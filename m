@@ -1,28 +1,28 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: Bcache version 9
-Date: Thu, 16 Dec 2010 03:21:33 -0800
-Message-ID: <4D09F63D.8040406@gmail.com>
-References: <20101121140808.GA6429@moria> <20101122010914.GB7688@kroah.com> <4CEB7648.8030000@gmail.com> <20101201041610.GA5891@kroah.com>
+From: LuVar <luvar-2S8i3W4CjuIzjkFyG6Beag@public.gmane.org>
+Subject: Installation of bcache
+Date: Fri, 17 Dec 2010 08:39:35 +0100 (GMT+01:00)
+Message-ID: <1741654248.28681292571575398.JavaMail.root@shiva>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20101201041610.GA5891@kroah.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.orglinux-fsdevel@vger.kernel.org
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: info <info-2S8i3W4CjuIzjkFyG6Beag@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 11/30/2010 08:16 PM, Greg KH wrote:
-> True, but I thought configfs could handle "bare" config items, you might
-> want to look a bit closer as to how people are using it.  But I could be
-> totally wrong however.
+Hi,
 
-Just in case I wasn't the only one confused, I stared at the 
-documentation and examples some more... still wasn't completely sure, so 
-I wrote the code, and bare attributes without a configfs item do work. I 
-just switched to configfs for the stuff that was in /sys/kernel/bcache, 
-it'll be in the next version.
+I have started an installation process of bcache. Till now I was (as an beginner foo in this type of tasks) able only to checkout (clone) an git repositories. Second one has tools. I had compiled them without problem.
 
-Almost got everything done on my todo list before it's ready to be 
-submitted...
+Iam having some troubles with second one repository. I had downloaded it (~317MB) and it appears to be an linux kernel. Iam running 2.6.34-gentoo-r12 kernel now and I want to keep this kernel and apply to its sources just patch, witch will add bcache functionality. Is it possible?
+
+I hope that reply could be also uploaded to http://bcache.evilpiepirate.org/GettingStarted page.
+
+Have a nice day,
+--
+LuVar
+--
+To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
