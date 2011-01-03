@@ -1,80 +1,83 @@
-From: luvar-2S8i3W4CjuIzjkFyG6Beag@public.gmane.org
-Subject: Re: Installation of bcache
-Date: Sat, 25 Dec 2010 23:49:35 +0100 (GMT+01:00)
-Message-ID: <510878981.29681293317375797.JavaMail.root@shiva>
-References: <160099935.29661293317149028.JavaMail.root@shiva>
+From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Bcache version 10
+Date: Sun, 2 Jan 2011 21:15:30 -0800
+Message-ID: <20110103051530.GA1386@moria>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <160099935.29661293317149028.JavaMail.root@shiva>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, info <info-2S8i3W4CjuIzjkFyG6Beag@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+Bcache is a patch to use SSDs to transparently cache arbitrary block
+devices. Its main claim to fame is that it's designed for the
+performance characteristics of SSDs - it avoids random writes and
+extraneous IO at all costs, instead allocating buckets sized to your
+erase blocks and filling them up seqentially. It uses a hybrid
+btree/log, instead of a hash table as some other caches.
 
-I have now a new questions. I had compiled kernel from your git (it doesnt have functional btrfs driver probably, because of kernel panic when mounting btrfs partition from fstab at startup). I am running it right now. I see sysfs interface to bcache. I had compiled make-bcache tool. Here I get stucked. According to http://bcache.evilpiepirate.org/GettingStarted and also according to documentation in Documentation/bcache.txt I should run something like this:
+It does both writethrough and writeback caching - it can use most of
+your SSD for buffering random writes, which are then flushed
+sequentially to the backing device. Skips sequential IO, too.
 
-make-bcache -b128k /dev/sde
+Bcache currently looks suitable for noncritical use; don't throw it on
+your server without testing your specific configuration with it but the
+risk of data corruption is minimal.
 
-When I run this command (with 512k param), it will give me this error:
-blacktroja bcache-tools # ./make-bcache -b512k /dev/sda1 
-Must specify one of -C or -B
-blacktroja bcache-tools #
+---
 
-I have had a look at make-bcache implementation and <delete>as Iam sw engineer I dont like it (I dont like also many of my own codes).</delete> I get lost in it. It seems that I should give it one of parameter B or C. If I give it C, it will affect bucket size. If Ill give it B, it will affect bucket size and some version field in some structure. I think that it will create writethrough or writeback cache from device. Is this right?
+Since the last patch, there hasn't been a huge amount of user visible
+stuff. Much of the recent work has been on making memory allocation
+deadlock proof, which is mostly done at this point.
 
-Questions:
-1. What parameter should I use, if I want cache (write-back) my root filesystem located on top of raid (/dev/md2)?
-2. Is it possible to cache root file system in write-back style? (yes, I found an answer on bcache web. I hope, initramfs wont kill me till new year...)
-3. What to do in shutdown script to be all right? (all dirti blocks from writeback device copied to main device. So I can on next boot omit using cache -> if any problems setting up cache in initramfs)
-4. Can I register 3 partitons of single ssd disk as three cache devices and associate them with concrete filesystems? (so for example /home partition will be cached on 5G cache partition and / partition will be cached on 10G cache partition) (I think this is not possible right now)
+Replaced some changes to the bio code with a different less intrusive
+way of doing things - this previously caused problems for btrfs and
+raid5 (as they used bios without calling bio_init() on them each time).
 
-PS: I want to set up cache and try to make chart/graph for booting times of my desktop. I hope, it will be lovering after some reboots. If anybody want to catch any other parameter than booting time, let me know.
+The userspace interface has been changed a bit more: /sys/kernel/bcache
+moves to /sys/kernel/config/bcache, and attaching a cache to a backing
+device is now done more explicitly - see Documentation/bcache.txt.
 
-Have a nice feriae days,
---
-LuVar
+This will be the last version based on 2.6.35, next on my todo list is
+syncing up with mainline. All that's left before I'll consider it ready
+for mainline is replacing the hooks for transparent caching with
+something else; I'm hoping to be able to submit it by the next merge
+window but that could turn out to be pure fantasy...
 
------ luvar-2S8i3W4CjuIzjkFyG6Beag@public.gmane.org wrote:
+I was previously working on a device mapper interface to replace said
+transparent caching, but I'm giving up on that - dm just looks too
+unsuited to bcache's needs. If someone who knows the dm code better felt
+like taking a stab at it I'll be happy to help (and they should have an
+easy time of it, I got it minimally working) but I'm going to be doing
+something else.
 
-> Hi,
-> ----- "Kent Overstreet" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
-> 
-> > On 12/16/2010 11:39 PM, LuVar wrote:
-> > > Hi,
-> > >
-> > > I have started an installation process of bcache. Till now I was
-> (as
-> > an beginner foo in this type of tasks) able only to checkout (clone)
-> > an git repositories. Second one has tools. I had compiled them
-> without
-> > problem.
-> > >
-> > > Iam having some troubles with second one repository. I had
-> > downloaded it (~317MB) and it appears to be an linux kernel. Iam
-> > running 2.6.34-gentoo-r12 kernel now and I want to keep this kernel
-> > and apply to its sources just patch, witch will add bcache
-> > functionality. Is it possible?
-> >
-> > Just do a git diff v2.6.35...HEAD to get a patch. If that applies
-> > cleanly against your gentoo kernel you should be good to go.
-> 
-> Sorry, Iam too lame in this area. Would you mind to send me exact
-> commands which to run? ("git diff v2.6.35...HEAD" complained something
-> about unknown version). I have now 2.6.36 kernel (which have some
-> cache capability mentioned in
-> Documentation/filesystems/caching/cachefiles.txt) in /usr/src/linux
-> directory (symlinked). Your git repository I have cloned in my home
-> dir.
-> 
-> PS: In few minutes Iam going to try your "TRIM whole ssd disk" script
-> after running first iozone test on my new disk.
-> 
-> Have a nice Christmas time to all. (especially to them, who had bought
-> a new ssd disk to himself :)
+Further off, once the new block interface is done I'll be starting on
+thin provisioning, then tiered storage and multiple cache devices. As
+part of thin provisioning, bcache will be getting logical volume
+management. I'm perfectly happy to work with anyone else who's
+interested on interfaces, userspace and otherwise.
+
+Bcache is available from
+git://evilpiepirate.org/~kent/linux-bcache.git
+git://evilpiepirate.org/~kent/bcache-tools.git
+http://bcache.evilpiepirate.org
+
+ Documentation/ABI/testing/sysfs-block-bcache |  156 +
+ Documentation/bcache.txt                     |  178 +
+ block/Kconfig                                |   16 +
+ block/Makefile                               |    4 +
+ block/bcache.c                               | 5505 ++++++++++++++++++++++++++
+ block/bcache_util.c                          |   78 +
+ block/bcache_util.h                          |  306 ++
+ block/blk-core.c                             |    7 +-
+ include/linux/bio.h                          |    1 +
+ include/linux/blkdev.h                       |    1 +
+ include/linux/fs.h                           |    5 +
+ include/linux/sched.h                        |    4 +
+ kernel/fork.c                                |    3 +
+13 files changed, 6262 insertions(+), 2 deletions(-)
+
 --
 To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
