@@ -1,38 +1,36 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [GIT] Bcache version 11
-Date: Sun, 29 May 2011 17:40:24 -0700
-Message-ID: <BANLkTikj4VHofeVnYJUU2x1A+jt786JX-A@mail.gmail.com>
-References: <20110520050237.GA383@google.com>
-	<BANLkTikD++zm004igjFq8-h_+_B0B1cYcQ@mail.gmail.com>
+From: Rohan Puri <prohan-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+Subject: Cannot clone git repository
+Date: Thu, 2 Jun 2011 15:40:10 +0800
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B04B1CF@MYMBX.MY.STEC-INC.AD>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <BANLkTikD++zm004igjFq8-h_+_B0B1cYcQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Dan Williams <dan.j.williams-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Cc: Anand Mitra <amitra-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Sat, May 28, 2011 at 2:27 AM, Dan Williams <dan.j.williams-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org=
-> wrote:
-> On Thu, May 19, 2011 at 10:02 PM, Kent Overstreet
-> <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
->> The code's currently based off of 2.6.34 (!). Git repository is up a=
-t
->> =A0git://evilpiepirate.org/~kent/linux-bcache.git
->
-> fyi...
->
-> $ git fetch origin
-> remote: Counting objects: 1985947, done.
-> remote: Compressing objects: =A065% (213301/3249)
-> remote: aborting due to possible repository corruption on the remote =
-side.
-> fatal: protocol error: bad pack header
-> $ git remote show origin -n
-> * remote origin
-> =A0Fetch URL: git://evilpiepirate.org/~kent/linux-bcache.git
+Hello,
 
-Sorry about that, I was trying to figure out how the repository got
-corrupted but it turned out it had just gotten too big for my linode,
-and git was running out of memory. Repacked and it works now.
+I was trying to clone the git repository at git://evilpiepirate.org/~kent/linux-bcache.git. But it fails with the following error : -
+
+Initialized empty Git repository in /home/tushar/bcache/linux-bcache/.git/
+remote: Counting objects: 1886033, done.
+remote: aborting due to possible repository corruption on the remote side.
+fatal: early EOF
+fatal: index-pack failed
+
+Also the patch url http://evilpiepirate.org/~kent/bcache.patch is not working.
+
+Please, let me know from where I can get the code.
+
+Regards,
+Rohan Puri.
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
