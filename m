@@ -1,17 +1,26 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: Cannot clone git repository
-Date: Thu, 02 Jun 2011 10:59:58 -0700
-Message-ID: <4DE7CF9E.3010707@gmail.com>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B04B1CF@MYMBX.MY.STEC-INC.AD>
+From: Rohan Puri <prohan-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+Subject: RE: Cannot clone git repository
+Date: Fri, 3 Jun 2011 14:35:57 +0800
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B04B1D4@MYMBX.MY.STEC-INC.AD>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B04B1CF@MYMBX.MY.STEC-INC.AD>,<4DE7CF9E.3010707@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B04B1CF-AQg6BlXVjylhNUoibfp7lHKnxlUjViKd@public.gmane.org>
+In-Reply-To: <4DE7CF9E.3010707-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Rohan Puri <prohan-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Anand Mitra <amitra-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
+
+I tried it yesterday. Came to know the problem. The problem is not in the repository. The problem was with the RAM. I tried to clone the repository with 8GB RAM and it got cloned. But the error is returned when the RAM is less.This  happens as the repository is very big.
+________________________________________
+From: Kent Overstreet [kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org]
+Sent: Thursday, June 02, 2011 11:29 PM
+To: Rohan Puri
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; Anand Mitra
+Subject: Re: Cannot clone git repository
 
 On 06/02/11 00:40, Rohan Puri wrote:
 > Hello,
@@ -24,7 +33,7 @@ On 06/02/11 00:40, Rohan Puri wrote:
 > fatal: early EOF
 > fatal: index-pack failed
 
-When was this? It was broken over the weekend, but I tried cloning just 
+When was this? It was broken over the weekend, but I tried cloning just
 now and it worked fine.
 > Also the patch url http://evilpiepirate.org/~kent/bcache.patch is not working.
 That was old, I need to delete the link.
