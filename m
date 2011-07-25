@@ -1,37 +1,27 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: Git Repo lacks memory ?
-Date: Mon, 25 Jul 2011 09:11:12 -0700
-Message-ID: <4E2D95A0.4070500@gmail.com>
-References: <loom.20110721T165958-17@post.gmane.org> <4E288633.3040602@gmail.com> <loom.20110725T180840-471@post.gmane.org>
+From: i- <itooo-xVucS5mfmt0AvxtiuMwx3w@public.gmane.org>
+Subject: Not a bcache superblock
+Date: Mon, 25 Jul 2011 16:14:21 +0000 (UTC)
+Message-ID: <loom.20110725T180931-69@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <loom.20110725T180840-471-eS7Uydv5nfjZ+VzJOa5vwg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: i- <itooo-xVucS5mfmt0AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 07/25/11 09:09, i- wrote:
-> Kent Overstreet<kent.overstreet@...>  writes:
->
->> Damn, thought I fixed that. Give me a day or so, I'm in the middle of
->> some on disk format changes and once I finish that I need to rebase and
->> upload a bunch of new stuff.
->>
->
-> Seems to be fixed, I could clone the repo, thank you.
+Hi all,
 
-Weird, I haven't touched it :p
+When trying to register a device with bcache, I have the following error message
+: "bcache: error opening /dev/sdb1: Not a bcache superblock"
 
-Chasing obnoxious bugs at the moment but I just finished all the on disk 
-format changes, soon as I figure this bug out I ought to be rebasing and 
-uploading new code...
+Digging around showed me the magic number could not be matched, digging a bit
+more I found out that the cache_sb structures are different in the tools code
+and in the kernel code.
 
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+There are 3 fields before the magic in the tools' bcache.h but the magic is the
+first field in bcache.c in the linux module code...
+
+Am I out of sync between repos ? (I cloned them both today)
+
+Regards
