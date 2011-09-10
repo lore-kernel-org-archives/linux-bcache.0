@@ -1,65 +1,47 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: [GIT] Bcache version 12
-Date: Fri, 9 Sep 2011 23:45:31 -0700
-Message-ID: <20110910064531.GA32536@moria>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: Mark Hills <mark-UrrBsZIrrsb10XsdtD+oqA@public.gmane.org>
+Subject: [PATCH 6/7] Temporary fix to pr_latency()
+Date: Sat, 10 Sep 2011 14:45:38 +0100
+Message-ID: <1315662339-3115-6-git-send-email-mark@pogo.org.uk>
+References: <1109101110320.2733@stax.localdomain>
+ <1315662339-3115-1-git-send-email-mark@pogo.org.uk>
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
+In-Reply-To: <1315662339-3115-1-git-send-email-mark-UrrBsZIrrsb10XsdtD+oqA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-Cc: rdunlap-/UHa2rfvQTnk1uMJSBkQmQ@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-bcache, n.: a cache for arbitrary block devices that uses an SSD
+The following compile errors are caused by pr_latency (gcc 4.5.2):
 
-It's probably past time I started poking people to see about getting
-this stuff in. It's synced up with mainline, the documentation is for
-once relatively up to date, and it looks just about production ready.
+  block/bcache.c: In function 'fill_bucket_work':
+  block/bcache.c:2510:2: error: initializer element is not constant
+  block/bcache.c:2510:2: error: (near initialization for '_rs.lock')
+  [...]
 
-Suggestions are more than welcome on how to make it easier to review -
-it's entirely too much code, I know (near 10k lines now). I'll be
-emailing the patches that touch other parts of the kernel separately.
+This is caused by printk_ratelimited() when compiled with --std=gnu99.
+Although it is not clear why; the pre-processed code seems to be
+constant. Perhaps this is even a bug in GCC.
 
-Short overview:
-Bcache does both writethrough and writeback caching. It presents itself
-as a new block device, a bit like say md. You can cache an arbitrary
-number of block devices with a single cache device, and attach and
-detach things at runtime - it's quite flexible.
+This patch fixes the build in this case, by using regular printk
+instead.
 
-It's very fast. It uses a b+ tree for the index, along with a journal to
-coalesce index updates, and a bunch of other cool tricks like auxiliary
-binary search trees with software floating point keys to avoid a bunch
-of random memory accesses when doing binary searches in the btree. It
-does over 50k iops doing 4k random /writes/ without breaking a sweat,
-and would do many times that if I had faster hardware.
+But the correct fix is to remove the specialised compile flag on bcache
+code. It is mainly required by variables initialised in for loops.
+---
+ block/bcache_util.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-It (configurably) tracks and skips sequential IO, so as to efficiently
-cache random IO. It's got more cool features than I can remember at this
-point. It's resilient, handling IO errors from the SSD when possible up
-to a configurable threshhold, then detaches the cache from the backing
-device even while you're still using it.
-
-The code is up at
-git://evilpiepirate.org/~kent/linux-bcache.git
-git://evilpiepirate.org/~kent/bcache-tools.git
-
-The wiki is woefully out of date, but that might change one day:
-http://bcache.evilpiepirate.org
-
-The most up to date documentation is in the kernel tree -
-Documentation/bcache.txt
-
- Documentation/ABI/testing/sysfs-block-bcache |  156 +
- Documentation/bcache.txt                     |  265 +
- block/Kconfig                                |   36 +
- block/Makefile                               |    4 +
- block/bcache.c                               | 8479 ++++++++++++++++++++++++++
- block/bcache_util.c                          |  661 ++
- block/bcache_util.h                          |  555 ++
- fs/bio.c                                     |    9 +-
- include/linux/blk_types.h                    |    2 +
- include/linux/sched.h                        |    4 +
- include/trace/events/bcache.h                |   53 +
- kernel/fork.c                                |    3 +
- 12 files changed, 10225 insertions(+), 2 deletions(-)
+diff --git a/block/bcache_util.h b/block/bcache_util.h
+index 872ca56..c7e72d0 100644
+--- a/block/bcache_util.h
++++ b/block/bcache_util.h
+@@ -414,7 +414,7 @@ extern unsigned latency_warn_ms;
+ do {									\
+ 	int _ms = jiffies_to_msecs(jiffies - (j));			\
+ 	if (j && latency_warn_ms && (_ms) > (int) latency_warn_ms)	\
+-		printk_ratelimited(KERN_DEBUG "bcache: %i ms latency "	\
++		printk(KERN_DEBUG "bcache: %i ms latency "		\
+ 			"called from %pf for " fmt "\n", _ms,		\
+ 		       __builtin_return_address(0), ##__VA_ARGS__);	\
+ } while (0)
+-- 
+1.7.4.4
