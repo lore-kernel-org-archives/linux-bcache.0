@@ -1,70 +1,76 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: [GIT] Bcache version 12
-Date: Sun, 11 Sep 2011 18:44:07 -0700
-Message-ID: <20110912014407.GA5171@moria>
-References: <20110910064531.GA32536@moria>
- <20110911081854.2958fdc8@notabene.brown>
- <20110911192259.GA3743@moria>
- <FD294A0B-7127-4ED1-89B8-3E3ADA796360@dilger.ca>
+From: Greg Bowyer <gbowyer-97jfqw80gc69FHfhHBbuYA@public.gmane.org>
+Subject: Re: New stuff up in git
+Date: Mon, 12 Sep 2011 18:50:47 -0700
+Message-ID: <4E6EB6F7.9030806@fastmail.co.uk>
+References: <CAC7rs0tjhf73fRGE6rvVGjiCGc1coCAZTQNFqoC0iAn+YmGZng@mail.gmail.com>	<j4d5bv$v1b$1@dough.gmane.org>	<CAC7rs0uriXHsxKP0Z9JhZhSz5mgFG_o9hLKYnhRauFHr=2mfPg@mail.gmail.com>	<4E6B0537.4060409@fastmail.co.uk> <CAC7rs0t57Kx1f3CsQCb3CCf7r7tB6TwmwOLYVw0RJjujXAcwTw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <FD294A0B-7127-4ED1-89B8-3E3ADA796360-m1MBpc4rdrD3fQ9qLvQP4Q@public.gmane.org>
+In-Reply-To: <CAC7rs0t57Kx1f3CsQCb3CCf7r7tB6TwmwOLYVw0RJjujXAcwTw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Andreas Dilger <adilger-m1MBpc4rdrD3fQ9qLvQP4Q@public.gmane.org>
-Cc: NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "rdunlap-/UHa2rfvQTnk1uMJSBkQmQ@public.gmane.org" <rdunlap-/UHa2rfvQTnk1uMJSBkQmQ@public.gmane.org>, "axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org" <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, "akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org" <akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org>
+To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Sun, Sep 11, 2011 at 07:35:56PM -0600, Andreas Dilger wrote:
-> On 2011-09-11, at 1:23 PM, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
-> > On Sun, Sep 11, 2011 at 08:18:54AM +0200, NeilBrown wrote:
-> >> 
-> >> Looking at bcache.txt....
-> >> 
-> >> To make bcache devices known to the kernel, echo them to /sys/fs/bcache/register
-> >>  echo /dev/sdb > /sys/fs/bcache/register
-> >>  echo /dev/sdc > /sys/fs/bcache/register
-> >> 
-> >> ???
-> >> I know that /sys is heading the way of /proc and becoming a disorganised ad
-> >> hoc mess, but we don't need to actively encourage that.
-> >> So when you are created a new block device type, putting controls
-> >> under /sys/fs (where I believe 'fs' stands for "file system") seem ill
-> >> advised.
-> >> 
-> >> My personal preference would be to see this as configuring the module and us
-> >>  /sys/modules/bcache/parameters/register
-> > 
-> > I don't think that makes any more sense, as module paramaters AFAIK are
-> > even more explicitly just a value you can stick in and pull out.
-> > /sys/fs/bcache/register is really more analagous to mount().
-> > 
-> > You're not the first person to complain about that, I moved it to
-> > configfs for awhile at Greg K-H's behest... but when I added cache sets
-> > I had to move it back to sysfs.
-> > 
-> >> Alternately you could device a new 'bus' type for bcache and do some sort of
-> >> device-model magic to attach something as a new device of that type.
-> > 
-> > I like that, I think that could make a lot of sense.
-> > 
-> > I'm not sure what to do about register though, I do prefer to have it a
-> > file you can echo to but it doesn't really fit anywhere.
-> 
-> Rather than using /proc or /sys to configure bcache, why not integrate it with device mapper, and use dmsetup to configure it?  That avoids adding yet another block device abstraction into the kernel, and yet one more obscure way of configuring things. 
-> 
-> A bcache device could be considered almost like an LV snapshot, where writes go to the SSD device instead of a disk, and they can have writeback or writethrough cache. 
+Sorry for the delay I was away over the weekend, my changes (minimal as 
+they are) are on github
 
-I looked into that many months ago, spent quite a bit of time fighting
-with the dm code trying to get it to do what I wanted and... no. Never
-again. It's worse than the cgroups code, and that's saying something.
+https://github.com/GregBowyer/linux-bcache
 
-It'd be great to have some uniformity, but you can't pay me enough to
-touch that code again; IMO it's horribly misdesigned and probably a lost
-cause.
+I didn't spend much time working out compile errors if I put on 
+debugging, they should be pretty easy to fix, I just wanted to play
+I also didn't realize that I needed to format the backing device 
+separate to the cache device, I have not had a chance to fully test 
+everything, I will try it out over the next few days.
 
-Anyways, the code to create a new block device in bcache is trivial,
-using dm certainly wouldn't make bcache any simpler (quite the
-opposite). Supporting a standard interface would also be easy provided
-it was a sane one.
+Do you want me to give this a more serious look over ?
+
+On 09/09/11 16:12, Kent Overstreet wrote:
+> Nice. If you want to push/email your changes I'll merge them into the
+> bcache-3.1 branch.
+>
+> Now if only I had some up to date documentation... :)
+>
+> On Fri, Sep 9, 2011 at 11:35 PM, Greg Bowyer<gbowyer-97jfqw80gc69FHfhHBbuYA@public.gmane.org>  wrote:
+>> On 09/09/11 15:27, Kent Overstreet wrote:
+>>> On Fri, Sep 9, 2011 at 2:46 PM, Greg Bowyer<gbowyer-97jfqw80gc69FHfhHBbuYA@public.gmane.org>
+>>>   wrote:
+>>>> Sorry if this is a dumb question, is bcache-3.1 an update to bcache for
+>>>> kernels 3.1+
+>>> It's the current bcache code rebased onto 3.1, yeah.
+>>>
+>>>> I ask because I dumbly merged bcache onto the v3.0 tag today since I want
+>>>> to
+>>>> have a play with bcache
+>>> Heh. Did you get it to compile/boot? the bcache-3.1 branch isn't
+>>> _quite_ that far.
+>> I did get to compile and boot, although I took the bcache branch and not
+>> bcache-3.1 (when I say compile it wont compile if I have debugging turned
+>> on, but I am ignoring that :S)
+>>>> On 08/09/11 01:49, Kent Overstreet wrote:
+>>>>> I just finished updating both the bcache (off 2.6.34) and the
+>>>>> bcache-3.1 branches with the latest stable code.
+>>>>>
+>>>>> Also got cgit set up and working, finally. Need to stick a link in the
+>>>>> wiki to it..
+>>>>>
+>>>>> http://evilpiepirate.org/git
+>>>>>
+>>>>> I still haven't figured out how to pack a git repository so cloning it
+>>>>> doesn't take>      80% of my linode's ram, but cloning works for me so I'm
+>>>>> done screwing with it for now.
+>>>>>
+>>>>> The bcache branch compiles but hasn't been tested. I don't expect any
+>>>>> issues though, it's pretty close to what I normally develop/test on.
+>>>>>
+>>>>> The bcache-3.1 branch still doesn't quite compile, but it's pretty
+>>>>> close - I'm try and get a working version pushed tomorrow, I did boot
+>>>>> a linux 3.1 + bcache kernel at one point...
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-bcache"
+>>>> in
+>>>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>
