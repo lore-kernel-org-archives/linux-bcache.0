@@ -1,66 +1,191 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
+From: Arnd Bergmann <arnd-r2nGTMty4D4@public.gmane.org>
 Subject: Re: [GIT] Bcache version 12
-Date: Tue, 20 Sep 2011 22:57:09 -0700
-Message-ID: <20110921055708.GB6601@moria>
-References: <20110910064531.GA32536@moria>
- <CAOJsxLFPODubVEB3Tjg54C7jDKM8H-RCM_u5kvO1D0kKyjUYXQ@mail.gmail.com>
- <20110921025545.GB5521@moria>
- <CAOJsxLHQdf-+HuwVsQtF26oY_oJf3BsVdDi3NyJDi7F0eD03Gw@mail.gmail.com>
- <CAOJsxLGWoGqdv=tdBwWjM9-MD_Qm3ibMSGpp1j-tQLjMW-b-0A@mail.gmail.com>
+Date: Wed, 21 Sep 2011 11:19:04 +0200
+Message-ID: <3275384.xWAcDU4Ykv@wuerfel>
+References: <20110910064531.GA32536@moria> <201109201737.05515.arnd@arndb.de> <20110921034416.GC5521@moria>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-fsdevel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <CAOJsxLGWoGqdv=tdBwWjM9-MD_Qm3ibMSGpp1j-tQLjMW-b-0A@mail.gmail.com>
-Sender: linux-fsdevel-owner@vger.kernel.org
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, rdunlap@xenotime.net, axboe@kernel.dk, akpm@linux-foundation.org, neilb@suse.de
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7Bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <20110921034416.GC5521@moria>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, rdunlap-/UHa2rfvQTnk1uMJSBkQmQ@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Sep 21, 2011 at 08:42:01AM +0300, Pekka Enberg wrote:
-> On Wed, Sep 21, 2011 at 5:55 AM, Kent Overstreet
-> > <kent.overstreet@gmail.com> wrote:
-> >> Short version: bcache is for making IO faster.
+On Tuesday 20 September 2011 20:44:16 Kent Overstreet wrote:
+> On Tue, Sep 20, 2011 at 05:37:05PM +0200, Arnd Bergmann wrote:
+> > On Saturday 10 September 2011, Kent Overstreet wrote:
+> > > Short overview:
+> > > Bcache does both writethrough and writeback caching. It presents itself
+> > > as a new block device, a bit like say md. You can cache an arbitrary
+> > > number of block devices with a single cache device, and attach and
+> > > detach things at runtime - it's quite flexible.
+> > > 
+> > > It's very fast. It uses a b+ tree for the index, along with a journal to
+> > > coalesce index updates, and a bunch of other cool tricks like auxiliary
+> > > binary search trees with software floating point keys to avoid a bunch
+> > > of random memory accesses when doing binary searches in the btree. It
+> > > does over 50k iops doing 4k random writes without breaking a sweat,
+> > > and would do many times that if I had faster hardware.
+> > > 
+> > > It (configurably) tracks and skips sequential IO, so as to efficiently
+> > > cache random IO. It's got more cool features than I can remember at this
+> > > point. It's resilient, handling IO errors from the SSD when possible up
+> > > to a configurable threshhold, then detaches the cache from the backing
+> > > device even while you're still using it.
+> > 
+> > Hi Kent,
+> > 
+> > What kind of SSD hardware do you target here? I roughly categorize them
+> > into two classes, the low-end (USB, SDHC, CF, cheap ATA SSD) and the
+> > high-end (SAS, PCIe, NAS, expensive ATA SSD), which have extremely
+> > different characteristics. 
 > 
-> On Wed, Sep 21, 2011 at 8:33 AM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> > That's helpful...
+> All of the above.
 > 
-> Your documentation isn't helpful either:
+> > I'm mainly interested in the first category, and a brief look at your
+> > code suggests that this is what you are indeed targetting. If that is
+> > true, can you name the specific hardware characteristics you require
+> > as a minimum? I.e. what erase block (bucket) sizes do you support
+> > (maximum size, non-power-of-two), how many buckets do you have
+> > open at the same time, and do you guarantee that each bucket is written
+> > in consecutive order?
 > 
-> +Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
-> +nice if you could use them as cache... Hence bcache.
+> Bucket size is set when you format your cache device. It is restricted
+> to powers of two (though the only reason for that restriction is to
+> avoid dividing by bucket size all over the place; if there was a
+> legitimate need we could easily see what the performance hit would be).
+
+Note that odd erase block sizes are getting very common now, since TLC
+flash is being used for many consumer grade devices and these tend to
+have erase blocks of three times the equivalent SLC flash. That means you
+have to support bucket sizes of 1.5/3/6/12 MB eventually. I've seen
+a few devices that use very odd sizes like 4128KiB or 992KiB, or that
+misalign the erase blocks to the drive's sector number (i.e. the first
+erase block is smaller than the others). I would not recommend trying to
+support those.
+
+> And it has to be >= PAGE_SIZE; come to think of it I don't think there's
+> a hard upper bound. Performance should be reasonable for bucket sizes
+> anywhere between 64k and around 2 mb; somewhere around 64k your btree
+> will have a depth of 2 and that and the increased operations on non leaf
+> nodes are going to hurt performance. Above around 2 mb and performance
+> will start to drop as btree nodes get bigger, but the hit won't be
+> enormous.
+
+2MB is rather small for devices made in 2011, the most common you'll 
+see now are 4MB and 8MB, and it's rising every year. Devices that use
+more channels in parallel like the Sandisk pSSD-P2 already use 16 MB
+erase blocks and performance drops sharply if you get it wrong there.
+
+> For data buckets, we currently keep 16 open, 8 for clean data and 8 for
+> dirty data. That's hard coded, but there's no reason it has to be. Btree
+> nodes are in normal operation mostly not full and thus could be
+> considered open buckets - it's always one btree node per bucket. IO to
+> the btree is typically < 1% of total IO, though.
+>
+> Most metadata IO is to the journal; the journal uses a list of buckets
+> and writes to them all sequentially, so one open bucket for the journal.
 > 
-> So it's a cool hack but you fail to explain why someone wants to use
-> it. You also fail to explain why you decided to implement it the way
-> you did instead of making it more like fscache, for example.
+> The one exception is the superblock, but that doesn't get written to in
+> normal operation. I am eventually going to switch to using another
+> journal for the superblock, as part of bcache FTL.
 > 
-> Really, why do I need to go digging for this sort of information? It
-> feels almost as if you don't want people to review your code...
+> We do guarantee that buckets are allways written to sequentially (save
+> the superblock). If discards are on, bcache will always issue a discard
+> before it starts writing to a bucket again (except for the journal, that
+> part's unfinished).
 
-The documentation should be better and better organized to be sure, but
-I'm honestly not sure what's so strange about the concept of a cache for
-block devices..
+I'd say that 16 (+1) open buckets is pushing it, *very* few devices can
+actually sustain that. Maybe you don't normally use all of them but instead
+have some buckets that see most of the incoming writes? I can't see how
+you'd avoid constant thrashing on cheap drives otherwise.
 
-My changelog messages are certainly lousy but they aren't really the
-place for a design doc, if that's what you're looking for.
+In the data I've collected at
+https://wiki.linaro.org/WorkingGroups/Kernel/Projects/FlashCardSurvey you
+can see that the median is 5 open erase blocks in current devices, so
+that's probably what you should aim for in the low end. It's not hard
+to measure during a format operation that you might already be doing,
+so if you can make the number configurable, you should be able to get
+more out of the low end without regressing on the real SSDs.
 
-As for bcache's design vs. fscache's design... well, they're so unlike
-each other I'm not sure it even makes much sense to go into much.
+Some SD cards support only one open erase block (plus journal/FAT),
+and it's probably not worth spending much thought about supporting
+those. This affects all Kingston branded SDHC cards and their OEM
+partners (some patriot, extrememory, danelec, emtec, integral --
+however as these don't produce the cards themselves, the next shipment
+could be better).
 
-Bcache caches block devices, fscache caches at the filesystem layer.
-They each have uses where the other can't be used.
+Fortunately, the number of open erase blocks in a device is increasing
+over time, as manufacturers have to work around growing erase block sizes,
+so this problem may become less significant in a few years.
 
-If you want more than that - IMO bcache's design is simpler, higher
-performing, and more flexible.
+> > On a different note, we had discussed at the last storage/fs summit about
+> > using an SSD cache either without a backing store or having the backing
+> > store on the same drive as the cache in order to optimize traditional
+> > file system on low-end flash media. Have you considered these scenarios?
+> > How hard would it be to support this in a meaningful way? My hope is that
+> > by sacrificing some 10% of the drive size, you would get significantly
+> > improved performance because you can avoid many internal GC cycles within
+> > the drive.
+> 
+> Yeah, so... what you really want there is to move the FTL into the
+> kernel, so you can have an FTL that doesn't suck. Bcache is already
+> about 90% of the way to being a full blown high performance FTL...
+> 
+> Besides the metadata stuff that I sort of covered above, the other thing
+> that'd have to be done to use bcache as an FTL and not a cache is we'd
+> just need a moving garbage collector - so when a bucket is mostly
+> empty but has data we need to keep we can move it somewhere else. But
+> this is pretty similar to what background writeback does now, so it'll
+> be easy and straightforward.
+> 
+> So yeah, it can be done :)
 
-bcache doesn't have to have a notion of files; it caches extents.
+Ok, sounds great! I'll probably come back to this point once you
+have made it upstream. Right now I would not add more features in
+order to keep the code reasonably simple for review.
 
-It can cache filesystem metadata - it can cache anything.
+> Further off, what I really want to do is extend bcache somewhat to turn
+> it into the bottom half of a filesystem...
+> 
+> It sounds kind of crazy at first, but - well, bcache already has an
+> index, allocation and garbage collection. Right now the index is
+> device:sector -> cache device:phys sector. If we just switch to
+> inode:sector -> ... we can map files in the filesystem with the exact
+> same index we're using for the cache. Not just the same code, the same
+> index.
+> 
+> Then the rough plan is that layer above bcache - the filesystem proper -
+> will store all the inodes in a file (say file 0); then when bcache is
+> doing garbage collection it has to be able to ask the fs "How big is
+> file n supposed to be?". It gives us a very nice separation between
+> layers.
 
-Because bcache has its own superblock (much like md), it can guarantee
-that bcache devices are consistent; this is particularly important if
-you want to do writeback caching. You really don't want to accidently
-mount a filesystem that you were doing writeback caching on without the
-ache - bcache makes it impossible to do so accidently.
+Have you thought about combining bcache with exofs? Your description sounds
+like what you have is basically an object based storage, so if you provide
+an interface that exofs can use, you don't need to worry about all the
+complicated VFS interactions.
 
-Is any of that useful?
+> There's a ton of other details - bcache then needs to handle allocation
+> for rotating disks and not just SSDs, and you want to do that somewhat
+> differently as fragmentation matters. But the idea seems to have legs.
+> 
+> Also, bcache is gaining some nifty functionality that'd be nice to have
+> available in the filesystem proper - we're working on full data
+> checksumming right now, in particular. We might be able to pull off all
+> the features of ZFS and then some, and beat ZFS on performance (maybe
+> even with a smaller codebase!).
+> 
+> If you don't think I'm completely insane and want to hear more, let me
+> know :)
+
+My impression is that you are on the right track for the cache, and that
+it would be good to combine this with a file system, but that it would
+be counterproductive to also want to support rotating disks or merging
+the high-level FS code into what you have now. The amount of research
+that has gone into these things is something you won't be able to
+match without having to sacrifice the stuff that you already do well.
+
+	Arnd
