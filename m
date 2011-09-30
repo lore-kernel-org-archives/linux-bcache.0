@@ -1,170 +1,143 @@
-From: Dan Williams <dan.j.williams-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: [GIT] Bcache version 12
-Date: Thu, 29 Sep 2011 16:38:52 -0700
-Message-ID: <CAA9_cmfOdv4ozkz7bd2QsbL5_VtAraMZMXoo0AAV0eCgNQr62Q@mail.gmail.com>
+Date: Fri, 30 Sep 2011 00:14:34 -0700
+Message-ID: <20110930071434.GA26565@moria>
 References: <20110910064531.GA32536@moria>
-	<20110911081854.2958fdc8@notabene.brown>
-	<20110911192259.GA3743@moria>
-	<FD294A0B-7127-4ED1-89B8-3E3ADA796360@dilger.ca>
-	<20110912014407.GA5171@moria>
-	<CAA9_cmeqevWoK=9WMD9c+csc8SbaYq0aK9j1qWr_0FEa6jWZEw@mail.gmail.com>
-	<CAC7rs0t_J+foaLZSuuw5BhpUAYfr-KY1iegFOxEBPCpbrkk1Dg@mail.gmail.com>
-	<20110919171606.3640c102@notabene.brown>
-	<20110921025408.GA5521@moria>
+ <20110911081854.2958fdc8@notabene.brown>
+ <20110911192259.GA3743@moria>
+ <FD294A0B-7127-4ED1-89B8-3E3ADA796360@dilger.ca>
+ <20110912014407.GA5171@moria>
+ <CAA9_cmeqevWoK=9WMD9c+csc8SbaYq0aK9j1qWr_0FEa6jWZEw@mail.gmail.com>
+ <CAC7rs0t_J+foaLZSuuw5BhpUAYfr-KY1iegFOxEBPCpbrkk1Dg@mail.gmail.com>
+ <20110919171606.3640c102@notabene.brown>
+ <20110921025408.GA5521@moria>
+ <CAA9_cmfOdv4ozkz7bd2QsbL5_VtAraMZMXoo0AAV0eCgNQr62Q@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20110921025408.GA5521@moria>
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmfOdv4ozkz7bd2QsbL5_VtAraMZMXoo0AAV0eCgNQr62Q-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Dan Williams <dan.j.williams-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
 Cc: NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>, Andreas Dilger <adilger-m1MBpc4rdrD3fQ9qLvQP4Q@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "rdunlap-/UHa2rfvQTnk1uMJSBkQmQ@public.gmane.org" <rdunlap-/UHa2rfvQTnk1uMJSBkQmQ@public.gmane.org>, "axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org" <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, "akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org" <akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Sep 20, 2011 at 7:54 PM, Kent Overstreet
-<kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->> Does not each block device have a unique superblock (created by make=
--bcache)
->> on it? =A0That should define a clear 1-to-1 mapping....
->
-> There is (for now) a 1:1 mapping of backing devices to block devices.
+On Thu, Sep 29, 2011 at 04:38:52PM -0700, Dan Williams wrote:
+> On Tue, Sep 20, 2011 at 7:54 PM, Kent Overstreet
+> > There is (for now) a 1:1 mapping of backing devices to block devices.
+> 
+> Is that "(for now)" where you see md not being able to model this in the future?
 
-Is that "(for now)" where you see md not being able to model this in th=
-e future?
+No, the for now was about bcache. I'm planning on adding volume
+managament/thin provisioning to bcache, but that may end up being only a
+stepping stone to a full fs (i.e. never 
 
-> Cache devices have a basically identical superblock as backing device=
-s
-> though, and some of the registration code is shared, but cache device=
-s
-> don't correspond to any block devices.
 
-Just like a raid0 is a virtual creation from two block devices?  Or
-some other meaning of "don't correspond"?
+> > Cache devices have a basically identical superblock as backing devices
+> > though, and some of the registration code is shared, but cache devices
+> > don't correspond to any block devices.
+> 
+> Just like a raid0 is a virtual creation from two block devices?  Or
+> some other meaning of "don't correspond"?
 
->> It isn't clear from the documentation what a 'cache set' is. =A0I th=
-ink it is a
->> set of related cache devices. =A0But how do they relate to backing d=
-evices?
->> Is it one backing device per cache set? =A0Or can it be several back=
-ing devices
->> are all cached by one cache-set??
->
-> Many backing devices per cache set, yes.
->
-> A cache set is a set of cache devices - i.e. SSDs. The primary
-> motivitation for cache sets (as distinct from just caches) is to have
-> the ability to mirror only dirty data, and not clean data.
->
-> i.e. if you're doing writeback caching of a raid6, your ssd is now a
-> single point of failure. You could use raid1 SSDs, but most of the da=
-ta
-> in the cache is clean, so you don't need to mirror that... just the
-> dirty data.
+No.
 
-=2E..but you only incur that "mirror clean data" penalty once, and then
-it's just a normal raid1 mirroring writes, right?
+Remember, you can hang multiple backing devices off a cache.
 
-> Multiple cache device support isn't quite finished yet (there's not a
-> lot of work to do, just lots of higher priorities). It looks like it'=
-s
-> also going to be a useful abstraction for bcache FTL, too - we can tr=
-eat
-> multiple channels of an SSD as different devices for allocation
-> purposes, we just won't expose it to the user in that case.
+Each backing device shows up as as a new block device - i.e. if you're
+caching /dev/sdb, you now use it as /dev/bcache0.
 
-See, if these things were just md devices multiple cache device would
-already be "done", or at least on its way by just stacking md devices.
- Where "done" is probably an oversimplification.
+But the SSD doesn't belong to any of those /dev/bcacheN devices.
 
->> In any case it certainly could be modelled in md - and if the modell=
-ing were
->> not elegant (e.g. even device numbers for backing devices, odd devic=
-e numbers
->> for cache devices) we could "fix" md to make it more elegant.
->
-> But we've no reason to create block devices for caches or have a 1:1
-> mapping - that'd be a serious step backwards in functionality.
+> > A cache set is a set of cache devices - i.e. SSDs. The primary
+> > motivitation for cache sets (as distinct from just caches) is to have
+> > the ability to mirror only dirty data, and not clean data.
+> >
+> > i.e. if you're doing writeback caching of a raid6, your ssd is now a
+> > single point of failure. You could use raid1 SSDs, but most of the data
+> > in the cache is clean, so you don't need to mirror that... just the
+> > dirty data.
+> 
+> ...but you only incur that "mirror clean data" penalty once, and then
+> it's just a normal raid1 mirroring writes, right?
 
-I don't follow that...  there's nothing that prevents having multiple
-superblocks per cache array.
+No idea what you mean...
 
-A couple reasons I'm probing the md angle.
+> See, if these things were just md devices multiple cache device would
+> already be "done", or at least on its way by just stacking md devices.
+>  Where "done" is probably an oversimplification.
 
-1/ Since the backing devices are md devices it would be nice if all
-the user space assembly logic that has seeped into udev and dracut
-could be re-used for assembling bcache devices.  As it stands it seems
-bcache relies on in-kernel auto-assembly, which md has discouraged
-with the v1 superblock.  We even have nascent GUI support in
-gnome-disk-utility it would be nice to harness some of that enabling
-momentum for this.
+No, it really wouldn't save us anything. If all we wanted to do was
+mirror everything, there'd be no point in implementing multiple cache
+device support, and you'd just use bcache on top of md. We're
+implementing something completely new!
 
-2/ md supports multiple superblock formats and if you Google "ssd
-caching" you'll see that there may be other superblock formats that
-the Linux block-caching driver could be asked to support down the
-road.  And wouldn't it be nice if bcache had at least the option to
-support the on-disk format of whatever dm-cache is doing?
+You read what I said about only mirroring dirty data... right?
 
->> (Not that I'm necessarily advocating an md interface, but if I can u=
-nderstand
->> why you don't think md can work, then I might understand bcache bett=
-er ....
->> or you might get to understand md better).
->
-> And I still would like to have some generic infrastructure, if only I
-> had the time to work on such things :)
->
-> The way I see it md is more or less conflating two different things -
-> things that consume block devices
+> >> In any case it certainly could be modelled in md - and if the modelling were
+> >> not elegant (e.g. even device numbers for backing devices, odd device numbers
+> >> for cache devices) we could "fix" md to make it more elegant.
+> >
+> > But we've no reason to create block devices for caches or have a 1:1
+> > mapping - that'd be a serious step backwards in functionality.
+> 
+> I don't follow that...  there's nothing that prevents having multiple
+> superblocks per cache array.
 
-=2E..did the interwebs chomp the last part of that thought?
+Multiple... superblocks? Do you mean partitioning up the cache, or do
+you mean creating multiple block devices for a cache? Either way it's a
+silly hack.
 
-[..]
->> Also I don't think the code belongs in /block. =A0The CRC64 code sho=
-uld go
->> in /lib and the rest should either be in /drivers/block or
->> possible /drivers/md (as it makes a single device out of 'multiple d=
-evices'.
->> Obviously that isn't urgent, but should be fixed before it can be co=
-nsidered
->> to be ready.
->
-> Yeah, moving it into drivers/block/bcache/ and splitting it up into
-> different files is on the todo list (for some reason, one of the othe=
-r
-> guys working on bcache thinks a 9k line .c file is excessive :)
+> A couple reasons I'm probing the md angle.
+> 
+> 1/ Since the backing devices are md devices it would be nice if all
+> the user space assembly logic that has seeped into udev and dracut
+> could be re-used for assembling bcache devices.  As it stands it seems
+> bcache relies on in-kernel auto-assembly, which md has discouraged
+> with the v1 superblock. 
 
-Not unheard of
-$ cat drivers/scsi/ipr.c | wc -l
-9237
+md was doing in kernel probing, which bcache does not do. What bcache is
+doing is centralizing all the code that touches the on disk
+superblock/metadata. You want to change something in the superblock -
+you just have to tell the kernel to do it for you. Otherwise not only
+would there be duplication of code, it'd be impossible to do safely
+without races or the userspace code screwing something up; only the
+kernel knows and controls the state of everything.
 
-> Pulling code out of bcache_util.[ch] and sending them as separate
-> patches is also on the todo list - certainly the crc code and the rb
-> tree code.
->
->> Is there some documentation on the format of the cache and the cache
->> replacement policy? =A0I couldn't easily find anything on your wiki.
->> Having that would make it much easier to review the code and to unde=
-rstand
->> pessimal workloads.
->
-> Format of the cache - not sure what you mean, on disk format?
->
-> Cache replacement policy is currently straight LRU. Someone else is
-> supposed to start looking at more intelligent cache replacement polic=
-y
-> soon, though I tend to think with most workloads and skipping sequent=
-ial
-> IO LRU is actually going to do pretty well.
->
->> Thanks,
->> NeilBrown
->
-> Thanks for your time! I'll have new code and benchmarks up just as so=
-on
-> as I can, it really has been busy lately. Are there any benchmarks yo=
-u'd
-> be interested in in particular?
->
+Or do you expect the ext4 superblock to be managed in normal operation
+by userspace tools?
 
-Side question, what are the "Change Id:" lines referring to in the git
-commit messages?
+> We even have nascent GUI support in
+> gnome-disk-utility it would be nice to harness some of that enabling
+> momentum for this.
+
+I've got nothing against standardizing the userspace interfaces to make
+life easier for things like gnome-disk-utility. Tell me what you want
+and if it's sane I'll see about implementing it.
+
+> 2/ md supports multiple superblock formats and if you Google "ssd
+> caching" you'll see that there may be other superblock formats that
+> the Linux block-caching driver could be asked to support down the
+> road.  And wouldn't it be nice if bcache had at least the option to
+> support the on-disk format of whatever dm-cache is doing?
+
+That's pure fantasy. That's like expecting the ext4 code to mount a ntfs
+filesystem!
+
+There's a lot more to bcache's metadata than a superblock, there's a
+journal and a full b-tree. A cache is going to need an index of some
+kind.
+
+> > The way I see it md is more or less conflating two different things -
+> > things that consume block devices
+> 
+> ...did the interwebs chomp the last part of that thought?
+
+Yeah, was supposed to be "things that consume block devices and things
+that provide them".
+
+> Side question, what are the "Change Id:" lines referring to in the git
+> commit messages?
+
+Gerrit wants them, and I don't see the point of stripping them out for
+the public tree.
