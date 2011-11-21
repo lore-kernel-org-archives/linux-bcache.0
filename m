@@ -1,109 +1,87 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: can't attach caching device to backing device
-Date: Mon, 21 Nov 2011 05:54:15 -0800
-Message-ID: <20111121135415.GA26333@dhcp-172-18-216-138.mtv.corp.google.com>
+From: Justin Rush <jarush-Ub+6UvMsOfg@public.gmane.org>
+Subject: RE: can't attach caching device to backing device
+Date: Mon, 21 Nov 2011 13:56:31 +0000
+Message-ID: <8C67A0427441E84B879B0D6058D20D5222421132@EXCH-MBX-1.epic.com>
 References: <8C67A0427441E84B879B0D6058D20D5222410FE6@EXCH-MBX-1.epic.com>
  <CAC7rs0sXfPXY81BpdQhtNMrj--bUeP+VSSqbDMvTYA_DyMRf3g@mail.gmail.com>
  <8C67A0427441E84B879B0D6058D20D5222420EA2@EXCH-MBX-1.epic.com>
  <8C67A0427441E84B879B0D6058D20D5222421068@EXCH-MBX-1.epic.com>
+ <20111121135415.GA26333@dhcp-172-18-216-138.mtv.corp.google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <8C67A0427441E84B879B0D6058D20D5222421068-QfgMShIfpGfUFh++4gLpBEEOCMrvLtNR@public.gmane.org>
+In-Reply-To: <20111121135415.GA26333-RcKxWJ4Cfj3IzGYXcIpNmNLIRw13R84JkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Justin Rush <jarush-Ub+6UvMsOfg@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: "kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 01:51:00PM +0000, Justin Rush wrote:
-> Yes, the file does exist.
-
-Hmm. Weird. I'll look at the code and see if I can think of anything.
-
-> Should I try it with the individual devices in the array?
-
-Worth a shot, though caching partitions is well tested.=20
-
-> I don't suppose bcache can play with LVM?
-
-The version I just pushed should now.
->=20
-> - Justin
->=20
-> -----Original Message-----=20
-> From: Kent Overstreet [kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org]
-> Received: Sunday, 20 Nov 2011, 11:31pm
-> To: Justin Rush [jarush-Ub+6UvMsOfg@public.gmane.org]
-> CC: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org [linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org]
-> Subject: Re: can't attach caching device to backing device
-> When you tried to attach the cache, did the file you were echoing to
-> exist? That looks correct but I'm not sure what else would generate
-> that error.
->=20
-> For the UUIDs to show up in blkid, blkid itself would have to be
-> updated to know about the bcache superblock (IIRC it lives in
-> util-linux). I should probably ping the author and see if that can ge=
-t
-> included.
->=20
-> If you have the udev rules and probe-bcache installed, the symlinks
-> /ought/ to show up when you reboot but I haven't tested that in ages.
->=20
-> I just got the code written so that it ought to be able to work on to=
-p
-> of md devices again, which means I should be able to run it at home
-> and I'll have to fix probe-bcache if it's broken then :)
->=20
-> On Mon, Nov 14, 2011 at 3:10 PM, Justin Rush <jarush-Ub+6UvMsOfg@public.gmane.org> wrote:
-> > Using 3.1.0-rc9
-> >
-> > I created a cache device on /dev/sdk1
-> > # ./make-bcache -C -b512k -w4k --writeback /dev/sdk1
-> >
-> > and a backing device on /dev/md127p1.
-> > ./make-bcache -B /dev/md127p1
-> >
-> > # ./probe-bcache /dev/sdk1
-> > 5f42bdd1-4342-4ab6-8dda-855989a09604: UUID=3D"" TYPE=3D"bcache"
-> >
-> > # ./probe-bcache /dev/md127p1
-> > 6bbac9a4-afbd-4d40-9562-cdd290622c5d: UUID=3D"" TYPE=3D"bcache"
-> >
-> > I then registered them by:
-> > # echo /dev/sdk1 >/sys/fs/bcache/register # echo /dev/md127p1 >/sys=
-/fs/bcache/register
-> >
-> > I have /dev/bcache0
-> >
-> > When I try to attach the cache, I get this:
-> > # echo "5f42bdd1-4342-4ab6-8dda-855989a09604" >/sys/block/md127/md1=
-27p1/bcache/attach
-> > -bash: echo: write error: No such file or directory
-> >
-> > I believe this problem is due to the UUIDs for the two devices, but=
- this is just a guess. =C2=A0The UUID for /dev/sdk1 and /dev/md127p1 do=
-esn't appear to be registering properly as they don't show up in blkid.=
- =C2=A0I tried specifying the UUID to use with the -U option when creat=
-ing the devices, but that didn't seem to help. =C2=A0I do have the udev=
- rules file from the tools in place
-> >
-> > Does anyone know what is going on here and how to fix it?
-> >
-> > Justin Rush
-> > jarush-Ub+6UvMsOfg@public.gmane.org
-> >
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-bca=
-che" in
-> > the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> > More majordomo info at =C2=A0http://vger.kernel.org/majordomo-info.=
-html
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+R3JlYXQsIEknbGwgdHJ5IHRoZSBuZXcgY29kZSB3aGVuIEkgZ2V0IGhvbWUgc2luY2UgdGhlIGVu
+ZCBnb2FsIGlzIHRvIHVzZSBMVk0gb24gdG9wIG9mIHRoZSByYWlkIGRldmljZXMgYW5kIHRoZW4g
+cHJlc2VudCB0aGUgTFZzIChvciAvZGV2L2JjYWNoKikgdG8gdGNtL2xpby4NCg0KSWYgdGhlcmUg
+aXMgYW55IGRlYnVnIGluZm9ybWF0aW9uIEkgY2FuIGdpdmUgeW91LCBwbGVhc2UgbGV0IG1lIGtu
+b3cuDQoNCi0gSnVzdGluDQoNCg0KLS0tLS1PcmlnaW5hbCBNZXNzYWdlLS0tLS0NCkZyb206IEtl
+bnQgT3ZlcnN0cmVldCBbbWFpbHRvOmtvdmVyc3RyZWV0QGdvb2dsZS5jb21dIA0KU2VudDogTW9u
+ZGF5LCBOb3ZlbWJlciAyMSwgMjAxMSA3OjU0IEFNDQpUbzogSnVzdGluIFJ1c2gNCkNjOiBrZW50
+Lm92ZXJzdHJlZXRAZ21haWwuY29tOyBsaW51eC1iY2FjaGVAdmdlci5rZXJuZWwub3JnDQpTdWJq
+ZWN0OiBSZTogY2FuJ3QgYXR0YWNoIGNhY2hpbmcgZGV2aWNlIHRvIGJhY2tpbmcgZGV2aWNlDQoN
+Ck9uIE1vbiwgTm92IDIxLCAyMDExIGF0IDAxOjUxOjAwUE0gKzAwMDAsIEp1c3RpbiBSdXNoIHdy
+b3RlOg0KPiBZZXMsIHRoZSBmaWxlIGRvZXMgZXhpc3QuDQoNCkhtbS4gV2VpcmQuIEknbGwgbG9v
+ayBhdCB0aGUgY29kZSBhbmQgc2VlIGlmIEkgY2FuIHRoaW5rIG9mIGFueXRoaW5nLg0KDQo+IFNo
+b3VsZCBJIHRyeSBpdCB3aXRoIHRoZSBpbmRpdmlkdWFsIGRldmljZXMgaW4gdGhlIGFycmF5Pw0K
+DQpXb3J0aCBhIHNob3QsIHRob3VnaCBjYWNoaW5nIHBhcnRpdGlvbnMgaXMgd2VsbCB0ZXN0ZWQu
+IA0KDQo+IEkgZG9uJ3Qgc3VwcG9zZSBiY2FjaGUgY2FuIHBsYXkgd2l0aCBMVk0/DQoNClRoZSB2
+ZXJzaW9uIEkganVzdCBwdXNoZWQgc2hvdWxkIG5vdy4NCj4gDQo+IC0gSnVzdGluDQo+IA0KPiAt
+LS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBLZW50IE92ZXJzdHJlZXQgW2tlbnQu
+b3ZlcnN0cmVldEBnbWFpbC5jb21dDQo+IFJlY2VpdmVkOiBTdW5kYXksIDIwIE5vdiAyMDExLCAx
+MTozMXBtDQo+IFRvOiBKdXN0aW4gUnVzaCBbamFydXNoQGVwaWMuY29tXQ0KPiBDQzogbGludXgt
+YmNhY2hlQHZnZXIua2VybmVsLm9yZyBbbGludXgtYmNhY2hlQHZnZXIua2VybmVsLm9yZ10NCj4g
+U3ViamVjdDogUmU6IGNhbid0IGF0dGFjaCBjYWNoaW5nIGRldmljZSB0byBiYWNraW5nIGRldmlj
+ZSBXaGVuIHlvdSANCj4gdHJpZWQgdG8gYXR0YWNoIHRoZSBjYWNoZSwgZGlkIHRoZSBmaWxlIHlv
+dSB3ZXJlIGVjaG9pbmcgdG8gZXhpc3Q/IA0KPiBUaGF0IGxvb2tzIGNvcnJlY3QgYnV0IEknbSBu
+b3Qgc3VyZSB3aGF0IGVsc2Ugd291bGQgZ2VuZXJhdGUgdGhhdCANCj4gZXJyb3IuDQo+IA0KPiBG
+b3IgdGhlIFVVSURzIHRvIHNob3cgdXAgaW4gYmxraWQsIGJsa2lkIGl0c2VsZiB3b3VsZCBoYXZl
+IHRvIGJlIA0KPiB1cGRhdGVkIHRvIGtub3cgYWJvdXQgdGhlIGJjYWNoZSBzdXBlcmJsb2NrIChJ
+SVJDIGl0IGxpdmVzIGluIA0KPiB1dGlsLWxpbnV4KS4gSSBzaG91bGQgcHJvYmFibHkgcGluZyB0
+aGUgYXV0aG9yIGFuZCBzZWUgaWYgdGhhdCBjYW4gZ2V0IA0KPiBpbmNsdWRlZC4NCj4gDQo+IElm
+IHlvdSBoYXZlIHRoZSB1ZGV2IHJ1bGVzIGFuZCBwcm9iZS1iY2FjaGUgaW5zdGFsbGVkLCB0aGUg
+c3ltbGlua3MgDQo+IC9vdWdodC8gdG8gc2hvdyB1cCB3aGVuIHlvdSByZWJvb3QgYnV0IEkgaGF2
+ZW4ndCB0ZXN0ZWQgdGhhdCBpbiBhZ2VzLg0KPiANCj4gSSBqdXN0IGdvdCB0aGUgY29kZSB3cml0
+dGVuIHNvIHRoYXQgaXQgb3VnaHQgdG8gYmUgYWJsZSB0byB3b3JrIG9uIHRvcCANCj4gb2YgbWQg
+ZGV2aWNlcyBhZ2Fpbiwgd2hpY2ggbWVhbnMgSSBzaG91bGQgYmUgYWJsZSB0byBydW4gaXQgYXQg
+aG9tZSANCj4gYW5kIEknbGwgaGF2ZSB0byBmaXggcHJvYmUtYmNhY2hlIGlmIGl0J3MgYnJva2Vu
+IHRoZW4gOikNCj4gDQo+IE9uIE1vbiwgTm92IDE0LCAyMDExIGF0IDM6MTAgUE0sIEp1c3RpbiBS
+dXNoIDxqYXJ1c2hAZXBpYy5jb20+IHdyb3RlOg0KPiA+IFVzaW5nIDMuMS4wLXJjOQ0KPiA+DQo+
+ID4gSSBjcmVhdGVkIGEgY2FjaGUgZGV2aWNlIG9uIC9kZXYvc2RrMSAjIC4vbWFrZS1iY2FjaGUg
+LUMgLWI1MTJrIC13NGsgDQo+ID4gLS13cml0ZWJhY2sgL2Rldi9zZGsxDQo+ID4NCj4gPiBhbmQg
+YSBiYWNraW5nIGRldmljZSBvbiAvZGV2L21kMTI3cDEuDQo+ID4gLi9tYWtlLWJjYWNoZSAtQiAv
+ZGV2L21kMTI3cDENCj4gPg0KPiA+ICMgLi9wcm9iZS1iY2FjaGUgL2Rldi9zZGsxDQo+ID4gNWY0
+MmJkZDEtNDM0Mi00YWI2LThkZGEtODU1OTg5YTA5NjA0OiBVVUlEPSIiIFRZUEU9ImJjYWNoZSIN
+Cj4gPg0KPiA+ICMgLi9wcm9iZS1iY2FjaGUgL2Rldi9tZDEyN3AxDQo+ID4gNmJiYWM5YTQtYWZi
+ZC00ZDQwLTk1NjItY2RkMjkwNjIyYzVkOiBVVUlEPSIiIFRZUEU9ImJjYWNoZSINCj4gPg0KPiA+
+IEkgdGhlbiByZWdpc3RlcmVkIHRoZW0gYnk6DQo+ID4gIyBlY2hvIC9kZXYvc2RrMSA+L3N5cy9m
+cy9iY2FjaGUvcmVnaXN0ZXIgIyBlY2hvIC9kZXYvbWQxMjdwMSANCj4gPiA+L3N5cy9mcy9iY2Fj
+aGUvcmVnaXN0ZXINCj4gPg0KPiA+IEkgaGF2ZSAvZGV2L2JjYWNoZTANCj4gPg0KPiA+IFdoZW4g
+SSB0cnkgdG8gYXR0YWNoIHRoZSBjYWNoZSwgSSBnZXQgdGhpczoNCj4gPiAjIGVjaG8gIjVmNDJi
+ZGQxLTQzNDItNGFiNi04ZGRhLTg1NTk4OWEwOTYwNCIgDQo+ID4gPi9zeXMvYmxvY2svbWQxMjcv
+bWQxMjdwMS9iY2FjaGUvYXR0YWNoDQo+ID4gLWJhc2g6IGVjaG86IHdyaXRlIGVycm9yOiBObyBz
+dWNoIGZpbGUgb3IgZGlyZWN0b3J5DQo+ID4NCj4gPiBJIGJlbGlldmUgdGhpcyBwcm9ibGVtIGlz
+IGR1ZSB0byB0aGUgVVVJRHMgZm9yIHRoZSB0d28gZGV2aWNlcywgYnV0IA0KPiA+IHRoaXMgaXMg
+anVzdCBhIGd1ZXNzLiDCoFRoZSBVVUlEIGZvciAvZGV2L3NkazEgYW5kIC9kZXYvbWQxMjdwMSAN
+Cj4gPiBkb2Vzbid0IGFwcGVhciB0byBiZSByZWdpc3RlcmluZyBwcm9wZXJseSBhcyB0aGV5IGRv
+bid0IHNob3cgdXAgaW4gDQo+ID4gYmxraWQuIMKgSSB0cmllZCBzcGVjaWZ5aW5nIHRoZSBVVUlE
+IHRvIHVzZSB3aXRoIHRoZSAtVSBvcHRpb24gd2hlbiANCj4gPiBjcmVhdGluZyB0aGUgZGV2aWNl
+cywgYnV0IHRoYXQgZGlkbid0IHNlZW0gdG8gaGVscC4gwqBJIGRvIGhhdmUgdGhlIA0KPiA+IHVk
+ZXYgcnVsZXMgZmlsZSBmcm9tIHRoZSB0b29scyBpbiBwbGFjZQ0KPiA+DQo+ID4gRG9lcyBhbnlv
+bmUga25vdyB3aGF0IGlzIGdvaW5nIG9uIGhlcmUgYW5kIGhvdyB0byBmaXggaXQ/DQo+ID4NCj4g
+PiBKdXN0aW4gUnVzaA0KPiA+IGphcnVzaEBlcGljLmNvbQ0KPiA+DQo+ID4NCj4gPiAtLQ0KPiA+
+IFRvIHVuc3Vic2NyaWJlIGZyb20gdGhpcyBsaXN0OiBzZW5kIHRoZSBsaW5lICJ1bnN1YnNjcmli
+ZSANCj4gPiBsaW51eC1iY2FjaGUiIGluIHRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpvcmRv
+bW9Admdlci5rZXJuZWwub3JnIA0KPiA+IE1vcmUgbWFqb3Jkb21vIGluZm8gYXQgwqBodHRwOi8v
+dmdlci5rZXJuZWwub3JnL21ham9yZG9tby1pbmZvLmh0bWwNCj4gPg0KPiAtLQ0KPiBUbyB1bnN1
+YnNjcmliZSBmcm9tIHRoaXMgbGlzdDogc2VuZCB0aGUgbGluZSAidW5zdWJzY3JpYmUgDQo+IGxp
+bnV4LWJjYWNoZSIgaW4gdGhlIGJvZHkgb2YgYSBtZXNzYWdlIHRvIG1ham9yZG9tb0B2Z2VyLmtl
+cm5lbC5vcmcgDQo+IE1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92Z2VyLmtlcm5lbC5v
+cmcvbWFqb3Jkb21vLWluZm8uaHRtbA0K
