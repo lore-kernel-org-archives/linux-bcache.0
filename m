@@ -1,59 +1,34 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: bcache.patch
-Date: Sun, 20 Nov 2011 21:33:46 -0800
-Message-ID: <CAC7rs0vvFAjF_WrQouSv2V4QNzHHU9X31O+gt9X+M9ousVEUCw@mail.gmail.com>
-References: <CALFpzo5VbD6WB=NEua4t-tEgyieNGWaVhBXDCucGDyw0tq74Nw@mail.gmail.com>
-	<CALFpzo5Ft9vLm8GKDet+gH6UC9QrfbkiFPQ+aZCff_S5B2Legg@mail.gmail.com>
+From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Subject: New version up with fix for md and other block devices
+Date: Mon, 21 Nov 2011 02:14:02 -0800
+Message-ID: <20111121101402.GA17787@dhcp-172-18-216-138.mtv.corp.google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CALFpzo5Ft9vLm8GKDet+gH6UC9QrfbkiFPQ+aZCff_S5B2Legg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Marcus Sorensen <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-I don't intend to keep bcache.patch up to date anymore - I need update
-the wiki...
+I just pushed a new version, and it's only been lightly tested but
+assuming I haven't screwed anything up it should work on
+md/dm/rados/iscsi/etc. block devices.
 
-Just do a git merge though, it'd be way easier than dealing with the
-patch anyways.
+I've only tested backing devices on raid devices; awhile back someone
+ran into a bug when the cache device was a raid1. I'm not sure if it
+ever got fixed, and it took awhile to reproduce - so if anyone feels
+like testing it please let me know.
 
-The docs that refer to the fs UUID are way out of date - the backing
-device superblock removed the need for that. It should be able to do
-exactly what you want.
+There were also a pair of very slow silent data corruption bugs found
+and fixed a few weeks ago; I updated the public repository with the
+fixes for those as soon as I had them but I was negligent in posting
+about it. So, the new code's better and when we discovered those bugs we
+added some more extensive verification code, I don't expect to find any
+more corruption bugs (fingers crossed).
 
-On Wed, Nov 9, 2011 at 7:53 PM, Marcus Sorensen <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> w=
-rote:
-> ---------- Forwarded message ----------
-> From: Marcus Sorensen <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-> Date: Wed, Nov 9, 2011 at 8:49 PM
-> Subject: bcache.patch
-> To: kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
->
->
-> Was looking for bcache.patch and it's not obvious where I should be
-> able to find these for various kernel versions. I did suck down the
-> 3.1 kernel tree in the git repo, but I've put some work into my
-> existing kernel tree and would like to use that.
->
-> =A0Also, various sources seem to state that it relies on filesystem
-> UUID, I'm assuming this means that I cannot use it to speed up a bloc=
-k
-> device that I'm exporting elsewhere (e.g. a logical volume exported a=
-s
-> iscsi or Fibre Channel target, that the client has
-> partitioned/formatted), because locally I should not be aware of or
-> using the filesystem, but perhaps I could use it if I were exporting
-> flat files as volumes to be used elsewhere (cached against the local
-> fs on which the flat files reside). Is this correct?
->
-> Thanks,
-> Marcus Sorensen
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
->
+But anyways, if anyone runs into bugs with this version please let me
+know. I know the documentation is horribly out of date, sorry about that
+and hopefully I'll have time to work on that soon.
+
+Hopefully I'll be able to post some real benchmarks soon too, it has
+gotten phenomenally fast...
