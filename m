@@ -1,41 +1,92 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: New version up with fix for md and other block devices
-Date: Mon, 21 Nov 2011 02:26:26 -0800
-Message-ID: <CAH+dOxKj_sisbFjKwTFaKQWANLgZumujrJe5LiLoCxg=ShzRkQ@mail.gmail.com>
-References: <20111121101402.GA17787@dhcp-172-18-216-138.mtv.corp.google.com>
-	<CAOzFzEjdhWtS9Q538+rM6LJm0ncx_MZg++3TCag3jr68F2=1uA@mail.gmail.com>
+From: Justin Rush <jarush-Ub+6UvMsOfg@public.gmane.org>
+Subject: RE: can't attach caching device to backing device
+Date: Mon, 21 Nov 2011 13:51:00 +0000
+Message-ID: <8C67A0427441E84B879B0D6058D20D5222421068@EXCH-MBX-1.epic.com>
+References: <8C67A0427441E84B879B0D6058D20D5222410FE6@EXCH-MBX-1.epic.com>,<CAC7rs0sXfPXY81BpdQhtNMrj--bUeP+VSSqbDMvTYA_DyMRf3g@mail.gmail.com>
+ <8C67A0427441E84B879B0D6058D20D5222420EA2@EXCH-MBX-1.epic.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAOzFzEjdhWtS9Q538+rM6LJm0ncx_MZg++3TCag3jr68F2=1uA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <8C67A0427441E84B879B0D6058D20D5222420EA2-QfgMShIfpGfUFh++4gLpBEEOCMrvLtNR@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Nov 21, 2011 at 2:18 AM, Joseph Glanville
-<joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org> wrote:
+Yes, the file does exist.
+
+Should I try it with the individual devices in the array?
+
+I don't suppose bcache can play with LVM?
+
+- Justin
+
+-----Original Message-----=20
+=46rom: Kent Overstreet [kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org]
+Received: Sunday, 20 Nov 2011, 11:31pm
+To: Justin Rush [jarush-Ub+6UvMsOfg@public.gmane.org]
+CC: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org [linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org]
+Subject: Re: can't attach caching device to backing device
+When you tried to attach the cache, did the file you were echoing to
+exist? That looks correct but I'm not sure what else would generate
+that error.
+
+=46or the UUIDs to show up in blkid, blkid itself would have to be
+updated to know about the bcache superblock (IIRC it lives in
+util-linux). I should probably ping the author and see if that can get
+included.
+
+If you have the udev rules and probe-bcache installed, the symlinks
+/ought/ to show up when you reboot but I haven't tested that in ages.
+
+I just got the code written so that it ought to be able to work on top
+of md devices again, which means I should be able to run it at home
+and I'll have to fix probe-bcache if it's broken then :)
+
+On Mon, Nov 14, 2011 at 3:10 PM, Justin Rush <jarush-Ub+6UvMsOfg@public.gmane.org> wrote:
+> Using 3.1.0-rc9
 >
-> Hi Kent,
+> I created a cache device on /dev/sdk1
+> # ./make-bcache -C -b512k -w4k --writeback /dev/sdk1
 >
-> Great news!
+> and a backing device on /dev/md127p1.
+> ./make-bcache -B /dev/md127p1
 >
-> Just wondering if the bcache tree has been updated or will apply cleanly against 3.1?
-
-It has, it's been rebased on top of v3.1.
-
-> I will test on some more exotic stuff (iSCSI, md devices, other custom block devices etc) and get back to you if I find bugs.
-> Are bugs best reported here on the list or is there another best way of doing so?
-
-Cool! The list and this email are best.
-
-> Willing to help out with some benchmarks on fast equipment that should be able to stress bcache abit.
-
-Benchmarks are definitely welcome, the only benchmarking I've had time
-to do has been for specifically working on performance.
-
-Also, I mostly develop and test on 2.6.34 - I've done some stress
-testing of the 3.1 version but no performance testing, so it is
-possible there's performance bugs in the 3.1 version.
-
-Thanks!
+> # ./probe-bcache /dev/sdk1
+> 5f42bdd1-4342-4ab6-8dda-855989a09604: UUID=3D"" TYPE=3D"bcache"
+>
+> # ./probe-bcache /dev/md127p1
+> 6bbac9a4-afbd-4d40-9562-cdd290622c5d: UUID=3D"" TYPE=3D"bcache"
+>
+> I then registered them by:
+> # echo /dev/sdk1 >/sys/fs/bcache/register # echo /dev/md127p1 >/sys/f=
+s/bcache/register
+>
+> I have /dev/bcache0
+>
+> When I try to attach the cache, I get this:
+> # echo "5f42bdd1-4342-4ab6-8dda-855989a09604" >/sys/block/md127/md127=
+p1/bcache/attach
+> -bash: echo: write error: No such file or directory
+>
+> I believe this problem is due to the UUIDs for the two devices, but t=
+his is just a guess. =A0The UUID for /dev/sdk1 and /dev/md127p1 doesn't=
+ appear to be registering properly as they don't show up in blkid. =A0I=
+ tried specifying the UUID to use with the -U option when creating the =
+devices, but that didn't seem to help. =A0I do have the udev rules file=
+ from the tools in place
+>
+> Does anyone know what is going on here and how to fix it?
+>
+> Justin Rush
+> jarush-Ub+6UvMsOfg@public.gmane.org
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
+e" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+>
