@@ -1,44 +1,85 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: New version up with fix for md and other block devices
-Date: Mon, 5 Dec 2011 22:01:44 -0800
-Message-ID: <CAH+dOxLW71YKpC1YL61osFq6oDVWxoj4ajLht3EqMUiWTYogTA@mail.gmail.com>
-References: <20111121101402.GA17787@dhcp-172-18-216-138.mtv.corp.google.com>
-	<4ED47771.9030309@fnarfbargle.com>
-	<20111129063126.GA14194@dhcp-172-18-216-138.mtv.corp.google.com>
-	<4ED48A64.4080406@fnarfbargle.com>
-	<20111129075440.GB14194@dhcp-172-18-216-138.mtv.corp.google.com>
-	<4ED4981E.6040501@fnarfbargle.com>
-	<20111206034553.GA25438@moria>
-	<CAC7rs0saVh=a587mNCTCJwbVi7-u7kRuXu6-pZuJ6CRs1AACsw@mail.gmail.com>
-	<CAC7rs0ttY4Ama4v7yTepVTc65TyCo3+T4aPFoHJW1CwA8mDuUA@mail.gmail.com>
+From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Quick bcache benchmark
+Date: Tue, 6 Dec 2011 00:22:33 -0800
+Message-ID: <20111206082233.GA19390@moria>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAC7rs0ttY4Ama4v7yTepVTc65TyCo3+T4aPFoHJW1CwA8mDuUA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Brad Campbell <brad-+nnirC7rrGZibQn6LdNjmg@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Ok, it looks like as long as your cache's bucket size is not greater
-than 1 mb everything should work, including writeback. Look forward to
-hearing if it works for you :)
+I've been very remiss in posting benchmarks; this isn't much, but if
+anyone has suggestions for what they want I'll see if I can run it.
 
-On Mon, Dec 5, 2011 at 8:41 PM, Kent Overstreet
-<kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
-> So, it should work in writethrough mode. I discovered a really
-> annoying issue with background writeback that's going to take me a bit
-> to decide how to solve...
->
-> On Mon, Dec 5, 2011 at 8:02 PM, Kent Overstreet
-> <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->> Argh. I spoke too soon, it just exploded after the second bonnie run.
->> The block layer is badly in need of some cleanup... *grumble*
->>
->> On Mon, Dec 5, 2011 at 7:45 PM, Kent Overstreet
->> <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->>> Fixed the raid10 issue - it's working for me, and the code's up. Haven't
->>> fixed the duplicate registration issue yet, though - I'll take a look at
->>> that next...
->>>
->>
+This is on an old corsair nova - bcache can go something like 10x faster
+but this is what I have at home. The profile is still interesting,
+though.
+
+The benchmark is 4k random O_DIRECT reads on a 16 gb file, all in cache
+- the idea is to push the b+tree.
+
+Also, the backing device is a md raid10 - so that's working, provided
+you format your cache with buckets not greater than 1 mb.
+
+root@utumno:/mnt# perf record -afg fio ~/rw4k
+randwrite: (g=0): rw=randread, bs=4K-4K/4K-4K, ioengine=libaio, iodepth=64
+fio 1.59
+Starting 1 process
+Jobs: 1 (f=1): [r] [100.0% done] [69914K/0K /s] [17.7K/0  iops] [eta 00m:00s]
+randwrite: (groupid=0, jobs=1): err= 0: pid=1247
+  read : io=16384MB, bw=68713KB/s, iops=17178 , runt=244169msec
+  cpu          : usr=5.66%, sys=22.93%, ctx=4198688, majf=0, minf=85
+  IO depths    : 1=0.1%, 2=0.1%, 4=0.1%, 8=0.1%, 16=0.1%, 32=0.1%, >=64=100.0%
+     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.1%, >=64=0.0%
+     issued r/w/d: total=4194367/0/0, short=0/0/0
+
+
+
+Run status group 0 (all jobs):
+   READ: io=16384MB, aggrb=68712KB/s, minb=70361KB/s, maxb=70361KB/s, mint=244169msec, maxt=244169msec
+
+Disk stats (read/write):
+  bcache0: ios=0/0, merge=0/0, ticks=0/0, in_queue=0, util=0.00%
+
+7.74%             fio  fio                 [.] 0x1d2ed
+5.26%         swapper  [kernel.kallsyms]   [k] ahci_interrupt
+3.02%         swapper  [kernel.kallsyms]   [k] mwait_idle
+2.52%         swapper  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
+1.82%         swapper  [kernel.kallsyms]   [k] ahci_scr_read
+1.68%             fio  [kernel.kallsyms]   [k] __bset_search		<- first bcache function
+1.37%             fio  [kernel.kallsyms]   [k] __blockdev_direct_IO
+1.36%         swapper  [kernel.kallsyms]   [k] irq_entries_start
+1.25%         swapper  [kernel.kallsyms]   [k] mix_pool_bytes_extract
+1.06%         swapper  [kernel.kallsyms]   [k] kmem_cache_free
+0.94%             fio  [kernel.kallsyms]   [k] __switch_to
+0.92%             fio  [kernel.kallsyms]   [k] system_call
+0.87%         swapper  [kernel.kallsyms]   [k] _raw_spin_unlock_irqrestore
+0.84%         swapper  [kernel.kallsyms]   [k] ata_qc_new_init
+0.80%             fio  [kernel.kallsyms]   [k] __schedule
+0.76%             fio  [kernel.kallsyms]   [k] do_io_submit
+0.74%             fio  [kernel.kallsyms]   [k] _raw_spin_lock_irq
+0.74%         swapper  [kernel.kallsyms]   [k] _raw_spin_lock
+0.73%             fio  [kernel.kallsyms]   [k] ext4_ext_find_extent
+0.71%             fio  [kernel.kallsyms]   [k] kmem_cache_alloc
+0.70%             fio  [kernel.kallsyms]   [k] read_events
+0.65%             fio  libaio.so.1.0.1     [.] 0x665
+0.64%         swapper  [kernel.kallsyms]   [k] __schedule
+0.63%         swapper  [kernel.kallsyms]   [k] native_sched_clock
+0.63%             fio  [kernel.kallsyms]   [k] btree_search_leaf	<- second bcache function
+0.62%             fio  [kernel.kallsyms]   [k] bcache_make_request
+0.59%         swapper  [kernel.kallsyms]   [k] read_tsc
+0.58%             fio  [kernel.kallsyms]   [k] aio_read_evt
+0.58%         swapper  [kernel.kallsyms]   [k] select_task_rq_fair
+0.57%         swapper  [kernel.kallsyms]   [k] tick_nohz_stop_sched_tick
+0.57%             fio  [kernel.kallsyms]   [k] __request_read
+0.57%             fio  [kernel.kallsyms]   [k] generic_make_request
+0.56%         swapper  [kernel.kallsyms]   [k] sd_prep_fn
+0.53%             fio  [kernel.kallsyms]   [k] _raw_spin_lock
+0.51%         swapper  [kernel.kallsyms]   [k] __hrtimer_start_range_ns
+0.50%             fio  [kernel.kallsyms]   [k] __math_state_restore
+
+Some of the calls to kmem_cache_(free|alloc) are of course from bcache
+but it looks to be under 25%.
