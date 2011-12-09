@@ -1,71 +1,44 @@
 From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: New version up with fix for md and other block devices
-Date: Fri, 9 Dec 2011 02:01:06 -0800
-Message-ID: <CAC7rs0tnhwAhQF53nTnHsdnnFOKpbG1BvAE5EcbbvsFWR-_6RA@mail.gmail.com>
-References: <20111121101402.GA17787@dhcp-172-18-216-138.mtv.corp.google.com>
-	<4ED47771.9030309@fnarfbargle.com>
-	<20111129063126.GA14194@dhcp-172-18-216-138.mtv.corp.google.com>
-	<4ED48A64.4080406@fnarfbargle.com>
-	<20111129075440.GB14194@dhcp-172-18-216-138.mtv.corp.google.com>
-	<4ED4981E.6040501@fnarfbargle.com>
-	<20111206034553.GA25438@moria>
-	<CAC7rs0saVh=a587mNCTCJwbVi7-u7kRuXu6-pZuJ6CRs1AACsw@mail.gmail.com>
-	<CAC7rs0ttY4Ama4v7yTepVTc65TyCo3+T4aPFoHJW1CwA8mDuUA@mail.gmail.com>
-	<CAH+dOxLW71YKpC1YL61osFq6oDVWxoj4ajLht3EqMUiWTYogTA@mail.gmail.com>
-	<4EE16FED.5080809@fnarfbargle.com>
+Subject: Re: Quick bcache benchmark
+Date: Fri, 9 Dec 2011 02:02:55 -0800
+Message-ID: <CAC7rs0vvJbN6iOvvKJ3Xgm5BAzBxBYL+e6_F_ZzfREEbnC9-CA@mail.gmail.com>
+References: <20111206082233.GA19390@moria>
+	<CAEp_DRCHQo1JyPZk6dKYZjJvxtaR7yxpEDtGE+uYK9n2dNb2Pw@mail.gmail.com>
+	<20111206115617.GA32759@moria>
+	<CAEp_DRDEQLSkJ3arx81qM1M4iSJ5Wy0dwZhsrYD=94682qw8JQ@mail.gmail.com>
+	<CALFpzo4s5ee23CMqNJbNUBW_wYBwc3gq0P8zzfAp8QSM+r_JLA@mail.gmail.com>
+	<CALFpzo6ugO-5KHvrszp0bAYHY9eT8ADebbBqwgM3Y9FRS7PnGw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <4EE16FED.5080809-+nnirC7rrGZibQn6LdNjmg@public.gmane.org>
+In-Reply-To: <CALFpzo6ugO-5KHvrszp0bAYHY9eT8ADebbBqwgM3Y9FRS7PnGw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Brad Campbell <brad-+nnirC7rrGZibQn6LdNjmg@public.gmane.org>
-Cc: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Marcus Sorensen <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: Bostjan Skufca <bostjan-CKT3X4mPfYE@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Bah, that's what I get for being lazy. Should work now.
+Weird. That wouldn't be blocksize - a tiny bucket size could cause
+performance issues, but not consistent with what you describe.
 
-Also, there's no need to re clone when I rebase - just do git reset
---hard origin/bcache
+Might be some sort of interaction with xfs, I'll have to see if I can
+reproduce it.
 
-On Thu, Dec 8, 2011 at 6:18 PM, Brad Campbell <brad-+nnirC7rrGZibQn6LdNjmg@public.gmane.org> wr=
-ote:
-> On 06/12/11 14:01, Kent Overstreet wrote:
+On Thu, Dec 8, 2011 at 6:32 PM, Marcus Sorensen <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> Got to try this out quickly this afternoon. Used 200GB hardware raid1
+> caching for 8 disk, 8T raid 10. Enabled writeback, put xfs on bcache0.
+> Mkfs.xfs took awhile, which was unusual. I mounted the filesystem, created
+> an 8GB file, which was fast. Then ran some 512b random reads against it(16
+> threads), almost sad speed. Switched same test to random writes, and it was
+> as slow as spindle. Some of the threads even threw "blocked for 120 seconds"
+> traces. I wonder if my blocksize is set wrong on the cache, sort of hard to
+> find the appropriate numbers.
+>
+> On Dec 6, 2011 10:02 AM, "Marcus Sorensen" <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
 >>
->> Ok, it looks like as long as your cache's bucket size is not greater
->> than 1 mb everything should work, including writeback. Look forward =
-to
->> hearing if it works for you :)
->
->
-> I saw you re-based the repository so I cloned fresh this morning and =
-get
-> this compile error :
->
-> brad@test:/raid10/src/linux-bcache$ make
-> =A0CHK =A0 =A0 include/linux/version.h
-> =A0CHK =A0 =A0 include/generated/utsrelease.h
-> =A0CALL =A0 =A0scripts/checksyscalls.sh
-> =A0CHK =A0 =A0 include/generated/compile.h
-> =A0CHK =A0 =A0 kernel/config_data.h
-> =A0CC =A0 =A0 =A0drivers/block/bcache/super.o
-> drivers/block/bcache/super.c: In function =91lioctl_dev=92:
-> drivers/block/bcache/super.c:1209: error: =91const struct
-> block_device_operations=92 has no member named =91locked_ioctl=92
-> drivers/block/bcache/super.c: At top level:
-> drivers/block/bcache/super.c:1215: error: unknown field =91locked_ioc=
-tl=92
-> specified in initializer
-> make[3]: *** [drivers/block/bcache/super.o] Error 1
-> make[2]: *** [drivers/block/bcache] Error 2
-> make[1]: *** [drivers/block] Error 2
-> make: *** [drivers] Error 2
->
-> Regards,
-> Brad
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+>> I'm also curious as to how it decides what to keep in cache and whatto
+>> toss out, what to write direct to platter and what to buffer. I'vebeen
+>> testing LSI's cachecade 2.0 pro, and my intent is to post
+>> somebenchmarks between the two. From what I've seen you get at most
+>> 1/2performance of your SSD if everything could fit into cache, I'm
+>> notsure if that's due to their algorithm and how they decide what's
+>> SSDworthy and what's not.
