@@ -1,159 +1,63 @@
-From: Marcus Sorensen <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: Quick bcache benchmark
-Date: Thu, 15 Dec 2011 21:28:08 -0700
-Message-ID: <CALFpzo6-cpEqxAy5p7rje_CR08PE94Cbju==yRktQ_8s7dN4QQ@mail.gmail.com>
-References: <20111206082233.GA19390@moria>
-	<CAEp_DRCHQo1JyPZk6dKYZjJvxtaR7yxpEDtGE+uYK9n2dNb2Pw@mail.gmail.com>
-	<20111206115617.GA32759@moria>
-	<CAEp_DRDEQLSkJ3arx81qM1M4iSJ5Wy0dwZhsrYD=94682qw8JQ@mail.gmail.com>
-	<CALFpzo4s5ee23CMqNJbNUBW_wYBwc3gq0P8zzfAp8QSM+r_JLA@mail.gmail.com>
-	<CALFpzo6ugO-5KHvrszp0bAYHY9eT8ADebbBqwgM3Y9FRS7PnGw@mail.gmail.com>
-	<CAC7rs0vvJbN6iOvvKJ3Xgm5BAzBxBYL+e6_F_ZzfREEbnC9-CA@mail.gmail.com>
-	<CALFpzo6kXrC+8kkqrtRuMcsqnRL-oPc+B3A-Vq3wkWhRLBbAJw@mail.gmail.com>
-	<20111210063307.GA16262@moria>
-	<CALFpzo71TRvx59U6n7xkd_DNejQrD9qj1tuOeir3w6NaT79bCA@mail.gmail.com>
-	<CALFpzo542=jHj5OB3qCSKCAvmig6t85VDhnuc++toO0O=z7brQ@mail.gmail.com>
-	<CAH+dOx+r7L2o9RSCdXsa0Nn+k=Ab9QXc60gBb7Mhb+huhcOQ1g@mail.gmail.com>
+From: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
+Subject: bcache lockup
+Date: Fri, 16 Dec 2011 12:41:49 -0500
+Message-ID: <CAB7K1hG7mYqGhrn1Uy9D0DGPJJVK8T0QOX8O26BXgcJHLxZESA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAH+dOx+r7L2o9RSCdXsa0Nn+k=Ab9QXc60gBb7Mhb+huhcOQ1g-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Thanks! I'll put it through some more tests. I kind of figured that
-something more real-world would help.
+I was just playing around with bcache, and set up an LV as the backing
+store for the cache:
 
-On Thu, Dec 15, 2011 at 7:17 PM, Kent Overstreet <koverstreet-hpIqsD4AKldhl2p70BpVqQ@public.gmane.org=
-m> wrote:
-> Sorry, I was thinking about that issue for awhile and then I got dist=
-racted...
->
-> It's not user error, it's an irritating corner case. Basically, it's
-> the result of a workaround for a particularly obscure data corruption
-> bug.
->
-> If a write bypasses the cache, it has to invalidate that region of th=
-e
-> cache; the null key it leaves in the cache will block cache misses
-> from adding that data to the cache until the btree node fills up (and
-> possibly splits).
->
-> It hasn't been an issue for us in normal operation, but when you're
-> just testing - i.e. you don't have much load - that node split may no=
-t
-> happen for a long time, and so if for some reason a bunch of data
-> bypassed the cache... well, you see what happens.
->
-> Unfortunately a better solution to the original race is not going to
-> be simple, so it's probably not going to be done in the very near
-> future. It's a _very_ difficult race to hit, but in the meantime I'd
-> rather lose performance than corrupt data.
->
-> But the good news is if you put normal server-ish load on it the issu=
-e
-> should go away in steady state operation.
->
-> On Thu, Dec 15, 2011 at 3:40 PM, Marcus Sorensen <shadowsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org=
-> wrote:
->> Any ideas on this? Do you think it's a bug, or am I just holding it =
-wrong? :-)
->>
->> On Sat, Dec 10, 2011 at 8:02 AM, Marcus Sorensen <shadowsor-Re5JQEeQqe8@public.gmane.org=
-m> wrote:
->>> That keeps the 'bypassed' value from increasing, but it doesn't cha=
-nge
->>> write performance.
->>>
->>> BEFORE:
->>> [root@sansrv2-10 stats_day]# cat *
->>> 27.6M
->>> 83
->>> 3500
->>> 0
->>> 166
->>> 24380
->>> 40660
->>> 0
->>>
->>> ...benchmarking...
->>>
->>> AFTER:
->>>
->>> [root@sansrv2-10 stats_day]# =A0for i in `ls`; do echo -n "$i "; ca=
-t $i;
->>>> done 2>/dev/null
->>> bypassed 27.6M
->>> cache_bypass_hits 83
->>> cache_bypass_misses 3500
->>> cache_hit_ratio 0
->>> cache_hits 410
->>> cache_miss_collisions 48879
->>> cache_misses 80545
->>> cache_readaheads 0
->>>
->>> /sys/fs/bcache/60da061c-d646-4ebe-931a-d8580add411d
->>>
->>> average_key_size 0
->>> block_size 2.0k
->>> btree_cache_size 3.2M
->>> bucket_size 1.0M
->>> cache_available_percent 100
->>> clear_stats congested 0
->>> congested_threshold_us 0
->>> dirty_data 0
->>> io_error_halflife 0
->>> io_error_limit 8
->>> root_usage_percent 0
->>> synchronous 1
->>> tree_depth 1
->>>
->>>
->>> On Fri, Dec 9, 2011 at 11:33 PM, Kent Overstreet
->>> <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->>>> On Fri, Dec 09, 2011 at 10:09:55AM -0700, Marcus Sorensen wrote:
->>>>> Here's some more info. I'm running kernel 3.1.4. When I do random
->>>>> writes, the 'bypassed' number increases in stats. Now I'm random
->>>>> writing direct to /dev/bcache0 and get the same result.
->>>>
->>>> Weird. From what you're describing it sounds like throttling is sc=
-rewed
->>>> up (and it was recently), but I can't reproduce it now.
->>>>
->>>> Can you try echoing 0 to congested_threshold_us in the cache set d=
-ir,
->>>> and seeing if that fixes it?
->>>>
->>>>> There also seems to be some work needed with clean-up, since I'm
->>>>> unfamiliar with how bcache works I attempted to make-bcache twice=
-,
->>>>> thinking I'd start over. That worked, but because my cache device=
- was
->>>>> already registered I was unable to re-register my newly formatted
->>>>> cache dev, got "kobject_add_internal failed for bcache with -EEXI=
-ST,
->>>>> don't try to register things with the same name in the same
->>>>> directory." I was still able to use my cache device via the old u=
-uid,
->>>>> but this will probably cause problems on reboot. Perhaps an unreg=
-ister
->>>>> file in /sys/fs/bcache would help, I also tried rmmod'ing bcache =
-to
->>>>> see if I could clear /sys/fs/bcache, but no luck. make-bcache sho=
-uld
->>>>> perhaps check for an existing superblock, ask for confirmation, a=
-nd
->>>>> give some sort instruction on how to unregister, or do it for you=
- if
->>>>> you reformat.
->>>>
->>>> Yeah, I think for some reason bcache isn't opening the devices
->>>> exclusively on 3.1. I'll have a look...
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcac=
-he" in
->> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+make-bcache -C -b512K /dev/sdb && echo /dev/sdb > /sys/fs/bcache/register
+make-bcache -B /dev/mapper/zapazoid-bacachetest && echo
+/dev/mapper-bacachetest > /sys/fs/bcache/register
+
+echo $CACHE_UUID > /sys/block/dm-11/bcache/attach
+
+mkfs.ext4 /dev/bcache0
+mount /dev/bcache0 /mnt
+scp hercules.vistashare.net:/mnt/data/backups/2011-12-10-scylla-incr.tar.bz2*
+/mnt/
+
+And there it hangs:
+
+[78411.767785] bcache: Caching dm-11, inserted new UUID
+4fb485fd-25b0-4e6a-8a57-cb3889f984be
+[78601.490591] EXT4-fs (bcache0): mounted filesystem with ordered data
+mode. Opts: (null)
+[78962.976149] INFO: task jbd2/bcache0-8:22301 blocked for more than
+120 seconds.
+[78962.976158] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[78962.976165] jbd2/bcache0-8  D 00000000     0 22301      2 0x00000000
+[78962.976176]  f2690e50 00000046 00000000 00000000 00000000 00000000
+00000000 31b5d000
+[78962.976193]  00000000 c14aa500 f2690ffc c14aa500 f2690e50 c14aa500
+c14aa500 00000001
+[78962.976208]  00000000 00000000 f2cb60c0 f2cb60c0 00000000 f2cb60c0
+c10380ee 00000002
+[78962.976221] Call Trace:
+[78962.976239]  [<c10380ee>] ? load_balance+0x60/0x58a
+[78962.976282]  [<f833ca94>] ?
+jbd2_journal_commit_transaction+0x17e/0xf36 [jbd2]
+[78962.976295]  [<c100b769>] ? __switch_to+0x6f/0xe2
+[78962.976305]  [<c12c00df>] ? __schedule+0x58d/0x5b4
+[78962.976316]  [<c105115a>] ? wake_up_bit+0x56/0x56
+[78962.976324]  [<c102c141>] ? __wake_up_common+0x34/0x5a
+[78962.976332]  [<c104562e>] ? lock_timer_base+0x19/0x34
+[78962.976341]  [<c1045a5f>] ? try_to_del_timer_sync+0x5c/0x63
+[78962.976364]  [<f8340dec>] ? kjournald2+0x9e/0x1c7 [jbd2]
+[78962.976373]  [<c105115a>] ? wake_up_bit+0x56/0x56
+[78962.976390]  [<f8340d4e>] ? commit_timeout+0x5/0x5 [jbd2]
+[78962.976400]  [<c1050e10>] ? kthread+0x63/0x68
+[78962.976409]  [<c1050dad>] ? kthread_worker_fn+0x114/0x114
+[78962.976418]  [<c12c6ebe>] ? kernel_thread_helper+0x6/0x10
+
+Is there any reason bcache would not work with LVM in particular, or
+did I do something else that was silly?
+
+-davidc
