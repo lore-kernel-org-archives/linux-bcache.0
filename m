@@ -1,76 +1,96 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+From: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
 Subject: Re: bcache lockup
-Date: Sat, 17 Dec 2011 20:46:01 -0800
-Message-ID: <CAC7rs0uPp6Y41zQ7DS5ROBJn8rcT7Jqmb9P0gF-O-ct3-zPcgw@mail.gmail.com>
+Date: Sun, 18 Dec 2011 20:22:33 -0500
+Message-ID: <CAB7K1hGgX5qEfZU+5SY04JM0woT48oNy-sC5+FZg=QKnB7EwMg@mail.gmail.com>
 References: <CAB7K1hG7mYqGhrn1Uy9D0DGPJJVK8T0QOX8O26BXgcJHLxZESA@mail.gmail.com>
 	<CAC7rs0tzAuxyokzAru=KDnPJjFmMhrFjAopH7NJnQiGxi05s3w@mail.gmail.com>
 	<CAB7K1hEBJhe1xU5J5saVw4DFz_Oh_JCS7cvqLx++SdadCTtkNA@mail.gmail.com>
+	<CAC7rs0uPp6Y41zQ7DS5ROBJn8rcT7Jqmb9P0gF-O-ct3-zPcgw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAB7K1hEBJhe1xU5J5saVw4DFz_Oh_JCS7cvqLx++SdadCTtkNA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAC7rs0uPp6Y41zQ7DS5ROBJn8rcT7Jqmb9P0gF-O-ct3-zPcgw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
+To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Argh, it's always something.
+On Sat, Dec 17, 2011 at 11:46 PM, Kent Overstreet
+<kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> Argh, it's always something.
+>
+> That looks like you hit the BUG_ON(!req->nr_phys_segments). I thought
+> I fixed that.
+>
+> Are you running the latest code? There should be a commit that says
+> "bcache: Always initialize bi_max_vecs".
 
-That looks like you hit the BUG_ON(!req->nr_phys_segments). I thought
-I fixed that.
+Yeah, I'm running the latest. The last commit is:
 
-Are you running the latest code? There should be a commit that says
-"bcache: Always initialize bi_max_vecs".
+	ffca635f2efb8e091c469ffcc86d4def2d5c381d: Open block device exclusivel=
+y
 
-On Sat, Dec 17, 2011 at 5:00 AM, David Rhodes Clymer
-<david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org> wrote:
-> On Fri, Dec 16, 2011 at 1:56 PM, Kent Overstreet
-> <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->> On Fri, Dec 16, 2011 at 9:41 AM, David Rhodes Clymer
->> <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org> wrote:
->>> Is there any reason bcache would not work with LVM in particular, o=
-r
->>> did I do something else that was silly?
+The only 2 commit messages referencing bi_max_vecs that I could find
+didn't seem to be bcache specific (they were from 2006).
+
+I have no local modifications.
+
+-davidc.
+
+
+>
+> On Sat, Dec 17, 2011 at 5:00 AM, David Rhodes Clymer
+> <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org> wrote:
+>> On Fri, Dec 16, 2011 at 1:56 PM, Kent Overstreet
+>> <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+>>> On Fri, Dec 16, 2011 at 9:41 AM, David Rhodes Clymer
+>>> <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org> wrote:
+>>>> Is there any reason bcache would not work with LVM in particular, =
+or
+>>>> did I do something else that was silly?
+>>>
+>>> Certainly ought to work, but I'm not sure what the last time I test=
+ed
+>>> it was. I'll see if I can reproduce it.
 >>
->> Certainly ought to work, but I'm not sure what the last time I teste=
-d
->> it was. I'll see if I can reproduce it.
->
-> Well, just for kicks, I setup bcache with a regular disk as the
-> backing device. Everything seemed to go ok...I was able to create an
-> ext4 filesystem on it and mount it. I remembered I had forgotten to
-> attach the cache, so I attached the cache, and tried copying an ISO t=
-o
-> the mounted fs, and it immediately crashed.
->
-> =A0I was doing this remotely, and now I can't get to the box. So I'm =
-not
-> certain this is the full traceback, but it's what I got before I lost
-> connection:
->
-> =A0kernel:[50655.044130] ------------[ cut here ]------------
-> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
-> kernel:[50655.048019] invalid opcode: 0000 [#1] SMP
-> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
-> kernel:[50655.048019] Process kworker/5:0 (pid: 5699, ti=3Dc78c2000
-> task=3Df27db5f0 task.ti=3Dc78c2000)
-> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
-> kernel:[50655.048019] Stack:
-> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
-> kernel:[50655.048019] Call Trace:
-> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
-> kernel:[50655.048019] Code: 8b 87 88 03 00 00 85 c0 74 17 8b 00 85 c0
-> 74 11 8b 48 28 85 c9 74 0a 89 f2 89 f8 ff d1 85 c0 75 6b 66 83 be 84
-> 00 00 00 00 75 04 <0f> 0b eb fe 8b 9e 90 00 00 00 85 db 75 1d ba 20 0=
+>> Well, just for kicks, I setup bcache with a regular disk as the
+>> backing device. Everything seemed to go ok...I was able to create an
+>> ext4 filesystem on it and mount it. I remembered I had forgotten to
+>> attach the cache, so I attached the cache, and tried copying an ISO =
+to
+>> the mounted fs, and it immediately crashed.
+>>
+>> =A0I was doing this remotely, and now I can't get to the box. So I'm=
+ not
+>> certain this is the full traceback, but it's what I got before I los=
+t
+>> connection:
+>>
+>> =A0kernel:[50655.044130] ------------[ cut here ]------------
+>> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
+>> kernel:[50655.048019] invalid opcode: 0000 [#1] SMP
+>> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
+>> kernel:[50655.048019] Process kworker/5:0 (pid: 5699, ti=3Dc78c2000
+>> task=3Df27db5f0 task.ti=3Dc78c2000)
+>> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
+>> kernel:[50655.048019] Stack:
+>> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
+>> kernel:[50655.048019] Call Trace:
+>> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
+>> kernel:[50655.048019] Code: 8b 87 88 03 00 00 85 c0 74 17 8b 00 85 c=
 0
-> 00 00 89 f8
-> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
-> kernel:[50655.048019] EIP: [<f8c759de>] scsi_setup_fs_cmnd+0x3f/0xa4
-> [scsi_mod] SS:ESP 0068:c78c3ed0
->
->
-> This box has a Phenom II X6 (1035T??). I'm not exactly certain of the
-> model number.
->
-> -davidc
+>> 74 11 8b 48 28 85 c9 74 0a 89 f2 89 f8 ff d1 85 c0 75 6b 66 83 be 84
+>> 00 00 00 00 75 04 <0f> 0b eb fe 8b 9e 90 00 00 00 85 db 75 1d ba 20 =
+00
+>> 00 00 89 f8
+>> Message from syslogd@zapazoid at Dec 17 07:39:06 ...
+>> kernel:[50655.048019] EIP: [<f8c759de>] scsi_setup_fs_cmnd+0x3f/0xa4
+>> [scsi_mod] SS:ESP 0068:c78c3ed0
+>>
+>>
+>> This box has a Phenom II X6 (1035T??). I'm not exactly certain of th=
+e
+>> model number.
+>>
+>> -davidc
