@@ -1,7 +1,7 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: kernel BUG registering cache device
-Date: Fri, 20 Jan 2012 15:03:12 -0800
-Message-ID: <CAH+dOxJtqwRgTndC0T_PnQzNoteQySNrufUXj6bDEtPEEavTEg@mail.gmail.com>
+Date: Fri, 20 Jan 2012 18:43:59 -0800
+Message-ID: <CAC7rs0v6VKfjTmUmkMvqPWwAeK6aS_iC8Diw8Lu9gxLHc4Pp=Q@mail.gmail.com>
 References: <CAFtEh-cC=eSSTQfxyN64CQtudwmjZmTh6UZae8tDXLYkR7vbvw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
@@ -13,8 +13,8 @@ To: Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Argh, that bug refuses to die. I'll see if I can reproduce it this
-weekend, probably is lvm related.
+Have you tried the bcache (3.1 based) branch with the same setup? Did
+it occur there?
 
 On Fri, Jan 20, 2012 at 3:27 AM, Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wr=
 ote:
