@@ -1,331 +1,455 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+From: Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: kernel BUG registering cache device
-Date: Mon, 23 Jan 2012 19:24:40 -0800
-Message-ID: <CAC7rs0v8o6PEtMLraSdfWaSWa-cuukMqEK49cZTb4NLHr+qp+g@mail.gmail.com>
+Date: Tue, 24 Jan 2012 11:13:27 +0000
+Message-ID: <CAFtEh-fPW6j+ztQ5TJhS=H39vvTYCXY5hw4tmGeR8TU=CmjZ0g@mail.gmail.com>
 References: <CAFtEh-cC=eSSTQfxyN64CQtudwmjZmTh6UZae8tDXLYkR7vbvw@mail.gmail.com>
 	<CAC7rs0v6VKfjTmUmkMvqPWwAeK6aS_iC8Diw8Lu9gxLHc4Pp=Q@mail.gmail.com>
 	<CAH+dOxLVxag=Yx5TtcfP+dCh7sp8bu1OZy8gTtezn7b3j95J8A@mail.gmail.com>
 	<CAFtEh-fr1Z0Va-cgFrfuvf3fCo5GJET8vfTYy_JcK2YwayEhig@mail.gmail.com>
 	<CAH+dOx+Vk0aL0ETxzxri7PCHqhABYePXWp1yvUsrJxjQ7qXKdQ@mail.gmail.com>
 	<CAFtEh-efCC3LM1Bm9WHfLyrnucBTTGHTiu7FR=1vtDTMyudmSw@mail.gmail.com>
+	<CAC7rs0v8o6PEtMLraSdfWaSWa-cuukMqEK49cZTb4NLHr+qp+g@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAFtEh-efCC3LM1Bm9WHfLyrnucBTTGHTiu7FR=1vtDTMyudmSw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAC7rs0v8o6PEtMLraSdfWaSWa-cuukMqEK49cZTb4NLHr+qp+g-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-New code up, should be fixed.
+The fix worked perfectly, thanks. I am now able to:
 
-On Mon, Jan 23, 2012 at 4:33 AM, Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wr=
-ote:
-> Cool thanks, let me know when there's something to test and I'll let
-> you know how it goes.
+1) create cache device on LVM & register it
+2) create backing device on rbd & register it
+3) use backing device without attaching the cache perfectly fine
+(format as ext4 + mount it and write some files)
+4) attach the cache device to the backing device
+
+Unfortunately when trying to mount the backing device after attaching
+the cache I end up with a kernel BUG, the syslog output is below.
+
+[  232.762594] bio: create slab <bio-1> at 1
+[  232.770175] bcache: btree_journal_read() done
+[  232.778854] bcache: btree_check() done
+[  232.778867] bcache: journal replay done, 1 keys in 1 entries, seq 3-=
+3
+[  232.780579] bcache: registered cache device dm-1
+[  242.271440] libceph: client0 fsid 58c297c0-018a-4c13-9a21-0140b9fb2f=
+25
+[  242.271973] libceph: mon1 10.10.20.1:6789 session established
+[  242.277119]  rbd0: unknown partition table
+[  242.277236] rbd: rbd0: added with size 0x3e80000000
+[  251.360401] bcache: Caching rbd0, looked up UUID
+12378985-91b3-4165-b3a6-6657831f050b
+[  280.083396] EXT4-fs (bcache0): recovery complete
+[  280.083403] EXT4-fs (bcache0): mounted filesystem with ordered data
+mode. Opts: (null)
+[  283.160575] ------------[ cut here ]------------
+[  283.160609] kernel BUG at
+/home/dchurchill/Packages/oneiric/linux/linux-3.2.0~bcache/include/linu=
+x/scatterlist.h:63!
+[  283.162338] invalid opcode: 0000 [#1] SMP
+[  283.164064] CPU 0
+[  283.164076] Modules linked in: bnep rfcomm bluetooth
+ip6table_filter ip6_tables ebtable_nat ebtables ipt_MASQUERADE
+iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state
+nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpudp
+iptable_filter ip_tables x_tables parport_pc ppdev kvm_intel kvm
+snd_hda_codec_hdmi snd_hda_codec_realtek eeepc_wmi asus_wmi
+sparse_keymap dm_multipath binfmt_misc bridge stp psmouse
+snd_hda_intel snd_hda_codec snd_hwdep snd_pcm serio_raw snd_seq_midi
+snd_rawmidi snd_seq_midi_event snd_seq radeon ttm snd_timer
+snd_seq_device mei(C) drm_kms_helper drm i2c_algo_bit video snd
+mac_hid soundcore snd_page_alloc wmi rbd libceph lp parport usbhid hid
+e1000e btrfs zlib_deflate firewire_ohci pata_marvell r8169
+firewire_core crc_itu_t libcrc32c
+[  283.175414]
+[  283.177376] Pid: 4222, comm: ext4lazyinit Tainted: G         C
+3.2.0-9-generic #17~oneiric2 System manufacturer System Product
+Name/P8H67-M EVO
+[  283.179432] RIP: 0010:[<ffffffff812f3588>]  [<ffffffff812f3588>]
+blk_rq_map_sg+0x178/0x350
+[  283.181502] RSP: 0018:ffff8803f01f99d0  EFLAGS: 00010006
+[  283.183562] RAX: 0000000000000000 RBX: ffff8803f5019020 RCX: 4acfa4a=
+af8e1e9bf
+[  283.185635] RDX: 0000000000000001 RSI: 00000000d6679dfb RDI: ffff880=
+3f5019000
+[  283.187711] RBP: ffff8803f01f9a30 R08: 0000000000000000 R09: ffff880=
+3eeb49e40
+[  283.189786] R10: 0000000000000001 R11: 0000000000000001 R12: ffff880=
+3f561c800
+[  283.191858] R13: 000000008a430cfb R14: ffff8803f561c810 R15: 0000000=
+000000082
+[  283.193941] FS:  0000000000000000(0000) GS:ffff88043f400000(0000)
+knlGS:0000000000000000
+[  283.196022] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  283.198100] CR2: 0000000001b1d278 CR3: 0000000001c05000 CR4: 0000000=
+0000406f0
+[  283.200191] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000=
+000000000
+[  283.202284] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000=
+000000400
+[  283.204382] Process ext4lazyinit (pid: 4222, threadinfo
+ffff8803f01f8000, task ffff8803f57a2e20)
+[  283.206504] Stack:
+[  283.208584]  ffff880400000001 ffff8803f57bb870 ffff8803f5019000
+0100000000000001
+[  283.210686]  ffff8804213a3368 ffff8803eeb49e40 ffff8803f01f9a30
+ffff8803f54f9158
+[  283.212778]  ffff8803f57bb870 0000000000000001 0000000000000020
+ffff880424e96800
+[  283.214833] Call Trace:
+[  283.216848]  [<ffffffff81442011>] scsi_init_sgtable+0x41/0x70
+[  283.218894]  [<ffffffff8144207d>] scsi_init_io+0x3d/0x150
+[  283.220930]  [<ffffffff8144228a>] scsi_setup_fs_cmnd.part.34+0x5a/0x=
+90
+[  283.222942]  [<ffffffff814422ef>] scsi_setup_fs_cmnd+0x2f/0x40
+[  283.224918]  [<ffffffff8145f62f>] sd_prep_fn+0xaf/0xaf0
+[  283.226882]  [<ffffffff813017f4>] ? cfq_dispatch_request+0x64/0xa0
+[  283.228835]  [<ffffffff812eecda>] blk_peek_request+0xba/0x240
+[  283.230784]  [<ffffffff814427e8>] scsi_request_fn+0x58/0x4c0
+[  283.232727]  [<ffffffff812e7c73>] ? __elv_add_request+0x1b3/0x290
+[  283.234668]  [<ffffffff812ef590>] blk_queue_bio+0x290/0x380
+[  283.236611]  [<ffffffff812ec114>] generic_make_request.part.50+0x74/=
+0xb0
+[  283.238570]  [<ffffffff812ec528>] generic_make_request+0x68/0x70
+[  283.240517]  [<ffffffff812ec5b5>] submit_bio+0x85/0x110
+[  283.242434]  [<ffffffff811ac61a>] ? bio_alloc_bioset+0xba/0x100
+[  283.244332]  [<ffffffff812f4900>] blkdev_issue_zeroout+0x110/0x170
+[  283.246223]  [<ffffffff8121163b>] ext4_init_inode_table+0x15b/0x370
+[  283.248070]  [<ffffffff8166ef75>] ? schedule_timeout+0x175/0x320
+[  283.249887]  [<ffffffff81224c65>] ext4_run_li_request+0x85/0xe0
+[  283.251686]  [<ffffffff81224d5c>] ext4_lazyinit_thread+0x9c/0x1c0
+[  283.253478]  [<ffffffff81224cc0>] ? ext4_run_li_request+0xe0/0xe0
+[  283.255273]  [<ffffffff8108832c>] kthread+0x8c/0xa0
+[  283.257048]  [<ffffffff8167b034>] kernel_thread_helper+0x4/0x10
+[  283.258824]  [<ffffffff810882a0>] ? flush_kthread_worker+0xa0/0xa0
+
+On 24 January 2012 03:24, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> w=
+rote:
+> New code up, should be fixed.
 >
-> On 23 January 2012 12:09, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wr=
-ote:
->> So, we called a null function pointer. Looks like I broke the ioctl
->> handler somehow, I'll check that out tomorrow.
->>
->> On Mon, Jan 23, 2012 at 3:52 AM, Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>=
- wrote:
->>> Excellent thanks a lot Kent, that's fixed the problem with the lv c=
-ache device.
->>>
->>> I am experiencing a problem attempting to use a rbd as a backing
->>> device also. This was working in 3.1 partially so I'm not sure what=
-'s
->>> changed there. The following is output to console & syslog whenever
->>> the bcache0 device is accessed by something. Well by blkid or
->>> mkfs.ext4.
->>>
->>> Jan 23 11:49:29 dev1 kernel: [ =A0280.993416] BUG: unable to handle
->>> kernel NULL pointer dereference at =A0 =A0 =A0 =A0 =A0 (null)
->>> Jan 23 11:49:29 dev1 kernel: [ =A0280.995317] IP: [< =A0 =A0 =A0 =A0=
- =A0(null)>]
->>> =A0 =A0 =A0 =A0(null)
->>> Jan 23 11:49:29 dev1 kernel: [ =A0280.997180] PGD 401b0d067 PUD 3fb=
-fa1067 PMD 0
->>> Jan 23 11:49:29 dev1 kernel: [ =A0280.999034] Oops: 0010 [#2] SMP
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.000831] CPU 2
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.000843] Modules linked in: bn=
-ep
->>> rfcomm bluetooth ip6table_filter ip6_tables ebtable_nat ebtables
->>> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
->>> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcpu=
-dp
->>> iptable_filter ip_tables x_tables kvm_intel kvm parport_pc ppdev
->>> binfmt_misc usbhid hid snd_hda_codec_hdmi snd_hda_codec_realtek bri=
-dge
->>> stp snd_seq_midi psmouse eeepc_wmi radeon ttm drm_kms_helper asus_w=
-mi
->>> snd_rawmidi drm sparse_keymap snd_seq_midi_event snd_hda_intel
->>> snd_hda_codec snd_hwdep snd_pcm snd_seq snd_timer snd_seq_device sn=
-d
->>> mac_hid video serio_raw soundcore dm_multipath wmi i2c_algo_bit
->>> snd_page_alloc mei(C) rbd libceph lp parport firewire_ohci
->>> firewire_core btrfs pata_marvell crc_itu_t e1000e r8169 zlib_deflat=
-e
->>> libcrc32c
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.012308]
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.014277] Pid: 4152, comm: blki=
-d
->>> Tainted: G =A0 =A0 =A0D =A0C =A0 3.2.0-9-generic #17~oneiric1 Syste=
-m
->>> manufacturer System Product Name/P8H67-M EVO
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.016330] RIP:
->>> 0010:[<0000000000000000>] =A0[< =A0 =A0 =A0 =A0 =A0(null)>] =A0 =A0=
- =A0 =A0 =A0 (null)
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.018364] RSP: 0018:ffff8803fbc=
-3de60
->>> =A0EFLAGS: 00010282
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.020397] RAX: ffffffffa00763a0=
- RBX:
->>> 0000000000005331 RCX: 0000000000000000
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.022447] RDX: 0000000000005331=
- RSI:
->>> 000000000000101d RDI: ffff880423649380
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.024502] RBP: ffff8803fbc3de68=
- R08:
->>> 0000000000005331 R09: 000000000000101d
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.026563] R10: 00007fff9286b990=
- R11:
->>> 0000000000000246 R12: 00000000ffffffe7
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.028628] R13: 0000000000000000=
- R14:
->>> ffff8804236496c0 R15: ffff880420abd800
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.030698] FS:
->>> 00007f62be453760(0000) GS:ffff88043f500000(0000)
->>> knlGS:0000000000000000
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.032772] CS: =A00010 DS: 0000 =
-ES:
->>> 0000 CR0: 0000000080050033
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.034832] CR2: 0000000000000000=
- CR3:
->>> 00000003fa2da000 CR4: 00000000000406e0
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.036908] DR0: 0000000000000000=
- DR1:
->>> 0000000000000000 DR2: 0000000000000000
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.038972] DR3: 0000000000000000=
- DR6:
->>> 00000000ffff0ff0 DR7: 0000000000000400
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.041019] Process blkid (pid: 4=
-152,
->>> threadinfo ffff8803fbc3c000, task ffff8803faa18000)
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.043083] Stack:
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.045138] =A0ffffffff8141fa0f
->>> ffff8803fbc3dec8 ffffffff812f5110 0000000000000000
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.047243] =A0ffff8804236496c0
->>> 0000000000000000 000000004f1d4903 00000000329f0436
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.049312] =A00000000000000003
->>> ffff8804217ad3c0 ffff880404ae0a50 0000000000000000
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.051352] Call Trace:
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.053334] =A0[<ffffffff8141fa0f=
->] ?
->>> ioctl_dev+0x2f/0x40
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.055284] =A0[<ffffffff812f5110=
->]
->>> blkdev_ioctl+0x2e0/0x740
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.057191] =A0[<ffffffff811acf10=
->]
->>> block_ioctl+0x40/0x50
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.059056] =A0[<ffffffff8118843a=
->]
->>> do_vfs_ioctl+0x8a/0x340
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.060888] =A0[<ffffffff8117b2ea=
->] ?
->>> sys_newfstat+0x2a/0x40
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.062687] =A0[<ffffffff81188781=
->]
->>> sys_ioctl+0x91/0xa0
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.064478] =A0[<ffffffff81678ec2=
->]
->>> system_call_fastpath+0x16/0x1b
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.066259] Code: =A0Bad RIP valu=
-e.
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.068035] RIP =A0[< =A0 =A0 =A0=
- =A0 =A0(null)>]
->>> =A0 =A0 =A0 =A0 (null)
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.069812] =A0RSP <ffff8803fbc3d=
-e60>
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.071573] CR2: 0000000000000000
->>> Jan 23 11:49:29 dev1 kernel: [ =A0281.073342] ---[ end trace 644c98=
-d7f838705d ]---
->>>
->>>
->>> On 21 January 2012 08:15, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> =
+> On Mon, Jan 23, 2012 at 4:33 AM, Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> =
 wrote:
->>>> just tracked down a bug I was seeing when I was testing bcache on =
-arm.
+>> Cool thanks, let me know when there's something to test and I'll let
+>> you know how it goes.
+>>
+>> On 23 January 2012 12:09, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> w=
+rote:
+>>> So, we called a null function pointer. Looks like I broke the ioctl
+>>> handler somehow, I'll check that out tomorrow.
+>>>
+>>> On Mon, Jan 23, 2012 at 3:52 AM, Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org=
+> wrote:
+>>>> Excellent thanks a lot Kent, that's fixed the problem with the lv =
+cache device.
 >>>>
->>>> Turns out whoever wrote bio_get_nr_vecs() never heard of integer o=
-verflow.
+>>>> I am experiencing a problem attempting to use a rbd as a backing
+>>>> device also. This was working in 3.1 partially so I'm not sure wha=
+t's
+>>>> changed there. The following is output to console & syslog wheneve=
+r
+>>>> the bcache0 device is accessed by something. Well by blkid or
+>>>> mkfs.ext4.
 >>>>
->>>> But I bet it's the same bug you were seeing, and there's a trivial
->>>> workaround in bcache.
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0280.993416] BUG: unable to ha=
+ndle
+>>>> kernel NULL pointer dereference at =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0 (null)
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0280.995317] IP: [< =C2=A0 =C2=
+=A0 =C2=A0 =C2=A0 =C2=A0(null)>]
+>>>> =C2=A0 =C2=A0 =C2=A0 =C2=A0(null)
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0280.997180] PGD 401b0d067 PUD=
+ 3fbfa1067 PMD 0
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0280.999034] Oops: 0010 [#2] S=
+MP
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.000831] CPU 2
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.000843] Modules linked in=
+: bnep
+>>>> rfcomm bluetooth ip6table_filter ip6_tables ebtable_nat ebtables
+>>>> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4
+>>>> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_tcp=
+udp
+>>>> iptable_filter ip_tables x_tables kvm_intel kvm parport_pc ppdev
+>>>> binfmt_misc usbhid hid snd_hda_codec_hdmi snd_hda_codec_realtek br=
+idge
+>>>> stp snd_seq_midi psmouse eeepc_wmi radeon ttm drm_kms_helper asus_=
+wmi
+>>>> snd_rawmidi drm sparse_keymap snd_seq_midi_event snd_hda_intel
+>>>> snd_hda_codec snd_hwdep snd_pcm snd_seq snd_timer snd_seq_device s=
+nd
+>>>> mac_hid video serio_raw soundcore dm_multipath wmi i2c_algo_bit
+>>>> snd_page_alloc mei(C) rbd libceph lp parport firewire_ohci
+>>>> firewire_core btrfs pata_marvell crc_itu_t e1000e r8169 zlib_defla=
+te
+>>>> libcrc32c
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.012308]
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.014277] Pid: 4152, comm: =
+blkid
+>>>> Tainted: G =C2=A0 =C2=A0 =C2=A0D =C2=A0C =C2=A0 3.2.0-9-generic #1=
+7~oneiric1 System
+>>>> manufacturer System Product Name/P8H67-M EVO
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.016330] RIP:
+>>>> 0010:[<0000000000000000>] =C2=A0[< =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
+=A0(null)>] =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 (null)
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.018364] RSP: 0018:ffff880=
+3fbc3de60
+>>>> =C2=A0EFLAGS: 00010282
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.020397] RAX: ffffffffa007=
+63a0 RBX:
+>>>> 0000000000005331 RCX: 0000000000000000
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.022447] RDX: 000000000000=
+5331 RSI:
+>>>> 000000000000101d RDI: ffff880423649380
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.024502] RBP: ffff8803fbc3=
+de68 R08:
+>>>> 0000000000005331 R09: 000000000000101d
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.026563] R10: 00007fff9286=
+b990 R11:
+>>>> 0000000000000246 R12: 00000000ffffffe7
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.028628] R13: 000000000000=
+0000 R14:
+>>>> ffff8804236496c0 R15: ffff880420abd800
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.030698] FS:
+>>>> 00007f62be453760(0000) GS:ffff88043f500000(0000)
+>>>> knlGS:0000000000000000
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.032772] CS: =C2=A00010 DS=
+: 0000 ES:
+>>>> 0000 CR0: 0000000080050033
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.034832] CR2: 000000000000=
+0000 CR3:
+>>>> 00000003fa2da000 CR4: 00000000000406e0
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.036908] DR0: 000000000000=
+0000 DR1:
+>>>> 0000000000000000 DR2: 0000000000000000
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.038972] DR3: 000000000000=
+0000 DR6:
+>>>> 00000000ffff0ff0 DR7: 0000000000000400
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.041019] Process blkid (pi=
+d: 4152,
+>>>> threadinfo ffff8803fbc3c000, task ffff8803faa18000)
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.043083] Stack:
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.045138] =C2=A0ffffffff814=
+1fa0f
+>>>> ffff8803fbc3dec8 ffffffff812f5110 0000000000000000
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.047243] =C2=A0ffff8804236=
+496c0
+>>>> 0000000000000000 000000004f1d4903 00000000329f0436
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.049312] =C2=A000000000000=
+00003
+>>>> ffff8804217ad3c0 ffff880404ae0a50 0000000000000000
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.051352] Call Trace:
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.053334] =C2=A0[<ffffffff8=
+141fa0f>] ?
+>>>> ioctl_dev+0x2f/0x40
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.055284] =C2=A0[<ffffffff8=
+12f5110>]
+>>>> blkdev_ioctl+0x2e0/0x740
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.057191] =C2=A0[<ffffffff8=
+11acf10>]
+>>>> block_ioctl+0x40/0x50
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.059056] =C2=A0[<ffffffff8=
+118843a>]
+>>>> do_vfs_ioctl+0x8a/0x340
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.060888] =C2=A0[<ffffffff8=
+117b2ea>] ?
+>>>> sys_newfstat+0x2a/0x40
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.062687] =C2=A0[<ffffffff8=
+1188781>]
+>>>> sys_ioctl+0x91/0xa0
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.064478] =C2=A0[<ffffffff8=
+1678ec2>]
+>>>> system_call_fastpath+0x16/0x1b
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.066259] Code: =C2=A0Bad R=
+IP value.
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.068035] RIP =C2=A0[< =C2=A0=
+ =C2=A0 =C2=A0 =C2=A0 =C2=A0(null)>]
+>>>> =C2=A0 =C2=A0 =C2=A0 =C2=A0 (null)
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.069812] =C2=A0RSP <ffff88=
+03fbc3de60>
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.071573] CR2: 000000000000=
+0000
+>>>> Jan 23 11:49:29 dev1 kernel: [ =C2=A0281.073342] ---[ end trace 64=
+4c98d7f838705d ]---
 >>>>
->>>> Patch will be up momentarily.
 >>>>
->>>> On Fri, Jan 20, 2012 at 6:43 PM, Kent Overstreet
->>>> <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->>>>> Have you tried the bcache (3.1 based) branch with the same setup?=
- Did
->>>>> it occur there?
+>>>> On 21 January 2012 08:15, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>=
+ wrote:
+>>>>> just tracked down a bug I was seeing when I was testing bcache on=
+ arm.
 >>>>>
->>>>> On Fri, Jan 20, 2012 at 3:27 AM, Damien Churchill <damoxc@gmail.c=
-om> wrote:
->>>>>> Hi there,
+>>>>> Turns out whoever wrote bio_get_nr_vecs() never heard of integer =
+overflow.
+>>>>>
+>>>>> But I bet it's the same bug you were seeing, and there's a trivia=
+l
+>>>>> workaround in bcache.
+>>>>>
+>>>>> Patch will be up momentarily.
+>>>>>
+>>>>> On Fri, Jan 20, 2012 at 6:43 PM, Kent Overstreet
+>>>>> <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+>>>>>> Have you tried the bcache (3.1 based) branch with the same setup=
+? Did
+>>>>>> it occur there?
 >>>>>>
->>>>>> I'm receiving the following after attempting to register a cache
->>>>>> device, I've built the kernel using the Ubuntu Precise kernel wi=
-th a
->>>>>> patch from bcache-3.2-dev applied to the tree.
->>>>>>
->>>>>> The cache device was created by running:
->>>>>> $ make-bcache -C -w 2k -b 1M /dev/sysvg/bcache-test
->>>>>>
->>>>>> The cache device is a logical volume, I'm unsure if that will ha=
-ve an impact?
->>>>>>
->>>>>> Regards,
->>>>>> Damien
->>>>>>
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.025724] bio: create slab <=
-bio-1> at 1
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.025902] bcache: invalidati=
-ng existing data
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026324] ------------[ cut =
-here ]------------
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026341] kernel BUG at
->>>>>> /home/dchurchill/Packages/oneiric/linux/linux-3.2.0~bcache/inclu=
-de/linux/scatterlist.h:63!
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026367] invalid opcode: 00=
-00 [#1] SMP
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026380] CPU 0
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026385] Modules linked in:=
- rfcomm
->>>>>> bnep bluetooth ip6table_filter ip6_tables ebtable_nat ebtables
->>>>>> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ip=
-v4
->>>>>> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_t=
-cpudp
->>>>>> iptable_filter ip_tables x_tables kvm_intel kvm parport_pc ppdev
->>>>>> snd_hda_codec_hdmi snd_hda_codec_realtek binfmt_misc bridge usbh=
-id hid
->>>>>> psmouse snd_hda_intel stp snd_hda_codec snd_hwdep snd_pcm snd_se=
-q_midi
->>>>>> eeepc_wmi asus_wmi sparse_keymap radeon ttm drm_kms_helper drm w=
-mi
->>>>>> mac_hid serio_raw video snd_rawmidi snd_seq_midi_event mei(C) sn=
-d_seq
->>>>>> snd_timer snd_seq_device snd i2c_algo_bit soundcore dm_multipath
->>>>>> snd_page_alloc rbd libceph lp parport firewire_ohci firewire_cor=
+>>>>>> On Fri, Jan 20, 2012 at 3:27 AM, Damien Churchill <damoxc@gmail.=
+com> wrote:
+>>>>>>> Hi there,
+>>>>>>>
+>>>>>>> I'm receiving the following after attempting to register a cach=
 e
->>>>>> crc_itu_t e1000e pata_marvell r8169 btrfs zlib_deflate libcrc32c
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026612]
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026617] Pid: 2420, comm: b=
-ash
->>>>>> Tainted: G =A0 =A0 =A0 =A0 C =A0 3.2.0-9-generic #17~oneiric1 Sy=
-stem
->>>>>> manufacturer System Product Name/P8H67-M EVO
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.026649] RIP:
->>>>>> 0010:[<ffffffff812f3588>] =A0[<ffffffff812f3588>]
->>>>>> blk_rq_map_sg+0x178/0x350
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.027607] RSP: 0018:ffff8804=
-20fbf7c8
->>>>>> =A0EFLAGS: 00010002
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.028564] RAX: 0000000000000=
-000 RBX:
->>>>>> ffff8803fa608a20 RCX: 2700013524000135
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.029529] RDX: 0000000000000=
-011 RSI:
->>>>>> 0000000027000135 RDI: ffff8803fa608a00
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.030492] RBP: ffff880420fbf=
-828 R08:
->>>>>> 0000000000001000 R09: ffff880421862f00
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.031455] R10: 0000000000000=
-001 R11:
->>>>>> 0000000000000001 R12: ffff8803fa60a510
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.032417] R13: 0000000027000=
-135 R14:
->>>>>> ffff8803fa60a520 R15: 00000000000000d3
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.033385] FS:
->>>>>> 00007f5259391720(0000) GS:ffff88043f400000(0000)
->>>>>> knlGS:0000000000000000
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.034361] CS: =A00010 DS: 00=
-00 ES:
->>>>>> 0000 CR0: 000000008005003b
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.035336] CR2: 00007f6d332e8=
-000 CR3:
->>>>>> 0000000401c16000 CR4: 00000000000406f0
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.036310] DR0: 0000000000000=
-000 DR1:
->>>>>> 0000000000000000 DR2: 0000000000000000
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.037287] DR3: 0000000000000=
-000 DR6:
->>>>>> 00000000ffff0ff0 DR7: 0000000000000400
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.038266] Process bash (pid:=
- 2420,
->>>>>> threadinfo ffff880420fbe000, task ffff880403b3dc40)
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.039252] Stack:
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.040220] =A0000000000000001=
-1
->>>>>> ffff880400fcd2b0 ffff8803fa608800 0100000000000001
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.041196] =A0ffff8804213a336=
-8
->>>>>> ffff880421862f00 ffff880420fbf828 ffff8804209cb858
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.042171] =A0ffff880400fcd2b=
-0
->>>>>> 0000000000000001 0000000000000020 ffff880424e96800
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.043130] Call Trace:
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.044070] =A0[<ffffffff81442=
-521>]
->>>>>> scsi_init_sgtable+0x41/0x70
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.045036] =A0[<ffffffff81442=
-58d>]
->>>>>> scsi_init_io+0x3d/0x150
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.045983] =A0[<ffffffff81442=
-79a>]
->>>>>> scsi_setup_fs_cmnd.part.34+0x5a/0x90
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.046917] =A0[<ffffffff81442=
-7ff>]
->>>>>> scsi_setup_fs_cmnd+0x2f/0x40
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.047837] =A0[<ffffffff8145f=
-b3f>]
->>>>>> sd_prep_fn+0xaf/0xaf0
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.048747] =A0[<ffffffff81301=
-7f4>] ?
->>>>>> cfq_dispatch_request+0x64/0xa0
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.049654] =A0[<ffffffff812ee=
-cda>]
->>>>>> blk_peek_request+0xba/0x240
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.050558] =A0[<ffffffff81442=
-cf8>]
->>>>>> scsi_request_fn+0x58/0x4c0
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.051461] =A0[<ffffffff812e7=
-c73>] ?
->>>>>> __elv_add_request+0x1b3/0x290
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.052361] =A0[<ffffffff812ef=
-590>]
->>>>>> blk_queue_bio+0x290/0x380
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.053262] =A0[<ffffffff812ec=
-114>]
->>>>>> generic_make_request.part.50+0x74/0xb0
->>>>>> Jan 20 11:24:36 dev1 kernel: [ =A0119.054170] =A0[<ffffffff812ec=
-528>]
->>>>>> generic_make_request+0x68/0x70
+>>>>>>> device, I've built the kernel using the Ubuntu Precise kernel w=
+ith a
+>>>>>>> patch from bcache-3.2-dev applied to the tree.
+>>>>>>>
+>>>>>>> The cache device was created by running:
+>>>>>>> $ make-bcache -C -w 2k -b 1M /dev/sysvg/bcache-test
+>>>>>>>
+>>>>>>> The cache device is a logical volume, I'm unsure if that will h=
+ave an impact?
+>>>>>>>
+>>>>>>> Regards,
+>>>>>>> Damien
+>>>>>>>
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.025724] bio: create sl=
+ab <bio-1> at 1
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.025902] bcache: invali=
+dating existing data
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026324] ------------[ =
+cut here ]------------
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026341] kernel BUG at
+>>>>>>> /home/dchurchill/Packages/oneiric/linux/linux-3.2.0~bcache/incl=
+ude/linux/scatterlist.h:63!
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026367] invalid opcode=
+: 0000 [#1] SMP
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026380] CPU 0
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026385] Modules linked=
+ in: rfcomm
+>>>>>>> bnep bluetooth ip6table_filter ip6_tables ebtable_nat ebtables
+>>>>>>> ipt_MASQUERADE iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_i=
+pv4
+>>>>>>> xt_state nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle xt_=
+tcpudp
+>>>>>>> iptable_filter ip_tables x_tables kvm_intel kvm parport_pc ppde=
+v
+>>>>>>> snd_hda_codec_hdmi snd_hda_codec_realtek binfmt_misc bridge usb=
+hid hid
+>>>>>>> psmouse snd_hda_intel stp snd_hda_codec snd_hwdep snd_pcm snd_s=
+eq_midi
+>>>>>>> eeepc_wmi asus_wmi sparse_keymap radeon ttm drm_kms_helper drm =
+wmi
+>>>>>>> mac_hid serio_raw video snd_rawmidi snd_seq_midi_event mei(C) s=
+nd_seq
+>>>>>>> snd_timer snd_seq_device snd i2c_algo_bit soundcore dm_multipat=
+h
+>>>>>>> snd_page_alloc rbd libceph lp parport firewire_ohci firewire_co=
+re
+>>>>>>> crc_itu_t e1000e pata_marvell r8169 btrfs zlib_deflate libcrc32=
+c
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026612]
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026617] Pid: 2420, com=
+m: bash
+>>>>>>> Tainted: G =C2=A0 =C2=A0 =C2=A0 =C2=A0 C =C2=A0 3.2.0-9-generic=
+ #17~oneiric1 System
+>>>>>>> manufacturer System Product Name/P8H67-M EVO
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.026649] RIP:
+>>>>>>> 0010:[<ffffffff812f3588>] =C2=A0[<ffffffff812f3588>]
+>>>>>>> blk_rq_map_sg+0x178/0x350
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.027607] RSP: 0018:ffff=
+880420fbf7c8
+>>>>>>> =C2=A0EFLAGS: 00010002
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.028564] RAX: 000000000=
+0000000 RBX:
+>>>>>>> ffff8803fa608a20 RCX: 2700013524000135
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.029529] RDX: 000000000=
+0000011 RSI:
+>>>>>>> 0000000027000135 RDI: ffff8803fa608a00
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.030492] RBP: ffff88042=
+0fbf828 R08:
+>>>>>>> 0000000000001000 R09: ffff880421862f00
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.031455] R10: 000000000=
+0000001 R11:
+>>>>>>> 0000000000000001 R12: ffff8803fa60a510
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.032417] R13: 000000002=
+7000135 R14:
+>>>>>>> ffff8803fa60a520 R15: 00000000000000d3
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.033385] FS:
+>>>>>>> 00007f5259391720(0000) GS:ffff88043f400000(0000)
+>>>>>>> knlGS:0000000000000000
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.034361] CS: =C2=A00010=
+ DS: 0000 ES:
+>>>>>>> 0000 CR0: 000000008005003b
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.035336] CR2: 00007f6d3=
+32e8000 CR3:
+>>>>>>> 0000000401c16000 CR4: 00000000000406f0
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.036310] DR0: 000000000=
+0000000 DR1:
+>>>>>>> 0000000000000000 DR2: 0000000000000000
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.037287] DR3: 000000000=
+0000000 DR6:
+>>>>>>> 00000000ffff0ff0 DR7: 0000000000000400
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.038266] Process bash (=
+pid: 2420,
+>>>>>>> threadinfo ffff880420fbe000, task ffff880403b3dc40)
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.039252] Stack:
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.040220] =C2=A000000000=
+00000011
+>>>>>>> ffff880400fcd2b0 ffff8803fa608800 0100000000000001
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.041196] =C2=A0ffff8804=
+213a3368
+>>>>>>> ffff880421862f00 ffff880420fbf828 ffff8804209cb858
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.042171] =C2=A0ffff8804=
+00fcd2b0
+>>>>>>> 0000000000000001 0000000000000020 ffff880424e96800
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.043130] Call Trace:
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.044070] =C2=A0[<ffffff=
+ff81442521>]
+>>>>>>> scsi_init_sgtable+0x41/0x70
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.045036] =C2=A0[<ffffff=
+ff8144258d>]
+>>>>>>> scsi_init_io+0x3d/0x150
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.045983] =C2=A0[<ffffff=
+ff8144279a>]
+>>>>>>> scsi_setup_fs_cmnd.part.34+0x5a/0x90
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.046917] =C2=A0[<ffffff=
+ff814427ff>]
+>>>>>>> scsi_setup_fs_cmnd+0x2f/0x40
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.047837] =C2=A0[<ffffff=
+ff8145fb3f>]
+>>>>>>> sd_prep_fn+0xaf/0xaf0
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.048747] =C2=A0[<ffffff=
+ff813017f4>] ?
+>>>>>>> cfq_dispatch_request+0x64/0xa0
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.049654] =C2=A0[<ffffff=
+ff812eecda>]
+>>>>>>> blk_peek_request+0xba/0x240
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.050558] =C2=A0[<ffffff=
+ff81442cf8>]
+>>>>>>> scsi_request_fn+0x58/0x4c0
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.051461] =C2=A0[<ffffff=
+ff812e7c73>] ?
+>>>>>>> __elv_add_request+0x1b3/0x290
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.052361] =C2=A0[<ffffff=
+ff812ef590>]
+>>>>>>> blk_queue_bio+0x290/0x380
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.053262] =C2=A0[<ffffff=
+ff812ec114>]
+>>>>>>> generic_make_request.part.50+0x74/0xb0
+>>>>>>> Jan 20 11:24:36 dev1 kernel: [ =C2=A0119.054170] =C2=A0[<ffffff=
+ff812ec528>]
+>>>>>>> generic_make_request+0x68/0x70
+>>>>>>> --
+>>>>>>> To unsubscribe from this list: send the line "unsubscribe linux=
+-bcache" in
+>>>>>>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+>>>>>>> More majordomo info at =C2=A0http://vger.kernel.org/majordomo-i=
+nfo.html
 >>>>>> --
 >>>>>> To unsubscribe from this list: send the line "unsubscribe linux-=
 bcache" in
 >>>>>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->>>>>> More majordomo info at =A0http://vger.kernel.org/majordomo-info.=
-html
->>>>> --
->>>>> To unsubscribe from this list: send the line "unsubscribe linux-b=
-cache" in
->>>>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->>>>> More majordomo info at =A0http://vger.kernel.org/majordomo-info.h=
-tml
+>>>>>> More majordomo info at =C2=A0http://vger.kernel.org/majordomo-in=
+fo.html
