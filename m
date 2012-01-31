@@ -1,71 +1,35 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Stats
-Date: Thu, 26 Jan 2012 12:35:57 -0800
-Message-ID: <CAH+dOxJTg6tcwk0pV35_LC4bjW1hTffEWeYxOzyssJi1meGJpw@mail.gmail.com>
-References: <CAB7K1hGfTHjskUbmgWG6GBBZCyfDFvTzZwpHjEAmsUgnt3FnMA@mail.gmail.com>
-	<CAHYUNGaenUE7VCprt8cbbLOVVD+J17ao1w65BNz7kW7xg-e4nQ@mail.gmail.com>
+From: infernix <infernix-ZHiucA87ovfk1uMJSBkQmQ@public.gmane.org>
+Subject: bcache with iscsi, mpath and lvm
+Date: Tue, 31 Jan 2012 16:36:34 +0100
+Message-ID: <4F280A82.3070802@infernix.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAHYUNGaenUE7VCprt8cbbLOVVD+J17ao1w65BNz7kW7xg-e4nQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Adam Berkan <aberkan-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-=46rom the timestamps, that's decaying way too fast. Looks like a bug.
+Hi,
 
-On Thu, Jan 26, 2012 at 10:38 AM, Adam Berkan <aberkan-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrot=
-e:
-> The=A0/sys/block/bcache0/bcache/stats_total/bypassed should accumulat=
-e
-> (notice the stats_total), but stats_day only shows results with an
-> exponentially weighted average with a half life of 1 day. =A0If your
-> load varies during the day, the amount bypassed will swing up and dow=
-n
-> accordingly.
->
-> Adam
->
-> On Thu, Jan 26, 2012 at 10:31 AM, David Rhodes Clymer
-> <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org> wrote:
->>
->> Although the doc (Documentation/bcache.txt) seems to indicate that
->> "bypassed" should contain cumulative IO for the stat period, I've
->> noticed that it does not consistently increase. In fact, it increase=
-s
->> and decreases quite a bit over a short period of time.
->>
->> root@zapazoid:~# date
->> Thu Jan 26 13:23:34 EST 2012
->> root@zapazoid:~# cat /sys/block/bcache0/bcache/stats_day/bypassed
->> 5.4M
->> root@zapazoid:~# cat /sys/block/bcache0/bcache/stats_day/bypassed
->> 9.1M
->> root@zapazoid:~# cat /sys/block/bcache0/bcache/stats_day/bypassed
->> 1008k
->> root@zapazoid:~# cat /sys/block/bcache0/bcache/stats_day/bypassed
->> 2.4M
->> root@zapazoid:~# cat /sys/block/bcache0/bcache/stats_day/bypassed
->> 5.1M
->> root@zapazoid:~# date
->> Thu Jan 26 13:24:44 EST 2012
->>
->>
->> This is while doing an rsync into a cached filesystem, which I would
->> imagine would entail a significant amount of sequential writes.
->>
->> Am I just misunderstanding what this is supposed to be telling me?
->>
->> -davidc
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcac=
-he" in
->> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+I've got the following stack, bottom to top:
+
+- iscsi sans with multiple NICs
+- servers with multiple NICs
+- open-iscsi cross-connecting to the san over those multiple nics
+- multipath to aggregate and load-balance IO over said paths
+- LVM on top of multiple mpathX devices
+- qemu-kvm running with disks connecting to logical volumes in said LVM
+
+I am wondering if bcache can fit in, and if so, where?
+
+Ideally I would say it sits between multipath and LVM, e.g. it is active 
+for the /dev/mapper/mpathX devices. But that doesn't work because there 
+isn't really a filesystem on it and so it doesn't get assigned an UUID. 
+Even if it did, that UUID would be the same for all sdX devices in the 
+multipath device.
+
+Is there any other way of activating bcache besides passing it an UUID? 
+And can it even work on top of a dm-multipath device?
+
+Thanks!
