@@ -1,54 +1,29 @@
-From: Piergiorgio Sartor <piergiorgio.sartor-KvP5wT2u2U0@public.gmane.org>
-Subject: Formatting of backing device
-Date: Wed, 1 Feb 2012 11:10:41 +0100
-Message-ID: <20120201101041.GA2779@lazy.lzy>
+From: Will Tatam <will-eSrJ3h7o4/Lk1uMJSBkQmQ@public.gmane.org>
+Subject: Kernel Compilation - As a module
+Date: Wed, 01 Feb 2012 15:20:11 +0000
+Message-ID: <4F29582B.4060900@netmindz.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi all,
+Is it possible to build bcache as a module for your current kernel ? The
+code I checked out appeared to be an entire linux kernel tree from what
+I could see at quick glance
 
-first of all I would like to congratulate for this
-project, I think it is one of the most promising
-feature the Linux kernel can have.
+When I've been building other stuff before, drbd, v2l-dvb etc I can just
+build the extra modules provided I have the kernel headers (and
+sometimes full source) for my running kernel
 
-Wrote that, I've a question about the concept of
-formatting the backing device.
+This is of course much faster, less disruptive and also allows you to do
+things like build kmods
 
-As far as I understood, the first concept of bcache
-was to simply "register" or "attach" a cache to a
-backing device, that is, the backing device had not
-to be formatted.
-
-Lately, still if I understood it correctly, this
-behaviour was changed and, now, the backing device
-needs to be formatted.
-
-So, the question is:
-
-How about an already running device? Is it still
-possible to attach a cache under such situation?
-
-In general, would it be possible to attach/detach
-a cache to any already available device (in the
-future)? Or the caching/backing setup must be planned
-before the HW is available, so to speak?
-
-It would be useful (and cool too), to have the
-possibility to attach/detach the SSD cache, on
-the fly (at run-time) to any device it needs it.
-
-I hope the question(s) are clear, if not please
-let me know.
-
-Thanks a lot in advance,
-
-bye,
+What would need to happen to make this possible, or am I just failing
+into the common trap of not reviewing all the documentation proper to
+asking a possibly simple question ?
 
 -- 
-
-piergiorgio
+Will Tatam
