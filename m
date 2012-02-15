@@ -1,87 +1,77 @@
-From: Piergiorgio Sartor <piergiorgio.sartor-KvP5wT2u2U0@public.gmane.org>
-Subject: Re: bcache on layered devices
-Date: Tue, 7 Feb 2012 20:12:13 +0100
-Message-ID: <20120207191213.GA2581@lazy.lzy>
-References: <20120206185612.GA2381@lazy.lzy>
- <CAH+dOxKir2mKZfq6r=aHngQeRxmPreS9=ch4dGaFtGscfkxBpA@mail.gmail.com>
+From: Franco <franco-uJ2R6605E/fKnmoGZ802fQ@public.gmane.org>
+Subject: Can't resgister cache
+Date: Wed, 15 Feb 2012 13:26:28 +0800
+Message-ID: <1329283588.3289.294.camel@ipcus>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <CAH+dOxKir2mKZfq6r=aHngQeRxmPreS9=ch4dGaFtGscfkxBpA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: Piergiorgio Sartor <piergiorgio.sartor-KvP5wT2u2U0@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Kent,
+Hi
 
-thanks for the answer.
+I was in the process of testing linux-bcache but was seeing some strange
+behaviour so I thought I would remount my cached filesystem. I then
+noticed that the performance results started looking like the cache just
+wasn't there, so I unregistered it:
 
-Reading bcache docs, I found that there should be
-distinction, in bcache, between "small" writes
-and "large" writes.
+bcache: Cache set be008612-38aa-4082-9f42-1bada25cb002 unregistered
+bcache: Caching disabled for sdc
 
-I was wondering if the choice of the layer could
-influence this distinction.
-Namely, LV uses PE of 4MB, which, I'm not sure,
-results in writes of 4MB as smallest size.
+but now when I try to register it again, I get bcache: error
+opening /dev/sdb: device busy.
 
-Thanks,
+I haven't tried rebooting yet but probably will do after I've sent this
+message.
 
-bye,
+These were the strange results I was getting that prompted me to unmount
+and remount the filesystems.
 
-pg
+Setup: hardware RAID 5 16 disk array with 2 partitions, 1 Intel 40GB SSD
+for bcache.
 
-On Mon, Feb 06, 2012 at 12:34:57PM -0800, Kent Overstreet wrote:
-> I'd personally use the raid as the backing device but any would work =
--
-> you would have duplicates ending up in the cache if you cached the
-> hard drives directly.
->=20
-> On Mon, Feb 6, 2012 at 10:56 AM, Piergiorgio Sartor
-> <piergiorgio.sartor-KvP5wT2u2U0@public.gmane.org> wrote:
-> > Hi all again,
-> >
-> > I'm not sure if the topic was already discussed here,
-> > anyway I'll go ahead, sorry if it is a duplication.
-> >
-> > I was wondering, in case of layered devices, what would
-> > be the best layer to use as backing device.
-> >
-> > Specifically, I've two HDDs in RAID10 (Linux md driver,
-> > software RAID), on top of the RAID there are LV partitions.
-> >
-> > Obviously, it would be possible to use the RAID components,
-> > i.e. the HDDs as backing devices, or the RAID itself, or
-> > the LV partitions (/dev/mapper/VolXXX).
-> >
-> > My guess would be to use the LV partitions, since these
-> > are closer to the filesystem, but, maybe, using the RAID
-> > or even the single HDDs could be better.
-> >
-> > Any idea on the topic? Suggestions & motivations?
-> >
-> > Thanks a lot in advance,
-> >
-> > bye,
-> >
-> > --
-> >
-> > piergiorgio
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-bca=
-che" in
-> > the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> > More majordomo info at =A0http://vger.kernel.org/majordomo-info.htm=
-l
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/bcache0          1.9T   26G  1.8T   2% /data33
+/dev/sdd              1.9T   23G  1.8T   2% /data34
 
---=20
+Wrote an 8GB file to each filesystem, then tried reading it back.
+Machine has 8GB RAM.
 
-piergiorgio
+Speed for random reads from identical SSD = 181.766523 MB/Sec, random
+read test done in the following order with measured speed in MB/Sec. The
+random IO is actually just reading with a 4GB stride, wrapping around at
+the end of the file.
+
+/data33 49
+/data34 114
+/data33 114
+/data33 and /data44 simultaneously 78 and 59 respectively
+/data33 76
+/data33 68
+/data34 114
+/data34 96
+/data34 69
+/data34 74
+/data33 118
+/data33 40
+/data34 91
+
+After remounting both filesystems:
+
+/data34 148
+/data33 120
+/data34 120
+/data33 82
+
+
+After unregistering the cache
+
+/data33 65
+/data34 83
+/data33 99
+/data34 113
+
+Cheers,
+Franco
