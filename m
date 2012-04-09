@@ -1,115 +1,73 @@
-From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Subject: Re: Quick howto?
-Date: Mon, 9 Apr 2012 21:37:38 +1000
-Message-ID: <CAOzFzEiy02VLbfXu1ET9PORUsTV=6GUA8MnT03PV0f8TLJLSBw@mail.gmail.com>
-References: <001901cd1643$3801e2c0$a805a840$@snow.nl>
+From: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
+Subject: Re: New bcache code up
+Date: Mon, 9 Apr 2012 15:33:41 -0400
+Message-ID: <CAB7K1hF+PXvOYeaGtiP26SsgfWRnHfG-2_tNeANJiF-eKRxVwA@mail.gmail.com>
+References: <20120409021220.GA4713@dhcp-172-18-216-138.mtv.corp.google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <001901cd1643$3801e2c0$a805a840$@snow.nl>
+In-Reply-To: <20120409021220.GA4713-RcKxWJ4Cfj3IzGYXcIpNmNLIRw13R84JkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Gerrit Tamboer <gtamboer-JFNXyGN8thM@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 9 April 2012 21:23, Gerrit Tamboer <gtamboer-JFNXyGN8thM@public.gmane.org> wrote:
-> Hi!
->
-> I am currently trying to test bcache stability in combination with th=
-e btrfs
-> filesystem. I am currently stuck with some unanswered questions and I=
- was
-> hoping that someone could help me out on the following;
->
-> 1. The documentation on the website is out of date, this means there =
-is not
-> quickstart guide on how to actually use bcache. I was able to compile=
- the
-> kernel with bcache support but how do I further configure it? I have =
-a sata
-> disk on sda with sda1 and sda2 used for / and /home. My sdb is an
-> unformatted SSD which I want to use for caching. In this particular s=
-etup,
-> how do I configure the kernel to use sdb for caching sda1 and sda2?
+On Sun, Apr 8, 2012 at 10:12 PM, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
+> I just pushed new code to the bcache-3.2-dev branch. I expect this
+> version to be more or less stable and production ready, but it does need
+> new testing.
 
-=46irst make sure you have built bcache into the kernel. In my
-experience building as a module caused me a few issues with 3.2. (will
-test and get back to the list at some stage)
+I run into a linking error when trying to build this:
 
-Next you need to get the bcache-tools repository.
-  git://evilpiepirate.org/~kent/bcache-tools.git
-Run make to build the tools, and make install to install them. You may
-have issues with it trying to install initramfs hooks if you distro
-doesnt use the same directory.
-
-=46ormat the devices.
-make-bcache -C /dev/sdb #setup the cache device with defaults, you can
-tune these later
-make-bcache -B /dev/sda2 # I would recommend starting with a spare
-disk or partition before attempting to get a system booting from
-bcache
-
-Register the devices with bcache
-echo /dev/sdb > /sys/fs/bcache/register
-echo /dev/sda2 > /sys/fs/bcache/register
-
-Attach the cache to the backing device. To do this you need the UUID
-of the cache set. This was returned in make-bcache -C step but you can
-get it back with "ls /sys/fs/bcache" or the blk-id command in
-bcache-tools.
-echo "$UUIDHERE" > /sys/block/bcache0/bcache/attach
-
-The cache is now online and you should be able to see bcache stats etc
-in /sys/block/bcache0/bcache/
-
->
-> 2. Currently the git repo is a full kernel with bcache support, is th=
-ere a
-> way to only fetch the bcache patch for other kernels? I have a linux =
-box
-> with linux 2.6.x and I would like to patch bcache into it instead of
-> compiling 3.1.x and migrating to it.
-
-There is some 2.6.32/34 code hanging about. Wait for Kent to reply
-with details of what is available.
-I would highly recommend running the 3.1 or 3.2 builds however,
-changes beside bcache have make the Linux kernel much more performant
-recently.
-If you want to apply bcache as a single monolithic patch against a
-stock 3.2 kernel you can generate the patch with this command:
-git diff 805a6af8dba5dfdd35ec35dc52ec0122400b2610 > /path/to/file.patch
-
-Else you can generate a full patch series with:
-git format-patch 805a6af8dba5dfdd35ec35dc52ec0122400b2610
-
->
-> 3. If I would temporarily want to disable caching to do maintenance, =
-is
-> there a way to flush the current queue to disk?
-
-I think the "stop' method will do this. Currently I pause I/O on the
-volumes and wait for the dirty data to drain (because I am paranoid)
-before running stop though.
-Kent might be able to offer some additional insight here.
-
->
-> Thanks in advance!
->
-> Regards,
->
-> Gerrit Tamboer
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+  AS      arch/x86/lib/putuser.o
+  AS      arch/x86/lib/rwlock.o
+  AS      arch/x86/lib/rwsem.o
+  CC      arch/x86/lib/string_32.o
+  CC      arch/x86/lib/strstr_32.o
+  AS      arch/x86/lib/thunk_32.o
+  CC      arch/x86/lib/usercopy.o
+  CC      arch/x86/lib/usercopy_32.o
+  AR      arch/x86/lib/lib.a
+  LD      vmlinux.o
+  MODPOST vmlinux.o
+  GEN     .version
+  CHK     include/generated/compile.h
+  UPD     include/generated/compile.h
+  CC      init/version.o
+  LD      init/built-in.o
+  LD      .tmp_vmlinux1
+drivers/built-in.o: In function `__update_writeback_rate':
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/writeback.c:229:
+undefined reference to `__udivdi3'
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/writeback.c:232:
+undefined reference to `__udivdi3'
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/writeback.c:247:
+undefined reference to `__divdi3'
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/writeback.c:254:
+undefined reference to `__divdi3'
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/writeback.c:256:
+undefined reference to `__divdi3'
+drivers/built-in.o: In function `writeback_delay':
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/writeback.c:304:
+undefined reference to `__udivdi3'
+drivers/built-in.o: In function `__cache_set_show':
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/sysfs.c:432:
+undefined reference to `__udivdi3'
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/sysfs.c:432:
+undefined reference to `__udivdi3'
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/sysfs.c:432:
+undefined reference to `__udivdi3'
+/usr/local/src/bcache/linux-bcache/drivers/block/bcache/sysfs.c:432:
+undefined reference to `__udivdi3'
+drivers/built-in.o:/usr/local/src/bcache/linux-bcache/drivers/block/bcache/sysfs.c:433:
+more undefined references to `__udivdi3' follow
+make: *** [.tmp_vmlinux1] Error 1
 
 
+I copied /boot/config-3.2.0-2-686-pae to .config, and the only thing
+that I know I changed was enabling bcache (compiled in, not as a
+module). I'm running debian wheezy (testing).
 
---=20
-=46ounder | Director | VP Research
-Orion Virtualisation Solutions=A0|=A0www.orionvm.com.au=A0| Phone: 1300=
- 56
-99 52 | Mobile: 0428 754 846
+Am I just doing something silly?
+
+-davidc
