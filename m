@@ -1,37 +1,42 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: New bcache code up
-Date: Sun, 8 Apr 2012 22:12:20 -0400
-Message-ID: <20120409021220.GA4713@dhcp-172-18-216-138.mtv.corp.google.com>
+From: "Gerrit Tamboer" <gtamboer-JFNXyGN8thM@public.gmane.org>
+Subject: Quick howto?
+Date: Mon, 9 Apr 2012 13:23:41 +0200
+Message-ID: <001901cd1643$3801e2c0$a805a840$@snow.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
+References: 
+In-Reply-To: 
+Content-Language: nl
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-Cc: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-I just pushed new code to the bcache-3.2-dev branch. I expect this
-version to be more or less stable and production ready, but it does need
-new testing.
+Hi!
 
-There's two changes that should improve performance:
+I am currently trying to test bcache stability in combination with the btrfs
+filesystem. I am currently stuck with some unanswered questions and I was
+hoping that someone could help me out on the following;
 
- * Reworked the code for inserting cache misses into the cache.
-Previously, in order to work around a particularly obscure race we had
-to fail a lot of inserts from cache misses that should've been fine (if
-there was any key at a particular offset, even a stale key or a key that
-just invalidated that region of the cache, inserts from cache misses
-would fail until the btree node was rewritten).
+1. The documentation on the website is out of date, this means there is not
+quickstart guide on how to actually use bcache. I was able to compile the
+kernel with bcache support but how do I further configure it? I have a sata
+disk on sda with sda1 and sda2 used for / and /home. My sdb is an
+unformatted SSD which I want to use for caching. In this particular setup,
+how do I configure the kernel to use sdb for caching sda1 and sda2?
 
-This'll improve the cache hit ratio, how much depending on how badly the
-given workload was affected.
+2. Currently the git repo is a full kernel with bcache support, is there a
+way to only fetch the bcache patch for other kernels? I have a linux box
+with linux 2.6.x and I would like to patch bcache into it instead of
+compiling 3.1.x and migrating to it.
 
- * Reworked the journalling code to handle cache flushes instead of
-treating all writes as sync.
+3. If I would temporarily want to disable caching to do maintenance, is
+there a way to flush the current queue to disk?
 
-This improves write latency and reduces the amount of journal io.
+Thanks in advance!
 
-Fixed some bugs too, including a memory leak. Please let me know if you
-find any more, and if anyone's running benchmarks I'd love to know how
-it's doing.
+Regards,
+
+Gerrit Tamboer
