@@ -1,43 +1,58 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Resizing bcache backing store
-Date: Wed, 11 Apr 2012 19:55:54 -0400
-Message-ID: <CAH+dOxJv-ajvLfbUSo8dqG0a8_grNBhfxJ1EbmSrYZz0YXJM2w@mail.gmail.com>
-References: <CAB7K1hH_o7koST7RYTbw9ya0GMEvmpb=TYAt1MqEVDhtBdRd1Q@mail.gmail.com>
+From: Leen Besselink <leen-RaxvPIb8m1QxPGQnf4u0eF6hYfS7NtTn@public.gmane.org>
+Subject: Re: Preliminary performance benchmarks.
+Date: Fri, 13 Apr 2012 02:05:46 +0200
+Message-ID: <20120413000546.GB2941@apia.perrit.net>
+Reply-To: leen-RaxvPIb8m1QxPGQnf4u0eF6hYfS7NtTn@public.gmane.org
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAB7K1hH_o7koST7RYTbw9ya0GMEvmpb=TYAt1MqEVDhtBdRd1Q-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-=46or the backing device, I think things will just work - you'll just
-have to close and reopen the backing device in order for bcache to
-notice the new size. Bcache's superblock doesn't remember the size, it
-just goes off of what the size of the backing device is when it's
-registered.
+(I've been lurking the mailinglist archive for a few months already, I think
+bcache sounds really interresting)
 
-There's currently no way to make bcache notice the backing device has
-grown to do it at runtime, though that ought to be fairly simple too.
+Hello Joseph,
 
-On Wed, Apr 11, 2012 at 6:47 PM, David Rhodes Clymer
-<david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org> wrote:
-> In the case where the bcache backing store is resizeable (eg. a
-> logical volume), is it possible to resize the backing store without
-> breaking bcache? Let's say, for example, that I would
-> unmount/unregister /dev/bcacheX, resize the backing store,
-> reregister/remount the cache.
->
-> I imagine a better approach would be to layer LVM on the cache device
-> itself. However, in this particular case, I set up the bcache before =
-I
-> had learned how to get LVM to use a bcache device as a PV.
->
-> -davidc
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+> Carrying out some scalability tests on high I/O systems. More tests to
+> come using the Phoronix Test Suite.
+> 
+> Fio summary:
+> 24 jobs
+> Direct IO
+> Randwrite test
+> Total of about 80k IOPs at 3.5k IOPS per thread.
+> 
+> Test rig specs:
+> 2x Intel(R) Xeon(R) CPU X5650  @ 2.67GHz (12 physical cores, 24 logical)
+> 12x 2TB Seagate nearline-SAS in RAID6 on LSI Logic / Symbios Logic LSI
+> MegaSAS 9260
+> 2x Intel 520 SSDs 120GB in RAID0
+> 
+> The 2 520s are striped with md raid as /dev/md0 whch is formatted as a
+> bcache cache device using 1M buckets and 8k hard block size
+> Backing device is the big old raid6.
+> 
+> Random IO performance of the native raid0 is about 96K IOPs, backing
+> device in the realm of 1600ish.
+> However the backing device has a sequential IO performance of about 1.5GB/s.
+> 
+
+So why do you put your SSDs in RAID0 ?
+
+If you are using RAID6 for your HDD you obviously care about your data, shouldn't
+you be using RAID1 or let bcache do some RAID1-like behaviour* ?
+
+Because when you use RAID0 your data will only be written to one SSD.
+
+* I think bcache had some ability to handle that sort of automatically.
+
+> Below are some quick findings using fio - showing very good
+> scalability of bcache even with very very fast SSDs.
+> *Note: The SSDs are connected via a SATA2 interface being somewhat of
+> a bottleneck.
+
+Have a nice day,
+	Leen.
