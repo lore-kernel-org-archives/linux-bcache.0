@@ -1,111 +1,147 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: Error related to bcache volume as PV
-Date: Wed, 9 May 2012 22:56:03 -0400
-Message-ID: <CAC7rs0u2Srxr+LevQEY8N-HX7KqpPnT8iPzVAo1REyqcjraERg@mail.gmail.com>
-References: <CAB7K1hH8YPVXXQfOvLyGNpwDDBZAHUykGTM3+1PYGW0OoWAVMA@mail.gmail.com>
+From: Kent Overstreet <koverstreet@google.com>
+Subject: [Bcache v13 00/16]
+Date: Wed, 9 May 2012 23:07:29 -0400
+Message-ID: <cover.1336619038.git.koverstreet@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAB7K1hH8YPVXXQfOvLyGNpwDDBZAHUykGTM3+1PYGW0OoWAVMA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Cc: tejun@google.com, agk@redhat.com
 List-Id: linux-bcache@vger.kernel.org
 
-That I haven't seen before. I'll see if I can reproduce it.
+bcache: a cache for arbitrary block devices using an SSD.
 
-On Mon, May 7, 2012 at 1:27 PM, David Rhodes Clymer
-<david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org> wrote:
-> When I modify my /etc/lvm.conf and add bcache as a allowed device typ=
-e:
->
-> types =3D [ "bcache", 16 ]
->
-> bcache is definitely in /proc/devices:
->
-> root@zapazoid:~# cat /proc/devices |grep bcache
-> 253 bcache
->
-> Now, when I attempt a pvscan or pvcreate:
->
-> [ =A0287.781024] bio: create slab <bio-1> at 1
-> [ =A0287.824983] bcache: btree_journal_read() done
-> [ =A0287.833084] bcache: btree_check() done
-> [ =A0287.833087] bcache: journal replay done, 0 keys in 1 entries, se=
-q 4-4
-> [ =A0287.833144] bcache: registered cache device sdb1
-> [ =A0427.970797] bcache: Caching sda2 as bcache0 on set
-> c6e304cc-e9d4-4d8d-85ae-d76e081e2bc3
-> [ =A0446.637876] ------------[ cut here ]------------
-> [ =A0446.638002] kernel BUG at fs/direct-io.c:647!
-> [ =A0446.638071] invalid opcode: 0000 [#1] SMP
-> [ =A0446.638207] Modules linked in: [last unloaded: scsi_wait_scan]
-> [ =A0446.638358]
-> [ =A0446.638424] Pid: 2292, comm: pvscan Not tainted 3.2.0+ #3 BIOSTA=
-R
-> Group A780L3G/A780L3G
-> [ =A0446.638623] EIP: 0060:[<c1134d0f>] EFLAGS: 00010246 CPU: 5
-> [ =A0446.638651] EIP is at dio_send_cur_page+0x48f/0x4b0
-> [ =A0446.638651] EAX: 00000000 EBX: f42b6a00 ECX: 0000000c EDX: 00000=
-000
-> [ =A0446.638651] ESI: f48a1d30 EDI: 00000001 EBP: f48a1c84 ESP: f48a1=
-c50
-> [ =A0446.638651] =A0DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-> [ =A0446.638651] Process pvscan (pid: 2292, ti=3Df48a0000 task=3Df4a6=
-eca0
-> task.ti=3Df48a0000)
-> [ =A0446.638651] Stack:
-> [ =A0446.638651] =A000000001 f42b6a40 f48a1c74 f48a1db8 f31c2080 f31c=
-2000
-> f48a1db8 074440e0
-> [ =A0446.638651] =A000000000 0000000c 440e0000 00000074 f48a1db8 f48a=
-1dfc
-> c1135b47 f48a1db8
-> [ =A0446.638651] =A000000000 f4a6ef20 f48a1db8 f48a1d30 00033a80 f42b=
-6a40
-> 01a82d40 440e0000
-> [ =A0446.638651] Call Trace:
->
-> [ =A0446.638651] =A0[<c1135b47>] __blockdev_direct_IO+0x7b7/0x1870
-> [ =A0446.638651] =A0[<c1132830>] ? block_llseek+0x100/0x100
-> [ =A0446.638651] =A0[<c11333d0>] blkdev_direct_IO+0x60/0x70
-> [ =A0446.638651] =A0[<c1132830>] ? block_llseek+0x100/0x100
-> [ =A0446.638651] =A0[<c10bf4d4>] generic_file_aio_read+0x6e4/0x750
-> [ =A0446.638651] =A0[<c1105654>] do_sync_read+0xa4/0xe0
-> [ =A0446.638651] =A0[<c11056f3>] ? rw_verify_area+0x63/0x110
-> [ =A0446.638651] =A0[<c16b4974>] ? mutex_lock+0x14/0x40
-> [ =A0446.638651] =A0[<c1105d67>] vfs_read+0x97/0x160
-> [ =A0446.638651] =A0[<c1292f54>] ? copy_to_user+0x34/0x120
-> [ =A0446.638651] =A0[<c11055b0>] ? do_sync_write+0xe0/0xe0
-> [ =A0446.638651] =A0[<c1105efd>] sys_read+0x3d/0x70
-> [ =A0446.638651] =A0[<c16b5b29>] syscall_call+0x7/0xb
-> [ =A0446.638651] Code: f2 89 d8 e8 74 f7 ff ff 85 ff 0f 44 f8 8b 43 3=
-0
-> 85 c0 75 d0 8b 75 e0 85 ff c7 46 24 00 00 00 00 0f 85 b1 fd ff ff e9
-> c3 fe ff ff <0f> 0b eb fe 0f 0b eb fe 89 d8 e8 02 2a f9 ff 84 c0 0f 8=
-5
-> 7d fd
-> [ =A0446.638651] EIP: [<c1134d0f>] dio_send_cur_page+0x48f/0x4b0 SS:E=
-SP
-> 0068:f48a1c50
-> [ =A0446.643626] ---[ end trace 667269d0635b2635 ]---
->
->
-> I'm running the latest version of bcache available, that I know of:
->
-> root@zapazoid:/usr/src/linux-bcache# git log --format=3Dshort -n1
-> commit f750663315afd8645badea86f4760092a137f990
-> Author: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
->
-> =A0 =A0closures: Export do_closure_timer_init()
->
->
-> This is with 32bit kernel/userland.
->
-> -davidc
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
+Short overview:
+Bcache does both writethrough and writeback caching. It presents itself as a
+new block device, a bit like say md. You can cache an arbitrary number of
+block devices with a single cache device, and attach and detach things at
+runtime - it's quite flexible.
+
+It's very fast. It uses a b+ tree for the index, along with a journal to
+coalesce index updates, and a bunch of other cool tricks like auxiliary binary
+search trees with software floating point keys for searching within btree
+nodes.
+
+Bcache is solid, production ready code. There are still bugs being found that
+affect specific configurations, but there haven't been any major issues found
+in awhile - it's well past time I started working on getting it into mainline.
+
+It's a lot of code - I tried to split it out so that it'd make some sort of
+sense for reviewing. Let me know if there's anything else I can do to make
+review easier.
+
+TODO/known issues:
+
+__up_write() needs to be exported for bcache to compile as a module - it's
+used for bypassing lockdep when traversing the btree during garbage
+collection. If someone else knows a better solution, please let me know.
+
+The userspace interface is going to change before it goes in. The general
+consensus at LSF was that we don't want yet another interface for
+probing/managing block devices, and dm exists so we may as well use that. I
+don't think anyone's started on that yet, though.
+
+Documentation needs to be updated. That's being actively worked on, though.
+
+Kent Overstreet (16):
+  Only clone bio vecs that are in use
+  Bio pool freeing
+  Revert "rw_semaphore: remove up/down_read_non_owner"
+  Fix ratelimit macro to compile in c99 mode
+  Export get_random_int()
+  Export blk_fill_rwbs()
+  Closures
+  bcache: Documentation, and changes to generic code
+  Bcache: generic utility code
+  bcache: Superblock/initialization/sysfs code
+  bcache: Core btree code
+  bcache: Bset code (lookups within a btree node)
+  bcache: Journalling
+  bcache: Request, io and allocation code
+  bcache: Writeback
+  bcache: Debug and tracing code
+
+ Documentation/ABI/testing/sysfs-block-bcache |  156 ++
+ Documentation/bcache.txt                     |  255 +++
+ block/blk-core.c                             |    2 +-
+ drivers/block/Kconfig                        |    2 +
+ drivers/block/Makefile                       |    1 +
+ drivers/block/bcache/Kconfig                 |   42 +
+ drivers/block/bcache/Makefile                |    8 +
+ drivers/block/bcache/alloc.c                 |  591 +++++++
+ drivers/block/bcache/bcache.h                |  839 ++++++++++
+ drivers/block/bcache/bset.c                  | 1149 +++++++++++++
+ drivers/block/bcache/bset.h                  |  218 +++
+ drivers/block/bcache/btree.c                 | 2249 ++++++++++++++++++++++++++
+ drivers/block/bcache/btree.h                 |  272 ++++
+ drivers/block/bcache/debug.c                 |  574 +++++++
+ drivers/block/bcache/debug.h                 |   53 +
+ drivers/block/bcache/io.c                    |  198 +++
+ drivers/block/bcache/journal.c               |  722 +++++++++
+ drivers/block/bcache/journal.h               |  113 ++
+ drivers/block/bcache/request.c               | 1470 +++++++++++++++++
+ drivers/block/bcache/request.h               |   58 +
+ drivers/block/bcache/stats.c                 |  243 +++
+ drivers/block/bcache/stats.h                 |   58 +
+ drivers/block/bcache/super.c                 | 2000 +++++++++++++++++++++++
+ drivers/block/bcache/sysfs.c                 |  802 +++++++++
+ drivers/block/bcache/sysfs.h                 |   99 ++
+ drivers/block/bcache/trace.c                 |   26 +
+ drivers/block/bcache/util.c                  |  572 +++++++
+ drivers/block/bcache/util.h                  |  657 ++++++++
+ drivers/block/bcache/writeback.c             |  518 ++++++
+ drivers/block/rbd.c                          |    2 +-
+ drivers/char/random.c                        |    1 +
+ drivers/md/dm.c                              |   27 +-
+ drivers/md/md.c                              |    3 +-
+ fs/bio.c                                     |   55 +-
+ include/linux/bio.h                          |    7 +-
+ include/linux/blk_types.h                    |    2 +
+ include/linux/cgroup_subsys.h                |    6 +
+ include/linux/closure.h                      |  614 +++++++
+ include/linux/ratelimit.h                    |    2 +-
+ include/linux/rwsem.h                        |   10 +
+ include/linux/sched.h                        |    4 +
+ include/trace/events/bcache.h                |  257 +++
+ kernel/fork.c                                |    4 +
+ kernel/rwsem.c                               |   16 +
+ kernel/trace/blktrace.c                      |    1 +
+ lib/Kconfig                                  |    3 +
+ lib/Kconfig.debug                            |    9 +
+ lib/Makefile                                 |    2 +
+ lib/closure.c                                |  363 +++++
+ 49 files changed, 15288 insertions(+), 47 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-block-bcache
+ create mode 100644 Documentation/bcache.txt
+ create mode 100644 drivers/block/bcache/Kconfig
+ create mode 100644 drivers/block/bcache/Makefile
+ create mode 100644 drivers/block/bcache/alloc.c
+ create mode 100644 drivers/block/bcache/bcache.h
+ create mode 100644 drivers/block/bcache/bset.c
+ create mode 100644 drivers/block/bcache/bset.h
+ create mode 100644 drivers/block/bcache/btree.c
+ create mode 100644 drivers/block/bcache/btree.h
+ create mode 100644 drivers/block/bcache/debug.c
+ create mode 100644 drivers/block/bcache/debug.h
+ create mode 100644 drivers/block/bcache/io.c
+ create mode 100644 drivers/block/bcache/journal.c
+ create mode 100644 drivers/block/bcache/journal.h
+ create mode 100644 drivers/block/bcache/request.c
+ create mode 100644 drivers/block/bcache/request.h
+ create mode 100644 drivers/block/bcache/stats.c
+ create mode 100644 drivers/block/bcache/stats.h
+ create mode 100644 drivers/block/bcache/super.c
+ create mode 100644 drivers/block/bcache/sysfs.c
+ create mode 100644 drivers/block/bcache/sysfs.h
+ create mode 100644 drivers/block/bcache/trace.c
+ create mode 100644 drivers/block/bcache/util.c
+ create mode 100644 drivers/block/bcache/util.h
+ create mode 100644 drivers/block/bcache/writeback.c
+ create mode 100644 include/linux/closure.h
+ create mode 100644 include/trace/events/bcache.h
+ create mode 100644 lib/closure.c
+
+-- 
+1.7.9.rc2
