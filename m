@@ -1,54 +1,60 @@
-From: Alex Pyrgiotis <apyrgio-Hpc4xzY4zrDSDkk6z29a7FAUjnlXr6A1@public.gmane.org>
-Subject: Userspace tools and git repo
-Date: Fri, 11 May 2012 14:01:51 +0300
-Message-ID: <1336734111.3576.34.camel@dimension7>
+From: Jeff Moyer <jmoyer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [dm-devel] [Bcache v13 01/16] Only clone bio vecs that are in use
+Date: Fri, 11 May 2012 09:29:42 -0400
+Message-ID: <x494nrmx2ux.fsf@segfault.boston.devel.redhat.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+	<cb817596299fecd01ea36e4a80203f23165bda75.1336619038.git.koverstreet@google.com>
+	<20120510213556.GO23768@redhat.com>
+	<CAH+dOxJ2Vi=8Oq1zDZLmqD9-a_wgM=co3+xemw4XBoiDkh_4zg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <CAH+dOxJ2Vi=8Oq1zDZLmqD9-a_wgM=co3+xemw4XBoiDkh_4zg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+	(Kent Overstreet's message of "Thu, 10 May 2012 14:42:17 -0700")
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, tejun-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Martin Peterson <mkp-30zCAauEzIw@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Kent,
 
-I 've been following this project for quite a while (congrats for the
-v13 of bcache) and I'm glad that the wiki has been revamped with more
-details and current status. 
-Today, I've been skimming through some of the stuff written there and I
-saw this:
+[top posting fixed]
 
--------------------------------------
-make-bcache -B -S <set-uuid> backing_device
-The -B option to bcache indicates that a backing device is being created
-The -S option allows the UUID of the cache set to be indicated so that
-the attach process can be bypasses
-<b>backing_device</b> is the path to the block device or partition that
-will be used as a backing device
----------------------------------------
+Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> writes:
 
-As far as I can tell, the -S option is not implemented in the userspace
-tools.
+> 2012/5/10 Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>:
+>> On Wed, May 09, 2012 at 11:08:13PM -0400, Kent Overstreet wrote:
+>>
+>> [..]
+>>> -
+>>> - =C2=A0 =C2=A0 if (bio_integrity(bio)) {
+>>> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 bio_integrity_clone(clo=
+ne, bio, GFP_NOIO, bs);
+>>> -
+>>> +#if 0
+>>> + =C2=A0 =C2=A0 if (bio_integrity(bio))
+>>> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 if (idx !=3D bio->=
+bi_idx || clone->bi_size < bio->bi_size)
+>>> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+ =C2=A0 bio_integrity_trim(clone,
+>>> =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
+ =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+=C2=A0bio_sector_offset(bio, idx, 0), len);
+>>> - =C2=A0 =C2=A0 }
+>>> -
+>>> +#endif
+>>
+>> Dead/debug code under "#if 0" ?
+>>
+> Oh, I never got around to figuring out what needed to be done with th=
+e
+> bio integrity - presumably it'll have to be handled differently
+> somehow (I'm assuming an index in the integrity bvec is intended to
+> match up with an index in the regular bvec), but I don't have any way
+> to test the integrity stuff.
 
-Am I missing something? I've downloaded the sources for bcache-tools and
-linux-bache from this git repo: 
+The scsi debug module supports dif/dix, so you can use that for testing=
+=2E
 
-git://evilpiepirate.org/~kent/
- 
-Is this repo up-to-date with your project?
- 
-I'm mainly asking since I can see that the latest changes were done
-about a month ago and the site was updated 2-3 days ago.
-
-Thanks,
-Alex
--- 
-
-Alex Pyrgiotis, a.k.a 03107422
-Undergrad Student
-
-School of Electrical & Computer Engineering
-National Technical University of Athens, Greece
-
-Paper Street Soap Co.
-work: (288) 555-0153
+Cheers,
+Jeff
