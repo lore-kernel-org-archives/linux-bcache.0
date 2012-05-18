@@ -1,424 +1,293 @@
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [Bcache v13 07/16] Closures
-Date: Tue, 15 May 2012 15:41:37 -0700
-Message-ID: <20120515224137.GA15386@google.com>
-References: <cover.1336619038.git.koverstreet@google.com>
- <82f00ebb4ee0404788c5bd7fbfa1fe4969f28ba1.1336619038.git.koverstreet@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <82f00ebb4ee0404788c5bd7fbfa1fe4969f28ba1.1336619038.git.koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+From: koverstreet@google.com
+Subject: [PATCH 12/13] Make generic_make_request handle arbitrarily large bios
+Date: Thu, 17 May 2012 22:59:59 -0400
+Message-ID: <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <cover.1337308722.git.koverstreet@google.com>
+In-Reply-To: <cover.1337308722.git.koverstreet@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org
+Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk, agk@redhat.com, neilb@suse.de
 List-Id: linux-bcache@vger.kernel.org
 
-Hello, Kent.
+From: Kent Overstreet <koverstreet@google.com>
 
-On Wed, May 09, 2012 at 11:09:46PM -0400, Kent Overstreet wrote:
-> Closures are asynchronous refcounty things based on workqueues, used
-> extensively in bcache.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+The way the block layer is currently written, it goes to great lengths
+to avoid having to split bios; upper layer code (such as bio_add_page())
+checks what the underlying device can handle and tries to always create
+bios that don't need to be split.
 
-Overall, I can't find myself liking this closure thing much.  It seems
-to be trying to roll too much into itself.  To me, it almost feels
-like some combination of semaphore and async execution with hierarchy
-and some other stuff thrown in for good measure.  Kernel moved away
-from semaphores for pretty good reasons.
+But this approach becomes unwieldy and eventually breaks down with
+stacked devices and devices with dynamic limits, and it adds a lot of
+complexity. If the block layer could split bios as needed, we could
+eliminate a lot of complexity elsewhere - particularly in stacked
+drivers. Code that creates bios can then create whatever size bios are
+convenient, and more importantly stacked drivers don't have to deal with
+both their own bio size limitations and the limitations of the
+(potentially multiple) devices underneath them.
 
-I haven't seen the actual usages yet so my opinion might do a
-back-flip but for now I would much prefer something simpler -
-e.g. work item triggering mechanism which might include hierarchy
-support, some wrappers around wait_queue_head_t and so on.
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ block/blk-core.c       |  111 ++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/bio.c               |   41 ++++++++++++++++++
+ include/linux/bio.h    |    7 +++
+ include/linux/blkdev.h |    3 +
+ 4 files changed, 162 insertions(+), 0 deletions(-)
 
-Another concern that the terms and concepts introduced are foreign.
-When something gets executed asynchronously, we make that explicit.
-Such explicit bouncing tends to cause some tension especially in IO
-code paths which often end up doing stuff which might require sleeping
-without process context but it usually is manageable with sensible
-split between what gets done with and without process context.  Maybe
-having a mechanism to blur the distinction helps such situations
-enough to justify introduction of new constructs but I feel somewhat
-skeptical at this point.
-
-So, those are my high level concerns.  I generally feel reserved about
-it.  Let's see whether that changes with the actual review of the
-usages.
-
-> +struct closure;
-> +typedef void (closure_fn) (struct closure *);
-> +
-> +typedef struct llist_head	closure_list_t;
-
-Please just use llist_head directly.
-
-> +#define CLOSURE_REMAINING_MASK	(~(~0 << 20))
-> +#define CLOSURE_GUARD_MASK					\
-> +	((1 << 20)|(1 << 22)|(1 << 24)|(1 << 26)|(1 << 28)|(1 << 30))
-> +
-> +	/*
-> +	 * CLOSURE_RUNNING: Set when a closure is running (i.e. by
-> +	 * closure_init() and when closure_put() runs then next function), and
-> +	 * must be cleared before remaining hits 0. Primarily to help guard
-> +	 * against incorrect usage and accidently transferring references.
-> +	 * continue_at() and closure_return() clear it for you, if you're doing
-> +	 * something unusual you can use closure_set_dead() which also helps
-> +	 * annotate where references are being transferred.
-> +	 *
-> +	 * CLOSURE_BLOCKING: Causes closure_wait_event() to block, instead of
-> +	 * waiting asynchronously
-> +	 *
-> +	 * CLOSURE_STACK: Sanity check - remaining should never hit 0 on a
-> +	 * closure with this flag set
-> +	 *
-> +	 * CLOSURE_WAITING: Set iff the closure is on a waitlist. Must be set by
-> +	 * the thread that owns the closure, and cleared by the thread that's
-> +	 * waking up the closure.
-> +	 *
-> +	 * CLOSURE_SLEEPING: Must be set before a thread uses a closure to sleep
-> +	 * - indicates that cl->task is valid and closure_put() may wake it up.
-> +	 * Only set or cleared by the thread that owns the closure.
-> +	 *
-> +	 * CLOSURE_TIMER: Analagous to CLOSURE_WAITING, indicates that a closure
-> +	 * has an outstanding timer. Must be set by the thread that owns the
-> +	 * closure, and cleared by the timer function when the timer goes off.
-> +	 */
-> +
-> +#define	CLOSURE_RUNNING		(1 << 21)
-> +#define	CLOSURE_BLOCKING	(1 << 23)
-> +#define CLOSURE_STACK		(1 << 25)
-> +#define	CLOSURE_WAITING		(1 << 27)
-> +#define	CLOSURE_SLEEPING	(1 << 29)
-> +#define	CLOSURE_TIMER		(1 << 31)
-> +	atomic_t		remaining;
-
-So, these bits are to be set alonside refcnt in lower 20 bits and
-there are guard bits between flag bits to detect cases where flag
-modification over/underflow caused by atomic_add/sub(), right?
-Hmmmm... I *hope* it were something dumber, especially given that the
-flags seem to be mostly for debugging and it would be nice which ones
-are for debugging and which ones are actually necessary for operation
-with better overall explanation.
-
-Also, I personally don't like embedding constant definitions inside
-struct definition and wish these were defined outside as enums but
-that's just my preference.
-
-> +#ifdef CONFIG_DEBUG_CLOSURES
-> +#define CLOSURE_MAGIC_DEAD	0xc1054e0dead
-> +#define CLOSURE_MAGIC_ALIVE	0xc1054e0a11e
-> +
-> +	unsigned long		magic;
-> +	struct list_head	all;
-> +	unsigned long		ip;
-> +	unsigned long		waiting_on;
-> +#endif
-> +};
-
-Maybe using debugobj is better for debugging object lifetime issues?
-
-> +#define __CL_TYPE(cl, _t)						\
-> +	  __builtin_types_compatible_p(typeof(cl), struct _t)		\
-> +		? TYPE_ ## _t :						\
-> +
-> +#define __closure_type(cl)						\
-> +(									\
-> +	__CL_TYPE(cl, closure)						\
-> +	__CL_TYPE(cl, closure_with_waitlist)				\
-> +	__CL_TYPE(cl, closure_with_timer)				\
-> +	__CL_TYPE(cl, closure_with_waitlist_and_timer)			\
-> +	invalid_closure_type()						\
-> +)
-
-Again, I with this were dumber and more conventional.  Not everything
-has to be smart and it's not like this can cover all cases anyway.
-What about INITIALIZERs?  I'd suggest just following what everyone
-else does.
-
-> +#define closure_init_type(cl, parent, running, memset)		\
-> +do {								\
-> +	struct closure *_cl = __to_internal_closure(cl);	\
-> +	_cl->type = __closure_type(*(cl));			\
-> +	closure_set_ip(_cl);					\
-> +	do_closure_init(_cl, parent, running);			\
-> +} while (0)
-
-Why is @memset unused?  And is it actually worth having a separate
-initializer to avoid memset?
-
-> +/**
-> + * closure_sleep() - asynchronous sleep
-
-Heh, I would much prefer delayed queue (or something along that line).
-Sleep has a lot of connotation attached to it and asynchronous sleep
-is way too confusing.
-
-> +#define closure_flush(cl)				\
-> +	__closure_flush(__to_internal_closure(cl), &(cl)->timer)
-> +
-> +#define closure_flush_sync(cl)				\
-> +	__closure_flush_sync(__to_internal_closure(cl), &(cl)->timer)
-
-Is this distinction really necessary?
-
-> +/**
-> + * closure_wake_up() - wake up all closures on a wait list.
-> + */
-> +static inline void closure_wake_up(closure_list_t *list)
-> +{
-> +	smp_mb();
-
-Why is this mb() instead of wmb()?  Which barrier is it paired with?
-In general, please always annotate barrier pairs when using barriers.
-Nothing causes more head scratches than memory barriers without proper
-explanation.
-
-> +	__closure_wake_up(list);
-> +}
-> +
-> +/*
-> + * Wait on an event, synchronously or asynchronously - analagous to wait_event()
-> + * but for closures.
-> + *
-> + * The loop is oddly structured so as to avoid a race; we must check the
-> + * condition again after we've added ourself to the waitlist. We know if we were
-> + * already on the waitlist because closure_wait() returns false; thus, we only
-> + * schedule or break if closure_wait() returns false. If it returns true, we
-> + * just loop again - rechecking the condition.
-> + *
-> + * The __closure_wake_up() is necessary because we may race with the event
-> + * becoming true; i.e. we see event false -> wait -> recheck condition, but the
-> + * thread that made the event true may have called closure_wake_up() before we
-> + * added ourself to the wait list.
-> + *
-> + * We have to call closure_sync() at the end instead of just
-> + * __closure_end_sleep() because a different thread might've called
-> + * closure_wake_up() before us and gotten preempted before they dropped the
-> + * refcount on our closure. If this was a stack allocated closure, that would be
-> + * bad.
-> + */
-> +#define __closure_wait_event(list, cl, condition, _block)		\
-> +({									\
-> +	__label__ out;							\
-> +	bool block = _block;						\
-
-What if @condition contains @block?  Local vars in macros better have
-long and ugly prefixes.
-
-> +	typeof(condition) ret;						\
-> +									\
-> +	while (!(ret = (condition))) {					\
-> +		if (block)						\
-> +			__closure_start_sleep(cl);			\
-> +		if (!closure_wait(list, cl)) {				\
-> +			if (!block)					\
-> +				goto out;				\
-> +			schedule();					\
-> +		}							\
-> +	}								\
-> +	__closure_wake_up(list);					\
-> +	if (block)							\
-> +		closure_sync(cl);					\
-> +out:									\
-
-I suppose __label__ out decl makes this local somehow.  I'd *much*
-prefer if something this unusual wasn't used tho.
-
-> +static inline void set_closure_fn(struct closure *cl, closure_fn *fn,
-> +				  struct workqueue_struct *wq)
-> +{
-> +	cl->fn = fn;
-> +	cl->wq = wq;
-> +	/* between atomic_dec() in closure_put() */
-> +	smp_mb__before_atomic_dec();
-
-Please be more explicit.  I can't follow.
-
-> +#define continue_at(_cl, _fn, _wq, ...)					\
-> +do {									\
-> +	BUG_ON(!(_cl) || object_is_on_stack(_cl));			\
-> +	closure_set_ip(_cl);						\
-> +	set_closure_fn(_cl, _fn, _wq);					\
-> +	closure_sub(_cl, CLOSURE_RUNNING + 1);				\
-> +	return __VA_ARGS__;						\
-> +} while (0)
-> +
-> +#define closure_return(_cl)	continue_at((_cl), NULL, NULL)
-
-Umm... so, anything which wraps something which are baked into
-people's reflexes is a bad idea.  It might seem to increase
-writability or whatnot somewhat and could feel fun but the accumulated
-overhead of all other people going WTF when trying to read the code
-far outweights any benefit which can be gained that way.  So, please
-don't bury return in a macro.  It's just a bad idea.
-
-> +void closure_queue(struct closure *cl)
-> +{
-> +	struct workqueue_struct *wq = cl->wq;
-> +	if (wq) {
-> +		cl->work.data = (atomic_long_t) WORK_DATA_INIT();
-> +		INIT_LIST_HEAD(&cl->work.entry);
-> +		BUG_ON(!queue_work(wq, &cl->work));
-> +	} else
-> +		cl->fn(cl);
-
-Umm... so the code is taking advantage of how fields of work_struct is
-laid and using internal initializer to partially initialize work item?
-Am I reading it correctly?  If so, please don't do this.  It's way too
-fragile.
-
-> +#define CL_FIELD(type, field)					\
-> +	case TYPE_ ## type:					\
-> +	return &container_of(cl, struct type, cl)->field
-> +
-> +static closure_list_t *closure_waitlist(struct closure *cl)
-> +{
-> +	switch (cl->type) {
-> +		CL_FIELD(closure_with_waitlist, wait);
-> +		CL_FIELD(closure_with_waitlist_and_timer, wait);
-> +	}
-> +	return NULL;
-> +}
-> +
-> +static struct timer_list *closure_timer(struct closure *cl)
-> +{
-> +	switch (cl->type) {
-> +		CL_FIELD(closure_with_timer, timer);
-> +		CL_FIELD(closure_with_waitlist_and_timer, timer);
-> +	}
-> +	return NULL;
-> +}
-
-C code trumps macros.  There are only four of them.  Let's just open
-code.
-
-> +static void closure_put_after_sub(struct closure *cl, int r)
-> +{
-> +	BUG_ON(r & CLOSURE_GUARD_MASK);
-> +	/* CLOSURE_BLOCK is the only flag that's allowed when r hits 0 */
-> +	BUG_ON((r & CLOSURE_REMAINING_MASK) == 0 &&
-> +	       (r & ~CLOSURE_BLOCKING));
-> +
-> +	/* Must deliver precisely one wakeup */
-> +	if ((r & CLOSURE_REMAINING_MASK) == 1 &&
-> +	    (r & CLOSURE_SLEEPING)) {
-> +		smp_mb__after_atomic_dec();
-
-Why?  wake_up_process() includes smp_wmb() and atomic_sub_return() has
-full smp_mb().
-
-> +		wake_up_process(cl->task);
-> +	}
-> +
-> +	if ((r & CLOSURE_REMAINING_MASK) == 0) {
-> +		smp_mb__after_atomic_dec();
-
-Ditto.
-
-> +		if (cl->fn) {
-> +			/* CLOSURE_BLOCKING might be set - clear it */
-> +			atomic_set(&cl->remaining,
-> +				   CLOSURE_REMAINING_INITIALIZER);
-> +			closure_queue(cl);
-> +		} else {
-> +			struct closure *parent = cl->parent;
-> +			closure_list_t *wait = closure_waitlist(cl);
-> +
-> +			closure_debug_destroy(cl);
-> +
-> +			smp_wmb();
-
-Why?  What is it paired with?  The only thing between the previous
-smp_mb() and here is closure_debug_destroy().
-
-> +			/* mb between last use of closure and unlocking it */
-> +			atomic_set(&cl->remaining, -1);
-> +
-> +			if (wait)
-> +				closure_wake_up(wait);
-> +
-> +			if (parent)
-> +				closure_put(parent);
-> +		}
-> +	}
-> +}
-...
-> +/*
-> + * Broken up because closure_put() has to do the xchg() and grab the wait list
-> + * before unlocking the closure, but the wakeup has to come after unlocking the
-> + * closure.
-> + */
-
-Doesn't seem to be used by closure_put().  Stale comment?
-
-> +static void closure_wake_up_after_xchg(struct llist_node *list)
-> +{
-> +	struct closure *cl;
-> +	struct llist_node *reverse = NULL;
-> +
-> +	while (list) {
-> +		struct llist_node *t = list;
-> +		list = llist_next(list);
-> +
-> +		t->next = reverse;
-> +		reverse = t;
-> +	}
-> +
-> +	while (reverse) {
-> +		cl = container_of(reverse, struct closure, list);
-> +		reverse = llist_next(reverse);
-> +
-> +		set_waiting(cl, 0);
-> +		closure_sub(cl, CLOSURE_WAITING + 1);
-
-Why is it done in reverse?  To keep FIFO order?  If so, what
-difference does that make and why no explanation?
-
-> +/**
-> + * closure_sync() - sleep until a closure a closure has nothing left to wait on
-
-                                   ^^^^^^^^^^^^^^^^^^^
-> + *
-> + * Sleeps until the refcount hits 1 - the thread that's running the closure owns
-> + * the last refcount.
-> + */
-> +void closure_sync(struct closure *cl)
-> +{
-> +	while (1) {
-> +		__closure_start_sleep(cl);
-> +		closure_set_ret_ip(cl);
-> +
-> +		if ((atomic_read(&cl->remaining) &
-> +		     CLOSURE_REMAINING_MASK) == 1)
-> +			break;
-> +
-> +		schedule();
-> +	}
-> +
-> +	__closure_end_sleep(cl);
-> +}
-> +EXPORT_SYMBOL_GPL(closure_sync);
-...
-> +void __closure_flush(struct closure *cl, struct timer_list *timer)
-> +{
-> +	if (del_timer(timer))
-> +		closure_sub(cl, CLOSURE_TIMER + 1);
-> +}
-> +EXPORT_SYMBOL_GPL(__closure_flush);
-> +
-> +void __closure_flush_sync(struct closure *cl, struct timer_list *timer)
-> +{
-> +	if (del_timer_sync(timer))
-> +		closure_sub(cl, CLOSURE_TIMER + 1);
-> +}
-> +EXPORT_SYMBOL_GPL(__closure_flush_sync);
-
-I'm kinda lost why this distinction is necessary.  Can you please
-explain a bit?
-
-Thanks.
-
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 91617eb..1d7a482 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -29,6 +29,7 @@
+ #include <linux/fault-inject.h>
+ #include <linux/list_sort.h>
+ #include <linux/delay.h>
++#include <linux/closure.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/block.h>
+@@ -52,6 +53,12 @@ static struct kmem_cache *request_cachep;
+ struct kmem_cache *blk_requestq_cachep;
+ 
+ /*
++ * For bio_split_hook
++ */
++static struct kmem_cache *bio_split_cache;
++static struct workqueue_struct *bio_split_wq;
++
++/*
+  * Controlling structure to kblockd
+  */
+ static struct workqueue_struct *kblockd_workqueue;
+@@ -487,6 +494,14 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 	if (q->id < 0)
+ 		goto fail_q;
+ 
++	q->bio_split_hook = mempool_create_slab_pool(4, bio_split_cache);
++	if (!q->bio_split_hook)
++		goto fail_split_hook;
++
++	q->bio_split = bioset_create(4, 0);
++	if (!q->bio_split)
++		goto fail_split;
++
+ 	q->backing_dev_info.ra_pages =
+ 			(VM_MAX_READAHEAD * 1024) / PAGE_CACHE_SIZE;
+ 	q->backing_dev_info.state = 0;
+@@ -526,6 +541,10 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 
+ fail_id:
+ 	ida_simple_remove(&blk_queue_ida, q->id);
++fail_split:
++	bioset_free(q->bio_split);
++fail_split_hook:
++	mempool_destroy(q->bio_split_hook);
+ fail_q:
+ 	kmem_cache_free(blk_requestq_cachep, q);
+ 	return NULL;
+@@ -1493,6 +1512,83 @@ static inline bool should_fail_request(struct hd_struct *part,
+ 
+ #endif /* CONFIG_FAIL_MAKE_REQUEST */
+ 
++struct bio_split_hook {
++	struct closure		cl;
++	struct request_queue	*q;
++	struct bio		*bio;
++	bio_end_io_t		*bi_end_io;
++	void			*bi_private;
++};
++
++static void bio_submit_split_done(struct closure *cl)
++{
++	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
++
++	s->bio->bi_end_io	= s->bi_end_io;
++	s->bio->bi_private	= s->bi_private;
++	bio_endio(s->bio, 0);
++
++	closure_debug_destroy(&s->cl);
++	mempool_free(s, s->q->bio_split_hook);
++}
++
++static void bio_submit_split_endio(struct bio *bio, int error)
++{
++	struct closure *cl = bio->bi_private;
++	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
++
++	if (error)
++		clear_bit(BIO_UPTODATE, &s->bio->bi_flags);
++
++	bio_put(bio);
++	closure_put(cl);
++}
++
++static void __bio_submit_split(struct closure *cl)
++{
++	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
++	struct bio *bio = s->bio, *n;
++
++	do {
++		n = bio_split(bio, bio_max_sectors(bio),
++			      GFP_NOIO, s->q->bio_split);
++		if (!n)
++			continue_at(cl, __bio_submit_split, bio_split_wq);
++
++		closure_get(cl);
++		generic_make_request(n);
++	} while (n != bio);
++
++	continue_at(cl, bio_submit_split_done, NULL);
++}
++
++static int bio_submit_split(struct bio *bio)
++{
++	struct bio_split_hook *s;
++	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
++
++	if (!bio_has_data(bio) ||
++	    !q ||
++	    !q->bio_split_hook ||
++	    bio_sectors(bio) <= bio_max_sectors(bio))
++		return 0;
++
++	s = mempool_alloc(q->bio_split_hook, GFP_NOIO);
++
++	closure_init(&s->cl, NULL);
++	s->bio		= bio;
++	s->q		= q;
++	s->bi_end_io	= bio->bi_end_io;
++	s->bi_private	= bio->bi_private;
++
++	bio_get(bio);
++	bio->bi_end_io	= bio_submit_split_endio;
++	bio->bi_private	= &s->cl;
++
++	__bio_submit_split(&s->cl);
++	return 1;
++}
++
+ /*
+  * Check whether this bio extends beyond the end of the device.
+  */
+@@ -1646,6 +1742,14 @@ void generic_make_request(struct bio *bio)
+ 	 * it is non-NULL, then a make_request is active, and new requests
+ 	 * should be added at the tail
+ 	 */
++
++	/*
++	 * If the device can't accept arbitrary sized bios, check if we
++	 * need to split:
++	 */
++	if (bio_submit_split(bio))
++		return;
++
+ 	if (current->bio_list) {
+ 		bio_list_add(current->bio_list, bio);
+ 		return;
+@@ -2892,11 +2996,18 @@ int __init blk_dev_init(void)
+ 	if (!kblockd_workqueue)
+ 		panic("Failed to create kblockd\n");
+ 
++	bio_split_wq = alloc_workqueue("bio_split", WQ_MEM_RECLAIM, 0);
++	if (!bio_split_wq)
++		panic("Failed to create bio_split wq\n");
++
+ 	request_cachep = kmem_cache_create("blkdev_requests",
+ 			sizeof(struct request), 0, SLAB_PANIC, NULL);
+ 
+ 	blk_requestq_cachep = kmem_cache_create("blkdev_queue",
+ 			sizeof(struct request_queue), 0, SLAB_PANIC, NULL);
+ 
++	bio_split_cache = kmem_cache_create("bio_split_hook",
++			sizeof(struct bio_split_hook), 0, SLAB_PANIC, NULL);
++
+ 	return 0;
+ }
+diff --git a/fs/bio.c b/fs/bio.c
+index 781a8cf..360ac93 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -428,6 +428,47 @@ inline int bio_phys_segments(struct request_queue *q, struct bio *bio)
+ }
+ EXPORT_SYMBOL(bio_phys_segments);
+ 
++unsigned __bio_max_sectors(struct bio *bio, struct block_device *bdev,
++			   sector_t sector)
++{
++	unsigned ret = bio_sectors(bio);
++	struct request_queue *q = bdev_get_queue(bdev);
++	struct bio_vec *bv, *end = bio_iovec(bio) +
++		min_t(int, bio_segments(bio), queue_max_segments(q));
++
++	struct bvec_merge_data bvm = {
++		.bi_bdev	= bdev,
++		.bi_sector	= sector,
++		.bi_size	= 0,
++		.bi_rw		= bio->bi_rw,
++	};
++
++	if (bio_segments(bio) > queue_max_segments(q) ||
++	    q->merge_bvec_fn) {
++		ret = 0;
++
++		for (bv = bio_iovec(bio); bv < end; bv++) {
++			if (q->merge_bvec_fn &&
++			    q->merge_bvec_fn(q, &bvm, bv) < (int) bv->bv_len)
++				break;
++
++			ret		+= bv->bv_len >> 9;
++			bvm.bi_size	+= bv->bv_len;
++		}
++
++		if (ret >= (BIO_MAX_PAGES * PAGE_SIZE) >> 9)
++			return (BIO_MAX_PAGES * PAGE_SIZE) >> 9;
++	}
++
++	ret = min(ret, queue_max_sectors(q));
++
++	WARN_ON(!ret);
++	ret = max_t(int, ret, bio_iovec(bio)->bv_len >> 9);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(__bio_max_sectors);
++
+ /**
+  * 	__bio_clone	-	clone a bio
+  * 	@bio: destination bio
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index db38175..79f8173 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -224,6 +224,13 @@ extern void bio_endio(struct bio *, int);
+ struct request_queue;
+ extern int bio_phys_segments(struct request_queue *, struct bio *);
+ 
++unsigned __bio_max_sectors(struct bio *, struct block_device *, sector_t);
++
++static inline unsigned bio_max_sectors(struct bio *bio)
++{
++	return __bio_max_sectors(bio, bio->bi_bdev, bio->bi_sector);
++}
++
+ extern void __bio_clone(struct bio *, struct bio *);
+ extern struct bio *bio_clone_bioset(struct bio *, gfp_t, struct bio_set *bs);
+ extern struct bio *bio_clone(struct bio *, gfp_t);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2aa2466..464adb7 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -399,6 +399,9 @@ struct request_queue {
+ 	/* Throttle data */
+ 	struct throtl_data *td;
+ #endif
++
++	mempool_t		*bio_split_hook;
++	struct bio_set		*bio_split;
+ };
+ 
+ #define QUEUE_FLAG_QUEUED	1	/* uses generic tag queueing */
 -- 
-tejun
+1.7.9.rc2
