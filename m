@@ -1,54 +1,38 @@
-From: Arnd Bergmann <arnd-r2nGTMty4D4@public.gmane.org>
-Subject: Re: [Bcache v13 00/16]
-Date: Fri, 18 May 2012 10:06:04 +0000
-Message-ID: <201205181006.04575.arnd@arndb.de>
-References: <cover.1336619038.git.koverstreet@google.com>
+From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Subject: Re: [PATCH 01/13] block: Generalized bio pool freeing
+Date: Fri, 18 May 2012 08:55:38 -0700
+Message-ID: <20120518155538.GA19388@google.com>
+References: <cover.1337308722.git.koverstreet@google.com>
+ <ea774fea2a27c9f1028a12ce31a7ee5e5517bef4.1337308722.git.koverstreet@google.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <cover.1336619038.git.koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <ea774fea2a27c9f1028a12ce31a7ee5e5517bef4.1337308722.git.koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, tejun-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+To: koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thursday 10 May 2012, Kent Overstreet wrote:
-> TODO/known issues:
+On Thu, May 17, 2012 at 10:59:48PM -0400, koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org wrote:
+> From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 > 
-> __up_write() needs to be exported for bcache to compile as a module - it's
-> used for bypassing lockdep when traversing the btree during garbage
-> collection. If someone else knows a better solution, please let me know.
+> With the old code, when you allocate a bio from a bio pool you have to
+> implement your own destructor that knows how to find the bio pool the
+> bio was originally allocated from.
 > 
-> The userspace interface is going to change before it goes in. The general
-> consensus at LSF was that we don't want yet another interface for
-> probing/managing block devices, and dm exists so we may as well use that. I
-> don't think anyone's started on that yet, though.
+> This adds a new field to struct bio (bi_pool) and changes
+> bio_alloc_bioset() to use it. This makes various bio destructors
+> unnecessary, so they're then deleted.
 > 
-> Documentation needs to be updated. That's being actively worked on, though.
+> Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 
-Hi Kent,
+Please add Cc: to maintainers of each modified subsystem.  Other than
+that, nice cleanup even without the later removal of bi_destructor.
 
-Sorry for jumping in late in the discussion. I believe we discussed the
-requirements for the low-end media when you posted v12 and it seemed that
-there are issues with a lot of the low-end media you were planning to
-support. I have seen devices with 12MB or 16MB erase block size, which you 
-didn't handle well, and many devices are severely limited on the number of
-buckets (erase blocks that a device can write to concurrently), typically
-3 to 8 for an SD card and slightly more for a USB drive.
+ Acked-by: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
 
-Are you still planning to support those devices or are you focusing now
-on other hardware? If you plan to support them, what are you current
-limits on the bucket size and the number of buckets?
+Thanks.
 
-FWIW, Tixy has written a tool named flashsim[1] to simulate the behavior
-of all kinds of flash drives, so you can use a blocktrace file as
-input and it will tell you the write amplification factor that a given
-drive would suffer given that workload. You can use it to find out how
-your algorithms would interact with devices that can only support a
-smaller number of buckets that you would actually want.
-
-	Arnd
-
-[1] http://yxit.co.uk/public/flash-performance/
+-- 
+tejun
