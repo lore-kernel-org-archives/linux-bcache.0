@@ -1,27 +1,49 @@
-From: Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [dm-devel] [PATCH 12/13] Make generic_make_request handle
-	arbitrarily large bios
-Date: Sat, 19 May 2012 01:59:32 +0100
-Message-ID: <20120519005932.GM29330@agk-dp.fab.redhat.com>
-References: <cover.1337308722.git.koverstreet@google.com> <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com> <20120518175216.GL19388@google.com>
+From: Alex Elsayed <eternaleye+usenet@gmail.com>
+Subject: Re: [RFC PATCH 0/7] bcache: md conversion
+Date: Fri, 18 May 2012 19:35:11 -0700
+Message-ID: <jp70t0$4ru$2@dough.gmane.org>
+References: <20120511194327.25770.79292.stgit@dwillia2-linux.jf.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-fsdevel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <20120518175216.GL19388@google.com>
-Sender: linux-fsdevel-owner@vger.kernel.org
-To: Tejun Heo <tj@kernel.org>
-Cc: koverstreet@google.com, axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.org, agk@redhat.com
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7Bit
+Return-path: <linux-btrfs-owner@vger.kernel.org>
+Sender: linux-btrfs-owner@vger.kernel.org
+To: linux-btrfs@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, May 18, 2012 at 10:52:16AM -0700, Tejun Heo wrote:
-> Does this by any chance allow killing ->merge_bvec_fn()?
+Dan Williams wrote:
 
-merge_bvec also has an impact on efficiency.
+> The consensus from LSF was that bcache need not invent a new interface
+> when md and dm can both do the job.  As mentioned in patch 7 this series
+> aims to be a minimal conversion.  Other refactoring items like
+> deprecating register_lock for mddev->reconfig_mutex are deferred.
+> 
+> This supports assembly of an already established cache array:
+> 
+> mdadm -A /dev/md/bcache /dev/sd[ab]
+> 
+> ...will create the /dev/md/bcache container and a subarray representing
+> the cache volume.  "Flash-only", or backing-device only volumes were not
+> tested.  "Create" support and hot-add/hot-remove come later.
+> 
+> Note:
+> * When attempting to test with small loopback devices (100MB), assembly
+>   soft locks in bcache_journal_read().  That hang went away with larger
+>   devices, so there seems to be minimum component device size that needs
+>   to be considered in the tooling.
 
-Why create a too-large bio in the first place if it's only going to have to
-get split up again?
+Is there any plan to separate the on-disk layout (per-device headers, etc) 
+from the logic for the purpose of reuse? I can think of at least one case 
+where this would be extremely useful: integration in BtrFS.
 
-If a change like this goes in, the various trade-offs should be re-examined.
+BtrFS already has its own methods for making sure a group of devices are all 
+present when the filesystem is mounted, so it doesn't really need the 
+formatting of the backing device bcache does to prevent it from being 
+mounted solo. Putting bcache under BtrFS would be silly in the same way as 
+putting it under a raid array, but bcache can't be put on top of BtrFS.
 
-Alasdair
+Logically, in looking at BtrFS' architecture, a cache would likely fit best 
+at the 'block group' level, which IIUC would be roughly equivalent to the 
+recommended 'over raid, under lvm' method of using bcache.
+
