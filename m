@@ -1,51 +1,56 @@
-From: Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [dm-devel] [PATCH 12/13] Make generic_make_request handle
- arbitrarily large bios
-Date: Mon, 21 May 2012 14:32:53 -0400
-Message-ID: <20120521183253.GA30143@redhat.com>
-References: <cover.1337308722.git.koverstreet@google.com>
- <1114e7019b0055fc09a54b59b36398d5c54f5e32.1337308722.git.koverstreet@google.com>
- <20120518180550.0a6cdc34@notabene.brown>
- <20120518081444.GA27205@dhcp-172-18-216-138.mtv.corp.google.com>
- <20120521171706.GH23993@redhat.com>
- <20120521175542.GA16598@google.com>
+From: Kent Overstreet <koverstreet@google.com>
+Subject: Re: [Bcache v13 07/16] Closures
+Date: Mon, 21 May 2012 12:40:20 -0700
+Message-ID: <20120521194020.GA20338@google.com>
+References: <cover.1336619038.git.koverstreet@google.com>
+ <82f00ebb4ee0404788c5bd7fbfa1fe4969f28ba1.1336619038.git.koverstreet@google.com>
+ <20120515224137.GA15386@google.com>
+ <20120518062948.GA21163@dhcp-172-18-216-138.mtv.corp.google.com>
+ <20120518110247.08696cec@pyramind.ukuu.org.uk>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-kernel-owner@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <20120521175542.GA16598@google.com>
+In-Reply-To: <20120518110247.08696cec@pyramind.ukuu.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <koverstreet@google.com>
-Cc: NeilBrown <neilb@suse.de>, axboe@kernel.dk, dm-devel@redhat.com, linux-kernel@vger.kernel.org, tj@kernel.org, linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.org, agk@redhat.com
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, agk@redhat.com
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, May 21, 2012 at 10:55:42AM -0700, Kent Overstreet wrote:
-> On Mon, May 21, 2012 at 01:17:06PM -0400, Vivek Goyal wrote:
-> > May be I am missing something, hence I will ask.  Is punting to workqueue
-> > will really solve the issue raised by Neil. 
-> > 
-> > Due to spliting required, we will be holding some bios in the stack and
-> > these bios can't be submitted till further allocation from pool happens. So
-> > will it matter whether we are waiting for allocation in submitting process
-> > context or in worker thread context.
+On Fri, May 18, 2012 at 11:02:47AM +0100, Alan Cox wrote:
+> > Well, I can definitely understand your reservations about the code; it's
+> > strange and foreign and complicated. But having beaten my head against
+> > the various problems and difficulties inherent in asynchronous
+> > programming for years - well, having found a way to make it sane to me
+> > it'd be madness to go back.
 > 
-> Punting to workqueue allows all the bio splits that have already been
-> allocated to be submitted.
->
-> > IOW, say you have a pool of 2 bios. We allocate 1 bio (say bio A),  and submit
-> > it for IO (now 1 bio left in pool). Now, bio A needs to be split up, so we
-> > allocate bio B and submit it (pool is empty now). Now we try to submit bio
-> > B and this also needs to be split. There are no more free bios so we will
-> > wait for some to get free but none of the bios (A and B) have actually
-> > been submitted for IO so nothing will get freed and we have a deadlock
-> > (This is assuming that memory is tight enough that we are not able to do
-> > any allocations from the slab backing the mempool).
+> I think its more of a different paradigm than complicated.
+
+Yeah, that's probably apt :) 
+
+> The big
+> question I'd have to ask is how does it fit with hard real time. That is
+> a big issue given the gradual merging and getting of "hard" real time
+> into the kernel proper.
 > 
-> You're talking about a different issue. You can't safely split a split
-> from the same bio pool - but this code doesn't do that since it adds a
-> separate bio pool for each request_queue that's only for splits.
+> In some ways it's not that strange either. A look at what happens on some
+> of our kref handling in drivers is very similar but hardcoded.
+> 
+> Is the handling of priority inversion within closures a well understood
+> and solved problem ?
 
-Ok, I missed the fact that there are per queue pools for bio allocation.
-Thanks for clarifying.
+Haven't really thought about it (aside from deadlocks which are a
+slightly different issue). AFAICT there shouldn't be much to worry
+about, at least with the way I'm using closures today; scheduling is all
+handled by the existing workqueue code and you have to explicitly say
+which workqueue a function is going to run out of.
 
-Vivek
+There are the wait lists I've implemented but that's mostly just for
+when some thread/closure is waiting on an arbitrary event to become true
+- analagous to wait_event(), in which case you want everything on the
+wait list to to run at once which is all it implements.
+
+If the closure wait lists ever did end up being used in a situation
+where priorities or priority inversion was more of a concern it wouldn't
+be a huge deal to swap out the implementation for something more
+sophisticated, or just use the existing wait_queue_t.
