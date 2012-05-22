@@ -1,14 +1,14 @@
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [Bcache v13 09/16] Bcache: generic utility code
-Date: Tue, 22 May 2012 14:19:31 -0700
-Message-ID: <20120522211931.GI14339@google.com>
+From: Tejun Heo <tejun-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [Bcache v13 11/16] bcache: Core btree code
+Date: Tue, 22 May 2012 15:12:59 -0700
+Message-ID: <20120522221259.GJ14339@google.com>
 References: <cover.1336619038.git.koverstreet@google.com>
- <c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet@google.com>
+ <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet@google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <c3f0ca2a499f532253d4c16a30837d43e237266a.1336619038.git.koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+In-Reply-To: <7f1de39b6d7040b3fe271500776f4b985b21ea82.1336619038.git.koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
@@ -16,462 +16,306 @@ List-Id: linux-bcache@vger.kernel.org
 
 Hello, Kent.
 
-I've been reading the code and am still very far from understanding
-the whole thing but here are general impressions upto this point.
+On Wed, May 09, 2012 at 11:10:48PM -0400, Kent Overstreet wrote:
+> +#define BKEY_PADDED(key)					\
+> +	union { struct bkey key; uint64_t key ## _pad[8]; }
 
-* I started reading from get_bucket(), mostly because I wasn't sure
-  where to start.  It would be very helpful to the reviewers and
-  future participants if there's a design doc and more comments (much
-  more).  The code is on the big side and the problem is exacerbated
-  by use of somewhat unconventional constructs and conventions and
-  lack of documentation and comments.
+What does the '8' mean?  And why does struct bbio use 3 instead?  Does
+this have to be a macro?  Can't we have struct bkey_padded (or
+whatever)?
 
-* It's unfortunate but true that different parts of kernel are held to
-  different standards in terms of conformance to overall style and
-  structure.  Code for obscure device, for example, is allowed to be
-  way more weird than common core code.  That said, one thing which is
-  generally frowned upon is bringing in lots of foreign constructs
-  because that tends to make the code much more difficult to follow
-  for other people than plain silly code.  Even for drivers, code with
-  a lot of wrappers and foreign constructs (synchronization, data
-  structure...) tend to get nacked and are recommended to convert to
-  existing infrastructure even if that ends up, say, more verbose
-  code.
-
-  It is also true that new constructs and mechanisms are constantly
-  being added to kernel and the ones used by bcache could be useful
-  enough to have; however, with my currently limited understanding,
-  the oddities seem too much.
-
-* Too many smart macros.  Macros suck.  Smart ones double suck.
-
-* For file internal ones, it's okay to be somewhat relaxed with
-  namespace separation but bcache code seems to be going too far.  It
-  also becomes a lot worse with macros as warnings and errors from
-  compiler get much more difficult to decipher.  e.g. things like
-  next() and end() macros are calling for trouble.
-
-* Somewhat related to the above, I'm not a fan of super-verbose
-  symbols but I *hope* that the variable names were just a tiny bit
-  more descriptive.  At least, the ones used as arguments.
-
-* The biggest thing that I dislike about closure is that it's not
-  clear what it does when I see one.  Is it a refcount,
-  synchronization construct or asynchronous execution mechanism?  To
-  me, it seems like a construct with too many purposes and too much
-  abstraction, which tends to make it difficult to understand, easy to
-  misuse and difficult to debug.  IMHO, constructs like this could
-  seem very attractive to small group of people with certain concepts
-  firmly on their minds; however, one man's paradise is another man's
-  hell and we're often better off without either.  In many ways,
-  closure feels like kobject and friends.
-
-  I'd like to recommend using something more concerete even if that
-  means more verbosity.  ie. if there are lots of bio sequencing going
-  on, implement and use bio sequencer.  That's way more concerete and
-  concerete stuff tends to be much easier to wrap one's head around
-  mostly because it's much easier to agree upon for different people
-  and they don't have to keep second-guessing what the original author
-  would have on his/her mind while implementing it.
-
-  The problem that closure poses is that stuff like this adds a lot to
-  on-going maintenance overhead.  bcache could be very successful and
-  something we continue to use for decades but it might as well be
-  mostly meaningless in five years due to developments in storage
-  technology.  It'll still have to be maintained and you might not be
-  around for the task and we don't want people to face code body which
-  depends on alien abstract synchronization and async constructs while
-  updating, say, block or workqueue API.  Code may be doing complex
-  things but they still better use the constructs and follow the
-  conventions that the rest of the kernel is using as much as
-  possible.
-
-Again, my understanding of the code base is quite limited at this
-point so I might change my mind but these were the impressions I got
-upto this point.  I'll keep on reading.  Specific comments follow.
-
-On Wed, May 09, 2012 at 11:10:17PM -0400, Kent Overstreet wrote:
-> +#define simple_strtoint(c, end, base)	simple_strtol(c, end, base)
-> +#define simple_strtouint(c, end, base)	simple_strtoul(c, end, base)
+> +struct io {
+> +	/* Used to track sequential IO so it can be skipped */
+> +	struct hlist_node	hash;
+> +	struct list_head	lru;
 > +
-> +#define STRTO_H(name, type)					\
-> +int name ## _h(const char *cp, type *res)		        \
-> +{								\
+> +	unsigned long		jiffies;
+> +	unsigned		sequential;
+> +	sector_t		last;
+> +};
+
+I don't think bcache can have struct io. :P
+
+> +struct dirty_io {
+> +	struct closure		cl;
+> +	struct cached_dev	*d;
+> +	struct bio		bio;
+> +};
+> +
+> +struct dirty {
+> +	struct rb_node		node;
+> +	BKEY_PADDED(key);
+> +	struct dirty_io		*io;
+> +};
 ...
-> +}								\
-> +EXPORT_SYMBOL_GPL(name ## _h);
-> +
-> +STRTO_H(strtoint, int)
-> +STRTO_H(strtouint, unsigned int)
-> +STRTO_H(strtoll, long long)
-> +STRTO_H(strtoull, unsigned long long)
+> +struct cache {
 
-Function defining macros == bad.  Can't it be implemented with a
-common backend function with wrappers implementing limits?  Why not
-use memparse()?
+Nor these and so on.
 
-> +ssize_t hprint(char *buf, int64_t v)
-> +{
-> +	static const char units[] = "?kMGTPEZY";
-> +	char dec[3] = "";
-> +	int u, t = 0;
+> +/* Bkey fields: all units are in sectors */
 > +
-> +	for (u = 0; v >= 1024 || v <= -1024; u++) {
-> +		t = v & ~(~0 << 10);
-> +		v >>= 10;
+> +#define KEY_FIELD(name, field, offset, size)				\
+> +	BITMASK(name, struct bkey, field, offset, size)
+> +
+> +#define PTR_FIELD(name, offset, size)					\
+> +	static inline uint64_t name(const struct bkey *k, unsigned i)	\
+> +	{ return (k->ptr[i] >> offset) & ~(((uint64_t) ~0) << size); }	\
+> +									\
+> +	static inline void SET_##name(struct bkey *k, unsigned i, uint64_t v)\
+> +	{								\
+> +		k->ptr[i] &= ~(~((uint64_t) ~0 << size) << offset);	\
+> +		k->ptr[i] |= v << offset;				\
 > +	}
 > +
-> +	if (!u)
-> +		return sprintf(buf, "%llu", v);
+> +KEY_FIELD(KEY_PTRS,	header, 60, 3)
+> +KEY_FIELD(HEADER_SIZE,	header, 58, 2)
+> +KEY_FIELD(KEY_CSUM,	header, 56, 2)
+> +KEY_FIELD(KEY_PINNED,	header, 55, 1)
+> +KEY_FIELD(KEY_DIRTY,	header, 36, 1)
 > +
-> +	if (v < 100 && v > -100)
-> +		sprintf(dec, ".%i", t / 100);
+> +KEY_FIELD(KEY_SIZE,	header, 20, 16)
+> +KEY_FIELD(KEY_DEV,	header, 0,  20)
 > +
-> +	return sprintf(buf, "%lli%s%c", v, dec, units[u]);
-> +}
-> +EXPORT_SYMBOL_GPL(hprint);
+> +KEY_FIELD(KEY_SECTOR,	key,	16, 47)
+> +KEY_FIELD(KEY_SNAPSHOT,	key,	0,  16)
+> +
+> +PTR_FIELD(PTR_DEV,		51, 12)
+> +PTR_FIELD(PTR_OFFSET,		8,  43)
+> +PTR_FIELD(PTR_GEN,		0,  8)
 
-Not your fault but maybe we want integer vsnprintf modifier for this.
-Also, sprintf() sucks.
+So, apart from the the macros, key is 64bit containing the backend
+device and extent offset and size with the ptr fields somehow point to
+cache.  Am I understanding it correctly?  If right, I'm *tiny* bit
+apprehensive about using only 43bits for offset.  While the block 9
+bits means 52bit addressing, the 9 bit block size is now there mostly
+to work as buffer between memory bitness growth and storage device
+size growth so that we have 9 bit buffer as storage device reaches
+ulong addressing limit.  Probably those days are far out enough.
 
-> +ssize_t sprint_string_list(char *buf, const char * const list[],
-> +			   size_t selected)
+> +void btree_read_done(struct closure *cl)
 > +{
-> +	char *out = buf;
+> +	struct btree *b = container_of(cl, struct btree, io.cl);
+> +	struct bset *i = b->sets[0].data;
+> +	struct btree_iter *iter = b->c->fill_iter;
+> +	const char *err = "bad btree header";
+> +	BUG_ON(b->nsets || b->written);
 > +
-> +	for (size_t i = 0; list[i]; i++)
-> +		out += sprintf(out, i == selected ? "[%s] " : "%s ", list[i]);
+> +	bbio_free(b->bio, b->c);
+> +	b->bio = NULL;
 > +
-> +	out[-1] = '\n';
-> +	return out - buf;
-> +}
-> +EXPORT_SYMBOL_GPL(sprint_string_list);
-
-sprintf() sucks.
-
-> +bool is_zero(const char *p, size_t n)
-> +{
-> +	for (size_t i = 0; i < n; i++)
-
-This doesn't build.  While loop var decl in for loop is nice, the
-kernel isn't built in c99 mode.  If you want to enable c99 mode
-kernel-wide, you're welcome to try but you can't flip that
-per-component.
-
-> +		if (p[i])
-> +			return false;
-> +	return true;
-> +}
-> +EXPORT_SYMBOL_GPL(is_zero);
->
-> +int parse_uuid(const char *s, char *uuid)
-> +{
-> +	size_t i, j, x;
-> +	memset(uuid, 0, 16);
+> +	mutex_lock(&b->c->fill_lock);
+> +	iter->used = 0;
 > +
-> +	for (i = 0, j = 0;
-> +	     i < strspn(s, "-0123456789:ABCDEFabcdef") && j < 32;
-> +	     i++) {
-> +		x = s[i] | 32;
+> +	if (btree_node_io_error(b) ||
+> +	    !i->seq)
+> +		goto err;
 > +
-> +		switch (x) {
-> +		case '0'...'9':
-> +			x -= '0';
+> +	for (;
+> +	     b->written < btree_blocks(b) && i->seq == b->sets[0].data->seq;
+> +	     i = write_block(b)) {
+> +		err = "unsupported bset version";
+> +		if (i->version > BCACHE_BSET_VERSION)
+> +			goto err;
+> +
+> +		err = "bad btree header";
+> +		if (b->written + set_blocks(i, b->c) > btree_blocks(b))
+> +			goto err;
+> +
+> +		err = "bad magic";
+> +		if (i->magic != bset_magic(b->c))
+> +			goto err;
+> +
+> +		err = "bad checksum";
+> +		switch (i->version) {
+> +		case 0:
+> +			if (i->csum != csum_set(i))
+> +				goto err;
 > +			break;
-> +		case 'a'...'f':
-> +			x -= 'a' - 10;
+> +		case BCACHE_BSET_VERSION:
+> +			if (i->csum != btree_csum_set(b, i))
+> +				goto err;
 > +			break;
-> +		default:
-> +			continue;
 > +		}
 > +
-> +		if (!(j & 1))
-> +			x <<= 4;
-> +		uuid[j++ >> 1] |= x;
+> +		err = "empty set";
+> +		if (i != b->sets[0].data && !i->keys)
+> +			goto err;
+> +
+> +		btree_iter_push(iter, i->start, end(i));
+> +
+> +		b->written += set_blocks(i, b->c);
 > +	}
-> +	return i;
-> +}
-> +EXPORT_SYMBOL_GPL(parse_uuid);
-
-Hmmm... can't we just enforce fixed format used by vsnprintf()?
-
-> +void time_stats_update(struct time_stats *stats, uint64_t start_time)
-> +{
-> +	uint64_t now		= local_clock();
-> +	uint64_t duration	= time_after64(now, start_time)
-> +		? now - start_time : 0;
-> +	uint64_t last		= time_after64(now, stats->last)
-> +		? now - stats->last : 0;
 > +
-> +	stats->max_duration = max(stats->max_duration, duration);
+> +	err = "corrupted btree";
+> +	for (i = write_block(b);
+> +	     index(i, b) < btree_blocks(b);
+> +	     i = ((void *) i) + block_bytes(b->c))
+> +		if (i->seq == b->sets[0].data->seq)
+> +			goto err;
 > +
-> +	if (stats->last) {
-> +		ewma_add(stats->average_duration, duration, 8, 8);
+> +	btree_sort_and_fix_extents(b, iter);
 > +
-> +		if (stats->average_frequency)
-> +			ewma_add(stats->average_frequency, last, 8, 8);
-> +		else
-> +			stats->average_frequency  = last << 8;
-> +	} else
-> +		stats->average_duration  = duration << 8;
+> +	i = b->sets[0].data;
+> +	err = "short btree key";
+> +	if (b->sets[0].size &&
+> +	    bkey_cmp(&b->key, &b->sets[0].end) < 0)
+> +		goto err;
 > +
-> +	stats->last = now ?: 1;
-> +}
-> +EXPORT_SYMBOL_GPL(time_stats_update);
-
-if {
-} else {
-}
-
-Even if one of the branches is single line.  Also, I'm not sure this
-(and a few others) is general enough to be common utility.
-
-> +#ifdef CONFIG_BCACHE_LATENCY_DEBUG
-> +unsigned latency_warn_ms;
-> +#endif
+> +	if (b->written < btree_blocks(b))
+> +		bset_init_next(b);
 > +
-> +#ifdef CONFIG_BCACHE_EDEBUG
-> +
-> +static void check_bio(struct bio *bio)
-> +{
-> +	unsigned i, size = 0;
-> +	struct bio_vec *bv;
-> +	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
-
-New line missing.
-
-> +	BUG_ON(!bio->bi_vcnt);
-> +	BUG_ON(!bio->bi_size);
-> +
-> +	bio_for_each_segment(bv, bio, i)
-> +		size += bv->bv_len;
-> +
-> +	BUG_ON(size != bio->bi_size);
-> +	BUG_ON(size > queue_max_sectors(q) << 9);
-> +
-> +	blk_recount_segments(q, bio);
-> +	BUG_ON(bio->bi_phys_segments > queue_max_segments(q));
-> +}
-...
-> +void bio_map(struct bio *bio, void *base)
-> +{
-> +	size_t size = bio->bi_size;
-> +	struct bio_vec *bv = bio->bi_inline_vecs;
-> +
-> +	BUG_ON(!bio->bi_size);
-> +	bio->bi_vcnt	= 0;
-> +	bio->bi_io_vec	= bv;
-
-I'd prefer these assignments didn't have indentations.
-
-> +	bv->bv_offset = base ? ((unsigned long) base) % PAGE_SIZE : 0;
-> +	goto start;
-> +
-> +	for (; size; bio->bi_vcnt++, bv++) {
-> +		bv->bv_offset	= 0;
-> +start:		bv->bv_len	= min_t(size_t, PAGE_SIZE - bv->bv_offset,
-> +					size);
-
-Please don't do this.
-
-> +		if (base) {
-> +			bv->bv_page = is_vmalloc_addr(base)
-> +				? vmalloc_to_page(base)
-> +				: virt_to_page(base);
-> +
-> +			base += bv->bv_len;
-> +		}
-> +
-> +		size -= bv->bv_len;
+> +	if (0) {
+> +err:		set_btree_node_io_error(b);
+> +		cache_set_error(b->c, "%s at bucket %lu, block %zu, %u keys",
+> +				err, PTR_BUCKET_NR(b->c, &b->key, 0),
+> +				index(i, b), i->keys);
 > +	}
-> +}
-> +EXPORT_SYMBOL_GPL(bio_map);
+
+Please don't do that.  Just define out: label, move error specific
+path to the end of the function and jump to out at the end of that.
+
 > +
-> +#undef bio_alloc_pages
-
-Why is this undef necessary?  If it's necessary, why isn't there any
-explanation?
-
-> +int bio_alloc_pages(struct bio *bio, gfp_t gfp)
+> +	mutex_unlock(&b->c->fill_lock);
+> +
+> +	spin_lock(&b->c->btree_read_time_lock);
+> +	time_stats_update(&b->c->btree_read_time, b->io_start_time);
+> +	spin_unlock(&b->c->btree_read_time_lock);
+> +
+> +	smp_wmb(); /* read_done is our write lock */
+> +	set_btree_node_read_done(b);
+> +
+> +	closure_return(cl);
+> +}
+> +
+> +static void btree_read_resubmit(struct closure *cl)
 > +{
-> +	int i;
-> +	struct bio_vec *bv;
+> +	struct btree *b = container_of(cl, struct btree, io.cl);
+> +
+> +	submit_bbio_split(b->bio, b->c, &b->key, 0);
+> +	continue_at(&b->io.cl, btree_read_done, system_wq);
+> +}
 
-New line missing.
+I suppose submit_bbio_split() can't fail here somehow unlike from
+btree_read() path?  If so, please add a comment to explain and maybe
+WARN_ON_ONCE() on failure.  Subtlety to comment ratio is *way* off.
 
-> +	bio_for_each_segment(bv, bio, i) {
-> +		bv->bv_page = alloc_page(gfp);
-> +		if (!bv->bv_page) {
-> +			while (bv-- != bio->bi_io_vec + bio->bi_idx)
-> +				__free_page(bv->bv_page);
-> +			return -ENOMEM;
-> +		}
+> +static struct btree *mca_bucket_alloc(struct cache_set *c,
+> +				      struct bkey *k, gfp_t gfp)
+> +{
+> +	struct btree *b = kzalloc(sizeof(struct btree), gfp);
+> +	if (!b)
+> +		return NULL;
+> +
+> +	init_rwsem(&b->lock);
+> +	INIT_LIST_HEAD(&b->list);
+> +	INIT_DELAYED_WORK(&b->work, btree_write_work);
+> +	b->c = c;
+> +	closure_init_unlocked(&b->io);
+> +
+> +	mca_data_alloc(b, k, gfp);
+> +	return b->sets[0].data ? b : NULL;
+> +}
+
+mca_data_alloc() failure path seems like a resource leak but it isn't
+because mca_data_alloc() puts it in free list.  Is the extra level of
+caching necessary?  How is it different from sl?b allocator cache?
+And either way, comments please.
+
+> +static int mca_reap(struct btree *b, struct closure *cl)
+> +{
+> +	lockdep_assert_held(&b->c->bucket_lock);
+> +
+> +	if (!down_write_trylock(&b->lock))
+> +		return -1;
+> +
+> +	BUG_ON(btree_node_dirty(b) && !b->sets[0].data);
+> +
+> +	if (cl && btree_node_dirty(b))
+> +		btree_write(b, true, NULL);
+> +
+> +	if (cl)
+> +		closure_wait_event_async(&b->io.wait, cl,
+> +			 atomic_read(&b->io.cl.remaining) == -1);
+> +
+> +	if (btree_node_dirty(b) ||
+> +	    atomic_read(&b->io.cl.remaining) != -1 ||
+> +	    work_pending(&b->work.work)) {
+> +		rw_unlock(true, b);
+> +		return -EAGAIN;
 > +	}
+> +
 > +	return 0;
 > +}
-> +EXPORT_SYMBOL_GPL(bio_alloc_pages);
-> +
-> +struct bio *bio_split_front(struct bio *bio, int sectors, bio_alloc_fn *_alloc,
-> +			    gfp_t gfp, struct bio_set *bs)
+
+Mixing -1 and -EAGAIN returns usually isn't a good idea.
+
+> +static struct btree *alloc_bucket(struct cache_set *c, struct bkey *k,
+> +				  int level, struct closure *cl)
 > +{
-> +	unsigned idx, vcnt = 0, nbytes = sectors << 9;
-> +	struct bio_vec *bv;
-> +	struct bio *ret = NULL;
+> +	struct btree *b, *i;
+> +	unsigned page_order = ilog2(KEY_SIZE(k) / PAGE_SECTORS ?: 1);
 > +
-> +	struct bio *alloc(int n)
-> +	{
-> +		if (bs)
-> +			return bio_alloc_bioset(gfp, n, bs);
-> +		else if (_alloc)
-> +			return _alloc(gfp, n);
-> +		else
-> +			return bio_kmalloc(gfp, n);
-> +	}
-
-These are now separate patch series, right?  But, please don't use
-nested functions.  Apart from being very unconventional (does gnu99
-even allow this?), the implicit outer scope access is dangerous when
-mixed with context bouncing which is rather common in kernel.  We
-(well, at least I) actually want cross stack frame accesses to be
-explicit.
-
-> +unsigned popcount_64(uint64_t x)
-> +{
-> +	static const uint64_t m1  = 0x5555555555555555LLU;
-> +	static const uint64_t m2  = 0x3333333333333333LLU;
-> +	static const uint64_t m4  = 0x0f0f0f0f0f0f0f0fLLU;
-> +	static const uint64_t h01 = 0x0101010101010101LLU;
+> +	lockdep_assert_held(&c->bucket_lock);
+> +retry:
+> +	if (find_bucket(c, k))
+> +		return NULL;
 > +
-> +	x -= (x >> 1) & m1;
-> +	x = (x & m2) + ((x >> 2) & m2);
-> +	x = (x + (x >> 4)) & m4;
-> +	return (x * h01) >> 56;
-> +}
-> +EXPORT_SYMBOL(popcount_64);
+> +	/* btree_free() doesn't free memory; it sticks the node on the end of
+> +	 * the list. Check if there's any freed nodes there:
+> +	 */
+> +	list_for_each_entry(b, &c->btree_cache_freeable, list)
+> +		if (page_order <= b->page_order &&
+> +		    !b->key.ptr[0] &&
+> +		    !mca_reap(b, NULL))
+> +			goto out;
 > +
-> +unsigned popcount_32(uint32_t x)
-> +{
-> +	static const uint32_t m1  = 0x55555555;
-> +	static const uint32_t m2  = 0x33333333;
-> +	static const uint32_t m4  = 0x0f0f0f0f;
-> +	static const uint32_t h01 = 0x01010101;
+> +	/* We never free struct btree itself, just the memory that holds the on
+> +	 * disk node. Check the freed list before allocating a new one:
+> +	 */
+> +	list_for_each_entry(b, &c->btree_cache_freed, list)
+> +		if (!mca_reap(b, NULL)) {
+> +			mca_data_alloc(b, k, __GFP_NOWARN|GFP_NOIO);
+> +			if (!b->sets[0].data) {
+> +				rw_unlock(true, b);
+> +				goto err;
+> +			} else
+> +				goto out;
+> +		}
 > +
-> +	x -= (x >> 1) & m1;
-> +	x = (x & m2) + ((x >> 2) & m2);
-> +	x = (x + (x >> 4)) & m4;
-> +	return (x * h01) >> 24;
-> +}
-> +EXPORT_SYMBOL(popcount_32);
-
-How are these different from bitmap_weight()?
-
-> +#ifndef USHRT_MAX
-> +#define USHRT_MAX	((u16)(~0U))
-> +#define SHRT_MAX	((s16)(USHRT_MAX>>1))
-> +#endif
-...
-
-These compat macros can be removed for upstream submission, right?
-
-> +#define BITMASK(name, type, field, offset, size)		\
-> +static inline uint64_t name(const type *k)			\
-> +{ return (k->field >> offset) & ~(((uint64_t) ~0) << size); }	\
-> +								\
-> +static inline void SET_##name(type *k, uint64_t v)		\
-> +{								\
-> +	k->field &= ~(~((uint64_t) ~0 << size) << offset);	\
-> +	k->field |= v << offset;				\
-> +}
-
-More function defining macros.
-
-> +#define DECLARE_HEAP(type, name)					\
-> +	struct {							\
-> +		size_t size, used;					\
-> +		type *data;						\
-> +	} name
+> +	b = mca_bucket_alloc(c, k, __GFP_NOWARN|GFP_NOIO);
+> +	if (!b)
+> +		goto err;
 > +
-> +#define init_heap(heap, _size, gfp)					\
-
-Ummm.... so, essentially templates done in macros.  Please don't do
-that.  Definitely NACK on this.
-
-> +#define DECLARE_FIFO(type, name)					\
-> +	struct {							\
-> +		size_t front, back, size, mask;				\
-> +		type *data;						\
-> +	} name
+> +	BUG_ON(!down_write_trylock(&b->lock));
+> +out:
+> +	BUG_ON(!closure_is_unlocked(&b->io.cl));
 > +
-> +#define fifo_for_each(c, fifo)						\
-
-Ditto.  Templates are already yucky enough even with compiler support.
-IMHO, it's a horrible idea to try that with preprocessor in C.
-
-> +#define DECLARE_ARRAY_ALLOCATOR(type, name, size)			\
-> +	struct {							\
-> +		type	*freelist;					\
-> +		type	data[size];					\
-> +	} name
-
-Ditto.
-
-> +#define strtoi_h(cp, res)						\
-> +	(__builtin_types_compatible_p(typeof(*res), int)		\
-> +	? strtoint_h(cp, (void *) res)					\
-> +	:__builtin_types_compatible_p(typeof(*res), long)		\
-> +	? strtol_h(cp, (void *) res)					\
-> +	: __builtin_types_compatible_p(typeof(*res), long long)		\
-> +	? strtoll_h(cp, (void *) res)					\
-> +	: __builtin_types_compatible_p(typeof(*res), unsigned int)	\
-> +	? strtouint_h(cp, (void *) res)					\
-> +	: __builtin_types_compatible_p(typeof(*res), unsigned long)	\
-> +	? strtoul_h(cp, (void *) res)					\
-> +	: __builtin_types_compatible_p(typeof(*res), unsigned long long)\
-> +	? strtoull_h(cp, (void *) res) : -EINVAL)
-
-Is this *really* necessary?
-
-> +#define strtoul_safe(cp, var)						\
-> +({									\
-> +	unsigned long _v;						\
-> +	int _r = strict_strtoul(cp, 10, &_v);				\
-> +	if (!_r)							\
-> +		var = _v;						\
-> +	_r;								\
-> +})
+> +	bkey_copy(&b->key, k);
+> +	list_move(&b->list, &c->btree_cache);
+> +	hlist_del_init_rcu(&b->hash);
+> +	hlist_add_head_rcu(&b->hash, hash_bucket(c, k));
+> +	lock_set_subclass(&b->lock.dep_map, level + 1, _THIS_IP_);
 > +
-> +#define strtoul_safe_clamp(cp, var, min, max)				\
-> +({									\
-> +	unsigned long _v;						\
-> +	int _r = strict_strtoul(cp, 10, &_v);				\
-> +	if (!_r)							\
-> +		var = clamp_t(typeof(var), _v, min, max);		\
-> +	_r;								\
-> +})
+> +	b->flags	= 0;
+> +	b->level	= level;
+> +	b->written	= 0;
+> +	b->nsets	= 0;
+> +	for (int i = 0; i < MAX_BSETS; i++)
+> +		b->sets[i].size = 0;
+> +	for (int i = 1; i < MAX_BSETS; i++)
+> +		b->sets[i].data = NULL;
+
+Why separate loops?
+
 > +
-> +#define snprint(buf, size, var)						\
-> +	snprintf(buf, size,						\
-> +		__builtin_types_compatible_p(typeof(var), int)		\
-> +		     ? "%i\n" :						\
-> +		__builtin_types_compatible_p(typeof(var), unsigned)	\
-> +		     ? "%u\n" :						\
-> +		__builtin_types_compatible_p(typeof(var), long)		\
-> +		     ? "%li\n" :					\
-> +		__builtin_types_compatible_p(typeof(var), unsigned long)\
-> +		     ? "%lu\n" :					\
-> +		__builtin_types_compatible_p(typeof(var), int64_t)	\
-> +		     ? "%lli\n" :					\
-> +		__builtin_types_compatible_p(typeof(var), uint64_t)	\
-> +		     ? "%llu\n" :					\
-> +		__builtin_types_compatible_p(typeof(var), const char *)	\
-> +		     ? "%s\n" : "%i\n", var)
+> +	return b;
+> +err:
+> +	if (current->bio_list)
+> +		return ERR_PTR(-EAGAIN);
 
-Ditto.
-
-I'm gonna stop here.  It should be pretty clear what I'm bitching
-about by now. :) Please make it C and, better, kernel C.
+What does this test do?
 
 Thanks.
 
---
+-- 
 tejun
