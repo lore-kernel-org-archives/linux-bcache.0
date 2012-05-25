@@ -1,36 +1,47 @@
-From: Boaz Harrosh <bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org>
-Subject: Re: [PATCH v2 08/14] block: Kill bi_destructor
-Date: Fri, 25 May 2012 09:43:03 +0300
-Message-ID: <4FBF29F7.6030808@panasas.com>
-References: <1337817771-25038-1-git-send-email-koverstreet@google.com> <1337817771-25038-9-git-send-email-koverstreet@google.com> <20120524195202.GG27550@redhat.com>
+From: Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [PATCH v2 09/14] block: Add an explicit bio flag for bios that
+ own their bvec
+Date: Fri, 25 May 2012 12:49:14 -0400
+Message-ID: <20120525164914.GE3855@redhat.com>
+References: <1337817771-25038-1-git-send-email-koverstreet@google.com>
+ <1337817771-25038-10-git-send-email-koverstreet@google.com>
+ <4FBE687E.1030605@panasas.com>
+ <20120524213158.GB22664@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20120524195202.GG27550-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <20120524213158.GB22664-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Cc: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, sage-BnTBU8nroG7k1uMJSBkQmQ@public.gmane.org, yehuda-L5o5AL9CYN0tUFlbccrkMA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: Boaz Harrosh <bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, sage-BnTBU8nroG7k1uMJSBkQmQ@public.gmane.org, yehuda-L5o5AL9CYN0tUFlbccrkMA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 05/24/2012 10:52 PM, Vivek Goyal wrote:
-
-> In fact I am not even sure that for one driver we should introduce
-> bio_reset() in generic block layer. So to me we should get rid of bio_reset()
-> and let all the gory details remain in driver.
+On Thu, May 24, 2012 at 02:31:58PM -0700, Kent Overstreet wrote:
+> On Thu, May 24, 2012 at 07:57:34PM +0300, Boaz Harrosh wrote:
+> > How do you insure that the original bio which owns the
+> > bvec is not freed before the split-out bio.
+> > 
+> > Perhaps calling code needs to make sure by taking an extra
+> > ref on the original bio, or something. If so a big fat comment
+> > at bio_split is do.
 > 
+> Yeah, just added that.
+> 
+> > 
+> > And I understand you did not like my suggestion of negating
+> > the meaning of the flag, so the default is zero?
+> > Please say why?
+> 
+> I liked it at first, but I think I prefer having the flag be set
+> if bio_free() must take some action; i.e. you set the flag when you
+> allocate bi_io_vec. Also, I think bio_alloc_bioset() getting
+> reimplemented is less likely than people open coding bio splitting or
+> something that shares bi_io_vec in the future, so it's slightlry less
+> likely to be used wrong this way.
 
-
-I disagree. The kind of trick we do where up to BIO_RESET_BYTES
-the struct is memset **must** stay at header, very close to the
-structure.
-
-I would though make bio_reset() inline at header, it's a single
-memset. Even the memset is inlined by the compiler.
-
-> Thanks
-> Vivek
-
+Even if you keep it as it is, I thought BIO_OWNS_BVEC probably communicates
+the idea better than BIO_HAS_BVEC.
 
 Thanks
-Boaz
+Vivek
