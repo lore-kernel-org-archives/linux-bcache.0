@@ -1,180 +1,51 @@
 From: Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 1/3] rbtree: Add rb_insert(), rb_search(), etc.
-Date: Fri, 25 May 2012 13:57:39 -0700
-Message-ID: <1337979461-19654-2-git-send-email-koverstreet@google.com>
-References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
+Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
+Date: Fri, 25 May 2012 14:09:44 -0700
+Message-ID: <20120525210944.GB14196@google.com>
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+ <1337977539-16977-15-git-send-email-koverstreet@google.com>
+ <20120525204651.GA24246@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1337979461-19654-1-git-send-email-koverstreet@google.com>
+Content-Disposition: inline
+In-Reply-To: <20120525204651.GA24246@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
-To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk, paul.gortmaker@windriver.com
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net, mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com, tj@kernel.org, sage@newdream.net, agk@redhat.com, drbd-dev@lists.linbit.com, Dave Chinner <dchinner@redhat.com>, tytso@google.com
 List-Id: linux-bcache@vger.kernel.org
 
-Change-Id: I072d94a42b75454aa62be849c724980d27523b08
+On Fri, May 25, 2012 at 04:46:51PM -0400, Mike Snitzer wrote:
+> I'd love to see the merge_bvec stuff go away but it does serve a
+> purpose: filesystems benefit from accurately building up much larger
+> bios (based on underlying device limits).  XFS has leveraged this for
+> some time and ext4 adopted this (commit bd2d0210cf) because of the
+> performance advantage.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- include/linux/rbtree.h |  110 ++++++++++++++++++++++++++++++++++++++++++++++++
- lib/rbtree.c           |   28 ++++++++++++
- 2 files changed, 138 insertions(+)
+That commit only talks about skipping buffer heads, from the patch
+description I don't see how merge_bvec_fn would have anything to do with
+what it's after.
 
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index 033b507..4447919 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -174,4 +174,114 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
- 	*rb_link = node;
- }
- 
-+typedef int (rb_cmp_t) (struct rb_node *l, struct rb_node *r);
-+
-+static inline int _rb_insert(struct rb_root *root,
-+			     struct rb_node *new,
-+			     rb_cmp_t cmp)
-+{
-+	struct rb_node **n = &root->rb_node, *parent = NULL;
-+	int res;
-+
-+	while (*n) {
-+		parent = *n;
-+		res = cmp(new, *n);
-+		if (!res)
-+			return -1;
-+		n = res < 0
-+			? &(*n)->rb_left
-+			: &(*n)->rb_right;
-+	}
-+
-+	rb_link_node(new, parent, n);
-+	rb_insert_color(new, root);
-+	return 0;
-+}
-+
-+static inline void _rb_insert_allow_dup(struct rb_root *root,
-+				       struct rb_node *new,
-+				       rb_cmp_t cmp)
-+{
-+	struct rb_node **n = &root->rb_node, *parent = NULL;
-+
-+	while (*n) {
-+		parent = *n;
-+		n = cmp(new, *n) < 0
-+			? &(*n)->rb_left
-+			: &(*n)->rb_right;
-+	}
-+
-+	rb_link_node(new, parent, n);
-+	rb_insert_color(new, root);
-+}
-+
-+static inline struct rb_node *_rb_search(struct rb_root *root,
-+					 struct rb_node *search,
-+					 rb_cmp_t cmp)
-+{
-+	struct rb_node *n = root->rb_node;
-+
-+	while (n) {
-+		int res = cmp(search, n);
-+		if (!res)
-+			return n;
-+
-+		n = res < 0
-+			? n->rb_left
-+			: n->rb_right;
-+	}
-+
-+	return NULL;
-+}
-+
-+static inline struct rb_node *_rb_greater(struct rb_root *root,
-+					  struct rb_node *search,
-+					  rb_cmp_t cmp)
-+{
-+	struct rb_node *n = root->rb_node;
-+	struct rb_node *ret = NULL;
-+
-+	while (n) {
-+		int res = cmp(search, n);
-+
-+		if (res < 0) {
-+			ret = n;
-+			n = n->rb_left;
-+		} else {
-+			n = n->rb_right;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+int rb_insert(struct rb_root *root, struct rb_node *new, rb_cmp_t cmp);
-+void rb_insert_allow_dup(struct rb_root *root,
-+			 struct rb_node *new,
-+			 rb_cmp_t cmp);
-+struct rb_node *rb_search(struct rb_root *root,
-+			  struct rb_node *search,
-+			  rb_cmp_t cmp);
-+struct rb_node *rb_greater(struct rb_root *root,
-+			   struct rb_node *search,
-+			   rb_cmp_t cmp);
-+
-+#define container_of_or_null(ptr, type, member)				\
-+({									\
-+	typeof(ptr) _ptr = ptr;						\
-+	_ptr ? container_of(_ptr, type, member) : NULL;			\
-+})
-+
-+#define RB_FIRST(root, type, member)					\
-+	container_of_or_null(rb_first(root), type, member)
-+
-+#define RB_LAST(root, type, member)					\
-+	container_of_or_null(rb_last(root), type, member)
-+
-+#define RB_NEXT(ptr, member)						\
-+	container_of_or_null(rb_next(&(ptr)->member), typeof(*ptr), member)
-+
-+#define RB_PREV(ptr, member)						\
-+	container_of_or_null(rb_prev(&(ptr)->member), typeof(*ptr), member)
-+
- #endif	/* _LINUX_RBTREE_H */
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index d417556..53641b7 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -135,6 +135,34 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
- }
- EXPORT_SYMBOL(rb_insert_color);
- 
-+int rb_insert(struct rb_root *root, struct rb_node *new, rb_cmp_t cmp)
-+{
-+	return _rb_insert(root, new, cmp);
-+}
-+EXPORT_SYMBOL(rb_insert);
-+
-+void rb_insert_allow_dup(struct rb_root *root, struct rb_node *new, rb_cmp_t cmp)
-+{
-+	_rb_insert_allow_dup(root, new, cmp);
-+}
-+EXPORT_SYMBOL(rb_insert_allow_dup);
-+
-+struct rb_node *rb_search(struct rb_root *root,
-+			  struct rb_node *search,
-+			  rb_cmp_t cmp)
-+{
-+	return _rb_search(root, search, cmp);
-+}
-+EXPORT_SYMBOL(rb_search);
-+
-+struct rb_node *rb_greater(struct rb_root *root,
-+			   struct rb_node *search,
-+			   rb_cmp_t cmp)
-+{
-+	return _rb_greater(root, search, cmp);
-+}
-+EXPORT_SYMBOL(rb_greater);
-+
- static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
- 			     struct rb_root *root)
- {
--- 
-1.7.9.3.327.g2980b
+> So if you don't have a mechanism for the filesystem's IO to have
+> accurate understanding of the limits of the device the filesystem is
+> built on (merge_bvec was the mechanism) and are leaning on late
+> splitting does filesystem performance suffer?
+
+So is the issue that it may take longer for an IO to complete, or is it
+CPU utilization/scalability?
+
+If it's the former, we've got a real problem. If it's the latter - it
+might be a problem in the interim (I don't expect generic_make_request()
+to be splitting bios in the common case long term), but I doubt it's
+going to be much of an issue.
+
+> Would be nice to see before and after XFS and ext4 benchmarks against a
+> RAID device (level 5 or 6).  I'm especially interested to get Dave
+> Chinner's and Ted's insight here.
+
+Yeah.
+
+I can't remember who it was, but Ted knows someone who was able to
+benchmark on a 48 core system. I don't think we need numbers from a 48
+core machine for these patches, but whatever workloads they were testing
+that were problematic CPU wise would be useful to test.
