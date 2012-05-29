@@ -1,139 +1,95 @@
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [PATCH 1/3] rbtree: Add rb_insert(), rb_search(), etc.
-Date: Tue, 29 May 2012 08:35:10 +0900
-Message-ID: <20120528233510.GD20954@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
- <1337979461-19654-2-git-send-email-koverstreet@google.com>
+From: Dave Chinner <david@fromorbit.com>
+Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
+Date: Tue, 29 May 2012 11:54:38 +1000
+Message-ID: <20120529015438.GZ5091@dastard>
+References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
+ <1337977539-16977-15-git-send-email-koverstreet@google.com>
+ <20120525204651.GA24246@redhat.com>
+ <20120525210944.GB14196@google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Return-path: <linux-fsdevel-owner@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <1337979461-19654-2-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, paul.gortmaker-CWA4WttNNZF54TAoqtyWWQ@public.gmane.org
+In-Reply-To: <20120525210944.GB14196@google.com>
+Sender: linux-fsdevel-owner@vger.kernel.org
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net, mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com, tj@kernel.org, sage@newdream.net, agk@redhat.com, drbd-dev@lists.linbit.com, Dave Chinner <dchinner@redhat.com>, tytso@google.com
 List-Id: linux-bcache@vger.kernel.org
 
-Hello, Kent.
-
-Please cc akpm.
-
-On Fri, May 25, 2012 at 01:57:39PM -0700, Kent Overstreet wrote:
-> Change-Id: I072d94a42b75454aa62be849c724980d27523b08
+On Fri, May 25, 2012 at 02:09:44PM -0700, Kent Overstreet wrote:
+> On Fri, May 25, 2012 at 04:46:51PM -0400, Mike Snitzer wrote:
+> > I'd love to see the merge_bvec stuff go away but it does serve a
+> > purpose: filesystems benefit from accurately building up much larger
+> > bios (based on underlying device limits).  XFS has leveraged this for
+> > some time and ext4 adopted this (commit bd2d0210cf) because of the
+> > performance advantage.
 > 
-> Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+> That commit only talks about skipping buffer heads, from the patch
+> description I don't see how merge_bvec_fn would have anything to do with
+> what it's after.
 
-Same complaints.
+XFS has used it since 2.6.16 as building our own bios enabled the Io
+path form IOs of sizes that are independent of the filesystem block
+size.
 
-And function comments please.
+http://oss.sgi.com/projects/xfs/papers/ols2006/ols-2006-paper.pdf
 
-> +static inline int _rb_insert(struct rb_root *root,
-> +			     struct rb_node *new,
-> +			     rb_cmp_t cmp)
-> +{
-> +	struct rb_node **n = &root->rb_node, *parent = NULL;
-> +	int res;
-> +
-> +	while (*n) {
-> +		parent = *n;
-> +		res = cmp(new, *n);
-> +		if (!res)
-> +			return -1;
+And it's not just the XFS write path that uses bio_add_page - the XFS
+metadata read/write IO code uses it as well because we have metadata
+constructs that are larger than a single page...
 
--EINVAL?
+> > So if you don't have a mechanism for the filesystem's IO to have
+> > accurate understanding of the limits of the device the filesystem is
+> > built on (merge_bvec was the mechanism) and are leaning on late
+> > splitting does filesystem performance suffer?
+> 
+> So is the issue that it may take longer for an IO to complete, or is it
+> CPU utilization/scalability?
 
-> +		n = res < 0
-> +			? &(*n)->rb_left
-> +			: &(*n)->rb_right;
+Both. Moving to this code reduced the CPU overhead per MB of data
+written to disk by 80-90%. It also allowed us to build IOs that span
+entire RAID stripe widths, thereby avoiding potential RAID RMW
+cycles, and even allowing high end raid controllers to trigger BBWC
+bypass fast paths that could double or triple the write throughput
+of the arrays...
 
-I don't know.  I'm finding this formatting rather weird.  If ?: has to
-be used and line has to break, how about the following?
+> If it's the former, we've got a real problem.
 
-		n = res < 0 ? A
-			    : B;
+... then you have a real problem.
 
-Or how about using good'ol if else?
+> If it's the latter - it
+> might be a problem in the interim (I don't expect generic_make_request()
+> to be splitting bios in the common case long term), but I doubt it's
+> going to be much of an issue.
 
-	if (res < 0)
-		n = A;
-	else if (res > 0)
-		n = B;
-	else
-		return -EINVAL;
+I think this will also be an issue - the typical sort of throughput
+I've been hearing about over the past year for typical HPC
+deployments is >20GB/s buffered write throughput to disk on a single
+XFS filesystem, and that is typically limited by the flusher thread
+being CPU bound. So if you changes have a CPU usage impact, then
+these systems will definitely see reduced performance....
 
-> +	}
-> +
-> +	rb_link_node(new, parent, n);
-> +	rb_insert_color(new, root);
-> +	return 0;
-> +}
-> +
-> +static inline void _rb_insert_allow_dup(struct rb_root *root,
-> +				       struct rb_node *new,
-> +				       rb_cmp_t cmp)
-> +{
-> +	struct rb_node **n = &root->rb_node, *parent = NULL;
-> +
-> +	while (*n) {
-> +		parent = *n;
-> +		n = cmp(new, *n) < 0
-> +			? &(*n)->rb_left
-> +			: &(*n)->rb_right;
+> > Would be nice to see before and after XFS and ext4 benchmarks against a
+> > RAID device (level 5 or 6).  I'm especially interested to get Dave
+> > Chinner's and Ted's insight here.
+> 
+> Yeah.
+> 
+> I can't remember who it was, but Ted knows someone who was able to
+> benchmark on a 48 core system. I don't think we need numbers from a 48
+> core machine for these patches, but whatever workloads they were testing
+> that were problematic CPU wise would be useful to test.
 
-Ditto.
+Eric Whitney.
 
-> +	}
-> +
-> +	rb_link_node(new, parent, n);
-> +	rb_insert_color(new, root);
-> +}
-> +
-> +static inline struct rb_node *_rb_search(struct rb_root *root,
-> +					 struct rb_node *search,
-> +					 rb_cmp_t cmp)
-> +{
-> +	struct rb_node *n = root->rb_node;
-> +
-> +	while (n) {
-> +		int res = cmp(search, n);
-> +		if (!res)
-> +			return n;
-> +
-> +		n = res < 0
-> +			? n->rb_left
-> +			: n->rb_right;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +static inline struct rb_node *_rb_greater(struct rb_root *root,
-> +					  struct rb_node *search,
-> +					  rb_cmp_t cmp)
-> +{
-> +	struct rb_node *n = root->rb_node;
-> +	struct rb_node *ret = NULL;
-> +
-> +	while (n) {
-> +		int res = cmp(search, n);
-> +
-> +		if (res < 0) {
-> +			ret = n;
-> +			n = n->rb_left;
-> +		} else {
-> +			n = n->rb_right;
-> +		}
-> +	}
-> +
-> +	return ret;
-> +}
+http://downloads.linux.hp.com/~enw/ext4/3.2/
 
-What does _rb_greater() do?  If these are gonna be inlined, can't we
-mostly just have single lookup function which returns either the found
-node or insertion position and let each wrapper deal with the
-specifics?
+His storage hardware probably isn't fast enough to demonstrate the
+sort of problems I'm expecting that would occur...
 
-Thanks.
+Cheers,
 
+Dave.
 -- 
-tejun
+Dave Chinner
+david@fromorbit.com
