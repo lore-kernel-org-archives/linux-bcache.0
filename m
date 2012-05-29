@@ -1,47 +1,55 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
-Date: Mon, 28 May 2012 23:36:28 -0400
-Message-ID: <20120529033628.GD10175@dhcp-172-18-216-138.mtv.corp.google.com>
-References: <20120525204651.GA24246@redhat.com>
- <20120525210944.GB14196@google.com>
- <20120525223937.GF5761@agk-dp.fab.redhat.com>
- <Pine.LNX.4.64.1205281129180.2227@file.rdu.redhat.com>
- <20120528202839.GA18537@dhcp-172-17-108-109.mtv.corp.google.com>
- <Pine.LNX.4.64.1205281659580.11763@file.rdu.redhat.com>
- <20120528213839.GB18537@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120528230208.GA20954@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120529020815.GB5091@dastard>
- <20120529021558.GG20954@dhcp-172-17-108-109.mtv.corp.google.com>
+From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Subject: Re: [PATCH 3/3] block: convert elevator to generic rb tree code
+Date: Tue, 29 May 2012 14:24:58 +0900
+Message-ID: <20120529052458.GA17366@google.com>
+References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
+ <1337979461-19654-4-git-send-email-koverstreet@google.com>
+ <20120528231717.GB20954@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120529032502.GA10175@dhcp-172-18-216-138.mtv.corp.google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20120529021558.GG20954-RcKxWJ4Cfj1J2suj2OqeGauc2jM2gXBXkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
+In-Reply-To: <20120529032502.GA10175-RcKxWJ4Cfj3IzGYXcIpNmNLIRw13R84JkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Cc: Dave Chinner <david-FqsqvQoI3Ljby3iVrkZq2A@public.gmane.org>, Mikulas Patocka <mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Alasdair G Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, yehuda-L5o5AL9CYN0tUFlbccrkMA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, sage-BnTBU8nroG7k1uMJSBkQmQ@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org, Dave Chinner <dchinner-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, tytso-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org, "Martin K. Petersen" <martin.petersen-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, paul.gortmaker-CWA4WttNNZF54TAoqtyWWQ@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, May 29, 2012 at 11:15:58AM +0900, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, May 29, 2012 at 12:08:15PM +1000, Dave Chinner wrote:
-> > > i thought a bit more about it and the only thing which makes sense to
-> > > me is exposing the stripe granularity for striped devices -
-> > > ie. something which says "if you go across this boundary, the
-> > > performance characteristics including latency might get affected",
-> > > which should fit nicely with the rest of topology information.
-> > > Martin, adding that shouldn't be difficult, right?
-> > 
-> > We already have the optimal IO size/alignment field in the topology.
-> > Doesn't this fit what you want exactly?
-> 
-> I don't know how xfs/ext4 is currently benefiting from
-> merge_bvec_fn(), so I'm unsure.  If the existing ones are enough,
-> great.
+Hello, Kent.
 
-Excepting readahead I don't think they are at all.
+On Mon, May 28, 2012 at 11:25:02PM -0400, Kent Overstreet wrote:
+> On Tue, May 29, 2012 at 08:17:17AM +0900, Tejun Heo wrote:
+> > This is dangerous.  You can't put things like struct request on stack.
+> > It might look like it's working ok on the tested setup but archs
+> > differ in stack pressure and more importantly people may add
+> > arbitrarily sized fields, including debugging stuff, to struct
+> > request.  So, no, please don't do that.
+> 
+> I was telling you about this exact issue before - and I looked at the
+> assembly to make sure that when the inlined version of rb_search() was
+> used the struct request on the stack was optimized away, and it was.
+> 
+> So in practice there's no extra stack usage. Whether this is an
+> optimization we want to depend I'm not going to say; I suspect it's
+> pretty safe w.r.t. the optimizer but it's definitely sketchy and if at
+> some point someone came along and switched it to the uninline version
+> we'd have problems.
 
-For readahead all we need is a hint - call it "atomic IO size" or
-something. Assuming one of the gazillion things in queue_limits doesn't
-already mean that anyways.
+I don't think we can depend on that.  Note that compiler may as well
+decide not to inline an inline function (e.g. if it sees many calling
+instances).  Depending on such behavior is way too fragile.
+
+> So we might want to leave this one open coded. Which would make me sad,
+> but I can't think of a sane way of implementing generic rb_search() that
+> doesn't require passing it a type t to compare against.
+
+I don't know either.  Open coding isn't the end of the world but I
+suspect a lot of data structures which go on rbtree wouldn't be stack
+friendly, so having common helper which can't handle that might not be
+too helpful.
+
+Thanks.
+
+--
+tejun
