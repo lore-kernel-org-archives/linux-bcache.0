@@ -1,45 +1,57 @@
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [PATCH v3 05/16] block: Kill bi_destructor
-Date: Tue, 29 May 2012 11:20:25 +0900
-Message-ID: <20120529022025.GH20954@dhcp-172-17-108-109.mtv.corp.google.com>
-References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
- <1337977539-16977-6-git-send-email-koverstreet@google.com>
- <20120528013608.GE9891@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120529021042.GA6472@dhcp-172-18-216-138.mtv.corp.google.com>
+From: Kent Overstreet <koverstreet@google.com>
+Subject: Re: [PATCH 3/3] block: convert elevator to generic rb tree code
+Date: Mon, 28 May 2012 23:25:02 -0400
+Message-ID: <20120529032502.GA10175@dhcp-172-18-216-138.mtv.corp.google.com>
+References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
+ <1337979461-19654-4-git-send-email-koverstreet@google.com>
+ <20120528231717.GB20954@dhcp-172-17-108-109.mtv.corp.google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Return-path: <linux-kernel-owner@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <20120529021042.GA6472-RcKxWJ4Cfj3IzGYXcIpNmNLIRw13R84JkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, sage-BnTBU8nroG7k1uMJSBkQmQ@public.gmane.org, yehuda-L5o5AL9CYN0tUFlbccrkMA@public.gmane.org
+In-Reply-To: <20120528231717.GB20954@dhcp-172-17-108-109.mtv.corp.google.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, axboe@kernel.dk, paul.gortmaker@windriver.com
 List-Id: linux-bcache@vger.kernel.org
 
-Hello, Kent.
-
-On Mon, May 28, 2012 at 10:10:42PM -0400, Kent Overstreet wrote:
-> Heh. Well, in my view deleting stuff is good by default, and if you can
-> delete things without user visible effects and without making the code
-> more complicated... 
+On Tue, May 29, 2012 at 08:17:17AM +0900, Tejun Heo wrote:
+> On Fri, May 25, 2012 at 01:57:41PM -0700, Kent Overstreet wrote:
+> > Change-Id: I676968e201f0de9a0d0a7813e2fcc6873343e8c3
+> > 
+> > Signed-off-by: Kent Overstreet <koverstreet@google.com>
 > 
-> So I guess given the simplicity of this particular patch in the series
-> I'm not sure what there is to justify here. Any suggestions on what
-> would make sense to put in...?
+> You know what I was gonna complain about here, right?  :)
 
-So, what I would prefer to see is the justification of the whole
-changes somewhere in the patch stream, so that patches can do,n
+Yep :P
 
-patch 1: update X to not use bi_destructor which will soon be removed.
-patch 2: ditto for Y
-...
-patch N: bi_destructor is stupid because blah blah and after preceding
-         changes is no longer used.  Kill it.
+> >  struct request *elv_rb_find(struct rb_root *root, sector_t sector)
+> >  {
+> > -	struct rb_node *n = root->rb_node;
+> > -	struct request *rq;
+> > -
+> > -	while (n) {
+> > -		rq = rb_entry(n, struct request, rb_node);
+> > +	struct request search = { .__sector = sector };
+> 
+> This is dangerous.  You can't put things like struct request on stack.
+> It might look like it's working ok on the tested setup but archs
+> differ in stack pressure and more importantly people may add
+> arbitrarily sized fields, including debugging stuff, to struct
+> request.  So, no, please don't do that.
 
-so that when one sees a patch in the series and wonders why the change
-is being made, [s]he can follow the patch stream and understand.
+I was telling you about this exact issue before - and I looked at the
+assembly to make sure that when the inlined version of rb_search() was
+used the struct request on the stack was optimized away, and it was.
 
-Thanks.
+So in practice there's no extra stack usage. Whether this is an
+optimization we want to depend I'm not going to say; I suspect it's
+pretty safe w.r.t. the optimizer but it's definitely sketchy and if at
+some point someone came along and switched it to the uninline version
+we'd have problems.
 
--- 
-tejun
+So we might want to leave this one open coded. Which would make me sad,
+but I can't think of a sane way of implementing generic rb_search() that
+doesn't require passing it a type t to compare against.
+
+I dunno.
