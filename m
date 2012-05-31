@@ -1,156 +1,46 @@
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [Bcache v13 14/16] bcache: Request, io and allocation code
-Date: Thu, 31 May 2012 15:45:15 +0900
-Message-ID: <20120531064515.GA18984@mtj.dyndns.org>
-References: <cover.1336619038.git.koverstreet@google.com>
- <9ea33658f2a71b3b9bd2ec10bee959bef146f23c.1336619038.git.koverstreet@google.com>
- <20120530072358.GB4854@google.com>
- <20120531005224.GA5645@google.com>
- <20120531024327.GC32121@google.com>
- <20120531051321.GA12602@dhcp-172-18-216-138.mtv.corp.google.com>
+From: Jan Kara <jack-AlSwsSmVLrQ@public.gmane.org>
+Subject: Re: [PATCH 0/3] Generic rb tree code
+Date: Thu, 31 May 2012 23:03:35 +0200
+Message-ID: <20120531210335.GC16338@quack.suse.cz>
+References: <1337979461-19654-1-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20120531051321.GA12602-RcKxWJ4Cfj3IzGYXcIpNmNLIRw13R84JkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
+In-Reply-To: <1337979461-19654-1-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, paul.gortmaker-CWA4WttNNZF54TAoqtyWWQ@public.gmane.org, Daniel Santos <danielfsantos-fOdFMYwuEsI@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hello, Kent.
-
-On Thu, May 31, 2012 at 01:13:21AM -0400, Kent Overstreet wrote:
-> BKEY_PADDED() was originally for keys in other structs that needed
-> padded, where the transparent union thing actually works. Are you
-> against the macro in general or just for stack allocated keys?
-
-Macro in general.  If it needs an extra union / struct member deref,
-so be it.  No need to be smart for things like this.
-
-> I would like more descriptive/unique variable names for cache,
-> cache_set, bcache_device and cached_dev, I'm just not coming up with
-> anything that's reasonably terse and seems to me like an improvement.
+On Fri 25-05-12 13:57:38, Kent Overstreet wrote:
+> Right now, users of the rb tree code have to open code their own search and
+> insert functions. This provides generic versions that you pass a comparison
+> function to.
 > 
-> (I'm not really against cdev, it's just that bcache_device should then
-> be bdev by analogy and that's taken... argh).
->
-> Anyways, I'm not really attached to the current variable names like I am
-> some of the style issues, I just can't come up with anything I like.
-
-Heh, yeah, naming isn't easy.  In most cases, it just has to be
-something consistent which has some association tho.
-
-> > * Generic names.  bio_insert() belongs to block layer.  Block layer
-> >   may use it in the future and when one sees bio_insert(), it's
-> >   natural for that person to assume that it's a block layer thing
-> >   doing something with bio.  As for better name, I'm not sure.  Maybe
-> >   just prefix it with bc_?
+> I highly doubt the extra function calls are going to have a measurable
+> performance impact in practice - the pointer chasing is going to dominate. I
+> did provide inline versions just in case, though - it's modelled after the
+> spinlock code.
 > 
-> Agreed on bio_insert() (there's a fair number of functions that I've
-> been meaning to rename for similarish reasons - get_bucket() and
-> pop_bucket() don't have anything to do with each other, for example).
+> The inline version of rb_search() is important for another reason, though - you
+> have to pass rb_search a pointer to your struct for it to compare against,
+> which has to be allocated on the stack. For most users I think that'll be fine,
+> but for the elevator code struct rb_node is embedded in struct request, which
+> is rather large. By using the inline version that stack allocation goes away.
 > 
-> I think the function names are easier to improve than variabe names,
-> though. The main obstacle (for me) to renaming stuff is that when I do I
-> want to come up with names that are patterned on the relationships in
-> the code, and that'll take some work.
-
-It doesn't have to be perfect.  Naming schemes like anything else tend
-to lose consistency over time anyway, so something good enough is
-usually good enough.
-
-> > * These aren't hard and fast rules.  There isn't one true fixed
-> >   standard that everyone conforms to.  There still are different
-> >   styles and people adopt the ones they think are pretty.  That's how
-> >   it evolves, but it too is a problem of degree and you can bend only
-> >   so far before people start complaining.
-> > 
-> >   For example, here's a fictionalized process that I got irritated and
-> >   felt generally hostile against the code base.
-> > 
-> >   1. Reading code.  Full of macros.
-> > 
-> >   2. Reading macros.  Single char arguments.  Starting to get
-> >      irritated.
-> > 
-> >   3. Encountered closures.  Still unsure what they mean.  This one
-> >      looks like a simple refcnt.  Wonders what the hell is wrong with
-> >      the usual refcnts.  Maybe somehow this gets used differently
-> >      somewhere else?  Of course, no explanation.
-> > 
-> >   4. While trying to follow the control flow, encounters a function
-> >      with full of cryptic numbers with "different" formatting.  No
-> >      high level explanation or anything.  Getting irritated.
+> (I looked at the generated assembly of elv_rb_find() before and after, and if
+> I'm reading it right it's not using any extra stack. Code is a bit worse, but
+> IMO removing code duplication is worth it).
 > 
-> Which function was that?
+> Kent Overstreet (3):
+>   rbtree: Add rb_insert(), rb_search(), etc.
+>   timerqueue: convert to generic rb tree code
+>   block: convert elevator to generic rb tree code
+  Hum, are you aware of another generic rb-tree attempt -
+ https://lkml.org/lkml/2012/4/30/132 ?
 
-Heh, this was dramatized for maximum effect.  I was thinking about the
-condition check functions / macros with hard-coded constants.
-
-...
-> I think also I haven't been explicit about it but I do try to
-> differentiate between style issues that are of no consequence (whoever
-> feels more strongly about those can decide, for all I care) and things
-> that make the codebase harder to read and understand.
-> 
-> Hell, I've never pretended to be any good at writing code that's
-> understandable by others. There's things I _am_ good at - writing fast
-> code, writing complex asynchronous code that _reliably works_ - but
-> understandable code? Hell no.
-
-I don't think your style is inferior or anything.  It's just different
-from the one used in the kernel.  I don't think it's anything
-difficult either.  It's just a matter of habit.
-
-...
-> That said, it does bug me when things are rejected out of hand merely
-> for being different and foreign.
-> 
-> Closures being the main example - I'd be more receptive to criticism if
-> I'd seen a half decent solution before, or if you or anyone else was
-> actually trying to come up with something better.
-> 
-> I'd really like to see what you come up with if you implement that bio
-> sequencer you've been talking about, because either you'll come up with
-> something better or you'll have a better understanding of the problems I
-> was trying to solve.
-
-I still don't understand what's being made better by closure.  At
-least the ones I've seen didn't seem to be justified, so if you have
-some examples which highlight the benefits of closure, please go ahead
-and explain them.
-
-I'll write more about it later but here are some of my current
-thoughts.
-
-* I personally think async (using something other than stack for
-  execution state) programming inherently sucks, no matter how it's
-  done.  The programming language and even the processor we use assume
-  that stack is used to track execution context after all.  My opinion
-  about async programming can essentially be summarized as "avoid it
-  as much as possible".
-
-* This itself may be too abstract but excess is often worse than lack,
-  especially for abstraction and design.  Problems caused by excess is
-  much more difficult to rectify as the problems are intentional and
-  systematic.  That's the part I dislike the most about kobject and
-  friends.
-
-* I don't (yet anyway) believe that you have something drastically
-  better in closure.  You just have something very different and maybe
-  a bit more convenient.  Both async and refcnting are well known
-  problems with established patterns.
-
-  In a sense, I think it's similar to the style argument although at a
-  higher level.  I don't think the amount of benefit justifies the
-  amount of deviation.
-
-So, at least to me, the bar for highly abstract refcnty async thingy
-is pretty high.  It's a ugly problem and I'd prefer to leave it ugly
-and painful unless it can be drastically better.
-
-Thanks.
-
+								Honza
 -- 
-tejun
+Jan Kara <jack-AlSwsSmVLrQ@public.gmane.org>
+SUSE Labs, CR
