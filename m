@@ -1,65 +1,60 @@
-From: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH v3 14/16] Gut bio_add_page()
-Date: Tue, 5 Jun 2012 10:33:10 +1000
-Message-ID: <20120605003309.GD4347@dastard>
-References: <1337977539-16977-1-git-send-email-koverstreet@google.com>
- <1337977539-16977-15-git-send-email-koverstreet@google.com>
- <20120525204651.GA24246@redhat.com>
- <20120525210944.GB14196@google.com>
- <20120529015438.GZ5091@dastard>
- <20120529033434.GC10175@dhcp-172-18-216-138.mtv.corp.google.com>
+From: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>
+Subject: Working bcache =?UTF-8?Q?patchset=3F?=
+Date: Fri, 08 Jun 2012 12:40:31 +0200
+Message-ID: <18d9ec0eee7d5cee38ced035d38a7a23@modelnine.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <20120529033434.GC10175@dhcp-172-18-216-138.mtv.corp.google.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, axboe@kernel.dk, yehuda@hq.newdream.net, mpatocka@redhat.com, vgoyal@redhat.com, bharrosh@panasas.com, tj@kernel.org, sage@newdream.net, agk@redhat.com, drbd-dev@lists.linbit.com, Dave Chinner <dchinner@redhat.com>, tytso@google.com
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, May 28, 2012 at 11:34:34PM -0400, Kent Overstreet wrote:
-> On Tue, May 29, 2012 at 11:54:38AM +1000, Dave Chinner wrote:
-> > It also allowed us to build IOs that span
-> > entire RAID stripe widths, thereby avoiding potential RAID RMW
-> > cycles, and even allowing high end raid controllers to trigger BBWC
-> > bypass fast paths that could double or triple the write throughput
-> > of the arrays...
-> 
-> merge_bvec_fn has nothing to do with that though, since for one there
+Hey!
 
-You're mistaking me for someone who cares about merge_bvec_fn().
-Someone asked me to describe why XFS uses bio_add_page()....
+I'm currently evaluating bcache for a pet project of mine (seeing the 
+great performance numbers in the hosting environment tests posted here 
+really sold me on to the idea), but I'm currently stumped by the bcache 
+HEAD repository state (bcache on a 3.4.0+) from 
+http://evilpiepirate.org/cgi-bin/cgit.cgi/linux-bcache.git, which does 
+compile fine (but only if you don't activate CGROUP support for bcache, 
+that is broken, and the "simple" naming fixes for struct bcache_group I 
+tested don't allow it to compile either...), but:
 
-> aren't any merge_bvec_fn's being called in the IO paths on these high
-> end disk arrays,
+* the current head implements a (slightly) different kind of sysfs-API 
+than is documented (concerning cache_mode, the "writeback" flag doesn't 
+exist anymore), which is self-documenting mostly, at least from what I 
+gather,
+* and secondly, it's easy to lose a volume completely by simply setting 
+a backing volume to writeback caching mode. Detaching the cache from a 
+working writeback volume doesn't work at all (gives no dmesg output, 
+does not seem to start the flush), stopping the backing volume does 
+work, reattaching the cache device after registering the backing device 
+again is impossible: "bcache: Couldn't find uuid for md127 in set",
+* and thirdly, setting readahead to anything else than zero makes 
+bcache access blocks behind the end of device (the backing device isn't 
+a multiple of the readahead size I tested): "md127: rw=0, 
+want=5816029416, limit=5816028912"
 
-Yes there are, because high bandwidth filesytem use software RAID 0
-striping to stripe multiple hardware RAID luns together to acheive
-the necessary bandwidth. Hardware RAID is used for disk failure
-prevention and to manage 1000 disks more easily, while software RAID
-(usually with multipathing) is used to scale the performance....
+As people have had success with bcache from what I gather: is there any 
+working revision/patch I can up/downgrade to? ;-) All other tags 
+published on the mentioned gitweb don't seem to be versions which could 
+be used pseudo-productively, and cloning from the published repository 
+git://evilpiepirate.org/~kent/linux-bcache.git currently fails:
 
-> and for our software raid implementations their
-> merge_bvec_fns will keep you from sending them bios that span entire
-> stripes.
+modelnine # git clone git://evilpiepirate.org/~kent/linux-bcache.git
+Cloning into 'linux-bcache'...
+remote: Counting objects: 2441832, done.
+remote: aborting due to possible repository corruption on the remote 
+side.
+fatal: early EOF
+fatal: index-pack failed
+modelnine #
 
-Well, yeah, the lower layer has to break up large bios into chunks
-for it's sub-devices.  What matters is that we build IOs that are
-larger than what the lower layers break it up into. e.g. if your
-hardware RAID5 stripe width is 1MB, then the software RAID chunks
-size is 1MB (and the stripe width is N luns X 1MB), then all that
-matters is that we build IOs larger than 1MB so that we get full
-stripe writes at that hardware RAID level and so avoid RMW cycles
-right at the bottom of the IO stack...
+Scrolling through the repository state published by web didn't 
+immediately hint at a previous tag/state in the repository that would be 
+usable. Thanks for any hints!
 
-As long as the new code still allows us to achieve the same or
-better IO sizes without any new overhead, then I simply don't care
-what happens to the guts of bio_add_page().
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+--- Heiko.
