@@ -1,48 +1,61 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [Bcache v14 16/16] bcache: Debug and tracing code
-Date: Tue, 12 Jun 2012 10:45:28 -0700
-Message-ID: <20120612174528.GB11365@google.com>
-References: <1339515562-14638-1-git-send-email-koverstreet@google.com>
- <1339515562-14638-17-git-send-email-koverstreet@google.com>
- <1339519858.2017.10.camel@joe2Laptop>
- <20120612172444.GA11365@google.com>
- <1339522543.2404.3.camel@joe2Laptop>
+From: Zhi Yong Wu <zwu.kernel-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: How to check if one disk is SSD drive?
+Date: Wed, 13 Jun 2012 09:38:59 +0800
+Message-ID: <CAEH94Lg8guj33EWFeHvFdX204Jzn=+D8nS__z1gAYgt7CyXBLw@mail.gmail.com>
+References: <CAEH94LgYWq3G_dhiGVmZ=b6eW9L8j=rqk4GeARiU7pdGtfoVUA@mail.gmail.com>
+	<CAJwrgW4kzV_vJ7iMfB-n7VTfEp=EKr+TXHdwzOrtT0EMv58dFQ@mail.gmail.com>
+	<CAEH94LgQmXAdRvb4jN+quNip0ZxON8VLQaQmyU5bCZfqB7uS3A@mail.gmail.com>
+	<CAJwrgW647uZUDjpEfzRtF+GzNufygJHM_PWXLnZCGWF_3O4YHw@mail.gmail.com>
+	<CAEH94Lg1i36VpM3pZXBbUY0dRkxpvERJ9GZUNTamTGDPvHQH0g@mail.gmail.com>
+	<CAJwrgW4hBO4eVd6jLfpXag7ri_O+Ynn9FM0X1v9CU_mwv78Pxg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <1339522543.2404.3.camel@joe2Laptop>
+In-Reply-To: <CAJwrgW4hBO4eVd6jLfpXag7ri_O+Ynn9FM0X1v9CU_mwv78Pxg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Joe Perches <joe-6d6DIl74uiNBDgjK7y7TUQ@public.gmane.org>
-Cc: g@google.com, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, tejun-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, dan.j.williams-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org
+To: Liang Guo <bluestonechina-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Stefan Hajnoczi <stefanha-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jun 12, 2012 at 10:35:43AM -0700, Joe Perches wrote:
-> "(uint64_t *)k - i->d" is what type again?
-> What is a %zu?
-> 
-> Isn't that a mismatch?
+On Tue, Jun 12, 2012 at 11:20 PM, Liang Guo <bluestonechina-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> On Tue, Jun 12, 2012 at 7:04 PM, Zhi Yong Wu <zwu.kernel-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+>>> I don't use bcache now. To use bcache, I need rebuild the entire kernel.
+>>>
+>>> I use flashcache instead, it can be compiled as a kernel model.
+>> Sorry, I am bcache newbie, please execute me to ask one more question.
+>>
+>> Just search flashcahce, it seems to have similar functions as bcache.
+>> right? If so, what is the difference between flashcache and bcache? If
+>> compared to flashcache, what are bcache's advantage and weakness
+>> separately?
+>>
+> As far as I know, both flashcache and bcache can use ssd as a cache device,
+> flashcache can be compiled a kernel module, but bcache can only be patched
+> in the kernel tree and be compiled with the entire kernel. If you are using a
+> vender provided kernel, compiling as kernel module needs less work then
+> compiling the entire kernel.
+>
+> Bcache peoples are working hard to merge bcache into upstream kernel, once
+> it enters to the upstream kernel, it will become a standard feature. and will be
+> easy to use.
+>
+> I have not do performance test. I don't know which one is better for
+> your situation.
+Great, thanks a lot.
+>
+> BTW: If you want to use ssd as read cache, zfs[1][2] is a option too.
+>
+> [1] http://zfs-fuse.net/
+> [2] http://zfsonlinux.org/
+>
+>
+> --
+> Liang Guo
+> http://bluestone.cublog.cn
 
-You're right - ssize_t and size_t. I think gcc just isn't checking
-signedness at all, that %i should be a %u too. Good catch.
 
-> 
-> > > > +static int debug_seq_show(struct seq_file *f, void *data)
-> > > > +{
-> > > > +	static const char *tabs = "\t\t\t\t\t";
-> > > 
-> > > Seems a _very_ odd use.
-> > 
-> > It is a strange hack.
-> > 
-> > The idea is that we want to indent more as we recurse; we could build up
-> > a new string of tabs each time we recurse that's got one more tab than
-> > our parent's, but that'd be a pain in the ass and it'd use more stack
-> > space (though that should be fine here), so instead it's just
-> > decrementing the pointer to the tab string to produce a string with one
-> > more tab.
-> 
-> It's a nice idea, but that's not what's happening
-> as I believe you reference tabs only once as &tabs[4]
 
-bch_btree_dump() prints out tabs, and passes tabs - 1 when it recurses.
+-- 
+Regards,
+
+Zhi Yong Wu
