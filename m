@@ -1,30 +1,31 @@
-From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Subject: bcache-3.2 branch
-Date: Wed, 20 Jun 2012 22:08:51 +1000
-Message-ID: <CAOzFzEh8pO37dVWoMoD+hFoUGrBoubSdktdu7SQS0UcXLcC66w@mail.gmail.com>
+From: eric-XITSOACK58MepN6nwfbeTeTW4wlIGRCZ@public.gmane.org
+Subject: Getting Started Guide
+Date: Sat, 30 Jun 2012 21:00:13 -0700
+Message-ID: <1341115213.19223.140661096271409.0A2F3484@webmail.messagingengine.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Kent and list,
+Hey All,
 
-I have pulled down the latest bcache code and have been playing around
-with it when I noticed that I am having issues starting Xen virtual
-machines using bcache + LVM.
-What is interesting is the QEMU storage emulation in userspace is able
-to access the device fine however blkback kernel module which uses the
-device directly seems to fail.
-How would I go about debugging any of this?
+The more I read, the more I'd like to try using bcache.  I know the
+project is going through it's paces trying to get into the mainline
+kernel, but is there any resource for getting started with bcache right
+now?  I am not a newbie, but I am having a hard time finding anything
+definitive out there.
 
-Older versions of bcache work fine so it's a regression as far as I can=
- tell.
+I finally found: 
 
-Joseph.
+http://bcache.evilpiepirate.org/GettingStarted
+git://evilpiepirate.org/~kent/linux-bcache.git
 
---=20
-CTO | Orion Virtualisation Solutions=A0|=A0www.orionvm.com.au
-Phone: 1300 56 99 52 | Mobile: 0428 754 846
+Are there still too many "sharp corners"?
+
+Appreciate it.  All the best!
+
+cheers,
+eric
