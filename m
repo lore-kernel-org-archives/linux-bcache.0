@@ -1,77 +1,51 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: howto unregister disks and unload bcache module
-Date: Sat, 7 Jul 2012 17:42:41 -0700
-Message-ID: <20120708004240.GA12542@moria.home.lan>
-References: <CACgTii9ZvM=jxJzhaQOZHuca3666KArQPf2AhkKUepg5N5Fb9w@mail.gmail.com>
+Subject: Re: bcache-3.2 branch
+Date: Mon, 9 Jul 2012 08:57:34 -0700
+Message-ID: <20120709155734.GA23774@google.com>
+References: <CAOzFzEh8pO37dVWoMoD+hFoUGrBoubSdktdu7SQS0UcXLcC66w@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <CACgTii9ZvM=jxJzhaQOZHuca3666KArQPf2AhkKUepg5N5Fb9w-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAOzFzEh8pO37dVWoMoD+hFoUGrBoubSdktdu7SQS0UcXLcC66w-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Alain Spineux <aspineux-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Jul 04, 2012 at 11:15:32AM +0200, Alain Spineux wrote:
-> Hi
-> 
-> I'm trying to unregister disks to unload the bcache module and reuse
-> the disk for other tests.
-> 
-> Can someone tell me how to unload module bcache after having run these command ?
+On Wed, Jun 20, 2012 at 10:08:51PM +1000, Joseph Glanville wrote:
+> Hi Kent and list,
+>=20
+> I have pulled down the latest bcache code and have been playing aroun=
+d
+> with it when I noticed that I am having issues starting Xen virtual
+> machines using bcache + LVM.
+> What is interesting is the QEMU storage emulation in userspace is abl=
+e
+> to access the device fine however blkback kernel module which uses th=
+e
+> device directly seems to fail.
+> How would I go about debugging any of this?
+>=20
+> Older versions of bcache work fine so it's a regression as far as I c=
+an tell.
 
-You'd use either unregister or stop (in the various bcache directories,
-depending on whether you just wanted to stop/unregister a backing device
-or cache set) and then you ought to be able to rmmod it.
+Hey, sorry for the delay - I just got back from my first sort-of
+vacation in... awhile :P
 
-I should test that though, I wouldn't be surprised if something isn't
-completely working.
+I'm pretty sure I know the approximate source of the regression - I
+fairly recently reworked some code in the generic block layer to handle
+arbitrary size bios (which enabled some major cleanups in the bcache
+code). I've chased down a few bugs with that code since then.
 
-> 
-> Thanks.
-> 
-> #first load module
-> # modprobe bcache
-> 
-> I created a cache device on /dev/sdb1
-> # ./make-bcache -C -b512k -w4k --writeback /dev/sdb1
-> 
-> and a backing device on /dev/sdz.
-> # ./make-bcache -B /dev/sdz
-> 
-> # ./probe-bcache /dev/sdb1
-> 5f42bdd1-4342-4ab6-8dda-855989a09604: UUID="" TYPE="bcache"
-> 
-> # ./probe-bcache /dev/sdz
-> 6bbac9a4-afbd-4d40-9562-cdd290622c5d: UUID="" TYPE="bcache"
-> 
-> 
-> I then registered them by:
-> # echo /dev/sdb1 >/sys/fs/bcache/register
-> # echo /dev/sdz  >/sys/fs/bcache/register
-> 
-> I have /dev/bcache0.
-> /dev/bcache0 maps /dev/sdz except the first blocks
-> /dev/bcache0 is not yet cached by anything
-> 
-> # ls /sys/fs/bcache/
-> 887d3bb6-0161-4e54-b9d8-801de9f7df83  register  register_quiet
-> 
-> "887d3bb6-0161-4e54-b9d8-801de9f7df83"
-> is the id of the bcache "pool" composed by the only caching device /dev/sdb1
-> 
-> # now I attach /dev/sdz to this pool
-> echo "887d3bb6-0161-4e54-b9d8-801de9f7df83" > /sys/block/sdz/bcache/attach
-> 
-> 
-> 
-> -- 
-> Alain Spineux                   |  aspineux gmail com
-> Monitor your iT & Backups |  http://www.magikmon.com
-> Free Backup front-end       | http://www.magikmon.com/mksbackup
-> Your email 100% available |  http://www.emailgency.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Got some logs for me to look at? Or did you want me to give you pointer=
+s
+on debugging kernel code? :)
+
+>=20
+> Joseph.
+>=20
+> --=20
+> CTO | Orion Virtualisation Solutions=C2=A0|=C2=A0www.orionvm.com.au
+> Phone: 1300 56 99 52 | Mobile: 0428 754 846
