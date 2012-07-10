@@ -1,65 +1,104 @@
-From: Jason Warr <jason-/cow75dQlsI@public.gmane.org>
-Subject: Re: bcache & kernel branch that will build together
-Date: Mon, 09 Jul 2012 16:48:43 -0500
-Message-ID: <4FFB51BB.7050905@warr.net>
-References: <CAOzFzEh8pO37dVWoMoD+hFoUGrBoubSdktdu7SQS0UcXLcC66w@mail.gmail.com> <20120709155734.GA23774@google.com> <CAOzFzEjovYu4eE9E_asOBVyBhqFuvhgzJ7UFyESLY0XycAfkuA@mail.gmail.com> <20120709170742.GA26798@google.com> <4FFB1DD4.7030304@warr.net> <20120709184149.GA3234@google.com> <CAC7rs0vkasCKYwBTrvhWg8pzvHuix1ZaBJxTLBW+5AVG_31hEQ@mail.gmail.com>
+From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
+Subject: Re: bcache-3.2 branch
+Date: Wed, 11 Jul 2012 04:52:40 +1000
+Message-ID: <CAOzFzEjUy9zakyBhE5CNhcP-Dv7+hQBz3uzhKsMy5kj5GxfGwg@mail.gmail.com>
+References: <CAOzFzEh8pO37dVWoMoD+hFoUGrBoubSdktdu7SQS0UcXLcC66w@mail.gmail.com>
+	<20120709155734.GA23774@google.com>
+	<CAOzFzEjovYu4eE9E_asOBVyBhqFuvhgzJ7UFyESLY0XycAfkuA@mail.gmail.com>
+	<20120709170742.GA26798@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAC7rs0vkasCKYwBTrvhWg8pzvHuix1ZaBJxTLBW+5AVG_31hEQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <20120709170742.GA26798-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Excellent.  That builds fine for me against 3.5rc6.
-
-Much appreciated.
-
-Now to see if I can get the Fedora "patched" source to build and boot.
-
-On 07/09/2012 03:16 PM, Kent Overstreet wrote:
-> Ok, I think I got them all fixed - the code that's up now should build for you.
+On 10 July 2012 03:07, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
+> On Tue, Jul 10, 2012 at 02:32:36AM +1000, Joseph Glanville wrote:
+>> On 10 July 2012 01:57, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
+>> > On Wed, Jun 20, 2012 at 10:08:51PM +1000, Joseph Glanville wrote:
+>> >> Hi Kent and list,
+>> >>
+>> >> I have pulled down the latest bcache code and have been playing around
+>> >> with it when I noticed that I am having issues starting Xen virtual
+>> >> machines using bcache + LVM.
+>> >> What is interesting is the QEMU storage emulation in userspace is able
+>> >> to access the device fine however blkback kernel module which uses the
+>> >> device directly seems to fail.
+>> >> How would I go about debugging any of this?
+>> >>
+>> >> Older versions of bcache work fine so it's a regression as far as I can tell.
+>> >
+>> > Hey, sorry for the delay - I just got back from my first sort-of
+>> > vacation in... awhile :P
+>> >
+>> > I'm pretty sure I know the approximate source of the regression - I
+>> > fairly recently reworked some code in the generic block layer to handle
+>> > arbitrary size bios (which enabled some major cleanups in the bcache
+>> > code). I've chased down a few bugs with that code since then.
+>> >
+>> > Got some logs for me to look at? Or did you want me to give you pointers
+>> > on debugging kernel code? :)
+>>
+>> A few pointers would be great. :)
 >
-> On Mon, Jul 9, 2012 at 11:41 AM, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
->> On Mon, Jul 09, 2012 at 01:07:16PM -0500, Jason Warr wrote:
->>> Dumb question coming from someone who is more of an admin than a
->>> developer.  Although I did build and run a dev lab at Sun in the
->>> early days of Solaris Nevada.
->>>
->>> What kernel source version or branch will your current git tree patch to and compile with?
->>>
->>> I have tried everything from 3.5rc1 to Linus's current git tree.  It
->>> breaks DRBD.  Once I disable DRBD in the config it fails at
->>> target_core_iblock.c.  So I never get a full build.
->>>
->>> So either I am doing something obviously wrong or ???
+> More than happy to :) I'm not sure what sort of general pointers I could
+> give you off the top of my head - there's no Unified Theory of
+> Debugging, it's just a big bag of tricks you learn to narrow things down
+> until you figure it out. But I'll try to tell you everything I'd do with
+> this bug, at least (and whatever else you find :)
+>
+> Also just understanding how things work so you can figure out a root
+> cause from the symptom.
+>
 >>
->> Bah, sounds like I didn't test my code when I rebased to 3.5. Lazy me.
+>> Also how do I best get it to do a really verbose log that I can use to
+>> help you track down bugs?
+>
+> I think for all the bugs that have shown up in the wild so far we
+> haven't needed any special logging, just the normal stuff has been fine.
+> There's all kinds of logging and tracing and whatnot buried in there but
+> for the most part you don't want to bother with the non default stuff
+> unless you have to.
+>
+> But anyways, just whatever the kernel spits out is the place to start.
+> If you've still got that, I'll take a look and tell you what I'd get out
+> of it.
+
+Unfortunately the kernel wasn't talking much, I didn't see anything
+unusual and everything else seemed to work fine. :(
+I was able to successfully use bcached LVM volumes with filesystems
+too, it only became an issue when trying to use them as block devices
+for virtual machines.
+From the virtual machine all I could see where I/O errors, probably
+caused by the xen_blkback module returning failed read.
+Debugging that beast is not all that fun but I will see how I can go
+setting up a test system sometime this week with the latest bcache
+code.
+We are pretty entrenched in 3.2 but would be be more useful if I
+carried out testing on latter kernels instead or is 3.2 fine?
+
+>
 >>
->> For the moment, if you're not actually using drbd or iscsi you could
->> just disable both of those in the config. Assuming I didn't break dm and
->> md too. heh.
+>> >
+>> >>
+>> >> Joseph.
+>> >>
+>> >> --
+>> >> CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+>> >> Phone: 1300 56 99 52 | Mobile: 0428 754 846
 >>
->>>
->>> I'd love to test this out and help with debugging.  I have plenty of
->>> hardware and interest in it working well.  I can even provide you
->>> access to debug when I hit an issue.
+>> Cheers,
+>> Joseph.
 >>
->> Cool!
->>
->>> What error output can I provide and can you point me to good trees?
->>
->> You could send me your .config in case it turns out to be something
->> specific to your specific config. Ought to be something simple, though.
->>
->>> I appreciate it and I am glad to see that someone is finally making
->>> the effort to get a real, working block cache object into the
->>> kernel.  I will help in any way I can.
->>
->> Thanks :)
 >> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+>> Phone: 1300 56 99 52 | Mobile: 0428 754 846
+
+Joseph.
+
+-- 
+CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+Phone: 1300 56 99 52 | Mobile: 0428 754 846
