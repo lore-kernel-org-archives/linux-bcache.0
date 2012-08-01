@@ -1,179 +1,41 @@
-From: Mikulas Patocka <mpatocka@redhat.com>
-Subject: [PATCH] A possible deadlock with stacked devices (was: [PATCH v4
- 08/12] block: Introduce new bio_split())
-Date: Thu, 26 Jul 2012 20:50:46 -0400 (EDT)
-Message-ID: <Pine.LNX.4.64.1207262005450.28322@file.rdu.redhat.com>
-References: <1343160689-12378-1-git-send-email-koverstreet@google.com>
- <1343160689-12378-9-git-send-email-koverstreet@google.com> <500FDEBC.9050607@panasas.com>
- <20120725232611.GD8673@moria.home.lan>
+From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
+Subject: Bcache in Xen Environment
+Date: Wed, 01 Aug 2012 10:20:15 +0100
+Message-ID: <5fe181f7719e9d85f15e0906688388bd@abpni.co.uk>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20120725232611.GD8673@moria.home.lan>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk, agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com, vgoyal@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
+Hi Everyone,
 
+I wish to investigate using bcache in a Xen virtualisation environment. 
+We wish to use bcache to add a SSD (single drive) cache to a RAID10 
+device (using metal spindles), and I have a few questions.
 
-On Wed, 25 Jul 2012, Kent Overstreet wrote:
+1) On the bcache website, it says this:
 
-> On Wed, Jul 25, 2012 at 02:55:40PM +0300, Boaz Harrosh wrote:
-> > On 07/24/2012 11:11 PM, Kent Overstreet wrote:
-> > 
-> > > The new bio_split() can split arbitrary bios - it's not restricted to
-> > > single page bios, like the old bio_split() (previously renamed to
-> > > bio_pair_split()). It also has different semantics - it doesn't allocate
-> > > a struct bio_pair, leaving it up to the caller to handle completions.
-> > > 
-> > > Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > > ---
-> > >  fs/bio.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  1 files changed, 99 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/fs/bio.c b/fs/bio.c
-> > > index 5d02aa5..a15e121 100644
-> > > --- a/fs/bio.c
-> > > +++ b/fs/bio.c
-> > > @@ -1539,6 +1539,105 @@ struct bio_pair *bio_pair_split(struct bio *bi, int first_sectors)
-> > >  EXPORT_SYMBOL(bio_pair_split);
-> > >  
-> > >  /**
-> > > + * bio_split - split a bio
-> > > + * @bio:	bio to split
-> > > + * @sectors:	number of sectors to split from the front of @bio
-> > > + * @gfp:	gfp mask
-> > > + * @bs:		bio set to allocate from
-> > > + *
-> > > + * Allocates and returns a new bio which represents @sectors from the start of
-> > > + * @bio, and updates @bio to represent the remaining sectors.
-> > > + *
-> > > + * If bio_sectors(@bio) was less than or equal to @sectors, returns @bio
-> > > + * unchanged.
-> > > + *
-> > > + * The newly allocated bio will point to @bio's bi_io_vec, if the split was on a
-> > > + * bvec boundry; it is the caller's responsibility to ensure that @bio is not
-> > > + * freed before the split.
-> > > + *
-> > > + * If bio_split() is running under generic_make_request(), it's not safe to
-> > > + * allocate more than one bio from the same bio set. Therefore, if it is running
-> > > + * under generic_make_request() it masks out __GFP_WAIT when doing the
-> > > + * allocation. The caller must check for failure if there's any possibility of
-> > > + * it being called from under generic_make_request(); it is then the caller's
-> > > + * responsibility to retry from a safe context (by e.g. punting to workqueue).
-> > > + */
-> > > +struct bio *bio_split(struct bio *bio, int sectors,
-> > > +		      gfp_t gfp, struct bio_set *bs)
-> > > +{
-> > > +	unsigned idx, vcnt = 0, nbytes = sectors << 9;
-> > > +	struct bio_vec *bv;
-> > > +	struct bio *ret = NULL;
-> > > +
-> > > +	BUG_ON(sectors <= 0);
-> > > +
-> > > +	/*
-> > > +	 * If we're being called from underneath generic_make_request() and we
-> > > +	 * already allocated any bios from this bio set, we risk deadlock if we
-> > > +	 * use the mempool. So instead, we possibly fail and let the caller punt
-> > > +	 * to workqueue or somesuch and retry in a safe context.
-> > > +	 */
-> > > +	if (current->bio_list)
-> > > +		gfp &= ~__GFP_WAIT;
-> > 
-> > 
-> > NACK!
-> > 
-> > If as you said above in the comment:
-> > 	if there's any possibility of it being called from under generic_make_request();
-> >         it is then the caller's responsibility to ...
-> > 
-> > So all the comment needs to say is: 
-> > 	... caller's responsibility to not set __GFP_WAIT at gfp.
-> > 
-> > And drop this here. It is up to the caller to decide. If the caller wants he can do
-> > "if (current->bio_list)" by his own.
-> > 
-> > This is a general purpose utility you might not know it's context.
-> > for example with osdblk above will break.
-> 
-> Well I'm highly highly skeptical that using __GFP_WAIT under
-> generic_make_request() is ever a sane thing to do - it could certainly
-> be safe in specific circumstances, but it's just such a fragile thing to
-> rely on, you have to _never_ use the same bio pool more than once. And
-> even then I bet there's other subtle ways it could break.
-> 
-> But you're not the first to complain about it, and your point about
-> existing code is compelling.
+"It won't return a write as completed until everything necessary to 
+locate it is on stable storage, nor will writes ever be seen as 
+partially completed (or worse, missing) in the event of power failure."
 
-Both md and dm use __GFP_WAIT allocations from mempools in 
-generic_make_request.
+Is this just true for write-through? Or write-back mode as well? If it 
+is true for write-back mode, how does this work? I thought the point of 
+write-back mode was to return write quickly due to the fast buffer 
+storage.
 
-I think you found an interesting bug here. Suppose that we have three 
-stacked devices: d1 depends on d2 and d2 depends on d3.
+2) When we delete a virtual machine, it is common for us to run dd to 
+"zero" the LVM LV so that data is deleted. If we introduce bcache, can 
+we still be sure that all data is gone? We need to make sure that no 
+data leakage can occur between LVs.
 
-Now, a bio b1 comes to d1. d1 splits it to two bios: b2.1 and b2.2 and 
-sends them to the device d2 - these bios end up in current->bio_list. The 
-driver for d2 receives bio b2.1 and sends bio b3.1 to d3. Now, 
-current->bio_list contains bios b2.2, b3.1. Now, bio b2.2 is popped off 
-the bio list and the driver for d2 is called with b2.2 - suppose that for 
-some reason mempool in d2 is exhausted and the driver needs to wait until 
-b2.1 finishes. b2.1 never finishes, because b2.1 depends on b3.1 and b3.1 
-is still in current->bio_list. So it deadlocks.
+3) SSD storage has a much more limited write span that metal spindles. 
+If an SSD drive were to fail, will the RAID10 spindle array still 
+continue to function? Will any data be lost? How does write-through and 
+write-back handle these cases?
 
-Turning off __GFP_WAIT fixes nothing - it just turns one bug (a possible 
-deadlock) into another bug (a possible bio failure with -ENOMEM).
-
-Increasing mempool sizes doesn't fix it either, the bio would just have to 
-be split to more pieces in the above example to make it deadlock.
-
-I think the above possible deadlock scenario could be fixed by reversing 
-current->bio_list processing - i.e. when some device's make_request_fn 
-adds some bios to current->bio_list, these bios are processed before other 
-bios that were on the list before. This way, bio list would contain "b3.1, 
-b2.2" instead of "b2.2, b3.1" in the above example and the deadlock would 
-not happen.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
----
- block/blk-core.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
-
-Index: linux-3.5-fast/block/blk-core.c
-===================================================================
---- linux-3.5-fast.orig/block/blk-core.c	2012-07-27 02:20:25.000000000 +0200
-+++ linux-3.5-fast/block/blk-core.c	2012-07-27 02:34:37.000000000 +0200
-@@ -1740,6 +1740,7 @@ end_io:
- void generic_make_request(struct bio *bio)
- {
- 	struct bio_list bio_list_on_stack;
-+	struct bio_list current_bio_list;
- 
- 	if (!generic_make_request_checks(bio))
- 		return;
-@@ -1789,14 +1790,22 @@ void generic_make_request(struct bio *bi
- 	 * bio_list, and call into ->make_request() again.
- 	 */
- 	BUG_ON(bio->bi_next);
--	bio_list_init(&bio_list_on_stack);
-+	bio_list_init(&current_bio_list);
- 	current->bio_list = &bio_list_on_stack;
- 	do {
- 		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
- 
-+		bio_list_init(&bio_list_on_stack);
-+
- 		q->make_request_fn(q, bio);
- 
--		bio = bio_list_pop(current->bio_list);
-+		/*
-+		 * To avoid a possible deadlock, bios that were added by
-+		 * the most recent make_request_fn must be processed first.
-+		 */
-+		bio_list_merge_head(&current_bio_list, &bio_list_on_stack);
-+
-+		bio = bio_list_pop(&current_bio_list);
- 	} while (bio);
- 	current->bio_list = NULL; /* deactivate */
- }
+Thanks for your time.
