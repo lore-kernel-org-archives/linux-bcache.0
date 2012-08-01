@@ -1,41 +1,28 @@
-From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
-Subject: Bcache in Xen Environment
-Date: Wed, 01 Aug 2012 10:30:35 +0100
-Message-ID: <f6d8cb27fa455b02f6da326945b06173@abpni.co.uk>
+From: Piergiorgio Sartor <piergiorgio.sartor-i47jiTeKxPI@public.gmane.org>
+Subject: Kernel schedule
+Date: Wed, 1 Aug 2012 18:57:18 +0200
+Message-ID: <20120801165718.GA2534@lazy.lzy>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Everyone,
+Hi all,
 
-I wish to investigate using bcache in a Xen virtualisation environment. 
-We wish to use bcache to add a SSD (single drive) cache to a RAID10 
-device (using metal spindles), and I have a few questions.
+just out of curiosity, when is expected the
+inclusion of bcache in mainline kernel?
 
-1) On the bcache website, it says this:
+I know many patches were underway back and
+forth, so I was wondering if an agreement
+was achieved or there is still discussion.
 
-"It won't return a write as completed until everything necessary to 
-locate it is on stable storage, nor will writes ever be seen as 
-partially completed (or worse, missing) in the event of power failure."
+Thanks,
 
-Is this just true for write-through? Or write-back mode as well? If it 
-is true for write-back mode, how does this work? I thought the point of 
-write-back mode was to return write quickly due to the fast buffer 
-storage.
+bye,
 
-2) When we delete a virtual machine, it is common for us to run dd to 
-"zero" the LVM LV so that data is deleted. If we introduce bcache, can 
-we still be sure that all data is gone? We need to make sure that no 
-data leakage can occur between LVs.
+-- 
 
-3) SSD storage has a much more limited write span that metal spindles. 
-If an SSD drive were to fail, will the RAID10 spindle array still 
-continue to function? Will any data be lost? How does write-through and 
-write-back handle these cases?
-
-Thanks for your time.
+piergiorgio
