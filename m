@@ -1,68 +1,50 @@
-From: Muthu Kumar <muthu.lkml-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: [dm-devel] [PATCH v5 12/12] block: Only clone bio vecs that are
- in use
-Date: Thu, 9 Aug 2012 19:29:04 -0700
-Message-ID: <CAFR8uedwrfv8TB==BkDTZAENYhDOY8S++aTqEoJ7xbn7Vo-6Ag@mail.gmail.com>
+From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
+Subject: Re: [PATCH v5 02/12] dm: Use bioset's front_pad for dm_rq_clone_bio_info
+Date: Sat, 11 Aug 2012 15:24:45 +1000
+Message-ID: <CAOzFzEhPW5-edb6mnL2gNbb4956u2MbWqQovv01010PyBCbc+g@mail.gmail.com>
 References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
-	<1344290921-25154-13-git-send-email-koverstreet@google.com>
-	<Pine.LNX.4.64.1208061913500.21956@file.rdu.redhat.com>
-	<20120808232804.GL6983@dhcp-172-17-108-109.mtv.corp.google.com>
-	<CAFR8uedZiG0NWgWQQa03r+kKh8rT0jzpj+hwPzq+i7K6zhpT_A@mail.gmail.com>
-	<20120809070154.GG2845@dhcp-172-17-108-109.mtv.corp.google.com>
+	<1344290921-25154-3-git-send-email-koverstreet@google.com>
+	<20120808220612.GA6983@dhcp-172-17-108-109.mtv.corp.google.com>
+	<20120808235731.GA7262@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20120809070154.GG2845-RcKxWJ4Cfj1J2suj2OqeGauc2jM2gXBXkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
+In-Reply-To: <20120808235731.GA7262-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Cc: Mikulas Patocka <mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, device-mapper development <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, yehuda-L5o5AL9CYN0tUFlbccrkMA@public.gmane.org, sage-BnTBU8nroG7k1uMJSBkQmQ@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, sage-BnTBU8nroG7k1uMJSBkQmQ@public.gmane.org, yehuda-L5o5AL9CYN0tUFlbccrkMA@public.gmane.org, snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Tejun,
+Hi Kent, Tejun
 
-On Thu, Aug 9, 2012 at 12:01 AM, Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org> wrote:
-> Hello,
+On 9 August 2012 09:57, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
+>> Also, how was this tested?
 >
-> On Wed, Aug 08, 2012 at 04:47:46PM -0700, Muthu Kumar wrote:
->> You are changing the meaning of __bio_clone() here. In old code, the
->> number of io_vecs, bi_idx, bi_vcnt are preserved. But in this modified
->> code, you are mapping bio_src's bi_iovec[bi_idx] to bio_dests
->> bi_iovec[0] and also restricting the number of allocated io_vecs of
->> the clone. It may be useful for cases were we would like a identical
->> copy of the original bio (may not be in current code base, but this
->> implementation is definitely not what one would expect from the name
->> "clone").
->
-> Implementation details changed somewhat but the high-level semantics
-> didn't change at all.  Any driver not messing with bio internals - and
-> they shouldn't - shouldn't notice the change.
+> Well, AFAICT the only request based dm target is multipath, and from the
+> documentation I've seen it doesn't appear to work without multipath
+> hardware, or at least I haven't seen it documented how. So, unless
+> there's another user I missed it's not been tested.
 
-The reason for doing this change is because the code in question is
-messing with bio internals.
+Multipath can be tested quite easily with a loopback scsi target, you
+don't require specialized hardware.
+The easiest way to do this would probably be the built in LIO target +
+open_iscsi initiator.
 
-No in-kernel drivers
-> seem to be broken by the change.  If you ask me, this looks more like
-> a bug fix to me where the bug is a silly behavior restricting
-> usefulness of the interface.
->
->> May be, call this new implementation some thing else (and use it for bcache)?
->
-> This doesn't only change __bio_clone() but all clone interface stacked
-> on top of it, so, no way.
-
->This ain't windows.
-
-ah... when you put it this way, it gets a different perspective :)
-
-Anyway, my point is, we shouldn't make it non-obvious ("clone" should
-be just "clone"). But, we can always add more comments i guess.
-
-Regards,
-Muthu
-
+I haven't attempted running this current version of the patch series
+but I haven't run into issues with bcache+multipath in the past.
 
 >
-> Thanks.
->
+>>
+>> Thanks.
+>>
+>> --
+>> tejun
 > --
-> tejun
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+Phone: 1300 56 99 52 | Mobile: 0428 754 846
