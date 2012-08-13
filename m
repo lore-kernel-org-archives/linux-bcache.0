@@ -1,42 +1,42 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [Xen-devel] blkback and bcache
-Date: Mon, 13 Aug 2012 14:34:55 -0700
-Message-ID: <20120813213455.GC6887@google.com>
-References: <6035A0D088A63A46850C3988ED045A4B299F67FA@BITCOM1.int.sbss.com.au>
- <CAOzFzEhna3CaBE28aHVX_ZoNLDEa6AhArHPcB9240Ni4jh9PYA@mail.gmail.com>
- <6035A0D088A63A46850C3988ED045A4B299F6A9B@BITCOM1.int.sbss.com.au>
- <CAOzFzEhF+Pb89PNoibBc-9_Db6OUiyG5R8mKkAPi5pns4+CsAg@mail.gmail.com>
+From: Kent Overstreet <koverstreet@google.com>
+Subject: Re: [PATCH v5 02/12] dm: Use bioset's front_pad for
+ dm_rq_clone_bio_info
+Date: Mon, 13 Aug 2012 14:44:46 -0700
+Message-ID: <20120813214446.GC9541@google.com>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com>
+ <1344290921-25154-3-git-send-email-koverstreet@google.com>
+ <20120808220612.GA6983@dhcp-172-17-108-109.mtv.corp.google.com>
+ <20120808235731.GA7262@moria.home.lan>
+ <CAOzFzEhPW5-edb6mnL2gNbb4956u2MbWqQovv01010PyBCbc+g@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Return-path: <linux-kernel-owner@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <CAOzFzEhF+Pb89PNoibBc-9_Db6OUiyG5R8mKkAPi5pns4+CsAg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Cc: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>, "xen-devel-GuqFBffKawuEi8DpZVb4nw@public.gmane.org" <xen-devel-GuqFBffKawuEi8DpZVb4nw@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <CAOzFzEhPW5-edb6mnL2gNbb4956u2MbWqQovv01010PyBCbc+g@mail.gmail.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Joseph Glanville <joseph.glanville@orionvm.com.au>
+Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk, agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net, snitzer@redhat.com
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Aug 13, 2012 at 08:53:44PM +1000, Joseph Glanville wrote:
-> On 13 August 2012 18:17, James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org> wrote:
-> >>
-> >> This could very well be the issue I was having, I haven't been able to pull the
-> >> latest bcache code for a few days (repo down?) but if I can help debug let me
-> >> know.
-> >>
-> >
-> > Is it Windows or Linux giving you problems? I've only tested Windows so far.
-> >
-> > James
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> > the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+On Sat, Aug 11, 2012 at 03:24:45PM +1000, Joseph Glanville wrote:
+> Hi Kent, Tejun
 > 
-> Both, I wasn't able to get either to work correctly with blkback.
+> On 9 August 2012 09:57, Kent Overstreet <koverstreet@google.com> wrote:
+> >> Also, how was this tested?
+> >
+> > Well, AFAICT the only request based dm target is multipath, and from the
+> > documentation I've seen it doesn't appear to work without multipath
+> > hardware, or at least I haven't seen it documented how. So, unless
+> > there's another user I missed it's not been tested.
+> 
+> Multipath can be tested quite easily with a loopback scsi target, you
+> don't require specialized hardware.
+> The easiest way to do this would probably be the built in LIO target +
+> open_iscsi initiator.
+> 
+> I haven't attempted running this current version of the patch series
+> but I haven't run into issues with bcache+multipath in the past.
 
-Just mentioned this in the other thread, but if this is due to the 4k
-blocksize - that's easy to fix: just format with 512 byte blocksize
-
-make-bcache --block 512
-
-Maybe I should change the default.
+Actually, I bet you have been running this code - do you think you could
+check the git log for the version you're running? That'd be awesome if
+you are.
