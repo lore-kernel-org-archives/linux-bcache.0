@@ -1,7 +1,7 @@
 From: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>
-Subject: grub and bcache
-Date: Sun, 12 Aug 2012 11:17:39 +0000
-Message-ID: <6035A0D088A63A46850C3988ED045A4B299F5324@BITCOM1.int.sbss.com.au>
+Subject: 4K sectors
+Date: Mon, 13 Aug 2012 07:19:50 +0000
+Message-ID: <6035A0D088A63A46850C3988ED045A4B299F682F@BITCOM1.int.sbss.com.au>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
@@ -11,28 +11,12 @@ Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Is the underlying bdev bcache format such that bios/grub won't be able to boot off it?
+I notice on my system that bcache presents 4K sectors to Linux. This is causing me problems with Windows on Xen using my PV drivers (problem = doesn't work). I haven't figured out if it's my PV drivers that don't tell Windows the right thing, or if Windows just doesn't like 4K sectors.
 
-Or to put it another way, I am wondering whether I can get away with:
+Is the 4K sector thing intentional? I assume there is a performance improvement in doing so.
 
-/dev/sd[ab]
- md0
-  bcache
-   lvm
-    lv-root
-    lv-boot
+And what would be the performance impact if I just told Windows that it was dealing with 512 byte sectors (eg fake it)?
 
-like I do now without bcache and have grub find the lv-boot, or if I need a separate md device to hold /boot like:
-
-/dev/sd[ab]
-  md0
-    boot
-  md1
-    bcache
-      lvm
-        lv-root
-        lv-boot
-
-thanks
+Thanks
 
 James
