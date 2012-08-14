@@ -1,23 +1,39 @@
-From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
-Subject: Which Version
-Date: Tue, 14 Aug 2012 11:02:59 +0100
-Message-ID: <c2131d5d34c5334cefb53aa59e274c98@abpni.co.uk>
+From: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>
+Subject: RE: Which Version
+Date: Tue, 14 Aug 2012 10:11:11 +0000
+Message-ID: <6035A0D088A63A46850C3988ED045A4B299F962D@BITCOM1.int.sbss.com.au>
+References: <c2131d5d34c5334cefb53aa59e274c98@abpni.co.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <c2131d5d34c5334cefb53aa59e274c98-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Everyone,
-
-Which version of bcache do I pull from git if I want the latest stable 
-release? Am I correct in saying that the only way to obtain bcache is to 
-pull and compile the entire Linux kernel from the bcache git server? 
-Also, I wish to run bcache on my Xen Dom0, I'm guessing that these 
-kernels have to correct Xen patches for this (As xen kernel patches are 
-now mainline)?
-
-Many Thanks
+PiANCj4gSGkgRXZlcnlvbmUsDQo+IA0KPiBXaGljaCB2ZXJzaW9uIG9mIGJjYWNoZSBkbyBJIHB1
+bGwgZnJvbSBnaXQgaWYgSSB3YW50IHRoZSBsYXRlc3Qgc3RhYmxlIHJlbGVhc2U/DQo+IEFtIEkg
+Y29ycmVjdCBpbiBzYXlpbmcgdGhhdCB0aGUgb25seSB3YXkgdG8gb2J0YWluIGJjYWNoZSBpcyB0
+byBwdWxsIGFuZA0KPiBjb21waWxlIHRoZSBlbnRpcmUgTGludXgga2VybmVsIGZyb20gdGhlIGJj
+YWNoZSBnaXQgc2VydmVyPw0KPiBBbHNvLCBJIHdpc2ggdG8gcnVuIGJjYWNoZSBvbiBteSBYZW4g
+RG9tMCwgSSdtIGd1ZXNzaW5nIHRoYXQgdGhlc2Uga2VybmVscw0KPiBoYXZlIHRvIGNvcnJlY3Qg
+WGVuIHBhdGNoZXMgZm9yIHRoaXMgKEFzIHhlbiBrZXJuZWwgcGF0Y2hlcyBhcmUgbm93DQo+IG1h
+aW5saW5lKT8NCj4gDQoNCkknbSB1c2luZyB0aGUgMy4yIGJyYW5jaCwgcHVyZWx5IGJlY2F1c2Ug
+SSB3YW50ZWQgdG8gY29udGludWUgdXNpbmcgdGhlIDMuMi54IGtlcm5lbCBmcm9tIERlYmlhbi4g
+QWNjb3JkaW5nIHRvIGEgcXVlc3Rpb24gSSBhc2tlZCByZWNlbnRseSBpdCdzIG1vc3RseSB1cCB0
+byBkYXRlLiBUbyBkbyB0aGlzLCBJIGNoZWNrZWQgb3V0IHRoZSAzLjIgYnJhbmNoIG9mIGJjYWNo
+ZSwgYW5kIGV4dHJhY3RlZCBhIGRpZmYgZnJvbSB0aGUgdjMuMiB0YWcgKGVnIHRoZSBtYWluc3Ry
+ZWFtIGxpbnV4KSwgdGhlbiBhcHBsaWVkIHRoaXMgdG8gdGhlIERlYmlhbiBzb3VyY2UuIEkgY2Fu
+J3QgcmVtZW1iZXIgYnV0IEkgdGhpbmsgdGhlIHBhdGNoIG5lZWRlZCBhIGJpdCBvZiBudWRnaW5n
+IGluIG9uZSBwbGFjZS4gSSd2ZSBvbmx5IGJlZW4gdGVzdGluZyBmb3IgYSBmZXcgZGF5cyBidXQg
+c28gZmFyIGl0J3MgZmxhd2xlc3MuDQoNCldoZW4geW91IGNyZWF0ZSB0aGUgYmNhY2hlIGRldmlj
+ZXMsIEkgc3VnZ2VzdCBzZXR0aW5nIHRoZSBibG9jayBzaXplIHRvIDUxMiBieXRlcywgb3RoZXJ3
+aXNlIHRoZSByZXN1bHRpbmcgYmNhY2hlIGRldmljZXMgaGF2ZSA0SyBzZWN0b3JzIHNpemVzIGFu
+ZCBYZW4gZG9lc24ndCBsaWtlIGl0LiBZTU1WLg0KDQpCZWNhdXNlIEknbSBsYXllcmluZyBsdm0g
+b24gYmNhY2hlIG9uIG1kIG9uIHNkLCBJIGhhZCB0byB0d2VhayB0aGUgaW5pdHJhbWZzIHNjcmlw
+dHMgdG8gbWFrZSB0aGluZ3MgbG9hZCBpbiB0aGUgcmlnaHQgb3JkZXIsIGFuZCBhbHNvIHlvdSBz
+dGlsbCBuZWVkIHRvIHB1dCAvYm9vdCBvbiBzb21ldGhpbmcgZ3J1YiB1bmRlcnN0YW5kcyBlZyAv
+ZGV2L3NkWCBvciAvZGV2L21kWC4gR3J1YiBkb2Vzbid0IHVuZGVyc3RhbmQgYmNhY2hlICh5ZXQ/
+KS4NCg0KSmFtZXMNCg0K
