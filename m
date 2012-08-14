@@ -1,31 +1,32 @@
-From: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>
-Subject: RE: [Xen-devel] blkback and bcache
-Date: Mon, 13 Aug 2012 23:30:09 +0000
-Message-ID: <6035A0D088A63A46850C3988ED045A4B299F80E1@BITCOM1.int.sbss.com.au>
-References: <6035A0D088A63A46850C3988ED045A4B299F67FA@BITCOM1.int.sbss.com.au>
- <CAOzFzEhna3CaBE28aHVX_ZoNLDEa6AhArHPcB9240Ni4jh9PYA@mail.gmail.com>
- <6035A0D088A63A46850C3988ED045A4B299F6A9B@BITCOM1.int.sbss.com.au>
- <CAOzFzEhF+Pb89PNoibBc-9_Db6OUiyG5R8mKkAPi5pns4+CsAg@mail.gmail.com>
- <20120813213455.GC6887@google.com>
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: [PATCH v5 02/12] dm: Use bioset's front_pad for dm_rq_clone_bio_info
+Date: Tue, 14 Aug 2012 14:33:20 +0900
+Message-ID: <5029E320.3050603@ce.jp.nec.com>
+References: <1344290921-25154-1-git-send-email-koverstreet@google.com> <1344290921-25154-3-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20120813213455.GC6887-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Content-Language: en-US
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Cc: "xen-devel-GuqFBffKawuEi8DpZVb4nw@public.gmane.org" <xen-devel-GuqFBffKawuEi8DpZVb4nw@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1344290921-25154-3-git-send-email-koverstreet@google.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, tj@kernel.org, axboe@kernel.dk, agk@redhat.com, neilb@suse.de, drbd-dev@lists.linbit.com, vgoyal@redhat.com, mpatocka@redhat.com, sage@newdream.net, yehuda@hq.newdream.net
 List-Id: linux-bcache@vger.kernel.org
 
-> 
-> Just mentioned this in the other thread, but if this is due to the 4k blocksize -
-> that's easy to fix: just format with 512 byte blocksize
-> 
-> make-bcache --block 512
-> 
-> Maybe I should change the default.
+On 08/07/12 07:08, Kent Overstreet wrote:
+>  struct dm_rq_clone_bio_info {
+>  	struct bio *orig;
+>  	struct dm_rq_target_io *tio;
+> +	struct bio clone;
+>  };
+...
+> -	pools->bs = bioset_create(pool_size, 0);
+> +	pools->bs = bioset_create(pool_size,
+> +				  offsetof(struct dm_rq_clone_bio_info, orig));
+>  	if (!pools->bs)
+>  		goto free_tio_pool_and_out;
 
-I suggest making the default 512, but also print a warning if the user didn't explicitly set it,eg "Block size not set - defaulting to 512 bytes"
+Shouldn't this be offsetof(struct dm_rq_clone_bio_info, clone)?
 
-James
+-- 
+Jun'ichi Nomura, NEC Corporation
