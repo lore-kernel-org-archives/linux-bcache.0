@@ -1,20 +1,20 @@
-From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
+From: Jack Wang <jack.wang.usish-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: bcache compared to more RAM
-Date: Thu, 16 Aug 2012 12:29:19 +1000
-Message-ID: <CAOzFzEiM5A6q5SL1QzE-b-EOWFOao9-XapeTUNijOS+up40idg@mail.gmail.com>
+Date: Thu, 16 Aug 2012 11:29:38 +0800
+Message-ID: <CA+res+RTJDPKS02Pou8Pui0qnCX1=L6juS1k5mYJ-bp-Qd+JmA@mail.gmail.com>
 References: <201208150630.36861.csights@fastmail.fm>
 	<CAA-P7fUiZFKnfyAEEQtB+23W74VGK-TU4o0WX2RF_gbn5Gaq=Q@mail.gmail.com>
 	<502BCD0C.6080108@intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 In-Reply-To: <502BCD0C.6080108-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Dave Jiang <dave.jiang-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
-Cc: John McCabe-Dansted <gmatht-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, C Sights <csights-97jfqw80gc6171pxa8y+qA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: John McCabe-Dansted <gmatht-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, C Sights <csights-97jfqw80gc6171pxa8y+qA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, jack_wang-aA8Fybl81pAAvxtiuMwx3w@public.gmane.org, lindar_liu-aA8Fybl81pAAvxtiuMwx3w@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 16 August 2012 02:23, Dave Jiang <dave.jiang-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org> wrote:
+2012/8/16 Dave Jiang <dave.jiang-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>:
 > On 08/15/2012 04:51 AM, John McCabe-Dansted wrote:
 >> On Wed, Aug 15, 2012 at 7:30 PM, C Sights <csights-97jfqw80gc6171pxa8y+qA@public.gmane.org> wrote:
 >>> Hi all,
@@ -43,20 +43,9 @@ On 16 August 2012 02:23, Dave Jiang <dave.jiang-ral2JQCrhuEAvxtiuMwx3w@public.gm
 > still be faster than SSD. Anyhow, I'm more curious as to how I can
 > benchmark this to demonstrate if this is a benefit with bcache. i.e.
 > what benchmarking tool(s) I should use and with what parameters etc.
-
-fio - the flexible I/O tester is by far the best tool.
-It's usage is demonstrated on the bcache wiki frontpage and there are
-numerous tutorials.
-I suggest using the linux AIO engine and a high queue depth to see the benefit.
-
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Hi Dave,
 
-Joseph.
+Intesting, wish to see the result. what cache mode is intended to use with ADR.
 
--- 
-CTO | Orion Virtualisation Solutions | www.orionvm.com.au
-Phone: 1300 56 99 52 | Mobile: 0428 754 846
+Jack
