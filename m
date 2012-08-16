@@ -1,38 +1,62 @@
-From: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>
-Subject: RE: [Xen-devel] blkback and bcache
-Date: Wed, 15 Aug 2012 23:48:33 +0000
-Message-ID: <6035A0D088A63A46850C3988ED045A4B299FCC7F@BITCOM1.int.sbss.com.au>
-References: <6035A0D088A63A46850C3988ED045A4B299F67FA@BITCOM1.int.sbss.com.au>
- <CAOzFzEhna3CaBE28aHVX_ZoNLDEa6AhArHPcB9240Ni4jh9PYA@mail.gmail.com>
- <6035A0D088A63A46850C3988ED045A4B299F6A9B@BITCOM1.int.sbss.com.au>
- <CAOzFzEhF+Pb89PNoibBc-9_Db6OUiyG5R8mKkAPi5pns4+CsAg@mail.gmail.com>
- <20120813213455.GC6887@google.com>
- <6035A0D088A63A46850C3988ED045A4B299F80E1@BITCOM1.int.sbss.com.au>
- <CAOzFzEitP95cy4LKJD+H1ffBLP_OjxWPTYCEd=XNkb-i5Mz39w@mail.gmail.com>
- <20120815200418.GA2758@google.com>
+From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
+Subject: Re: bcache compared to more RAM
+Date: Thu, 16 Aug 2012 12:29:19 +1000
+Message-ID: <CAOzFzEiM5A6q5SL1QzE-b-EOWFOao9-XapeTUNijOS+up40idg@mail.gmail.com>
+References: <201208150630.36861.csights@fastmail.fm>
+	<CAA-P7fUiZFKnfyAEEQtB+23W74VGK-TU4o0WX2RF_gbn5Gaq=Q@mail.gmail.com>
+	<502BCD0C.6080108@intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20120815200418.GA2758-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Content-Language: en-US
+In-Reply-To: <502BCD0C.6080108-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Cc: "xen-devel-GuqFBffKawuEi8DpZVb4nw@public.gmane.org" <xen-devel-GuqFBffKawuEi8DpZVb4nw@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Dave Jiang <dave.jiang-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+Cc: John McCabe-Dansted <gmatht-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, C Sights <csights-97jfqw80gc6171pxa8y+qA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-> > Is there anything xen-devel should be doing about this? I wouldn't
-> > expect blkback to care about block size...
-> 
-> Well, I wouldn't be surprised if Windows doesn't work on a device with block
-> size > 512 bytes. But Linux (ext4 at least) certaintly does work with 4k blocks -
-> unless maybe it was breaking on something in the boot process?
-> 
-> So it sounds like this might be indicative of a bug in blkback.
-> 
+On 16 August 2012 02:23, Dave Jiang <dave.jiang-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org> wrote:
+> On 08/15/2012 04:51 AM, John McCabe-Dansted wrote:
+>> On Wed, Aug 15, 2012 at 7:30 PM, C Sights <csights-97jfqw80gc6171pxa8y+qA@public.gmane.org> wrote:
+>>> Hi all,
+>>>    Has anyone tried creating a bcache device in RAM and benchmarking
+>>> performance of that versus just allowing that RAM to be used as file system
+>>> buffers?
+>> I doubt it; bcache is designed to use non-volatile flash memory rather
+>> than ram.
+>>
+>> If the filesystem is readonly, I imagine that using RAM for bcache
+>> would lead to worse performance as it would just add overhead. If the
+>> filesystem is read-write then it might lead to better performance but
+>> would also lead to the file-system being trashed on if unexpected
+>> power loss occurs.
+>>
+>> Under what circumstance would you intend to actually use ram backed bcache?
+>>
+>
+> So the Intel Xeon E5-2600 series platforms has this feature called
+> asynchronous DRAM refresh (ADR). Essentially it's battery backed DRAM on
+> per DIMM socket basis. I have written a RAM disk driver on top of that
+> experimentally and played a little bit with it used by bcache instead of
+> SSD. Writing to the memory region isn't going to be as fast as normal
+> cached RAM because you have to ensure the data is flushed to the DRAM.
+> However, read should be the same as cached DRAM. But the writing should
+> still be faster than SSD. Anyhow, I'm more curious as to how I can
+> benchmark this to demonstrate if this is a benefit with bcache. i.e.
+> what benchmarking tool(s) I should use and with what parameters etc.
 
-As far as I can tell, blkback works internally in 512 byte sectors, but does a bounds check of the 512 byte sector offset against the native sector count, so if you have 4K sectors you get an error trying to access anything past 1/8th of the disk. This is a problem, but qemu can't boot off anything but 512 byte sectors so that is the more limiting factor. I suspect a more thorough audit of blkback's behaviour wrt 4K sectors would be in order before simply fixing the bounds check bug, although it seems to work fine.
+fio - the flexible I/O tester is by far the best tool.
+It's usage is demonstrated on the bcache wiki frontpage and there are
+numerous tutorials.
+I suggest using the linux AIO engine and a high queue depth to see the benefit.
 
-Curiously, despite literature to the contrary, Windows itself doesn't seem to care if the sector size is 4K. I added a second disk to an already running Windows DomU, partitioned it, and formatted it, and tested it (copying files on, off, rebooting, etc). As long as the size of my partition was <1/8th the size of the disk it worked fine.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-James
+Joseph.
+
+-- 
+CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+Phone: 1300 56 99 52 | Mobile: 0428 754 846
