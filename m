@@ -1,60 +1,76 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Issues dropping vm fs caches with kernel 3.5.2 + bcache master
-Date: Mon, 20 Aug 2012 17:37:13 -0700
-Message-ID: <20120821003713.GB19615@google.com>
-References: <CAAnFQG9JCMpZ7VSnuNxSGxXa4KrDWjdP4e3UJZj=W2Jbi30dZg@mail.gmail.com>
- <20120820202921.GA21953@google.com>
- <CAAnFQG-aK4aR8J05oe=MygbzjkoW4furOSyEjrhw6Zp0vznhEw@mail.gmail.com>
- <20120821001514.GB21953@google.com>
- <CAAnFQG_rE9f61Rgo+xH6uNujLwNx_QFaF-OpH_=pYro-+99AFQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Subject: [PATCH v6 00/13] Block cleanups
+Date: Wed, 22 Aug 2012 10:03:57 -0700
+Message-ID: <1345655050-28199-1-git-send-email-koverstreet@google.com>
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <CAAnFQG_rE9f61Rgo+xH6uNujLwNx_QFaF-OpH_=pYro-+99AFQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Javier Marcet <jmarcet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: Linux BCache Mailing List <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+Cc: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Aug 21, 2012 at 02:31:18AM +0200, Javier Marcet wrote:
-> >> >> I've recently set up a software RAID5 + bcache.
-> >> >>
-> >> >> I'm using kernel 3.5.2 merged with bcache master branch. I'm quite
-> >> >> happy with the performance but
-> >> >> there is an important issue. I can't drop caches. Writing any number
-> >> >> to /proc/sys/vm/drop_caches
-> >> >> makes the system hung.
-> >> >>
-> >> >> Furthermore, so far I've been unable to curb bcache's memory
-> >> >> consumption using the available
-> >> >> sysctl knobs.
-> >> >>
-> >> >> Is this problem known?
-> >> >
-> >> > No I didn't know about that - thanks, I'll look into it.
-> >
-> > Just tried it - I can reproduce it, but it's gone in 3.6. Looks like a
-> > 3.5 bug, not a bcache bug.
-> 
-> Oh, it was a coincidence then. I hadn't needed to use that for a long
-> time.
+Buncha changes in this version.
 
-Yeah. Weird bug.
+I came up with a new, much better solution to the "bio allocation from
+bio sets under generic_make_request()" problem. Previously, I was
+working around this in all of my code that allocated bios; it'd mask out
+GFP_WAIT if current->bio_list != NULL, then punt to workqueue if the
+allocation failed - so as to avoid the deadlock from allocating multiple
+bios from the same bio set.
 
-> > I'm gonna reset the master branch to my current dev branch soon as I've
-> > tested it a bit more, but I'd suggest the bcache-3.2 branch - that's the
-> > best tested code.
-> 
-> I cannot use a 3.2 kernel. This an HTPC too, besides a NAS and host for
-> vm guests. The tuners I have are supported from 3.4 onwards.
-> 
-> Do you mean there might be more problems with the master branch?
+This approach worked, but it required it to be explicitly handled in any
+stacking driver that might split a bio an arbitrary number of times -
+less than ideal.
 
-Perhaps, but mainly it tracks mainline pretty closely. 
+My new patch inverts this - when we go to allocate a bio and we're
+blocking another bio from being submitted, we punt the bio(s) that are
+being blocked off to a workqueue to be submitted. This means we only
+have to handle it in one place, in bio_alloc_bioset() - stack block
+drivers no longer have to do anything special (I got to delete some code
+from bcache, and dm wasn't handling this at all before).
 
-> By the way. I have read in the manual how to add new cache devices, but
-> can you remove completely the caches in a 'clean way'? Imagine to change
-> it to a different disk which for some reason you cannot use at the same time.
+Other big change - I consolidated bio allocation. Now bio_alloc(),
+bio_kmalloc(), bio_clone(), and bio_clone_kmalloc() are all one line
+wrappers.
 
-Yep. echo 1 > /sys/fs/bcache/<cache set>/unregister
+Incorporated a bunch of review feedback, most of which I hopefully
+remembered to note in the patch descriptions this time.
+
+Kent Overstreet (13):
+  block: Generalized bio pool freeing
+  dm: Use bioset's front_pad for dm_rq_clone_bio_info
+  block: Add bio_reset()
+  pktcdvd: Switch to bio_kmalloc()
+  block: Kill bi_destructor
+  block: Consolidate bio_alloc_bioset(), bio_kmalloc()
+  block: Avoid deadlocks with bio allocation by stacking drivers
+  block: Add an explicit bio flag for bios that own their bvec
+  block: Rename bio_split() -> bio_pair_split()
+  block: Introduce new bio_split()
+  block: Rework bio_pair_split()
+  block: Add bio_clone_bioset(), bio_clone_kmalloc()
+  block: Only clone bio vecs that are in use
+
+ Documentation/block/biodoc.txt      |   5 -
+ block/blk-core.c                    |  10 +-
+ drivers/block/drbd/drbd_main.c      |  13 +-
+ drivers/block/drbd/drbd_req.c       |  18 +-
+ drivers/block/osdblk.c              |   3 +-
+ drivers/block/pktcdvd.c             |  73 ++-----
+ drivers/block/rbd.c                 |   8 +-
+ drivers/md/dm-crypt.c               |   9 -
+ drivers/md/dm-io.c                  |  11 -
+ drivers/md/dm.c                     |  68 ++----
+ drivers/md/linear.c                 |   6 +-
+ drivers/md/md.c                     |  44 +---
+ drivers/md/raid0.c                  |   8 +-
+ drivers/md/raid10.c                 |  23 +-
+ drivers/target/target_core_iblock.c |   9 -
+ fs/bio-integrity.c                  |  45 ----
+ fs/bio.c                            | 419 +++++++++++++++++++++++-------------
+ fs/exofs/ore.c                      |   5 +-
+ include/linux/bio.h                 | 155 +++++++------
+ include/linux/blk_types.h           |  16 +-
+ 20 files changed, 434 insertions(+), 514 deletions(-)
+
+-- 
+1.7.12
