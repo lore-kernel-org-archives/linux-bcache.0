@@ -1,132 +1,42 @@
 From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [PATCH v6 07/13] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Date: Fri, 24 Aug 2012 13:28:55 -0700
-Message-ID: <20120824202855.GE21325@google.com>
+Subject: Re: [PATCH v6 12/13] block: Add bio_clone_bioset(),
+ bio_clone_kmalloc()
+Date: Fri, 24 Aug 2012 13:36:20 -0700
+Message-ID: <20120824203620.GG21325@google.com>
 References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-8-git-send-email-koverstreet@google.com>
- <20120822203003.GJ19212@google.com>
- <20120824055554.GC11977@moria.home.lan>
+ <1345655050-28199-13-git-send-email-koverstreet@google.com>
+ <20120822210740.GM19212@google.com>
+ <20120824062418.GD11977@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20120824055554.GC11977-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+In-Reply-To: <20120824062418.GD11977-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Jeff Garzik <jeff-o2qLIJkoznsdnm+yROfE0A@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
 Hello,
 
-On Thu, Aug 23, 2012 at 10:55:54PM -0700, Kent Overstreet wrote:
-> > Why aren't we turning off __GFP_WAIT instead?  e.g. What if the caller
-> > has one of NUMA flags or __GFP_COLD specified?
+On Thu, Aug 23, 2012 at 11:24:18PM -0700, Kent Overstreet wrote:
+> > I'd prefer simply adding @bioset to bio_clone() so that the caller
+> > always has to make the choice consciously.  We're updating all the
+> > callers anyway.
 > 
-> Didn't think of that. The reason I did it that way is I wasn't sure if
-> just doing &= ~__GFP_WAIT would be correct, since that would leave
-> __GFP_IO|__GFP_FS set.
+> Possibly, but the btrfs code uses bio_clone() and there fs_bio_set may
+> be correct (will have to look at what it's doing, if it's cloning a bio
+> that was allocated out of fs_bio_set that would be bad..)
 
-Using the appropriate __GFP_IO/FS flags is the caller's
-responsibility.  The only thing bioset needs to worry and take action
-about here is __GFP_WAIT causing indefinite wait in mempool.
+Yeah, I think it's generally a good idea to require explicit bioset
+specification even if that ends up being fs_bio_set or NULL.
 
-> > Plesae don't mix struct definition relocation (or any relocation
-> > really) with actual changes.  It buries the actual changes and makes
-> > reviewing difficult.
-> 
-> Make a new patch that does nothing more than reorder the definitions,
-> then?
+> I would also prefer to simply drop bio_clone() so that
+> bio_clone_bioset() matches bio_alloc_bioset(), but regardless that'll
+> have to be a different patch (and I don't think I've had to update any
+> of the bio_clone() callers in this patch series anyways).
 
-Yeap, with justification.
-
->     block: Avoid deadlocks with bio allocation by stacking drivers
->     
->     Previously, if we ever try to allocate more than once from the same bio
->     set while running under generic_make_request() (i.e. a stacking block
->     driver), we risk deadlock.
->     
->     This is because of the code in generic_make_request() that converts
->     recursion to iteration; any bios we submit won't actually be submitted
->     (so they can complete and eventually be freed) until after we return -
->     this means if we allocate a second bio, we're blocking the first one
->     from ever being freed.
->     
->     Thus if enough threads call into a stacking block driver at the same
->     time with bios that need multiple splits, and the bio_set's reserve gets
->     used up, we deadlock.
->     
->     This can be worked around in the driver code - we could check if we're
->     running under generic_make_request(), then mask out __GFP_WAIT when we
->     go to allocate a bio, and if the allocation fails punt to workqueue and
->     retry the allocation.
->     
->     But this is tricky and not a generic solution. This patch solves it for
->     all users by inverting the previously described technique. We allocate a
->     rescuer workqueue for each bio_set, and then in the allocation code if
->     there are bios on current->bio_list we would be blocking, we punt them
->     to the rescuer workqueue to be submitted.
->     
->     Tested it by forcing the rescue codepath to be taken (by disabling the
->     first GFP_NOWAIT) attempt, and then ran it with bcache (which does a lot
->     of arbitrary bio splitting) and verified that the rescuer was being
->     invoked.
-
-Yeah, the description looks good to me.
-
->  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  {
-> +	gfp_t saved_gfp = gfp_mask;
->  	unsigned front_pad;
->  	unsigned inline_vecs;
->  	unsigned long idx = BIO_POOL_NONE;
-> @@ -318,16 +336,44 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  		p = kmalloc(sizeof(struct bio) +
->  			    nr_iovecs * sizeof(struct bio_vec),
->  			    gfp_mask);
-> +
->  		front_pad = 0;
->  		inline_vecs = nr_iovecs;
->  	} else {
-> +		/*
-> +		 * generic_make_request() converts recursion to iteration; this
-> +		 * means if we're running beneath it, any bios we allocate and
-> +		 * submit will not be submitted (and thus freed) until after we
-> +		 * return.
-> +		 *
-> +		 * This exposes us to a potential deadlock if we allocate
-> +		 * multiple bios from the same bio_set() while running
-> +		 * underneath generic_make_request(). If we were to allocate
-> +		 * multiple bios (say a stacking block driver that was splitting
-> +		 * bios), we would deadlock if we exhausted the mempool's
-> +		 * reserve.
-> +		 *
-> +		 * We solve this, and guarantee forward progress, with a rescuer
-> +		 * workqueue per bio_set. If we go to allocate and there are
-> +		 * bios on current->bio_list, we first try the allocation
-> +		 * without __GFP_WAIT; if that fails, we punt those bios we
-> +		 * would be blocking to the rescuer workqueue before we retry
-> +		 * with the original gfp_flags.
-> +		 */
-
-Can you please add a comment in generic_make_request() to describe the
-issue briefly and link back here?
-
->  void bioset_free(struct bio_set *bs)
->  {
-> +	if (bs->rescue_workqueue)
-
-Why is the conditional necessary?  Is it possible to have a bioset w/o
-rescue_workqueue?
-
-> +		destroy_workqueue(bs->rescue_workqueue);
-> +
->  	if (bs->bio_pool)
->  		mempool_destroy(bs->bio_pool);
-
-This makes bioset_free() require process context, which probably is
-okay for bioset but still isn't nice.  Might worth noting in the patch
-description.
+Ooh yeah, bio_clone_bioset() would be the better name for it.
 
 Thanks.
 
