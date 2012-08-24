@@ -1,17 +1,17 @@
 From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [PATCH v6 06/13] block: Consolidate bio_alloc_bioset(),
- bio_kmalloc()
-Date: Fri, 24 Aug 2012 13:08:35 -0700
-Message-ID: <20120824200835.GD21325@google.com>
+Subject: Re: [PATCH v6 07/13] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Date: Fri, 24 Aug 2012 13:28:55 -0700
+Message-ID: <20120824202855.GE21325@google.com>
 References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-7-git-send-email-koverstreet@google.com>
- <20120822201730.GI19212@google.com>
- <20120824050400.GA11977@moria.home.lan>
+ <1345655050-28199-8-git-send-email-koverstreet@google.com>
+ <20120822203003.GJ19212@google.com>
+ <20120824055554.GC11977@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20120824050400.GA11977-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+In-Reply-To: <20120824055554.GC11977-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
@@ -19,63 +19,114 @@ List-Id: linux-bcache@vger.kernel.org
 
 Hello,
 
-On Thu, Aug 23, 2012 at 10:04:00PM -0700, Kent Overstreet wrote:
-> > >  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
-> > >  {
-> > > +	unsigned front_pad;
-> > > +	unsigned inline_vecs;
-> > >  	unsigned long idx = BIO_POOL_NONE;
-> > >  	struct bio_vec *bvl = NULL;
-> > >  	struct bio *bio;
-> > >  	void *p;
-> > >  
-> > > -	p = mempool_alloc(bs->bio_pool, gfp_mask);
-> > > +	if (nr_iovecs > UIO_MAXIOV)
-> > > +		return NULL;
-> > 
-> > This test used to only happen for bio_kmalloc().  If I follow the code
-> > I can see that UIO_MAXIOV is larger than BIOVEC_MAX_IDX, so this
-> > doesn't really affect the capability of bioset allocs; however, given
-> > that bioset allocation already checks against BIOVEC_MAX_IDX, I don't
-> > see why this test is now also applied to them.
+On Thu, Aug 23, 2012 at 10:55:54PM -0700, Kent Overstreet wrote:
+> > Why aren't we turning off __GFP_WAIT instead?  e.g. What if the caller
+> > has one of NUMA flags or __GFP_COLD specified?
 > 
-> Having arbitrary limits that are different for kmalloced bios and bioset
-> allocated bios seems _very_ sketchy to me. I tend to think that
-> UIO_MAXIOV check shouldn't be there at all... but if it is IMO it makes
-> slightly more sense for it to apply to all bio allocations.
+> Didn't think of that. The reason I did it that way is I wasn't sure if
+> just doing &= ~__GFP_WAIT would be correct, since that would leave
+> __GFP_IO|__GFP_FS set.
+
+Using the appropriate __GFP_IO/FS flags is the caller's
+responsibility.  The only thing bioset needs to worry and take action
+about here is __GFP_WAIT causing indefinite wait in mempool.
+
+> > Plesae don't mix struct definition relocation (or any relocation
+> > really) with actual changes.  It buries the actual changes and makes
+> > reviewing difficult.
 > 
-> As you mentioned it doesn't affect the behaviour of the code, but
-> supposing UIO_MAXIOV was less than BIO_MAX_PAGES, whatever was depending
-> on that check would then implicitly depend on the bios not being
-> allocated from a bioset. Ugly.
+> Make a new patch that does nothing more than reorder the definitions,
+> then?
 
-Please keep UIO_MAXIOV test on kmalloc case only.  If you want to
-change that, please do that in a separate patch with its own
-justification.
+Yeap, with justification.
 
-> > And we lose /** comments on two exported functions and
-> > bio_alloc_bioset() comment doesn't explain that it now also handles
-> > NULL bioset case.  Now that they share common implementation, you can
-> > update bio_alloc_bioset() and refer to it from its wrappers but please
-> > don't drop them like this.
-> 
-> So if I follow you, you're fine with dropping the comments from the
-> single line wrappers provided their information is rolled into
-> bio_alloc_bioset()'s documentation? That's what I should have done,
-> I'll do that now.
+>     block: Avoid deadlocks with bio allocation by stacking drivers
+>     
+>     Previously, if we ever try to allocate more than once from the same bio
+>     set while running under generic_make_request() (i.e. a stacking block
+>     driver), we risk deadlock.
+>     
+>     This is because of the code in generic_make_request() that converts
+>     recursion to iteration; any bios we submit won't actually be submitted
+>     (so they can complete and eventually be freed) until after we return -
+>     this means if we allocate a second bio, we're blocking the first one
+>     from ever being freed.
+>     
+>     Thus if enough threads call into a stacking block driver at the same
+>     time with bios that need multiple splits, and the bio_set's reserve gets
+>     used up, we deadlock.
+>     
+>     This can be worked around in the driver code - we could check if we're
+>     running under generic_make_request(), then mask out __GFP_WAIT when we
+>     go to allocate a bio, and if the allocation fails punt to workqueue and
+>     retry the allocation.
+>     
+>     But this is tricky and not a generic solution. This patch solves it for
+>     all users by inverting the previously described technique. We allocate a
+>     rescuer workqueue for each bio_set, and then in the allocation code if
+>     there are bios on current->bio_list we would be blocking, we punt them
+>     to the rescuer workqueue to be submitted.
+>     
+>     Tested it by forcing the rescue codepath to be taken (by disabling the
+>     first GFP_NOWAIT) attempt, and then ran it with bcache (which does a lot
+>     of arbitrary bio splitting) and verified that the rescuer was being
+>     invoked.
 
-Not really, for example, if you had
+Yeah, the description looks good to me.
 
-	/* explain A in detail */
-	a() {};
+>  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+>  {
+> +	gfp_t saved_gfp = gfp_mask;
+>  	unsigned front_pad;
+>  	unsigned inline_vecs;
+>  	unsigned long idx = BIO_POOL_NONE;
+> @@ -318,16 +336,44 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+>  		p = kmalloc(sizeof(struct bio) +
+>  			    nr_iovecs * sizeof(struct bio_vec),
+>  			    gfp_mask);
+> +
+>  		front_pad = 0;
+>  		inline_vecs = nr_iovecs;
+>  	} else {
+> +		/*
+> +		 * generic_make_request() converts recursion to iteration; this
+> +		 * means if we're running beneath it, any bios we allocate and
+> +		 * submit will not be submitted (and thus freed) until after we
+> +		 * return.
+> +		 *
+> +		 * This exposes us to a potential deadlock if we allocate
+> +		 * multiple bios from the same bio_set() while running
+> +		 * underneath generic_make_request(). If we were to allocate
+> +		 * multiple bios (say a stacking block driver that was splitting
+> +		 * bios), we would deadlock if we exhausted the mempool's
+> +		 * reserve.
+> +		 *
+> +		 * We solve this, and guarantee forward progress, with a rescuer
+> +		 * workqueue per bio_set. If we go to allocate and there are
+> +		 * bios on current->bio_list, we first try the allocation
+> +		 * without __GFP_WAIT; if that fails, we punt those bios we
+> +		 * would be blocking to the rescuer workqueue before we retry
+> +		 * with the original gfp_flags.
+> +		 */
 
-and if you introduce __a() which does __A and make a its wrapper.
+Can you please add a comment in generic_make_request() to describe the
+issue briefly and link back here?
 
-	/* explain __A in detail */
-	__a() {};
+>  void bioset_free(struct bio_set *bs)
+>  {
+> +	if (bs->rescue_workqueue)
 
-	/* explain A briefly and refer to __a() for details */
-	a() {};
+Why is the conditional necessary?  Is it possible to have a bioset w/o
+rescue_workqueue?
+
+> +		destroy_workqueue(bs->rescue_workqueue);
+> +
+>  	if (bs->bio_pool)
+>  		mempool_destroy(bs->bio_pool);
+
+This makes bioset_free() require process context, which probably is
+okay for bioset but still isn't nice.  Might worth noting in the patch
+description.
 
 Thanks.
 
