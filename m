@@ -1,68 +1,83 @@
-From: Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [PATCH v6 02/13] dm: Use bioset's front_pad for
- dm_rq_clone_bio_info
-Date: Fri, 24 Aug 2012 14:40:34 -0400
-Message-ID: <20120824184034.GA29932@redhat.com>
+From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Subject: Re: [PATCH v6 06/13] block: Consolidate bio_alloc_bioset(),
+ bio_kmalloc()
+Date: Fri, 24 Aug 2012 13:08:35 -0700
+Message-ID: <20120824200835.GD21325@google.com>
 References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-3-git-send-email-koverstreet@google.com>
- <20120822213010.GA8020@redhat.com>
- <20120824071448.GF11977@moria.home.lan>
+ <1345655050-28199-7-git-send-email-koverstreet@google.com>
+ <20120822201730.GI19212@google.com>
+ <20120824050400.GA11977@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20120824071448.GF11977-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+In-Reply-To: <20120824050400.GA11977-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Aug 24, 2012 at 12:14:48AM -0700, Kent Overstreet wrote:
+Hello,
 
-[..]
-> > > -static struct dm_rq_clone_bio_info *alloc_bio_info(struct mapped_device *md)
-> > > -{
-> > > -	return mempool_alloc(md->io_pool, GFP_ATOMIC);
-> > > -}
-> > > -
-> > > -static void free_bio_info(struct dm_rq_clone_bio_info *info)
-> > > -{
-> > > -	mempool_free(info, info->tio->md->io_pool);
-> > > -}
-> > > -
+On Thu, Aug 23, 2012 at 10:04:00PM -0700, Kent Overstreet wrote:
+> > >  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+> > >  {
+> > > +	unsigned front_pad;
+> > > +	unsigned inline_vecs;
+> > >  	unsigned long idx = BIO_POOL_NONE;
+> > >  	struct bio_vec *bvl = NULL;
+> > >  	struct bio *bio;
+> > >  	void *p;
+> > >  
+> > > -	p = mempool_alloc(bs->bio_pool, gfp_mask);
+> > > +	if (nr_iovecs > UIO_MAXIOV)
+> > > +		return NULL;
 > > 
-> > With this change, do you still need "_rq_bio_info_cache" slab cache? I would
-> > think that it can be cleaned up now?
+> > This test used to only happen for bio_kmalloc().  If I follow the code
+> > I can see that UIO_MAXIOV is larger than BIOVEC_MAX_IDX, so this
+> > doesn't really affect the capability of bioset allocs; however, given
+> > that bioset allocation already checks against BIOVEC_MAX_IDX, I don't
+> > see why this test is now also applied to them.
 > 
-> It looks like it, but I'm hesitent to make more extensive changes to the
-> dm code given that I'm unfamiliar with it and I haven't been able to
-> personally test the request type dm target code.
+> Having arbitrary limits that are different for kmalloced bios and bioset
+> allocated bios seems _very_ sketchy to me. I tend to think that
+> UIO_MAXIOV check shouldn't be there at all... but if it is IMO it makes
+> slightly more sense for it to apply to all bio allocations.
 > 
-> That and the way io_pool is overloaded. I see too many ways I could
-> screw things up.
+> As you mentioned it doesn't affect the behaviour of the code, but
+> supposing UIO_MAXIOV was less than BIO_MAX_PAGES, whatever was depending
+> on that check would then implicitly depend on the bios not being
+> allocated from a bioset. Ugly.
 
-I understand your concern but still if you leave it behind, job is
-half done. You moved rq_bio_info in bio front padding but left the
-associated cache and mempool behind. I would say we need to clean
-it up and then get ACK from dm/md folks.
+Please keep UIO_MAXIOV test on kmalloc case only.  If you want to
+change that, please do that in a separate patch with its own
+justification.
 
-I am looking at the code and one thing which is not clear to me is
-__bind_mempools() which assumes that md->io_pool is always set. With
-your change md->io_pool is set only for BIO based targets and not
-request based targets. So that will need some tidying up.
-
-Testing of request based target should be easy. Just enable multipath
-for your sata disk.
-
-
+> > And we lose /** comments on two exported functions and
+> > bio_alloc_bioset() comment doesn't explain that it now also handles
+> > NULL bioset case.  Now that they share common implementation, you can
+> > update bio_alloc_bioset() and refer to it from its wrappers but please
+> > don't drop them like this.
 > 
-> Also it looks like the equivalent change ought to be done with struct
-> dm_io first (then we'd have removed all the users of io_pool), but
-> honestly it takes me forever to do anything in the dm code so I'd rather
-> leave that to someone else.
+> So if I follow you, you're fine with dropping the comments from the
+> single line wrappers provided their information is rolled into
+> bio_alloc_bioset()'s documentation? That's what I should have done,
+> I'll do that now.
 
-I think we can leave io_pool behind. Just that it remains null for
-request based targets.
+Not really, for example, if you had
 
-Thanks
-Vivek
+	/* explain A in detail */
+	a() {};
+
+and if you introduce __a() which does __A and make a its wrapper.
+
+	/* explain __A in detail */
+	__a() {};
+
+	/* explain A briefly and refer to __a() for details */
+	a() {};
+
+Thanks.
+
+-- 
+tejun
