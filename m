@@ -1,75 +1,77 @@
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: [PATCH v6 13/13] block: Only clone bio vecs that are in use
-Date: Fri, 24 Aug 2012 13:42:16 -0700
-Message-ID: <20120824204216.GH21325@google.com>
+From: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v6 11/13] block: Rework bio_pair_split()
+Date: Fri, 24 Aug 2012 13:53:03 -0700
+Message-ID: <20120824205303.GI21325@google.com>
 References: <1345655050-28199-1-git-send-email-koverstreet@google.com>
- <1345655050-28199-14-git-send-email-koverstreet@google.com>
- <20120822211045.GN19212@google.com>
- <20120824070508.GE11977@moria.home.lan>
+ <1345655050-28199-12-git-send-email-koverstreet@google.com>
+ <20120822210410.GL19212@google.com>
+ <20120824103049.GG11977@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Return-path: <linux-kernel-owner@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <20120824070508.GE11977-jC9Py7bek1znysI04z7BkA@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, Alasdair Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Sage Weil <sage-4GqslpFJ+cxBDgjK7y7TUQ@public.gmane.org>
+In-Reply-To: <20120824103049.GG11977@moria.home.lan>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com, bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.de>, Lars Ellenberg <lars.ellenberg@linbit.com>, Peter Osterlund <petero2@telia.com>, Sage Weil <sage@inktank.com>, "Martin K. Petersen" <martin.petersen@oracle.com>
 List-Id: linux-bcache@vger.kernel.org
 
-Hello, Kent.
+Hello,
 
-On Fri, Aug 24, 2012 at 12:05:08AM -0700, Kent Overstreet wrote:
-> > I'm pretty sure I sound like a broken record by now, but
-> > 
-> > * How was this tested?
-> > 
-> > * What are the implications and possible dangers?
+On Fri, Aug 24, 2012 at 03:30:49AM -0700, Kent Overstreet wrote:
+> > I complained about this in the last posting and in the previous patch.
+> > Please respond.  Martin, are you okay with these integrity changes?
 > 
-> I've said all that on list, but I gather what you really wanted was to
-> have it all in the patch description. Will do.
-
-Yeap.
-
-> > > @@ -463,10 +468,10 @@ void __bio_clone(struct bio *bio, struct bio *bio_src)
-> > >  	bio->bi_sector = bio_src->bi_sector;
-> > >  	bio->bi_bdev = bio_src->bi_bdev;
-> > >  	bio->bi_flags |= 1 << BIO_CLONED;
-> > > +	bio->bi_flags &= ~(1 << BIO_SEG_VALID);
-> > 
-> > For the n'th time, explain please.
+> I did respond. I said more before, but in short the old
+> bio_integrity_split() only worked for single page bios, and thus wasn't
+> useful even as a starting point.
 > 
-> Argh, I could've sworn I dropped that part.
+> What my bio_split() does with the integrity is actually basically what
+> dm does (that's the only other place bio_integrity_trim()) is used).
 
-Can we drop it tho?  If we're changing bvecs, we probably should be
-clearing SEG_VALID on both bios.
+And all those information should be in the patch description.  Imagine
+this patch hitting some enterprise deployment, say four years after
+now, and causing weird performance regression and someone succeeding
+to bisect it down to this commit.  None of us would be remembering
+much about this and could in fact be doing something completely
+different.  Patches should at least try to record its visible
+implications.
 
-> commit 0edda563aef9432b45f0c6a50f52590b92594560
-> Author: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-> Date:   Thu Aug 23 23:26:38 2012 -0700
+This type of information should be always attached to the patch not
+only for future references but also to alert reviewers who aren't
+necessarily following the whole series and its iterations.
+
+> > Also, given that it's a pair split, it would be nice to somehow
+> > indicate that ->split is the earlier half.  Before this change it was
+> > pretty clear with ->bio1/2.
 > 
->     block: Only clone bio vecs that are in use
->     
->     bcache creates large bios internally, and then splits them according to
->     the device requirements before it sends them down. If a lower level
->     device tries to clone the bio, and the original bio had more than
->     BIO_MAX_PAGES, the clone will fail unecessarily.
->     
->     We can fix this by only cloning the bio vecs that are actually in use -
->     as for as the block layer is concerned the new bio is still equivalent
->     to the old bio.
->     
->     This code should in general be safe as long as all the block layer code
->     uses bi_idx, bi_vcnt consistently; since bios are cloned by code that
->     doesn't own the original bio there's little room for issues caused by
->     code playing games with the original bio's bi_io_vec. One perhaps
->     imagine code depending the clone and original bio's io vecs lining up a
->     certain way, but auditing and testing haven't turned up anything.
->     
->     Testing: This code has been in the bcache tree for quite awhile, and has
->     been tested with various md layers and dm targets (including strange
->     things like multipath).
+> Fixed the comment to indicate that too.
 
-Yeap, looks much better to me.
+Any chance we can do that with field name?
+
+> commit 5db0562e43099d06ed9488e7ae6bf0a0cc6ef5da
+> Author: Kent Overstreet <koverstreet@google.com>
+> Date:   Fri Aug 24 03:27:24 2012 -0700
+> 
+>     block: Rework bio_pair_split()
+>     
+>     This changes bio_pair_split() to use the new bio_split() underneath.
+>     
+>     This has two user visible changes: First, it's not restricted to single
+>     page bios anymore. Secondly, where before callers used bio1 and bio2 in
+>     struct bio_pair, now they use split and orig - this being a result of
+>     the new implementation.
+>     
+>     bio_integrity_split() is removed, as the old bio_pair_split() was the
+>     only user; the new bio_split() uses bio_integrity_clone/trim much like
+>     the dm code does.
+
+      "which may affect XXX in YYY cases but I think it's okay because ZZZ."
+
+If you aren't that sure,
+
+      "which may affect AAA but I don't think that's a big deal
+       because BBB.  This definitely requires Martin's ack."
 
 Thanks.
 
