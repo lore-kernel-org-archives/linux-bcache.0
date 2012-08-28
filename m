@@ -1,203 +1,65 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [PATCH v7 3/9] block: Add bio_reset()
-Date: Tue, 28 Aug 2012 15:53:38 -0700
-Message-ID: <20120828225337.GH1048@moria.home.lan>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-4-git-send-email-koverstreet@google.com>
- <20120828203148.GB24608@dhcp-172-17-108-109.mtv.corp.google.com>
- <20120828221715.GD1048@moria.home.lan>
+From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
+Subject: Re: Block Size for Windows
+Date: Tue, 28 Aug 2012 23:56:26 +0100
+Message-ID: <503D4C9A.5030109@abpni.co.uk>
+References: <503BC71A.6050207@abpni.co.uk> <CAH+dOxJ1GPQgmgDv4T3On-QovazSshU89GdVp=EHFmpaAzAGnQ@mail.gmail.com> <503BC82F.1030107@abpni.co.uk> <CAH+dOxJZEH9=ZEsB4RsS-8MdH-AGRh3jvo31bMUwXsMdirLMMQ@mail.gmail.com> <503BC897.3020606@abpni.co.uk> <CAH+dOxKx=kaW4duTyhRYrFH-5mYDUT6CGgY7WX9vqsMD_CpJaQ@mail.gmail.com> <503BCDC6.9010807@abpni.co.uk> <CAH+dOxLaYdqOi+n=NF2MSoEVsSz-C6QazbQrdwGCO02aDZXxDg@mail.gmail.com> <503D49A3.4090100@abpni.co.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20120828221715.GD1048-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+In-Reply-To: <503D49A3.4090100-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 03:17:15PM -0700, Kent Overstreet wrote:
-> On Tue, Aug 28, 2012 at 01:31:48PM -0700, Tejun Heo wrote:
-> > > +	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
-> > > +
-> > > +	if (bio_integrity(bio))
-> > > +		bio_integrity_free(bio, bio->bi_pool);
-> > > +
-> > > +	bio_disassociate_task(bio);
-> > 
-> > Is this desirable?  Why?
-> 
-> *twitch* I should've thought more when I made that change.
-> 
-> It occurs to me now that we specifically talked about that and decided
-> to do it the other way - when I changed that I was just looking at
-> bio_free() and decided they needed to be symmetrical.
-> 
-> I still think they should be symmetrical, but if that's true bi_ioc and
-> bi_css need to be moved, and also bio_disassociate_task() should be
-> getting called from bio_free(), not bio_put().
+On 28/08/2012 23:43, Jonathan Tripathy wrote:
+> On 27/08/2012 20:55, Kent Overstreet wrote:
+>> On Mon, Aug 27, 2012 at 12:43 PM, Jonathan Tripathy 
+>> <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org> wrote:
+>>> On 27/08/2012 20:22, Kent Overstreet wrote:
+>>>> echo 1 > /sys/fs/bcache/<uuid>/unregister
+>>>>
+>>>> echo 1 > /sys/block/bcache0/bcache/stop
+>>> Ok, so I managed to recreate everything with a block size of 512 bytes.
+>>> However, 2 bad things have happened:
+>>>
+>>> 1) In my Linux DomU, my fio randomwrite test have gone from about 
+>>> 28k iops
+>>> to about 800 iops. Can this be fixed? changing bs and ba to 512 in 
+>>> the fio
+>>> config file didn't hep.
+>> Ouch!
+>>
+>> Bet the ssd doesn't like those 512 byte journal writes. I'm going to
+>> have to think about that...
+> Hi Kent,
+>
+> Ok, a little good news. I managed to sort out the low IOPS issue. When 
+> I formatted bcache0 with a 512 block size, I forgot to set the caching 
+> mode back to writeback. Once I did that, the IOPS were nice and high 
+> again (circa 26k IOPS). Sorry about the noise regarding that non-issue.
+>
+> I re-tried the windows setup with writeback enabled for the 512B 
+> formatted cache. It kernel paniced as per-usual, however for some 
+> reason, it's kernel panicking upon every boot now, whereas when it was 
+> formatted with 4k sectors, once the system came back up, it was stable 
+> (until I tried another windows setup). The debug trace appears to be 
+> the same as the one I posted to the list (kernel BUG at fs/bio.c:420! 
+> invalid opcode: 0000 [#1] SMP).
+>
+> I appreciate your time.
+>
+> Thanks
+>
+I'm going to take a wild guess and say that my system is constantly 
+throwing the same panic as there is some dirty data in the cache (that 
+the windows setup has written) and when bcache tries to write this to 
+the MD-RAID10 array, the kernel panics. Before when it only happened 
+during windows setup, this was probably because I didn't have writeback 
+enabled (or no cache setup at all), hence no dirty data.
 
-Though - looking at it again I didn't actually screw anything up when I
-made that change, it's just bad style.
+To sum up my wild guess: The windows setup is writing certain data that 
+is causing the MD-RAID10 array to panic the kernel.
 
-Just screwing around a bit with the patch below, but - couple thoughts:
-
-1) I hate duplicated code, and for the stuff in
-bio_init()/bio_free()/bio_reset() it's perhaps not worth it, it is the
-kind of stuff that gets out of sync.
-
-2) It'd be better to have bio_reset() reset as much as possible, i.e. be
-as close to bio_init() as posible. Fewer differences to confuse people.
-
-
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 7c8fe1d..a38bc7d 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -148,6 +148,9 @@ void bio_integrity_free(struct bio *bio, struct bio_set *bs)
- 
- 	BUG_ON(bip == NULL);
- 
-+	if (!bs)
-+		bs = fs_bio_set;
-+
- 	/* A cloned bio doesn't own the integrity metadata */
- 	if (!bio_flagged(bio, BIO_CLONED) && !bio_flagged(bio, BIO_FS_INTEGRITY)
- 	    && bip->bip_buf != NULL)
-diff --git a/fs/bio.c b/fs/bio.c
-index c938f42..56d8fa2 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -234,39 +234,47 @@ fallback:
- 	return bvl;
- }
- 
-+static void bio_free_stuff(struct bio *bio)
-+{
-+	bio_disassociate_task(bio);
-+
-+	if (bio_integrity(bio))
-+		bio_integrity_free(bio, bio->bi_pool);
-+}
-+
- void bio_free(struct bio *bio)
- {
- 	struct bio_set *bs = bio->bi_pool;
- 	void *p;
- 
-+	bio_free_stuff(bio);
-+
- 	if (!bs) {
--		/* Bio was allocated by bio_kmalloc() */
--		if (bio_integrity(bio))
--			bio_integrity_free(bio, fs_bio_set);
- 		kfree(bio);
--		return;
--	}
--
--	if (bio_has_allocated_vec(bio))
--		bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
-+	} else {
-+		if (bio_has_allocated_vec(bio))
-+			bvec_free_bs(bs, bio->bi_io_vec, BIO_POOL_IDX(bio));
- 
--	if (bio_integrity(bio))
--		bio_integrity_free(bio, bs);
-+		/*
-+		 * If we have front padding, adjust the bio pointer before freeing
-+		 */
-+		p = bio;
-+		if (bs->front_pad)
-+			p -= bs->front_pad;
- 
--	/*
--	 * If we have front padding, adjust the bio pointer before freeing
--	 */
--	p = bio;
--	if (bs->front_pad)
--		p -= bs->front_pad;
-+		mempool_free(p, bs->bio_pool);
-+	}
-+}
- 
--	mempool_free(p, bs->bio_pool);
-+static void __bio_init(struct bio *bio)
-+{
-+	memset(bio, 0, BIO_RESET_BYTES);
-+	bio->bi_flags = 1 << BIO_UPTODATE;
- }
- 
- void bio_init(struct bio *bio)
- {
--	memset(bio, 0, sizeof(*bio));
--	bio->bi_flags = 1 << BIO_UPTODATE;
-+	__bio_init(bio);
- 	atomic_set(&bio->bi_cnt, 1);
- }
- EXPORT_SYMBOL(bio_init);
-@@ -275,13 +283,10 @@ void bio_reset(struct bio *bio)
- {
- 	unsigned long flags = bio->bi_flags & (~0UL << BIO_RESET_BITS);
- 
--	if (bio_integrity(bio))
--		bio_integrity_free(bio, bio->bi_pool);
-+	bio_free_stuff(bio);
-+	__bio_init(bio);
- 
--	bio_disassociate_task(bio);
--
--	memset(bio, 0, BIO_RESET_BYTES);
--	bio->bi_flags = flags|(1 << BIO_UPTODATE);
-+	bio->bi_flags |= flags;
- }
- EXPORT_SYMBOL(bio_reset);
- 
-@@ -440,10 +445,8 @@ void bio_put(struct bio *bio)
- 	/*
- 	 * last put frees it
- 	 */
--	if (atomic_dec_and_test(&bio->bi_cnt)) {
--		bio_disassociate_task(bio);
-+	if (atomic_dec_and_test(&bio->bi_cnt))
- 		bio_free(bio);
--	}
- }
- EXPORT_SYMBOL(bio_put);
- 
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index ca63847..28bddc0 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -68,15 +68,6 @@ struct bio {
- 
- 	struct bvec_iter	bi_iter;
- 
--	/*
--	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
--	 */
--
--	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
--
--	atomic_t		bi_cnt;		/* pin count */
--
--	struct bio_vec		*bi_io_vec;	/* the actual vec list */
- #ifdef CONFIG_BLK_CGROUP
- 	/*
- 	 * Optional ioc and css associated with this bio.  Put on bio
-@@ -89,6 +80,16 @@ struct bio {
- 	struct bio_integrity_payload *bi_integrity;  /* data integrity */
- #endif
- 
-+	/*
-+	 * Everything starting with bi_max_vecs will be preserved by bio_reset()
-+	 */
-+
-+	unsigned int		bi_max_vecs;	/* max bvl_vecs we can hold */
-+
-+	atomic_t		bi_cnt;		/* pin count */
-+
-+	struct bio_vec		*bi_io_vec;	/* the actual vec list */
-+
- 	struct bio_set		*bi_pool;
- 
- 	/*
+But these are only guesses.
