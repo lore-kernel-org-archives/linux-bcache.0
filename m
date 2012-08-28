@@ -1,97 +1,49 @@
-From: Kent Overstreet <koverstreet@google.com>
-Subject: Re: [PATCH v7 9/9] block: Avoid deadlocks with bio allocation by
- stacking drivers
-Date: Tue, 28 Aug 2012 15:28:00 -0700
-Message-ID: <20120828222800.GG1048@moria.home.lan>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
+From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
+Subject: Re: Block Size for Windows
+Date: Tue, 28 Aug 2012 23:43:47 +0100
+Message-ID: <503D49A3.4090100@abpni.co.uk>
+References: <503BC71A.6050207@abpni.co.uk> <CAH+dOxJ1GPQgmgDv4T3On-QovazSshU89GdVp=EHFmpaAzAGnQ@mail.gmail.com> <503BC82F.1030107@abpni.co.uk> <CAH+dOxJZEH9=ZEsB4RsS-8MdH-AGRh3jvo31bMUwXsMdirLMMQ@mail.gmail.com> <503BC897.3020606@abpni.co.uk> <CAH+dOxKx=kaW4duTyhRYrFH-5mYDUT6CGgY7WX9vqsMD_CpJaQ@mail.gmail.com> <503BCDC6.9010807@abpni.co.uk> <CAH+dOxLaYdqOi+n=NF2MSoEVsSz-C6QazbQrdwGCO02aDZXxDg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <20120828204910.GG24608@dhcp-172-17-108-109.mtv.corp.google.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com, bharrosh@panasas.com, Jens Axboe <axboe@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <CAH+dOxLaYdqOi+n=NF2MSoEVsSz-C6QazbQrdwGCO02aDZXxDg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Aug 28, 2012 at 01:49:10PM -0700, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Aug 28, 2012 at 10:37:36AM -0700, Kent Overstreet wrote:
-> > @@ -324,13 +342,37 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
-> >  		front_pad = 0;
-> >  		inline_vecs = nr_iovecs;
-> >  	} else {
-> > +		/*
-> > +		 * generic_make_request() converts recursion to iteration; this
-> > +		 * means if we're running beneath it, any bios we allocate and
-> > +		 * submit will not be submitted (and thus freed) until after we
-> > +		 * return.
-> > +		 *
-> > +		 * This exposes us to a potential deadlock if we allocate
-> > +		 * multiple bios from the same bio_set() while running
-> > +		 * underneath generic_make_request(). If we were to allocate
-> > +		 * multiple bios (say a stacking block driver that was splitting
-> > +		 * bios), we would deadlock if we exhausted the mempool's
-> > +		 * reserve.
-> > +		 *
-> > +		 * We solve this, and guarantee forward progress, with a rescuer
-> > +		 * workqueue per bio_set. If we go to allocate and there are
-> > +		 * bios on current->bio_list, we first try the allocation
-> > +		 * without __GFP_WAIT; if that fails, we punt those bios we
-> > +		 * would be blocking to the rescuer workqueue before we retry
-> > +		 * with the original gfp_flags.
-> > +		 */
-> > +
-> > +		if (current->bio_list && !bio_list_empty(current->bio_list))
-> > +			gfp_mask &= ~__GFP_WAIT;
-> > +retry:
-> >  		p = mempool_alloc(bs->bio_pool, gfp_mask);
-> >  		front_pad = bs->front_pad;
-> >  		inline_vecs = BIO_INLINE_VECS;
-> >  	}
-> >  
-> >  	if (unlikely(!p))
-> > -		return NULL;
-> > +		goto err;
-> >  
-> >  	bio = p + front_pad;
-> >  	bio_init(bio);
-> > @@ -351,6 +393,19 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
-> >  
-> >  err_free:
-> >  	mempool_free(p, bs->bio_pool);
-> > +err:
-> > +	if (gfp_mask != saved_gfp) {
-> > +		gfp_mask = saved_gfp;
-> > +
-> > +		spin_lock(&bs->rescue_lock);
-> > +		bio_list_merge(&bs->rescue_list, current->bio_list);
-> > +		bio_list_init(current->bio_list);
-> > +		spin_unlock(&bs->rescue_lock);
-> > +
-> > +		queue_work(bs->rescue_workqueue, &bs->rescue_work);
-> > +		goto retry;
-> > +	}
-> 
-> I wonder whether it would be easier to follow if this part is in-line
-> where retry: is.  All that needs to be duplicated is single
-> mempool_alloc() call, right?
+On 27/08/2012 20:55, Kent Overstreet wrote:
+> On Mon, Aug 27, 2012 at 12:43 PM, Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org> wrote:
+>> On 27/08/2012 20:22, Kent Overstreet wrote:
+>>> echo 1 > /sys/fs/bcache/<uuid>/unregister
+>>>
+>>> echo 1 > /sys/block/bcache0/bcache/stop
+>> Ok, so I managed to recreate everything with a block size of 512 bytes.
+>> However, 2 bad things have happened:
+>>
+>> 1) In my Linux DomU, my fio randomwrite test have gone from about 28k iops
+>> to about 800 iops. Can this be fixed? changing bs and ba to 512 in the fio
+>> config file didn't hep.
+> Ouch!
+>
+> Bet the ssd doesn't like those 512 byte journal writes. I'm going to
+> have to think about that...
+Hi Kent,
 
-Actually, what might be better than both of those approaches is shoving
-that code into another function. Then it's just:
+Ok, a little good news. I managed to sort out the low IOPS issue. When I 
+formatted bcache0 with a 512 block size, I forgot to set the caching 
+mode back to writeback. Once I did that, the IOPS were nice and high 
+again (circa 26k IOPS). Sorry about the noise regarding that non-issue.
 
-if (gfp_mask != saved_gfp) {
-	gfp_mask = saved_gfp;
-	shovel_bios_to_rescuer();
-	goto retry;
-}
+I re-tried the windows setup with writeback enabled for the 512B 
+formatted cache. It kernel paniced as per-usual, however for some 
+reason, it's kernel panicking upon every boot now, whereas when it was 
+formatted with 4k sectors, once the system came back up, it was stable 
+(until I tried another windows setup). The debug trace appears to be the 
+same as the one I posted to the list (kernel BUG at fs/bio.c:420! 
+invalid opcode: 0000 [#1] SMP).
 
-> Overall, I *think* this is correct but need to think more about it to
-> be sure.
+I appreciate your time.
 
-Please do. As much time as I've spent staring at this kind of stuff,
-I'm pretty sure I've got it correct but it still makes my head hurt to
-work out all the various possible deadlocks.
+Thanks
