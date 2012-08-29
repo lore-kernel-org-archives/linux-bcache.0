@@ -1,53 +1,37 @@
-From: Peter Osterlund <peterosterlund2@gmail.com>
-Subject: Re: [PATCH v6 04/13] pktcdvd: Switch to bio_kmalloc()
-Date: Wed, 29 Aug 2012 06:35:30 +0200 (CEST)
-Message-ID: <alpine.LFD.2.02.1208290634360.15468@acer.localdomain>
-References: <1345655050-28199-1-git-send-email-koverstreet@google.com> <1345655050-28199-5-git-send-email-koverstreet@google.com> <20120822195546.GG19212@google.com> <alpine.LNX.2.00.1208281608560.22447@pobox.suse.cz>
+From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Subject: Re: Block Size for Windows
+Date: Tue, 28 Aug 2012 22:56:14 -0700
+Message-ID: <CAH+dOxLnh34vQ+56JUfKtA2PyA1cyeDZvfBdWvSUhZC_pV2YMQ@mail.gmail.com>
+References: <503BC71A.6050207@abpni.co.uk>
+	<CAH+dOxJ1GPQgmgDv4T3On-QovazSshU89GdVp=EHFmpaAzAGnQ@mail.gmail.com>
+	<503BC82F.1030107@abpni.co.uk>
+	<CAH+dOxJZEH9=ZEsB4RsS-8MdH-AGRh3jvo31bMUwXsMdirLMMQ@mail.gmail.com>
+	<503BC897.3020606@abpni.co.uk>
+	<CAH+dOxKx=kaW4duTyhRYrFH-5mYDUT6CGgY7WX9vqsMD_CpJaQ@mail.gmail.com>
+	<503BCDC6.9010807@abpni.co.uk>
+	<503BD1E8.7060402@abpni.co.uk>
+	<503BD37C.9010403@abpni.co.uk>
+	<503BD55D.2060408@abpni.co.uk>
+	<CAOzFzEi6AzHFJVUGGc+J2p7QYe2f2i_XKrpad8wHDXo2xO=buA@mail.gmail.com>
+	<503BEE7F.4020202@abpni.co.uk>
+	<CAOzFzEg7v6U6sTYjTsGDzPE_yGRp-WULzngAn-1TCygp2jo76w@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <alpine.LNX.2.00.1208281608560.22447@pobox.suse.cz>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Kent Overstreet <koverstreet@google.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, vgoyal@redhat.com, mpatocka@redhat.com, bharrosh@panasas.com
+Content-Type: text/plain; charset=ISO-8859-1
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <CAOzFzEg7v6U6sTYjTsGDzPE_yGRp-WULzngAn-1TCygp2jo76w-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
+Cc: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, 28 Aug 2012, Jiri Kosina wrote:
+On Mon, Aug 27, 2012 at 3:06 PM, Joseph Glanville
+<joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org> wrote:
+> The issue is probably in fs/bio.c, some of the bio splitting changes
+> could effect md without even having bcache in use.
+>
+> Kent, I will try get a test box up running more recent code then the
+> stuff we run (which doesn't have said issue).
 
-> On Wed, 22 Aug 2012, Tejun Heo wrote:
->
->> (cc'ing Jiri, hi!)
->
-> Hi there! :)
->
->> On Wed, Aug 22, 2012 at 10:04:01AM -0700, Kent Overstreet wrote:
->>> This is prep work for killing bi_destructor - previously, pktcdvd had
->>> its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
->>> necessitating its own bi_destructor implementation.
->>>
->>> v5: Un-reorder some functions, to make the patch easier to review
->>>
->>> Signed-off-by: Kent Overstreet <koverstreet@google.com>
->>> CC: Peter Osterlund <petero2@telia.com>
->>
->> Apart from bio_reset() not resetting bi_end_io and bi_private, this
->> looks fine to me but lack of testing makes me a bit hesitant to ack
->> it.
->>
->> Peter doesn't want to be the maintainer of pktcdvd anymore.  Maybe
->> Jiri can be tricked into taking this one too?  :)
->
-> Gah, seems like the floppy saga is going to cause me some more trouble in
-> the future ... :)
->
-> Well, I definitely have hardware back at home that supports this, so I can
-> take it. Doesn't seem to be heavy traffic code either.
->
-> Peter, ok with that? Also, how was this usually fed upstream -- through
-> Jens' tree?
-
-Yes, I am ok with that.
-
--- 
-Peter Osterlund - peterosterlund2@gmail.com, petero2@comhem.se
-http://web.comhem.se/petero2home
+Well, sounds like it's definitively just raid10 that triggers it -
+that helps a lot. I think I know a sure workaround for it now, I'll
+try and upload a new version tomorrow that should fix it.
