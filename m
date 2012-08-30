@@ -1,56 +1,49 @@
-From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
-Subject: Re: Expected Behavior
-Date: Thu, 30 Aug 2012 13:18:54 +0100
-Message-ID: <239802233aa1dabc37f60b293d2941c9@abpni.co.uk>
-References: <503F132E.6060305@abpni.co.uk> <503F147A.10101@abpni.co.uk>
+From: David Rhodes Clymer <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
+Subject: Re: Windows IOPS Benchmark
+Date: Thu, 30 Aug 2012 08:48:05 -0400
+Message-ID: <CAB7K1hG9YOhEhgw5TEUiJCxoc+UHuku71Mf8ZDCqQT7EorGJfQ@mail.gmail.com>
+References: <503EAF26.6020009@abpni.co.uk>
+	<503EB016.10603@abpni.co.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <503F147A.10101-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
+In-Reply-To: <503EB016.10603-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-
-On 30.08.2012 08:21, Jonathan Tripathy wrote:
-> On 30/08/2012 08:15, Jonathan Tripathy wrote:
->> Hi There,
+On Wed, Aug 29, 2012 at 8:13 PM, Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org> wrote:
+> On 30/08/2012 01:09, Jonathan Tripathy wrote:
 >>
->> On my WIndows DomU (Xen VM) which is running on a LV which is using 
->> bcache (against two SSD in MDRAID1 and a MD-RAID10 spindle array), I 
->> ran an IOMeter test for about 2 hours (with 30 workers and a io depth 
->> of 256). This was a very heavy workload (Got an average iops of about 
->> 6.5k). After I stopped the test, I then went back to fio on my Linux 
->> Xen Host (Dom0). The random write performance isn't as good as it was 
->> before I started the IOMeter test. It used to be about 25k and now 
->> showed about 7k iops. I assumed that maybe this was due to the fact 
->> that bcache was writing out dirty data to the spindles so the SSD was 
->> busy.
+>> Hi Everyone,
 >>
->> However, this morning, after the spindles have calmed down, 
->> performance of fio is still not great (still about 7k).
+>> I'm using bcache with a RAID1 pair of SSDs (for the cache) with a
+>> MD-RAID10 spindle array for the backing device. On top of this is LVM. This
+>> setup is used with the Xen Hypervisor. Bcache is formatted with a sector
+>> size of 512 bytes.
 >>
->> Is there something wrong here? What is expected behavior?
+>> If I use an LV for a Linux DomU, I get fantastic disk performance using
+>> fio (about 23k random write). However, when I use IOMeter in a Windows HVM
+>> DomU (with GPLPV drivers installed), my avg IOPS is around 4000. I am using
+>> the "default" Access Specification. Am I doing something wrong? Changing the
+>> number of workers doesn't seem to help.
+>>
+>> Any advice is appreciated.
 >>
 >> Thanks
 >>
-> BTW, I can confirm that this isn't an SSD issue, as I have a
-> partition on the SSD that I kept seperate from bcache and I'm getting
-> excellent (about 28k) iops performance there.
+> Actually nvm, I forgot to enable the dist target for each of the works. Now
+> I'm getting an avg iops of about 34k.
 >
-> It's as if after the heavy workload I did with IOMeter, bcache has
-> somehow throttled the writeback cache?
->
-> Any help is appreciated.
->
+> But this does leave me with a question: is the number of "workers" in
+> IOMeter akin to "IO Depth" in fio?
 
-I'd like to add that a reboot pretty much solves the issue. This leads 
-me to believe that there is a bug in the bcache code that causes 
-performance to drop the more it gets used.
+I've not used IOmeter, but I would assume that the number of "workers" would
+be similar to the number of "jobs" in fio. IO depth/queue depth is the
+number of IO requests that are queued for processing at any one time. So, if
+you've got 4 workers, each keeping one IO operation queued at all times,
+your effective IO depth would be 4, while the IO depth for each job/worker
+would be 1. That's my understanding at least.
 
-Any ideas?
-
-Thanks
+-davidc
