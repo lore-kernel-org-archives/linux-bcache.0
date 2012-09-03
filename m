@@ -1,264 +1,94 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: [PATCH v2] block: Avoid deadlocks with bio allocation by stacking
- drivers
-Date: Sun, 2 Sep 2012 18:34:15 -0700
-Message-ID: <20120903013415.GE20060@moria.home.lan>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com>
- <1346175456-1572-10-git-send-email-koverstreet@google.com>
- <Pine.LNX.4.64.1208291210180.774@file.rdu.redhat.com>
- <20120829165006.GB20312@google.com>
- <20120829170711.GC12504@redhat.com>
- <20120829171345.GC20312@google.com>
- <20120830220745.GI27257@redhat.com>
- <20120901021348.GB19535@dhcp-172-17-108-109.mtv.corp.google.com>
+From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
+Subject: Re: Expected Behavior
+Date: Mon, 03 Sep 2012 09:30:26 +0100
+Message-ID: <fd31f46503030cb2f09c50453971f618@abpni.co.uk>
+References: <503F132E.6060305@abpni.co.uk> <503F147A.10101@abpni.co.uk>
+ <239802233aa1dabc37f60b293d2941c9@abpni.co.uk>
+ <20120830212841.GB14247@google.com> <503FF05B.1040506@abpni.co.uk>
+ <6035A0D088A63A46850C3988ED045A4B29A7D49D@BITCOM1.int.sbss.com.au>
+ <a7955ba43dfd9792245545eeb8c54e55@abpni.co.uk>
+ <151f74230aeb6825d9b8b633881d5e6c@abpni.co.uk>
+ <504203F8.4000302@abpni.co.uk> <20120903003750.GA20060@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20120901021348.GB19535-RcKxWJ4Cfj1J2suj2OqeGauc2jM2gXBXkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
+In-Reply-To: <20120903003750.GA20060-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Cc: Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mikulas Patocka <mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Aug 31, 2012 at 07:13:48PM -0700, Tejun Heo wrote:
-> Hello, Vivek.
-> 
-> On Thu, Aug 30, 2012 at 06:07:45PM -0400, Vivek Goyal wrote:
-> > Here is one quick and dirty proof of concept patch. It checks for stack
-> > depth and if remaining space is less than 20% of stack size, then it
-> > defers the bio submission to per queue worker.
-> 
-> So, it removes breadth-first walking of bio construction by ensuring
-> stack overflow never happens by bouncing to workqueue if stack usage
-> seems too high.
-> 
-> I do like removal of breadth-first walking.  It makes failure
-> scenarios a lot less mind-bending.  That said, Kent is right that this
-> can incur significant overhead for certain configurations, and looking
-> at stack usage in block layer is rather nasty both in design and
-> implementation.
-> 
-> If we're gonna need rescuer anyway and can get it right and the
-> mechanism can be contained in block proper relatively well, I think it
-> would be better to make bread-first walking safe.  Both are nasty in
-> their own ways after all.
 
-I added that filtering I was talking about, and I like this version much
-better.
 
-To me at least, it's much clearer what it's actually doing; when we go
-sleep in an allocation, we first unblock only the bios that were
-allocated from this bio_set - i.e. only the bios that caused the
-original deadlock.
+On 03.09.2012 01:37, Kent Overstreet wrote:
+> On Sat, Sep 01, 2012 at 01:47:52PM +0100, Jonathan Tripathy wrote:
+>> On 31/08/2012 13:41, Jonathan Tripathy wrote:
+>> >
+>> >
+>> >On 31.08.2012 13:36, Jonathan Tripathy wrote:
+>> >>On 31.08.2012 04:47, James Harper wrote:
+>> >>>>Hi Kent,
+>> >>>>
+>> >>>>I'm going to try and reproduce it myself as well. I just
+>> >>>>used IOMeter in a
+>> >>>>Windows DomU with 30 workers, each having an io depth of 256. A 
+>> *very*
+>> >>>>heavy workload indeed, but my point was to see if I could
+>> >>>>break something.
+>> >>>>Unless the issue is specific to windows causing problems
+>> >>>>(NTFS or whatever),
+>> >>>>I'm guessing running fio with 30 jobs and an iodepth of 256
+>> >>>>would probably
+>> >>>>produce a similar load.
+>> >>>>
+>> >>>>BTW, do you have access to a Xen node for testing?
+>> >>>>
+>> >>>
+>> >>>Does the problem resolve itself after you shut down the windows 
+>> DomU?
+>> >>>Or only when you reboot the whole Dom0?
+>> >>>
+>> >>
+>> >>Hi There,
+>> >>
+>> >>I managed to reproduce this again. I have to reboot the entire 
+>> Dom0
+>> >>(the physical server) for it to work properly again.
+>> >>
+>> >>James, are you able to reproduce this? Kent, are there any other
+>> >>tests/debug output you need from me?
+>> >>
+>> >
+>> >BTW, I was using IOMeter's 'default' Access Specification with the
+>> >following modifications: 100% random, 66% read, 33% write, and a
+>> >2kB size. My bcache is formatted for 512bytes.
+>> >--
+>> >
+>> Kent, is there any debug output of some sort I could switch on and
+>> help you figure out what's going on? If needs be, I can give you
+>> access to my setup here where you can run these tests yourself, if
+>> you're not keen installing Xen on your end :)
+>
+> Shell access would probably be fastest, I suppose...
+>
+> One thing that comes to mind is perhaps the load from background
+> writeback is slowing things down. Two things you can do:
+>
+> set writeback_percent to 10, that'll enable a pd controller so it's 
+> not
+> going full blast
+>
 
-It's still trickier than Vivek's approach but the performance impact
-certainly lowers, since we're only using the workqueue thread on
-allocation failure.
+Hi Kent,
 
-commit c61f9c16dc8c7ae833a73b857936106c71daab3f
-Author: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Date:   Fri Aug 31 20:52:41 2012 -0700
+I will try the above configuration change and repeat the test. However, 
+it's worth noting that I left an overnight gap between from when my 
+iomater run finished and from when I started the fio test. This was to 
+ensure that all data had been written out to backing storage. While I 
+didn't check if the cache was clean or dirty in the morning, I can 
+confirm that there was no disk activity according to the HDD lights on 
+the server case.
 
-    block: Avoid deadlocks with bio allocation by stacking drivers
-    
-    Previously, if we ever try to allocate more than once from the same bio
-    set while running under generic_make_request() (i.e. a stacking block
-    driver), we risk deadlock.
-    
-    This is because of the code in generic_make_request() that converts
-    recursion to iteration; any bios we submit won't actually be submitted
-    (so they can complete and eventually be freed) until after we return -
-    this means if we allocate a second bio, we're blocking the first one
-    from ever being freed.
-    
-    Thus if enough threads call into a stacking block driver at the same
-    time with bios that need multiple splits, and the bio_set's reserve gets
-    used up, we deadlock.
-    
-    This can be worked around in the driver code - we could check if we're
-    running under generic_make_request(), then mask out __GFP_WAIT when we
-    go to allocate a bio, and if the allocation fails punt to workqueue and
-    retry the allocation.
-    
-    But this is tricky and not a generic solution. This patch solves it for
-    all users by inverting the previously described technique. We allocate a
-    rescuer workqueue for each bio_set, and then in the allocation code if
-    there are bios on current->bio_list we would be blocking, we punt them
-    to the rescuer workqueue to be submitted.
-    
-    Tested it by forcing the rescue codepath to be taken (by disabling the
-    first GFP_NOWAIT) attempt, and then ran it with bcache (which does a lot
-    of arbitrary bio splitting) and verified that the rescuer was being
-    invoked.
-    
-    Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-    CC: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-
-diff --git a/fs/bio.c b/fs/bio.c
-index 22d654f..076751f 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -286,6 +286,43 @@ void bio_reset(struct bio *bio)
- }
- EXPORT_SYMBOL(bio_reset);
- 
-+static void bio_alloc_rescue(struct work_struct *work)
-+{
-+	struct bio_set *bs = container_of(work, struct bio_set, rescue_work);
-+	struct bio *bio;
-+
-+	while (1) {
-+		spin_lock(&bs->rescue_lock);
-+		bio = bio_list_pop(&bs->rescue_list);
-+		spin_unlock(&bs->rescue_lock);
-+
-+		if (!bio)
-+			break;
-+
-+		generic_make_request(bio);
-+	}
-+}
-+
-+static void punt_bios_to_rescuer(struct bio_set *bs)
-+{
-+	struct bio_list punt, nopunt;
-+	struct bio *bio;
-+
-+	bio_list_init(&punt);
-+	bio_list_init(&nopunt);
-+
-+	while ((bio = bio_list_pop(current->bio_list)))
-+		bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
-+
-+	*current->bio_list = nopunt;
-+
-+	spin_lock(&bs->rescue_lock);
-+	bio_list_merge(&bs->rescue_list, &punt);
-+	spin_unlock(&bs->rescue_lock);
-+
-+	queue_work(bs->rescue_workqueue, &bs->rescue_work);
-+}
-+
- /**
-  * bio_alloc_bioset - allocate a bio for I/O
-  * @gfp_mask:   the GFP_ mask given to the slab allocator
-@@ -308,6 +345,7 @@ EXPORT_SYMBOL(bio_reset);
-  */
- struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- {
-+	gfp_t saved_gfp = gfp_mask;
- 	unsigned front_pad;
- 	unsigned inline_vecs;
- 	unsigned long idx = BIO_POOL_NONE;
-@@ -325,13 +363,37 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 		front_pad = 0;
- 		inline_vecs = nr_iovecs;
- 	} else {
-+		/*
-+		 * generic_make_request() converts recursion to iteration; this
-+		 * means if we're running beneath it, any bios we allocate and
-+		 * submit will not be submitted (and thus freed) until after we
-+		 * return.
-+		 *
-+		 * This exposes us to a potential deadlock if we allocate
-+		 * multiple bios from the same bio_set() while running
-+		 * underneath generic_make_request(). If we were to allocate
-+		 * multiple bios (say a stacking block driver that was splitting
-+		 * bios), we would deadlock if we exhausted the mempool's
-+		 * reserve.
-+		 *
-+		 * We solve this, and guarantee forward progress, with a rescuer
-+		 * workqueue per bio_set. If we go to allocate and there are
-+		 * bios on current->bio_list, we first try the allocation
-+		 * without __GFP_WAIT; if that fails, we punt those bios we
-+		 * would be blocking to the rescuer workqueue before we retry
-+		 * with the original gfp_flags.
-+		 */
-+
-+		if (current->bio_list && !bio_list_empty(current->bio_list))
-+			gfp_mask &= ~__GFP_WAIT;
-+retry:
- 		p = mempool_alloc(bs->bio_pool, gfp_mask);
- 		front_pad = bs->front_pad;
- 		inline_vecs = BIO_INLINE_VECS;
- 	}
- 
- 	if (unlikely(!p))
--		return NULL;
-+		goto err;
- 
- 	bio = p + front_pad;
- 	bio_init(bio);
-@@ -352,6 +414,13 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 
- err_free:
- 	mempool_free(p, bs->bio_pool);
-+err:
-+	if (gfp_mask != saved_gfp) {
-+		punt_bios_to_rescuer(bs);
-+		gfp_mask = saved_gfp;
-+		goto retry;
-+	}
-+
- 	return NULL;
- }
- EXPORT_SYMBOL(bio_alloc_bioset);
-@@ -1561,6 +1630,9 @@ static void biovec_free_pools(struct bio_set *bs)
- 
- void bioset_free(struct bio_set *bs)
- {
-+	if (bs->rescue_workqueue)
-+		destroy_workqueue(bs->rescue_workqueue);
-+
- 	if (bs->bio_pool)
- 		mempool_destroy(bs->bio_pool);
- 
-@@ -1596,6 +1668,10 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
- 
- 	bs->front_pad = front_pad;
- 
-+	spin_lock_init(&bs->rescue_lock);
-+	bio_list_init(&bs->rescue_list);
-+	INIT_WORK(&bs->rescue_work, bio_alloc_rescue);
-+
- 	bs->bio_slab = bio_find_or_create_slab(front_pad + back_pad);
- 	if (!bs->bio_slab) {
- 		kfree(bs);
-@@ -1606,9 +1682,14 @@ struct bio_set *bioset_create(unsigned int pool_size, unsigned int front_pad)
- 	if (!bs->bio_pool)
- 		goto bad;
- 
--	if (!biovec_create_pools(bs, pool_size))
--		return bs;
-+	if (biovec_create_pools(bs, pool_size))
-+		goto bad;
-+
-+	bs->rescue_workqueue = alloc_workqueue("bioset", WQ_MEM_RECLAIM, 0);
-+	if (!bs->rescue_workqueue)
-+		goto bad;
- 
-+	return bs;
- bad:
- 	bioset_free(bs);
- 	return NULL;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index a7561b9..f329102 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -491,6 +491,15 @@ struct bio_set {
- 	mempool_t *bio_integrity_pool;
- #endif
- 	mempool_t *bvec_pool;
-+
-+	/*
-+	 * Deadlock avoidance for stacking block drivers: see comments in
-+	 * bio_alloc_bioset() for details
-+	 */
-+	spinlock_t		rescue_lock;
-+	struct bio_list		rescue_list;
-+	struct work_struct	rescue_work;
-+	struct workqueue_struct	*rescue_workqueue;
- };
- 
- struct biovec_slab {
+Cheers
