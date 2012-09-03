@@ -1,94 +1,28 @@
-From: Jonathan Tripathy <jonnyt-Nf8S+5hNwl710XsdtD+oqA@public.gmane.org>
-Subject: Re: Expected Behavior
-Date: Mon, 03 Sep 2012 09:30:26 +0100
-Message-ID: <fd31f46503030cb2f09c50453971f618@abpni.co.uk>
-References: <503F132E.6060305@abpni.co.uk> <503F147A.10101@abpni.co.uk>
- <239802233aa1dabc37f60b293d2941c9@abpni.co.uk>
- <20120830212841.GB14247@google.com> <503FF05B.1040506@abpni.co.uk>
- <6035A0D088A63A46850C3988ED045A4B29A7D49D@BITCOM1.int.sbss.com.au>
- <a7955ba43dfd9792245545eeb8c54e55@abpni.co.uk>
- <151f74230aeb6825d9b8b633881d5e6c@abpni.co.uk>
- <504203F8.4000302@abpni.co.uk> <20120903003750.GA20060@moria.home.lan>
+From: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>
+Subject: RE: hang
+Date: Mon, 3 Sep 2012 09:33:19 +0000
+Message-ID: <6035A0D088A63A46850C3988ED045A4B29A822AA@BITCOM1.int.sbss.com.au>
+References: <6035A0D088A63A46850C3988ED045A4B29A7F38D@BITCOM1.int.sbss.com.au>
+ <20120903004113.GB20060@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20120903003750.GA20060-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+In-Reply-To: <20120903004113.GB20060-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
+> Hmm.
+> 
+> If it's related to lvm snapshots, there's a workaround I just added to the
+> bcache-3.2 branch - I'd give that a try, looks plausible from your log.
+> 
 
+Is that the default writeback_percent = 10 in commit 113740372e2244951fb34235b30a2ac646a5d8c2?
 
-On 03.09.2012 01:37, Kent Overstreet wrote:
-> On Sat, Sep 01, 2012 at 01:47:52PM +0100, Jonathan Tripathy wrote:
->> On 31/08/2012 13:41, Jonathan Tripathy wrote:
->> >
->> >
->> >On 31.08.2012 13:36, Jonathan Tripathy wrote:
->> >>On 31.08.2012 04:47, James Harper wrote:
->> >>>>Hi Kent,
->> >>>>
->> >>>>I'm going to try and reproduce it myself as well. I just
->> >>>>used IOMeter in a
->> >>>>Windows DomU with 30 workers, each having an io depth of 256. A 
->> *very*
->> >>>>heavy workload indeed, but my point was to see if I could
->> >>>>break something.
->> >>>>Unless the issue is specific to windows causing problems
->> >>>>(NTFS or whatever),
->> >>>>I'm guessing running fio with 30 jobs and an iodepth of 256
->> >>>>would probably
->> >>>>produce a similar load.
->> >>>>
->> >>>>BTW, do you have access to a Xen node for testing?
->> >>>>
->> >>>
->> >>>Does the problem resolve itself after you shut down the windows 
->> DomU?
->> >>>Or only when you reboot the whole Dom0?
->> >>>
->> >>
->> >>Hi There,
->> >>
->> >>I managed to reproduce this again. I have to reboot the entire 
->> Dom0
->> >>(the physical server) for it to work properly again.
->> >>
->> >>James, are you able to reproduce this? Kent, are there any other
->> >>tests/debug output you need from me?
->> >>
->> >
->> >BTW, I was using IOMeter's 'default' Access Specification with the
->> >following modifications: 100% random, 66% read, 33% write, and a
->> >2kB size. My bcache is formatted for 512bytes.
->> >--
->> >
->> Kent, is there any debug output of some sort I could switch on and
->> help you figure out what's going on? If needs be, I can give you
->> access to my setup here where you can run these tests yourself, if
->> you're not keen installing Xen on your end :)
->
-> Shell access would probably be fastest, I suppose...
->
-> One thing that comes to mind is perhaps the load from background
-> writeback is slowing things down. Two things you can do:
->
-> set writeback_percent to 10, that'll enable a pd controller so it's 
-> not
-> going full blast
->
+Can I effect the same change by "echo 10 >writeback_percent"? If so then it would save the hassle of a rebuild just to test. I assume it's sleep time in your timezone at the moment so I'll test it anyway and let you know - it was failing pretty consistently, within 30 seconds of starting my restore job.
 
-Hi Kent,
-
-I will try the above configuration change and repeat the test. However, 
-it's worth noting that I left an overnight gap between from when my 
-iomater run finished and from when I started the fio test. This was to 
-ensure that all data had been written out to backing storage. While I 
-didn't check if the cache was clean or dirty in the morning, I can 
-confirm that there was no disk activity according to the HDD lights on 
-the server case.
-
-Cheers
+James
