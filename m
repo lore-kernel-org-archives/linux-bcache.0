@@ -1,32 +1,43 @@
-From: Jiri Kosina <jkosina-AlSwsSmVLrQ@public.gmane.org>
-Subject: Re: [PATCH v7 4/9] pktcdvd: Switch to bio_kmalloc()
-Date: Tue, 4 Sep 2012 11:05:06 +0200 (CEST)
-Message-ID: <alpine.LRH.2.00.1209041104020.26301@twin.jikos.cz>
-References: <1346175456-1572-1-git-send-email-koverstreet@google.com> <1346175456-1572-5-git-send-email-koverstreet@google.com> <20120828203247.GC24608@dhcp-172-17-108-109.mtv.corp.google.com>
+From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Subject: Re: hang
+Date: Tue, 4 Sep 2012 04:22:37 -0700
+Message-ID: <CAH+dOxLRMi3hSewxFvA_5rhdFStY_DUs=fF16wuogVNwcovUMw@mail.gmail.com>
+References: <6035A0D088A63A46850C3988ED045A4B29A7F38D@BITCOM1.int.sbss.com.au>
+	<20120903004113.GB20060@moria.home.lan>
+	<6035A0D088A63A46850C3988ED045A4B29A822AA@BITCOM1.int.sbss.com.au>
+	<6035A0D088A63A46850C3988ED045A4B29A825A7@BITCOM1.int.sbss.com.au>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20120828203247.GC24608-RcKxWJ4Cfj1J2suj2OqeGauc2jM2gXBXkQQo+JxHRPFibQn6LdNjmg@public.gmane.org>
+In-Reply-To: <6035A0D088A63A46850C3988ED045A4B29A825A7-mzsoxcrO4/2UD0RQwgcqbDSf8X3wrgjD@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, Peter Osterlund <petero2-zq6IREYz3ykAvxtiuMwx3w@public.gmane.org>
+To: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, 28 Aug 2012, Tejun Heo wrote:
+No, it's the previous commit on the branch you need (hack around bi_idx...)
 
-> > This is prep work for killing bi_destructor - previously, pktcdvd had
-> > its own pkt_bio_alloc which was basically duplication bio_kmalloc(),
-> > necessitating its own bi_destructor implementation.
-> 
-> How was this tested?
-
-I have now tested it and it works properly. You can add
-
-	Signed-off-by: Jiri Kosina <jkosina-AlSwsSmVLrQ@public.gmane.org>
-
-once you will be pushing the patchset through (I will be pushing 
-MAINTAINERS update through my tree to Jens separately).
-
--- 
-Jiri Kosina
-SUSE Labs
+On Mon, Sep 3, 2012 at 4:28 AM, James Harper
+<james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org> wrote:
+>>
+>> > Hmm.
+>> >
+>> > If it's related to lvm snapshots, there's a workaround I just added to
+>> > the
+>> > bcache-3.2 branch - I'd give that a try, looks plausible from your log.
+>> >
+>>
+>> Is that the default writeback_percent = 10 in commit
+>> 113740372e2244951fb34235b30a2ac646a5d8c2?
+>>
+>> Can I effect the same change by "echo 10 >writeback_percent"? If so then it
+>> would save the hassle of a rebuild just to test. I assume it's sleep time in your
+>> timezone at the moment so I'll test it anyway and let you know - it was failing
+>> pretty consistently, within 30 seconds of starting my restore job.
+>>
+>
+> Setting writeback_percent=10 manually resulted in no change - crash still occurred within a few minutes of the restore job starting.
+>
+> Deleting the snapshot and running on the original LV resulted in no problems, so it's definitely snapshot related.
+>
+> James
