@@ -1,45 +1,41 @@
-From: Alex Pyrgiotis <apyrgio-Hpc4xzY4zrDSDkk6z29a7FAUjnlXr6A1@public.gmane.org>
-Subject: Did I hear anyone say "deadlock"?
-Date: Sat, 08 Sep 2012 22:04:51 +0300
-Message-ID: <504B96D3.9020802@cslab.ece.ntua.gr>
+From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Subject: Re: [PATCH 0/9] Prep work for immutable bio vecs
+Date: Sat, 8 Sep 2012 12:41:15 -0700
+Message-ID: <20120908194115.GC12773@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1347058760-30794-1-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <1347058760-30794-1-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Kent and list,
+Hello, Kent.
 
-I may have stumbled upon a deadlock in the latest code for bcache. Since 
-I see this is a hot issue between you and the guys working on dm, you 
-might want to take a look.
+On Fri, Sep 07, 2012 at 03:59:11PM -0700, Kent Overstreet wrote:
+> Random assortment of refactoring and trivial cleanups.
+> 
+> Immutable bio vecs and efficient bio splitting require auditing and removing
+> pretty much all bi_idx uses, among other things.
+> 
+> The reason is that with immutable bio vecs we can't use the bvec array
+> directly; if we have a partially completed bvec, that'll be indicated with a
+> field in struct bvec_iter (which gets embedded in struct bio) - bi_bvec_done.
+> 
+> bio_for_each_segments() will handle this transparently, so code needs to be
+> converted to use it or some other generic accessor.
+> 
+> Also, bio splitting means that when a driver gets a bio, bi_idx and
+> bi_bvec_done may both be nonzero. Again, just need to use generic accessors.
 
-I have compiled your latest commit in master branch 
-(66f5a1f7311d5cc24bdff876ca2cfed88a3cc5d1) and running it raw on my home 
-laptop - not using a VM or something.
-For benchmarking reasons, I'm using a RAMdisk (brd module) as a cache 
-set for an HDD disk. These are the steps that I take:
+There are three pending patchsets and I don't know how they're
+supposed to come together.  Please explain on which tree the patches
+are based and how they stack and preferably provide a git branch.
 
-# Load ramdisks with max size 2.5GB (/dev/ram[0-15])
-modprobe brd rd_size=2621440
+Thanks.
 
-#Format ramdisk as bcache cache set
-make-bcache -C /dev/ram0
-
-#Register the cache set
-echo /dev/ram0 > /sys/fs/bcache/register
-
-The last command fails to finish. The system hangs and nothing gets to 
-be written in kern.log.
-On the other hand, on another bcache kernel that is installed in the 
-same system, everything runs smoothly. This kernel was taken from the 
-bcache-dev branch and based on linux kernel version 3.5.0 rc2.
-
-It is probably not a big issue, but i thought it'd be helpful to share it.
-So, is the proposed code somewhere in your git tree? In this case, I 
-could try it out and check if this problem is solved.
-
-Thanks,
-Alex
+-- 
+tejun
