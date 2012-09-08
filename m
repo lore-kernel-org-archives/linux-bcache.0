@@ -1,72 +1,115 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [dm-devel] [PATCH v10 4/8] block: Add bio_reset()
-Date: Fri, 7 Sep 2012 16:25:31 -0700
-Message-ID: <20120907232531.GF16360@google.com>
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com>
- <1346970902-10931-5-git-send-email-koverstreet@google.com>
- <50494F1A.4080207@kernel.dk>
- <20120907205823.GD16360@google.com>
- <504A6D57.1030607@kernel.dk>
- <504A6FF5.3090603@kernel.dk>
- <20120907222522.GE16360@google.com>
- <504A78B0.8010105@kernel.dk>
- <20120907231433.GE10309@agk-dp.fab.redhat.com>
+From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Subject: Re: [PATCH 2/2] block: Avoid deadlocks with bio allocation by
+ stacking drivers
+Date: Sat, 8 Sep 2012 12:36:41 -0700
+Message-ID: <20120908193641.GB12773@dhcp-172-17-108-109.mtv.corp.google.com>
+References: <1347055973-11581-1-git-send-email-koverstreet@google.com>
+ <1347055973-11581-3-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20120907231433.GE10309-FDJ95KluN3Z0klwcnFlA1dvLeJWuRmrY@public.gmane.org>
+In-Reply-To: <1347055973-11581-3-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mikulas Patocka <mpatocka-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, bharrosh-C4P08NqkoRlBDgjK7y7TUQ@public.gmane.org, david-FqsqvQoI3Ljby3iVrkZq2A@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Sat, Sep 08, 2012 at 12:14:33AM +0100, Alasdair G Kergon wrote:
-> As I indicated already in this discussion, dm started to use
-> merge_bvec_fn as a cheap way of avoiding splitting and this improved
-> overall efficiency.  Often it's better to pay the small price of calling
-> that function to ensure the bio is created the right size in the first
-> place so it won't have to get split later.
+(Restoring cc list from the previous discussion.  Please retain the cc
+list of the people who discussed in the previous postings.)
 
-When I say cheap, I mean _cheap_:
+On Fri, Sep 07, 2012 at 03:12:53PM -0700, Kent Overstreet wrote:
+> But this is tricky and not a generic solution. This patch solves it for
+> all users by inverting the previously described technique. We allocate a
+> rescuer workqueue for each bio_set, and then in the allocation code if
+> there are bios on current->bio_list we would be blocking, we punt them
+> to the rescuer workqueue to be submitted.
 
-split = bio_clone_bioset(bio, gfp_flags, bs);
+It would be great if this explanation can be expanded a bit.  Why does
+it make the deadlock condition go away?  What are the restrictions -
+e.g. using other mempools for additional per-bio data structure
+wouldn't work, right?
 
-bio_advance(bio, sectors << 9);
-split->bi_iter.bi_size = sectors << 9;
+> +static void punt_bios_to_rescuer(struct bio_set *bs)
+> +{
+> +	struct bio_list punt, nopunt;
+> +	struct bio *bio;
+> +
+> +	bio_list_init(&punt);
+> +	bio_list_init(&nopunt);
+> +
+> +	while ((bio = bio_list_pop(current->bio_list)))
+> +		bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
+> +
+> +	*current->bio_list = nopunt;
 
-And the clone doesn't copy the bvecs - split->bi_io_vec ==
-bio->bi_io_vec.
+Why this is necessary needs explanation and it's done in rather
+unusual way.  I suppose the weirdness is from bio_list API
+restriction?
 
-> I'm as yet unconvinced that removing merge_bvec_fn would be an overall
-> win.  Some of Kent's other changes that make splitting cheaper will
-> improve the balance in some situations, but that might be handled by
-> simplifying the merge_bvec_fn calculations in those situations.
-> (Or changing the mechanism to avoid repeating performing the mapping
-> when it hasn't changed.)
+> +	spin_lock(&bs->rescue_lock);
+> +	bio_list_merge(&bs->rescue_list, &punt);
+> +	spin_unlock(&bs->rescue_lock);
+> +
+> +	queue_work(bs->rescue_workqueue, &bs->rescue_work);
+> +}
+> +
+>  /**
+>   * bio_alloc_bioset - allocate a bio for I/O
+>   * @gfp_mask:   the GFP_ mask given to the slab allocator
+> @@ -317,6 +354,7 @@ EXPORT_SYMBOL(bio_reset);
+>   */
+>  struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+>  {
+> +	gfp_t saved_gfp = gfp_mask;
+>  	unsigned front_pad;
+>  	unsigned inline_vecs;
+>  	unsigned long idx = BIO_POOL_NONE;
+> @@ -334,13 +372,37 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
+>  		front_pad = 0;
+>  		inline_vecs = nr_iovecs;
+>  	} else {
+> +		/*
+> +		 * generic_make_request() converts recursion to iteration; this
+> +		 * means if we're running beneath it, any bios we allocate and
+> +		 * submit will not be submitted (and thus freed) until after we
+> +		 * return.
+> +		 *
+> +		 * This exposes us to a potential deadlock if we allocate
+> +		 * multiple bios from the same bio_set() while running
+> +		 * underneath generic_make_request(). If we were to allocate
+> +		 * multiple bios (say a stacking block driver that was splitting
+> +		 * bios), we would deadlock if we exhausted the mempool's
+> +		 * reserve.
+> +		 *
+> +		 * We solve this, and guarantee forward progress, with a rescuer
+> +		 * workqueue per bio_set. If we go to allocate and there are
+> +		 * bios on current->bio_list, we first try the allocation
+> +		 * without __GFP_WAIT; if that fails, we punt those bios we
+> +		 * would be blocking to the rescuer workqueue before we retry
+> +		 * with the original gfp_flags.
+> +		 */
+> +
+> +		if (current->bio_list && !bio_list_empty(current->bio_list))
+> +			gfp_mask &= ~__GFP_WAIT;
+> +retry:
+>  		p = mempool_alloc(bs->bio_pool, gfp_mask);
+>  		front_pad = bs->front_pad;
+>  		inline_vecs = BIO_INLINE_VECS;
+>  	}
 
-The current situation is what causes you to repeatedly do the mapping
-lookup, since you'll often get contiguous bios that don't need to be
-split at the mapping level (because of other requirements of the
-underlying devices or because implementing merge_bvec_fn correctly was
-too hard).
+Wouldn't the following be better?
 
-Splitting only when required is going to _improve_ that.
+	p = mempool_alloc(bs->bi_pool, gfp_mask);
+	if (unlikely(!p) && gfp_mask != saved_gfp) {
+		punt_bios_to_rescuer(bs);
+		p = mempool_alloc(bs->bi_pool, saved_gfp);
+	}
 
-> IOW Any proposal to remove merge_bvec_fn from dm needs careful 
-> evaluation to ensure it doesn't introduce any significant
-> performance regressions for some sets of users.
+I really hope the usage restriction (don't mix with mempool) for
+bioset is clearly documented somewhere appropriate.
 
-There's also the 1000+ lines of deleted code to consider. In my
-immutable bvec branch I've deleted over 400 lines of code, and that's
-without actually trying to delete code. Getting rid of merge_bvec_fn
-deletes another 800 lines of code on top of that.
+Thanks.
 
-CPU wise, there won't be any performance regressions. The only cause for
-concern I can think of is where the upper layer could've made use of
-partial completions - i.e. it submitted a 1 mb bio instead of a bunch of
-128k bios, but it could've made use of that first 128k if it went to a
-different device and completed sooner.
-
-Only thing I know of that'd be affected by that though is readahead, and
-I have a couple ideas for easily solving that if it actually becomes an
-issue.
+-- 
+tejun
