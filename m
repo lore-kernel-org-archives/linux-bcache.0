@@ -1,79 +1,121 @@
-From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Subject: Build warnings on linux-bcache.git/bcache
-Date: Tue, 11 Sep 2012 23:20:56 +1000
-Message-ID: <CAOzFzEi+jXDrBXyv-5dQe_PHnArojJt9FFXMvBGRDwiBy95p_w@mail.gmail.com>
+From: Kent Overstreet <koverstreet@google.com>
+Subject: Re: [PATCH v2 12/26] raid1: use bio_reset()
+Date: Tue, 11 Sep 2012 11:28:25 -0700
+Message-ID: <20120911182825.GG19739@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-13-git-send-email-koverstreet@google.com>
+ <20120911145913.3f8a0a30@notabene.brown>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <20120911145913.3f8a0a30@notabene.brown>
+Sender: linux-kernel-owner@vger.kernel.org
+To: NeilBrown <neilb@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com, axboe@kernel.dk, tj@kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Kent, list.
+On Tue, Sep 11, 2012 at 02:59:13PM +1000, NeilBrown wrote:
+> On Mon, 10 Sep 2012 17:22:23 -0700 Kent Overstreet <koverstreet@google.com>
+> wrote:
+> 
+> > I couldn't figure out what sbio->bi_end_io in process_checks() was
+> > supposed to be, so I took the easy way out.
+> 
+> Almost.
+> You save 'sbio->bi_end_io' to 'bi_end_io', then do nothing with it...
 
-I am getting a few build warnings on the current bcache branch with gcc=
- 4.7.1
-They are all formatting errors, don't look to be harmful at first
-glance unless you touch the sysfs atributes.
+Whoops :) I think I must've gotten distracted and forgot to finish with
+that patch, I wasn't setting bi_private either.
 
-In file included from drivers/md/bcache/super.c:132:0:
-drivers/md/bcache/sysfs.c: In function =91__cached_dev_show=92:
-drivers/md/bcache/sysfs.c:113:4: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:113:4: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c:115:4: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:115:4: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c:117:4: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:117:4: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c:130:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:130:2: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c: In function =91flash_dev_show=92:
-drivers/md/bcache/sysfs.c:294:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:294:2: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c: In function =91__cache_set_show=92:
-drivers/md/bcache/sysfs.c:433:2: warning: unknown conversion type
-character =91z=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:433:2: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c:445:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:445:2: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c:460:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:460:2: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c: In function =91__cache_show=92:
-drivers/md/bcache/sysfs.c:635:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:635:2: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c:637:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:637:2: warning: too many arguments for
-format [-Wformat-extra-args]
-drivers/md/bcache/sysfs.c:639:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/sysfs.c:639:2: warning: too many arguments for
-format [-Wformat-extra-args]
+> 
+> A little way above the 'fixup the bio for reuse' comment you'll find:
+> 
+> 		struct bio *sbio = r1_bio->bios[i];
+> ....
+> 		if (r1_bio->bios[i]->bi_end_io != end_sync_read)
+> 			continue;
+> 
+> which implies that if we don't 'continue', then sbio->bi_end_io ==
+> end_sync_read.
 
-drivers/md/bcache/stats.c: In function =91cache_stats_show=92:
-drivers/md/bcache/stats.c:75:2: warning: unknown conversion type
-character =91l=92 in format [-Wformat]
-drivers/md/bcache/stats.c:75:2: warning: too many arguments for format
-[-Wformat-extra-args]
+Ahh. I remember reading that, but I missed that that was sbio that was
+being checked.
+
+> 
+> So I suspect you want to add
+>     sbio->bi_end_io = end_sync_read;
+> somewhere after the 'bio_reset()'.
+> 
+> If you happened to also fix that 'if' that I quoted so that it reads:
+> 
+>      if (sbio->bi_end_io != end_sync_read)
+>            continue;
+
+Will do! How's this look?
 
 
---=20
-CTO | Orion Virtualisation Solutions | www.orionvm.com.au
-Phone: 1300 56 99 52 | Mobile: 0428 754 846
+commit 40a4645a4346edd040066baedcf2184ac4211ba7
+Author: Kent Overstreet <koverstreet@google.com>
+Date:   Tue Sep 11 11:26:12 2012 -0700
+
+    raid1: use bio_reset()
+    
+    Signed-off-by: Kent Overstreet <koverstreet@google.com>
+    CC: Jens Axboe <axboe@kernel.dk>
+    CC: NeilBrown <neilb@suse.de>
+
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index ee85154..df68691 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -1851,7 +1851,7 @@ static int process_checks(struct r1bio *r1_bio)
+ 		struct bio *sbio = r1_bio->bios[i];
+ 		int size;
+ 
+-		if (r1_bio->bios[i]->bi_end_io != end_sync_read)
++		if (sbio->bi_end_io != end_sync_read)
+ 			continue;
+ 
+ 		if (test_bit(BIO_UPTODATE, &sbio->bi_flags)) {
+@@ -1876,16 +1876,15 @@ static int process_checks(struct r1bio *r1_bio)
+ 			continue;
+ 		}
+ 		/* fixup the bio for reuse */
++		bio_reset(sbio);
+ 		sbio->bi_vcnt = vcnt;
+ 		sbio->bi_size = r1_bio->sectors << 9;
+-		sbio->bi_idx = 0;
+-		sbio->bi_phys_segments = 0;
+-		sbio->bi_flags &= ~(BIO_POOL_MASK - 1);
+-		sbio->bi_flags |= 1 << BIO_UPTODATE;
+-		sbio->bi_next = NULL;
+ 		sbio->bi_sector = r1_bio->sector +
+ 			conf->mirrors[i].rdev->data_offset;
+ 		sbio->bi_bdev = conf->mirrors[i].rdev->bdev;
++		sbio->bi_end_io = end_sync_read;
++		sbio->bi_private = r1_bio;
++
+ 		size = sbio->bi_size;
+ 		for (j = 0; j < vcnt ; j++) {
+ 			struct bio_vec *bi;
+@@ -2426,18 +2425,7 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr, int *skipp
+ 	for (i = 0; i < conf->raid_disks * 2; i++) {
+ 		struct md_rdev *rdev;
+ 		bio = r1_bio->bios[i];
+-
+-		/* take from bio_init */
+-		bio->bi_next = NULL;
+-		bio->bi_flags &= ~(BIO_POOL_MASK-1);
+-		bio->bi_flags |= 1 << BIO_UPTODATE;
+-		bio->bi_rw = READ;
+-		bio->bi_vcnt = 0;
+-		bio->bi_idx = 0;
+-		bio->bi_phys_segments = 0;
+-		bio->bi_size = 0;
+-		bio->bi_end_io = NULL;
+-		bio->bi_private = NULL;
++		bio_reset(bio);
+ 
+ 		rdev = rcu_dereference(conf->mirrors[i].rdev);
+ 		if (rdev == NULL ||
