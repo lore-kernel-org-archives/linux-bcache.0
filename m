@@ -1,81 +1,36 @@
-From: Stefan Behrens <sbehrens-yx7LkcorvrlcxY2q9kLzMw@public.gmane.org>
-Subject: Re: [PATCH] btrfs: Kill some bi_idx references
-Date: Wed, 12 Sep 2012 13:15:06 +0200
-Message-ID: <50506EBA.7040907@giantdisaster.de>
-References: <1347399074-23546-1-git-send-email-koverstreet@google.com>
+From: "Martin K. Petersen" <martin.petersen-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [dm-devel] [PATCH v2 01/26] block: Convert integrity to bvec_alloc_bs(), and a bugfix
+Date: Wed, 12 Sep 2012 15:39:18 -0400
+Message-ID: <yq1wqzzrpy1.fsf@sermon.lab.mkp.net>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+	<1347322957-25260-2-git-send-email-koverstreet@google.com>
+	<20120911203643.GC17113@redhat.com>
+	<20120911220750.GM19739@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <1347399074-23546-1-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+In-Reply-To: <20120911220750.GM19739-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> (Kent Overstreet's message of
+	"Tue, 11 Sep 2012 15:07:50 -0700")
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Chris Mason <chris.mason-5c4llco8/ftWk0Htik3J/w@public.gmane.org>
+Cc: Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, "Martin K. Petersen" <martin.petersen-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, 11 Sep 2012 14:31:14 -0700, Kent Overstreet wrote:
-> For immutable bio vecs, I've been auditing and removing bi_idx
-> references. These were harmless, but removing them will make auditing
-> easier.
-> 
-> scrub_bio_end_io_worker() was open coding a bio_reset() - but this
-> doesn't appear to have been needed for anything as right after it does a
-> bio_put(), and perusing the code it doesn't appear anything else was
-> holding a reference to the bio.
-> 
-> The other use end_bio_extent_readpage() was just for a pr_debug() -
-> changed it to something that might be a bit more useful.
-> 
-> Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-> CC: Chris Mason <chris.mason-5c4llco8/ftWk0Htik3J/w@public.gmane.org>
-> CC: Stefan Behrens <sbehrens-yx7LkcorvrlcxY2q9kLzMw@public.gmane.org>
-> ---
->  fs/btrfs/extent_io.c |  4 ++--
->  fs/btrfs/scrub.c     | 15 ---------------
->  2 files changed, 2 insertions(+), 17 deletions(-)
-> 
-> diff --git a/fs/btrfs/extent_io.c b/fs/btrfs/extent_io.c
-> index 4c87847..8d7fb96 100644
-> --- a/fs/btrfs/extent_io.c
-> +++ b/fs/btrfs/extent_io.c
-> @@ -2298,8 +2298,8 @@ static void end_bio_extent_readpage(struct bio *bio, int err)
->  		struct extent_state *cached = NULL;
->  		struct extent_state *state;
->  
-> -		pr_debug("end_bio_extent_readpage: bi_vcnt=%d, idx=%d, err=%d, "
-> -			 "mirror=%ld\n", bio->bi_vcnt, bio->bi_idx, err,
-> +		pr_debug("end_bio_extent_readpage: bi_sector=%llu, err=%d, "
-> +			 "mirror=%ld\n", (u64)bio->bi_sector, err,
->  			 (long int)bio->bi_bdev);
->  		tree = &BTRFS_I(page->mapping->host)->io_tree;
->  
-> diff --git a/fs/btrfs/scrub.c b/fs/btrfs/scrub.c
-> index b223620..2683ea7 100644
-> --- a/fs/btrfs/scrub.c
-> +++ b/fs/btrfs/scrub.c
-> @@ -1666,21 +1666,6 @@ static void scrub_bio_end_io_worker(struct btrfs_work *work)
->  		scrub_block_put(sblock);
->  	}
->  
-> -	if (sbio->err) {
-> -		/* what is this good for??? */
-> -		sbio->bio->bi_flags &= ~(BIO_POOL_MASK - 1);
-> -		sbio->bio->bi_flags |= 1 << BIO_UPTODATE;
-> -		sbio->bio->bi_phys_segments = 0;
-> -		sbio->bio->bi_idx = 0;
-> -
-> -		for (i = 0; i < sbio->page_count; i++) {
-> -			struct bio_vec *bi;
-> -			bi = &sbio->bio->bi_io_vec[i];
-> -			bi->bv_offset = 0;
-> -			bi->bv_len = PAGE_SIZE;
-> -		}
-> -	}
-> -
->  	bio_put(sbio->bio);
->  	sbio->bio = NULL;
->  	spin_lock(&sdev->list_lock);
-> 
+>>>>> "Kent" == Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> writes:
 
-Yes, it is correct to remove these lines in the btrfs scrub code. They
-are a relict from the past.
+Kent,
+
+Kent> To fix the bug first, I'd have to reorder struct bio_pair and then
+Kent> just delete two lines of code from bio_integrity_split(). But the
+Kent> reordering is unnecessary with the refactoring.
+
+Well, a bug is a bug and the fix needs to go into stable. So we will
+need a patch that does not depend on your changes.
+
+I don't have a problem with adding a pointer so clones can point to the
+parent's vector. But embedding the vector into the bip was a feature.
+If you check the git log you'll see that originally I did use separate
+vector allocations.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
