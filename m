@@ -1,35 +1,54 @@
-From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
-Subject: Re: bcache crash/bugs on HEAD (rebased on 3.6-rc5)
-Date: Thu, 13 Sep 2012 18:21:43 +1000
-Message-ID: <CAOzFzEhb85zzrREM8wwg--6sNyGLVHD88wCkX+NVUkBSnjjg+Q@mail.gmail.com>
-References: <CAOzFzEhfGi0Z6r0q_3D6M181yC0t5GTs0VG6Y-9LCqU_gJCt+g@mail.gmail.com>
-	<CAOzFzEi=esX5SD9Fhy2utsR=bq5R9jxPKKez7CfwmwtOTHvNGw@mail.gmail.com>
+From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Subject: Re: problem w/ read caching..
+Date: Thu, 13 Sep 2012 11:43:51 -0700
+Message-ID: <CAH+dOxLKJKRLU2+0hD0LVmTC68SnFpFrTE63+QegaGPs5BOSMg@mail.gmail.com>
+References: <CAPKZHbV3n7O+VRVNS-C2oDVSpO_VdirMDUOuwwWKaA5ZOUEG_g@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAOzFzEi=esX5SD9Fhy2utsR=bq5R9jxPKKez7CfwmwtOTHvNGw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAPKZHbV3n7O+VRVNS-C2oDVSpO_VdirMDUOuwwWKaA5ZOUEG_g-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+To: Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-I am able to consistently cause it to hang with the second trace (the
-rcu_check_callbacks one) with the following fio jobfile.
+Sounds like a good portion of your IO is bypassing the cache. That
+will happen if some of it's sequential, or if the SSD latency goes
+over a threshold - sequential_cutoff, congested_read_threshold_us and
+congest_write_threshold_us (if I'm remembering the names correctly)
+are the settings that control all that. 0 disables all of them.
 
-[global]
-numjobs=16
-iodepth=64
-
-[/dev/dsan/bcache]
-bs=4k
-ba=4k
-rw=randwrite
-size=1g
-direct=1
-ioengine=libaio
-
-Another interesting note is that while in this state cat'ing stats
-files like root_usage_percent cause the entire system to hang
-completely.
-I imagine this is due to some sort of sync.
-
-Joseph.
+On Wed, Sep 12, 2012 at 1:01 PM, Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org> wrot=
+e:
+> I am having a problem with BCache.
+>
+> I=92ve followed the documentation and have my cache attached. Here is
+> what dmesg tells me:
+>
+> [  372.622905] bcache: invalidating existing data
+> [  372.637517] bcache: registered cache device rssda1
+> [  400.704672] bcache: Caching dm-2 as bcache0 on set
+> 16fd7139-f018-461c-9d9e-daa
+>
+> I warmed up the cache by using an application (vdbench) to do random
+> reads over a 10GB region.
+>
+> Everything looks good as the response time comes down as the cache
+> warms up. But, for some reason the cache_hit_rate is showing 90% and
+> yet I=92m still seeing heavy activity to the disk device.
+>
+> bwalker@nellis:~> cat
+> /sys/fs/bcache/16fd7139-f018-461c-9d9e-daa7666c7f1e/stats_total/cache=
+_hit_ratio
+> 94
+> bwalker@nellis:~>
+>
+> Any ideas on why this might be happening are appreciated.
+>
+> -brad w.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
+e" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
