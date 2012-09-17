@@ -1,34 +1,30 @@
-From: Joseph Glanville <joseph.glanville@orionvm.com.au>
-Subject: 3.6-rc5 cgroups blkio throttle + md regression
-Date: Mon, 17 Sep 2012 03:31:27 +1000
-Message-ID: <CAOzFzEhf2LfT0BCNPAgPgxZ3=pj2KvJ4Z6kP7XF8nnxag1dfvg@mail.gmail.com>
+From: Steven Whitehouse <swhiteho-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [PATCH v2 05/26] block: Add bio_end()
+Date: Mon, 17 Sep 2012 10:17:24 +0100
+Message-ID: <1347873444.2688.3.camel@menhir>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+	 <1347322957-25260-6-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Return-path: <linux-raid-owner@vger.kernel.org>
-Sender: linux-raid-owner@vger.kernel.org
-To: cgroups@vger.kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, NeilBrown <neilb@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <1347322957-25260-6-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
 Hi,
 
-When using cgroups blkio controller with bio throttling my shell hangs
-attempting to write limits for md devices.
-Standard sd devices work as expected but md devices cause the shell to
-hang on io_wait.
+On Mon, 2012-09-10 at 17:22 -0700, Kent Overstreet wrote:
+> Just a little convenience macro - main reason to add it now is preparing
+> for immutable bio vecs, it'll reduce the size of the patch that puts
+> bi_sector/bi_size/bi_idx into a struct bvec_iter.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+> CC: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
 
-For example:
+GFS2 bits:
+Acked-by: Steven Whitehouse <swhiteho-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
 
-echo 9:0 0 > blkio.throttle.read_bps_device
-
-Where 9:0 => /dev/md0
-
-I haven't started trying to narrow down when this occured yet, it
-works fine on 3.2 and I will try out 3.5 etc shortly to see if I can
-bisect where it stopped working.
-
-Joseph.
-
--- 
-CTO | Orion Virtualisation Solutions | www.orionvm.com.au
-Phone: 1300 56 99 52 | Mobile: 0428 754 846
+Steve.
