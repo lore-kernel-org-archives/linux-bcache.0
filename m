@@ -1,25 +1,49 @@
-From: Alasdair G Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [dm-devel] [PATCH v10 1/8] block: Generalized bio pool freeing
-Date: Tue, 18 Sep 2012 17:31:57 +0100
-Message-ID: <20120918163156.GC17356@agk-dp.fab.redhat.com>
-References: <1346970902-10931-1-git-send-email-koverstreet@google.com> <1346970902-10931-2-git-send-email-koverstreet@google.com> <20120914182828.GK15728@agk-dp.fab.redhat.com> <20120917205139.GB14492@google.com>
+From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Subject: Re: [PATCH v2 01/26] block: Convert integrity to bvec_alloc_bs(),
+ and a bugfix
+Date: Thu, 20 Sep 2012 14:53:13 -0700
+Message-ID: <20120920215313.GE7264@google.com>
+References: <1347322957-25260-1-git-send-email-koverstreet@google.com>
+ <1347322957-25260-2-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20120917205139.GB14492-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+In-Reply-To: <1347322957-25260-2-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, Lars Ellenberg <lars.ellenberg-63ez5xqkn6DQT0dZR+AlfA@public.gmane.org>, Hannes Reinecke <hare-l3A5Bk7waGM@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org, "Martin K. Petersen" <martin.petersen-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, Vivek Goyal <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Sep 17, 2012 at 01:51:39PM -0700, Kent Overstreet wrote:
-> That isn't a very good patch - it says it's clearing bi_end_io as a
-> precaution, but as a precaution to what?
- 
-As a precaution against the endio function being called an extra time by
-mistake if a stray reference remains after the bio has been freed.
-Wipe this field when dm frees it.  Defensive programming, basically,
-in response to a tricky bug he had to deal with.
+Hello,
 
-Alasdair
+On Mon, Sep 10, 2012 at 05:22:12PM -0700, Kent Overstreet wrote:
+> This adds a pointer to the bvec array to struct bio_integrity_payload,
+> instead of the bvecs always being inline; then the bvecs are allocated
+> with bvec_alloc_bs().
+> 
+> This is needed eventually for immutable bio vecs - immutable bvecs
+> aren't useful if we still have to copy them, hence the need for the
+> pointer. Less code is always nice too, though.
+> 
+> Also fix an amusing bug in bio_integrity_split() - struct bio_pair
+> doesn't have the integrity bvecs after the bio_integrity_payloads, so
+> there was a buffer overrun. The code was confusing pointers with arrays.
+
+Aside from what Martin and Vivek already pointed out, it generally
+looks okay to me but here are some thoughts.
+
+I'm quite doubtful how much we're gaining by this complex set of slabs
+and mempools approach compared to just using kmalloc + one mempool for
+the largest size.  I can't think of anything to be gained in terms of
+cacheline hotness.  In terms of memory usage too, we're proabably
+introducing more fragmentation with all the different slabs.
+
+Jens, what are you thoughts?  For forward progress guarantee, single
+mempool per bioset serving the largest one is enough and we can
+significantly simplify the whole bioset thing.
+
+Thanks.
+
+-- 
+tejun
