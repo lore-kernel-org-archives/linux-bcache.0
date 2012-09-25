@@ -1,55 +1,49 @@
-From: Kent Overstreet <koverstreet@google.com>
-Subject: Re: [dm-devel] [PATCH v3 11/26] block: Add submit_bio_wait(), remove
- from md
-Date: Tue, 25 Sep 2012 15:15:08 -0700
-Message-ID: <20120925221508.GD22647@google.com>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-12-git-send-email-koverstreet@google.com>
- <5061464B.4090002@suse.de>
+From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
+Subject: Re: bcache hangs..
+Date: Wed, 26 Sep 2012 08:21:44 +1000
+Message-ID: <CAOzFzEiWDfot2KkWXGowvp4thY5o+rvWHNvW=ORZTHNeyucefQ@mail.gmail.com>
+References: <CAPKZHbX86Jw6JYEkO8zSJqxXezXtEg_+mRGOSjzhz4NZHn-ueQ@mail.gmail.com>
+	<loom.20120925T221213-151@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <5061464B.4090002@suse.de>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Hannes Reinecke <hare@suse.de>
-Cc: device-mapper development <dm-devel@redhat.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, tj@kernel.org, axboe@kernel.dk, vgoyal@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <loom.20120925T221213-151-eS7Uydv5nfjZ+VzJOa5vwg@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 07:51:07AM +0200, Hannes Reinecke wrote:
-> On 09/25/2012 12:34 AM, Kent Overstreet wrote:
-> > +/**
-> > + * submit_bio_wait - submit a bio, and wait until it completes
-> > + * @rw: whether to %READ or %WRITE, or maybe to %READA (read ahead)
-> > + * @bio: The &struct bio which describes the I/O
-> > + *
-> > + * Simple wrapper around submit_bio(). Returns 0 on success, or the error from
-> > + * bio_endio() on failure.
-> > + */
-> > +int submit_bio_wait(int rw, struct bio *bio)
-> > +{
-> > +	struct submit_bio_ret ret;
-> > +
-> > +	rw |= REQ_SYNC;
-> > +	init_completion(&ret.event);
-> > +	bio->bi_private = &ret;
-> > +	bio->bi_end_io = submit_bio_wait_endio;
-> 
-> Hmm. As this is meant to be a generic function, blindly overwriting
-> the bi_end_io pointer doesn't look like a good idea; the caller
-> could have set something there.
-> 
-> Please add at least a WARN_ON(bio->bi_end_io) prior to modifying it.
+On 26 September 2012 06:12, Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org> wrote:
+> Brad Walker <bwalker@...> writes:
+>
+>>
+>> I have a problem where BCache is hanging.
+>>
+>>
+>
+> Forgot to mention this is the latest BCache.
+>
+> I cloned it from the tree using
+>     git clone http://evilpiepirate.org/git/linux-bcache.git
+>
+> bwalker@nellis:~> uname -a
+> Linux nellis 3.6.0-rc3-0.5-default+ #1 SMP Tue Sep 25 11:12:26 MDT 2012 x86_64
+> x86_64 x86_64 GNU/Linux
+> bwalker@nellis:~>
+>
+> -brad w.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Nah, the general rule with bios is after it's completed anything
-could've been modified; we don't document or enforce otherwise with
-bi_end_io (and there's a fair amount of code that saves/sets bi_end_io,
-and I don't think it all restores the original before calling it).
-I'm not going to special case this unless we start documenting/enforcing
-it in general.
+Hi,
 
-Besides that, setting a callback on something that's being used
-synchronously is just dumb. Personally, I make damn sure to read and
-understand code I'm using. I mean, maybe if this restriction was in the
-slightest way subtle, but... how else would submit_bio_wait() be
-implemented? It's kind of obvious if you think for two seconds about it.
+You might have better luck with the stable bcache branch, usually bcache-3.2
+
+Joseph.
+
+-- 
+CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+Phone: 1300 56 99 52 | Mobile: 0428 754 846
