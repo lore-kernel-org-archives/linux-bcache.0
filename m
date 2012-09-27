@@ -1,44 +1,31 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [PATCH v3 05/26] md: Convert md_trim_bio() to use bio_advance()
-Date: Wed, 26 Sep 2012 21:41:37 -0700
-Message-ID: <20120927044137.GC29160@moria.home.lan>
-References: <1348526106-17074-1-git-send-email-koverstreet@google.com>
- <1348526106-17074-6-git-send-email-koverstreet@google.com>
- <20120926103827.4d880cf4@notabene.brown>
+From: Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org>
+Subject: Re: bcache hangs..
+Date: Thu, 27 Sep 2012 20:09:11 +0000 (UTC)
+Message-ID: <loom.20120927T220720-727@post.gmane.org>
+References: <CAPKZHbX86Jw6JYEkO8zSJqxXezXtEg_+mRGOSjzhz4NZHn-ueQ@mail.gmail.com> <loom.20120925T221213-151@post.gmane.org> <CAOzFzEiWDfot2KkWXGowvp4thY5o+rvWHNvW=ORZTHNeyucefQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20120926103827.4d880cf4-wvvUuzkyo1EYVZTmpyfIwg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Sep 26, 2012 at 10:38:27AM +1000, NeilBrown wrote:
-> On Mon, 24 Sep 2012 15:34:45 -0700 Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-> wrote:
-> 
-> > Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-> > CC: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-> > CC: NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>
-> > ---
-> >  drivers/md/md.c | 19 +++++--------------
-> >  1 file changed, 5 insertions(+), 14 deletions(-)
-> > 
-> > diff --git a/drivers/md/md.c b/drivers/md/md.c
-> > index 7a2b079..51ce48c 100644
-> > --- a/drivers/md/md.c
-> > +++ b/drivers/md/md.c
-> > @@ -190,25 +190,16 @@ void md_trim_bio(struct bio *bio, int offset, int size)
-> >  	struct bio_vec *bvec;
-> >  	int sofar = 0;
-> >  
-> > -	size <<= 9;
-> >  	if (offset == 0 && size == bio->bi_size)
-> >  		return;
-> 
-> Safer to leave the "size <<= 9" where it is, otherwise that condition will
-> always fail.
+Joseph Glanville <joseph.glanville@...> writes:
 
-Whoops, moving that certainly didn't make sense. Thanks!
+> 
+> Hi,
+> 
+> You might have better luck with the stable bcache branch, usually bcache-3.2
+> 
+> Joseph.
+
+Joseph,
+
+I moved over to the bcache-3.2 branch and it works.
+
+It still has a problem and I will post that in a separate message.
+
+But, thanks for the suggestion.
+
+-brad w. 
