@@ -1,49 +1,66 @@
-From: Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org>
+From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Subject: Re: problem w/ read caching..
-Date: Fri, 28 Sep 2012 10:31:01 -0600
-Message-ID: <CAPKZHbX_C62QmktNJkGKHa54FiaeiW5+s-v_=e6QcCw_P+N89w@mail.gmail.com>
-References: <50651c68.a8e1440a.1165.67c8SMTPIN_ADDED@mx.google.com>
+Date: Fri, 28 Sep 2012 11:59:49 -0700
+Message-ID: <20120928185949.GA7062@google.com>
+References: <CAPKZHbV3n7O+VRVNS-C2oDVSpO_VdirMDUOuwwWKaA5ZOUEG_g@mail.gmail.com>
+ <CAH+dOxLKJKRLU2+0hD0LVmTC68SnFpFrTE63+QegaGPs5BOSMg@mail.gmail.com>
+ <loom.20120928T010314-562@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <50651c68.a8e1440a.1165.67c8SMTPIN_ADDED-ATjtLOhZ0NVl57MIdRCFDg@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <loom.20120928T010314-562-eS7Uydv5nfjZ+VzJOa5vwg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "jason-/cow75dQlsI@public.gmane.org" <jason-/cow75dQlsI@public.gmane.org>
+To: Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, Sep 27, 2012 at 9:41 PM, jason-/cow75dQlsI@public.gmane.org <jason-/cow75dQlsI@public.gmane.org> wrote:
-> One thing that comes to mind for me is your 1gb test may be mostly hitting
-> the ram cache on the ssd.  That is generally where ssd makers, consumer and
-> to a lesser extent enterprise, get the peak I/O ops numbers from.
+On Thu, Sep 27, 2012 at 11:28:20PM +0000, Brad Walker wrote:
+> Kent Overstreet <koverstreet@...> writes:
+> 
+> > 
+> > Sounds like a good portion of your IO is bypassing the cache. That
+> > will happen if some of it's sequential, or if the SSD latency goes
+> > over a threshold - sequential_cutoff, congested_read_threshold_us and
+> > congest_write_threshold_us (if I'm remembering the names correctly)
+> > are the settings that control all that. 0 disables all of them.
+> > 
+> 
+> So I set the sequential_cutoff and congested_read_threshold_us to both be 0.
+> Since I was only doing reads, I figured there was no need to mess with the write
+> option.
+> 
+> But, I'm still seeing a problem. 
+> 
+> My hardware is:
+> 1 - Dell PowerEdge R710 w/ 24 x Xeon processors, 96GB of ram
+> 2 - Micron P320H SSD
+> 3 - LSI storage device connected by a SAS interface
+> 
+> What I see is that when I do random reads over a 10GB region, the cache warms up
+> but hits a read response plateau at about 7ms. I still see a LOT (i.e. 32000
+> IOPS) of I/O to the disk. 
 
-I understand your thinking. But, in tests using Facebook FlashCache as
-well as our internally developed caching software (I work for a big
-storage company), that is not what I see. What I see is that once the
-cache warms ups, regardless of the size (i.e. 1GB, 10GB, 100GB), that
-access times are sub-millisecond.
+By disk you do mean spinning disk? Or just to the bcache device?
 
-> Can you do the same tests, 10gb and 1gb, using only the ssd as your block
-> device to get a baseline for it without bcache in the picture?
+I'm wondering if your storage array just is that fast (which would
+explain the 7 ms) or something weird is going on.
 
-Good suggestion! I have done this and the data shows that my SSD has a
-baseline of 800K iops when using a 4k blocksize.
+Cache hit ratio or iostat would tell you.
 
-> I would also do some mixed r/w tests just to sort of get a real world
-> profile for your ssd and system.
+> Yes, if I run the same test over a 1GB region, runs really fast. Pretty close to
+> the max IOPS rate of the SSD.
+> 
+> So I'm thinking there is a problem here or I have a bcache config issue.
 
-I'll take a look at doing this over the weekend.
+Sounds like some sort of bcache problem. hrm.
 
-> You also don't mention what type and how many spindles you have in the
-> mechanical array.
+Most likely cause is something is keeping the cache from warming up, and
+some IO is still going to disk. That used to be an issue with the old
+synchronization for updating the cache on cache miss, but it shouldn't
+be anymore...
 
-I'm using a RAID array which has lots of horsepower and the RAID 5
-configuration has 6 drives. Each drive is a 15K rpm type. So the array
-has very good performance.
-
-One data point that is when I run Facebook flashcache, once the cache
-is fully warmed, I see about 0.60 ms response time.
-
-Any suggestions?
-
--brad w.
+Check number of cache misses after a run... if it's going up when all
+the data should be in the cache, that's one bug. If there's no cache
+misses and you're still seeing 7 ms latency... well, that would be
+weird. queueing delays, maybe..
