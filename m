@@ -1,45 +1,51 @@
-From: Kingsly John <member+bcache-4+VQVQEymQXR7s880joybQ@public.gmane.org>
-Subject: Re: bcache, layered block devices and unclean shutdowns
-Date: Fri, 5 Oct 2012 08:15:17 +0530
-Message-ID: <20121005024517.GE17229@narnia.kingsly.net>
-References: <20121004103625.GD17229@narnia.kingsly.net>
- <20121004195130.GB29494@google.com>
+From: Brad Walker <bwalker-WlSugiYO8JFBDgjK7y7TUQ@public.gmane.org>
+Subject: Re: problem w/ read caching..
+Date: Mon, 8 Oct 2012 16:39:03 +0000 (UTC)
+Message-ID: <loom.20121008T172856-174@post.gmane.org>
+References: <CAH+dOxLKJKRLU2+0hD0LVmTC68SnFpFrTE63+QegaGPs5BOSMg@mail.gmail.com> <loom.20120928T010314-562@post.gmane.org> <20120928185949.GA7062@google.com> <loom.20121001T211315-779@post.gmane.org> <20121001193806.GA26488@google.com> <loom.20121001T220412-225@post.gmane.org> <20121001203706.GB26488@google.com> <loom.20121001T223817-249@post.gmane.org> <20121001211458.GC26488@google.com> <loom.20121002T001556-394@post.gmane.org> <20121001230023.GG26488@google.com> <CAH+dOx+Xju7-OFbJevrs3M3pXACzt_a+2T9Mqiuh6gLLyPksMg@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20121004195130.GB29494-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-+++ Kent Overstreet [2012-10-04 12:51:30]:
+Kent Overstreet <koverstreet@...> writes:
 
-> On Thu, Oct 04, 2012 at 04:06:25PM +0530, Kingsly John wrote:
-> > Hi!
-> > 
-> > In the archives I found a thread from a few months ago where it was
-> > recommended that it's best to use bcache on the RAID layer.(rather than the
-> > disks themselves or LVM)
-> > 
-> > Wouldn't this affect bcache's ability to recover from an unclean shutdown?
-> > ie, if the raid array itself can't be brought up, bcache wouldn't be able to
-> > write caches to disk? (Or is that not a possibility)
 > 
-> Not sure what you're asking...
+> Man, this is a frustrating issue :)
+> 
+> I haven't been able to come up with a way of fixing it right without
+> rewriting a bunch of code. I do have a workaround figured out though
+> if this is a real issue for you - it'll just increase internal
+> fragmentation in the btree a bit, but with large btree nodes like you
+> normally want not enough to matter.
+> 
+> Though like I said, as long as your workload isn't 100% reads this
+> shouldn't be an isuse.
+> 
 
-If /dev/md0 is the backing device, in the event of an unclean shutdown during
-a write it would be dirty(at the raid level) and there would be a resync
-etc. 
+Sorry to be away for a few days.
 
-If the individual disks that make make up /dev/md0 were backing devices
-instead, wouldn't bcache ensure that /dev/md0 would never end up dirty when
-recovering from an unclean shutdown and eliminate the need for a forced
-resync?
+I can imagine it is frustrating. I've been looking at the code and it seems
+pretty tough.
 
-Is one better than the other in terms of maintaining data integrity or would
-they both be equally reliable?
+I think it would be worthwhile to have this fixed if possible as it does benefit
+small caches (i.e. 1GB in size) as well.
 
-Kingsly
+Basically, I made my combination of reads verses writes to be 99 to 1 like you
+said to do. So 99% of the time, I'm doing a read. When I do this, I never see my
+IOPS rate get over approximately 45K.
 
--- 
+Also previously, when I run my test over a 1GB region with 100% reads, once the
+cache warmed, I would see 0.350ms response time for a read. Once I changed the
+read/write mixture to 99% reads, the response time went down to 0.150ms. So I
+would think it would be beneficial to small workloads and large workloads if we
+could fix this.
+
+I'm happy to test this for you or help out in any way possible.
+
+Thanks.
+
+-brad w.
