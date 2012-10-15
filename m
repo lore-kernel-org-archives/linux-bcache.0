@@ -1,38 +1,95 @@
-From: Zach Brown <zab-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [PATCH 5/5] aio: Refactor aio_read_evt, use cmxchg(), fix bug
-Date: Thu, 11 Oct 2012 09:43:12 -0700
-Message-ID: <20121011164312.GD8768@lenny.home.zabbo.net>
-References: <20121009183753.GP26187@lenny.home.zabbo.net>
- <20121009212724.GD29494@google.com>
- <20121009224703.GT26187@lenny.home.zabbo.net>
- <20121009225509.GA26835@google.com>
- <20121009231059.GV26187@lenny.home.zabbo.net>
- <20121010000600.GB26835@google.com>
- <20121010002634.GX26187@lenny.home.zabbo.net>
- <20121010004746.GF26835@google.com>
- <20121010214315.GE6371@lenny.home.zabbo.net>
- <20121011025102.GE24174@moria.home.lan>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20121011025102.GE24174-jC9Py7bek1znysI04z7BkA@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, tytso-3s7WtUTddSA@public.gmane.org
+From: Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH v4 00/24] Prep work for immutable bio vecs
+Date: Mon, 15 Oct 2012 13:08:34 -0700
+Message-ID: <1350331769-14856-1-git-send-email-koverstreet@google.com>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Cc: Kent Overstreet <koverstreet@google.com>, tj@kernel.org, axboe@kernel.dk, neilb@suse.de, vgoyal@redhat.com
 List-Id: linux-bcache@vger.kernel.org
 
-> Yeah, but that means the completion has to be delivered from process
-> context. That's not what aio does today, and it'd be a real performance
-> regression.
+Since last time - split bio integrity stuff out into its own 2 patch series.
 
-It'd only have to to complete from process context if it faults. The
-cheapest possible delivery mechanism is simple cpu stores.  In the vast
-majority of cases the ring will be resident and it'll be done.  In rare
-cases it could fall back to a deferred completion.  If apps can't
-stomach that latency and want to pay the overhead of pinning to remove
-that risk, they're welcome to do so.
+Also changed bio_advance() a bit - it now explicitly special cases discard and
+WRITE_SAME requests, so that partial completions will work. Previously, partial
+completions worked for other requests but would've silently blown up for those
+- this'll be of use later too, for generic bio splitting.
 
-That's my hope, anyway.
+I've got 3 patch series queued up but they all should be independent - git tree
+is at
 
-- z
+http://evilpiepirate.org/git/linux-bcache.git for-jens
+
+It's on top of jens' for-next branch.
+
+
+Kent Overstreet (24):
+  block: Add bio_advance()
+  block: Refactor blk_update_request()
+  md: Convert md_trim_bio() to use bio_advance()
+  block: Add bio_end_sector()
+  block: Use bio_sectors() more consistently
+  block: Change bio_split() to respect the current value of bi_idx
+  block: Remove bi_idx references
+  block: Remove some unnecessary bi_vcnt usage
+  block: Add submit_bio_wait(), remove from md
+  raid10: Use bio_reset()
+  raid1: use bio_reset()
+  raid5: use bio_reset()
+  raid1: Refactor narrow_write_error() to not use bi_idx
+  block: Add bio_copy_data()
+  pktcdvd: use bio_copy_data()
+  pktcdvd: Use bio_reset() in disabled code to kill bi_idx usage
+  raid1: use bio_copy_data()
+  bounce: Refactor __blk_queue_bounce to not use bi_io_vec
+  block: Add bio_for_each_segment_all()
+  block: Convert some code to bio_for_each_segment_all()
+  block: Add bio_alloc_pages()
+  block: Add an explicit bio flag for bios that own their bvec
+  bio-integrity: Add explicit field for owner of bip_buf
+  block: Add BIO_SUBMITTED flag, kill BIO_CLONED
+
+ block/blk-core.c                         |  84 ++----------
+ block/cfq-iosched.c                      |   7 +-
+ block/deadline-iosched.c                 |   2 +-
+ drivers/block/aoe/aoeblk.c               |   2 +-
+ drivers/block/aoe/aoecmd.c               |   2 +-
+ drivers/block/brd.c                      |   3 +-
+ drivers/block/drbd/drbd_req.c            |   8 +-
+ drivers/block/floppy.c                   |   1 -
+ drivers/block/pktcdvd.c                  | 102 ++++----------
+ drivers/md/dm-crypt.c                    |   3 +-
+ drivers/md/dm-raid1.c                    |   2 +-
+ drivers/md/dm-stripe.c                   |   2 +-
+ drivers/md/dm-verity.c                   |   4 +-
+ drivers/md/dm.c                          |   1 -
+ drivers/md/faulty.c                      |   6 +-
+ drivers/md/linear.c                      |   3 +-
+ drivers/md/md.c                          |  17 +--
+ drivers/md/raid0.c                       |   9 +-
+ drivers/md/raid1.c                       | 133 ++++++------------
+ drivers/md/raid10.c                      |  78 +++--------
+ drivers/md/raid5.c                       |  49 ++++---
+ drivers/message/fusion/mptsas.c          |   6 +-
+ drivers/s390/block/dcssblk.c             |   3 +-
+ drivers/scsi/libsas/sas_expander.c       |   6 +-
+ drivers/scsi/mpt2sas/mpt2sas_transport.c |  10 +-
+ fs/bio-integrity.c                       |  10 +-
+ fs/bio.c                                 | 226 +++++++++++++++++++++++++++----
+ fs/btrfs/extent_io.c                     |   3 +-
+ fs/buffer.c                              |   1 -
+ fs/direct-io.c                           |   8 +-
+ fs/exofs/ore.c                           |   2 +-
+ fs/exofs/ore_raid.c                      |   2 +-
+ fs/gfs2/lops.c                           |   2 +-
+ fs/jfs/jfs_logmgr.c                      |   2 -
+ fs/logfs/dev_bdev.c                      |   5 -
+ include/linux/bio.h                      |  29 ++--
+ include/linux/blk_types.h                |   5 +-
+ include/trace/events/block.h             |  10 +-
+ mm/bounce.c                              |  75 +++-------
+ mm/page_io.c                             |   1 -
+ 40 files changed, 424 insertions(+), 500 deletions(-)
+
+-- 
+1.7.12
