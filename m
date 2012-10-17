@@ -1,22 +1,22 @@
-From: Ed Cashin <ecashin@coraid.com>
-Subject: Re: [PATCH v4 05/24] block: Use bio_sectors() more consistently
-Date: Mon, 15 Oct 2012 20:54:50 -0500
-Message-ID: <FCC1E3FC-FE23-4BC7-A437-04471143D8B9@coraid.com>
-References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
- <1350331769-14856-6-git-send-email-koverstreet@google.com>
+From: =?UTF-8?B?5b2t5YuH?= <ppyy-Mm5uWUBpxRjQT0dZR+AlfA@public.gmane.org>
+Subject: git and web are down
+Date: Wed, 17 Oct 2012 08:44:54 +0800
+Message-ID: <CAB4GJpWmGApP2hO+b1JEsarQcPZAWLO+0zHLHiC+KsXiTYSPqA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1350331769-14856-6-git-send-email-koverstreet@google.com>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <koverstreet@google.com>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "tj@kernel.org" <tj@kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>, "neilb@suse.de" <neilb@suse.de>, "vgoyal@redhat.com" <vgoyal@redhat.com>, Nick Piggin <npiggin@kernel.dk>, Jiri Kosina <jkosina@suse.cz>, Jim Paris <jim@jtan.com>, Geoff Levand <geoff@infradead.org>, Alasdair Kergon <agk@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-The aoe changes look OK, thanks.
+git is down for more than 12 hours.
 
--- 
-  Ed Cashin
-  ecashin@coraid.com
+it's hosted in a linode VPS.
+
+can it be moved to a service such as github?
+
+i would like to clone it now, can any one shared with me?
+
+--
+=E5=BD=AD=E5=8B=87 (Peng Yong)
