@@ -1,22 +1,29 @@
-From: =?UTF-8?B?5b2t5YuH?= <ppyy-Mm5uWUBpxRjQT0dZR+AlfA@public.gmane.org>
-Subject: git and web are down
-Date: Wed, 17 Oct 2012 08:44:54 +0800
-Message-ID: <CAB4GJpWmGApP2hO+b1JEsarQcPZAWLO+0zHLHiC+KsXiTYSPqA@mail.gmail.com>
+From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+Subject: Re: [PATCH v4 1/2] block: Reorder struct bio_set
+Date: Thu, 18 Oct 2012 18:14:01 -0700
+Message-ID: <20121019011401.GI13370@google.com>
+References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
+ <1350331769-14856-26-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <1350331769-14856-26-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-git is down for more than 12 hours.
+On Mon, Oct 15, 2012 at 01:08:59PM -0700, Kent Overstreet wrote:
+> This is prep work for the next patch, which embeds a struct bio_list in
+> struct bio_set.
+> 
+> Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+> CC: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
 
-it's hosted in a linode VPS.
+Acked-by: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
 
-can it be moved to a service such as github?
+Thanks.
 
-i would like to clone it now, can any one shared with me?
-
---
-=E5=BD=AD=E5=8B=87 (Peng Yong)
+-- 
+tejun
