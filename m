@@ -1,19 +1,43 @@
 From: James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org>
 Subject: RE: Always cache?
-Date: Sat, 3 Nov 2012 23:06:47 +0000
-Message-ID: <93462A6BCE1CD840B94554FBBEE4C93603075DA08D@THHS2E12BE8X.hostedservice2.net>
+Date: Sat, 3 Nov 2012 23:22:24 +0000
+Message-ID: <93462A6BCE1CD840B94554FBBEE4C93603075DA08E@THHS2E12BE8X.hostedservice2.net>
 References: <loom.20121103T193709-932@post.gmane.org>
  <CAH+dOx+Sj6xovbfgy-tzB2QtJsYtV6=Vx2qxUGxLZRUpMHKbkQ@mail.gmail.com>
+ <93462A6BCE1CD840B94554FBBEE4C93603075DA08D@THHS2E12BE8X.hostedservice2.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAH+dOx+Sj6xovbfgy-tzB2QtJsYtV6=Vx2qxUGxLZRUpMHKbkQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <93462A6BCE1CD840B94554FBBEE4C93603075DA08D-DfMK7iAD4PJfakIiyABxvNnpRUX5XqCHU7KNoL8tkdc@public.gmane.org>
 Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+To: James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org>, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
+
+Aha,
+
+Setting mode to writethrough does cause all writes to be written to both cache and backing disk simultaneously - so not what I was looking for.
+
+However, it seems the congestion option is what I was looking for.
+
+Setting cache_mode to writeback and then setting both congested_[read/write]_threshold_us to 0 as you directed seems to do pretty much exactly what I want.  (at least it appears that almost all writes are going to cache first and then starts sending the data to the backing store about 30 seconds later as expected)
+
+Perfect, thank-you.
+
+Any chance you could briefly explain what the two congestion values do?
+
+Cheers,
+
+James
+
+-----Original Message-----
+From: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org [mailto:linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org] On Behalf Of James Sefton
+Sent: 03 November 2012 23:07
+To: Kent Overstreet
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Subject: RE: Always cache?
 
 Okay, I will give that a try now.
 
@@ -26,7 +50,7 @@ Cheers,
 James
 
 -----Original Message-----
-From: Kent Overstreet [mailto:koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org] 
+From: Kent Overstreet [mailto:koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org]
 Sent: 03 November 2012 22:41
 To: James Sefton
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
@@ -56,7 +80,7 @@ On Sat, Nov 3, 2012 at 11:53 AM, James Sefton <james-3k2nYdb70uTQXOPxS62xeg@publ
 > running = 1 sequential_cutoff = 0 (also tried this at 1.1G, which 
 > appears to be maximum) sequential_merge = 1 (also tried 0.  I have no 
 > idea what this means) state = clean writeback_delay = 30 
-> writeback_metadata = 1 (not sure what this does) writeback_percent = 
+> writeback_metadata = 1 (not sure what this does) writeback_percent =
 > 40 (also tried at 10) writeback_running = 1
 >
 >
@@ -90,3 +114,5 @@ On Sat, Nov 3, 2012 at 11:53 AM, James Sefton <james-3k2nYdb70uTQXOPxS62xeg@publ
 > To unsubscribe from this list: send the line "unsubscribe 
 > linux-bcache" in the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org 
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--
+To unsubscribe from this list: send the line "unsubscribe linux-bcache" in the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
