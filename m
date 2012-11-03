@@ -1,69 +1,65 @@
 From: James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org>
-Subject: RE: Partitions?
-Date: Fri, 2 Nov 2012 19:11:25 +0000
-Message-ID: <93462A6BCE1CD840B94554FBBEE4C93603075DA05E@THHS2E12BE8X.hostedservice2.net>
-References: <loom.20121102T041855-678@post.gmane.org>
- <20121102153335.GD14917@google.com>
+Subject: Always cache?
+Date: Sat, 3 Nov 2012 18:53:14 +0000 (UTC)
+Message-ID: <loom.20121103T193709-932@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20121102153335.GD14917-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Awesome.   1 byte change to the source!
+Hi Kent,
 
-I now have bcache0p1 in /dev.
-Not used it yet but so far it's looking good. :)
+I am trying to configure the cache to always cache.
+The only time I want it to bypass the cache is when it has to.  (ie.. cache 
+full)
 
------Original Message-----
-From: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org [mailto:linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org] On Behalf Of Kent Overstreet
-Sent: 02 November 2012 15:34
-To: James Sefton
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-Subject: Re: Partitions?
+In particular - I want all writes to hit the writeback cache and never be 
+written directly. (Unless no space is left for writeback)
 
-On Fri, Nov 02, 2012 at 03:24:13AM +0000, James Sefton wrote:
-> Hi,
-> 
-> I have got my /dev/bcache0 device showing up and attached the cache.
-> 
-> I then used fdisk to add a single partition to it but it gave an error on exit:
-> 
-> WARNING: Re-reading the partition table failed with error 22: Invalid argument.
-> The kernel still uses the old table. The new table will be used at the 
-> next reboot or after you run partprobe(8) or kpartx(8)
-> 
-> 
-> I have had this before quite a bit and often have to run partprobe 
-> after leaving fdisk for the partition table to be read and partitions populated in /dev.
-> 
-> However, when running partprobe (or partprobe /dev/bcache0) I get the following:
-> 
-> Error: Error informing the kernel about modifications to partition
-> /dev/bcache0p1 -- Invalid argument.  This means Linux won't know about 
-> any changes you made to /dev/bcache0p1 until you reboot -- so you 
-> shouldn't mount it or use it in any way before rebooting.
-> Error: Failed to add partition 1 (Invalid argument)
-> 
-> 
-> I checked /dev and confirmed that bcache0p1 was not present.
-> 
-> 
-> What did I do wrong?
+I am not sure how to configure this.  I thought I had done it once before but I 
+cant seem to reproduce it.
 
-Oh, that's nothing you did... the bcache code is just creating an unpartitionalable block device.
+Here are my settings so far:
 
-I suppose there's no real reason for that...
+/sys/block/bcache0/bcache/
 
-I _think_ all you'd need to change is one line, in
-drivers/md/bcache/super.c: if you search through the file, you'll find a call to alloc_disk(1) somewhere - change that to alloc_disk(16).
+cache_mode = writethrough [writeback] writearound none
+readahead = 0
+running = 1
+sequential_cutoff = 0 (also tried this at 1.1G, which appears to be maximum)
+sequential_merge = 1 (also tried 0.  I have no idea what this means)
+state = clean
+writeback_delay = 30
+writeback_metadata = 1 (not sure what this does)
+writeback_percent = 40 (also tried at 10)
+writeback_running = 1
 
 
-Want to try that and let me know if it works?
---
-To unsubscribe from this list: send the line "unsubscribe linux-bcache" in the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+not sure what else there is to configure.
+Any suggestions would be appreciated.
+
+I am basically trying to maintain responsive disk access as much as possible.  
+The backing storage is on a slow link to a SAN and when accessed directly is 
+relatively slow.  I want it to use the cache as much as is possible and then 
+bCache write the cache data to the backend storage behind the scenes.  Workload 
+is mixed..  random and sequential reads and writes, anything from just a few 
+bytes to 4-5Gb files.
+
+I am guessing that sequential_cutoff = 0 disables the cut-off feature.  (I tried 
+the max of 1.1G too, just in case)
+
+I am using nmon to monitor where data is being written while copying /usr into 
+the filesystem on cache0p1. (ext4)   I am seeing writes going to the cache 
+device and the backing device simultaneously - but the cache is not written to 
+heavily.  Performance seen when copying is similar to that of if I was just 
+writing to the backing device directly.  (maybe a little better since some bits 
+are getting written to the cache)
+
+Any suggestion what I may be doing wrong?
+
+Cheers,
+
+James
