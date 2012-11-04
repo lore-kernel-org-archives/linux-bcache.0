@@ -1,35 +1,59 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Always cache?
-Date: Sat, 3 Nov 2012 16:29:38 -0700
-Message-ID: <CAH+dOxK5Q-EZUJ_4KPPVA8FWcZQ_rDoWDyV_DQauP5iyp7DVTg@mail.gmail.com>
-References: <loom.20121103T193709-932@post.gmane.org>
-	<CAH+dOx+Sj6xovbfgy-tzB2QtJsYtV6=Vx2qxUGxLZRUpMHKbkQ@mail.gmail.com>
-	<93462A6BCE1CD840B94554FBBEE4C93603075DA08D@THHS2E12BE8X.hostedservice2.net>
-	<93462A6BCE1CD840B94554FBBEE4C93603075DA08E@THHS2E12BE8X.hostedservice2.net>
+From: James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org>
+Subject: Kernel Oops (bCache hangs on registering 3rd device)
+Date: Sun, 4 Nov 2012 03:27:29 +0000 (UTC)
+Message-ID: <loom.20121104T035737-445@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <93462A6BCE1CD840B94554FBBEE4C93603075DA08E-DfMK7iAD4PJfakIiyABxvNnpRUX5XqCHU7KNoL8tkdc@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Sat, Nov 3, 2012 at 4:22 PM, James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org> wrote:
-> Aha,
->
-> Setting mode to writethrough does cause all writes to be written to both cache and backing disk simultaneously - so not what I was looking for.
->
-> However, it seems the congestion option is what I was looking for.
->
-> Setting cache_mode to writeback and then setting both congested_[read/write]_threshold_us to 0 as you directed seems to do pretty much exactly what I want.  (at least it appears that almost all writes are going to cache first and then starts sending the data to the backing store about 30 seconds later as expected)
->
-> Perfect, thank-you.
->
-> Any chance you could briefly explain what the two congestion values do?
+Hi,
 
-They're for when your cache device is slower than your backing
-device(s) - to prevent the cache device from being a bottleneck, it
-starts cranking down the bypass threshold when latency to the SSD goes
-over that threshold
+Seems I broke something.
+
+I have run into this problem about 3 times now where bCache (or something!) 
+seems to hang and I only just thought to check kern.log before trying to reboot 
+so was previously assuming something else had just got stuck!
+
+I only had 3 servers available to me and once this problem occurs, the servers 
+seems to get stuck rebooting so I cannot do another test to confirm tonight.  (I 
+have put a reboot request in for them to be force rebooted but that will not get 
+actioned until tomorrow)
+
+Here is what I know about the most recent time this happened:
+
+I had already set-up and been using /dev/bcache0 and /dev/bcache1.  They are 
+attached to the cache set and set to writeback.
+
+The problem occurred when I ran "echo /dev/rbd2 >/sys/fs/bcache/register".   
+This device had been newly formatted with "make-bcache -B /dev/rbd2"   (rbd2 is 
+a SAN based block device)
+
+If it makes any difference - these commands are in a script so the register 
+command would have been run *immediately* after the make-bcache command 
+returned.  (I am going to try sticking a sleep 3 or something in there tomorrow 
+- just in case its related to trying to register the device so quickly after it 
+was prepared)
+
+At this point my console just stops.  I cannot CTRL+C to abort the echo command.
+top shows increasing load average - presumably it thinks a process is stuck 
+waiting for something.  Rebooting server kicks me out of console and then never 
+comes back.
+
+/dev/rbd0 and /dev/rbd1 are already registered at this point and were working 
+fine.  If I open another console (did this before rebooting) and create 
+/dev/rbd3, and then try and register it - the same happens again.
+
+Here is what came up in kern.log:
+
+http://pastebin.com/xNBuv3sj
+(Using Gmane to post and it complained about long lines)
+
+Any ideas?
+
+Cheers,
+
+James
