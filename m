@@ -1,8 +1,8 @@
 From: James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org>
 Subject: Re: Kernel Oops (bCache hangs on registering 3rd device)
-Date: Mon, 5 Nov 2012 13:01:18 +0000 (UTC)
-Message-ID: <loom.20121105T135531-268@post.gmane.org>
-References: <loom.20121104T035737-445@post.gmane.org>
+Date: Mon, 5 Nov 2012 13:15:21 +0000 (UTC)
+Message-ID: <loom.20121105T140203-975@post.gmane.org>
+References: <loom.20121104T035737-445@post.gmane.org> <loom.20121105T135531-268@post.gmane.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
@@ -14,76 +14,64 @@ List-Id: linux-bcache@vger.kernel.org
 James Sefton <james@...> writes:
 
 > 
-> Hi,
+> James Sefton <james@...> writes:
 > 
-> Seems I broke something.
+> > 
+> > Hi,
+> > 
+> > Seems I broke something.
+> > <.. pruned previous post ..>
 > 
-> I have run into this problem about 3 times now where bCache (or something!) 
-> seems to hang and I only just thought to check kern.log before trying to 
-reboot 
-> so was previously assuming something else had just got stuck!
+> Yes, reproduced it after a clean boot.
+> It gets stuck creating the third cache device. (/dev/bcache2)
 > 
-> I only had 3 servers available to me and once this problem occurs, the servers 
-> seems to get stuck rebooting so I cannot do another test to confirm tonight.  
-(I 
-> have put a reboot request in for them to be force rebooted but that will not 
-get 
-> actioned until tomorrow)
+> Here is the latest info from kern.log, but it looks very similar to what I 
+> posted before.
 > 
-> Here is what I know about the most recent time this happened:
+> http://pastebin.com/r8YRSNGR
 > 
-> I had already set-up and been using /dev/bcache0 and /dev/bcache1.  They are 
-> attached to the cache set and set to writeback.
+> Any idea if I am doing something wrong or is this a bug?
+> I need to create up to 64 cache devices.  Possibly slightly over that on rare 
+> occasions.  (The majority of servers will have 16-32)
 > 
-> The problem occurred when I ran "echo /dev/rbd2 >/sys/fs/bcache/register".   
-> This device had been newly formatted with "make-bcache -B /dev/rbd2"   (rbd2 
-is 
-> a SAN based block device)
-> 
-> If it makes any difference - these commands are in a script so the register 
-> command would have been run *immediately* after the make-bcache command 
-> returned.  (I am going to try sticking a sleep 3 or something in there 
-tomorrow 
-> - just in case its related to trying to register the device so quickly after 
-it 
-> was prepared)
-> 
-> At this point my console just stops.  I cannot CTRL+C to abort the echo 
-command.
-> top shows increasing load average - presumably it thinks a process is stuck 
-> waiting for something.  Rebooting server kicks me out of console and then 
-never 
-> comes back.
-> 
-> /dev/rbd0 and /dev/rbd1 are already registered at this point and were working 
-> fine.  If I open another console (did this before rebooting) and create 
-> /dev/rbd3, and then try and register it - the same happens again.
-> 
-> Here is what came up in kern.log:
-> 
-> http://pastebin.com/xNBuv3sj
-> (Using Gmane to post and it complained about long lines)
-> 
-> Any ideas?
-> 
-> Cheers,
+> Many Thanks,
 > 
 > James
 > 
 > 
 
 
-Yes, reproduced it after a clean boot.
-It gets stuck creating the third cache device. (/dev/bcache2)
+Aha,  I have more information.
 
-Here is the latest info from kern.log, but it looks very similar to what I 
-posted before.
+ls /dev/block -l
 
-http://pastebin.com/r8YRSNGR
+<filtered results to relevant>
+lrwxrwxrwx 1 root root 10 Nov  5 12:51 252:0 -> ../bcache0
+lrwxrwxrwx 1 root root 10 Nov  5 12:51 252:1 -> ../bcache1
+lrwxrwxrwx 1 root root 12 Nov  5 12:51 252:2 -> ../bcache1p1
 
-Any idea if I am doing something wrong or is this a bug?
-I need to create up to 64 cache devices.  Possibly slightly over that on rare 
-occasions.  (The majority of servers will have 16-32)
+
+Our script does things in the following order:
+1. Registers bcache0 - OK
+ - links bcache0 in /dev/block/252:0
+2. Registers bcache1 - OK
+ - links bcache1 in /dev/block/252:1
+3. Partitions bcache1 - OK  (single partition at the moment)
+ - links bcache1p1 in /dev/block/252:2
+4. Partitions bcache0 - Partition table writes okay, but bcache0p1 does not get 
+created.
+ - presumably attempts to link /dev/block/252:1 or something, and fails.
+5. Registers bcache2 - FAIL, prevents any further bcache devices being 
+registered and prevents system shut-down.
+ - attempts to link bcache2 in /dev/block/252:2, which is already used for 
+bcache1p1.
+
+Probably explains why this has not been seen before since we only just added 
+support for partitions with the patch details you recently gave me.
+
+Any chance of a patch to fix the numbering?
+(I wish my C++ was up to scratch so that I could do it myself as it looks like 
+it could be relatively simple!)
 
 Many Thanks,
 
