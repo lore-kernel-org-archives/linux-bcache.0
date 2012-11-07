@@ -1,41 +1,43 @@
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
+From: "Reddy, Sreekanth" <Sreekanth.Reddy-M7mHMAq9Yzo@public.gmane.org>
 Subject: RE: [PATCH v4 08/24] block: Remove some unnecessary bi_vcnt usage
-Date: Tue, 6 Nov 2012 16:49:46 +0530
-Message-ID: <DCD177647606E9419ED923E0C8C4AA7223E7397F74@inbmail02.lsi.com>
+Date: Wed, 7 Nov 2012 11:35:51 +0530
+Message-ID: <DCD177647606E9419ED923E0C8C4AA7223E7398080@inbmail02.lsi.com>
 References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
  <1350331769-14856-9-git-send-email-koverstreet@google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1350331769-14856-9-git-send-email-koverstreet@google.com>
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <1350331769-14856-9-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <koverstreet@google.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "dm-devel@redhat.com" <dm-devel@redhat.com>
-Cc: "tj@kernel.org" <tj@kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>, "neilb@suse.de" <neilb@suse.de>, "vgoyal@redhat.com" <vgoyal@redhat.com>, "Moore, Eric" <Eric.Moore@lsi.com>, "James E.J. Bottomley" <JBottomley@parallels.com>, "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Cc: "tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org" <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, "axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org" <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, "neilb-l3A5Bk7waGM@public.gmane.org" <neilb-l3A5Bk7waGM@public.gmane.org>, "vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "Moore, Eric" <Eric.Moore-M7mHMAq9Yzo@public.gmane.org>, "James E.J. Bottomley" <JBottomley-bzQdu9zFT3WakBO8gow8eQ@public.gmane.org>, "linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-This patch seem to be fine. Please consider this patch.
+Hi,
+
+This patch seem to be fine. Please consider this patch as Acked-by: "Sreekanth Reddy" <Sreekanth.reddy-M7mHMAq9Yzo@public.gmane.org>
 
 Regards,
 Sreekanth.
 
 -----Original Message-----
-From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Kent Overstreet
+From: linux-scsi-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org [mailto:linux-scsi-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org] On Behalf Of Kent Overstreet
 Sent: Tuesday, October 16, 2012 1:39 AM
-To: linux-bcache@vger.kernel.org; linux-kernel@vger.kernel.org; dm-devel@redhat.com
-Cc: Kent Overstreet; tj@kernel.org; axboe@kernel.dk; neilb@suse.de; vgoyal@redhat.com; Moore, Eric; James E.J. Bottomley; linux-scsi@vger.kernel.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+Cc: Kent Overstreet; tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org; axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org; neilb-l3A5Bk7waGM@public.gmane.org; vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org; Moore, Eric; James E.J. Bottomley; linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 Subject: [PATCH v4 08/24] block: Remove some unnecessary bi_vcnt usage
 
 More prep work for immutable bvecs/effecient bio splitting - usage of bi_vcnt has to be auditing, so getting rid of all the unnecessary usage makes that easier.
 
 Plus, bio_segments() is really what this code wanted, as it respects the current value of bi_idx.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Eric Moore <Eric.Moore@lsi.com>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org
+Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+CC: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+CC: Eric Moore <Eric.Moore-M7mHMAq9Yzo@public.gmane.org>
+CC: "James E.J. Bottomley" <JBottomley-bzQdu9zFT3WakBO8gow8eQ@public.gmane.org>
+CC: linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 ---
  drivers/message/fusion/mptsas.c          |  6 +++---
  drivers/scsi/libsas/sas_expander.c       |  6 +++---
@@ -129,4 +131,4 @@ index c6cf20f..403a57b 100644
 1.7.12
 
 --
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
