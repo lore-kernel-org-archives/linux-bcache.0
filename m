@@ -1,134 +1,111 @@
-From: "Reddy, Sreekanth" <Sreekanth.Reddy-M7mHMAq9Yzo@public.gmane.org>
-Subject: RE: [PATCH v4 08/24] block: Remove some unnecessary bi_vcnt usage
-Date: Wed, 7 Nov 2012 11:35:51 +0530
-Message-ID: <DCD177647606E9419ED923E0C8C4AA7223E7398080@inbmail02.lsi.com>
-References: <1350331769-14856-1-git-send-email-koverstreet@google.com>
- <1350331769-14856-9-git-send-email-koverstreet@google.com>
+From: Vegard Hansen <vegard.x-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Problem building kernel 3.2
+Date: Sun, 18 Nov 2012 19:07:41 +0100
+Message-ID: <CAMx1jcZqDn5vUFh52Za6o_gnUfhEOduFemxD7DMhQeoYt3up2w@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <1350331769-14856-9-git-send-email-koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Cc: "tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org" <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, "axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org" <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, "neilb-l3A5Bk7waGM@public.gmane.org" <neilb-l3A5Bk7waGM@public.gmane.org>, "vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "Moore, Eric" <Eric.Moore-M7mHMAq9Yzo@public.gmane.org>, "James E.J. Bottomley" <JBottomley-bzQdu9zFT3WakBO8gow8eQ@public.gmane.org>, "linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: linux-bcache <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
 Hi,
 
-This patch seem to be fine. Please consider this patch as Acked-by: "Sreekanth Reddy" <Sreekanth.reddy-M7mHMAq9Yzo@public.gmane.org>
+Using Debian Wheezy I'm having truble building linux-bcache. Using the
+old config from debian wheezy when selecting modules. I can add the
+config if you need that too.
 
-Regards,
-Sreekanth.
+Using v3.2-2173-gcafb412 (bcache-3.2):
+root@foo:~/linux-bcache# make
+scripts/kconfig/conf --silentoldconfig Kconfig
+make[1]: Nothing to be done for `relocs'.
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  VDSOSYM arch/x86/vdso/vdso-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-syscall-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-syms.lds
+  LD      arch/x86/vdso/built-in.o
+  LD      arch/x86/built-in.o
+  CC      fs/bio.o
+  LD      fs/built-in.o
+  CC      block/blk-core.o
+  LD      block/built-in.o
+  CC      drivers/md/bcache/writeback.o
+  CC      drivers/md/bcache/request.o
+drivers/md/bcache/request.c: In function =91bio_to_cgroup=92:
+drivers/md/bcache/request.c:40:2: error: implicit declaration of
+function =91get_bio_cgroup=92 [-Werror=3Dimplicit-function-declaration]
+drivers/md/bcache/request.c:40:2: warning: passing argument 1 of
+=91cgroup_to_bcache=92 makes pointer from integer without a cast [enabl=
+ed
+by default]
+drivers/md/bcache/request.c:29:20: note: expected =91struct cgroup *=92
+but argument is of type =91int=92
+drivers/md/bcache/request.c: At top level:
+drivers/md/bcache/request.c:165:2: warning: initialization from
+incompatible pointer type [enabled by default]
+drivers/md/bcache/request.c:165:2: warning: (near initialization for
+=91bcache_subsys.create=92) [enabled by default]
+drivers/md/bcache/request.c:166:2: warning: initialization from
+incompatible pointer type [enabled by default]
+drivers/md/bcache/request.c:166:2: warning: (near initialization for
+=91bcache_subsys.destroy=92) [enabled by default]
+cc1: some warnings being treated as errors
+make[3]: *** [drivers/md/bcache/request.o] Error 1
+make[2]: *** [drivers/md/bcache] Error 2
+make[1]: *** [drivers/md] Error 2
+make: *** [drivers] Error 2
 
------Original Message-----
-From: linux-scsi-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org [mailto:linux-scsi-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org] On Behalf Of Kent Overstreet
-Sent: Tuesday, October 16, 2012 1:39 AM
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org; dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
-Cc: Kent Overstreet; tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org; axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org; neilb-l3A5Bk7waGM@public.gmane.org; vgoyal-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org; Moore, Eric; James E.J. Bottomley; linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-Subject: [PATCH v4 08/24] block: Remove some unnecessary bi_vcnt usage
-
-More prep work for immutable bvecs/effecient bio splitting - usage of bi_vcnt has to be auditing, so getting rid of all the unnecessary usage makes that easier.
-
-Plus, bio_segments() is really what this code wanted, as it respects the current value of bi_idx.
-
-Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-CC: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-CC: Eric Moore <Eric.Moore-M7mHMAq9Yzo@public.gmane.org>
-CC: "James E.J. Bottomley" <JBottomley-bzQdu9zFT3WakBO8gow8eQ@public.gmane.org>
-CC: linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
----
- drivers/message/fusion/mptsas.c          |  6 +++---
- drivers/scsi/libsas/sas_expander.c       |  6 +++---
- drivers/scsi/mpt2sas/mpt2sas_transport.c | 10 +++++-----
- 3 files changed, 11 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c index 551262e..5406a9f 100644
---- a/drivers/message/fusion/mptsas.c
-+++ b/drivers/message/fusion/mptsas.c
-@@ -2235,10 +2235,10 @@ static int mptsas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	}
- 
- 	/* do we need to support multiple segments? */
--	if (req->bio->bi_vcnt > 1 || rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
- 		printk(MYIOC_s_ERR_FMT "%s: multiple segments req %u %u, rsp %u %u\n",
--		    ioc->name, __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
--		    rsp->bio->bi_vcnt, blk_rq_bytes(rsp));
-+		    ioc->name, __func__, bio_segments(req->bio), blk_rq_bytes(req),
-+		    bio_segments(rsp->bio), blk_rq_bytes(rsp));
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/scsi/libsas/sas_expander.c b/drivers/scsi/libsas/sas_expander.c
-index efc6e72..ee331a7 100644
---- a/drivers/scsi/libsas/sas_expander.c
-+++ b/drivers/scsi/libsas/sas_expander.c
-@@ -2151,10 +2151,10 @@ int sas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	}
- 
- 	/* do we need to support multiple segments? */
--	if (req->bio->bi_vcnt > 1 || rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1 || bio_segments(rsp->bio) > 1) {
- 		printk("%s: multiple segments req %u %u, rsp %u %u\n",
--		       __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
--		       rsp->bio->bi_vcnt, blk_rq_bytes(rsp));
-+		       __func__, bio_segments(req->bio), blk_rq_bytes(req),
-+		       bio_segments(rsp->bio), blk_rq_bytes(rsp));
- 		return -EINVAL;
- 	}
- 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-index c6cf20f..403a57b 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -1939,7 +1939,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	ioc->transport_cmds.status = MPT2_CMD_PENDING;
- 
- 	/* Check if the request is split across multiple segments */
--	if (req->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1) {
- 		u32 offset = 0;
- 
- 		/* Allocate memory and copy the request */ @@ -1971,7 +1971,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 
- 	/* Check if the response needs to be populated across
- 	 * multiple segments */
--	if (rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(rsp->bio) > 1) {
- 		pci_addr_in = pci_alloc_consistent(ioc->pdev, blk_rq_bytes(rsp),
- 		    &pci_dma_in);
- 		if (!pci_addr_in) {
-@@ -2038,7 +2038,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	sgl_flags = (MPI2_SGE_FLAGS_SIMPLE_ELEMENT |
- 	    MPI2_SGE_FLAGS_END_OF_BUFFER | MPI2_SGE_FLAGS_HOST_TO_IOC);
- 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
--	if (req->bio->bi_vcnt > 1) {
-+	if (bio_segments(req->bio) > 1) {
- 		ioc->base_add_sg_single(psge, sgl_flags |
- 		    (blk_rq_bytes(req) - 4), pci_dma_out);
- 	} else {
-@@ -2054,7 +2054,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 	    MPI2_SGE_FLAGS_LAST_ELEMENT | MPI2_SGE_FLAGS_END_OF_BUFFER |
- 	    MPI2_SGE_FLAGS_END_OF_LIST);
- 	sgl_flags = sgl_flags << MPI2_SGE_FLAGS_SHIFT;
--	if (rsp->bio->bi_vcnt > 1) {
-+	if (bio_segments(rsp->bio) > 1) {
- 		ioc->base_add_sg_single(psge, sgl_flags |
- 		    (blk_rq_bytes(rsp) + 4), pci_dma_in);
- 	} else {
-@@ -2099,7 +2099,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 		    le16_to_cpu(mpi_reply->ResponseDataLength);
- 		/* check if the resp needs to be copied from the allocated
- 		 * pci mem */
--		if (rsp->bio->bi_vcnt > 1) {
-+		if (bio_segments(rsp->bio) > 1) {
- 			u32 offset = 0;
- 			u32 bytes_to_copy =
- 			    le16_to_cpu(mpi_reply->ResponseDataLength);
---
-1.7.12
+Using v3.2-2166-g2a29dd2 (bcache-3.2-fixed):
+root@foo:~/linux-bcache# make
+make[1]: Nothing to be done for `relocs'.
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  VDSOSYM arch/x86/vdso/vdso-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-syscall-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
+  VDSOSYM arch/x86/vdso/vdso32-syms.lds
+  LD      arch/x86/vdso/built-in.o
+  LD      arch/x86/built-in.o
+  CC      fs/bio.o
+  LD      fs/built-in.o
+  CC      block/blk-core.o
+  LD      block/built-in.o
+  CC      drivers/md/bcache/writeback.o
+  CC      drivers/md/bcache/request.o
+drivers/md/bcache/request.c: In function =91bio_to_cgroup=92:
+drivers/md/bcache/request.c:40:2: error: implicit declaration of
+function =91get_bio_cgroup=92 [-Werror=3Dimplicit-function-declaration]
+drivers/md/bcache/request.c:40:2: warning: passing argument 1 of
+=91cgroup_to_bcache=92 makes pointer from integer without a cast [enabl=
+ed
+by default]
+drivers/md/bcache/request.c:29:20: note: expected =91struct cgroup *=92
+but argument is of type =91int=92
+drivers/md/bcache/request.c: At top level:
+drivers/md/bcache/request.c:165:2: warning: initialization from
+incompatible pointer type [enabled by default]
+drivers/md/bcache/request.c:165:2: warning: (near initialization for
+=91bcache_subsys.create=92) [enabled by default]
+drivers/md/bcache/request.c:166:2: warning: initialization from
+incompatible pointer type [enabled by default]
+drivers/md/bcache/request.c:166:2: warning: (near initialization for
+=91bcache_subsys.destroy=92) [enabled by default]
+cc1: some warnings being treated as errors
+make[3]: *** [drivers/md/bcache/request.o] Error 1
+make[2]: *** [drivers/md/bcache] Error 2
+make[1]: *** [drivers/md] Error 2
+make: *** [drivers] Error 2
 
 --
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Med vennlig hilsen
+Vegard Hansen
+Mob.: (+47) 9110 1337
