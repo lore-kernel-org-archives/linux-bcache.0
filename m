@@ -1,62 +1,131 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: pre-emptive caching
-Date: Wed, 21 Nov 2012 10:28:38 -0800
-Message-ID: <CAC7rs0vau4JsRgtC1m+nHZzrUMg=Da-ZbrVna3kCE2sO3NK7Wg@mail.gmail.com>
-References: <CAOiFb5+sobkRnrThO9uo3p674pF8B3PpUC6nBS44nb-UBGxyJQ@mail.gmail.com>
+From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Subject: Re: Problem building kernel 3.2
+Date: Wed, 21 Nov 2012 13:00:41 -0800
+Message-ID: <CAH+dOx+cMAA3Od3zWSJiTf5yqK=E_ittH9knkvUur2EN0Bim0Q@mail.gmail.com>
+References: <CAMx1jcZqDn5vUFh52Za6o_gnUfhEOduFemxD7DMhQeoYt3up2w@mail.gmail.com>
+	<93462A6BCE1CD840B94554FBBEE4C936030AF66DC5@THHS2E12BE8X.hostedservice2.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAOiFb5+sobkRnrThO9uo3p674pF8B3PpUC6nBS44nb-UBGxyJQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <93462A6BCE1CD840B94554FBBEE4C936030AF66DC5-DfMK7iAD4PJfakIiyABxvNnpRUX5XqCHU7KNoL8tkdc@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Joshua Laferriere <laferrierejc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org>
+Cc: Vegard Hansen <vegard.x-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-bcache <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Install time is a bit different because all those small files will
-probably end up looking like sequential writes to bcache, so they may
-end up bypassing the cache.
+Thanks for reporting this - cgroup support is just broken on the older
+kernels (and probably the newer ones), so I just pushed a patch
+disabling it for now.
 
-In general though, small random writes will be added to the cache in
-both writethrough and writeback mode.
-
-On Sat, Nov 17, 2012 at 7:15 AM, Joshua Laferriere
-<laferrierejc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
-> does it cache small files written during write-back caching?
+On Sun, Nov 18, 2012 at 10:11 AM, James Sefton <james-3k2nYdb70uTQXOPxS62xeg@public.gmane.org> wrote:
+> Hi Vegard,
 >
-> for example, new install, installing a bunch of files, first written
-> files... never been read, just written
+> I was messing around with this a few weeks ago and had a similar error.
+> I seem to remember I got around it by messing around with the options selected when running make menuconfig.
 >
-> does it cache the small files (not to overwrite current cache that has
-> higher priority) just in case that file is re-read later so as not to have
-> seek time penalties?
+> In the section where you enable the bcache features, I think there are a series of sub-items. (some for debugging, and a few others iirc)
+> I got it to compile by removing all sub-options and just leaving the main bcache component included in the build.
 >
-> On Thu, Nov 15, 2012 at 2:24 AM, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-> wrote:
->>
->> Yes - bcache does block level caching with small (sector) granularity
->> - it'll do what you want
->>
->> On Thu, Nov 15, 2012 at 2:22 AM, Joshua Laferriere
->> <laferrierejc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->> > synapse
->> >
->> > On Nov 15, 2012 2:22 AM, "Joshua Laferriere" <laferrierejc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
->> > wrote:
->> >>
->> >> i was thinking how synaoss maintains a low random access time of
->> >> .78ms...
->> >> and wondered if its because it caches the first 128kb of large files it
->> >> wishes to read.
->> >>
->> >> On Nov 14, 2012 10:23 PM, "Joshua Laferriere" <laferrierejc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
->> >> wrote:
->> >>>
->> >>> how dkes it do read caching? just store prior read data? which i guess
->> >>> is
->> >>> fine. i did a symbolic link setup in windows that would break after
->> >>> about
->> >>> 10-100k links with smaller than 129k sized files on my ssd and all
->> >>> else in
->> >>> hdd
+> I am sure someone will correct me if I am way off.
 >
+> Hope it helps a little.
 >
+> James
+>
+> -----Original Message-----
+> From: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org [mailto:linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org] On Behalf Of Vegard Hansen
+> Sent: 18 November 2012 18:08
+> To: linux-bcache
+> Subject: Problem building kernel 3.2
+>
+> Hi,
+>
+> Using Debian Wheezy I'm having truble building linux-bcache. Using the old config from debian wheezy when selecting modules. I can add the config if you need that too.
+>
+> Using v3.2-2173-gcafb412 (bcache-3.2):
+> root@foo:~/linux-bcache# make
+> scripts/kconfig/conf --silentoldconfig Kconfig
+> make[1]: Nothing to be done for `relocs'.
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   VDSOSYM arch/x86/vdso/vdso-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-syscall-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-syms.lds
+>   LD      arch/x86/vdso/built-in.o
+>   LD      arch/x86/built-in.o
+>   CC      fs/bio.o
+>   LD      fs/built-in.o
+>   CC      block/blk-core.o
+>   LD      block/built-in.o
+>   CC      drivers/md/bcache/writeback.o
+>   CC      drivers/md/bcache/request.o
+> drivers/md/bcache/request.c: In function 'bio_to_cgroup':
+> drivers/md/bcache/request.c:40:2: error: implicit declaration of function 'get_bio_cgroup' [-Werror=implicit-function-declaration]
+> drivers/md/bcache/request.c:40:2: warning: passing argument 1 of 'cgroup_to_bcache' makes pointer from integer without a cast [enabled by default]
+> drivers/md/bcache/request.c:29:20: note: expected 'struct cgroup *'
+> but argument is of type 'int'
+> drivers/md/bcache/request.c: At top level:
+> drivers/md/bcache/request.c:165:2: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/md/bcache/request.c:165:2: warning: (near initialization for
+> 'bcache_subsys.create') [enabled by default]
+> drivers/md/bcache/request.c:166:2: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/md/bcache/request.c:166:2: warning: (near initialization for
+> 'bcache_subsys.destroy') [enabled by default]
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/md/bcache/request.o] Error 1
+> make[2]: *** [drivers/md/bcache] Error 2
+> make[1]: *** [drivers/md] Error 2
+> make: *** [drivers] Error 2
+>
+> Using v3.2-2166-g2a29dd2 (bcache-3.2-fixed):
+> root@foo:~/linux-bcache# make
+> make[1]: Nothing to be done for `relocs'.
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   VDSOSYM arch/x86/vdso/vdso-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-syscall-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-syms.lds
+>   LD      arch/x86/vdso/built-in.o
+>   LD      arch/x86/built-in.o
+>   CC      fs/bio.o
+>   LD      fs/built-in.o
+>   CC      block/blk-core.o
+>   LD      block/built-in.o
+>   CC      drivers/md/bcache/writeback.o
+>   CC      drivers/md/bcache/request.o
+> drivers/md/bcache/request.c: In function 'bio_to_cgroup':
+> drivers/md/bcache/request.c:40:2: error: implicit declaration of function 'get_bio_cgroup' [-Werror=implicit-function-declaration]
+> drivers/md/bcache/request.c:40:2: warning: passing argument 1 of 'cgroup_to_bcache' makes pointer from integer without a cast [enabled by default]
+> drivers/md/bcache/request.c:29:20: note: expected 'struct cgroup *'
+> but argument is of type 'int'
+> drivers/md/bcache/request.c: At top level:
+> drivers/md/bcache/request.c:165:2: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/md/bcache/request.c:165:2: warning: (near initialization for
+> 'bcache_subsys.create') [enabled by default]
+> drivers/md/bcache/request.c:166:2: warning: initialization from incompatible pointer type [enabled by default]
+> drivers/md/bcache/request.c:166:2: warning: (near initialization for
+> 'bcache_subsys.destroy') [enabled by default]
+> cc1: some warnings being treated as errors
+> make[3]: *** [drivers/md/bcache/request.o] Error 1
+> make[2]: *** [drivers/md/bcache] Error 2
+> make[1]: *** [drivers/md] Error 2
+> make: *** [drivers] Error 2
+>
+> --
+> Med vennlig hilsen
+> Vegard Hansen
+> Mob.: (+47) 9110 1337
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
