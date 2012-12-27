@@ -1,216 +1,110 @@
-From: Thomas Fjellstrom <thomas-T/OQ2aoscs6U4IzBdx3r/Q@public.gmane.org>
-Subject: Re: recomended bcache setup
-Date: Wed, 26 Dec 2012 12:01:07 -0700
-Message-ID: <201212261201.07192.thomas@fjellstrom.ca>
-References: <201212212006.41906.thomas@fjellstrom.ca> <201212240120.34879.thomas@fjellstrom.ca> <20121226184726.GB20185@google.com>
-Reply-To: thomas-T/OQ2aoscs6U4IzBdx3r/Q@public.gmane.org
+From: Pim van den Berg <pim.vandenberg-IXGSG4U2CCrz+pZb47iToQ@public.gmane.org>
+Subject: mkfs crash
+Date: Thu, 27 Dec 2012 13:05:11 +0100
+Message-ID: <50DC3977.2080209@nethuis.nl>
 Mime-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20121226184726.GB20185-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed Dec 26, 2012, you wrote:
-> On Mon, Dec 24, 2012 at 01:20:34AM -0700, Thomas Fjellstrom wrote:
-> > On Fri Dec 21, 2012, Thomas Fjellstrom wrote:
-> > > I'm setting up a little home NAS here, and I've been thinking about
-> > > using bcache to speed up the random access bits on the "big" raid6
-> > > array (7x2TB).
-> > > 
-> > > How does one get started using bcache (custom patched kernel?), and
-> > > what is the recommended setup for use with mdraid? I remember reading
-> > > ages ago that it was recommended that each component device was
-> > > attached directly to the cache, and then mdraid put on top, but a
-> > > quick google suggests putting the cache on top of the raid instead.
-> > > 
-> > > Also, is it possible to add a cache to an existing volume yet? I have a
-> > > smaller array (7x1TB) that I wouldn't mind adding the cache layer to.
-> > 
-> > I just tried a basic setup with the cache ontop of the raid6. I ran a
-> > quick iozone test with the default debian sid (3.2.35) kernel, the
-> > bcache (3.2.28) kernel without bcache enabled, and with bcache enabled
-> > (See below).
-> > 
-> > Here's a little information:
-> > 
-> > system info:
-> > 	Intel  S1200KP Motherboard
-> > 	Intel Core i3 2120 CPU
-> > 	16GB DDR3 1333 ECC
-> > 	IBM M1015 in IT mode
-> > 	7 x 2TB Seagate Barracuda HDDs
-> > 	1 x 240 GB Samsung 470 SSD
-> > 
-> > kernel: fresh git checkout of the bcache repo, 3.2.28
-> > 
-> > 
-> > 
-> > Raid Info:
-> > 
-> > /dev/md0:
-> >         Version : 1.2
-> >   
-> >   Creation Time : Sat Dec 22 03:38:05 2012
-> >   
-> >      Raid Level : raid6
-> >      Array Size : 9766914560 (9314.46 GiB 10001.32 GB)
-> >   
-> >   Used Dev Size : 1953382912 (1862.89 GiB 2000.26 GB)
-> >   
-> >    Raid Devices : 7
-> >   
-> >   Total Devices : 7
-> >   
-> >     Persistence : Superblock is persistent
-> >     
-> >     Update Time : Mon Dec 24 00:22:28 2012
-> >     
-> >           State : clean
-> >  
-> >  Active Devices : 7
-> > 
-> > Working Devices : 7
-> > 
-> >  Failed Devices : 0
-> >  
-> >   Spare Devices : 0
-> >   
-> >          Layout : left-symmetric
-> >      
-> >      Chunk Size : 512K
-> >      
-> >            Name : mrbig:0  (local to host mrbig)
-> >            UUID : 547c30d1:3af4b2ec:14712d0b:88e4337a
-> >          
-> >          Events : 10591
-> >     
-> >     Number   Major   Minor   RaidDevice State
-> >     
-> >        0       8        0        0      active sync   /dev/sda
-> >        1       8       16        1      active sync   /dev/sdb
-> >        2       8       32        2      active sync   /dev/sdc
-> >        3       8       48        3      active sync   /dev/sdd
-> >        4       8       80        4      active sync   /dev/sdf
-> >        5       8       96        5      active sync   /dev/sdg
-> >        6       8      112        6      active sync   /dev/sdh
-> > 
-> > Fs info:
-> > root@mrbig:~/build/bcache-tools# xfs_info /dev/bcache0
-> > meta-data=/dev/bcache0  isize=256    agcount=10, agsize=268435328 blks
-> > 
-> >          =               sectsz=512   attr=2
-> > 
-> > data     =               bsize=4096   blocks=2441728638, imaxpct=5
-> > 
-> >          =               sunit=128    swidth=640 blks
-> > 
-> > naming   =version 2      bsize=4096   ascii-ci=0
-> > log      =internal       bsize=4096   blocks=521728, version=2
-> > 
-> >          =               sectsz=512   sunit=8 blks, lazy-count=1
-> > 
-> > realtime =none           extsz=4096   blocks=0, rtextents=0
-> > 
-> > 
-> > 
-> > 
-> > iozone -a -s 32G -r 8M
-> > 
-> >                                                      random  random   
-> >                                                      bkwd   record  
-> >                                                      stride
-> >        
-> >        KB  reclen   write rewrite    read    reread    read   write   
-> >        read  rewrite     read   fwrite frewrite   fread  freread
-> > 
-> > w/o cache (debian kernel 3.2.35-1)
-> > 33554432    8192  212507  210382   630327   630852  372807  161710 
-> > 388319  4922757   617347   210642   217122  717279   716150 w/ cache 
-> > (bcache git kernel 3.2.28):
-> > 33554432    8192  248376  231717   268560   269966  123718  132210 
-> > 148030  4888983   152240   230099   238223  276254   282441 w/o cache
-> > (bcache git kernel 3.2.28):
-> > 33554432    8192  277607  259159   709837   702192  399889  151629 
-> > 399779  4846688   655210   251297   245953  783930   778595
-> > 
-> > Note: I disabled the cache before the last test, unregistered the device
-> > and "stop"ed the cache. I also changed the config slightly for the
-> > bcache kernel, I started out with the debian config, and then switched
-> > the preemption option to server, which may be the reason for the
-> > performance difference between the two non cached tests.
-> > 
-> > I probably messed up the setup somehow. If anyone has some tips or
-> > suggestions I'd appreciate some input.
-> 
-> So you probably didn't put bcache in writeback mode, which would explain
-> the write numbers being slightly worse.
+Hi,
 
-Yeah, I didn't test in writeback.
+I'm successfully using bcache on 1 partition of my system for a while
+now. The SSD is split in 2 partitions to be able to enable bcache on
+another partition too.
 
-> Something I noticed myself with bcache on top of a raid6 is that in
-> writeback mode sequential write throughput was significantly worse - due
-> to the ssd not having as much write bandwidth as the raid6 and bcache's
-> writeback having no knowledge of the stripe layout.
+The first partition is setup like this:
+/dev/md3 (mdadm, RAID1, bcache backing device)
+- /dev/bcache0
 
-Yeah, I think the SSD I'm using is limited to about 200MB/s sequential write, 
-which is probably half of what the raid may be capable of. I could pick up 
-another more modern SATA III SSD to remedy that, and I might. But It isn't too 
-terribly important. It's random writes I really want to take care of, since 
-those really kill performance.
+I tried to setup the second partition like this:
+/dev/md4 (mdadm, RAID1)
+- /dev/dm-0 (luks, bcache backing device)
+  - /dev/bcache3
 
-> This is something I'd like to fix, if I ever get time. Normal operation
-> (i.e. with mostly random writes) was vastly improved, though.
-> 
-> Not sure why your read numbers are worse, though - I haven't used iozone
-> myself so I'm not sure what exactly it's doing.
-> 
-> It'd useful to know what iozone's reads look like - how many in flight
-> at a time, how big they are, etc.
-> 
-> I suppose it'd be informative to have a benchmark where bcache is
-> enabled but all the reads are cache misses, and bcache isn't writing any
-> of the cache misses to the cache. I think I'd need to add another cache
-> mode for that, though (call it "readaround" I suppose).
-> 
-> I wouldn't worry _too_ much about iozone's numbers, I suspect whatever
-> it's doing differently to get such bad read numbers isn't terribly
-> representative. I'd benchmark whatever you're using the server for, if
-> you can. Still be good to know what's going on, there's certainly
-> something that ought to be fixed.
+All goes well until I try to create an ext4 (or ext3) filesystem on it.
+The mkfs command crashes and couple of 1000 lines show up in my syslog
+(the full log is over here:
+http://pommi.nethuis.nl/storage/software/bcache/log/mkfs-crash.log):
 
-I'm betting most of it is pure un-cached reads. I don't know though if it 
-keeps the same file around between tests or not. If it does, then things 
-should improve significantly after the random write test I should think. But 
-it doesn't really. I wasn't too concerned about the initial read tests, but 
-I'd have thought it'd at least match or come in slightly under the actual 
-numbers without the cache. I remember reading before that bcache has been 
-shown to at most add a very slight amount of overhead, if any at all.
- 
-> Oh, one thing that comes to mind - there's an issue with pure read
-> workloads in the current stable branch, where inserting data from a
-> cache miss will fail to update the index if the btree node is full (but
-> after the data has been written to the cache). This shows up in
-> benchmarks, because they tend to test reads and writes separately, but
-> it's not an issue in any real world workload I know of because any
-> amount of write traffic keeps it from showing up, as the btree nodes
-> will split when necessary on writes.
-> 
-> I have a fix for this in the dev branch, and I think it's stable but the
-> dev branch needs more testing.
+[1631972.332656] bcache: Caching dm-0 as bcache3 on set
+6bc79688-a6e0-4c21-8f44-59b0083b8169
+[1631983.772362] CPU 0
+[1631983.772380] Pid: 28707, comm: mkfs.ext4 Not tainted 3.2.33-kvm
+#1                  /DH67CF
+[1631983.772420] RIP: 0010:[<ffffffff813f91ca>]  [<ffffffff813f91ca>]
+bch_mark_sectors_bypassed+0x1a/0x35
+[1631983.772465] RSP: 0018:ffff880165cadbf8  EFLAGS: 00000a06
+[1631983.772486] RAX: ffff8801128e0010 RBX: ffff880165fd0318 RCX:
+ffff880165cadc30
+[1631983.772521] RDX: 2000000000000000 RSI: 00000000007fffff RDI:
+ffff880165fd0318
+[1631983.772556] RBP: ffff880165cadbf8 R08: ffff88021e802be0 R09:
+00000000ffffff02
+[1631983.772592] R10: 00000000ffffff01 R11: ffff880165cadc78 R12:
+ffff8801128e0000
+[1631983.772627] R13: ffff880118450000 R14: ffff880165cadc68 R15:
+0000000000000000
+[1631983.772662] FS:  000067d4ad65e760(0000) GS:ffff88021fa00000(0000)
+knlGS:0000000000000000
+[1631983.772699] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[1631983.772722] CR2: 0000000001958908 CR3: 0000000163c68000 CR4:
+00000000000406f0
+[1631983.772757] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+[1631983.772792] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+[1631983.772827] Process mkfs.ext4 (pid: 28707, threadinfo
+ffff880133edacf0, task ffff880133eda800)
+[1631983.772880]  ffff880165cadc48 ffffffff813f08dc 0000001065cadc48
+ffff880163fe0000
+[1631983.772919]  ffff8801128e0000 ffff880165fd0318 ffff8801128e0000
+ffff880165fd0378
+[1631983.772957]  ffff880165cadc68 ffff880165cadc58 ffff880165cadca8
+ffffffff813f1ae0
+[1631983.773015]  [<ffffffff813f08dc>] check_should_skip+0x31f/0x335
+[1631983.773039]  [<ffffffff813f1ae0>] request_write+0x7d/0x267
+[1631983.773061]  [<ffffffff813f1dc8>] cached_dev_make_request+0xfe/0x1ad
+[1631983.773087]  [<ffffffff8127edff>] generic_make_request+0x17c/0x1d2
+[1631983.773110]  [<ffffffff8127ef25>] submit_bio+0xd0/0xdb
+[1631983.773133]  [<ffffffff81284a3d>] blkdev_issue_discard+0x158/0x1a7
+[1631983.773156]  [<ffffffff812850bb>] blkdev_ioctl+0x2f7/0x69c
+[1631983.773180]  [<ffffffff811191f8>] block_ioctl+0x32/0x36
+[1631983.773203]  [<ffffffff810fe7e2>] do_vfs_ioctl+0x5aa/0x5fa
+[1631983.773226]  [<ffffffff810fe874>] sys_ioctl+0x42/0x65
+[1631983.773250]  [<ffffffff815657b6>] system_call_fastpath+0x18/0x1d
+[1631983.773384] Call Trace:
+[1631983.773401]  [<ffffffff813f08dc>] check_should_skip+0x31f/0x335
+[1631983.773424]  [<ffffffff813f1ae0>] request_write+0x7d/0x267
+[1631983.773447]  [<ffffffff813f1dc8>] cached_dev_make_request+0xfe/0x1ad
+[1631983.773470]  [<ffffffff8127edff>] generic_make_request+0x17c/0x1d2
+[1631983.773499]  [<ffffffff8127ef25>] submit_bio+0xd0/0xdb
+[1631983.773520]  [<ffffffff81284a3d>] blkdev_issue_discard+0x158/0x1a7
+[1631983.773544]  [<ffffffff812850bb>] blkdev_ioctl+0x2f7/0x69c
+[1631983.773567]  [<ffffffff811191f8>] block_ioctl+0x32/0x36
+[1631983.773590]  [<ffffffff810fe7e2>] do_vfs_ioctl+0x5aa/0x5fa
+[1631983.773613]  [<ffffffff810fe874>] sys_ioctl+0x42/0x65
+[1631983.773635]  [<ffffffff815657b6>] system_call_fastpath+0x18/0x1d
 
-Ah ok, I'll have to test that. I remember reading about that on the list here. 
-I'll test that and get back to you
+I'm using the 3.2.33 Linux kernel with
+grsecurity-2.9.1-3.2.33-201211072000 and bcache v3.2.28-384-gcafb412.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I've tried to set it up this way multiple times but I hit the same
+problem each time. Because I'm successfully running bcache on a mdadm
+device, I thought there was an issue with the luks part. So I tested
+this part with a USB thumb drive as a backing device:
+
+/dev/sdd
+- /dev/dm-0 (luks, bcache backing device)
+  - /dev/bcache1
+
+In this case the bcache device worked without a problem. As you can see
+in the stacktrace, bch_mark_sectors_bypassed (a piece of bcache code)
+causes the crash. Do you know what is going wrong here?
 
 -- 
-Thomas Fjellstrom
-thomas-T/OQ2aoscs6U4IzBdx3r/Q@public.gmane.org
+Regards,
+Pim
