@@ -1,21 +1,21 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Subject: Re: Bcache v. whatever
-Date: Tue, 15 Jan 2013 12:59:12 -0800
-Message-ID: <20130115205912.GA26407@google.com>
+Date: Tue, 15 Jan 2013 13:18:37 -0800
+Message-ID: <20130115211837.GB26407@google.com>
 References: <20130114223202.GV26407@google.com>
- <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com>
+ <20130115014931.GA19373@kroah.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <1358241656.2383.2.camel-sFMDBYUN5F8GjUHQrlYNx2Wm91YjaHnnhRte9Li2A+AAvxtiuMwx3w@public.gmane.org>
+In-Reply-To: <20130115014931.GA19373-U8xfFu+wG4EAvxtiuMwx3w@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: James Bottomley <James.Bottomley-d9PhHud1JfjCXq6kfMZ53/egYHeGw8Jk@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org
+To: Greg KH <gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org>
+Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, James.Bottomley-JuX6DAaQMKPCXq6kfMZ53/egYHeGw8Jk@public.gmane.org, snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 09:20:56AM +0000, James Bottomley wrote:
-> On Mon, 2013-01-14 at 14:32 -0800, Kent Overstreet wrote:
+On Mon, Jan 14, 2013 at 05:49:31PM -0800, Greg KH wrote:
+> On Mon, Jan 14, 2013 at 02:32:02PM -0800, Kent Overstreet wrote:
 > > Bcache: a block layer SSD cache
 > > 
 > > Does writethrough and writeback, handles unclean shutdown, and has
@@ -42,23 +42,15 @@ On Tue, Jan 15, 2013 at 09:20:56AM +0000, James Bottomley wrote:
 > > I'd like to finish the md integration so it doesn't need userspace stuff
 > > for probing/bootup. So, I'd be fine with it going into staging if that's
 > > the consensus, but it's stable tested code.
-> > 
-> > The code is available at
-> > http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
-> > 
-> > This latest branch is on top of v3.8-rc3:
 > 
-> The guy to merge this is the maintainer in that layer, which is Alasdair
-> Kergon.  I know you've been sending patches to the dm-devel list, what's
-> the reason you didn't include him in the cc list?  Is there some type of
-> political problem in dm?  From reading the list, it looks like your
-> patches are being tested and progressing, so what am I missing?
+> If it goes into staging, I need a reason why it can't be merged into the
+> "real" part of the kernel, and what will be done to get it there.
 
-That was merely an oversight - but, bcache is currently just another
-block device, it doesn't plug into dm or md. There was some md
-integration work started, and that's the one I'm more inclined to work
-on personally (if and when I find the time).
+I don't personally see why it can't, but maybe other people will chime
+in. There's certainly still stuff to do (something this size is never
+finished) but I'm not abandoning the code.
 
-So I'm not sure why it'd go in via dm, it seems to me it'd make just as
-much sense for it to go in via Neil Brown's tree. Unless there's
-something I'm missing?
+> Oh, and you will need to get acks from the people who's symbols you are
+> wanting to export, usually staging patches are self-contained.
+
+Yeah, good point. I'll mail out those patches now.
