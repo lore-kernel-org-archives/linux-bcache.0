@@ -1,23 +1,23 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+From: Greg KH <gregkh@linuxfoundation.org>
 Subject: Re: Bcache v. whatever
-Date: Tue, 15 Jan 2013 23:15:38 +0000
-Message-ID: <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com>
+Date: Tue, 15 Jan 2013 14:50:24 -0800
+Message-ID: <20130115225024.GE32544@kroah.com>
 References: <20130114223202.GV26407@google.com>
-	 <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com>
-	 <20130115205912.GA26407@google.com>
+ <20130115014931.GA19373@kroah.com>
+ <20130115211837.GB26407@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20130115205912.GA26407@google.com>
+Content-Disposition: inline
+In-Reply-To: <20130115211837.GB26407@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk, snitzer@redhat.com, agk@redhat.com, neilb@suse.de
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk, James.Bottomley@hansenpartnership.com, snitzer@redhat.com
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, 2013-01-15 at 12:59 -0800, Kent Overstreet wrote:
-> On Tue, Jan 15, 2013 at 09:20:56AM +0000, James Bottomley wrote:
-> > On Mon, 2013-01-14 at 14:32 -0800, Kent Overstreet wrote:
+On Tue, Jan 15, 2013 at 01:18:37PM -0800, Kent Overstreet wrote:
+> On Mon, Jan 14, 2013 at 05:49:31PM -0800, Greg KH wrote:
+> > On Mon, Jan 14, 2013 at 02:32:02PM -0800, Kent Overstreet wrote:
 > > > Bcache: a block layer SSD cache
 > > > 
 > > > Does writethrough and writeback, handles unclean shutdown, and has
@@ -44,38 +44,18 @@ On Tue, 2013-01-15 at 12:59 -0800, Kent Overstreet wrote:
 > > > I'd like to finish the md integration so it doesn't need userspace stuff
 > > > for probing/bootup. So, I'd be fine with it going into staging if that's
 > > > the consensus, but it's stable tested code.
-> > > 
-> > > The code is available at
-> > > http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
-> > > 
-> > > This latest branch is on top of v3.8-rc3:
 > > 
-> > The guy to merge this is the maintainer in that layer, which is Alasdair
-> > Kergon.  I know you've been sending patches to the dm-devel list, what's
-> > the reason you didn't include him in the cc list?  Is there some type of
-> > political problem in dm?  From reading the list, it looks like your
-> > patches are being tested and progressing, so what am I missing?
+> > If it goes into staging, I need a reason why it can't be merged into the
+> > "real" part of the kernel, and what will be done to get it there.
 > 
-> That was merely an oversight - but, bcache is currently just another
-> block device, it doesn't plug into dm or md. There was some md
-> integration work started, and that's the one I'm more inclined to work
-> on personally (if and when I find the time).
+> I don't personally see why it can't, but maybe other people will chime
+> in. There's certainly still stuff to do (something this size is never
+> finished) but I'm not abandoning the code.
 
-I think md integration would be a bit of a mistake, since md is pretty
-much only a raid engine at this point in time.  There are also a couple
-of other dm cache targets, so it would be nice to have one rather than
-three.  This all, however, seems to be under discussion on the dm list.
+Ok, then it should be accepted, care to make it up into a format that
+can be applied to someone's tree?  We can't do anything in the current
+git-tree format it is in today.
 
-> So I'm not sure why it'd go in via dm, it seems to me it'd make just as
-> much sense for it to go in via Neil Brown's tree. Unless there's
-> something I'm missing?
+thanks,
 
-Um, well there's no caching patches in the md tree; it's RAID only.  The
-basic caching stuff is all in the dm tree, which is why it's the natural
-one.
-
-It seems to me that your stuff is progressing on the dm list, so I don't
-really see a need to circumvent the process in the dm tree ... unless
-there's some problem I'm not seeing?
-
-James
+greg k-h
