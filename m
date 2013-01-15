@@ -1,56 +1,89 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Bcache v. whatever
-Date: Tue, 15 Jan 2013 13:18:37 -0800
-Message-ID: <20130115211837.GB26407@google.com>
+Subject: [PATCH 1/4] Revert "rw_semaphore: remove up/down_read_non_owner"
+Date: Tue, 15 Jan 2013 13:25:39 -0800
+Message-ID: <1358285142-10576-1-git-send-email-koverstreet@google.com>
 References: <20130114223202.GV26407@google.com>
- <20130115014931.GA19373@kroah.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20130115014931.GA19373-U8xfFu+wG4EAvxtiuMwx3w@public.gmane.org>
+In-Reply-To: <20130114223202.GV26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Greg KH <gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, James.Bottomley-JuX6DAaQMKPCXq6kfMZ53/egYHeGw8Jk@public.gmane.org, snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+To: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, Christoph Hellwig <hch-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Jan 14, 2013 at 05:49:31PM -0800, Greg KH wrote:
-> On Mon, Jan 14, 2013 at 02:32:02PM -0800, Kent Overstreet wrote:
-> > Bcache: a block layer SSD cache
-> > 
-> > Does writethrough and writeback, handles unclean shutdown, and has
-> > various other nifty features. See the wiki and the documentation for
-> > more:
-> > 
-> > http://bcache.evilpiepirate.org
-> > 
-> > Over the Christmas break I finally got the tree into a self contained
-> > state that ought to be suitable for merging; this tree is fairly close
-> > to the previous stable tree that people have been running on production
-> > servers for awhile (and that I've been running on this workstation), 
-> > 
-> > So, I think this is ready for mainline and I'd like to get it in. I
-> > should've tried to push it ages ago, but I was hoping to get in various
-> > block layer cleanups first; I finally deided to work around them in the
-> > meantime since I haven't had time to finish the block layer stuff.
-> > 
-> > Not everything has been addressed since I last posted for review
-> > feedback - notably the closure code was controversial and for now I've
-> > just moved that into drivers/block/bcache (though I've been refactoring
-> > stuff to make it less asynchronous lately; most of that work is in the
-> > testing/dev branches). The bigger issue IMO is the userspace interface -
-> > I'd like to finish the md integration so it doesn't need userspace stuff
-> > for probing/bootup. So, I'd be fine with it going into staging if that's
-> > the consensus, but it's stable tested code.
-> 
-> If it goes into staging, I need a reason why it can't be merged into the
-> "real" part of the kernel, and what will be done to get it there.
+This reverts commit 11b80f459adaf91a712f95e7734a17655a36bf30.
 
-I don't personally see why it can't, but maybe other people will chime
-in. There's certainly still stuff to do (something this size is never
-finished) but I'm not abandoning the code.
+Bcache needs rw semaphores for cache coherency in writeback mode -
+writes have to take a read lock on a per cache device rw sem, and
+release it when the bio completes.
 
-> Oh, and you will need to get acks from the people who's symbols you are
-> wanting to export, usually staging patches are self-contained.
+But since this is for bios it's naturally not in the context of the
+process that originally took the lock.
 
-Yeah, good point. I'll mail out those patches now.
+Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+CC: Christoph Hellwig <hch-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>
+CC: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+---
+ include/linux/rwsem.h | 10 ++++++++++
+ kernel/rwsem.c        | 16 ++++++++++++++++
+ 2 files changed, 26 insertions(+)
+
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 54bd7cd..ddfe46d 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -125,9 +125,19 @@ extern void downgrade_write(struct rw_semaphore *sem);
+  */
+ extern void down_read_nested(struct rw_semaphore *sem, int subclass);
+ extern void down_write_nested(struct rw_semaphore *sem, int subclass);
++/*
++ * Take/release a lock when not the owner will release it.
++ *
++ * [ This API should be avoided as much as possible - the
++ *   proper abstraction for this case is completions. ]
++ */
++extern void down_read_non_owner(struct rw_semaphore *sem);
++extern void up_read_non_owner(struct rw_semaphore *sem);
+ #else
+ # define down_read_nested(sem, subclass)		down_read(sem)
+ # define down_write_nested(sem, subclass)	down_write(sem)
++# define down_read_non_owner(sem)		down_read(sem)
++# define up_read_non_owner(sem)			up_read(sem)
+ #endif
+ 
+ #endif /* _LINUX_RWSEM_H */
+diff --git a/kernel/rwsem.c b/kernel/rwsem.c
+index 6850f53..78b7915 100644
+--- a/kernel/rwsem.c
++++ b/kernel/rwsem.c
+@@ -116,6 +116,15 @@ void down_read_nested(struct rw_semaphore *sem, int subclass)
+ 
+ EXPORT_SYMBOL(down_read_nested);
+ 
++void down_read_non_owner(struct rw_semaphore *sem)
++{
++	might_sleep();
++
++	__down_read(sem);
++}
++
++EXPORT_SYMBOL(down_read_non_owner);
++
+ void down_write_nested(struct rw_semaphore *sem, int subclass)
+ {
+ 	might_sleep();
+@@ -126,6 +135,13 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
+ 
+ EXPORT_SYMBOL(down_write_nested);
+ 
++void up_read_non_owner(struct rw_semaphore *sem)
++{
++	__up_read(sem);
++}
++
++EXPORT_SYMBOL(up_read_non_owner);
++
+ #endif
+ 
+ 
+-- 
+1.7.12
