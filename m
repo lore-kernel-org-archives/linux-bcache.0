@@ -1,51 +1,42 @@
-From: Kent Overstreet <koverstreet@google.com>
+From: Alasdair G Kergon <agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
 Subject: Re: Bcache v. whatever
-Date: Tue, 15 Jan 2013 15:33:47 -0800
-Message-ID: <20130115233347.GD26407@google.com>
-References: <20130114223202.GV26407@google.com>
- <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com>
- <20130115205912.GA26407@google.com>
- <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com>
+Date: Wed, 16 Jan 2013 01:29:15 +0000
+Message-ID: <20130116012914.GA27245@agk-dp.fab.redhat.com>
+References: <20130114223202.GV26407@google.com> <1358241656.2383.2.camel@dabdike.int.hansenpartnership.com> <20130115205912.GA26407@google.com> <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com> <20130115233347.GD26407@google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <1358291738.10591.23.camel@dabdike.int.hansenpartnership.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, akpm@linux-foundation.org, tj@kernel.org, axboe@kernel.dk, snitzer@redhat.com, agk@redhat.com, neilb@suse.de
+In-Reply-To: <20130115233347.GD26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: James Bottomley <James.Bottomley-d9PhHud1JfjCXq6kfMZ53/egYHeGw8Jk@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, agk-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jan 15, 2013 at 11:15:38PM +0000, James Bottomley wrote:
-> I think md integration would be a bit of a mistake, since md is pretty
-> much only a raid engine at this point in time.  There are also a couple
-> of other dm cache targets, so it would be nice to have one rather than
-> three.  This all, however, seems to be under discussion on the dm list.
+On Tue, Jan 15, 2013 at 03:33:47PM -0800, Kent Overstreet wrote:
+> I haven't been active on dm-devel, besides the occasional cross
+> posting... not sure what activity you're referring to on the dm list,
+ 
+A caching framework based on dm has been proposed by Joe Thornber (the
+original author of dm).
 
-The raid vs. caching bit is a bit beside the point IMO; they both
-aggregate block devices and expose virtual block devices, and the
-mechanism for doing so isn't part of the generic framework.
+Mike Snitzer is trying to adapt the performance tests for this dm-based
+framework to include the latest bcache code that you just posted to
+start to give us an idea of the circumstances in which each of them work
+well (or badly).
 
-I'm not morally opposed to dm integration, I'm just more comfortable
-with the md code and find it easier to understand and work with.
+1, Caching is a complicated feature: It's easy to get no benefit or even
+a negative benefit from a cache if you use an inappropriate policy or
+don't tune it to your I/O patterns.
 
-And the goal I care about is just commonality of userspace interfaces
-and tooling, which integration with either would accomplish.
+2. We now have several independent/overlapping implementations of this
+type of caching.  Comparing and contrasting them should help us to tease
+out the critical design elements and optimisations and decide which of
+them together or separately (or some hybrid) would enable the kernel to
+support the widest range of situations users require with the minimum
+of code and complexity.
 
-> > So I'm not sure why it'd go in via dm, it seems to me it'd make just as
-> > much sense for it to go in via Neil Brown's tree. Unless there's
-> > something I'm missing?
-> 
-> Um, well there's no caching patches in the md tree; it's RAID only.  The
-> basic caching stuff is all in the dm tree, which is why it's the natural
-> one.
-> 
-> It seems to me that your stuff is progressing on the dm list, so I don't
-> really see a need to circumvent the process in the dm tree ... unless
-> there's some problem I'm not seeing?
+3. We all want to move quickly now, perhaps even with something in the
+next merge window if we can or otherwise the one after that.
 
-I haven't been active on dm-devel, besides the occasional cross
-posting... not sure what activity you're referring to on the dm list,
-
-But if Alasdair wants to pick it up I'm not complaining, I don't
-particularly care who merges it.
+Alasdair
