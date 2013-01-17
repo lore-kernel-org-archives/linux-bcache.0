@@ -1,238 +1,195 @@
-From: thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
-Subject: Re: [dm-devel] Announcement: STEC EnhanceIO SSD caching software for
- Linux kernel
-Date: Thu, 17 Jan 2013 13:26:21 +0000
-Message-ID: <20130117132620.GA2438@raspberrypi>
+From: Amit Kale <akale-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+Subject: RE: [dm-devel] Announcement: STEC EnhanceIO SSD caching software
+ for Linux kernel
+Date: Fri, 18 Jan 2013 01:17:17 +0800
+Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D7247@MYMBX.MY.STEC-INC.AD>
 References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
  <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
  <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD>
  <20130116104546.GA3869@raspberrypi>
  <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A@MYMBX.MY.STEC-INC.AD>
+ <20130117113940.GI10411@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A-AQg6BlXVjylhNUoibfp7lHKnxlUjViKd@public.gmane.org>
+In-Reply-To: <20130117113940.GI10411-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Amit Kale <akale-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
-Cc: device-mapper development <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: "thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, device-mapper development <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, Jan 17, 2013 at 05:52:00PM +0800, Amit Kale wrote:
-> Hi Joe, Kent,
+Thanks for a prompt reply.
+ 
+> Suppose I could fill out the bcache version...
 > 
-> [Adding Kent as well since bcache is mentioned below as one of the contenders for being integrated into mainline kernel.]
+> On Thu, Jan 17, 2013 at 05:52:00PM +0800, Amit Kale wrote:
+> > Hi Joe, Kent,
+> >
+> > [Adding Kent as well since bcache is mentioned below as one of the
+> > contenders for being integrated into mainline kernel.]
+> >
+> > My understanding is that these three caching solutions all have three
+> principle blocks.
+> > 1. A cache block lookup - This refers to finding out whether a block
+> was cached or not and the location on SSD, if it was.
+> > 2. Block replacement policy - This refers to the algorithm for
+> replacing a block when a new free block can't be found.
+> > 3. IO handling - This is about issuing IO requests to SSD and HDD.
+> > 4. Dirty data clean-up algorithm (for write-back only) - The dirty
+> data clean-up algorithm decides when to write a dirty block in an SSD
+> to its original location on HDD and executes the copy.
+> >
+> > When comparing the three solutions we need to consider these aspects.
+> > 1. User interface - This consists of commands used by users for
+> creating, deleting, editing properties and recovering from error
+> conditions.
+> > 2. Software interface - Where it interfaces to Linux kernel and
+> applications.
 > 
-> My understanding is that these three caching solutions all have three principle blocks.
+> Both done with sysfs, at least for now.
 
-Let me try and explain how dm-cache works.
+sysfs is the user interface. Bcache creates a new block device. So it interfaces to Linux kernel at block device layer. HDD and SSD interfaces would at using submit_bio (pl. correct if this is wrong).
 
-> 1. A cache block lookup - This refers to finding out whether a block was cached or not and the location on SSD, if it was.
+> 
+> > 3. Availability - What's the downtime when adding, deleting caches,
+> making changes to cache configuration, conversion between cache modes,
+> recovering after a crash, recovering from an error condition.
+> 
+> All of that is done at runtime, without any interruption. bcache
+> doesn't distinguish between clean and unclean shutdown, which is nice
+> because it means the recovery code gets tested. Registering a cache
+> device takes on the order of half a second, for a large (half terabyte)
+> cache.
 
-Of course we have this, but it's part of the policy plug-in.  I've
-done this because the policy nearly always needs to do some book
-keeping (eg, update a hit count when accessed).
+Since a new device is created, you need to bring down applications the first time a cache is created. There-onwards it would be online. Similarly applications need to be brought down when deleting a cache. Fstab changes etc also need to be done. My guess is all this requires some effort and understanding by a system administrator. Does fstab work without any manual editing if it contains labes instead of device paths?
 
-> 2. Block replacement policy - This refers to the algorithm for replacing a block when a new free block can't be found.
+> 
+> > 4. Security - Security holes, if any.
+> 
+> Hope there aren't any!
 
-I think there's more than just this.  These are the tasks that I hand
-over to the policy:
+All the three caches can be operated only as root. So as long as there are no bugs, there is no need to worry about security loopholes.
 
-  a) _Which_ blocks should be promoted to the cache.  This seems to be
-     the key decision in terms of performance.  Blindly trying to
-     promote every io or even just every write will lead to some very
-     bad performance in certain situations.
+> 
+> > 5. Portability - Which HDDs, SSDs, partitions, other block devices it
+> works with.
+> 
+> Any block device.
+> 
+> > 6. Persistence of cache configuration - Once created does the cache
+> configuration stay persistent across reboots. How are changes in device
+> sequence or numbering handled.
+> 
+> Persistent. Device nodes are not stable across reboots, same as say
+> scsi devices if they get probed in a different order. It does persist a
+> label in the backing device superblock which can be used to implement
+> stable device nodes.
 
-     The mq policy uses a multiqueue (effectively a partially sorted
-     lru list) to keep track of candidate block hit counts.  When
-     candidates get enough hits they're promoted.  The promotion
-     threshold his periodically recalculated by looking at the hit
-     counts for the blocks already in the cache.
+Can this be embedded in a udev script so that the configuration becomes persistent regardless of probing order? What happens if either SSD or HDD are absent when a system comes up? Does it work with iSCSI HDDs? iSCSi HDDs can be tricky during shutdown, specifically if the iSCSI device goes offline before a cache saves metadata.
 
-     The hit counts should degrade over time (for some definition of
-     time; eg. io volume).  I've experimented with this, but not yet
-     come up with a satisfactory method.
+> > 7. Persistence of cached data - Does cached data remain across
+> reboots/crashes/intermittent failures. Is the "sticky"ness of data
+> configurable.
+> 
+> Persists across reboots. Can't be switched off, though it could be if
+> there was any demand.
 
-     I read through EnhanceIO yesterday, and think this is where
-     you're lacking.
-
-  b) When should a block be promoted.  If you're swamped with io, then
-     adding copy io is probably not a good idea.  Current dm-cache
-     just has a configurable threshold for the promotion/demotion io
-     volume.  If you or Kent have some ideas for how to approximate
-     the bandwidth of the devices I'd really like to hear about it.
-
-  c) Which blocks should be demoted?
-
-     This is the bit that people commonly think of when they say
-     'caching algorithm'.  Examples are lru, arc, etc.  Such
-     descriptions are fine when describing a cache where elements
-     _have_ to be promoted before they can be accessed, for example a
-     cpu memory cache.  But we should be aware that 'lru' for example
-     really doesn't tell us much in the context of our policies.
-
-     The mq policy uses a blend of lru and lfu for eviction, it seems
-     to work well.
-
-A couple of other things I should mention; dm-cache uses a large block
-size compared to eio.  eg, 64k - 1m.  This is a mixed blessing;
-
- - our copy io is more efficient (we don't have to worry about
-   batching migrations together so much.  Something eio is careful to
-   do).
-
- - we have fewer blocks to hold stats about, so can keep more info per
-   block in the same amount of memory.
-
- - We trigger more copying.  For example if an incoming write triggers
-   a promotion from the origin to the cache, and the io covers a block
-   we can avoid any copy from the origin to cache.  With a bigger
-   block size this optmisation happens less frequently.
-
- - We waste SSD space.  eg, a 4k hotspot could trigger a whole block
-   to be moved to the cache.
+Believe me, enterprise customers do require a cache to be non-persistent. This is because of a paranoia that HDD and SSD may go out of sync after a shutdown and before a reboot. This is primarily in an environment with a large number of HDDs accessed through a complicated iSCSI based setup perhaps with software RAID.
 
 
-We do not keep the dirty state of cache blocks up to date on the
-metadata device.  Instead we have a 'mounted' flag that's set in the
-metadata when opened.  When a clean shutdown occurs (eg, dmsetup
-suspend my-cache) the dirty bits are written out and the mounted flag
-cleared.  On a crash the mounted flag will still be set on reopen and
-all dirty flags degrade to 'dirty'.  Correct me if I'm wrong, but I
-think eio is holding io completion until the dirty bits have been
-committed to disk?
+> > 8. SSD life - Projected SSD life. Does the caching solution cause too
+> much of write amplification leading to an early SSD failure.
+> 
+> With LRU, there's only so much you can do to work around the SSD's FTL,
+> though bcache does try; allocation is done in terms of buckets, which
+> are on the order of a megabyte (configured when you format the cache
+> device). Buckets are written to sequentially, then rewritten later all
+> at once (and it'll issue a discard before rewriting a bucket if you
+> flip it on, it's not on by default because TRIM = slow).
+> 
+> Bcache also implements fifo cache replacement, and with that write
+> amplification should never be an issue.
 
-I really view dm-cache as a slow moving hotspot optimiser.  Whereas I
-think eio and bcache are much more of a heirarchical storage approach,
-where writes go through the cache if possible?
+Most SSDs contain a fairly sophisticated FTL doing wear-leveling. Wear-leveling only helps by evenly balancing over-writes across an entire SSD. Do you have statistics on how many SSD writes are generated per block read from or written to HDD? Metadata writes should be done only for the affected sectors, or else they contribute to more SSD internal writes. There is also a common debate on whether writing a single sector is more beneficial compared writing a whole block containing that sector.
 
-> 3. IO handling - This is about issuing IO requests to SSD and HDD.
+> 
+> > 9. Performance - Throughput is generally most important. Latency is
+> also one more performance comparison point. Performance under different
+> load classes can be measured.
+> > 10. ACID properties - Atomicity, Concurrency, Idempotent, Durability.
+> Does the caching solution have these typical transactional database or
+> filesystem properties. This includes avoiding torn-page problem amongst
+> crash and failure scenarios.
+> 
+> Yes.
+> 
+> > 11. Error conditions - Handling power failures, intermittent and
+> permanent device failures.
+> 
+> Power failures and device failures yes, intermittent failures are not
+> explicitly handled.
 
-  I get most of this for free via dm and kcopyd.  I'm really keen to
-  see how bcache does; it's more invasive of the block layer, so I'm
-  expecting it to show far better performance than dm-cache.
+The IO completion guarantee offered on intermittent failures should be as good as HDD.
 
-> 4. Dirty data clean-up algorithm (for write-back only) - The dirty
-  data clean-up algorithm decides when to write a dirty block in an
-  SSD to its original location on HDD and executes the copy.
+> 
+> > 12. Configuration parameters for tuning according to applications.
+> 
+> Lots. The most important one is probably sequential bypass - you don't
+> typically want to cache your big sequential IO, because rotating disks
+> do fine at that. So bcache detects sequential IO and bypasses it with a
+> configurable threshold.
+> 
+> There's also stuff for bypassing more data if the SSD is overloaded -
+> if you're caching many disks with a single SSD, you don't want the SSD
+> to be the bottleneck. So it tracks latency to the SSD and cranks down
+> the sequential bypass threshold if it gets too high.
 
-  Yep.
+That's interesting. I'll definitely want to read this part of the source code.
 
-> When comparing the three solutions we need to consider these aspects.
+> 
+> > We'll soon document EnhanceIO behavior in context of these aspects.
+> We'll appreciate if dm-cache and bcache is also documented.
+> >
+> > When comparing performance there are three levels at which it can be
+> > measured 1. Architectural elements 1.1. Throughput for 100% cache hit
+> > case (in absence of dirty data clean-up)
+> 
+> North of a million iops.
+> 
+> > 1.2. Throughput for 0% cache hit case (in absence of dirty data
+> > clean-up)
+> 
+> Also relevant whether you're adding the data to the cache. I'm sure
+> bcache is slightly slower than the raw backing device here, but if it's
+> noticable it's a bug (I haven't benchmarked that specifically in ages).
+> 
+> > 1.3. Dirty data clean-up rate (in absence of IO)
+> 
+> Background writeback is done by scanning the btree in the background
+> for dirty data, and then writing it out in lba order - so the writes
+> are as sequential as they're going to get. It's fast.
 
-> 1. User interface - This consists of commands used by users for
-  creating, deleting, editing properties and recovering from error
-  conditions.
+Great.
 
-  I was impressed how easy eio was to use yesterday when I was playing
-  with it.  Well done.
+Thanks.
+-Amit
+> 
+> > 2. Performance of architectural elements combined 2.1. Varying mix of
+> > read/write, sustained performance.
+> 
+> Random write performance is definitely important, as there you've got
+> to keep an index up to date on stable storage (if you want to handle
+> unclean shutdown, anyways). Making that fast is non trivial. Bcache is
+> about as efficient as you're going to get w.r.t. metadata writes,
+> though.
+> 
+> > 3. Application level testing - The more real-life like benchmark we
+> work with, the better it is.
 
-  Driving dm-cache through dm-setup isn't much more of a hassle
-  though.  Though we've decided to pass policy specific params on the
-  target line, and tweak via a dm message (again simple via dmsetup).
-  I don't think this is as simple as exposing them through something
-  like sysfs, but it is more in keeping with the device-mapper way.
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
 
-> 2. Software interface - Where it interfaces to Linux kernel and applications.
 
-  See above.
 
-> 3. Availability - What's the downtime when adding, deleting caches,
-  making changes to cache configuration, conversion between cache
-  modes, recovering after a crash, recovering from an error condition.
-
-  Normal dm suspend, alter table, resume cycle.  The LVM tools do this
-  all the time.
-
-> 4. Security - Security holes, if any.
-
-  Well I saw the comment in your code describing the security flaw you
-  think you've got.  I hope we don't have any, I'd like to understand
-  your case more.
-
-> 5. Portability - Which HDDs, SSDs, partitions, other block devices it works with.
-
-  I think we all work with any block device.  But eio and bcache can
-  overlay any device node, not just a dm one.  As mentioned in earlier
-  email I really think this is a dm issue, not specific to dm-cache.
-
-> 6. Persistence of cache configuration - Once created does the cache
-  configuration stay persistent across reboots. How are changes in
-  device sequence or numbering handled.
-
-  We've gone for no persistence of policy parameters.  Instead
-  everything is handed into the kernel when the target is setup.  This
-  decision was made by the LVM team who wanted to store this
-  information themselves (we certainly shouldn't store it in two
-  places at once).  I don't feel strongly either way, and could
-  persist the policy params v. easily (eg, 1 days work).
-
-  One thing I do provide is a 'hint' array for the policy to use and
-  persist.  The policy specifies how much data it would like to store
-  per cache block, and then writes it on clean shutdown (hence 'hint',
-  it has to cope without this, possibly with temporarily degraded
-  performance).  The mq policy uses the hints to store hit counts.
-
-> 7. Persistence of cached data - Does cached data remain across
-  reboots/crashes/intermittent failures. Is the "sticky"ness of data
-  configurable.
-
-  Surely this is a given?  A cache would be trivial to write if it
-  didn't need to be crash proof.
-
-> 8. SSD life - Projected SSD life. Does the caching solution cause
-  too much of write amplification leading to an early SSD failure.
-
-  No, I decided years ago that life was too short to start optimising
-  for specific block devices.  By the time you get it right the
-  hardware characteristics will have moved on.  Doesn't the firmware
-  on SSDs try and even out io wear these days?
-
-  That said I think we evenly use the SSD.  Except for the superblock
-  on the metadata device.
-
-> 9. Performance - Throughput is generally most important. Latency is
-  also one more performance comparison point. Performance under
-  different load classes can be measured.
-
-  I think latency is more important than throughput.  Spindles are
-  pretty good at throughput.  In fact the mq policy tries to spot when
-  we're doing large linear ios and stops hit counting; best leave this
-  stuff on the spindle.
-
-> 10. ACID properties - Atomicity, Concurrency, Idempotent,
-  Durability. Does the caching solution have these typical
-  transactional database or filesystem properties. This includes
-  avoiding torn-page problem amongst crash and failure scenarios.
-
-  Could you expand on the torn-page issue please?
-
-> 11. Error conditions - Handling power failures, intermittent and permanent device failures.
-
-  I think the area where dm-cache is currently lacking is intermittent
-  failures.  For example if a cache read fails we just pass that error
-  up, whereas eio sees if the block is clean and if so tries to read
-  off the origin.  I'm not sure which behaviour is correct; I like to
-  know about disk failure early.
-
-> 12. Configuration parameters for tuning according to applications.
-
-  Discussed above.
-
-> We'll soon document EnhanceIO behavior in context of these
-  aspects. We'll appreciate if dm-cache and bcache is also documented.
-
-  I hope the above helps.  Please ask away if you're unsure about
-  something.
-
-> When comparing performance there are three levels at which it can be measured
-
-Developing these caches is tedious.  Test runs take time, and really
-slow the dev cycle down.  So I suspect we've all been using
-microbenchmarks that run in a few minutes.
-
-Let's get our pool of microbenchmarks together, then work on some
-application level ones (we're happy to put some time into developing
-these).
-
-- Joe
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
