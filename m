@@ -1,71 +1,40 @@
-From: Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
-Subject: Re: Bcache upstreaming
-Date: Sat, 19 Jan 2013 21:42:11 +1100
-Message-ID: <50FA7883.7030004@crc.id.au>
-References: <50FA5C38.60301@crc.id.au> <CAC7rs0v=zA-6Lf9kH5jmXxySci6GTLMu_Tq1pZFhHDpYcj0APQ@mail.gmail.com>
+From: Roy Sigurd Karlsbakk <roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org>
+Subject: Adding caching to existing volumes?
+Date: Sat, 19 Jan 2013 19:08:25 +0100 (CET)
+Message-ID: <17989056.10.1358618905144.JavaMail.root@zimbra>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAC7rs0v=zA-6Lf9kH5jmXxySci6GTLMu_Tq1pZFhHDpYcj0APQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Does this include all the kernel source or just a patch?
+Hi all
 
-I'd like to just put a single patch into my kernel RPM to make 
-management easier...
+As far as I can understand from the bcache docs, a volume cached with b=
+cache, must be formatted and setup for bcache in the first place. I com=
+e from a ZFS environment, where adding SLOG or L2ARC is done dynamicall=
+y, so I have a few questions:
 
+- Would it be somewhat possible to add caching to an existing volume an=
+d its data?
+- What would happen if the cache device dies - does the whole filesyste=
+m become inaccessible?
+
+
+--=20
+Vennlige hilsener / Best regards
+
+roy
 --
-Steven Haigh
-
-Email: netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org
-Web: https://www.crc.id.au
-Phone: (03) 9001 6090 - 0412 935 897
-Fax: (03) 8338 0299
-
-On 19/01/2013 9:35 PM, Kent Overstreet wrote:
-> Yeah, the bcache master branch is currently against 3.7.
->
-> On Sat, Jan 19, 2013 at 12:41 AM, Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org> wrote:
->>> From: Kent Overstreet <koverstreet@...
->>> <http://gmane.org/get-address.php?address=koverstreet%2dhpIqsD4AKlfQT0dZR%2bAlfA%40public.gmane.org>>
->>> Subject:Bcache upstreaming
->>> <http://news.gmane.org/find-root.php?message_id=%3c20130104235040.GA26407%40google.com%3e>
->>> Newsgroups:gmane.linux.kernel.bcache.devel
->>> <http://news.gmane.org/gmane.linux.kernel.bcache.devel>
->>> Date: 2013-01-04 23:50:40 GMT (2 weeks, 8 hours and 47 minutes ago)
->>>
->>> I've (finally!) got a bcache branch hacked up that ought to be suitable
->>> to go upstream, possibly in staging initially.
->>>
->>> It's currently closer to the dev branch than the stable branch, plus
->>> some additional minor changes to make it all more self contained. The
->>> code has seen a decent amount of testing and I think it's in good shape,
->>> but I'd like it if it could see a bit more testing before I see about
->>> pushing it upstream.
->>>
->>> If anyone wants to try it out, checkout the bcache-for-staging branch.
->>> It's against Linux 3.7.
->>
->> Hi Kent,
->>
->> Just wondering if you maintain a patch for this vs kernel 3.7.x?
->>
->> I build EL6 RPMs for use as a Xen Dom0 and I'd like to include bcache in
->> them for testing....
->>
->> --
->> Steven Haigh
->>
->> Email: netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org
->> Web: http://www.crc.id.au
->> Phone: (03) 9001 6090 - 0412 935 897
->> Fax: (03) 8338 0299
->>
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Roy Sigurd Karlsbakk
+(+47) 98013356
+roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org
+http://blogg.karlsbakk.net/
+GPG Public key: http://karlsbakk.net/roysigurdkarlsbakk.pubkey.txt
+--
+I all pedagogikk er det essensielt at pensum presenteres intelligibelt.=
+ Det er et element=C3=A6rt imperativ for alle pedagoger =C3=A5 unng=C3=A5=
+ eksessiv anvendelse av idiomer med xenotyp etymologi. I de fleste tilf=
+eller eksisterer adekvate og relevante synonymer p=C3=A5 norsk.
