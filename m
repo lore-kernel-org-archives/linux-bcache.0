@@ -1,183 +1,88 @@
-From: Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
-Subject: Re: Adding caching to existing volumes?
-Date: Wed, 23 Jan 2013 10:26:14 +1100
-Message-ID: <50FF2016.4020802@crc.id.au>
-References: <17989056.10.1358618905144.JavaMail.root@zimbra> <50FBA4A6.7020709@crc.id.au> <20130122231547.GF26407@google.com>
+From: James Harper <james.harper-NMzNsA1hOHcW+bLBXbPJGg@public.gmane.org>
+Subject: RE: Adding caching to existing volumes?
+Date: Tue, 22 Jan 2013 23:42:10 +0000
+Message-ID: <6035A0D088A63A46850C3988ED045A4B356382D3@BITCOM1.int.sbss.com.au>
+References: <17989056.10.1358618905144.JavaMail.root@zimbra>
+ <50FBA4A6.7020709@crc.id.au> <20130122231547.GF26407@google.com>
+ <50FF2016.4020802@crc.id.au>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms080103060308000704030909"
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130122231547.GF26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+In-Reply-To: <50FF2016.4020802-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-This is a cryptographically signed message in MIME format.
+> 
+> On 23/01/2013 10:15 AM, Kent Overstreet wrote:
+> > On Sun, Jan 20, 2013 at 07:02:46PM +1100, Steven Haigh wrote:
+> >> On 20/01/2013 5:08 AM, Roy Sigurd Karlsbakk wrote:
+> >>> Hi all
+> >>>
+> >>> As far as I can understand from the bcache docs, a volume cached with
+> bcache, must be formatted and setup for bcache in the first place. I come
+> from a ZFS environment, where adding SLOG or L2ARC is done dynamically,
+> so I have a few questions:
+> >>>
+> >>> - Would it be somewhat possible to add caching to an existing volume
+> and its data?
+> >>> - What would happen if the cache device dies - does the whole
+> filesystem become inaccessible?
+> >>
+> >> I've actually been wondering a bit about this - its not exactly
+> >> clear in the docs as to what I should do to set up bcache.
+> >>
+> >> In my case, I have a RAID6 over 4 x 2Tb drives. It lives as
+> >> /dev/md2. /dev/md[01] are RAID1 on a pair of 80Gb drives for boot
+> >> and LVM.
+> >>
+> >> As the system is a Xen Dom0, all the DomU (guests) run from their
+> >> own LV on the RAID6. So - it would make sense to add bcache to
+> >> /dev/md2.
+> >>
+> >> I'm a bit confused from reading the docs if I can attach to the
+> >> existing /dev/md2 or I have to create something from scratch.
+> >> Obviously, attaching to an existing RAID device is going to be the
+> >> preferred method.
+> >>
+> >> Covering this in the docs or even on the web site would probably be
+> >> beneficial for a lot of people - especially as I feel that this is
+> >> getting closer to be merged with the upstream kernel.
+> >
+> > You've got to start from scratch, unfortunately.
+> >
+> > The reason is that there needs to be a bcache specific superblock on the
+> > backing device so bcache can keep the cache and backing device in sync -
+> > and especially so you can't accidentally mount and use the backing
+> > device without the cache. That would be bad.
+> >
+> > I just added an explanation to the faq - thanks for pointing it out.
+> > http://bcache.evilpiepirate.org/FAQ
+> 
+> Great! Thanks Kent. Although this now makes me wonder how to shift the
+> 2Tb+ of data to try this... That being said, I don't have a spare SSD at
+> this stage, so the main thing was looking at getting a patch file to
+> then add to the kernel during compile time of the RPM packages.
+> 
+> The hard part would be redoing the entire LVM structure again for the
+> guest OS's.
+> 
 
---------------ms080103060308000704030909
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: quoted-printable
+If your backups are good, you could do what I did:
+. plug in the required number of additional disks, USB might do (I just broke my RAID1 and created a new degraded RAID1 etc)
+. add them as PV's to your VG
+. Use pvmove to move everything off your RAID PV's.
+. Remove the RAID PV's from the VG
+. Rebuild the RAID volume as a bcache volume
+. Add the bcache volume to the VG
+. Use pvmove to move everything back
 
-On 23/01/2013 10:15 AM, Kent Overstreet wrote:
-> On Sun, Jan 20, 2013 at 07:02:46PM +1100, Steven Haigh wrote:
->> On 20/01/2013 5:08 AM, Roy Sigurd Karlsbakk wrote:
->>> Hi all
->>>
->>> As far as I can understand from the bcache docs, a volume cached with=
- bcache, must be formatted and setup for bcache in the first place. I com=
-e from a ZFS environment, where adding SLOG or L2ARC is done dynamically,=
- so I have a few questions:
->>>
->>> - Would it be somewhat possible to add caching to an existing volume =
-and its data?
->>> - What would happen if the cache device dies - does the whole filesys=
-tem become inaccessible?
->>
->> I've actually been wondering a bit about this - its not exactly
->> clear in the docs as to what I should do to set up bcache.
->>
->> In my case, I have a RAID6 over 4 x 2Tb drives. It lives as
->> /dev/md2. /dev/md[01] are RAID1 on a pair of 80Gb drives for boot
->> and LVM.
->>
->> As the system is a Xen Dom0, all the DomU (guests) run from their
->> own LV on the RAID6. So - it would make sense to add bcache to
->> /dev/md2.
->>
->> I'm a bit confused from reading the docs if I can attach to the
->> existing /dev/md2 or I have to create something from scratch.
->> Obviously, attaching to an existing RAID device is going to be the
->> preferred method.
->>
->> Covering this in the docs or even on the web site would probably be
->> beneficial for a lot of people - especially as I feel that this is
->> getting closer to be merged with the upstream kernel.
->
-> You've got to start from scratch, unfortunately.
->
-> The reason is that there needs to be a bcache specific superblock on th=
-e
-> backing device so bcache can keep the cache and backing device in sync =
--
-> and especially so you can't accidentally mount and use the backing
-> device without the cache. That would be bad.
->
-> I just added an explanation to the faq - thanks for pointing it out.
-> http://bcache.evilpiepirate.org/FAQ
+I thought I might have problems because my disks had 512 byte sectors and the bcache volume had 4K sectors by default (is this still the case?), but LVM didn't care. Xen cares though - once I did reboot later and LVM officially presented 4K sectors my Xen windows VM's wouldn't reboot and I had to do it all over again, recreating the bcache volume with 512 byte sectors.
 
-Great! Thanks Kent. Although this now makes me wonder how to shift the=20
-2Tb+ of data to try this... That being said, I don't have a spare SSD at =
+The really nice thing was that I could do it all live without shutting down or anything (except for the 4K/512byte thing), even though I was moving the root volume around. LVM is great!
 
-this stage, so the main thing was looking at getting a patch file to=20
-then add to the kernel during compile time of the RPM packages.
+I use my root volume on the bcache volume, but in retrospect it probably wasn't a great idea as suddenly I can't boot with a non-bcache-enabled kernel anymore. Make sure you have an emergency boot CD or something with your bcache kernel on it!
 
-The hard part would be redoing the entire LVM structure again for the=20
-guest OS's.
-
---=20
-Steven Haigh
-
-Email: netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org
-Web: http://www.crc.id.au
-Phone: (03) 9001 6090 - 0412 935 897
-Fax: (03) 8338 0299
-
-
---------------ms080103060308000704030909
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIOSjCC
-BjQwggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDE1NVoXDTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOr
-lr6KMoOMpohBllVHrdRvEg/q6r8jR+EK75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSM
-zR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6
-qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxDz2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSD
-kOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr/+N2JLKutIxMYqQOJebr/f/h5t95
-m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFcfH6WNU7y1LhRgjAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqD
-CH14qywGXLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy
-6QMVQjbbMXltUfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPI
-zKKR9tQW8gGK+2+RHxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKf
-KSETEPrHh7p5shuuNktvsv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HOR
-z9v3vQwR4e3ksLc2JZOAFK+ssS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9
-sIPP7ON0fz095HdThKjiVJe6vofq+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCie
-uoBJ9OlqmsVWQvifIYf40dJPZkk9YgGTzWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7t
-w1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGqUp/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQ
-G2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb19mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t
-5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIIDjCCBvagAwIBAgIDA7ikMA0GCSqGSIb3DQEB
-BQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMi
-U2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20g
-Q2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcNMTIwMjEzMTMzODE0
-WhcNMTMwMjEzMTc1NjUzWjBXMRkwFwYDVQQNExB3bjVlU1RNM2RWOUIwMEk5MRkwFwYDVQQD
-DBBuZXR3aXpAY3JjLmlkLmF1MR8wHQYJKoZIhvcNAQkBFhBuZXR3aXpAY3JjLmlkLmF1MIIC
-IjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAzTaLiL78pm4Hqp7Pou4C60jt2wdvDiPt
-Sq6hspKk6oaST7BFeDOfoed3mvzytkjNr3C1gds3zsHulAMzRjuX2M1zPkfaj5QFkmlqQcxr
-+tnaf8QFpn9PrUcjpbYDYPxdcGR+SeClKzmjdxicHuYDrD8YXnbk+k8dWDaCuv5sKRQHJmIR
-maqUIGoVML+/kUR+sqkMpnbhOsL+E84Hg4fxLzpV3Tjf9bZbKgaspvg+BeJJCYKThBxMnZJI
-cQ9JzDGL4rO2BEuTXI9Ofl0+AAttBEpZeqc2rePCfA9NivKTCZ0qaFKmvM5SN7TiZUqv80rD
-ewTp+OLXNZEd5aa5jEDPNlznkcX0WfuKCmtyIEzT7PgHl1tOWTx7nw6FVWcB8qjC6xlyaL6W
-1oS7Om3b2ka+9vSiz7DrPZzUDZuS91Fr2zIIMrrRzhN8q/JdQf8lGTydpmoRUB0z+BAcH8V/
-nOcMMDogqV6/dCfywi7zFQK4AsiPSpyBAZyO53J4uPgoIzSpFj54f83KRIobHCWDU1BaU2+6
-CfEoAD3iMId1tcFWTXikEThL+3oHQullq9EbPR4f3ToAU7aTZYWG4KNKrmG93KAfyCUFb+bf
-mt3hf1BprKIUJnpOxdZHi0KwLXVwURiB4XQKZpEWL8mRbHRdxVATKrrJAHOFTl3/s37VLprP
-J9kCAwEAAaOCA6swggOnMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQGCCsG
-AQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUS9is0NdoOI3DZ/36Zlq78IrSedgwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwGwYDVR0RBBQwEoEQbmV0d2l6QGNyYy5pZC5h
-dTCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJo
-dHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8v
-d3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBT
-dGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0
-ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVp
-cmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
-aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5
-IG9ibGlnYXRpb25zLjCBnAYIKwYBBQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlv
-biBBdXRob3JpdHkwAwIBAhpkTGlhYmlsaXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVk
-ISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExpbWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20g
-Q0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9j
-cnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2Nz
-cC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6
-Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNV
-HRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBABL6
-TyHlAHW0kkHb0ZLcd/pn7Ue0B5mIWBhmta4dK8qd0hXw+/lhpWaJWR/RltCSPabxSd+Lm9Iw
-NWm7WP73GHAGby0TC+siwDJSk7CwDBqnVM1T3XQ5TgjfVX7h9qjVixsSWzAD++dXFmpf/344
-Uf3zcG/hKJSeRtOvM/88nn4eJtrn7QFnIm4AJpHEgrqwU/0pmQBLwmEYS1G5cr04Oact2v6W
-L3JHOlEP8lPBAO9GtZD8UZGmBoDTNG0Rf4TnVTBGdw1sLZqpXnkcVI+rDUaFk/jb7AtCB30N
-8tbm2I5ALevgjv+vNMZIQD/0AgOaylGrQwbP852lgOvMo2AdpGExggTdMIIE2QIBATCBlDCB
-jDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3Vy
-ZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNz
-IDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMDuKQwCQYFKw4DAhoFAKCCAh0w
-GAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTMwMTIyMjMyNjE0
-WjAjBgkqhkiG9w0BCQQxFgQUNt3VMbMScmJUsfY4IUu+ftJzlTkwbAYJKoZIhvcNAQkPMV8w
-XTALBglghkgBZQMEASowCwYJYIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIA
-gDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggqhkiG9w0DAgIBKDCBpQYJKwYBBAGCNxAE
-MYGXMIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UE
-CxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRD
-b20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwO4pDCBpwYLKoZI
-hvcNAQkQAgsxgZeggZQwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQu
-MSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQD
-Ey9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQQIDA7ik
-MA0GCSqGSIb3DQEBAQUABIICAKHEP9tge2ocZNyx8ImK5oSzJh+733UWBia0tS8PMJGpRqf8
-yJP9WnV7hD+JmtHon21r0ZfG3Wo22nayVoCTuqrrC4hsmSGa25HjJ6wlOQ6EKj/7Ip4MwDYn
-sO+/p2x/rfeN2Skr7KpFT5DS9Q2eHij5Zt9XIa7PhnyhzaMVlkpsx07zrdW9aifzjEa01jMz
-WJL+eYolmnIpxr1AKH9i3rtSfPK/SFZpvDCQUlCjYj9L+EneaAHYhTTR69aa1bFENWPQWCvL
-YwlBSaFHeHmrUaaxdDQ9kPyT5grjppYUrQ1TgiahDiPoH/q7vyIHEyCgLFA4IOQr1Ha44AB4
-zvlVdSE+U1ePAH0X2g6h2iMnursh68FGDjTVByJ42Xk2jErGdAk9F1IJRjbXjmLZoWxSV4WZ
-5+g9U0GS0398lH15AEoi/nM1/lEdHQ/c8Loc7vFjYyi7CY+yH7o7WcpmT2LgzEi/MBIkYnCA
-3iMfscces1KfYoUi/o+pBdnSSIAPN3ybDR8DheotALSJkq98I7HslOCLE8XWZl8idTVFUlOS
-VN9nEPVmP37som4GsJfjJbrOxZf1bciNkHS+X/IeriNjy7HtdmE72tCI6RyufyzRM8Qc4Q+9
-Oabz5/osmOkcR6biQCdcTYxs6qcudbd0oEk4cC5sZzvSoGouVCbpNzBTL47VAAAAAAAA
---------------ms080103060308000704030909--
+James
