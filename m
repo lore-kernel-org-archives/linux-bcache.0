@@ -1,44 +1,81 @@
-From: Roy Sigurd Karlsbakk <roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org>
-Subject: Re: Adding caching to existing volumes?
-Date: Wed, 23 Jan 2013 18:17:44 +0100 (CET)
-Message-ID: <12410785.14.1358961464521.JavaMail.root@zimbra>
-References: <20130122231547.GF26407@google.com>
+From: Pierre Beck <debian-bugs-MZZvbRqs/9F0RdzJJlgK+g@public.gmane.org>
+Subject: Loosing transactions
+Date: Wed, 23 Jan 2013 21:14:09 +0100
+Message-ID: <51004490.704@pierre-beck.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130122231547.GF26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-> You've got to start from scratch, unfortunately.
->=20
-> The reason is that there needs to be a bcache specific superblock on
-> the
-> backing device so bcache can keep the cache and backing device in syn=
-c
-> -
-> and especially so you can't accidentally mount and use the backing
-> device without the cache. That would be bad.
->=20
-> I just added an explanation to the faq - thanks for pointing it out.
-> http://bcache.evilpiepirate.org/FAQ
+Hi,
 
-Then, what happens when the SSD dies?
+something is not working as advertised :-)
 
-Vennlige hilsener / Best regards
+I have a test setup for power loss behaviour evaluation. Recently a 
+batch of SSDs was of interest and following them, naturally, bcache.
 
-roy
---
-Roy Sigurd Karlsbakk
-(+47) 98013356
-roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org
-http://blogg.karlsbakk.net/
-GPG Public key: http://karlsbakk.net/roysigurdkarlsbakk.pubkey.txt
---
-I all pedagogikk er det essensielt at pensum presenteres intelligibelt.=
- Det er et element=C3=A6rt imperativ for alle pedagoger =C3=A5 unng=C3=A5=
- eksessiv anvendelse av idiomer med xenotyp etymologi. I de fleste tilf=
-eller eksisterer adekvate og relevante synonymer p=C3=A5 norsk.
+The test is simple: format an ext4 fs on the target device, copy over an 
+empty mysql db and server with ACID compliant config (defaults, innodb 
+table), then write inserts with a python script and output the latest 
+insert id. Watch via SSH, then cut power. I was positively surprised 
+that the consumer SSDs obey flushes and don't loose transactions (stored 
+transaction was in fact always one or two ahead of output). Intel 
+520series, Samsung 840 Pro and Corsair Neutron GTX, all 256 GB, in case 
+you're wondering. The Intel 520 was alot faster btw., I think Sandforce 
+did a really good job performance-wise. Testing an OCZ Vector failed, 
+BIOS hang during detection.
+
+Using an external Ext4 Journal with data=journal yielded SSD-like write 
+performance with writebacks to an ST3000DM001 at the same level thanks 
+to re-ordering, not loosing transactions as well.
+
+Adding bcache, tests immediately failed, in both writeback and 
+writethrough modes. Watching writethrough mode, the performance of the 
+HDD looked odd, because waiting for cache flushes it should not exceed 1 
+MiB/s, yet I saw 30 MiB/s. So cache flushes are simply eaten somewhere.
+
+dmesg says this at boot time:
+
+Jan 23 19:23:37 dr-nick kernel: [    2.948131] sd 2:0:0:0: [sdb] 
+5860533168 512-byte logical blocks: (3.00 TB/2.72 TiB)
+Jan 23 19:23:37 dr-nick kernel: [    2.948135] sd 2:0:0:0: [sdb] 
+4096-byte physical blocks
+Jan 23 19:23:37 dr-nick kernel: [    2.948185] sd 2:0:0:0: [sdb] Write 
+Protect is off
+Jan 23 19:23:37 dr-nick kernel: [    2.948189] sd 2:0:0:0: [sdb] Mode 
+Sense: 00 3a 00 00
+Jan 23 19:23:37 dr-nick kernel: [    2.948212] sd 2:0:0:0: [sdb] Write 
+cache: enabled, read cache: enabled, doesn't support DPO or FUA
+Jan 23 19:23:37 dr-nick kernel: [    2.948914] sd 3:0:0:0: [sdc] 
+468862128 512-byte logical blocks: (240 GB/223 GiB)
+Jan 23 19:23:37 dr-nick kernel: [    2.948986] sd 3:0:0:0: [sdc] Write 
+Protect is off
+Jan 23 19:23:37 dr-nick kernel: [    2.948990] sd 3:0:0:0: [sdc] Mode 
+Sense: 00 3a 00 00
+Jan 23 19:23:37 dr-nick kernel: [    2.949013] sd 3:0:0:0: [sdc] Write 
+cache: enabled, read cache: enabled, doesn't support DPO or FUA
+
+and bcache journal recovery looks like this:
+
+Jan 23 19:24:58 dr-nick kernel: [   96.909115] bcache: 
+btree_journal_read() done
+Jan 23 19:24:58 dr-nick kernel: [   97.112616] bcache: btree_check() done
+Jan 23 19:24:58 dr-nick kernel: [   97.113322] bcache: journal replay 
+done, 103 keys in 2 entries, seq 6175-6176
+Jan 23 19:24:58 dr-nick kernel: [   97.118998] bcache: Caching sdb as 
+bcache0 on set f5f0cd6d-0f77-49d3-ab2d-2203ffff1668
+Jan 23 19:24:58 dr-nick kernel: [   97.119125] bcache: registered cache 
+device sdc
+
+I wonder if there's some cache flushing method missing in bcache that 
+other device mappers use to work around the missing support for FUA 
+(queue draining?).
+
+Any ideas where to start debugging?
+
+Greetings,
+
+Pierre Beck
