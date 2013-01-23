@@ -1,104 +1,44 @@
-From: Nitin Kshirsagar <nshirsagar-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
-Subject: (unknown)
-Date: Wed, 23 Jan 2013 20:37:10 +0800
-Message-ID: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A6257C7D0@MYMBX.MY.STEC-INC.AD>
+From: Roy Sigurd Karlsbakk <roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org>
+Subject: Re: Adding caching to existing volumes?
+Date: Wed, 23 Jan 2013 18:17:44 +0100 (CET)
+Message-ID: <12410785.14.1358961464521.JavaMail.root@zimbra>
+References: <20130122231547.GF26407@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=Windows-1252
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Subject: 
-Content-Language: en-US
+In-Reply-To: <20130122231547.GF26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: Amit Kale <akale-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, Sanoj Unnikrishnan <sunnikrishnan-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hello Kent,
+> You've got to start from scratch, unfortunately.
+>=20
+> The reason is that there needs to be a bcache specific superblock on
+> the
+> backing device so bcache can keep the cache and backing device in syn=
+c
+> -
+> and especially so you can't accidentally mount and use the backing
+> device without the cache. That would be bad.
+>=20
+> I just added an explanation to the faq - thanks for pointing it out.
+> http://bcache.evilpiepirate.org/FAQ
 
-I have setup bcache and run fio data verification test on write back an=
-d write through caches.
-The fio tests are passed, however I have found following issues while u=
-sing bcache.
+Then, what happens when the SSD dies?
 
-Issue1: Cache is not created as per user specified options =20
------------------------------------------------------------------------=
----------------------------------
-Steps:
-1.Create cache by specifying mode writeback and cache replacement polic=
-y as fifo
-[root@annu bcache]# make-bcache --cache  /dev/sdc --bdev /dev/sdd  --wr=
-iteback --cache_replacement_policy=3Dfifo=20
-UUID:                   e25f2840-f02b-46af-81e7-28948b2737cc
-Set UUID:               68da5b89-1e87-457a-80c7-2c822737f969
-nbuckets:               2048
-block_size:             1
-bucket_size:            1024
-nr_in_set:              1
-nr_this_dev:            0
-first_bucket:           1
-UUID:                   a3ce52e6-631b-4c74-afa2-9f8b0088c7f4
-Set UUID:               68da5b89-1e87-457a-80c7-2c822737f969
-nbuckets:               20480
-block_size:             1
-bucket_size:            1024
-nr_in_set:              1
-nr_this_dev:            0
-first_bucket:           1
+Vennlige hilsener / Best regards
 
-[root@annu bcache]# echo /dev/sdc > /sys/fs/bcache/register
-[root@annu bcache]# echo /dev/sdd > /sys/fs/bcache/register
-
-
-2. Cache mode should  be "writeback" instead of "writethrough"
-[root@annu bcache]# cat /sys/block/bcache2/bcache/cache_mode
-[writethrough] writeback writearound none
-[root@annu bcache]# cat /sys/block/bcache2/bcache/writeback_running
-1
-
-3. Cache policy should be "fifo" instead of "lru"=20
-[root@annu ~]# cat /sys/block/bcache2/bcache/cache/cache0/cache_replace=
-ment_policy
-[lru] fifo random
-
-
-Issue2: Cache dirty data value should not be negative.
------------------------------------------------------------------------=
---------------------------------
-Steps:
-
-1.Create cache by specifying mode writeback and cache replacement polic=
-y as fifo
-2.To make bcache devices known to the kernel
-    [root@annu bcache]# echo /dev/sdc > /sys/fs/bcache/register
-    [root@annu bcache]# echo /dev/sdd > /sys/fs/bcache/register
-3.Create FS on cache  /dev/bcacheN and mount in directory
-4.Create Data set by using fio or dd on mount point.
-5. Change cache node from "writethrough" to "writeback"   =20
-    [root@annu ~]# echo writeback >  /sys/block/bcache2/bcache/cache_mo=
-de
-    [root@annu ~]# cat /sys/block/bcache2/bcache/cache_mode
-    writethrough [writeback] writearound none
-6.Check cache dirty data should not be negative value=20
-   [root@annu ~]# cat /sys/block/bcache2/bcache/dirty_data
-   -9.4M
-
-
---=20
-Thanks & Regards
-
-Nitin Kshirsagar
-Software Engr, QA
-Cell 997.566.3985
-
-STEC india private Limited, Pune | The SSD Company TM
-NASDAQ STEC =95 Web www.stec-inc.com
-
-PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED=0D
-=0D
-This electronic transmission, and any documents attached hereto, may co=
-ntain confidential, proprietary and/or legally privileged information. =
-The information is intended only for use by the recipient named above. =
-If you received this electronic message in error, please notify the sen=
-der and delete the electronic message. Any disclosure, copying, distrib=
-ution, or use of the contents of information received in error is stric=
-tly prohibited, and violators will be pursued legally.
+roy
+--
+Roy Sigurd Karlsbakk
+(+47) 98013356
+roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org
+http://blogg.karlsbakk.net/
+GPG Public key: http://karlsbakk.net/roysigurdkarlsbakk.pubkey.txt
+--
+I all pedagogikk er det essensielt at pensum presenteres intelligibelt.=
+ Det er et element=C3=A6rt imperativ for alle pedagoger =C3=A5 unng=C3=A5=
+ eksessiv anvendelse av idiomer med xenotyp etymologi. I de fleste tilf=
+eller eksisterer adekvate og relevante synonymer p=C3=A5 norsk.
