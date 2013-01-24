@@ -1,88 +1,110 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: your mail
-Date: Thu, 24 Jan 2013 15:12:40 -0800
-Message-ID: <20130124231240.GN26407@google.com>
-References: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A6257C7D0@MYMBX.MY.STEC-INC.AD>
+Subject: Re: Loosing transactions
+Date: Thu, 24 Jan 2013 15:35:59 -0800
+Message-ID: <20130124233559.GO26407@google.com>
+References: <51004490.704@pierre-beck.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <C4B5704C6FEB5244B2A1BCC8CF83B86B0A6257C7D0-AQg6BlXVjylhNUoibfp7lHKnxlUjViKd@public.gmane.org>
+In-Reply-To: <51004490.704-MZZvbRqs/9F0RdzJJlgK+g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Nitin Kshirsagar <nshirsagar-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Amit Kale <akale-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, Sanoj Unnikrishnan <sunnikrishnan-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+To: Pierre Beck <debian-bugs-MZZvbRqs/9F0RdzJJlgK+g@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 08:37:10PM +0800, Nitin Kshirsagar wrote:
-> Hello Kent,
+On Wed, Jan 23, 2013 at 09:14:09PM +0100, Pierre Beck wrote:
+> Hi,
 > 
-> I have setup bcache and run fio data verification test on write back and write through caches.
-> The fio tests are passed, however I have found following issues while using bcache.
+> something is not working as advertised :-)
 > 
-> Issue1: Cache is not created as per user specified options  
-> --------------------------------------------------------------------------------------------------------
-> Steps:
-> 1.Create cache by specifying mode writeback and cache replacement policy as fifo
-> [root@annu bcache]# make-bcache --cache  /dev/sdc --bdev /dev/sdd  --writeback --cache_replacement_policy=fifo 
-> UUID:                   e25f2840-f02b-46af-81e7-28948b2737cc
-> Set UUID:               68da5b89-1e87-457a-80c7-2c822737f969
-> nbuckets:               2048
-> block_size:             1
-> bucket_size:            1024
-> nr_in_set:              1
-> nr_this_dev:            0
-> first_bucket:           1
-> UUID:                   a3ce52e6-631b-4c74-afa2-9f8b0088c7f4
-> Set UUID:               68da5b89-1e87-457a-80c7-2c822737f969
-> nbuckets:               20480
-> block_size:             1
-> bucket_size:            1024
-> nr_in_set:              1
-> nr_this_dev:            0
-> first_bucket:           1
+> I have a test setup for power loss behaviour evaluation. Recently a
+> batch of SSDs was of interest and following them, naturally, bcache.
 > 
-> [root@annu bcache]# echo /dev/sdc > /sys/fs/bcache/register
-> [root@annu bcache]# echo /dev/sdd > /sys/fs/bcache/register
-> 
-> 
-> 2. Cache mode should  be "writeback" instead of "writethrough"
-> [root@annu bcache]# cat /sys/block/bcache2/bcache/cache_mode
-> [writethrough] writeback writearound none
-> [root@annu bcache]# cat /sys/block/bcache2/bcache/writeback_running
-> 1
-> 
-> 3. Cache policy should be "fifo" instead of "lru" 
-> [root@annu ~]# cat /sys/block/bcache2/bcache/cache/cache0/cache_replacement_policy
-> [lru] fifo random
+> The test is simple: format an ext4 fs on the target device, copy
+> over an empty mysql db and server with ACID compliant config
+> (defaults, innodb table), then write inserts with a python script
+> and output the latest insert id. Watch via SSH, then cut power. I
+> was positively surprised that the consumer SSDs obey flushes and
+> don't loose transactions (stored transaction was in fact always one
+> or two ahead of output). Intel 520series, Samsung 840 Pro and
+> Corsair Neutron GTX, all 256 GB, in case you're wondering. The Intel
+> 520 was alot faster btw., I think Sandforce did a really good job
+> performance-wise. Testing an OCZ Vector failed, BIOS hang during
+> detection.
 
-These two are... oddities/documentation bugs with make-bcache. Options
-apply to devices you specify _after_ the option, not before - it was
-implemented this way so you could format cache devices and backing
-devices at the same time - and really, the other options should be
-parsed differently but I haven't spent much time on make-bcache.
+Ok, sounds reasonable
 
-Patches welcome :)
-
-> Issue2: Cache dirty data value should not be negative.
-> -------------------------------------------------------------------------------------------------------
-> Steps:
+> Using an external Ext4 Journal with data=journal yielded SSD-like
+> write performance with writebacks to an ST3000DM001 at the same
+> level thanks to re-ordering, not loosing transactions as well.
 > 
-> 1.Create cache by specifying mode writeback and cache replacement policy as fifo
-> 2.To make bcache devices known to the kernel
->     [root@annu bcache]# echo /dev/sdc > /sys/fs/bcache/register
->     [root@annu bcache]# echo /dev/sdd > /sys/fs/bcache/register
-> 3.Create FS on cache  /dev/bcacheN and mount in directory
-> 4.Create Data set by using fio or dd on mount point.
-> 5. Change cache node from "writethrough" to "writeback"    
->     [root@annu ~]# echo writeback >  /sys/block/bcache2/bcache/cache_mode
->     [root@annu ~]# cat /sys/block/bcache2/bcache/cache_mode
->     writethrough [writeback] writearound none
-> 6.Check cache dirty data should not be negative value 
->    [root@annu ~]# cat /sys/block/bcache2/bcache/dirty_data
->    -9.4M
+> Adding bcache, tests immediately failed, in both writeback and
+> writethrough modes. Watching writethrough mode, the performance of
+> the HDD looked odd, because waiting for cache flushes it should not
+> exceed 1 MiB/s, yet I saw 30 MiB/s. So cache flushes are simply
+> eaten somewhere.
 
-Known bug, but fairly harmless one. That value is only used for the pd
-controller that adjusts the background writeback rate - and in practice
-when there's dirty data in the cache it shouldn't be _too_ far off.
+Hmm.
 
-It's on the todo list, but it'll be a bit before I get to it.
+So when you say the test failed - were there any inconsistencies after
+you rebooted, or was it just that the most recent transactions didn't
+amke it down?
+
+> dmesg says this at boot time:
+> 
+> Jan 23 19:23:37 dr-nick kernel: [    2.948131] sd 2:0:0:0: [sdb]
+> 5860533168 512-byte logical blocks: (3.00 TB/2.72 TiB)
+> Jan 23 19:23:37 dr-nick kernel: [    2.948135] sd 2:0:0:0: [sdb]
+> 4096-byte physical blocks
+> Jan 23 19:23:37 dr-nick kernel: [    2.948185] sd 2:0:0:0: [sdb]
+> Write Protect is off
+> Jan 23 19:23:37 dr-nick kernel: [    2.948189] sd 2:0:0:0: [sdb]
+> Mode Sense: 00 3a 00 00
+> Jan 23 19:23:37 dr-nick kernel: [    2.948212] sd 2:0:0:0: [sdb]
+> Write cache: enabled, read cache: enabled, doesn't support DPO or
+> FUA
+> Jan 23 19:23:37 dr-nick kernel: [    2.948914] sd 3:0:0:0: [sdc]
+> 468862128 512-byte logical blocks: (240 GB/223 GiB)
+> Jan 23 19:23:37 dr-nick kernel: [    2.948986] sd 3:0:0:0: [sdc]
+> Write Protect is off
+> Jan 23 19:23:37 dr-nick kernel: [    2.948990] sd 3:0:0:0: [sdc]
+> Mode Sense: 00 3a 00 00
+> Jan 23 19:23:37 dr-nick kernel: [    2.949013] sd 3:0:0:0: [sdc]
+> Write cache: enabled, read cache: enabled, doesn't support DPO or
+> FUA
+> 
+> and bcache journal recovery looks like this:
+> 
+> Jan 23 19:24:58 dr-nick kernel: [   96.909115] bcache:
+> btree_journal_read() done
+> Jan 23 19:24:58 dr-nick kernel: [   97.112616] bcache: btree_check() done
+> Jan 23 19:24:58 dr-nick kernel: [   97.113322] bcache: journal
+> replay done, 103 keys in 2 entries, seq 6175-6176
+> Jan 23 19:24:58 dr-nick kernel: [   97.118998] bcache: Caching sdb
+> as bcache0 on set f5f0cd6d-0f77-49d3-ab2d-2203ffff1668
+> Jan 23 19:24:58 dr-nick kernel: [   97.119125] bcache: registered
+> cache device sdc
+> 
+> I wonder if there's some cache flushing method missing in bcache
+> that other device mappers use to work around the missing support for
+> FUA (queue draining?).
+> 
+> Any ideas where to start debugging?
+
+We probably want to start by simplifying/narrowing it down a bit - we
+can eliminate the possibility of the disk having anything to do with it
+and just use the SSD by forcing everything to writeback mode:
+
+For that you'll want to disable both sequential bypass (echo 0 >
+/sys/block/bcache/bcacheN/sequential_cutoff) and the congested
+thresholds -
+echo 0 > /sys/fs/bcache/<cache set>/congested_read_threshold_us,
+echo 0 > /sys/fs/bcache/<cache set>/congested_write_threshold_us
+
+After that (assuming you're also in writeback mode) all writes will be
+writeback writes until the device is more than half full of dirty data.
+
+Can you check if transactions are still getting lost in that setup? If
+so (I kind of expect they will be) we may have to do a bit of
+blktracing, but that'll really narrow down the possibilities.
