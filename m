@@ -1,55 +1,55 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Creating a patch against upstream kernel 3.7.4
-Date: Thu, 24 Jan 2013 15:41:47 -0800
-Message-ID: <20130124234147.GP26407@google.com>
-References: <50FF3EA9.1020109@crc.id.au>
+Subject: Re: [dm-devel] Announcement: STEC EnhanceIO SSD caching software for
+ Linux kernel
+Date: Thu, 24 Jan 2013 15:45:24 -0800
+Message-ID: <20130124234524.GQ26407@google.com>
+References: <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D6F3C@MYMBX.MY.STEC-INC.AD>
+ <CAMM=eLdgD8GKeK48SU2rfC49u3H4WRf9-xFxM4ymVPbKkx+mCw@mail.gmail.com>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D70CE@MYMBX.MY.STEC-INC.AD>
+ <20130116104546.GA3869@raspberrypi>
+ <C4B5704C6FEB5244B2A1BCC8CF83B86B07CE4D720A@MYMBX.MY.STEC-INC.AD>
+ <20130117113940.GI10411@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <50FF3EA9.1020109-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
+In-Reply-To: <20130117113940.GI10411-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Amit Kale <akale-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+Cc: "thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, device-mapper development <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org" <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Jan 23, 2013 at 12:36:41PM +1100, Steven Haigh wrote:
-> Hi all,
+On Thu, Jan 17, 2013 at 03:39:40AM -0800, Kent Overstreet wrote:
+> Suppose I could fill out the bcache version...
 > 
-> I'm quite a n00b when it comes to the ins and outs of using git...
-> My last real project using something like this was when CVS was all
-> the rage!
+> On Thu, Jan 17, 2013 at 05:52:00PM +0800, Amit Kale wrote:
+> > 11. Error conditions - Handling power failures, intermittent and permanent device failures.
 > 
-> I'm wanting to try to make an automated method to create a single
-> patch file for all the changes required against the upstream kernel
-> version. This will allow me to easily manage changes until things
-> are merged. It will also allow a one-liner in my Xen Dom0 scripting
-> to let me patch bcache into the kernel (good!).
-> 
-> Does git have a way to do this?
+> Power failures and device failures yes, intermittent failures are not
+> explicitly handled.
 
-Yeah. You don't have to deal with actual patches. Just clone one
-repository, then add the other as a remote
+Coworker pointed out bcache actually does handle some intermittent io errors. I
+just added error handling to the documentation: 
+http://atlas.evilpiepirate.org/git/linux-bcache.git/tree/Documentation/bcache.txt?h=bcache-dev
 
-cd linux-bcache
-git remote add linux-stable git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-git fetch --all
+To cut and paste,
 
-git checkout bcache
-git merge linux-stable/linux-3.7.y
+Bcache tries to transparently handle IO errors to/from the cache device without
+affecting normal operation; if it sees too many errors (the threshold is
+configurable, and defaults to 0) it shuts down the cache device and switches all
+the backing devices to passthrough mode.
 
-Later, to get the latest linux-stable changes you can just rerun that
-git merge command, but when I update the bcache branch since I always
-force update/rewrite history you'll have to reset and start over:
+ - For reads from the cache, if they error we just retry the read from the
+   backing device.
 
-git reset --hard origin/bcache
-git merge linux-stable/linux-3.7.y
+ - For writethrough writes, if the write to the cache errors we just switch to
+   invalidating the data at that lba in the cache (i.e. the same thing we do for
+   a write that bypasses the cache)
+ 
+ - For writeback writes, we currently pass that error back up to the
+   filesystem/userspace. This could be improved - we could retry it as a write
+   that skips the cache so we don't have to error the write.
 
-> I just tried to check out the bcache tree, but I just got:
-> $ git clone http://evilpiepirate.org/git/linux-bcache.git
-> Initialized empty Git repository in /home/netwiz/linux-bcache/.git/
-> error: RPC failed; result=22, HTTP code = 405
-
-Old version of git that doesn't support http redirects - you'll need to
-upgrade git, or use
-git clone http://atlas.evilpiepirate.org/git/linux-bcache.git
+ - When we detach, we first try to flush any dirty data (if we were running in
+   writeback mode). It currently doesn't do anything intelligent if it fails to
+   read some of the dirty data, though.
