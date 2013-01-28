@@ -1,32 +1,22 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+From: eyck <eyck-rqLlN7Z922bsq35pWSNszA@public.gmane.org>
 Subject: Re: bcache git : error: RPC failed; result=22, HTTP code = 405
-Date: Mon, 28 Jan 2013 01:17:08 -0800
-Message-ID: <CAC7rs0sNxV3eCDZrhaoGisEEVLrpF2cjSUpSJycYTrqHqNgsKw@mail.gmail.com>
+Date: Mon, 28 Jan 2013 10:20:42 +0100
+Message-ID: <20130128092042.GD2362@kuszelas.eu>
 References: <20130128091348.GC2362@kuszelas.eu>
+ <CAC7rs0sNxV3eCDZrhaoGisEEVLrpF2cjSUpSJycYTrqHqNgsKw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-2
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130128091348.GC2362-rqLlN7Z922bsq35pWSNszA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <CAC7rs0sNxV3eCDZrhaoGisEEVLrpF2cjSUpSJycYTrqHqNgsKw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: eyck <eyck-rqLlN7Z922bsq35pWSNszA@public.gmane.org>
+To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Upgrade your git, or use atlas.evilpiepirate.org
+> Upgrade your git, or use atlas.evilpiepirate.org
+ Thanks, this works:
 
-On Mon, Jan 28, 2013 at 1:13 AM, eyck <eyck-rqLlN7Z922bsq35pWSNszA@public.gmane.org> wrote:
-> Hi,
->  has bcache been taken offline:
->
-> git clone http://evilpiepirate.org/git/linux-bcache.git
-> Cloning into linux-bcache...
-> error: RPC failed; result=22, HTTP code = 405
-> fatal: The remote end hung up unexpectedly
->
->
-> it's been like this for more then a week,
->
-> regards, Eyck
-> --
-> Key fingerprint = 40D0 9FFB 9939 7320 8294  05E0 BCC7 02C4 75CC 50D9
->  Total Existance Failure
+ git clone http://atlas.evilpiepirate.org/git/linux-bcache.git
+Cloning into linux-bcache...
+remote: Counting objects: 1537200   
