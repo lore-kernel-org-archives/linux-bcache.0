@@ -1,22 +1,39 @@
-From: eyck <eyck-rqLlN7Z922bsq35pWSNszA@public.gmane.org>
-Subject: Re: bcache git : error: RPC failed; result=22, HTTP code = 405
-Date: Mon, 28 Jan 2013 10:20:42 +0100
-Message-ID: <20130128092042.GD2362@kuszelas.eu>
-References: <20130128091348.GC2362@kuszelas.eu>
- <CAC7rs0sNxV3eCDZrhaoGisEEVLrpF2cjSUpSJycYTrqHqNgsKw@mail.gmail.com>
+From: Pierre Beck <debian-bugs-MZZvbRqs/9F0RdzJJlgK+g@public.gmane.org>
+Subject: Re: Loosing transactions
+Date: Mon, 28 Jan 2013 15:45:23 +0100
+Message-ID: <51068F01.9060000@pierre-beck.de>
+References: <51004490.704@pierre-beck.de> <20130124233559.GO26407@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <CAC7rs0sNxV3eCDZrhaoGisEEVLrpF2cjSUpSJycYTrqHqNgsKw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <20130124233559.GO26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-> Upgrade your git, or use atlas.evilpiepirate.org
- Thanks, this works:
 
- git clone http://atlas.evilpiepirate.org/git/linux-bcache.git
-Cloning into linux-bcache...
-remote: Counting objects: 1537200   
+> We probably want to start by simplifying/narrowing it down a bit - we
+> can eliminate the possibility of the disk having anything to do with it
+> and just use the SSD by forcing everything to writeback mode:
+>
+> For that you'll want to disable both sequential bypass (echo 0 >
+> /sys/block/bcache/bcacheN/sequential_cutoff) and the congested
+> thresholds -
+> echo 0 > /sys/fs/bcache/<cache set>/congested_read_threshold_us,
+> echo 0 > /sys/fs/bcache/<cache set>/congested_write_threshold_us
+>
+> After that (assuming you're also in writeback mode) all writes will be
+> writeback writes until the device is more than half full of dirty data.
+>
+> Can you check if transactions are still getting lost in that setup? If
+> so (I kind of expect they will be) we may have to do a bit of
+> blktracing, but that'll really narrow down the possibilities.
+>
+
+Yes, the most recent transactions are still lost.
+
+Greetings,
+
+Pierre Beck
