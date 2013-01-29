@@ -1,50 +1,41 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Loosing transactions
-Date: Tue, 29 Jan 2013 11:09:42 -0800
-Message-ID: <20130129190942.GM26407@google.com>
-References: <51004490.704@pierre-beck.de>
- <20130124233559.GO26407@google.com>
- <51068F01.9060000@pierre-beck.de>
- <20130129190133.GL26407@google.com>
+Subject: Re: Bcache (device?) failure
+Date: Tue, 29 Jan 2013 11:11:26 -0800
+Message-ID: <20130129191126.GN26407@google.com>
+References: <1359131422.8441.0.camel@professorx.vistashare.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20130129190133.GL26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+In-Reply-To: <1359131422.8441.0.camel-BhfXqN+OCyH0JUkrLwYuUYegIDNd2VA9XqFh9Ls21Oc@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Pierre Beck <debian-bugs-MZZvbRqs/9F0RdzJJlgK+g@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "David H. Rhodes Clymer" <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jan 29, 2013 at 11:01:33AM -0800, Kent Overstreet wrote:
-> On Mon, Jan 28, 2013 at 03:45:23PM +0100, Pierre Beck wrote:
-> > 
-> > >We probably want to start by simplifying/narrowing it down a bit - we
-> > >can eliminate the possibility of the disk having anything to do with it
-> > >and just use the SSD by forcing everything to writeback mode:
-> > >
-> > >For that you'll want to disable both sequential bypass (echo 0 >
-> > >/sys/block/bcache/bcacheN/sequential_cutoff) and the congested
-> > >thresholds -
-> > >echo 0 > /sys/fs/bcache/<cache set>/congested_read_threshold_us,
-> > >echo 0 > /sys/fs/bcache/<cache set>/congested_write_threshold_us
-> > >
-> > >After that (assuming you're also in writeback mode) all writes will be
-> > >writeback writes until the device is more than half full of dirty data.
-> > >
-> > >Can you check if transactions are still getting lost in that setup? If
-> > >so (I kind of expect they will be) we may have to do a bit of
-> > >blktracing, but that'll really narrow down the possibilities.
-> > >
-> > 
-> > Yes, the most recent transactions are still lost.
+On Fri, Jan 25, 2013 at 11:30:22AM -0500, David H. Rhodes Clymer wrote:
+> Speaking of bcache integrity...This morning, bcache started indicating
+> that it was encountering errors writing to the drive. 
 > 
-> Think I figured out what's going on. Just had a chat with another kernel
-> dev and figured out the flaw in my logic :P
+> For some stupid reason, I rebooted, and on boot, it cannot find the
+> volume group (I was running LVM on bcache) that my root fs is on,
+> finally dropping to the initramfs shell.
+> 
+> I then find that attempting to register my bcache component devices
+> fails:
+> 
+> (initramfs) echo /dev/sdb1 > /sys/fs/bcache/register
+> sh: write error: invalid argument
+> (initramfs) ls /sys/fs/bcache/
+> register         register_quiet
+> 
+> This happens for both the cache device and the backing store. I realize
+> that collecting information prior to a reboot would have been much more
+> useful...sorry. 
+> 
+> Is there any simple reason why I would be seeing this behavior? I assume
+> that either both devices are corrupt, and no longer seen as bcache
+> formatted devices. Does that seem likely?
 
-I lied, that idea turned out to be wrong.
-
-Though - data=journal isn't that commonly used, an ext4 bug is an
-outside possibility (if it was assuming the pre 2.6.38 semantics of
-barriers that could cause this). Could you test with data=ordered and
-tell me what happens?
+Yeah... you'd have to check the dmesg log to be sure, but the most
+likely cause for that is bcache isn't finding a bcache superblock :/
