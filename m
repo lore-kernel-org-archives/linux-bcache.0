@@ -1,41 +1,40 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Bcache (device?) failure
-Date: Tue, 29 Jan 2013 11:11:26 -0800
-Message-ID: <20130129191126.GN26407@google.com>
-References: <1359131422.8441.0.camel@professorx.vistashare.net>
+From: Pierre Beck <debian-bugs-MZZvbRqs/9F0RdzJJlgK+g@public.gmane.org>
+Subject: Re: Loosing transactions
+Date: Tue, 29 Jan 2013 21:16:02 +0100
+Message-ID: <51082E02.7000908@pierre-beck.de>
+References: <51004490.704@pierre-beck.de> <20130124233559.GO26407@google.com> <51068F01.9060000@pierre-beck.de> <20130129190133.GL26407@google.com> <20130129190942.GM26407@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <1359131422.8441.0.camel-BhfXqN+OCyH0JUkrLwYuUYegIDNd2VA9XqFh9Ls21Oc@public.gmane.org>
+In-Reply-To: <20130129190942.GM26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "David H. Rhodes Clymer" <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Jan 25, 2013 at 11:30:22AM -0500, David H. Rhodes Clymer wrote:
-> Speaking of bcache integrity...This morning, bcache started indicating
-> that it was encountering errors writing to the drive. 
-> 
-> For some stupid reason, I rebooted, and on boot, it cannot find the
-> volume group (I was running LVM on bcache) that my root fs is on,
-> finally dropping to the initramfs shell.
-> 
-> I then find that attempting to register my bcache component devices
-> fails:
-> 
-> (initramfs) echo /dev/sdb1 > /sys/fs/bcache/register
-> sh: write error: invalid argument
-> (initramfs) ls /sys/fs/bcache/
-> register         register_quiet
-> 
-> This happens for both the cache device and the backing store. I realize
-> that collecting information prior to a reboot would have been much more
-> useful...sorry. 
-> 
-> Is there any simple reason why I would be seeing this behavior? I assume
-> that either both devices are corrupt, and no longer seen as bcache
-> formatted devices. Does that seem likely?
+Am 29.01.2013 20:09, schrieb Kent Overstreet:
+> I lied, that idea turned out to be wrong.
+>
+> Though - data=journal isn't that commonly used, an ext4 bug is an
+> outside possibility (if it was assuming the pre 2.6.38 semantics of
+> barriers that could cause this). Could you test with data=ordered and
+> tell me what happens?
+>
 
-Yeah... you'd have to check the dmesg log to be sure, but the most
-likely cause for that is bcache isn't finding a bcache superblock :/
+Sorry I didn't state that clearly. The ext4 data=journal test was for 
+comparison only. All bcache tests were done with defaults, which is 
+data=ordered.
+
+# mkfs.ext4 -K -b 4096
+# mount -o noatime
+
+Disabling all hardware caches with hdparm AND putting bcache in 
+writethrough mode made it pass the test, btw., with severe performance 
+loss of course. What's really alarming is that bcache in writeback with 
+hw caches deactivated still loses transactions. This points to the 
+journal logic. Maybe the last element of the journal is simply not iterated?
+
+Greetings,
+
+Pierre Beck
