@@ -1,15 +1,26 @@
 From: Giovanni Lenzi <giovanni.lenzi-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Fwd: is the fail-over of two bcached volumes in raid 1 really possible?
-Date: Tue, 5 Feb 2013 09:57:21 +0100
-Message-ID: <CAAxY4JkKVvk0i-6W2-QC=qsfB8iKtvp6PLs-PMkdRcRW5LEuTA@mail.gmail.com>
+Date: Tue, 5 Feb 2013 17:24:47 +0100
+Message-ID: <CAAxY4JmnH4sam7JfAt0UTgjEBN-aYnwutPhpaTVX_FbC_2Anpw@mail.gmail.com>
 References: <CAAxY4JkfGwg-+BGu6nYoSWBW64VS6ZyLaHNrzW493Davwx_Bvg@mail.gmail.com>
+	<CAAxY4JkKVvk0i-6W2-QC=qsfB8iKtvp6PLs-PMkdRcRW5LEuTA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAAxY4JkfGwg-+BGu6nYoSWBW64VS6ZyLaHNrzW493Davwx_Bvg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAAxY4JkKVvk0i-6W2-QC=qsfB8iKtvp6PLs-PMkdRcRW5LEuTA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
+
+I'm going to put bcache in write-back mode ..
+
+
+---------- Forwarded message ----------
+From: Giovanni Lenzi <giovanni.lenzi-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Date: 5 February 2013 09:57
+Subject: Fwd: is the fail-over of two bcached volumes in raid 1 really possible?
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+
 
 Hi all,
 I'm planning to use bcache in a production environment.
