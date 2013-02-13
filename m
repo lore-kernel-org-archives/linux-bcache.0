@@ -1,52 +1,38 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: bcache vs enhanceio?
-Date: Tue, 12 Feb 2013 13:56:29 -0800
-Message-ID: <20130212215629.GJ27179@google.com>
-References: <5114334D.7040709@networklabs.co.nz>
- <23363144.24.1360701679980.JavaMail.root@zimbra>
+From: "Aaron W.  Hsu" <arcfide-5nC73gNclPNzbRFIqnYvSA@public.gmane.org>
+Subject: Error building after merging upstream 3.7.7
+Date: Wed, 13 Feb 2013 13:30:59 -0500
+Message-ID: <kfgm5b$c8k$1@ger.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <23363144.24.1360701679980.JavaMail.root@zimbra>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Roy Sigurd Karlsbakk <roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org>
-Cc: Andrew Thrift <andrew-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Feb 12, 2013 at 09:41:20PM +0100, Roy Sigurd Karlsbakk wrote:
-> Wouldn't it be better to allow the sysadmin to determine the safety?
+I have managed to use bcache rather successfully for a while now, and I=
+=20
+wanted to try getting the latest changes to the bcache branch into my=20
+kernel. At the same time, I wanted to merge in the latest linux stable=20
+changes.
 
-The sysadmin can override, but - say you're using bcache for your root
-filesystem and after a reboot the SSD doesn't come up, for whatever
-reason.
+I did a merge of linux-stable/linux-3.7.y into the HEAD of the bcache=20
+branch, which seems to have worked without issue, however, after I=20
+configured the kernel, attempting to build the kernel errors out with t=
+he=20
+following message:
 
-How's the sysadmin supposed to know for sure whether there was dirty
-data in the cache? There's no way to reliably track that without bcache
-tracking it itself in the backing device's superblock.
+  LD      init/built-in.o
+kernel/built-in.o:(.data+0x8bc8): undefined reference to `bcache_subsys=
+'
 
-Say there wasn't any dirty data in the cache, so you can safely run
-without the cache device - so you do, so you can boot up and use your
-machine.
+Is there something I have totally missed here?
 
-Then later you figure out what's wrong with the SSD (cable got
-unplugged?), so you reenable caching.
-
-But the cache is now inconsistent - you _cannot_ use that cached data.
-With the backing device superblock, bcache can trivially note that the
-cache is out of sync and make sure that that cached data isn't used.
-
-If we didn't have that, the sysadmin would have to make _sure_ to use
-the right flag when reattaching to specify cached data shouldn't be
-used, otherwise he just corrupted all his data.
-
-
-> Also, if running in writethrough, why shouldn't an SSD be allowed to be added in realtime?
-
-If you're running in writethrough, you'd already be caching... not sure
-what you mean?
-
-> All of this works well with systems like ZFS. I really don't see a reason for a filesystem being created to allow caching
-
-ZFS is a filesystem that also does caching, bcache isn't a filesystem.
-Did you get something backwards...?
+--=20
+Aaron W. Hsu | arcfide-5nC73gNclPNzbRFIqnYvSA@public.gmane.org | http://www.sacrideo.us
+=D7=9C=D6=B5=D6=A4=D7=91 =D7=97=D6=B2=D7=9B=D6=B8=D7=9E=D6=B4=D7=99=D7=9D=
+=D6=99 =D7=91=D6=BC=D6=B0=D7=91=D6=B5=D6=A3=D7=99=D7=AA =D7=90=D6=B5=D6=
+=94=D7=91=D6=B6=D7=9C =D7=95=D6=B0=D7=9C=D6=B5=D6=A5=D7=91 =D7=9B=D6=BC=
+=D6=B0=D7=A1=D6=B4=D7=99=D7=9C=D6=B4=D6=96=D7=99=D7=9D =D7=91=D6=BC=D6=B0=
+=D7=91=D6=B5=D6=A5=D7=99=D7=AA =D7=A9=D7=82=D6=B4=D7=9E=D6=B0=D7=97=D6=B8=
+=D6=BD=D7=94=D7=83
