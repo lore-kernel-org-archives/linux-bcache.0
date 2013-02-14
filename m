@@ -1,7 +1,7 @@
 From: "Aaron W.  Hsu" <arcfide-5nC73gNclPNzbRFIqnYvSA@public.gmane.org>
-Subject: Error building after merging upstream 3.7.7
-Date: Wed, 13 Feb 2013 13:30:59 -0500
-Message-ID: <kfgm5b$c8k$1@ger.gmane.org>
+Subject: Powerdown failure (unmounting / busy problem)
+Date: Thu, 14 Feb 2013 17:41:41 -0500
+Message-ID: <kfjp7e$lo9$1@ger.gmane.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
@@ -10,23 +10,16 @@ Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-I have managed to use bcache rather successfully for a while now, and I=
-=20
-wanted to try getting the latest changes to the bcache branch into my=20
-kernel. At the same time, I wanted to merge in the latest linux stable=20
-changes.
+I am getting a strange error when I recently upgraded my bcache to the=20
+latest HEAD.
 
-I did a merge of linux-stable/linux-3.7.y into the HEAD of the bcache=20
-branch, which seems to have worked without issue, however, after I=20
-configured the kernel, attempting to build the kernel errors out with t=
-he=20
-following message:
-
-  LD      init/built-in.o
-kernel/built-in.o:(.data+0x8bc8): undefined reference to `bcache_subsys=
-'
-
-Is there something I have totally missed here?
+Specifically, when shutting down, I am now getting an error when trying=
+ to=20
+unmount / (bcache is on the root device) saying that it is busy. This w=
+as=20
+not happening before. Is there something that would have caused this? H=
+ow=20
+might I fix it?
 
 --=20
 Aaron W. Hsu | arcfide-5nC73gNclPNzbRFIqnYvSA@public.gmane.org | http://www.sacrideo.us
