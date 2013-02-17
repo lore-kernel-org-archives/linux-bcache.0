@@ -1,46 +1,143 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Powerdown failure (unmounting / busy problem)
-Date: Thu, 14 Feb 2013 15:13:14 -0800
-Message-ID: <CAH+dOxLGFYDPs1avtxywSYJ1TmmAMY3jpiD+L5MW4CLsFAQ28A@mail.gmail.com>
-References: <kfjp7e$lo9$1@ger.gmane.org>
+From: Steven Haigh <netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org>
+Subject: Re: Error building after merging upstream 3.7.7
+Date: Sun, 17 Feb 2013 23:16:34 +1100
+Message-ID: <5120CA22.5010708@crc.id.au>
+References: <kfgm5b$c8k$1@ger.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms050406030201040502000609"
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <kfjp7e$lo9$1@ger.gmane.org>
+In-Reply-To: <kfgm5b$c8k$1@ger.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "Aaron W. Hsu" <arcfide-5nC73gNclPNzbRFIqnYvSA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-That doesn't sound like a bcache issue...
+This is a cryptographically signed message in MIME format.
 
-On Thu, Feb 14, 2013 at 2:41 PM, Aaron W.  Hsu <arcfide-5nC73gNclPNzbRFIqnYvSA@public.gmane.org> wr=
-ote:
-> I am getting a strange error when I recently upgraded my bcache to th=
-e
-> latest HEAD.
+--------------ms050406030201040502000609
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
+
+I would *really* love to see a single .patch that can be applied to=20
+3.7.x kernels. This would allow me to start producing some kernel RPMs=20
+for using bcache on EL6 systems.
+
+I've tried producing something that works, but haven't had much success=20
+in patching bcache into the vanilla kernel. Having a single patch that=20
+can be easily refactored as newer 3.7.x releases are done would be heaven=
+=2E
+
+--
+Steven Haigh
+
+Email: netwiz-tY1ak9Q0PTWHXe+LvDLADg@public.gmane.org
+Web: https://www.crc.id.au
+Phone: (03) 9001 6090 - 0412 935 897
+Fax: (03) 8338 0299
+
+On 14/02/2013 5:30 AM, Aaron W. Hsu wrote:
+> I have managed to use bcache rather successfully for a while now, and I=
+
+> wanted to try getting the latest changes to the bcache branch into my
+> kernel. At the same time, I wanted to merge in the latest linux stable
+> changes.
 >
-> Specifically, when shutting down, I am now getting an error when tryi=
-ng to
-> unmount / (bcache is on the root device) saying that it is busy. This=
- was
-> not happening before. Is there something that would have caused this?=
- How
-> might I fix it?
+> I did a merge of linux-stable/linux-3.7.y into the HEAD of the bcache
+> branch, which seems to have worked without issue, however, after I
+> configured the kernel, attempting to build the kernel errors out with t=
+he
+> following message:
 >
-> --
-> Aaron W. Hsu | arcfide-5nC73gNclPNzbRFIqnYvSA@public.gmane.org | http://www.sacrideo.us
-> =D7=9C=D6=B5=D6=A4=D7=91 =D7=97=D6=B2=D7=9B=D6=B8=D7=9E=D6=B4=D7=99=D7=
-=9D=D6=99 =D7=91=D6=BC=D6=B0=D7=91=D6=B5=D6=A3=D7=99=D7=AA =D7=90=D6=B5=
-=D6=94=D7=91=D6=B6=D7=9C =D7=95=D6=B0=D7=9C=D6=B5=D6=A5=D7=91 =D7=9B=D6=
-=BC=D6=B0=D7=A1=D6=B4=D7=99=D7=9C=D6=B4=D6=96=D7=99=D7=9D =D7=91=D6=BC=D6=
-=B0=D7=91=D6=B5=D6=A5=D7=99=D7=AA =D7=A9=D7=82=D6=B4=D7=9E=D6=B0=D7=97=D6=
-=B8=D6=BD=D7=94=D7=83
+>    LD      init/built-in.o
+> kernel/built-in.o:(.data+0x8bc8): undefined reference to `bcache_subsys=
+'
 >
+> Is there something I have totally missed here?
 >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
-e" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+--------------ms050406030201040502000609
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMdTCC
+BjQwggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDE1NVoXDTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOr
+lr6KMoOMpohBllVHrdRvEg/q6r8jR+EK75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSM
+zR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6
+qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxDz2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSD
+kOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr/+N2JLKutIxMYqQOJebr/f/h5t95
+m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFcfH6WNU7y1LhRgjAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqD
+CH14qywGXLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy
+6QMVQjbbMXltUfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPI
+zKKR9tQW8gGK+2+RHxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKf
+KSETEPrHh7p5shuuNktvsv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HOR
+z9v3vQwR4e3ksLc2JZOAFK+ssS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9
+sIPP7ON0fz095HdThKjiVJe6vofq+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCie
+uoBJ9OlqmsVWQvifIYf40dJPZkk9YgGTzWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7t
+w1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGqUp/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQ
+G2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb19mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t
+5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGOTCCBSGgAwIBAgIDBdMXMA0GCSqGSIb3DQEB
+BQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMi
+U2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20g
+Q2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcNMTMwMTI5MTIyMTM0
+WhcNMTQwMTMwMjIzNjE4WjBXMRkwFwYDVQQNExA0MzM5TjFVWjZFS2ZBa0Y2MRkwFwYDVQQD
+DBBuZXR3aXpAY3JjLmlkLmF1MR8wHQYJKoZIhvcNAQkBFhBuZXR3aXpAY3JjLmlkLmF1MIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqz7eWA7Oi1ES6IIWwtRNtOa6cSj6GSio
+72D26TkCPm/vYamqS/9pluIyMO2TbGjMyveGxWZB9bDt+MnuI6yJ3spD6br5TUXQSqsgp1/g
+NXicgNmUHESd/A7+POEdYKMyTtXjVEqmR8R6uPtD78MBhIKQVZdBYGFuRBhrjoFMOnWARmXD
+47FG6eLH8jyeBi+RGEYEpBgTe1gFcoU1dCrjBqxAj47ALNgcHP4ffNX47DLvyhW2pMMaOYUh
+ga/UyQuPOpZcMAJdVI7dTIkbdipboEEE5pTdoIRI+F+XDLzO8bNkGLa1xLTWrbP048xxw3SL
+Aw/DmLYqQ+oC8vabAAqBIwIDAQABo4IC1jCCAtIwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAw
+HQYDVR0lBBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBR/FxImYCufSdz0pG5w
+A8VPzNyaujAfBgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAbBgNVHREEFDASgRBu
+ZXR3aXpAY3JjLmlkLmF1MIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASow
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsG
+AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
+aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZh
+bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
+bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
+IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9j
+cmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYB
+BQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVudC9jYTBC
+BggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMS5j
+bGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAwsdSJioQIH5mEXlMBkQBZN9qrqCvDn4e92NKIX2LMPhVH01o0weH
+MEgkFMOBypbcPrwnZD51IL+ZfPmuDrcFJR9SPk4W95p3wLakMUBmvDPJ3IC+pa97+fU/GYsh
+q4dth+VlAIWJarpPV5ee6hAXGQEZvC2jyy5ukcjlr/oQxegb4hufgkLhKjqaq5UDs2be5q1N
+CBewezVmAbb/VDNVogP1xacnHn4rhllskMfGAda2DPCCaSMaJ3LcC5JRyfMkpKe5UxpVmVeM
+vGP8hYGI9DlFjwpqRCmIvD/Wl6oWWJc0HaLl6k+U3dngqEHhunzh3H6b/3lWOmEKQuI3Piy+
+oDGCA90wggPZAgEBMIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRk
+LjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UE
+AxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwXT
+FzAJBgUrDgMCGgUAoIICHTAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJ
+BTEPFw0xMzAyMTcxMjE2MzRaMCMGCSqGSIb3DQEJBDEWBBSzzCGVyFVqvW99u6uy5GFNIlUV
+bDBsBgkqhkiG9w0BCQ8xXzBdMAsGCWCGSAFlAwQBKjALBglghkgBZQMEAQIwCgYIKoZIhvcN
+AwcwDgYIKoZIhvcNAwICAgCAMA0GCCqGSIb3DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMC
+AgEoMIGlBgkrBgEEAYI3EAQxgZcwgZQwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFy
+dENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5n
+MTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVu
+dCBDQQIDBdMXMIGnBgsqhkiG9w0BCRACCzGBl6CBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
+BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRl
+IFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlh
+dGUgQ2xpZW50IENBAgMF0xcwDQYJKoZIhvcNAQEBBQAEggEAnbxS5c+AnZH79LK+4Q2LXRRA
+le2BMMwAPAo2yw5+mxI+nqrjYI3XxnMhO1qUJDVorKqI9RvN2z62NHtfFjkoMJ52k9Q2KtnM
+HLS+0UL7koBCrWnV3A/wSlNg7laJrByZEm2oreENar/g3H5l3d4MsC2YRhy8rtBek2Yh8Ruj
+xM/nsASm6vG1w9Nb28O8v9oWOpxK65VyAUDEgbLgEa8id+cpJiU/6uoPYtjDw3oeCX2R5JQZ
+XHH2M/SNq2cSMqe3FWeSNGtW9XCGAiFKNqXotNvsbnikbaLbaizuWLh4oeHaGCDktFJ2arv2
+5TElubPCLtRS9bdefhS+/bsqjaB3nAAAAAAAAA==
+--------------ms050406030201040502000609--
