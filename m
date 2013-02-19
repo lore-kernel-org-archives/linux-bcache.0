@@ -1,46 +1,69 @@
-From: Roy Sigurd Karlsbakk <roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org>
+From: Joseph Glanville <joseph.glanville-2MxvZkOi9dvvnOemgxGiVw@public.gmane.org>
 Subject: Re: bcache vs enhanceio?
-Date: Tue, 19 Feb 2013 13:23:20 +0100 (CET)
-Message-ID: <1514139.9.1361276600610.JavaMail.root@zimbra>
-References: <20130213041453.9D6F6F5149@zimbra.karlsbakk.net>
+Date: Tue, 19 Feb 2013 23:48:40 +1100
+Message-ID: <CAOzFzEiLeW=nvuwcrVrs2xO__92ze7b6BDt8MkAkaNctuSR9Vg@mail.gmail.com>
+References: <5114334D.7040709@networklabs.co.nz>
+	<23363144.24.1360701679980.JavaMail.root@zimbra>
+	<20130212215629.GJ27179@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130213041453.9D6F6F5149-QnAKKd0jTYMSbMbpMVjRk+TW4wlIGRCZ@public.gmane.org>
+In-Reply-To: <20130212215629.GJ27179-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: jason-/cow75dQlsI@public.gmane.org
-Cc: Andrew Thrift <andrew-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: Roy Sigurd Karlsbakk <roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org>, Andrew Thrift <andrew-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
------ Opprinnelig melding -----
-> ZFS is not just a filesystem. It is a complete block device storage
-> management stack that has a filesystem component.
+On 13 February 2013 08:56, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
+> On Tue, Feb 12, 2013 at 09:41:20PM +0100, Roy Sigurd Karlsbakk wrote:
+>> Wouldn't it be better to allow the sysadmin to determine the safety?
+>
+> The sysadmin can override, but - say you're using bcache for your root
+> filesystem and after a reboot the SSD doesn't come up, for whatever
+> reason.
+>
+> How's the sysadmin supposed to know for sure whether there was dirty
+> data in the cache? There's no way to reliably track that without bcache
+> tracking it itself in the backing device's superblock.
+>
+> Say there wasn't any dirty data in the cache, so you can safely run
+> without the cache device - so you do, so you can boot up and use your
+> machine.
+>
+> Then later you figure out what's wrong with the SSD (cable got
+> unplugged?), so you reenable caching.
+>
+> But the cache is now inconsistent - you _cannot_ use that cached data.
+> With the backing device superblock, bcache can trivially note that the
+> cache is out of sync and make sure that that cached data isn't used.
+>
+> If we didn't have that, the sysadmin would have to make _sure_ to use
+> the right flag when reattaching to specify cached data shouldn't be
+> used, otherwise he just corrupted all his data.
 
-I know ZFS quite well, so I'm aware of the comparison is somewhat unfai=
-r.=20
+Looking through the enhanceio repo it seems possible to do it without
+a superblock by utilizing customized udev rules.
+Said rules prevent the backing device from being using to mount the
+root filesystem before the cache is attached.
 
-> The Linux tool chain can be more complicated but it is vastly more
-> flexible. With the addition of a caching target all of the pieces are
-> there to be able to build a tiering storage system in any way your us=
-e
-> case needs it to be.
+>
+>
+>> Also, if running in writethrough, why shouldn't an SSD be allowed to be added in realtime?
+>
+> If you're running in writethrough, you'd already be caching... not sure
+> what you mean?
+>
+>> All of this works well with systems like ZFS. I really don't see a reason for a filesystem being created to allow caching
+>
+> ZFS is a filesystem that also does caching, bcache isn't a filesystem.
+> Did you get something backwards...?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Still, flashcache/enhanceio seems to be able to handle this in a very f=
-lexible way. I really don't want to recreate my home RAID (7,2TiB) just=
- to add cache to it=E2=80=A6
 
-Vennlige hilsener / Best regards
 
-roy
---
-Roy Sigurd Karlsbakk
-(+47) 98013356
-roy-ooPBL11mRiZbRRN4PJnoQQ@public.gmane.org
-http://blogg.karlsbakk.net/
-GPG Public key: http://karlsbakk.net/roysigurdkarlsbakk.pubkey.txt
---
-I all pedagogikk er det essensielt at pensum presenteres intelligibelt.=
- Det er et element=C3=A6rt imperativ for alle pedagoger =C3=A5 unng=C3=A5=
- eksessiv anvendelse av idiomer med xenotyp etymologi. I de fleste tilf=
-eller eksisterer adekvate og relevante synonymer p=C3=A5 norsk.
+-- 
+CTO | Orion Virtualisation Solutions | www.orionvm.com.au
+Phone: 1300 56 99 52 | Mobile: 0428 754 846
