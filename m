@@ -1,33 +1,29 @@
-From: Paul Klapperich <paul.klapperich+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: Error building after merging upstream 3.7.7
-Date: Wed, 6 Mar 2013 16:00:16 +0000 (UTC)
-Message-ID: <loom.20130306T165443-49@post.gmane.org>
-References: <kfgm5b$c8k$1@ger.gmane.org> <5120CA22.5010708@crc.id.au>
+From: Alex Elsayed <eternaleye-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Bcache data layout - suited as swap filesystem on SSDs?
+Date: Fri, 08 Mar 2013 22:52:02 -0800
+Message-ID: <khem6g$avh$1@ger.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7Bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Steven Haigh <netwiz@...> writes:
+I came across a paper [1] today talking about improving the Linux swap 
+system for use on SSDs, and I realized that some points made in the paper 
+could be addressed by using bcache 'in reverse', where instead of caching a 
+slower block device it stores pages on behalf of faster memory.
 
-> 
-> I would *really* love to see a single .patch that can be applied to 
-> 3.7.x kernels. This would allow me to start producing some kernel RPMs 
-> for using bcache on EL6 systems.
-> 
-> I've tried producing something that works, but haven't had much success 
-> in patching bcache into the vanilla kernel. Having a single patch that 
-> can be easily refactored as newer 3.7.x releases are done would be heaven.
-> 
-> --
-> Steven Haigh
+Bcache already optimizes for SSDs by writing linearly where possible, using 
+'buckets' sized to work well with eraseblocks, and taking advantage of high 
+random read performance.
 
-I'm using bcache on the 3.7.9 kernel. I documented how I made the patch on the
-Arch Wiki:
-https://wiki.archlinux.org/index.php/Bcache#Create_the_patch_file
+The paper advocates doing much the same with swap on SSDs, although it also 
+talks about removing layers of software between the VM and the SSD.
 
---
-Paul
+Since bcache is an efficient way of storing sparse, fixed-size chunks of 
+data identified by addresses, it might be a really interesting data layout 
+for efficient swap on SSDs.
+
+[1] http://pages.cs.wisc.edu/~msaxena/FlashVMpaper.html
