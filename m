@@ -1,159 +1,138 @@
-From: "David H. Rhodes Clymer" <david-LEGOU7lN1jbY0TyS/+Ba5Q@public.gmane.org>
-Subject: bsetup
-Date: Tue, 12 Mar 2013 00:31:54 -0400
-Message-ID: <20130312043154.GB30795@mandarb.home.zettazebra.com>
+From: CoRpO <corpo-Zp/rcV4kTj0@public.gmane.org>
+Subject: Strange behavior
+Date: Thu, 14 Mar 2013 13:17:54 +0100
+Message-ID: <d7d9ba24c29c31d9d462490a7e978814@gruk.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-I've written the following bit if ugliness to ease the tedium of
-doing setup/teardown of bcache devices. This is particularly handy
-when testing things. Anyway, here it is, in the odd chance that it
-might make things easier for anyone else.
+Hi,
 
--davidc
+I'm currently running the latest bcache (non-dev) on an ubuntu 12.04, 
+and it seems to me that bcache doesn't cache anything
 
-#!/bin/sh
+The setup is as follow:
 
-action=$1
+- One drive for the system
+- a 480 GB SSD caching device (/dev/sdb)
+- a 10 drives Raid 5 (on a HP P410 controller) backing device 
+(/dev/sdc)
+- 36 GB ram
 
-CREATE_LOG=bcache_create.log
-DESTROY_LOG=bcache_destroy.log
+/dev/bcache0 mounted as /home
 
+The server is a file server, with lots of file but few of them served 
+frequently. So that's why I've put bcache on it, to have frequently 
+asked files on the caching device (which are bigger than the server's 
+ram)
 
-case $action in
-  create)
-    [ -z "$2" ] && { echo "Error: Missing backing device."; exit 1; }
-    [ -b "$2" ] || { echo "Error: Invalid backing device."; exit 1; }
-    BACKING_DEV=$(readlink -e $2)
-    CACHE_DEV=$(readlink -e $3)
-    MNTPOINT=$4
+I've filled the server with 16 TB of datas, and I see little to no 
+usage of /dev/sdb
 
-    backing_part=$(basename $BACKING_DEV)
-    backing_root=$(basename $BACKING_DEV |sed -e 's/(md|sd[a-z])[0-9]/\\1/g')
-    if [ "$backing_part" = "$backing_root" ]; then
-        backing_part=
-    fi
-    backing_sysfs_bcache=/sys/block/$backing_root/${backing_part:+${backing_part}/}/bcache/
+# iostat -x 30
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+            0.05    0.00    0.74   10.92    0.00   88.30
 
-    [ -d "$backing_sysfs_bcache" ] && { echo "Error: $BACKING_DEV is already a registered bcache device."; exit 1; }
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+sda               0.00     0.40    0.00    0.83     0.00     5.07    
+12.16     0.00    0.00    0.00    0.00   0.00   0.00
+sdb               0.27     0.03    1.10    0.17   136.57     0.37   
+216.21     0.00    0.95    1.09    0.00   0.53   0.07
+sdc               0.00     0.00  185.53    0.03 23750.93     0.03   
+255.98     3.14   16.90   16.90    0.00   4.40  81.59
+bcache0           0.00     0.00  186.67    0.10 23896.00     0.32   
+255.89     0.00   16.81   16.82    0.00   0.00   0.00
 
-    cache_set=$(ls -1 /sys/fs/bcache |grep -v register |head -n1)
-    if [ -n "$CACHE_DEV" -a -z "$cache_set" ]; then
-      [ -b "$CACHE_DEV" ] || { echo "Error: Invalid cache device."; exit 1; }
-      cache_part=$(basename $CACHE_DEV)
-      cache_root=$(basename $CACHE_DEV |sed -e 's/[0-9]//g')
-      cache_sysfs_bcache=/sys/block/$cache_root/$cache_part/bcache/
-      [ -d "$cache_sysfs_bcache" ] && { echo "Error: $CACHE_DEV is already a registered bcache device."; exit 1; }
+sequential_cutoff and sequential_merge are echoed 0 to disable them, 
+because I want sequential IOs to be cached
 
-      echo "Initializing cache device..."
-      make-bcache -C --writeback $CACHE_DEV > "$CREATE_LOG" 2>&1
-      echo $CACHE_DEV > /sys/fs/bcache/register
-    else
-      [ -z "$cache_set" ] && { echo "Error: Missing cache device."; exit 1; }
-      echo "Using existing cache set: $cache_set"
-    fi
-	
-    echo "Initializing backing device..."
-    make-bcache -B --writeback $BACKING_DEV > "$CREATE_LOG" 2>&1
-    echo $BACKING_DEV > /sys/fs/bcache/register
-    # It seems that this can take a small amount of time. Wait, to ensure
-    # that the devices are properly registered
-    sleep 2
-    echo "Creating bcache device..."
-    cache_set=$(ls -1 /sys/fs/bcache |grep -v register |head -n1)
-    echo $cache_set > $backing_sysfs_bcache/attach
-    # It seems that this can take a small amount of time. Wait, to ensure
-    # that the bcache device is set up.
-    sleep 2
-    bcache_dev=$(basename $(readlink ${backing_sysfs_bcache}/dev))
-    if [ -n "$bcache_dev" ]; then
-      echo "Device $bcache_dev created."
-      if [ -n "$MNTPOINT" -a -d "$MNTPOINT" ]; then
-        echo "Creating filesystem..."
-        mkfs.ext4 /dev/$bcache_dev > "$CREATE_LOG" 2>&1
-        tune2fs -o journal_data_writeback /dev/$bcache_dev
-        echo "Mounting on $MNTPOINT"
-        mount /dev/$bcache_dev $MNTPOINT > "$CREATE_LOG" 2>&1
-      fi
-      echo "done."
-    else
-      echo "Error: No bcache dev found"
-      exit 1
-    fi
-  ;;
+I get strange numbers from the variables. Some seems to indicate that 
+bcache is doing its work, others seems not.
+I'm totally puzzled. Am I doing something wrong ? It bcache suited for 
+what I want to do ? Is it a bug ?
 
-  destroy)
-    [ -z "$2" ] && { echo "Error: Missing device."; exit 1; }
-    dev=$2
-    if [ "${dev#/dev/bcache}" != "$dev" ]; then
-      [ -b "$dev" ] || { echo "Error: Invalid bcache device."; exit 1; }
-      BCACHE_DEV=$dev
-      bcache_part=$(basename $BCACHE_DEV)
-      for bdev in /sys/block/$bcache_part/bcache/cache/bdev*; do
-         BACKING_DEV="/dev/$(basename $(dirname $(readlink $bdev))) $BACKING_DEV"
-      done
-      CACHE_DEV=/dev/$(basename $(dirname $(readlink /sys/block/$bcache_part/bcache/cache/cache0)))
-    else
-      [ -b "$dev" ] || { echo "Error: Invalid backing device."; exit 1; }
-      BACKING_DEV=$2
-    fi
+I've even tried to recreate the caching device to get rid of the data 
+that was on it during data was put on the backing device.
+As noted in this mailing-list, I made some writes to the device to 
+allow the btree to split/grow if needed, and seen no changes.
 
-    if [ -n "$MNTPOINT" -a -d "$MNTPOINT" ]; then
-      echo "Unmounting device..."
-      umount "$MNTPOINT" > "$DESTROY_LOG" 2>&1
-    fi
+Here are the details :
 
-    for bdev in $BACKING_DEV; do
-      backing_part=$(basename $bdev)
-      backing_root=$(basename $BACKING_DEV |sed -e 's/(md|sd[a-z])[0-9]/\\1/g')
-      if [ "$backing_part" = "$backing_root" ]; then
-          backing_part=
-      fi
-      backing_sysfs_bcache=/sys/block/$backing_root/${backing_part:+${backing_part}/}/bcache/
+# cat /sys/block/bcache0/bcache/cache/internal/active_journal_entries
+3
 
-      [ -d "$backing_sysfs_bcache" ] || { echo "Error: $bdev is not a registered bcache device."; exit 1; }
+# cat /sys/block/bcache0/bcache/cache/internal/bset_tree_stats
+btree nodes:            1
+written sets:           2
+unwritten sets:         1
+written key bytes:      156768
+unwritten key bytes:    96
+floats:                 1222
+failed:                 63
 
-      echo "Detaching cache from backing store '$bdev'..."
-      echo 1 > $backing_sysfs_bcache/detach
-      # I don't know for sure that "stop" will only complete once dirty data
-      # has been written out.
-      echo "Stopping backing store '$bdev'..."
-      { echo 1 > $backing_sysfs_bcache/stop; } > "$DESTROY_LOG" 2>&1
-    done
+# cat /sys/block/bcache0/bcache/cache/internal/btree_nodes
+1
+# cat /sys/block/bcache0/bcache/cache/internal/btree_used_percent
+46
+# cat /sys/block/bcache0/bcache/cache/average_key_size
+384k
+# cat /sys/block/bcache0/bcache/cache/btree_cache_size
+0
+# cat /sys/block/bcache0/bcache/cache/cache_available_percent
+99
+# cat /sys/block/bcache0/bcache/cache/root_usage_percent
+47
+# cat /sys/block/bcache0/bcache/cache/tree_depth
+0
+# cat /sys/block/bcache0/bcache/cache_mode
+writethrough [writeback] writearound none
+# cat /sys/block/bcache0/bcache/readahead
+1.0M
+# cat /sys/block/bcache0/bcache/stats_hour/bypassed
+0
+# cat /sys/block/bcache0/bcache/stats_hour/cache_hit_ratio
+100
+# cat /sys/block/bcache0/bcache/stats_hour/cache_hits
+960779
+# cat /sys/block/bcache0/bcache/stats_hour/cache_misses
+0
+# cat /sys/block/bcache0/bcache/stats_hour/cache_readaheads
+0
+# cat /sys/block/bcache0/bcache/cache/cache0/freelist_percent
+0
+# cat /sys/block/bcache0/bcache/cache/cache0/priority_stats
+Unused:         89%
+Metadata:       0%
+Average:        4141
+Sectors per Q:  3109760
+Quantiles:      [4162 4189 4193 4197 4201 4205 4209 4213 4217 4221 4225 
+4229 4233 4237 4241 4245 4249 4253 4257 4260 4264 4268 4272 4276 4280 
+4284 4288 4292 4296 4300 4304]
+# cat /sys/block/bcache0/bcache/cache/cache0/written
+47.4G
+# cat /sys/block/bcache0/bcache/cache/cache0/cache_replacement_policy
+[lru] fifo random
+# cat /sys/block/bcache0/bcache/cache/cache0/nbuckets
+915661
+# cat /sys/block/bcache0/bcache/cache/cache0/metadata_written
+13.3M
 
-    if [ -n "$CACHE_DEV" ]; then
-      cache_part=$(basename $CACHE_DEV)
-      cache_root=$(basename $CACHE_DEV |sed -e 's/[0-9]//g')
-      cache_sysfs_bcache=/sys/block/$cache_root/$cache_part/bcache/
+I don't know what to try. At first I used bcache-3.2, and seeing this 
+beavior made me switch to bcache and 3.8 kernel. Tried bcache-dev, too, 
+but the server doesn't boot, kernel stuck in a softlock @[bcache:345] 
+(no idea of the meaning)
 
-      if [ ! -d "$cache_sysfs_bcache" ]; then 
-        echo "Error: $CACHE_DEV is not a registered bcache device."
-      else
-	echo "Stopping cache device..."
-	{ echo 1 > /sys/block/$cache_root/$cache_part/bcache/set/stop; } > "$DESTROY_LOG" 2>&1
-      fi
-    fi
-    echo "done."
-  ;;
+What am I doing wrong ?
+There's little to no activity on the caching device, I though there 
+would be write operations to cache served files, but the only writes are 
+when I put new files. The pattern is 99% read of big files (~ from 100 
+MB to 10 GB)
 
-  *)
-    echo "Error: invalid action '$action'"
-    echo
-    echo "Usage: bsetup create <backing device> [ <cache device> ]"
-    echo "       bsetup destroy { <bcache device> | <backing device> }"
-    echo
-    echo "On create, a cache device will be created if supplied. Otherwise"
-    echo "it is assumed that an existing cache set should be used."
-    echo
-    echo "On destroy, the backing device and cache set will be removed if"
-    echo "a bcache device is given. Otherwise, only the backing device is"
-    echo "removed"
-   
-    exit 1
-  ;;
-esac
+Thank you
