@@ -1,30 +1,82 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [PATCH -next 1/3] bcache: Add missing #include <linux/prefetch.h>
-Date: Wed, 27 Mar 2013 11:21:50 -0700
-Message-ID: <20130327182150.GB25906@google.com>
-References: <1364406990-20541-1-git-send-email-geert@linux-m68k.org>
+Subject: Re: Raid5 slower with bcache
+Date: Wed, 27 Mar 2013 11:25:36 -0700
+Message-ID: <20130327182536.GA22232@google.com>
+References: <CAAnFQG9Uafe2PLgA33Uve95W06hb_EHMOqC5FQg9mUbuH-hznw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <1364406990-20541-1-git-send-email-geert-Td1EMuHUCqxL1ZNQvxDV9g@public.gmane.org>
+In-Reply-To: <CAAnFQG9Uafe2PLgA33Uve95W06hb_EHMOqC5FQg9mUbuH-hznw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Geert Uytterhoeven <geert-Td1EMuHUCqxL1ZNQvxDV9g@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-next-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Javier Marcet <jmarcet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: Linux BCache Mailing List <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 06:56:28PM +0100, Geert Uytterhoeven wrote:
-> m68k/allmodconfig:
->=20
-> drivers/md/bcache/bset.c: In function =E2=80=98bset_search_tree=E2=80=
-=99:
-> drivers/md/bcache/bset.c:727: error: implicit declaration of function=
- =E2=80=98prefetch=E2=80=99
->=20
-> drivers/md/bcache/btree.c: In function =E2=80=98bch_btree_node_get=E2=
-=80=99:
-> drivers/md/bcache/btree.c:933: error: implicit declaration of functio=
-n =E2=80=98prefetch=E2=80=99
+On Wed, Mar 27, 2013 at 11:03:52AM +0100, Javier Marcet wrote:
+> Hi,
+> 
+> I've been using bcache since last summer, caching a 4x3TB raid5.
+> 
+> Last week one of my disks died so after replacing it, I also got a new
+> SSD and began to do some tests. There is something which, while not
+> proving anything, worries me anyway. Better than describing it, just
+> see this (caches were flushed before each hdparm):
 
-Thanks, applied! The other two I already have a patch queued up for.
+I think I may have finally figured this one out - bcache wasn't setting
+readahead_pages, and raid5/6 needs it to be set based on the number of
+devices in the array. Can you try the version I just pushed?
+
+> 
+>  # hdparm -tT /dev/md0
+> 
+> /dev/md0:
+>  Timing cached reads:   23860 MB in  2.00 seconds = 11941.98 MB/sec
+>  Timing buffered disk reads: 996 MB in  3.00 seconds = 331.85 MB/sec
+> 
+> # hdparm -tT /dev/bcache0
+> 
+> /dev/bcache0:
+>  Timing cached reads:   22944 MB in  2.00 seconds = 11482.63 MB/sec
+>  Timing buffered disk reads: 488 MB in  3.00 seconds = 162.49 MB/sec
+> 
+> This is without any caching devices attached, that is, in pass-through
+> mode. My md raid5 is bottlenecked by the 3Gbps of the SATA controller
+> but with bcache, even in pass-through mode, seems to have a degrading
+> effect.
+> 
+> With a caching device attached, I know random I/O improves, but it
+> seems I'm degrading sequential access considerably. See now with a
+> fresh 128GB Crucial M4 SSD attached:
+> 
+> # hdparm -tT /dev/sdb
+> 
+> /dev/sdb:
+>  Timing cached reads:   23964 MB in  2.00 seconds = 11994.69 MB/sec
+>  Timing buffered disk reads: 1594 MB in  3.00 seconds = 530.72 MB/sec
+> 
+>  # hdparm -tT /dev/bcache0
+> 
+> /dev/bcache0:
+>  Timing cached reads:   23830 MB in  2.00 seconds = 11927.29 MB/sec
+>  Timing buffered disk reads: 626 MB in  3.00 seconds = 208.64 MB/sec
+> 
+> # hdparm -tT /dev/bcache0
+> 
+> /dev/bcache0:
+>  Timing cached reads:   24156 MB in  2.00 seconds = 12089.18 MB/sec
+>  Timing buffered disk reads: 542 MB in  3.05 seconds = 177.53 MB/sec
+> 
+> I would like to try more suited testing tools directly over the RAID,
+> without any bcache but it looks like I'd need to recreate the whole
+> array, sigh.
+> 
+> I would appreciate any more info about these numbers.
+> 
+> 
+> -- 
+> Javier Marcet <jmarcet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
