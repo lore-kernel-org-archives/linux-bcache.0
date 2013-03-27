@@ -1,82 +1,33 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+From: Javier Marcet <jmarcet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: Raid5 slower with bcache
-Date: Wed, 27 Mar 2013 11:25:36 -0700
-Message-ID: <20130327182536.GA22232@google.com>
+Date: Wed, 27 Mar 2013 19:42:50 +0100
+Message-ID: <CAAnFQG-1YzRS_z1sKNWtN7hQfAY-FGuWJSj2Tbk918KZQs8jCQ@mail.gmail.com>
 References: <CAAnFQG9Uafe2PLgA33Uve95W06hb_EHMOqC5FQg9mUbuH-hznw@mail.gmail.com>
+ <20130327182536.GA22232@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <CAAnFQG9Uafe2PLgA33Uve95W06hb_EHMOqC5FQg9mUbuH-hznw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <20130327182536.GA22232-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Javier Marcet <jmarcet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: Linux BCache Mailing List <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Mar 27, 2013 at 11:03:52AM +0100, Javier Marcet wrote:
-> Hi,
-> 
-> I've been using bcache since last summer, caching a 4x3TB raid5.
-> 
-> Last week one of my disks died so after replacing it, I also got a new
-> SSD and began to do some tests. There is something which, while not
-> proving anything, worries me anyway. Better than describing it, just
-> see this (caches were flushed before each hdparm):
+On Wed, Mar 27, 2013 at 7:25 PM, Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
 
-I think I may have finally figured this one out - bcache wasn't setting
-readahead_pages, and raid5/6 needs it to be set based on the number of
-devices in the array. Can you try the version I just pushed?
+> > I've been using bcache since last summer, caching a 4x3TB raid5.
+> >
+> > Last week one of my disks died so after replacing it, I also got a new
+> > SSD and began to do some tests. There is something which, while not
+> > proving anything, worries me anyway. Better than describing it, just
+> > see this (caches were flushed before each hdparm):
+>
+> I think I may have finally figured this one out - bcache wasn't setting
+> readahead_pages, and raid5/6 needs it to be set based on the number of
+> devices in the array. Can you try the version I just pushed?
 
-> 
->  # hdparm -tT /dev/md0
-> 
-> /dev/md0:
->  Timing cached reads:   23860 MB in  2.00 seconds = 11941.98 MB/sec
->  Timing buffered disk reads: 996 MB in  3.00 seconds = 331.85 MB/sec
-> 
-> # hdparm -tT /dev/bcache0
-> 
-> /dev/bcache0:
->  Timing cached reads:   22944 MB in  2.00 seconds = 11482.63 MB/sec
->  Timing buffered disk reads: 488 MB in  3.00 seconds = 162.49 MB/sec
-> 
-> This is without any caching devices attached, that is, in pass-through
-> mode. My md raid5 is bottlenecked by the 3Gbps of the SATA controller
-> but with bcache, even in pass-through mode, seems to have a degrading
-> effect.
-> 
-> With a caching device attached, I know random I/O improves, but it
-> seems I'm degrading sequential access considerably. See now with a
-> fresh 128GB Crucial M4 SSD attached:
-> 
-> # hdparm -tT /dev/sdb
-> 
-> /dev/sdb:
->  Timing cached reads:   23964 MB in  2.00 seconds = 11994.69 MB/sec
->  Timing buffered disk reads: 1594 MB in  3.00 seconds = 530.72 MB/sec
-> 
->  # hdparm -tT /dev/bcache0
-> 
-> /dev/bcache0:
->  Timing cached reads:   23830 MB in  2.00 seconds = 11927.29 MB/sec
->  Timing buffered disk reads: 626 MB in  3.00 seconds = 208.64 MB/sec
-> 
-> # hdparm -tT /dev/bcache0
-> 
-> /dev/bcache0:
->  Timing cached reads:   24156 MB in  2.00 seconds = 12089.18 MB/sec
->  Timing buffered disk reads: 542 MB in  3.05 seconds = 177.53 MB/sec
-> 
-> I would like to try more suited testing tools directly over the RAID,
-> without any bcache but it looks like I'd need to recreate the whole
-> array, sigh.
-> 
-> I would appreciate any more info about these numbers.
-> 
-> 
-> -- 
-> Javier Marcet <jmarcet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Sure. It's compiling right now, give me a few minutes and I'll report back.
+
+
+--
+Javier Marcet <jmarcet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
