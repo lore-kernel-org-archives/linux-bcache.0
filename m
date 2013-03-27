@@ -1,33 +1,44 @@
-From: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>
-Subject: Re: bcache hangs with continuous write I/O to SSD device, bcache
- device stops working
-Date: Wed, 27 Mar 2013 20:17:42 +0100
-Message-ID: <515345D6.1060803@modelnine.org>
-References: <514C4FC1.6090804@modelnine.org> <20130322141613.GA29496@gmail.com> <514C687C.4010304@modelnine.org>
+From: Randy Dunlap <rdunlap-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>
+Subject: Re: [PATCH -next 1/3] bcache: Add missing #include <linux/prefetch.h>
+Date: Wed, 27 Mar 2013 11:27:58 -0700
+Message-ID: <51533A2E.2000501@infradead.org>
+References: <1364406990-20541-1-git-send-email-geert@linux-m68k.org> <20130327182150.GB25906@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <514C687C.4010304-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>
+In-Reply-To: <20130327182150.GB25906-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: Geert Uytterhoeven <geert-Td1EMuHUCqxL1ZNQvxDV9g@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-next-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Am 22.03.2013 15:19, schrieb Heiko Wundram:
-> In my case, the syncing was still going on after around 16 hours (I
-> simply let the system run after it got locked in this state). As I've
-> only got around 2GB of page cache in the corresponding system that was
-> used as the test bed, most probably, the system wasn't (still) flushing
-> data, but rather spinning on something else.
+On 03/27/13 11:21, Kent Overstreet wrote:
+> On Wed, Mar 27, 2013 at 06:56:28PM +0100, Geert Uytterhoeven wrote:
+>> m68k/allmodconfig:
+>>
+>> drivers/md/bcache/bset.c: In function =E2=80=98bset_search_tree=E2=80=
+=99:
+>> drivers/md/bcache/bset.c:727: error: implicit declaration of functio=
+n =E2=80=98prefetch=E2=80=99
+>>
+>> drivers/md/bcache/btree.c: In function =E2=80=98bch_btree_node_get=E2=
+=80=99:
+>> drivers/md/bcache/btree.c:933: error: implicit declaration of functi=
+on =E2=80=98prefetch=E2=80=99
+>=20
+> Thanks, applied! The other two I already have a patch queued up for.
 
-I'm not entirely sure what difference I made, but it seems that this 
-problem has disappeared (hasn't surfaced over the last three days, 
-whereas before it was a matter of hours).
 
-I've updated the kernel to statically contain bcache and the DM/md 
-infrastructure (which should be unrelated, except for being part of a 
-stack of block devices). Anyway, that seems to have done the trick, in 
-case anybody else is experiencing this.
+On i386 and x86_64, I also see this build problem:
 
--- 
---- Heiko.
+drivers/md/bcache/bset.c:885:4: error: implicit declaration of function=
+ '__WARN' [-Werror=3Dimplicit-function-declaration]
+
+
+Do you also have a patch for it?
+
+
+thanks,
+--=20
+~Randy
