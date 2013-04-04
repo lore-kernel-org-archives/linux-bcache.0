@@ -1,61 +1,89 @@
-From: Sasha Levin <sasha.levin-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
-Subject: bcache: BUG in fuzz testing without devices
-Date: Tue, 02 Apr 2013 12:21:02 -0400
-Message-ID: <515B056E.6010002@oracle.com>
+From: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>
+Subject: Hangs on bcache on HEAD and bcache-testing when stacking LVM on top
+ (?)
+Date: Thu, 04 Apr 2013 12:27:30 +0200
+Message-ID: <515D5592.60906@modelnine.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org, NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi all,
+Hey!
 
-It seems that trying to fuzz bcache without any devices triggers a BUG:
+I've already written previously about write hangs with bcache in "bcache 
+hangs with continuous write I/O to SSD device, bcache device stops 
+working", and I thought, that the problem was solved by statically 
+building bcache into the kernel, but that does not seem to be the case.
 
-sh-4.2# echo 1 > /sys/fs/bcache/fuzz
-[   89.700458] bio: create slab <bio-1> at 1
-[   89.704543] ------------[ cut here ]------------
-[   89.710043] kernel BUG at drivers/md/bcache/debug.c:447!
-[   89.710043] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   89.710043] Modules linked in:
-[   89.710043] CPU 2
-[   89.710043] Pid: 6885, comm: sh Tainted: G        W    3.9.0-rc4-next-20130328-sasha-00017-g1463000 #321
-[   89.710043] RIP: 0010:[<ffffffff8324c005>]  [<ffffffff8324c005>] btree_fuzz+0x95/0x720
-[   89.710043] RSP: 0018:ffff880035279be8  EFLAGS: 00010246
-[   89.710043] RAX: ffff880034720000 RBX: ffff880034721030 RCX: ffff8800353af400
-[   89.710043] RDX: 0000000000000000 RSI: ffff880034723b18 RDI: ffff88003477a960
-[   89.710043] RBP: ffff880035279e88 R08: ffff88003477a900 R09: ffff88003d801e00
-[   89.710043] R10: 000000000048d002 R11: 0000000000000000 R12: ffff880035279c18
-[   89.710043] R13: ffff880034721030 R14: ffff880034720000 R15: ffff880035279c30
-[   89.710043] FS:  00007f591db62700(0000) GS:ffff88003e000000(0000) knlGS:0000000000000000
-[   89.710043] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   89.710043] CR2: 00007f591db8e000 CR3: 0000000035bf0000 CR4: 00000000000406e0
-[   89.710043] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   89.710043] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   89.710043] Process sh (pid: 6885, threadinfo ffff880035278000, task ffff880037060000)
-[   89.710043] Stack:
-[   89.710043]  ffffffff84c1b104 ffffffff83e20320 000000000000d8e0 ffff880035279ca8
-[   89.710043]  ffff88003e00a000 ffff880035278000 ffff880035279fd8 ffff88003e1d7cd0
-[   89.710043]  ffff880035279c58 0000000000000000 0000000000000000 0000000000000000
-[   89.710043] Call Trace:
-[   89.710043]  [<ffffffff812ffd92>] ? sysfs_write_file+0xe2/0x150
-[   89.710043]  [<ffffffff819fff5f>] kobj_attr_store+0xf/0x20
-[   89.710043]  [<ffffffff812ffdaa>] sysfs_write_file+0xfa/0x150
-[   89.710043]  [<ffffffff8127eff0>] vfs_write+0xb0/0x180
-[   89.710043]  [<ffffffff8127f480>] SyS_write+0x50/0xa0
-[   89.710043]  [<ffffffff83db7e58>] tracesys+0xe1/0xe6
-[   89.710043] Code: c0 49 89 c6 0f 84 2c 06 00 00 4c 8d a5 90 fd ff ff 4c 8d a8 30 10 00 00 4d 89 e7 49 83 c7 18 49 8b 9e 30 10
-00 00 4c 39 eb 75 0b <0f> 0b 66 0f 1f 84 00 00 00 00 00 48 8d 83 a0 fd ff ff 48 89 df
-[   89.710043] RIP  [<ffffffff8324c005>] btree_fuzz+0x95/0x720
-[   89.710043]  RSP <ffff880035279be8>
-[   89.755259] ---[ end trace d6647580839fba22 ]---
+I've now encountered something similar, which seems to occur after 
+around 3-4 days of usage of the bcache device (I've had it twice now). 
+The bcache device (or rather, the devices stacked on the bcache device 
+through LVM) hang, and show 100% CPU utilization. All other devices 
+which are not on the bcache volume still work properly. There's no 
+obvious kernel thread which is taking CPU time and blocking the device 
+(as was with the last bug report I noted).
 
-That BUG looks very intentional there, any reason for adding it instead of exiting
-if there aren't any devices?
+When the bcache volume is blocked, iostat reports:
 
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+sda               0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+sdb               0,00     0,50    0,00    8,50     0,00     0,03 
+6,53     0,06    6,88    0,00    6,88   4,88   4,15
+sdc               0,00     0,50    0,00    8,50     0,00     0,03 
+6,53     0,06    7,24    0,00    7,24   5,29   4,50
+md127             0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+md126             0,00     0,00    0,00    6,50     0,00     0,03 
+8,00     0,00    0,00    0,00    0,00   0,00   0,00
+md125             0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-0              0,00     0,00    0,00    6,50     0,00     0,03 
+8,00     0,13   20,00    0,00   20,00   5,15   3,35
+dm-1              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-2              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+bcache0           0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-3              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-4              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-5              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-6              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     1,00    0,00    0,00    0,00   0,00 100,00
+dm-7              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-8              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     1,00    0,00    0,00    0,00   0,00 100,00
+dm-9              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-10             0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     3,00    0,00    0,00    0,00   0,00 100,00
 
-Thanks,
-Sasha
+The devices starting with dm-3 are logical volumes in a volume group 
+which resides on (the only) physical volume /dev/bcache0, which in turn 
+is made up of /dev/sda (SSD device) and /dev/md127 (backing volume, 
+kernel RAID1). /dev/md127 is made up of GPT partitions on /dev/sdb and 
+/dev/sdc.
+
+The bcache volume and the cache is set to use 512byte logical sectors, 
+which both devices support (although they both have 4k physical sectors).
+
+There's no real clue as to where I might start to look from here. Is 
+this a "known" problem when using bcache together with LVM? Memory usage 
+does not seem to be a culprit.
+
+I'm now trying to boot the system using kernel 3.2 (i.e., the bcache-3.2 
+tree), and can report about that.
+
+Thanks for any pointers!
+
+-- 
+--- Heiko.
