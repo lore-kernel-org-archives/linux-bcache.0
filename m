@@ -1,26 +1,30 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: bcache: BUG in fuzz testing without devices
-Date: Fri, 5 Apr 2013 14:21:10 -0700
-Message-ID: <20130405212110.GD15749@google.com>
-References: <515B056E.6010002@oracle.com>
+Subject: Re: [Pull request] A command to print the superblock
+Date: Fri, 5 Apr 2013 15:16:16 -0700
+Message-ID: <CAH+dOxJFnodvL7u0h__8kShYZytXuwvzumSq89XhW79198ETYA@mail.gmail.com>
+References: <khfe6b$rpk$1@ger.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <515B056E.6010002-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+In-Reply-To: <khfe6b$rpk$1@ger.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Sasha Levin <sasha.levin-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
-Cc: NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Apr 02, 2013 at 12:21:02PM -0400, Sasha Levin wrote:
-> Hi all,
-> 
-> It seems that trying to fuzz bcache without any devices triggers a BUG:
-> 
-> That BUG looks very intentional there, any reason for adding it instead of exiting
-> if there aren't any devices?
+Hey, sorry for the delay - I'm finally catching up on bcache stuff. I
+just merged your patches, thanks!
 
-The fuzz tester is meant to stress test some of the btree code - it's a
-purely in memory test. But it looks like it's rotted - thanks for the
-bug report, I'll disable it for now.
+On Sat, Mar 9, 2013 at 5:41 AM, Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> Hello,
+> I've written a command to print a bcache superblock; mostly I wanted
+> a reliable way to find the data offset. The output is based on
+> btrfs-show-super (easy to read and parse). Please pull from
+>
+>     https://github.com/g2p/bcache-tools
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
