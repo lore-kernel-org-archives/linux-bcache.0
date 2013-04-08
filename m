@@ -1,53 +1,55 @@
-From: Kent Overstreet <koverstreet@google.com>
-Subject: Re: [PATCH -next 1/3] bcache: Add missing #include <linux/prefetch.h>
-Date: Mon, 8 Apr 2013 14:00:20 -0700
-Message-ID: <20130408210020.GI15749@google.com>
-References: <1364406990-20541-1-git-send-email-geert@linux-m68k.org>
- <20130327182150.GB25906@google.com>
- <51533A2E.2000501@infradead.org>
- <20130327195050.GB22232@google.com>
- <alpine.DEB.2.02.1304071415220.3441@chino.kir.corp.google.com>
+From: Gabriel <g2p.code@gmail.com>
+Subject: Re: [PATCH] bcache: Take data offset from the bdev superblock.
+Date: Mon, 08 Apr 2013 23:23:59 +0200
+Message-ID: <5163356F.50406@gmail.com>
+References: <51629766.6030805@gmail.com> <1365415866-16344-1-git-send-email-g2p.code+bcache@gmail.com> <20130408204956.GH15749@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-next-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1304071415220.3441@chino.kir.corp.google.com>
-Sender: linux-next-owner@vger.kernel.org
-To: David Rientjes <rientjes@google.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Geert Uytterhoeven <geert@linux-m68k.org>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8;
+	format=flowed
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20130408204956.GH15749@google.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, Gabriel <g2p.code+bcache@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On Sun, Apr 07, 2013 at 02:15:49PM -0700, David Rientjes wrote:
-> On Wed, 27 Mar 2013, Kent Overstreet wrote:
-> 
-> > Nope - looks like __WARN() doesn't exist if CONFIG_BUG=n, whoops.
-> > 
-> > Adding this to the queue:
-> > 
-> > commit 796c213186b850b3e6e8d5fd5799b0fd74721ea3
-> > Author: Kent Overstreet <koverstreet@google.com>
-> > Date:   Wed Mar 27 12:47:45 2013 -0700
-> > 
-> >     bcache: Use WARN_ONCE() instead of __WARN()
-> >     
-> >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
-> > 
-> > diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
-> > index d4f2164..cb4578a 100644
-> > --- a/drivers/md/bcache/bset.c
-> > +++ b/drivers/md/bcache/bset.c
-> > @@ -883,7 +883,7 @@ struct bkey *bch_btree_iter_next(struct btree_iter *iter)
-> >  		iter->data->k = bkey_next(iter->data->k);
-> >  
-> >  		if (iter->data->k > iter->data->end) {
-> > -			__WARN();
-> > +			WARN_ONCE(1, "bset was corrupt!\n");
-> >  			iter->data->k = iter->data->end;
-> >  		}
-> >  
-> 
-> This problem still persists in linux-next as of today, how is this fix 
-> being pushed?
+Le lun. 08 avril 2013 22:49:56 CEST, Kent Overstreet a =C3=A9crit :
+> On Mon, Apr 08, 2013 at 12:11:06PM +0200, Gabriel wrote:
+>> Add a new superblock version, and consolidate related defines.
+>
+> So, I think BDEV_WITH_OFFSET looks ok, but what's the use case for it=
+? I
+> was going to add it way back but we decided not to implement the hack=
+ we
+> thought we needed it for - if you or someone is going to use it I'll =
+go
+> ahead and apply it.
 
-Sorry for the delay, I've been moving all last week - I just sent Jens a
-pull request with the latest bcache fixes, though.
+It's for converting existing devices to bcache.
+
+https://github.com/g2p/blocks converts a partition to bcache by putting
+a bcache superblock immediately before and shifting the partition start
+to the left by exactly 1MB.  The 1MB alignment is to play nice with=20
+other partitioning tools and drives with 4k sectors.
+
+blocks also converts logical volumes to bcache, and for that it has to=20
+insert exactly 4MB (an LVM physical extent) before the filesystem data.
+
+I'm already using the new format, it allowed me to get rid of some=20
+complicated stuff that sandwiched a partition table on top of an LV so=20
+that the original filesystem data was at the start of its container dev=
+ice.
+
+> As for BCACHE_SB_VERSION_CDEV_WITH_UUID, can you explain why you adde=
+d
+> that? I suspect it's needed but I can't remember why I didn't add it
+> when I added the new UUID format (or perhaps I just forgot)
+
+I took the name from a comment in the kernel-side bcache.h.
+BCACHE_SB_VERSION_CDEV is the version make-bcache writes, and=20
+BCACHE_SB_VERSION_CDEV_WITH_UUID is what the kernel updates it too; I=20
+just changed the version names so that user-side and kernel-side were=20
+more consistent, internally and with each other.
+The kernel doesn't discriminate these two versions when opening, so it=20
+should be possible to define only the latter and deprecate the other.
