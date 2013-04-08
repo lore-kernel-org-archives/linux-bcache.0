@@ -1,176 +1,53 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [PATCH] bcache: Take data offset from the bdev superblock.
-Date: Mon, 8 Apr 2013 13:49:56 -0700
-Message-ID: <20130408204956.GH15749@google.com>
-References: <51629766.6030805@gmail.com>
- <1365415866-16344-1-git-send-email-g2p.code+bcache@gmail.com>
+From: Kent Overstreet <koverstreet@google.com>
+Subject: Re: [PATCH -next 1/3] bcache: Add missing #include <linux/prefetch.h>
+Date: Mon, 8 Apr 2013 14:00:20 -0700
+Message-ID: <20130408210020.GI15749@google.com>
+References: <1364406990-20541-1-git-send-email-geert@linux-m68k.org>
+ <20130327182150.GB25906@google.com>
+ <51533A2E.2000501@infradead.org>
+ <20130327195050.GB22232@google.com>
+ <alpine.DEB.2.02.1304071415220.3441@chino.kir.corp.google.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Return-path: <linux-next-owner@vger.kernel.org>
 Content-Disposition: inline
-In-Reply-To: <1365415866-16344-1-git-send-email-g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Gabriel <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Gabriel <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+In-Reply-To: <alpine.DEB.2.02.1304071415220.3441@chino.kir.corp.google.com>
+Sender: linux-next-owner@vger.kernel.org
+To: David Rientjes <rientjes@google.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, Geert Uytterhoeven <geert@linux-m68k.org>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Apr 08, 2013 at 12:11:06PM +0200, Gabriel wrote:
-> Add a new superblock version, and consolidate related defines.
+On Sun, Apr 07, 2013 at 02:15:49PM -0700, David Rientjes wrote:
+> On Wed, 27 Mar 2013, Kent Overstreet wrote:
+> 
+> > Nope - looks like __WARN() doesn't exist if CONFIG_BUG=n, whoops.
+> > 
+> > Adding this to the queue:
+> > 
+> > commit 796c213186b850b3e6e8d5fd5799b0fd74721ea3
+> > Author: Kent Overstreet <koverstreet@google.com>
+> > Date:   Wed Mar 27 12:47:45 2013 -0700
+> > 
+> >     bcache: Use WARN_ONCE() instead of __WARN()
+> >     
+> >     Signed-off-by: Kent Overstreet <koverstreet@google.com>
+> > 
+> > diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+> > index d4f2164..cb4578a 100644
+> > --- a/drivers/md/bcache/bset.c
+> > +++ b/drivers/md/bcache/bset.c
+> > @@ -883,7 +883,7 @@ struct bkey *bch_btree_iter_next(struct btree_iter *iter)
+> >  		iter->data->k = bkey_next(iter->data->k);
+> >  
+> >  		if (iter->data->k > iter->data->end) {
+> > -			__WARN();
+> > +			WARN_ONCE(1, "bset was corrupt!\n");
+> >  			iter->data->k = iter->data->end;
+> >  		}
+> >  
+> 
+> This problem still persists in linux-next as of today, how is this fix 
+> being pushed?
 
-So, I think BDEV_WITH_OFFSET looks ok, but what's the use case for it? I
-was going to add it way back but we decided not to implement the hack we
-thought we needed it for - if you or someone is going to use it I'll go
-ahead and apply it.
- 
-As for BCACHE_SB_VERSION_CDEV_WITH_UUID, can you explain why you added
-that? I suspect it's needed but I can't remember why I didn't add it
-when I added the new UUID format (or perhaps I just forgot)
-
-> 
-> Signed-off-by: Gabriel de Perthuis <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-> ---
->  drivers/md/bcache/bcache.h  | 23 ++++++++++++++++++-----
->  drivers/md/bcache/request.c |  2 +-
->  drivers/md/bcache/super.c   | 21 ++++++++++++++++-----
->  3 files changed, 35 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index f057235..8a110e6 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -223,11 +223,17 @@ struct bkey {
->  #define BKEY_PADDED(key)					\
->  	union { struct bkey key; uint64_t key ## _pad[BKEY_PAD]; }
->  
-> -/* Version 1: Backing device
-> +/* Version 0: Cache device
-> + * Version 1: Backing device
->   * Version 2: Seed pointer into btree node checksum
-> - * Version 3: New UUID format
-> + * Version 3: Cache device with new UUID format
-> + * Version 4: Backing device with data offset
->   */
-> -#define BCACHE_SB_VERSION	3
-> +#define BCACHE_SB_VERSION_CDEV			0
-> +#define BCACHE_SB_VERSION_BDEV			1
-> +#define BCACHE_SB_VERSION_CDEV_WITH_UUID	3
-> +#define BCACHE_SB_VERSION_BDEV_WITH_OFFSET	4
-> +#define BCACHE_SB_MAX_VERSION			4
->  
->  #define SB_SECTOR		8
->  #define SB_SIZE			4096
-> @@ -236,13 +242,12 @@ struct bkey {
->  /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
->  #define MAX_CACHES_PER_SET	8
->  
-> -#define BDEV_DATA_START		16	/* sectors */
-> +#define BDEV_DATA_START_DEFAULT	16	/* sectors */
->  
->  struct cache_sb {
->  	uint64_t		csum;
->  	uint64_t		offset;	/* sector where this sb was written */
->  	uint64_t		version;
-> -#define CACHE_BACKING_DEV	1
->  
->  	uint8_t			magic[16];
->  
-> @@ -485,6 +490,7 @@ struct cached_dev {
->  	 * where it's at.
->  	 */
->  	sector_t		last_read;
-> +	sector_t		data_start_sector;
->  
->  	/* Number of writeback bios in flight */
->  	atomic_t		in_flight;
-> @@ -861,6 +867,13 @@ static inline bool key_merging_disabled(struct cache_set *c)
->  #endif
->  }
->  
-> +
-> +static inline bool SB_IS_BDEV(const struct cache_sb *sb) {
-> +	return sb->version == BCACHE_SB_VERSION_BDEV
-> +		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_OFFSET;
-> +}
-> +
-> +
->  struct bbio {
->  	unsigned		submit_time_us;
->  	union {
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index 83731dc..9f74aff 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -1220,7 +1220,7 @@ static void cached_dev_make_request(struct request_queue *q, struct bio *bio)
->  	part_stat_unlock();
->  
->  	bio->bi_bdev = dc->bdev;
-> -	bio->bi_sector += BDEV_DATA_START;
-> +	bio->bi_sector += dc->data_start_sector;
->  
->  	if (cached_dev_get(dc)) {
->  		s = search_alloc(bio, d);
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 5fa3cd2..a409bb5 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -148,7 +148,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
->  		goto err;
->  
->  	err = "Unsupported superblock version";
-> -	if (sb->version > BCACHE_SB_VERSION)
-> +	if (sb->version > BCACHE_SB_MAX_VERSION)
->  		goto err;
->  
->  	err = "Bad block/bucket size";
-> @@ -168,7 +168,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
->  	if (get_capacity(bdev->bd_disk) < sb->bucket_size * sb->nbuckets)
->  		goto err;
->  
-> -	if (sb->version == CACHE_BACKING_DEV)
-> +	if (SB_IS_BDEV(sb))
->  		goto out;
->  
->  	err = "Bad UUID";
-> @@ -286,7 +286,7 @@ void bcache_write_super(struct cache_set *c)
->  	for_each_cache(ca, c, i) {
->  		struct bio *bio = &ca->sb_bio;
->  
-> -		ca->sb.version		= BCACHE_SB_VERSION;
-> +		ca->sb.version		= BCACHE_SB_VERSION_CDEV_WITH_UUID;
->  		ca->sb.seq		= c->sb.seq;
->  		ca->sb.last_mount	= c->sb.last_mount;
->  
-> @@ -1047,9 +1047,20 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
->  	dc->bdev = bdev;
->  	dc->bdev->bd_holder = dc;
->  
-> +	err = "bad start sector";
-> +	if (sb->version == BCACHE_SB_VERSION_BDEV) {
-> +		dc->data_start_sector = BDEV_DATA_START_DEFAULT;
-> +	} else {
-> +		if (sb->keys < 1)
-> +			goto err;
-> +		dc->data_start_sector = sb->d[0];
-> +		if (dc->data_start_sector < BDEV_DATA_START_DEFAULT)
-> +			goto err;
-> +	}
-> +
->  	g = dc->disk.disk;
->  
-> -	set_capacity(g, dc->bdev->bd_part->nr_sects - 16);
-> +	set_capacity(g, dc->bdev->bd_part->nr_sects - dc->data_start_sector);
->  
->  	bch_cached_dev_request_init(dc);
->  
-> @@ -1802,7 +1813,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
->  	if (err)
->  		goto err_close;
->  
-> -	if (sb->version == CACHE_BACKING_DEV) {
-> +	if (SB_IS_BDEV(sb)) {
->  		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
->  
->  		err = register_bdev(sb, sb_page, bdev, dc);
-> -- 
-> 1.8.2.rc3.7.g35aca0e
-> 
+Sorry for the delay, I've been moving all last week - I just sent Jens a
+pull request with the latest bcache fixes, though.
