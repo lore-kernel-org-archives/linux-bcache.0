@@ -1,132 +1,43 @@
-From: Gabriel <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: [PATCH] bcache: Reload device size
-Date: Tue,  9 Apr 2013 15:07:33 +0200
-Message-ID: <1365512853-32135-1-git-send-email-g2p.code+bcache@gmail.com>
+From: Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Subject: make-bcache's bucket size and block size values are ignored
+Date: Tue, 9 Apr 2013 10:07:36 -0400
+Message-ID: <20130409140735.GA3984@redhat.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-Cc: Gabriel <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Adds /sys/block/bcache*/bcache/resize; writing "max"
-to such a file will reload the device size to match
-the size of the underlying device, minus the bcache
-superblock.
+Hey Kent,
 
-This is useful to grow a filesystem stacked on top
-of bcache and a logical volume.
+No matter what I specify via make-bcache's -b and -w args they are
+always 512k and 512b respectively, e.g.:
 
-Other values than max are reserved for now; support
-for shrinking might be added if the need comes up.
+# make-bcache -B /dev/mapper/test-dev-174467 -C /dev/mapper/test-dev-24832 --cache_replacement_policy=fifo -b 2048k --writeback --discard
+    UUID:                       3705b1d8-4b44-406c-abf2-594c0cb146be
+    Set UUID:           a16dc554-c054-4a24-90fa-40f624e3a652
+    nbuckets:           8192
+    block_size:         1
+    bucket_size:                1024
+    nr_in_set:          1
+    nr_this_dev:                0
+    first_bucket:               1
+    UUID:                       46a37bba-2582-4533-a95b-1eb29c71e53f
+    Set UUID:           a16dc554-c054-4a24-90fa-40f624e3a652
+    nbuckets:           512
+    block_size:         1
+    bucket_size:                1024
+    nr_in_set:          1
+    nr_this_dev:                0
+    first_bucket:               1
 
-Signed-off-by: Gabriel de Perthuis <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
----
- Documentation/bcache.txt   |  4 ++++
- drivers/md/bcache/bcache.h |  1 +
- drivers/md/bcache/super.c  | 13 ++++++++-----
- drivers/md/bcache/sysfs.c  | 11 +++++++++++
- 4 files changed, 24 insertions(+), 5 deletions(-)
+# cat /sys/block/bcache3/bcache/cache/bucket_size 
+512k
 
-diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
-index 77db880..3d72856 100644
---- a/Documentation/bcache.txt
-+++ b/Documentation/bcache.txt
-@@ -217,6 +217,10 @@ readahead
-   1M, it will round cache miss reads up to that size, but without overlapping
-   existing cache entries.
- 
-+resize
-+  Write "max" to this file after resizing the underlying device.
-+  bcache will update its device size to match.
-+
- running
-   1 if bcache is running (i.e. whether the /dev/bcache device exists, whether
-   it's in passthrough mode or caching).
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 8a110e6..65bf44f 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -1219,6 +1219,7 @@ int bch_flash_dev_create(struct cache_set *c, uint64_t size);
- int bch_cached_dev_attach(struct cached_dev *, struct cache_set *);
- void bch_cached_dev_detach(struct cached_dev *);
- void bch_cached_dev_run(struct cached_dev *);
-+void bch_cached_dev_resize(struct cached_dev *);
- void bcache_device_stop(struct bcache_device *);
- 
- void bch_cache_set_unregister(struct cache_set *);
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index a409bb5..c9f0e4c 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -766,6 +766,13 @@ static void calc_cached_dev_sectors(struct cache_set *c)
- 	c->cached_dev_sectors = sectors;
- }
- 
-+void bch_cached_dev_resize(struct cached_dev *dc)
-+{
-+	set_capacity(
-+		dc->disk.disk,
-+		dc->bdev->bd_part->nr_sects - dc->data_start_sector);
-+}
-+
- void bch_cached_dev_run(struct cached_dev *dc)
- {
- 	struct bcache_device *d = &dc->disk;
-@@ -1036,7 +1043,6 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
- {
- 	char name[BDEVNAME_SIZE];
- 	const char *err = "cannot allocate memory";
--	struct gendisk *g;
- 	struct cache_set *c;
- 
- 	if (!dc || cached_dev_init(dc, sb->block_size << 9) != 0)
-@@ -1058,10 +1064,7 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
- 			goto err;
- 	}
- 
--	g = dc->disk.disk;
--
--	set_capacity(g, dc->bdev->bd_part->nr_sects - dc->data_start_sector);
--
-+	bch_cached_dev_resize(dc);
- 	bch_cached_dev_request_init(dc);
- 
- 	err = "error creating kobject";
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 4d9cca4..663b96d 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -27,6 +27,7 @@ write_attribute(clear_stats);
- write_attribute(trigger_gc);
- write_attribute(prune_cache);
- write_attribute(flash_vol_create);
-+write_attribute(resize);
- 
- read_attribute(bucket_size);
- read_attribute(block_size);
-@@ -201,6 +202,15 @@ STORE(__cached_dev)
- 	    strtoul_or_return(buf))
- 		bch_cached_dev_run(dc);
- 
-+	if (attr == &sysfs_resize) {
-+		if (!strcmp(buf, "max") || !strcmp(buf, "max\n"))
-+			bch_cached_dev_resize(dc);
-+		else
-+			/* Reserved for future use, if someone needs sizes below the max.
-+			 * memparse units would be consistent with fs resizing tools. */
-+			return -EINVAL;
-+	}
-+
- 	if (attr == &sysfs_cache_mode) {
- 		ssize_t v = bch_read_string_list(buf, bch_cache_modes + 1);
- 
-@@ -288,6 +298,7 @@ static struct attribute *bch_cached_dev_files[] = {
- 	&sysfs_sequential_merge,
- 	&sysfs_clear_stats,
- 	&sysfs_running,
-+	&sysfs_resize,
- 	&sysfs_state,
- 	&sysfs_label,
- 	&sysfs_readahead,
--- 
-1.8.2.rc3.7.g35aca0e
+I can take a look at the make-bcache source in a bit but figured I'd let
+you know sooner rather than later.
+
+Mike
