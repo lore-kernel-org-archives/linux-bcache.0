@@ -1,34 +1,132 @@
-From: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-Subject: Re: pull request: bcache fixes
-Date: Tue, 9 Apr 2013 09:15:50 +0200
-Message-ID: <20130409071550.GT12244@kernel.dk>
-References: <20130408204246.GG15749@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: Gabriel <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: [PATCH] bcache: Reload device size
+Date: Tue,  9 Apr 2013 15:07:33 +0200
+Message-ID: <1365512853-32135-1-git-send-email-g2p.code+bcache@gmail.com>
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20130408204246.GG15749-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: Gabriel <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Apr 08 2013, Kent Overstreet wrote:
-> Jens, here's the latest bcache fixes. All of it fairly minor:
-> 
-> The following changes since commit 169ef1cf6171d35550fef85645b83b960e241cff:
-> 
->   bcache: Don't export utility code, prefix with bch_ (2013-03-28 12:50:55 -0600)
-> 
-> are available in the git repository at:
-> 
->   http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
-> 
-> for you to fetch changes up to cef5279735d3f6f0243e626963e6d5c84efade0a:
-> 
->   bcache: Disable broken btree fuzz tester (2013-04-08 13:33:49 -0700)
+Adds /sys/block/bcache*/bcache/resize; writing "max"
+to such a file will reload the device size to match
+the size of the underlying device, minus the bcache
+superblock.
 
-Pulled in, thanks Kent.
+This is useful to grow a filesystem stacked on top
+of bcache and a logical volume.
 
+Other values than max are reserved for now; support
+for shrinking might be added if the need comes up.
+
+Signed-off-by: Gabriel de Perthuis <g2p.code+bcache-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+---
+ Documentation/bcache.txt   |  4 ++++
+ drivers/md/bcache/bcache.h |  1 +
+ drivers/md/bcache/super.c  | 13 ++++++++-----
+ drivers/md/bcache/sysfs.c  | 11 +++++++++++
+ 4 files changed, 24 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
+index 77db880..3d72856 100644
+--- a/Documentation/bcache.txt
++++ b/Documentation/bcache.txt
+@@ -217,6 +217,10 @@ readahead
+   1M, it will round cache miss reads up to that size, but without overlapping
+   existing cache entries.
+ 
++resize
++  Write "max" to this file after resizing the underlying device.
++  bcache will update its device size to match.
++
+ running
+   1 if bcache is running (i.e. whether the /dev/bcache device exists, whether
+   it's in passthrough mode or caching).
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 8a110e6..65bf44f 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -1219,6 +1219,7 @@ int bch_flash_dev_create(struct cache_set *c, uint64_t size);
+ int bch_cached_dev_attach(struct cached_dev *, struct cache_set *);
+ void bch_cached_dev_detach(struct cached_dev *);
+ void bch_cached_dev_run(struct cached_dev *);
++void bch_cached_dev_resize(struct cached_dev *);
+ void bcache_device_stop(struct bcache_device *);
+ 
+ void bch_cache_set_unregister(struct cache_set *);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index a409bb5..c9f0e4c 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -766,6 +766,13 @@ static void calc_cached_dev_sectors(struct cache_set *c)
+ 	c->cached_dev_sectors = sectors;
+ }
+ 
++void bch_cached_dev_resize(struct cached_dev *dc)
++{
++	set_capacity(
++		dc->disk.disk,
++		dc->bdev->bd_part->nr_sects - dc->data_start_sector);
++}
++
+ void bch_cached_dev_run(struct cached_dev *dc)
+ {
+ 	struct bcache_device *d = &dc->disk;
+@@ -1036,7 +1043,6 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
+ {
+ 	char name[BDEVNAME_SIZE];
+ 	const char *err = "cannot allocate memory";
+-	struct gendisk *g;
+ 	struct cache_set *c;
+ 
+ 	if (!dc || cached_dev_init(dc, sb->block_size << 9) != 0)
+@@ -1058,10 +1064,7 @@ static const char *register_bdev(struct cache_sb *sb, struct page *sb_page,
+ 			goto err;
+ 	}
+ 
+-	g = dc->disk.disk;
+-
+-	set_capacity(g, dc->bdev->bd_part->nr_sects - dc->data_start_sector);
+-
++	bch_cached_dev_resize(dc);
+ 	bch_cached_dev_request_init(dc);
+ 
+ 	err = "error creating kobject";
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 4d9cca4..663b96d 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -27,6 +27,7 @@ write_attribute(clear_stats);
+ write_attribute(trigger_gc);
+ write_attribute(prune_cache);
+ write_attribute(flash_vol_create);
++write_attribute(resize);
+ 
+ read_attribute(bucket_size);
+ read_attribute(block_size);
+@@ -201,6 +202,15 @@ STORE(__cached_dev)
+ 	    strtoul_or_return(buf))
+ 		bch_cached_dev_run(dc);
+ 
++	if (attr == &sysfs_resize) {
++		if (!strcmp(buf, "max") || !strcmp(buf, "max\n"))
++			bch_cached_dev_resize(dc);
++		else
++			/* Reserved for future use, if someone needs sizes below the max.
++			 * memparse units would be consistent with fs resizing tools. */
++			return -EINVAL;
++	}
++
+ 	if (attr == &sysfs_cache_mode) {
+ 		ssize_t v = bch_read_string_list(buf, bch_cache_modes + 1);
+ 
+@@ -288,6 +298,7 @@ static struct attribute *bch_cached_dev_files[] = {
+ 	&sysfs_sequential_merge,
+ 	&sysfs_clear_stats,
+ 	&sysfs_running,
++	&sysfs_resize,
+ 	&sysfs_state,
+ 	&sysfs_label,
+ 	&sysfs_readahead,
 -- 
-Jens Axboe
+1.8.2.rc3.7.g35aca0e
