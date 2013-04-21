@@ -1,7 +1,7 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Subject: Re: bcache hangs with continuous write I/O to SSD device: me too
-Date: Sat, 20 Apr 2013 16:00:47 -0700
-Message-ID: <20130420230047.GA22470@moria.home.lan>
+Date: Sat, 20 Apr 2013 18:12:16 -0700
+Message-ID: <20130421011215.GB22470@moria.home.lan>
 References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -33,8 +33,6 @@ On Thu, Apr 18, 2013 at 02:42:59PM +0300, Juha Aatrokoski wrote:
 > detailed knowledge about bcache and the bio subsystem) ported to 3.7
 > kernels, so I guess I'll be stuck with 3.6 until the bug is fixed.
 
-Thanks for checking writeback_running - so, it's probably not background
-writeback, sounds like it's actually the new allocation code.
-
-Can you tell me anything about your setup? In particular, are you
-running on device mapper/lvm?
+So, I'm not having any luck with reproducing it, but I do have a
+possible fix in the bcache-testing branch - any chance you can give that
+a try and let me know if it works?
