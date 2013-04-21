@@ -1,12 +1,12 @@
 From: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
 Subject: Re: bcache hangs with continuous write I/O to SSD device: me too
-Date: Sun, 21 Apr 2013 15:39:33 +0300 (EEST)
-Message-ID: <alpine.DEB.2.02.1304211532440.31363@orbit.lan>
-References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan> <20130420230047.GA22470@moria.home.lan>
+Date: Sun, 21 Apr 2013 15:42:23 +0300 (EEST)
+Message-ID: <alpine.DEB.2.02.1304211540050.31363@orbit.lan>
+References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan> <20130421011215.GB22470@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130420230047.GA22470-jC9Py7bek1znysI04z7BkA@public.gmane.org>
+In-Reply-To: <20130421011215.GB22470-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
@@ -34,17 +34,8 @@ On Sat, 20 Apr 2013, Kent Overstreet wrote:
 >> detailed knowledge about bcache and the bio subsystem) ported to 3.7
 >> kernels, so I guess I'll be stuck with 3.6 until the bug is fixed.
 >
-> Thanks for checking writeback_running - so, it's probably not background
-> writeback, sounds like it's actually the new allocation code.
->
-> Can you tell me anything about your setup? In particular, are you
-> running on device mapper/lvm?
+> So, I'm not having any luck with reproducing it, but I do have a
+> possible fix in the bcache-testing branch - any chance you can give that
+> a try and let me know if it works?
 
-As mentioned above, the block device stack is as follows:
-
-   dmcrypt
-     bcache0
-       sda3 (SSD)
-       md0 (raid0)
-         sdb
-         sdc
+OK, I'll test it when I have time, which may not be until next weekend.
