@@ -1,41 +1,34 @@
-From: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
-Subject: Re: bcache hangs with continuous write I/O to SSD device: me too
-Date: Sun, 21 Apr 2013 15:42:23 +0300 (EEST)
-Message-ID: <alpine.DEB.2.02.1304211540050.31363@orbit.lan>
-References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan> <20130421011215.GB22470@moria.home.lan>
+From: Jack Wang <jinpu.wang-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
+Subject: bcache strange behaviour in write back mode
+Date: Mon, 22 Apr 2013 21:15:14 +0200
+Message-ID: <51758C42.4040708@profitbricks.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130421011215.GB22470-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org
+Cc: dongsu.park-EIkl63zCoXaH+58JC4qpiA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Sat, 20 Apr 2013, Kent Overstreet wrote:
+Hi all,
 
-> On Thu, Apr 18, 2013 at 02:42:59PM +0300, Juha Aatrokoski wrote:
->> I ran into the same bug as Heiko Wundram reported a while back:
->> after a few (2-4) days of normal desktop usage, bcache hangs and
->> dstat shows continuous 50MB/s write to the cache SSD partition with
->> one CPU core maxed out in IO wait. I remembered Kent's answer to the
->> later message, and at least echoing 0 to writeback_running did
->> nothing in my system. The bcache device consists of an SSD partition
->> and two disks in md raid0, and there is dmcrypt on top of bcache.
->>
->> The branch was bcache patched to a 3.7.10 (Gentoo) kernel. Is bcache
->> the correct branch, or should I be using bcache-for-upstream? (There
->> are many branches in the git repo, but I can't find any
->> documentation/description on what they are and who should use them.)
->>
->> I had to revert back to the previous setup, which was bcache-3.2
->> patched to a 3.6.11 kernel and which doesn't have the problem. But
->> it looks like bcache-3.2 cannot be trivially (i.e. without more
->> detailed knowledge about bcache and the bio subsystem) ported to 3.7
->> kernels, so I guess I'll be stuck with 3.6 until the bug is fixed.
->
-> So, I'm not having any luck with reproducing it, but I do have a
-> possible fix in the bcache-testing branch - any chance you can give that
-> a try and let me know if it works?
+We've seen strange behaviour in bcache mode in current bcache-testing
+branch with Possible allocator fix:
 
-OK, I'll test it when I have time, which may not be until next weekend.
+Once I start writing data with "dd if=/dev/zero of=/dev/bcache0 bs=4k
+count=10000 oflag=sync", all SSDs in the Pool go close to 100% util and
+I see about 3600 writes/second in iostat for each disk in the pool, BUT
+no data written in means of throughput.
+
+Then after some seconds (the flush interval of bcache) I see the flush
+of the writeback and also data written to the pool SSDs which looks
+pretty much like reordering and merging happened for that data.
+
+bcache-3.2 does not have such problem.
+only bcache(master) and bcache-testing have such problem.
+
+What's the possible reason?
+
+Regards,
+Jack
