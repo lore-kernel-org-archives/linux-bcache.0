@@ -1,74 +1,102 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: bcache strange behaviour in write back mode
-Date: Mon, 22 Apr 2013 14:51:38 -0700
-Message-ID: <20130422215138.GA9931@google.com>
-References: <51758C42.4040708@profitbricks.com>
- <CAC7rs0u=epPv0c_swBSifi_fDRC0k9WpZ+34OmFdgxjR3-8WcA@mail.gmail.com>
- <51759D17.5040204@profitbricks.com>
+From: Jack Wang <jinpu.wang-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
+Subject: Re: [PATCH]bcache : limit the bio max sectors to make request bug
+ in raid0
+Date: Tue, 23 Apr 2013 07:12:42 +0200
+Message-ID: <5176184A.4040206@profitbricks.com>
+References: <516E50EB.6020902@profitbricks.com> <20130422214601.GC4704@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <51759D17.5040204-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
+In-Reply-To: <20130422214601.GC4704@localhost>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Jack Wang <jinpu.wang-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
-Cc: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, dongsu.park-EIkl63zCoXaH+58JC4qpiA@public.gmane.org
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Michael Balser <michael.balser-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>, Dongsu Park <dongsu.park-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Apr 22, 2013 at 10:27:03PM +0200, Jack Wang wrote:
-> Thanks for reply, Kent, two of my colleagues saw this behaviour, so I
-> think we can reproduce this.
-> If you could give me more detailed guide to narrow it down, I can try it
-> on my side.
-
-So, my current hypothesis is that the problem is the allocator spinning,
-and the IO is from it continually rewriting prios/gens.
-
-But I'm still not sure what's causing the allocator to spin, that's what
-the last patch was supposed to fix.
-
-Can you see if you can reproduce it with this patch, and then tell me
-what shows up in the dmesg log? I expect you'll get a _lot_ of output -
-flip timestamps on in your kernel config, if they're not already on.
-Thanks!
-
-commit 60a09d37d301f88dd0f0f413408821a067966d1a
-Author: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Date:   Mon Apr 22 14:49:33 2013 -0700
-
-    bcache: Allocator debug patch
-
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 2879487..37c22c6 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -393,12 +393,15 @@ void bch_allocator_thread(struct closure *cl)
- 				allocator_wait(ca, !list_empty(&ca->discards));
- 				do_discard(ca, bucket);
- 			} else {
--				fifo_push(&ca->free, bucket);
-+				BUG_ON(!fifo_push(&ca->free, bucket));
- 				closure_wake_up(&ca->set->bucket_wait);
- 			}
- 		}
- 
- 		allocator_wait(ca, ca->set->gc_mark_valid);
-+
-+		printk(KERN_DEBUG "bcache: invalidating buckets: free_inc %zu/%zu\n",
-+		       fifo_used(&ca->free_inc), ca->free_inc.size);
- 		invalidate_buckets(ca);
- 
- 		allocator_wait(ca, !atomic_read(&ca->set->prio_blocked) ||
-@@ -407,8 +410,12 @@ void bch_allocator_thread(struct closure *cl)
- 		if (CACHE_SYNC(&ca->set->sb) &&
- 		    (!fifo_empty(&ca->free_inc) ||
- 		     ca->need_save_prio > 64)) {
-+			printk(KERN_DEBUG "bcache: writing prios: free_inc %zu/%zu\n",
-+			       fifo_used(&ca->free_inc), ca->free_inc.size);
- 			bch_prio_write(ca);
--		}
-+		} else
-+			printk(KERN_DEBUG "bcache: not writing prios: free_inc %zu/%zu\n",
-+			       fifo_used(&ca->free_inc), ca->free_inc.size);
- 	}
- }
+On 2013=E5=B9=B404=E6=9C=8822=E6=97=A5 23:46, Kent Overstreet wrote:
+> On Wed, Apr 17, 2013 at 09:36:11AM +0200, Jack Wang wrote:
+>> We are using your bcache-testing branch.
+>>
+>> From 20ad8cfb8047df2d09a5a960610f02c555a31a4f Mon Sep 17 00:00:00 20=
+01
+>> From: Jack Wang <jinpu.wang-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
+>> Date: Tue, 16 Apr 2013 14:59:04 +0200
+>> Subject: [PATCH] limit the max sectors in bcache to fix the make req=
+uest bug
+>>  in raid10
+>> During test bcache with raid1+0, we saw a lot of complain as below:
+>> [ 2766.555172] md/raid0:md400: make_request bug: can't convert block
+>> across chunks or bigger than 512k 953328 144
+>>
+>> when the using dd or fio with bigger blocksize like 512k, limited th=
+e
+>> bio_max_sectors resolve this issue.
+>=20
+> The fix is wrong - it'll have the effect of limiting _every_ bio bcac=
+he
+> emits to a single page, which will be bad for performance.
+>=20
+> I think I just found the problem though - looking at the raid0
+> merge_bvec_fn, when it's stacked on top of devices with their own
+> merge_bvec_fns, it reuses the bvm was passed to it and modifies the
+> bi_bdev and bi_sector. Ew.
+>=20
+> Can you try this patch and see if it fixes it?
+Sure, thanks for looking into it, will test it today.
+>=20
+> commit a09ded8edf9ed4009930713e101249084cbcea5c
+> Author: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+> Date:   Mon Apr 22 14:44:24 2013 -0700
+>=20
+>     bcache: Fix merge_bvec_fn usage for when it modifies the bvm
+>    =20
+>     Stacked md devices reuse the bvm for the subordinate device, caus=
+ing
+>     problems...
+>    =20
+>     Reported-by: Michael Balser <michael.balser-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
+>     Signed-off-by: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+>=20
+> diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+> index 5304eaa..48efd4d 100644
+> --- a/drivers/md/bcache/io.c
+> +++ b/drivers/md/bcache/io.c
+> @@ -163,13 +163,6 @@ static unsigned bch_bio_max_sectors(struct bio *=
+bio)
+>  	struct bio_vec *bv, *end =3D bio_iovec(bio) +
+>  		min_t(int, bio_segments(bio), max_segments);
+> =20
+> -	struct bvec_merge_data bvm =3D {
+> -		.bi_bdev	=3D bio->bi_bdev,
+> -		.bi_sector	=3D bio->bi_sector,
+> -		.bi_size	=3D 0,
+> -		.bi_rw		=3D bio->bi_rw,
+> -	};
+> -
+>  	if (bio->bi_rw & REQ_DISCARD)
+>  		return min(ret, q->limits.max_discard_sectors);
+> =20
+> @@ -178,12 +171,18 @@ static unsigned bch_bio_max_sectors(struct bio =
+*bio)
+>  		ret =3D 0;
+> =20
+>  		for (bv =3D bio_iovec(bio); bv < end; bv++) {
+> +			struct bvec_merge_data bvm =3D {
+> +				.bi_bdev	=3D bio->bi_bdev,
+> +				.bi_sector	=3D bio->bi_sector,
+> +				.bi_size	=3D ret << 9,
+> +				.bi_rw		=3D bio->bi_rw,
+> +			};
+> +
+>  			if (q->merge_bvec_fn &&
+>  			    q->merge_bvec_fn(q, &bvm, bv) < (int) bv->bv_len)
+>  				break;
+> =20
+> -			ret		+=3D bv->bv_len >> 9;
+> -			bvm.bi_size	+=3D bv->bv_len;
+> +			ret +=3D bv->bv_len >> 9;
+>  		}
+>  	}
+> =20
+>=20
