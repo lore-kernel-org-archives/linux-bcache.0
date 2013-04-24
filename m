@@ -1,114 +1,94 @@
 From: Jack Wang <jinpu.wang-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
 Subject: Re: bcache strange behaviour in write back mode
-Date: Wed, 24 Apr 2013 08:56:26 +0200
-Message-ID: <5177821A.3010004@profitbricks.com>
-References: <51758C42.4040708@profitbricks.com> <CAC7rs0u=epPv0c_swBSifi_fDRC0k9WpZ+34OmFdgxjR3-8WcA@mail.gmail.com> <51759D17.5040204@profitbricks.com> <20130422215138.GA9931@google.com> <517676E7.4030805@profitbricks.com> <CAH+dOxL9Ajsp7fruw-9nC63rJLzOqBYreeE1URxF945-pv6vug@mail.gmail.com>
+Date: Wed, 24 Apr 2013 21:49:07 +0200
+Message-ID: <51783733.9080907@profitbricks.com>
+References: <51758C42.4040708@profitbricks.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAH+dOxL9Ajsp7fruw-9nC63rJLzOqBYreeE1URxF945-pv6vug-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <51758C42.4040708-EIkl63zCoXaH+58JC4qpiA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, dongsu.park-EIkl63zCoXaH+58JC4qpiA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org
+Cc: dongsu.park-EIkl63zCoXaH+58JC4qpiA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 04/23/2013 08:40 PM, Kent Overstreet wrote:
-> Well _that_ interesting, the implication is that garbage collection is
-> getting stuck somehow and unable to finish.
-> 
-> I'll probably have another debug patch for you later today.
+I revert this commit:
 
-Hi Kent,
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index e5ff12e..2f36743 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -489,6 +489,12 @@ static void bch_insert_data_loop(struct closure *c=
+l)
+ 		bch_queue_gc(op->c);
+ 	}
 
-Any possible patch, please don't hesitate to send to me , I can help to
-test and hope we can fix that finally.
++	/*
++	 * Journal writes are marked REQ_FLUSH; if the original write was a
++	 * flush, it'll wait on the journal write.
++	 */
++	bio->bi_rw &=3D ~(REQ_FLUSH|REQ_FUA);
++
+ 	do {
+ 		unsigned i;
+ 		struct bkey *k;
+@@ -716,7 +722,7 @@ static struct search *search_alloc(struct bio *bio,
+struct bcache_device *d)
+ 	s->task			=3D current;
+ 	s->orig_bio		=3D bio;
+ 	s->write		=3D (bio->bi_rw & REQ_WRITE) !=3D 0;
+-	s->op.flush_journal	=3D (bio->bi_rw & REQ_FLUSH) !=3D 0;
++	s->op.flush_journal	=3D (bio->bi_rw & (REQ_FLUSH|REQ_FUA)) !=3D 0;
+ 	s->op.skip		=3D (bio->bi_rw & REQ_DISCARD) !=3D 0;
+ 	s->recoverable		=3D 1;
+ 	s->start_time		=3D jiffies;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 6817ea4..0932580 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -766,6 +766,8 @@ static int bcache_device_init(struct bcache_device
+*d, unsigned block_size)
+ 	set_bit(QUEUE_FLAG_NONROT,	&d->disk->queue->queue_flags);
+ 	set_bit(QUEUE_FLAG_DISCARD,	&d->disk->queue->queue_flags);
 
-Regards,
++	blk_queue_flush(q, REQ_FLUSH|REQ_FUA);
++
+ 	return 0;
+ }
+
+the strange behaviour is gone. And I checked the bcache-testing, it doe=
+s
+not contain that commit any more, maybe I'm lost in the git tree update=
+=2E
+Anyway, thanks Kent for your kindly support.
+
 Jack
-> 
-> On Tue, Apr 23, 2013 at 4:56 AM, Jack Wang <jinpu.wang-EIkl63zCoXaH+58JC4qpiA@public.gmane.org> wrote:
->> Hi Kent,
->>
->> After some test, we saw log in dmesg like below:
->>
->>
->>
->> [ 1505.282400] bcache: bch_allocator_thread() bcache: invalidating
->> buckets: free_inc 0/127
->> [ 1505.285843] bcache: bch_allocator_thread() bcache: not writing prios:
->> free_inc 0/127
->> [ 1508.005957] bcache: bch_allocator_thread() bcache: invalidating
->> buckets: free_inc 0/127
->> [ 1508.009357] bcache: bch_allocator_thread() bcache: not writing prios:
->> free_inc 0/127
->> [ 1512.493609] bcache: bch_allocator_thread() bcache: invalidating
->> buckets: free_inc 0/127
->> [ 1512.497070] bcache: bch_allocator_thread() bcache: not writing prios:
->> free_inc 0/127
->>
->> Does this show some clue to you?
->>
->> Regards,
->> Jack
->>
->> On 04/22/2013 11:51 PM, Kent Overstreet wrote:
->>> On Mon, Apr 22, 2013 at 10:27:03PM +0200, Jack Wang wrote:
->>>> Thanks for reply, Kent, two of my colleagues saw this behaviour, so I
->>>> think we can reproduce this.
->>>> If you could give me more detailed guide to narrow it down, I can try it
->>>> on my side.
->>>
->>> So, my current hypothesis is that the problem is the allocator spinning,
->>> and the IO is from it continually rewriting prios/gens.
->>>
->>> But I'm still not sure what's causing the allocator to spin, that's what
->>> the last patch was supposed to fix.
->>>
->>> Can you see if you can reproduce it with this patch, and then tell me
->>> what shows up in the dmesg log? I expect you'll get a _lot_ of output -
->>> flip timestamps on in your kernel config, if they're not already on.
->>> Thanks!
->>>
->>> commit 60a09d37d301f88dd0f0f413408821a067966d1a
->>> Author: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
->>> Date:   Mon Apr 22 14:49:33 2013 -0700
->>>
->>>     bcache: Allocator debug patch
->>>
->>> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
->>> index 2879487..37c22c6 100644
->>> --- a/drivers/md/bcache/alloc.c
->>> +++ b/drivers/md/bcache/alloc.c
->>> @@ -393,12 +393,15 @@ void bch_allocator_thread(struct closure *cl)
->>>                               allocator_wait(ca, !list_empty(&ca->discards));
->>>                               do_discard(ca, bucket);
->>>                       } else {
->>> -                             fifo_push(&ca->free, bucket);
->>> +                             BUG_ON(!fifo_push(&ca->free, bucket));
->>>                               closure_wake_up(&ca->set->bucket_wait);
->>>                       }
->>>               }
->>>
->>>               allocator_wait(ca, ca->set->gc_mark_valid);
->>> +
->>> +             printk(KERN_DEBUG "bcache: invalidating buckets: free_inc %zu/%zu\n",
->>> +                    fifo_used(&ca->free_inc), ca->free_inc.size);
->>>               invalidate_buckets(ca);
->>>
->>>               allocator_wait(ca, !atomic_read(&ca->set->prio_blocked) ||
->>> @@ -407,8 +410,12 @@ void bch_allocator_thread(struct closure *cl)
->>>               if (CACHE_SYNC(&ca->set->sb) &&
->>>                   (!fifo_empty(&ca->free_inc) ||
->>>                    ca->need_save_prio > 64)) {
->>> +                     printk(KERN_DEBUG "bcache: writing prios: free_inc %zu/%zu\n",
->>> +                            fifo_used(&ca->free_inc), ca->free_inc.size);
->>>                       bch_prio_write(ca);
->>> -             }
->>> +             } else
->>> +                     printk(KERN_DEBUG "bcache: not writing prios: free_inc %zu/%zu\n",
->>> +                            fifo_used(&ca->free_inc), ca->free_inc.size);
->>>       }
->>>  }
->>>
->>
+
+On 2013=E5=B9=B404=E6=9C=8822=E6=97=A5 21:15, Jack Wang wrote:
+> Hi all,
+>=20
+> We've seen strange behaviour in bcache mode in current bcache-testing
+> branch with Possible allocator fix:
+>=20
+> Once I start writing data with "dd if=3D/dev/zero of=3D/dev/bcache0 b=
+s=3D4k
+> count=3D10000 oflag=3Dsync", all SSDs in the Pool go close to 100% ut=
+il and
+> I see about 3600 writes/second in iostat for each disk in the pool, B=
+UT
+> no data written in means of throughput.
+>=20
+> Then after some seconds (the flush interval of bcache) I see the flus=
+h
+> of the writeback and also data written to the pool SSDs which looks
+> pretty much like reordering and merging happened for that data.
+>=20
+> bcache-3.2 does not have such problem.
+> only bcache(master) and bcache-testing have such problem.
+>=20
+> What's the possible reason?
+>=20
+> Regards,
+> Jack
+>=20
