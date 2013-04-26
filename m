@@ -1,54 +1,47 @@
-From: Andrew Morton <akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org>
-Subject: Re: Bcache v. whatever
-Date: Thu, 25 Apr 2013 16:17:04 -0700
-Message-ID: <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
-References: <20130114223202.GV26407@google.com>
+From: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
+Subject: Re: bcache hangs with continuous write I/O to SSD device: me too
+Date: Fri, 26 Apr 2013 19:17:48 +0300 (EEST)
+Message-ID: <alpine.DEB.2.02.1304261915080.29828@orbit.lan>
+References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan> <20130421011215.GB22470@moria.home.lan> <alpine.DEB.2.02.1304211540050.31363@orbit.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130114223202.GV26407-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+In-Reply-To: <alpine.DEB.2.02.1304211540050.31363-pfGh9vBu50j/PtFMR13I2A@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, James.Bottomley-JuX6DAaQMKPCXq6kfMZ53/egYHeGw8Jk@public.gmane.org, snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, 14 Jan 2013 14:32:02 -0800 Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org> wrote:
+On Sun, 21 Apr 2013, Juha Aatrokoski wrote:
 
-> Bcache: a block layer SSD cache
+> On Sat, 20 Apr 2013, Kent Overstreet wrote:
+>
+>> On Thu, Apr 18, 2013 at 02:42:59PM +0300, Juha Aatrokoski wrote:
+>>> I ran into the same bug as Heiko Wundram reported a while back:
+>>> after a few (2-4) days of normal desktop usage, bcache hangs and
+>>> dstat shows continuous 50MB/s write to the cache SSD partition with
+>>> one CPU core maxed out in IO wait. I remembered Kent's answer to the
+>>> later message, and at least echoing 0 to writeback_running did
+>>> nothing in my system. The bcache device consists of an SSD partition
+>>> and two disks in md raid0, and there is dmcrypt on top of bcache.
+>>> 
+>>> The branch was bcache patched to a 3.7.10 (Gentoo) kernel. Is bcache
+>>> the correct branch, or should I be using bcache-for-upstream? (There
+>>> are many branches in the git repo, but I can't find any
+>>> documentation/description on what they are and who should use them.)
+>>> 
+>>> I had to revert back to the previous setup, which was bcache-3.2
+>>> patched to a 3.6.11 kernel and which doesn't have the problem. But
+>>> it looks like bcache-3.2 cannot be trivially (i.e. without more
+>>> detailed knowledge about bcache and the bio subsystem) ported to 3.7
+>>> kernels, so I guess I'll be stuck with 3.6 until the bug is fixed.
+>> 
+>> So, I'm not having any luck with reproducing it, but I do have a
+>> possible fix in the bcache-testing branch - any chance you can give that
+>> a try and let me know if it works?
+>
+> OK, I'll test it when I have time, which may not be until next weekend.
 
-sparc64 gcc-3.4.5:
-
-drivers/md/bcache/btree.c: In function `bch_btree_read':
-drivers/md/bcache/btree.c:266: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `__btree_write':
-drivers/md/bcache/btree.c:379: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `btree_node_free':
-drivers/md/bcache/btree.c:980: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `btree_insert_key':
-drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1857: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1859: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
-drivers/md/bcache/btree.c:1864: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `btree_split':
-drivers/md/bcache/btree.c:1934: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `bch_btree_set_root':
-drivers/md/bcache/btree.c:2159: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `bch_btree_search_recurse':
-drivers/md/bcache/btree.c:2262: error: invalid operands to binary +
-drivers/md/bcache/btree.c: In function `bch_btree_refill_keybuf':
-drivers/md/bcache/btree.c:2330: error: invalid operands to binary +
-
-due to
-
-#define pbtree(b)       (&bch_pbtree(b).s[0])
-
-I don't know why this is happening (presumably a gcc glitch), but
-returning an 80-byte struct by value from bch_pkey() and bch_pbtree()
-is just gruesome.  The compiler has to allocate the space on the caller
-stack, pass a hidden pointer into the callee and the callee copies its
-return value into that caller stack slot.  It's slow and consumes stack.
-
-Something different, please.
+I just patched my 3.7.10 Gentoo kernel with the latest bcache branch 
+(which I understand should have the fix for this) and rebooted. I'll let 
+you know if the problem still persists.
