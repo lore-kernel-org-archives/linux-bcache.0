@@ -1,71 +1,53 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Bcache v. whatever
-Date: Fri, 26 Apr 2013 13:54:54 -0700
-Message-ID: <20130426205454.GG9931@google.com>
-References: <20130114223202.GV26407@google.com>
- <20130425161704.3f0fc3b6af55cf75acbc9d9e@linux-foundation.org>
- <20130426194642.GC9931@google.com>
- <20130426132438.4e48e0688fc3c3c298e71d7e@linux-foundation.org>
+From: Leslie Basmid <leslie.basmid-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Very poor performances with the bcache-for-upstream branch
+Date: Mon, 29 Apr 2013 17:43:54 +0200
+Message-ID: <CA+XuAnJO4BCE0yj0i_CZ_iQvDj56FHwFZH302XrisD45P5R3Tw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20130426132438.4e48e0688fc3c3c298e71d7e-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Andrew Morton <akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org, axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org, James.Bottomley-JuX6DAaQMKPCXq6kfMZ53/egYHeGw8Jk@public.gmane.org, snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Apr 26, 2013 at 01:24:38PM -0700, Andrew Morton wrote:
-> > As far as I can tell the only real improvement would be to add a %p
-> > format string to vsnprintf, but adding a global extension would obviously be
-> > inappropriate for this. It'd be really nice to have a mechanism for
-> > adding file/module private format strings to vsnprintf, but I haven't
-> > cared enough yet to implement it myself.
-> > 
-> > Of course if you know a better solution I'm all ears.
-> > 
-> > Uhm, as for the actual bug - that is a fairly ancient gcc, I wasn't
-> > aware we were supporting compilers that old but I'm sure you wouldn't be
-> > bugging me about it if we weren't...
-> 
-> Why are those things macros anyway?  urgh, it's because we want to jam
-> a string into the caller's stack frame without declaring any of it.
+Hi all,
 
-Well, it also _used_ to be the case that if DEBUG and
-CONFIG_DYNAMIC_DEBUG weren't defined then pr_debug() was defined as an
-empty macro, so btree_to_text() wouldn't be called.
+I have chosen to install bcache using the bcache-for-upstream branch
+(recompiled this morning for the latest patches). Even though
+everything is running smoothly, I am surprised by the very poor
+performance I'm obtaining from my setup.
 
-But, I just checked and it's been converted to an empty inline
-function, and some of this debug code is called from fast paths where
-the overhead really does matter :/ argh
+1. Everything is setup on my laptop which has a 500GB HD (sda) and a
+16 GB SSD (sdb).
+2. I have setup an LVM above bcache, and /dev/sda4 is the only cache
+partition. The whole thing was setup with:
 
-> Really I do think it would be better to do away with the C party tricks
-> and have callers do
-> 
-> 	char btree_buf[BTREE_BUF_SIZE];
-> 
-> 	btree_to_text(btree_buf, b);
-> 	pr_debug("%s\n", btree_buf);
-> 
-> Nice, simple, explicit, direct and stupid.  It might generate
-> unused-var warnings if DEBUG is undefined but from my reading of
-> pr_debug() things will be OK.
-> 
-> Then we can poke around at btree_to_text() until gcc-3.4.5 is happy
-> with it.
+make-bcache -B /dev/sda4 -C /dev/sdb
 
-Well, since pr_debug() isn't an empty macro anymore there goes my main
-reason for keeping these macros around.
+the LVM is "inside" /dev/sda4
+3. I am using fio as a benchmark, have setup writeback
+# cat /sys/block/bcache0/bcache/writeback_running
+1
+and I think I have followed every hints I could found about performance tuning.
+Yet, when running the ssd fio test suite on a file on partition that
+is not "cached", I am obtaining the following figures:
+seq-read: iops=29156
+rand-read: iops=291
+seq-write: iops=22355
+rand-write: iops=260
 
-seems like pr_debug() could still have the no_printk() call inside an
-if (0) though...
+Running it on a cached file system I'm obtaining:
+seq-read: iops=22196
+rand-read: iops=330
+seq-write: iops=15864
+rand-write: iops=387
 
-argh. If there was some way to tell gcc "this function only modifies
-this argument so you don't have to call it if the output is never used"
-then I'd just convert it to the explicit bufs now. But I really can't
-have btree_to_text()/bkey_to_text() getting called in non debug
-kernels...
+What am I missing ?
+The benchmark parameters are:
+bs=4k
+ioengine=libaio
+iodepth=64
+size=1g
+direct=1
 
-I'm going to mull it over a bit for now, and try and decide what's least
-ugly.
+Thanks in advance for your answers,
+Leslie.
