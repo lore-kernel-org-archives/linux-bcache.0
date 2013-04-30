@@ -1,67 +1,46 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: bcache hangs with continuous write I/O to SSD device: me too
-Date: Tue, 30 Apr 2013 13:11:42 -0700
-Message-ID: <CAH+dOx+PdC57AH-v8dxAEMZb0MEbw1TVSsmZ7RxBqyuCSkreUA@mail.gmail.com>
-References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan>
-	<20130421011215.GB22470@moria.home.lan>
-	<alpine.DEB.2.02.1304211540050.31363@orbit.lan>
-	<alpine.DEB.2.02.1304261915080.29828@orbit.lan>
-	<alpine.DEB.2.02.1304301909310.13363@orbit.lan>
+Subject: Re: block activity stats
+Date: Tue, 30 Apr 2013 13:31:34 -0700
+Message-ID: <20130430203134.GI9931@google.com>
+References: <CAC7rs0t4uKx37i7pxMoMQgVeUT6spDeridfdC+R6mqLbf1dwug@mail.gmail.com>
+ <1367293610.13617.YahooMailClassic@web181503.mail.ne1.yahoo.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <alpine.DEB.2.02.1304301909310.13363-pfGh9vBu50j/PtFMR13I2A@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <1367293610.13617.YahooMailClassic-XYahOdtEMNn35Xbc4wGBzZOW+3bF1jUfVpNB7YpNyf8@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Argh.
+On Mon, Apr 29, 2013 at 08:46:50PM -0700, matthew patton wrote:
+> Is block activity tracked exclusively by Bcache code or is Bcache
+> piggy-backing on already existing statistics tracking that is
+> implemented in LVM or the VM or (scsi?) block layers? If the first, I
+> was wondering how hard it would be to move it into the lower levels
+> and turned on/off with sysfs.
 
-That hang took a lot longer to show up than last time, didn't it?
-Wonder if I might have fixed part of the problem.
+What sort of activity? Do you mean which blocks are cached and which
+aren't?
 
-On Tue, Apr 30, 2013 at 9:13 AM, Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org> wrote:
-> On Fri, 26 Apr 2013, Juha Aatrokoski wrote:
->>
->> On Sun, 21 Apr 2013, Juha Aatrokoski wrote:
->>>
->>> On Sat, 20 Apr 2013, Kent Overstreet wrote:
->>>>
->>>> On Thu, Apr 18, 2013 at 02:42:59PM +0300, Juha Aatrokoski wrote:
->>>>>
->>>>> I ran into the same bug as Heiko Wundram reported a while back:
->>>>> after a few (2-4) days of normal desktop usage, bcache hangs and
->>>>> dstat shows continuous 50MB/s write to the cache SSD partition with
->>>>> one CPU core maxed out in IO wait. I remembered Kent's answer to the
->>>>> later message, and at least echoing 0 to writeback_running did
->>>>> nothing in my system. The bcache device consists of an SSD partition
->>>>> and two disks in md raid0, and there is dmcrypt on top of bcache.
->>>>>
->>>>> The branch was bcache patched to a 3.7.10 (Gentoo) kernel. Is bcache
->>>>> the correct branch, or should I be using bcache-for-upstream? (There
->>>>> are many branches in the git repo, but I can't find any
->>>>> documentation/description on what they are and who should use them.)
->>>>>
->>>>> I had to revert back to the previous setup, which was bcache-3.2
->>>>> patched to a 3.6.11 kernel and which doesn't have the problem. But
->>>>> it looks like bcache-3.2 cannot be trivially (i.e. without more
->>>>> detailed knowledge about bcache and the bio subsystem) ported to 3.7
->>>>> kernels, so I guess I'll be stuck with 3.6 until the bug is fixed.
->>>>
->>>>
->>>> So, I'm not having any luck with reproducing it, but I do have a
->>>> possible fix in the bcache-testing branch - any chance you can give that
->>>> a try and let me know if it works?
->>>
->>>
->>> OK, I'll test it when I have time, which may not be until next weekend.
->>
->>
->> I just patched my 3.7.10 Gentoo kernel with the latest bcache branch
->> (which I understand should have the fix for this) and rebooted. I'll let you
->> know if the problem still persists.
->
->
-> No luck, same symptoms after four days running the latest bcache branch.
->
+That sort of thing is tracked entirely within bcache.
+
+Maybe you could tell me more specifically what you're trying to do?
+
+> Is there a whitepaper that goes into the mechanics of the tracking,
+> the granularity (eg. block region size), (de)promotion trigger logic,
+> etc? Or is this a question best answered by "go read the code"?
+
+There might be a more concise description of this stuff in the wiki, but
+probably the best documentation is going to be in the code - I wrote a
+lot of high level documentation and stuck it at the top of various
+files:
+
+http://atlas.evilpiepirate.org/git/linux-bcache.git/tree/drivers/md/bcache/bcache.h?h=bcache-dev
+
+http://atlas.evilpiepirate.org/git/linux-bcache.git/tree/drivers/md/bcache/alloc.c?h=bcache-dev
+
+http://atlas.evilpiepirate.org/git/linux-bcache.git/tree/drivers/md/bcache/btree.h?h=bcache-dev
+
+Let me know what's missing!
