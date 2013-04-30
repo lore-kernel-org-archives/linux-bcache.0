@@ -1,50 +1,67 @@
 From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: [GIT PULL] Bcache fixes for 3.10
-Date: Tue, 30 Apr 2013 12:52:14 -0700
-Message-ID: <20130430195214.GH9931@google.com>
+Subject: Re: bcache hangs with continuous write I/O to SSD device: me too
+Date: Tue, 30 Apr 2013 13:11:42 -0700
+Message-ID: <CAH+dOx+PdC57AH-v8dxAEMZb0MEbw1TVSsmZ7RxBqyuCSkreUA@mail.gmail.com>
+References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan>
+	<20130421011215.GB22470@moria.home.lan>
+	<alpine.DEB.2.02.1304211540050.31363@orbit.lan>
+	<alpine.DEB.2.02.1304261915080.29828@orbit.lan>
+	<alpine.DEB.2.02.1304301909310.13363@orbit.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1304301909310.13363-pfGh9vBu50j/PtFMR13I2A@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org
-Cc: akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hey Jens, this is everything I've got ready for 3.10 - there's _still_
-one more bug I'm trying to track down.
+Argh.
 
-Andrew - I've got patches that rip out the pkey() and pbtree() macros,
-but they're somewhat tied up with some other nontrivial refactorings so
-I think I'm going to wait a bit on those.
+That hang took a lot longer to show up than last time, didn't it?
+Wonder if I might have fixed part of the problem.
 
-The following changes since commit cef5279735d3f6f0243e626963e6d5c84efade0a:
-
-  bcache: Disable broken btree fuzz tester (2013-04-08 13:33:49 -0700)
-
-are available in the git repository at:
-
-  http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
-
-for you to fetch changes up to cd66f1f69ed40270bb34e20b25a8111bc72a1b2a:
-
-  bcache: Use bd_link_disk_holder() (2013-04-24 13:15:17 -0700)
-
-----------------------------------------------------------------
-Kent Overstreet (8):
-      bcache: Take data offset from the bdev superblock.
-      bcache: Set ra_pages based on backing device's ra_pages
-      bcache: Hack around stuff that clones up to bi_max_vecs
-      bcache: Correctly check against BIO_MAX_PAGES
-      bcache: Fix merge_bvec_fn usage for when it modifies the bvm
-      bcache: Make sure blocksize isn't smaller than device blocksize
-      bcache: Allocator cleanup/fixes
-      bcache: Use bd_link_disk_holder()
-
- drivers/md/bcache/alloc.c   |  74 +++++++++++++-------
- drivers/md/bcache/bcache.h  |  48 ++++++++++---
- drivers/md/bcache/btree.c   |   8 +--
- drivers/md/bcache/io.c      |  35 ++++++----
- drivers/md/bcache/request.c |   2 +-
- drivers/md/bcache/super.c   | 166 +++++++++++++++++++++++++++-----------------
- 6 files changed, 215 insertions(+), 118 deletions(-)
+On Tue, Apr 30, 2013 at 9:13 AM, Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org> wrote:
+> On Fri, 26 Apr 2013, Juha Aatrokoski wrote:
+>>
+>> On Sun, 21 Apr 2013, Juha Aatrokoski wrote:
+>>>
+>>> On Sat, 20 Apr 2013, Kent Overstreet wrote:
+>>>>
+>>>> On Thu, Apr 18, 2013 at 02:42:59PM +0300, Juha Aatrokoski wrote:
+>>>>>
+>>>>> I ran into the same bug as Heiko Wundram reported a while back:
+>>>>> after a few (2-4) days of normal desktop usage, bcache hangs and
+>>>>> dstat shows continuous 50MB/s write to the cache SSD partition with
+>>>>> one CPU core maxed out in IO wait. I remembered Kent's answer to the
+>>>>> later message, and at least echoing 0 to writeback_running did
+>>>>> nothing in my system. The bcache device consists of an SSD partition
+>>>>> and two disks in md raid0, and there is dmcrypt on top of bcache.
+>>>>>
+>>>>> The branch was bcache patched to a 3.7.10 (Gentoo) kernel. Is bcache
+>>>>> the correct branch, or should I be using bcache-for-upstream? (There
+>>>>> are many branches in the git repo, but I can't find any
+>>>>> documentation/description on what they are and who should use them.)
+>>>>>
+>>>>> I had to revert back to the previous setup, which was bcache-3.2
+>>>>> patched to a 3.6.11 kernel and which doesn't have the problem. But
+>>>>> it looks like bcache-3.2 cannot be trivially (i.e. without more
+>>>>> detailed knowledge about bcache and the bio subsystem) ported to 3.7
+>>>>> kernels, so I guess I'll be stuck with 3.6 until the bug is fixed.
+>>>>
+>>>>
+>>>> So, I'm not having any luck with reproducing it, but I do have a
+>>>> possible fix in the bcache-testing branch - any chance you can give that
+>>>> a try and let me know if it works?
+>>>
+>>>
+>>> OK, I'll test it when I have time, which may not be until next weekend.
+>>
+>>
+>> I just patched my 3.7.10 Gentoo kernel with the latest bcache branch
+>> (which I understand should have the fix for this) and rebooted. I'll let you
+>> know if the problem still persists.
+>
+>
+> No luck, same symptoms after four days running the latest bcache branch.
+>
