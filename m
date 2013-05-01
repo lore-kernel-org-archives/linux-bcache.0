@@ -1,80 +1,92 @@
-From: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
-Subject: Re: bcache hangs with continuous write I/O to SSD device: me too
-Date: Wed, 1 May 2013 14:14:48 +0300 (EEST)
-Message-ID: <alpine.DEB.2.02.1305011244540.28808@orbit.lan>
-References: <alpine.DEB.2.02.1304181413360.30807@orbit.lan> <20130421011215.GB22470@moria.home.lan> <alpine.DEB.2.02.1304211540050.31363@orbit.lan> <alpine.DEB.2.02.1304261915080.29828@orbit.lan> <alpine.DEB.2.02.1304301909310.13363@orbit.lan>
- <CAH+dOx+PdC57AH-v8dxAEMZb0MEbw1TVSsmZ7RxBqyuCSkreUA@mail.gmail.com>
+From: Leslie Basmid <leslie.basmid-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: Very poor performances with the bcache-for-upstream branch
+Date: Wed, 1 May 2013 15:30:12 +0200
+Message-ID: <CA+XuAnK4nNOG_tSuuteDThbj5L+5xmDsxQLfrHj314z1fr+bUA@mail.gmail.com>
+References: <CA+XuAnJO4BCE0yj0i_CZ_iQvDj56FHwFZH302XrisD45P5R3Tw@mail.gmail.com>
+	<CAC7rs0t4uKx37i7pxMoMQgVeUT6spDeridfdC+R6mqLbf1dwug@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAH+dOx+PdC57AH-v8dxAEMZb0MEbw1TVSsmZ7RxBqyuCSkreUA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAC7rs0t4uKx37i7pxMoMQgVeUT6spDeridfdC+R6mqLbf1dwug-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, 30 Apr 2013, Kent Overstreet wrote:
-> Argh.
->
-> That hang took a lot longer to show up than last time, didn't it?
-> Wonder if I might have fixed part of the problem.
+Hi Kent,
 
-Well, not exactly. Before this I triggered the bug two times, the first 
-time after four days of uptime and the second after two days, so since 
-this time was also four days it's hard to say whether this bug has been 
-affected at all. But yes, since this is my main desktop computer and the 
-workload on it is non-artificial and not very heavy, it does take a long 
-time to trigger this bug. Perhaps Heiko can trigger it faster, assuming 
-his setup still has this bug?
+this is exactly the documentation I had followed to try to track the
+bad performance issues I was experiencing.
+Redoing a whole run, trying to force everything into writeback mode,
+by disabling both the sequential bypass
+echo 0 > /sys/block/bcache0/bcache/sequential_cutoff
+and the congested thresholds
+echo 0 > /sys/fs/bcache/<set>/congested_read_threshold_us,
+echo 0 > /sys/fs/bcache/<set>/congested_write_threshold_us
 
-I do have a spare computer and disks at work that I can use for a test 
-setup (with the same kernel and block stack), though it will take a few 
-days to free up an SSD for it. If you can provide scripts to generate the 
-workload then maybe the bug could be reproduced faster.
 
-> On Tue, Apr 30, 2013 at 9:13 AM, Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org> wrote:
->> On Fri, 26 Apr 2013, Juha Aatrokoski wrote:
->>>
->>> On Sun, 21 Apr 2013, Juha Aatrokoski wrote:
->>>>
->>>> On Sat, 20 Apr 2013, Kent Overstreet wrote:
->>>>>
->>>>> On Thu, Apr 18, 2013 at 02:42:59PM +0300, Juha Aatrokoski wrote:
->>>>>>
->>>>>> I ran into the same bug as Heiko Wundram reported a while back:
->>>>>> after a few (2-4) days of normal desktop usage, bcache hangs and
->>>>>> dstat shows continuous 50MB/s write to the cache SSD partition with
->>>>>> one CPU core maxed out in IO wait. I remembered Kent's answer to the
->>>>>> later message, and at least echoing 0 to writeback_running did
->>>>>> nothing in my system. The bcache device consists of an SSD partition
->>>>>> and two disks in md raid0, and there is dmcrypt on top of bcache.
->>>>>>
->>>>>> The branch was bcache patched to a 3.7.10 (Gentoo) kernel. Is bcache
->>>>>> the correct branch, or should I be using bcache-for-upstream? (There
->>>>>> are many branches in the git repo, but I can't find any
->>>>>> documentation/description on what they are and who should use them.)
->>>>>>
->>>>>> I had to revert back to the previous setup, which was bcache-3.2
->>>>>> patched to a 3.6.11 kernel and which doesn't have the problem. But
->>>>>> it looks like bcache-3.2 cannot be trivially (i.e. without more
->>>>>> detailed knowledge about bcache and the bio subsystem) ported to 3.7
->>>>>> kernels, so I guess I'll be stuck with 3.6 until the bug is fixed.
->>>>>
->>>>>
->>>>> So, I'm not having any luck with reproducing it, but I do have a
->>>>> possible fix in the bcache-testing branch - any chance you can give that
->>>>> a try and let me know if it works?
->>>>
->>>>
->>>> OK, I'll test it when I have time, which may not be until next weekend.
->>>
->>>
->>> I just patched my 3.7.10 Gentoo kernel with the latest bcache branch
->>> (which I understand should have the fix for this) and rebooted. I'll let you
->>> know if the problem still persists.
->>
->>
->> No luck, same symptoms after four days running the latest bcache branch.
->>
+I am obtaining the following figures, on a cached fs:
+seq-read: iops=12188
+rand-read: iops=7392
+seq-write: iops=430
+rand-write: iops=454
+
+I must be missing something, and I would really appreciate any help on
+the matter.
+
+Thanks in advance,
+Leslie.
+
+On Mon, Apr 29, 2013 at 7:52 PM, Kent Overstreet
+<kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> There's documentation for exactly this stuff, linked off the main page
+> of the wiki:
 >
+> http://atlas.evilpiepirate.org/git/linux-bcache.git/tree/Documentation/bcache.txt?h=bcache-dev#n126
 >
+> On Mon, Apr 29, 2013 at 8:43 AM, Leslie Basmid <leslie.basmid-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+>> Hi all,
+>>
+>> I have chosen to install bcache using the bcache-for-upstream branch
+>> (recompiled this morning for the latest patches). Even though
+>> everything is running smoothly, I am surprised by the very poor
+>> performance I'm obtaining from my setup.
+>>
+>> 1. Everything is setup on my laptop which has a 500GB HD (sda) and a
+>> 16 GB SSD (sdb).
+>> 2. I have setup an LVM above bcache, and /dev/sda4 is the only cache
+>> partition. The whole thing was setup with:
+>>
+>> make-bcache -B /dev/sda4 -C /dev/sdb
+>>
+>> the LVM is "inside" /dev/sda4
+>> 3. I am using fio as a benchmark, have setup writeback
+>> # cat /sys/block/bcache0/bcache/writeback_running
+>> 1
+>> and I think I have followed every hints I could found about performance tuning.
+>> Yet, when running the ssd fio test suite on a file on partition that
+>> is not "cached", I am obtaining the following figures:
+>> seq-read: iops=29156
+>> rand-read: iops=291
+>> seq-write: iops=22355
+>> rand-write: iops=260
+>>
+>> Running it on a cached file system I'm obtaining:
+>> seq-read: iops=22196
+>> rand-read: iops=330
+>> seq-write: iops=15864
+>> rand-write: iops=387
+>>
+>> What am I missing ?
+>> The benchmark parameters are:
+>> bs=4k
+>> ioengine=libaio
+>> iodepth=64
+>> size=1g
+>> direct=1
+>>
+>> Thanks in advance for your answers,
+>> Leslie.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
