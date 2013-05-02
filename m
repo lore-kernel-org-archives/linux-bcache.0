@@ -1,24 +1,42 @@
-From: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: [GIT PULL] Bcache fixes for 3.10
-Date: Wed, 1 May 2013 14:19:43 -0700
-Message-ID: <CAC7rs0s7_EBcvLGtbFKcjOofhZC3U=PXoPqR3C7Doo8dKJTFXQ@mail.gmail.com>
-References: <20130430195214.GH9931@google.com>
-	<20130501072616.GH7800@kernel.dk>
-	<20130501185450.GA4057@moria.home.lan>
-	<20130501190553.GC7800@kernel.dk>
+From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: Very poor performances with the bcache-for-upstream branch
+Date: Thu, 2 May 2013 05:50:54 +0000 (UTC)
+Message-ID: <klsuru$l60$2@ger.gmane.org>
+References: <CA+XuAnJO4BCE0yj0i_CZ_iQvDj56FHwFZH302XrisD45P5R3Tw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130501190553.GC7800-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-Cc: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, May 1, 2013 at 12:05 PM, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org> wrote:
-> Nope, in fact your series was on top of the last commit I got from you,
-> cef52797. Only non-bcache in between. Just wondering how that 215
-> insertions and 118 deletions becames 213/112 for that case.
+> 2. I have setup an LVM above bcache, and /dev/sda4 is the only cache
+> partition. The whole thing was setup with:
+> 
+> make-bcache -B /dev/sda4 -C /dev/sdb
+> 
+> the LVM is "inside" /dev/sda4
+> 3. I am using fio as a benchmark, have setup writeback
+> # cat /sys/block/bcache0/bcache/writeback_running
+> 1
+> and I think I have followed every hints I could found about performance tuning.
+> Yet, when running the ssd fio test suite on a file on partition that
+> is not "cached", I am obtaining the following figures:
+> seq-read: iops=29156
+> rand-read: iops=291
+> seq-write: iops=22355
+> rand-write: iops=260
+> 
+> Running it on a cached file system I'm obtaining:
+> seq-read: iops=22196
+> rand-read: iops=330
+> seq-write: iops=15864
+> rand-write: iops=387
+> 
+> What am I missing ?
 
-Oh, that. That was a last minute bugfix, just backed out part of a
-change. Sorry :P
+Outside of the make-bcache, none of the commands you give in the thread
+prove that the cache is assembled (it's actually possible to have
+writeback_running = 1 with a detached bdev, though that's a bug in my
+opinion).  What does `ls -d /sys/fs/bcache/*/bdev*` show?
