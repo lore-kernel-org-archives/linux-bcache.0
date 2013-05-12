@@ -1,35 +1,22 @@
-From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: bcache on ubuntu
-Date: Sat, 11 May 2013 07:56:41 +0000 (UTC)
-Message-ID: <kmktjp$1mp$1@ger.gmane.org>
-References: <CAAxY4JmYSri=YJyfmRrUaN3R5KvDx6JKRxOUc6am5vqxUhSh1Q@mail.gmail.com>
+From: Marcel Ammerlaan <marcel-uObrZzd3RrBWk0Htik3J/w@public.gmane.org>
+Subject: Patching kernel 3.2
+Date: Sun, 12 May 2013 15:03:35 +0200
+Message-ID: <CAOr0bonryaf6PtTC_bX1e4XAuzSQxmu9C24++xkV2CxGyGFsLA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-> Ok thanks,
-> I think I will wait for the 3.10 on the link you provided..
-> 
-> Then, running it on my machine is just like copying the file like
-> "linux-image-3.9.1-030901-generic_3.9.1-030901.201305080210_amd64.deb"
-> into my existing /boot/ folder and letting grub to boot it, isn't it?
-> 
-> But what about the initrd image? It is not provided on your link... I
-> can take the old one I was booting? What is this image?
-> 
-> As you suggested, now I will try to build bcache-tools. But shouldn't
-> I compile it only when I'm running the new kernel?
+Hi,
 
-I did say:
+Although I see the patches being pushed to kernel 3.10, I'd like to
+patch a 3.2 kernel as well. However, it seems I cannot clone the git
+repository (many timeouts) and git cannot restart a partial clone. Is
+it possible to either download the repo as a zipfile or otherwise
+receive the repo or a patch containing the changes for a 3.2 kernel.
 
-you'll need bcache-tools installed *before* the kernel so that it gets
-picked up for your boot.  So no.  This has to do with initramfs generation.
+Regards,
 
-The wiki page I linked has the command for installing deb files.
-
-If you hit any more snags, it will be a good idea to wait for things to
-be properly integrated by Ubuntu.
+Marcel Ammerlaan.
