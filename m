@@ -1,39 +1,48 @@
-From: Paul Bolle <pebolle@tiscali.nl>
-Subject: [PATCH] bcache: drop "select CLOSURES"
-Date: Mon, 13 May 2013 10:35:21 +0200
-Message-ID: <1368434121.1350.27.camel@x61.thuisdomein>
+From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Subject: [GIT PULL] Bcache fixes for 3.10
+Date: Wed, 15 May 2013 00:53:02 -0700
+Message-ID: <20130515075302.GA26662@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-The Kconfig entry for BCACHE selects CLOSURES. But there's no Kconfig
-symbol CLOSURES. That symbol was used in development versions of bcache,
-but was removed when the closures code was no longer provided as a
-kernel library. It can safely be dropped.
+Jens - couple more bcache patches. Bug fixes and a doc update.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
-Basically untested.
+The following changes since commit f50efd2fdbd9b35b11f5778ed85beb764184bda9:
 
- drivers/md/bcache/Kconfig | 1 -
- 1 file changed, 1 deletion(-)
+  Merge branch 'bcache-for-upstream' of http://evilpiepirate.org/git/linux-bcache into for-3.10/drivers (2013-05-01 09:23:05 +0200)
 
-diff --git a/drivers/md/bcache/Kconfig b/drivers/md/bcache/Kconfig
-index 05c220d..f950c9d 100644
---- a/drivers/md/bcache/Kconfig
-+++ b/drivers/md/bcache/Kconfig
-@@ -1,7 +1,6 @@
- 
- config BCACHE
- 	tristate "Block device as cache"
--	select CLOSURES
- 	---help---
- 	Allows a block device to be used as cache for other devices; uses
- 	a btree for indexing and the layout is optimized for SSDs.
--- 
-1.7.11.7
+are available in the git repository at:
+
+
+  http://evilpiepirate.org/git/linux-bcache.git bcache-for-upstream
+
+for you to fetch changes up to f59fce847fc8483508b5028c24e2b1e00523dd88:
+
+  bcache: Fix error handling in init code (2013-05-15 00:48:14 -0700)
+
+----------------------------------------------------------------
+Emil Goode (1):
+      bcache: Fix incompatible pointer type warning
+
+Gabriel (1):
+      bcache: clarify free/available/unused space
+
+Kent Overstreet (1):
+      bcache: Fix error handling in init code
+
+Paul Bolle (1):
+      bcache: drop "select CLOSURES"
+
+ Documentation/bcache.txt      |   12 ++-
+ drivers/md/bcache/Kconfig     |    1 -
+ drivers/md/bcache/bcache.h    |    2 +-
+ drivers/md/bcache/stats.c     |   34 ++++----
+ drivers/md/bcache/super.c     |  185 ++++++++++++++++++-----------------------
+ drivers/md/bcache/writeback.c |    2 +-
+ 6 files changed, 109 insertions(+), 127 deletions(-)
