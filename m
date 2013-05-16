@@ -1,54 +1,57 @@
-From: Campbell Steven <casteven-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Bcache problem perhaps bug?
-Date: Thu, 16 May 2013 10:03:38 +1200
-Message-ID: <CAPerZE9pV43ASnSuo3R6G42s57MaPWA3rsOLnjch7v2y4UkC7Q@mail.gmail.com>
+From: Patrick Ng <ppng-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+Subject: Poor performance with bcache write-back mode
+Date: Thu, 16 May 2013 14:51:46 -0700 (PDT)
+Message-ID: <1368741106.62060.YahooMailNeo@web162401.mail.bf1.yahoo.com>
+Reply-To: Patrick Ng <ppng-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+Hi all,
 
-We have been using bcache in a test environment here for a while to
-vastly improve performance of a CEPH cluster. We have really only run
-into one issue, and I'm sure it's something to do with the way we have
-things configured (otherwise others would have noticed I'm sure) but
-I'm not exactly sure where. We are currently running this
-http://atlas.evilpiepirate.org/git/linux-bcache.git/commit/?id=dbc52367ad8e63b5bcb8c6b1442e8fb5ed251421
-commit  from the bcache tree after this when we reboot the server it
-will hang for ever with timeouts shown in the screenshots of the KVM
-below (sorry limited options for collecting debug data via a windows
-only KVM):
+I have installed Linux kernel 3.9.2 in my Fedora 18. =A0When I ran FIO =
+in bcache write-through mode, the performance was good, but running a s=
+imilar test in bcache write-back mode, I got very poor performance.
+Did I miss any options when setting the write-back mode?
 
-https://www.btg.co.nz/Public/2.jpg
-https://www.btg.co.nz/Public/3.jpg
-https://www.btg.co.nz/Public/4.jpg
-https://www.btg.co.nz/Public/6.jpg
+Environment
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+500G backing store at /dev/sdb1
+150G SSD at /dev/sdc1
 
-I have tested a plain mainline kernel without bcache on the same
-machine and that works fine as does everything up to and around the
-commit from the bcache tree mentioned above. Anything later than that
-(up to and including the latest mainline checkout as of today)
-exhibits the behaviour above.
+Write-through mode
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+make-bcache -B /dev/sdb1 -C /dev/sdc1
+echo /dev/sdb1 > /sys/fs/bcache/register
+echo /dev/sdc1 > /sys/fs/bcache/register
+mkfs.ext4 /dev/bcache0
+mount /dev/bcache0 /mnt/bcache
 
-Our setup is:
 
-2 x Intel 520 120GB SSD's of which 10 GB is in a RAID 1 for the OS
-with LVM over top and the remaining space on both SSD's is a RAID 0
-with LVM on top and used as a bcache caching device for the 4 spinning
-disks in the servers.
+Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
+the result is approx. 65k IOPS
 
-As a reference this post to the list appears to show the same errors
-we are getting.
 
-http://comments.gmane.org/gmane.linux.kernel.bcache.devel/1562
+Write-backe mode (setup is almost the same as write-through except the =
+extra step at the end "echo writeback ...")
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+make-bcache -B /dev/sdb1 -C /dev/sdc1
+echo /dev/sdb1 > /sys/fs/bcache/register
+echo /dev/sdc1 > /sys/fs/bcache/register
+mkfs.ext4 /dev/bcache0
+mount /dev/bcache0 /mnt/bcache
+echo writeback > /sys/block/bcache0/bcache/cache_mode
 
-I made contact with Aaron, he wasn't able to resolve the issue.
+Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
+the result is approx. 12k IOPS
 
-Any pointers (or glaring problems with our setup) gladly accepted.
+Running FIO with random, 80% read 20% write, iosize=3D4096, queue depth=
+=3D16
+the result is approx. 2k IOPS
 
-Thanks
-
-Campbell
+Thanks,
+Patrick=A0
