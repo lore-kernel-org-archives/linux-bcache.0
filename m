@@ -1,79 +1,82 @@
-From: folkert <folkert-Beo89p9qyDM6GGFevw1D/A@public.gmane.org>
-Subject: speed
-Date: Tue, 21 May 2013 14:19:30 +0200
-Message-ID: <20130521121928.GO10944@belle.intranet.vanheusden.com>
+From: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+Subject: Re: speed
+Date: Tue, 21 May 2013 06:45:47 -0700 (PDT)
+Message-ID: <1369143947.80902.YahooMailClassic@web181504.mail.ne1.yahoo.com>
+References: <20130521121928.GO10944@belle.intranet.vanheusden.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
+In-Reply-To: <20130521121928.GO10944-0UqbV+S8w/00yi0pm118jWr4lhVJriqTmjCW/i4Lttk@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, folkert <folkert-Beo89p9qyDM6GGFevw1D/A@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+> - any suggestions what SSD to buy? e.g. an OCZ Vertex 4?
 
-I've got a couple of questions regarding bcache:
+OCZ is IMO a troubled company and their products are seriously hit/miss=
+=2E I would go with Intel, samsung, micron/corsair in that order.
 
-- will it be faster to implement bcache instead of letting the
-  write-intent-map of a raid1 volume be written on an ssd together with
-  the journals of the filesystems on that raid1 volume?
+> - are there any suggestions on what size SSD to use for a
+> certain size
 
-- if i have multiple logical volumes in a volume group, do I need to
-  explicitly configure bcache for each of them? or can I "connect" bcache
-  to the whole volume group?
+It all depends on your workload. The "big boys" generally put at least =
+5% of backend capacity in SSD. For normal singleton server/desktops you=
+'d be hard-pressed to see any value. If you're running virtualized serv=
+ers, the combined I/O patterns seen at the central array degenerate to =
+random I/O and that is where tiering or Bcache can be useful. The indiv=
+idual server running it's virtualized workload might see some benefit t=
+oo but probably not to near the same extent. If you're using NFS datast=
+ores running FS-cache on the virtual host might be a very useful thing =
+but only if the local SSD/fast HD is big enough to grab the entire file=
+ since virtual disk files tend to be sizable.
 
-- does bcache do trim? and/or pass it through?
+> - is it possible to use more than 1 SSD as a bcache for the
+> same =A0 storage?
 
-- maybe bcache can check if a written block is all 0x00 and then do a
-  trim instead? that is not only usefull for SSDs but can help
-  data-deduplication software/appliances as well
+use LVM segments. ie. put <N> SSDs in a VGpool and then when allocating=
+ the LV, specify extent ranges out of some/all of them. When you need t=
+o remove the SSD, use pvchange to have LVM vacate the extents on that d=
+rive. Then you can remove at will.
 
-- what will happen if an SSD suddenly stops working in the sense that it
-  won't allow anymore writes? will bcache then still commit all the
-  buffered data which was already written to the SSD but not to the HDDs?
+> - does bcache work with e.g. iscsi/nbd remote storage?
+> =A0 - then maybe it would be nice if it is possible to
+> temporarily bring
+> =A0 =A0 down the remote-storage + bcache combination
+> when the network
+> =A0 =A0 connection goes down
 
-- any suggestions what SSD to buy? e.g. an OCZ Vertex 4?
+If your iSCSI is unreachable your I/O will stall and timeout regardless=
+ of any local Bcache. Oh you might get lucky for a couple seconds but a=
+fter that, boom. Engineer your network-attached storage correctly.
 
-- are there any suggestions on what size SSD to use for a certain size
-  HDD? or does it depend on the amount of data written per second? or
-  the number of iops?
+> - is it possible to swap via bcache?
 
-- is it possible to do an emergency flush where everything in the cache
-  is written to disk, *as much as possible*? e.g. if a read fails,
-  continue with other blocks?
-  I'm asking this as I'm not entirely convinced of the quality of SSDs
+swap is generally a continuous write, so no. If you're swapping, you ne=
+ed to fix the underlying problem, not play games with trying to make sw=
+ap "faster". You can ofcourse mount your swap device from something tha=
+t is locally attached and cut out the bandwidth and latency of an over-=
+the-wire target.
 
-- is it possible to use more than 1 SSD as a bcache for the same
-  storage? not as raid0 as you then can't remove one from the system
-  without affecting the other
+> - does it keep track of checksums/crcs of the data it writes
+> to the SSD?
+> =A0 e.g. it writes a block to the SSD and then later on
+> it reads that
+> =A0 block back from the SSD (to write to e.g. HDD) and
+> verifies that what
+> =A0 it got back is what it expected
 
-- does bcache work with e.g. iscsi/nbd remote storage?
-  - then maybe it would be nice if it is possible to temporarily bring
-    down the remote-storage + bcache combination when the network
-    connection goes down
-
-- is it possible to swap via bcache?
-
-- maybe zcache can be combined so that you can work with more data with
-  a smaller SSD?
-
-- I think I read on the website that blocks are stored in sorted order
-  on disk. that's probably on the HDD below it and not on the SSD,
-  right? (because afaik an ssd has always the same access latency,
-  independent of write order. altough I can image if that is not true)
-
-- does it keep track of checksums/crcs of the data it writes to the SSD?
-  e.g. it writes a block to the SSD and then later on it reads that
-  block back from the SSD (to write to e.g. HDD) and verifies that what
-  it got back is what it expected
-
-
-Folkert van Heusden
-
--- 
-Always wondered what the latency of your webserver is? Or how much more
-latency you get when you go through a proxy server/tor? The numbers
-tell the tale and with HTTPing you know them!
-                                     http://www.vanheusden.com/httping/
------------------------------------------------------------------------
-Phone: +31-6-41278122, PGP-key: 1F28D8AE, www.vanheusden.com
+No. If you want ZFS' features use that. This whole silent block corrupt=
+ion thing is a marketing gimmick by Sun because at some point 10+ years=
+ ago they used a family of REALLY buggy controllers. Oh sure, if you've=
+ got petabytes on your petabytes you'll run into it eventually. If you =
+use crap hardware with half-baked drivers or shitty consumer hardware y=
+ou may run into it too. But so you know, the PCIe busses use checksums =
+and erasure-coding. As does the SATA/SAS chip when sending it down the =
+wire to the drive interface. And the drive itself does checksums and in=
+ fact writes the data using erasure coding too. So about the only time =
+that 512bytes is just 512bytes of "fragile", unprotected data is when i=
+t's in RAM be it system, controller, or disk. Not to say that bit-flips=
+ don't happen where the drive miss-writes or miss-reads but the occuran=
+ce is vanishingly rare and the drive already has mechanisms to deal wit=
+h it.
