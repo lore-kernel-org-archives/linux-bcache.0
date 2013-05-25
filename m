@@ -1,82 +1,116 @@
-From: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
-Subject: Re: speed
-Date: Tue, 21 May 2013 06:45:47 -0700 (PDT)
-Message-ID: <1369143947.80902.YahooMailClassic@web181504.mail.ne1.yahoo.com>
-References: <20130521121928.GO10944@belle.intranet.vanheusden.com>
+From: Amit Kale <amitkale-Gl6SwLIDy+bjyqlaT+yXCw@public.gmane.org>
+Subject: Re: EnhanceIO(TM) caching driver features [1/3]
+Date: Sat, 25 May 2013 21:30:27 +0530
+Message-ID: <201305252130.27645.amitkale@geeksofpune.in>
+References: <A44CB407BBB85C498149811C52498A450872D9@MYMBX3.stec-inc.ad> <A44CB407BBB85C498149811C52498A45088559@MYMBX3.stec-inc.ad> <20130525062917.GW29680@kernel.dk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130521121928.GO10944-0UqbV+S8w/00yi0pm118jWr4lhVJriqTmjCW/i4Lttk@public.gmane.org>
+In-Reply-To: <20130525062917.GW29680-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, folkert <folkert-Beo89p9qyDM6GGFevw1D/A@public.gmane.org>
+To: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Cc: Amit Kale <akale-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, OS Engineering <osengineering-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Padmini Balasubramaniyan <padminib-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, Amit Phansalkar <aphansalkar-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-> - any suggestions what SSD to buy? e.g. an OCZ Vertex 4?
+On Saturday 25 May 2013, Jens Axboe wrote:
+> Please don't top post!
 
-OCZ is IMO a troubled company and their products are seriously hit/miss=
-=2E I would go with Intel, samsung, micron/corsair in that order.
+Got to use a different email client for that. Note that I am writing this from 
+my personal email address. This email and any future emails I write from this 
+address are my personal views and sTec can't be held responsible for them.
 
-> - are there any suggestions on what size SSD to use for a
-> certain size
+> On Sat, May 25 2013, Amit Kale wrote:
+> > Hi Jens,
+> > 
+> > I by mistake dropped the weblink to demartek study while composing my
+> > email. The demartek study is published here:
+> > http://www.demartek.com/Demartek_STEC_S1120_PCIe_Evaluation_2013-02.html.
+> > It's an independent study. Here are a few numbers taken from this
+> > report. In a database comparison using transactions per second
+> > 
+> > HDD baseline (40 disks) - 2570 tps
+> > 240GB Cache - 9844 tps
+> > 480GB cache - 19758 tps
+> > RAID5 pure SSD - 32380 tps
+> > RAID0 pure SSD - 40467 tps
+> > 
+> > There are two types of performance comparisons, application based and
+> > IO pattern based. Application based tests measure efficiency of cache
+> > replacement algorithms. These are time consuming. Above tests were
+> > done by demartek over a period of time. I don't have performance
+> > comparisons between EnhanceIO(TM) driver, bcache and dm-cache. I'll
+> > try to get them done in-house.
+> 
+> Unless I'm badly mistaken, that study is only on enhanceio, it does not
+> compare it to any other solutions. 
 
-It all depends on your workload. The "big boys" generally put at least =
-5% of backend capacity in SSD. For normal singleton server/desktops you=
-'d be hard-pressed to see any value. If you're running virtualized serv=
-ers, the combined I/O patterns seen at the central array degenerate to =
-random I/O and that is where tiering or Bcache can be useful. The indiv=
-idual server running it's virtualized workload might see some benefit t=
-oo but probably not to near the same extent. If you're using NFS datast=
-ores running FS-cache on the virtual host might be a very useful thing =
-but only if the local SSD/fast HD is big enough to grab the entire file=
- since virtual disk files tend to be sizable.
+That's correct. I haven't seen any application level benchmark based 
+comparisons between different caching solutions on any platform.
 
-> - is it possible to use more than 1 SSD as a bcache for the
-> same =A0 storage?
+> Additionally, it's running on
+> Windows?!
 
-use LVM segments. ie. put <N> SSDs in a VGpool and then when allocating=
- the LV, specify extent ranges out of some/all of them. When you need t=
-o remove the SSD, use pvchange to have LVM vacate the extents on that d=
-rive. Then you can remove at will.
+Yes. However as I have said above, application level testing is primarly a 
+test of cache replacement algorithm. So the effect of a platform is less, 
+although not zero.
 
-> - does bcache work with e.g. iscsi/nbd remote storage?
-> =A0 - then maybe it would be nice if it is possible to
-> temporarily bring
-> =A0 =A0 down the remote-storage + bcache combination
-> when the network
-> =A0 =A0 connection goes down
+> I don't think it's too much to ask to see results on the
+> operating system for which you are submitting the changes.
 
-If your iSCSI is unreachable your I/O will stall and timeout regardless=
- of any local Bcache. Oh you might get lucky for a couple seconds but a=
-fter that, boom. Engineer your network-attached storage correctly.
+Agreed that's a fair thing to ask.
 
-> - is it possible to swap via bcache?
+> 
+> > IO pattern based tests can be done quickly. However since IO pattern
+> > is fixed prior to the test, output tends to depend on whether the IO
+> > pattern suits the caching algorithm. These are relatively easy. I can
+> > definitely post this comparison.
+> 
+> It's fairly trivial to do some synthetic cache testing with fio, using
+> eg the zipf distribution. That'll get you data reuse, for both reads and
+> writes (if you want), in the selected distribution.
 
-swap is generally a continuous write, so no. If you're swapping, you ne=
-ed to fix the underlying problem, not play games with trying to make sw=
-ap "faster". You can ofcourse mount your swap device from something tha=
-t is locally attached and cut out the bandwidth and latency of an over-=
-the-wire target.
+While the running a test is trivial deciding what IO patterns to run is a 
+difficult problem. The bottom line for sequential, random, zipf and pareto is 
+the same - they all test a fixed IO pattern, which at best is very unlike an 
+application pattern. Cache behavior affects IO addresses that an application 
+issues. The block list of IOs requested by an application is different when 
+running on HDD, SSD and cache. Memory usage by cache is one significant factor 
+in this effect. IO latency (more and less) also affects when multiple threads 
+are processing transactions.
 
-> - does it keep track of checksums/crcs of the data it writes
-> to the SSD?
-> =A0 e.g. it writes a block to the SSD and then later on
-> it reads that
-> =A0 block back from the SSD (to write to e.g. HDD) and
-> verifies that what
-> =A0 it got back is what it expected
+Regardless of which IO pattern is used following characteristics to a large 
+extent measure efficiency of a cache engine minus cache replacement algorithm.
+Hit rate - Can be varied between 0 to 100%. 90% and above are of interest for 
+caching.
+Read versus Write mix - Can be varied from 0/100, 10/90, ...., 10/90, 0/100.
+IO block size - Fixed equal to or a multiple of cache block size. Variable 
+complicates analysis of results.
 
-No. If you want ZFS' features use that. This whole silent block corrupt=
-ion thing is a marketing gimmick by Sun because at some point 10+ years=
- ago they used a family of REALLY buggy controllers. Oh sure, if you've=
- got petabytes on your petabytes you'll run into it eventually. If you =
-use crap hardware with half-baked drivers or shitty consumer hardware y=
-ou may run into it too. But so you know, the PCIe busses use checksums =
-and erasure-coding. As does the SATA/SAS chip when sending it down the =
-wire to the drive interface. And the drive itself does checksums and in=
- fact writes the data using erasure coding too. So about the only time =
-that 512bytes is just 512bytes of "fragile", unprotected data is when i=
-t's in RAM be it system, controller, or disk. Not to say that bit-flips=
- don't happen where the drive miss-writes or miss-reads but the occuran=
-ce is vanishingly rare and the drive already has mechanisms to deal wit=
-h it.
+Does following comparison sound interesting? I welcome others to propose 
+modifications or other ways.
+
+Cache block size 4kB.
+HDD size = 500GB
+SSD size = 100GB and 500GB. 
+HDD equal to SSD is only to study cache behavior so all of the tests below 
+need not be performed.
+
+For read-only cache mode 
+This works best for write intensive loads R/W mix - 10/90 and 30/70
+Write intensive loads are usually long writes Block size - 64kB
+Cache hit ratio 0%, 90%, 95%, 100%.
+
+For write-through cache mode
+This works best for read intensive loads R/W mix 100/0, 90/10
+Block size - 4kB, 16kB, 128kB.
+Cache hit ratio 90%, 95%, 100%
+
+For write-back cache mode
+This works best for fluctuating loads R/W mix 90/10
+Block size - 4kB
+Cache hit ratio 95%.
+
+Thanks.
+-Amit
