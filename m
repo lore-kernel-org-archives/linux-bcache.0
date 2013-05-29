@@ -1,65 +1,29 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Poor performance with bcache write-back mode
-Date: Tue, 28 May 2013 17:40:58 -0700
-Message-ID: <20130529004058.GF2291@google.com>
-References: <1368741106.62060.YahooMailNeo@web162401.mail.bf1.yahoo.com>
+From: Kumar amit mehta <gmate.amit-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: [PATCH] md: bcache: io.c: fix a potential NULL pointer
+ dereference
+Date: Tue, 28 May 2013 20:01:13 -0400
+Message-ID: <20130529000113.GA6648@gmail.com>
+References: <1369726275-5424-1-git-send-email-gmate.amit@gmail.com>
+ <20130529002041.GC2291@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <1368741106.62060.YahooMailNeo-QseONlJJzSFal3a5i+KC+JEhsgyP+Z75VpNB7YpNyf8@public.gmane.org>
+In-Reply-To: <20130529002041.GC2291-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Patrick Ng <ppng-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: neilb-l3A5Bk7waGM@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, kernel-janitors-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, May 16, 2013 at 02:51:46PM -0700, Patrick Ng wrote:
-> Hi all,
->=20
-> I have installed Linux kernel 3.9.2 in my Fedora 18. =C2=A0When I ran=
- FIO in bcache write-through mode, the performance was good, but runnin=
-g a similar test in bcache write-back mode, I got very poor performance=
-=2E
-> Did I miss any options when setting the write-back mode?
->=20
-> Environment
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> 500G backing store at /dev/sdb1
-> 150G SSD at /dev/sdc1
->=20
-> Write-through mode
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> make-bcache -B /dev/sdb1 -C /dev/sdc1
-> echo /dev/sdb1 > /sys/fs/bcache/register
-> echo /dev/sdc1 > /sys/fs/bcache/register
-> mkfs.ext4 /dev/bcache0
-> mount /dev/bcache0 /mnt/bcache
->=20
->=20
-> Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
-> the result is approx. 65k IOPS
->=20
->=20
-> Write-backe mode (setup is almost the same as write-through except th=
-e extra step at the end "echo writeback ...")
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> make-bcache -B /dev/sdb1 -C /dev/sdc1
-> echo /dev/sdb1 > /sys/fs/bcache/register
-> echo /dev/sdc1 > /sys/fs/bcache/register
-> mkfs.ext4 /dev/bcache0
-> mount /dev/bcache0 /mnt/bcache
-> echo writeback > /sys/block/bcache0/bcache/cache_mode
->=20
-> Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
-> the result is approx. 12k IOPS
->=20
-> Running FIO with random, 80% read 20% write, iosize=3D4096, queue dep=
-th=3D16
-> the result is approx. 2k IOPS
+On Tue, May 28, 2013 at 05:20:41PM -0700, Kent Overstreet wrote:
+> On Tue, May 28, 2013 at 12:31:15AM -0700, Kumar Amit Mehta wrote:
+> > bio_alloc_bioset returns NULL on failure. This fix adds a missing check
+> > for potential NULL pointer dereferencing.
+> 
+> Whoops, that's definitely a bug. Thanks, applied.
+> 
+> How'd you find it?
 
-You're probably getting bit by the congested bypass - try setting
-congested_read_threshold_us and congested_write_threshold_us both to 0.
+Using smatch[1]
 
-I wish there was a better solution to the congestion bypass stuff, it's
-a hard problem...
+[1] http://smatch.sourceforge.net/
