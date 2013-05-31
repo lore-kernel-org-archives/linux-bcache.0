@@ -1,29 +1,34 @@
-From: Kumar amit mehta <gmate.amit-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: [PATCH] md: bcache: io.c: fix a potential NULL pointer
- dereference
-Date: Tue, 28 May 2013 20:01:13 -0400
-Message-ID: <20130529000113.GA6648@gmail.com>
-References: <1369726275-5424-1-git-send-email-gmate.amit@gmail.com>
- <20130529002041.GC2291@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: Phil Viana <phillip.l.viana-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: [PATCH] md: bcache: Fixed a spelling mistake with the word 'journaling' in a comment
+Date: Thu, 30 May 2013 23:42:38 -0300
+Message-ID: <1369968158-13820-1-git-send-email-phillip.l.viana@gmail.com>
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20130529002041.GC2291-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: neilb-l3A5Bk7waGM@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, kernel-janitors-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org
+Cc: neilb-l3A5Bk7waGM@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, trivial-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Phil Viana <phillip.l.viana-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, May 28, 2013 at 05:20:41PM -0700, Kent Overstreet wrote:
-> On Tue, May 28, 2013 at 12:31:15AM -0700, Kumar Amit Mehta wrote:
-> > bio_alloc_bioset returns NULL on failure. This fix adds a missing check
-> > for potential NULL pointer dereferencing.
-> 
-> Whoops, that's definitely a bug. Thanks, applied.
-> 
-> How'd you find it?
+The word 'journaling' is spelt with a single 'l' throughout the Linux
+source code, and this spelling is also found in the Oxford dictionary
+and used in other projects in general.
 
-Using smatch[1]
+Signed-off-by: Phil Viana <phillip.l.viana-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+---
+ drivers/md/bcache/bset.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-[1] http://smatch.sourceforge.net/
+diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+index a0f190a..d33f5ad 100644
+--- a/drivers/md/bcache/bset.c
++++ b/drivers/md/bcache/bset.c
+@@ -31,7 +31,7 @@ int bch_keylist_realloc(struct keylist *l, int nptrs, struct cache_set *c)
+ 	unsigned newsize = oldsize + 2 + nptrs;
+ 	uint64_t *new;
+ 
+-	/* The journalling code doesn't handle the case where the keys to insert
++	/* The journaling code doesn't handle the case where the keys to insert
+ 	 * is bigger than an empty write: If we just return -ENOMEM here,
+ 	 * bio_insert() and bio_invalidate() will insert the keys created so far
+ 	 * and finish the rest when the keylist is empty.
+-- 
+1.7.9.5
