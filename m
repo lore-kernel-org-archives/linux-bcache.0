@@ -1,59 +1,89 @@
-From: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Subject: Re: bcache on top of drbd or the contrary?
-Date: Mon, 3 Jun 2013 12:14:57 -0700
-Message-ID: <20130603191457.GJ2291@google.com>
-References: <CAAxY4JkxnNqe_AUjERze30t8GQSD_3ZXXgM84Q+O_bnP6TCs4g@mail.gmail.com>
+From: Patrick Ng <ppng-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+Subject: Re: Poor performance with bcache write-back mode
+Date: Mon, 3 Jun 2013 21:44:59 +0000 (UTC)
+Message-ID: <loom.20130603T233345-71@post.gmane.org>
+References: <1368741106.62060.YahooMailNeo@web162401.mail.bf1.yahoo.com> <20130529004058.GF2291@google.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <CAAxY4JkxnNqe_AUjERze30t8GQSD_3ZXXgM84Q+O_bnP6TCs4g-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Giovanni Lenzi <giovanni.lenzi-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Sat, Jun 01, 2013 at 05:45:09PM +0200, Giovanni Lenzi wrote:
-> Hi,
-> I'm planning to user bcache for speed, and drbd for HA between two nodes.
-> 
-> I'm facing with this question:
-> Is it better to have drbd on top of a bcached volume(caching + backing device)
-> or to use bcache to put a caching device on top of a drbd backing device?
-> 
-> I think that with the second option and writeback enabled, write
-> requests should be faster than with the first option... Do you agree?
-> 
-> But.. what about the data integrity and consistency of the data on the
-> drbd slave volume? What if the power goes down on the master node?
-> Could the drbd volume on the slave node, get corrupted If the caching
-> device is not detached correctly on the master node?
-> 
-> On the contrary with the first option(drbd on top of bcache), I think
-> drbd should always preserve data integrity on the two nodes, isn't it?
-> Can bcache with writeback mode, cause corrupted data on both nodes in
-> case of a ssd, or power unit failure?
-> 
-> And where is it better to put drbd metadata? External or internal?
-> External to ssd is the obvious answer, but if I want to store them
-> internally, what will be the advantages and disadvantages of the two
-> solutions?
-> 
-> With the first option, storing metadata internally on the bcached
-> device should not be so slow, given that bcache should always cache
-> most used data. Isn't it?
-> 
-> What do you think about this subject?
+Kent Overstreet <koverstreet@...> writes:
 
-If you're using bcache in writethrough mode, running bcache on top of
-drbd is fine and may be faster (but benchmark it if you care).
+>=20
+> On Thu, May 16, 2013 at 02:51:46PM -0700, Patrick Ng wrote:
+> > Hi all,
+> >=20
+> > I have installed Linux kernel 3.9.2 in my Fedora 18. =C2=A0When I r=
+an FIO in=20
+bcache write-through mode, the
+> performance was good, but running a similar test in bcache write-back=
+=20
+mode, I got very poor performance.
+> > Did I miss any options when setting the write-back mode?
+> >=20
+> > Environment
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > 500G backing store at /dev/sdb1
+> > 150G SSD at /dev/sdc1
+> >=20
+> > Write-through mode
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > make-bcache -B /dev/sdb1 -C /dev/sdc1
+> > echo /dev/sdb1 > /sys/fs/bcache/register
+> > echo /dev/sdc1 > /sys/fs/bcache/register
+> > mkfs.ext4 /dev/bcache0
+> > mount /dev/bcache0 /mnt/bcache
+> >=20
+> >=20
+> > Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
+> > the result is approx. 65k IOPS
+> >=20
+> >=20
+> > Write-backe mode (setup is almost the same as write-through except =
+the=20
+extra step at the end "echo
+> writeback ...")
+> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> > make-bcache -B /dev/sdb1 -C /dev/sdc1
+> > echo /dev/sdb1 > /sys/fs/bcache/register
+> > echo /dev/sdc1 > /sys/fs/bcache/register
+> > mkfs.ext4 /dev/bcache0
+> > mount /dev/bcache0 /mnt/bcache
+> > echo writeback > /sys/block/bcache0/bcache/cache_mode
+> >=20
+> > Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
+> > the result is approx. 12k IOPS
+> >=20
+> > Running FIO with random, 80% read 20% write, iosize=3D4096, queue d=
+epth=3D16
+> > the result is approx. 2k IOPS
+>=20
+> You're probably getting bit by the congested bypass - try setting
+> congested_read_threshold_us and congested_write_threshold_us both to =
+0.
+>=20
+> I wish there was a better solution to the congestion bypass stuff, it=
+'s
+> a hard problem...
+>=20
 
-Reason being in writethrough mode the SSD failing won't hurt anything.
+Hi Kent, thank you for responding to my question.
 
-If you're using bcache in writeback mode, _definitely_ run drbd on top
-of bcache.
+I have tried setting both congested_read_threshold_us and=20
+congested_write_threshold_us to zero.
 
-In writeback mode, if the SSD fails the backing device is now useless.
-If you were using bcache under drbd, no big deal - you have a replica of
-the backing device. If you're using bcache on top of drbd... well,
-that's /dev/drbd0 that's now toast, and you're screwed.
+The result of FIO random 100% read test in WriteBack mode has improved =
+and=20
+the IOPS is as good as in WriteThur mode.
+
+The result of FIO random 80% read 20% write remain the same with no=20
+improvement.
+
+It appears that the option does not help on the WRITE?
+
+Thanks,
+Patrick
