@@ -1,89 +1,71 @@
-From: Patrick Ng <ppng-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
-Subject: Re: Poor performance with bcache write-back mode
-Date: Mon, 3 Jun 2013 21:44:59 +0000 (UTC)
-Message-ID: <loom.20130603T233345-71@post.gmane.org>
-References: <1368741106.62060.YahooMailNeo@web162401.mail.bf1.yahoo.com> <20130529004058.GF2291@google.com>
+From: OS Engineering <osengineering-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+Subject: Performance Comparison among EnhanceIO, bcache and dm-cache.
+Date: Tue, 11 Jun 2013 15:05:07 +0000
+Message-ID: <D399C715A2AD7F4F891A75871FC3117507866B@MYMBX3.stec-inc.ad>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org" <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Cc: Padmini Balasubramaniyan <padminib-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, Amit Phansalkar <aphansalkar-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Kent Overstreet <koverstreet@...> writes:
+Hi Jens,
 
->=20
-> On Thu, May 16, 2013 at 02:51:46PM -0700, Patrick Ng wrote:
-> > Hi all,
-> >=20
-> > I have installed Linux kernel 3.9.2 in my Fedora 18. =C2=A0When I r=
-an FIO in=20
-bcache write-through mode, the
-> performance was good, but running a similar test in bcache write-back=
-=20
-mode, I got very poor performance.
-> > Did I miss any options when setting the write-back mode?
-> >=20
-> > Environment
-> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > 500G backing store at /dev/sdb1
-> > 150G SSD at /dev/sdc1
-> >=20
-> > Write-through mode
-> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > make-bcache -B /dev/sdb1 -C /dev/sdc1
-> > echo /dev/sdb1 > /sys/fs/bcache/register
-> > echo /dev/sdc1 > /sys/fs/bcache/register
-> > mkfs.ext4 /dev/bcache0
-> > mount /dev/bcache0 /mnt/bcache
-> >=20
-> >=20
-> > Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
-> > the result is approx. 65k IOPS
-> >=20
-> >=20
-> > Write-backe mode (setup is almost the same as write-through except =
-the=20
-extra step at the end "echo
-> writeback ...")
-> > =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> > make-bcache -B /dev/sdb1 -C /dev/sdc1
-> > echo /dev/sdb1 > /sys/fs/bcache/register
-> > echo /dev/sdc1 > /sys/fs/bcache/register
-> > mkfs.ext4 /dev/bcache0
-> > mount /dev/bcache0 /mnt/bcache
-> > echo writeback > /sys/block/bcache0/bcache/cache_mode
-> >=20
-> > Running FIO with random, 100% read, iosize=3D4096, queue depth=3D16
-> > the result is approx. 12k IOPS
-> >=20
-> > Running FIO with random, 80% read 20% write, iosize=3D4096, queue d=
-epth=3D16
-> > the result is approx. 2k IOPS
->=20
-> You're probably getting bit by the congested bypass - try setting
-> congested_read_threshold_us and congested_write_threshold_us both to =
-0.
->=20
-> I wish there was a better solution to the congestion bypass stuff, it=
-'s
-> a hard problem...
->=20
+In continuation with our previous communication, we have carried out performance comparison among EnhanceIO, bcache and dm-cache.
 
-Hi Kent, thank you for responding to my question.
+We found that EnhanceIO provides better throughput on zipf workload (with theta=1.2) in comparison to bcache and dm-cache for write through caches.
+However, for write back caches, we found that dm-cache had best throughput followed by EnhanceIO and then bcache. Dm-cache commits on-disk metadata every time a REQ_SYNC or REQ_FUA bio is written. If no such requests are made then it commits metadata once every second. If power is lost, it may lose some recent writes. However, EnhanceIO and bcache do not acknowledge IO completion until both IO and metadata hits the SSD. Hence, EnhanceIO and bcache provide higher data integrity at a cost of performance.
 
-I have tried setting both congested_read_threshold_us and=20
-congested_write_threshold_us to zero.
+The fio config and setup information follows:
+HDD              : 100GB
+SSD              :  20GB
+Mode             : write through / write back
+Cache block_size : 4KB for bcache, EnhanceIO and 256KB for dm-cache
 
-The result of FIO random 100% read test in WriteBack mode has improved =
-and=20
-the IOPS is as good as in WriteThur mode.
+The other options have been left to their default values.
 
-The result of FIO random 80% read 20% write remain the same with no=20
-improvement.
+Note:
+1) In case of dm-cache, we used 2 partitions of same SSD with 1GB partition as metadata and 20GB partition as caching device. This has been done so as to ensure a fair comparison as EnhanceIO and bcache do not have a separate metadata device.
 
-It appears that the option does not help on the WRITE?
+2) In order to ensure proper cache warm up, We have turned off sequential bypass in bcache. This does not impact our performance results as they are taken for random workload.
 
-Thanks,
-Patrick
+For each test, we first performed a warm up run using the following fio options:
+fio --direct=1 --size=90% --filesize=20G --blocksize=4k --ioengine=libaio --rw=rw --rwmixread=100 --rwmixwrite=0 --iodepth=8 ...
+
+Then, we performed our actual run with the following fio options:
+fio --direct=1 --size=100% --filesize=20G --blocksize=4k --ioengine=libaio --rw=randrw --rwmixread=90 --rwmixwrite=10 --iodepth=8 --numjobs=4 --random_distribution=zipf:1.2 ...
+
+============================= Write Through ===============================
+Type      Read Latency(ms)   Write Latency(ms)    Read(MB/s)    Write(MB/s)
+===========================================================================
+EnhanceIO      1.58              16.53               32.91       3.65
+bcache         0.58              31.05               27.17       3.02
+dm-cache       0.24              27.45               31.05       3.44
+
+============================= Write Back ==================================
+Type      Read Latency(ms)    Write Latency(ms)    Read(MB/s)   Write(MB/s)
+===========================================================================
+EnhanceIO      0.34               4.98               138.72      15.40
+bcache         0.95               1.76               106.82      11.85
+dm-cache       0.58               0.55               193.76      21.52
+
+============================ Base Line ====================================
+Type      Read Latency(ms)    Write Latency(ms)    Read(MB/s)   Write(MB/s)
+===========================================================================
+HDD            6.22              27.23                13.51       1.49
+SSD            0.47               0.42               235.87      26.21
+
+We have written scripts that aid in cache creation, deletion and performance run for all these caching solutions. These scripts can be found at:
+https://github.com/stec-inc/EnhanceIO/tree/master/performance_test
+
+Thanks and Regards,
+sTec Team
+
+PROPRIETARY-CONFIDENTIAL INFORMATION INCLUDED
+
+
+
+This electronic transmission, and any documents attached hereto, may contain confidential, proprietary and/or legally privileged information. The information is intended only for use by the recipient named above. If you received this electronic message in error, please notify the sender and delete the electronic message. Any disclosure, copying, distribution, or use of the contents of information received in error is strictly prohibited, and violators will be pursued legally.
