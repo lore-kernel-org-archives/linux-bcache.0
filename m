@@ -1,141 +1,86 @@
-From: OS Engineering <osengineering-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
-Subject: RE: Performance Comparison among EnhanceIO, bcache and dm-cache.
-Date: Wed, 12 Jun 2013 11:39:30 +0000
-Message-ID: <D399C715A2AD7F4F891A75871FC3117507B9E6@MYMBX3.stec-inc.ad>
-References: <D399C715A2AD7F4F891A75871FC3117507866B@MYMBX3.stec-inc.ad>
- <201306121028.03278.amitkale@geeksofpune.in>
+From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: [PATCH] bcache: Set the logical block size to a sensible value
+Date: Thu, 13 Jun 2013 22:25:02 +0200
+Message-ID: <51BA2A9E.2070905@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <201306121028.03278.amitkale-Gl6SwLIDy+bjyqlaT+yXCw@public.gmane.org>
-Content-Language: en-US
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Amit Kale <amitkale-Gl6SwLIDy+bjyqlaT+yXCw@public.gmane.org>
-Cc: "koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org" <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, Padmini Balasubramaniyan <padminib-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, Amit Phansalkar <aphansalkar-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-> -----Original Message-----
-> From: Amit Kale [mailto:amitkale-Gl6SwLIDy+bjyqlaT+yXCw@public.gmane.org]
-> Sent: Wednesday, June 12, 2013 10:28 AM
-> To: OS Engineering
-> Cc: koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org; linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org;
-> thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org; dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org; LKML; Jens Axboe; Padmini
-> Balasubramaniyan; Amit Phansalkar
-> Subject: Re: Performance Comparison among EnhanceIO, bcache and dm-
-> cache.
-> 
-> On Tuesday 11 Jun 2013, OS Engineering wrote:
-> > Hi Jens,
-> >
-> > In continuation with our previous communication, we have carried out
-> > performance comparison among EnhanceIO, bcache and dm-cache.
-> >
-> > We found that EnhanceIO provides better throughput on zipf workload
-> > (with
-> > theta=1.2) in comparison to bcache and dm-cache for write through caches.
-> > However, for write back caches, we found that dm-cache had best
-> > throughput followed by EnhanceIO and then bcache. Dm-cache commits
-> > on-disk metadata every time a REQ_SYNC or REQ_FUA bio is written. If
-> > no such requests are made then it commits metadata once every second.
-> > If power is lost, it may lose some recent writes. However, EnhanceIO
-> > and bcache do not acknowledge IO completion until both IO and metadata
-> > hits the SSD. Hence, EnhanceIO and bcache provide higher data integrity at
-> a cost of performance.
-> 
-> So it won't be fair to compare them with dm-cache in write-back mode since
-> guarantees are different. I am sure if similar (SYNC/FUA enforcement for
-> persistence) guarantees are implemented in bcache/EnhanceIO, they'll offer
-> a much better performance.
-> 
-> >
-> > The fio config and setup information follows:
-> > HDD              : 100GB
-> > SSD              :  20GB
-> > Mode             : write through / write back
-> > Cache block_size : 4KB for bcache, EnhanceIO and 256KB for dm-cache
-> >
-> > The other options have been left to their default values.
-> >
-> > Note:
-> > 1) In case of dm-cache, we used 2 partitions of same SSD with 1GB partition
-> > as metadata and 20GB partition as caching device. This has been done so as
-> > to ensure a fair comparison as EnhanceIO and bcache do not have a
-> separate
-> > metadata device.
-> >
-> > 2) In order to ensure proper cache warm up, We have turned off
-> sequential
-> > bypass in bcache. This does not impact our performance results as they are
-> > taken for random workload.
-> >
-> > For each test, we first performed a warm up run using the following fio
-> > options: fio --direct=1 --size=90% --filesize=20G --blocksize=4k
-> > --ioengine=libaio --rw=rw --rwmixread=100 --rwmixwrite=0 --iodepth=8 ...
-> >
-> > Then, we performed our actual run with the following fio options:
-> > fio --direct=1 --size=100% --filesize=20G --blocksize=4k --ioengine=libaio
-> > --rw=randrw --rwmixread=90 --rwmixwrite=10 --iodepth=8 --numjobs=4
-> > --random_distribution=zipf:1.2 ...
-> 
-> Did you experiment a little with varying iodepth and numjobs? Is this the
-> best
-> combination you found out? The numbers below appear low considering a
-> 90% hit
-> ratio for EnhanceIO. SSD baseline performance shown below appears low.
-> However
-> it should not affect this comparison. All caching solutions are being subjected
-> to the same ratio of HDD/SSD performance.
+Preserve the backing device's logical size, use 512 byte
+sectors when there is no backing device.
 
-We have chosen a representative workload for our tests, we could do more experiments  
-that tests SSD to its performance limits.  
+The logical block size has no impact on performance, but
+it alters the meaning of on-disk structures like partition
+tables.  Preserve the backing device's sector size to keep
+bcache transparent, and use 512 byte sectors like everyone
+else when no backing device is present.
 
+Signed-off-by: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+---
+ drivers/md/bcache/super.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-> >
-> > ============================= Write Through ===============================
-> > Type      Read Latency(ms)   Write Latency(ms)    Read(MB/s)    Write(MB/s)
-> > ========================================================================
-> > EnhanceIO      1.58                             16.53                           32.91               3.65
-> > bcache             0.58                             31.05                           27.17                3.02
-> > dm-cache       0.24                             27.45                           31.05                3.44
-> 
-> EnhanceIO shows much higher read latency here. Is that because of
-> READFILLs ?
-> Write latency, read-write throughputs are good.
-> 
-
-Yes, READFILL's (SSD writes at the time of read of an uncached block) is the reason for higher read latency in EnhanceIO. 
-
-
-> >
-> > ============================= Write Back ==================================
-> > Type      Read Latency(ms)    Write Latency(ms)    Read(MB/s)   Write(MB/s)
-> >
->>==========================================================================
-> > EnhanceIO      0.34                         4.98                                 138.72                15.40
-> > bcache             0.95                          1.76                                 106.82                11.85
-> > dm-cache       0.58                          0.55                                 193.76                21.52
-> 
-> Here EnhanceIO's read latency is better compared the other two. Write
-> latency
-> is larger than the other two.
-> 
-> -Amit
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 1e3bc4c..94fad70 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -745,11 +745,12 @@ static void bcache_device_free(struct bcache_device *d)
+ 		bioset_free(d->bio_split);
  
-EnhanceIO has higher write latencies as it acknowledges IO completion only when both data and metadata has
-hit the SSD.
-
-> >
-> > ============================ Base Line ====================================
-> > Type      Read Latency(ms)    Write Latency(ms)    Read(MB/s)   Write(MB/s)
->> ==========================================================================
-> > HDD            6.22                              27.23                               13.51                1.49
-> > SSD             0.47                                0.42                             235.87              26.21
-> >
-> > We have written scripts that aid in cache creation, deletion and
-> > performance run for all these caching solutions. These scripts can be
-> > found at:
-> > https://github.com/stec-inc/EnhanceIO/tree/master/performance_test
-> >
-> > Thanks and Regards,
-> > sTec Team
+ 	closure_debug_destroy(&d->cl);
+ }
+ 
+-static int bcache_device_init(struct bcache_device *d, unsigned block_size)
++static int bcache_device_init(struct bcache_device *d, unsigned block_size,
++			      unsigned logical_size)
+ {
+ 	struct request_queue *q;
+ 
+ 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
+ 	    !(d->unaligned_bvec = mempool_create_kmalloc_pool(1,
+@@ -774,11 +775,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size)
+ 	q->limits.max_sectors		= UINT_MAX;
+ 	q->limits.max_segment_size	= UINT_MAX;
+ 	q->limits.max_segments		= BIO_MAX_PAGES;
+ 	q->limits.max_discard_sectors	= UINT_MAX;
+ 	q->limits.io_min		= block_size;
+-	q->limits.logical_block_size	= block_size;
++	q->limits.logical_block_size	= logical_size;
+ 	q->limits.physical_block_size	= block_size;
+ 	set_bit(QUEUE_FLAG_NONROT,	&d->disk->queue->queue_flags);
+ 	set_bit(QUEUE_FLAG_DISCARD,	&d->disk->queue->queue_flags);
+ 
+ 	return 0;
+@@ -1064,11 +1065,11 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+ 	for (io = dc->io; io < dc->io + RECENT_IO; io++) {
+ 		list_add(&io->lru, &dc->io_lru);
+ 		hlist_add_head(&io->hash, dc->io_hash + RECENT_IO);
+ 	}
+ 
+-	ret = bcache_device_init(&dc->disk, block_size);
++	ret = bcache_device_init(&dc->disk, block_size, q->limits.logical_block_size);
+ 	if (ret)
+ 		return ret;
+ 
+ 	set_capacity(dc->disk.disk,
+ 		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
+@@ -1163,11 +1164,11 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+ 	closure_init(&d->cl, NULL);
+ 	set_closure_fn(&d->cl, flash_dev_flush, system_wq);
+ 
+ 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
+ 
+-	if (bcache_device_init(d, block_bytes(c)))
++	if (bcache_device_init(d, block_bytes(c), 512))
+ 		goto err;
+ 
+ 	bcache_device_attach(d, c, u - c->uuids);
+ 	set_capacity(d->disk, u->sectors);
+ 	bch_flash_dev_request_init(d);
+-- 
+1.8.3.222.g430da9e
