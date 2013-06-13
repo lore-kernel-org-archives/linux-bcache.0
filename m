@@ -1,86 +1,44 @@
-From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: [PATCH] bcache: Set the logical block size to a sensible value
-Date: Thu, 13 Jun 2013 22:25:02 +0200
-Message-ID: <51BA2A9E.2070905@gmail.com>
+From: Piergiorgio Sartor <piergiorgio.sartor-i47jiTeKxPI@public.gmane.org>
+Subject: (b)cache trashing
+Date: Thu, 13 Jun 2013 22:33:49 +0200
+Message-ID: <20130613203348.GA3019@lazy.lzy>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Preserve the backing device's logical size, use 512 byte
-sectors when there is no backing device.
+Hi all,
 
-The logical block size has no impact on performance, but
-it alters the meaning of on-disk structures like partition
-tables.  Preserve the backing device's sector size to keep
-bcache transparent, and use 512 byte sectors like everyone
-else when no backing device is present.
+one (or two), naive, question.
 
-Signed-off-by: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
----
- drivers/md/bcache/super.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+I assume that bcache will cache on reads too.
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 1e3bc4c..94fad70 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -745,11 +745,12 @@ static void bcache_device_free(struct bcache_device *d)
- 		bioset_free(d->bio_split);
- 
- 	closure_debug_destroy(&d->cl);
- }
- 
--static int bcache_device_init(struct bcache_device *d, unsigned block_size)
-+static int bcache_device_init(struct bcache_device *d, unsigned block_size,
-+			      unsigned logical_size)
- {
- 	struct request_queue *q;
- 
- 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
- 	    !(d->unaligned_bvec = mempool_create_kmalloc_pool(1,
-@@ -774,11 +775,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size)
- 	q->limits.max_sectors		= UINT_MAX;
- 	q->limits.max_segment_size	= UINT_MAX;
- 	q->limits.max_segments		= BIO_MAX_PAGES;
- 	q->limits.max_discard_sectors	= UINT_MAX;
- 	q->limits.io_min		= block_size;
--	q->limits.logical_block_size	= block_size;
-+	q->limits.logical_block_size	= logical_size;
- 	q->limits.physical_block_size	= block_size;
- 	set_bit(QUEUE_FLAG_NONROT,	&d->disk->queue->queue_flags);
- 	set_bit(QUEUE_FLAG_DISCARD,	&d->disk->queue->queue_flags);
- 
- 	return 0;
-@@ -1064,11 +1065,11 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
- 	for (io = dc->io; io < dc->io + RECENT_IO; io++) {
- 		list_add(&io->lru, &dc->io_lru);
- 		hlist_add_head(&io->hash, dc->io_hash + RECENT_IO);
- 	}
- 
--	ret = bcache_device_init(&dc->disk, block_size);
-+	ret = bcache_device_init(&dc->disk, block_size, q->limits.logical_block_size);
- 	if (ret)
- 		return ret;
- 
- 	set_capacity(dc->disk.disk,
- 		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
-@@ -1163,11 +1164,11 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
- 	closure_init(&d->cl, NULL);
- 	set_closure_fn(&d->cl, flash_dev_flush, system_wq);
- 
- 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
- 
--	if (bcache_device_init(d, block_bytes(c)))
-+	if (bcache_device_init(d, block_bytes(c), 512))
- 		goto err;
- 
- 	bcache_device_attach(d, c, u - c->uuids);
- 	set_capacity(d->disk, u->sectors);
- 	bch_flash_dev_request_init(d);
+What will happen if something like this is run:
+
+find /home -type -f -exec md5sum {} \;
+
+That is, the md5 of *all* files is computed.
+
+I assume that the cache will be completely
+trashed and no old data will be present.
+
+Is this the case?
+
+Now, assuming we have a RAID something, with
+LVM on top, with different volumes.
+For example one for /home, one for /usr, etc.
+Would it make sense, in respect of the above
+trashing, to have different SSD (or paritions)
+to cache the different volumes?
+Instead of caching the complete RAID, of course.
+
+Thanks a lot in advance,
+
+bye,
+
 -- 
-1.8.3.222.g430da9e
+
+piergiorgio
