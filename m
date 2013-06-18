@@ -1,31 +1,51 @@
-From: Joe Thornber <thornber-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Subject: Re: Performance Comparison among EnhanceIO, bcache and dm-cache.
-Date: Mon, 17 Jun 2013 11:29:44 +0100
-Message-ID: <20130617102943.GA11121@debian>
-References: <D399C715A2AD7F4F891A75871FC3117507866B@MYMBX3.stec-inc.ad>
+From: Jiri Kosina <jkosina-AlSwsSmVLrQ@public.gmane.org>
+Subject: Re: [PATCH] md: bcache: Fixed a typo with the word 'arithmetic'
+Date: Tue, 18 Jun 2013 13:42:18 +0200 (CEST)
+Message-ID: <alpine.LNX.2.00.1306181341580.6750@pobox.suse.cz>
+References: <1370263902-14360-1-git-send-email-phillip.l.viana@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <D399C715A2AD7F4F891A75871FC3117507866B-/Mge6msRHKZU8iYRzhpb3QxBAXYc4onH@public.gmane.org>
+In-Reply-To: <1370263902-14360-1-git-send-email-phillip.l.viana-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: OS Engineering <osengineering-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
-Cc: "koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org" <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, Padmini Balasubramaniyan <padminib-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>, Amit Phansalkar <aphansalkar-FZ1t8LVTR2ZWk0Htik3J/w@public.gmane.org>
+To: Phil Viana <phillip.l.viana-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org, neilb-l3A5Bk7waGM@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jun 11, 2013 at 03:05:07PM +0000, OS Engineering wrote:
+On Mon, 3 Jun 2013, Phil Viana wrote:
 
-...
+> The word 'arithmetic' was typed as 'arithmatic'
+> 
+> Signed-off-by: Phil Viana <phillip.l.viana-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> ---
+>  drivers/md/bcache/bset.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+> index d33f5ad..8822ed2 100644
+> --- a/drivers/md/bcache/bset.c
+> +++ b/drivers/md/bcache/bset.c
+> @@ -403,7 +403,7 @@ void inorder_test(void)
+>  #endif
+>  
+>  /*
+> - * Cacheline/offset <-> bkey pointer arithmatic:
+> + * Cacheline/offset <-> bkey pointer arithmetic:
+>   *
+>   * t->tree is a binary search tree in an array; each node corresponds to a key
+>   * in one cacheline in t->set (BSET_CACHELINE bytes).
+> @@ -412,7 +412,7 @@ void inorder_test(void)
+>   * the binary tree points to; to_inorder() gives us the cacheline, and then
+>   * bkey_float->m gives us the offset within that cacheline, in units of 8 bytes.
+>   *
+> - * cacheline_to_bkey() and friends abstract out all the pointer arithmatic to
+> + * cacheline_to_bkey() and friends abstract out all the pointer arithmetic to
+>   * make this work.
+>   *
+>   * To construct the bfloat for an arbitrary key we need to know what the key
 
-> Dm-cache commits on-disk metadata every time a REQ_SYNC or REQ_FUA
-> bio is written. If no such requests are made then it commits
-> metadata once every second. If power is lost, it may lose some
-> recent writes.
+I don't see this in linux-next as of today, so I am taking it. Thanks,
 
-Not true (though it is true for thinp, which may be where you got this
-idea?).  For caching we have to commit whenever data is moved about,
-otherwise a crash could result in us reading data that is not just out
-of date (acceptable for some), but used to belong to a totally
-different part of the device (always unacceptable).
-
-- Joe
+-- 
+Jiri Kosina
+SUSE Labs
