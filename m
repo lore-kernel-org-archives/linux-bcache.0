@@ -1,121 +1,129 @@
-From: Pavel Machek <pavel-+ZI9xUNit7I@public.gmane.org>
-Subject: bcache: order 7 allocation
-Date: Sat, 22 Jun 2013 13:47:46 +0200
-Message-ID: <20130622114745.GB8075@amd.pavel.ucw.cz>
+From: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>
+Subject: Doubling (?) of writes
+Date: Mon, 24 Jun 2013 14:57:48 +0200
+Message-ID: <51C8424C.8020709@modelnine.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: kernel list <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi!
+Hey,
 
-I'm trying to play with bcache, but first surprise was oom in syslog:
+I've been using bcache for quite some time now in production, and after 
+the initial problems that I faced with strange hangs on writes (see the 
+mailing list history), it seems to run smooth now - I've had no kernel 
+panics or hangs for quite some time now.
 
-Order 7 alocation is pretty big, no?
+What I'm starting to notice just now (after having tuned/changed the 
+parameters of bcache a bit) is the fact that writes to the SSD seem to 
+double in throughput from what's written to the bcache device. The 
+following shows an excerpt from a run of iostat, where /dev/sda is the 
+SSD caching device (cache set), and /dev/bcache1 builds on /dev/md2 
+(which in is a normal md RAID-1 on two partitions of /dev/sdb and /dev/sdc):
 
-								Pavel
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+sda               0,00   320,00   44,50  408,50    22,25   287,85 
+1401,95     8,92   19,81   11,69   20,69   2,21 100,00
+sdb               0,00     0,00   13,50   47,00     0,05    22,25 
+755,08     0,33    5,62    7,70    5,02   1,95  11,80
+sdc               2,50     0,00    0,50   46,50     0,01    22,25 
+970,12    64,29 1532,64   40,00 1548,69  21,28 100,00
+md0               0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+md1               0,00     0,00   16,50    0,50     0,07     0,01 
+8,94     0,00    0,00    0,00    0,00   0,00   0,00
+md2               0,00     0,00    0,00   44,50     0,00    22,25 
+1024,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-0              0,00     0,00   16,00    0,50     0,06     0,01 
+8,73     0,93   13,58   14,00    0,00  44,24  73,00
+dm-1              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-2              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-3              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-4              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+bcache1           0,00     0,00    0,00  141,00     0,00   141,00 
+2048,00     0,00   28,64    0,00   28,64   0,00   0,00
 
-bcache: register_bdev() registered backing device sda4
-bcache: register_bcache() error opening /dev/sdb1: Not a bcache
-superblock
-bash: page allocation failure: order:7, mode:0x80d0
-CPU: 0 PID: 4091 Comm: bash Tainted: G        W    3.10.0-rc6+ #266
-Hardware name: LENOVO 17097HU/17097HU, BIOS 7BETD3WW (2.14 )
-10/04/2007
- 00000000 ebaabd5c c09597dc ebaabd8c c02a8550 c0b2b094 f4588950
- 00000007
- 000080d0 00000000 01000000 c0c7c580 00000001 00000001 00000000
- ebaabe24
- c02a9d36 000080d0 00000007 00000000 c0c7bbc0 00000000 00000001
- ebaabe16
-Call Trace:
- [<c09597dc>] dump_stack+0x16/0x18
- [<c02a8550>] warn_alloc_failed+0xc0/0x100
- [<c02a9d36>] __alloc_pages_nodemask+0x4d6/0x6f0
- [<c02a9fc7>] __get_free_pages+0x17/0x30
- [<c06e91c4>] register_cache+0x3e4/0x5d0
- [<c02cff58>] ? cache_alloc_debugcheck_after+0x68/0x220
- [<c02d18aa>] ? kmem_cache_alloc+0xfa/0x100
- [<c06e985f>] ? register_bcache+0x4af/0xc10
- [<c06e987b>] register_bcache+0x4cb/0xc10
- [<c027c086>] ? __lock_acquire+0x386/0xcf0
- [<c0329f63>] ? sysfs_write_file+0x83/0xf0
- [<c06e93b0>] ? register_cache+0x5d0/0x5d0
- [<c0445a10>] kobj_attr_store+0x20/0x30
- [<c0329f79>] sysfs_write_file+0x99/0xf0
- [<c02d6080>] vfs_write+0xb0/0x190
- [<c0329ee0>] ? sysfs_open_file+0x1e0/0x1e0
- [<c02d6251>] SyS_write+0x51/0x90
- [<c095d7f8>] sysenter_do_call+0x12/0x31
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:  186, btch:  31 usd:   0
-CPU    1: hi:  186, btch:  31 usd:   0
-HighMem per-cpu:
-CPU    0: hi:  186, btch:  31 usd:   0
-CPU    1: hi:  186, btch:  31 usd:  20
-active_anon:91768 inactive_anon:47794 isolated_anon:0
- active_file:48599 inactive_file:14374 isolated_file:0
- unevictable:4 dirty:111 writeback:0 unstable:0
- free:127541 slab_reclaimable:155598 slab_unreclaimable:22989
- mapped:23527 shmem:24489 pagetables:1391 bounce:0
- free_cma:0
-DMA free:1580kB min:4kB low:4kB high:4kB active_anon:0kB
-inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB
-isolated(anon):0kB isolated(file):0kB present:15992kB managed:1580kB
-mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB
-pages_scanned:0 all_unreclaimable? yes
-lowmem_reserve[]: 0 850 2000 2000
-Normal free:55600kB min:3724kB low:4652kB high:5584kB
-active_anon:14408kB inactive_anon:14416kB active_file:28384kB
-inactive_file:28344kB unevictable:0kB isolated(anon):0kB
-isolated(file):0kB present:892920kB managed:870564kB mlocked:0kB
-dirty:408kB writeback:0kB mapped:64kB shmem:17620kB
-slab_reclaimable:622392kB slab_unreclaimable:91956kB
-kernel_stack:2736kB pagetables:5564kB unstable:0kB bounce:0kB
-free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 9206 9206
-HighMem free:452984kB min:512kB low:1772kB high:3032kB
-active_anon:352664kB inactive_anon:176844kB active_file:166012kB
-inactive_file:29152kB unevictable:16kB isolated(anon):0kB
-isolated(file):0kB present:1178440kB managed:1178440kB mlocked:16kB
-dirty:36kB writeback:0kB mapped:94044kB shmem:80336kB
-slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB
-pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-DMA: 1*4kB (U) 1*8kB (U) 0*16kB 1*32kB (U) 2*64kB (U) 1*128kB (U)
-1*256kB (U) 0*512kB 1*1024kB (U) 0*2048kB 0*4096kB = 1580kB
-Normal: 12737*4kB (EM) 464*8kB (UEMR) 7*16kB (UMR) 1*32kB (R) 1*64kB
-(R) 2*128kB (R) 0*256kB 1*512kB (R) 0*1024kB 0*2048kB 0*4096kB =
-55636kB
-HighMem: 20470*4kB (UEMR) 17082*8kB (UEMR) 8461*16kB (UEMR) 2331*32kB
-(UEMR) 325*64kB (UEMR) 22*128kB (UEMR) 3*256kB (UE) 0*512kB 0*1024kB
-0*2048kB 0*4096kB = 452888kB
-87500 total pagecache pages
-20 pages in swap cache
-Swap cache stats: add 863, delete 843, find 13/17
-Free swap  = 775840kB
-Total swap = 779148kB
-521935 pages RAM
-294610 pages HighMem
-9299 pages reserved
-747603 pages shared
-322744 pages non-shared
-bcache: register_cache() error opening sdb1: cannot allocate memory
-bashged:1580kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB
-shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB
-pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB
-pages_scanned:0 all_
+Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+sda               0,00   316,00   49,50  402,50    24,75   283,87 
+1398,34     8,96   19,88   12,20   20,83   2,21 100,00
+sdb               0,00     7,00    0,00   56,00     0,00    24,81 
+907,23     1,06   18,86    0,00   18,86   2,57  14,40
+sdc               0,00     7,00    0,00   55,50     0,00    24,80 
+915,19    57,11 1048,43    0,00 1048,43  18,02 100,00
+md0               0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+md1               0,00     0,00    0,00   11,50     0,00     0,05 
+8,35     0,00    0,00    0,00    0,00   0,00   0,00
+md2               0,00     0,00    0,00   49,50     0,00    24,75 
+1024,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-0              0,00     0,00    0,00   10,50     0,00     0,05 
+9,14     7,29  599,43    0,00  599,43  95,24 100,00
+dm-1              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-2              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-3              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+dm-4              0,00     0,00    0,00    0,00     0,00     0,00 
+0,00     0,00    0,00    0,00    0,00   0,00   0,00
+bcache1           0,00     0,00    0,00  139,00     0,00   139,00 
+2048,00     0,00   28,66    0,00   28,66   0,00   0,00
+
+The wMB/s for /dev/sda are always somewhere around double of those for 
+/dev/bcache1. I can't explain why that should be expected/sensible.
+
+The bcache1 and cache set devices have all options for congestion 
+control and sequential cutoff turned off, i.e., all writes/reads go 
+through the SSD.
+
+sequential_cutoff of bcache1 is 0
+congested_read_threshold_us of set is 0
+congested_write_threshold_us of set is 0
+
+bcache-show-super for /dev/sda:
+
+sb.magic                ok
+sb.first_sector         8 [match]
+sb.csum                 8C05DE3B7AFC3311 [match]
+sb.version              3 [cache device]
+
+dev.uuid                0520cedd-9edd-45d6-83da-4a1e217373f0
+dev.sectors_per_block   1
+dev.sectors_per_bucket  1024
+dev.cache.first_sector  1024
+dev.cache.cache_sectors 468860928
+dev.cache.total_sectors 468861952
+dev.cache.discard       yes
+dev.cache.pos           0
+
+cset.uuid               90b61bf3-cd64-4944-a7fd-c1dd14d981ee
+
+and for /dev/md2
+
+sb.magic                ok
+sb.first_sector         8 [match]
+sb.csum                 2352A11D57CE3D37 [match]
+sb.version              1 [backing device]
+
+dev.uuid                1856f759-7022-4279-92c2-2a8546e0aff5
+dev.sectors_per_block   1
+dev.sectors_per_bucket  1024
+dev.data.first_sector   16
+dev.data.cache_mode     1 [writeback]
+dev.data.cache_state    2 [dirty]
+
+cset.uuid               90b61bf3-cd64-4944-a7fd-c1dd14d981ee
+
+Is this behaviour expected, and if it is, why? Thanks for any hints!
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+--- Heiko.
