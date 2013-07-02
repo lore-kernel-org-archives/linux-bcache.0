@@ -1,81 +1,28 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: [GIT PULL] Bcache changes for 3.11
-Date: Mon, 1 Jul 2013 15:10:00 -0700
-Message-ID: <20130701221000.GA4794@moria.home.lan>
+From: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Subject: Re: [GIT PULL] Bcache changes for 3.11
+Date: Tue, 2 Jul 2013 08:34:49 +0200
+Message-ID: <20130702063449.GO32428@kernel.dk>
+References: <20130701221000.GA4794@moria.home.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
+In-Reply-To: <20130701221000.GA4794-jC9Py7bek1znysI04z7BkA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Jens, here's the bcache changes for 3.11.
+On Mon, Jul 01 2013, Kent Overstreet wrote:
+> Hi Jens, here's the bcache changes for 3.11.
+> 
+> The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
+> 
+>   Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
 
-The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
+Ugh, that is 6 rcs ahead of where my for-3.11/drivers branch is sitting.
+I guess there's no real way to avoid fast forwarding a bit, since there
+are bcache fixes in that range as well.
 
-  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
-
-are available in the git repository at:
-
-  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
-
-for you to fetch changes up to 8e51e414a3c6d92ef2cc41720c67342a8e2c0bf7:
-
-  bcache: Use standard utility code (2013-07-01 14:43:53 -0700)
-
-----------------------------------------------------------------
-Gabriel de Perthuis (4):
-      bcache: Warn when a device is already registered.
-      bcache: Send a uevent with a cached device's UUID
-      bcache: Send label uevents
-      bcache: Refresh usage docs
-
-Kent Overstreet (14):
-      bcache: fix a spurious gcc complaint, use scnprintf
-      bcache: Convert allocator thread to kthread
-      bcache: Refactor btree io
-      bcache: Fix/revamp tracepoints
-      bcache: Rip out pkey()/pbtree()
-      bcache: Improve lazy sorting
-      bcache: Initialize sectors_dirty when attaching
-      bcache: Track dirty data by stripe
-      bcache: Write out full stripes
-      bcache: FUA fixes
-      bcache: Document shrinker reserve better
-      bcache: Delete fuzz tester
-      bcache: Update email address
-      bcache: Use standard utility code
-
-Kumar Amit Mehta (1):
-      md: bcache: io.c: fix a potential NULL pointer dereference
-
-Masanari Iida (1):
-      doc: Fix typo in documentation/bcache.txt
-
- Documentation/bcache.txt      |  47 +++--
- MAINTAINERS                   |   2 +-
- drivers/md/bcache/alloc.c     |  44 +++--
- drivers/md/bcache/bcache.h    |  56 ++----
- drivers/md/bcache/bset.c      |  56 ++++--
- drivers/md/bcache/bset.h      |   4 +
- drivers/md/bcache/btree.c     | 447 ++++++++++++++++++++----------------------
- drivers/md/bcache/btree.h     |  35 ++--
- drivers/md/bcache/debug.c     | 178 ++---------------
- drivers/md/bcache/debug.h     |  11 +-
- drivers/md/bcache/io.c        |  68 +++----
- drivers/md/bcache/journal.c   |  18 +-
- drivers/md/bcache/movinggc.c  |  24 +--
- drivers/md/bcache/request.c   | 189 +++++++-----------
- drivers/md/bcache/request.h   |   2 +-
- drivers/md/bcache/super.c     | 131 ++++++++++---
- drivers/md/bcache/sysfs.c     |  66 ++++---
- drivers/md/bcache/trace.c     |  47 ++++-
- drivers/md/bcache/util.c      |  17 --
- drivers/md/bcache/util.h      |   6 -
- drivers/md/bcache/writeback.c | 133 +++++++++++--
- drivers/md/bcache/writeback.h |  64 ++++++
- include/trace/events/bcache.h | 381 +++++++++++++++++++++++++----------
- 23 files changed, 1119 insertions(+), 907 deletions(-)
- create mode 100644 drivers/md/bcache/writeback.h
+-- 
+Jens Axboe
