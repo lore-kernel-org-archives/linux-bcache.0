@@ -1,39 +1,36 @@
-From: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>
+From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: software raid and bcache
-Date: Wed, 3 Jul 2013 20:23:35 +0400
-Message-ID: <CACaajQvx20qaFXEM-JBk=9UP3ApJAiC6-XxFcsrseKQJ9vXuGw@mail.gmail.com>
+Date: Wed, 3 Jul 2013 16:41:14 +0000 (UTC)
+Message-ID: <kr1k7a$v4m$1@ger.gmane.org>
 References: <CACaajQuSFAu9i-EzNfEnfDpCwzAf4OHR8vxk5ZtjaaRS75Tz7g@mail.gmail.com>
- <1372868105.17096.YahooMailNeo@web181504.mail.ne1.yahoo.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <1372868105.17096.YahooMailNeo-XYahOdtEMNkbWpotXP+qY5OW+3bF1jUfVpNB7YpNyf8@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hmm. Sorry i'm not fully understand.
+On Wed, 03 Jul 2013 19:43:55 +0400, Vasiliy Tolstov wrote:
+> Hello. I'm newbie with bcache and stuck at drive configuration.
+> Now i have 1 sata 3Tb disk and one 240Gb ssd eMLC disk. I want to
+> create from 1 sata disk raid1 with missing 1 drive (i want to able to
+> sync pre failed sata disk with new by remove ssd disk and add sata)
+> 
+> What steps i need to do?
 
-I think :
+Hello,
 
-create /dev/md0 with /dev/sda (sata) level=1 raid-devices=1
-format /dev/md0 with bcache
-format /dev/sdb (ssd) with brache
+You could use `blocks to-lvm`[1] to convert your large disk to lvm,
+and then `blocks to-bcache` to convert the lvm volume to bcache.
+The lvm conversion will allow you to migrate the data off the
+prefailed disk later, either by moving it (pvmove) or by converting
+to raid1 (lvconvert).
 
-create bcache0 with /dev/md0 and /dev/sdb
+The blocks README should guide you through converting.  Right now it
+doesn't include instructions on attaching the slow backing device to
+the SSD cache device, I'll see about adding that, or you can refer
+to the ATTACHING section of [2].
 
-why this is not possible?
-
-
-2013/7/3 matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>:
-> short answer you can't. you can unbind the SSD from bcache and otherwise remove the bcache config but you can't turn a live disk into a MD raid member without destroying all data on it. Introduce the 2nd big hard disk and create a raid1 on it with an absent mirror pair. DD or RSYNC the data from your first disk to the new MD device. reconfigure first disk to be MD member and let MD re-sync the (same) data back once more.
->
-> add SSD and MD device to bcache config and it's now accelerated.
-
-
-
---
-Vasiliy Tolstov,
-e-mail: v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
-jabber: vase-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
+[1] https://github.com/g2p/blocks
+[2] http://atlas.evilpiepirate.org/git/linux-bcache.git/tree/Documentation/bcache.txt?h=bcache-dev
