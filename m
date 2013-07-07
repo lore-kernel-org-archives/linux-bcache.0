@@ -1,7 +1,7 @@
 From: sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: bcache
-Date: Sun, 7 Jul 2013 10:44:04 -0400
-Message-ID: <CAB7xdi=SLTSD1MmJ=DfROugW_v1F6QswuvSa_eOLJxPtN+VfbA@mail.gmail.com>
+Subject: reverse link from bucket to keys
+Date: Sun, 7 Jul 2013 10:47:50 -0400
+Message-ID: <CAB7xdi=zBrOfPH9PwCeu=wrguku5utMXJM1pQFiRa1GZU6xGEw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
@@ -19,6 +19,7 @@ is that true?
 
 Thanks,
 Sheng
+
 
 --
 Sheng Qiu
