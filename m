@@ -1,145 +1,78 @@
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: [PATCH cgroup/for-3.11-fixes] cgroup: remove bcache_subsys_id which
- got added stealthily
-Date: Tue, 9 Jul 2013 16:33:38 -0700
-Message-ID: <20130709233338.GB10374@htj.dyndns.org>
+From: sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: reverse link from bucket to keys
+Date: Wed, 10 Jul 2013 11:22:22 -0400
+Message-ID: <CAB7xdi=wn1O4+g8cynMpSrD114RVsXf4O6Jzz+cytcb=RZhHAg@mail.gmail.com>
+References: <CAB7xdi=zBrOfPH9PwCeu=wrguku5utMXJM1pQFiRa1GZU6xGEw@mail.gmail.com>
+	<CALJ65zk1kkUgOa4iqAFkA+64eU+6cEa=HRNQxZQ5SOwn4e5jAA@mail.gmail.com>
+	<CAB7xdikiVCeG=fJENSGY2K256CGOZrp=MYE8q6quSGX0h=ph9g@mail.gmail.com>
+	<20130708214859.GB1959@kmo-pixel>
+	<CAB7xdinkyiE1Wp+K3=WyA7J1==G3t_coXoDn3wf_6ZvyUV+Vkg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
+In-Reply-To: <CAB7xdinkyiE1Wp+K3=WyA7J1==G3t_coXoDn3wf_6ZvyUV+Vkg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Li Zefan <lizefan-hv44wF8Li93QT0dZR+AlfA@public.gmane.org>, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: cgroups-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-From add0c59d802e6118e51e21244c3871be35164e4b Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Date: Tue, 9 Jul 2013 16:17:39 -0700
+Hi Kent,
 
-cafe563591 ("bcache: A block layer cache") added a new cgroup
-subsystem bcache_subsys without proper review and ack.  bcache_subsys
-seems to use cgroup for group stats and per-group cache_mode
-configuration.  This is very much the type of usage that we don't want
-to allow.
+just a quick question about the bkey fields. The "high" member seems
+to have some bits not used right now. from bits 37 to bits 54 seems to
+be unused, right?
+The reason i was asking is that i want to keep some additional
+information in the bkeys,  if these bits are not used i might reuse
+them without incur more storage.
 
-Fortunately, CONFIG_CGROUP_BCACHE which enables bcache_subsys is
-currently commented out, so this shouldn't have any upstream users.
-Let's nip in the bud.  While at it, clarify in cgroup_subsys.h that no
-new subsystem should be added without explicit acks from cgroup
-maintainers.
+Thanks,
+Sheng
 
-Signed-off-by: Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Cc: Li Zefan <lizefan-hv44wF8Li93QT0dZR+AlfA@public.gmane.org>
-Cc: cgroups-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-Cc: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
----
-Applied to cgroup/for-3.11-fixes.  Please don't do things like this
-ever again.
+On Tue, Jul 9, 2013 at 11:24 AM, sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> Hi Kent,
+>
+> thanks for reply. i read the document in the code. just to make sure i
+> understand correctly, the stale key nodes are produced by invalidation
+> (replacement) of the buckets they reside on, right?
+> in another word, the stale key nodes might be the recently evict out data?
+>
+> Thanks,
+> Sheng
+>
+> On Mon, Jul 8, 2013 at 5:48 PM, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org> wrote:
+>> On Mon, Jul 08, 2013 at 09:44:41AM -0400, sheng qiu wrote:
+>>> Hi Kent,
+>>>
+>>> Thanks a lot for your reply.
+>>>
+>>> Then i have a question about the bucket invalidation. when bcache
+>>> choose to replace a bucket, will the keys that reside on that bucket
+>>> still be in the btree? since you do not have information about which
+>>> keys reside on the bucket, how do you update the btree?
+>>>
+>>> i can think out two ways, one is you periodically scan the btree nodes
+>>> and delete the stale nodes, the other way is when you get a cache hit
+>>> on stale nodes, then you delete it at that moment. How bcache does
+>>> this? Can you tell me the functions involve for these operations? i am
+>>> interested in this part of codes.
+>>
+>> This is documented in the code - start here:
+>> http://evilpiepirate.org/git/linux-bcache.git/tree/drivers/md/bcache/bcache.h?h=bcache-dev
+>
+>
+>
+> --
+> Sheng Qiu
+> Texas A & M University
+> Room 332B Wisenbaker
+> email: herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+> College Station, TX 77843-3259
 
-Thanks.
 
- include/linux/cgroup_subsys.h | 45 +++++++------------------------------------
- 1 file changed, 7 insertions(+), 38 deletions(-)
 
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index 6e7ec64..b613ffd 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -1,86 +1,55 @@
--/* Add subsystem definitions of the form SUBSYS(<name>) in this
-- * file. Surround each one by a line of comment markers so that
-- * patches don't collide
-+/*
-+ * List of cgroup subsystems.
-+ *
-+ * DO NOT ADD ANY SUBSYSTEM WITHOUT EXPLICIT ACKS FROM CGROUP MAINTAINERS.
-  */
--
--/* */
--
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CPUSETS)
- SUBSYS(cpuset)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEBUG)
- SUBSYS(debug)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_SCHED)
- SUBSYS(cpu_cgroup)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_CPUACCT)
- SUBSYS(cpuacct)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_MEMCG)
- SUBSYS(mem_cgroup)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEVICE)
- SUBSYS(devices)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_FREEZER)
- SUBSYS(freezer)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_NET_CLS_CGROUP)
- SUBSYS(net_cls)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_BLK_CGROUP)
- SUBSYS(blkio)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_PERF)
- SUBSYS(perf)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_NETPRIO_CGROUP)
- SUBSYS(net_prio)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_HUGETLB)
- SUBSYS(hugetlb)
- #endif
--
--/* */
--
--#ifdef CONFIG_CGROUP_BCACHE
--SUBSYS(bcache)
--#endif
--
--/* */
-+/*
-+ * DO NOT ADD ANY SUBSYSTEM WITHOUT EXPLICIT ACKS FROM CGROUP MAINTAINERS.
-+ */
 -- 
-1.8.3.1
+Sheng Qiu
+Texas A & M University
+Room 332B Wisenbaker
+email: herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
+College Station, TX 77843-3259
