@@ -1,104 +1,82 @@
-From: sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: reverse link from bucket to keys
-Date: Wed, 10 Jul 2013 17:14:49 -0400
-Message-ID: <CAB7xdinPKr6orbY4Oc-CH-e5aeGwghLsiTFmFC4Qs80PwniBcg@mail.gmail.com>
-References: <CAB7xdi=zBrOfPH9PwCeu=wrguku5utMXJM1pQFiRa1GZU6xGEw@mail.gmail.com>
-	<CALJ65zk1kkUgOa4iqAFkA+64eU+6cEa=HRNQxZQ5SOwn4e5jAA@mail.gmail.com>
-	<CAB7xdikiVCeG=fJENSGY2K256CGOZrp=MYE8q6quSGX0h=ph9g@mail.gmail.com>
-	<20130708214859.GB1959@kmo-pixel>
-	<CAB7xdinkyiE1Wp+K3=WyA7J1==G3t_coXoDn3wf_6ZvyUV+Vkg@mail.gmail.com>
-	<CAB7xdi=wn1O4+g8cynMpSrD114RVsXf4O6Jzz+cytcb=RZhHAg@mail.gmail.com>
+From: Ben Hutchings <ben-/+tVBieCtBitmTQ+vhA3Yw@public.gmane.org>
+Subject: Re: Bug#715019: linux-image-3.10-rc7-amd64: Bcache (with cache on
+ LVM?) stops system from shutting down
+Date: Wed, 10 Jul 2013 23:42:28 +0100
+Message-ID: <1373496148.24446.21.camel@deadeye.wl.decadent.org.uk>
+References: <20130705135658.9757.33407.reportbug@domo-b>
+	 <20130705184222.GX4752@decadent.org.uk>
+	 <CAL3dRBXX8Ex3iNE1v8N4pswqwh08enGPih0sP_ubpqUmbctdHA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-kJN0H/UbAcHpHtRycgsd"
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAB7xdi=wn1O4+g8cynMpSrD114RVsXf4O6Jzz+cytcb=RZhHAg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAL3dRBXX8Ex3iNE1v8N4pswqwh08enGPih0sP_ubpqUmbctdHA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Jarno Elonen <jarno.elonen-DbzOA/0qlwOT8k0kg1mbHA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: 715019-61a8vm9lEZVf4u+23C9RwQ@public.gmane.org, lvm2-R+A61+qa7K2F9N/2sQ04j0B+6BGkLq7r@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Kent,
 
-i am sorry to bother you again. i am reading the movinggc.c, i am
-really interested in this piece of codes. So if i enable the copy_gc,
-this piece of codes will be active. My question is after the gc_moving
-confirmed the gc_moving_threshold, it began to scan the bkeys. i do
-not quite understand how you fill the moving_gc_keys, do you go
-through all the current btree nodes to find proper keys for migration
-(the bucket.used_sectors < threshold)? or you do incremental scans?
+--=-kJN0H/UbAcHpHtRycgsd
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-i will be appreciated if you can explain some more about it.
+On Mon, 2013-07-08 at 19:56 +0300, Jarno Elonen wrote:
+> Ok, I tried to take a photo but apparently the camera was set for very
+> low resolution. :/ Anyway, a few pictures attached, and here's also a
+> manual transcript of a few lines:
+[...]
+> [242866.xxxxxx] ata5.00: exception Emask 0x0 SAct 0x0 SError 0x0
+> action 0x6 frozen
+> [242866.xxxxxx] ata5.00: failed command: FLUSH CACHE EXT
+> [242866.xxxxxx] ata8.00: exception Emask 0x0 SAct 0x0 SError 0x0
+> action 0x6 frozen
+> [242866.xxxxxx] ata8.00: failed command: FLUSH CACHE EXT
+> [242866.xxxxxx] ata8.00: cmd ea/00:00:00:00:00/00:00:00:00:00/a0 tag 0
+> [242866.xxxxxx]          res 40/00:ff:00:00:00/00:00:00:00:00/00 Emask
+> 0x4 (timeout)
+> [242866.xxxxxx] ata8.00: status { DRDY }
+> [242867.xxxxxx] ata5.00: cmd ea/00:00:00:00:00/00:00:00:00:00/a0 tag 0
+> ...
+> [242877.xxxxxx] ata3: COMRESET failed (errno=3D-16)
+> [242877.xxxxxx] ata5: COMRESET failed (errno=3D-16)
+> ...
+>=20
+> These kinds of splurs com up once in a minute or so.
 
-Thanks,
-Sheng
+This suggests to me that LVM is *not* part of the problem, but instead
+the disks are being shut down before bcache has been quiesced.
 
-On Wed, Jul 10, 2013 at 11:22 AM, sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
-> Hi Kent,
->
-> just a quick question about the bkey fields. The "high" member seems
-> to have some bits not used right now. from bits 37 to bits 54 seems to
-> be unused, right?
-> The reason i was asking is that i want to keep some additional
-> information in the bkeys,  if these bits are not used i might reuse
-> them without incur more storage.
->
-> Thanks,
-> Sheng
->
-> On Tue, Jul 9, 2013 at 11:24 AM, sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
->> Hi Kent,
->>
->> thanks for reply. i read the document in the code. just to make sure i
->> understand correctly, the stale key nodes are produced by invalidation
->> (replacement) of the buckets they reside on, right?
->> in another word, the stale key nodes might be the recently evict out data?
->>
->> Thanks,
->> Sheng
->>
->> On Mon, Jul 8, 2013 at 5:48 PM, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org> wrote:
->>> On Mon, Jul 08, 2013 at 09:44:41AM -0400, sheng qiu wrote:
->>>> Hi Kent,
->>>>
->>>> Thanks a lot for your reply.
->>>>
->>>> Then i have a question about the bucket invalidation. when bcache
->>>> choose to replace a bucket, will the keys that reside on that bucket
->>>> still be in the btree? since you do not have information about which
->>>> keys reside on the bucket, how do you update the btree?
->>>>
->>>> i can think out two ways, one is you periodically scan the btree nodes
->>>> and delete the stale nodes, the other way is when you get a cache hit
->>>> on stale nodes, then you delete it at that moment. How bcache does
->>>> this? Can you tell me the functions involve for these operations? i am
->>>> interested in this part of codes.
->>>
->>> This is documented in the code - start here:
->>> http://evilpiepirate.org/git/linux-bcache.git/tree/drivers/md/bcache/bcache.h?h=bcache-dev
->>
->>
->>
->> --
->> Sheng Qiu
->> Texas A & M University
->> Room 332B Wisenbaker
->> email: herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
->> College Station, TX 77843-3259
->
->
->
-> --
-> Sheng Qiu
-> Texas A & M University
-> Room 332B Wisenbaker
-> email: herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
-> College Station, TX 77843-3259
+bcache developers - is this supposed to just work, or does the init
+system need to do (or not do) something special for bcache devices?
 
+Ben.
 
+--=20
+Ben Hutchings
+It is easier to write an incorrect program than to understand a correct one=
+.
 
--- 
-Sheng Qiu
-Texas A & M University
-Room 332B Wisenbaker
-email: herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
-College Station, TX 77843-3259
+--=-kJN0H/UbAcHpHtRycgsd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUd3jVOe/yOyVhhEJAQqwDhAAyXaHFzpt2tJcCiG/tywZoBfMzyrMOOX7
+XwuhDw0ijGyUDXa1K1MAFGk6UcHlG8itHqPTiQB/ZphpuW0A2eniP0TwYOB5uO0m
+RR8Z/aL0bGaP6wXiZmGiUO57Kw2CIGa08Abr94KnYvSrNDGfPJegdMv1o9qjZYyP
++FN8sNH6D8B+BL9Aq6O70khI9oJbmkKzdUNoN2hOBS9d5Hh4NRXQ1sUhFambE8Os
+vIpOCzXRDG/HZAvMQj1D7g9qpEfyEbBYFRuDDRRDPwMLeEBXc4fkpq2TXt7FNiNj
+SghnxiyjyifdSoEejClXZnRpa+lWPtlY6OKtpmTMWA0hsMzh8ZfnR1x7czo/88Dk
+aXWiC7GH8G6M4Rah2awkca4bGPCEw97g7q/wgfijc16xS6MUdSXf8ICj1rnEmNcv
+qsOHtSZcl/jU+dxu/iOZZ7Xj663cl3lbZJG9A8tLt5G9yaQ/CyB76cDf4rIDXzMZ
+aX8YXQ/FNrpuAIurkB9wNTq1ixW6VsrtkFIpO3HVwUFEmHr+NatKmqr1QYEBLJgB
+TgX8dCesXfvuHaY6fdby3NOTx+D2uaWvoP6/cVR0CtfoOi+/4p7/rlwWTpPMjAg/
+QrN5t1pS8VNC5KG7J6W9LPsztoGPS3MOICfj2STn8kDqJtPsNy9JkbbHx2HQ7mwI
+tnq5zLFuFUM=
+=XGTc
+-----END PGP SIGNATURE-----
+
+--=-kJN0H/UbAcHpHtRycgsd--
