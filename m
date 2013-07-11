@@ -1,7 +1,7 @@
 From: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
-Subject: Negative stats value
-Date: Thu, 11 Jul 2013 07:32:05 +0200
-Message-ID: <103FE78F-7B2E-4B2F-83E6-51D2DEE33BB3@profihost.ag>
+Subject: Raw stats
+Date: Thu, 11 Jul 2013 07:35:01 +0200
+Message-ID: <DE95649B-13EB-4733-BFCD-4B67F82D179B@profihost.ag>
 Mime-Version: 1.0 (1.0)
 Content-Type: text/plain;
 	charset=us-ascii
@@ -12,7 +12,7 @@ To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL
 Cc: "kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org" <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-I've seen negative dirty cache values several times. Is there a fix available?
+The stats_total counters are formatted to GB MB,... for several use cases raw values would be better (f.e.nagios plugin). Is this possible?
 
 Stefan--
 To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
