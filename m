@@ -1,43 +1,50 @@
-From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: label devices got removed after format
-Date: Fri, 12 Jul 2013 11:40:56 +0000 (UTC)
-Message-ID: <kroq08$tfo$3@ger.gmane.org>
-References: <51DE7E3A.5070709@profihost.ag>
-	<20130712012806.GB17799@kmo-pixel> <krom21$tfo$2@ger.gmane.org>
-	<51DFDE21.2040309@profihost.ag>
+From: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
+Subject: Re: bcache hangs on writes, recovers after disabling discard on
+ cache device
+Date: Fri, 12 Jul 2013 19:13:43 +0300 (EEST)
+Message-ID: <alpine.DEB.2.02.1307121902540.10602@orbit.lan>
+References: <51C891C9.4060809@modelnine.org> <alpine.DEB.2.02.1307111748130.26927@orbit.lan> <20130712011554.GA17799@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <20130712011554.GA17799@kmo-pixel>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, 12 Jul 2013 12:44:49 +0200, Stefan Priebe - Profihost AG wrote:
-> Am 12.07.2013 12:33, schrieb Gabriel de Perthuis:
->> On Thu, 11 Jul 2013 18:28:06 -0700, Kent Overstreet wrote:
->>> On Thu, Jul 11, 2013 at 11:43:22AM +0200, Stefan Priebe - Profihost AG wrote:
->>>> Hi,
->>>>
->>>> after doing mkfs.xfs -f /dev/bcache/by-label/mybcachelabel
->>>>
->>>> /dev/bcache/by-label/mybcachelabel gots removed...
->>>>
->>>> Only a reboot brings it back.
->>>>
->>>> Stefan
->>>
-> To me it happens alays when a udev event is triggered. It seems the
-> label isn't republished. To me the whole Folder /dev/bcache gets removed.
-> 
-> May i've used the wrong kernel patches on top of 3.10?
+On Thu, 11 Jul 2013, Kent Overstreet wrote:
 
-After discussing this on IRC:
+> On Thu, Jul 11, 2013 at 05:58:17PM +0300, Juha Aatrokoski wrote:
+>> On Mon, 24 Jun 2013, Heiko Wundram wrote:
+>>
+>>> In a rather old thread of mine (514C4FC1.6090804-EqIAFqbRPK3NLxjTenLetw@public.gmane.org), I
+>>> already stated a problem I was seeing back at the time, namely
+>>> that bcache seems to hang on writes to the SSD device after some
+>>> time, writing 50 MB/s continuously to the output device.
+>> ...
+>>> Disabling discard on the SSD device (by echo 0 >
+>>> /sys/fs/bcache/.../cache0/discard) makes the bcache device become
+>>> responsive again.
+>>
+>> I can confirm this. On Monday I booted into kernel 3.8.13-gentoo
+>> with the current "bcache" branch patched onto it. Discard was on for
+>> the cache device, and today this 50MB/s hang occured. Disabling
+>> discard did indeed fix it.
+>>
+>> I had CONFIG_BCACHE_CLOSURES_DEBUG=y in the kernel, and the contents
+>> of /sys/kernel/debug/bcache/bcache-UUID and
+>> /sys/kernel/debug/closures both before and after disabling discard
+>> can be found at the address below, in case they can help in
+>> determining where exactly the hang happens.
+>
+> Can you give this patch a try? It's on top of the current
+> bcache-for-3.11 branch
 
-The Squeeze version of udev chokes on newlines in labels, to the point
-that all the device's symlinks are removed; the uuid symlinks aren't
-even involved in label uevents.
-As a workaround, the latest commit in [1] strips endlines when setting
-the label.
+OK, now running the same kernel with this patch applied and discard 
+enabled. However, it has previously taken my system 2-4 days to trigger 
+this bug, so I'd say at least two weeks before I can say the patch (may 
+have) fixed the issue.
 
-[1] https://github.com/g2p/linux/commits/v3.10%2Bbcache-for-3.11
+Heiko, can your setup reproduce this bug consistently in a shorter time? 
+If so, you could also try this patch for faster feedback.
