@@ -1,42 +1,37 @@
 From: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
-Subject: Re: bcache kernel 3.10 wrong bypassed values
-Date: Fri, 12 Jul 2013 08:13:36 +0200
-Message-ID: <51DF9E90.8070408@profihost.ag>
-References: <51D52EA0.80302@profihost.ag> <20130712015559.GF17799@kmo-pixel>
+Subject: Re: Raw stats
+Date: Fri, 12 Jul 2013 08:14:40 +0200
+Message-ID: <51DF9ED0.9010103@profihost.ag>
+References: <DE95649B-13EB-4733-BFCD-4B67F82D179B@profihost.ag> <20130712013308.GD17799@kmo-pixel>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130712015559.GF17799@kmo-pixel>
+In-Reply-To: <20130712013308.GD17799@kmo-pixel>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Am 12.07.2013 03:55, schrieb Kent Overstreet:
-> On Thu, Jul 04, 2013 at 10:13:20AM +0200, Stefan Priebe - Profihost AG wrote:
->> Hello list,
->>
->> while testing bcache i noticed that while writing a big 48GB file the
->> sequential cutoff works fine i see only I/O on the disk but not on the
->> cache. I thought i would afterwards see a bypassed value of around 48GB
->> but it is only 1.2GB.
->>
->> Is this expected? Is bcache in kernel 3.10 stable for production usage?
+Am 12.07.2013 03:33, schrieb Kent Overstreet:
+> On Thu, Jul 11, 2013 at 07:35:01AM +0200, Stefan Priebe - Profihost AG wrote:
+>> The stats_total counters are formatted to GB MB,... for several use cases raw values would be better (f.e.nagios plugin). Is this possible?
 > 
-> That sounds like a bug, but bcache in 3.10 certainly should be stable
-> for production usage.
+> Heh, I imagine Greg K-H or someone would say the sysfs stuff should only
+> be exporting the raw values..
 > 
-> There can be some weirdness due to the way the stats work, there's a ~13
-> second update interval (and also the intermediate counters are 32 bit
-> ints so if you manage to wrap that in 13 seconds you'll lose counts, but
-> it's counting sectors so I doubt that happened here).
+> It'd be pretty easy to add _raw versions, though - or maybe _bytes? I'm
+> not terribly eager to wade through the sysfs code right this minute, but
+> the sysfs code should be pretty easy to figure out if you want to try
+> it and I'd take a patch.
+> 
+> (Look for sysfs_hprint() calls in sysfs.c and stats.c; add attributes
+> (the read_attribute() things) for the files you want to add and
+> sysfs_print() calls for the raw versions)
 
-Mhm i doubt that too. But if i write 40GB shouldn't i see a bypass value
-near 40GB? It's just very small.
+I would vote for dropping this human stuff too and use raw / byte values
+in general. Makeing nice looking values out of it is always up to utils
+or the user.
 
-> Does that sound like it might explain what you were seeing, or do you
-> think there's something else going on?
-No right no i don't believe that.
-
+Greets,
 Stefan
