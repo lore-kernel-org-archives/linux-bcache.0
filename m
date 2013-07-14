@@ -1,50 +1,81 @@
-From: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
-Subject: Re: bcache hangs on writes, recovers after disabling discard on
- cache device
-Date: Fri, 12 Jul 2013 19:13:43 +0300 (EEST)
-Message-ID: <alpine.DEB.2.02.1307121902540.10602@orbit.lan>
-References: <51C891C9.4060809@modelnine.org> <alpine.DEB.2.02.1307111748130.26927@orbit.lan> <20130712011554.GA17799@kmo-pixel>
+From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Fwd: Bug#715019: linux-image-3.10-rc7-amd64: Bcache (with cache on
+ LVM?) stops system from shutting down
+Date: Sun, 14 Jul 2013 13:24:24 +0200
+Message-ID: <CAPBO7TYo16QrYUF7-ZRaOZUJi_eXgGqxsv8oh_WgpjFhK3xfuw@mail.gmail.com>
+References: <CAPBO7Tb9EvxnyeV-xWjsx3Z2NRbDRbRurVmfkU9rsOnUwSBP3A@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130712011554.GA17799@kmo-pixel>
+In-Reply-To: <CAPBO7Tb9EvxnyeV-xWjsx3Z2NRbDRbRurVmfkU9rsOnUwSBP3A-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, 11 Jul 2013, Kent Overstreet wrote:
+---------- Forwarded message ----------
+From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Date: 14 July 2013 13:23
+Subject: Re: Bug#715019: linux-image-3.10-rc7-amd64: Bcache (with cache on
+LVM?) stops system from shutting down
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 
-> On Thu, Jul 11, 2013 at 05:58:17PM +0300, Juha Aatrokoski wrote:
->> On Mon, 24 Jun 2013, Heiko Wundram wrote:
->>
->>> In a rather old thread of mine (514C4FC1.6090804-EqIAFqbRPK3NLxjTenLetw@public.gmane.org), I
->>> already stated a problem I was seeing back at the time, namely
->>> that bcache seems to hang on writes to the SSD device after some
->>> time, writing 50 MB/s continuously to the output device.
->> ...
->>> Disabling discard on the SSD device (by echo 0 >
->>> /sys/fs/bcache/.../cache0/discard) makes the bcache device become
->>> responsive again.
->>
->> I can confirm this. On Monday I booted into kernel 3.8.13-gentoo
->> with the current "bcache" branch patched onto it. Discard was on for
->> the cache device, and today this 50MB/s hang occured. Disabling
->> discard did indeed fix it.
->>
->> I had CONFIG_BCACHE_CLOSURES_DEBUG=y in the kernel, and the contents
->> of /sys/kernel/debug/bcache/bcache-UUID and
->> /sys/kernel/debug/closures both before and after disabling discard
->> can be found at the address below, in case they can help in
->> determining where exactly the hang happens.
->
-> Can you give this patch a try? It's on top of the current
-> bcache-for-3.11 branch
 
-OK, now running the same kernel with this patch applied and discard 
-enabled. However, it has previously taken my system 2-4 days to trigger 
-this bug, so I'd say at least two weeks before I can say the patch (may 
-have) fixed the issue.
+Hello,
 
-Heiko, can your setup reproduce this bug consistently in a shorter time? 
-If so, you could also try this patch for faster feedback.
+I have added new info to this bug. Forward it to this list:
+
+To: 715019-61a8vm9lEZVf4u+23C9RwQ@public.gmane.org
+Subject: Bug#715019: linux-image-3.10-rc7-amd64: Bcache (with cache on LVM?)
+stops system from shutting down
+From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Date: Sun, 14 Jul 2013 00:55:00 +0200
+Message-id:
+<CAPBO7TbcPWAq2rePLsxLapb8y75gNWmUe-RB6ONcR9cNd=cEag-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Reply-to: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, 715019-61a8vm9lEZVf4u+23C9RwQ@public.gmane.org
+
+________________________________
+Hello,
+
+I would like to comment that the same behaviour is happening to my system.
+
+
+Root filesystem is ext3 on /dev/bcache0, which works with /dev/sda3 as the
+backing partition and /dev/sdb as the cache disk (it is an msata version).
+(System was on LVM before, but changed it to ext3 to keep it easier for the
+bcache).
+
+bcache is not shutting down well, and the system cannot shutdown,reboot,
+suspend, hibernate.
+When shutting down, messages are like:
+
+...
+mei_me 000:00:16:0:stop
+exception Emask 0x0 SACT 0x3 SErr 0x0 action 0x6 frozen
+failed command: WRITE FPDMA QUEUED
+ata3.00: cmd 61/08:00:60:6d:0e/00:00:00:00:00/40 tag 0 ncq 4096 out
+res 40:00:f4:00:00:00/00:00:00:00:00/40 Emask 0x4 (timeout)
+ata 3.00: status: {DRDY}
+ata3: COMRESET failed (errno=-16)
+end_request: I/O error, dev sdb, sector xxxxxx
+bcache: bch_count_io_error() sdb:
+IO error on writing btree, recovering
+I/O error, dev sdb, sector xxxxxx
+...
+
+And keeps pausing and showing messages...
+
+I wish that this info helps to find a solution...
+
+--
+--
+Salutacions...Josep
+--
+
+(by the way, kernel now is 3.10.1 and the behaviour is the same).
+
+
+
+--
+--
+Salutacions...Josep
+--
