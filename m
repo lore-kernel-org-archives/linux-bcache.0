@@ -1,53 +1,80 @@
 From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: label devices got removed after format
-Date: Tue, 16 Jul 2013 14:37:56 -0700
-Message-ID: <20130716213756.GA2724@kmo-pixel>
-References: <51DE7E3A.5070709@profihost.ag>
- <20130712012806.GB17799@kmo-pixel>
- <krom21$tfo$2@ger.gmane.org>
- <51DFDE21.2040309@profihost.ag>
- <kroq08$tfo$3@ger.gmane.org>
+Subject: Re: Fwd: Bug#715019: linux-image-3.10-rc7-amd64: Bcache (with cache
+ on LVM?) stops system from shutting down
+Date: Tue, 16 Jul 2013 14:42:05 -0700
+Message-ID: <20130716214205.GB2724@kmo-pixel>
+References: <CAPBO7Tb9EvxnyeV-xWjsx3Z2NRbDRbRurVmfkU9rsOnUwSBP3A@mail.gmail.com>
+ <CAPBO7TYo16QrYUF7-ZRaOZUJi_eXgGqxsv8oh_WgpjFhK3xfuw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <kroq08$tfo$3@ger.gmane.org>
+In-Reply-To: <CAPBO7TYo16QrYUF7-ZRaOZUJi_eXgGqxsv8oh_WgpjFhK3xfuw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 11:40:56AM +0000, Gabriel de Perthuis wrote:
-> On Fri, 12 Jul 2013 12:44:49 +0200, Stefan Priebe - Profihost AG wrote:
-> > Am 12.07.2013 12:33, schrieb Gabriel de Perthuis:
-> >> On Thu, 11 Jul 2013 18:28:06 -0700, Kent Overstreet wrote:
-> >>> On Thu, Jul 11, 2013 at 11:43:22AM +0200, Stefan Priebe - Profihost AG wrote:
-> >>>> Hi,
-> >>>>
-> >>>> after doing mkfs.xfs -f /dev/bcache/by-label/mybcachelabel
-> >>>>
-> >>>> /dev/bcache/by-label/mybcachelabel gots removed...
-> >>>>
-> >>>> Only a reboot brings it back.
-> >>>>
-> >>>> Stefan
-> >>>
-> > To me it happens alays when a udev event is triggered. It seems the
-> > label isn't republished. To me the whole Folder /dev/bcache gets removed.
-> > 
-> > May i've used the wrong kernel patches on top of 3.10?
+On Sun, Jul 14, 2013 at 01:24:24PM +0200, Josep Lladonosa wrote:
+> ---------- Forwarded message ----------
+> From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> Date: 14 July 2013 13:23
+> Subject: Re: Bug#715019: linux-image-3.10-rc7-amd64: Bcache (with cache on
+> LVM?) stops system from shutting down
+> To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 > 
-> After discussing this on IRC:
 > 
-> The Squeeze version of udev chokes on newlines in labels, to the point
-> that all the device's symlinks are removed; the uuid symlinks aren't
-> even involved in label uevents.
-> As a workaround, the latest commit in [1] strips endlines when setting
-> the label.
+> Hello,
 > 
-> [1] https://github.com/g2p/linux/commits/v3.10%2Bbcache-for-3.11
+> I have added new info to this bug. Forward it to this list:
+> 
+> To: 715019-61a8vm9lEZVf4u+23C9RwQ@public.gmane.org
+> Subject: Bug#715019: linux-image-3.10-rc7-amd64: Bcache (with cache on LVM?)
+> stops system from shutting down
+> From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> Date: Sun, 14 Jul 2013 00:55:00 +0200
+> Message-id:
+> <CAPBO7TbcPWAq2rePLsxLapb8y75gNWmUe-RB6ONcR9cNd=cEag-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+> Reply-to: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, 715019-61a8vm9lEZVf4u+23C9RwQ@public.gmane.org
+> 
+> ________________________________
+> Hello,
+> 
+> I would like to comment that the same behaviour is happening to my system.
+> 
+> 
+> Root filesystem is ext3 on /dev/bcache0, which works with /dev/sda3 as the
+> backing partition and /dev/sdb as the cache disk (it is an msata version).
+> (System was on LVM before, but changed it to ext3 to keep it easier for the
+> bcache).
+> 
+> bcache is not shutting down well, and the system cannot shutdown,reboot,
+> suspend, hibernate.
+> When shutting down, messages are like:
+> 
+> ...
+> mei_me 000:00:16:0:stop
+> exception Emask 0x0 SACT 0x3 SErr 0x0 action 0x6 frozen
+> failed command: WRITE FPDMA QUEUED
+> ata3.00: cmd 61/08:00:60:6d:0e/00:00:00:00:00/40 tag 0 ncq 4096 out
+> res 40:00:f4:00:00:00/00:00:00:00:00/40 Emask 0x4 (timeout)
+> ata 3.00: status: {DRDY}
+> ata3: COMRESET failed (errno=-16)
+> end_request: I/O error, dev sdb, sector xxxxxx
+> bcache: bch_count_io_error() sdb:
+> IO error on writing btree, recovering
+> I/O error, dev sdb, sector xxxxxx
+> ...
+> 
+> And keeps pausing and showing messages...
+> 
+> I wish that this info helps to find a solution...
 
-Thanks, applied.
+Hrm, wonder what's causing the IO errors...
 
-Gabriel, would you mind sending me these patches with git format-patch
-or git send-email? I didn't see this until last night :)
+I did fix the reboot notifier the other day, can you try either my
+bcache-for-3.10 or bcache-for-3.11 branches? That should fix shutdown
+and reboot.
+
+Suspend and hibernate should be fixed in the for-3.11 branch, but I
+think I'll need to backport a freezer fix for it to work in 3.10...
