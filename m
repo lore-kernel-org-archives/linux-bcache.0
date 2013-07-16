@@ -1,61 +1,52 @@
-From: sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: reverse link from bucket to keys
-Date: Tue, 16 Jul 2013 11:14:29 -0400
-Message-ID: <CAB7xdimAMQSovzRkBz47KwrVqDt1C4-d3iL6cBcrTGoqJ0dJNg@mail.gmail.com>
-References: <CAB7xdi=wn1O4+g8cynMpSrD114RVsXf4O6Jzz+cytcb=RZhHAg@mail.gmail.com>
-	<CAB7xdinPKr6orbY4Oc-CH-e5aeGwghLsiTFmFC4Qs80PwniBcg@mail.gmail.com>
-	<20130710230257.GD13527@kmo-pixel>
-	<CAB7xdik_nDtJbz-YBaKkQ6XDVQT65ZiSB9E7WWZHon8jXH57SQ@mail.gmail.com>
-	<CAB7xdikjXhAyM5dqVXuEUgL4RHM4L0uf0ksXZ_6uU3-ZgAKR4g@mail.gmail.com>
-	<CAB7xdinRH6ysM6O1x4jB00acqOvtRwPN00xjm2jkmvML37f3JQ@mail.gmail.com>
-	<20130712021057.GA30223@kmo-pixel>
-	<CAB7xdimtWj728xp9amk=K3-dnCWugFYLSUDuueHQwRYOP13dmw@mail.gmail.com>
-	<20130712022551.GB30223@kmo-pixel>
-	<CAB7xdinz82AstkNTptXa2z3VFsAB4AT3NXf-Y0X7PZ+27k6iAw@mail.gmail.com>
-	<20130712024125.GC30223@kmo-pixel>
+From: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
+Subject: Re: bcache hangs on writes, recovers after disabling discard on
+ cache device
+Date: Tue, 16 Jul 2013 21:14:09 +0300 (EEST)
+Message-ID: <alpine.DEB.2.02.1307162111590.3617@orbit.lan>
+References: <51C891C9.4060809@modelnine.org> <alpine.DEB.2.02.1307111748130.26927@orbit.lan> <20130712011554.GA17799@kmo-pixel> <alpine.DEB.2.02.1307121902540.10602@orbit.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130712024125.GC30223@kmo-pixel>
+In-Reply-To: <alpine.DEB.2.02.1307121902540.10602-pfGh9vBu50j/PtFMR13I2A@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Kent,
+On Fri, 12 Jul 2013, Juha Aatrokoski wrote:
 
-sorry to bother you again. i got another question. it's about the
-bucket->pin. Can you explain what's the usage for this data member?
-i see only bucket with pin value "0" can be invalidated. And only "0"
-valued pin bucket's prio will be decreased within the
-bch_rescale_priorities(). But every time when you write data to
-bucket, you increase that bucket's pin, and i did not see when it will
-be decreased. This makes me a little confused. Or do i miss anything
-where you might reset it?
-
-i am appreciated for your help.
-
-Thanks,
-Sheng
-
-On Thu, Jul 11, 2013 at 10:41 PM, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org> wrote:
-> On Thu, Jul 11, 2013 at 10:29:23PM -0400, sheng qiu wrote:
->> sure, in your btree.c code, when you do btree gc, you update the
->> bucket's used sectors by min(unsigned, GC_SECTORS_USED(b)+key_size(),
->> 1<<14-1). this might get you larger than the bucket size. since the
->> newly allocated bucket is set to bucket size already. so each round
->> you will accumulate the key_size(). i print the information at that
->> point, and see GC_SECTORS_USED > bucket size.
+> On Thu, 11 Jul 2013, Kent Overstreet wrote:
 >
-> Hey, I think you're right - btree_gc_start() is supposed to be zeroing
-> out GC_SECTORS_USED() (the same place it does SET_GC_MARK(b,
-> GC_MARK_RECLAIMABLE)) - but that's missing. Thanks!
+>> On Thu, Jul 11, 2013 at 05:58:17PM +0300, Juha Aatrokoski wrote:
+>>> On Mon, 24 Jun 2013, Heiko Wundram wrote:
+>>> 
+>>>> In a rather old thread of mine (514C4FC1.6090804-EqIAFqbRPK3NLxjTenLetw@public.gmane.org), I
+>>>> already stated a problem I was seeing back at the time, namely
+>>>> that bcache seems to hang on writes to the SSD device after some
+>>>> time, writing 50 MB/s continuously to the output device.
+>>> ...
+>>>> Disabling discard on the SSD device (by echo 0 >
+>>>> /sys/fs/bcache/.../cache0/discard) makes the bcache device become
+>>>> responsive again.
+>>> 
+>>> I can confirm this. On Monday I booted into kernel 3.8.13-gentoo
+>>> with the current "bcache" branch patched onto it. Discard was on for
+>>> the cache device, and today this 50MB/s hang occured. Disabling
+>>> discard did indeed fix it.
+>>> 
+>>> I had CONFIG_BCACHE_CLOSURES_DEBUG=y in the kernel, and the contents
+>>> of /sys/kernel/debug/bcache/bcache-UUID and
+>>> /sys/kernel/debug/closures both before and after disabling discard
+>>> can be found at the address below, in case they can help in
+>>> determining where exactly the hang happens.
+>> 
+>> Can you give this patch a try? It's on top of the current
+>> bcache-for-3.11 branch
+>
+> OK, now running the same kernel with this patch applied and discard enabled. 
+> However, it has previously taken my system 2-4 days to trigger this bug, so 
+> I'd say at least two weeks before I can say the patch (may have) fixed the 
+> issue.
 
-
-
--- 
-Sheng Qiu
-Texas A & M University
-Room 332B Wisenbaker
-email: herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
-College Station, TX 77843-3259
+No such luck, hit the bug after four days of uptime. Disabling discard 
+fixed the problem so at least it's not any worse than before.
