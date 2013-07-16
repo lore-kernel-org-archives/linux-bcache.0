@@ -1,48 +1,43 @@
 From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: reverse link from bucket to keys
-Date: Tue, 16 Jul 2013 13:59:34 -0700
-Message-ID: <20130716205934.GB27000@kmo-pixel>
-References: <20130710230257.GD13527@kmo-pixel>
- <CAB7xdik_nDtJbz-YBaKkQ6XDVQT65ZiSB9E7WWZHon8jXH57SQ@mail.gmail.com>
- <CAB7xdikjXhAyM5dqVXuEUgL4RHM4L0uf0ksXZ_6uU3-ZgAKR4g@mail.gmail.com>
- <CAB7xdinRH6ysM6O1x4jB00acqOvtRwPN00xjm2jkmvML37f3JQ@mail.gmail.com>
- <20130712021057.GA30223@kmo-pixel>
- <CAB7xdimtWj728xp9amk=K3-dnCWugFYLSUDuueHQwRYOP13dmw@mail.gmail.com>
- <20130712022551.GB30223@kmo-pixel>
- <CAB7xdinz82AstkNTptXa2z3VFsAB4AT3NXf-Y0X7PZ+27k6iAw@mail.gmail.com>
- <20130712024125.GC30223@kmo-pixel>
- <CAB7xdimAMQSovzRkBz47KwrVqDt1C4-d3iL6cBcrTGoqJ0dJNg@mail.gmail.com>
+Subject: Re: bcache hangs on writes, recovers after disabling discard on
+ cache device
+Date: Tue, 16 Jul 2013 14:05:28 -0700
+Message-ID: <20130716210527.GC27000@kmo-pixel>
+References: <51C891C9.4060809@modelnine.org>
+ <alpine.DEB.2.02.1307111748130.26927@orbit.lan>
+ <20130712011554.GA17799@kmo-pixel>
+ <alpine.DEB.2.02.1307121902540.10602@orbit.lan>
+ <alpine.DEB.2.02.1307162111590.3617@orbit.lan>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <CAB7xdimAMQSovzRkBz47KwrVqDt1C4-d3iL6cBcrTGoqJ0dJNg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <alpine.DEB.2.02.1307162111590.3617-pfGh9vBu50j/PtFMR13I2A@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Juha Aatrokoski <jha-6fQLAAUwtFMxHbG02/KK1g@public.gmane.org>
+Cc: Heiko Wundram <modelnine-EqIAFqbRPK3NLxjTenLetw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 11:14:29AM -0400, sheng qiu wrote:
-> Hi Kent,
+On Tue, Jul 16, 2013 at 09:14:09PM +0300, Juha Aatrokoski wrote:
+> On Fri, 12 Jul 2013, Juha Aatrokoski wrote:
+> >>Can you give this patch a try? It's on top of the current
+> >>bcache-for-3.11 branch
+> >
+> >OK, now running the same kernel with this patch applied and
+> >discard enabled. However, it has previously taken my system 2-4
+> >days to trigger this bug, so I'd say at least two weeks before I
+> >can say the patch (may have) fixed the issue.
 > 
-> sorry to bother you again. i got another question. it's about the
-> bucket->pin. Can you explain what's the usage for this data member?
-> i see only bucket with pin value "0" can be invalidated. And only "0"
-> valued pin bucket's prio will be decreased within the
-> bch_rescale_priorities(). But every time when you write data to
-> bucket, you increase that bucket's pin, and i did not see when it will
-> be decreased. This makes me a little confused. Or do i miss anything
-> where you might reset it?
+> No such luck, hit the bug after four days of uptime. Disabling
+> discard fixed the problem so at least it's not any worse than
+> before.
 
-It's to keep buckets from being garbage collected after they're
-allocated but before we've added a pointer to them to the btree.
+Argh, damn peculiar bug... and the fact that it takes so long to trigger
+is frustrating. I'm honestly at a loss at this point as to what that IO
+actually is.
 
-I've actually been meaning to get rid of it, and just keep a refcount on
-the open buckets (the ones pick_data_bucket() uses) and have garbage
-collection mark those buckets too.
+I should've thought of this sooner, but if there's any way you could
+capture some blktrace output while it's doing its spinning thing that
+could be very helpful.
 
-Originally I also used it for preventing buckets from being invalidated
-while we were reading from them (on cache hit), but I got rid of that
-ages ago for performance reasons - now it just checks after the read
-finishes if it was invalidated, and if so rereads from the backing
-device.
+I'll think about it some more...
