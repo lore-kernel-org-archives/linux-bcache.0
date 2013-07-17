@@ -1,36 +1,37 @@
-From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: label devices got removed after format
-Date: Tue, 16 Jul 2013 22:16:44 +0000 (UTC)
-Message-ID: <ks4goc$o2d$1@ger.gmane.org>
-References: <51DE7E3A.5070709@profihost.ag>
-	<20130712012806.GB17799@kmo-pixel> <krom21$tfo$2@ger.gmane.org>
-	<51DFDE21.2040309@profihost.ag> <kroq08$tfo$3@ger.gmane.org>
-	<20130716213756.GA2724@kmo-pixel>
+From: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Subject: Re: [GIT PULL] Bcache fixes for 3.11
+Date: Tue, 16 Jul 2013 21:11:05 -0600
+Message-ID: <20130717031105.GW22392@kernel.dk>
+References: <20130716211221.GD27000@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <20130716211221.GD27000@kmo-pixel>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, 16 Jul 2013 14:37:56 -0700, Kent Overstreet wrote:
-> On Fri, Jul 12, 2013 at 11:40:56AM +0000, Gabriel de Perthuis wrote:
->> The Squeeze version of udev chokes on newlines in labels, to the point
->> that all the device's symlinks are removed; the uuid symlinks aren't
->> even involved in label uevents.
->> As a workaround, the latest commit in [1] strips endlines when setting
->> the label.
->> 
->> [1] https://github.com/g2p/linux/commits/v3.10%2Bbcache-for-3.11
+On Tue, Jul 16 2013, Kent Overstreet wrote:
+> Hey Jens - I've been busy torture testing and chasing bugs, here's the
+> fruits of my labors. These are all fairly small fixes, some of them
+> quite important:
 > 
-> Thanks, applied.
+> The following changes since commit 8e51e414a3c6d92ef2cc41720c67342a8e2c0bf7:
+> 
+>   bcache: Use standard utility code (2013-07-01 14:43:53 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
+> 
+> for you to fetch changes up to 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
+> 
+>   bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
 
-Thanks.
+Thanks Kent, pulled in for 3.11. Due to my recent move, the 3.11 drivers
+pull is delayed a bit, will go out shortly.
 
-> Gabriel, would you mind sending me these patches with git format-patch
-> or git send-email? I didn't see this until last night :)
-
-Ah, sorry.  I iterated those pushes a bit, so I didn't mind you
-not picking it up right away, but I'll try to switch to more visible
-email next time.
+-- 
+Jens Axboe
