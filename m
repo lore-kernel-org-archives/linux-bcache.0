@@ -1,34 +1,36 @@
-From: "Cyril B." <cbay-SxHCd5+OuqTrt3ojHgZu+w@public.gmane.org>
+From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: [PATCH] Don't register if a non-bcache superblock is found as
  well
-Date: Mon, 22 Jul 2013 12:38:35 +0200
-Message-ID: <51ED0BAB.4040604@excellency.fr>
-References: <ksh1nq$dvp$1@ger.gmane.org> <1374430637-12954-1-git-send-email-g2p.code@gmail.com>
+Date: Mon, 22 Jul 2013 13:00:20 +0200
+Message-ID: <51ED10C4.2050808@gmail.com>
+References: <ksh1nq$dvp$1@ger.gmane.org> <1374430637-12954-1-git-send-email-g2p.code@gmail.com> <51ED0BAB.4040604@excellency.fr>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <1374430637-12954-1-git-send-email-g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+In-Reply-To: <51ED0BAB.4040604-SxHCd5+OuqTrt3ojHgZu+w@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Gabriel <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: "Cyril B." <cbay-SxHCd5+OuqTrt3ojHgZu+w@public.gmane.org>
 Cc: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Gabriel wrote:
-> This should fix it.
+> Gabriel wrote:
+>> This should fix it.
+>>
+>> Because the raid superblock is at the end of the device, bcache's
+>> udev rules could detect a bcache device on the unassembled raid
+>> member.  A better fix would be to merge probe-bcache into
+>> util-linux's blkid.
 >
-> Because the raid superblock is at the end of the device, bcache's
-> udev rules could detect a bcache device on the unassembled raid
-> member.  A better fix would be to merge probe-bcache into
-> util-linux's blkid.
+> I'm afraid that doesn't work: with that patch, my backing device doesn't even get registered anymore, since blkid will detect it as XFS:
 
+I just tried making an xfs filesystem on a bcache device,
+and the xfs superblock isn't visible to the backing device.
 
-I'm afraid that doesn't work: with that patch, my backing device doesn't 
-even get registered anymore, since blkid will detect it as XFS:
+Your problem is likely an old superblock; use wipefs before make-bcache.
 
-# /sbin/blkid -o udev /dev/md10
-ID_FS_UUID=08e8619f-6815-4380-b8c8-9eab18d1643c
-ID_FS_UUID_ENC=08e8619f-6815-4380-b8c8-9eab18d1643c
-ID_FS_TYPE=xfs
+If you do find a filesystem that doesn't put its blkid magic
+at a fixed offset from the start of the device, we could
+consider alternatives, like whitelisting them or porting to blkid.
 
-Cyril
+For now, better safe than sorry.
