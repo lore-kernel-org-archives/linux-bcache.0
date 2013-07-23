@@ -1,37 +1,37 @@
-From: "Cyril B." <cbay-SxHCd5+OuqTrt3ojHgZu+w@public.gmane.org>
-Subject: Re: [PATCH] Don't register if a non-bcache superblock is found as
- well
-Date: Mon, 22 Jul 2013 16:36:08 +0200
-Message-ID: <51ED4358.6030005@excellency.fr>
-References: <ksh1nq$dvp$1@ger.gmane.org> <1374430637-12954-1-git-send-email-g2p.code@gmail.com> <51ED0BAB.4040604@excellency.fr> <51ED10C4.2050808@gmail.com>
+From: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+Subject: can't get bache's sequential_cutoff to work
+Date: Tue, 23 Jul 2013 16:16:54 +0200
+Message-ID: <51EE9056.7030903@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <51ED10C4.2050808-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Cc: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Gabriel de Perthuis wrote:
->> I'm afraid that doesn't work: with that patch, my backing device doesn't even get registered anymore, since blkid will detect it as XFS:
->
-> I just tried making an xfs filesystem on a bcache device,
-> and the xfs superblock isn't visible to the backing device.
->
-> Your problem is likely an old superblock; use wipefs before make-bcache.
->
-> If you do find a filesystem that doesn't put its blkid magic
-> at a fixed offset from the start of the device, we could
-> consider alternatives, like whitelisting them or porting to blkid.
->
-> For now, better safe than sorry.
+Hi,
+
+maybe i missed something or maybe i'm just wrong.
 
 
-After zeroing my devices and trying again, I cannot reproduce the issue. 
-I guess you're right, I must have had an old superblock or something.
+# cat /sys/block/bcache2/bcache/sequential_cutoff
+512k
 
-Thanks for the fix.
+# cat /sys/block/bcache2/bcache/stats_five_minute/bypassed
+64.3M
 
-Cyril
+# dd if=/dev/zero of=/mnt/bcache2/ttt bs=4M count=1000 oflag=direct
+1000+0 records in
+1000+0 records out
+4194304000 bytes (4,2 GB) copied, 11,0348 s, 380 MB/s
+
+# cat /sys/block/bcache2/bcache/stats_five_minute/bypassed
+69.3M
+
+I also see only IOP/s an writes go to the SSD but not to the disk
+behind. What's wrong?
+
+Greets,
+Stefan
