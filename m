@@ -1,50 +1,39 @@
-From: Andrew Thrift <andrew-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>
-Subject: Inconsistent Performance
-Date: Mon, 29 Jul 2013 15:32:49 +1200
-Message-ID: <51F5E261.6050600@networklabs.co.nz>
+From: Geert Uytterhoeven <geert-Td1EMuHUCqxL1ZNQvxDV9g@public.gmane.org>
+Subject: [PATCH] bcache: Correct printf()-style format length modifier
+Date: Mon, 29 Jul 2013 12:45:05 +0200
+Message-ID: <1375094705-27302-1-git-send-email-geert@linux-m68k.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Geert Uytterhoeven <geert-Td1EMuHUCqxL1ZNQvxDV9g@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+drivers/md/bcache/btree.c: In function =E2=80=98bch_btree_node_read=E2=80=
+=99:
+drivers/md/bcache/btree.c:259: warning: format =E2=80=98%lu=E2=80=99 ex=
+pects type =E2=80=98long unsigned int=E2=80=99, but argument 3 has type=
+ =E2=80=98size_t=E2=80=99
 
-We are noticing some odd performance characteristics with bcache on 3.10 
-Mainline kernel.
+Signed-off-by: Geert Uytterhoeven <geert-Td1EMuHUCqxL1ZNQvxDV9g@public.gmane.org>
+---
+ drivers/md/bcache/btree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-We are using Intel DC S3700 SSD and Seagate Constellation ES.2 HDD
-
-Using FIO to perform a 4K random write test with QD=32 and 4 instances 
-we get:
-
-RAW SSD:    55.5K iops
-
-RAW HDD:   540 iops
-
-Fresh bcache on top of SSD/HDD [writeback]:    36.8K iops
-
-Which is not great, but OK.
-
-However if I run the FIO test a number of times, letting it write out 
-the data to the backing device after each run, after a few runs I will 
-notice the IOPS drop.  When the benchmark starts it will sit around 14K 
-IOPS, then as soon as it starts writing to the backing device this will 
-drop to around 5K IOPS. On the subsequent runs it will never go above 5K 
-IOPS.
-
-
-
-Has there been a performance regression on 3.10 ?
-
-
-
-Regards,
-
-
-
-
-
-Andrew
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index ee37288..60908de 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -255,7 +255,7 @@ void bch_btree_node_read(struct btree *b)
+=20
+ 	return;
+ err:
+-	bch_cache_set_error(b->c, "io error reading bucket %lu",
++	bch_cache_set_error(b->c, "io error reading bucket %zu",
+ 			    PTR_BUCKET_NR(b->c, &b->key, 0));
+ }
+=20
+--=20
+1.7.9.5
