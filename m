@@ -1,53 +1,32 @@
 From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: Inconsistent Performance
-Date: Mon, 29 Jul 2013 12:04:47 -0700
-Message-ID: <20130729190447.GA13280@kmo-pixel>
-References: <51F5E261.6050600@networklabs.co.nz>
+Subject: Re: bcache disabled due to inconsistent ptrs
+Date: Mon, 29 Jul 2013 12:13:05 -0700
+Message-ID: <20130729191305.GB13280@kmo-pixel>
+References: <CAB7xdimUODWgMC8fuxC_6bRWYja6g5Z+LYSr85obRUUvWsoArQ@mail.gmail.com>
+ <20130728233757.GB6653@moria.home.lan>
+ <CAB7xdik9ZEsj8+s+DB9GDqEZAcLTStyk+mf7Yiw7uazAXjz1MA@mail.gmail.com>
+ <20130728235259.GC6653@moria.home.lan>
+ <CAB7xdimynY=k1e9+jMM1Fwm1LmY=n_xZQS+zKW5VZpPDa_2jGw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <51F5E261.6050600-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>
+In-Reply-To: <CAB7xdimynY=k1e9+jMM1Fwm1LmY=n_xZQS+zKW5VZpPDa_2jGw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Andrew Thrift <andrew-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>
+To: sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 03:32:49PM +1200, Andrew Thrift wrote:
-> Hi,
-> 
-> We are noticing some odd performance characteristics with bcache on
-> 3.10 Mainline kernel.
-> 
-> We are using Intel DC S3700 SSD and Seagate Constellation ES.2 HDD
-> 
-> Using FIO to perform a 4K random write test with QD=32 and 4
-> instances we get:
-> 
-> RAW SSD:    55.5K iops
-> 
-> RAW HDD:   540 iops
-> 
-> Fresh bcache on top of SSD/HDD [writeback]:    36.8K iops
-> 
-> Which is not great, but OK.
-> 
-> However if I run the FIO test a number of times, letting it write
-> out the data to the backing device after each run, after a few runs
-> I will notice the IOPS drop.  When the benchmark starts it will sit
-> around 14K IOPS, then as soon as it starts writing to the backing
-> device this will drop to around 5K IOPS. On the subsequent runs it
-> will never go above 5K IOPS.
+On Sun, Jul 28, 2013 at 06:57:42PM -0500, sheng qiu wrote:
+> generally the flash size is 40GB, RAM is 8GB. The workload first
+> writes about 65GB of data and then do read/writes (10 threads) on
+> those data.
+> it runs less than 1 hour during the read/write step and nearly
+> happened each time. now i was testing with less threads and see if
+> this is the case.
 
-Hmm... that sounds like something an SSD would do, but it sounds like
-you've checked that performance to the bare SSD isn't degrading, and
-that is a rather large regression.
+Some kind of garbage collection bug... :/
 
-> Has there been a performance regression on 3.10 ?
-
-Certainly not impossible.
-
-Could you try doing some profiling with perf and seeing if anything
-shows up? Also, try flipping off discards if you have them on.
-
-It's just write performance that's degrading, not read?
+Could you try the bcache-testing branch? It's got significantly improved
+garbage collection code - if it's not fixed there, at least that code
+should be easier to debug...
