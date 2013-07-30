@@ -1,32 +1,48 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: bcache disabled due to inconsistent ptrs
-Date: Mon, 29 Jul 2013 12:13:05 -0700
-Message-ID: <20130729191305.GB13280@kmo-pixel>
-References: <CAB7xdimUODWgMC8fuxC_6bRWYja6g5Z+LYSr85obRUUvWsoArQ@mail.gmail.com>
- <20130728233757.GB6653@moria.home.lan>
- <CAB7xdik9ZEsj8+s+DB9GDqEZAcLTStyk+mf7Yiw7uazAXjz1MA@mail.gmail.com>
- <20130728235259.GC6653@moria.home.lan>
- <CAB7xdimynY=k1e9+jMM1Fwm1LmY=n_xZQS+zKW5VZpPDa_2jGw@mail.gmail.com>
+From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: shutdown and bcache
+Date: Tue, 30 Jul 2013 11:18:18 +0200
+Message-ID: <CAPBO7Ta-EayiYtTjJnFRrCF1Jg-x_bR=YGGwM+yGfAFmEcGjVQ@mail.gmail.com>
+References: <CAPBO7TavO4ptpXk41jyHLsezS4fhQ1+y5Zk7yq4K183jvOeD-g@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <CAB7xdimynY=k1e9+jMM1Fwm1LmY=n_xZQS+zKW5VZpPDa_2jGw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAPBO7TavO4ptpXk41jyHLsezS4fhQ1+y5Zk7yq4K183jvOeD-g-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: sheng qiu <herbert1984106-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Sun, Jul 28, 2013 at 06:57:42PM -0500, sheng qiu wrote:
-> generally the flash size is 40GB, RAM is 8GB. The workload first
-> writes about 65GB of data and then do read/writes (10 threads) on
-> those data.
-> it runs less than 1 hour during the read/write step and nearly
-> happened each time. now i was testing with less threads and see if
-> this is the case.
+Hello,
 
-Some kind of garbage collection bug... :/
+My scenario is root partition at /dev/sda3 and /boot at /dev/sda1
 
-Could you try the bcache-testing branch? It's got significantly improved
-garbage collection code - if it's not fixed there, at least that code
-should be easier to debug...
+I am using a complete mSATA unit (/dev/sdb) as a cache and it works,
+but system is not shutting down.
+
+after
+
+me_me 0000:00:16:0:stop
+
+i get messages giving
+
+failed command: WRITE FPDMA QUEUED
+
+and so.
+
+I have tried kernel 3.10.4 replacing ./drivers/md/bcache content to
+get last version of bcache (even with last shutdown "fix":
+http://evilpiepirate.org/git/linux-bcache.git/commit/?id=7051ed6b28b3770b59cab6fb7872e38e7d3cdb9d
+) but it is not fixing this case: system is not stopping.
+
+Screenshots here:
+
+http://s9.postimg.org/sveejhewr/mei_me.jpg
+
+http://s9.postimg.org/eq8lho5vf/write_fpdma_queued.jpg
+
+
+Josep
+
+--
+--
+Salutacions...Josep
+--
