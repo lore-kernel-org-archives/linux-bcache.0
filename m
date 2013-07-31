@@ -1,50 +1,29 @@
 From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: Inconsistent Performance
-Date: Tue, 30 Jul 2013 23:13:25 -0700
-Message-ID: <20130731061325.GJ6653@moria.home.lan>
-References: <51F5E261.6050600@networklabs.co.nz>
+Subject: Re: shutdown and bcache
+Date: Tue, 30 Jul 2013 23:15:53 -0700
+Message-ID: <20130731061553.GK6653@moria.home.lan>
+References: <CAPBO7TavO4ptpXk41jyHLsezS4fhQ1+y5Zk7yq4K183jvOeD-g@mail.gmail.com>
+ <CAPBO7Ta-EayiYtTjJnFRrCF1Jg-x_bR=YGGwM+yGfAFmEcGjVQ@mail.gmail.com>
+ <CAPBO7TZpOJUO0cNLu6w+QF-aRBm_REWYkN=7MwdL5ja7AxTfRw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <51F5E261.6050600-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>
+In-Reply-To: <CAPBO7TZpOJUO0cNLu6w+QF-aRBm_REWYkN=7MwdL5ja7AxTfRw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Andrew Thrift <andrew-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>
+To: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 03:32:49PM +1200, Andrew Thrift wrote:
-> Hi,
+On Tue, Jul 30, 2013 at 11:43:27AM +0200, Josep Lladonosa wrote:
+> Hello,
 > 
-> We are noticing some odd performance characteristics with bcache on
-> 3.10 Mainline kernel.
+> Have just checked kernel 3.11.0-rc3 #1 SMP Tue Jul 30 11:06:14 CEST
+> 2013 x86_64 GNU/Linux
 > 
-> We are using Intel DC S3700 SSD and Seagate Constellation ES.2 HDD
-> 
-> Using FIO to perform a 4K random write test with QD=32 and 4
-> instances we get:
-> 
-> RAW SSD:    55.5K iops
-> 
-> RAW HDD:   540 iops
-> 
-> Fresh bcache on top of SSD/HDD [writeback]:    36.8K iops
-> 
-> Which is not great, but OK.
-> 
-> However if I run the FIO test a number of times, letting it write
-> out the data to the backing device after each run, after a few runs
-> I will notice the IOPS drop.  When the benchmark starts it will sit
-> around 14K IOPS, then as soon as it starts writing to the backing
-> device this will drop to around 5K IOPS. On the subsequent runs it
-> will never go above 5K IOPS.
-> 
-> 
-> 
-> Has there been a performance regression on 3.10 ?
+> and system has shut down!
 
-I don't seem to be able to reproduce this in the bcache-testing branch
-(but I haven't tried stock 3.10, and also the SSD in my test machine
-isn't near as fast as yours).
-
-Could you try the testing branch and see if you can reproduce it there?
+Awesome! I wonder what actually fixed it - I don't think a bcache bug
+could've been causing those errors (and I asked some other kernel devs,
+they thought the same thing), and 3.10.4 should have all the same
+fixes... but who really knows. Glad it's working now.
