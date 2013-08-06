@@ -1,9 +1,10 @@
-From: Ashim Saikia <akhim.saikia-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: bcache patch for kernel version 3.0
-Date: Tue, 6 Aug 2013 14:29:24 +0530
-Message-ID: <CAM+ADaxMfE3PpsDZ+1sAAthX6=6H5SNMne3QgdADj3ZOGt74hQ@mail.gmail.com>
+From: Tim Small <tim-vjYYaD5tTFXhKRip0M0iNA@public.gmane.org>
+Subject: bcache and md / lvm / ext4 alignment
+Date: Tue, 06 Aug 2013 14:34:22 +0100
+Message-ID: <5200FB5E.3050803@buttersideup.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
@@ -11,40 +12,46 @@ List-Id: linux-bcache@vger.kernel.org
 
 Hi,
 
-I am new to bcache and I am looking for a bcache patch for linux kernel
-version 3.0.
+I'm planning to test bcache like this:
 
-Initially, form a 3.7 kernel, I prepared a patch and applied to 3.0 kernel.
-But in this case, I encounter "null pointer dereference".
+8x SATA drives
+md RAID10
+bcache
+lvm
+ext3/ext4
 
-I am trying to use ramdisk as cache device and mmc partiton as backing
-device.
+Recent LVM versions have these two settings:
+
+>     # By default, if a PV is placed directly upon an md device, LVM2
+>     # will align its data blocks with the md device's stripe-width.
+>     # 1 enables; 0 disables.
+>     md_chunk_alignment = 1
+>
+>     # By default, the start of a PV's data area will be a multiple of
+>     # the 'minimum_io_size' or 'optimal_io_size' exposed in sysfs.
+>     # - minimum_io_size - the smallest request the device can perform
+>     #   w/o incurring a read-modify-write penalty (e.g. MD's chunk size)
+>     # - optimal_io_size - the device's preferred unit of receiving I/O
+>     #   (e.g. MD's stripe width)
+>     # minimum_io_size is used if optimal_io_size is undefined (0).
+>     # If md_chunk_alignment is enabled, that detects the optimal_io_size.
+>     # This setting takes precedence over md_chunk_alignment.
+>     # 1 enables; 0 disables.
+>     data_alignment_detection = 1
+
+... so will bcache pass the correct settings up to lvm via sysfs?
+
+When creating ext* filesystems on top of mds I currently use this:
+
+http://busybox.net/~aldot/mkfs_stride.html
+
+... and I was wondering if bcache's metadata will be OK with this?
 
 
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-kernel BUG at fs/bio.c:424!
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = c0004000
-[00000000] *pgd=00000000
-Internal error: Oops: 817 [#1] PREEMPT
-Modules linked in:
-CPU: 0    Not tainted  (3.0.8-00054-gece392b-dirty #5)
-PC is at __bug+0x1c/0x24
-LR is at __bug+0x18/0x24
-pc : [<c003c584>]    lr : [<c003c580>]    psr: 60000193
-sp : f0bf7d88  ip : f0bf7cc0  fp : 00000000
-r10: f02f3000  r9 : e2b70400  r8 : e2b70400
-r7 : 00000000  r6 : 00000800  r5 : 00000000  r4 : 00000000
-r3 : 00000000  r2 : 00000001  r1 : 00000002  r0 : 00000022
-Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-Control: 10c5387d  Table: 4da00019  DAC: 00000015
+Also, I noted that in the bcache.txt it says that discard is off by
+default because " SATA TRIM is an unqueued command (and thus slow)".  I
+see that SATA v3.1 includes a queued trim/discard command, but I don't
+know if Linux yet has the support for it (there are a few SSDs with SATA
+v3.1 support on the market I think).
 
-PC: 0xc003c504:
-
-So, I am trying to debug this issue. My guess is back porting bcache from
-3.7 kernel may not be the right way.
-I am looking for help in getting a bcache 3.0 patch. If anybody can give me
-some pointers in order to get that patch, that will be really helpful to me.
-
-Regards
-Ashim
+Tim.
