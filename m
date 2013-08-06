@@ -1,39 +1,50 @@
-From: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
-Subject: bcache hang on suspend? sometimes?
-Date: Mon, 5 Aug 2013 22:34:03 -0700
-Message-ID: <20130806053403.GB7998@blackbox.djwong.org>
+From: Ashim Saikia <akhim.saikia-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: bcache patch for kernel version 3.0
+Date: Tue, 6 Aug 2013 14:29:24 +0530
+Message-ID: <CAM+ADaxMfE3PpsDZ+1sAAthX6=6H5SNMne3QgdADj3ZOGt74hQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
 Hi,
 
-Lately (i.e. 3.10.5) I thought I'd give bcache a try on my work laptop.  I
-paired up a boring SATA SSD with one of those newfangled 4k "advanced format"
-drives, and formatted the whole stack with dm-crypt + lvm + ext4 on top of
-bcache.  Things were looking pretty good -- LKML loads much faster in mutt, and
-all was well with the world, even suspend/resume worked fine.
+I am new to bcache and I am looking for a bcache patch for linux kernel
+version 3.0.
 
-Then I rebooted the machine.  After the reboot, the machine will hang every
-time I suspend.  I set up netconsole and set no_console_suspend=1, but nothing
-interesting showed up in dmesg.  I see that SCSI managed to flush the disks,
-but everything seems to stop dead.  No lockup messages or anything.
+Initially, form a 3.7 kernel, I prepared a patch and applied to 3.0 kernel.
+But in this case, I encounter "null pointer dereference".
 
-Curiously, if I set up a bcache between that SSD and a 512-byte-sector old
-school disk, suspend/resume seem fine even after a reboot.  My bcache test
-machine also suspends/resumes just fine.  I tried simulating a 4k disk with
-qemu to see if I could arrange an easier testcase, but I couldn't reproduce the
-hang there either.  (Yes, I do have bcache debugging turned on.)
+I am trying to use ramdisk as cache device and mmc partiton as backing
+device.
 
-I'll keep plugging away on this as time permits, but I was wondering -- has
-anyone else seen this before?  Is this my own little crazy party?  I was
-careful to make sure everything on the AF drive lined up on a 4k alignment.
 
-<shrug>
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+kernel BUG at fs/bio.c:424!
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+pgd = c0004000
+[00000000] *pgd=00000000
+Internal error: Oops: 817 [#1] PREEMPT
+Modules linked in:
+CPU: 0    Not tainted  (3.0.8-00054-gece392b-dirty #5)
+PC is at __bug+0x1c/0x24
+LR is at __bug+0x18/0x24
+pc : [<c003c584>]    lr : [<c003c580>]    psr: 60000193
+sp : f0bf7d88  ip : f0bf7cc0  fp : 00000000
+r10: f02f3000  r9 : e2b70400  r8 : e2b70400
+r7 : 00000000  r6 : 00000800  r5 : 00000000  r4 : 00000000
+r3 : 00000000  r2 : 00000001  r1 : 00000002  r0 : 00000022
+Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+Control: 10c5387d  Table: 4da00019  DAC: 00000015
 
---D
+PC: 0xc003c504:
+
+So, I am trying to debug this issue. My guess is back porting bcache from
+3.7 kernel may not be the right way.
+I am looking for help in getting a bcache 3.0 patch. If anybody can give me
+some pointers in order to get that patch, that will be really helpful to me.
+
+Regards
+Ashim
