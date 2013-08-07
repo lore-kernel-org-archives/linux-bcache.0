@@ -1,52 +1,63 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: bcache hang on suspend? sometimes?
-Date: Tue, 6 Aug 2013 16:12:42 -0700
-Message-ID: <20130806231241.GB8519@kmo-pixel>
-References: <20130806053403.GB7998@blackbox.djwong.org>
- <20130806205650.GA5878@blackbox.djwong.org>
- <20130806210224.GA8519@kmo-pixel>
- <20130806230851.GA10118@blackbox.djwong.org>
+From: Ashim Saikia <akhim.saikia-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: bcache patch for kernel version 3.0
+Date: Wed, 7 Aug 2013 09:17:48 +0530
+Message-ID: <CAM+ADaxb-d3Kj0Wu87im8grKWt7ihX4sc2uODG37z2DSq+yEOA@mail.gmail.com>
+References: <CAM+ADaxMfE3PpsDZ+1sAAthX6=6H5SNMne3QgdADj3ZOGt74hQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20130806230851.GA10118-yuuUpGxbzT9UbpRmUfBrXUB+6BGkLq7r@public.gmane.org>
+In-Reply-To: <CAM+ADaxMfE3PpsDZ+1sAAthX6=6H5SNMne3QgdADj3ZOGt74hQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
-Cc: kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Aug 06, 2013 at 04:08:52PM -0700, Darrick J. Wong wrote:
-> On Tue, Aug 06, 2013 at 02:02:24PM -0700, Kent Overstreet wrote:
-> > On Tue, Aug 06, 2013 at 01:56:50PM -0700, Darrick J. Wong wrote:
-> > > Ok, I've narrowed it down a little bit --
-> > > 
-> > > It's not caused by any of the fixes that went into 3.10.[1-5].  It doesn't seem
-> > > to be specific to any particular storage bus, controller, disk, or even cache
-> > > set -- the same bcache'd usb stick will crash my laptop and not crash my test
-> > > box.  The 4k/512b sector thing was a red herring; you can ignore that.
-> > 
-> > Ok, that makes more sense...
-> > 
-> > > The test box is a boring old Core2 box; the laptop is an Ivy Bridge.  I'll try
-> > > to enable more verbose PM debugging to see if I can determine what exactly's
-> > > going on at sleep time.  (Again, shooting in the dark...)
-> > 
-> > I just looked at the code and it appears there was a freezer fix that
-> > didn't make it into 3.10 and should have. Can you try the
-> > bcache-for-3.11 branch and see if that fixes it? If so, I'll get that
-> > patch sent out for stable.
-> 
-> The suspend problem seems to be gone with the for-3.11 branch. 
+Hi Matthew,
 
-Good!
+I have bcache patch for 3.7 kernel. But I was trying to use bcache in
+an android device which has a 3.0 kernel. So, I tried to back port
+bcache patch to 3.0. But the bio handling in case of 3.0 is having
+issues. Tried the git, but was not able to get a 3.0 compatible patch.
 
-> The branch
-> seems to be based off 3.10-rc7... is that correct?
+Regards
+Ashim
 
-Yeah, that's just where it was when I sent Jens the pull request.
-
-> Also, is there any way to figure out how much of a cache device is actively
-> holding cached data?
-
-<cache set dir>/cache0/priority_stats
+On Tue, Aug 6, 2013 at 2:29 PM, Ashim Saikia <akhim.saikia-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> Hi,
+>
+> I am new to bcache and I am looking for a bcache patch for linux kernel
+> version 3.0.
+>
+> Initially, form a 3.7 kernel, I prepared a patch and applied to 3.0 kernel.
+> But in this case, I encounter "null pointer dereference".
+>
+> I am trying to use ramdisk as cache device and mmc partiton as backing
+> device.
+>
+>
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> kernel BUG at fs/bio.c:424!
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> pgd = c0004000
+> [00000000] *pgd=00000000
+> Internal error: Oops: 817 [#1] PREEMPT
+> Modules linked in:
+> CPU: 0    Not tainted  (3.0.8-00054-gece392b-dirty #5)
+> PC is at __bug+0x1c/0x24
+> LR is at __bug+0x18/0x24
+> pc : [<c003c584>]    lr : [<c003c580>]    psr: 60000193
+> sp : f0bf7d88  ip : f0bf7cc0  fp : 00000000
+> r10: f02f3000  r9 : e2b70400  r8 : e2b70400
+> r7 : 00000000  r6 : 00000800  r5 : 00000000  r4 : 00000000
+> r3 : 00000000  r2 : 00000001  r1 : 00000002  r0 : 00000022
+> Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 10c5387d  Table: 4da00019  DAC: 00000015
+>
+> PC: 0xc003c504:
+>
+> So, I am trying to debug this issue. My guess is back porting bcache from
+> 3.7 kernel may not be the right way.
+> I am looking for help in getting a bcache 3.0 patch. If anybody can give me
+> some pointers in order to get that patch, that will be really helpful to me.
+>
+> Regards
+> Ashim
