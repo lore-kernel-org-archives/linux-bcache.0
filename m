@@ -1,39 +1,38 @@
 From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: Replacing the caching device (SSD) of a bcache set
-Date: Thu, 8 Aug 2013 17:25:50 -0700
-Message-ID: <20130809002550.GE15409@kmo-pixel>
-References: <CAPBO7TbPW5thQt04kUm6gzHqAJna+2pvKU5rnwLVGc7DdBdMvA@mail.gmail.com>
+Subject: Re: Converting existing partition to bcache backing device without
+ loss of data
+Date: Thu, 8 Aug 2013 17:36:57 -0700
+Message-ID: <20130809003657.GF15409@kmo-pixel>
+References: <CAO9TOLddUrQCSchv_2-Xf=xjp_AOfN+NyePMPfiQYwqA+gx4ew@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <CAPBO7TbPW5thQt04kUm6gzHqAJna+2pvKU5rnwLVGc7DdBdMvA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <CAO9TOLddUrQCSchv_2-Xf=xjp_AOfN+NyePMPfiQYwqA+gx4ew-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: Adam Brenner <aebrenne-sXc7qaQca9o@public.gmane.org>, g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, Aug 08, 2013 at 02:17:24PM +0200, Josep Lladonosa wrote:
-> Hello,
+On Thu, Aug 08, 2013 at 09:27:33AM -0700, Adam Brenner wrote:
+> Howdy,
 > 
-> I am running a root file system (/) in a bcache set (/dev/sda3 as the
-> backing device and /dev/sdb -the SSD- as the caching device).
+> I am in the process of testing bcache on our HPC cluster to act as
+> cache for our gluster storage (~750TB).
 > 
-> I want to replace the caching device with another hardware.
+> I notice that during the setup process on our test cluster, our
+> backing device (where all our data is stored) will need to be
+> formatted in order to support bcache.
 > 
-> The question is, which is the best procedure to replace it? I was thinking
-> about:
-> 
-> - turn off computer.
-> - replace SSD with the new one.
-> - turn on computer.
-> 
-> It seems to me very simple, perhaps too much. Does it need any other
-> step? Reattaching?
+> Does a way exist so we do not have to format our backing device? Or is
+> working being done to support this?
 
-Oh, for reattaching - after you boot up with the new SSD, you'll format
-it and register it, then reattach
+Unfortunately, there's no general purpose way - the faq explains why (I
+just fixed the wiki so it's there again :)
 
-ls /sys/fs/bcache to get the new cache set UUID
+http://bcache.evilpiepirate.org/FAQ/
 
-echo <uuid> /sys/block/bcache0/bcache/attach
+However, Gabriel de Perthuis has a tool to do in place conversion - I
+can't remember if it was limited to lvm devices or not - Gabriel, what
+was the link to that again? I should stick a link to it in the wiki or
+give you an account on it so you can.
