@@ -1,39 +1,40 @@
-From: Adam Brenner <aebrenne-sXc7qaQca9o@public.gmane.org>
-Subject: Converting existing partition to bcache backing device without loss
- of data
-Date: Thu, 8 Aug 2013 09:27:33 -0700
-Message-ID: <CAO9TOLddUrQCSchv_2-Xf=xjp_AOfN+NyePMPfiQYwqA+gx4ew@mail.gmail.com>
+From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Subject: Re: Replacing the caching device (SSD) of a bcache set
+Date: Thu, 8 Aug 2013 17:18:44 -0700
+Message-ID: <20130809001844.GD15409@kmo-pixel>
+References: <CAPBO7TbPW5thQt04kUm6gzHqAJna+2pvKU5rnwLVGc7DdBdMvA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <CAPBO7TbPW5thQt04kUm6gzHqAJna+2pvKU5rnwLVGc7DdBdMvA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Howdy,
+On Thu, Aug 08, 2013 at 02:17:24PM +0200, Josep Lladonosa wrote:
+> Hello,
+> 
+> I am running a root file system (/) in a bcache set (/dev/sda3 as the
+> backing device and /dev/sdb -the SSD- as the caching device).
+> 
+> I want to replace the caching device with another hardware.
+> 
+> The question is, which is the best procedure to replace it? I was thinking
+> about:
+> 
+> - turn off computer.
+> - replace SSD with the new one.
+> - turn on computer.
+> 
+> It seems to me very simple, perhaps too much. Does it need any other
+> step? Reattaching?
 
-I am in the process of testing bcache on our HPC cluster to act as
-cache for our gluster storage (~750TB).
+Detach the bcache device from the cache set first - _definitely_ do that
+first if you're using it in writeback mode
 
-I notice that during the setup process on our test cluster, our
-backing device (where all our data is stored) will need to be
-formatted in order to support bcache.
+echo 1 > /sys/block/bcache0/bcache/detach
 
-Does a way exist so we do not have to format our backing device? Or is
-working being done to support this?
-
-Thanks,
--Adam
-
---
-Adam Brenner
-Computer Science, Undergraduate Student
-Donald Bren School of Information and Computer Sciences
-
-Research Computing Support
-Office of Information Technology
-http://www.oit.uci.edu/rcs/
-
-University of California, Irvine
-www.ics.uci.edu/~aebrenne/
-aebrenne-sXc7qaQca9o@public.gmane.org
+Unregistering the cache set detaches it from every attached device too:
+echo 1 > /sys/fs/bcache/<cache set>/unregister
