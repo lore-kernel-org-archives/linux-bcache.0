@@ -1,7 +1,7 @@
 From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 Subject: Re: Replacing the caching device (SSD) of a bcache set
-Date: Thu, 8 Aug 2013 17:18:44 -0700
-Message-ID: <20130809001844.GD15409@kmo-pixel>
+Date: Thu, 8 Aug 2013 17:25:50 -0700
+Message-ID: <20130809002550.GE15409@kmo-pixel>
 References: <CAPBO7TbPW5thQt04kUm6gzHqAJna+2pvKU5rnwLVGc7DdBdMvA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -31,10 +31,9 @@ On Thu, Aug 08, 2013 at 02:17:24PM +0200, Josep Lladonosa wrote:
 > It seems to me very simple, perhaps too much. Does it need any other
 > step? Reattaching?
 
-Detach the bcache device from the cache set first - _definitely_ do that
-first if you're using it in writeback mode
+Oh, for reattaching - after you boot up with the new SSD, you'll format
+it and register it, then reattach
 
-echo 1 > /sys/block/bcache0/bcache/detach
+ls /sys/fs/bcache to get the new cache set UUID
 
-Unregistering the cache set detaches it from every attached device too:
-echo 1 > /sys/fs/bcache/<cache set>/unregister
+echo <uuid> /sys/block/bcache0/bcache/attach
