@@ -1,58 +1,30 @@
-From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+From: Huub Bouma <bouma-CuspTiYYhYk@public.gmane.org>
 Subject: Re: Replacing the caching device (SSD) of a bcache set
-Date: Sun, 11 Aug 2013 11:28:03 +0200
-Message-ID: <CAPBO7TYh36a1ON=4zT6qvwQYAwsOy5KAu0qQLNMtLP9+ySdoMA@mail.gmail.com>
-References: <CAPBO7TbPW5thQt04kUm6gzHqAJna+2pvKU5rnwLVGc7DdBdMvA@mail.gmail.com>
-	<20130809002550.GE15409@kmo-pixel>
+Date: Sun, 11 Aug 2013 12:13:23 +0200
+Message-ID: <520763C3.9080605@w20e.com>
+References: <CAPBO7TbPW5thQt04kUm6gzHqAJna+2pvKU5rnwLVGc7DdBdMvA@mail.gmail.com> <20130809002550.GE15409@kmo-pixel> <CAPBO7TYh36a1ON=4zT6qvwQYAwsOy5KAu0qQLNMtLP9+ySdoMA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130809002550.GE15409@kmo-pixel>
+In-Reply-To: <CAPBO7TYh36a1ON=4zT6qvwQYAwsOy5KAu0qQLNMtLP9+ySdoMA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+To: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 9 August 2013 02:25, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org> wrote:
-> On Thu, Aug 08, 2013 at 02:17:24PM +0200, Josep Lladonosa wrote:
->> Hello,
->>
->> I am running a root file system (/) in a bcache set (/dev/sda3 as the
->> backing device and /dev/sdb -the SSD- as the caching device).
->>
->> I want to replace the caching device with another hardware.
->>
->> The question is, which is the best procedure to replace it? I was thinking
->> about:
->>
->> - turn off computer.
->> - replace SSD with the new one.
->> - turn on computer.
->>
->> It seems to me very simple, perhaps too much. Does it need any other
->> step? Reattaching?
->
-> Oh, for reattaching - after you boot up with the new SSD, you'll format
-> it and register it, then reattach
->
-> ls /sys/fs/bcache to get the new cache set UUID
->
-> echo <uuid> /sys/block/bcache0/bcache/attach
+On 08/11/2013 11:28 AM, Josep Lladonosa wrote:
+> Hello, Thanks to eveybody. All working now. Just a comment. I find
+> that with kernel 3.11.0-rc4 hard disk writes are teeeeeerribly slow
+> (for example when installing a deb package, for example, a new kernel.
+> It runs, but very slow comparing to a system running without bcache.
+> Josep 
 
+Hi Josep,
 
-Hello,
+I had the exact same issue, when running dpkg it took half an hour or
+so.. after chatting on IRC to Kent Overstreet I was told this was fixed,
+so you might need to patch the kernel with the latest changes. I haven't
+seen this issue since, but haven't done a lot of testing since either..
 
-Thanks to eveybody. All working now.
-
-Just a comment. I find that with kernel 3.11.0-rc4 hard disk writes
-are teeeeeerribly slow (for example when installing a deb package, for
-example, a new kernel. It runs, but very slow comparing to a system
-running without bcache.
-
-Josep
-
-
--- 
---
-Salutacions...Josep
---
+Cheers, Huub
