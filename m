@@ -1,65 +1,65 @@
-From: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+From: Kent Overstreet <kmo@daterainc.com>
 Subject: Re: [GIT PULL] bcache fixes for 3.11
-Date: Thu, 15 Aug 2013 08:43:22 +0200
-Message-ID: <520C788A.1060208@profihost.ag>
+Date: Thu, 15 Aug 2013 00:07:29 -0700
+Message-ID: <20130815070729.GC6427@kmo-pixel>
 References: <20130814225904.GA6427@kmo-pixel>
+ <520C788A.1060208@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130814225904.GA6427@kmo-pixel>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <520C788A.1060208@profihost.ag>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-Am 15.08.2013 00:59, schrieb Kent Overstreet:
-> Jens, here's the latest bcache fixes. Some urgent stuff in here:
+On Thu, Aug 15, 2013 at 08:43:22AM +0200, Stefan Priebe - Profihost AG wrote:
+> Am 15.08.2013 00:59, schrieb Kent Overstreet:
+> > Jens, here's the latest bcache fixes. Some urgent stuff in here:
+> > 
+> > 
+> > The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
+> > 
+> >   bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
+> > 
+> > are available in the git repository at:
+> > 
+> >   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
+> > 
+> > for you to fetch changes up to 0434a516e99ee51ac2d0dfa71b2f56c89ac5db05:
+> > 
+> >   bcache: Fix a flush/fua performance bug (2013-08-14 15:44:51 -0700)
+> > 
+> > ----------------------------------------------------------------
+> > Gabriel de Perthuis (1):
+> >       bcache: Strip endline when writing the label through sysfs
+> > 
+> > Geert Uytterhoeven (1):
+> >       bcache: Correct printf()-style format length modifier
+> > 
+> > Kent Overstreet (4):
+> >       bcache: Fix a dumb journal discard bug
+> >       bcache: Fix for when no journal entries are found
+> >       bcache: Fix a writeback performance regression
+> >       bcache: Fix a flush/fua performance bug
+> > 
+> >  drivers/md/bcache/bcache.h    |  7 +++----
+> >  drivers/md/bcache/btree.c     |  2 +-
+> >  drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
+> >  drivers/md/bcache/sysfs.c     |  9 +++++++--
+> >  drivers/md/bcache/util.c      | 11 ++++++++++-
+> >  drivers/md/bcache/util.h      | 12 +++++++++---
+> >  drivers/md/bcache/writeback.c | 37 ++++++++++++++++++-------------------
+> >  7 files changed, 68 insertions(+), 43 deletions(-)
+> > --
 > 
+> As 3.10 is long term stable release. You might need CC the stable list
+> for patches which have to go to 3.10 as well.
 > 
-> The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
-> 
->   bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
-> 
-> for you to fetch changes up to 0434a516e99ee51ac2d0dfa71b2f56c89ac5db05:
-> 
->   bcache: Fix a flush/fua performance bug (2013-08-14 15:44:51 -0700)
-> 
-> ----------------------------------------------------------------
-> Gabriel de Perthuis (1):
->       bcache: Strip endline when writing the label through sysfs
-> 
-> Geert Uytterhoeven (1):
->       bcache: Correct printf()-style format length modifier
-> 
-> Kent Overstreet (4):
->       bcache: Fix a dumb journal discard bug
->       bcache: Fix for when no journal entries are found
->       bcache: Fix a writeback performance regression
->       bcache: Fix a flush/fua performance bug
-> 
->  drivers/md/bcache/bcache.h    |  7 +++----
->  drivers/md/bcache/btree.c     |  2 +-
->  drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
->  drivers/md/bcache/sysfs.c     |  9 +++++++--
->  drivers/md/bcache/util.c      | 11 ++++++++++-
->  drivers/md/bcache/util.h      | 12 +++++++++---
->  drivers/md/bcache/writeback.c | 37 ++++++++++++++++++-------------------
->  7 files changed, 68 insertions(+), 43 deletions(-)
-> --
+> At least this one should go to 3.10:
+> > Gabriel de Perthuis (1):
+> >       bcache: Strip endline when writing the label through sysfs
 
-As 3.10 is long term stable release. You might need CC the stable list
-for patches which have to go to 3.10 as well.
-
-At least this one should go to 3.10:
-> Gabriel de Perthuis (1):
->       bcache: Strip endline when writing the label through sysfs
-
-Thanks!
-
-Greets,
-Stefan
+That patch is fixing a bug in code that was merged for 3.11 - the rest
+are marked for stable :)
