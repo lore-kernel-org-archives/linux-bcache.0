@@ -1,74 +1,53 @@
-From: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
-Subject: Re: [GIT PULL] bcache fixes for 3.11
-Date: Fri, 16 Aug 2013 12:11:00 +0200
-Message-ID: <520DFAB4.1050402@profihost.ag>
-References: <20130814225904.GA6427@kmo-pixel> <520C788A.1060208@profihost.ag>
+From: Mark Hills <mark-tknEL9DgK0w@public.gmane.org>
+Subject: Re: SSD cache with regular partition, like BSD swapcache
+Date: Fri, 16 Aug 2013 18:41:14 +0100 (BST)
+Message-ID: <alpine.LNX.2.01.1308161809070.8964@localhost>
+References: <alpine.LNX.2.01.1308152103410.24372@localhost> <CAO9TOLd203JdTN1w3kAf25PC1xKqamkSkfbnG3T8L7cHmr+NkQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <520C788A.1060208-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+In-Reply-To: <CAO9TOLd203JdTN1w3kAf25PC1xKqamkSkfbnG3T8L7cHmr+NkQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Adam Brenner <aebrenne-sXc7qaQca9o@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+On Thu, 15 Aug 2013, Adam Brenner wrote:
 
-bcache: Fix a writeback performance regression
+> > Hence, looking for a non-writeback SSD cache which can be transparently
+> > added and removed from the system.
+> 
+> Removing / Adding a caching device within Bcache can be done on a live
+> system, so long as a backing device is created before hand. This was
+> explained here:
+> http://comments.gmane.org/gmane.linux.kernel.bcache.devel/1886
 
-this one results in 3.10 into hung tasks in bcache_writeback read_dirty.
+Sorry, maybe I should have been more clear. I meant adding without 
+modifying the _backing_ device.
 
-Stefan
-Am 15.08.2013 08:43, schrieb Stefan Priebe - Profihost AG:
-> Am 15.08.2013 00:59, schrieb Kent Overstreet:
->> Jens, here's the latest bcache fixes. Some urgent stuff in here:
->>
->>
->> The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
->>
->>   bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
->>
->> are available in the git repository at:
->>
->>   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
->>
->> for you to fetch changes up to 0434a516e99ee51ac2d0dfa71b2f56c89ac5db05:
->>
->>   bcache: Fix a flush/fua performance bug (2013-08-14 15:44:51 -0700)
->>
->> ----------------------------------------------------------------
->> Gabriel de Perthuis (1):
->>       bcache: Strip endline when writing the label through sysfs
->>
->> Geert Uytterhoeven (1):
->>       bcache: Correct printf()-style format length modifier
->>
->> Kent Overstreet (4):
->>       bcache: Fix a dumb journal discard bug
->>       bcache: Fix for when no journal entries are found
->>       bcache: Fix a writeback performance regression
->>       bcache: Fix a flush/fua performance bug
->>
->>  drivers/md/bcache/bcache.h    |  7 +++----
->>  drivers/md/bcache/btree.c     |  2 +-
->>  drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
->>  drivers/md/bcache/sysfs.c     |  9 +++++++--
->>  drivers/md/bcache/util.c      | 11 ++++++++++-
->>  drivers/md/bcache/util.h      | 12 +++++++++---
->>  drivers/md/bcache/writeback.c | 37 ++++++++++++++++++-------------------
->>  7 files changed, 68 insertions(+), 43 deletions(-)
->> --
+> > Doesn't look like it's possible from the docs; has there been any work on
+> > this -- a different 'glue' or front end?
 > 
-> As 3.10 is long term stable release. You might need CC the stable list
-> for patches which have to go to 3.10 as well.
+> Is this what you are looking for? https://github.com/g2p/blocks
 > 
-> At least this one should go to 3.10:
->> Gabriel de Perthuis (1):
->>       bcache: Strip endline when writing the label through sysfs
-> 
-> Thanks!
-> 
-> Greets,
-> Stefan
-> 
+> This should keep any data on the backing device without the need to format.
+
+Not really, keeping the data on the partition is only part of the solution 
+-- and this requires free space before the partiion, or LVM.
+
+As I said, I don't wish to modify the backing device at all (even in-place 
+for risk to data) or use a new partition format (also prevents mounting 
+the filesystem on other systems, or boot disks)
+
+And it's just not necessary anyway if using a non-persistent read cache.
+
+The nature of swapcache's integration makes it easier and less disruptive 
+to configure -- especially for people who don't already use an initrd.
+
+It would make it easier to experiement with the caching in different 
+scenarios.
+
+Thanks
+
+-- 
+Mark
