@@ -1,53 +1,515 @@
-From: Mark Hills <mark-tknEL9DgK0w@public.gmane.org>
-Subject: Re: SSD cache with regular partition, like BSD swapcache
-Date: Fri, 16 Aug 2013 18:41:14 +0100 (BST)
-Message-ID: <alpine.LNX.2.01.1308161809070.8964@localhost>
-References: <alpine.LNX.2.01.1308152103410.24372@localhost> <CAO9TOLd203JdTN1w3kAf25PC1xKqamkSkfbnG3T8L7cHmr+NkQ@mail.gmail.com>
+From: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [RFC] bcache-status
+Date: Fri, 16 Aug 2013 14:35:28 -0700
+Message-ID: <20130816213528.GB5758@blackbox.djwong.org>
+References: <20130815233508.GB6949@blackbox.djwong.org>
+ <520DB3EC.70001@networklabs.co.nz>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAO9TOLd203JdTN1w3kAf25PC1xKqamkSkfbnG3T8L7cHmr+NkQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <520DB3EC.70001-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Adam Brenner <aebrenne-sXc7qaQca9o@public.gmane.org>
+To: Andrew Thrift <andrew-3e6jenk95VYpDvLZ8AWkcaVXKuFTiq87@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, 15 Aug 2013, Adam Brenner wrote:
-
-> > Hence, looking for a non-writeback SSD cache which can be transparently
-> > added and removed from the system.
+On Fri, Aug 16, 2013 at 05:09:00PM +1200, Andrew Thrift wrote:
+> On 8/16/2013 11:35 AM, Darrick J. Wong wrote:
+> >Hi all,
+> >
+> >I wrote a script to dump out various stats about a bcache.  It would be nice
+> >eventually to put it into bcache-tools so that users don't have to go digging
+> >through sysfs, but for now I'm really just wondering, does this program
+> >interpret the sysfs files correctly?
+> >
+> >I'm particularly anxious about 'cache used' since it's just reading out of
+> >/sys/fs/bcache/*/cache*/priority_stats and multiplying by cache size...
+> >
+> >...also I wonder what the negative dirty data count means?
+> >
+> >$ bcache-status -s
+> >--- bcache ---
+> >Device                      /dev/bcache0 (253:0)
+> >UUID                        c4157b48-5cdc-4554-8ce6-520dafdbac55
+> >Block Size                  4.00KiB
+> >Bucket Size                 512.00KiB
+> >Congested?                  False
+> >Read Congestion             2.0ms
+> >Write Congestion            20.0ms
+> >Total Cache Size            205.66GiB
+> >Total Cache Used            26.74GiB	(12%)
+> >Total Cache Unused          178.92GiB	(87%)
+> >Dirty Data                  0B	(0%)
+> >Evictable Cache             205.66GiB	(100%)
+> >Replacement Policy          [lru] fifo random
+> >Cache Mode                  writethrough [writeback] writearound none
+> >Total Hits                  263809	(56%)
+> >Total Misses                199136
+> >Total Bypass Hits           9079	(100%)
+> >Total Bypass Misses         0
+> >Total Bypassed              2.70GiB
+> >--- Backing Device ---
+> >   Device                    /dev/sdb1 (8:17)
+> >   Size                      698.64GiB
+> >   Cache Mode                writethrough [writeback] writearound none
+> >   Readahead                 0
+> >   Sequential Cutoff         4.00MiB
+> >   Merge sequential?         True
+> >   State                     dirty
+> >   Writeback?                True
+> >   Dirty Data                -2.10MiB
+> >   Total Hits                263809	(56%)
+> >   Total Misses              199136
+> >   Total Bypass Hits         9079	(100%)
+> >   Total Bypass Misses       0
+> >   Total Bypassed            2.60GiB
+> >--- Cache Device ---
+> >   Device                    /dev/sda4 (8:4)
+> >   Size                      205.66GiB
+> >   Block Size                4.00KiB
+> >   Bucket Size               512.00KiB
+> >   Replacement Policy        [lru] fifo random
+> >   Discard?                  False
+> >   I/O Errors                0
+> >   Metadata Written          1.10GiB
+> >   Data Written              25.30GiB
+> >   Buckets                   421190
+> >   Cache Used                26.74GiB	(12%)
+> >   Cache Unused              178.92GiB	(87%)
+> >
+> >--D
+> >
+> >#!/usr/bin/env python3
+> ># Dumb script to dump (some) of bcache status
+> ># Copyright 2013 Darrick J. Wong. All rights reserved.
+> ># This program is licensed under GPLv2.
+> >
+> >import os
+> >import sys
+> >
+> >MAX_KEY_LENGTH = 28
+> >
+> >def file_to_lines(fname):
+> >	try:
+> >		with open(fname, "r") as fd:
+> >			return fd.readlines()
+> >	except:
+> >		return []
+> >
+> >def file_to_line(fname):
+> >	ret = file_to_lines(fname)
+> >	if len(ret) > 0:
+> >		return ret[0].strip()
+> >	return ''
+> >
+> >def str_to_bool(x):
+> >	if x == '1':
+> >		return True
+> >	return False
+> >
+> >def format_sectors(x):
+> >	'''Pretty print a sector count.'''
+> >	sectors = int(x)
+> >	asectors = abs(sectors)
+> >
+> >	if asectors == 0:
+> >		return '0B'
+> >	elif asectors < 2048:
+> >		return '%.2fKiB' % (sectors / 2)
+> >	elif asectors < 2097152:
+> >		return '%.2fMiB' % (sectors / 2048)
+> >	elif asectors < 2147483648:
+> >		return '%.2fGiB' % (sectors / 2097152)
+> >	else:
+> >		return '%.2fTiB' % (sectors / 2147483648)
+> >
+> >def interpret_sectors(x):
+> >	'''Interpret a pretty-printed disk size.'''
+> >	factors = {
+> >		'k': 1 << 10,
+> >		'M': 1 << 20,
+> >		'G': 1 << 30,
+> >		'T': 1 << 40,
+> >		'P': 1 << 50,
+> >		'E': 1 << 60,
+> >		'Z': 1 << 70,
+> >		'Y': 1 << 80,
+> >	}
+> >
+> >	factor = 1
+> >	if x[-1] in factors:
+> >		factor = factors[x[-1]]
+> >		x = x[:-1]
+> >	return int(float(x) * factor / 512)
+> >
+> >def pretty_size(x):
+> >	return format_sectors(interpret_sectors(x))
+> >
+> >def dump_bdev(bdev_path):
+> >	'''Dump a backing device stats.'''
+> >	global MAX_KEY_LENGTH, devnum_map
+> >	attrs = [
+> >		('../dev',		'Device',		lambda x: '%s (%s)' % (devnum_map.get(x, '?'), x)),
+> >		('../size',		'Size',			format_sectors),
+> >		('cache_mode',		'Cache Mode',		None),
+> >		('readahead',		'Readahead',		None),
+> >		('sequential_cutoff',	'Sequential Cutoff',	pretty_size),
+> >		('sequential_merge',	'Merge sequential?',	str_to_bool),
+> >		('state',		'State',		None),
+> >		('writeback_running',	'Writeback?',		str_to_bool),
+> >		('dirty_data',		'Dirty Data',		pretty_size),
+> >	]
+> >
+> >	print('--- Backing Device ---')
+> >	for (sysfs_name, display_name, conversion_func) in attrs:
+> >		val = file_to_line('%s/%s' % (bdev_path, sysfs_name))
+> >		if conversion_func is not None:
+> >			val = conversion_func(val)
+> >		if display_name is None:
+> >			display_name = sysfs_name
+> >		print('  %-*s%s' % (MAX_KEY_LENGTH - 2, display_name, val))
+> >
+> >def dump_cachedev(cachedev_path):
+> >	'''Dump a cachding device stats.'''
+> >	def fmt_cachesize(val):
+> >		return '%s\t(%d%%)' % (format_sectors(val), float(val) / cache_size * 100)
+> >
+> >	global MAX_KEY_LENGTH, devnum_map
+> >	attrs = [
+> >		('../dev',			'Device',		lambda x: '%s (%s)' % (devnum_map.get(x, '?'), x)),
+> >		('../size',			'Size',			format_sectors),
+> >		('block_size',			'Block Size',		pretty_size),
+> >		('bucket_size',			'Bucket Size',		pretty_size),
+> >		('cache_replacement_policy',	'Replacement Policy',	None),
+> >		('discard',			'Discard?',		str_to_bool),
+> >		('io_errors',			'I/O Errors',		None),
+> >		('metadata_written',		'Metadata Written',	pretty_size),
+> >		('written',			'Data Written',		pretty_size),
+> >		('nbuckets',			'Buckets',		None),
+> >		(None,				'Cache Used',		lambda x: fmt_cachesize(used_sectors)),
+> >		(None,				'Cache Unused',		lambda x: fmt_cachesize(unused_sectors)),
+> >	]
+> >
+> >	stats = get_cache_priority_stats(cachedev_path)
+> >	cache_size = int(file_to_line('%s/../size' % cachedev_path))
+> >	unused_sectors = float(stats['Unused'][:-1]) * cache_size / 100
+> >	used_sectors = cache_size - unused_sectors
+> >
+> >	print('--- Cache Device ---')
+> >	for (sysfs_name, display_name, conversion_func) in attrs:
+> >		if sysfs_name is not None:
+> >			val = file_to_line('%s/%s' % (cachedev_path, sysfs_name))
+> >		if conversion_func is not None:
+> >			val = conversion_func(val)
+> >		if display_name is None:
+> >			display_name = sysfs_name
+> >		print('  %-*s%s' % (MAX_KEY_LENGTH - 2, display_name, val))
+> >
+> >def hits_to_str(hits_str, misses_str):
+> >	'''Render a hits/misses ratio as a string.'''
+> >	hits = int(hits_str)
+> >	misses = int(misses_str)
+> >
+> >	ret = '%d' % hits
+> >	if hits + misses != 0:
+> >		ret = '%s\t(%.d%%)' % (ret, 100 * hits / (hits + misses))
+> >	return ret
+> >
+> >def dump_stats(sysfs_path, indent_str, stats):
+> >	'''Dump stats on a bcache device.'''
+> >	stat_types = [
+> >		('five_minute',	'Last 5min'),
+> >		('hour',	'Last Hour'),
+> >		('day',		'Last Day'),
+> >		('total',	'Total'),
+> >	]
+> >	attrs = ['bypassed', 'cache_bypass_hits', 'cache_bypass_misses', 'cache_hits', 'cache_misses']
+> >	display = [
+> >		('Hits',		lambda: hits_to_str(stat_data['cache_hits'], stat_data['cache_misses'])),
+> >		('Misses',		lambda: stat_data['cache_misses']),
+> >		('Bypass Hits',		lambda: hits_to_str(stat_data['cache_bypass_hits'], stat_data['cache_bypass_misses'])),
+> >		('Bypass Misses',	lambda: stat_data['cache_bypass_misses']),
+> >		('Bypassed',		lambda: pretty_size(stat_data['bypassed'])),
+> >	]
+> >
+> >	for (sysfs_name, stat_display_name) in stat_types:
+> >		if len(stats) > 0 and sysfs_name not in stats:
+> >			continue
+> >		stat_data = {}
+> >		for attr in attrs:
+> >			val = file_to_line('%s/stats_%s/%s' % (sysfs_path, sysfs_name, attr))
+> >			stat_data[attr] = val
+> >		for (display_name, str_func) in display:
+> >			d = '%s%s %s' % (indent_str, stat_display_name, display_name)
+> >			print('%-*s%s' % (MAX_KEY_LENGTH, d, str_func()))
+> >
+> >def get_cache_priority_stats(cache):
+> >	'''Retrieve priority stats from a cache.'''
+> >	attrs = {}
+> >
+> >	for line in file_to_lines('%s/priority_stats' % cache):
+> >		x = line.split()
+> >		key = x[0]
+> >		value = x[1]
+> >		attrs[key[:-1]] = value
+> >	return attrs
+> >
+> >def dump_bcache(bcache_sysfs_path, stats, print_subdevices, device):
+> >	'''Dump bcache stats'''
+> >	global devnum_map
+> >	def fmt_cachesize(val):
+> >		return '%s\t(%d%%)' % (format_sectors(val), 100.0 * val / cache_sectors)
+> >
+> >	attrs = [
+> >		(None,					'Device',		lambda x: '%s (%s)' % (devnum_map.get(device, '?'), device)),
+> >		(None,					'UUID',			lambda x: os.path.basename(bcache_sysfs_path)),
+> >		('block_size',				'Block Size',		pretty_size),
+> >		('bucket_size',				'Bucket Size',		pretty_size),
+> >		('congested', 				'Congested?',		str_to_bool),
+> >		('congested_read_threshold_us',		'Read Congestion',	lambda x: '%.1fms' % (int(x) / 1000)),
+> >		('congested_write_threshold_us',	'Write Congestion',	lambda x: '%.1fms' % (int(x) / 1000)),
+> >		(None,					'Total Cache Size',	lambda x: format_sectors(cache_sectors)),
+> >		(None,					'Total Cache Used',	lambda x: fmt_cachesize(cache_used_sectors)),
+> >		(None,					'Total Cache Unused',	lambda x: fmt_cachesize(cache_unused_sectors)),
+> >		('dirty_data',				'Dirty Data',		lambda x: fmt_cachesize(interpret_sectors(x))),
+> >		('cache_available_percent',		'Evictable Cache',	lambda x: '%s\t(%s%%)' % (format_sectors(float(x) * cache_sectors / 100), x)),
+> >		(None,					'Replacement Policy',	lambda x: replacement_policies.pop() if len(replacement_policies) == 1 else '(Unknown)'),
+> >		(None,					'Cache Mode',		lambda x: cache_modes.pop() if len(cache_modes) == 1 else '(Unknown)'),
+> >	]
+> >
+> >	# Calculate aggregate data
+> >	cache_sectors = 0
+> >	cache_unused_sectors = 0
+> >	cache_modes = set()
+> >	replacement_policies = set()
+> >	for obj in os.listdir(bcache_sysfs_path):
+> >		if not os.path.isdir('%s/%s' % (bcache_sysfs_path, obj)):
+> >			continue
+> >		if obj.startswith('cache'):
+> >			cache_size = int(file_to_line('%s/%s/../size' % (bcache_sysfs_path, obj)))
+> >			cache_sectors += cache_size
+> >			cstats = get_cache_priority_stats('%s/%s' % (bcache_sysfs_path, obj))
+> >			unused_size = float(cstats['Unused'][:-1]) * cache_size / 100
+> >			cache_unused_sectors += unused_size
+> >			replacement_policies.add(file_to_line('%s/%s/cache_replacement_policy' % (bcache_sysfs_path, obj)))
+> >		elif obj.startswith('bdev'):
+> >			cache_modes.add(file_to_line('%s/%s/cache_mode' % (bcache_sysfs_path, obj)))
+> >	cache_used_sectors = cache_sectors - cache_unused_sectors
+> >
+> >	# Dump basic stats
+> >	print("--- bcache ---")
+> >	for (sysfs_name, display_name, conversion_func) in attrs:
+> >		if sysfs_name is not None:
+> >			val = file_to_line('%s/%s' % (bcache_sysfs_path, sysfs_name))
+> >		else:
+> >			val = None
+> >		if conversion_func is not None:
+> >			val = conversion_func(val)
+> >		if display_name is None:
+> >			display_name = sysfs_name
+> >		print('%-*s%s' % (MAX_KEY_LENGTH, display_name, val))
+> >	dump_stats(bcache_sysfs_path, '', stats)
+> >
+> >	# Dump sub-device stats
+> >	if not print_subdevices:
+> >		return
+> >	for obj in os.listdir(bcache_sysfs_path):
+> >		if not os.path.isdir('%s/%s' % (bcache_sysfs_path, obj)):
+> >			continue
+> >		if obj.startswith('bdev'):
+> >			dump_bdev('%s/%s' % (bcache_sysfs_path, obj))
+> >			dump_stats('%s/%s' % (bcache_sysfs_path, obj), '  ', stats)
+> >		elif obj.startswith('cache'):
+> >			dump_cachedev('%s/%s' % (bcache_sysfs_path, obj))
+> >
+> >def map_uuid_to_device():
+> >	'''Map bcache UUIDs to device files.'''
+> >	global SYSFS_BLOCK_PATH
+> >	ret = {}
+> >
+> >	for bdev in os.listdir(SYSFS_BLOCK_PATH):
+> >		link = '%s%s/bcache/cache' % (SYSFS_BLOCK_PATH, bdev)
+> >		if not os.path.islink(link):
+> >			continue
+> >		basename = os.path.basename(os.readlink(link))
+> >		ret[basename] = file_to_line('%s%s/dev' % (SYSFS_BLOCK_PATH, bdev))
+> >	return ret
+> >
+> >def map_devnum_to_device():
+> >	'''Map device numbers to device files.'''
+> >	global DEV_BLOCK_PATH
+> >	ret = {}
+> >
+> >	for bdev in os.listdir(DEV_BLOCK_PATH):
+> >		ret[bdev] = os.path.realpath('%s%s' % (DEV_BLOCK_PATH, bdev))
+> >
+> >	return ret
+> >
+> >def print_help():
+> >	print('Usage: %s [OPTIONS]' % sys.argv[0])
+> >	print('Options:')
+> >	print(' -f	Print the last five minutes of stats.')
+> >	print(' -d	Print the last hour of stats.')
+> >	print(' -h	Print the last day of stats.')
+> >	print(' -t	Print total stats.')
+> >	print(' -a	Print all stats.')
+> >	print(' -r	Reset stats after printing them.')
+> >	print(' -s	Print subdevice status.')
+> >	print(' -g	Invoke GC before printing status.')
+> >	print('By default, print only the total stats.')
+> >
+> >def main():
+> >	'''Main function'''
+> >	global SYSFS_BCACHE_PATH
+> >	global uuid_map, devnum_map
+> >	stats = set()
+> >	reset_stats = False
+> >	print_subdevices = False
+> >	run_gc = False
+> >
+> >	for arg in sys.argv[1:]:
+> >		if arg == '--help':
+> >			print_help()
+> >			return 0
+> >		elif arg == '-f':
+> >			stats.add('five_minute')
+> >		elif arg == '-h':
+> >			stats.add('hour')
+> >		elif arg == '-d':
+> >			stats.add('day')
+> >		elif arg == '-t':
+> >			stats.add('total')
+> >		elif arg == '-a':
+> >			stats.add('five_minute')
+> >			stats.add('hour')
+> >			stats.add('day')
+> >			stats.add('total')
+> >		elif arg == '-r':
+> >			reset_stats = True
+> >		elif arg == '-s':
+> >			print_subdevices = True
+> >		elif arg == '-g':
+> >			run_gc = True
+> >		else:
+> >			print_help()
+> >			return 0
+> >	if len(stats) == 0:
+> >		stats.add('total')
+> >
+> >	uuid_map = map_uuid_to_device()
+> >	devnum_map = map_devnum_to_device()
+> >	for cache in os.listdir(SYSFS_BCACHE_PATH):
+> >		if not os.path.isdir('%s%s' % (SYSFS_BCACHE_PATH, cache)):
+> >			continue
+> >
+> >		if run_gc:
+> >			with open('%s%s/internal/trigger_gc' % (SYSFS_BCACHE_PATH, cache), 'w') as fd:
+> >				fd.write('1\n')
+> >
+> >		dump_bcache('%s%s' % (SYSFS_BCACHE_PATH, cache), stats, print_subdevices, uuid_map.get(cache, '?'))
+> >
+> >		if reset_stats:
+> >			with open('%s%s/clear_stats' % (SYSFS_BCACHE_PATH, cache), 'w') as fd:
+> >				fd.write('1\n')
+> >
+> >SYSFS_BCACHE_PATH = '/sys/fs/bcache/'
+> >SYSFS_BLOCK_PATH = '/sys/block/'
+> >DEV_BLOCK_PATH = '/dev/block/'
+> >if __name__ == '__main__':
+> >	main()
+> >
+> >--
+> >To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> >the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> >More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Hi Darrick,
 > 
-> Removing / Adding a caching device within Bcache can be done on a live
-> system, so long as a backing device is created before hand. This was
-> explained here:
-> http://comments.gmane.org/gmane.linux.kernel.bcache.devel/1886
-
-Sorry, maybe I should have been more clear. I meant adding without 
-modifying the _backing_ device.
-
-> > Doesn't look like it's possible from the docs; has there been any work on
-> > this -- a different 'glue' or front end?
 > 
-> Is this what you are looking for? https://github.com/g2p/blocks
+> A very useful script indeed.
 > 
-> This should keep any data on the backing device without the need to format.
+> We made the following changes:
+> 
+> -    Removed "Device" from under cache-set header
+> -    Added "bcache Device" to Backing Device section
+> -    Changed "Device" to "Physical Device" in Backing Device section
 
-Not really, keeping the data on the partition is only part of the solution 
--- and this requires free space before the partiion, or LVM.
+"Device File"?  There's nothing requiring the inputs to a cache set be
+*physical* devices at all.
 
-As I said, I don't wish to modify the backing device at all (even in-place 
-for risk to data) or use a new partition format (also prevents mounting 
-the filesystem on other systems, or boot disks)
+> -    Removed "Cache Mode" from cache-set header as it set per backing device
 
-And it's just not necessary anyway if using a non-persistent read cache.
+I realize that; if all the backing devices have the same cache mode then it'll
+print that, otherwise it prints "unknown".  Come to think of it, that really
+ought to be "various" or something.
 
-The nature of swapcache's integration makes it easier and less disruptive 
-to configure -- especially for people who don't already use an initrd.
 
-It would make it easier to experiement with the caching in different 
-scenarios.
+> We will make some more changes in the coming weeks to implement a
+> brief display mode as well as a verbose display mode.
 
-Thanks
+Cool, thanks.  I'm glad you can get some use out of it.
 
--- 
-Mark
+--D
+> 
+> Patch inline:
+> 
+> --- /usr/local/bin/bcache-status        2013-08-16 11:51:55.281095640 +1200
+> +++ bcache-status       2013-08-16 17:00:28.884020997 +1200
+> @@ -64,11 +64,16 @@
+>  def pretty_size(x):
+>          return format_sectors(interpret_sectors(x))
+> 
+> +def device_path(x):
+> +       x="/dev/block/%s" % x
+> +       return os.path.abspath(os.path.join(os.path.dirname(x),
+> os.readlink(x)))
+> +
+>  def dump_bdev(bdev_path):
+>          '''Dump a backing device stats.'''
+>          global MAX_KEY_LENGTH, devnum_map
+>          attrs = [
+> -                ('../dev',              'Device', lambda x: '%s
+> (%s)' % (devnum_map.get(x, '?'), x)),
+> +                ('dev/dev',             'bcache Device', device_path),
+> +               ('../dev',              'Physical Device', lambda x:
+> '%s (%s)' % (devnum_map.get(x, '?'), x)),
+>                  ('../size',             'Size', format_sectors),
+>                  ('cache_mode',          'Cache Mode', None),
+>                  ('readahead',           'Readahead', None),
+> @@ -180,7 +185,7 @@
+>                  return '%s\t(%d%%)' % (format_sectors(val), 100.0 *
+> val / cache_sectors)
+> 
+>          attrs = [
+> -                (None, 'Device',               lambda x: '%s (%s)'
+> % (devnum_map.get(device, '?'), device)),
+> +                #(None, 'Device',               lambda x: '%s (%s)'
+> % (devnum_map.get(device, '?'), device)),
+>                  (None, 'UUID',                 lambda x:
+> os.path.basename(bcache_sysfs_path)),
+>                  ('block_size',                          'Block
+> Size',           pretty_size),
+>                  ('bucket_size',                         'Bucket
+> Size',          pretty_size),
+> @@ -268,8 +273,8 @@
+>          print('Usage: %s [OPTIONS]' % sys.argv[0])
+>          print('Options:')
+>          print(' -f      Print the last five minutes of stats.')
+> -        print(' -d      Print the last hour of stats.')
+> -        print(' -h      Print the last day of stats.')
+> +        print(' -h      Print the last hour of stats.')
+> +        print(' -d      Print the last day of stats.')
+>          print(' -t      Print total stats.')
+>          print(' -a      Print all stats.')
+>          print(' -r      Reset stats after printing them.')
+> 
+> 
+> Regards,
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> Andrew
