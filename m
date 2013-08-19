@@ -1,82 +1,81 @@
-From: Stefan Priebe <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
-Subject: Re: bcache: Fix a writeback performance regression
-Date: Mon, 19 Aug 2013 00:09:24 +0200
-Message-ID: <52114614.4070509@profihost.ag>
-References: <20130814225904.GA6427@kmo-pixel> <520C788A.1060208@profihost.ag> <520DFAB4.1050402@profihost.ag>
+From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Fwd: low speed writing in device
+Date: Mon, 19 Aug 2013 10:47:55 +0200
+Message-ID: <CAPBO7TYh5hG7gd16wPBRLNF1WYNMuaJYQ1S7X_VzygpQG=m3rA@mail.gmail.com>
+References: <CAPBO7TZxbg9PMHNOcB_OMoNNZA6P95kRD0EkSMaz-X9YzprLNw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <520DFAB4.1050402-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+In-Reply-To: <CAPBO7TZxbg9PMHNOcB_OMoNNZA6P95kRD0EkSMaz-X9YzprLNw-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
+Hello,
 
-Vanilla 3.10.7 + bcache: Fix a writeback performance regression
 
-http://pastebin.com/raw.php?i=LXZk4cMH
+I wrote some days ago about low rates on "intense" writes, and tried
+the given patch in the reply. It did not work for me.
+Kernel 3.11.0-rc5 with last bcache from git was also not solving this issue.
 
-Stefan
+Today I have tried  3.11.0-rc6 and unfortunately, I get similar results.
+I add here results of iostat while dpkg -i linux-headers (or
+installation of a linux-image). They take minutes, minutes,
+minuuuuuutes... ;)
 
-Am 16.08.2013 12:11, schrieb Stefan Priebe - Profihost AG:
-> Hi,
->
-> bcache: Fix a writeback performance regression
->
-> this one results in 3.10 into hung tasks in bcache_writeback read_dirty.
->
-> Stefan
-> Am 15.08.2013 08:43, schrieb Stefan Priebe - Profihost AG:
->> Am 15.08.2013 00:59, schrieb Kent Overstreet:
->>> Jens, here's the latest bcache fixes. Some urgent stuff in here:
->>>
->>>
->>> The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
->>>
->>>    bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
->>>
->>> are available in the git repository at:
->>>
->>>    git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
->>>
->>> for you to fetch changes up to 0434a516e99ee51ac2d0dfa71b2f56c89ac5db05:
->>>
->>>    bcache: Fix a flush/fua performance bug (2013-08-14 15:44:51 -0700)
->>>
->>> ----------------------------------------------------------------
->>> Gabriel de Perthuis (1):
->>>        bcache: Strip endline when writing the label through sysfs
->>>
->>> Geert Uytterhoeven (1):
->>>        bcache: Correct printf()-style format length modifier
->>>
->>> Kent Overstreet (4):
->>>        bcache: Fix a dumb journal discard bug
->>>        bcache: Fix for when no journal entries are found
->>>        bcache: Fix a writeback performance regression
->>>        bcache: Fix a flush/fua performance bug
->>>
->>>   drivers/md/bcache/bcache.h    |  7 +++----
->>>   drivers/md/bcache/btree.c     |  2 +-
->>>   drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
->>>   drivers/md/bcache/sysfs.c     |  9 +++++++--
->>>   drivers/md/bcache/util.c      | 11 ++++++++++-
->>>   drivers/md/bcache/util.h      | 12 +++++++++---
->>>   drivers/md/bcache/writeback.c | 37 ++++++++++++++++++-------------------
->>>   7 files changed, 68 insertions(+), 43 deletions(-)
->>> --
->>
->> As 3.10 is long term stable release. You might need CC the stable list
->> for patches which have to go to 3.10 as well.
->>
->> At least this one should go to 3.10:
->>> Gabriel de Perthuis (1):
->>>        bcache: Strip endline when writing the label through sysfs
->>
->> Thanks!
->>
->> Greets,
->> Stefan
->>
+
+# iostat -d 5
+Linux 3.11.0-rc6 (minijep)     19/08/13     _x86_64_    (8 CPU)
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda              19,70        78,48       350,69      34506     154188
+sdb              64,05       913,99       306,53     401856     134772
+bcache0          96,15       915,06       350,68     402322     154184
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda             409,20         0,80     14871,20          4      74356
+sdb            1299,60         6,40     10969,60         32      54848
+bcache0        2434,00         7,20     14871,20         36      74356
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda              10,60         0,00        26,40          0        132
+sdb              10,80         0,00        67,20          0        336
+bcache0          16,80         0,00        26,40          0        132
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda              10,40         0,00        15,20          0         76
+sdb              10,60         0,00        56,80          0        284
+bcache0          13,80         0,00        15,20          0         76
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda              10,60         0,00        16,80          0         84
+sdb              10,60         0,00        56,80          0        284
+bcache0          14,40         0,00        16,80          0         84
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda              10,80         0,00        28,00          0        140
+sdb              11,20         0,00        70,40          0        352
+bcache0          17,20         0,00        28,00          0        140
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda             125,60         0,00      3951,20          0      19756
+sdb              22,20         0,00      3906,40          0      19532
+bcache0         971,20         0,00      3951,20          0      19756
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda              16,40         0,00       274,40          0       1372
+sdb              18,40         0,00       327,20          0       1636
+bcache0          22,00         0,00       274,40          0       1372
+
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda              10,60         0,00        15,20          0         76
+sdb              10,60         0,00        55,20          0        276
+bcache0          13,80         0,00        15,20          0         76
+
+
+
+
+-- 
+--
+Salutacions...Josep
+--
