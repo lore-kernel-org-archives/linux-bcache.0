@@ -1,26 +1,75 @@
-From: Damien Churchill <damoxc-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: [RFC] bcache-status
-Date: Mon, 19 Aug 2013 12:48:17 +0100
-Message-ID: <CAFtEh-eWjZDKu3SCr-9czx9Mqrg+gUPPar7y7W2EZMyy3JoZ4g@mail.gmail.com>
-References: <20130815233508.GB6949@blackbox.djwong.org>
+From: Kent Overstreet <kmo@daterainc.com>
+Subject: Re: bcache: Fix a writeback performance regression
+Date: Mon, 19 Aug 2013 15:27:18 -0700
+Message-ID: <20130819222718.GA32104@kmo-pixel>
+References: <20130814225904.GA6427@kmo-pixel>
+ <520C788A.1060208@profihost.ag>
+ <520DFAB4.1050402@profihost.ag>
+ <52114614.4070509@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130815233508.GB6949-yuuUpGxbzT9UbpRmUfBrXUB+6BGkLq7r@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
-Cc: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, bcache <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <52114614.4070509@profihost.ag>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Stefan Priebe <s.priebe@profihost.ag>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+On Mon, Aug 19, 2013 at 12:09:24AM +0200, Stefan Priebe wrote:
+> 
+> Vanilla 3.10.7 + bcache: Fix a writeback performance regression
+> 
+> http://pastebin.com/raw.php?i=LXZk4cMH
 
-On 16 August 2013 00:35, Darrick J. Wong <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org> wrote:
-> Hi all,
->
-> I wrote a script to dump out various stats about a bcache.
+Whoops, at first I thought this was the same bug as one I'd already been
+chasing down that had been a harmless bug - turns out I didn't look
+closely enough at the backtrace.
 
-I've put your script in a gist[0] and modified a few things, all
-cosmetic. Switched to use argparse and changed a few conditionals to
-be slightly more pythonic.
+What happened is background writeback is deadlocking, because for some
+reason the workqueue it's running out of is a singlethreaded workqueue,
+so as soon as it decides to queue enough writeback bios that it has to
+sleep on that semaphore (which often won't happen due to the PD
+controller based ratelimiting) - boom, deadlock.
 
-[0] https://gist.github.com/damoxc/6267899
+Here's the fixup patch I just tested and am applying:
+
+
+From 0af68de350e05e43fd093b36dcb0fe8aa838fabf Mon Sep 17 00:00:00 2001
+From: Kent Overstreet <kmo@daterainc.com>
+Date: Mon, 19 Aug 2013 15:26:22 -0700
+Subject: [PATCH] bcache: Fix a writeback deadlock
+
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index f88c62e..27ac519 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -351,7 +351,7 @@ static void write_dirty(struct closure *cl)
+ 
+ 	closure_bio_submit(&io->bio, cl, &io->dc->disk);
+ 
+-	continue_at(cl, write_dirty_finish, dirty_wq);
++	continue_at(cl, write_dirty_finish, system_wq);
+ }
+ 
+ static void read_dirty_endio(struct bio *bio, int error)
+@@ -371,7 +371,7 @@ static void read_dirty_submit(struct closure *cl)
+ 
+ 	closure_bio_submit(&io->bio, cl, &io->dc->disk);
+ 
+-	continue_at(cl, write_dirty, dirty_wq);
++	continue_at(cl, write_dirty, system_wq);
+ }
+ 
+ static void read_dirty(struct closure *cl)
+@@ -512,7 +512,7 @@ void bch_writeback_exit(void)
+ 
+ int __init bch_writeback_init(void)
+ {
+-	dirty_wq = create_singlethread_workqueue("bcache_writeback");
++	dirty_wq = create_workqueue("bcache_writeback");
+ 	if (!dirty_wq)
+ 		return -ENOMEM;
+ 
