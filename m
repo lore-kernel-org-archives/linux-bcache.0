@@ -1,126 +1,107 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+From: Steven Rostedt <rostedt@goodmis.org>
 Subject: Re: [PATCH] bcache: Remove use of down/up_read_non_owner()
-Date: Tue, 20 Aug 2013 20:36:58 -0700
-Message-ID: <20130821033658.GE4051@kmo-pixel>
+Date: Wed, 21 Aug 2013 04:38:21 -0400
+Message-ID: <20130821043821.6e1224b4@gandalf.local.home>
 References: <20130820111602.3cea203c@gandalf.local.home>
- <20130821021900.GB4051@kmo-pixel>
- <20130820224153.5667495b@gandalf.local.home>
+	<20130821021900.GB4051@kmo-pixel>
+	<20130820224153.5667495b@gandalf.local.home>
+	<20130821033658.GE4051@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20130820224153.5667495b-f9ZlEuEWxVcJvu8Pb33WZ0EMvNT87kid@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Steven Rostedt <rostedt-nx8X9YLhiw1AfugRpC6u6w@public.gmane.org>
-Cc: LKML <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Christoph Hellwig <hch-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>, David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Thomas Gleixner <tglx-hfZtesqFncYOwBW4kG4KsQ@public.gmane.org>, Sebastian Andrzej Siewior <bigeasy-hfZtesqFncYOwBW4kG4KsQ@public.gmane.org>, akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20130821033658.GE4051@kmo-pixel>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, Christoph Hellwig <hch@infradead.org>, David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, Sebastian Andrzej Siewior <bigeasy@linutronix.de>, akpm@linux-foundation.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 10:41:53PM -0400, Steven Rostedt wrote:
-> > I get that there's a problem, but the bcache code REALLY IS USING THE
-> > RWSEM AS A LOCK; the answer isn't to open code the lock!
+On Tue, 20 Aug 2013 20:36:58 -0700
+Kent Overstreet <kmo@daterainc.com> wrote:
+
+
+> I think we're mostly quibbling over semantics here, and it's not that
+> big a deal - that said, I don't really get your distinction between a
+> semaphore and a mutex; I'd distinguish them by saying a semaphore can
+> count an arbitrary number of resources (the number it's initialized to),
+> and a mutex is always initialized to one - the fact that in the kernel
+> mutexes must be released by the same process that took them (while
+> important for PI and debugging) is not fundamental.
+
+Understood. As, I usually am focused on PI and debugging, it may be
+more fundamental to me than others.
+
 > 
-> Actually, it is using it as a semaphore. The problem with Linux
-> was that it only had spin locks and semaphores. People would use the
-> semaphore as either a completion or a mutex. Luckily, we created both
-> of those and replaced 90% of all semaphores with either a mutex or a
-> completion.
+> "rw semaphore" never made any sense to me; they're not counting
+> anything, like regular semaphores. They're just sleepable rw locks.
+
+Me either.
+
 > 
-> The rwsem, sorta has the same issue. But it was pretty much always used
-> as a read/write sleeping lock. It was not used as a semaphore. But it
-> seems that the bcache really does use it as a semaphore here as it
-> isn't just a mutex location. It's a special kind of completion, but the
-> completion is in a strange way.
+> So it _sounds_ like you're saying bcache is using it as a semaphore,
+> beacuse it's using it as a lock we don't release in the original
+> context? in analogy to linux mutexes and semaphores? Not quite sure what
+> you mean.
 
-I think we're mostly quibbling over semantics here, and it's not that
-big a deal - that said, I don't really get your distinction between a
-semaphore and a mutex; I'd distinguish them by saying a semaphore can
-count an arbitrary number of resources (the number it's initialized to),
-and a mutex is always initialized to one - the fact that in the kernel
-mutexes must be released by the same process that took them (while
-important for PI and debugging) is not fundamental.
+Actually, I'm thinking you are using it more as a completion than a
+semaphore.
 
-"rw semaphore" never made any sense to me; they're not counting
-anything, like regular semaphores. They're just sleepable rw locks.
 
-So it _sounds_ like you're saying bcache is using it as a semaphore,
-beacuse it's using it as a lock we don't release in the original
-context? in analogy to linux mutexes and semaphores? Not quite sure what
-you mean.
-
-> > Apologies to Christoph for getting distracted and not responding when
-> > you started to explain what the issues were for RT. I'm not really
-> > convinced they're that insurmountable (one of the issues was debugging,
-> > which the _non_owner() stuff always handled just fine), but I'll take it
-> > on faith that this usage is incompatible with rwsems + the RT
-> > functionality since I haven't actually had time to dig into it.
+> > I have a hack that actually implements a work around for non_owner, but
+> > it adds overhead to all locks to do so.
 > 
-> The thing is, RT requires priority inheritance. When a task blocks on a
-> rwsem, it has to boost the owner of that rwsem otherwise it risks
-> unbounded priority inversion.
+> Ok - I'd just be curious why the PI bit can't be factored out into a
+> wrapper like how the debug stuff is handled with the _non_owner bits,
+> but I can certainly believe that.
+
+The problem is that all sleeping locks go through rt_mutex. The locks
+are replaced with locks that incorporate PI.
+
+
+> To simplify the algorithm just a bit (only leaving out some
+> optimizations), bcache is using it to protect a rb tree, which containts
+> "things that are undergoing background writeback".
+
+I think this is what makes bcache unique in the kernel, and I don't
+think there's open coded locks elsewhere.
+
 > 
-> I have a hack that actually implements a work around for non_owner, but
-> it adds overhead to all locks to do so.
-
-Ok - I'd just be curious why the PI bit can't be factored out into a
-wrapper like how the debug stuff is handled with the _non_owner bits,
-but I can certainly believe that.
-
-> > So assuming that's the case, IMO the sanest thing to do is make a new
-> > type of lock - "rwsem_non_process" or somesuch - and use _that_ in
-> > bcache. Not open coding the lock.
+> For foreground writes, we've got to check if the write overlaps with
+> anything in this rb tree. If so, we force _this_ write to writeback;
+> background writeback will write stale data to the backing device, but
+> that's fine because the data in the cache will still be marked as dirty.
 > 
-> I actually started that, but decided this was the easier patch to send.
-> Don't worry, I was expecting this email. No surprises here ;-)
+> To add stuff to this rb tree - i.e. for background writeback to start
+> flushing some dirty data - it's got to make sure it's not going to
+> overwrite some in progress foreground writethrough write.
 > 
-> This email was taken from Andrew Morton's play book (I see you Cc'd
-> him, I forgot to). It's one of these patches of "It's so bad that the
-> owner of the code will fix the issue out of fear that this patch may
-> make it in".
-
-Ah, I see :)
-
-> > It can even live in the bcache code if we want since there currently
-> > wouldn't be any other users, I don't really care. But open coding it?
-> > Come on... makes me wonder what other code in the kernel is open coding
-> > locks because it couldn't release it in the same process context that
-> > took the lock for whatever reason.
+> Tracking every outstanding foreground write would be expensive, so
+> foreground writes take a read lock on the rb tree (both to check it for
+> anything they overlap with, and for their duration), and background
+> writeback takes a write lock when it goes to scan for dirty data to add
+> to the rb tree.
 > 
-> Most cases just have completions. This looks like a case where "don't
-> do something while transaction is taking place". Which can usually get
-> away with a wait event.
+> Even if you complain it's not _just_ protecting the rb tree, we're still
+> using it for mutual exclusion, plain and simple, and that's all a lock
+> is.
 
-Eh, only in sense that it's easy to implement mutexes and rwlocks with
-wait_event().
+Well, rwlocks and rwsems are not mutually exclusive ;-) The read side
+has multiple accessors. A mutual exclusion also would be a single task
+needing exclusive access to a resource. But as things are done in the
+background, that is not the case. But we are arguing semantics here and
+not helping with a solution.
 
-To simplify the algorithm just a bit (only leaving out some
-optimizations), bcache is using it to protect a rb tree, which containts
-"things that are undergoing background writeback".
-
-For foreground writes, we've got to check if the write overlaps with
-anything in this rb tree. If so, we force _this_ write to writeback;
-background writeback will write stale data to the backing device, but
-that's fine because the data in the cache will still be marked as dirty.
-
-To add stuff to this rb tree - i.e. for background writeback to start
-flushing some dirty data - it's got to make sure it's not going to
-overwrite some in progress foreground writethrough write.
-
-Tracking every outstanding foreground write would be expensive, so
-foreground writes take a read lock on the rb tree (both to check it for
-anything they overlap with, and for their duration), and background
-writeback takes a write lock when it goes to scan for dirty data to add
-to the rb tree.
-
-Even if you complain it's not _just_ protecting the rb tree, we're still
-using it for mutual exclusion, plain and simple, and that's all a lock
-is.
-
-
-> > Also, nack this patch because increasing the number of atomic ops to
-> > shared cachelines in our fast path. If it does end up being open coded,
-> > I'll make a more efficient version.
 > 
-> Perhaps I can whip up a "struct rwsem_non_owner" and have a very
-> limited API for that, and then you can use that.
+> 
+> > > Also, nack this patch because increasing the number of atomic ops to
+> > > shared cachelines in our fast path. If it does end up being open coded,
+> > > I'll make a more efficient version.
+> > 
+> > Perhaps I can whip up a "struct rwsem_non_owner" and have a very
+> > limited API for that, and then you can use that.
+> 
+> That would be perfect :)
 
-That would be perfect :)
+OK, I'll see what I can do.
+
+-- Steve
