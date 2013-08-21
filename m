@@ -1,59 +1,52 @@
-From: Georg =?utf-8?Q?Sch=C3=B6nberger?=
-	<gschoenberger-qD/LZSXtZz5FYGZjsVlUvw@public.gmane.org>
-Subject: Flushing dirty data after bcache detach
-Date: Wed, 21 Aug 2013 10:48:57 +0200 (CEST)
-Message-ID: <1057573722.337424.1377074937216.JavaMail.root@thomas-krenn.com>
-References: <423285490.335846.1377074174264.JavaMail.root@thomas-krenn.com>
+From: Kent Overstreet <kmo@daterainc.com>
+Subject: Re: bcache: Fix a writeback performance regression
+Date: Wed, 21 Aug 2013 14:10:35 -0700
+Message-ID: <20130821211035.GB4657@kmo-pixel>
+References: <20130814225904.GA6427@kmo-pixel>
+ <520C788A.1060208@profihost.ag>
+ <520DFAB4.1050402@profihost.ag>
+ <52114614.4070509@profihost.ag>
+ <20130819222718.GA32104@kmo-pixel>
+ <52132243.8050803@profihost.ag>
+ <521323D1.1070503@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <423285490.335846.1377074174264.JavaMail.root-qD/LZSXtZz5FYGZjsVlUvw@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <521323D1.1070503@profihost.ag>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi bcache team,
+On Tue, Aug 20, 2013 at 10:07:45AM +0200, Stefan Priebe - Profihost AG wrote:
+> Am 20.08.2013 10:01, schrieb Stefan Priebe - Profihost AG:
+> > Am 20.08.2013 00:27, schrieb Kent Overstreet:
+> >> On Mon, Aug 19, 2013 at 12:09:24AM +0200, Stefan Priebe wrote:
+> >>>
+> >>> Vanilla 3.10.7 + bcache: Fix a writeback performance regression
+> >>>
+> >>> http://pastebin.com/raw.php?i=LXZk4cMH
+> >>
+> >> Whoops, at first I thought this was the same bug as one I'd already been
+> >> chasing down that had been a harmless bug - turns out I didn't look
+> >> closely enough at the backtrace.
+> >>
+> >> What happened is background writeback is deadlocking, because for some
+> >> reason the workqueue it's running out of is a singlethreaded workqueue,
+> >> so as soon as it decides to queue enough writeback bios that it has to
+> >> sleep on that semaphore (which often won't happen due to the PD
+> >> controller based ratelimiting) - boom, deadlock.
+> >>
+> >> Here's the fixup patch I just tested and am applying:
+> 
+> Oh i'm now seeing very high CPU spikes of kworker... i don't see if i
+> remove bcache: Fix a writeback performance regression.
 
-we are currently developing performance test scripts with Fio for bcach=
-e.
-At the end of a test we want to detach and destroy the cache. Therefore=
- we did:
-    echo 1 > /sys/block/$dev/bcache/detach
-    echo 1 > /sys/block/$dev/bcache/stop
+*swears*
 
-    echo 1 > /sys/fs/bcache/*/stop
-    echo 1 > /sys/fs/bcache/*/unregister
+I just saw that this morning, but I assumed it was a bug in my stripe
+aware scan code that isn't in this branch yet - thanks for letting me
+know that's not the case.
 
-With a simple randwrite test with we had about 2GB dirty data in the ca=
-che. After detaching the dirty data flush rate was about 900KB/s from S=
-SD to HDD.
-Is there a way to accelerate flushing of dirty data?
-What is the correct way to detach/destroy a writeback caching device?
-
-* Kernel:  3.11.0-2-generic #5-Ubuntu SMP Mon Aug 12 16:09:51 UTC 2013 =
-x86_64 x86_64 x86_64 GNU/Linux
-* Kernel module info:
-filename:       /lib/modules/3.11.0-2-generic/kernel/drivers/md/bcache/=
-bcache.ko
-author:         Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-license:        GPL
-license:        GPL
-author:         Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
-srcversion:     EE441BF41AAB31C3E44F5D2
-depends:       =20
-intree:         Y
-vermagic:       3.11.0-2-generic SMP mod_unload modversions=20
-* iostat while flushing after detach:
-Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
-sda               0.00         0.00         0.00          0          0
-sdc             229.50       912.00         6.00       1824         12
-sdb             228.00         0.00       912.00          0       1824
-bcache0           0.00         0.00         0.00          0          0
-
-Thanks a lot for your help in advance, Georg.
---
-: Georg Sch=C3=B6nberger
-: Research & Development Executive
-: Thomas-Krenn.AG | The server-experts
-: http://www.thomas-krenn.com | http://www.thomas-krenn.com/wiki
+I shall work on a fix for the fix...
