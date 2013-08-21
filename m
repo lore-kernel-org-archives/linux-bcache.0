@@ -1,107 +1,59 @@
-From: Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] bcache: Remove use of down/up_read_non_owner()
-Date: Wed, 21 Aug 2013 04:38:21 -0400
-Message-ID: <20130821043821.6e1224b4@gandalf.local.home>
-References: <20130820111602.3cea203c@gandalf.local.home>
-	<20130821021900.GB4051@kmo-pixel>
-	<20130820224153.5667495b@gandalf.local.home>
-	<20130821033658.GE4051@kmo-pixel>
+From: Georg =?utf-8?Q?Sch=C3=B6nberger?=
+	<gschoenberger-qD/LZSXtZz5FYGZjsVlUvw@public.gmane.org>
+Subject: Flushing dirty data after bcache detach
+Date: Wed, 21 Aug 2013 10:48:57 +0200 (CEST)
+Message-ID: <1057573722.337424.1377074937216.JavaMail.root@thomas-krenn.com>
+References: <423285490.335846.1377074174264.JavaMail.root@thomas-krenn.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20130821033658.GE4051@kmo-pixel>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, Christoph Hellwig <hch@infradead.org>, David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>, Sebastian Andrzej Siewior <bigeasy@linutronix.de>, akpm@linux-foundation.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <423285490.335846.1377074174264.JavaMail.root-qD/LZSXtZz5FYGZjsVlUvw@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, 20 Aug 2013 20:36:58 -0700
-Kent Overstreet <kmo@daterainc.com> wrote:
+Hi bcache team,
 
+we are currently developing performance test scripts with Fio for bcach=
+e.
+At the end of a test we want to detach and destroy the cache. Therefore=
+ we did:
+    echo 1 > /sys/block/$dev/bcache/detach
+    echo 1 > /sys/block/$dev/bcache/stop
 
-> I think we're mostly quibbling over semantics here, and it's not that
-> big a deal - that said, I don't really get your distinction between a
-> semaphore and a mutex; I'd distinguish them by saying a semaphore can
-> count an arbitrary number of resources (the number it's initialized to),
-> and a mutex is always initialized to one - the fact that in the kernel
-> mutexes must be released by the same process that took them (while
-> important for PI and debugging) is not fundamental.
+    echo 1 > /sys/fs/bcache/*/stop
+    echo 1 > /sys/fs/bcache/*/unregister
 
-Understood. As, I usually am focused on PI and debugging, it may be
-more fundamental to me than others.
+With a simple randwrite test with we had about 2GB dirty data in the ca=
+che. After detaching the dirty data flush rate was about 900KB/s from S=
+SD to HDD.
+Is there a way to accelerate flushing of dirty data?
+What is the correct way to detach/destroy a writeback caching device?
 
-> 
-> "rw semaphore" never made any sense to me; they're not counting
-> anything, like regular semaphores. They're just sleepable rw locks.
+* Kernel:  3.11.0-2-generic #5-Ubuntu SMP Mon Aug 12 16:09:51 UTC 2013 =
+x86_64 x86_64 x86_64 GNU/Linux
+* Kernel module info:
+filename:       /lib/modules/3.11.0-2-generic/kernel/drivers/md/bcache/=
+bcache.ko
+author:         Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+license:        GPL
+license:        GPL
+author:         Kent Overstreet <koverstreet-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>
+srcversion:     EE441BF41AAB31C3E44F5D2
+depends:       =20
+intree:         Y
+vermagic:       3.11.0-2-generic SMP mod_unload modversions=20
+* iostat while flushing after detach:
+Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+sda               0.00         0.00         0.00          0          0
+sdc             229.50       912.00         6.00       1824         12
+sdb             228.00         0.00       912.00          0       1824
+bcache0           0.00         0.00         0.00          0          0
 
-Me either.
-
-> 
-> So it _sounds_ like you're saying bcache is using it as a semaphore,
-> beacuse it's using it as a lock we don't release in the original
-> context? in analogy to linux mutexes and semaphores? Not quite sure what
-> you mean.
-
-Actually, I'm thinking you are using it more as a completion than a
-semaphore.
-
-
-> > I have a hack that actually implements a work around for non_owner, but
-> > it adds overhead to all locks to do so.
-> 
-> Ok - I'd just be curious why the PI bit can't be factored out into a
-> wrapper like how the debug stuff is handled with the _non_owner bits,
-> but I can certainly believe that.
-
-The problem is that all sleeping locks go through rt_mutex. The locks
-are replaced with locks that incorporate PI.
-
-
-> To simplify the algorithm just a bit (only leaving out some
-> optimizations), bcache is using it to protect a rb tree, which containts
-> "things that are undergoing background writeback".
-
-I think this is what makes bcache unique in the kernel, and I don't
-think there's open coded locks elsewhere.
-
-> 
-> For foreground writes, we've got to check if the write overlaps with
-> anything in this rb tree. If so, we force _this_ write to writeback;
-> background writeback will write stale data to the backing device, but
-> that's fine because the data in the cache will still be marked as dirty.
-> 
-> To add stuff to this rb tree - i.e. for background writeback to start
-> flushing some dirty data - it's got to make sure it's not going to
-> overwrite some in progress foreground writethrough write.
-> 
-> Tracking every outstanding foreground write would be expensive, so
-> foreground writes take a read lock on the rb tree (both to check it for
-> anything they overlap with, and for their duration), and background
-> writeback takes a write lock when it goes to scan for dirty data to add
-> to the rb tree.
-> 
-> Even if you complain it's not _just_ protecting the rb tree, we're still
-> using it for mutual exclusion, plain and simple, and that's all a lock
-> is.
-
-Well, rwlocks and rwsems are not mutually exclusive ;-) The read side
-has multiple accessors. A mutual exclusion also would be a single task
-needing exclusive access to a resource. But as things are done in the
-background, that is not the case. But we are arguing semantics here and
-not helping with a solution.
-
-> 
-> 
-> > > Also, nack this patch because increasing the number of atomic ops to
-> > > shared cachelines in our fast path. If it does end up being open coded,
-> > > I'll make a more efficient version.
-> > 
-> > Perhaps I can whip up a "struct rwsem_non_owner" and have a very
-> > limited API for that, and then you can use that.
-> 
-> That would be perfect :)
-
-OK, I'll see what I can do.
-
--- Steve
+Thanks a lot for your help in advance, Georg.
+--
+: Georg Sch=C3=B6nberger
+: Research & Development Executive
+: Thomas-Krenn.AG | The server-experts
+: http://www.thomas-krenn.com | http://www.thomas-krenn.com/wiki
