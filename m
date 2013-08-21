@@ -1,7 +1,7 @@
-From: Kent Overstreet <kmo@daterainc.com>
+From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 Subject: Re: bcache: Fix a writeback performance regression
-Date: Wed, 21 Aug 2013 14:10:35 -0700
-Message-ID: <20130821211035.GB4657@kmo-pixel>
+Date: Wed, 21 Aug 2013 16:47:15 -0700
+Message-ID: <20130821234715.GA4630@moria.home.lan>
 References: <20130814225904.GA6427@kmo-pixel>
  <520C788A.1060208@profihost.ag>
  <520DFAB4.1050402@profihost.ag>
@@ -11,12 +11,12 @@ References: <20130814225904.GA6427@kmo-pixel>
  <521323D1.1070503@profihost.ag>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <521323D1.1070503@profihost.ag>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+In-Reply-To: <521323D1.1070503-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
 On Tue, Aug 20, 2013 at 10:07:45AM +0200, Stefan Priebe - Profihost AG wrote:
@@ -43,10 +43,4 @@ On Tue, Aug 20, 2013 at 10:07:45AM +0200, Stefan Priebe - Profihost AG wrote:
 > Oh i'm now seeing very high CPU spikes of kworker... i don't see if i
 > remove bcache: Fix a writeback performance regression.
 
-*swears*
-
-I just saw that this morning, but I assumed it was a bug in my stripe
-aware scan code that isn't in this branch yet - thanks for letting me
-know that's not the case.
-
-I shall work on a fix for the fix...
+Are you able to reproduce it? I'm not having any luck reproducing it...
