@@ -1,46 +1,100 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: bcache: Fix a writeback performance regression
-Date: Wed, 21 Aug 2013 16:47:15 -0700
-Message-ID: <20130821234715.GA4630@moria.home.lan>
-References: <20130814225904.GA6427@kmo-pixel>
- <520C788A.1060208@profihost.ag>
- <520DFAB4.1050402@profihost.ag>
- <52114614.4070509@profihost.ag>
- <20130819222718.GA32104@kmo-pixel>
- <52132243.8050803@profihost.ag>
- <521323D1.1070503@profihost.ag>
+From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: low speed writing in device
+Date: Thu, 22 Aug 2013 03:09:34 +0200
+Message-ID: <CAPBO7TYdc3XXVK_icvndkC2A5wprivpCW7AfUtJ-S=-ZFrY=eA@mail.gmail.com>
+References: <CAPBO7TZxbg9PMHNOcB_OMoNNZA6P95kRD0EkSMaz-X9YzprLNw@mail.gmail.com>
+	<CAPBO7TYh5hG7gd16wPBRLNF1WYNMuaJYQ1S7X_VzygpQG=m3rA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <521323D1.1070503-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+In-Reply-To: <CAPBO7TYh5hG7gd16wPBRLNF1WYNMuaJYQ1S7X_VzygpQG=m3rA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
-Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Aug 20, 2013 at 10:07:45AM +0200, Stefan Priebe - Profihost AG wrote:
-> Am 20.08.2013 10:01, schrieb Stefan Priebe - Profihost AG:
-> > Am 20.08.2013 00:27, schrieb Kent Overstreet:
-> >> On Mon, Aug 19, 2013 at 12:09:24AM +0200, Stefan Priebe wrote:
-> >>>
-> >>> Vanilla 3.10.7 + bcache: Fix a writeback performance regression
-> >>>
-> >>> http://pastebin.com/raw.php?i=LXZk4cMH
-> >>
-> >> Whoops, at first I thought this was the same bug as one I'd already been
-> >> chasing down that had been a harmless bug - turns out I didn't look
-> >> closely enough at the backtrace.
-> >>
-> >> What happened is background writeback is deadlocking, because for some
-> >> reason the workqueue it's running out of is a singlethreaded workqueue,
-> >> so as soon as it decides to queue enough writeback bios that it has to
-> >> sleep on that semaphore (which often won't happen due to the PD
-> >> controller based ratelimiting) - boom, deadlock.
-> >>
-> >> Here's the fixup patch I just tested and am applying:
-> 
-> Oh i'm now seeing very high CPU spikes of kworker... i don't see if i
-> remove bcache: Fix a writeback performance regression.
+On 19 August 2013 10:47, Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+> Hello,
+>
+>
+> I wrote some days ago about low rates on "intense" writes, and tried
+> the given patch in the reply. It did not work for me.
+> Kernel 3.11.0-rc5 with last bcache from git was also not solving this issue.
+>
+> Today I have tried  3.11.0-rc6 and unfortunately, I get similar results.
+> I add here results of iostat while dpkg -i linux-headers (or
+> installation of a linux-image). They take minutes, minutes,
+> minuuuuuutes... ;)
+>
+>
+> # iostat -d 5
+> Linux 3.11.0-rc6 (minijep)     19/08/13     _x86_64_    (8 CPU)
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda              19,70        78,48       350,69      34506     154188
+> sdb              64,05       913,99       306,53     401856     134772
+> bcache0          96,15       915,06       350,68     402322     154184
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda             409,20         0,80     14871,20          4      74356
+> sdb            1299,60         6,40     10969,60         32      54848
+> bcache0        2434,00         7,20     14871,20         36      74356
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda              10,60         0,00        26,40          0        132
+> sdb              10,80         0,00        67,20          0        336
+> bcache0          16,80         0,00        26,40          0        132
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda              10,40         0,00        15,20          0         76
+> sdb              10,60         0,00        56,80          0        284
+> bcache0          13,80         0,00        15,20          0         76
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda              10,60         0,00        16,80          0         84
+> sdb              10,60         0,00        56,80          0        284
+> bcache0          14,40         0,00        16,80          0         84
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda              10,80         0,00        28,00          0        140
+> sdb              11,20         0,00        70,40          0        352
+> bcache0          17,20         0,00        28,00          0        140
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda             125,60         0,00      3951,20          0      19756
+> sdb              22,20         0,00      3906,40          0      19532
+> bcache0         971,20         0,00      3951,20          0      19756
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda              16,40         0,00       274,40          0       1372
+> sdb              18,40         0,00       327,20          0       1636
+> bcache0          22,00         0,00       274,40          0       1372
+>
+> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
+> sda              10,60         0,00        15,20          0         76
+> sdb              10,60         0,00        55,20          0        276
+> bcache0          13,80         0,00        15,20          0         76
+>
+>
+>
+>
+> --
+> --
+> Salutacions...Josep
+> --
 
-Are you able to reproduce it? I'm not having any luck reproducing it...
+
+Hello,
+
+I saw http://evilpiepirate.org/git/linux-bcache.git/commit/?h=bcache-for-3.11&id=9df79a37eeb7ee89dc56aeed3051be676369359a
+
+and have patched 3.11.0-rc6 with it.
+
+This eliminates the delay. Now a kernel image installs in about 20
+seconds. :) Thanks!
+
+
+
+-- 
+--
+Salutacions...Josep
+--
