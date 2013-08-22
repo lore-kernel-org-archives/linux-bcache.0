@@ -1,41 +1,36 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: Flushing dirty data after bcache detach
-Date: Wed, 21 Aug 2013 23:07:01 -0700
-Message-ID: <20130822060701.GC14935@kmo-pixel>
-References: <423285490.335846.1377074174264.JavaMail.root@thomas-krenn.com>
- <1057573722.337424.1377074937216.JavaMail.root@thomas-krenn.com>
+From: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+Subject: Re: bcache: Fix a writeback performance regression
+Date: Thu, 22 Aug 2013 09:32:52 +0200
+Message-ID: <5215BEA4.6040101@profihost.ag>
+References: <520C788A.1060208@profihost.ag> <520DFAB4.1050402@profihost.ag> <52114614.4070509@profihost.ag> <20130819222718.GA32104@kmo-pixel> <52132243.8050803@profihost.ag> <521323D1.1070503@profihost.ag> <20130821234715.GA4630@moria.home.lan> <5215A130.9080508@profihost.ag> <20130822054336.GA14935@kmo-pixel> <5215A8A8.90900@profihost.ag> <20130822060215.GB14935@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <1057573722.337424.1377074937216.JavaMail.root-qD/LZSXtZz5FYGZjsVlUvw@public.gmane.org>
+In-Reply-To: <20130822060215.GB14935@kmo-pixel>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Georg =?utf-8?Q?Sch=C3=B6nberger?= <gschoenberger-qD/LZSXtZz5FYGZjsVlUvw@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Aug 21, 2013 at 10:48:57AM +0200, Georg Sch=C3=B6nberger wrote:
-> Hi bcache team,
->=20
-> we are currently developing performance test scripts with Fio for bca=
-che.
-> At the end of a test we want to detach and destroy the cache. Therefo=
-re we did:
->     echo 1 > /sys/block/$dev/bcache/detach
->     echo 1 > /sys/block/$dev/bcache/stop
->=20
->     echo 1 > /sys/fs/bcache/*/stop
->     echo 1 > /sys/fs/bcache/*/unregister
->=20
-> With a simple randwrite test with we had about 2GB dirty data in the =
-cache. After detaching the dirty data flush rate was about 900KB/s from=
- SSD to HDD.
-> Is there a way to accelerate flushing of dirty data?
-> What is the correct way to detach/destroy a writeback caching device?
+great!
 
-The stop is unnecessary for the cache set (that'll shut down the cache
-set without detaching anything or flushing dirty data).
+Everything seems to work fine now! Except read_dirty always going to
+negative values after a reboot.
 
-900KB/sec sounds like a bug though - I'll try and take a look at it
-tomorrow.
+Stefan
+
+Am 22.08.2013 08:02, schrieb Kent Overstreet:
+> On Thu, Aug 22, 2013 at 07:59:04AM +0200, Stefan Priebe wrote:
+>>
+>>> schedule_timeout() is not the same as
+>>> schedule_timeout_interruptible().
+>>
+>> just search and replace? So i can try on my own.
+> 
+> The one in read_dirty(), line ~330
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
