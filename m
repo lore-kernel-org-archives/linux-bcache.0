@@ -1,65 +1,54 @@
-From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: bcache-tools: changes to make the udev rules work
-Date: Mon, 26 Aug 2013 15:27:45 +0000 (UTC)
-Message-ID: <kvfs5h$j12$1@ger.gmane.org>
-References: <521B1E94.8090802@rolffokkens.nl>
+From: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+Subject: Re: bcache-tools: minor change for bcache-register
+Date: Mon, 26 Aug 2013 09:17:58 -0700
+Message-ID: <20130826161758.GA4780@blackbox.djwong.org>
+References: <521B1C5E.2090007@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <521B1C5E.2090007-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, 26 Aug 2013 11:23:32 +0200, Rolf Fokkens wrote:
+On Mon, Aug 26, 2013 at 11:14:06AM +0200, Rolf Fokkens wrote:
 > Hi!
-
-Hello!
-
-> When making bcache tools run on Fedora I had to make some small tweaks 
-> on the udev rules file:
 > 
-> - first trying with blkid doesn't work, because it doesn't know about bcache
-> - full pathnames are needed, also for bcache-register because udev 
-> doesn't include /sbin and /usr/sbin in PATH.
-
-The blkid check is to make sure that there isn't a non-bcache superblock.
-blkid doesn't need to understand bcache for this.
-
-Make path changes if you really need, but udev is supposed to find unqualified
-paths like bcache-register in $udevlibdir ( /lib/udev on debian, possibly
-/usr/lib/udev in fedora).
-
-> This is the diff:
+> bcache-register is called from the provided udev rules in
+> bcache-tools. During boot it seams like some devices are registered
+> multiple times, which results in messages during boot. To suppress
+> these messages I redirect them to /dev/null in the following patch:
 > 
-> --- bcache-tools-20130820/61-bcache.rules.rules    2013-08-20 
+> --- bcache-tools-20130820/bcache-register.register      2013-08-20
 > 22:03:46.000000000 +0200
-> +++ bcache-tools-20130820/61-bcache.rules    2013-08-25 
-> 15:53:32.690312711 +0200
-> @@ -5,14 +5,14 @@
->   ACTION=="remove", GOTO="bcache_end"
+> +++ bcache-tools-20130820/bcache-register       2013-08-25
+> 21:31:11.707823194 +0200
+> @@ -1,4 +1,9 @@
+>  #!/bin/sh
+> -modprobe -qba bcache
+> -test -f /sys/fs/bcache/register && echo "$1" > /sys/fs/bcache/register
+> +#
+> +# Utility script to be called from udev, so it's not monkey proof
+> at all. It's
+> +# sole purpose is to load the bcache kernel module whenever a
+> bcache device is
+> +# detected.
+> +#
+> +/usr/sbin/modprobe -qba bcache
+> +test -f /sys/fs/bcache/register && echo "$1" >
+> /sys/fs/bcache/register 2>/dev/null
 > 
->   # Backing devices: scan, symlink, register
-> -IMPORT{program}="/sbin/blkid -o udev $tempnode"
-> +#IMPORT{program}="/usr/sbin/blkid -o udev $tempnode"
->   # blkid and probe-bcache can disagree, in which case don't register
-> -ENV{ID_FS_TYPE}=="?*", ENV{ID_FS_TYPE}!="bcache", GOTO="bcache_backing_end"
-> +#ENV{ID_FS_TYPE}=="?*", ENV{ID_FS_TYPE}!="bcache", 
-> GOTO="bcache_backing_end"
+> I can imagine there's a more elegant solution, suggestions are welcome.
 
-Those first two changes should be reverted.
+/sys/fs/bcache/register_quiet
 
-> -IMPORT{program}="/sbin/probe-bcache -o udev $tempnode"
-> +IMPORT{program}="/usr/sbin/probe-bcache -o udev $tempnode"
-
-This change isn't broken, though you could make use of any /sbin
-compat symlinks and not carry an upstream delta.
-
->   ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"
->   SUBSYSTEM=="block", ACTION=="add|change", ENV{ID_FS_TYPE}=="bcache", \
-> -        RUN+="bcache-register $tempnode"
-> +        RUN+="/usr/lib/udev/bcache-register $tempnode"
->   LABEL="bcache_backing_end"
-
-Unless there's been a change in udev, this change is unnecessary and
-introduces a distro-specific path.
+--D
+> 
+> Rolf
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
