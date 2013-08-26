@@ -1,33 +1,52 @@
 From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
-Subject: Re: [RFC] bcache-status
-Date: Mon, 26 Aug 2013 22:36:11 +0200
-Message-ID: <521BBC3B.9010003@rolffokkens.nl>
-References: <521A55D4.20908@rolffokkens.nl> <521A6B92.60001@rolffokkens.nl> <20130826163055.GB4780@blackbox.djwong.org>
+Subject: Re: bcache-tools: changes to make the udev rules work
+Date: Mon, 26 Aug 2013 23:01:43 +0200
+Message-ID: <521BC237.9000802@rolffokkens.nl>
+References: <521B1E94.8090802@rolffokkens.nl> <kvfs5h$j12$1@ger.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130826163055.GB4780-yuuUpGxbzT9UbpRmUfBrXUB+6BGkLq7r@public.gmane.org>
+In-Reply-To: <kvfs5h$j12$1@ger.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+To: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 08/26/2013 06:30 PM, Darrick J. Wong wrote:
-> https://bugzilla.redhat.com/show_bug.cgi?id=999690#c12
+On 08/26/2013 05:27 PM, Gabriel de Perthuis wrote:
+> Make path changes if you really need, but udev is supposed to find unqualified
+> paths like bcache-register in $udevlibdir ( /lib/udev on debian, possibly
+> /usr/lib/udev in fedora).
+You're right; works fine without the full path.
 >
-> I have a few questions/remarks:
-> - Is the python3 dependency really needed? I changed it to ordinary
-> python(2) and it runs fine I think.
-> Not required; I'm merely writing new scripts in python3.  (At least when I can
-> find py3 libraries...)  I didn't write anything py3-specific, as far as I know.
-Would you consider putting python in the header instead of python3? 
-Having python3 in the heading adds the requirement to install python3, 
-and I think python2 is (still) more standard. For Fedora 20 I think it 
-is anyway, which means I have to patch it everytime I want to package it.
-> For now, there's: https://gist.github.com/djwong/6343451 in which I've merged
-> all the changes made by the two people who (thank you both!) provided
-> modifications.
+>> This is the diff:
+>>
+>> --- bcache-tools-20130820/61-bcache.rules.rules    2013-08-20
+>> 22:03:46.000000000 +0200
+>> +++ bcache-tools-20130820/61-bcache.rules    2013-08-25
+>> 15:53:32.690312711 +0200
+>> @@ -5,14 +5,14 @@
+>>    ACTION=="remove", GOTO="bcache_end"
+>>
+>>    # Backing devices: scan, symlink, register
+>> -IMPORT{program}="/sbin/blkid -o udev $tempnode"
+>> +#IMPORT{program}="/usr/sbin/blkid -o udev $tempnode"
+>>    # blkid and probe-bcache can disagree, in which case don't register
+>> -ENV{ID_FS_TYPE}=="?*", ENV{ID_FS_TYPE}!="bcache", GOTO="bcache_backing_end"
+>> +#ENV{ID_FS_TYPE}=="?*", ENV{ID_FS_TYPE}!="bcache",
+>> GOTO="bcache_backing_end"
+> Those first two changes should be reverted.
+I tried, but with the blkid check first my /dev/bcache* devices are not 
+reliably created. I have 2 in total (/dev/bcache0 and /dev/bcach1) and 
+with the blkid there's only one after any reboot. Although the name 
+varies (bcache0 or bcache1) it actually is always the /dev/bcache* 
+device for the 'second' bcache device that is created. second one means: 
+the first one is the combi of /dev/sda3 & /dev/sdb1, the second one is 
+the combi of /dev/sdc1 and /dev/sdd1. I'm not sure how I can figure out 
+what's actually happening during boot.
 >
-> Yeah, I fixed that before posting the gist. :) --D 
-Thanks, I'll update the package!
+>> -IMPORT{program}="/sbin/probe-bcache -o udev $tempnode"
+>> +IMPORT{program}="/usr/sbin/probe-bcache -o udev $tempnode"
+> This change isn't broken, though you could make use of any /sbin
+> compat symlinks and not carry an upstream delta.
+Moved back to using the symlinks, though later on ...
