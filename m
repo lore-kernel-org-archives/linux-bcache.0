@@ -1,29 +1,63 @@
 From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: bcache-tools: minor change for bcache-register
-Date: Mon, 26 Aug 2013 16:31:25 +0000 (UTC)
-Message-ID: <kvfvst$j12$2@ger.gmane.org>
-References: <521B1C5E.2090007@rolffokkens.nl>
-	<20130826161758.GA4780@blackbox.djwong.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: [PATCH] bcache: Downgrade "device already registered" to pr_debug
+Date: Mon, 26 Aug 2013 18:54:10 +0200
+Message-ID: <1377536050-22925-1-git-send-email-g2p.code@gmail.com>
+References: <kvfvst$j12$2@ger.gmane.org>
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <kvfvst$j12$2@ger.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, 26 Aug 2013 09:17:58 -0700, Darrick J. Wong wrote:
-> On Mon, Aug 26, 2013 at 11:14:06AM +0200, Rolf Fokkens wrote:
->> /sys/fs/bcache/register 2>/dev/null
->> 
->> I can imagine there's a more elegant solution, suggestions are welcome.
-> 
-> /sys/fs/bcache/register_quiet
+People tended to see:
 
-Good point: the messages come from the kernel.
+    (info) bcache: register_bcache() error opening /dev/blah: device already registered
 
-register_quiet would make legitimate errors harder to debug however.
+as more problematic than it really is.  Change it to:
 
-I'll just send a patch to change "device already registered"
-to a low-priority pr_debug message rather than something that
-looks like an error.
+    (debug) bcache: register_bcache() device /dev/blah is already registered
+
+and don't return -EINVAL in this case.
+
+Signed-off-by: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+---
+ drivers/md/bcache/super.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index a41c681..b09e973 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1894,21 +1894,24 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 
+ 	if (!(path = kstrndup(buffer, size, GFP_KERNEL)) ||
+ 	    !(sb = kmalloc(sizeof(struct cache_sb), GFP_KERNEL)))
+ 		goto err;
+ 
+-	err = "failed to open device";
+ 	bdev = blkdev_get_by_path(strim(path),
+ 				  FMODE_READ|FMODE_WRITE|FMODE_EXCL,
+ 				  sb);
+ 	if (IS_ERR(bdev)) {
+ 		if (bdev == ERR_PTR(-EBUSY)) {
+ 			bdev = lookup_bdev(strim(path));
+-			if (!IS_ERR(bdev) && bch_is_open(bdev))
+-				err = "device already registered";
+-			else
+-				err = "device busy";
++			if (!IS_ERR(bdev) && bch_is_open(bdev)) {
++				pr_debug("device %s is already registered",
++					 path);
++				goto out;
++			}
++			err = "device busy";
++		} else {
++			err = "failed to open device";
+ 		}
+ 		goto err;
+ 	}
+ 
+ 	err = "failed to set blocksize";
+-- 
+1.8.4.rc0.5.g48765cc
