@@ -1,43 +1,40 @@
-From: Kent Overstreet <kmo@daterainc.com>
-Subject: Bcache fixes for stable
-Date: Mon, 26 Aug 2013 15:02:49 -0700
-Message-ID: <20130826220249.GF2798@kmo-pixel>
+From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Subject: Re: Error "unsupported bset version"
+Date: Mon, 26 Aug 2013 15:10:09 -0700
+Message-ID: <20130826221009.GH2798@kmo-pixel>
+References: <52189D62.7010603@gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <stable-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-Sender: stable-owner@vger.kernel.org
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <52189D62.7010603-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Tobias Reinhard <trtracer-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Two fixes that went into 3.11 should've been marked for stable, but I
-screwed up and forgot to mark them.
+On Sat, Aug 24, 2013 at 01:47:46PM +0200, Tobias Reinhard wrote:
+> Hi all,
+> 
+> I'm running bcache to speed up my 4 TB HDD with a 64 GB partition on
+> my SSD. After a reboot bcache didn't start automatically. So I
+> stopped bcache, unloaded the module, reloaded it and tried to
+> register the SSD and HDD again.
+> 
+> Registering the SSD gave me this error:
+> error on f1e69e99-940d-447a-900e-4956bd607933: unsupported bset
+> version at bucket 108098, block 0, 855650560 keys, disabling caching
+> 
+> The bcache was running in writeback mode but I think it was almost
+> clean so I forced the device to go online and made an fsck.
+> Everything looks ok, so no data loss. But surely this should not
+> happen, right? Is there any way to check why? (I made an image of
+> the cache device)
 
-One of them fixes bugs that appear to being hit in the wild, so please
-pull these:
+I think this was the result of a bug for which I accidentally didn't
+mark the fix for stable - the fix was in 3.11
 
-The following changes since commit 0a4b6d4ff200a553951f77f765971cb3e4c91ec0:
+I just sent out a pull request to get it into 3.10, and in the meantime
+I have a branch with all the relevant fixes on top of 3.10:
 
-  Linux 3.10.9 (2013-08-20 15:40:47 -0700)
-
-are available in the git repository at:
-
-  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.10
-
-for you to fetch changes up to a213846fafcdf52153dfebf8b1671498a72b6285:
-
-  bcache: FUA fixes (2013-08-26 14:56:52 -0700)
-
-----------------------------------------------------------------
-Kent Overstreet (1):
-      bcache: FUA fixes
-
-Kumar Amit Mehta (1):
-      md: bcache: io.c: fix a potential NULL pointer dereference
-
- drivers/md/bcache/btree.c   | 23 +++++++++++++++++++++--
- drivers/md/bcache/io.c      |  2 ++
- drivers/md/bcache/journal.c |  2 +-
- drivers/md/bcache/request.c | 13 ++++++++++++-
- 4 files changed, 36 insertions(+), 4 deletions(-)
+git://evilpiepirate.org/~kent/linux-bcache.git bcache-3.10-stable
