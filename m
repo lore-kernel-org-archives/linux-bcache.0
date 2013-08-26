@@ -1,57 +1,38 @@
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Bcache fixes for stable
-Date: Mon, 26 Aug 2013 15:19:57 -0700
-Message-ID: <20130826221957.GA2782@kroah.com>
-References: <20130826220249.GF2798@kmo-pixel>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Re: bcache-tools: changes to make the udev rules work
+Date: Tue, 27 Aug 2013 00:20:06 +0200
+Message-ID: <521BD496.5060207@rolffokkens.nl>
+References: <521B1E94.8090802@rolffokkens.nl> <kvfs5h$j12$1@ger.gmane.org> <521BC237.9000802@rolffokkens.nl> <521BC829.9080303@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <stable-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <20130826220249.GF2798@kmo-pixel>
-Sender: stable-owner@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: stable@vger.kernel.org, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <521BC829.9080303-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 03:02:49PM -0700, Kent Overstreet wrote:
-> Two fixes that went into 3.11 should've been marked for stable, but I
-> screwed up and forgot to mark them.
-> 
-> One of them fixes bugs that appear to being hit in the wild, so please
-> pull these:
-> 
-> The following changes since commit 0a4b6d4ff200a553951f77f765971cb3e4c91ec0:
-> 
->   Linux 3.10.9 (2013-08-20 15:40:47 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.10
-> 
-> for you to fetch changes up to a213846fafcdf52153dfebf8b1671498a72b6285:
-> 
->   bcache: FUA fixes (2013-08-26 14:56:52 -0700)
-> 
-> ----------------------------------------------------------------
-> Kent Overstreet (1):
->       bcache: FUA fixes
-> 
-> Kumar Amit Mehta (1):
->       md: bcache: io.c: fix a potential NULL pointer dereference
+On 08/26/2013 11:27 PM, Gabriel de Perthuis wrote:
+> Possibly /dev/sdc1 or /dev/sdd1 has a stray non-bcache superblock.
+You're right, see below. That was an ugly one.
 
-Can I get a hint as to what the git commit ids of these patches are in
-Linus's tree?
+Do you think having blkid identify bcache itself would have helped, or 
+is there always a chance of contradictive signatures which may confuse  
+blkid?
+>
+> You can check with wipefs, and remove it with wipefs -a.
+The evidence:
 
-Ideally, that's all you need to send me, but if you want to send me a
-git pull, that's fine too, but please use a signed tag, otherwise it's
-just a random tree...
+[root@localhost ~]# wipefs /dev/sda3
+[root@localhost ~]# wipefs /dev/sdb1
+offset               type
+----------------------------------------------------------------
+0x218                LVM2_member   [raid]
+                      UUID:  ZSSjZv-FU0H-Zeaa-92GU-37Zs-KyLS-JMF03Y
 
-Also, if you do a git pull, I need the git commit ids in the changelog
-entry that match Linus's tree, so people (like me) can verify things.
-
-For now, I can edit these two patches and add them in, if you give me
-the git commit ids to verify them.
-
-thanks,
-
-greg k-h
+[root@localhost ~]# wipefs /dev/sdc1
+[root@localhost ~]# wipefs /dev/sdd1
+[root@localhost ~]# blkid /dev/sdb1
+/dev/sdb1: UUID="ZSSjZv-FU0H-Zeaa-92GU-37Zs-KyLS-JMF03Y" TYPE="LVM2_member"
+[root@localhost ~]#
