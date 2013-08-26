@@ -1,42 +1,41 @@
 From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
-Subject: Re: [RFC] bcache-status
-Date: Sun, 25 Aug 2013 22:39:46 +0200
-Message-ID: <521A6B92.60001@rolffokkens.nl>
-References: <521A55D4.20908@rolffokkens.nl>
+Subject: bcache-tools: minor change for bcache-register
+Date: Mon, 26 Aug 2013 11:14:06 +0200
+Message-ID: <521B1C5E.2090007@rolffokkens.nl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <521A55D4.20908-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+Hi!
 
-I took the liberty of adding bcache-status to the bcache-tools package 
-I'm building:
+bcache-register is called from the provided udev rules in bcache-tools. 
+During boot it seams like some devices are registered multiple times, 
+which results in messages during boot. To suppress these messages I 
+redirect them to /dev/null in the following patch:
 
-https://bugzilla.redhat.com/show_bug.cgi?id=999690#c12
+--- bcache-tools-20130820/bcache-register.register      2013-08-20 
+22:03:46.000000000 +0200
++++ bcache-tools-20130820/bcache-register       2013-08-25 
+21:31:11.707823194 +0200
+@@ -1,4 +1,9 @@
+  #!/bin/sh
+-modprobe -qba bcache
+-test -f /sys/fs/bcache/register && echo "$1" > /sys/fs/bcache/register
++#
++# Utility script to be called from udev, so it's not monkey proof at 
+all. It's
++# sole purpose is to load the bcache kernel module whenever a bcache 
+device is
++# detected.
++#
++/usr/sbin/modprobe -qba bcache
++test -f /sys/fs/bcache/register && echo "$1" > /sys/fs/bcache/register 
+2>/dev/null
 
-I have a few questions/remarks:
-- Is the python3 dependency really needed? I changed it to ordinary 
-python(2) and it runs fine I think.
-- Is https://gist.github.com/damoxc/6267899 the proper source?
-- When the bcache kernel module is not loaded, the feedback looks buggy:
-[root@home07 ~]# bcache-status
-Traceback (most recent call last):
-   File "/sbin/bcache-status", line 348, in <module>
-     main()
-   File "/sbin/bcache-status", line 333, in main
-     for cache in os.listdir(SYSFS_BCACHE_PATH):
-OSError: [Errno 2] No such file or directory: '/sys/fs/bcache/'
-[root@home07 ~]#
+I can imagine there's a more elegant solution, suggestions are welcome.
 
 Rolf
-
-On 08/25/2013 09:07 PM, Rolf Fokkens wrote:
-> To allow Fedora users to benefit from bcache I'm currently packaging 
-> bcache-tools for Fedora.
->
-> See also: https://bugzilla.redhat.com/show_bug.cgi?id=999690
