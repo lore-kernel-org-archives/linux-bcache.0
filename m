@@ -1,27 +1,57 @@
-From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: bcache-tools: minor change for bcache-register
-Date: Tue, 27 Aug 2013 00:16:32 +0200
-Message-ID: <521BD3C0.9070209@gmail.com>
-References: <521B1C5E.2090007@rolffokkens.nl> <20130826161758.GA4780@blackbox.djwong.org> <kvfvst$j12$2@ger.gmane.org> <20130826214848.GC2798@kmo-pixel>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: Bcache fixes for stable
+Date: Mon, 26 Aug 2013 15:19:57 -0700
+Message-ID: <20130826221957.GA2782@kroah.com>
+References: <20130826220249.GF2798@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130826214848.GC2798@kmo-pixel>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <stable-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <20130826220249.GF2798@kmo-pixel>
+Sender: stable-owner@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: stable@vger.kernel.org, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
->> I'll just send a patch to change "device already registered"
->> to a low-priority pr_debug message rather than something that
->> looks like an error.
->
-> register_quiet isn't supposed to suppress legit errors - if it does
-> that's a bug
+On Mon, Aug 26, 2013 at 03:02:49PM -0700, Kent Overstreet wrote:
+> Two fixes that went into 3.11 should've been marked for stable, but I
+> screwed up and forgot to mark them.
+> 
+> One of them fixes bugs that appear to being hit in the wild, so please
+> pull these:
+> 
+> The following changes since commit 0a4b6d4ff200a553951f77f765971cb3e4c91ec0:
+> 
+>   Linux 3.10.9 (2013-08-20 15:40:47 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.10
+> 
+> for you to fetch changes up to a213846fafcdf52153dfebf8b1671498a72b6285:
+> 
+>   bcache: FUA fixes (2013-08-26 14:56:52 -0700)
+> 
+> ----------------------------------------------------------------
+> Kent Overstreet (1):
+>       bcache: FUA fixes
+> 
+> Kumar Amit Mehta (1):
+>       md: bcache: io.c: fix a potential NULL pointer dereference
 
-It does suppress all the err =3D "=E2=80=A6" messages in register_bcach=
-e from super.c;
-I don't know how often they come up in practice.  From the read_super c=
-all
-on, errors get reported by the called functions.
+Can I get a hint as to what the git commit ids of these patches are in
+Linus's tree?
+
+Ideally, that's all you need to send me, but if you want to send me a
+git pull, that's fine too, but please use a signed tag, otherwise it's
+just a random tree...
+
+Also, if you do a git pull, I need the git commit ids in the changelog
+entry that match Linus's tree, so people (like me) can verify things.
+
+For now, I can edit these two patches and add them in, if you give me
+the git commit ids to verify them.
+
+thanks,
+
+greg k-h
