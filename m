@@ -1,66 +1,46 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: Bcache fixes for stable
-Date: Mon, 26 Aug 2013 16:23:33 -0700
-Message-ID: <20130826232333.GA11778@moria.home.lan>
-References: <20130826220249.GF2798@kmo-pixel>
- <20130826221957.GA2782@kroah.com>
+From: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+Subject: Re: bcache-tools: changes to make the udev rules work
+Date: Mon, 26 Aug 2013 17:17:11 -0700 (PDT)
+Message-ID: <1377562631.31720.YahooMailNeo@web181503.mail.ne1.yahoo.com>
+References: <1377516018.51534.YahooMailAndroidMobile@web181503.mail.ne1.yahoo.com> <95A9778F-C617-4455-BBEC-23F0DB06072C@rolffokkens.nl>
+Reply-To: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20130826221957.GA2782-U8xfFu+wG4EAvxtiuMwx3w@public.gmane.org>
+In-Reply-To: <95A9778F-C617-4455-BBEC-23F0DB06072C-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Greg Kroah-Hartman <gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org>
-Cc: stable-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Aug 26, 2013 at 03:19:57PM -0700, Greg Kroah-Hartman wrote:
-> On Mon, Aug 26, 2013 at 03:02:49PM -0700, Kent Overstreet wrote:
-> > Two fixes that went into 3.11 should've been marked for stable, but I
-> > screwed up and forgot to mark them.
-> > 
-> > One of them fixes bugs that appear to being hit in the wild, so please
-> > pull these:
-> > 
-> > The following changes since commit 0a4b6d4ff200a553951f77f765971cb3e4c91ec0:
-> > 
-> >   Linux 3.10.9 (2013-08-20 15:40:47 -0700)
-> > 
-> > are available in the git repository at:
-> > 
-> >   git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.10
-> > 
-> > for you to fetch changes up to a213846fafcdf52153dfebf8b1671498a72b6285:
-> > 
-> >   bcache: FUA fixes (2013-08-26 14:56:52 -0700)
-> > 
-> > ----------------------------------------------------------------
-> > Kent Overstreet (1):
-> >       bcache: FUA fixes
-> > 
-> > Kumar Amit Mehta (1):
-> >       md: bcache: io.c: fix a potential NULL pointer dereference
-> 
-> Can I get a hint as to what the git commit ids of these patches are in
-> Linus's tree?
 
-5c694129c8db6d89c9be109049a16510b2f70f6d
-e49c7c374e7aacd1f04ecbc21d9dbbeeea4a77d6
+>The rationale is here:
+>
+>
+>http://fedoraproject.org/wiki/Features/UsrMove
 
-> Ideally, that's all you need to send me, but if you want to send me a
-> git pull, that's fine too, but please use a signed tag, otherwise it's
-> just a random tree...
 
-*nod* I need to get some more signatures on my gpg key...
+<quote>But, advanced features in today's systems can not really bootup =
+with an empty /usr anymore. More and more fails in subtle ways in such =
+setups.</quote>
 
-> Also, if you do a git pull, I need the git commit ids in the changelog
-> entry that match Linus's tree, so people (like me) can verify things.
 
-Ok, I'll remember that for the future.
+What a crock of (#$@. "We broke the rules and now we're going to perpet=
+uate the mistake because we can't be bothered to go fix our past screwu=
+ps." Damn kids!! No one says it has to boot to network-aware multi user=
+ (init=3D3 or higher) without /usr but it damn well better post to sing=
+le-user and be able to mount all "local" (ie non-network dependent) blo=
+ck devices without /usr. I swear, the work product out of RedHat gets w=
+orse every year.
 
-> For now, I can edit these two patches and add them in, if you give me
-> the git commit ids to verify them.
+>Might be very Fedora specific, so I can make a non-Fedora diff. And ev=
+en on Fedora /sbin is a symlink to /usr/sbin so I might not have to ass=
+ume the tools are =A0in /usr
 
-Ok - I don't care too much either way but there were some slightly
-nontrivial conflicts on the second patch, and the one I did backported
-has been tested.
+
+
+Definitely do NOT assume they put stuff in /usr/sbin. Always use /sbin =
+and if RedHat forgot something, make them fix their symlink abomination=
+ (what is this, Fedora aspires to be fscking Slowaris with /etc/init ->=
+ /sbin/init and holy hell breaks if you don't have the /etc/init link?)=
+=2E
