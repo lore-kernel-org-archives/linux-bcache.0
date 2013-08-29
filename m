@@ -1,1068 +1,740 @@
-From: Stefan Priebe <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
-Subject: Re: bcache: Fix a writeback performance regression
-Date: Thu, 29 Aug 2013 20:52:47 +0200
-Message-ID: <521F987F.7060700@profihost.ag>
-References: <52132243.8050803@profihost.ag> <521323D1.1070503@profihost.ag> <20130821234715.GA4630@moria.home.lan> <5215A130.9080508@profihost.ag> <20130822054336.GA14935@kmo-pixel> <5215A8A8.90900@profihost.ag> <20130822060215.GB14935@kmo-pixel> <5215BEA4.6040101@profihost.ag> <521BAACB.4070003@profihost.ag> <CAFkUHxeAUvv-nhSZSDRVwdm8SoNhHD8oSBKqDYnEO3bNAKLG6w@mail.gmail.com> <20130828060521.GC8032@kmo-pixel> <CAFkUHxeryKu2VdgBTBWBHTnzzZ=aapUgLd22+7cQnFOXF4r_2g@mail.gmail.com> <AE6E0884-C111-4545-B4E5-CB03A5AD2A5F@profihost.ag> <CAFkUHxcu+0Qv64_4gEGbMk5YaBkm1r7pdw4-JTamiCqy=SMUPg@mail.gmail.com> <521E4D87.8020705@profihost.ag> <CAFkUHxfn8fn09d8xnhVyySOTkn_8r_5O8aqCCf=GmMr6m7nOmA@mail.gmail.com> <521E5A69.30408@profihost.ag>
+From: kernel neophyte <neophyte.hacker001-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: bcache hangs and calll trace
+Date: Thu, 29 Aug 2013 16:34:17 -0700
+Message-ID: <CAFkUHxfg5MCrZ8y8FCJzQZsj91PwqwerfjjGZGLwL6tziM6+jQ@mail.gmail.com>
+References: <521ED8E3.5010407@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <521E5A69.30408-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+In-Reply-To: <521ED8E3.5010407-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: kernel neophyte <neophyte.hacker001-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Stefan Priebe <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+Cc: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-sorry seems i see something similiar:
-http://pastebin.com/raw.php?i=ZqgLf9gp
-
-Stefan
-
-Am 28.08.2013 22:15, schrieb Stefan Priebe:
-> sorry but that's completely wrong.
+On Wed, Aug 28, 2013 at 10:15 PM, Stefan Priebe <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org> wrote:
+> Hi,
 >
-> please use branch bcache-for-3.10
+> i got this one today. I have a load aof 1200 after this.
 >
-> http://evilpiepirate.org/git/linux-bcache.git/log/?h=bcache-for-3.10
+
+We are evaluating to use bcache on our production systems where the
+caching devices are insanely fast, in this scenario under a heavy load
+of random 4k writes.. bcache fails miserably :-(
+I have posted several such crash logs...
+
+in my case I see this very very frequently...  :-(
+
+
+[  928.788063] bcache: bch_cached_dev_attach() Caching sda3 as bcache0
+on set 64af0627-4df2-4e5d-9ca3-d5d0af2f923c
+[ 2162.689481] INFO: task kswapd0:51 blocked for more than 120 seconds.
+[ 2162.689492] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.689498] kswapd0         D 0000000000000001     0    51      2 0x00000000
+[ 2162.689505]  ffff882f8a075ba8 0000000000000046 ffff882f8a075bc8
+ffff882fa49f4cf8
+[ 2162.689511]  ffff882fa49f4cb0 ffff882f8a075fd8 ffff882f8a075fd8
+ffff882f8a075fd8
+[ 2162.689516]  ffff882f8a6ce640 ffff882fa49f4cb0 ffff882f881d9990
+ffff882983500d98
+[ 2162.689521] Call Trace:
+[ 2162.689535]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.689540]  [<ffffffff816be57e>] schedule_preempt_disabled+0xe/0x10
+[ 2162.689546]  [<ffffffff816bc862>] __mutex_lock_slowpath+0x112/0x1b0
+[ 2162.689551]  [<ffffffff816bc3da>] mutex_lock+0x2a/0x50
+[ 2162.689559]  [<ffffffff815112e5>] bch_mca_shrink+0x1b5/0x2f0
+[ 2162.689567]  [<ffffffff8117fc32>] ? prune_super+0x162/0x1b0
+[ 2162.689576]  [<ffffffff8112ebb4>] shrink_slab+0x154/0x300
+[ 2162.689582]  [<ffffffff81131f54>] kswapd+0x634/0x9b0
+[ 2162.689680]  [<ffffffff8106a720>] ? add_wait_queue+0x60/0x60
+[ 2162.689685]  [<ffffffff81131920>] ? try_to_free_pages+0x1a0/0x1a0
+[ 2162.689691]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.689695]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.689704]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.689708]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.689713] INFO: task kworker/0:3:341 blocked for more than 120 seconds.
+[ 2162.689718] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.689723] kworker/0:3     D 0000000000000000     0   341      2 0x00000000
+[ 2162.689734] Workqueue: events write_dirty_finish
+[ 2162.689736]  ffff882f8888bb30 0000000000000046 ffffffff81511b8c
+ffffffff815137c0
+[ 2162.689741]  ffff882f885b0000 ffff882f8888bfd8 ffff882f8888bfd8
+ffff882f8888bfd8
+[ 2162.689745]  ffff88179f2ce640 ffff882f885b0000 ffffffff815117a1
+ffff882f885b0000
+[ 2162.689750] Call Trace:
+[ 2162.689754]  [<ffffffff81511b8c>] ? bch_btree_map_nodes_recurse+0x6c/0x170
+[ 2162.689759]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.689764]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
+[ 2162.689769]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.689775]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
+[ 2162.689783]  [<ffffffff81332c64>] call_rwsem_down_read_failed+0x14/0x30
+[ 2162.689788]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
+[ 2162.689793]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
+[ 2162.689797]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.689804]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
+[ 2162.689809]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
+[ 2162.689814]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
+[ 2162.689819]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
+[ 2162.689824]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
+[ 2162.689830]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
+[ 2162.689836]  [<ffffffff810624d4>] process_one_work+0x174/0x490
+[ 2162.689841]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
+[ 2162.689846]  [<ffffffff81063570>] ? manage_workers.isra.23+0x2d0/0x2d0
+[ 2162.689850]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.689855]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.689860]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.689864]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.689874] INFO: task bcache_writebac:1692 blocked for more than
+120 seconds.
+[ 2162.689879] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.689883] bcache_writebac D 0000000000000000     0  1692      2 0x00000000
+[ 2162.689888]  ffff88291b73fc58 0000000000000046 ffff88291b73fd48
+ffffffff811269e2
+[ 2162.689892]  ffff882f8a61b320 ffff88291b73ffd8 ffff88291b73ffd8
+ffff88291b73ffd8
+[ 2162.689897]  ffff882f8a6ce640 ffff882f8a61b320 ffff88291b73fc68
+ffff882f7fa10ba0
+[ 2162.689901] Call Trace:
+[ 2162.689912]  [<ffffffff811269e2>] ? __alloc_pages_nodemask+0x152/0x9b0
+[ 2162.689917]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.689923]  [<ffffffff816bc015>] schedule_timeout+0x1e5/0x250
+[ 2162.689929]  [<ffffffff810799bf>] ? try_to_wake_up+0x24f/0x2b0
+[ 2162.689934]  [<ffffffff816bcd09>] __down_common+0x8e/0xe3
+[ 2162.689942]  [<ffffffff81160600>] ? alloc_pages_current+0x90/0x170
+[ 2162.689947]  [<ffffffff816bcdd1>] __down+0x1d/0x1f
+[ 2162.689953]  [<ffffffff8106f351>] down+0x41/0x50
+[ 2162.689959]  [<ffffffff8151ba7d>] bch_writeback_thread+0x35d/0x7f0
+[ 2162.689964]  [<ffffffff8108458b>] ? idle_balance+0xeb/0x150
+[ 2162.689970]  [<ffffffff8151b720>] ? write_dirty+0xc0/0xc0
+[ 2162.689974]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.689978]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.689984]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.689988]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.689991] INFO: task bcache_allocato:1701 blocked for more than
+120 seconds.
+[ 2162.689996] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.690000] bcache_allocato D 0000000000000001     0  1701      2 0x00000000
+[ 2162.690004]  ffff881bf0d95d88 0000000000000046 ffff881bf0d95da8
+ffffffff810808ad
+[ 2162.690008]  ffff882f94b09990 ffff881bf0d95fd8 ffff881bf0d95fd8
+ffff881bf0d95fd8
+[ 2162.690013]  ffff882f8a161990 ffff882f94b09990 ffff882f881d9990
+ffff882983500d98
+[ 2162.690017] Call Trace:
+[ 2162.690021]  [<ffffffff810808ad>] ? dequeue_task_fair+0x2cd/0x530
+[ 2162.690027]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.690032]  [<ffffffff816be57e>] schedule_preempt_disabled+0xe/0x10
+[ 2162.690037]  [<ffffffff816bc862>] __mutex_lock_slowpath+0x112/0x1b0
+[ 2162.690041]  [<ffffffff816bc3da>] mutex_lock+0x2a/0x50
+[ 2162.690046]  [<ffffffff8150cdbf>] bch_allocator_thread+0x10f/0xe20
+[ 2162.690051]  [<ffffffff8150ccb0>] ? bch_bucket_add_unused+0xe0/0xe0
+[ 2162.690054]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.690059]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690064]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.690068]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690072] INFO: task kworker/0:0:1710 blocked for more than 120 seconds.
+[ 2162.690076] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.690080] kworker/0:0     D 0000000000000000     0  1710      2 0x00000000
+[ 2162.690087] Workqueue: events write_dirty_finish
+[ 2162.690090]  ffff882f7f26fb30 0000000000000046 ffffffff81511b8c
+ffffffff815137c0
+[ 2162.690094]  ffff882f88914cb0 ffff882f7f26ffd8 ffff882f7f26ffd8
+ffff882f7f26ffd8
+[ 2162.690098]  ffff881770ca6640 ffff882f88914cb0 ffffffff815117a1
+ffff882f88914cb0
+[ 2162.690103] Call Trace:
+[ 2162.690107]  [<ffffffff81511b8c>] ? bch_btree_map_nodes_recurse+0x6c/0x170
+[ 2162.690112]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690116]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
+[ 2162.690121]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.690127]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
+[ 2162.690132]  [<ffffffff81332c64>] call_rwsem_down_read_failed+0x14/0x30
+[ 2162.690136]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
+[ 2162.690141]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
+[ 2162.690145]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690151]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
+[ 2162.690156]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
+[ 2162.690160]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
+[ 2162.690165]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
+[ 2162.690170]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
+[ 2162.690175]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
+[ 2162.690179]  [<ffffffff810624d4>] process_one_work+0x174/0x490
+[ 2162.690184]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
+[ 2162.690189]  [<ffffffff81063570>] ? manage_workers.isra.23+0x2d0/0x2d0
+[ 2162.690193]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.690197]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690202]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.690206]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690210] INFO: task iozone:1750 blocked for more than 120 seconds.
+[ 2162.690214] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.690218] iozone          D 0000000000000001     0  1750   1475 0x00000000
+[ 2162.690222]  ffff882786867978 0000000000000086 ffff882786867938
+ffffffff81301d7a
+[ 2162.690227]  ffff882fa6a84cb0 ffff882786867fd8 ffff882786867fd8
+ffff882786867fd8
+[ 2162.690231]  ffff882f881d9990 ffff882fa6a84cb0 ffff882786867978
+ffff882fbf2139f8
+[ 2162.690236] Call Trace:
+[ 2162.690241]  [<ffffffff81301d7a>] ? generic_make_request+0xca/0x100
+[ 2162.690247]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.690251]  [<ffffffff816be36f>] io_schedule+0x8f/0xd0
+[ 2162.690259]  [<ffffffff811b797c>] do_blockdev_direct_IO+0x1a7c/0x1fb0
+[ 2162.690269]  [<ffffffffa027aa80>] ? ext2_get_blocks+0xa60/0xa60 [ext2]
+[ 2162.690275]  [<ffffffff811b7f05>] __blockdev_direct_IO+0x55/0x60
+[ 2162.690281]  [<ffffffffa027aa80>] ? ext2_get_blocks+0xa60/0xa60 [ext2]
+[ 2162.690287]  [<ffffffffa027b349>] ext2_direct_IO+0x79/0xe0 [ext2]
+[ 2162.690293]  [<ffffffffa027aa80>] ? ext2_get_blocks+0xa60/0xa60 [ext2]
+[ 2162.690300]  [<ffffffff8104ade6>] ? current_fs_time+0x16/0x60
+[ 2162.690306]  [<ffffffff8111f126>] generic_file_direct_write+0xc6/0x180
+[ 2162.690312]  [<ffffffff8111f4bd>] __generic_file_aio_write+0x2dd/0x3b0
+[ 2162.690317]  [<ffffffff8111f5f9>] generic_file_aio_write+0x69/0xd0
+[ 2162.690322]  [<ffffffff8117b88a>] do_sync_write+0x7a/0xb0
+[ 2162.690327]  [<ffffffff8106e960>] ? SyS_setns+0xf0/0xf0
+[ 2162.690332]  [<ffffffff8117c63e>] vfs_write+0xce/0x1e0
+[ 2162.690337]  [<ffffffff8117cb22>] SyS_write+0x52/0xa0
+[ 2162.690342]  [<ffffffff816c7a02>] system_call_fastpath+0x16/0x1b
+[ 2162.690347] INFO: task kworker/1:0:2001 blocked for more than 120 seconds.
+[ 2162.690353] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.690358] kworker/1:0     D ffffffff81813a60     0  2001      2 0x00000000
+[ 2162.690367] Workqueue: bcache bch_data_insert_keys
+[ 2162.690369]  ffff882fa677bbe0 0000000000000046 ffffffff81053bd0
+ffff88298350cbc0
+[ 2162.690373]  ffff882f89b26640 ffff882fa677bfd8 ffff882fa677bfd8
+ffff882fa677bfd8
+[ 2162.690378]  ffff882fa6ae8000 ffff882f89b26640 0000000000000286
+ffff882f89b26640
+[ 2162.690382] Call Trace:
+[ 2162.690388]  [<ffffffff81053bd0>] ? internal_add_timer+0x20/0x50
+[ 2162.690393]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.690398]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
+[ 2162.690403]  [<ffffffff81332c64>] call_rwsem_down_read_failed+0x14/0x30
+[ 2162.690408]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
+[ 2162.690413]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
+[ 2162.690417]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690422]  [<ffffffff8151ac6f>] ? bch_journal+0x42f/0x4b0
+[ 2162.690427]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
+[ 2162.690432]  [<ffffffff8151e1be>] bch_data_insert_keys+0x3e/0x160
+[ 2162.690437]  [<ffffffff810624d4>] process_one_work+0x174/0x490
+[ 2162.690442]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
+[ 2162.690447]  [<ffffffff81063570>] ? manage_workers.isra.23+0x2d0/0x2d0
+[ 2162.690450]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.690455]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690460]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.690464]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690468] INFO: task kworker/0:2:2244 blocked for more than 120 seconds.
+[ 2162.690473] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.690478] kworker/0:2     D 0000000000000000     0  2244      2 0x00000000
+[ 2162.690484] Workqueue: events write_dirty_finish
+[ 2162.690486]  ffff8829b9c39b30 0000000000000046 ffffffff81511b8c
+ffffffff815137c0
+[ 2162.690491]  ffff882fa67d3320 ffff8829b9c39fd8 ffff8829b9c39fd8
+ffff8829b9c39fd8
+[ 2162.690495]  ffff882f8af0e640 ffff882fa67d3320 ffffffff815117a1
+ffff882fa67d3320
+[ 2162.690500] Call Trace:
+[ 2162.690504]  [<ffffffff81511b8c>] ? bch_btree_map_nodes_recurse+0x6c/0x170
+[ 2162.690508]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690513]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
+[ 2162.690518]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.690523]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
+[ 2162.690528]  [<ffffffff81332c64>] call_rwsem_down_read_failed+0x14/0x30
+[ 2162.690533]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
+[ 2162.690537]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
+[ 2162.690542]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690546]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
+[ 2162.690551]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
+[ 2162.690555]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
+[ 2162.690561]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
+[ 2162.690565]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
+[ 2162.690570]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
+[ 2162.690575]  [<ffffffff810624d4>] process_one_work+0x174/0x490
+[ 2162.690579]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
+[ 2162.690584]  [<ffffffff81063570>] ? manage_workers.isra.23+0x2d0/0x2d0
+[ 2162.690588]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.690592]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690598]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.690602]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690605] INFO: task kworker/0:1:2267 blocked for more than 120 seconds.
+[ 2162.690610] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.690616] kworker/0:1     D 0000000000000000     0  2267      2 0x00000000
+[ 2162.690621] Workqueue: events write_dirty_finish
+[ 2162.690623]  ffff882fa33abb30 0000000000000046 ffffffff81511b8c
+ffffffff815137c0
+[ 2162.690628]  ffff882f89b13320 ffff882fa33abfd8 ffff882fa33abfd8
+ffff882fa33abfd8
+[ 2162.690632]  ffff882f8af09990 ffff882f89b13320 ffffffff815117a1
+ffff882f89b13320
+[ 2162.690637] Call Trace:
+[ 2162.690641]  [<ffffffff81511b8c>] ? bch_btree_map_nodes_recurse+0x6c/0x170
+[ 2162.690645]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690650]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
+[ 2162.690655]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.690660]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
+[ 2162.690665]  [<ffffffff81332c64>] call_rwsem_down_read_failed+0x14/0x30
+[ 2162.690669]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
+[ 2162.690674]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
+[ 2162.690678]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690682]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
+[ 2162.690687]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
+[ 2162.690692]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
+[ 2162.690697]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
+[ 2162.690701]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
+[ 2162.690706]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
+[ 2162.690711]  [<ffffffff810624d4>] process_one_work+0x174/0x490
+[ 2162.690716]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
+[ 2162.690720]  [<ffffffff81063570>] ? manage_workers.isra.23+0x2d0/0x2d0
+[ 2162.690724]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.690728]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690734]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.690738]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690741] INFO: task kworker/0:4:2269 blocked for more than 120 seconds.
+[ 2162.690746] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[ 2162.690751] kworker/0:4     D 0000000000000000     0  2269      2 0x00000000
+[ 2162.690757] Workqueue: events write_dirty_finish
+[ 2162.690759]  ffff88299ff2bb30 0000000000000046 ffffffff81511b8c
+ffffffff815137c0
+[ 2162.690764]  ffff882f89b11990 ffff88299ff2bfd8 ffff88299ff2bfd8
+ffff88299ff2bfd8
+[ 2162.690768]  ffff882fa6726640 ffff882f89b11990 ffffffff815117a1
+ffff882f89b11990
+[ 2162.690773] Call Trace:
+[ 2162.690777]  [<ffffffff81511b8c>] ? bch_btree_map_nodes_recurse+0x6c/0x170
+[ 2162.690781]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690786]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
+[ 2162.690791]  [<ffffffff816be299>] schedule+0x29/0x70
+[ 2162.690796]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
+[ 2162.690801]  [<ffffffff81332c64>] call_rwsem_down_read_failed+0x14/0x30
+[ 2162.690805]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
+[ 2162.690810]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
+[ 2162.690814]  [<ffffffff815137c0>] ? bch_btree_insert_node+0x2f0/0x2f0
+[ 2162.690820]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
+[ 2162.690824]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
+[ 2162.690829]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
+[ 2162.690834]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
+[ 2162.690838]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
+[ 2162.690843]  [<ffffffff810624d4>] process_one_work+0x174/0x490
+[ 2162.690848]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
+[ 2162.690853]  [<ffffffff81063570>] ? manage_workers.isra.23+0x2d0/0x2d0
+[ 2162.690856]  [<ffffffff81069f40>] kthread+0xc0/0xd0
+[ 2162.690861]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+[ 2162.690866]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
+[ 2162.690870]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
+
+
+-Neo
+
+> [158645.058211] INFO: task kworker/3:2:668 blocked for more than 120
+> seconds.
+> [158645.059757] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158645.061531] kworker/3:2     D ffffffff8160f760     0   668      2
+> 0x00000000
+> [158645.063289] Workqueue: events bch_allocator_thread [bcache]
+> [158645.064776]  ffff880c412d5c88 0000000000000046 ffff880c412d5fd8
+> 0000000000012c80
+> [158645.066677]  ffff880c412d4010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158645.068512]  ffff880c412d5fd8 0000000000012c80 ffff880c462098e0
+> ffff880c48dd31c0
+> [158645.070615] Call Trace:
+> [158645.071208]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158645.072455]  [<ffffffff81524b69>] schedule_preempt_disabled+0x9/0x10
+> [158645.074073]  [<ffffffff815236e4>] __mutex_lock_slowpath+0x194/0x240
+> [158645.075621]  [<ffffffff81522f1e>] mutex_lock+0x1e/0x40
+> [158645.076960]  [<ffffffffa01e1665>] bch_allocator_thread+0x125/0x650
+> [bcache]
+> [158645.078552]  [<ffffffff81070ad0>] ? wake_up_bit+0x40/0x40
+> [158645.079803]  [<ffffffff81069661>] process_one_work+0x171/0x410
+> [158645.081119]  [<ffffffff8106aabf>] worker_thread+0x11f/0x3e0
+> [158645.082396]  [<ffffffff8106a9a0>] ? manage_workers+0x160/0x160
+> [158645.083853]  [<ffffffff81070326>] kthread+0xc6/0xd0
+> [158645.085164]  [<ffffffff81070260>] ? kthread_parkme+0x20/0x20
+> [158645.086614]  [<ffffffff81526a6c>] ret_from_fork+0x7c/0xb0
+> [158645.087864]  [<ffffffff81070260>] ? kthread_parkme+0x20/0x20
+> [158645.089148] INFO: task ceph-osd:3691 blocked for more than 120 seconds.
+> [158645.090652] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158645.092434] ceph-osd        D ffffffff8160f760     0  3691      1
+> 0x00000000
+> [158645.094237]  ffff880c31547d38 0000000000000086 ffff880c31547fd8
+> 0000000000012c80
+> [158645.096076]  ffff880c31546010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158645.097881]  ffff880c31547fd8 0000000000012c80 ffff880c3832b1c0
+> ffff880c48dee380
+> [158645.099735] Call Trace:
+> [158645.100302]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158645.101427]  [<ffffffff81522bbd>] schedule_timeout+0x16d/0x200
+> [158645.102759]  [<ffffffff81068eba>] ? __queue_delayed_work+0xaa/0x1a0
+> [158645.104303]  [<ffffffff81068d19>] ? try_to_grab_pending+0x109/0x190
+> [158645.105714]  [<ffffffff815251e5>] wait_for_completion+0x95/0x110
+> [158645.107091]  [<ffffffff8107fd00>] ? try_to_wake_up+0x2a0/0x2a0
+> [158645.108433]  [<ffffffff81167797>] ? bdi_queue_work+0x77/0xc0
+> [158645.109702]  [<ffffffff81167863>] writeback_inodes_sb_nr+0x83/0xb0
+> [158645.111107]  [<ffffffff811678ea>] writeback_inodes_sb+0x5a/0x70
+> [158645.112452]  [<ffffffff8116dd0a>] __sync_filesystem+0x4a/0x50
+> [158645.113810]  [<ffffffff8116dd42>] sync_filesystem+0x32/0x60
+> [158645.115136]  [<ffffffff8116ddc0>] SyS_syncfs+0x50/0x90
+> [158645.116308]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158645.117654] INFO: task ceph-osd:3699 blocked for more than 120 seconds.
+> [158645.119153] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158645.120909] ceph-osd        D ffffffff8160f760     0  3699      1
+> 0x00000000
+> [158645.122563]  ffff880c3845b790 0000000000000086 ffff880c3845bfd8
+> 0000000000012c80
+> [158645.124468]  ffff880c3845a010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158645.170846]  ffff880c3845bfd8 0000000000012c80 ffff880c42f7b1c0
+> ffff880c48dee380
+> [158645.217702] Call Trace:
+> [158645.262627]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158645.307261]  [<ffffffff81525d7d>] rwsem_down_read_failed+0x9d/0xe5
+> [158645.351755]  [<ffffffff812aa0a4>] call_rwsem_down_read_failed+0x14/0x30
+> [158645.395832]  [<ffffffff81523a42>] ? down_read+0x12/0x20
+> [158645.438918]  [<ffffffffa01f1d62>] btree_read_async+0xa2/0x1a0 [bcache]
+> [158645.482648]  [<ffffffffa01feb73>] closure_queue+0x43/0x60 [bcache]
+> [158645.527144]  [<ffffffffa01f2903>] T.1050+0x63/0x70 [bcache]
+> [158645.570204]  [<ffffffffa01f46ea>] cached_dev_make_request+0x20a/0x350
+> [bcache]
+> [158645.614751]  [<ffffffff81281952>] generic_make_request+0xc2/0x100
+> [158645.658722]  [<ffffffff812819f7>] submit_bio+0x67/0x130
+> [158645.702390]  [<ffffffff8116f5f3>] _submit_bh+0x143/0x200
+> [158645.745862]  [<ffffffff8116f6bb>] submit_bh+0xb/0x10
+> [158645.788846]  [<ffffffff81170826>] ll_rw_block+0xa6/0xb0
+> [158645.831263]  [<ffffffff8117275f>] __block_write_begin+0x26f/0x530
+> [158645.874533]  [<ffffffff811e90c0>] ? xfs_get_blocks_direct+0x20/0x20
+> [158645.917967]  [<ffffffff810e6d6f>] ?
+> grab_cache_page_write_begin+0x9f/0xd0
+> [158645.960801]  [<ffffffff811e809f>] xfs_vm_write_begin+0x5f/0xd0
+> [158646.004157]  [<ffffffff810e521a>] ?
+> iov_iter_copy_from_user_atomic+0xea/0x150
+> [158646.048422]  [<ffffffff810e561a>] generic_perform_write+0xca/0x200
+> [158646.093424]  [<ffffffff810e57af>] generic_file_buffered_write+0x5f/0x90
+> [158646.142867]  [<ffffffff811f02e5>] xfs_file_buffered_aio_write+0xf5/0x180
+> [158646.187998]  [<ffffffff811f043e>] xfs_file_aio_write+0xce/0x150
+> [158646.230793]  [<ffffffff8114acfd>] ? path_put+0x1d/0x30
+> [158646.272575]  [<ffffffff811407f8>] do_sync_readv_writev+0x68/0xa0
+> [158646.314299]  [<ffffffff811420c2>] do_readv_writev+0xf2/0x2e0
+> [158646.356620]  [<ffffffff811f0370>] ?
+> xfs_file_buffered_aio_write+0x180/0x180
+> [158646.398982]  [<ffffffff81140830>] ? do_sync_readv_writev+0xa0/0xa0
+> [158646.440790]  [<ffffffff811422ee>] vfs_writev+0x3e/0x60
+> [158646.482174]  [<ffffffff8114243a>] SyS_writev+0x5a/0xc0
+> [158646.524316]  [<ffffffff81141143>] ? SyS_lseek+0x53/0x80
+> [158646.565544]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158646.608015] INFO: task ceph-osd:3700 blocked for more than 120 seconds.
+> [158646.650176] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158646.693338] ceph-osd        D ffffffff8160f760     0  3700      1
+> 0x00000000
+> [158646.737144]  ffff880c35da7790 0000000000000086 ffff880c35da7fd8
+> 0000000000012c80
+> [158646.781401]  ffff880c35da6010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158646.826639]  ffff880c35da7fd8 0000000000012c80 ffff880c42f7caa0
+> ffffffff81a10420
+> [158646.871873] Call Trace:
+> [158646.916272]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158646.961209]  [<ffffffff81525d7d>] rwsem_down_read_failed+0x9d/0xe5
+> [158647.006594]  [<ffffffff812aa0a4>] call_rwsem_down_read_failed+0x14/0x30
+> [158647.052053]  [<ffffffff81523a42>] ? down_read+0x12/0x20
+> [158647.097154]  [<ffffffffa01f1d62>] btree_read_async+0xa2/0x1a0 [bcache]
+> [158647.140916]  [<ffffffffa01feb73>] closure_queue+0x43/0x60 [bcache]
+> [158647.184914]  [<ffffffffa01f2903>] T.1050+0x63/0x70 [bcache]
+> [158647.228652]  [<ffffffffa01f46ea>] cached_dev_make_request+0x20a/0x350
+> [bcache]
+> [158647.272936]  [<ffffffff81281952>] generic_make_request+0xc2/0x100
+> [158647.316736]  [<ffffffff812819f7>] submit_bio+0x67/0x130
+> [158647.360750]  [<ffffffff8116f5f3>] _submit_bh+0x143/0x200
+> [158647.407208]  [<ffffffff8116f6bb>] submit_bh+0xb/0x10
+> [158647.449859]  [<ffffffff81170826>] ll_rw_block+0xa6/0xb0
+> [158647.492521]  [<ffffffff8117275f>] __block_write_begin+0x26f/0x530
+> [158647.535373]  [<ffffffff811e90c0>] ? xfs_get_blocks_direct+0x20/0x20
+> [158647.579262]  [<ffffffff810e6d6f>] ?
+> grab_cache_page_write_begin+0x9f/0xd0
+> [158647.627839]  [<ffffffff811e809f>] xfs_vm_write_begin+0x5f/0xd0
+> [158647.675609]  [<ffffffff810e51af>] ?
+> iov_iter_copy_from_user_atomic+0x7f/0x150
+> [158647.723418]  [<ffffffff810e561a>] generic_perform_write+0xca/0x200
+> [158647.767945]  [<ffffffff810e57af>] generic_file_buffered_write+0x5f/0x90
+> [158647.811264]  [<ffffffff811f02e5>] xfs_file_buffered_aio_write+0xf5/0x180
+> [158647.855420]  [<ffffffff811f043e>] xfs_file_aio_write+0xce/0x150
+> [158647.898677]  [<ffffffff8114acfd>] ? path_put+0x1d/0x30
+> [158647.941845]  [<ffffffff811407f8>] do_sync_readv_writev+0x68/0xa0
+> [158647.984976]  [<ffffffff811420c2>] do_readv_writev+0xf2/0x2e0
+> [158648.027533]  [<ffffffff811f0370>] ?
+> xfs_file_buffered_aio_write+0x180/0x180
+> [158648.071360]  [<ffffffff81140830>] ? do_sync_readv_writev+0xa0/0xa0
+> [158648.115227]  [<ffffffff811422ee>] vfs_writev+0x3e/0x60
+> [158648.157775]  [<ffffffff8114243a>] SyS_writev+0x5a/0xc0
+> [158648.199905]  [<ffffffff81141143>] ? SyS_lseek+0x53/0x80
+> [158648.241889]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158648.284075] INFO: task ceph-osd:3781 blocked for more than 120 seconds.
+> [158648.326973] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158648.371493] ceph-osd        D ffffffff8160f760     0  3781      1
+> 0x00000000
+> [158648.416060]  ffff880c38463770 0000000000000086 ffff880c38463fd8
+> 0000000000012c80
+> [158648.461454]  ffff880c38462010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158648.506047]  ffff880c38463fd8 0000000000012c80 ffff880c3784b1c0
+> ffff880c48dd18e0
+> [158648.550419] Call Trace:
+> [158648.596187]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158648.641218]  [<ffffffff81525d7d>] rwsem_down_read_failed+0x9d/0xe5
+> [158648.686533]  [<ffffffff812aa0a4>] call_rwsem_down_read_failed+0x14/0x30
+> [158648.731382]  [<ffffffff81523a42>] ? down_read+0x12/0x20
+> [158648.776221]  [<ffffffffa01f1d62>] btree_read_async+0xa2/0x1a0 [bcache]
+> [158648.820360]  [<ffffffffa01feb73>] closure_queue+0x43/0x60 [bcache]
+> [158648.864657]  [<ffffffffa01f2903>] T.1050+0x63/0x70 [bcache]
+> [158648.913544]  [<ffffffffa01f46ea>] cached_dev_make_request+0x20a/0x350
+> [bcache]
+> [158648.959712]  [<ffffffff81281952>] generic_make_request+0xc2/0x100
+> [158649.003388]  [<ffffffff812819f7>] submit_bio+0x67/0x130
+> [158649.046907]  [<ffffffff811eac60>] xfs_buf_ioapply_map+0x180/0x1d0
+> [158649.092278]  [<ffffffff811eadb7>] _xfs_buf_ioapply+0x107/0x150
+> [158649.135841]  [<ffffffff811ec7ac>] ? _xfs_buf_read+0x2c/0x50
+> [158649.179011]  [<ffffffff8124e2f1>] ? xfs_trans_read_buf_map+0x191/0x410
+> [158649.222304]  [<ffffffff811ec23a>] xfs_buf_iorequest+0x4a/0xa0
+> [158649.265927]  [<ffffffff811ec7ac>] _xfs_buf_read+0x2c/0x50
+> [158649.309112]  [<ffffffff811ec873>] xfs_buf_read_map+0xa3/0xf0
+> [158649.352526]  [<ffffffff8124e2f1>] xfs_trans_read_buf_map+0x191/0x410
+> [158649.395566]  [<ffffffff8122260f>] xfs_da_read_buf+0xbf/0x220
+> [158649.438050]  [<ffffffff812096e4>] xfs_attr3_leaf_read+0x24/0x60
+> [158649.480825]  [<ffffffff8120688d>] xfs_attr_leaf_get+0x3d/0xf0
+> [158649.523810]  [<ffffffff8120f826>] ? xfs_bmap_one_block+0x36/0xa0
+> [158649.566863]  [<ffffffff81206b70>] xfs_attr_get_int+0x100/0x120
+> [158649.611874]  [<ffffffff81206c2e>] xfs_attr_get+0x9e/0xc0
+> [158649.654591]  [<ffffffff8120151e>] xfs_xattr_get+0x2e/0x50
+> [158649.696779]  [<ffffffff81162458>] generic_getxattr+0x88/0x90
+> [158649.738614]  [<ffffffff811629f7>] vfs_getxattr+0x67/0x80
+> [158649.780161]  [<ffffffff811634d0>] getxattr+0xb0/0x1a0
+> [158649.821541]  [<ffffffff81150dc4>] ? do_filp_open+0x44/0xa0
+> [158649.863494]  [<ffffffff81163613>] SyS_fgetxattr+0x53/0x90
+> [158649.904869]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158649.946609] INFO: task ceph-osd:3671 blocked for more than 120 seconds.
+> [158649.988715] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158650.031328] ceph-osd        D ffffffff8160f760     0  3671      1
+> 0x00000000
+> [158650.074871]  ffff880c29a45790 0000000000000086 ffff880c29a45fd8
+> 0000000000012c80
+> [158650.122861]  ffff880c29a44010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158650.170457]  ffff880c29a45fd8 0000000000012c80 ffff880c35f86380
+> ffff880c48dd6380
+> [158650.213977] Call Trace:
+> [158650.257133]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158650.301077]  [<ffffffff81525d7d>] rwsem_down_read_failed+0x9d/0xe5
+> [158650.345435]  [<ffffffff812aa0a4>] call_rwsem_down_read_failed+0x14/0x30
+> [158650.389838]  [<ffffffff81523a42>] ? down_read+0x12/0x20
+> [158650.432773]  [<ffffffffa01f1d62>] btree_read_async+0xa2/0x1a0 [bcache]
+> [158650.475565]  [<ffffffffa01feb73>] closure_queue+0x43/0x60 [bcache]
+> [158650.518106]  [<ffffffffa01f2903>] T.1050+0x63/0x70 [bcache]
+> [158650.560659]  [<ffffffffa01f46ea>] cached_dev_make_request+0x20a/0x350
+> [bcache]
+> [158650.605662]  [<ffffffff81281952>] generic_make_request+0xc2/0x100
+> [158650.648411]  [<ffffffff812819f7>] submit_bio+0x67/0x130
+> [158650.690988]  [<ffffffff8116f5f3>] _submit_bh+0x143/0x200
+> [158650.732976]  [<ffffffff8116f6bb>] submit_bh+0xb/0x10
+> [158650.774947]  [<ffffffff81170826>] ll_rw_block+0xa6/0xb0
+> [158650.816820]  [<ffffffff8117275f>] __block_write_begin+0x26f/0x530
+> [158650.858904]  [<ffffffff811e90c0>] ? xfs_get_blocks_direct+0x20/0x20
+> [158650.900719]  [<ffffffff810e6d6f>] ?
+> grab_cache_page_write_begin+0x9f/0xd0
+> [158650.942587]  [<ffffffff811e809f>] xfs_vm_write_begin+0x5f/0xd0
+> [158650.984196]  [<ffffffff810e51af>] ?
+> iov_iter_copy_from_user_atomic+0x7f/0x150
+> [158651.025732]  [<ffffffff810e561a>] generic_perform_write+0xca/0x200
+> [158651.067449]  [<ffffffff810e57af>] generic_file_buffered_write+0x5f/0x90
+> [158651.110731]  [<ffffffff811f02e5>] xfs_file_buffered_aio_write+0xf5/0x180
+> [158651.152567]  [<ffffffff811f043e>] xfs_file_aio_write+0xce/0x150
+> [158651.194708]  [<ffffffff8114acfd>] ? path_put+0x1d/0x30
+> [158651.235999]  [<ffffffff811407f8>] do_sync_readv_writev+0x68/0xa0
+> [158651.277149]  [<ffffffff811420c2>] do_readv_writev+0xf2/0x2e0
+> [158651.318313]  [<ffffffff811f0370>] ?
+> xfs_file_buffered_aio_write+0x180/0x180
+> [158651.360353]  [<ffffffff81140830>] ? do_sync_readv_writev+0xa0/0xa0
+> [158651.405056]  [<ffffffff811422ee>] vfs_writev+0x3e/0x60
+> [158651.446600]  [<ffffffff8114243a>] SyS_writev+0x5a/0xc0
+> [158651.487901]  [<ffffffff81141143>] ? SyS_lseek+0x53/0x80
+> [158651.528541]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158651.569832] INFO: task ceph-osd:3672 blocked for more than 120 seconds.
+> [158651.616630] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158651.665141] ceph-osd        D ffffffff8160f760     0  3672      1
+> 0x00000000
+> [158651.714329]  ffff880c29a47790 0000000000000086 ffff880c29a47fd8
+> 0000000000012c80
+> [158651.762559]  ffff880c29a46010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158651.807631]  ffff880c29a47fd8 0000000000012c80 ffff880c35f831c0
+> ffff880c48dd18e0
+> [158651.853027] Call Trace:
+> [158651.897577]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158651.942740]  [<ffffffff81525d7d>] rwsem_down_read_failed+0x9d/0xe5
+> [158651.988306]  [<ffffffff812aa0a4>] call_rwsem_down_read_failed+0x14/0x30
+> [158652.033122]  [<ffffffff81523a42>] ? down_read+0x12/0x20
+> [158652.077390]  [<ffffffffa01f1d62>] btree_read_async+0xa2/0x1a0 [bcache]
+> [158652.122399]  [<ffffffffa01feb73>] closure_queue+0x43/0x60 [bcache]
+> [158652.166743]  [<ffffffffa01f2903>] T.1050+0x63/0x70 [bcache]
+> [158652.210570]  [<ffffffffa01f46ea>] cached_dev_make_request+0x20a/0x350
+> [bcache]
+> [158652.254983]  [<ffffffff81281952>] generic_make_request+0xc2/0x100
+> [158652.298983]  [<ffffffff812819f7>] submit_bio+0x67/0x130
+> [158652.342402]  [<ffffffff8116f5f3>] _submit_bh+0x143/0x200
+> [158652.386453]  [<ffffffff8116f6bb>] submit_bh+0xb/0x10
+> [158652.429114]  [<ffffffff81170826>] ll_rw_block+0xa6/0xb0
+> [158652.471733]  [<ffffffff8117275f>] __block_write_begin+0x26f/0x530
+> [158652.514128]  [<ffffffff811e90c0>] ? xfs_get_blocks_direct+0x20/0x20
+> [158652.556817]  [<ffffffff810e6d6f>] ?
+> grab_cache_page_write_begin+0x9f/0xd0
+> [158652.600689]  [<ffffffff811e809f>] xfs_vm_write_begin+0x5f/0xd0
+> [158652.643876]  [<ffffffff810e561a>] generic_perform_write+0xca/0x200
+> [158652.686409]  [<ffffffff810e57af>] generic_file_buffered_write+0x5f/0x90
+> [158652.728637]  [<ffffffff811f02e5>] xfs_file_buffered_aio_write+0xf5/0x180
+> [158652.771637]  [<ffffffff811f043e>] xfs_file_aio_write+0xce/0x150
+> [158652.814522]  [<ffffffff8114acfd>] ? path_put+0x1d/0x30
+> [158652.857755]  [<ffffffff811407f8>] do_sync_readv_writev+0x68/0xa0
+> [158652.903827]  [<ffffffff811420c2>] do_readv_writev+0xf2/0x2e0
+> [158652.951211]  [<ffffffff811f0370>] ?
+> xfs_file_buffered_aio_write+0x180/0x180
+> [158652.998001]  [<ffffffff81140830>] ? do_sync_readv_writev+0xa0/0xa0
+> [158653.040667]  [<ffffffff811422ee>] vfs_writev+0x3e/0x60
+> [158653.082544]  [<ffffffff8114243a>] SyS_writev+0x5a/0xc0
+> [158653.125383]  [<ffffffff81141143>] ? SyS_lseek+0x53/0x80
+> [158653.167445]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158653.209187] INFO: task ceph-osd:3665 blocked for more than 120 seconds.
+> [158653.251572] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158653.295280] ceph-osd        D ffffffff8160f760     0  3665      1
+> 0x00000000
+> [158653.339222]  ffff880c28c85c28 0000000000000086 ffff880c28c85fd8
+> 0000000000012c80
+> [158653.384398]  ffff880c28c84010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158653.428586]  ffff880c28c85fd8 0000000000012c80 ffff880c36836380
+> ffff880c48dee380
+> [158653.472639] Call Trace:
+> [158653.516082]  [<ffffffff810e60f0>] ? __lock_page+0x70/0x70
+> [158653.560602]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158653.606175]  [<ffffffff81524947>] io_schedule+0x87/0xd0
+> [158653.650351]  [<ffffffff810e60f9>] sleep_on_page+0x9/0x10
+> [158653.694926]  [<ffffffff81522e47>] __wait_on_bit+0x57/0x80
+> [158653.737743]  [<ffffffff810e5c1c>] ? find_get_pages_tag+0xcc/0x180
+> [158653.780323]  [<ffffffff810e630e>] wait_on_page_bit+0x6e/0x80
+> [158653.822456]  [<ffffffff81070b10>] ? autoremove_wake_function+0x40/0x40
+> [158653.865849]  [<ffffffff810f26c0>] ? pagevec_lookup_tag+0x20/0x30
+> [158653.908405]  [<ffffffff810e684f>] filemap_fdatawait_range+0x10f/0x1b0
+> [158653.950566]  [<ffffffff810e6913>] filemap_fdatawait+0x23/0x30
+> [158653.992295]  [<ffffffff81166ea5>] wait_sb_inodes+0xb5/0x110
+> [158654.034148]  [<ffffffff81167a8c>] sync_inodes_sb+0x9c/0xd0
+> [158654.075311]  [<ffffffff8116dcd6>] __sync_filesystem+0x16/0x50
+> [158654.118922]  [<ffffffff8116dd53>] sync_filesystem+0x43/0x60
+> [158654.164698]  [<ffffffff8116ddc0>] SyS_syncfs+0x50/0x90
+> [158654.206230]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158654.246908] INFO: task ceph-osd:3685 blocked for more than 120 seconds.
+> [158654.287777] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158654.329555] ceph-osd        D ffffffff8160f760     0  3685      1
+> 0x00000000
+> [158654.372741]  ffff880c296c78d8 0000000000000086 ffff880c296c7fd8
+> 0000000000012c80
+> [158654.415985]  ffff880c296c6010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158654.459154]  ffff880c296c7fd8 0000000000012c80 ffff880c2ab198e0
+> ffff880c48dd6380
+> [158654.502381] Call Trace:
+> [158654.545034]  [<ffffffff811704a0>] ? __wait_on_buffer+0x30/0x30
+> [158654.588704]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158654.632054]  [<ffffffff81524947>] io_schedule+0x87/0xd0
+> [158654.675323]  [<ffffffff811704a9>] sleep_on_buffer+0x9/0x10
+> [158654.718565]  [<ffffffff81522e47>] __wait_on_bit+0x57/0x80
+> [158654.761192]  [<ffffffff811704a0>] ? __wait_on_buffer+0x30/0x30
+> [158654.804099]  [<ffffffff81522ee3>] out_of_line_wait_on_bit+0x73/0x90
+> [158654.847575]  [<ffffffff81070b10>] ? autoremove_wake_function+0x40/0x40
+> [158654.891283]  [<ffffffff8116f6bb>] ? submit_bh+0xb/0x10
+> [158654.934496]  [<ffffffff81170496>] __wait_on_buffer+0x26/0x30
+> [158654.977642]  [<ffffffff81172873>] __block_write_begin+0x383/0x530
+> [158655.020551]  [<ffffffff811e90c0>] ? xfs_get_blocks_direct+0x20/0x20
+> [158655.063484]  [<ffffffff810e6d6f>] ?
+> grab_cache_page_write_begin+0x9f/0xd0
+> [158655.107048]  [<ffffffff811e809f>] xfs_vm_write_begin+0x5f/0xd0
+> [158655.150574]  [<ffffffff810e51af>] ?
+> iov_iter_copy_from_user_atomic+0x7f/0x150
+> [158655.195879]  [<ffffffff810e561a>] generic_perform_write+0xca/0x200
+> [158655.239777]  [<ffffffff810e57af>] generic_file_buffered_write+0x5f/0x90
+> [158655.283361]  [<ffffffff811f02e5>] xfs_file_buffered_aio_write+0xf5/0x180
+> [158655.326698]  [<ffffffff811f043e>] xfs_file_aio_write+0xce/0x150
+> [158655.368954]  [<ffffffff8114acfd>] ? path_put+0x1d/0x30
+> [158655.410567]  [<ffffffff811407f8>] do_sync_readv_writev+0x68/0xa0
+> [158655.452505]  [<ffffffff811420c2>] do_readv_writev+0xf2/0x2e0
+> [158655.494489]  [<ffffffff811f0370>] ?
+> xfs_file_buffered_aio_write+0x180/0x180
+> [158655.536230]  [<ffffffff81140830>] ? do_sync_readv_writev+0xa0/0xa0
+> [158655.577645]  [<ffffffff811422ee>] vfs_writev+0x3e/0x60
+> [158655.619292]  [<ffffffff8114243a>] SyS_writev+0x5a/0xc0
+> [158655.660740]  [<ffffffff81141143>] ? SyS_lseek+0x53/0x80
+> [158655.702619]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
+> [158655.744381] INFO: task ceph-osd:3686 blocked for more than 120 seconds.
+> [158655.786604] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables
+> this message.
+> [158655.829720] ceph-osd        D ffffffff8160f760     0  3686      1
+> 0x00000000
+> [158655.873724]  ffff880c298118d8 0000000000000086 ffff880c29811fd8
+> 0000000000012c80
+> [158655.920739]  ffff880c29810010 0000000000012c80 0000000000012c80
+> 0000000000012c80
+> [158655.964463]  ffff880c29811fd8 0000000000012c80 ffff880c2ab1b1c0
+> ffff880c48dd18e0
+> [158656.008690] Call Trace:
+> [158656.057983]  [<ffffffff811704a0>] ? __wait_on_buffer+0x30/0x30
+> [158656.107852]  [<ffffffff81524874>] schedule+0x24/0x70
+> [158656.157651]  [<ffffffff81524947>] io_schedule+0x87/0xd0
+> [158656.203807]  [<ffffffff811704a9>] sleep_on_buffer+0x9/0x10
+> [158656.248966]  [<ffffffff81522e47>] __wait_on_bit+0x57/0x80
+> [158656.293044]  [<ffffffff811704a0>] ? __wait_on_buffer+0x30/0x30
+> [158656.337387]  [<ffffffff81522ee3>] out_of_line_wait_on_bit+0x73/0x90
+> [158656.381173]  [<ffffffff81070b10>] ? autoremove_wake_function+0x40/0x40
+> [158656.424233]  [<ffffffff8116f6bb>] ? submit_bh+0xb/0x10
+> [158656.466674]  [<ffffffff81170496>] __wait_on_buffer+0x26/0x30
+> [158656.509110]  [<ffffffff81172873>] __block_write_begin+0x383/0x530
+> [158656.551775]  [<ffffffff811e90c0>] ? xfs_get_blocks_direct+0x20/0x20
+> [158656.594479]  [<ffffffff810e6d6f>] ?
+> grab_cache_page_write_begin+0x9f/0xd0
+> [158656.637101]  [<ffffffff811e809f>] xfs_vm_write_begin+0x5f/0xd0
+> [158656.679179]  [<ffffffff810e51af>] ?
+> iov_iter_copy_from_user_atomic+0x7f/0x150
+> [158656.722646]  [<ffffffff810e561a>] generic_perform_write+0xca/0x200
+> [158656.765810]  [<ffffffff810e57af>] generic_file_buffered_write+0x5f/0x90
+> [158656.809135]  [<ffffffff811f02e5>] xfs_file_buffered_aio_write+0xf5/0x180
+> [158656.852315]  [<ffffffff811f043e>] xfs_file_aio_write+0xce/0x150
+> [158656.895632]  [<ffffffff8114acfd>] ? path_put+0x1d/0x30
+> [158656.938289]  [<ffffffff811407f8>] do_sync_readv_writev+0x68/0xa0
+> [158656.980809]  [<ffffffff811420c2>] do_readv_writev+0xf2/0x2e0
+> [158657.023069]  [<ffffffff811f0370>] ?
+> xfs_file_buffered_aio_write+0x180/0x180
+> [158657.065997]  [<ffffffff81140830>] ? do_sync_readv_writev+0xa0/0xa0
+> [158657.109884]  [<ffffffff811422ee>] vfs_writev+0x3e/0x60
+> [158657.152314]  [<ffffffff8114243a>] SyS_writev+0x5a/0xc0
+> [158657.194674]  [<ffffffff81141143>] ? SyS_lseek+0x53/0x80
+> [158657.236672]  [<ffffffff81526b12>] system_call_fastpath+0x16/0x1b
 >
 > Stefan
->
-> Am 28.08.2013 22:12, schrieb kernel neophyte:
->> On Wed, Aug 28, 2013 at 12:20 PM, Stefan Priebe
->> <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org> wrote:
->>> Am 28.08.2013 20:47, schrieb kernel neophyte:
->>>
->>>> On Wed, Aug 28, 2013 at 11:38 AM, Stefan Priebe - Profihost AG
->>>> <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org> wrote:
->>>>>
->>>>> I don't had one for a few days. Which kernel so you use?
->>>>
->>>>
->>>> 3.10 kernel with all of kent's stable patches and perf patches..
->>>
->>>
->>> Which exact 3.10 version? Which patches on top?
->>
->> 3.10.0-rc7
->> with following patches:
->> bcache: Fix a dumb CPU spinning bug in writeback
->> bcache: Fix a flush/fua performance bug
->> bcache: Fix a writeback performance regression
->> bcache: FUA fixes
->>
->> I have also tried bcache perf branch i.e.
->> (http://evilpiepirate.org/git/linux-bcache.git/log/?h=bcache-perf)
->>
->>>
->>>
->>>> and all defaults except for:
->>>>
->>>> echo writeback > /sys/block/bcache0/bcache/cache_mode
->>>> echo 0 > /sys/block/bcache0/bcache/sequential_cutoff
->>>> echo 0 >
->>>> /sys/fs/bcache/1e26e5ca-5cb9-4c5a-ad7e-3c787524a9dc/congested_read_threshold_us
->>>>
->>>> echo 0 >
->>>> /sys/fs/bcache/1e26e5ca-5cb9-4c5a-ad7e-3c787524a9dc/congested_write_threshold_us
->>>>
->>>>
->>>> -Neo
->>>>
->>>>>
->>>>> Stefan
->>>>>
->>>>> This mail was sent with my iPhone.
->>>>>
->>>>> Am 28.08.2013 um 20:12 schrieb kernel neophyte
->>>>> <neophyte.hacker001-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>:
->>>>>
->>>>>> On Tue, Aug 27, 2013 at 11:05 PM, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
->>>>>> wrote:
->>>>>>>
->>>>>>> On Tue, Aug 27, 2013 at 08:37:54PM -0700, kernel neophyte wrote:
->>>>>>>>
->>>>>>>> Hi Kent,
->>>>>>>>
->>>>>>>> I am still seeing deadlock:
->>>>>>>
->>>>>>>
->>>>>>> Seeing blk_throtl_bio (what asshole misspells words in their
->>>>>>> function
->>>>>>> names, so when you go to grep for them you grep for the wrong
->>>>>>> thing?)
->>>>>>> in
->>>>>>> the backtrace - is that what it takes to hit it?
->>>>>>
->>>>>>
->>>>>> I don't think so,
->>>>>> I had another deadlock:
->>>>>>
->>>>>> [ 1179.193990] bio: create slab <bio-2> at 2
->>>>>> [ 1179.194491] bcache: run_cache_set() invalidating existing data
->>>>>> [ 1179.212308] bcache: register_cache() registered cache device rxd1
->>>>>> [ 1203.846220] bcache: register_bdev() registered backing device sda3
->>>>>> [ 1227.780088] bcache: bch_cached_dev_attach() Caching sda3 as
->>>>>> bcache0
->>>>>> on set a079dda3-27fd-4b1c-a616-d46110bfae6c
->>>>>> [ 2162.497950] INFO: task kworker/0:0:4 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.497961] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.497967] kworker/0:0     D 0000000000000000     0     4      2
->>>>>> 0x00000000
->>>>>> [ 2162.497982] Workqueue: events write_dirty_finish
->>>>>> [ 2162.497986]  ffff882fa6ac9b30 0000000000000046 ffffffff81511b8c
->>>>>> ffffffff815137c0
->>>>>> [ 2162.497992]  ffff882fa6a84cb0 ffff882fa6ac9fd8 ffff882fa6ac9fd8
->>>>>> ffff882fa6ac9fd8
->>>>>> [ 2162.497996]  ffff882f78139990 ffff882fa6a84cb0 ffffffff815117a1
->>>>>> ffff882fa6a84cb0
->>>>>> [ 2162.498001] Call Trace:
->>>>>> [ 2162.498010]  [<ffffffff81511b8c>] ?
->>>>>> bch_btree_map_nodes_recurse+0x6c/0x170
->>>>>> [ 2162.498015]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498019]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
->>>>>> [ 2162.498028]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498034]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
->>>>>> [ 2162.498043]  [<ffffffff81332c64>]
->>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>> [ 2162.498048]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>> [ 2162.498052]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
->>>>>> [ 2162.498057]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498066]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>> [ 2162.498072]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
->>>>>> [ 2162.498076]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>> [ 2162.498082]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
->>>>>> [ 2162.498087]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
->>>>>> [ 2162.498093]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
->>>>>> [ 2162.498100]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>> [ 2162.498105]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>> [ 2162.498110]  [<ffffffff81063570>] ?
->>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>> [ 2162.498115]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.498120]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498127]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.498131]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498145] INFO: task bcache_allocato:1766 blocked for more than
->>>>>> 120 seconds.
->>>>>> [ 2162.498149] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.498154] bcache_allocato D 0000000000000001     0  1766      2
->>>>>> 0x00000000
->>>>>> [ 2162.498158]  ffff8822630f3d88 0000000000000046 ffff8822630f3da8
->>>>>> ffffffff810808ad
->>>>>> [ 2162.498163]  ffff882f891de640 ffff8822630f3fd8 ffff8822630f3fd8
->>>>>> ffff8822630f3fd8
->>>>>> [ 2162.498167]  ffff882f81a91990 ffff882f891de640 ffff882f88b33320
->>>>>> ffff8801fad20d98
->>>>>> [ 2162.498172] Call Trace:
->>>>>> [ 2162.498177]  [<ffffffff810808ad>] ? dequeue_task_fair+0x2cd/0x530
->>>>>> [ 2162.498182]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498187]  [<ffffffff816be57e>]
->>>>>> schedule_preempt_disabled+0xe/0x10
->>>>>> [ 2162.498192]  [<ffffffff816bc862>]
->>>>>> __mutex_lock_slowpath+0x112/0x1b0
->>>>>> [ 2162.498197]  [<ffffffff816bc3da>] mutex_lock+0x2a/0x50
->>>>>> [ 2162.498202]  [<ffffffff8150cdbf>] bch_allocator_thread+0x10f/0xe20
->>>>>> [ 2162.498207]  [<ffffffff8150ccb0>] ?
->>>>>> bch_bucket_add_unused+0xe0/0xe0
->>>>>> [ 2162.498211]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.498215]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498220]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.498224]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498228] INFO: task bcache_writebac:1771 blocked for more than
->>>>>> 120 seconds.
->>>>>> [ 2162.498233] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.498237] bcache_writebac D 0000000000000000     0  1771      2
->>>>>> 0x00000000
->>>>>> [ 2162.498241]  ffff88197d2adc58 0000000000000046 ffff88197d2add48
->>>>>> ffffffff811269e2
->>>>>> [ 2162.498245]  ffff882f891d8000 ffff88197d2adfd8 ffff88197d2adfd8
->>>>>> ffff88197d2adfd8
->>>>>> [ 2162.498250]  ffff882f81a91990 ffff882f891d8000 ffff88197d2adc68
->>>>>> ffff882f89550ba0
->>>>>> [ 2162.498254] Call Trace:
->>>>>> [ 2162.498264]  [<ffffffff811269e2>] ?
->>>>>> __alloc_pages_nodemask+0x152/0x9b0
->>>>>> [ 2162.498269]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498274]  [<ffffffff816bc015>] schedule_timeout+0x1e5/0x250
->>>>>> [ 2162.498280]  [<ffffffff810799bf>] ? try_to_wake_up+0x24f/0x2b0
->>>>>> [ 2162.498285]  [<ffffffff816bcd09>] __down_common+0x8e/0xe3
->>>>>> [ 2162.498293]  [<ffffffff81160600>] ? alloc_pages_current+0x90/0x170
->>>>>> [ 2162.498298]  [<ffffffff816bcdd1>] __down+0x1d/0x1f
->>>>>> [ 2162.498304]  [<ffffffff8106f351>] down+0x41/0x50
->>>>>> [ 2162.498310]  [<ffffffff8151ba7d>] bch_writeback_thread+0x35d/0x7f0
->>>>>> [ 2162.498315]  [<ffffffff8108458b>] ? idle_balance+0xeb/0x150
->>>>>> [ 2162.498321]  [<ffffffff8151b720>] ? write_dirty+0xc0/0xc0
->>>>>> [ 2162.498325]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.498329]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498334]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.498338]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498342] INFO: task kworker/0:2:1789 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.498346] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.498351] kworker/0:2     D ffffffff81813a60     0  1789      2
->>>>>> 0x00000000
->>>>>> [ 2162.498357] Workqueue: events write_dirty_finish
->>>>>> [ 2162.498360]  ffff88277062fb30 0000000000000046 ffffffff81511b8c
->>>>>> ffffffff815137c0
->>>>>> [ 2162.498364]  ffff882fa6786640 ffff88277062ffd8 ffff88277062ffd8
->>>>>> ffff88277062ffd8
->>>>>> [ 2162.498368]  ffffffff81c10440 ffff882fa6786640 ffffffff815117a1
->>>>>> ffff882fa6786640
->>>>>> [ 2162.498373] Call Trace:
->>>>>> [ 2162.498378]  [<ffffffff81511b8c>] ?
->>>>>> bch_btree_map_nodes_recurse+0x6c/0x170
->>>>>> [ 2162.498382]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498387]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
->>>>>> [ 2162.498392]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498397]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
->>>>>> [ 2162.498402]  [<ffffffff81332c64>]
->>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>> [ 2162.498407]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>> [ 2162.498411]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
->>>>>> [ 2162.498416]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498420]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>> [ 2162.498425]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
->>>>>> [ 2162.498430]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>> [ 2162.498435]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
->>>>>> [ 2162.498439]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
->>>>>> [ 2162.498444]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
->>>>>> [ 2162.498449]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>> [ 2162.498454]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>> [ 2162.498459]  [<ffffffff81063570>] ?
->>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>> [ 2162.498463]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.498467]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498472]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.498476]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498480] INFO: task iozone:2052 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.498484] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.498488] iozone          D 0000000000000001     0  2052   1944
->>>>>> 0x00000000
->>>>>> [ 2162.498492]  ffff882f7e2d3978 0000000000000082 ffff882f7e2d3938
->>>>>> ffffffff81301d7a
->>>>>> [ 2162.498497]  ffff882f8a116640 ffff882f7e2d3fd8 ffff882f7e2d3fd8
->>>>>> ffff882f7e2d3fd8
->>>>>> [ 2162.498501]  ffff882f88b33320 ffff882f8a116640 ffff882f7e2d3978
->>>>>> ffff882fbf2339f8
->>>>>> [ 2162.498505] Call Trace:
->>>>>> [ 2162.498511]  [<ffffffff81301d7a>] ?
->>>>>> generic_make_request+0xca/0x100
->>>>>> [ 2162.498517]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498522]  [<ffffffff816be36f>] io_schedule+0x8f/0xd0
->>>>>> [ 2162.498530]  [<ffffffff811b797c>]
->>>>>> do_blockdev_direct_IO+0x1a7c/0x1fb0
->>>>>> [ 2162.498539]  [<ffffffffa0273a80>] ? ext2_get_blocks+0xa60/0xa60
->>>>>> [ext2]
->>>>>> [ 2162.498546]  [<ffffffff811b7f05>] __blockdev_direct_IO+0x55/0x60
->>>>>> [ 2162.498552]  [<ffffffffa0273a80>] ? ext2_get_blocks+0xa60/0xa60
->>>>>> [ext2]
->>>>>> [ 2162.498556]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>> [ 2162.498562]  [<ffffffffa0274349>] ext2_direct_IO+0x79/0xe0 [ext2]
->>>>>> [ 2162.498567]  [<ffffffffa0273a80>] ? ext2_get_blocks+0xa60/0xa60
->>>>>> [ext2]
->>>>>> [ 2162.498572]  [<ffffffff8107e775>] ? set_next_entity+0xa5/0xc0
->>>>>> [ 2162.498579]  [<ffffffff8104ade6>] ? current_fs_time+0x16/0x60
->>>>>> [ 2162.498585]  [<ffffffff8111f126>]
->>>>>> generic_file_direct_write+0xc6/0x180
->>>>>> [ 2162.498590]  [<ffffffff8111f4bd>]
->>>>>> __generic_file_aio_write+0x2dd/0x3b0
->>>>>> [ 2162.498595]  [<ffffffff816bc364>] ? mutex_unlock+0x14/0x20
->>>>>> [ 2162.498600]  [<ffffffff8111f5f9>] generic_file_aio_write+0x69/0xd0
->>>>>> [ 2162.498607]  [<ffffffff8117b88a>] do_sync_write+0x7a/0xb0
->>>>>> [ 2162.498612]  [<ffffffff8117c63e>] vfs_write+0xce/0x1e0
->>>>>> [ 2162.498617]  [<ffffffff8117bba0>] ?
->>>>>> generic_file_llseek_size+0x110/0x110
->>>>>> [ 2162.498621]  [<ffffffff8117cb22>] SyS_write+0x52/0xa0
->>>>>> [ 2162.498627]  [<ffffffff816c7a02>] system_call_fastpath+0x16/0x1b
->>>>>> [ 2162.498630] INFO: task kworker/0:1:2293 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.498635] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.498639] kworker/0:1     D ffffffff81813a60     0  2293      2
->>>>>> 0x00000000
->>>>>> [ 2162.498645] Workqueue: events write_dirty_finish
->>>>>> [ 2162.498647]  ffff882f8a05bb30 0000000000000046 ffffffff81511b8c
->>>>>> ffffffff815137c0
->>>>>> [ 2162.498652]  ffff882f8a163320 ffff882f8a05bfd8 ffff882f8a05bfd8
->>>>>> ffff882f8a05bfd8
->>>>>> [ 2162.498656]  ffffffff81c10440 ffff882f8a163320 ffffffff815117a1
->>>>>> ffff882f8a163320
->>>>>> [ 2162.498661] Call Trace:
->>>>>> [ 2162.498665]  [<ffffffff81511b8c>] ?
->>>>>> bch_btree_map_nodes_recurse+0x6c/0x170
->>>>>> [ 2162.498669]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498674]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
->>>>>> [ 2162.498679]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498684]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
->>>>>> [ 2162.498689]  [<ffffffff81332c64>]
->>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>> [ 2162.498693]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>> [ 2162.498698]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
->>>>>> [ 2162.498702]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498707]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>> [ 2162.498712]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
->>>>>> [ 2162.498716]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>> [ 2162.498721]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
->>>>>> [ 2162.498726]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
->>>>>> [ 2162.498731]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
->>>>>> [ 2162.498735]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>> [ 2162.498740]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>> [ 2162.498745]  [<ffffffff81063570>] ?
->>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>> [ 2162.498749]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.498753]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498758]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.498762]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498766] INFO: task kworker/0:3:2534 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.498772] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.498777] kworker/0:3     D ffffffff81813a60     0  2534      2
->>>>>> 0x00000000
->>>>>> [ 2162.498783] Workqueue: events write_dirty_finish
->>>>>> [ 2162.498785]  ffff88237d0bdb30 0000000000000046 ffffffff81511b8c
->>>>>> ffffffff815137c0
->>>>>> [ 2162.498790]  ffff882fa66fe640 ffff88237d0bdfd8 ffff88237d0bdfd8
->>>>>> ffff88237d0bdfd8
->>>>>> [ 2162.498794]  ffffffff81c10440 ffff882fa66fe640 ffffffff815117a1
->>>>>> ffff882fa66fe640
->>>>>> [ 2162.498799] Call Trace:
->>>>>> [ 2162.498803]  [<ffffffff81511b8c>] ?
->>>>>> bch_btree_map_nodes_recurse+0x6c/0x170
->>>>>> [ 2162.498807]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498812]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
->>>>>> [ 2162.498817]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498822]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
->>>>>> [ 2162.498826]  [<ffffffff81332c64>]
->>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>> [ 2162.498831]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>> [ 2162.498836]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
->>>>>> [ 2162.498840]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498845]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>> [ 2162.498849]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
->>>>>> [ 2162.498854]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>> [ 2162.498859]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
->>>>>> [ 2162.498864]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
->>>>>> [ 2162.498868]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
->>>>>> [ 2162.498873]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>> [ 2162.498878]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>> [ 2162.498882]  [<ffffffff81063570>] ?
->>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>> [ 2162.498886]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.498890]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498896]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.498900]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.498903] INFO: task kworker/0:4:2537 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.498908] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.498914] kworker/0:4     D 0000000000000000     0  2537      2
->>>>>> 0x00000000
->>>>>> [ 2162.498920] Workqueue: events write_dirty_finish
->>>>>> [ 2162.498922]  ffff882f76d8fb30 0000000000000046 ffffffff81511b8c
->>>>>> ffffffff815137c0
->>>>>> [ 2162.498926]  ffff882f88b30000 ffff882f76d8ffd8 ffff882f76d8ffd8
->>>>>> ffff882f76d8ffd8
->>>>>> [ 2162.498931]  ffff882f78beb320 ffff882f88b30000 ffffffff815117a1
->>>>>> ffff882f88b30000
->>>>>> [ 2162.498935] Call Trace:
->>>>>> [ 2162.498940]  [<ffffffff81511b8c>] ?
->>>>>> bch_btree_map_nodes_recurse+0x6c/0x170
->>>>>> [ 2162.498944]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498948]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
->>>>>> [ 2162.498953]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.498958]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
->>>>>> [ 2162.498963]  [<ffffffff81332c64>]
->>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>> [ 2162.498968]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>> [ 2162.498972]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
->>>>>> [ 2162.498977]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.498981]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>> [ 2162.498986]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
->>>>>> [ 2162.498990]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>> [ 2162.498995]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
->>>>>> [ 2162.499000]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
->>>>>> [ 2162.499004]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
->>>>>> [ 2162.499009]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>> [ 2162.499014]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>> [ 2162.499019]  [<ffffffff81063570>] ?
->>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>> [ 2162.499023]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.499027]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.499032]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.499036]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.499039] INFO: task kworker/1:1:2544 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.499044] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.499050] kworker/1:1     D ffffffff81813d40     0  2544      2
->>>>>> 0x00000000
->>>>>> [ 2162.499057] Workqueue: bcache bch_data_insert_keys
->>>>>> [ 2162.499059]  ffff882fa677b3f8 0000000000000046 ffff882fa677b418
->>>>>> ffff882f8a709000
->>>>>> [ 2162.499063]  ffff882f88b33320 ffff882fa677bfd8 ffff882fa677bfd8
->>>>>> ffff882fa677bfd8
->>>>>> [ 2162.499068]  ffff882fa6471990 ffff882f88b33320 ffff882f88b33320
->>>>>> ffff8801fad20d98
->>>>>> [ 2162.499072] Call Trace:
->>>>>> [ 2162.499077]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.499082]  [<ffffffff816be57e>]
->>>>>> schedule_preempt_disabled+0xe/0x10
->>>>>> [ 2162.499087]  [<ffffffff816bc862>]
->>>>>> __mutex_lock_slowpath+0x112/0x1b0
->>>>>> [ 2162.499092]  [<ffffffff816bc3da>] mutex_lock+0x2a/0x50
->>>>>> [ 2162.499096]  [<ffffffff815112e5>] bch_mca_shrink+0x1b5/0x2f0
->>>>>> [ 2162.499102]  [<ffffffff8117fc32>] ? prune_super+0x162/0x1b0
->>>>>> [ 2162.499109]  [<ffffffff8112ebb4>] shrink_slab+0x154/0x300
->>>>>> [ 2162.499113]  [<ffffffff81076828>] ? resched_task+0x68/0x70
->>>>>> [ 2162.499118]  [<ffffffff81077165>] ? check_preempt_curr+0x75/0xa0
->>>>>> [ 2162.499126]  [<ffffffff8113a379>] ? fragmentation_index+0x19/0x70
->>>>>> [ 2162.499131]  [<ffffffff8113140f>] do_try_to_free_pages+0x20f/0x4b0
->>>>>> [ 2162.499137]  [<ffffffff81131864>] try_to_free_pages+0xe4/0x1a0
->>>>>> [ 2162.499143]  [<ffffffff81126e9c>]
->>>>>> __alloc_pages_nodemask+0x60c/0x9b0
->>>>>> [ 2162.499149]  [<ffffffff8116062a>] alloc_pages_current+0xba/0x170
->>>>>> [ 2162.499155]  [<ffffffff8112240e>] __get_free_pages+0xe/0x40
->>>>>> [ 2162.499159]  [<ffffffff8150ebb3>] mca_data_alloc+0x73/0x1d0
->>>>>> [ 2162.499163]  [<ffffffff81510f37>] mca_alloc+0x277/0x470
->>>>>> [ 2162.499168]  [<ffffffff81511d1c>] bch_btree_node_alloc+0x8c/0x1c0
->>>>>> [ 2162.499173]  [<ffffffff81513020>] btree_split+0x110/0x5c0
->>>>>> [ 2162.499179]  [<ffffffff81457d43>] ?
->>>>>> scsi_pool_alloc_command+0x33/0x80
->>>>>> [ 2162.499184]  [<ffffffff81515fc7>] ?
->>>>>> bch_keylist_pop_front+0x47/0x50
->>>>>> [ 2162.499188]  [<ffffffff8150fed6>] ?
->>>>>> bch_btree_insert_keys+0x56/0x250
->>>>>> [ 2162.499193]  [<ffffffff81082def>] ? update_group_power+0x13f/0x220
->>>>>> [ 2162.499198]  [<ffffffff81513582>] bch_btree_insert_node+0xb2/0x2f0
->>>>>> [ 2162.499202]  [<ffffffff815137e8>] btree_insert_fn+0x28/0x50
->>>>>> [ 2162.499207]  [<ffffffff81511b8c>]
->>>>>> bch_btree_map_nodes_recurse+0x6c/0x170
->>>>>> [ 2162.499211]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.499216]  [<ffffffff816bcc26>] ? down_write+0x16/0x40
->>>>>> [ 2162.499221]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
->>>>>> [ 2162.499225]  [<ffffffff81511c30>]
->>>>>> bch_btree_map_nodes_recurse+0x110/0x170
->>>>>> [ 2162.499230]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.499235]  [<ffffffff811b51ea>] ? dio_bio_end_io+0x5a/0x90
->>>>>> [ 2162.499239]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>> [ 2162.499244]  [<ffffffff81514dce>]
->>>>>> __bch_btree_map_nodes+0x13e/0x1c0
->>>>>> [ 2162.499248]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.499254]  [<ffffffff8151ac6f>] ? bch_journal+0x42f/0x4b0
->>>>>> [ 2162.499258]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>> [ 2162.499264]  [<ffffffff8151e1be>] bch_data_insert_keys+0x3e/0x160
->>>>>> [ 2162.499268]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>> [ 2162.499273]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>> [ 2162.499278]  [<ffffffff81063570>] ?
->>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>> [ 2162.499282]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.499286]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.499292]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.499296]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.499299] INFO: task kworker/0:5:2552 blocked for more than 120
->>>>>> seconds.
->>>>>> [ 2162.499304] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>> disables this message.
->>>>>> [ 2162.499310] kworker/0:5     D 0000000000000000     0  2552      2
->>>>>> 0x00000000
->>>>>> [ 2162.499411] Workqueue: events write_dirty_finish
->>>>>> [ 2162.499413]  ffff88226314db30 0000000000000046 ffffffff81511b8c
->>>>>> ffffffff815137c0
->>>>>> [ 2162.499418]  ffff882fa6781990 ffff88226314dfd8 ffff88226314dfd8
->>>>>> ffff88226314dfd8
->>>>>> [ 2162.499422]  ffff882fa6a84cb0 ffff882fa6781990 ffffffff815117a1
->>>>>> ffff882fa6781990
->>>>>> [ 2162.499427] Call Trace:
->>>>>> [ 2162.499431]  [<ffffffff81511b8c>] ?
->>>>>> bch_btree_map_nodes_recurse+0x6c/0x170
->>>>>> [ 2162.499435]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.499440]  [<ffffffff815117a1>] ? bch_btree_node_get+0x71/0x280
->>>>>> [ 2162.499445]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>> [ 2162.499450]  [<ffffffff816bf0fd>] rwsem_down_read_failed+0x9d/0xe5
->>>>>> [ 2162.499455]  [<ffffffff81332c64>]
->>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>> [ 2162.499460]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>> [ 2162.499464]  [<ffffffff81514d75>] __bch_btree_map_nodes+0xe5/0x1c0
->>>>>> [ 2162.499468]  [<ffffffff815137c0>] ?
->>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>> [ 2162.499473]  [<ffffffff8151b21e>] ? dirty_io_destructor+0xe/0x10
->>>>>> [ 2162.499478]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>> [ 2162.499483]  [<ffffffff8151b553>] write_dirty_finish+0x1e3/0x270
->>>>>> [ 2162.499488]  [<ffffffff8107e7fb>] ? pick_next_task_fair+0x6b/0x150
->>>>>> [ 2162.499492]  [<ffffffff810765f3>] ? dequeue_task+0x93/0xb0
->>>>>> [ 2162.499497]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>> [ 2162.499502]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>> [ 2162.499507]  [<ffffffff81063570>] ?
->>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>> [ 2162.499511]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>> [ 2162.499515]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>> [ 2162.499520]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>> [ 2162.499524]  [<ffffffff81069e80>] ? flush_kthread_worker+0xb0/0xb0
->>>>>>
->>>>>>
->>>>>>
->>>>>>>> [  930.169234] bcache: bch_cached_dev_attach() Caching sda3 as
->>>>>>>> bcache0
->>>>>>>> on set 06496904-10ca-489a-ae75-68c6a07d3db1
->>>>>>>> [ 2522.956188] INFO: task bcache_writebac:2058 blocked for more
->>>>>>>> than
->>>>>>>> 120 seconds.
->>>>>>>> [ 2522.956199] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>> disables this message.
->>>>>>>> [ 2522.956205] bcache_writebac D ffffffff81813a60     0
->>>>>>>> 2058      2
->>>>>>>> 0x00000000
->>>>>>>> [ 2522.956212]  ffff881c39c1fcd8 0000000000000046 0000000000000001
->>>>>>>> 0000000000000001
->>>>>>>> [ 2522.956218]  ffff882f8b56b320 ffff881c39c1ffd8 ffff881c39c1ffd8
->>>>>>>> ffff881c39c1ffd8
->>>>>>>> [ 2522.956222]  ffff882fa6aeb320 ffff882f8b56b320 ffff882f8b56b320
->>>>>>>> ffff882f8b56b320
->>>>>>>> [ 2522.956227] Call Trace:
->>>>>>>> [ 2522.956241]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>>>> [ 2522.956247]  [<ffffffff816befb5>]
->>>>>>>> rwsem_down_write_failed+0xf5/0x1a0
->>>>>>>> [ 2522.956255]  [<ffffffff81332c93>]
->>>>>>>> call_rwsem_down_write_failed+0x13/0x20
->>>>>>>> [ 2522.956261]  [<ffffffff816bcc41>] ? down_write+0x31/0x40
->>>>>>>> [ 2522.956269]  [<ffffffff8151b782>]
->>>>>>>> bch_writeback_thread+0x62/0x7f0
->>>>>>>> [ 2522.956278]  [<ffffffff8108458b>] ? idle_balance+0xeb/0x150
->>>>>>>> [ 2522.956284]  [<ffffffff8151b720>] ? write_dirty+0xc0/0xc0
->>>>>>>> [ 2522.956290]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>>>> [ 2522.956294]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.956302]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>>>> [ 2522.956306]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.956313] INFO: task kworker/u64:1:2433 blocked for more
->>>>>>>> than 120
->>>>>>>> seconds.
->>>>>>>> [ 2522.956317] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>> disables this message.
->>>>>>>> [ 2522.956322] kworker/u64:1   D ffffffff81813a60     0
->>>>>>>> 2433      2
->>>>>>>> 0x00000000
->>>>>>>> [ 2522.956332] Workqueue: writeback bdi_writeback_workfn
->>>>>>>> (flush-252:0)
->>>>>>>> [ 2522.956336]  ffff882f899d1560 0000000000000046 ffffffff81120635
->>>>>>>> 0000000000000100
->>>>>>>> [ 2522.956340]  ffff88219b488000 ffff882f899d1fd8 ffff882f899d1fd8
->>>>>>>> ffff882f899d1fd8
->>>>>>>> [ 2522.956345]  ffff882fa6aeb320 ffff88219b488000 ffffffff8131ad55
->>>>>>>> ffff88219b488000
->>>>>>>> [ 2522.956349] Call Trace:
->>>>>>>> [ 2522.956359]  [<ffffffff81120635>] ? mempool_alloc_slab+0x15/0x20
->>>>>>>> [ 2522.956367]  [<ffffffff8131ad55>] ? blk_throtl_bio+0x3b5/0x540
->>>>>>>> [ 2522.956372]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>>>> [ 2522.956378]  [<ffffffff816bf0fd>]
->>>>>>>> rwsem_down_read_failed+0x9d/0xe5
->>>>>>>> [ 2522.956383]  [<ffffffff81332c64>]
->>>>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>>>> [ 2522.956388]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>>>> [ 2522.956394]  [<ffffffff8151fe32>]
->>>>>>>> cached_dev_make_request+0x752/0xf00
->>>>>>>> [ 2522.956400]  [<ffffffff81301af8>] ?
->>>>>>>> generic_make_request_checks+0x1e8/0x3a0
->>>>>>>> [ 2522.956405]  [<ffffffff81301d7a>]
->>>>>>>> generic_make_request+0xca/0x100
->>>>>>>> [ 2522.956409]  [<ffffffff81301e29>] submit_bio+0x79/0x160
->>>>>>>> [ 2522.956417]  [<ffffffff811b1710>] ? bio_alloc_bioset+0xa0/0x1d0
->>>>>>>> [ 2522.956421]  [<ffffffff811abd3f>] _submit_bh+0x13f/0x200
->>>>>>>> [ 2522.956425]  [<ffffffff811abe10>] submit_bh+0x10/0x20
->>>>>>>> [ 2522.956430]  [<ffffffff811af6b8>]
->>>>>>>> __block_write_full_page+0x1d8/0x360
->>>>>>>> [ 2522.956439]  [<ffffffff8145fc0b>] ? scsi_request_fn+0xbb/0x530
->>>>>>>> [ 2522.956444]  [<ffffffff811ad3c0>] ?
->>>>>>>> end_buffer_async_read+0x130/0x130
->>>>>>>> [ 2522.956449]  [<ffffffff811b2c40>] ? I_BDEV+0x10/0x10
->>>>>>>> [ 2522.956454]  [<ffffffff811b2c40>] ? I_BDEV+0x10/0x10
->>>>>>>> [ 2522.956459]  [<ffffffff811af90a>]
->>>>>>>> block_write_full_page_endio+0xca/0x100
->>>>>>>> [ 2522.956464]  [<ffffffff811af955>]
->>>>>>>> block_write_full_page+0x15/0x20
->>>>>>>> [ 2522.956469]  [<ffffffff811b3608>] blkdev_writepage+0x18/0x20
->>>>>>>> [ 2522.956473]  [<ffffffff81127d37>] __writepage+0x17/0x40
->>>>>>>> [ 2522.956477]  [<ffffffff8112820e>] write_cache_pages+0x20e/0x460
->>>>>>>> [ 2522.956481]  [<ffffffff81127d20>] ?
->>>>>>>> set_page_dirty_lock+0x60/0x60
->>>>>>>> [ 2522.956486]  [<ffffffff811ac251>] ? __set_page_dirty+0x71/0xc0
->>>>>>>> [ 2522.956490]  [<ffffffff811284aa>] generic_writepages+0x4a/0x70
->>>>>>>> [ 2522.956495]  [<ffffffff81129cd0>] do_writepages+0x20/0x40
->>>>>>>> [ 2522.956501]  [<ffffffff811a36f5>]
->>>>>>>> __writeback_single_inode+0x45/0x280
->>>>>>>> [ 2522.956507]  [<ffffffff811269e2>] ?
->>>>>>>> __alloc_pages_nodemask+0x152/0x9b0
->>>>>>>> [ 2522.956513]  [<ffffffff811a495d>]
->>>>>>>> writeback_sb_inodes+0x19d/0x3c0
->>>>>>>> [ 2522.956518]  [<ffffffff811a4c1e>]
->>>>>>>> __writeback_inodes_wb+0x9e/0xd0
->>>>>>>> [ 2522.956523]  [<ffffffff811a4ecb>] wb_writeback+0x27b/0x320
->>>>>>>> [ 2522.956529]  [<ffffffff81196228>] ?
->>>>>>>> get_nr_dirty_inodes+0x58/0x80
->>>>>>>> [ 2522.956534]  [<ffffffff811a500f>]
->>>>>>>> wb_check_old_data_flush+0x9f/0xb0
->>>>>>>> [ 2522.956539]  [<ffffffff811a67e1>] wb_do_writeback+0x151/0x1d0
->>>>>>>> [ 2522.956547]  [<ffffffff8106539f>] ? set_worker_desc+0x6f/0x80
->>>>>>>> [ 2522.956552]  [<ffffffff811a68da>]
->>>>>>>> bdi_writeback_workfn+0x7a/0x200
->>>>>>>> [ 2522.956557]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>>>> [ 2522.956562]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>>>> [ 2522.956567]  [<ffffffff81063570>] ?
->>>>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>>>> [ 2522.956571]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>>>> [ 2522.956575]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.956581]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>>>> [ 2522.956585]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.956588] INFO: task iozone:2435 blocked for more than 120
->>>>>>>> seconds.
->>>>>>>> [ 2522.956593] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>> disables this message.
->>>>>>>> [ 2522.956597] iozone          D 0000000000000001     0  2435
->>>>>>>> 1545
->>>>>>>> 0x00000000
->>>>>>>> [ 2522.956602]  ffff882a75671978 0000000000000082 ffff882a75671938
->>>>>>>> ffffffff81301d7a
->>>>>>>> [ 2522.956606]  ffff882f88dc1990 ffff882a75671fd8 ffff882a75671fd8
->>>>>>>> ffff882a75671fd8
->>>>>>>> [ 2522.956611]  ffff882f8ec91990 ffff882f88dc1990 ffff882a75671978
->>>>>>>> ffff882fbf2539f8
->>>>>>>> [ 2522.956615] Call Trace:
->>>>>>>> [ 2522.956619]  [<ffffffff81301d7a>] ?
->>>>>>>> generic_make_request+0xca/0x100
->>>>>>>> [ 2522.956625]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>>>> [ 2522.956630]  [<ffffffff816be36f>] io_schedule+0x8f/0xd0
->>>>>>>> [ 2522.956636]  [<ffffffff811b797c>]
->>>>>>>> do_blockdev_direct_IO+0x1a7c/0x1fb0
->>>>>>>> [ 2522.956645]  [<ffffffffa0262a80>] ? ext2_get_blocks+0xa60/0xa60
->>>>>>>> [ext2]
->>>>>>>> [ 2522.956652]  [<ffffffff811b7f05>] __blockdev_direct_IO+0x55/0x60
->>>>>>>> [ 2522.956658]  [<ffffffffa0262a80>] ? ext2_get_blocks+0xa60/0xa60
->>>>>>>> [ext2]
->>>>>>>> [ 2522.956662]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>>>> [ 2522.956669]  [<ffffffffa0263349>] ext2_direct_IO+0x79/0xe0
->>>>>>>> [ext2]
->>>>>>>> [ 2522.956674]  [<ffffffffa0262a80>] ? ext2_get_blocks+0xa60/0xa60
->>>>>>>> [ext2]
->>>>>>>> [ 2522.956680]  [<ffffffff8104ade6>] ? current_fs_time+0x16/0x60
->>>>>>>> [ 2522.956685]  [<ffffffff8111f126>]
->>>>>>>> generic_file_direct_write+0xc6/0x180
->>>>>>>> [ 2522.956690]  [<ffffffff8111f4bd>]
->>>>>>>> __generic_file_aio_write+0x2dd/0x3b0
->>>>>>>> [ 2522.956696]  [<ffffffff8111f5f9>]
->>>>>>>> generic_file_aio_write+0x69/0xd0
->>>>>>>> [ 2522.956702]  [<ffffffff8117b88a>] do_sync_write+0x7a/0xb0
->>>>>>>> [ 2522.956706]  [<ffffffff811bb108>] ? fsnotify+0x1f8/0x2b0
->>>>>>>> [ 2522.956712]  [<ffffffff8117c63e>] vfs_write+0xce/0x1e0
->>>>>>>> [ 2522.956716]  [<ffffffff8117cb22>] SyS_write+0x52/0xa0
->>>>>>>> [ 2522.956722]  [<ffffffff816c7a02>] system_call_fastpath+0x16/0x1b
->>>>>>>> [ 2522.956726] INFO: task kworker/2:1:2470 blocked for more than
->>>>>>>> 120
->>>>>>>> seconds.
->>>>>>>> [ 2522.956730] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>> disables this message.
->>>>>>>> [ 2522.956735] kworker/2:1     D ffffffff81813d40     0
->>>>>>>> 2470      2
->>>>>>>> 0x00000000
->>>>>>>> [ 2522.956743] Workqueue: bcache bch_data_insert_keys
->>>>>>>> [ 2522.956745]  ffff882a5b0c9628 0000000000000046 ffff882a5b0c9648
->>>>>>>> 0000004000000000
->>>>>>>> [ 2522.956749]  ffff882f8ec91990 ffff882a5b0c9fd8 ffff882a5b0c9fd8
->>>>>>>> ffff882a5b0c9fd8
->>>>>>>> [ 2522.956754]  ffff882fa6489990 ffff882f8ec91990 ffff882f8ec91990
->>>>>>>> ffff8828dba00d98
->>>>>>>> [ 2522.956758] Call Trace:
->>>>>>>> [ 2522.956763]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>>>> [ 2522.956769]  [<ffffffff816be57e>]
->>>>>>>> schedule_preempt_disabled+0xe/0x10
->>>>>>>> [ 2522.956774]  [<ffffffff816bc862>]
->>>>>>>> __mutex_lock_slowpath+0x112/0x1b0
->>>>>>>> [ 2522.956779]  [<ffffffff816bc3da>] mutex_lock+0x2a/0x50
->>>>>>>> [ 2522.956783]  [<ffffffff815112e5>] bch_mca_shrink+0x1b5/0x2f0
->>>>>>>> [ 2522.956791]  [<ffffffff8117fc32>] ? prune_super+0x162/0x1b0
->>>>>>>> [ 2522.956799]  [<ffffffff8112ebb4>] shrink_slab+0x154/0x300
->>>>>>>> [ 2522.956805]  [<ffffffff81076828>] ? resched_task+0x68/0x70
->>>>>>>> [ 2522.956810]  [<ffffffff81077165>] ? check_preempt_curr+0x75/0xa0
->>>>>>>> [ 2522.956816]  [<ffffffff8113a379>] ?
->>>>>>>> fragmentation_index+0x19/0x70
->>>>>>>> [ 2522.956822]  [<ffffffff8113140f>]
->>>>>>>> do_try_to_free_pages+0x20f/0x4b0
->>>>>>>> [ 2522.956827]  [<ffffffff81131864>] try_to_free_pages+0xe4/0x1a0
->>>>>>>> [ 2522.956833]  [<ffffffff81126e9c>]
->>>>>>>> __alloc_pages_nodemask+0x60c/0x9b0
->>>>>>>> [ 2522.956843]  [<ffffffff8116062a>] alloc_pages_current+0xba/0x170
->>>>>>>> [ 2522.956848]  [<ffffffff8112240e>] __get_free_pages+0xe/0x40
->>>>>>>> [ 2522.956852]  [<ffffffff8150ebb3>] mca_data_alloc+0x73/0x1d0
->>>>>>>> [ 2522.956857]  [<ffffffff8150ee5a>] mca_bucket_alloc+0x14a/0x1f0
->>>>>>>> [ 2522.956861]  [<ffffffff81511020>] mca_alloc+0x360/0x470
->>>>>>>> [ 2522.956866]  [<ffffffff81517031>] ?
->>>>>>>> __bch_bset_search+0x1d1/0x480
->>>>>>>> [ 2522.956871]  [<ffffffff8151183e>] bch_btree_node_get+0x10e/0x280
->>>>>>>> [ 2522.956875]  [<ffffffff81511c02>]
->>>>>>>> bch_btree_map_nodes_recurse+0xe2/0x170
->>>>>>>> [ 2522.956880]  [<ffffffff815137c0>] ?
->>>>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>>>> [ 2522.956886]  [<ffffffff811b51ea>] ? dio_bio_end_io+0x5a/0x90
->>>>>>>> [ 2522.956890]  [<ffffffff8107f991>] ? update_curr+0x141/0x1f0
->>>>>>>> [ 2522.956895]  [<ffffffff81514dce>]
->>>>>>>> __bch_btree_map_nodes+0x13e/0x1c0
->>>>>>>> [ 2522.956899]  [<ffffffff815137c0>] ?
->>>>>>>> bch_btree_insert_node+0x2f0/0x2f0
->>>>>>>> [ 2522.956905]  [<ffffffff8151ac6f>] ? bch_journal+0x42f/0x4b0
->>>>>>>> [ 2522.956909]  [<ffffffff81514f04>] bch_btree_insert+0xb4/0x120
->>>>>>>> [ 2522.956915]  [<ffffffff8151e1be>]
->>>>>>>> bch_data_insert_keys+0x3e/0x160
->>>>>>>> [ 2522.956920]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>>>> [ 2522.956925]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>>>> [ 2522.956930]  [<ffffffff81063570>] ?
->>>>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>>>> [ 2522.956933]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>>>> [ 2522.956938]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.956943]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>>>> [ 2522.956947]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.956951] INFO: task kworker/3:2:2471 blocked for more than
->>>>>>>> 120
->>>>>>>> seconds.
->>>>>>>> [ 2522.956955] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>> disables this message.
->>>>>>>> [ 2522.956959] kworker/3:2     D ffffffff81813a60     0
->>>>>>>> 2471      2
->>>>>>>> 0x00000000
->>>>>>>> [ 2522.956966] Workqueue: events update_writeback_rate
->>>>>>>> [ 2522.956968]  ffff882a5d125cd0 0000000000000046 0000000000000003
->>>>>>>> ffff882a5d125d68
->>>>>>>> [ 2522.956972]  ffff882f8ec94cb0 ffff882a5d125fd8 ffff882a5d125fd8
->>>>>>>> ffff882a5d125fd8
->>>>>>>> [ 2522.956977]  ffff882fa6aeb320 ffff882f8ec94cb0 0000000200000003
->>>>>>>> ffff882f8ec94cb0
->>>>>>>> [ 2522.956981] Call Trace:
->>>>>>>> [ 2522.956987]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>>>> [ 2522.956992]  [<ffffffff816bf0fd>]
->>>>>>>> rwsem_down_read_failed+0x9d/0xe5
->>>>>>>> [ 2522.956997]  [<ffffffff81332c64>]
->>>>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>>>> [ 2522.957002]  [<ffffffff816bcc74>] ? down_read+0x24/0x2b
->>>>>>>> [ 2522.957007]  [<ffffffff8151b010>]
->>>>>>>> update_writeback_rate+0x30/0x230
->>>>>>>> [ 2522.957011]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>>>> [ 2522.957017]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>>>> [ 2522.957021]  [<ffffffff81063570>] ?
->>>>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>>>> [ 2522.957025]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>>>> [ 2522.957030]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.957035]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>>>> [ 2522.957039]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.957048] INFO: task kworker/u64:2:2540 blocked for more
->>>>>>>> than 120
->>>>>>>> seconds.
->>>>>>>> [ 2522.957052] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>> disables this message.
->>>>>>>> [ 2522.957056] kworker/u64:2   D ffffffff81813a60     0
->>>>>>>> 2540      2
->>>>>>>> 0x00000000
->>>>>>>> [ 2522.957062] Workqueue: bch_btree_io btree_node_write_work
->>>>>>>> [ 2522.957064]  ffff882a4fdc9778 0000000000000046 ffff882a4fdc9738
->>>>>>>> ffff882f86e3be58
->>>>>>>> [ 2522.957069]  ffff882fa4bc1990 ffff882a4fdc9fd8 ffff882a4fdc9fd8
->>>>>>>> ffff882a4fdc9fd8
->>>>>>>> [ 2522.957073]  ffff882fa6aeb320 ffff882fa4bc1990 ffff882f86e3be00
->>>>>>>> ffff8828dba00d98
->>>>>>>> [ 2522.957078] Call Trace:
->>>>>>>> [ 2522.957083]  [<ffffffff816be299>] schedule+0x29/0x70
->>>>>>>> [ 2522.957088]  [<ffffffff816be57e>]
->>>>>>>> schedule_preempt_disabled+0xe/0x10
->>>>>>>> [ 2522.957092]  [<ffffffff816bc862>]
->>>>>>>> __mutex_lock_slowpath+0x112/0x1b0
->>>>>>>> [ 2522.957102]  [<ffffffff81484090>] ?
->>>>>>>> ata_scsiop_mode_sense+0x380/0x380
->>>>>>>> [ 2522.957107]  [<ffffffff816bc3da>] mutex_lock+0x2a/0x50
->>>>>>>> [ 2522.957111]  [<ffffffff815112e5>] bch_mca_shrink+0x1b5/0x2f0
->>>>>>>> [ 2522.957116]  [<ffffffff8117fc32>] ? prune_super+0x162/0x1b0
->>>>>>>> [ 2522.957121]  [<ffffffff8112ebb4>] shrink_slab+0x154/0x300
->>>>>>>> [ 2522.957126]  [<ffffffff81076828>] ? resched_task+0x68/0x70
->>>>>>>> [ 2522.957130]  [<ffffffff81077165>] ? check_preempt_curr+0x75/0xa0
->>>>>>>> [ 2522.957135]  [<ffffffff8113a379>] ?
->>>>>>>> fragmentation_index+0x19/0x70
->>>>>>>> [ 2522.957140]  [<ffffffff8113140f>]
->>>>>>>> do_try_to_free_pages+0x20f/0x4b0
->>>>>>>> [ 2522.957146]  [<ffffffff81131864>] try_to_free_pages+0xe4/0x1a0
->>>>>>>> [ 2522.957152]  [<ffffffff81126e9c>]
->>>>>>>> __alloc_pages_nodemask+0x60c/0x9b0
->>>>>>>> [ 2522.957158]  [<ffffffff8116062a>] alloc_pages_current+0xba/0x170
->>>>>>>> [ 2522.957163]  [<ffffffff8112240e>] __get_free_pages+0xe/0x40
->>>>>>>> [ 2522.957168]  [<ffffffff81517fc8>] __btree_sort+0x48/0x230
->>>>>>>> [ 2522.957173]  [<ffffffff8151765c>] ?
->>>>>>>> __bch_btree_iter_init+0x7c/0xc0
->>>>>>>> [ 2522.957178]  [<ffffffff81518301>]
->>>>>>>> bch_btree_sort_partial+0x101/0x120
->>>>>>>> [ 2522.957182]  [<ffffffff8150f000>] ?
->>>>>>>> __btree_node_write_done+0x100/0x100
->>>>>>>> [ 2522.957187]  [<ffffffff81518468>] bch_btree_sort_lazy+0x68/0x90
->>>>>>>> [ 2522.957191]  [<ffffffff815109ba>]
->>>>>>>> bch_btree_node_write+0x36a/0x4a0
->>>>>>>> [ 2522.957196]  [<ffffffff8108458b>] ? idle_balance+0xeb/0x150
->>>>>>>> [ 2522.957201]  [<ffffffff8106212c>] ?
->>>>>>>> pwq_activate_delayed_work+0x4c/0xb0
->>>>>>>> [ 2522.957205]  [<ffffffff81511477>]
->>>>>>>> btree_node_write_work+0x57/0x80
->>>>>>>> [ 2522.957210]  [<ffffffff810624d4>] process_one_work+0x174/0x490
->>>>>>>> [ 2522.957215]  [<ffffffff8106368b>] worker_thread+0x11b/0x370
->>>>>>>> [ 2522.957219]  [<ffffffff81063570>] ?
->>>>>>>> manage_workers.isra.23+0x2d0/0x2d0
->>>>>>>> [ 2522.957223]  [<ffffffff81069f40>] kthread+0xc0/0xd0
->>>>>>>> [ 2522.957228]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>> [ 2522.957233]  [<ffffffff816c795c>] ret_from_fork+0x7c/0xb0
->>>>>>>> [ 2522.957237]  [<ffffffff81069e80>] ?
->>>>>>>> flush_kthread_worker+0xb0/0xb0
->>>>>>>>
->>>>>>>>
->>>>>>>> I can easily reproduce this, please let me know if you require any
->>>>>>>> info/test any patch.
->>>>>>>>
->>>>>>>> Thanks,
->>>>>>>> Neo
->>>>>>>>
->>>>>>>> On Mon, Aug 26, 2013 at 12:21 PM, Stefan Priebe
->>>>>>>> <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org> wrote:
->>>>>>>>>
->>>>>>>>> Hi Kent,
->>>>>>>>>
->>>>>>>>> a new one under 3.10:
->>>>>>>>>
->>>>>>>>> 2013-08-26 21:05:30     INFO: task ceph-osd:8939 blocked for more
->>>>>>>>> than 120
->>>>>>>>> seconds.
->>>>>>>>> 2013-08-26 21:05:30     "echo 0 >
->>>>>>>>> /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>>> disables this message.
->>>>>>>>> 2013-08-26 21:05:30     ceph-osd D ffffffff8160f760 0 8939 1
->>>>>>>>> 0x00000000
->>>>>>>>> 2013-08-26 21:05:30     ffff880bd9a61820 0000000000000086
->>>>>>>>> ffff880bd9a61fd8
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:30     ffff880bd9a60010 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:30     ffff880bd9a61fd8 0000000000012c80
->>>>>>>>> ffff880bd7abb1c0
->>>>>>>>> ffff880c48dee380
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff811e8128>]
->>>>>>>>> xfs_vm_readpages+0x18/0x20
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810f1da3>] read_pages+0x43/0x100
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810e64df>] ?
->>>>>>>>> __page_cache_alloc+0x9f/0xc0
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810f1fab>]
->>>>>>>>> __do_page_cache_readahead+0x14b/0x160
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810f1fdc>] ra_submit+0x1c/0x20
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810f22a5>]
->>>>>>>>> ondemand_readahead+0x115/0x240
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810f249e>]
->>>>>>>>> page_cache_sync_readahead+0x2e/0x40
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810e7a5e>] T.1003+0x33e/0x430
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810e7c30>]
->>>>>>>>> generic_file_aio_read+0xe0/0x220
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff811efd0a>]
->>>>>>>>> xfs_file_aio_read+0x15a/0x2a0
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff8114095a>]
->>>>>>>>> do_sync_read+0x7a/0xb0
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff81140df1>] vfs_read+0xb1/0x130
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff81141757>] SyS_pread64+0x97/0xa0
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff81526b12>]
->>>>>>>>> system_call_fastpath+0x16/0x1b
->>>>>>>>> 2013-08-26 21:05:29     INFO: task ceph-osd:8896 blocked for more
->>>>>>>>> than 120
->>>>>>>>> seconds.
->>>>>>>>> 2013-08-26 21:05:29     "echo 0 >
->>>>>>>>> /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>>> disables this message.
->>>>>>>>> 2013-08-26 21:05:29     ceph-osd D ffffffff8160f760 0 8896 1
->>>>>>>>> 0x00000000
->>>>>>>>> 2013-08-26 21:05:29     ffff880bd9a9dc28 0000000000000086
->>>>>>>>> ffff880bd9a9dfd8
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:29     ffff880bd9a9c010 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:29     ffff880bd9a9dfd8 0000000000012c80
->>>>>>>>> ffff880bd79298e0
->>>>>>>>> ffff880c48dd6380
->>>>>>>>> 2013-08-26 21:05:29     Call Trace:
->>>>>>>>> 2013-08-26 21:05:29     [<ffffffff810e60f0>] ?
->>>>>>>>> __lock_page+0x70/0x70
->>>>>>>>> 2013-08-26 21:05:28     "echo 0 >
->>>>>>>>> /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>>> disables this message.
->>>>>>>>> 2013-08-26 21:05:28     ceph-osd D ffffffff8160f760 0 8798 1
->>>>>>>>> 0x00000000
->>>>>>>>> 2013-08-26 21:05:28     ffff880bd998b740 0000000000000086
->>>>>>>>> ffff880bd998bfd8
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:28     ffff880bd998a010 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:28     ffff880bd998bfd8 0000000000012c80
->>>>>>>>> ffff880bd99c0000
->>>>>>>>> ffff880c48dd6380
->>>>>>>>> 2013-08-26 21:05:28     Call Trace:
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff81524874>] schedule+0x24/0x70
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff81525d7d>]
->>>>>>>>> rwsem_down_read_failed+0x9d/0xe5
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff812aa0a4>]
->>>>>>>>> call_rwsem_down_read_failed+0x14/0x30
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff81523a42>] ? down_read+0x12/0x20
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffffa01ead62>]
->>>>>>>>> btree_read_async+0xa2/0x1a0
->>>>>>>>> [bcache]
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffffa01f7b73>]
->>>>>>>>> closure_queue+0x43/0x60
->>>>>>>>> [bcache]
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffffa01eb903>] T.1050+0x63/0x70
->>>>>>>>> [bcache]
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffffa01ed6ea>]
->>>>>>>>> cached_dev_make_request+0x20a/0x350 [bcache]
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff81281952>]
->>>>>>>>> generic_make_request+0xc2/0x100
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff812819f7>] submit_bio+0x67/0x130
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff8117b240>]
->>>>>>>>> do_mpage_readpage+0x2a0/0x660
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff81101cee>] ?
->>>>>>>>> __inc_zone_page_state+0x2e/0x30
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff810e6581>] ?
->>>>>>>>> add_to_page_cache_locked+0x81/0x110
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff8117b76a>]
->>>>>>>>> mpage_readpages+0xfa/0x150
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff811e90c0>] ?
->>>>>>>>> xfs_get_blocks_direct+0x20/0x20
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff811e90c0>] ?
->>>>>>>>> xfs_get_blocks_direct+0x20/0x20
->>>>>>>>> 2013-08-26 21:05:28     [<ffffffff810eeda3>] ?
->>>>>>>>> __alloc_pages_nodemask+0x123/0x240
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff8115bf93>] ?
->>>>>>>>> __close_fd+0x43/0x80
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff8116dabe>]
->>>>>>>>> SyS_fdatasync+0xe/0x20
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81526b12>]
->>>>>>>>> system_call_fastpath+0x16/0x1b
->>>>>>>>> 2013-08-26 21:05:27     INFO: task ceph-osd:8746 blocked for more
->>>>>>>>> than 120
->>>>>>>>> seconds.
->>>>>>>>> 2013-08-26 21:05:27     "echo 0 >
->>>>>>>>> /proc/sys/kernel/hung_task_timeout_secs"
->>>>>>>>> disables this message.
->>>>>>>>> 2013-08-26 21:05:27     ceph-osd D ffffffff8160f760 0 8746 1
->>>>>>>>> 0x00000000
->>>>>>>>> 2013-08-26 21:05:27     ffff880c2dde1d38 0000000000000086
->>>>>>>>> ffff880c2dde1fd8
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:27     ffff880c2dde0010 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 0000000000012c80
->>>>>>>>> 2013-08-26 21:05:27     ffff880c2dde1fd8 0000000000012c80
->>>>>>>>> ffff880c239eb1c0
->>>>>>>>> ffff880c48dd6380
->>>>>>>>> 2013-08-26 21:05:27     Call Trace:
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81524874>] schedule+0x24/0x70
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81522bbd>]
->>>>>>>>> schedule_timeout+0x16d/0x200
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81068eba>] ?
->>>>>>>>> __queue_delayed_work+0xaa/0x1a0
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81068d19>] ?
->>>>>>>>> try_to_grab_pending+0x109/0x190
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff815251e5>]
->>>>>>>>> wait_for_completion+0x95/0x110
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff8107fd00>] ?
->>>>>>>>> try_to_wake_up+0x2a0/0x2a0
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81167797>] ?
->>>>>>>>> bdi_queue_work+0x77/0xc0
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81167863>]
->>>>>>>>> writeback_inodes_sb_nr+0x83/0xb0
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff811678ea>]
->>>>>>>>> writeback_inodes_sb+0x5a/0x70
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff8116dd0a>]
->>>>>>>>> __sync_filesystem+0x4a/0x50
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff8116dd42>]
->>>>>>>>> sync_filesystem+0x32/0x60
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff8116ddc0>] SyS_syncfs+0x50/0x90
->>>>>>>>> 2013-08-26 21:05:27     [<ffffffff81526b12>]
->>>>>>>>> system_call_fastpath+0x16/0x1b
->>>>>>>>> 2013-08-26 21:05:27     INFO: task ceph-osd:8798 blocked for more
->>>>>>>>> than 120
->>>>>>>>> seconds.
->>>>>>>>>
->>>>>>>>> Stefan
->>>>>>>>>
->>>>>>>>> Am 22.08.2013 09:32, schrieb Stefan Priebe - Profihost AG:
->>>>>>>>>
->>>>>>>>>> great!
->>>>>>>>>>
->>>>>>>>>> Everything seems to work fine now! Except read_dirty always
->>>>>>>>>> going to
->>>>>>>>>> negative values after a reboot.
->>>>>>>>>>
->>>>>>>>>> Stefan
->>>>>>>>>>
->>>>>>>>>> Am 22.08.2013 08:02, schrieb Kent Overstreet:
->>>>>>>>>>>
->>>>>>>>>>>
->>>>>>>>>>> On Thu, Aug 22, 2013 at 07:59:04AM +0200, Stefan Priebe wrote:
->>>>>>>>>>>>
->>>>>>>>>>>>
->>>>>>>>>>>>
->>>>>>>>>>>>> schedule_timeout() is not the same as
->>>>>>>>>>>>> schedule_timeout_interruptible().
->>>>>>>>>>>>
->>>>>>>>>>>>
->>>>>>>>>>>>
->>>>>>>>>>>> just search and replace? So i can try on my own.
->>>>>>>>>>>
->>>>>>>>>>>
->>>>>>>>>>>
->>>>>>>>>>> The one in read_dirty(), line ~330
->>>>>>>>>>> --
->>>>>>>>>>> To unsubscribe from this list: send the line "unsubscribe
->>>>>>>>>>> linux-bcache"
->>>>>>>>>>> in
->>>>>>>>>>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->>>>>>>>>>> More majordomo info at
->>>>>>>>>>> http://vger.kernel.org/majordomo-info.html
->>>>>>>>>
->>>>>>>>> --
->>>>>>>>> To unsubscribe from this list: send the line "unsubscribe
->>>>>>>>> linux-bcache" in
->>>>>>>>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->>>>>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>>>
->>>>>> --
->>>>>> To unsubscribe from this list: send the line "unsubscribe
->>>>>> linux-bcache"
->>>>>> in
->>>>>> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
->>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
