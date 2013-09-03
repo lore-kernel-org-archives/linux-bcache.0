@@ -1,130 +1,125 @@
-From: Zachary Palmer <zep_bcache-J5qI5MFTcs8@public.gmane.org>
-Subject: Re: Suspend and Hibernation Bugs
-Date: Mon, 02 Sep 2013 16:07:06 -0400
-Message-ID: <5224EFEA.5060601@bahj.com>
-References: <52238303.6040509@bahj.com> <20130902163743.GA14878@blackbox.djwong.org>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Re: [RFC] bcache-status
+Date: Tue, 03 Sep 2013 22:46:37 +0200
+Message-ID: <52264AAD.3050401@rolffokkens.nl>
+References: <521A55D4.20908@rolffokkens.nl> <521A6B92.60001@rolffokkens.nl> <20130826163055.GB4780@blackbox.djwong.org> <521BBC3B.9010003@rolffokkens.nl> <20130829004646.GA3099@blackbox.djwong.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130902163743.GA14878-yuuUpGxbzT9UbpRmUfBrXUB+6BGkLq7r@public.gmane.org>
+In-Reply-To: <20130829004646.GA3099-yuuUpGxbzT9UbpRmUfBrXUB+6BGkLq7r@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-It seems that installing linux-image-3.11-rc4-686-pae=3.11~rc4-1~exp1 
-from Debian's experimental repository solved my problem.  :)  Thanks!
+Hi,
 
-- Zach
-> On Sun, Sep 01, 2013 at 02:10:11PM -0400, Zachary Palmer wrote:
->> Hello there.  I'm not sure if this is the appropriate venue, so
->> please let me know if this information should be somewhere else.  I
->> have configured a Debian 7.0 installation on a Dell Inspiron 17R SE
->> laptop to use a bcache root device.  The previous known working
->> configuration for the laptop was:
->>
->>      /dev/sda (1TB HDD)
->>          ...
->>          /dev/sda7 (used as LUKS encrypted volume)
->>              /dev/mapper/sda7_crypt (used as LVM PV)
->>                  /dev/vg0/home
->>                  /dev/vg0/root
->>                  ...
->>          /dev/sda8 (used as ext3 /boot)
->>
->> The new configuration is
->>
->>      /dev/sda (1TB HDD)
->>          ...
->>          /dev/sda7 (used as bcache backing device)
->>              /dev/bcache0 (used as LUKS encrypted volume)
->>                  /dev/mapper/bcache_crypt (used as LVM PV)
->>                      /dev/vg0/home
->>                      /dev/vg0/root
->>                      ...
->>          /dev/sda8 (used as ext3 /boot)
->>      /dev/sdb (32GB SSD)
->>          ...
->>          /dev/sdb3 (used as bcache caching device)
->>
->> In order to get things booting, I also:
->>
->>      * Installed a Linux 3.10 kernel from wheezy-backports
->> (3.10-0.bpo.2-686-pae)
->>      * Obtained a copy of the bcache-tools source from the git repo
->> and compiled it
->>      * Constructed a Debian package for bcache-tools using checkinstall
->>      * Because udev recognition wasn't enough at boot time, added a
->> script /etc/initramfs-tools/scripts/init-premount/z-bcache which
->> looks like this:
->>              #!/bin/sh -e
->>
->>              # ZEP - Added (2013-08-29) because some bcache devices
->> were not being detected
->>              #       at startup by udev.  This sloppy hack should do
->> the job.
->>
->>              PREREQS=""
->>
->>              prereqs() { echo "$PREREQS"; }
->>
->>              case "$1" in
->>                  prereqs)
->>                      prereqs
->>                      exit 0
->>                      ;;
->>              esac
->>
->>              . /scripts/functions
->>
->>              if [ -e '/sys/fs/bcache/register_quiet' ]; then
->>                  log_begin_msg "Scanning for bcache devices..."
->>                  for d in `ls /dev/sd*`; do
->>                      echo "$d" > /sys/fs/bcache/register_quiet
->> 2>/dev/null || true
->>                  done
->>                  log_end_msg "bcache device scan complete"
->>              else
->>                  log_warning_msg "/sys/fs/bcache/register_quiet not
->> found; not registering devices"
->>              fi
->>      * Executed update-initramfs -u -k all to get everything working
->>
->> My machine boots from /dev/sda8 and the initramfs has enough
->> machinery to get the root drive mounted.  I was thrilled until I
->> discovered that neither suspend nor hibernate seems to work; the
->> suspend process seizes up while suspending devices and never comes
->> back.  I booted the laptop from a custom Debian live disk using the
->> same kernel (3.10-0.bpo.2-686-pae) and performed a series of tests:
->>
->>      * When the bcache kernel module was not loaded, suspend to RAM
->> worked correctly.
->>      * When the bcache kernel module was loaded but no devices were
->> registered, suspend to RAM worked correctly.
->>      * When a single bcache device was registered using "echo
->> /dev/sda7 > /sys/fs/bcache/register; echo /dev/sdb3 >
->> /sys/fs/bcache/register", suspend to RAM failed to change the power
->> state of the machine.
->>      * With a /dev/bcache0 device in use as an encrypted volume,
->> running "echo freezer > /sys/power/pm_test; echo platform >
->> /sys/power/disk; echo disk > /sys/power/state" allows the machine to
->> awaken from the test correctly.
->>      * With a /dev/bcache0 device in use as an encrypted volume,
->> running "echo devices > /sys/power/pm_test; echo platform >
->> /sys/power/disk; echo disk > /sys/power/state" causes the machine to
->> hang.
->>
->> Has suspend/hibernate been tested with bcache?  Is it supported? I'm
->> trying to figure out if it's my specific laptop hardware causing the
->> issue or if bcache is somehow at fault.  (Clearly, I can get
->> suspend/hibernate back if I migrate back to using just my HDD, but
->> caching blocks in a fashion designed for SSDs seems like such a
->> lovely idea.)
-> Suspend/resume works fine for me (sort of).  On 3.10.5 I saw some sort of bug
-> with the freezer that went away if I disabled the Intel MEI driver (or just
-> applied Kent's for-3.11 branch).  I don't recall if Kent ever submitted it for
-> 3.10.
->
-> --D
->
+bcache-status renders some weird output:
+
+- "Total Cache Used" and "Total Cache Unused" don't always add up to 
+"Total Cache Size"
+- "Dirty Data" is -6 MB?
+
+Seems like bugs to me. Details below.
+
+Rolf
+
+[root@localhost bcache]# bcache-status -s
+--- bcache ---
+UUID c318c0b2-0b69-4f66-a729-23b82a9d0e91
+Block Size                  0.00KiB
+Bucket Size                 512.00KiB
+Congested?                  False
+Read Congestion             2.0ms
+Write Congestion            20.0ms
+Total Cache Size            1.00GiB
+Total Cache Used            20.00MiB    (1%)
+Total Cache Unused          1.00GiB    (99%)
+Dirty Data                  0B    (0%)
+Evictable Cache             1.00GiB    (100%)
+Replacement Policy          [lru] fifo random
+Cache Mode                  [writethrough] writeback writearound none
+Total Hits                  122    (100%)
+Total Misses                0
+Total Bypass Hits           0
+Total Bypass Misses         0
+Total Bypassed              0B
+--- Backing Device ---
+   Device File               /dev/sda3 (8:3)
+   bcache Device File        /dev/bcache1 (252:1)
+   Size                      7.00GiB
+   Cache Mode                [writethrough] writeback writearound none
+   Readahead                 0
+   Sequential Cutoff         4.00MiB
+   Merge sequential?         True
+   State                     clean
+   Writeback?                True
+   Dirty Data                0B
+   Total Hits                122    (100%)
+   Total Misses              0
+   Total Bypass Hits         0
+   Total Bypass Misses       0
+   Total Bypassed            0B
+--- Cache Device ---
+   Device File               /dev/sdb1 (8:17)
+   Size                      1.00GiB
+   Block Size                0.00KiB
+   Bucket Size               512.00KiB
+   Replacement Policy        [lru] fifo random
+   Discard?                  False
+   I/O Errors                0
+   Metadata Written          1.00KiB
+   Data Written              0B
+   Buckets                   4094
+   Cache Used                20.00MiB    (1%)
+   Cache Unused              1.00GiB    (99%)
+--- bcache ---
+UUID d07cd9a1-6211-4bba-bc37-a8ba8858ef4d
+Block Size                  0.00KiB
+Bucket Size                 512.00KiB
+Congested?                  False
+Read Congestion             2.0ms
+Write Congestion            20.0ms
+Total Cache Size            1.00GiB
+Total Cache Used            204.00MiB    (10%)
+Total Cache Unused          1.00GiB    (90%)
+Dirty Data                  0B    (0%)
+Evictable Cache             1.00GiB    (100%)
+Replacement Policy          [lru] fifo random
+Cache Mode                  writethrough [writeback] writearound none
+Total Hits                  1365    (81%)
+Total Misses                318
+Total Bypass Hits           3191    (100%)
+Total Bypass Misses         0
+Total Bypassed              46.00MiB
+--- Backing Device ---
+   Device File               /dev/sdc1 (8:33)
+   bcache Device File        /dev/bcache0 (252:0)
+   Size                      19.00GiB
+   Cache Mode                writethrough [writeback] writearound none
+   Readahead                 0
+   Sequential Cutoff         0B
+   Merge sequential?         True
+   State                     dirty
+   Writeback?                True
+   Dirty Data                -6.00MiB
+   Total Hits                1365    (81%)
+   Total Misses              318
+   Total Bypass Hits         3191    (100%)
+   Total Bypass Misses       0
+   Total Bypassed            46.00MiB
+--- Cache Device ---
+   Device File               /dev/sdd1 (8:49)
+   Size                      1.00GiB
+   Block Size                0.00KiB
+   Bucket Size               512.00KiB
+   Replacement Policy        [lru] fifo random
+   Discard?                  False
+   I/O Errors                0
+   Metadata Written          281.00KiB
+   Data Written              18.00MiB
+   Buckets                   4094
+   Cache Used                204.00MiB    (10%)
+   Cache Unused              1.00GiB    (90%)
+[root@localhost bcache]#
