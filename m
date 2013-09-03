@@ -1,125 +1,57 @@
-From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
-Subject: Re: [RFC] bcache-status
-Date: Tue, 03 Sep 2013 22:46:37 +0200
-Message-ID: <52264AAD.3050401@rolffokkens.nl>
-References: <521A55D4.20908@rolffokkens.nl> <521A6B92.60001@rolffokkens.nl> <20130826163055.GB4780@blackbox.djwong.org> <521BBC3B.9010003@rolffokkens.nl> <20130829004646.GA3099@blackbox.djwong.org>
+From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Subject: [GIT PULL] Bcache fixes
+Date: Tue, 3 Sep 2013 13:48:09 -0700
+Message-ID: <20130903204809.GC11778@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130829004646.GA3099-yuuUpGxbzT9UbpRmUfBrXUB+6BGkLq7r@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+Jens, here's the latest bcache fixes.
 
-bcache-status renders some weird output:
+The last one of these fixes a (really difficult to trigger) data
+corruption bug - I was waiting until the user who was able to reproduce
+it had tested it to send this pull out, that's the most serious fix in
+this pull.
 
-- "Total Cache Used" and "Total Cache Unused" don't always add up to 
-"Total Cache Size"
-- "Dirty Data" is -6 MB?
+The following changes since commit 79826c35eb99cd3c0873b8396f45fa26c87fb0b0:
 
-Seems like bugs to me. Details below.
+  bcache: Allocation kthread fixes (2013-07-12 00:22:49 -0700)
 
-Rolf
+are available in the git repository at:
 
-[root@localhost bcache]# bcache-status -s
---- bcache ---
-UUID c318c0b2-0b69-4f66-a729-23b82a9d0e91
-Block Size                  0.00KiB
-Bucket Size                 512.00KiB
-Congested?                  False
-Read Congestion             2.0ms
-Write Congestion            20.0ms
-Total Cache Size            1.00GiB
-Total Cache Used            20.00MiB    (1%)
-Total Cache Unused          1.00GiB    (99%)
-Dirty Data                  0B    (0%)
-Evictable Cache             1.00GiB    (100%)
-Replacement Policy          [lru] fifo random
-Cache Mode                  [writethrough] writeback writearound none
-Total Hits                  122    (100%)
-Total Misses                0
-Total Bypass Hits           0
-Total Bypass Misses         0
-Total Bypassed              0B
---- Backing Device ---
-   Device File               /dev/sda3 (8:3)
-   bcache Device File        /dev/bcache1 (252:1)
-   Size                      7.00GiB
-   Cache Mode                [writethrough] writeback writearound none
-   Readahead                 0
-   Sequential Cutoff         4.00MiB
-   Merge sequential?         True
-   State                     clean
-   Writeback?                True
-   Dirty Data                0B
-   Total Hits                122    (100%)
-   Total Misses              0
-   Total Bypass Hits         0
-   Total Bypass Misses       0
-   Total Bypassed            0B
---- Cache Device ---
-   Device File               /dev/sdb1 (8:17)
-   Size                      1.00GiB
-   Block Size                0.00KiB
-   Bucket Size               512.00KiB
-   Replacement Policy        [lru] fifo random
-   Discard?                  False
-   I/O Errors                0
-   Metadata Written          1.00KiB
-   Data Written              0B
-   Buckets                   4094
-   Cache Used                20.00MiB    (1%)
-   Cache Unused              1.00GiB    (99%)
---- bcache ---
-UUID d07cd9a1-6211-4bba-bc37-a8ba8858ef4d
-Block Size                  0.00KiB
-Bucket Size                 512.00KiB
-Congested?                  False
-Read Congestion             2.0ms
-Write Congestion            20.0ms
-Total Cache Size            1.00GiB
-Total Cache Used            204.00MiB    (10%)
-Total Cache Unused          1.00GiB    (90%)
-Dirty Data                  0B    (0%)
-Evictable Cache             1.00GiB    (100%)
-Replacement Policy          [lru] fifo random
-Cache Mode                  writethrough [writeback] writearound none
-Total Hits                  1365    (81%)
-Total Misses                318
-Total Bypass Hits           3191    (100%)
-Total Bypass Misses         0
-Total Bypassed              46.00MiB
---- Backing Device ---
-   Device File               /dev/sdc1 (8:33)
-   bcache Device File        /dev/bcache0 (252:0)
-   Size                      19.00GiB
-   Cache Mode                writethrough [writeback] writearound none
-   Readahead                 0
-   Sequential Cutoff         0B
-   Merge sequential?         True
-   State                     dirty
-   Writeback?                True
-   Dirty Data                -6.00MiB
-   Total Hits                1365    (81%)
-   Total Misses              318
-   Total Bypass Hits         3191    (100%)
-   Total Bypass Misses       0
-   Total Bypassed            46.00MiB
---- Cache Device ---
-   Device File               /dev/sdd1 (8:49)
-   Size                      1.00GiB
-   Block Size                0.00KiB
-   Bucket Size               512.00KiB
-   Replacement Policy        [lru] fifo random
-   Discard?                  False
-   I/O Errors                0
-   Metadata Written          281.00KiB
-   Data Written              18.00MiB
-   Buckets                   4094
-   Cache Used                204.00MiB    (10%)
-   Cache Unused              1.00GiB    (90%)
-[root@localhost bcache]#
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.11
+
+for you to fetch changes up to bef0ef06a9fe34b08177b67d3213dceab29d3abe:
+
+  bcache: Fix for handling overlapping extents when reading in a btree node (2013-09-03 13:42:35 -0700)
+
+----------------------------------------------------------------
+Gabriel de Perthuis (1):
+      bcache: Strip endline when writing the label through sysfs
+
+Geert Uytterhoeven (1):
+      bcache: Correct printf()-style format length modifier
+
+Kent Overstreet (7):
+      bcache: Fix a dumb journal discard bug
+      bcache: Fix for when no journal entries are found
+      bcache: Fix a writeback performance regression
+      bcache: Fix a flush/fua performance bug
+      bcache: Fix a dumb CPU spinning bug in writeback
+      bcache: Fix a shrinker deadlock
+      bcache: Fix for handling overlapping extents when reading in a btree node
+
+ drivers/md/bcache/bcache.h    |  7 +++----
+ drivers/md/bcache/bset.c      | 39 ++++++++++++++++++++++++++++-----------
+ drivers/md/bcache/btree.c     |  4 ++--
+ drivers/md/bcache/journal.c   | 33 ++++++++++++++++++++-------------
+ drivers/md/bcache/sysfs.c     |  9 +++++++--
+ drivers/md/bcache/util.c      | 11 ++++++++++-
+ drivers/md/bcache/util.h      | 12 +++++++++---
+ drivers/md/bcache/writeback.c | 42 ++++++++++++++++++++----------------------
+ 8 files changed, 99 insertions(+), 58 deletions(-)
