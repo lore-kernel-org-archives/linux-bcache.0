@@ -1,22 +1,141 @@
-From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Subject: Re: [PATCH -next] bcache: fix btree printk format warning
-Date: Wed, 4 Sep 2013 11:59:38 -0700
-Message-ID: <20130904185938.GB27467@kmo-pixel>
-References: <20130904181300.06fbf0698863cfaacf9fad9a@canb.auug.org.au>
- <52277576.5020805@infradead.org>
+From: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [RFC] bcache-status
+Date: Wed, 4 Sep 2013 13:26:00 -0700
+Message-ID: <20130904202600.GA4554@blackbox.djwong.org>
+References: <521A55D4.20908@rolffokkens.nl>
+ <521A6B92.60001@rolffokkens.nl>
+ <20130826163055.GB4780@blackbox.djwong.org>
+ <521BBC3B.9010003@rolffokkens.nl>
+ <20130829004646.GA3099@blackbox.djwong.org>
+ <52264AAD.3050401@rolffokkens.nl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <52277576.5020805-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>
+In-Reply-To: <52264AAD.3050401-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Randy Dunlap <rdunlap-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>
-Cc: Stephen Rothwell <sfr-3FnU+UHB4dNDw9hX6IcOSA@public.gmane.org>, linux-next-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Andrew Morton <akpm-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 11:01:26AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>
+On Tue, Sep 03, 2013 at 10:46:37PM +0200, Rolf Fokkens wrote:
+> Hi,
 > 
-> Fix printk format warning on i386:
+> bcache-status renders some weird output:
+> 
+> - "Total Cache Used" and "Total Cache Unused" don't always add up to
+> "Total Cache Size"
 
-I've sent out the fix for this, Jens just hasn't pulled it yet.
+Yeah... I calculate total cache size, then cache-used = cache-size * whatever
+percentage bcache reports.  It won't add up exactly due to rounding errors.
+0.999 -> 1.00.  That's rather a lot, really.
+
+> - "Dirty Data" is -6 MB?
+
+I think this was fixed in 3.11.
+
+--D
+> 
+> Seems like bugs to me. Details below.
+> 
+> Rolf
+> 
+> [root@localhost bcache]# bcache-status -s
+> --- bcache ---
+> UUID c318c0b2-0b69-4f66-a729-23b82a9d0e91
+> Block Size                  0.00KiB
+> Bucket Size                 512.00KiB
+> Congested?                  False
+> Read Congestion             2.0ms
+> Write Congestion            20.0ms
+> Total Cache Size            1.00GiB
+> Total Cache Used            20.00MiB    (1%)
+> Total Cache Unused          1.00GiB    (99%)
+> Dirty Data                  0B    (0%)
+> Evictable Cache             1.00GiB    (100%)
+> Replacement Policy          [lru] fifo random
+> Cache Mode                  [writethrough] writeback writearound none
+> Total Hits                  122    (100%)
+> Total Misses                0
+> Total Bypass Hits           0
+> Total Bypass Misses         0
+> Total Bypassed              0B
+> --- Backing Device ---
+>   Device File               /dev/sda3 (8:3)
+>   bcache Device File        /dev/bcache1 (252:1)
+>   Size                      7.00GiB
+>   Cache Mode                [writethrough] writeback writearound none
+>   Readahead                 0
+>   Sequential Cutoff         4.00MiB
+>   Merge sequential?         True
+>   State                     clean
+>   Writeback?                True
+>   Dirty Data                0B
+>   Total Hits                122    (100%)
+>   Total Misses              0
+>   Total Bypass Hits         0
+>   Total Bypass Misses       0
+>   Total Bypassed            0B
+> --- Cache Device ---
+>   Device File               /dev/sdb1 (8:17)
+>   Size                      1.00GiB
+>   Block Size                0.00KiB
+>   Bucket Size               512.00KiB
+>   Replacement Policy        [lru] fifo random
+>   Discard?                  False
+>   I/O Errors                0
+>   Metadata Written          1.00KiB
+>   Data Written              0B
+>   Buckets                   4094
+>   Cache Used                20.00MiB    (1%)
+>   Cache Unused              1.00GiB    (99%)
+> --- bcache ---
+> UUID d07cd9a1-6211-4bba-bc37-a8ba8858ef4d
+> Block Size                  0.00KiB
+> Bucket Size                 512.00KiB
+> Congested?                  False
+> Read Congestion             2.0ms
+> Write Congestion            20.0ms
+> Total Cache Size            1.00GiB
+> Total Cache Used            204.00MiB    (10%)
+> Total Cache Unused          1.00GiB    (90%)
+> Dirty Data                  0B    (0%)
+> Evictable Cache             1.00GiB    (100%)
+> Replacement Policy          [lru] fifo random
+> Cache Mode                  writethrough [writeback] writearound none
+> Total Hits                  1365    (81%)
+> Total Misses                318
+> Total Bypass Hits           3191    (100%)
+> Total Bypass Misses         0
+> Total Bypassed              46.00MiB
+> --- Backing Device ---
+>   Device File               /dev/sdc1 (8:33)
+>   bcache Device File        /dev/bcache0 (252:0)
+>   Size                      19.00GiB
+>   Cache Mode                writethrough [writeback] writearound none
+>   Readahead                 0
+>   Sequential Cutoff         0B
+>   Merge sequential?         True
+>   State                     dirty
+>   Writeback?                True
+>   Dirty Data                -6.00MiB
+>   Total Hits                1365    (81%)
+>   Total Misses              318
+>   Total Bypass Hits         3191    (100%)
+>   Total Bypass Misses       0
+>   Total Bypassed            46.00MiB
+> --- Cache Device ---
+>   Device File               /dev/sdd1 (8:49)
+>   Size                      1.00GiB
+>   Block Size                0.00KiB
+>   Bucket Size               512.00KiB
+>   Replacement Policy        [lru] fifo random
+>   Discard?                  False
+>   I/O Errors                0
+>   Metadata Written          281.00KiB
+>   Data Written              18.00MiB
+>   Buckets                   4094
+>   Cache Used                204.00MiB    (10%)
+>   Cache Unused              1.00GiB    (90%)
+> [root@localhost bcache]#
+> 
