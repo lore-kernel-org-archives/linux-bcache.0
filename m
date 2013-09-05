@@ -1,110 +1,40 @@
-From: Josep Lladonosa <jlladono-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: Linux 3.11-rc4 Writeback Cache Corruption
-Date: Thu, 5 Sep 2013 06:08:10 +0200
-Message-ID: <CAPBO7TZN-17wQdaDr4w3zLvovzbRv-TKKmnrHQ5aK0Dt1ZZQ0g@mail.gmail.com>
-References: <52265410.4010000@bahj.com>
-	<522656EC.8040002@gmail.com>
-	<5227F74F.5000305@bahj.com>
-	<5227F774.7010002@bahj.com>
+From: Stefan Priebe - Profihost AG <s.priebe-2Lf/h1ldwEHR5kwTpVNS9A@public.gmane.org>
+Subject: Re: [RFC] bcache-status
+Date: Thu, 05 Sep 2013 08:14:19 +0200
+Message-ID: <5228213B.2060901@profihost.ag>
+References: <521A55D4.20908@rolffokkens.nl> <521A6B92.60001@rolffokkens.nl> <20130826163055.GB4780@blackbox.djwong.org> <521BBC3B.9010003@rolffokkens.nl> <20130829004646.GA3099@blackbox.djwong.org> <52264AAD.3050401@rolffokkens.nl> <20130904202600.GA4554@blackbox.djwong.org> <52279DA5.7050505@rolffokkens.nl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <5227F774.7010002-J5qI5MFTcs8@public.gmane.org>
+In-Reply-To: <52279DA5.7050505-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Zachary Palmer <zachary.palmer-J5qI5MFTcs8@public.gmane.org>
-Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Cc: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 5 September 2013 05:16, Zachary Palmer <zachary.palmer-J5qI5MFTcs8@public.gmane.org> wrote:
-> Whoops; forgot to send this e-mail to the whole list.  :)
->>
->> So I have some unfortunate test results regarding this corruption issue.
->> I tested my laptop on two kernels I built today.  The procedure was as
->> follows:
->>
->>     1. Check out bcache-3.10-stable.  Kernal was build using the .config I
->> have for Debian package linux-image-3.10-0.bpo.2-686-pae=3.10.5-1~bpo70+1.
->> All new options were left at defaults.
->>     2. Begin by checking out bcache git repository at bcache-for-3.11.
->> Next, add Linux stable git as an origin.  Then, "git br temp; git co temp;
->> git merge linux-3.11.y".  The merge applies automatically.  Build the
->> resulting kernel, again using the above .config with all new options left at
->> defaults.
->>
->> My hope was that one of these two kernels would resolve both (a) the cache
->> corruption issue and (b) my hibernate/suspend problem. This did not appear
->> to be the case.  Using kernel #2 above (Linux 3.11.0), cache corruption was
->> immediately evident; both apt-cacher and MySQL failed to start due to
->> segfaults.  Cache corruption was resolved by detaching and reattaching the
->> cache device under a clean kernel.
->>
->> Using kernel #1 above, I get the same results as the Debian stock kernel
->> for Wheezy backports (the one from the package named above): bcache seems to
->> work just fine until the kernel attempts to stop devices for suspend,
->> hibernate, or shutdown; at this point, bcache times out waiting for the
->> device to stop and the laptop never changes power states.
->>
->> For the time being, it is easier for me to live without suspend/hibernate
->> than it is for me to migrate back to a cacheless layout; moving all of that
->> data around is time-consuming and I really want to use bcache.  :)  If there
->> is any information I could collect with my machine that would help in the
->> debugging process, please let me know!
->>
+Am 04.09.2013 22:52, schrieb Rolf Fokkens:
+> I'm not sure if I understand.
+> 
+> On 09/04/2013 10:26 PM, Darrick J. Wong wrote:
+>> Yeah... I calculate total cache size, then cache-used = cache-size *
+>> whatever
+>> percentage bcache reports.  It won't add up exactly due to rounding
+>> errors.
+>> 0.999 -> 1.00.  That's rather a lot, really.
+> Is the following (snippet of the output I sent) the result of rounding
+> errors?
+> 
+> Total Cache Size            1.00GiB
+> Total Cache Used            204.00MiB    (10%)
+> Total Cache Unused          1.00GiB    (90%)
+> 
+> I mean: the percentages are 10% and 90%..
+> 
+>>> - "Dirty Data" is -6 MB?
+>> I think this was fixed in 3.11.
+> OK, so that is a kernel issue.
 
-Hello Zach,
+Any chance to get this fixed in 3.10 stable kernel too?
 
-I am working now with kernel 3.11.0-rc7 (x86_64) and this issue is solved.
-
-In some previous kernel releases with pending patches to be applied,
-instead merging, I tried to replace contents in
-(kernel)/drivers/md/bcache with latest git for 3.11 and it compiled
-and worked.
-
-Josep
-
-
-
->> Thanks,
->>
->> Zach
->>>
->>> [This mail was also posted to gmane.linux.kernel.bcache.devel.]
->>>
->>>
->>> On Tue, 03 Sep 2013 17:26:40 -0400, Zachary Palmer wrote:
->>>>
->>>> So here's the question: how would I best go about testing this patch?
->>>> In looking through the git history, it doesn't seem as if the
->>>> bcache-for-3.11 branch has been synced against the Linux git since
->>>> 3.10-rc7 (on June 22nd).  I was thinking I could
->>>>
->>>>       * Pull the Linux kernel source
->>>>       * Add the bcache git as an origin
->>>>       * Merge the bcache-for-3.11 branch into the Linux 3.11 mainline
->>>> branch myself and
->>>>       * Assuming that this works, compile and boot the resulting kernel
->>>> using my Debian kernel .config
->>>>
->>>> Does this sound reasonable?  Or is there a better way to do this? I'm
->>>> pretty happy with whatever gives me at least the behavior of my mainline
->>>> 3.10 kernel and I'm looking forward to getting bcache and laptop power
->>>> modes on the same machine.  :)
->>>
->>> Yeah, it'll merge cleanly.  You can reuse the .config and build with
->>>
->>> `make deb-pkg -j -l6`, which is slowly replacing make-kpkg functionality.
->>>
->>>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
--- 
---
-Salutacions...Josep
---
+Stefan
