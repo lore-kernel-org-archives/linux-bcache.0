@@ -1,84 +1,52 @@
-From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: bcache-tools package for Fedora / status probe-bcache
-Date: Mon, 09 Sep 2013 17:28:57 +0200
-Message-ID: <522DE939.5090009@gmail.com>
-References: <521A55D4.20908@rolffokkens.nl> <52282A87.4000801@rolffokkens.nl> <52285A03.7080802@gmail.com> <FEBD3400-93F1-4286-8BE8-45D5413C2EA2@rolffokkens.nl> <52286299.7000708@gmail.com> <20130909132653.GA8061@x2.net.home>
+From: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+Subject: Re: [RFC] bcache-status
+Date: Mon, 9 Sep 2013 15:45:32 -0700
+Message-ID: <20130909224532.GB4553@blackbox.djwong.org>
+References: <521A55D4.20908@rolffokkens.nl>
+ <521A6B92.60001@rolffokkens.nl>
+ <20130826163055.GB4780@blackbox.djwong.org>
+ <521BBC3B.9010003@rolffokkens.nl>
+ <20130829004646.GA3099@blackbox.djwong.org>
+ <52264AAD.3050401@rolffokkens.nl>
+ <20130904202600.GA4554@blackbox.djwong.org>
+ <52279DA5.7050505@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130909132653.GA8061-s5vVilr7EKH/9pzu0YdTqQ@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <52279DA5.7050505-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Karel Zak <kzak-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
-Cc: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, util-linux <util-linux-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-lun. 09 sept. 2013 15:26:53 CEST, Karel Zak a =C3=A9crit :
-> On Thu, Sep 05, 2013 at 12:53:13PM +0200, Gabriel de Perthuis wrote:
->>>> I'm not a fan of a blkid csum check (I pointed it out on the=20
->>>> bug[1]). If a superblock gets scribbled or corrupted, you want=20
->>>> bcache to complain, and you don't want blkid to look for the next=20
->>>> possible signature.
->>>
->>> Having blkid also verify the csum was requested by Karel Zak, the=20
->>> maintainer of util-linux. As a packager of bcache-tools I'm in favo=
-ur
->>> of having blkid identify bcache, but I don't have a preference on
->>> using csum to identify bcache. I can pass the message to Karel, but
->>> it would be better if we both discuss it on the appropriate=20
->>> (util-linux?) mail list.
->>
->> Karel, are you okay if blkid doesn't do the csum verification discus=
-sed above?
->
->  I don't insist on csum, but I'd like to have something more robust
->  than check for a magic string only. It's usually better if there
->  is some additional thing (for example within superblock offset,
->  csum, etc.) -- checksums are ideal because it usually verifies=20
->  whole superblock (header).=20
-> =20
->> Checksum failures will be reported by the kernel instead.
->
->  I don't care about kernel :-) The important is what userspace (udev)
->  thinks about the device -- is it correct to trigger any action on
->  broken bcache device or the device should be ignored by userspace
->  rules?
+On Wed, Sep 04, 2013 at 10:52:53PM +0200, Rolf Fokkens wrote:
+> I'm not sure if I understand.
+> 
+> On 09/04/2013 10:26 PM, Darrick J. Wong wrote:
+> >Yeah... I calculate total cache size, then cache-used = cache-size * whatever
+> >percentage bcache reports.  It won't add up exactly due to rounding errors.
+> >0.999 -> 1.00.  That's rather a lot, really.
+> Is the following (snippet of the output I sent) the result of
+> rounding errors?
+> 
+> Total Cache Size            1.00GiB
+> Total Cache Used            204.00MiB    (10%)
+> Total Cache Unused          1.00GiB    (90%)
+> 
+> I mean: the percentages are 10% and 90%..
 
-It's correct insofar as current consumers expect it, and it's better
-for error reporting.  The patches took care of my other objections,
-so you can keep the crc check and go with what's on
-https://github.com/g2p/util-linux/commits
-(the csum patches I sent + Rolf's patch + a patch that depends on both)=
-=2E
+Oops, this was a Py3 v. Py2 issue -- Python3 saw the '%.2f' in the function
+that pretty-printed cache sizes and would fp-divide the two integers, whereas
+Pyhon2 saw that we were trying to divide two integers and used integer
+division. Fixed in the Gist.
 
->> Alternatively, do you see a way libblkid can return good magic / bad=
- checksum
->> results?
->
->  If I good understand your patches then it makes wipefs(8) more
->  "hungry" to zap incomplete superblock. I have no problem to support
->  this scenario.
+Kent: Any chance you'd like to pick up bcache-status into bcache-tools.git?
 
-The second patch does that, and the first one also prevents exposing
-nested data when a csum is broken, which was a dangerous failure mode.
+(Or really, anyone who has commit access to that repo.)
 
->  Something else (like report bad checksums to udev) is probably
->  unnecessary. Right?
-
-It would be good to have, because silent boot failures suck.
-Maybe as a tweak to udev's embedded blkid?
-
->>> I agree, f20 is a specific case, but in general probe-bcache will b=
-e=20
->>> needed for a while.
->>
->> For the record, the libblkid patch is a good thing in the long run:
->> common interface, less forks in udev.
->
->  Yes, definitely.=20
-> =20
->  Maybe we can backport the patch to F20 if you need it -- it's not to=
-o
->  invasive change.=20
-
-(Letting Rolf field this one)
+--D
+> 
+> >>- "Dirty Data" is -6 MB?
+> >I think this was fixed in 3.11.
+> OK, so that is a kernel issue.
