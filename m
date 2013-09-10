@@ -1,52 +1,101 @@
-From: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
-Subject: Re: [RFC] bcache-status
-Date: Mon, 9 Sep 2013 15:45:32 -0700
-Message-ID: <20130909224532.GB4553@blackbox.djwong.org>
-References: <521A55D4.20908@rolffokkens.nl>
- <521A6B92.60001@rolffokkens.nl>
- <20130826163055.GB4780@blackbox.djwong.org>
- <521BBC3B.9010003@rolffokkens.nl>
- <20130829004646.GA3099@blackbox.djwong.org>
- <52264AAD.3050401@rolffokkens.nl>
- <20130904202600.GA4554@blackbox.djwong.org>
- <52279DA5.7050505@rolffokkens.nl>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Updated package for Fedora
+Date: Tue, 10 Sep 2013 20:22:21 +0200
+Message-ID: <522F635D.4030905@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <52279DA5.7050505-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Sep 04, 2013 at 10:52:53PM +0200, Rolf Fokkens wrote:
-> I'm not sure if I understand.
-> 
-> On 09/04/2013 10:26 PM, Darrick J. Wong wrote:
-> >Yeah... I calculate total cache size, then cache-used = cache-size * whatever
-> >percentage bcache reports.  It won't add up exactly due to rounding errors.
-> >0.999 -> 1.00.  That's rather a lot, really.
-> Is the following (snippet of the output I sent) the result of
-> rounding errors?
-> 
-> Total Cache Size            1.00GiB
-> Total Cache Used            204.00MiB    (10%)
-> Total Cache Unused          1.00GiB    (90%)
-> 
-> I mean: the percentages are 10% and 90%..
+Hi!
 
-Oops, this was a Py3 v. Py2 issue -- Python3 saw the '%.2f' in the function
-that pretty-printed cache sizes and would fp-divide the two integers, whereas
-Pyhon2 saw that we were trying to divide two integers and used integer
-division. Fixed in the Gist.
+I updated the Fedora 20 & rawhide package for bcache-tools:
 
-Kent: Any chance you'd like to pick up bcache-status into bcache-tools.git?
+https://admin.fedoraproject.org/updates/bcache-tools-0-0.11.20130909git.fc20
 
-(Or really, anyone who has commit access to that repo.)
+It's an update to the latest git / gist sources for bcache-tools an 
+bcache-status. Some of the patches it includes to make it run on Fedora 
+are explained below.
 
---D
-> 
-> >>- "Dirty Data" is -6 MB?
-> >I think this was fixed in 3.11.
-> OK, so that is a kernel issue.
+Rolf
+
+bcache-tools-20130827-udevfix.patch
+=======================
+On Fedora only 'early' udev rules files run /usr/sbin/blkid and the rest 
+of the rules files use the results. This patch removes the call to 
+/usr/sbin/blkid and (more important) makes sure that probe-bcache does 
+not print overlapping variable names. This is needed until util-linux 
+itself supports bcache, after that there's no need to call  
+probe-bcaches at all.
+
+--- bcache-tools-20130827/61-bcache.rules.orig    2013-09-06 
+08:54:07.656978850 +0200
++++ bcache-tools-20130827/61-bcache.rules    2013-09-06 
+08:57:09.769768802 +0200
+@@ -5,13 +5,12 @@
+  ACTION=="remove", GOTO="bcache_end"
+
+  # Backing devices: scan, symlink, register
+-IMPORT{program}="/sbin/blkid -o udev $tempnode"
+  # blkid and probe-bcache can disagree, in which case don't register
+  ENV{ID_FS_TYPE}=="?*", ENV{ID_FS_TYPE}!="bcache", 
+GOTO="bcache_backing_end"
+
+  IMPORT{program}="/sbin/probe-bcache -o udev $tempnode"
+-ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"
+-SUBSYSTEM=="block", ACTION=="add|change", ENV{ID_FS_TYPE}=="bcache", \
++ENV{BCACHE_ID_FS_UUID_ENC}=="?*", 
+SYMLINK+="disk/by-uuid/$env{BCACHE_ID_FS_UUID_ENC}"
++SUBSYSTEM=="block", ACTION=="add|change", 
+ENV{BCACHE_ID_FS_TYPE}=="bcache", \
+          RUN+="bcache-register $tempnode"
+  LABEL="bcache_backing_end"
+
+--- bcache-tools-20130827/probe-bcache.c.orig    2013-09-06 
+08:52:28.743089432 +0200
++++ bcache-tools-20130827/probe-bcache.c    2013-09-06 
+08:53:44.046005241 +0200
+@@ -61,9 +61,9 @@
+          uuid_unparse(sb.uuid, uuid);
+
+          if (udev)
+-            printf("ID_FS_UUID=%s\n"
+-                   "ID_FS_UUID_ENC=%s\n"
+-                   "ID_FS_TYPE=bcache\n",
++            printf("BCACHE_ID_FS_UUID=%s\n"
++                   "BCACHE_ID_FS_UUID_ENC=%s\n"
++                   "BCACHE_ID_FS_TYPE=bcache\n",
+                     uuid, uuid);
+          else
+              printf("%s: UUID=\"\" TYPE=\"bcache\"\n", uuid);
+
+
+
+bcache-tools-20130827-register.patch
+=======================
+Fedora needs full path names to call /sbin/ binaries from udev, this is 
+fixed in this patch. Also errors are suppressed when a device is 
+registered twice.
+
+--- bcache-tools-20130827.orig/bcache-register    2013-08-26 
+23:46:19.000000000 +0200
++++ bcache-tools-20130827/bcache-register    2013-08-27 
+08:49:59.924940825 +0200
+@@ -1,4 +1,9 @@
+  #!/bin/sh
+-modprobe -qba bcache
+-test -f /sys/fs/bcache/register_quiet && echo "$1" > 
+/sys/fs/bcache/register_quiet
++#
++# Utility script to be called from udev, so it's not monkey proof at 
+all. It's
++# sole purpose is to load the bcache kernel module whenever a bcache 
+device is
++# detected.
++#
++/sbin/modprobe -qba bcache
++test -f /sys/fs/bcache/register_quiet && echo "$1" > 
+/sys/fs/bcache/register_quiet 2>/dev/null
