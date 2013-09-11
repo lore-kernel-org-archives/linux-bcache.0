@@ -1,41 +1,27 @@
-From: Kees Cook <keescook@chromium.org>
-Subject: [PATCH] bcache: defensively handle format strings
-Date: Tue, 10 Sep 2013 21:41:34 -0700
-Message-ID: <20130911044134.GA17310@www.outflux.net>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Re: bcache-tools package for Fedora / status probe-bcache
+Date: Wed, 11 Sep 2013 13:59:10 +0200
+Message-ID: <CE5623FD.1AC8F%rolf@rolffokkens.nl>
+References: <522DE939.5090009@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-Sender: linux-kernel-owner@vger.kernel.org
-To: linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <522DE939.5090009-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Karel Zak <kzak-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, util-linux <util-linux-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Just to be safe, call the error reporting function with "%s" to avoid
-any possible future format string leak.
+Op 09-09-13 17:28 schreef Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>:
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
----
- drivers/md/bcache/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>> Maybe we can backport the patch to F20 if you need it -- it's not too
+>>  invasive change.
+>
+>(Letting Rolf field this one)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 547c4c5..5be1de4 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1644,7 +1644,7 @@ err_unlock_gc:
- err:
- 	closure_sync(&op.cl);
- 	/* XXX: test this, it's broken */
--	bch_cache_set_error(c, err);
-+	bch_cache_set_error(c, "%s", err);
- }
- 
- static bool can_attach_cache(struct cache *ca, struct cache_set *c)
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Most important for me is to have bcache identification by blkid in before
+F20, so the udev rules file doesn't have to call bcache-probe. Whether or
+not it uses checksums is not the most important thing, and that aspect
+might even change later.
