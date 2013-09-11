@@ -1,101 +1,109 @@
-From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
-Subject: Updated package for Fedora
-Date: Tue, 10 Sep 2013 20:22:21 +0200
-Message-ID: <522F635D.4030905@rolffokkens.nl>
+From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Subject: [GIT PULL] Bcache changes for 3.12
+Date: Tue, 10 Sep 2013 20:55:28 -0700
+Message-ID: <20130911035528.GA28505@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi!
+Jens, here's the bcache stuff for 3.12. This is on top of the pull
+request I sent you of fixes for 3.11. Pull away!
 
-I updated the Fedora 20 & rawhide package for bcache-tools:
+The following changes since commit bef0ef06a9fe34b08177b67d3213dceab29d3abe:
 
-https://admin.fedoraproject.org/updates/bcache-tools-0-0.11.20130909git.fc20
+  bcache: Fix for handling overlapping extents when reading in a btree node (2013-09-03 13:42:35 -0700)
 
-It's an update to the latest git / gist sources for bcache-tools an 
-bcache-status. Some of the patches it includes to make it run on Fedora 
-are explained below.
+are available in the git repository at:
 
-Rolf
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.12
 
-bcache-tools-20130827-udevfix.patch
-=======================
-On Fedora only 'early' udev rules files run /usr/sbin/blkid and the rest 
-of the rules files use the results. This patch removes the call to 
-/usr/sbin/blkid and (more important) makes sure that probe-bcache does 
-not print overlapping variable names. This is needed until util-linux 
-itself supports bcache, after that there's no need to call  
-probe-bcaches at all.
+for you to fetch changes up to 2879736e8a022780e28da9e4502815b510fcfe8b:
 
---- bcache-tools-20130827/61-bcache.rules.orig    2013-09-06 
-08:54:07.656978850 +0200
-+++ bcache-tools-20130827/61-bcache.rules    2013-09-06 
-08:57:09.769768802 +0200
-@@ -5,13 +5,12 @@
-  ACTION=="remove", GOTO="bcache_end"
+  bcache: Bypass torture test (2013-09-10 19:08:32 -0700)
 
-  # Backing devices: scan, symlink, register
--IMPORT{program}="/sbin/blkid -o udev $tempnode"
-  # blkid and probe-bcache can disagree, in which case don't register
-  ENV{ID_FS_TYPE}=="?*", ENV{ID_FS_TYPE}!="bcache", 
-GOTO="bcache_backing_end"
+----------------------------------------------------------------
+Kent Overstreet (49):
+      bcache: Use blkdev_issue_discard()
+      bcache: Add on error panic/unregister setting
+      bcache: Stripe size isn't necessarily a power of two
+      bcache: Remove unnecessary check in should_split()
+      bcache: Explicitly track btree node's parent
+      bcache: Add btree_insert_node()
+      bcache: Insert multiple keys at a time
+      bcache: Convert btree_insert_check_key() to btree_insert_node()
+      bcache: Add explicit keylist arg to btree_insert()
+      bcache: Clean up keylist code
+      bcache: Refactor request_write()
+      bcache: Refactor read request code a bit
+      bcache: Refactor journalling flow control
+      bcache: Move keylist out of btree_op
+      bcache: Convert try_wait to wait_queue_head_t
+      bcache: Convert bucket_wait to wait_queue_head_t
+      bcache: Convert gc to a kthread
+      bcache: Convert writeback to a kthread
+      bcache: Add btree_map() functions
+      bcache: Move some stuff to btree.c
+      bcache: Convert bch_btree_read_async() to bch_btree_map_keys()
+      bcache: Clean up cache_lookup_fn
+      bcache: Prune struct btree_op
+      bcache: Kill op->cl
+      bcache: Drop some closure stuff
+      bcache: Kill op->replace
+      bcache: Don't use op->insert_collision
+      bcache: Convert bch_btree_insert() to bch_btree_map_leaf_nodes()
+      bcache: Break up struct search
+      bcache: Move sector allocator to alloc.c
+      bcache: Pull on disk data structures out into a separate header
+      bcache: Fix bch_ptr_bad()
+      bcache: Debug code improvements
+      bcache: Don't bother with bucket refcount for btree node allocations
+      bcache: bch_(btree|extent)_ptr_invalid()
+      bcache: PRECEDING_KEY()
+      bcache: Add btree_node_write_sync()
+      bcache: Add make_btree_freeing_key()
+      bcache: Incremental gc
+      bcache: Avoid deadlocking in garbage collection
+      bcache: Kill bch_next_recurse_key()
+      bcache: Kill sequential_merge option
+      bcache: Move spinlock into struct time_stats
+      bcache: Have btree_split() insert into parent directly
+      bcache: Better full stripe scanning
+      bcache: Fix sysfs splat on shutdown with flash only devs
+      bcache: Use ida for bcache block dev minor
+      bcache: Delete some slower inline asm
+      bcache: Bypass torture test
 
-  IMPORT{program}="/sbin/probe-bcache -o udev $tempnode"
--ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"
--SUBSYSTEM=="block", ACTION=="add|change", ENV{ID_FS_TYPE}=="bcache", \
-+ENV{BCACHE_ID_FS_UUID_ENC}=="?*", 
-SYMLINK+="disk/by-uuid/$env{BCACHE_ID_FS_UUID_ENC}"
-+SUBSYSTEM=="block", ACTION=="add|change", 
-ENV{BCACHE_ID_FS_TYPE}=="bcache", \
-          RUN+="bcache-register $tempnode"
-  LABEL="bcache_backing_end"
-
---- bcache-tools-20130827/probe-bcache.c.orig    2013-09-06 
-08:52:28.743089432 +0200
-+++ bcache-tools-20130827/probe-bcache.c    2013-09-06 
-08:53:44.046005241 +0200
-@@ -61,9 +61,9 @@
-          uuid_unparse(sb.uuid, uuid);
-
-          if (udev)
--            printf("ID_FS_UUID=%s\n"
--                   "ID_FS_UUID_ENC=%s\n"
--                   "ID_FS_TYPE=bcache\n",
-+            printf("BCACHE_ID_FS_UUID=%s\n"
-+                   "BCACHE_ID_FS_UUID_ENC=%s\n"
-+                   "BCACHE_ID_FS_TYPE=bcache\n",
-                     uuid, uuid);
-          else
-              printf("%s: UUID=\"\" TYPE=\"bcache\"\n", uuid);
-
-
-
-bcache-tools-20130827-register.patch
-=======================
-Fedora needs full path names to call /sbin/ binaries from udev, this is 
-fixed in this patch. Also errors are suppressed when a device is 
-registered twice.
-
---- bcache-tools-20130827.orig/bcache-register    2013-08-26 
-23:46:19.000000000 +0200
-+++ bcache-tools-20130827/bcache-register    2013-08-27 
-08:49:59.924940825 +0200
-@@ -1,4 +1,9 @@
-  #!/bin/sh
--modprobe -qba bcache
--test -f /sys/fs/bcache/register_quiet && echo "$1" > 
-/sys/fs/bcache/register_quiet
-+#
-+# Utility script to be called from udev, so it's not monkey proof at 
-all. It's
-+# sole purpose is to load the bcache kernel module whenever a bcache 
-device is
-+# detected.
-+#
-+/sbin/modprobe -qba bcache
-+test -f /sys/fs/bcache/register_quiet && echo "$1" > 
-/sys/fs/bcache/register_quiet 2>/dev/null
+ drivers/md/bcache/Kconfig     |   11 +-
+ drivers/md/bcache/alloc.c     |  383 +++++++-----
+ drivers/md/bcache/bcache.h    |  327 +---------
+ drivers/md/bcache/bset.c      |  289 ++++-----
+ drivers/md/bcache/bset.h      |   93 +--
+ drivers/md/bcache/btree.c     | 1385 ++++++++++++++++++++++-------------------
+ drivers/md/bcache/btree.h     |  195 ++----
+ drivers/md/bcache/closure.c   |   25 +-
+ drivers/md/bcache/closure.h   |  110 +---
+ drivers/md/bcache/debug.c     |  170 +++--
+ drivers/md/bcache/debug.h     |   50 +-
+ drivers/md/bcache/journal.c   |  290 ++++-----
+ drivers/md/bcache/journal.h   |   49 +-
+ drivers/md/bcache/movinggc.c  |   85 ++-
+ drivers/md/bcache/request.c   | 1106 ++++++++++++++++----------------
+ drivers/md/bcache/request.h   |   43 +-
+ drivers/md/bcache/stats.c     |   26 +-
+ drivers/md/bcache/stats.h     |   13 +-
+ drivers/md/bcache/super.c     |  188 +++---
+ drivers/md/bcache/sysfs.c     |   42 +-
+ drivers/md/bcache/trace.c     |    1 -
+ drivers/md/bcache/util.c      |   12 +-
+ drivers/md/bcache/util.h      |   15 +-
+ drivers/md/bcache/writeback.c |  455 +++++++-------
+ drivers/md/bcache/writeback.h |   47 +-
+ include/trace/events/bcache.h |   47 +-
+ include/uapi/linux/bcache.h   |  373 +++++++++++
+ 27 files changed, 2966 insertions(+), 2864 deletions(-)
+ create mode 100644 include/uapi/linux/bcache.h
