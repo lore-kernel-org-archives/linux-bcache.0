@@ -1,130 +1,57 @@
-From: Vasiliy Tolstov <v.tolstov@selfip.ru>
-Subject: Re: [ANN] Ubuntu PPA for bcache-tools and blocks
-Date: Fri, 13 Sep 2013 15:59:52 +0400
-Message-ID: <CACaajQtmLuA6M2Sj-=GJ6BGLicYi3Wn=qWmK84UA_PEa84MSYg@mail.gmail.com>
-References: <5232F139.4080508@gmail.com>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Re: bcache support in other linux packages
+Date: Sat, 14 Sep 2013 13:42:34 +0200
+Message-ID: <52344BAA.7070005@rolffokkens.nl>
+References: <522F635D.4030905@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="===============7807215847107845359=="
-Return-path: <ubuntu-devel-bounces@lists.ubuntu.com>
-In-Reply-To: <5232F139.4080508@gmail.com>
-List-Unsubscribe: <https://lists.ubuntu.com/mailman/options/ubuntu-devel>,
- <mailto:ubuntu-devel-request@lists.ubuntu.com?subject=unsubscribe>
-List-Archive: <https://lists.ubuntu.com/archives/ubuntu-devel>
-List-Post: <mailto:ubuntu-devel@lists.ubuntu.com>
-List-Help: <mailto:ubuntu-devel-request@lists.ubuntu.com?subject=help>
-List-Subscribe: <https://lists.ubuntu.com/mailman/listinfo/ubuntu-devel>,
- <mailto:ubuntu-devel-request@lists.ubuntu.com?subject=subscribe>
-Errors-To: ubuntu-devel-bounces@lists.ubuntu.com
-Sender: ubuntu-devel-bounces@lists.ubuntu.com
-To: Gabriel de Perthuis <g2p.code@gmail.com>
-Cc: bcache <linux-bcache@vger.kernel.org>, linux-kernel@vger.kernel.org, ubuntu-devel@lists.ubuntu.com
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <522F635D.4030905-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
---===============7807215847107845359==
-Content-Type: multipart/alternative; boundary=001a11c1b4589d61a304e64297c3
+Hi,
 
---001a11c1b4589d61a304e64297c3
-Content-Type: text/plain; charset=UTF-8
+I'd like to report some other nice progress as well, related to other 
+Linux packages. Although I'm working on Fedora packaging, there is good 
+spin-off for all Linux distro's out there!
 
-Is that possible to create bcached kernel for raring?
-I like autoapdating and packages created via standard way. So I can install
-source package and headers and can vbuild to it dkms modules.
-On Sep 13, 2013 3:04 PM, "Gabriel de Perthuis" <g2p.code@gmail.com> wrote:
+Util-Linux
+=====
+Util-Linux 2.24 will have support for bcache built in (for blkid and 
+wipefs): https://bugzilla.redhat.com/show_bug.cgi?id=1001120. This means 
+that "stuff gets more straightforward", e.g. the udev rules for bcache 
+can simply rely on bcache instead of also having to call probe-bcache. 
+There's also benefits for Dracut, see below.
 
-> Hello,
-> I've published various bcache-related packages to
->
-> https://launchpad.net/~g2p/+archive/storage/
->
-> The packages are built for saucy and raring, and can be
-> added with
->
->     sudo add-apt-repository ppa:g2p/storage
->     sudo apt-get update
->     sudo apt-get install bcache-tools blocks
->
-> bcache is a hybrid caching layer that speeds up HDDs
-> with SSDs; it was merged in Linux 3.10.  Backported
-> Ubuntu kernels are available at
->
-> http://kernel.ubuntu.com/~kernel-ppa/mainline/
->
-> bcache-tools contains udev and initramfs integration and
-> some command-line tools.
->
-> blocks is a conversion tool that can convert block devices
-> to bcache and lvm.  Usage is described here:
->
-> https://github.com/g2p/blocks#bcache-conversion
->
-> This release of blocks adds a maintboot mode that can
-> convert root filesystems to bcache without a live cd.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Dracut
+====
+Dracut 032 already had bcache support, dracut 033 now has support built 
+in for the migration phase from probe-bcache to blkid. I did some 
+testing with a root FS on bcache, and dracut perfectly builds a booting 
+initramfs! Beware though that there is a (soft) dependency on Util-Linux 
+2.24. When using an older Util-linux users should pass the -N option to 
+dracut te build a functional initramfs. More details: 
+https://bugzilla.redhat.com/show_bug.cgi?id=1003207
 
---001a11c1b4589d61a304e64297c3
-Content-Type: text/html; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+I'm aware that other distro's don't use dracut to build an initramfs, 
+but the dracut related info may be useful."
 
-<p dir=3D"ltr">Is that possible to create bcached kernel for raring?<br>
-I like autoapdating and packages created via standard way. So I can install=
- source package and headers and can vbuild to it dkms modules.</p>
-<div class=3D"gmail_quote">On Sep 13, 2013 3:04 PM, &quot;Gabriel de Perthu=
-is&quot; &lt;<a href=3D"mailto:g2p.code@gmail.com">g2p.code@gmail.com</a>&g=
-t; wrote:<br type=3D"attribution"><blockquote class=3D"gmail_quote" style=
-=3D"margin:0 0 0 .8ex;border-left:1px #ccc solid;padding-left:1ex">
-Hello,<br>
-I&#39;ve published various bcache-related packages to<br>
-<br>
-<a href=3D"https://launchpad.net/~g2p/+archive/storage/" target=3D"_blank">=
-https://launchpad.net/~g2p/+archive/storage/</a><br>
-<br>
-The packages are built for saucy and raring, and can be<br>
-added with<br>
-<br>
-=C2=A0 =C2=A0 sudo add-apt-repository ppa:g2p/storage<br>
-=C2=A0 =C2=A0 sudo apt-get update<br>
-=C2=A0 =C2=A0 sudo apt-get install bcache-tools blocks<br>
-<br>
-bcache is a hybrid caching layer that speeds up HDDs<br>
-with SSDs; it was merged in Linux 3.10. =C2=A0Backported<br>
-Ubuntu kernels are available at<br>
-<br>
-<a href=3D"http://kernel.ubuntu.com/~kernel-ppa/mainline/" target=3D"_blank=
-">http://kernel.ubuntu.com/~kernel-ppa/mainline/</a><br>
-<br>
-bcache-tools contains udev and initramfs integration and<br>
-some command-line tools.<br>
-<br>
-blocks is a conversion tool that can convert block devices<br>
-to bcache and lvm. =C2=A0Usage is described here:<br>
-<br>
-<a href=3D"https://github.com/g2p/blocks#bcache-conversion" target=3D"_blan=
-k">https://github.com/g2p/blocks#bcache-conversion</a><br>
-<br>
-This release of blocks adds a maintboot mode that can<br>
-convert root filesystems to bcache without a live cd.<br>
---<br>
-To unsubscribe from this list: send the line &quot;unsubscribe linux-bcache=
-&quot; in<br>
-the body of a message to <a href=3D"mailto:majordomo@vger.kernel.org">major=
-domo@vger.kernel.org</a><br>
-More majordomo info at =C2=A0<a href=3D"http://vger.kernel.org/majordomo-in=
-fo.html" target=3D"_blank">http://vger.kernel.org/majordomo-info.html</a><b=
-r>
-</blockquote></div>
+LVM2
+===
+LVM2 needs a small change to be able to detect PV's on bcache devices. 
+Without the change users need to add a "types = [ "bcache", 1 ]" line in 
+the /etc/lvm/lvm.conf. Users may also need to pass the --lvmconf option 
+to dracut when booting from a root FS on bcache. More details: 
+https://bugzilla.redhat.com/show_bug.cgi?id=1000817
 
---001a11c1b4589d61a304e64297c3--
+In the bugzilla there's a claim that bcache support in Fedora isn't 
+supportable because upstream (bcache) is'nt actively working with 
+Fedora. I don't agree with this, because I think the collaboration with 
+upstream is working fine.
 
+I'll keep you all posted,
 
---===============7807215847107845359==
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-
-
---===============7807215847107845359==--
+Rolf
