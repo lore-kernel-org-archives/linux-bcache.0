@@ -1,47 +1,62 @@
-From: Hubert Kempkensteffen <hubert-39zlLzowylnAQEp6PLVxx6xOck334EZe@public.gmane.org>
-Subject: Re: [PATCH] bcache: Possible flush fix
-Date: Wed, 18 Sep 2013 21:28:11 +0000 (UTC)
-Message-ID: <loom.20130918T232346-723@post.gmane.org>
-References: <loom.20130916T150548-751@post.gmane.org> <20130917020316.GC10907@kmo-pixel> <loom.20130917T122135-908@post.gmane.org> <20130917203741.GA32037@kmo-pixel> <loom.20130917T224603-574@post.gmane.org> <20130917214043.GF32037@kmo-pixel> <loom.20130918T134845-142@post.gmane.org> <20130918202809.GB19161@kmo-pixel> <loom.20130918T223347-893@post.gmane.org> <20130918204303.GC19161@kmo-pixel>
+From: "Darrick J. Wong" <darrick.wong-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+Subject: Re: bcache-status shows now output when caching device detached
+Date: Wed, 18 Sep 2013 16:53:35 -0700
+Message-ID: <20130918235335.GA4565@birch.djwong.org>
+References: <5235CD22.8000507@rolffokkens.nl>
+ <5235D021.8040501@gmail.com>
+ <5235D578.8020406@rolffokkens.nl>
+ <5235E637.10008@rolffokkens.nl>
+ <5235EFB6.2060008@rolffokkens.nl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <5235EFB6.2060008-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Kent Overstreet <kmo@...> writes:
+On Sun, Sep 15, 2013 at 07:34:46PM +0200, Rolf Fokkens wrote:
+> When no caching devices are connected, bcache-status shows nothing.
+> Although actually no caching happens, it's confusing.
 
+Aha, I didn't quite understand what you were getting at until I broke one of my
+cachesets.
+
+Yes, it would be useful to have it report orphaned cache / backing devices,
+since right now it only prints full sets in /sys/fs/bcache/$uuid/.
+
+--D
 > 
-> On Wed, Sep 18, 2013 at 08:39:10PM +0000, Hubert Kempkensteffen wrote:
-> > Kent Overstreet <kmo <at> ...> writes:
-> > 
-> > 
-> > > > I am currently testing the patch. (writethrough)
-> > > > The kernel is: git clone http://evilpiepirate.org/git/linux-
-bcache.git
-> > > 
-> > > What branch?
-> > > 
-> > 
-> > I thing:  Head bcache-3.10-stable
-> > 
-> > I had also already tested 3,10,11.
-> > The result was basically the same, but I had not enough time.
-> > Early morning I can say more.
+> On 09/15/2013 06:54 PM, Rolf Fokkens wrote:
+> >Yep, works indeed.
+> >
+> >Dispite the alarming description :-)
+> >
+> >Suggestion for alternative text:  "Detaches all caching devices
+> >and closes them; if any data is present in the caching devices it
+> >will ..."
+> >
+> >On 09/15/2013 05:42 PM, Rolf Fokkens wrote:
+> >>On 09/15/2013 05:20 PM, Gabriel de Perthuis wrote:
+> >>>Cache sets have an 'unregister' action:
+> >>>/sys/fs/bcache/<uuid>/unregister The reference docs are in
+> >>>bcache.txt. http://atlas.evilpiepirate.org/git/linux-bcache.git/tree/Documentation/bcache.txt?h=bcache-dev#n367
+> >>
+> >>
+> >>I noteced that one, but it looks kind of scary to me:
+> >>|"Detaches all backing devices and closes the cache devices; if
+> >>dirty data is present it will disable writeback caching and wait
+> >>for it to be flushed.|
+> >>Sounds like one of these:
+> >>- the /dev/cache* devices are gone; if so: that's definitely not
+> >>what I want.
+> >>- or at least the the baching devices are detached; that also
+> >>sounds bad. I don't want to detacht the backing devices at all,
+> >>I want to detacht the caching device.
+> >>
+> >>The text is somewhat confusing to me. I'll give it a try, it's
+> >>only a VM.
+> >
 > 
-> I just rebased bcache-3.10-stable and added the fix you tested to it.
-> 
-> Also, HEAD in the bcache repository now points to bcache-3.10-stable and
-> not bcache-for-3.10.
-> 
-> Can you run echo t > /proc/sysrq-trigger when things get stuck, and give
-> me the full dmesg output?
-> 
-I had not rebooted the computer.
-I'm already at home but once I get the data over ssh.
-Maybe it helps, I'll repeat tomorrow with the latest code from git.
-...
-I've been trying all the time the output of dmesg to post here.
-But it does not work. I'll send you via email once, hope to arrive.
