@@ -1,12 +1,12 @@
 From: Carsten Aulbert <Carsten.Aulbert-l1a6w7hxd2yELgA04lAiVw@public.gmane.org>
 Subject: Re: running iozone on bcache0 device yields wrongly read data
-Date: Wed, 18 Sep 2013 08:42:36 +0200
-Message-ID: <52394B5C.8000106@aei.mpg.de>
-References: <5238AAE5.8000800@aei.mpg.de> <20130917204059.GB32037@kmo-pixel> <52392D4D.3020506@aei.mpg.de> <20130918044551.GD32386@kmo-pixel>
+Date: Wed, 18 Sep 2013 10:43:52 +0200
+Message-ID: <523967C8.7010502@aei.mpg.de>
+References: <5238AAE5.8000800@aei.mpg.de> <20130917204059.GB32037@kmo-pixel> <52392D4D.3020506@aei.mpg.de> <20130918044551.GD32386@kmo-pixel> <52394B5C.8000106@aei.mpg.de>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms000909010906070009050108"
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms010807010803010104080203"
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20130918044551.GD32386@kmo-pixel>
+In-Reply-To: <52394B5C.8000106-l1a6w7hxd2yELgA04lAiVw@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
@@ -14,27 +14,27 @@ List-Id: linux-bcache@vger.kernel.org
 
 This is a cryptographically signed message in MIME format.
 
---------------ms000909010906070009050108
+--------------ms010807010803010104080203
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-Hi
+Hi again (sorry for the amount of small emails)
 
-On 09/18/2013 06:45 AM, Kent Overstreet wrote:
+On 09/18/2013 08:42 AM, Carsten Aulbert wrote:
+>> Writeback or writethrough?
+
+> Sorry, writeback as this testing is aimed for high performance scratch
+> space.
 >=20
-> Writeback or writethrough?
->=20
 
-
-Sorry, writeback as this testing is aimed for high performance scratch
-space.
+Just  tested, the same happens with writethrough
 
 Cheers
 
 Carsten
 
 
---------------ms000909010906070009050108
+--------------ms010807010803010104080203
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -66,16 +66,16 @@ O5w/wdtCTQ5Tpfr/n90KWYwVQ2er5dnKowu6j9YIj/dD8jJGk3T13rgzdnRzWtSQhjP8YIRf
 ql08NsUgDShjNiBo289K7fpBNdVLGNI/pIA8P1ratofCGBPvMdjp+cjhulQX5//qS1ctP0ux
 8MhY3kBMGynLkwibH5MiLfVSip0xggLOMIICygIBATA8MDYxCzAJBgNVBAYTAkRFMRMwEQYD
 VQQKEwpHZXJtYW5HcmlkMRIwEAYDVQQDEwlHcmlkS2EtQ0ECAk/QMAkGBSsOAwIaBQCgggFn
-MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEzMDkxODA2NDIz
-NlowIwYJKoZIhvcNAQkEMRYEFHqnPOwJSb6drUTERSI7ZMCWoE9YMEsGCSsGAQQBgjcQBDE+
+MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEzMDkxODA4NDM1
+MlowIwYJKoZIhvcNAQkEMRYEFPgmMXvL0X1ZYLjaDE/WtJS8Ta3FMEsGCSsGAQQBgjcQBDE+
 MDwwNjELMAkGA1UEBhMCREUxEzARBgNVBAoTCkdlcm1hbkdyaWQxEjAQBgNVBAMTCUdyaWRL
 YS1DQQICT9AwTQYLKoZIhvcNAQkQAgsxPqA8MDYxCzAJBgNVBAYTAkRFMRMwEQYDVQQKEwpH
 ZXJtYW5HcmlkMRIwEAYDVQQDEwlHcmlkS2EtQ0ECAk/QMGwGCSqGSIb3DQEJDzFfMF0wCwYJ
 YIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0DAgICAIAwDQYI
 KoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwDQYJKoZIhvcNAQEBBQAEggEA
-A+N/rpNDYV5j8uqaxTI4/7bt1pewulmB20+mn13OzFUr1YIuAhd0UA6FzIw+l6lX5dk/sbW7
-LakD/alhWKV7Qiv26f2rq17WGnxzvJUB2VXdp9ZtdpDR64u2YtEuevzF0MVOzd/rXFH+1q8r
-0v1TbIheLI0szubKEQVSsCxJY44o/cwGf0Pbf2qlhg2KLPWtf/oXD5aYXAGRhKERcOERbcbh
-R6R5hP9b+7Or55zgG+cEzTy+oyOCf00/8JFRjw6DlIIPlTAkYjbBmxd+u7O1lqR3JxDw43vB
-BCfXpmU6QPGR9NPwzziPTMko7PZjMCIDnZdRgzB50gKMbLHsULJHMQAAAAAAAA==
---------------ms000909010906070009050108--
+mwwH0TcAiP6Si/ynMcw6GDau/u7uqovJU8aCniHPqGjv1vZ9XIv6/8i/i8X44wXbojBChxqP
+pKsswPZHja9pY5WKYvqCZxCr4oXqZ2Vjwfrc5TxBWu3DwuExX9VeVZhtiILVKcQRCVLdFGoe
+yAs15YYgdFMIzDyURZtONvnPAK0q577dI9/YsdFHXpoVdJtCpjdfrg578PpyAbe3OCV+v4Lr
+QIikAeLCQvgG4UPek0KArR8piVWqDM9z0UR4G5rpSfU/3jpEWdugRU2Slob9dUzoHiWoIOqm
+p7vUmC4OS32hvCBzPnG7bB+ny011uf0+ynGjgMIdhc6N8rj/V4avTQAAAAAAAA==
+--------------ms010807010803010104080203--
