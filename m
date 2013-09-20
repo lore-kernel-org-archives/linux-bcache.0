@@ -1,38 +1,21 @@
 From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
-Subject: Re: bcache & btrfs: "Btrfs detected SSD devices, enabling SSD mode"
-Date: Fri, 20 Sep 2013 21:25:29 +0200
-Message-ID: <523CA129.1000508@rolffokkens.nl>
-References: <523C71C4.9030606@rolffokkens.nl> <523C76F4.3070809@gmail.com>
+Subject: Re: Data corruption with bcache in 3.11
+Date: Fri, 20 Sep 2013 21:33:19 +0200
+Message-ID: <523CA2FF.4090102@rolffokkens.nl>
+References: <20130920023501.GJ17891@kmo-pixel> <523BF3EB.7050709@rolffokkens.nl> <CALJ65zkj2U-Kr_EBx7RJETqW2jQmWxsr0QmZspHU3H+jDts3tQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252;
-	format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <523C76F4.3070809-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+In-Reply-To: <CALJ65zkj2U-Kr_EBx7RJETqW2jQmWxsr0QmZspHU3H+jDts3tQ-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 09/20/2013 06:25 PM, Gabriel de Perthuis wrote:
-> SSD [=85] optimizations (e.g. avoiding unnecessary seek optimizations=
-,
-> sending writes in clusters, even if they are from unrelated files. Th=
-is
-> results in larger write operations and faster write throughput)
->
-> The optimisations should be beneficial iff bcache is used in writebac=
-k
-> mode.  ssd_spread and discard are enabled separately; I'm not sure wh=
-at
-> ssd_spread (from the wiki: more strict about finding a large unused
-> region of the disk for new allocations) would do for bcache.
- From observing iostat I have the impression that bcache sometimes=20
-bypasses the cache, probably related to sequential_cutoff. Seems like=20
-btrfs tries to cluster writes (because an SSD is detected) and next=20
-bcache bypasses the SSD (because the writes are clustered). Doesn't see=
-m=20
-the right kind of cooperation :-)
-
-(Assuming of course that clustered writes are based on sequential write=
-s)
+On 09/20/2013 09:44 AM, Kent Overstreet wrote:
+> If you weren't seeing it before, don't worry about it. Normal setups
+> with the usual 4k block size won't ever see this.
+I wouldn't mind helping to reproduce other issues as well, like the 
+iozone related issues and the "bcache hangs" issue. I actually tried, 
+but bcache worked just fine.
