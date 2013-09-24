@@ -1,23 +1,39 @@
 From: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH] Bcache fixes - please apply
-Date: Mon, 23 Sep 2013 23:17:25 -0700
-Message-ID: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
+Subject: [PATCH 01/11] block: Fix bio_copy_data()
+Date: Mon, 23 Sep 2013 23:17:26 -0700
+Message-ID: <1380003456-19938-2-git-send-email-kmo@daterainc.com>
+References: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
+Sender: stable-owner@vger.kernel.org
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc: axboe@kernel.dk
+Cc: axboe@kernel.dk, Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-Linus, please apply the following patch series. There's fixes for
-_three_ different data corruption bugs, all of which were found by users
-hitting them in the wild.
+The memcpy() in bio_copy_data() was using the wrong offset vars, leading
+to data corruption in weird unusual setups.
 
-The first one isn't bcache specific - in 3.11 bcache was switched to the
-bio_copy_data in fs/bio.c, and that's when the bug in that code was
-discovered, but it's also used by raid1 and pktcdvd. (That was my code
-too, so the bug's doubly embarassing given that it was or should've been
-just a cut and paste from bcache code. Dunno what happened there).
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: linux-stable <stable@vger.kernel.org> # >= v3.9
+---
+ fs/bio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Most of these (all the non data corruption bugs, actually) were ready
-before the merge window and have been sitting in Jens' tree, but I don't
-know what's been up with him lately...
+diff --git a/fs/bio.c b/fs/bio.c
+index b3b20ed..ea5035d 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -917,8 +917,8 @@ void bio_copy_data(struct bio *dst, struct bio *src)
+ 		src_p = kmap_atomic(src_bv->bv_page);
+ 		dst_p = kmap_atomic(dst_bv->bv_page);
+ 
+-		memcpy(dst_p + dst_bv->bv_offset,
+-		       src_p + src_bv->bv_offset,
++		memcpy(dst_p + dst_offset,
++		       src_p + src_offset,
+ 		       bytes);
+ 
+ 		kunmap_atomic(dst_p);
+-- 
+1.8.4.rc3
