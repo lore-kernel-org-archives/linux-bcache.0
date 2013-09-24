@@ -1,7 +1,7 @@
 From: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 01/11] block: Fix bio_copy_data()
-Date: Mon, 23 Sep 2013 23:17:26 -0700
-Message-ID: <1380003456-19938-2-git-send-email-kmo@daterainc.com>
+Subject: [PATCH 02/11] bcache: Fix a dumb journal discard bug
+Date: Mon, 23 Sep 2013 23:17:27 -0700
+Message-ID: <1380003456-19938-3-git-send-email-kmo@daterainc.com>
 References: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
 Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
@@ -10,30 +10,27 @@ To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org, linux-bcache@vg
 Cc: axboe@kernel.dk, Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-The memcpy() in bio_copy_data() was using the wrong offset vars, leading
-to data corruption in weird unusual setups.
+That switch statement was obviously wrong, leading to some sort of weird
+spinning on rare occasion with discards enabled...
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: linux-stable <stable@vger.kernel.org> # >= v3.9
+Cc: linux-stable <stable@vger.kernel.org> # >= v3.10
 ---
- fs/bio.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/bcache/journal.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/bio.c b/fs/bio.c
-index b3b20ed..ea5035d 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -917,8 +917,8 @@ void bio_copy_data(struct bio *dst, struct bio *src)
- 		src_p = kmap_atomic(src_bv->bv_page);
- 		dst_p = kmap_atomic(dst_bv->bv_page);
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index ba95ab8..c0017ca 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -428,7 +428,7 @@ static void do_journal_discard(struct cache *ca)
+ 		return;
+ 	}
  
--		memcpy(dst_p + dst_bv->bv_offset,
--		       src_p + src_bv->bv_offset,
-+		memcpy(dst_p + dst_offset,
-+		       src_p + src_offset,
- 		       bytes);
+-	switch (atomic_read(&ja->discard_in_flight) == DISCARD_IN_FLIGHT) {
++	switch (atomic_read(&ja->discard_in_flight)) {
+ 	case DISCARD_IN_FLIGHT:
+ 		return;
  
- 		kunmap_atomic(dst_p);
 -- 
 1.8.4.rc3
