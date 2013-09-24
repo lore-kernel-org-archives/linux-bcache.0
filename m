@@ -1,88 +1,37 @@
 From: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 10/11] bcache: Fix for handling overlapping extents when reading in a btree node
-Date: Mon, 23 Sep 2013 23:17:35 -0700
-Message-ID: <1380003456-19938-11-git-send-email-kmo@daterainc.com>
+Subject: [PATCH 07/11] bcache: Fix a flush/fua performance bug
+Date: Mon, 23 Sep 2013 23:17:32 -0700
+Message-ID: <1380003456-19938-8-git-send-email-kmo@daterainc.com>
 References: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
 Return-path: <linux-kernel-owner@vger.kernel.org>
 In-Reply-To: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc: axboe@kernel.dk, Kent Overstreet <kmo@daterainc.com>
+Cc: axboe@kernel.dk, Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-btree_sort_fixup() was overly clever, because it was trying to avoid
-pulling a key off the btree iterator in more than one place.
+bch_journal_meta() was missing the flush to make the journal write
+actually go down (instead of waiting up to journal_delay_ms)...
 
-This led to a really obscure bug where we'd break early from the loop in
-btree_sort_fixup() if the current key overlapped with keys in more than
-one older set, and the next key it overlapped with was zero size.
+Whoops
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Cc: linux-stable <stable@vger.kernel.org> # >= v3.10
 ---
- drivers/md/bcache/bset.c | 39 ++++++++++++++++++++++++++++-----------
- 1 file changed, 28 insertions(+), 11 deletions(-)
+ drivers/md/bcache/journal.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
-index 8010eed..22d1ae7 100644
---- a/drivers/md/bcache/bset.c
-+++ b/drivers/md/bcache/bset.c
-@@ -926,28 +926,45 @@ struct bkey *bch_next_recurse_key(struct btree *b, struct bkey *search)
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index f5203df..8435f81 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -695,6 +695,7 @@ void bch_journal_meta(struct cache_set *c, struct closure *cl)
+ 		if (cl)
+ 			BUG_ON(!closure_wait(&w->wait, cl));
  
- /* Mergesort */
- 
-+static void sort_key_next(struct btree_iter *iter,
-+			  struct btree_iter_set *i)
-+{
-+	i->k = bkey_next(i->k);
-+
-+	if (i->k == i->end)
-+		*i = iter->data[--iter->used];
-+}
-+
- static void btree_sort_fixup(struct btree_iter *iter)
- {
- 	while (iter->used > 1) {
- 		struct btree_iter_set *top = iter->data, *i = top + 1;
--		struct bkey *k;
- 
- 		if (iter->used > 2 &&
- 		    btree_iter_cmp(i[0], i[1]))
- 			i++;
- 
--		for (k = i->k;
--		     k != i->end && bkey_cmp(top->k, &START_KEY(k)) > 0;
--		     k = bkey_next(k))
--			if (top->k > i->k)
--				__bch_cut_front(top->k, k);
--			else if (KEY_SIZE(k))
--				bch_cut_back(&START_KEY(k), top->k);
--
--		if (top->k < i->k || k == i->k)
-+		if (bkey_cmp(top->k, &START_KEY(i->k)) <= 0)
- 			break;
- 
--		heap_sift(iter, i - top, btree_iter_cmp);
-+		if (!KEY_SIZE(i->k)) {
-+			sort_key_next(iter, i);
-+			heap_sift(iter, i - top, btree_iter_cmp);
-+			continue;
-+		}
-+
-+		if (top->k > i->k) {
-+			if (bkey_cmp(top->k, i->k) >= 0)
-+				sort_key_next(iter, i);
-+			else
-+				bch_cut_front(top->k, i->k);
-+
-+			heap_sift(iter, i - top, btree_iter_cmp);
-+		} else {
-+			/* can't happen because of comparison func */
-+			BUG_ON(!bkey_cmp(&START_KEY(top->k), &START_KEY(i->k)));
-+			bch_cut_back(&START_KEY(i->k), top->k);
-+		}
++		closure_flush(&c->journal.io);
+ 		__journal_try_write(c, true);
  	}
  }
- 
 -- 
 1.8.4.rc3
