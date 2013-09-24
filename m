@@ -1,36 +1,48 @@
 From: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH 02/11] bcache: Fix a dumb journal discard bug
-Date: Mon, 23 Sep 2013 23:17:27 -0700
-Message-ID: <1380003456-19938-3-git-send-email-kmo@daterainc.com>
+Subject: [PATCH 03/11] bcache: Strip endline when writing the label through sysfs
+Date: Mon, 23 Sep 2013 23:17:28 -0700
+Message-ID: <1380003456-19938-4-git-send-email-kmo@daterainc.com>
 References: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
-Return-path: <stable-owner@vger.kernel.org>
+Return-path: <linux-kernel-owner@vger.kernel.org>
 In-Reply-To: <1380003456-19938-1-git-send-email-kmo@daterainc.com>
-Sender: stable-owner@vger.kernel.org
+Sender: linux-kernel-owner@vger.kernel.org
 To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc: axboe@kernel.dk, Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
+Cc: axboe@kernel.dk, Gabriel de Perthuis <g2p.code@gmail.com>, Kent Overstreet <kmo@daterainc.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-That switch statement was obviously wrong, leading to some sort of weird
-spinning on rare occasion with discards enabled...
+From: Gabriel de Perthuis <g2p.code@gmail.com>
 
+sysfs attributes with unusual characters have crappy failure modes
+in Squeeze (udev 164); later versions of udev are unaffected.
+
+This should make these characters more unusual.
+
+Signed-off-by: Gabriel de Perthuis <g2p.code@gmail.com>
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Cc: linux-stable <stable@vger.kernel.org> # >= v3.10
 ---
- drivers/md/bcache/journal.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/bcache/sysfs.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index ba95ab8..c0017ca 100644
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -428,7 +428,7 @@ static void do_journal_discard(struct cache *ca)
- 		return;
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 4fe6ab2..924dcfd 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -223,8 +223,13 @@ STORE(__cached_dev)
  	}
  
--	switch (atomic_read(&ja->discard_in_flight) == DISCARD_IN_FLIGHT) {
-+	switch (atomic_read(&ja->discard_in_flight)) {
- 	case DISCARD_IN_FLIGHT:
- 		return;
- 
+ 	if (attr == &sysfs_label) {
+-		/* note: endlines are preserved */
+-		memcpy(dc->sb.label, buf, SB_LABEL_SIZE);
++		if (size > SB_LABEL_SIZE)
++			return -EINVAL;
++		memcpy(dc->sb.label, buf, size);
++		if (size < SB_LABEL_SIZE)
++			dc->sb.label[size] = '\0';
++		if (size && dc->sb.label[size - 1] == '\n')
++			dc->sb.label[size - 1] = '\0';
+ 		bch_write_bdev_super(dc, NULL);
+ 		if (dc->disk.c) {
+ 			memcpy(dc->disk.c->uuids[dc->disk.id].label,
 -- 
 1.8.4.rc3
