@@ -1,24 +1,24 @@
-From: Hans Kraus <hans-V6XWkrn/fmtByuSxxbvQtw@public.gmane.org>
-Subject: Partition possible as caching device; external journal for Ext4?
-Date: Fri, 27 Sep 2013 10:21:26 +0200
-Message-ID: <52454006.7020902@hanswkraus.com>
+From: Joseph Yasi <joe.yasi-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: Re: Data corruption with bcache in 3.11
+Date: Sun, 29 Sep 2013 12:52:42 -0400
+Message-ID: <CADzA9okLDMc6Pqm3a+dyZ+1YGfn4LDGKcs385isU4ssrw0z0jQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi,
+On 09/20/2013 02:35 AM, Kent Overstreet wrote:
+> If you were one of the users seeing data corruption in 3.11 but not any
+> of the 3.10 stable kernel, I think I just fixed it. It's now clearer why
+> it was only hitting some users, too...
+>
+> I want to get confirmation from someone who was seeing it that it fixes
+> the issue, so please test the fix and let me know what happens. It's in
+> my bcache-data-corruption-fix branch, and the patch is below:
+>
+> commit 97ad43a31a7ea3c23a4eb64b8e26aad3cf21ae8d
 
-is it possible to use only a partition of an SSD as caching device for
-bcache or is a complete device necessary?
-
-Is there a rule of thumb for the cache size? Eg. at what value I do get
-diminishing returns?
-
-When I cache a big Raid6 with Ext4, makes it still sense (performance
-wise) to put the journal on a separate SSD partition?
-
-Regards, Hans
+This patch seems to fix the corruption problem for me caching an md
+RAID10 array.
