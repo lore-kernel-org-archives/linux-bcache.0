@@ -1,24 +1,99 @@
-From: Joseph Yasi <joe.yasi-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: Data corruption with bcache in 3.11
-Date: Sun, 29 Sep 2013 12:52:42 -0400
-Message-ID: <CADzA9okLDMc6Pqm3a+dyZ+1YGfn4LDGKcs385isU4ssrw0z0jQ@mail.gmail.com>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Re: bcache-tools and bcache support in other linux packages
+Date: Mon, 30 Sep 2013 17:04:04 +0200
+Message-ID: <CE6F5EB0.1B9E7%rolf@rolffokkens.nl>
+References: <524404C9.3030103@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <524404C9.3030103-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Development discussions related to Fedora <devel-TuqUDEhatI4ANWPb/1PvSmm0pvjS0E/A@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 09/20/2013 02:35 AM, Kent Overstreet wrote:
-> If you were one of the users seeing data corruption in 3.11 but not any
-> of the 3.10 stable kernel, I think I just fixed it. It's now clearer why
-> it was only hitting some users, too...
->
-> I want to get confirmation from someone who was seeing it that it fixes
-> the issue, so please test the fix and let me know what happens. It's in
-> my bcache-data-corruption-fix branch, and the patch is below:
->
-> commit 97ad43a31a7ea3c23a4eb64b8e26aad3cf21ae8d
+Hi
 
-This patch seems to fix the corruption problem for me caching an md
-RAID10 array.
+It was brought to my attention that there's a confusing typo in the
+message below regarding the planning of bcache support for anaconda. The
+claim that it is planned for F20 is not true, it is planned for F21:
+
+https://fedorahosted.org/fesco/ticket/1145
+
+Sorry for any confusion,
+
+Rolf
+
+Op 26-09-13 11:56 schreef Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>:
+
+>Hi,
+>
+>Like I did on the 14th on the linux-bcache list I'd like to send an
+>update on the progress of bcache related packages. While focussing on
+>Fedora packaging of bcache-tools, I had some good collaboration with
+>other packagers resulting in improved bcache support in other packages
+>as well. Other Linux distro's may benefit from these updated packages too.
+>
+>util-linux
+>==========
+>On 27th of September util-linux v2.24 RC will probably be released. This
+>release supports the identification of bcache superblocks in libblkid,
+>actually integrating and obsoleting probe-bcache. Because of this udev
+>rules for bcache can be simplified because they only need blkid. Of
+>course this only applies to systems where util-linux v2.24 RC (or
+>higher) actually is installed, otherwise probe-bcache is still needed.
+>
+>Dracut
+>======
+>Since version 032 Dracut already had bcache support. Since version 033
+>it adds support for util-linux v2.24 RC, so even without (obsoleted)
+>probe-bcache it is able to identify bcache using blkid. Additionally
+>Dracut benefits from blkid being able to identify bcache, because it
+>uses blkid to identify all necessary kernel modules automatically, so no
+>-N option is needed anymore.
+>
+>LVM2
+>====
+>With the release of v2_01_102 LVM2 now accepts Physical Volumes on
+>bcache by default. This simplifies the creation of initramfs (by Dracut)
+>because no specific LVM2 option (--lvmconf) needs to be passed to
+>Dracut.For the user this means that updating a kernel just works out of
+>the box!
+>
+>bcache-tools
+>============
+>The bcache-tools package is available in Fedora 20. I plan to build an
+>updated package that no longer includes probe-bcache when the new
+>util-linux is released.
+>
+>Anaconda
+>========
+>Anaconda (the Fedora installer) does not support bcache yet. This is
+>planned for Fedora 20. This is important when installing Fedora on a
+>system and having your root filesystem on bcache. Althought other
+>Distro's don't use Anaconda, I guess their installers also need to be
+>changed in some way to supportbcache.
+>
+>Currently having Fedora installed with your root Filesystem on bcache is
+>possible, but It's done in a fewsteps:
+>1. Install Fedora using Anaconda without using bcache, but create an
+>extra partition to supportan alternate root FS
+>2. From the running system build a bcache device using the extra
+>partition. Copy the current root FS to the bcache root FS
+>3. Reboot your system in the bcache root FS, and reclaim the spaces used
+>by the non-bcache root partition
+>
+>More information can be found below, related to the "SSD Cache Fedora
+>test day".
+>
+>The SSD Cache Fedora test day
+>=============================
+>On 13th of October there's an "SSD Cache Fedora test day": see the Wiki
+>page https://fedoraproject.org/wiki/Test_Day:2013-10-13_SSD_Cache. This
+>page is work in progress, any feedback is welcome. People interested in
+>testing are invited to participate on 13th of October.
+>
+>When there's anything new toreport, I'll keep you posted.
+>
+>Rolf Fokkens
