@@ -1,42 +1,43 @@
-From: Gabriel de Perthuis <g2p.code@gmail.com>
-Subject: Re: bcache oops in bch_insert_data with the latest stables fixes
- (3.10.15)
-Date: Wed, 09 Oct 2013 00:13:56 +0200
-Message-ID: <525483A4.5020607@gmail.com>
-References: <52513DBD.80005@excellency.fr> <525186E3.4000905@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <525186E3.4000905@gmail.com>
-Sender: stable-owner@vger.kernel.org
-To: linux stable <stable@vger.kernel.org>, Greg KH <greg@kroah.com>
-Cc: cbay@excellency.fr, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+From: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Subject: [PATCH] bcache: Fix a null ptr deref regression
+Date: Tue,  8 Oct 2013 15:29:55 -0700
+Message-ID: <1381271401-29262-1-git-send-email-kmo@daterainc.com>
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org, cbay-SxHCd5+OuqTrt3ojHgZu+w@public.gmane.org
+Cc: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Le 06/10/2013 17:50, Gabriel de Perthuis a =E9crit :
-> Le 06/10/2013 12:38, Cyril B. a =E9crit :
->> Hello,
->>
->> I get the following oops immediately after booting on 3.10.15.
->> Everything works fine in 3.10.10. Both the backing and cache devices=
- are
->> on top of mdadm.
->=20
-> Reverting c0f04d88e46d14de51f4baebb6efafb7d59e9f96 fixes it; it was o=
-ne
-> of the few commits that's in 3.12 and -stable but not in
-> bcache-for-3.11.  That commit causes bch_insert_data to be called wit=
-h
-> an unset op.cache_bio.
+c0f04d8 was fixing a reported data corruption bug, but it seems some
+last minute refactoring or rebasing introduced a null pointer deref.
 
-Pinging stable,
-http://git.kernel.org/linus/c0f04d88e46d14de51f4baebb6efafb7d59e9f96
-should be reverted.  It was in 3.11.4 and 3.10.15 (and 3.12-rc3).
-It breaks bcache's writeback mode by calling bch_writeback_data without
-setting cache_bio (it's more visible here[1]).  There's a bit of
-indirection through closure calls, but it could never work.
+Signed-off-by: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: linux-stable <stable-u79uwXL29TY76Z2rM5mHXA@public.gmane.org> # >= v3.10
+Reported-by: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+---
+ drivers/md/bcache/request.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-|1]
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?=
-id=3Dc0f04d88e46d14de51f4baebb6efafb7d59e9f96&context=3D8
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 71eb233..b6a74bc 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -996,6 +996,7 @@ static void request_write(struct cached_dev *dc, struct search *s)
+ 		closure_bio_submit(bio, cl, s->d);
+ 	} else {
+ 		bch_writeback_add(dc);
++		s->op.cache_bio = bio;
+ 
+ 		if (bio->bi_rw & REQ_FLUSH) {
+ 			/* Also need to send a flush to the backing device */
+@@ -1008,8 +1009,6 @@ static void request_write(struct cached_dev *dc, struct search *s)
+ 			flush->bi_private = cl;
+ 
+ 			closure_bio_submit(flush, cl, s->d);
+-		} else {
+-			s->op.cache_bio = bio;
+ 		}
+ 	}
+ out:
+-- 
+1.8.4.rc3
