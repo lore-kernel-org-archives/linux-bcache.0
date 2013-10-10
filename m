@@ -1,44 +1,52 @@
-From: Ryan Press <ryan-KcFX5CmBy0dzbRFIqnYvSA@public.gmane.org>
-Subject: Re: Changing writeback_delay
-Date: Thu, 10 Oct 2013 10:50:31 -0700
-Message-ID: <CABx3TkUh_VR9bg41GPFhxWisLBe8XsRTL-_CtxXCeYwPst239A@mail.gmail.com>
-References: <CABx3TkUS1TeBOzRY+E4TS7QsyORAaJNG6qy3FvEYQvHQ2+RbNw@mail.gmail.com>
-	<CABx3TkUVEAdbRYc3e6cU3URGOt7Ta_4HaCm37D1pd0qnpN78sg@mail.gmail.com>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Sunday 13th of October: Fedora bcache test day
+Date: Thu, 10 Oct 2013 22:38:52 +0200
+Message-ID: <5257105C.8070407@rolffokkens.nl>
+References: <5255D277.3060802@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CABx3TkUVEAdbRYc3e6cU3URGOt7Ta_4HaCm37D1pd0qnpN78sg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <5255D277.3060802-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-> On Fri, Oct 4, 2013 at 10:01 PM, Ryan Press <ryan-KcFX5CmBy0dzbRFIqnYvSA@public.gmane.org> wrote:
->
-> I'm running 3.11 kernel, and I've been playing around with bcache.  I'd like to set something up where I can spin down the hard disks to save power, reading and writing to the SSD as much as possible.  It is working quite well performance wise, with normal sequential speed as well as greatly improved random access speeds.
->
-> To avoid spinning up the disk for writes, I have enabled writeback mode.  I would like to increase writeback_delay, but whatever I set it to has no effect.  If I spin down the hard disk with 'hdparm -Y /dev/sda', touch a file on the mounted share, exactly 30 seconds after I touch the file (the default writeback_delay) the hard drive spins up, regardless of what I echo to writeback_delay.
->
-> Any ideas?  Do I need to set writeback_delay in some sequence for it to take effect?
+Hi All,
 
+Bcache-tools for Fedora 20 is now close to completion, so it's 
+integrated very well with dracut, udev, util-linux and lvm2. What's left 
+is some good testing :-)
 
-Alright, after some more testing it seems that writeback_delay is
-indeed working as intended.  There is something else touching the
-disk, and I'm pretty sure it's the btree stuff.  It has 30 seconds
-hardcoded in two different places as so:
+To do some testing there's a Fedora SSD Cache is this sunday October 
+13th 2013. This Fedora Test Day will focus on bcache based SSD Caching 
+in Fedora 20:
 
-   if (btree_node_dirty(b))
-      queue_delayed_work(btree_io_wq, &b->work,
-         msecs_to_jiffies(30000));
+https://fedoraproject.org/wiki/Test_Day:2013-10-13_SSD_Cache
 
-...and...
+If you're interested in trying out the bcache SSD caching functionality 
+on Fedora, step by step instructions are available for:
+- bcache on physical hardware
+- bcache in a virtual machine
+- non-root FS on bcache (with or without LVM)
+- root FS on bcache (wtih or without LVM)
 
-   if (!btree_node_dirty(b))
-      queue_delayed_work(btree_io_wq, &b->work, 30 * HZ);
+The objective of this Test day is to demonstrate a working Fedora 20 
+system using bcache. Te be more specific:
+* The system boots OK; after booting bcache is operating as expected
+* The system updates ("yum update") OK. After updating specifically the 
+kernel the system boots OK.
+* The system is bootable when the caching device is disabled.
 
-I guess this commits the btree to both the SSD and the hard disk?  Is
-it possible to increase this delay without compromising integrity (say
-for a power failure) or is this a major design change?
+Although testing on real hardware is closest to "the real thing", 
+testing in a VM may also provide good insights on the proper working of 
+bcache (except for performance) in relation to the other software.
 
-Thanks,
-Ryan
+If you do plan on showing up to the test day pop into #fedora-test-day 
+on freenode and give us a shout! If you can't make the date of the test 
+day, adding test case results to the wiki anytime next week is fine as well.
+
+The Wiki page is still under development, so expect some improvements 
+before sunday.
+
+Rolf Fokkens
