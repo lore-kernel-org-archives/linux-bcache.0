@@ -1,45 +1,27 @@
-From: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH] bcache: Fix a null ptr deref regression
-Date: Thu, 10 Oct 2013 17:31:15 -0700
-Message-ID: <1381451475-24551-2-git-send-email-kmo@daterainc.com>
+From: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Subject: Re: [PATCH] Fix for bcache regression
+Date: Thu, 10 Oct 2013 20:23:13 -0600
+Message-ID: <20131011022313.GA31029@kernel.dk>
 References: <1381451475-24551-1-git-send-email-kmo@daterainc.com>
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1381451475-24551-1-git-send-email-kmo@daterainc.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: torvalds@linux-foundation.org, axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <1381451475-24551-1-git-send-email-kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: torvalds-de/tnXTf+JLsfHDXvbKv3WD2FQJk+8+b@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-c0f04d8 was fixing a reported data corruption bug, but it seems some
-last minute refactoring or rebasing introduced a null pointer deref.
+On Thu, Oct 10 2013, Kent Overstreet wrote:
+> Linus, please apply - the last fix in the bugfix series I sent you had an
+> embarassing screwup...
+> 
+> For 3.13, shall I start sending you pull requests directly?
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-stable <stable@vger.kernel.org> # >= v3.10
-Reported-by: Gabriel de Perthuis <g2p.code@gmail.com>
----
- drivers/md/bcache/request.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Sorry I dropped the ball on that one, it's the first time ever I've
+missed a deadline. It's being ramped up again, kernel time will be
+plenty again shortly.
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 71eb233..b6a74bc 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -996,6 +996,7 @@ static void request_write(struct cached_dev *dc, struct search *s)
- 		closure_bio_submit(bio, cl, s->d);
- 	} else {
- 		bch_writeback_add(dc);
-+		s->op.cache_bio = bio;
- 
- 		if (bio->bi_rw & REQ_FLUSH) {
- 			/* Also need to send a flush to the backing device */
-@@ -1008,8 +1009,6 @@ static void request_write(struct cached_dev *dc, struct search *s)
- 			flush->bi_private = cl;
- 
- 			closure_bio_submit(flush, cl, s->d);
--		} else {
--			s->op.cache_bio = bio;
- 		}
- 	}
- out:
 -- 
-1.8.4.rc3
+Jens Axboe
