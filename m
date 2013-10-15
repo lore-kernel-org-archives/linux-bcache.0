@@ -1,55 +1,30 @@
-From: Mark Brown <broonie-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
-Subject: Re: linux-next: Tree for Oct 14 (bcache)
-Date: Tue, 15 Oct 2013 10:36:09 +0100
-Message-ID: <20131015093609.GT2443@sirena.org.uk>
-References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
- <525C3EC2.20404@infradead.org>
- <20131014202723.GQ2443@sirena.org.uk>
- <20131015084631.GK7856@ulmo.nvidia.com>
+From: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>
+Subject: Re: [BUG] unable to handle kernel NULL pointer dereference at
+ 000000000000006c (bch_insert_data)
+Date: Tue, 15 Oct 2013 13:42:57 +0400
+Message-ID: <CACaajQuhbWGZAf_HAn9-EDZ=n+9UAivyVuRoQ2y978p2O-chTw@mail.gmail.com>
+References: <1381699461.2306.6.camel@ThinkPad-X230.localdomain>
+ <525BE5B4.6000003@gmail.com> <CACaajQubbRDdewAxXekeTFu-vACRb3QnN2H1cA0XOvCzeFdbcw@mail.gmail.com>
+ <20131014233551.GM28572@kmo>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bIK/Xm5bvUaTMa1a"
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
-In-Reply-To: <20131015084631.GK7856-AwZRO8vwLAwmlAP/+Wk3EA@public.gmane.org>
+In-Reply-To: <20131014233551.GM28572@kmo>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Thierry Reding <thierry.reding-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Cc: Randy Dunlap <rdunlap-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>, linux-next-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Cc: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Igor Gnatenko <i.gnatenko.brain-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
+2013/10/15 Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>:
+>> does branche http://evilpiepirate.org/git/linux-bcache.git/log/?h=bcache-for-3.11
+>> has all fixes and stable for use?
+>
+> No - but 3.11.5 is out and has the fix
 
---bIK/Xm5bvUaTMa1a
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Tue, Oct 15, 2013 at 10:46:32AM +0200, Thierry Reding wrote:
+Thanks! In the feature where the best place to search for patches?
 
-> Oh wait, they were applied right after the merges that broke. I hadn't
-> checked for that.
-
-Yeah, it's because I've been doing incremental build checks - the builds
-fail at the point the tree gets merged in.
-
---bIK/Xm5bvUaTMa1a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJSXQyFAAoJELSic+t+oim9EYwP/A2MPJ+vNq610cxv+vxPa/DQ
-4M8teRS8iNcdCgqxdd/vkspZz6F0retJqXKOUBa+gN/IF2DTWzLbAJBsas0lZCUk
-JXoMJU7H/VgqeJmoZmQRsf1rM0ZmM08dUWnV6QKmAGldwSOtRW4+LA9vm3zZDZWe
-IF7tJaAtHOfQEUar0EYIZlmzl3AKtQW6HEky2uYFx97nAFjeEQm6r9ajn+D4lpll
-Pio9uBq9+Bkl/CEvwjp2F/Kpc/wPbOqdYI7YpZuOEDK6+4EOyXc/n9Zq8BsTcQo0
-YhfgwpmcNtc0cwAy3pRU7oE9VnC50Lcs7Pfa1wdDJXi5SWr6KAKShbLWRukRqjKo
-1lRIM6XvNt8KYxZja7lckfglE7SAYfwbuNEiUrOcTV2zzS6mtsvXVtWynrKXV8Bp
-YJN0qXJfDmlJ0jyNC4slzoeOp84RaOWij1+JyuO2H2KHz8Rdfol4vRVOquPOEk6z
-bbtYurL1tKJJBHftSC14WDUxGGsHxIRYMHeIohfWZ+xyTd9LFWsnDsCLgysGgRCi
-9StG2Y1OZCWfbcQ1ihnXyxDThaLKMqxvXbpo9EoA4NBGqsDBteLp86svYBExmWuj
-Fb1cJbu960k7lYHb+55gV0IRj0qNhEXkiPTdkBSGaP9QvcvOpHNZ+ofaHw8DIxGE
-uqcXLhCAIctLIVu80cUU
-=NiVj
------END PGP SIGNATURE-----
-
---bIK/Xm5bvUaTMa1a--
+-- 
+Vasiliy Tolstov,
+e-mail: v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
+jabber: vase-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
