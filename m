@@ -1,66 +1,55 @@
-From: Thierry Reding <thierry.reding-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+From: Mark Brown <broonie-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
 Subject: Re: linux-next: Tree for Oct 14 (bcache)
-Date: Tue, 15 Oct 2013 10:46:32 +0200
-Message-ID: <20131015084631.GK7856@ulmo.nvidia.com>
+Date: Tue, 15 Oct 2013 10:36:09 +0100
+Message-ID: <20131015093609.GT2443@sirena.org.uk>
 References: <1381762088-18880-1-git-send-email-treding@nvidia.com>
  <525C3EC2.20404@infradead.org>
  <20131014202723.GQ2443@sirena.org.uk>
+ <20131015084631.GK7856@ulmo.nvidia.com>
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="73fGQZLCrFzENemP"
+	protocol="application/pgp-signature"; boundary="bIK/Xm5bvUaTMa1a"
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Content-Disposition: inline
-In-Reply-To: <20131014202723.GQ2443-GFdadSzt00ze9xe1eoZjHA@public.gmane.org>
+In-Reply-To: <20131015084631.GK7856-AwZRO8vwLAwmlAP/+Wk3EA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Mark Brown <broonie-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>
+To: Thierry Reding <thierry.reding-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Cc: Randy Dunlap <rdunlap-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>, linux-next-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
 
---73fGQZLCrFzENemP
+--bIK/Xm5bvUaTMa1a
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Mon, Oct 14, 2013 at 09:27:23PM +0100, Mark Brown wrote:
-> On Mon, Oct 14, 2013 at 11:58:10AM -0700, Randy Dunlap wrote:
-> > On 10/14/13 07:48, Thierry Reding wrote:
->=20
-> > > Gained a few conflicts, but nothing too exciting. x86 and ARM default
-> > > configurations build fine. There were some build failures unrelated to
->=20
-> > Maybe you could build allmodconfig instead of a default config
-> > for more better coverage?  I am seeing lots of build problems.
->=20
-> I'd say in addition - if you look at the last tree I did it's got fixes
-> for all these tihngs I think.
+On Tue, Oct 15, 2013 at 10:46:32AM +0200, Thierry Reding wrote:
 
-Strange, I didn't see any build fixes in it.
+> Oh wait, they were applied right after the merges that broke. I hadn't
+> checked for that.
 
-Oh wait, they were applied right after the merges that broke. I hadn't
-checked for that.
+Yeah, it's because I've been doing incremental build checks - the builds
+fail at the point the tree gets merged in.
 
-Thierry
-
---73fGQZLCrFzENemP
-Content-Type: application/pgp-signature
+--bIK/Xm5bvUaTMa1a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJSXQDnAAoJEN0jrNd/PrOhhGMP/0ar3qE208SFMSTAFfI2MPiS
-vvfBUcSWGbHb3bpVE5sASPlKiqBjXNrlFAXj6+jvIeis4bN2BvgRmrv6XIe28ZFl
-bPL4LIsAP0WMrrXy+OLOkdjqflGSpTAefOjNWbs59tTMRzOSNtudBZ4BzoTZcCSn
-GLjtDmp1ytbiaahU5ugiYMww3vamCEX9UN4RqFAxYi7/5RfsUlIOQnPe0qg8Rd3N
-IorxWuVa3XNbUS7TF3eSVF3fjrvTxTG2dAUv5/kXVA6pS0lxBHCgncsGgUw/jzPO
-URBzk8TRLDwJpZFeOL3B+/eHycqqJhWC9tTxau7ouTBA5UQ+BVw/IB+VQeuXZ+67
-C4UMtV9h5N7Rxzpx8uY2SgHCcuhzBdQ71kERYNkKLxJYX9p2JJA8wsOHNMDYFnBW
-AtsSC2aN6zsdcoWRa1cGNqX2OtZQsZs5gW8w1ePAjq/hS67Q2cpX4wSFlKe3MRaH
-JSUNTnG1hgRgjeka6lGQIg8fBDt0c6sFfKBmC37Na86XQukXhLUv02LEG8cc4d7f
-wwDpp0lltpgnBZcIeRogmJeCzc5+eMG9Wy3pIZmpE7pu65yfq8bB8BYU69nnYvU2
-SeeBnzqab4FqlNIh/7bikdAxEkYFJ2CHC5rhm+/tAFHXUdwV1d0qJGxCwgzEMo8f
-5FpMu/7l/3zwlMmWK7OY
-=K3Ii
+iQIcBAEBAgAGBQJSXQyFAAoJELSic+t+oim9EYwP/A2MPJ+vNq610cxv+vxPa/DQ
+4M8teRS8iNcdCgqxdd/vkspZz6F0retJqXKOUBa+gN/IF2DTWzLbAJBsas0lZCUk
+JXoMJU7H/VgqeJmoZmQRsf1rM0ZmM08dUWnV6QKmAGldwSOtRW4+LA9vm3zZDZWe
+IF7tJaAtHOfQEUar0EYIZlmzl3AKtQW6HEky2uYFx97nAFjeEQm6r9ajn+D4lpll
+Pio9uBq9+Bkl/CEvwjp2F/Kpc/wPbOqdYI7YpZuOEDK6+4EOyXc/n9Zq8BsTcQo0
+YhfgwpmcNtc0cwAy3pRU7oE9VnC50Lcs7Pfa1wdDJXi5SWr6KAKShbLWRukRqjKo
+1lRIM6XvNt8KYxZja7lckfglE7SAYfwbuNEiUrOcTV2zzS6mtsvXVtWynrKXV8Bp
+YJN0qXJfDmlJ0jyNC4slzoeOp84RaOWij1+JyuO2H2KHz8Rdfol4vRVOquPOEk6z
+bbtYurL1tKJJBHftSC14WDUxGGsHxIRYMHeIohfWZ+xyTd9LFWsnDsCLgysGgRCi
+9StG2Y1OZCWfbcQ1ihnXyxDThaLKMqxvXbpo9EoA4NBGqsDBteLp86svYBExmWuj
+Fb1cJbu960k7lYHb+55gV0IRj0qNhEXkiPTdkBSGaP9QvcvOpHNZ+ofaHw8DIxGE
+uqcXLhCAIctLIVu80cUU
+=NiVj
 -----END PGP SIGNATURE-----
 
---73fGQZLCrFzENemP--
+--bIK/Xm5bvUaTMa1a--
