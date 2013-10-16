@@ -1,43 +1,41 @@
-From: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>
-Subject: bcache not works?
-Date: Wed, 16 Oct 2013 08:22:29 +0400
-Message-ID: <CACaajQueWka6dA3g-Uv7Asz9KhgX9nJ_sjd8bNRo2Y2iU-73jA@mail.gmail.com>
+From: "Paul B. Henson" <henson-HInyCGIudOg@public.gmane.org>
+Subject: RE: good bcache use case?
+Date: Wed, 16 Oct 2013 12:29:30 -0700
+Message-ID: <04b801cecaa6$0ad387e0$207a97a0$@acm.org>
+References: <1005c01cec92f$b61b2040$225160c0$@acm.org> <1381849203.67736.YahooMailNeo@web181503.mail.ne1.yahoo.com> <038e01cec9da$8a19e750$9e4db5f0$@acm.org> <525DAFA3.4060709@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <525DAFA3.4060709-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Content-Language: en-us
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: 'Gabriel de Perthuis' <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-I have this setup:
-/dev/md127 - raid1 with one sata 3Tb drive
-/dev/sdb SSD disk with 240 Gb
+> From: Gabriel de Perthuis [mailto:g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org]
+> Sent: Tuesday, October 15, 2013 2:12 PM
+>
+> 3.10.x and 3.11.y stable kernels have been getting bcache backports
+[...]
+> that introduced the crash was fixing a more serious bug.  Stopping here
+> because the mailing list is starting to feel like Groundhog day.
 
-I'm succeseful create bcache0 device and format it to ext4.
+Sorry, I did do some specific searching on the mailing list and a quick
+review of recent traffic, don't mean to make you guys rehash stuff.
 
-/dev/bcache0 /var/lib/libvirt/images ext4
-rw,relatime,journal_checksum,journal_async_commit,errors=remount-ro,min_batch_time=15000,max_batch_time=60000,data=ordered
-0 0
+3.10.16 was just released this week, does that contain backports for all
+known serious issues and would be considered suitable for production
+deployment?
 
-After that i'm install kvm virtual machine and tries to create some
-activity via iozone fio and other. But stats says nothing.
+> but since LVM can do raid and a single cache can cache multiple devices,
 
-What i miss?
+I've seen references to raid using lvm (as opposed to lvm over md raid), but
+it's never really been clear to me whether that is considered an alternative
+to md raid, or a replacement, or whether it's better to do raid within lvm
+rather than layering lvm on top of md raid. At this point, I'm considerably
+more familiar with md raid so I've just been sticking with that.
 
-root@node03:~# cat
-/sys/fs/bcache/76907875-ef3b-48b1-8531-f880e64487a8/stats_day/*
-0
-0
-0
-0
-0
-0
-0
-0
-
-
-
--- 
-Vasiliy Tolstov,
-e-mail: v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
-jabber: vase-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
+Thanks much.
