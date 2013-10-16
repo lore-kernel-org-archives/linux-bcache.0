@@ -1,33 +1,43 @@
-From: Felipe Pena <felipensp-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: [PATCH] drivers: md: bcache: Fix wrong check on can_attach_cache
-Date: Tue, 15 Oct 2013 20:37:22 -0300
-Message-ID: <1381880242-3858-1-git-send-email-felipensp@gmail.com>
+From: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>
+Subject: bcache not works?
+Date: Wed, 16 Oct 2013 08:22:29 +0400
+Message-ID: <CACaajQueWka6dA3g-Uv7Asz9KhgX9nJ_sjd8bNRo2Y2iU-73jA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>, Neil Brown <neilb-l3A5Bk7waGM@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Felipe Pena <felipensp-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-There is a wrong check on can_attach_cache() function which
-bucket_size is compared to block_size value.
+I have this setup:
+/dev/md127 - raid1 with one sata 3Tb drive
+/dev/sdb SSD disk with 240 Gb
 
-Signed-off-by: Felipe Pena <felipensp-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
----
- drivers/md/bcache/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm succeseful create bcache0 device and format it to ext4.
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 547c4c5..d5bc1eb 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1650,7 +1650,7 @@ err:
- static bool can_attach_cache(struct cache *ca, struct cache_set *c)
- {
- 	return ca->sb.block_size	== c->sb.block_size &&
--		ca->sb.bucket_size	== c->sb.block_size &&
-+		ca->sb.bucket_size	== c->sb.bucket_size &&
- 		ca->sb.nr_in_set	== c->sb.nr_in_set;
- }
+/dev/bcache0 /var/lib/libvirt/images ext4
+rw,relatime,journal_checksum,journal_async_commit,errors=remount-ro,min_batch_time=15000,max_batch_time=60000,data=ordered
+0 0
 
---
-1.7.10.4
+After that i'm install kvm virtual machine and tries to create some
+activity via iozone fio and other. But stats says nothing.
+
+What i miss?
+
+root@node03:~# cat
+/sys/fs/bcache/76907875-ef3b-48b1-8531-f880e64487a8/stats_day/*
+0
+0
+0
+0
+0
+0
+0
+0
+
+
+
+-- 
+Vasiliy Tolstov,
+e-mail: v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
+jabber: vase-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
