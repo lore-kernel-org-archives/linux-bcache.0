@@ -1,57 +1,25 @@
-From: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>
-Subject: configuration for kvm vps on disk
-Date: Thu, 17 Oct 2013 22:48:44 +0400
-Message-ID: <CACaajQt5FV=hLROyFtF-dQHpKzwq0guwwTonYjYF=q4MtW9q2Q@mail.gmail.com>
+From: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+Subject: Re: configuration for kvm vps on disk
+Date: Thu, 17 Oct 2013 13:36:10 -0700 (PDT)
+Message-ID: <1382042170.70599.YahooMailNeo@web181502.mail.ne1.yahoo.com>
+References: <CACaajQt5FV=hLROyFtF-dQHpKzwq0guwwTonYjYF=q4MtW9q2Q@mail.gmail.com>
+Reply-To: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <CACaajQt5FV=hLROyFtF-dQHpKzwq0guwwTonYjYF=q4MtW9q2Q-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi all. I'm very happy with bcache. Now i'm try tune some params  for own nedds.
-Firstly i want to run 50 vps on disk and get to it greate performance
-(im not warry about ssd disk failure).
-What fs best of all for that? ext4 or btrfs?
-What parameters in bcache i need to tune to get maximum performance?
-I'm try to disable sequential cutoff
+1. Cut the filesystem out of the equation. Use LVM to create the disks. If you are hoping to do sparse files, use LVM's new thin-provisioning feature. But if you do sparse or thin-provision, performance won't be near as good as "fat" allocation.
 
+2. It's a general rule of thumb that each virtual machine will use ~5 IOPS. Of course if you're running a compile farm, that figure is WAY off.
 
-Now i'm get something like this, Why i have very bad random read speed?
+3. With more than say 3 virtual machines the IO pattern will be completely random and 4KB in size (linux and windows NTFS both use 4K as default). There's absolutely no point in testing anything but 4 and maybe 8K transfer sizes
 
-        Auto Mode
-        OPS Mode. Output is in operations per second.
-        File size set to 3145728 KB
-        Command line used: iozone -a -i0 -i1 -i2 -O -s3G
-        Time Resolution = 0.000001 seconds.
-        Processor cache size set to 1024 Kbytes.
-        Processor cache line size set to 32 bytes.
-        File stride size set to 17 * record size.
-                                                            random
-random    bkwd   record   stride
-              KB  reclen   write rewrite    read    reread    read
-write    read  rewrite     read   fwrite frewrite   fread  freread
-         3145728       4  112681  101056    97197    94559    3641   40138
-         3145728       8   68963   67357    35151    39137    2789   49231
-         3145728      16   28620   34762    20139    22825    2303   28583
-         3145728      32   13285   16637    10209    11520    1848   13074
-         3145728      64    6875    8470     5229     5817    1268    7887
-         3145728     128    3946    4078     2660     2943     905    4004
-         3145728     256    1983    2183     1350     1452     593    1801
-         3145728     512     988     971      672      727     418    1079
-         3145728    1024     474     527      345      375     280     552
-         3145728    2048     265     255      170      183     158     235
-         3145728    4096     135     129       89       91      85     121
-         3145728    8192      67      63       45       45      43      63
-         3145728   16384      34      32       22       22      22      33
+4. IOPS are inverse linearly related (4k will be 2x as fast as 8k and 4x as fast as 16k). Efficiencies at certain sizes can produce sweet spots that deviate slightly from that rule.
 
-i mount ext4 via
+5. What is the underlying spinning RUST and SSD configuration? A 7K RPM drive can barely muster 100 random IOPS. The SSD can obviously do vastly better on reads but writes can vary all over the map depending on how the firmware's smarts and filesystem/block layer coalesce capabilities. Please describe the model of SSD and HDD being used.
 
-/dev/bcache0 /var/lib/libvirt/images ext4
-rw,relatime,journal_checksum,journal_async_commit,errors=remount-ro,min_batch_time=15000,max_batch_time=60000,data=ordered
-0 0
-
--- 
-Vasiliy Tolstov,
-e-mail: v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
-jabber: vase-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
+6. OS level scheduling (should be noop or deadline) can influence behavior and block level read-ahead should be turned off on the SSD in particular. If you can get the FS to journal in nice, big chunks (eg. erasure block size of commonly 512KB, intel used to use 128KB) that helps too.
