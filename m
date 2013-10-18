@@ -1,65 +1,26 @@
-From: Hans de Goede <hdegoede@redhat.com>
+From: Gabriel de Perthuis <g2p.code-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 Subject: Re: bcache-tools and bcache support in other linux packages
-Date: Fri, 18 Oct 2013 14:15:50 +0200
-Message-ID: <52612676.4040702@redhat.com>
+Date: Fri, 18 Oct 2013 15:30:51 +0200
+Message-ID: <5261380B.2020007@gmail.com>
 References: <CE86CB5C.BB96%rolf@rolffokkens.nl>
-Reply-To: Development discussions related to Fedora
-	<devel@lists.fedoraproject.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; Format="flowed"
-Content-Transfer-Encoding: base64
-Return-path: <devel-bounces@lists.fedoraproject.org>
-In-Reply-To: <CE86CB5C.BB96%rolf@rolffokkens.nl>
-List-Unsubscribe: <https://admin.fedoraproject.org/mailman/options/devel>,
-	<mailto:devel-request@lists.fedoraproject.org?subject=unsubscribe>
-List-Archive: <http://lists.fedoraproject.org/pipermail/devel/>
-List-Post: <mailto:devel@lists.fedoraproject.org>
-List-Help: <mailto:devel-request@lists.fedoraproject.org?subject=help>
-List-Subscribe: <https://admin.fedoraproject.org/mailman/listinfo/devel>,
-	<mailto:devel-request@lists.fedoraproject.org?subject=subscribe>
-Sender: devel-bounces@lists.fedoraproject.org
-Errors-To: devel-bounces@lists.fedoraproject.org
-To: Development discussions related to Fedora <devel@lists.fedoraproject.org>, Piergiorgio Sartor <piergiorgio.sartor@nexgo.de>
-Cc: linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <CE86CB5C.BB96%rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Cc: Piergiorgio Sartor <piergiorgio.sartor-i47jiTeKxPI@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Development discussions related to Fedora <devel-TuqUDEhatI4ANWPb/1PvSmm0pvjS0E/A@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-SGksCgpPbiAxMC8xOC8yMDEzIDExOjU2IEFNLCBSb2xmIEZva2tlbnMgd3JvdGU6Cj4gSGkgYWxs
-LAo+Cj4gV2UndmUgYmVlbiB3YWl0aW5nIHRvIHNlZSBpZiBvdGhlciBwZW9wbGUgd2hvIGNvdWxk
-bid0IG1ha2Ugb24gU3VuZGF5Cj4gd291bGQgYWxzbyBkbyBzb21lIHRlc3RpbmcuIFRoYXQgaGFz
-bid0IGhhcHBlbmVkLCBzbyBhIGZldyB3b3JkcyBvbiBteQo+IGltcHJlc3Npb25zIG9uIHRoZSB0
-ZXN0IGRheSBhcmUgYXBwcm9wcmlhdGUgaW5kZWVkLgo+Cj4gRmlyc3Qgb2YgYWxsIG5vdCBtYW55
-IHBlb3BsZSByZWFsbHkgZGlkIHNvbWUgdGVzdGluZy4gV2UgZGlkbid0IGV4cGVjdAo+IG1hbnkg
-cGVvcGxlIHRvIHBhcnRpY2lwYXRlLCBidXQgdGhlIDMgcGVvcGxlIHdobyBkaWQgKG1hbnkgdGhh
-bmtzIHRvCj4gdGhlbSEpIHdlcmUgdGhlIGJhcmUgbWluaW11bSB3ZSBhbnRpY2lwYXRlZC4gVGhp
-cyB3YXMgcHJvYmFibHkgY2F1c2VkIGJ5Cj4gdGhlIGZvbGxvd2luZzoKPiAtIFNTRCBjYWNoaW5n
-IG1heSBuZWVkIG1vcmUgZXhwbGFuYXRpb24sIG5vdCBtYW55IHBlb3BsZSB1bmRlcnN0YW5kIHdo
-YXQKPiBpdCBpcyBhbmQgd2hhdCB0aGUgYmVuZWZpdHMgYXJlCj4gLSBCZWNhdXNlIGl0J3MgaGFy
-ZCB0byBjaGFuZ2UgYW4gZXhpc3RpbmcgcGFydGl0aW9uIHRvIGEgJ2JjYWNoZWQnCj4gcGFydGl0
-aW9uLCBpdCdzIG5vdCByZWFsbHkgdGVtcHRpbmcgdG8gdGVzdCAodGhlcmUncyBhIGJsb2NrcyB1
-dGlsaXR5Cj4gdW5kZXIgZGV2ZWxvcG1lbnQgdGhhdCBtYXkgaGVscCwgY3VycmVudGx5IGJhY2t1
-cC1yZXN0b3JlIGlzIHRoZSBvbmx5IHdheSkuCj4gLSBOb3QgbWFueSBwZW9wbGUgaGF2ZSB0aGUg
-cmVxdWlyZWQgcmVzb3VyY2VzIGF2YWlsYWJsZSB0byBkbyB0ZXN0aW5nLgo+IEV2ZW4gd2hlbiB0
-ZXN0aW5nIGluIGEgVk0gbm90IG1hbnkgcGVvcGxlIGhhdmUgdGhlIHJlcXVpcmVkIDEwR0IgYXZh
-aWxhYmxlCj4gKFRoZSByZXF1aXJlbWVudHMgY291bGQgYmUgbG93ZXJlZCB0b3AgYWJvdXQgNkdC
-LCBzbyB0aGF0IG1pZ2h0IGhlbHApCj4gLSBJbnN0YWxsaW5nIEYyMCBhcyByZXF1ZXN0ZWQgaW4g
-dGhlIHByZXJlcXVpc2l0ZXMgd2FzIGhhcmRlciB0byB0aGUKPiB0ZXN0ZXJzIHRoYW4gd2UgYW50
-aWNpcGF0ZWQuIFNwZWNpZmljYWxseSBwbGFubmluZyBhIHNwZWNpZmljIHBhcnRpdGlvbgo+IGxh
-eW91dCBpbiBBbmFjb25kYSByZXF1aXJlcyBhIGxvdCBvZiBhdHRlbnRpb24gKEkgY291bGQgdXBs
-b2FkIGEgVk0gaW1hZ2UKPiBzb21ld2hlcmUgdG8gZmFjaWxpdGF0ZSB0aGF0KS4KPgo+IEFib3V0
-IHRoZSB0ZXN0aW5nIGl0c2VsZjoKPiAtIHRoZSBhbGlnbm1lbnQgb2YgdGhlIHRvb2xzIChiY2Fj
-aGUtdG9vbHMsIGtlcm5lbCwgdXRpbC1saW51eCBhbmQgZHJhY3V0KQo+IGlzIHJlYWxseSBnb29k
-IG5vdywgcGVvcGxlIHdlcmUgYWJsZSB0byBkbyB0aGUgdGVzdGNhc2VzICgxLkEgYW5kIDEuQikK
-PiB3aXRob3V0IGEgaGl0Y2guCj4gLSBub2JvZHkgdGVzdGVkIHRoZSBMVk0gaW50ZWdyYXRpb24g
-KHRlc3RjYXNlcyAyLkEgYW5kIDIuQiksIHNvIG5vIHRlc3QKPiByZXN1bHRzIG9uIHRoYXQgcGFy
-dC4KPiAtIFVuZm9ydHVuYXRlbHkga2VybmVsIDMuMTEuNCAod2hpY2ggd2FzIHRoZSBsYXRlc3Qg
-dmVyc2lvbiBvbiBTdW5kYXkpCj4gZXhoaWJpdGVkIGEgYnVnIGR1cmluZyBzdHJlc3MgdGVzdGlu
-Zwo+IChodHRwczovL2J1Z3ppbGxhLnJlZGhhdC5jb20vc2hvd19idWcuY2dpP2lkPTEwMTg2MTUp
-LCBidXQgdGhhdCBidWcgaXMKPiBzdXBwb3NlZCB0byBiZSBmaXhlZCBpbiBrZXJuZWwgMy4xMS41
-IHdoaWNoIHdhcyByZWxlYXNlZCBsYXRlciB0aGlzIHdlZWsuCj4KPiBTbyBJIHRoaW5rIFNTRCBD
-YWNoaW5nICh1c2luZyBiY2FjaGUpIGlzIGluIGEgZ29vZCBzaGFwZSwgYnV0IEkgd291bGQgbGlr
-ZQo+IHRvIGVuY291cmFnZSBwZW9wbGUgdG8gZG8gc29tZSBtb3JlIHRlc3RpbmcuIE9mIGNvdXJz
-ZSBvdGhlciBmZWVkYmFjayBpcwo+IGFsc28gYXBwcmVjaWF0ZWQuCgpHb29kIHdvcmssIGFuZCB0
-aGFua3MgZm9yIHRoZSBkZXRhaWxlZCBzdW1tYXJ5IQoKUmVnYXJkcywKCkhhbnMKLS0gCmRldmVs
-IG1haWxpbmcgbGlzdApkZXZlbEBsaXN0cy5mZWRvcmFwcm9qZWN0Lm9yZwpodHRwczovL2FkbWlu
-LmZlZG9yYXByb2plY3Qub3JnL21haWxtYW4vbGlzdGluZm8vZGV2ZWwKRmVkb3JhIENvZGUgb2Yg
-Q29uZHVjdDogaHR0cDovL2ZlZG9yYXByb2plY3Qub3JnL2NvZGUtb2YtY29uZHVjdA==
+> - Because it's hard to change an existing partition to a 'bcached'
+> partition, it's not really tempting to test (there's a blocks utility
+> under development that may help, currently backup-restore is the only way)
+
+blocks[1] has been doing bcache conversion since forever (last march,
+when the project was renamed from lvmify).
+
+Backup-restore hasn't been necessary since then, apart from unusual
+cases, like not having a /boot partition.
+
+[1] https://github.com/g2p/blocks
