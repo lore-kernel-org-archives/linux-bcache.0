@@ -1,48 +1,30 @@
-From: Rolf Fokkens <rolf@rolffokkens.nl>
-Subject: Re: bcache-tools and bcache support in other linux packages
-Date: Sat, 19 Oct 2013 09:59:37 +0200
-Message-ID: <52623BE9.5070507@rolffokkens.nl>
-References: <20131018092234.GA18159@lazy.lzy>	<CE86CB5C.BB96%rolf@rolffokkens.nl>
-	<CAPVzhpwGvP9RK9bEmNLLvy5qM8ejHcoDkeFU3aksdJq9BE0u6g@mail.gmail.com>
-Reply-To: Development discussions related to Fedora
-	<devel@lists.fedoraproject.org>
+From: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>
+Subject: Re: configuration for kvm vps on disk
+Date: Sat, 19 Oct 2013 14:29:07 +0400
+Message-ID: <CACaajQuy7+UKkFksaR8EJGEMRqu7d3XOu79xXJSj5RyxSBQS0w@mail.gmail.com>
+References: <CACaajQt5FV=hLROyFtF-dQHpKzwq0guwwTonYjYF=q4MtW9q2Q@mail.gmail.com>
+ <1382042170.70599.YahooMailNeo@web181502.mail.ne1.yahoo.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; Format="flowed"
-Content-Transfer-Encoding: base64
-Return-path: <devel-bounces@lists.fedoraproject.org>
-In-Reply-To: <CAPVzhpwGvP9RK9bEmNLLvy5qM8ejHcoDkeFU3aksdJq9BE0u6g@mail.gmail.com>
-List-Unsubscribe: <https://admin.fedoraproject.org/mailman/options/devel>,
-	<mailto:devel-request@lists.fedoraproject.org?subject=unsubscribe>
-List-Archive: <http://lists.fedoraproject.org/pipermail/devel/>
-List-Post: <mailto:devel@lists.fedoraproject.org>
-List-Help: <mailto:devel-request@lists.fedoraproject.org?subject=help>
-List-Subscribe: <https://admin.fedoraproject.org/mailman/listinfo/devel>,
-	<mailto:devel-request@lists.fedoraproject.org?subject=subscribe>
-Sender: devel-bounces@lists.fedoraproject.org
-Errors-To: devel-bounces@lists.fedoraproject.org
-To: Reartes Guillermo <rtguille@gmail.com>, Development discussions related to Fedora <devel@lists.fedoraproject.org>
-Cc: linux-bcache@vger.kernel.org, Piergiorgio Sartor <piergiorgio.sartor@nexgo.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <1382042170.70599.YahooMailNeo-XYahOdtEMNm2Y7dhQGSVAJOW+3bF1jUfVpNB7YpNyf8@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+Cc: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-SGkgUmVhcnRlcywKCk9uIDEwLzE4LzIwMTMgMDU6NTcgUE0sIFJlYXJ0ZXMgR3VpbGxlcm1vIHdy
-b3RlOgo+IEkgdGVzdGVkIEYyMCBvbiBhIHBoeXNpY2FsIGhvc3Qgd2l0aCBhIHZlcnRleDMgc3Nk
-Lgo+IEJ1dCBpdCB3YXMgbm90IGEgcmVxdWVzdGVkIHRlc3QgY2FzZSwgaSByZS11c2VkIGEgbWQg
-cmFpZDAgd2l0aCBhIDZnYgo+IHBhcnRpdGlvbiBvZiB0aGUgc3NkLgo+Cj4gVGhlIGZpbGUtc3lz
-dGVtIHdhcyBzZXR1cCBhcyBhIHN0b3JhZ2UgcG9vbCBmb3IgdmlydC1tYW5hZ2VyLgo+Cj4gSSBk
-aWQgbm90IGV4cGVyaWVuY2UgYW55IGlzc3VlcywgaSBpbnN0YWxsZWQgMiBGMjAgZ3Vlc3QgYXQg
-dGhlIHNhbWUgdGltZS4KPiBJIGV2ZW4gcmVib290ZWQgbWFueSB0aW1lcyBhbmQgaXQgc3Vydml2
-ZWQgc2V2ZXJhbCBrZXJuZWwgdXBkYXRlcy4KPiBJIGRpZCBub3QgdGVzdCBhIHBvd2VyLWxvc3Mg
-c2NlbmFyaW8uIEkgaGFzIGJlZW4gd29ya2luZyBvayBzaW5jZSBhCj4gY291cGxlIG9mIGRheXMu
-Cj4KPiBJIGFsc28gZGlkIHRoZSBub24gbHZtIHRlc3RzIG9uIGd1ZXN0LCB3aXRob3V0IGFueSBp
-c3N1ZS4KVGhhbmtzIGZvciB5b3VyIGZlZWRiYWNrLCBnbGFkIHRvIGhlYXIgaXQgd29ya3Mgd2Vs
-bCBmb3IgeW91Lgo+IFRoZSBvbmx5IHRoaW5nIHRoYXQgaSBjYW4gcmVjYWxsIGFzIHN0cmFuZ2Ug
-aXMgdGhlIGZhY3QgdGhhdCBiY2FjaGUKPiBzZWVtcyB0byBub3QgdG8gdXNlIGRpc2NhcmQvdHJp
-bSBmb3Igc29tZSByZWFzb24uCmRpc2NhcmQvdHJpbSBjYW4gYmUgZW5hYmxlZCwgc2VlOgpodHRw
-Oi8vZXZpbHBpZXBpcmF0ZS5vcmcvZ2l0L2xpbnV4LWJjYWNoZS5naXQvdHJlZS9Eb2N1bWVudGF0
-aW9uL2JjYWNoZS50eHQ/aD1iY2FjaGUtZGV2I24xMjYKClRoZXJlJ3MgYWxzbyBhbiBleHBsYW5h
-dGlvbiBpbiB0aGUgZG9jdW1lbnQgd2h5IGl0IGlzbid0IGVuYWJsZWQgYnkgZGVmYXVsdDoKInxE
-ZWZhdWx0cyB0byBvZmYsIHNpbmNlIFNBVEEgVFJJTSBpcyBhbiB1bnF1ZXVlZCBjb21tYW5kIChh
-bmQgdGh1cyBzbG93KS4iCgpSb2xmCnwKLS0gCmRldmVsIG1haWxpbmcgbGlzdApkZXZlbEBsaXN0
-cy5mZWRvcmFwcm9qZWN0Lm9yZwpodHRwczovL2FkbWluLmZlZG9yYXByb2plY3Qub3JnL21haWxt
-YW4vbGlzdGluZm8vZGV2ZWwKRmVkb3JhIENvZGUgb2YgQ29uZHVjdDogaHR0cDovL2ZlZG9yYXBy
-b2plY3Qub3JnL2NvZGUtb2YtY29uZHVjdA==
+2013/10/18 matthew patton <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>:
+> 5. What is the underlying spinning RUST and SSD configuration? A 7K RPM drive can barely muster 100 random IOPS. The SSD can obviously do vastly better on reads but writes can vary all over the map depending on how the firmware's smarts and filesystem/block layer coalesce capabilities. Please describe the model of SSD and HDD being used.
+>
+> 6. OS level scheduling (should be noop or deadline) can influence behavior and block level read-ahead should be turned off on the SSD in particular. If you can get the FS to journal in nice, big chunks (eg. erasure block size of commonly 512KB, intel used to use 128KB) that helps too.
+
+
+Thanks again. I'm switch to lvm logical volumes for vps. Scheduler
+deadline.What i can tune now to not crack ssd =)?
+As i known i can switch sequential_cutoff to default?
+
+-- 
+Vasiliy Tolstov,
+e-mail: v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
+jabber: vase-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
