@@ -1,43 +1,32 @@
-From: Dirk Geschke <dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org>
-Subject: bcache not working on large files?
-Date: Tue, 22 Oct 2013 09:08:30 +0200
-Message-ID: <20131022070830.GA20286@euve30603.vserver.de>
+From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Subject: Re: bcache not working on large files?
+Date: Tue, 22 Oct 2013 19:35:48 +0200
+Message-ID: <5266B774.6040202@rolffokkens.nl>
+References: <20131022070830.GA20286@euve30603.vserver.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-Content-Disposition: inline
+In-Reply-To: <20131022070830.GA20286-TGNR7510c4H9eX/OD4jYIkzuTB+3w3uf@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Dirk Geschke <dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hi all,
+Hi Dirk,
 
-I was just playing a little bit with bcache and it works fine. But
-if I try random IOPS writes (writeback) on a file larger than the
-cache, it seems not to work? At least I get a performance as without
-bcache.
+On 10/22/2013 09:08 AM, Dirk Geschke wrote:
+> I was just playing a little bit with bcache and it works fine. But
+> if I try random IOPS writes (writeback) on a file larger than the
+> cache, it seems not to work? At least I get a performance as without
+> bcache.
+>
+> Did I miss something? Is caching disabled in such cases?
+>
+> Has anyone a hint for me, what is going wrong?
+Bcache has some specific handling of sequential I/O:
 
-I used a RAID-6 of 8 SSDs (each 238 GiB) as a cache and a RAID-6 of
-10 HDDs (2794 Gib). For my test I did random writes of 4k blocks.
-With 8 threads writing on one 1000 GB file, I get IOPS in the range
-of 20000, but with a file of 10000 GB I end up with about 400 IOPS.
-That is the same as without cache. 
+http://evilpiepirate.org/git/linux-bcache.git/tree/Documentation/bcache.txt
 
-Did I miss something? Is caching disabled in such cases?
+Could this explain what you're seeing?
 
-I would expect, that even in this case (writeback and random writes)
-it should work as well. Even after a few minutes I get these results,
-so it is not a problem of a full cache.
-
-Has anyone a hint for me, what is going wrong?
-
-Best regards
-
-Dirk
-
--- 
-+----------------------------------------------------------------------+
-| Dr. Dirk Geschke       / Plankensteinweg 61    / 85435 Erding        |
-| Telefon: 08122-559448  / Mobil: 0176-96906350 / Fax: 08122-9818106   |
-| dirk-tpR6ahGJfjwEZ6m2XrtfILNAH6kLmebB@public.gmane.org / dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org  / kontakt-WMiem5eIfR0n5izryJqWLw@public.gmane.org |
-+----------------------------------------------------------------------+
+Rolf
