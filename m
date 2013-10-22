@@ -1,56 +1,59 @@
-From: Rolf Fokkens <rolf@rolffokkens.nl>
-Subject: Re: bcache-tools and bcache support in other linux packages
-Date: Tue, 22 Oct 2013 19:53:43 +0200
-Message-ID: <5266BBA7.4070106@rolffokkens.nl>
-References: <20131020185937.GA18759@lazy.lzy>
-	<CE8AE869.BD62%rolf@rolffokkens.nl>
-	<20131021164756.GA8027@lazy.lzy>
-Reply-To: Development discussions related to Fedora
-	<devel@lists.fedoraproject.org>
+From: Dirk Geschke <dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org>
+Subject: Re: bcache not working on large files?
+Date: Tue, 22 Oct 2013 20:03:16 +0200
+Message-ID: <20131022180316.GA24473@euve30603.vserver.de>
+References: <20131022070830.GA20286@euve30603.vserver.de>
+ <5266B774.6040202@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; Format="flowed"
-Content-Transfer-Encoding: base64
-Return-path: <devel-bounces@lists.fedoraproject.org>
-In-Reply-To: <20131021164756.GA8027@lazy.lzy>
-List-Unsubscribe: <https://admin.fedoraproject.org/mailman/options/devel>,
-	<mailto:devel-request@lists.fedoraproject.org?subject=unsubscribe>
-List-Archive: <http://lists.fedoraproject.org/pipermail/devel/>
-List-Post: <mailto:devel@lists.fedoraproject.org>
-List-Help: <mailto:devel-request@lists.fedoraproject.org?subject=help>
-List-Subscribe: <https://admin.fedoraproject.org/mailman/listinfo/devel>,
-	<mailto:devel-request@lists.fedoraproject.org?subject=subscribe>
-Sender: devel-bounces@lists.fedoraproject.org
-Errors-To: devel-bounces@lists.fedoraproject.org
-To: Piergiorgio Sartor <piergiorgio.sartor@nexgo.de>
-Cc: Development discussions related to Fedora <devel@lists.fedoraproject.org>, linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <5266B774.6040202-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Cc: Dirk Geschke <dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-T24gMTAvMjEvMjAxMyAwNjo0NyBQTSwgUGllcmdpb3JnaW8gU2FydG9yIHdyb3RlOgo+Cj4gSW50
-ZXJlc3RpbmcsIHRoZW4gbG9naWMgd291bGQgc3VnZ2VzdCB0byAoYiljYWNoZQo+IHRoZSBjb21w
-b25lbnRzIG9mIHRoZSBSQUlELgo+IE9mLCBldmVuIGJldHRlciwgdG8gKGIpY2FjaGUgL2Rldi9z
-ZFthYl0gKGluIHRoaXMKPiBjYXNlKSBhbmQgY292ZXIsIGluIHRoaXMgd2F5LCBldmVyeXRoaW5n
-LgpXZWxsLCBJIGFncmVlLCB0aGVyZSdzIG1vcmUgdG8gaXQuIExpa2UgY29zdC4gT25lIGNvdWxk
-IGNvbnNpZGVyIHRvIHBhaXIgCnNlcnZlcmFsIEhIRCcgZWFjaCB3aXRoIGEgZGVkaWNhdGVkIGJj
-YWNoZSBTU0QuIEFuZCBmcm9tIHRoYXQgb25lIGNvdWxkIApidWlsZCBhIFJBSUQgYXJyYXkuIFRo
-aXMgUkFJRCBhcnJheSBoYXMgZXhjZWxsZW50IChyZWFkKSBwZXJmb3JtYW5jZSAKYmVjYXVzZSBv
-ZiB0aGUgY29tYmluZWQgU1NEIHBlcmZvcm1hbmNlLiBUaGlzIHN0b3JhZ2Ugc3lzdGVtIGRvZXMg
-YnJlYWsgCndoZW4gb25lIG9mIHRoZSBIREQncyBvciBTREQncyBicmVha3MsIHdoaWNoIGlzIGFs
-c28gYSBuaWNlIGZlYXR1cmUuIFNvIAppZiBpdCB3ZXJlbid0IGZvciB0aGUgY29zdCAoYW5kIHRo
-ZSBudW1iZXIgb2YgYXZhaWxiYWxlIFNBVEEgY29ubmVjdG9ycykgCnRoaXMgY291bGQgYmUgaW50
-ZXJyZXN0aW5nLiBCdXQgaXQncyBhbGwgYSBtYXR0ZXIgb2YgcmVxdWlyZW1lbnRzIG9mIGNvdXJz
-ZS4KPiBJdCdzIGEgZGVza3RvcCBQQywgSSBub3RpY2UgdGhhdCBwZXJmb3JtYW5jZXMKPiBtYWlu
-bHkgZGVwZW5kIG9uIHRoZSBzdG9yYWdlIHN1YnlzdGVtLCB0aGUgcmVzdAo+IChDUFUsIG1lbW9y
-eSwgR1BVKSBpcyBmaW5lIGZvciBtZS4KCkluIG15IGRlc2t0b3AgUEMgSSdtIHJ1bm5pbmcgc2lu
-Z2xzIFNTRCBiY2FjaGUgb24gYSBSQUlENSBhcnJheS4gVGhlIApwZXJmb3JtYW5jZSBpcyBmaW5l
-LCBhbmQgd2hlbiB0aGUgU1NEIGJyZWFrcywgd2VsbCwgSSBob3BlIHRoZSBGUyBvbiB0aGUgCkhE
-RCBjYW4gYmUgcmVjb3ZlcmVkLiBBbmQgaWYgbm90PyBXZWxsLCBpdCdzIG9ubHkgYSBkZXNrdG9w
-IFBDLgoKQW5kIHdoZW4gdXNpbmcgbXVsdGlwbGUgU1NEJ3MgZm9yIHJlZHVuY2FuY3ksIHRoZSBm
-b2xsb3dpbmcgYXJ0aWNsZSAKY292ZXJzIHNvbWUgaW50ZXJyZXN0aW5nIGZlYXR1cmVzIGluIGJj
-YWNoZToKCmh0dHA6Ly93d3cubGludXguY29tL25ld3MvZmVhdHVyZWQtYmxvZ3MvMjAwLWxpYmJ5
-LWNsYXJrLzcyODIwOS1hYm91dC10aGUtbGludXgta2VybmVsLWJjYWNoZQoKUXVvdGUgIk11bHRp
-cGxlIFNTRHMgd2lsbCBhbGxvdyB1cyB0byBtaXJyb3IgZGlydHkgZGF0YSBhbmQgbWV0YWRhdGEs
-IApidXQgbm90IGNsZWFuIGRhdGEgLSB5b3UgZ2V0IHJlZHVuZGFuY3kgd2l0aG91dCB3YXN0aW5n
-IFNTRCBzcGFjZSAKZHVwbGljYXRpbmcgY2xlYW4gY2FjaGVkIGRhdGEiLgotLSAKZGV2ZWwgbWFp
-bGluZyBsaXN0CmRldmVsQGxpc3RzLmZlZG9yYXByb2plY3Qub3JnCmh0dHBzOi8vYWRtaW4uZmVk
-b3JhcHJvamVjdC5vcmcvbWFpbG1hbi9saXN0aW5mby9kZXZlbApGZWRvcmEgQ29kZSBvZiBDb25k
-dWN0OiBodHRwOi8vZmVkb3JhcHJvamVjdC5vcmcvY29kZS1vZi1jb25kdWN0
+Hi Rolf,
+
+> >I was just playing a little bit with bcache and it works fine. But
+> >if I try random IOPS writes (writeback) on a file larger than the
+> >cache, it seems not to work? At least I get a performance as without
+> >bcache.
+> >
+> >Did I miss something? Is caching disabled in such cases?
+> >
+> >Has anyone a hint for me, what is going wrong?
+> Bcache has some specific handling of sequential I/O:
+> 
+> http://evilpiepirate.org/git/linux-bcache.git/tree/Documentation/bcache.txt
+> 
+> Could this explain what you're seeing?
+
+no, I was explicitly testing random I/O writes of 4k blocks, 
+no sequential writing. With a file of 1000 GB it does work, but
+if I use a 10000 GB file, it seems to fail. I would expect, that
+the size should not really matter here, at least until the cache
+is filled up.
+
+The only thing I can imagine is a problem with the RAID controller.
+Both RAIDs (HDDs and SSDs) are on the same controller. Maybe the
+controller slows down the SSD cache if it writes to the HDDs?
+
+Hmm, maybe I should do two test prarallel, benchmarking random
+writes of 4k blocks to a 1000 GB file on the SSD RAID and random
+writes on the HDD RAID. Maybe with random I/O on a 10000 GB file 
+would take too long and slow down the SSD RAID?
+
+I will see if I can test it. So maybe it is not an issue of BCache
+at all...
+
+Best regards
+
+Dirk
+-- 
++----------------------------------------------------------------------+
+| Dr. Dirk Geschke       / Plankensteinweg 61    / 85435 Erding        |
+| Telefon: 08122-559448  / Mobil: 0176-96906350 / Fax: 08122-9818106   |
+| dirk-tpR6ahGJfjwEZ6m2XrtfILNAH6kLmebB@public.gmane.org / dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org  / kontakt-WMiem5eIfR0n5izryJqWLw@public.gmane.org |
++----------------------------------------------------------------------+
