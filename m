@@ -1,31 +1,32 @@
-From: Kent Overstreet <kmo@daterainc.com>
-Subject: [PATCH] bcache: Fixed incorrect order of arguments to bio_alloc_bioset()
-Date: Tue, 22 Oct 2013 15:35:50 -0700
-Message-ID: <1382481353-4300-1-git-send-email-kmo@daterainc.com>
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: axboe@kernel.dk, linux-bcache@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
+From: "Paul B. Henson" <henson-HInyCGIudOg@public.gmane.org>
+Subject: RE: bcache-tools and bcache support in other linux packages
+Date: Tue, 22 Oct 2013 18:36:34 -0700
+Message-ID: <0cc401cecf90$51437a20$f3ca6e60$@acm.org>
+References: <20131018092234.GA18159@lazy.lzy>	<CE86CB5C.BB96%rolf@rolffokkens.nl> <CAPVzhpwGvP9RK9bEmNLLvy5qM8ejHcoDkeFU3aksdJq9BE0u6g@mail.gmail.com> <52623BE9.5070507@rolffokkens.nl>
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <52623BE9.5070507-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
+Content-Language: en-us
+Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: 'Rolf Fokkens' <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>, 'Reartes Guillermo' <rtguille-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, 'Development discussions related to Fedora' <devel-TuqUDEhatI4ANWPb/1PvSmm0pvjS0E/A@public.gmane.org>
+Cc: 'Piergiorgio Sartor' <piergiorgio.sartor-i47jiTeKxPI@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-stable <stable@vger.kernel.org> # >= v3.10
----
- drivers/md/bcache/request.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> From: Rolf Fokkens
+> Sent: Saturday, October 19, 2013 1:00 AM
+>
+> There's also an explanation in the document why it isn't enabled by
+default:
+> "|Defaults to off, since SATA TRIM is an unqueued command (and thus
+> slow)."
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index b6a74bc..2a7f0dd 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1000,7 +1000,7 @@ static void request_write(struct cached_dev *dc, struct search *s)
+Is there any way to TRIM all the empty space in bulk occasionally at off
+hours (like fstrim), or if you don't enable TRIM the only way to clean up
+would be to occasionally disable the cache, do a secure erase (or
+something), and then recreate/add it back?
+
+Thanks.
  
- 		if (bio->bi_rw & REQ_FLUSH) {
- 			/* Also need to send a flush to the backing device */
--			struct bio *flush = bio_alloc_bioset(0, GFP_NOIO,
-+			struct bio *flush = bio_alloc_bioset(GFP_NOIO, 0,
- 							     dc->disk.bio_split);
- 
- 			flush->bi_rw	= WRITE_FLUSH;
--- 
-1.8.4.rc3
