@@ -1,52 +1,52 @@
-From: Vasiliy Tolstov <v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org>
-Subject: Re: [PATCH] bcache: Fixed incorrect order of arguments to bio_alloc_bioset()
-Date: Wed, 23 Oct 2013 13:06:03 +0400
-Message-ID: <CACaajQskzQdSGJ_8hG-1t7L173jTaN4poYbM8NX_sP_-9kUt8A@mail.gmail.com>
-References: <1382481353-4300-1-git-send-email-kmo@daterainc.com>
+From: Dirk Geschke <dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org>
+Subject: Re: bcache not working on large files?
+Date: Wed, 23 Oct 2013 16:47:16 +0200
+Message-ID: <20131023144715.GA3373@euve30603.vserver.de>
+References: <20131022070830.GA20286@euve30603.vserver.de>
+ <5266B774.6040202@rolffokkens.nl>
+ <20131022180316.GA24473@euve30603.vserver.de>
+ <1382476284.36900.YahooMailNeo@web181506.mail.ne1.yahoo.com>
+ <20131022214553.GC26186@euve30603.vserver.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <1382481353-4300-1-git-send-email-kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <20131022214553.GC26186-TGNR7510c4H9eX/OD4jYIkzuTB+3w3uf@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Does this can crash or destroy data? Does i need more speed to apply
-it to my own kernel or i can wait?
-Thanks!
+Hi all,
 
-2013/10/23 Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>:
-> Signed-off-by: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-> Cc: linux-stable <stable-u79uwXL29TY76Z2rM5mHXA@public.gmane.org> # >= v3.10
-> ---
->  drivers/md/bcache/request.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index b6a74bc..2a7f0dd 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -1000,7 +1000,7 @@ static void request_write(struct cached_dev *dc, struct search *s)
->
->                 if (bio->bi_rw & REQ_FLUSH) {
->                         /* Also need to send a flush to the backing device */
-> -                       struct bio *flush = bio_alloc_bioset(0, GFP_NOIO,
-> +                       struct bio *flush = bio_alloc_bioset(GFP_NOIO, 0,
->                                                              dc->disk.bio_split);
->
->                         flush->bi_rw    = WRITE_FLUSH;
-> --
-> 1.8.4.rc3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> So with 8 threads doing random I/O of 4k blocks in a 1000 GB file
+> results in IOPS in the range of about 20,000. The same setup with
+> a file of 10,000 GB results in an IOPS of about 400. That is about
+> the same rate the HDDs have without bcache. This is something I did
+> not expect. It looks like bcache stopped to work at all...
 
+I have to correct it: I rebuild the SSD-RAID and used now an RAID 0
+instead of RAID 6 for caching. So now I get about 10.000 IOPS with
+writing 4k blocks . I think this is 
 
+   a) ok 
+
+and 
+
+   b) it is not a bcache problem
+
+I suspect it is a problem of the raid controller, but I have no clue 
+which one...
+
+Probably it is a better decision to use a separate raid controller
+for SSD (b)cache...
+
+Best regards
+
+Dirk
 
 -- 
-Vasiliy Tolstov,
-e-mail: v.tolstov-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
-jabber: vase-+9FY0jupvH6HXe+LvDLADg@public.gmane.org
++----------------------------------------------------------------------+
+| Dr. Dirk Geschke       / Plankensteinweg 61    / 85435 Erding        |
+| Telefon: 08122-559448  / Mobil: 0176-96906350 / Fax: 08122-9818106   |
+| dirk-tpR6ahGJfjwEZ6m2XrtfILNAH6kLmebB@public.gmane.org / dirk-WMiem5eIfR0n5izryJqWLw@public.gmane.org  / kontakt-WMiem5eIfR0n5izryJqWLw@public.gmane.org |
++----------------------------------------------------------------------+
