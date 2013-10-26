@@ -1,50 +1,47 @@
-From: =?UTF-8?B?UGF2ZWwgUGFsw6F0?= <pavel.palat-UDV0GzaorVTrBKCeMvbIDA@public.gmane.org>
-Subject: Re: bcache writeback hang with 3.11.5 and 3.10.17
-Date: Fri, 25 Oct 2013 11:00:19 +0200
-Message-ID: <526A3323.4030608@devsoft.cz>
-References: <5263DDC9.6050705@devsoft.cz>
+From: Rolf Fokkens <rolf@rolffokkens.nl>
+Subject: Re: bcache strategies for consistency in case of powerloss
+Date: Sat, 26 Oct 2013 15:45:14 +0200
+Message-ID: <526BC76A.5060804@rolffokkens.nl>
+References: <5255D277.3060802@rolffokkens.nl>
+	<525BA671.7040507@redhat.com>	<525D93ED.2020107@rolffokkens.nl>
+	<526A3D96.9080600@redhat.com>
+Reply-To: Development discussions related to Fedora
+	<devel@lists.fedoraproject.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
-	format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <5263DDC9.6050705-UDV0GzaorVTrBKCeMvbIDA@public.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Content-Type: text/plain; charset="utf-8"; Format="flowed"
+Content-Transfer-Encoding: base64
+Return-path: <devel-bounces@lists.fedoraproject.org>
+In-Reply-To: <526A3D96.9080600@redhat.com>
+List-Unsubscribe: <https://admin.fedoraproject.org/mailman/options/devel>,
+	<mailto:devel-request@lists.fedoraproject.org?subject=unsubscribe>
+List-Archive: <http://lists.fedoraproject.org/pipermail/devel/>
+List-Post: <mailto:devel@lists.fedoraproject.org>
+List-Help: <mailto:devel-request@lists.fedoraproject.org?subject=help>
+List-Subscribe: <https://admin.fedoraproject.org/mailman/listinfo/devel>,
+	<mailto:devel-request@lists.fedoraproject.org?subject=subscribe>
+Sender: devel-bounces@lists.fedoraproject.org
+Errors-To: devel-bounces@lists.fedoraproject.org
+To: Development discussions related to Fedora <devel@lists.fedoraproject.org>, linux-bcache@vger.kernel.org, Gabriel de Perthuis <g2p.code@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 20.10.2013 15:42, Pavel Pal=C3=A1t wrote:
-> Hello,
->
-> I have experienced hangs with above kernel and bcache in writeback=20
-> mode. Hangs are very easily archieved - just do:
->
-> mkdir /data/tmp
-> cp -xar / /data/tmp
->
-> Cancel after 1-5 minutes, then do sync (sometimes don't needed) and i=
-t=20
-> hangs. Either the sync hangs and/or the cp (or rm /data/tmp).=20
-> Behaviour is very consistent, it happens every time I enable writebac=
-k=20
-> and perform IO heavy operations.
->
-> I have not experienced the issue so far with writethrough mode.
->
-> Hardware is HP j000ec, attaching dmesg from hanged box with both=20
-> 3.11.5 and 3.10.17 LTS kernel. Distribution is arch linux.
->
-> dmesg outputs is available on=20
-> http://www.devsoft.cz/upload/bcache_bugreport.tar.gz
->
-> P.
-Hello,
-
-update: Tried with 3.12rc6 with same results. It also hangs with writeb=
-ack.
-
-http://www.devsoft.cz/upload/bcache_312.txt
-
-Best regards,
-
-Pavel Palat
+SGkgRmxvcmlhbiwKCk9uIDEwLzI1LzIwMTMgMTE6NDQgQU0sIEZsb3JpYW4gV2VpbWVyIHdyb3Rl
+Ogo+IE9uIDEwLzE1LzIwMTMgMDk6MTMgUE0sIFJvbGYgRm9ra2VucyB3cm90ZToKPj4gT24gMTAv
+MTQvMjAxMyAxMDowOCBBTSwgRmxvcmlhbiBXZWltZXIgd3JvdGU6Cj4+PiBJcyB0aGVyZSBhIHdy
+aXRlLXVwIHNvbWV3aGVyZSBkb2N1bWVudGluZyB3aGF0IHN0cmF0ZWdpZXMgYXJlCj4+PiBpbXBs
+ZW1lbnRlZCBieSBiY2FjaGUgdG8ga2VlcCB0aGUgU1NEIGFuZCB0aGUgaGFyZCBkaXNrIGNvbnRl
+bnRzIGluCj4+PiBzeW5jIGV2ZW4gaW4gdGhlIGV2ZW50IG9mIGEgc3VkZGVuIHBvd2VyIGxvc3M/
+Cj4+IFRoaXMgaXMgZ29vZCBwbGFjZSB0byBzdGFydDogaHR0cDovL2JjYWNoZS5ldmlscGllcGly
+YXRlLm9yZy8KPgo+IEl0IGRvZXNuJ3QgYWN0dWFsbHkgYWRkcmVzcyB0aGlzIGFzIGZhciBhcyBJ
+IGNhbiBzZWUuICBJdCBvbmx5IAo+IGRlc2NyaWJlcyBob3cgdGhlIGRhdGEgc3RydWN0dXJlIGlu
+dGVncml0eSBpcyBtYWludGFpbmVkIG9uIHRoZSBTU0QgCj4gc2lkZS4gIEV2ZW4gdGhhdCBkb2Vz
+bid0IHNlZW0gdG8gYWRkcmVzcyB0b3JuIHdyaXRlcyAod2hpY2ggYXJlIAo+IHByb2JsZW0gZm9y
+IGNoZWFwLXRvLW1lZGl1bS1ncmFkZSBTU0RzKS4gIFRoZSBjb2RlIGNvbnRhaW5zICJwcm9wYWdh
+dGUgCj4gYmFycmllcnMiIGFzIGEgdG8tZG8gaXRlbSAoc2VlIHRoZSBiZWdpbm5pbmcgb2YgCj4g
+ZHJpdmVycy9tZC9iY2FjaGUvYnRyZWUuYykuICBJIGNvdWxkbid0IGZpbmQgYW55dGhpbmcgdGhh
+dCBkaXNjdXNzZXMgCj4gd3JpdGUgb3JkZXJpbmcgaXNzdWVzIHdoaWNoIGNhbiBvY2N1ciBpbiB3
+cml0ZS10aHJvdWdoIG1vZGUuCj4KSSBkb24ndCBoYXZlIHRoZSBleHBlcnRpc2UgbXlzZWxmIHRv
+IGFuc3dlciB5b3VyIHF1ZXN0aW9uLCBzbyBJIGhlcmVieSAKZm9yd2FyZCB0aGlzIHF1ZXN0aW9u
+IHRvIEtlbnQgYW5kIEdhYnJpZWwgYW5kIHRoZSBiY2FjaGUgbWFpbCBsaXN0LgoKUm9sZgotLSAK
+ZGV2ZWwgbWFpbGluZyBsaXN0CmRldmVsQGxpc3RzLmZlZG9yYXByb2plY3Qub3JnCmh0dHBzOi8v
+YWRtaW4uZmVkb3JhcHJvamVjdC5vcmcvbWFpbG1hbi9saXN0aW5mby9kZXZlbApGZWRvcmEgQ29k
+ZSBvZiBDb25kdWN0OiBodHRwOi8vZmVkb3JhcHJvamVjdC5vcmcvY29kZS1vZi1jb25kdWN0
