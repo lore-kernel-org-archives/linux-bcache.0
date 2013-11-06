@@ -1,36 +1,31 @@
-From: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-Subject: Re: [GIT PULL] bcache changes for 3.13
-Date: Mon, 04 Nov 2013 13:16:43 -0700
-Message-ID: <527800AB.8030803@kernel.dk>
-References: <20131104200747.GD27129@kmo> <5277FFA1.6060001@kernel.dk> <20131104201611.GB27733@kmo>
+From: Larkin Lowrey <llowrey-UpbEI2NfuFOXcJoGtpVZpwC/G2K4zDHf@public.gmane.org>
+Subject: Read cache contents cleared on boot?
+Date: Wed, 06 Nov 2013 16:08:45 -0600
+Message-ID: <527ABDED.60902@nuclearwinter.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <20131104201611.GB27733@kmo>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 11/04/2013 01:16 PM, Kent Overstreet wrote:
-> On Mon, Nov 04, 2013 at 01:12:17PM -0700, Jens Axboe wrote:
->> On 11/04/2013 01:07 PM, Kent Overstreet wrote:
->>> Hey Jens, sorry for being late with this - anyways, it's roughly the same set of
->>> patches you had queued up before plus a few minor fixes, but it's been rebased
->>> onto your for-3.13/core branch.
->>
->> Merge window is a little later this time, and since it was already in
->> for the previous release, we can make it happen.
->>
->> But can you please base it on for-3.13/drivers however? That's where I'd
->> like to pull in the driver bits, and if I pull this one, then things get
->> even more tangled since for-3.13/core is holding the blk-mq changes too.
-> 
-> I'd like to do the merge with immutable biovecs myself though - there's some
-> tricky bits in there. How will that work?
+When I boot my cache usage returns to 1.3GB even when it was nearly full
+at shutdown (as reported by bcache-status). Are the read cache contents
+not retained across a reboot?
 
-OK, in that case, yeah it might be easier to just pull it in wholesale.
+I'm running fedora 19 w/ kernel-3.11.6-201.fc19.x86_64 and bcache-tools
+built from git yesterday afternoon.
 
--- 
-Jens Axboe
+The machine in question is a backup server that boots nightly (via WOL)
+runs all backup jobs then shuts down. The backup process spends most of
+its time seeking (probably inodes) and I was hoping that the cache would
+be warm on boot so those random reads would come from cache.
+
+The cache device is a 48GB LVM LV on top of a 2 disk raid1 (60GB SSDs).
+The backing devices are two 16 drive md raid6 arrays which act as LVM PVs.
+
+Backup run time has not improved which supports the idea that the read
+cache is empty on boot.
+
+--Larkin
