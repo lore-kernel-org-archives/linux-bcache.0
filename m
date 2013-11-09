@@ -1,27 +1,39 @@
 From: Rolf Fokkens <rolf-6w2rdlBuEQTpMFipWq+H6g@public.gmane.org>
-Subject: Re: Bcache causes data lose / BTRFS
-Date: Sat, 09 Nov 2013 11:25:33 +0100
-Message-ID: <527E0D9D.9020200@rolffokkens.nl>
-References: <CAMJW5=23t=jQRObnB5NHU8hTRBg6bCyW2m0+HCgtS8dxd82rRg@mail.gmail.com>	<20131107202211.GG3842@kmo> <CAGqt0zy08jmT5NW62OEwV_1nH1aeN=ZYW7XiD9UwG3TSRk4R8A@mail.gmail.com>
+Subject: Re: bad btree header at bucket xxx.
+Date: Sat, 09 Nov 2013 11:37:23 +0100
+Message-ID: <527E1063.4090209@rolffokkens.nl>
+References: <5276DE9D.6000401@de-leeuw.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAGqt0zy08jmT5NW62OEwV_1nH1aeN=ZYW7XiD9UwG3TSRk4R8A-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <5276DE9D.6000401-gY9mk9TZ+INg9hUCZPvPmw@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Yuxuan Shui <yshuiv7-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Kent Overstreet <kmo-PEzghdH756F8UrSeD/g0lQ@public.gmane.org>
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Thierry <thierry-gY9mk9TZ+INg9hUCZPvPmw@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 11/08/2013 05:13 AM, Yuxuan Shui wrote:
-> My SSD drive is Samsung 840EVO 120G. I'm not using md or lvm, just
-> btrfs on top of bcache.
-While testing bcache in Fedora I noticed BTRFS reporting checksum errors 
-in kernels <= 3.11.4. Not knowing if it was a BRTFS issue or a bcache 
-issue and the fact that there's no proper fsck for BTRFS I stopped using 
-BTRFS.
+On 11/04/2013 12:39 AM, Thierry wrote:
+> After a reboot, the bcache devices didn't appeared. Looking at dmesg I
+> foud out the following entries:
+> [ 12.182288] bcache: register_bdev() registered backing device dm-0
+> [ 12.217379] bcache: register_bdev() registered backing device dm-1
+> [ 12.253040] bcache: error on d8e791cc-47c2-449c-909a-1e4433a5de11: bad
+> btree header at bucket 32018, block 0, 0 keys, disabling caching
+> [ 12.253050] bcache: register_cache() registered cache device sdb1
+> [ 12.253488] bcache: cache_set_free() Cache set
+> d8e791cc-47c2-449c-909a-1e4433a5de11 unregistered
+>
+> As you see I restarted the devices after having changed the cache mode
+> to "none" followed by a echo 1 > running (The state of the 2 devices
+> were dirty)
+> e2fsck do not report any problem on any of the bcache device
+>
+> Are there other "emegency actions" I should take (cache is till reported
+> as inconsistent)?
+I've seen the same problems in earlier kernels, but not in kernels > 3.11.5.
 
-Could BTRFS be a good way to test bcache because it has checksumming? Or 
-will it only complicate testing?
+After also forcing the bcache device to running (echo 1 > running) I 
+also recreated the caching device (make-bcache -C ...) and reattached it 
+to the bcache device. Have you tried to do that?
 
 Rolf
