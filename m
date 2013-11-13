@@ -1,53 +1,56 @@
-From: "Matthew Patton" <pattonme-/E1597aS9LQAvxtiuMwx3w@public.gmane.org>
+From: Zachary Palmer <zep_bcache-J5qI5MFTcs8@public.gmane.org>
 Subject: Re: bcache and SSD over provisioning
-Date: Wed, 13 Nov 2013 09:13:33 -0500
-Message-ID: <op.w6hq4v0of3gqgg@desktop.patton.net>
-References: <CAC9WiBiuQ2zG6C9XJio-STz-ScnfzzYb+Rz23u6JW+vFni8PNA@mail.gmail.com>
+Date: Wed, 13 Nov 2013 09:32:20 -0500
+Message-ID: <52838D74.6020502@bahj.com>
+References: <CAC9WiBiuQ2zG6C9XJio-STz-ScnfzzYb+Rz23u6JW+vFni8PNA@mail.gmail.com> <op.w6hq4v0of3gqgg@desktop.patton.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <CAC9WiBiuQ2zG6C9XJio-STz-ScnfzzYb+Rz23u6JW+vFni8PNA-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+In-Reply-To: <op.w6hq4v0of3gqgg-r49W/1Cwd2cba4AQcYcrVKxOck334EZe@public.gmane.org>
 Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Francis Moreau <francis.moro-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, 13 Nov 2013 03:42:54 -0500, Francis Moreau  
-<francis.moro-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+On 11/13/2013 09:13 AM, Matthew Patton wrote:
+> On Wed, 13 Nov 2013 03:42:54 -0500, Francis Moreau 
+> <francis.moro-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org> wrote:
+>
+>> And finally, can I create the over-provisioning without lost the
+>> content of my backing device ?
+>
+> hell no.
+>
+I'm a bit confused: why not?  Francis seems to be asking if the entire 
+bcache device needs to be recreated.  It definitely is necessary to 
+rebuild the cache device, but the backing device shouldn't be affected.  
+Let's call the backing device /dev/backdev and the cache device 
+/dev/cachedev.  Then it should be possible to do the following:
 
-> First I'd like to know if over-provisioning is still needed when
-> bcache is used ?
+0. If you are using writeback caching, "echo none > 
+/sys/block/backdev/bcache/cache_mode" to tell bcache to flush the 
+contents of the cache and then wait until "cat 
+/sys/block/backdev/bcache/dirty_data" yields a zero
+1. "echo 1 > /sys/block/backdev/bcache/detach" to remove the caching 
+device from the bcache volume
+2. "echo 1 >  /sys/fs/bcache/$UUID/unregister" to remove the caching 
+device from the kernel
+3. repartition the caching device so that /dev/cachedev is only e.g. 75% 
+of the SSD
+4. "make-bcache -C /dev/cachedev" to recreate the cache device
+5. "echo /dev/cachedev > /sys/fs/bcache/register" to make the kernel 
+aware of the new device
+6. "ls /sys/fs/bcache" or just pay attention to make-bcache to find the 
+cache volume UUID
+7. "echo $UUID > /sys/block/backdev/bcache/attach" to reattach the 
+caching device
+8. "echo whatever-mode > /sys/block/backdev/bcache/cache_mode" to put it 
+back into whichever mode you wish
 
-it's needed for any decent, sustained write load if you don't want  
-performance to crash thru the floor. But it doesn't sound like this is  
-your use case. Are you sustaining 5000+ write IOPs?
+Is there something wrong with my reasoning?  I may also have 
+misunderstood the situation.  I'm just hoping I understand bcache as 
+well as I think I do.  :)
 
->   - Should I create 2 partitions with one left emtpy and whose size is
-> roughly 7% of the device size ?
+Cheers,
 
-Your SSD already has 7% overprovisioning. For best sustained and  
-consistent write performance you'll want to bump it to 25-30%. Yes you  
-just need to partition/LVM down to the desired size.
-
->   - Should I create a "Host Protected Area" by using hdparm ?
-
-http://www.thomas-krenn.com/en/wiki/SSD_Over-provisioning_using_hdparm
-
-Either take the precautions outlined in the WIKI given the penchant of the  
-kernel to ignore such settings, or just remove the chance for error and  
-partition the device instead.
-
-> And finally, can I create the over-provisioning without lost the
-> content of my backing device ?
-
-hell no.
-
--- 
-NSA - subscribe to our Timeline and you'll know even before they've hit  
-'ENTER'
-
-"The budget should be balanced, the Treasury refilled, public debt  
-reduced, the arrogance of officialdom tempered and controlled, and the  
-assistance to foreign lands should be curtailed lest Rome become bankrupt.  
-People must again learn to work, instead of living on public assistance."
-  - Cicero (55 BC)
+Zach
