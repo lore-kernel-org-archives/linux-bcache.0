@@ -1,28 +1,31 @@
-From: Francis Moreau <francis.moro-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
-Subject: Re: bcache and SSD over provisioning
-Date: Thu, 14 Nov 2013 07:12:22 +0100
-Message-ID: <l61pjs$use$1@ger.gmane.org>
-References: <CAC9WiBiuQ2zG6C9XJio-STz-ScnfzzYb+Rz23u6JW+vFni8PNA@mail.gmail.com> <op.w6hq4v0of3gqgg@desktop.patton.net> <5283D85B.10904@gmail.com> <l60uia$5ua$1@ger.gmane.org>
+From: Larkin Lowrey <llowrey@nuclearwinter.com>
+Subject: Net-snmp module?
+Date: Wed, 20 Nov 2013 13:17:42 -0600
+Message-ID: <528D0AD6.3080002@nuclearwinter.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
-In-Reply-To: <l60uia$5ua$1@ger.gmane.org>
-Sender: linux-bcache-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from titan.nuclearwinter.com ([174.136.96.186]:41645 "EHLO
+	mail.nuclearwinter.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754428Ab3KTTRm (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 20 Nov 2013 14:17:42 -0500
+Received: from [10.0.0.100] ([10.0.0.100])
+	(authenticated bits=0)
+	by mail.nuclearwinter.com (8.14.4/8.14.4) with ESMTP id rAKJHedu011501
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-CAMELLIA256-SHA bits=256 verify=NO)
+	for <linux-bcache@vger.kernel.org>; Wed, 20 Nov 2013 13:17:41 -0600
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-Le 13/11/2013 23:30, Alex Elsayed a =C3=A9crit :
+I've googled around and haven't seen any discussions of SNMP monitoring
+for bcache. I would like to volunteer to write a net-snmp module for
+bcache. Has any work (or discussions, thoughts, etc) been done in this
+area? Any objections?
 
-[...]
+My intent is to produce a module for inclusion in net-snmp if they will
+permit it, or as a dynamically loadable module (.so) if they do not.
 
->=20
-> Because the raw flash chips are only available in power-of-two sizes.=
- The=20
-> available storage the controller allows access to is 120GB, and it's=20
-> reserved 8GB for overprovisioning if I'm looking at the right model.
->=20
-
-I got it.
-
-Thanks for your explanation.
+--Larkin
