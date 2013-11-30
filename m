@@ -1,42 +1,37 @@
-From: Wei Yongjun <weiyj.lk@gmail.com>
-Subject: [PATCH -next] bcache: fix sparse non static symbol warning
-Date: Thu, 28 Nov 2013 10:31:35 +0800
-Message-ID: <CAPgLHd-qv+6z4PBMAUoe8tvTkUFTMhPE1Wv-2dzr9FvEzqZMaA@mail.gmail.com>
+From: Jonathan Tripathy <jonnyt@abpni.co.uk>
+Subject: Easy CentOS 5 install
+Date: Sat, 30 Nov 2013 01:45:12 +0000
+Message-ID: <a4112a312285944fa9fac6446f79ce3b@abpni.co.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:63976 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754561Ab3K1Cbg (ORCPT
+Received: from edge1.gosport.uk.abpni.net ([109.200.19.114]:8399 "EHLO
+	mail1.gosport.uk.corp.abpni.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751273Ab3K3Bz0 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 27 Nov 2013 21:31:36 -0500
+	Fri, 29 Nov 2013 20:55:26 -0500
+Received: from localhost (mail1.gosport.corp.uk.abpni.net [127.0.0.1])
+	by mail1.gosport.uk.corp.abpni.net (Postfix) with ESMTP id A2ACA5A000A
+	for <linux-bcache@vger.kernel.org>; Sat, 30 Nov 2013 01:38:05 +0000 (GMT)
+Received: from mail1.gosport.uk.corp.abpni.net ([127.0.0.1])
+	by localhost (mail1.mail.gosport.corp.uk.abpni.net [127.0.0.1]) (amavisd-new, port 10024)
+	with ESMTP id CLNGivS15PgP for <linux-bcache@vger.kernel.org>;
+	Sat, 30 Nov 2013 01:38:05 +0000 (GMT)
+Received: from mail.abpni.co.uk (unknown [10.87.17.3])
+	by mail1.gosport.uk.corp.abpni.net (Postfix) with ESMTPA id 267C35A0008
+	for <linux-bcache@vger.kernel.org>; Sat, 30 Nov 2013 01:38:04 +0000 (GMT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kmo@daterainc.com, neilb@suse.de
-Cc: yongjun_wei@trendmicro.com.cn, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Hi Everyone,
 
-Fixes the following sparse warning:
+What is the easiest way to install bcache on a currently running 
+production CentOS 5.x machine? Is there an official and/or EPEL package 
+available? We would also need Xen Dom0 support...
 
-drivers/md/bcache/btree.c:2220:5: warning:
- symbol 'btree_insert_fn' was not declared. Should it be static?
+Thanks
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/md/bcache/btree.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index b62f379..2a46036 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -2217,7 +2217,7 @@ struct btree_insert_op {
- 	struct bkey	*replace_key;
- };
- 
--int btree_insert_fn(struct btree_op *b_op, struct btree *b)
-+static int btree_insert_fn(struct btree_op *b_op, struct btree *b)
- {
- 	struct btree_insert_op *op = container_of(b_op,
- 					struct btree_insert_op, op);
+Jonathan
