@@ -1,59 +1,48 @@
-From: "Wesley W. Terpstra" <wesley@terpstra.ca>
-Subject: Using bcache to save power -- safe?
-Date: Wed, 4 Dec 2013 15:59:12 +0100
-Message-ID: <CAA-O0Xh0p1ERoR_QDrzj3T_5b-G63fnW+ykLqmu8L=_A3m5p8A@mail.gmail.com>
+From: Matthias Ferdinand <bcache@mfedv.net>
+Subject: Re: /dev/bcache* missing after reboot
+Date: Thu, 5 Dec 2013 16:37:49 +0100
+Message-ID: <20131205153749.GA1848@teapot>
+References: <9FA7630E-7DC4-4F45-B5E1-FFFB511EFA8B@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:63757 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab3LDO7N (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 4 Dec 2013 09:59:13 -0500
-Received: by mail-ve0-f180.google.com with SMTP id jz11so12335177veb.11
-        for <linux-bcache@vger.kernel.org>; Wed, 04 Dec 2013 06:59:12 -0800 (PST)
+Received: from sw.mfedv.net ([212.82.36.162]:41222 "EHLO sw.mfedv.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545Ab3LEPh5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 5 Dec 2013 10:37:57 -0500
+Content-Disposition: inline
+In-Reply-To: <9FA7630E-7DC4-4F45-B5E1-FFFB511EFA8B@gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Thierry De Leeuw <deleeuw.thierry@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-Good afternoon!
+[already sent 2 days ago, but did not appear on the list]
 
-My question: Can I leave writeback_running=0, or will it hurt my data?
+On Mon, Dec 02, 2013 at 11:36:47PM +0100, Thierry De Leeuw wrote:
+> Hi,
+> 
+> Running Linux 3.12.1. I have disk /dev/sda2 with LVM that has, amongst
+> other, lvHome as a bcache device, and the cache resides on /dev/sdb1
+> 
+> My PC hung and I had to do a forced shutdown.
+> 
+> Now the /dev/bcache0 (and so on) do not appear anymore.
 
-Background:
+Perhaps you need to re-register / re-attach the backing device to the
+caching device, something like 
 
-I've started using bcache on my NAS array and must say it is working
-out quite well. My goals were energy/noise savings and performance.
-These appear to be met with my current configuration.
+   echo /dev/dm-xx > /sys/fs/bcache/register
+   echo yyyyyyy > /sys/devices/virtual/block/dm-xx/bcache/attach   
 
-backing device: RAID5 array on 4x WD green drives
-cache device: RAID1 array on 2x SanDisk SSDs
-LVM on top of bcache0
-WD drives set to spin down after 10 minutes idle
-linux 3.12
+If that does not help, you can try to force starting the bcache backing
+device without the caching device (might give you serious fs damage with
+writeback):
 
-writeback_percent = 25
-sequential_cutoff = 0
-congested_*_threshold_us = 0
-writeback_running = 0
+  echo "1" > /sys/devices/virtual/block/dm-xx/bcache/running
 
-... with these settings my server can happily continue running its
-periodic tasks (smartd, cacti, syslog, dvb, samba, ntp, etc) without
-spinning up the disks. All periodic data gets stored to the energy
-saving (and silent) SSDs. Great!
+But since you are using LVM, you might want to create a snapshot of the
+backing device LV before doing this, just in case.
 
-My concern is what will happen if some huge burst of IO comes and
-overwhelms my cache drive. Can bcache still push data to the RAID5
-when writeback_running=0? I have a daily cronjob set to re-enable
-writeback_running and set cache_mode to writethrough, wait for clean,
-then re-enable writeback. So, the dirty_data does not tend to get too
-high. However, there could be some day where a ton of data gets
-written.
-
-Is near-permanent writeback_running=0 safe?
-
-Thanks!
-
-PS. Obviously I am interested in the progress of RAID5-aware bcache
-and multiple SSDs per cache set, since both would directly benefit my
-setup. So I am pretty happy with the direction bcache is heading!
+Regards
+Matthias
