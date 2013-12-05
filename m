@@ -1,48 +1,105 @@
 From: Matthias Ferdinand <bcache@mfedv.net>
-Subject: Re: /dev/bcache* missing after reboot
-Date: Thu, 5 Dec 2013 16:37:49 +0100
-Message-ID: <20131205153749.GA1848@teapot>
-References: <9FA7630E-7DC4-4F45-B5E1-FFFB511EFA8B@gmail.com>
+Subject: md-raid5 with bcache member devices => kernel panic
+Date: Thu, 5 Dec 2013 22:29:13 +0100
+Message-ID: <20131205212913.GE1848@teapot>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from sw.mfedv.net ([212.82.36.162]:41222 "EHLO sw.mfedv.net"
+Received: from sw.mfedv.net ([212.82.36.162]:41247 "EHLO sw.mfedv.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545Ab3LEPh5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 5 Dec 2013 10:37:57 -0500
+	id S1753021Ab3LEV3T (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 5 Dec 2013 16:29:19 -0500
 Content-Disposition: inline
-In-Reply-To: <9FA7630E-7DC4-4F45-B5E1-FFFB511EFA8B@gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Thierry De Leeuw <deleeuw.thierry@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-[already sent 2 days ago, but did not appear on the list]
+Hi,
 
-On Mon, Dec 02, 2013 at 11:36:47PM +0100, Thierry De Leeuw wrote:
-> Hi,
-> 
-> Running Linux 3.12.1. I have disk /dev/sda2 with LVM that has, amongst
-> other, lvHome as a bcache device, and the cache resides on /dev/sdb1
-> 
-> My PC hung and I had to do a forced shutdown.
-> 
-> Now the /dev/bcache0 (and so on) do not appear anymore.
+I am currently experimenting with bcache. The hardware is rather old:
+Intel Core2 6600, 2.4GHz, 8GB RAM. I intend using it as a KVM host. OS
+is Ubuntu 13.10 amd64.
 
-Perhaps you need to re-register / re-attach the backing device to the
-caching device, something like 
+SSD: single Intel 530 series 120G (SSDSC2BW120A4), i.e. same cache
+device for all backing devices
 
-   echo /dev/dm-xx > /sys/fs/bcache/register
-   echo yyyyyyy > /sys/devices/virtual/block/dm-xx/bcache/attach   
+My test procedure:
 
-If that does not help, you can try to force starting the bcache backing
-device without the caching device (might give you serious fs damage with
-writeback):
+  - prepare VMs:
+       foreach vm in x y z
+         copy VM image to volume (dd_rescue)
+           (Ubuntu 12.04 amd64 Webservers, XFS filesystem)
+         start up VM
 
-  echo "1" > /sys/devices/virtual/block/dm-xx/bcache/running
+  - wait at least 5 min so any writeback can settle down
 
-But since you are using LVM, you might want to create a snapshot of the
-backing device LV before doing this, just in case.
+  - synchronously start "apt-get dist-upgrade" inside the
+    VMs (includes linux-image-... and linux-headers-...,
+    which makes for lot of small files)
+
+I did this with various values of bcache cache_mode and KVM virtual
+disk caching options.
+
+Bcaches 'writeback' cache_mode is fastest, of course. But now the KVM
+setting "writeback" is slower than "writethrough" - in the same setup
+with no bcache involved, KVMs "writeback" would be far ahead.
+
+Storage setup:
+
+  LVM
+   |
+  md-raid5 (chunksize 512k)
+   |
+  3x SATA 2TB Seagate ST2000DM001-1CH1; Partition 6
+
+
+I tried putting bcache at different levels in the storage stack:
+
+  [bcache <1a> <1b> <1c>]
+   |
+  LVM
+   |
+  [bcache <2>]
+   |
+  md-raid5 (chunksize 512k)
+   |
+  [bcache <3a> <3b> <3c>]
+   |
+  3x SATA 2TB Seagate ST2000DM001-1CH1; Partition 6
+
+
+1) 3 bcache devices on top of LVs (<1a>, <1b>, <1c>).
+
+2) 1 bcache device above the md-raid5 (<2>), used as LVM PV.
+
+3) 3 bcache devices on top of the partitions (<3a>, <3b>, <3c>),
+      used as member devices for md-raid5.
+
+The higher bcache was in this hierarchy, the better the
+performance was. An md-raid5 made of bcaches (that use the same cache
+device) is horribly slow.
+
+But not only is it rather slow, it reliably (but nondeterministically)
+produces kernel panics. It might panic while copying the first VM image
+(dd_rescue), or during startup of the first VM, while the copy process
+for the second VM image (dd_rescue) is already running.
+
+Tried with different kernels, all produce the panics:
+  - Ubuntu 3.11.0-13.20
+  - kernel.org 3.12.2
+  - kernel.org 3.13-rc2
+
+Having so many layers on top of bcache may be stupid, but sure it should
+not panic :-)
+
+You can find the complete serial console output of those crashing runs
+at http://dl.mfedv.net/md5raid_on_bcache_panic/
+
+I can't see bcache mentioned in those kernel backtraces - perhaps it's
+not really bcaches fault. (there is a single bcache line in the 3.12.2
+trace, though)
+
+Any ideas?
 
 Regards
 Matthias
