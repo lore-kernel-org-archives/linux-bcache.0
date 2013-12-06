@@ -1,73 +1,40 @@
-From: Matthias Ferdinand <bcache@mfedv.net>
-Subject: Re: md-raid5 with bcache member devices => kernel panic
-Date: Fri, 6 Dec 2013 01:00:45 +0100
-Message-ID: <20131206000045.GG1848@teapot>
-References: <20131205212913.GE1848@teapot>
- <20131205225234.GA4054@kmo>
- <20131205230813.GF1848@teapot>
- <20131205231547.GB4054@kmo>
+From: "Paul B. Henson" <henson@acm.org>
+Subject: RE: md-raid5 with bcache member devices => kernel panic
+Date: Thu, 5 Dec 2013 19:22:28 -0800
+Message-ID: <057501cef232$66ced280$346c7780$@acm.org>
+References: <20131205212913.GE1848@teapot> <20131205225234.GA4054@kmo> <20131205230813.GF1848@teapot> <20131205231547.GB4054@kmo>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from sw.mfedv.net ([212.82.36.162]:41254 "EHLO sw.mfedv.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752923Ab3LFAAw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 5 Dec 2013 19:00:52 -0500
-Content-Disposition: inline
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:51610 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756818Ab3LFDWe (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 5 Dec 2013 22:22:34 -0500
+Received: by mail-pb0-f51.google.com with SMTP id up15so234824pbc.24
+        for <linux-bcache@vger.kernel.org>; Thu, 05 Dec 2013 19:22:34 -0800 (PST)
 In-Reply-To: <20131205231547.GB4054@kmo>
+Content-Language: en-us
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: nks@daterainc.com, linux-bcache@vger.kernel.org
+To: 'Kent Overstreet' <kmo@daterainc.com>
+Cc: linux-bcache@vger.kernel.org
 
-On Thu, Dec 05, 2013 at 03:15:47PM -0800, Kent Overstreet wrote:
-> On Fri, Dec 06, 2013 at 12:08:13AM +0100, Matthias Ferdinand wrote:
-> > I only get panics when I use md-raid on top of bcaches:
-> > 
-> >               LVM
-> >                |
-> >            md-raid5
-> >          /     |     \
-> >   bcache0  bcache1  bcache2
-> >    |           |       |
-> >   sdb6       sdc6     sdd6
-> > 
-> > (probably an unusual setup; just playing around...)
-> 
-> Yeah, that is unusual. Very odd though, that setup I would definitely expect to
-> work.
-> 
-> You mentioned it's faster with bcache higher in the stack - do you have any
-> issues with your preferred setup?
+> From: Kent Overstreet
+> Sent: Thursday, December 05, 2013 3:16 PM
+>
+> I'm reworking how all this crap works in mainline,
+> maybe by 3.14 generic_make_request() will be accepting arbitrary size bios
+> and the code that's probably buggy here will be gone.
 
-for simpler administration, I would prefer to have LVM on top. Where
-exactly bcache sits below that is not really important (except for
-performance gains, which is the whole point of it all :-)
+Hmm, calling the current code crap is not exactly confidence inspiring for
+running 3.11 or 3.12 in production ;).
 
-My preferred lookup would be like this:
+If you're in an email answering mood, any chance I could trouble you to
+answer the question I posed earlier this week about the -w option to
+make-bcache, its relation (or not) to SSD page size,  and how to best
+configure an SSD with a page size of 8k as a cache device :)?
 
-         LVM
-          |
-       bcache0
-          |
-       md-raid5
-      /   |    \
-  sdb6   sdc6   sdd6
-
-but it is slightly slower compared to having bcache{0,1,2} devices on
-top of LVs for the virtual disks.
-
-I only had the idea to RAID bcaches because the default chunk size of
-512k equals the erase block size of the SSD (I assume it is 512k, could
-not find hard evidence for it). And since small writes on RAID5 create
-tremendous overhead, I hoped to benefit from bcache having already
-cached some full chunks.
-
-> If the bug isn't actually affecting real/preferred use cases then I'll be a lot
-> less concerned about it - I'm reworking how all this crap works in mainline,
-> maybe by 3.14 generic_make_request() will be accepting arbitrary size bios and
-> the code that's probably buggy here will be gone.
-It is not yet in production use, I am still playing with the setup.
-
-Regards
-Matthias
+Thanks.
