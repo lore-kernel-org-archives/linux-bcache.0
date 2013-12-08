@@ -1,28 +1,42 @@
 From: Rolf Fokkens <rolf@rolffokkens.nl>
-Subject: Re: Read cache contents cleared on boot?
-Date: Sun, 08 Dec 2013 19:32:18 +0100
-Message-ID: <52A4BB32.9010104@rolffokkens.nl>
-References: <527ABDED.60902@nuclearwinter.com>
+Subject: Re: Easy CentOS 5 install
+Date: Sun, 08 Dec 2013 19:48:51 +0100
+Message-ID: <52A4BF13.30703@rolffokkens.nl>
+References: <a4112a312285944fa9fac6446f79ce3b@abpni.co.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:33484 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755110Ab3LHScV (ORCPT
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:58785 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759822Ab3LHSsy (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 8 Dec 2013 13:32:21 -0500
-Received: by mail-ee0-f50.google.com with SMTP id c41so1183848eek.9
-        for <linux-bcache@vger.kernel.org>; Sun, 08 Dec 2013 10:32:20 -0800 (PST)
-In-Reply-To: <527ABDED.60902@nuclearwinter.com>
+	Sun, 8 Dec 2013 13:48:54 -0500
+Received: by mail-ea0-f171.google.com with SMTP id h10so1173833eak.30
+        for <linux-bcache@vger.kernel.org>; Sun, 08 Dec 2013 10:48:53 -0800 (PST)
+In-Reply-To: <a4112a312285944fa9fac6446f79ce3b@abpni.co.uk>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Larkin Lowrey <llowrey@nuclearwinter.com>, linux-bcache@vger.kernel.org
+To: Jonathan Tripathy <jonnyt@abpni.co.uk>, linux-bcache@vger.kernel.org
 
-On 11/06/2013 11:08 PM, Larkin Lowrey wrote:
-> When I boot my cache usage returns to 1.3GB even when it was nearly full
-> at shutdown (as reported by bcache-status). Are the read cache contents
-> not retained across a reboot?
-Same here: After running for a while bcache-status reports a Total Cache 
-Used of 2.1GB. After reboot it's back to 910MB all the time. Did you get 
-an explanation for this?
+On 11/30/2013 02:45 AM, Jonathan Tripathy wrote:
+> What is the easiest way to install bcache on a currently running 
+> production CentOS 5.x machine? Is there an official and/or EPEL 
+> package available? We would also need Xen Dom0 support...
+I built the bcache-tools package for Fedora 20, which has some specific 
+requirements (that are met by Fedora 20):
+
+- util-linux >= 2.24, because libblkid (>= 2.24) is able to identify 
+bcache devices which greatly improves dracut functionality
+- dracut < 34, because bcache-tools includes the dracut module for 
+bcache which was part of dracut from dracut-31 to dracut-33
+
+Having your root FS on bcache requires the proper util-linux and dracut 
+versions, but when not having your root FS on a bcache(d) device it 
+should be possible to use bcache on e.g. CentOS. This requires a 
+modification of the current src.rpm though, which I won't mind doing if 
+you intend to use it
+
+Please let me know.
+
+Rolf
