@@ -1,33 +1,28 @@
-From: "Paul B. Henson" <henson@acm.org>
-Subject: Re: better place for bcache discussion?
-Date: Sat, 7 Dec 2013 14:19:15 -0800
-Message-ID: <492620D7-9DCA-4C28-89A3-290E1D683E80@acm.org>
-References: <060d01cef2fa$6c4ca070$44e5e150$@acm.org> <CAO9TOLe=Beyrnbsf9Q6MmXz0co29q4y+pTkJgYhr7YHbu1w_bg@mail.gmail.com>
-Mime-Version: 1.0 (1.0)
-Content-Type: text/plain;
-	charset=us-ascii
+From: Rolf Fokkens <rolf@rolffokkens.nl>
+Subject: Re: Read cache contents cleared on boot?
+Date: Sun, 08 Dec 2013 19:32:18 +0100
+Message-ID: <52A4BB32.9010104@rolffokkens.nl>
+References: <527ABDED.60902@nuclearwinter.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:35587 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902Ab3LGWTR (ORCPT
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:33484 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755110Ab3LHScV (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 7 Dec 2013 17:19:17 -0500
-Received: by mail-pd0-f181.google.com with SMTP id p10so2951338pdj.40
-        for <linux-bcache@vger.kernel.org>; Sat, 07 Dec 2013 14:19:17 -0800 (PST)
-In-Reply-To: <CAO9TOLe=Beyrnbsf9Q6MmXz0co29q4y+pTkJgYhr7YHbu1w_bg@mail.gmail.com>
+	Sun, 8 Dec 2013 13:32:21 -0500
+Received: by mail-ee0-f50.google.com with SMTP id c41so1183848eek.9
+        for <linux-bcache@vger.kernel.org>; Sun, 08 Dec 2013 10:32:20 -0800 (PST)
+In-Reply-To: <527ABDED.60902@nuclearwinter.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Adam Brenner <aebrenne@uci.edu>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: Larkin Lowrey <llowrey@nuclearwinter.com>, linux-bcache@vger.kernel.org
 
-
-
-> On Dec 7, 2013, at 9:31 AM, Adam Brenner <aebrenne@uci.edu> wrote:
-> 
-> FYO: IRC does exist
-> 
->     irc.oftc.net
->     #bcache
-
-Cool, thanks for the pointer, I'll give that a shot. 
+On 11/06/2013 11:08 PM, Larkin Lowrey wrote:
+> When I boot my cache usage returns to 1.3GB even when it was nearly full
+> at shutdown (as reported by bcache-status). Are the read cache contents
+> not retained across a reboot?
+Same here: After running for a while bcache-status reports a Total Cache 
+Used of 2.1GB. After reboot it's back to 910MB all the time. Did you get 
+an explanation for this?
