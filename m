@@ -1,64 +1,54 @@
-From: Pete Eby <relative.prime@gmail.com>
-Subject: Re: Unable to create /dev/bcacheN after initial creation
-Date: Thu, 12 Dec 2013 10:02:37 -0500
-Message-ID: <CAFRtjp-O0SZdBP0xi=LLog5C-KW0Up0oZm+N_o86-o7oQZzaOg@mail.gmail.com>
-References: <CAFRtjp_+j2RcsEkmsBLjAse7dP+1jXzEkxRAGGLnD=taaMG6Jg@mail.gmail.com>
-	<52A87E88.2000003@bahj.com>
-	<20131212000144.GV1848@teapot>
+From: Jason Warr <jason@warr.net>
+Subject: Found an interesting device
+Date: Thu, 12 Dec 2013 09:22:49 -0600
+Message-ID: <52A9D4C9.7020801@warr.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:56646 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358Ab3LLPCi (ORCPT
+Received: from smtprelay0202.hostedemail.com ([216.40.44.202]:36459 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751358Ab3LLPWv (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:02:38 -0500
-Received: by mail-ve0-f176.google.com with SMTP id oz11so375765veb.7
-        for <linux-bcache@vger.kernel.org>; Thu, 12 Dec 2013 07:02:37 -0800 (PST)
-In-Reply-To: <20131212000144.GV1848@teapot>
+	Thu, 12 Dec 2013 10:22:51 -0500
+Received: from filter.hostedemail.com (ff-bigip1 [10.5.19.254])
+	by smtprelay02.hostedemail.com (Postfix) with ESMTP id 6814C12BCF3
+	for <linux-bcache@vger.kernel.org>; Thu, 12 Dec 2013 15:22:50 +0000 (UTC)
+Received: from atlas.themelon.org (cpe-173-172-11-43.tx.res.rr.com [173.172.11.43])
+	(Authenticated sender: jason@warr.net)
+	by omf01.hostedemail.com (Postfix) with ESMTPA
+	for <linux-bcache@vger.kernel.org>; Thu, 12 Dec 2013 15:22:49 +0000 (UTC)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Matthias Ferdinand <bcache@mfedv.net>
-Cc: Zachary Palmer <zep_bcache@bahj.com>, linux-bcache@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Hi Matthias and Zachary,
+Some of you may be interested in this PCIe card:
 
-Thanks for the help - I was able to mount the device after manually attaching.
+http://www.addonics.com/products/ad4mspx2.php
 
-Now, to just figure out the last pieces preventing it from mounting as
-the root device, which it looks like Zachary's tips should help with.
+I just received a couple of them and have done basic functionality
+testing.  No bcache yet but that is what they are intended for.  The
+controller is a Marvell 88SE9230 connected via an x2 link.
 
-On Wed, Dec 11, 2013 at 7:01 PM, Matthias Ferdinand <bcache@mfedv.net> wrote:
-> [disclaimer: haven't tried bcache on / myself]
->
-> from the manual steps given, I think there needs to also be an attaching
-> operation:
->
->   echo "<cset-uuid>" >/sys/block/dm-xy/bcache/attach
+03:00.0 SATA controller: Marvell Technology Group Ltd. 88SE9230 PCIe
+SATA 6Gb/s Controller (rev 10)
+                LnkCap: Port #0, Speed 5GT/s, Width x2, ASPM L0s L1,
+Latency L0 <512ns, L1 <64us
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain-
+CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 5GT/s, Width x2, TrErr- Train- SlotClk+
+DLActive- BWMgmt- ABWMgmt--
+        Kernel driver in use: ahci
+        Kernel modules: ahci
 
-Brilliant - that's what I needed. Can't believe I missed that in the manual.
+[8:0:0:0]    disk    ATA      MKNSSDAT120GB-DX 521A  /dev/sde
+[9:0:0:0]    disk    ATA      MKNSSDAT120GB-DX 507A  /dev/sdf
 
-> Not sure why often the backing device must be explicitly attached to the
-> caching device to make /dev/bcache<n> show up. Perhaps some cleanup left
-> to do, so it doesn't want to be mountable without its caching device.
->
-> You should put "bcache" into /etc/modules und run update-initramfs,
-> otherwise the bcache module will not be ready when the kernel needs it
-> for mounting the real root device.
-
-I did put bcache into /etc/sysconfig/kernel INITRD_MODULES (suse) and
-generated a new initrd
-
-> More tweaks might be necessary, don't know if that already gives you the
-> udev rules inside the initramfs (it should, if you have bcache-tools
-> installed which provide initramfs-tools/hooks/bcache).
-> Regards
-> Matthias
-
-bcache-tools, with the initrd rules, in installed in Suse as well.
-lsinitrd shows bcache.ko and /usr/lib/udev/bcache-register are
-present.
-
-I'll follow Zachary's tips next - thank you both very much!
-
-Pete
+So you are theoretically limited to less than 1GB/s across PCIe but for
+caching purposes I'm more interested in IOPS than raw bandwidth
+anyways.  Using "dd if=/dev/zero of=/dev/sdX bs=1M oflag=direct" I am
+seeing ~380MB/s per device on 2 Mushkin MKNSSDAT120GB-DX concurrently. 
+Not the greatest test but it does show that they work OK.  I am getting
+Fedora 20 installed the way I want it and then the real testing will begin.
