@@ -1,67 +1,47 @@
-From: Jason Warr <jason@warr.net>
-Subject: Re: Found an interesting device
-Date: Thu, 12 Dec 2013 09:28:25 -0600
-Message-ID: <52A9D619.50504@warr.net>
-References: <52A9D4C9.7020801@warr.net>
+From: Rashika Kheria <rashika.kheria@gmail.com>
+Subject: [PATCH] drivers: md: Mark the function btree_insert_fn() as static
+ in btree.c
+Date: Sat, 14 Dec 2013 18:29:29 +0530
+Message-ID: <20131214125929.GA8200@rashika>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtprelay0229.hostedemail.com ([216.40.44.229]:60141 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751530Ab3LLP21 (ORCPT
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:59075 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753397Ab3LNM7h (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 12 Dec 2013 10:28:27 -0500
-Received: from filter.hostedemail.com (ff-bigip1 [10.5.19.254])
-	by smtprelay01.hostedemail.com (Postfix) with ESMTP id DCCDC235AE
-	for <linux-bcache@vger.kernel.org>; Thu, 12 Dec 2013 15:28:26 +0000 (UTC)
-Received: from atlas.themelon.org (cpe-173-172-11-43.tx.res.rr.com [173.172.11.43])
-	(Authenticated sender: jason@warr.net)
-	by omf09.hostedemail.com (Postfix) with ESMTPA
-	for <linux-bcache@vger.kernel.org>; Thu, 12 Dec 2013 15:28:25 +0000 (UTC)
-In-Reply-To: <52A9D4C9.7020801@warr.net>
+	Sat, 14 Dec 2013 07:59:37 -0500
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, josh@joshtriplett.org
 
+This patch marks the function btree_insert_fn() as static in
+bcache/btree.c because it is not used outside this file.
 
-On 12/12/2013 09:22 AM, Jason Warr wrote:
-> Some of you may be interested in this PCIe card:
->
-> http://www.addonics.com/products/ad4mspx2.php
->
-> I just received a couple of them and have done basic functionality
-> testing.  No bcache yet but that is what they are intended for.  The
-> controller is a Marvell 88SE9230 connected via an x2 link.
->
-> 03:00.0 SATA controller: Marvell Technology Group Ltd. 88SE9230 PCIe
-> SATA 6Gb/s Controller (rev 10)
->                 LnkCap: Port #0, Speed 5GT/s, Width x2, ASPM L0s L1,
-> Latency L0 <512ns, L1 <64us
->                         ClockPM- Surprise- LLActRep- BwNot-
->                 LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain-
-> CommClk+
->                         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
->                 LnkSta: Speed 5GT/s, Width x2, TrErr- Train- SlotClk+
-> DLActive- BWMgmt- ABWMgmt--
->         Kernel driver in use: ahci
->         Kernel modules: ahci
->
-> [8:0:0:0]    disk    ATA      MKNSSDAT120GB-DX 521A  /dev/sde
-> [9:0:0:0]    disk    ATA      MKNSSDAT120GB-DX 507A  /dev/sdf
+Thus, it also eliminates the following warning in bcache/btree.c:
+drivers/md/bcache/btree.c:2220:5: warning: no previous prototype for =E2=
+=80=98btree_insert_fn=E2=80=99 [-Wmissing-prototypes]
 
-Also this may or may not matter to anyone here but I was screwing around
-with it and you can hot-plug the mSATA cards onto it just fine.  At
-least with those particular Mushkin models but I believe it is supposed
-to be part of the spec that mSATA support all the features of regular SATA.
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+---
+ drivers/md/bcache/btree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> So you are theoretically limited to less than 1GB/s across PCIe but for
-> caching purposes I'm more interested in IOPS than raw bandwidth
-> anyways.  Using "dd if=/dev/zero of=/dev/sdX bs=1M oflag=direct" I am
-> seeing ~380MB/s per device on 2 Mushkin MKNSSDAT120GB-DX concurrently. 
-> Not the greatest test but it does show that they work OK.  I am getting
-> Fedora 20 installed the way I want it and then the real testing will begin.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 5e2765a..dc6e2be 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -2217,7 +2217,7 @@ struct btree_insert_op {
+ 	struct bkey	*replace_key;
+ };
+=20
+-int btree_insert_fn(struct btree_op *b_op, struct btree *b)
++static int btree_insert_fn(struct btree_op *b_op, struct btree *b)
+ {
+ 	struct btree_insert_op *op =3D container_of(b_op,
+ 					struct btree_insert_op, op);
+--=20
+1.7.9.5
