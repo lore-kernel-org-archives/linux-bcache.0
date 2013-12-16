@@ -1,41 +1,65 @@
-From: "Matthew Patton" <pattonme@yahoo.com>
-Subject: Re: 2 drives btrfs raid1 with one ssd
-Date: Sun, 15 Dec 2013 20:11:45 -0500
-Message-ID: <op.w75uxvdkf3gqgg@desktop.patton.net>
-References: <1387155717.6876.29.camel@N900-P>
+From: Kent Overstreet <kmo@daterainc.com>
+Subject: [GIT PULL] bcache fixes for 3.13
+Date: Mon, 16 Dec 2013 14:24:09 -0800
+Message-ID: <20131216222409.GD4054@kmo>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from nm29-vm1.bullet.mail.ne1.yahoo.com ([98.138.90.63]:49001 "HELO
-	nm29-vm1.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751908Ab3LPBML (ORCPT
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:62326 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3LPWYM (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 15 Dec 2013 20:12:11 -0500
-In-Reply-To: <1387155717.6876.29.camel@N900-P>
+	Mon, 16 Dec 2013 17:24:12 -0500
+Received: by mail-pb0-f47.google.com with SMTP id um1so6082286pbc.20
+        for <linux-bcache@vger.kernel.org>; Mon, 16 Dec 2013 14:24:12 -0800 (PST)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org, Pavol Cupka <pavol.cupka@gmail.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 
-On Sun, 15 Dec 2013 20:01:57 -0500, Pavol Cupka <pavol.cupka@gmail.com>  
-wrote:
+Jens - small pile of bcache fixes. I've been slacking on the writeback fixes but
+those definitely need to get into 3.13:
 
-> I would like to use a bcache for btrfs filesystem residing on two  
-> identical disk as raid1 using btrfs' raid (without soft/hard raid).
->
-> Is it possible?
+The following changes since commit c86949486d41d9e7d7681fc72923555114fd702f:
 
-if I understood you correctly, no.
+  bcache: defensively handle format strings (2013-11-10 21:56:43 -0800)
 
-> I would like to use the same ssd/ssd partition for caching both  
-> drives/mirror. Is this doable?
+are available in the git repository at:
 
-You will have to build the btrfs 'raid' on top of two bcache devices. If  
-the caching device for both devices in the same SSD (partitioned) what's  
-the point? Assuming Btrfs has a similar feature set to MD's Raid1  
-write-mostly, you could accelerate the one side, and run the other half of  
-the mirror without acceleration. Otherwise I would just use MD's Raid1 and  
-be done with it. Put btrfs/ext4/xfs on top as you like.
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.13
 
-Does your intended workload really benefit from putting an SSD into the  
-mix?
+for you to fetch changes up to 16749c23c00c686ed168471963e3ddb0f3fcd855:
+
+  bcache: New writeback PD controller (2013-12-16 14:22:59 -0800)
+
+----------------------------------------------------------------
+Kent Overstreet (4):
+      bcache: Use uninterruptible sleep in writeback
+      bcache: Fix dirty_data accounting
+      bcache: bugfix for race between moving_gc and bucket_invalidate
+      bcache: New writeback PD controller
+
+Nicholas Swenson (5):
+      bcache: Fix for can_attach_cache()
+      bcache: Fix heap_peek() macro
+      bcache: fix for gc crashing when no sectors are used
+      bcache: bugfix - moving_gc now moves only correct buckets
+      bcache: fix for gc and writeback race
+
+Stefan Priebe (1):
+      bcache: kthread don't set writeback task to INTERUPTIBLE
+
+Wei Yongjun (1):
+      bcache: fix sparse non static symbol warning
+
+ drivers/md/bcache/alloc.c     |  2 ++
+ drivers/md/bcache/bcache.h    | 12 +++++-----
+ drivers/md/bcache/btree.c     | 27 ++++++++++++++++++++--
+ drivers/md/bcache/movinggc.c  | 21 ++++++++++++-----
+ drivers/md/bcache/super.c     |  2 +-
+ drivers/md/bcache/sysfs.c     | 50 +++++++++++++++++++++++-----------------
+ drivers/md/bcache/util.c      |  8 ++++++-
+ drivers/md/bcache/util.h      |  2 +-
+ drivers/md/bcache/writeback.c | 53 ++++++++++++++++++++-----------------------
+ 9 files changed, 111 insertions(+), 66 deletions(-)
