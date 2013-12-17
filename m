@@ -1,65 +1,59 @@
-From: Kent Overstreet <kmo@daterainc.com>
-Subject: [GIT PULL] bcache fixes for 3.13
-Date: Mon, 16 Dec 2013 14:24:09 -0800
-Message-ID: <20131216222409.GD4054@kmo>
+From: eb <eab@gmx.ch>
+Subject: bcache/btrfs interaction causing warnings
+Date: Tue, 17 Dec 2013 18:50:10 +0100
+Message-ID: <CAFvEZVHrfjWM=gxr1hjqQV-KASqBRe4sACxM_XMgDbv3eE4fiw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:62326 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3LPWYM (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 16 Dec 2013 17:24:12 -0500
-Received: by mail-pb0-f47.google.com with SMTP id um1so6082286pbc.20
-        for <linux-bcache@vger.kernel.org>; Mon, 16 Dec 2013 14:24:12 -0800 (PST)
-Content-Disposition: inline
+Received: from mout.gmx.net ([212.227.17.21]:62441 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753453Ab3LQRud (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 17 Dec 2013 12:50:33 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]) by mail.gmx.com
+ (mrgmx101) with ESMTPSA (Nemesis) id 0MWPOI-1W0EpW03MQ-00Xdyt for
+ <linux-bcache@vger.kernel.org>; Tue, 17 Dec 2013 18:50:32 +0100
+Received: by mail-pb0-f48.google.com with SMTP id md12so7273340pbc.35
+        for <linux-bcache@vger.kernel.org>; Tue, 17 Dec 2013 09:50:30 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-Jens - small pile of bcache fixes. I've been slacking on the writeback fixes but
-those definitely need to get into 3.13:
+I've recently setup a system (Kernel 3.12.5-1-ARCH) which is layered as follows:
 
-The following changes since commit c86949486d41d9e7d7681fc72923555114fd702f:
+/dev/sdb3 - cache0 (80 GB Intel SSD)
+/dev/sdc1 - backing device (2 TB WD HDD)
 
-  bcache: defensively handle format strings (2013-11-10 21:56:43 -0800)
+sdb3+sdc1 => /dev/bcache0
 
-are available in the git repository at:
+On /dev/bcache0, there's a btrfs filesystem with 2 subvolumes, mounted
+as / and /home. What's been bothering me are the following entries in
+my kernel log:
 
-  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.13
+[13811.845540] incomplete page write in btrfs with offset 1536 and length 2560
+[13870.326639] incomplete page write in btrfs with offset 3072 and length 1024
 
-for you to fetch changes up to 16749c23c00c686ed168471963e3ddb0f3fcd855:
+The offset/length values are always either 1536/2560 or 3072/1024,
+they sum up nicely to 4K. There are 607 of those in there as I am
+writing this (well, 651 now :)), the machine has been up 18 hours and
+been under no particular I/O strain (it's a desktop).
 
-  bcache: New writeback PD controller (2013-12-16 14:22:59 -0800)
+Trying to fix this, I unattached the cache (still using /dev/bcache0,
+but without /dev/sdb3 attached), causing these errors to disappear. As
+soon as I re-attached /dev/sdb3 they started again, so I am fairly
+sure it's an unfavorable interaction between bcache and btrfs.
 
-----------------------------------------------------------------
-Kent Overstreet (4):
-      bcache: Use uninterruptible sleep in writeback
-      bcache: Fix dirty_data accounting
-      bcache: bugfix for race between moving_gc and bucket_invalidate
-      bcache: New writeback PD controller
+Is this something I should be worried about (they're only emitted with
+KERN_INFO) or just an alignment problem? The underlying HDD is using
+4K-Sectors, while the block_size of bcache seems to be 512, could that
+be the issue here?
 
-Nicholas Swenson (5):
-      bcache: Fix for can_attach_cache()
-      bcache: Fix heap_peek() macro
-      bcache: fix for gc crashing when no sectors are used
-      bcache: bugfix - moving_gc now moves only correct buckets
-      bcache: fix for gc and writeback race
+I've also encountered incomplete reads and a few csum errors, but I
+have not been able to trigger these regularly.
 
-Stefan Priebe (1):
-      bcache: kthread don't set writeback task to INTERUPTIBLE
+Any advice is appreciated,
 
-Wei Yongjun (1):
-      bcache: fix sparse non static symbol warning
+- eb
 
- drivers/md/bcache/alloc.c     |  2 ++
- drivers/md/bcache/bcache.h    | 12 +++++-----
- drivers/md/bcache/btree.c     | 27 ++++++++++++++++++++--
- drivers/md/bcache/movinggc.c  | 21 ++++++++++++-----
- drivers/md/bcache/super.c     |  2 +-
- drivers/md/bcache/sysfs.c     | 50 +++++++++++++++++++++++-----------------
- drivers/md/bcache/util.c      |  8 ++++++-
- drivers/md/bcache/util.h      |  2 +-
- drivers/md/bcache/writeback.c | 53 ++++++++++++++++++++-----------------------
- 9 files changed, 111 insertions(+), 66 deletions(-)
+PS: I've only sent this to the bcache list so far, if this is a
+concern for btrfs, let me know and I will take it there. However,
+without the cache enabled, it seems to run without a hitch.
