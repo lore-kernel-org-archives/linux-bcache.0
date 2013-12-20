@@ -1,32 +1,47 @@
-From: Pavol Cupka <pavol.cupka@gmail.com>
-Subject: Re: 2 drives btrfs raid1 with one ssd
-Date: Thu, 19 Dec 2013 05:04:55 +0100
-Message-ID: <CAH4oapejLOoWP58__hAqvTNP7nQULBycxGRCqrAW3_x8yhdg8w@mail.gmail.com>
-References: <1387155717.6876.29.camel@N900-P>
-	<op.w75uxvdkf3gqgg@desktop.patton.net>
-	<CAH4oapepG0UgG_g8EHDpGSYKCGSKi9AFEAU8BGH63d5Bx6e+AQ@mail.gmail.com>
-	<1387420255.21384.YahooMailNeo@web181506.mail.ne1.yahoo.com>
+From: eb <eab@gmx.ch>
+Subject: Re: btrfs on bcache
+Date: Fri, 20 Dec 2013 13:36:53 +0100
+Message-ID: <CAFvEZVFwzKUBbBC9-3CaX0SL56qnX3rizOqiJwZrs60cMoN8-Q@mail.gmail.com>
+References: <CAFvEZVF8J0jbYnTtV7X6uJWL1pBkwG6iFbH-KoNSPGq0Mc7bTw@mail.gmail.com>
+ <1387483201.23881.2.camel@ret.masoncoding.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:59440 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab3LSEE4 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 18 Dec 2013 23:04:56 -0500
-Received: by mail-qa0-f41.google.com with SMTP id j5so4381409qaq.7
-        for <linux-bcache@vger.kernel.org>; Wed, 18 Dec 2013 20:04:55 -0800 (PST)
-In-Reply-To: <1387420255.21384.YahooMailNeo@web181506.mail.ne1.yahoo.com>
+Received: from mout.gmx.net ([212.227.17.22]:50344 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932089Ab3LTMhR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 20 Dec 2013 07:37:17 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]) by mail.gmx.com
+ (mrgmx001) with ESMTPSA (Nemesis) id 0MaaOf-1WE7Xe2VOD-00KAdy for
+ <linux-bcache@vger.kernel.org>; Fri, 20 Dec 2013 13:37:15 +0100
+Received: by mail-pb0-f48.google.com with SMTP id md12so2551430pbc.7
+        for <linux-bcache@vger.kernel.org>; Fri, 20 Dec 2013 04:37:13 -0800 (PST)
+In-Reply-To: <1387483201.23881.2.camel@ret.masoncoding.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Chris Mason <clm@fb.com>
+Cc: linux-bcache@vger.kernel.org, linux-btrfs@vger.kernel.org
 
-could you do it without mdraid? directly using the btrfs raid1 settings?
+On Thu, Dec 19, 2013 at 8:59 PM, Chris Mason <clm@fb.com> wrote:
+> On Wed, 2013-12-18 at 18:17 +0100, eb wrote:
+> Btrfs shouldn't be setting the offset on the bios.  Are you able to add
+> a WARN_ON to the message that prints this so we can see the stack trace?
 
-thanks
+If you send me a patch - my experience on hacking on the kernel is
+exactly 0 - I'll try to see if I can compile a custom kernel and get
+it running.
 
-On Thu, Dec 19, 2013 at 3:30 AM, matthew patton <pattonme@yahoo.com> wrote:
->> I was thinking of simulating L2ARC like design from ZFS for btrfs.
->
->
-> construct one leg of the MD Raid1 from a bCache device. Construct the other leg from regular disk and put it into write-mostly. Put BTRfs on top. Now you have L2ARC.
+> Could you please cc the bcache and btrfs list together?
+
+Done.
+
+I did some more testing - I copied an image of a 128GB drive over the
+network (via netcat) onto the bcache/btrfs system and verified the
+results twice using sha1sum. They're both identical on the source
+system (which is *not* using bcache) and bcache/btrfs setup. I've
+gotten a lot of the incomplete write errors and a few csum erros in
+dmesg, but apparently they haven't done any harm?
+
+Not sure how remarkable this is, as these kinds of things are supposed
+to bypass the cache anyway, but I assume they still have to go through
+the subsystem.
