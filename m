@@ -1,103 +1,114 @@
-From: =?UTF-8?Q?F=C3=A1bio_Pfeifer?= <fmpfeifer@gmail.com>
-Subject: Re: btrfs on bcache
-Date: Tue, 24 Dec 2013 14:44:57 -0200
-Message-ID: <CABtk0xSn3V33CuWvW4END0nH0xpvFQ_pDj-o2+WcoAxdyEssuw@mail.gmail.com>
-References: <CAFvEZVF8J0jbYnTtV7X6uJWL1pBkwG6iFbH-KoNSPGq0Mc7bTw@mail.gmail.com>
- <1387483201.23881.2.camel@ret.masoncoding.com> <CABtk0xRbO9BthbOGHGg3cO4H5CZYeDwb_H4gAmspMiKSZMNZtQ@mail.gmail.com>
- <1387554401.9407.0.camel@ret.masoncoding.com>
+From: Kent Overstreet <kmo@daterainc.com>
+Subject: [GIT PULL] Bcache for 3.14
+Date: Mon, 6 Jan 2014 14:56:56 -0800
+Message-ID: <20140106225656.GG9037@kmo>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-btrfs-owner@vger.kernel.org>
-In-Reply-To: <1387554401.9407.0.camel@ret.masoncoding.com>
-Sender: linux-btrfs-owner@vger.kernel.org
-To: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+Sender: linux-kernel-owner@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-(resend int text only)
-Some more information about this issue.
+Jens - here's the bcache pull for 3.14, on top of your for-3.14/drivers branch.
 
-I installed my system last november (arch x86_64), with kernel 3.11.
-That time I didn't see any csum error or
-"incomplete page read" error. Some time later these errors started to
-show up. I don't know exactly if it was in
-3.11 -> 3.12 upgrade or somewhere in the 3.12 cycle. I've been using
-bcache in writeback mode from the beginning.
+First 11 patches are duplicates of the bcache patches in v3.13-rc5 but not your
+for-3.14 drivers branch.
 
-I made some more testing:
-  - tryed bcache in writethrough, writearound  and none modes;
-  - tryed linux kernel 3.13-rc5
+The following changes since commit 8586ea96b4f919a9b38929040bc9ce57c9998fc4:
 
-The errors didn't go away (maybe because my filesystem is already
-corrupted). I didn't have time to test with kernel 3.11 again.
+  pktcdvd: fix error return code (2014-01-03 10:05:34 +0100)
 
-But lately the errors increased, and it started to make my system
-unstable, and then unusable.
-I had to reformat everything and recover my backups.
+are available in the git repository at:
 
-I don't have my / and /home in btrfs over bcache anymore, but I can
-make some tests in a spare HD and SSD i have here. I'll report back
-after Christmas.
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.14
 
-thanks,
+for you to fetch changes up to e793d59db9369522b676365fae553897ea1846a7:
 
-=46abio
+  bcache: Fix auxiliary search trees for key size > cacheline size (2014-01-06 14:52:09 -0800)
 
-2013/12/20 Chris Mason <clm@fb.com>:
-> On Fri, 2013-12-20 at 10:42 -0200, F=C3=A1bio Pfeifer wrote:
->> Hello,
->>
->> I put the "WARN_ON(1);" after the printk lines (incomplete page read
->> and incomplete page write) in extent_io.c.
->>
->> here some call traces:
->>
->> [   19.509497] incomplete page read in btrfs with offset 2560 and le=
-ngth 1536
->> [   19.509500] ------------[ cut here ]------------
->> [   19.509528] WARNING: CPU: 2 PID: 220 at fs/btrfs/extent_io.c:2441
->> end_bio_extent_readpage+0x788/0xc20 [btrfs]()
->> [   19.509530] Modules linked in: cdc_acm fuse iTCO_wdt
->> iTCO_vendor_support snd_hda_codec_analog coretemp kvm_intel kvm raid=
-1
->> ext4 crc16 md_mod mbcache jbd2 microcode nvidia(PO) psmouse pcspkr
->> evdev serio_raw i2c_i801 lpc_ich i2c_core snd_hda_intel sky2 skge
->> i82975x_edac button asus_atk0110 snd_hda_codec snd_hwdep shpchp
->> snd_pcm snd_page_alloc snd_timer acpi_cpufreq snd edac_core soundcor=
-e
->> processor vboxdrv(O) sr_mod cdrom ata_generic pata_acpi hid_generic
->> usbhid hid usb_storage sd_mod pata_marvell firewire_ohci uhci_hcd ah=
-ci
->> ehci_pci firewire_core ata_piix libahci crc_itu_t ehci_hcd libata
->> scsi_mod usbcore usb_common btrfs crc32c libcrc32c xor raid6_pq bcac=
-he
->> [   19.509578] CPU: 2 PID: 220 Comm: btrfs-endio-met Tainted: P
->> W  O 3.12.5-1-ARCH #1
->> [   19.509580] Hardware name: System manufacturer System Product
->> Name/P5WDG2 WS Pro, BIOS 0905    03/06/2008
->> [   19.509581]  0000000000000009 ffff880231a63cb0 ffffffff814ee37b
->> 0000000000000000
->> [   19.509585]  ffff880231a63ce8 ffffffff81062bcd ffffea00085eaec0
->> 0000000000000000
->> [   19.509587]  ffff8802320cc9c0 0000000000000000 ffff880233b0e000
->> ffff880231a63cf8
->> [   19.509590] Call Trace:
->> [   19.509596]  [<ffffffff814ee37b>] dump_stack+0x54/0x8d
->> [   19.509601]  [<ffffffff81062bcd>] warn_slowpath_common+0x7d/0xa0
->> [   19.509603]  [<ffffffff81062caa>] warn_slowpath_null+0x1a/0x20
->> [   19.509614]  [<ffffffffa00b7ba8>] end_bio_extent_readpage+0x788/0=
-xc20 [btrfs]
->
-> This should mean that bcache is either failing to read some blocks
-> properly or is fiddling with the bv_len/bv_offset fields.
->
-> Could someone from bcache comment?
->
-> -chris
->
---
-To unsubscribe from this list: send the line "unsubscribe linux-btrfs" =
-in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+----------------------------------------------------------------
+Kent Overstreet (36):
+      bcache: Use uninterruptible sleep in writeback
+      bcache: Fix dirty_data accounting
+      bcache: bugfix for race between moving_gc and bucket_invalidate
+      bcache: New writeback PD controller
+      bcache: Data corruption fix
+      bcache: Minor journal fix
+      bcache: Performance fix for when journal entry is full
+      bcache: Minor btree cache fix
+      bcache: Don't touch bucket gen for dirty ptrs
+      bcache: Zero less memory
+      bcache: kill closure locking usage
+      bcache: kill closure locking code
+      bcache: Rework allocator reserves
+      bcache: Do bkey_put() in btree_split() error path
+      bcache/md: Use raid stripe size
+      bcache: Trivial error handling fix
+      bcache: kill index()
+      bcache: Btree verify code improvements
+      bcache: Use a mempool for mergesort temporary space
+      bcache: Remove/fix some header dependencies
+      bcache: Make bch_keylist_realloc() take u64s, not nptrs
+      bcache: Bkey indexing renaming
+      bcache: Split out sort_extent_cmp()
+      bcache: Add struct bset_sort_state
+      bcache: Rename/shuffle various code around
+      bcache: Abstract out stuff needed for sorting
+      bcache: Add struct btree_keys
+      bcache: Add bch_btree_keys_u64s_remaining()
+      bcache: Refactor bset_tree sysfs stats
+      bcache: Convert btree_iter to struct btree_keys
+      bcache: Convert debug code to btree_keys
+      bcache: Convert sorting to btree_keys
+      bcache: Move insert_fixup() to btree_keys_ops
+      bcache: Improve bucket_prio() calculation
+      bcache: Don't return -EINTR when insert finished
+      bcache: Fix auxiliary search trees for key size > cacheline size
+
+Nicholas Swenson (7):
+      bcache: Fix for can_attach_cache()
+      bcache: Fix heap_peek() macro
+      bcache: fix for gc crashing when no sectors are used
+      bcache: bugfix - moving_gc now moves only correct buckets
+      bcache: fix for gc and writeback race
+      bcache: update bch_bkey_try_merge
+      bcache: Add bch_bkey_equal_header()
+
+Stefan Priebe (1):
+      bcache: kthread don't set writeback task to INTERUPTIBLE
+
+Wei Yongjun (1):
+      bcache: fix sparse non static symbol warning
+
+ drivers/md/bcache/Makefile    |   5 +-
+ drivers/md/bcache/alloc.c     |  91 +++--
+ drivers/md/bcache/bcache.h    |  94 ++---
+ drivers/md/bcache/bset.c      | 904 +++++++++++++++++++++++-------------------
+ drivers/md/bcache/bset.h      | 440 +++++++++++++-------
+ drivers/md/bcache/btree.c     | 699 +++++++++++++-------------------
+ drivers/md/bcache/btree.h     |  62 +--
+ drivers/md/bcache/closure.c   |  90 +----
+ drivers/md/bcache/closure.h   | 355 +++++------------
+ drivers/md/bcache/debug.c     | 247 +++---------
+ drivers/md/bcache/debug.h     |  27 +-
+ drivers/md/bcache/extents.c   | 616 ++++++++++++++++++++++++++++
+ drivers/md/bcache/extents.h   |  13 +
+ drivers/md/bcache/journal.c   |  75 ++--
+ drivers/md/bcache/journal.h   |   1 +
+ drivers/md/bcache/movinggc.c  |  23 +-
+ drivers/md/bcache/request.c   |  72 ++--
+ drivers/md/bcache/request.h   |  21 +-
+ drivers/md/bcache/super.c     | 105 +++--
+ drivers/md/bcache/sysfs.c     | 129 +++---
+ drivers/md/bcache/util.c      |   8 +-
+ drivers/md/bcache/util.h      |  10 +-
+ drivers/md/bcache/writeback.c |  53 ++-
+ drivers/md/raid5.c            |   1 +
+ include/linux/blkdev.h        |   1 +
+ include/trace/events/bcache.h |  10 +-
+ include/uapi/linux/bcache.h   |   3 +-
+ 27 files changed, 2330 insertions(+), 1825 deletions(-)
+ create mode 100644 drivers/md/bcache/extents.c
+ create mode 100644 drivers/md/bcache/extents.h
