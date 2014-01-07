@@ -1,50 +1,60 @@
 From: Kent Overstreet <kmo@daterainc.com>
-Subject: Re: About physically swapping backing and cache device
-Date: Tue, 7 Jan 2014 13:35:58 -0800
-Message-ID: <20140107213558.GK9037@kmo>
-References: <CAPBO7TYjki0s4-cMxS1ztvO=WT-8+ScH6mfZrE+YkTLuFcBqAA@mail.gmail.com>
+Subject: Re: [PATCH] bcache/md: Use raid stripe size
+Date: Tue, 7 Jan 2014 13:59:54 -0800
+Message-ID: <20140107215954.GL9037@kmo>
+References: <1387415531-10713-1-git-send-email-kmo@daterainc.com>
+ <CAMM=eLcGTYcSdYW9vWYWk64dRuwgyY_O90NySb_jR9zQTCBTJg@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:52217 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaAGVgC (ORCPT
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:40519 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855AbaAGV75 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 7 Jan 2014 16:36:02 -0500
-Received: by mail-pb0-f42.google.com with SMTP id uo5so671407pbc.29
-        for <linux-bcache@vger.kernel.org>; Tue, 07 Jan 2014 13:36:01 -0800 (PST)
+	Tue, 7 Jan 2014 16:59:57 -0500
+Received: by mail-pa0-f44.google.com with SMTP id fa1so955656pad.31
+        for <linux-bcache@vger.kernel.org>; Tue, 07 Jan 2014 13:59:56 -0800 (PST)
 Content-Disposition: inline
-In-Reply-To: <CAPBO7TYjki0s4-cMxS1ztvO=WT-8+ScH6mfZrE+YkTLuFcBqAA@mail.gmail.com>
+In-Reply-To: <CAMM=eLcGTYcSdYW9vWYWk64dRuwgyY_O90NySb_jR9zQTCBTJg@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Josep Lladonosa <jlladono@gmail.com>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, Neil Brown <neilb@suse.de>, Jens Axboe <axboe@kernel.dk>
 
-On Tue, Jan 07, 2014 at 09:52:50AM +0100, Josep Lladonosa wrote:
-> Hello,
+On Mon, Jan 06, 2014 at 09:04:25PM -0500, Mike Snitzer wrote:
+> On Wed, Dec 18, 2013 at 8:12 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+> > Now that we've got code for raid5/6 stripe awareness, bcache just needs
+> > to know about the stripes and when writing partial stripes is expensive
+> > - we probably don't want to enable this optimization for raid1 or 10,
+> > even though they have stripes. So add a flag to queue_limits.
+> >
+> > Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+> > ---
+> > This is in my pile of bcache stuff queued up for 3.14 - if no one objects it'll
+> > be in my bcache pull request:
+> >
+> >  drivers/md/bcache/super.c | 6 ++++++
+> >  drivers/md/raid5.c        | 1 +
+> >  include/linux/blkdev.h    | 1 +
+> >  3 files changed, 8 insertions(+)
 > 
+> Hi Kent,
 > 
-> I have been using bcache for some months. Now I am with 3.12.6 kernel
-> (stable! :)
-> Thanks and congratulations for the good work.
+> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> > index 02cb6f0ea7..0375654adb 100644
+> > --- a/include/linux/blkdev.h
+> > +++ b/include/linux/blkdev.h
+> > @@ -291,6 +291,7 @@ struct queue_limits {
+> >         unsigned char           discard_misaligned;
+> >         unsigned char           cluster;
+> >         unsigned char           discard_zeroes_data;
+> > +       unsigned char           raid_partial_stripes_expensive;
+> >  };
+> >
+> >  struct request_queue {
 > 
-> I have in the laptop this configuration:
-> 
-> /dev/sda7 as backing device (hard drive partition)
-> /dev/sdb as cache device (SSD)
-> 
-> 1) I would like to physically swap sda and sdb (a matter of different
-> bus speeds) in order to improve ata speed for SSD. The fact is that in
-> a case of this, would I have to "reregister" anything in bcache, or it
-> will run referenced to UUIDs and so?
+> If you add a new member to queue_limits you need to update
+> blk_stack_limits() so that it propagates as you stack devices.
 
-Everything's referenced with UUIDs, so it'll all just work.
-
-> 2) I think I would have to install GRUB into /dev/sdb (it has no
-> partitions defined). Would it be safe installing GRUB in a cache
-> device? Future configuration would be /dev/sda for the cache (SSD) and
-> /dev/sdb for the backing device (hard drive).
-
-Bcache doesn't touch the first 4k of the device, so if it's just grub's MBR (512
-bytes) that should be fine. I would verify that grub isn't touching more than
-the first 4k of the device though.
+Thanks, going to send Jens a new pull after he does some merging so I'll include
+that in the updated version.
