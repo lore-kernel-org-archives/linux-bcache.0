@@ -1,39 +1,43 @@
 From: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH 3/3] bcache: Fix the bug about cal nr_stripes of backed device
-Date: Wed, 8 Jan 2014 19:39:28 +0800
-Message-ID: <201401081939244995495@gmail.com>
+Subject: [PATCH 2/3] bcache: Avoid hung task happen.
+Date: Wed, 8 Jan 2014 19:39:26 +0800
+Message-ID: <201401081939218365334@gmail.com>
 Reply-To: majianpeng <majianpeng@gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:45705 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaAHLjc (ORCPT
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:34923 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677AbaAHLja (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 8 Jan 2014 06:39:32 -0500
-Received: by mail-pb0-f50.google.com with SMTP id rr13so1476846pbb.37
-        for <linux-bcache@vger.kernel.org>; Wed, 08 Jan 2014 03:39:31 -0800 (PST)
+	Wed, 8 Jan 2014 06:39:30 -0500
+Received: by mail-pb0-f54.google.com with SMTP id un15so1466582pbc.41
+        for <linux-bcache@vger.kernel.org>; Wed, 08 Jan 2014 03:39:30 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: kmo <kmo@daterainc.com>
 Cc: linux-bcache <linux-bcache@vger.kernel.org>
 
-SW4gZnVuYyBiY2FjaGVfZGV2aWNlX2luaXQoKSxpdCB1c2UgdGhpcyBleHByZXNzaW9uIHRvIGNh
-bCBucl9zdHJpcGVzOg0KImQtPm5yX3N0cmlwZXMgPSBESVZfUk9VTkRfVVBfVUxMKHNlY3RvcnMs
-IGQtPnN0cmlwZV9zaXplKSIuDQpCdXQgdGhlIHVuaXQgb2YgZC0+c3RyaXBlX3NpemUgaXMgYnl0
-ZSx0aGUgdW5pdCBvcyBzZWN0b3JzIGlzIHNlY3Rvci4NClNvIHdlIHNob3VsZCByZXBsYWNlIHNl
-Y3RvcnMgd2l0aCAic2Vjb3RycyA8PCA5Ii4NCg0KU2lnbmVkLW9mZi1ieTogSmlhbnBlbmcgTWEg
-PG1hamlhbnBlbmdAZ21haWwuY29tPg0KLS0tDQogZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYyB8
-ICAgIDIgKy0NCiAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKyksIDEgZGVsZXRpb24oLSkN
-Cg0KZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMgYi9kcml2ZXJzL21kL2Jj
-YWNoZS9zdXBlci5jDQppbmRleCAyMWY3N2MxLi42Mzk0ZGQ2IDEwMDY0NA0KLS0tIGEvZHJpdmVy
-cy9tZC9iY2FjaGUvc3VwZXIuYw0KKysrIGIvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYw0KQEAg
-LTc2OSw3ICs3NjksNyBAQCBzdGF0aWMgaW50IGJjYWNoZV9kZXZpY2VfaW5pdChzdHJ1Y3QgYmNh
-Y2hlX2RldmljZSAqZCwgdW5zaWduZWQgYmxvY2tfc2l6ZSwNCiAJaWYgKCFkLT5zdHJpcGVfc2l6
-ZSkNCiAJCWQtPnN0cmlwZV9zaXplID0gbWluX3QodW5zaWduZWQsIDEgPDwgMzEsIHEtPmxpbWl0
-cy5pb19vcHQpOw0KIA0KLQlkLT5ucl9zdHJpcGVzID0gRElWX1JPVU5EX1VQX1VMTChzZWN0b3Jz
-LCBkLT5zdHJpcGVfc2l6ZSk7DQorCWQtPm5yX3N0cmlwZXMgPSBESVZfUk9VTkRfVVBfVUxMKHNl
-Y3RvcnMgPDwgOSwgZC0+c3RyaXBlX3NpemUpOw0KIA0KIAlpZiAoIWQtPm5yX3N0cmlwZXMgfHwN
-CiAJICAgIGQtPm5yX3N0cmlwZXMgPiBJTlRfTUFYIHx8DQotLSANCjEuNy4xMC40DQo=
+QmVjYXVzZSBhZnRlciBrdGhyZWFkX2NyZWF0ZSwgdGhlIHN0YXRlIG9mIGt0aHJlYWQgaXMgVEFT
+S19VTklOVEVSUlVQVElCTEUuDQpJZiB3ZSBkb24ndCB3YWtlIHVwIGRjLT53cml0ZWJhY2tfdGhy
+ZWFkLCB0aGUgdGhyZWFkIHdpbGwgYmUgaHVuZy10YXNrLg0KRm9yIHRob3NlIHJlYXNvbnMsIHdl
+IGRvbid0IHdha2UgdXAgd3JpdGViYWNrX3RocmVhZDoNCkE6b25seSBjcmVhdGUgYmFja2VkIGRl
+dmljZQ0KQjpjcmVhdGUgYmFja2VkIGRldmljZSBhbmQgY2FjaGUgZGV2aWNlLCBidXQgZG9uJ3Qg
+d3JpdGUgYXQgb25jZQ0KQzp3cml0ZSB3aXRob3V0IHdyaXRlYmFjayBwb2xpeQ0KDQpTbyBsaWtl
+IHRoZSB3YXkgb2YgY3JlYXRlIGdjX3RocmVhZCwgYWZ0ZXIgY3JlYXRpbmcgd3JpdGViYWNrX3Ro
+cmVhZCwgaQ0Kc2V0IHRoZSBzdGF0ZSBpcyBUQVNLX0lOVEVSUlVQVElCTEUuDQoNClNpZ25lZC1v
+ZmYtYnk6IEppYW5wZW5nIE1hIDxtYWppYW5wZW5nQGdtYWlsLmNvbT4NCi0tLQ0KIGRyaXZlcnMv
+bWQvYmNhY2hlL3dyaXRlYmFjay5jIHwgICAgMiArKw0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2Vy
+dGlvbnMoKykNCg0KZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWQvYmNhY2hlL3dyaXRlYmFjay5jIGIv
+ZHJpdmVycy9tZC9iY2FjaGUvd3JpdGViYWNrLmMNCmluZGV4IDZjNDRmZTAuLjdmYmMyMmEgMTAw
+NjQ0DQotLS0gYS9kcml2ZXJzL21kL2JjYWNoZS93cml0ZWJhY2suYw0KKysrIGIvZHJpdmVycy9t
+ZC9iY2FjaGUvd3JpdGViYWNrLmMNCkBAIC00OTksNiArNDk5LDggQEAgaW50IGJjaF9jYWNoZWRf
+ZGV2X3dyaXRlYmFja19pbml0KHN0cnVjdCBjYWNoZWRfZGV2ICpkYykNCiAJaWYgKElTX0VSUihk
+Yy0+d3JpdGViYWNrX3RocmVhZCkpDQogCQlyZXR1cm4gUFRSX0VSUihkYy0+d3JpdGViYWNrX3Ro
+cmVhZCk7DQogDQorCXNldF90YXNrX3N0YXRlKGRjLT53cml0ZWJhY2tfdGhyZWFkLCBUQVNLX0lO
+VEVSUlVQVElCTEUpOw0KKw0KIAlJTklUX0RFTEFZRURfV09SSygmZGMtPndyaXRlYmFja19yYXRl
+X3VwZGF0ZSwgdXBkYXRlX3dyaXRlYmFja19yYXRlKTsNCiAJc2NoZWR1bGVfZGVsYXllZF93b3Jr
+KCZkYy0+d3JpdGViYWNrX3JhdGVfdXBkYXRlLA0KIAkJCSAgICAgIGRjLT53cml0ZWJhY2tfcmF0
+ZV91cGRhdGVfc2Vjb25kcyAqIEhaKTsNCi0tIA0KMS43LjEwLjQNCg==
