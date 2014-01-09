@@ -1,30 +1,41 @@
-From: Kent Overstreet <kmo@daterainc.com>
-Subject: Re: [PATCH 3/3] bcache: Fix the bug about cal nr_stripes of backed
- device
-Date: Wed, 8 Jan 2014 13:37:00 -0800
-Message-ID: <20140108213700.GH7291@kmo-pixel>
-References: <201401081939244995495@gmail.com>
+From: majianpeng <majianpeng@gmail.com>
+Subject: Re: Re: [PATCH 2/3] bcache: Avoid hung task happen.
+Date: Thu, 9 Jan 2014 11:00:00 +0800
+Message-ID: <201401091059579428371@gmail.com>
+References: <201401081939218365334@gmail.com>,
+	<20140108213402.GG7291@kmo-pixel>
+Reply-To: majianpeng <majianpeng@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset="gb2312"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:52359 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757754AbaAHVfn (ORCPT
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:61980 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752828AbaAIDAH (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 8 Jan 2014 16:35:43 -0500
-Received: by mail-pd0-f182.google.com with SMTP id v10so2280027pde.41
-        for <linux-bcache@vger.kernel.org>; Wed, 08 Jan 2014 13:35:43 -0800 (PST)
-Content-Disposition: inline
-In-Reply-To: <201401081939244995495@gmail.com>
+	Wed, 8 Jan 2014 22:00:07 -0500
+Received: by mail-pd0-f171.google.com with SMTP id z10so2566528pdj.30
+        for <linux-bcache@vger.kernel.org>; Wed, 08 Jan 2014 19:00:05 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: majianpeng <majianpeng@gmail.com>
+To: kmo <kmo@daterainc.com>
 Cc: linux-bcache <linux-bcache@vger.kernel.org>
 
-On Wed, Jan 08, 2014 at 07:39:28PM +0800, majianpeng wrote:
-> In func bcache_device_init(),it use this expression to cal nr_stripes:
-> "d->nr_stripes = DIV_ROUND_UP_ULL(sectors, d->stripe_size)".
-> But the unit of d->stripe_size is byte,the unit os sectors is sector.
-> So we should replace sectors with "secotrs << 9".
-
-Nope, d->stripe_size is definitely sectors.
+Pk9uIFdlZCwgSmFuIDA4LCAyMDE0IGF0IDA3OjM5OjI2UE0gKzA4MDAsIG1hamlhbnBlbmcgd3Jv
+dGU6DQo+PiBCZWNhdXNlIGFmdGVyIGt0aHJlYWRfY3JlYXRlLCB0aGUgc3RhdGUgb2Yga3RocmVh
+ZCBpcyBUQVNLX1VOSU5URVJSVVBUSUJMRS4NCj4+IElmIHdlIGRvbid0IHdha2UgdXAgZGMtPndy
+aXRlYmFja190aHJlYWQsIHRoZSB0aHJlYWQgd2lsbCBiZSBodW5nLXRhc2suDQo+PiBGb3IgdGhv
+c2UgcmVhc29ucywgd2UgZG9uJ3Qgd2FrZSB1cCB3cml0ZWJhY2tfdGhyZWFkOg0KPj4gQTpvbmx5
+IGNyZWF0ZSBiYWNrZWQgZGV2aWNlDQo+PiBCOmNyZWF0ZSBiYWNrZWQgZGV2aWNlIGFuZCBjYWNo
+ZSBkZXZpY2UsIGJ1dCBkb24ndCB3cml0ZSBhdCBvbmNlDQo+PiBDOndyaXRlIHdpdGhvdXQgd3Jp
+dGViYWNrIHBvbGl5DQo+PiANCj4+IFNvIGxpa2UgdGhlIHdheSBvZiBjcmVhdGUgZ2NfdGhyZWFk
+LCBhZnRlciBjcmVhdGluZyB3cml0ZWJhY2tfdGhyZWFkLCBpDQo+PiBzZXQgdGhlIHN0YXRlIGlz
+IFRBU0tfSU5URVJSVVBUSUJMRS4NCj4NCj5JJ3ZlIHNlZW4gdGhpcyBpc3N1ZSwgYnV0IHRoaXMg
+aXNuJ3QgZXZlbiB3aGVyZSB0aGUgc2xlZXAgaGFwcGVucywNCj50aGVyZSdzIG5vIHdheSB0aGlz
+IGNvdWxkIGJlIGZpeGluZyBpdC4uDQpZZXMuQnV0IG5vdywgdGhlIGRlZmF1bHQgY2FjaGUgbW9k
+ZSBpcyB3cml0ZXRocm91Z2guU28ga2VybmVsIGFsc28gcHJpbnRrIGh1bmctdGFzayBtZXNzYWdl
+cy4NCklmIHlvdSBkb24ndCBsaWtlIHRoaXMgd2F5LCB5b3UgY2FuIHVzZSBrdGhyZWFkX3J1biBp
+bnN0ZWFkIGt0aHJlYWRfY3JlYXRlLg0KQmVjYXVzZSB5b3UgdGVzdCBkYy0+aGFzX2RpcnR5IGlu
+IGJjaF93cml0ZWJhY2tfdGhyZWFkLHNvIHVzaW5nIGt0aHJlYWRfcnVuIGlzIHNhZmUuDQoNClRo
+YW5rcyENCkppYW5wZW5nIE1hDQoNCg0K
