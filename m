@@ -1,42 +1,30 @@
-From: Wei Yongjun <weiyj.lk@gmail.com>
-Subject: [PATCH -next] bcache: Fix sparse non static symbol warning
-Date: Thu, 9 Jan 2014 22:21:19 +0800
-Message-ID: <CAPgLHd_sYw7iTiNHT8S86QXswOZZhQVsi-hfh5fbZni0L7BiBg@mail.gmail.com>
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [GIT PULL] bcache for 3.14
+Date: Thu, 9 Jan 2014 19:34:47 -0700
+Message-ID: <20140110023447.GG6780@kernel.dk>
+References: <20140108211907.GD7291@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:48154 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756004AbaAIOVY (ORCPT
+Received: from merlin.infradead.org ([205.233.59.134]:49399 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755458AbaAJCet (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 9 Jan 2014 09:21:24 -0500
+	Thu, 9 Jan 2014 21:34:49 -0500
+Content-Disposition: inline
+In-Reply-To: <20140108211907.GD7291@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kmo@daterainc.com, neilb@suse.de
-Cc: yongjun_wei@trendmicro.com.cn, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Wed, Jan 08 2014, Kent Overstreet wrote:
+> Jens, here's the updated bcache pull, rebased and retested on top of
+> your latest for-3.14/drivers branch. Only other change was a one liner
+> in the "bcache/md: Use raid stripe size" patch to update
+> blk_stack_limits(), as pointed out by Mike Snitzer.
 
-Fixes the following sparse warning:
+Pulled, thanks!
 
-drivers/md/bcache/sysfs.c:419:5: warning:
- symbol 'bch_bset_print_stats' was not declared. Should it be static?
-
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/md/bcache/sysfs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index c6ab693..d8458d4 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -416,7 +416,7 @@ static int btree_bset_stats(struct btree_op *b_op, struct btree *b)
- 	return MAP_CONTINUE;
- }
- 
--int bch_bset_print_stats(struct cache_set *c, char *buf)
-+static int bch_bset_print_stats(struct cache_set *c, char *buf)
- {
- 	struct bset_stats_op op;
- 	int ret;
+-- 
+Jens Axboe
