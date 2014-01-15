@@ -1,57 +1,57 @@
-From: Joe Perches <joe@perches.com>
-Subject: Re: [PATCH -next 2/2] bcache: Use max_t() when comparing different
- types
-Date: Wed, 15 Jan 2014 03:06:38 -0800
-Message-ID: <1389783998.14001.22.camel@joe-AO722>
-References: <1389776784-30825-1-git-send-email-geert@linux-m68k.org>
-	 <1389776784-30825-2-git-send-email-geert@linux-m68k.org>
+From: David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] mm: Make {,set}page_address() static inline if
+ WANT_PAGE_VIRTUAL
+Date: Wed, 15 Jan 2014 14:57:56 -0800 (PST)
+Message-ID: <alpine.DEB.2.02.1401151454440.24121@chino.kir.corp.google.com>
+References: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1389776784-30825-2-git-send-email-geert@linux-m68k.org>
-Sender: linux-kernel-owner@vger.kernel.org
+Content-Type: MULTIPART/MIXED; BOUNDARY="531381512-692950067-1389826679=:24121"
+Return-path: <linux-m68k-owner@vger.kernel.org>
+In-Reply-To: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
+Sender: linux-m68k-owner@vger.kernel.org
 To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, Guenter Roeck <linux@roeck-us.net>, "Michael S. Tsirkin" <mst@redhat.com>, linux-mm@kvack.org, linux-bcache@vger.kernel.org, Vineet Gupta <vgupta@synopsys.com>, sparclinux@vger.kernel.org, linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, 2014-01-15 at 10:06 +0100, Geert Uytterhoeven wrote:
-> drivers/md/bcache/btree.c: In function =E2=80=98insert_u64s_remaining=
-=E2=80=99:
-> drivers/md/bcache/btree.c:1816: warning: comparison of distinct point=
-er types lacks a cast
-[]
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-[]
-> @@ -1813,7 +1813,7 @@ static size_t insert_u64s_remaining(struct btre=
-e *b)
->  	if (b->keys.ops->is_extents)
->  		ret -=3D KEY_MAX_U64S;
-> =20
-> -	return max(ret, 0L);
-> +	return max_t(ssize_t, ret, 0L);
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-why not
-	return max(ret, 0);
+--531381512-692950067-1389826679=:24121
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-I think it odd that:
+On Wed, 15 Jan 2014, Geert Uytterhoeven wrote:
 
-drivers/md/bcache/bset.h:static inline size_t bch_btree_keys_u64s_remai=
-ning(struct btree_keys *b)
+> {,set}page_address() are macros if WANT_PAGE_VIRTUAL.
+> If !WANT_PAGE_VIRTUAL, they're plain C functions.
+> 
+> If someone calls them with a void *, this pointer is auto-converted to
+> struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
+> architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc):
 
-and:
+s/sparc/sparc64/
 
-static size_t insert_u64s_remaining(struct btree *b)
-{
-	ssize_t ret =3D bch_btree_keys_u64s_remaining(&b->keys);
+> 
+> drivers/md/bcache/bset.c: In function ‘__btree_sort’:
+> drivers/md/bcache/bset.c:1190: warning: dereferencing ‘void *’ pointer
+> drivers/md/bcache/bset.c:1190: error: request for member ‘virtual’ in something not a structure or union
+> 
+> Convert them to static inline functions to fix this. There are already
+> plenty of  users of struct page members inside <linux/mm.h>, so there's no
+> reason to keep them as macros.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-	/*
-	 * Might land in the middle of an existing extent and have to split it
-	 */
-	if (b->keys.ops->is_extents)
-		ret -=3D KEY_MAX_U64S;
+Tested-by: David Rientjes <rientjes@google.com>
 
-	return max(ret, 0L);
-}
+I'm cringing at the page_address(mempool_alloc(..., GFP_NOIO)) in 
+drivers/md/bcache/bset.c, though.  It's relying on that fact that 
+mempool_alloc() can never return NULL if __GFP_WAIT but I think this could 
+have all been avoided with
 
-so the only use of that size_t inline is cast to ssize_t
+	struct page *page = mempool_alloc(state->pool, GFP_NOIO);
+	out = page_address(page);
+
+instead of burying the mempool_alloc() in page_address() for what I think 
+is cleaner code.  Owell, it fixes the issue.
+--531381512-692950067-1389826679=:24121--
