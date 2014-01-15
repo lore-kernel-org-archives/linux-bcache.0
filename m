@@ -1,52 +1,47 @@
-From: Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] mm: Make {,set}page_address() static inline if WANT_PAGE_VIRTUAL
-Date: Wed, 15 Jan 2014 02:31:50 -0800
-Message-ID: <52D66396.5050104@roeck-us.net>
-References: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH -next 2/2] bcache: Use max_t() when comparing different types
+Date: Wed, 15 Jan 2014 10:06:24 +0100
+Message-ID: <1389776784-30825-2-git-send-email-geert@linux-m68k.org>
+References: <1389776784-30825-1-git-send-email-geert@linux-m68k.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
-	format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <sparclinux-owner@vger.kernel.org>
-In-Reply-To: <1389778426-14836-1-git-send-email-geert@linux-m68k.org>
-Sender: sparclinux-owner@vger.kernel.org
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Andrew Morton <akpm@linux-foundation.org>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-mm@kvack.org, linux-bcache@vger.kernel.org, Vineet Gupta <vgupta@synopsys.com>, sparclinux@vger.kernel.org, linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from jacques.telenet-ops.be ([195.130.132.50]:57841 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaAOKtz (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 15 Jan 2014 05:49:55 -0500
+In-Reply-To: <1389776784-30825-1-git-send-email-geert@linux-m68k.org>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
 
-On 01/15/2014 01:33 AM, Geert Uytterhoeven wrote:
-> {,set}page_address() are macros if WANT_PAGE_VIRTUAL.
-> If !WANT_PAGE_VIRTUAL, they're plain C functions.
->
-> If someone calls them with a void *, this pointer is auto-converted t=
-o
-> struct page * if !WANT_PAGE_VIRTUAL, but causes a build failure on
-> architectures using WANT_PAGE_VIRTUAL (arc, m68k and sparc):
->
-> drivers/md/bcache/bset.c: In function =E2=80=98__btree_sort=E2=80=99:
-> drivers/md/bcache/bset.c:1190: warning: dereferencing =E2=80=98void *=
-=E2=80=99 pointer
-> drivers/md/bcache/bset.c:1190: error: request for member =E2=80=98vir=
-tual=E2=80=99 in something not a structure or union
->
-> Convert them to static inline functions to fix this. There are alread=
-y
-> plenty of  users of struct page members inside <linux/mm.h>, so there=
-'s no
-> reason to keep them as macros.
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+drivers/md/bcache/btree.c: In function =E2=80=98insert_u64s_remaining=E2=
+=80=99:
+drivers/md/bcache/btree.c:1816: warning: comparison of distinct pointer=
+ types lacks a cast
 
-Tested-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/md/bcache/btree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-That also fixes the problem seen in stable-queue for 3.10 and 3.12,
-so it may be a better fix for the problem seen there than the patch
-provided by Michael.
-
-Guenter
-
---
-To unsubscribe from this list: send the line "unsubscribe sparclinux" i=
-n
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 98cc0a810a36..c2ebc850d9a9 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1813,7 +1813,7 @@ static size_t insert_u64s_remaining(struct btree =
+*b)
+ 	if (b->keys.ops->is_extents)
+ 		ret -=3D KEY_MAX_U64S;
+=20
+-	return max(ret, 0L);
++	return max_t(ssize_t, ret, 0L);
+ }
+=20
+ static bool bch_btree_insert_keys(struct btree *b, struct btree_op *op=
+,
+--=20
+1.7.9.5
