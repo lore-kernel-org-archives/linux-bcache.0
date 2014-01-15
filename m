@@ -1,41 +1,57 @@
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH -next 1/2] bcache: Use %zi to format size_t
-Date: Wed, 15 Jan 2014 10:06:23 +0100
-Message-ID: <1389776784-30825-1-git-send-email-geert@linux-m68k.org>
+From: Joe Perches <joe@perches.com>
+Subject: Re: [PATCH -next 2/2] bcache: Use max_t() when comparing different
+ types
+Date: Wed, 15 Jan 2014 03:06:38 -0800
+Message-ID: <1389783998.14001.22.camel@joe-AO722>
+References: <1389776784-30825-1-git-send-email-geert@linux-m68k.org>
+	 <1389776784-30825-2-git-send-email-geert@linux-m68k.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1389776784-30825-2-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-drivers/md/bcache/extents.c: In function =E2=80=98btree_ptr_bad_expensi=
-ve=E2=80=99:
-drivers/md/bcache/extents.c:196: warning: format =E2=80=98%li=E2=80=99 =
-expects type =E2=80=98long int=E2=80=99, but argument 4 has type =E2=80=
-=98size_t=E2=80=99
+On Wed, 2014-01-15 at 10:06 +0100, Geert Uytterhoeven wrote:
+> drivers/md/bcache/btree.c: In function =E2=80=98insert_u64s_remaining=
+=E2=80=99:
+> drivers/md/bcache/btree.c:1816: warning: comparison of distinct point=
+er types lacks a cast
+[]
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+[]
+> @@ -1813,7 +1813,7 @@ static size_t insert_u64s_remaining(struct btre=
+e *b)
+>  	if (b->keys.ops->is_extents)
+>  		ret -=3D KEY_MAX_U64S;
+> =20
+> -	return max(ret, 0L);
+> +	return max_t(ssize_t, ret, 0L);
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/md/bcache/extents.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+why not
+	return max(ret, 0);
 
-diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
-index c3ead586dc27..416d1a3e028e 100644
---- a/drivers/md/bcache/extents.c
-+++ b/drivers/md/bcache/extents.c
-@@ -194,7 +194,7 @@ err:
- 	mutex_unlock(&b->c->bucket_lock);
- 	bch_extent_to_text(buf, sizeof(buf), k);
- 	btree_bug(b,
--"inconsistent btree pointer %s: bucket %li pin %i prio %i gen %i last_=
-gc %i mark %llu gc_gen %i",
-+"inconsistent btree pointer %s: bucket %zi pin %i prio %i gen %i last_=
-gc %i mark %llu gc_gen %i",
- 		  buf, PTR_BUCKET_NR(b->c, k, i), atomic_read(&g->pin),
- 		  g->prio, g->gen, g->last_gc, GC_MARK(g), g->gc_gen);
- 	return true;
---=20
-1.7.9.5
+I think it odd that:
+
+drivers/md/bcache/bset.h:static inline size_t bch_btree_keys_u64s_remai=
+ning(struct btree_keys *b)
+
+and:
+
+static size_t insert_u64s_remaining(struct btree *b)
+{
+	ssize_t ret =3D bch_btree_keys_u64s_remaining(&b->keys);
+
+	/*
+	 * Might land in the middle of an existing extent and have to split it
+	 */
+	if (b->keys.ops->is_extents)
+		ret -=3D KEY_MAX_U64S;
+
+	return max(ret, 0L);
+}
+
+so the only use of that size_t inline is cast to ssize_t
