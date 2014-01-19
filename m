@@ -1,230 +1,179 @@
-From: Jose Manuel dos Santos Calhariz <jose.calhariz@tecnico.ulisboa.pt>
-Subject: kernel BUG at drivers/md/bcache/btree.c:1168
-Date: Fri, 17 Jan 2014 12:34:17 +0000
-Message-ID: <52D92349.9040709@tecnico.ulisboa.pt>
-Reply-To: jose.calhariz@tecnico.ulisboa.pt
+From: Patrick Zwahlen <paz@navixia.com>
+Subject: Use a btier device as a bcache set
+Date: Sun, 19 Jan 2014 18:23:03 +0000
+Message-ID: <0e085038e5af42b4a9da37039bc36ea5@navex1.navixia.local>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
-	format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
+	micalg=SHA1; boundary="----=_NextPart_000_003B_01CF154B.DEB220E0"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtp2.ist.utl.pt ([193.136.128.22]:59995 "EHLO smtp2.ist.utl.pt"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752503AbaAQMnP convert rfc822-to-8bit (ORCPT
+Received: from 62-2-213-50.static.cablecom.ch ([62.2.213.50]:22179 "EHLO
+	navfw1a.navixia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358AbaASSXs (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 17 Jan 2014 07:43:15 -0500
+	Sun, 19 Jan 2014 13:23:48 -0500
+Received: from navex1.navixia.local (navex1.navixia.local [172.29.96.60])
+	by navfw1a.navixia.com (8.14.5/8.14.5) with ESMTP id s0JINjTP024519
+	(version=TLSv1/SSLv3 cipher=RC4-SHA bits=128 verify=FAIL)
+	for <linux-bcache@vger.kernel.org>; Sun, 19 Jan 2014 19:23:46 +0100
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: "ns-list@dsi.ist.utl.pt" <ns-list@dsi.ist.utl.pt>
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+
+------=_NextPart_000_003B_01CF154B.DEB220E0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+
+Hi,
+
+First of all congratulations for bcache!
+
+Working on a SAN head here under Fedora 19. The stack looks like that:
+
+JBOD(SAS)->MDADM(RAID10)->SCST(BLOCKIO)->iSCSI(10G)->ESXi
+
+The SAN server contains an SSD that we use for writethrough only bcache.
+Initially, we had:
+- Backing: /dev/mdX (Raid10)
+- Caching: /dev/sda (SATA SSD)
+
+The server also has 32G of RAM which we're trying to use for caching as
+well. As we have no FS and do BLOCKIO only, the linux page_cache is out of
+the picture (as far as I know).
+
+The idea is then to use a ramdisk (either BRD or RapidDisk) and use it as
+part of the cache as well. An idea is to use btier in order to "join"
+together a RAM disk (tier0) and the SSD (tier1), and use this btier device
+as a bcache cacheset.
+
+Btier will then regularly promote the hot blocks from SSD to RAM and demote
+the cold blocks. I imagine this should bring meta into RAM as well.
+
+It's technically working (lab) but I would like some feedback and please
+tell me if we're going to hit a wall somewhere.
+
+Drawback is that every boot gets a new blank cache set (with a new UUID),
+but this can be easily managed.
+
+Other ideas are:
+- bcache over bcache
+- dm-cache over bcache
+
+Thanks for reading and for feedback. - Patrick -
 
 
-Hi, is the second time I get this BUG.
+------=_NextPart_000_003B_01CF154B.DEB220E0
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
 
-The first was during boot from an old 3.13.0-rc2 to a 3.13.0-rc7. The=20
-second time was when running tests.
+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
+xCZU7wO94CTLVBowHQYDVR0OBBYEFImCZ33EnSZwAEu0UEh83j2uBG59MA4GA1UdDwEB/wQEAwIB
+BjAPBgNVHRMBAf8EBTADAQH/MBEGA1UdIAQKMAgwBgYEVR0gADBEBgNVHR8EPTA7MDmgN6A1hjNo
+dHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vQWRkVHJ1c3RFeHRlcm5hbENBUm9vdC5jcmwwNQYIKwYB
+BQUHAQEEKTAnMCUGCCsGAQUFBzABhhlodHRwOi8vb2NzcC51c2VydHJ1c3QuY29tMA0GCSqGSIb3
+DQEBBQUAA4IBAQABvJzjYyiw8zEBwt973WKgAZ0jMQ+cknNTUeofTPrWn8TKL2d+eDMPdBa5kYeR
+9Yom+mRwANge+QsEYlCHk4HU2vUj2zS7hVa0cDRueIM3HoUcxREVkl+HF72sav3xwtHMiV+xfPA+
+UfI183zsYJhrOivg79+zfYbrtRv1W+yifJgT1wBQudEtc94DeHThBYUxXsuauZ2UxrmUN3Vy3ET7
+Z+jw+iUeUqfaJelH4KDHPKBOsQo2+3dIn++Xivu0/uOUFKiDvFwtP9JgcWDuwnGCDOmINuPaILSj
+oGyqlku4gI51ykkH9jsUut/cBdmf2+Cy5k2geCbn5y1uf1/GHogVMIIFGjCCBAKgAwIBAgIQbRnq
+pxlPajMi5iIyeqpx3jANBgkqhkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVU
+MRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3Jr
+MSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmly
+c3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1
+MzAxMDQ4MzhaMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
+DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
+T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU
+4PkncQfFxmmkuTLE8UAakMwnVmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHff
+sReswtqCAtbUMmrUZ28gE49cNfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kAB
+W0ho3cVKtODtJB86r3FfB+OsvxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJk
+JpFOpZIP/+CxYP0ab2hRmWONGoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IB
+SzCCAUcwHwYDVR0jBBgwFoAUiYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4
+Y2QnwS/ioFu8ecV7MA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQK
+MAgwBgYEVR0gADBYBgNVHR8EUTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVRO
+LVVTRVJGaXJzdC1DbGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRo
+MGYwPQYIKwYBBQUHMAKGMWh0dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVu
+dF9DQS5jcnQwJQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcN
+AQEFBQADggEBAIXWvnhXVW0zf0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjB
+MCjfy/tCPKElPgp11tA9OYZm0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T
+4ENyG+2P/WA5IEf7i686ZUg8mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8
+H+2b/5tJM75CKTmD7jNpLoKdRU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5
+OOu0M/qgOl0mWJ5hVRi0IdWZ1eBDQEIwvuql55TSsP7zdfl/bucwggUfMIIEB6ADAgECAhAX3R0Y
+7UBKukviAqwn1AAnMA0GCSqGSIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3Jl
+YXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGlt
+aXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVt
+YWlsIENBMB4XDTEzMDcwMzAwMDAwMFoXDTE0MDcwMzIzNTk1OVowIDEeMBwGCSqGSIb3DQEJARYP
+cGF6QG5hdml4aWEuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0F0TmZlMK9tI
+OxjMw+RotD8HyeA/WMCh4WgkRErJKDA1clpy0rTE+e54cRsd1yYMRpzxFlPHBSu6wdwD3r1g/lNP
+ArFhvr1azGCO0Jcq14fyNfv7SA+gyg2Fu1Oym1xZBFYECimMMrp7nRSTqRehQ8q4byidSqmFLTZa
+6TwMOdKTqdIxewO/CH2bxIcrawASjQCHLmT6lOe+Ebec0bvg+W+t9nkGWQbXlXUMYcx5QAgAYy5T
+utLVen4svpbNW2TzM2U+r8JvIBrZmPOIJ9c3OBAKrDyemESY/RPtFuU2qrG0M86T0yQYtOkNLs2N
+FYnvSwOVdBpde8w8CLncCKvK6QIDAQABo4IB3zCCAdswHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfB
+L+KgW7x5xXswHQYDVR0OBBYEFIyO7UASW/goTcHarjyu85CPoczeMA4GA1UdDwEB/wQEAwIFoDAM
+BgNVHRMBAf8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhC
+AQEEBAMCBSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6
+Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21v
+ZG9jYS5jb20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCB
+iAYIKwYBBQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01P
+RE9DbGllbnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhho
+dHRwOi8vb2NzcC5jb21vZG9jYS5jb20wGgYDVR0RBBMwEYEPcGF6QG5hdml4aWEuY29tMA0GCSqG
+SIb3DQEBBQUAA4IBAQBtGIlrhLZOI48oRZn08jrt6JDyLeBR5Z28lc/OmOGsHYtFHZFUhcs1xaYT
+RqqMlmJQ3CfncYCwgqCsOqWsmtfQmB64vEUMECeZsnkA60dP72QqL0YcvWyh4l79mHX7F//0ftS+
+4IogwH+PDmNzJDul/VffyI67OowAJu+NErlucYj6h5vPz3eUlQ0H2Decopv8jKI5QBEsv92ALbKC
+fgFzyiLSpDY7GYy9hEy8ZOQ//0oxKuZGXJv3NAUXJd5+ZiOxx48ZqUazRVMgAFHH/jP5MxHSv90R
+uk1o3QdvZYfI8etoJ0tdVQRIbJqDXJNy7dvEfIValfObvZWIzT15az7qMYIEQTCCBD0CAQEwgagw
+gZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1Nh
+bGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50
+IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+ICrCfUACcwCQYF
+Kw4DAhoFAKCCAm0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQw
+MTE5MTgyMzAxWjAjBgkqhkiG9w0BCQQxFgQUEfwRZri8cEHc3u+b/183AjpfpPwwgZMGCSqGSIb3
+DQEJDzGBhTCBgjALBglghkgBZQMEASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFl
+AwQBAjAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAhowCwYJYIZIAWUDBAID
+MAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwgbkGCSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UE
+BhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgG
+A1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNVBAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGlj
+YXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQF90dGO1ASrpL4gKsJ9QAJzCBuwYLKoZIhvcNAQkQ
+AgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAO
+BgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01P
+RE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+IC
+rCfUACcwDQYJKoZIhvcNAQEBBQAEggEAM92Csv5TbUc4OFdm0v/H9Gednj7QJnI9ZQ5/yo4CiqCN
+HQNLed3eDz0t3JFN/BYdrxgcTRqTPhg9YPy+0gHtgN+jryL9eIVds9LOTkusy8rBVvo9pkhyVBE+
+FFDbQcdrZMyQ/G1J2b2cXC7+V9mwWeeCQeNZOajKFSFZauE8MhN9nHcOemIkdgK4qU8UJu4uePGn
+BpQmhslwsQUdwYNxxxahPQ2IapauoyzNFA9v7n0bjNDKLr0VoUuZwxD4ywBvRyowqbWwXY6CJlwT
+d0ZGvbuqXxpvG3sKdT3085ci+vWF2EWXPjOu3gpUy/Lj9ADNEFTVl0QnzDwcbYJK8aWb7QAAAAAA
+AA==
 
-=46ollow the two stack trace:
-
-Jan 14 17:33:59 xxxxx kernel: ------------[ cut here ]------------
-Jan 14 17:33:59 xxxxx kernel: kernel BUG at drivers/md/bcache/btree.c:1=
-168!
-Jan 14 17:33:59 xxxxx kernel: invalid opcode: 0000 [#1] SMP
-Jan 14 17:33:59 xxxxx kernel: Modules linked in: lp parport_pc parport=20
-joydev st sr_mod cdrom xt_multiport iptable_filter ip_tables x_tables=20
-xfs libcrc32c ipmi_devintf loop snd_pcm mgag200 snd_page_alloc snd_time=
-r=20
-ttm x86_pkg_temp_thermal drm_kms_helper drm snd i2c_algo_bit coretemp=20
-soundcore kvm_intel kvm
-+crc32c_intel ghash_clmulni_intel ioatdma aesni_intel aes_x86_64=20
-iTCO_wdt sb_edac iTCO_vendor_support mei_me mei ablk_helper edac_core=20
-cryptd psmouse i2c_i801 lpc_ich serio_raw i2c_core pcspkr lrw mfd_core=20
-gf128mul ipmi_si ipmi_msghandler glue_helper evdev processor wmi=20
-thermal_sys button ext3 mbcache jbd dm_mod
-+raid1 md_mod hid_generic usbhid hid bcache sg sd_mod ses crc_t10dif=20
-enclosure crct10dif_common microcode ahci libahci libata ehci_pci=20
-ehci_hcd mpt2sas raid_class usbcore megaraid_sas scsi_transport_sas=20
-usb_common scsi_mod ixgbe dca ptp pps_core mdio [last unloaded: parport=
-_pc]
-Jan 14 17:33:59 xxxxx kernel: CPU: 6 PID: 700 Comm: bcache_gc Not=20
-tainted 3.13.0-rc7-dsi #3
-Jan 14 17:33:59 xxxxx kernel: Hardware name: Supermicro=20
-X9SRH-7F/7TF/X9SRH-7F/7TF, BIOS 3.00 07/05/2013
-Jan 14 17:33:59 xxxxx kernel: task: ffff88101371a050 ti:=20
-ffff88100ea56000 task.ti: ffff88100ea56000
-Jan 14 17:33:59 xxxxx kernel: RIP: 0010:[<ffffffffa01ce41e>]=20
-[<ffffffffa01ce41e>] __bch_btree_mark_key+0x171/0x1a8 [bcache]
-Jan 14 17:33:59 xxxxx kernel: RSP: 0018:ffff88100ea57cb8  EFLAGS: 00010=
-246
-Jan 14 17:33:59 xxxxx kernel: RAX: 0000000000000002 RBX:=20
-ffff880fab8001e8 RCX: 0000000000002000
-Jan 14 17:33:59 xxxxx kernel: RDX: 0000000000000002 RSI:=20
-ffff880fab8001e8 RDI: ffff881028d60000
-Jan 14 17:33:59 xxxxx kernel: RBP: 0000000000000000 R08:=20
-0000000000000001 R09: ffff88101003c000
-Jan 14 17:33:59 xxxxx kernel: R10: 0000000000001000 R11:=20
-ffff880fce594400 R12: 0000000000000000
-Jan 14 17:33:59 xxxxx kernel: R13: ffff881028d60000 R14:=20
-0000000000000001 R15: ffffc90016d93678
-Jan 14 17:33:59 xxxxx kernel: FS:  0000000000000000(0000)=20
-GS:ffff88107fcc0000(0000) knlGS:0000000000000000
-Jan 14 17:33:59 xxxxx kernel: CS:  0010 DS: 0000 ES: 0000 CR0:=20
-0000000080050033
-Jan 14 17:33:59 xxxxx kernel: CR2: 00007fe31614ccf8 CR3:=20
-000000000160c000 CR4: 00000000000407e0
-Jan 14 17:33:59 xxxxx kernel: Stack:
-Jan 14 17:33:59 xxxxx kernel: ffff880fab8001e8 0000000188a000fb=20
-ffff880fce594400 ffff880fce594400
-Jan 14 17:33:59 xxxxx kernel: ffff880fab8001e8 0000000000000013=20
-0000000000000001 ffff88100ea57dc8
-Jan 14 17:33:59 xxxxx kernel: ffff88100ea57d18 ffffffffa01ce72a=20
-ffff88101371a050 0000000200000000
-Jan 14 17:33:59 xxxxx kernel: Call Trace:
-Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01ce72a>] ?=20
-btree_gc_mark_node+0x4c/0x16d [bcache]
-Jan 14 17:33:59 xxxxx kernel: [<ffffffff811e8e63>] ?=20
-call_rwsem_down_write_failed+0x13/0x20
-Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d005e>] ?=20
-bch_btree_gc+0x187/0x3a7 [bcache]
-Jan 14 17:33:59 xxxxx kernel: [<ffffffff8106ffde>] ?=20
-idle_balance+0x12b/0x166
-Jan 14 17:33:59 xxxxx kernel: [<ffffffff81066b18>] ? mmdrop+0xd/0x1c
-Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d02ab>] ?=20
-bch_gc_thread+0x2d/0xe5 [bcache]
-Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d027e>] ?=20
-bch_btree_gc+0x3a7/0x3a7 [bcache]
-Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d027e>] ?=20
-bch_btree_gc+0x3a7/0x3a7 [bcache]
-Jan 14 17:33:59 xxxxx kernel: [<ffffffff8105f77a>] ? kthread+0x99/0xa1
-Jan 14 17:33:59 xxxxx kernel: [<ffffffff8105f6e1>] ?=20
-__kthread_parkme+0x59/0x59
-Jan 14 17:33:59 xxxxx kernel: [<ffffffff813b58cc>] ? ret_from_fork+0x7c=
-/0xb0
-Jan 14 17:33:59 xxxxx kernel: [<ffffffff8105f6e1>] ?=20
-__kthread_parkme+0x59/0x59
-Jan 14 17:33:59 xxxxx kernel: Code: 00 01 c1 b8 ff 3f 00 00 81 f9 ff 3f=
-=20
-00 00 0f 46 c1 66 81 e2 03 80 25 ff 1f 00 00 c1 e0 02 09 d0 66 a9 fc 7f=
-=20
-66 41 89 47 0a 75 02 <0f> 0b ff c5 eb 05 31 ed 45 31 e4 48 8b 03 89 ea=20
-48 c1 e8 3c 83
-Jan 14 17:33:59 xxxxx kernel: RIP  [<ffffffffa01ce41e>]=20
-__bch_btree_mark_key+0x171/0x1a8 [bcache]
-Jan 14 17:33:59 xxxxx kernel: RSP <ffff88100ea57cb8>
-Jan 14 17:33:59 xxxxx kernel: ---[ end trace 6a29ce0fa7816b54 ]---
-
-
-Jan 16 12:16:00 xxxxx kernel: ------------[ cut here ]------------
-Jan 16 12:16:00 xxxxx kernel: kernel BUG at drivers/md/bcache/btree.c:1=
-168!
-Jan 16 12:16:00 xxxxx kernel: invalid opcode: 0000 [#1] SMP
-Jan 16 12:16:00 xxxxx kernel: Modules linked in: lp parport_pc parport=20
-joydev st sr_mod cdrom xt_multiport iptable_filter ip_tables x_tables=20
-xfs libcrc32c ipmi_devintf loop iTCO_wdt x86_pkg_temp_thermal coretemp=20
-kvm_intel kvm sb_edac iTCO_vendor_support mgag200 ioatdma snd_pcm=20
-snd_page_alloc snd_timer snd i2c_i801
-+ttm soundcore crc32c_intel ghash_clmulni_intel aesni_intel lpc_ich=20
-aes_x86_64 drm_kms_helper drm i2c_algo_bit i2c_core mfd_core ablk_helpe=
-r=20
-cryptd lrw gf128mul mei_me mei glue_helper psmouse edac_core serio_raw=20
-pcspkr evdev wmi ipmi_si ipmi_msghandler processor thermal_sys button=20
-ext3 mbcache jbd dm_mod raid1
-+md_mod hid_generic usbhid hid bcache sg sd_mod ses crc_t10dif enclosur=
-e=20
-crct10dif_common microcode ehci_pci ehci_hcd usbcore ahci mpt2sas=20
-libahci usb_common raid_class libata scsi_transport_sas megaraid_sas=20
-ixgbe scsi_mod dca ptp pps_core mdio [last unloaded: parport_pc]
-Jan 16 12:16:00 xxxxx kernel: CPU: 8 PID: 707 Comm: bcache_gc Not=20
-tainted 3.13.0-rc7-dsi #3
-Jan 16 12:16:00 xxxxx kernel: Hardware name: Supermicro=20
-X9SRH-7F/7TF/X9SRH-7F/7TF, BIOS 3.00 07/05/2013
-Jan 16 12:16:00 xxxxx kernel: task: ffff88102c30f800 ti:=20
-ffff88100e44c000 task.ti: ffff88100e44c000
-Jan 16 12:16:00 xxxxx kernel: RIP: 0010:[<ffffffffa01f341e>]=20
-[<ffffffffa01f341e>] __bch_btree_mark_key+0x171/0x1a8 [bcache]
-Jan 16 12:16:00 xxxxx kernel: RSP: 0018:ffff88100e44da78  EFLAGS: 00010=
-246
-Jan 16 12:16:00 xxxxx kernel: RAX: 0000000000000000 RBX:=20
-ffff880fed4037b8 RCX: 0000000000002000
-Jan 16 12:16:00 xxxxx kernel: RDX: 0000000000000000 RSI:=20
-ffff880fed4037b8 RDI: ffff881028ce0000
-Jan 16 12:16:00 xxxxx kernel: RBP: 0000000000000000 R08:=20
-0000000000000001 R09: ffff8810109ea000
-Jan 16 12:16:00 xxxxx kernel: R10: 0000000000001000 R11:=20
-ffff880fee906400 R12: 0000000000000000
-Jan 16 12:16:00 xxxxx kernel: R13: ffff881028ce0000 R14:=20
-0000000000000000 R15: ffffc900168dc660
-Jan 16 12:16:00 xxxxx kernel: FS:  0000000000000000(0000)=20
-GS:ffff88107fd00000(0000) knlGS:0000000000000000
-Jan 16 12:16:00 xxxxx kernel: CS:  0010 DS: 0000 ES: 0000 CR0:=20
-0000000080050033
-Jan 16 12:16:00 xxxxx kernel: CR2: 0000000000619570 CR3:=20
-000000000160c000 CR4: 00000000000407e0
-Jan 16 12:16:00 xxxxx kernel: Stack:
-Jan 16 12:16:00 xxxxx kernel: ffff88100e44dad8 0000000108801efc=20
-ffffffffa01f0c31 ffff880fee906400
-Jan 16 12:16:00 xxxxx kernel: ffff880fed4037b8 0000000000000251=20
-0000000000000000 ffff88100e44ddc8
-Jan 16 12:16:00 xxxxx kernel: ffff88100e44dad8 ffffffffa01f372a=20
-ffffffffa01f5bb1 00000251b5f80000
-Jan 16 12:16:00 xxxxx kernel: Call Trace:
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f0c31>] ?=20
-bch_cut_back+0x41/0x41 [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f372a>] ?=20
-btree_gc_mark_node+0x4c/0x16d [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f5bb1>] ?=20
-tree_to_bkey+0x13/0x3c [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f64b8>] ?=20
-bch_ptr_invalid+0x1a/0x1a [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f4cbf>] ?=20
-btree_gc_recurse+0x677/0x88f [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f6398>] ?=20
-bch_btree_ptr_invalid+0x46/0xb0 [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff813ae20a>] ? __schedule+0x48f/0=
-x555
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff810680ad>] ? resched_task+0x15/=
-0x4b
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f7ab0>] ?=20
-bch_btree_iter_next_filter+0x18/0x38 [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f379c>] ?=20
-btree_gc_mark_node+0xbe/0x16d [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff811e8e63>] ?=20
-call_rwsem_down_write_failed+0x13/0x20
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f50df>] ?=20
-bch_btree_gc+0x208/0x3a7 [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff8106ffde>] ?=20
-idle_balance+0x12b/0x166
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff81066b18>] ? mmdrop+0xd/0x1c
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f52ab>] ?=20
-bch_gc_thread+0x2d/0xe5 [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f527e>] ?=20
-bch_btree_gc+0x3a7/0x3a7 [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f527e>] ?=20
-bch_btree_gc+0x3a7/0x3a7 [bcache]
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff8105f77a>] ? kthread+0x99/0xa1
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff8105f6e1>] ?=20
-__kthread_parkme+0x59/0x59
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff813b58cc>] ? ret_from_fork+0x7c=
-/0xb0
-Jan 16 12:16:00 xxxxx kernel: [<ffffffff8105f6e1>] ?=20
-__kthread_parkme+0x59/0x59
-Jan 16 12:16:00 xxxxx kernel: Code: 00 01 c1 b8 ff 3f 00 00 81 f9 ff 3f=
-=20
-00 00 0f 46 c1 66 81 e2 03 80 25 ff 1f 00 00 c1 e0 02 09 d0 66 a9 fc 7f=
-=20
-66 41 89 47 0a 75 02 <0f> 0b ff c5 eb 05 31 ed 45 31 e4 48 8b 03 89 ea=20
-48 c1 e8 3c 83
-Jan 16 12:16:00 xxxxx kernel: RIP  [<ffffffffa01f341e>]=20
-__bch_btree_mark_key+0x171/0x1a8 [bcache]
-Jan 16 12:16:00 xxxxx kernel: RSP <ffff88100e44da78>
-Jan 16 12:16:00 xxxxx kernel: ---[ end trace 14e7f7c11d82ef2f ]---
-
-
-
-
-
---=20
---
-Um rep=C3=B3rter de rock =C3=A9 um jornalista que n=C3=A3o sabe escreve=
-r, entrevistando gente
-que n=C3=A3o sabe falar, para pessoas que n=C3=A3o sabem ler.
+------=_NextPart_000_003B_01CF154B.DEB220E0--
