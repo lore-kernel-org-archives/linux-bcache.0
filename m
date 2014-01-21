@@ -1,179 +1,33 @@
-From: Patrick Zwahlen <paz@navixia.com>
-Subject: Use a btier device as a bcache set
-Date: Sun, 19 Jan 2014 18:23:03 +0000
-Message-ID: <0e085038e5af42b4a9da37039bc36ea5@navex1.navixia.local>
+From: matthew patton <pattonme@yahoo.com>
+Subject: How important is bcache cache device in write-thru mode? (was Re: Tiered bcache)
+Date: Tue, 21 Jan 2014 09:35:06 -0800 (PST)
+Message-ID: <1390325706.9841.YahooMailNeo@web181504.mail.ne1.yahoo.com>
+References: <b7031efdcd6440b983eff36b67873eee@navex1.navixia.local> <FA5AF690-E0B7-4AE2-ACF3-CA7C67AEFF96@gmail.com> <fccc7e213e1c451ab6e9189821924205@navex1.navixia.local> <1390314565.24447.YahooMailNeo@web181503.mail.ne1.yahoo.com> <9bfdb3a8cc1a4d55b4df233e2646ccf0@navex1.navixia.local> <1390321548.6065.YahooMailNeo@web181504.mail.ne1.yahoo.com> <72162e596cdd4b5ca00fcf061471ebd6@navex1.navixia.local>
+Reply-To: matthew patton <pattonme@yahoo.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_003B_01CF154B.DEB220E0"
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 62-2-213-50.static.cablecom.ch ([62.2.213.50]:22179 "EHLO
-	navfw1a.navixia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751358AbaASSXs (ORCPT
+Received: from nm16-vm3.access.bullet.mail.bf1.yahoo.com ([216.109.115.50]:29010
+	"EHLO nm16-vm3.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755089AbaAURlS (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 19 Jan 2014 13:23:48 -0500
-Received: from navex1.navixia.local (navex1.navixia.local [172.29.96.60])
-	by navfw1a.navixia.com (8.14.5/8.14.5) with ESMTP id s0JINjTP024519
-	(version=TLSv1/SSLv3 cipher=RC4-SHA bits=128 verify=FAIL)
-	for <linux-bcache@vger.kernel.org>; Sun, 19 Jan 2014 19:23:46 +0100
-Content-Language: en-US
+	Tue, 21 Jan 2014 12:41:18 -0500
+In-Reply-To: <72162e596cdd4b5ca00fcf061471ebd6@navex1.navixia.local>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Cc: Patrick Zwahlen <paz@navixia.com>
 
-------=_NextPart_000_003B_01CF154B.DEB220E0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+>>  wait, the cache DEVICE for bcache is a Btier device composed of an SSD
 
-Hi,
-
-First of all congratulations for bcache!
-
-Working on a SAN head here under Fedora 19. The stack looks like that:
-
-JBOD(SAS)->MDADM(RAID10)->SCST(BLOCKIO)->iSCSI(10G)->ESXi
-
-The SAN server contains an SSD that we use for writethrough only bcache.
-Initially, we had:
-- Backing: /dev/mdX (Raid10)
-- Caching: /dev/sda (SATA SSD)
-
-The server also has 32G of RAM which we're trying to use for caching as
-well. As we have no FS and do BLOCKIO only, the linux page_cache is out of
-the picture (as far as I know).
-
-The idea is then to use a ramdisk (either BRD or RapidDisk) and use it as
-part of the cache as well. An idea is to use btier in order to "join"
-together a RAM disk (tier0) and the SSD (tier1), and use this btier device
-as a bcache cacheset.
-
-Btier will then regularly promote the hot blocks from SSD to RAM and demote
-the cold blocks. I imagine this should bring meta into RAM as well.
-
-It's technically working (lab) but I would like some feedback and please
-tell me if we're going to hit a wall somewhere.
-
-Drawback is that every boot gets a new blank cache set (with a new UUID),
-but this can be easily managed.
-
-Other ideas are:
-- bcache over bcache
-- dm-cache over bcache
-
-Thanks for reading and for feedback. - Patrick -
+>>  and RAM? So in effect you want btier to move the really hot blocks
+>>  within the bcache cache device into RAM? So effectively bcache metadata
+>>  and any really hot blocks will live in RAM and the rest of the 
+> 'read'
+>>  cache will sit on the SSD.
+> 
+> Exactly! Apologies if that wasn't clear in the first place but that
+> describes 100% what we're currently testing.
 
 
-------=_NextPart_000_003B_01CF154B.DEB220E0
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-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
-xCZU7wO94CTLVBowHQYDVR0OBBYEFImCZ33EnSZwAEu0UEh83j2uBG59MA4GA1UdDwEB/wQEAwIB
-BjAPBgNVHRMBAf8EBTADAQH/MBEGA1UdIAQKMAgwBgYEVR0gADBEBgNVHR8EPTA7MDmgN6A1hjNo
-dHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vQWRkVHJ1c3RFeHRlcm5hbENBUm9vdC5jcmwwNQYIKwYB
-BQUHAQEEKTAnMCUGCCsGAQUFBzABhhlodHRwOi8vb2NzcC51c2VydHJ1c3QuY29tMA0GCSqGSIb3
-DQEBBQUAA4IBAQABvJzjYyiw8zEBwt973WKgAZ0jMQ+cknNTUeofTPrWn8TKL2d+eDMPdBa5kYeR
-9Yom+mRwANge+QsEYlCHk4HU2vUj2zS7hVa0cDRueIM3HoUcxREVkl+HF72sav3xwtHMiV+xfPA+
-UfI183zsYJhrOivg79+zfYbrtRv1W+yifJgT1wBQudEtc94DeHThBYUxXsuauZ2UxrmUN3Vy3ET7
-Z+jw+iUeUqfaJelH4KDHPKBOsQo2+3dIn++Xivu0/uOUFKiDvFwtP9JgcWDuwnGCDOmINuPaILSj
-oGyqlku4gI51ykkH9jsUut/cBdmf2+Cy5k2geCbn5y1uf1/GHogVMIIFGjCCBAKgAwIBAgIQbRnq
-pxlPajMi5iIyeqpx3jANBgkqhkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVU
-MRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3Jr
-MSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmly
-c3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1
-MzAxMDQ4MzhaMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
-DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
-T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU
-4PkncQfFxmmkuTLE8UAakMwnVmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHff
-sReswtqCAtbUMmrUZ28gE49cNfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kAB
-W0ho3cVKtODtJB86r3FfB+OsvxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJk
-JpFOpZIP/+CxYP0ab2hRmWONGoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IB
-SzCCAUcwHwYDVR0jBBgwFoAUiYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4
-Y2QnwS/ioFu8ecV7MA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQK
-MAgwBgYEVR0gADBYBgNVHR8EUTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVRO
-LVVTRVJGaXJzdC1DbGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRo
-MGYwPQYIKwYBBQUHMAKGMWh0dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVu
-dF9DQS5jcnQwJQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcN
-AQEFBQADggEBAIXWvnhXVW0zf0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjB
-MCjfy/tCPKElPgp11tA9OYZm0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T
-4ENyG+2P/WA5IEf7i686ZUg8mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8
-H+2b/5tJM75CKTmD7jNpLoKdRU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5
-OOu0M/qgOl0mWJ5hVRi0IdWZ1eBDQEIwvuql55TSsP7zdfl/bucwggUfMIIEB6ADAgECAhAX3R0Y
-7UBKukviAqwn1AAnMA0GCSqGSIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3Jl
-YXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGlt
-aXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVt
-YWlsIENBMB4XDTEzMDcwMzAwMDAwMFoXDTE0MDcwMzIzNTk1OVowIDEeMBwGCSqGSIb3DQEJARYP
-cGF6QG5hdml4aWEuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0F0TmZlMK9tI
-OxjMw+RotD8HyeA/WMCh4WgkRErJKDA1clpy0rTE+e54cRsd1yYMRpzxFlPHBSu6wdwD3r1g/lNP
-ArFhvr1azGCO0Jcq14fyNfv7SA+gyg2Fu1Oym1xZBFYECimMMrp7nRSTqRehQ8q4byidSqmFLTZa
-6TwMOdKTqdIxewO/CH2bxIcrawASjQCHLmT6lOe+Ebec0bvg+W+t9nkGWQbXlXUMYcx5QAgAYy5T
-utLVen4svpbNW2TzM2U+r8JvIBrZmPOIJ9c3OBAKrDyemESY/RPtFuU2qrG0M86T0yQYtOkNLs2N
-FYnvSwOVdBpde8w8CLncCKvK6QIDAQABo4IB3zCCAdswHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfB
-L+KgW7x5xXswHQYDVR0OBBYEFIyO7UASW/goTcHarjyu85CPoczeMA4GA1UdDwEB/wQEAwIFoDAM
-BgNVHRMBAf8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhC
-AQEEBAMCBSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6
-Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21v
-ZG9jYS5jb20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCB
-iAYIKwYBBQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01P
-RE9DbGllbnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhho
-dHRwOi8vb2NzcC5jb21vZG9jYS5jb20wGgYDVR0RBBMwEYEPcGF6QG5hdml4aWEuY29tMA0GCSqG
-SIb3DQEBBQUAA4IBAQBtGIlrhLZOI48oRZn08jrt6JDyLeBR5Z28lc/OmOGsHYtFHZFUhcs1xaYT
-RqqMlmJQ3CfncYCwgqCsOqWsmtfQmB64vEUMECeZsnkA60dP72QqL0YcvWyh4l79mHX7F//0ftS+
-4IogwH+PDmNzJDul/VffyI67OowAJu+NErlucYj6h5vPz3eUlQ0H2Decopv8jKI5QBEsv92ALbKC
-fgFzyiLSpDY7GYy9hEy8ZOQ//0oxKuZGXJv3NAUXJd5+ZiOxx48ZqUazRVMgAFHH/jP5MxHSv90R
-uk1o3QdvZYfI8etoJ0tdVQRIbJqDXJNy7dvEfIValfObvZWIzT15az7qMYIEQTCCBD0CAQEwgagw
-gZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1Nh
-bGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50
-IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+ICrCfUACcwCQYF
-Kw4DAhoFAKCCAm0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQw
-MTE5MTgyMzAxWjAjBgkqhkiG9w0BCQQxFgQUEfwRZri8cEHc3u+b/183AjpfpPwwgZMGCSqGSIb3
-DQEJDzGBhTCBgjALBglghkgBZQMEASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFl
-AwQBAjAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAhowCwYJYIZIAWUDBAID
-MAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwgbkGCSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UE
-BhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgG
-A1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNVBAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGlj
-YXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQF90dGO1ASrpL4gKsJ9QAJzCBuwYLKoZIhvcNAQkQ
-AgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAO
-BgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01P
-RE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+IC
-rCfUACcwDQYJKoZIhvcNAQEBBQAEggEAM92Csv5TbUc4OFdm0v/H9Gednj7QJnI9ZQ5/yo4CiqCN
-HQNLed3eDz0t3JFN/BYdrxgcTRqTPhg9YPy+0gHtgN+jryL9eIVds9LOTkusy8rBVvo9pkhyVBE+
-FFDbQcdrZMyQ/G1J2b2cXC7+V9mwWeeCQeNZOajKFSFZauE8MhN9nHcOemIkdgK4qU8UJu4uePGn
-BpQmhslwsQUdwYNxxxahPQ2IapauoyzNFA9v7n0bjNDKLr0VoUuZwxD4ywBvRyowqbWwXY6CJlwT
-d0ZGvbuqXxpvG3sKdT3085ci+vWF2EWXPjOu3gpUy/Lj9ADNEFTVl0QnzDwcbYJK8aWb7QAAAAAA
-AA==
-
-------=_NextPart_000_003B_01CF154B.DEB220E0--
+you REALLY want to check with Kent as to what happens when the bcache caching device (and any meta-data it stores there) routinely get blown away or run a high risk of experiencing sudden destruction. I'm afraid this is not a test case that has undergone enough scrutiny.
