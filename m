@@ -1,34 +1,310 @@
-From: Vasiliy Tolstov <v.tolstov@selfip.ru>
-Subject: bcache using in case of 5 hdd disks
-Date: Thu, 23 Jan 2014 23:26:19 +0400
-Message-ID: <CACaajQvHG=Y-ZywBYi6sNbxEDb1wXOWYLsLJGyNLSL84PYHgxQ@mail.gmail.com>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+Subject: Re: kernel BUG at drivers/md/bcache/btree.c:1168
+Date: Fri, 24 Jan 2014 22:28:03 -0800
+Message-ID: <20140125062803.GA9334@birch.djwong.org>
+References: <52D92349.9040709@tecnico.ulisboa.pt>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:57021 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbaAWT0h (ORCPT
+Received: from aserp1040.oracle.com ([141.146.126.69]:22326 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854AbaAYG2R (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 23 Jan 2014 14:26:37 -0500
-Received: by mail-qa0-f50.google.com with SMTP id cm18so2699858qab.23
-        for <linux-bcache@vger.kernel.org>; Thu, 23 Jan 2014 11:26:34 -0800 (PST)
+	Sat, 25 Jan 2014 01:28:17 -0500
+Content-Disposition: inline
+In-Reply-To: <52D92349.9040709@tecnico.ulisboa.pt>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Jose Manuel dos Santos Calhariz <jose.calhariz@tecnico.ulisboa.pt>
+Cc: linux-bcache@vger.kernel.org, "ns-list@dsi.ist.utl.pt" <ns-list@dsi.ist.utl.pt>
 
-Hi all.
-I'm very happy with bcache on current production system (raid1 with 1
-sata hdd + 1 ssd). But now i get new platform with 5 sata hdd and 1
-ssd disk.
-Each of sata hdd i need to format with some fs (ext4 or btrfs?) to
-store data. How can i use bcache in this case? I'm unerstand that i
-can create5 partitions on ssd drive and use each partition to each
-drive. But does it possible to use whole ssd disk to cache in this
-case?
+On Fri, Jan 17, 2014 at 12:34:17PM +0000, Jose Manuel dos Santos Calhar=
+iz wrote:
+>=20
+> Hi, is the second time I get this BUG.
+>=20
+> The first was during boot from an old 3.13.0-rc2 to a 3.13.0-rc7.
+> The second time was when running tests.
 
-Thanks!
+Yeah, I also saw this tonight on 3.13.  Running on ext4 -> LVM -> LUKS =
+->
+bcache -> ssd/disk.
 
--- 
-Vasiliy Tolstov,
-e-mail: v.tolstov@selfip.ru
-jabber: vase@selfip.ru
+[81881.815077] ------------[ cut here ]------------
+[81881.815108] kernel BUG at drivers/md/bcache/btree.c:1168!
+[81881.815123] invalid opcode: 0000 [#1] PREEMPT SMP=20
+[81881.815140] Modules linked in: hfsplus hfs msdos ipt_MASQUERADE ipta=
+ble_nat nf_nat_ipv4 xt_conntrack xt_CHECKSUM iptable_mangle tun bridge =
+stp llc fuse af_packet microcode bnep rfcomm nfsd nfs_acl exportfs auth=
+_rpcgss nfs lockd sunrpc xt_physdev xt_hl uvcvideo ip6t_rt videobuf2_co=
+re videodev nf_conntrack_ipv6 nf_defrag_ipv6 videobuf2_vmalloc videobuf=
+2_memops ipt_REJECT xt_sctp xt_limit xt_tcpudp xt_addrtype nf_conntrack=
+_ipv4 nf_defrag_ipv4 xt_state ip6table_filter ip6_tables nf_conntrack_n=
+etbios_ns nf_conntrack_broadcast nf_nat_ftp nf_nat nf_conntrack_ftp nf_=
+conntrack iptable_filter ip_tables x_tables eeprom sch_fq_codel nls_iso=
+8859_1 nls_cp437 vfat fat lpc_ich mfd_core loop bcache zlib_deflate lib=
+crc32c
+[81881.815346] CPU: 2 PID: 1418 Comm: bcache_gc Not tainted 3.13.0-60-b=
+irch #1
+[81881.815365] Hardware name: LENOVO 2349E51/2349E51, BIOS G1ET69WW (2.=
+05 ) 09/12/2012
+[81881.815385] task: ffff880402038000 ti: ffff8804043c6000 task.ti: fff=
+f8804043c6000
+[81881.815405] RIP: 0010:[<ffffffffa0017a01>]  [<ffffffffa0017a01>] __b=
+ch_btree_mark_key+0x251/0x290 [bcache]
+[81881.815438] RSP: 0018:ffff8804043c7c78  EFLAGS: 00010246
+[81881.815453] RAX: 0000000000000002 RBX: ffffc90004397dac RCX: 0000000=
+000000200
+[81881.815471] RDX: 0000000000000002 RSI: 0000000000000001 RDI: ffffc90=
+004397dac
+[81881.815490] RBP: ffff8804043c7cc8 R08: 000007ffffffffff R09: 0000000=
+000000001
+[81881.815509] R10: 0000000000003fff R11: 0000001000000000 R12: 0000000=
+000000000
+[81881.815527] R13: ffff8800532002c0 R14: ffff8804017a0000 R15: 0000000=
+000000000
+[81881.815546] FS:  0000000000000000(0000) GS:ffff88041e300000(0000) kn=
+lGS:0000000000000000
+[81881.815568] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[81881.815583] CR2: 00007f467f76b000 CR3: 0000000001c0c000 CR4: 0000000=
+0001407e0
+[81881.815602] Stack:
+[81881.815609]  ffff8804043c7ce8 ffff880408fb2000 ffff8804043c7c98 ffff=
+ffffa0014be5
+[81881.815632]  ffff8804043c7cc8 ffff880408fb2000 ffff8804043c7de0 ffff=
+8800532002c0
+[81881.815653]  0000000000000000 000000000000001c ffff8804043c7d68 ffff=
+ffffa0017e41
+[81881.815675] Call Trace:
+[81881.815690]  [<ffffffffa0014be5>] ? bch_ptr_invalid+0x25/0x30 [bcach=
+e]
+[81881.815713]  [<ffffffffa0017e41>] btree_gc_mark_node+0x81/0x210 [bca=
+che]
+[81881.815736]  [<ffffffffa001a2e2>] bch_btree_gc+0x252/0x5d0 [bcache]
+[81881.815759]  [<ffffffffa001a698>] bch_gc_thread+0x38/0x120 [bcache]
+[81881.815781]  [<ffffffffa001a660>] ? bch_btree_gc+0x5d0/0x5d0 [bcache=
+]
+[81881.815801]  [<ffffffff810e4b79>] kthread+0xc9/0xe0
+[81881.815816]  [<ffffffff810e4ab0>] ? flush_kthread_worker+0xb0/0xb0
+[81881.815835]  [<ffffffff817f63ec>] ret_from_fork+0x7c/0xb0
+[81881.815851]  [<ffffffff810e4ab0>] ? flush_kthread_worker+0xb0/0xb0
+[81881.815868] Code: c8 44 89 55 b8 4c 89 5d b0 e8 5c 21 01 00 4c 8b 45=
+ c0 84 c0 44 8b 4d c8 44 8b 55 b8 4c 8b 5d b0 75 13 0f b7 43 0a e9 28 f=
+f ff ff <0f> 0b 48 89 df e9 ec fe ff ff 4c 89 45 c0 44 89 4d c8 44 89 5=
+5=20
+[81881.815956] RIP  [<ffffffffa0017a01>] __bch_btree_mark_key+0x251/0x2=
+90 [bcache]
+[81881.815982]  RSP <ffff8804043c7c78>
+[81881.820218] ---[ end trace f9ade3bfa4c277bf ]---
+
+--D
+>=20
+> Follow the two stack trace:
+>=20
+> Jan 14 17:33:59 xxxxx kernel: ------------[ cut here ]------------
+> Jan 14 17:33:59 xxxxx kernel: kernel BUG at drivers/md/bcache/btree.c=
+:1168!
+> Jan 14 17:33:59 xxxxx kernel: invalid opcode: 0000 [#1] SMP
+> Jan 14 17:33:59 xxxxx kernel: Modules linked in: lp parport_pc
+> parport joydev st sr_mod cdrom xt_multiport iptable_filter ip_tables
+> x_tables xfs libcrc32c ipmi_devintf loop snd_pcm mgag200
+> snd_page_alloc snd_timer ttm x86_pkg_temp_thermal drm_kms_helper drm
+> snd i2c_algo_bit coretemp soundcore kvm_intel kvm
+> +crc32c_intel ghash_clmulni_intel ioatdma aesni_intel aes_x86_64
+> iTCO_wdt sb_edac iTCO_vendor_support mei_me mei ablk_helper
+> edac_core cryptd psmouse i2c_i801 lpc_ich serio_raw i2c_core pcspkr
+> lrw mfd_core gf128mul ipmi_si ipmi_msghandler glue_helper evdev
+> processor wmi thermal_sys button ext3 mbcache jbd dm_mod
+> +raid1 md_mod hid_generic usbhid hid bcache sg sd_mod ses crc_t10dif
+> enclosure crct10dif_common microcode ahci libahci libata ehci_pci
+> ehci_hcd mpt2sas raid_class usbcore megaraid_sas scsi_transport_sas
+> usb_common scsi_mod ixgbe dca ptp pps_core mdio [last unloaded:
+> parport_pc]
+> Jan 14 17:33:59 xxxxx kernel: CPU: 6 PID: 700 Comm: bcache_gc Not
+> tainted 3.13.0-rc7-dsi #3
+> Jan 14 17:33:59 xxxxx kernel: Hardware name: Supermicro
+> X9SRH-7F/7TF/X9SRH-7F/7TF, BIOS 3.00 07/05/2013
+> Jan 14 17:33:59 xxxxx kernel: task: ffff88101371a050 ti:
+> ffff88100ea56000 task.ti: ffff88100ea56000
+> Jan 14 17:33:59 xxxxx kernel: RIP: 0010:[<ffffffffa01ce41e>]
+> [<ffffffffa01ce41e>] __bch_btree_mark_key+0x171/0x1a8 [bcache]
+> Jan 14 17:33:59 xxxxx kernel: RSP: 0018:ffff88100ea57cb8  EFLAGS: 000=
+10246
+> Jan 14 17:33:59 xxxxx kernel: RAX: 0000000000000002 RBX:
+> ffff880fab8001e8 RCX: 0000000000002000
+> Jan 14 17:33:59 xxxxx kernel: RDX: 0000000000000002 RSI:
+> ffff880fab8001e8 RDI: ffff881028d60000
+> Jan 14 17:33:59 xxxxx kernel: RBP: 0000000000000000 R08:
+> 0000000000000001 R09: ffff88101003c000
+> Jan 14 17:33:59 xxxxx kernel: R10: 0000000000001000 R11:
+> ffff880fce594400 R12: 0000000000000000
+> Jan 14 17:33:59 xxxxx kernel: R13: ffff881028d60000 R14:
+> 0000000000000001 R15: ffffc90016d93678
+> Jan 14 17:33:59 xxxxx kernel: FS:  0000000000000000(0000)
+> GS:ffff88107fcc0000(0000) knlGS:0000000000000000
+> Jan 14 17:33:59 xxxxx kernel: CS:  0010 DS: 0000 ES: 0000 CR0:
+> 0000000080050033
+> Jan 14 17:33:59 xxxxx kernel: CR2: 00007fe31614ccf8 CR3:
+> 000000000160c000 CR4: 00000000000407e0
+> Jan 14 17:33:59 xxxxx kernel: Stack:
+> Jan 14 17:33:59 xxxxx kernel: ffff880fab8001e8 0000000188a000fb
+> ffff880fce594400 ffff880fce594400
+> Jan 14 17:33:59 xxxxx kernel: ffff880fab8001e8 0000000000000013
+> 0000000000000001 ffff88100ea57dc8
+> Jan 14 17:33:59 xxxxx kernel: ffff88100ea57d18 ffffffffa01ce72a
+> ffff88101371a050 0000000200000000
+> Jan 14 17:33:59 xxxxx kernel: Call Trace:
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01ce72a>] ?
+> btree_gc_mark_node+0x4c/0x16d [bcache]
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffff811e8e63>] ?
+> call_rwsem_down_write_failed+0x13/0x20
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d005e>] ?
+> bch_btree_gc+0x187/0x3a7 [bcache]
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffff8106ffde>] ?
+> idle_balance+0x12b/0x166
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffff81066b18>] ? mmdrop+0xd/0x1c
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d02ab>] ?
+> bch_gc_thread+0x2d/0xe5 [bcache]
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d027e>] ?
+> bch_btree_gc+0x3a7/0x3a7 [bcache]
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffffa01d027e>] ?
+> bch_btree_gc+0x3a7/0x3a7 [bcache]
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffff8105f77a>] ? kthread+0x99/0xa=
+1
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffff8105f6e1>] ?
+> __kthread_parkme+0x59/0x59
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffff813b58cc>] ? ret_from_fork+0x=
+7c/0xb0
+> Jan 14 17:33:59 xxxxx kernel: [<ffffffff8105f6e1>] ?
+> __kthread_parkme+0x59/0x59
+> Jan 14 17:33:59 xxxxx kernel: Code: 00 01 c1 b8 ff 3f 00 00 81 f9 ff
+> 3f 00 00 0f 46 c1 66 81 e2 03 80 25 ff 1f 00 00 c1 e0 02 09 d0 66 a9
+> fc 7f 66 41 89 47 0a 75 02 <0f> 0b ff c5 eb 05 31 ed 45 31 e4 48 8b
+> 03 89 ea 48 c1 e8 3c 83
+> Jan 14 17:33:59 xxxxx kernel: RIP  [<ffffffffa01ce41e>]
+> __bch_btree_mark_key+0x171/0x1a8 [bcache]
+> Jan 14 17:33:59 xxxxx kernel: RSP <ffff88100ea57cb8>
+> Jan 14 17:33:59 xxxxx kernel: ---[ end trace 6a29ce0fa7816b54 ]---
+>=20
+>=20
+> Jan 16 12:16:00 xxxxx kernel: ------------[ cut here ]------------
+> Jan 16 12:16:00 xxxxx kernel: kernel BUG at drivers/md/bcache/btree.c=
+:1168!
+> Jan 16 12:16:00 xxxxx kernel: invalid opcode: 0000 [#1] SMP
+> Jan 16 12:16:00 xxxxx kernel: Modules linked in: lp parport_pc
+> parport joydev st sr_mod cdrom xt_multiport iptable_filter ip_tables
+> x_tables xfs libcrc32c ipmi_devintf loop iTCO_wdt
+> x86_pkg_temp_thermal coretemp kvm_intel kvm sb_edac
+> iTCO_vendor_support mgag200 ioatdma snd_pcm snd_page_alloc snd_timer
+> snd i2c_i801
+> +ttm soundcore crc32c_intel ghash_clmulni_intel aesni_intel lpc_ich
+> aes_x86_64 drm_kms_helper drm i2c_algo_bit i2c_core mfd_core
+> ablk_helper cryptd lrw gf128mul mei_me mei glue_helper psmouse
+> edac_core serio_raw pcspkr evdev wmi ipmi_si ipmi_msghandler
+> processor thermal_sys button ext3 mbcache jbd dm_mod raid1
+> +md_mod hid_generic usbhid hid bcache sg sd_mod ses crc_t10dif
+> enclosure crct10dif_common microcode ehci_pci ehci_hcd usbcore ahci
+> mpt2sas libahci usb_common raid_class libata scsi_transport_sas
+> megaraid_sas ixgbe scsi_mod dca ptp pps_core mdio [last unloaded:
+> parport_pc]
+> Jan 16 12:16:00 xxxxx kernel: CPU: 8 PID: 707 Comm: bcache_gc Not
+> tainted 3.13.0-rc7-dsi #3
+> Jan 16 12:16:00 xxxxx kernel: Hardware name: Supermicro
+> X9SRH-7F/7TF/X9SRH-7F/7TF, BIOS 3.00 07/05/2013
+> Jan 16 12:16:00 xxxxx kernel: task: ffff88102c30f800 ti:
+> ffff88100e44c000 task.ti: ffff88100e44c000
+> Jan 16 12:16:00 xxxxx kernel: RIP: 0010:[<ffffffffa01f341e>]
+> [<ffffffffa01f341e>] __bch_btree_mark_key+0x171/0x1a8 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: RSP: 0018:ffff88100e44da78  EFLAGS: 000=
+10246
+> Jan 16 12:16:00 xxxxx kernel: RAX: 0000000000000000 RBX:
+> ffff880fed4037b8 RCX: 0000000000002000
+> Jan 16 12:16:00 xxxxx kernel: RDX: 0000000000000000 RSI:
+> ffff880fed4037b8 RDI: ffff881028ce0000
+> Jan 16 12:16:00 xxxxx kernel: RBP: 0000000000000000 R08:
+> 0000000000000001 R09: ffff8810109ea000
+> Jan 16 12:16:00 xxxxx kernel: R10: 0000000000001000 R11:
+> ffff880fee906400 R12: 0000000000000000
+> Jan 16 12:16:00 xxxxx kernel: R13: ffff881028ce0000 R14:
+> 0000000000000000 R15: ffffc900168dc660
+> Jan 16 12:16:00 xxxxx kernel: FS:  0000000000000000(0000)
+> GS:ffff88107fd00000(0000) knlGS:0000000000000000
+> Jan 16 12:16:00 xxxxx kernel: CS:  0010 DS: 0000 ES: 0000 CR0:
+> 0000000080050033
+> Jan 16 12:16:00 xxxxx kernel: CR2: 0000000000619570 CR3:
+> 000000000160c000 CR4: 00000000000407e0
+> Jan 16 12:16:00 xxxxx kernel: Stack:
+> Jan 16 12:16:00 xxxxx kernel: ffff88100e44dad8 0000000108801efc
+> ffffffffa01f0c31 ffff880fee906400
+> Jan 16 12:16:00 xxxxx kernel: ffff880fed4037b8 0000000000000251
+> 0000000000000000 ffff88100e44ddc8
+> Jan 16 12:16:00 xxxxx kernel: ffff88100e44dad8 ffffffffa01f372a
+> ffffffffa01f5bb1 00000251b5f80000
+> Jan 16 12:16:00 xxxxx kernel: Call Trace:
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f0c31>] ?
+> bch_cut_back+0x41/0x41 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f372a>] ?
+> btree_gc_mark_node+0x4c/0x16d [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f5bb1>] ?
+> tree_to_bkey+0x13/0x3c [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f64b8>] ?
+> bch_ptr_invalid+0x1a/0x1a [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f4cbf>] ?
+> btree_gc_recurse+0x677/0x88f [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f6398>] ?
+> bch_btree_ptr_invalid+0x46/0xb0 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff813ae20a>] ? __schedule+0x48f=
+/0x555
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff810680ad>] ? resched_task+0x1=
+5/0x4b
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f7ab0>] ?
+> bch_btree_iter_next_filter+0x18/0x38 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f379c>] ?
+> btree_gc_mark_node+0xbe/0x16d [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff811e8e63>] ?
+> call_rwsem_down_write_failed+0x13/0x20
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f50df>] ?
+> bch_btree_gc+0x208/0x3a7 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff8106ffde>] ?
+> idle_balance+0x12b/0x166
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff81066b18>] ? mmdrop+0xd/0x1c
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f52ab>] ?
+> bch_gc_thread+0x2d/0xe5 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f527e>] ?
+> bch_btree_gc+0x3a7/0x3a7 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffffa01f527e>] ?
+> bch_btree_gc+0x3a7/0x3a7 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff8105f77a>] ? kthread+0x99/0xa=
+1
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff8105f6e1>] ?
+> __kthread_parkme+0x59/0x59
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff813b58cc>] ? ret_from_fork+0x=
+7c/0xb0
+> Jan 16 12:16:00 xxxxx kernel: [<ffffffff8105f6e1>] ?
+> __kthread_parkme+0x59/0x59
+> Jan 16 12:16:00 xxxxx kernel: Code: 00 01 c1 b8 ff 3f 00 00 81 f9 ff
+> 3f 00 00 0f 46 c1 66 81 e2 03 80 25 ff 1f 00 00 c1 e0 02 09 d0 66 a9
+> fc 7f 66 41 89 47 0a 75 02 <0f> 0b ff c5 eb 05 31 ed 45 31 e4 48 8b
+> 03 89 ea 48 c1 e8 3c 83
+> Jan 16 12:16:00 xxxxx kernel: RIP  [<ffffffffa01f341e>]
+> __bch_btree_mark_key+0x171/0x1a8 [bcache]
+> Jan 16 12:16:00 xxxxx kernel: RSP <ffff88100e44da78>
+> Jan 16 12:16:00 xxxxx kernel: ---[ end trace 14e7f7c11d82ef2f ]---
+>=20
+>=20
+>=20
+>=20
+>=20
+> --=20
+> --
+> Um rep=F3rter de rock =E9 um jornalista que n=E3o sabe escrever, entr=
+evistando gente
+> que n=E3o sabe falar, para pessoas que n=E3o sabem ler.
+>=20
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
+e" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
