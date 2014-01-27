@@ -1,179 +1,89 @@
-From: Patrick Zwahlen <paz@navixia.com>
-Subject: RE: bcache using in case of 5 hdd disks
-Date: Mon, 27 Jan 2014 20:38:33 +0000
-Message-ID: <c25cf68c80584a4a80e6adf3395738b9@navex1.navixia.local>
-References: <CACaajQvHG=Y-ZywBYi6sNbxEDb1wXOWYLsLJGyNLSL84PYHgxQ@mail.gmail.com>
+From: =?ISO-8859-1?Q?Jo=E3o_Trindade?= <trindade.joao@gmail.com>
+Subject: Kernel bug 3.13.0 at drivers/md/bcache/btree.c:1168!
+Date: Mon, 27 Jan 2014 23:41:29 +0000
+Message-ID: <CAK7wQSjBvjoCCg=LGOvZZk_BBMa228sR4GObcc+1-12rKXsUPw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_0004_01CF1BA8.205B8C40"
+Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 62-2-213-50.static.cablecom.ch ([62.2.213.50]:13650 "EHLO
-	navfw1a.navixia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875AbaA0UjE (ORCPT
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:53124 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545AbaA0Xlu (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 27 Jan 2014 15:39:04 -0500
-Received: from navex1.navixia.local (navex1.navixia.local [172.29.96.60])
-	by navfw1a.navixia.com (8.14.5/8.14.5) with ESMTP id s0RKcv96013032
-	(version=TLSv1/SSLv3 cipher=RC4-SHA bits=128 verify=FAIL)
-	for <linux-bcache@vger.kernel.org>; Mon, 27 Jan 2014 21:38:57 +0100
-In-Reply-To: <CACaajQvHG=Y-ZywBYi6sNbxEDb1wXOWYLsLJGyNLSL84PYHgxQ@mail.gmail.com>
-Content-Language: en-US
+	Mon, 27 Jan 2014 18:41:50 -0500
+Received: by mail-qa0-f51.google.com with SMTP id f11so8221757qae.24
+        for <linux-bcache@vger.kernel.org>; Mon, 27 Jan 2014 15:41:49 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-------=_NextPart_000_0004_01CF1BA8.205B8C40
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Hi,
 
-Hi!
+Just had a kernel bug which froze the system. Running ext4 -> lvm -> bcache.
 
-> -----Original Message-----
-> From: linux-bcache-owner@vger.kernel.org [mailto:linux-bcache-
-> owner@vger.kernel.org] On Behalf Of Vasiliy Tolstov
-> Sent: jeudi 23 janvier 2014 20:26
-> To: linux-bcache@vger.kernel.org
-> Subject: bcache using in case of 5 hdd disks
->
-> Hi all.
-> I'm very happy with bcache on current production system (raid1 with 1
-> sata hdd + 1 ssd). But now i get new platform with 5 sata hdd and 1
-> ssd disk.
-> Each of sata hdd i need to format with some fs (ext4 or btrfs?) to
-> store data. How can i use bcache in this case? I'm unerstand that i
-> can create5 partitions on ssd drive and use each partition to each
-> drive. But does it possible to use whole ssd disk to cache in this
-> case?
-
-My understanding is that a single "cacheset" (in your case, your SSD) can be 
-shared between multiple backing devices.
-
-You should be able to attach a single cacheset's UUID to multiple devices.
-
-Can anyone else confirm ?
-
->
-> Thanks!
->
-> --
-> Vasiliy Tolstov,
-> e-mail: v.tolstov@selfip.ru
-> jabber: vase@selfip.ru
-> --
-
-
-------=_NextPart_000_0004_01CF1BA8.205B8C40
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-
-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
-xCZU7wO94CTLVBowHQYDVR0OBBYEFImCZ33EnSZwAEu0UEh83j2uBG59MA4GA1UdDwEB/wQEAwIB
-BjAPBgNVHRMBAf8EBTADAQH/MBEGA1UdIAQKMAgwBgYEVR0gADBEBgNVHR8EPTA7MDmgN6A1hjNo
-dHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vQWRkVHJ1c3RFeHRlcm5hbENBUm9vdC5jcmwwNQYIKwYB
-BQUHAQEEKTAnMCUGCCsGAQUFBzABhhlodHRwOi8vb2NzcC51c2VydHJ1c3QuY29tMA0GCSqGSIb3
-DQEBBQUAA4IBAQABvJzjYyiw8zEBwt973WKgAZ0jMQ+cknNTUeofTPrWn8TKL2d+eDMPdBa5kYeR
-9Yom+mRwANge+QsEYlCHk4HU2vUj2zS7hVa0cDRueIM3HoUcxREVkl+HF72sav3xwtHMiV+xfPA+
-UfI183zsYJhrOivg79+zfYbrtRv1W+yifJgT1wBQudEtc94DeHThBYUxXsuauZ2UxrmUN3Vy3ET7
-Z+jw+iUeUqfaJelH4KDHPKBOsQo2+3dIn++Xivu0/uOUFKiDvFwtP9JgcWDuwnGCDOmINuPaILSj
-oGyqlku4gI51ykkH9jsUut/cBdmf2+Cy5k2geCbn5y1uf1/GHogVMIIFGjCCBAKgAwIBAgIQbRnq
-pxlPajMi5iIyeqpx3jANBgkqhkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVU
-MRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3Jr
-MSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmly
-c3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1
-MzAxMDQ4MzhaMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
-DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
-T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU
-4PkncQfFxmmkuTLE8UAakMwnVmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHff
-sReswtqCAtbUMmrUZ28gE49cNfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kAB
-W0ho3cVKtODtJB86r3FfB+OsvxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJk
-JpFOpZIP/+CxYP0ab2hRmWONGoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IB
-SzCCAUcwHwYDVR0jBBgwFoAUiYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4
-Y2QnwS/ioFu8ecV7MA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQK
-MAgwBgYEVR0gADBYBgNVHR8EUTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVRO
-LVVTRVJGaXJzdC1DbGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRo
-MGYwPQYIKwYBBQUHMAKGMWh0dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVu
-dF9DQS5jcnQwJQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcN
-AQEFBQADggEBAIXWvnhXVW0zf0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjB
-MCjfy/tCPKElPgp11tA9OYZm0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T
-4ENyG+2P/WA5IEf7i686ZUg8mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8
-H+2b/5tJM75CKTmD7jNpLoKdRU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5
-OOu0M/qgOl0mWJ5hVRi0IdWZ1eBDQEIwvuql55TSsP7zdfl/bucwggUfMIIEB6ADAgECAhAX3R0Y
-7UBKukviAqwn1AAnMA0GCSqGSIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3Jl
-YXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGlt
-aXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVt
-YWlsIENBMB4XDTEzMDcwMzAwMDAwMFoXDTE0MDcwMzIzNTk1OVowIDEeMBwGCSqGSIb3DQEJARYP
-cGF6QG5hdml4aWEuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0F0TmZlMK9tI
-OxjMw+RotD8HyeA/WMCh4WgkRErJKDA1clpy0rTE+e54cRsd1yYMRpzxFlPHBSu6wdwD3r1g/lNP
-ArFhvr1azGCO0Jcq14fyNfv7SA+gyg2Fu1Oym1xZBFYECimMMrp7nRSTqRehQ8q4byidSqmFLTZa
-6TwMOdKTqdIxewO/CH2bxIcrawASjQCHLmT6lOe+Ebec0bvg+W+t9nkGWQbXlXUMYcx5QAgAYy5T
-utLVen4svpbNW2TzM2U+r8JvIBrZmPOIJ9c3OBAKrDyemESY/RPtFuU2qrG0M86T0yQYtOkNLs2N
-FYnvSwOVdBpde8w8CLncCKvK6QIDAQABo4IB3zCCAdswHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfB
-L+KgW7x5xXswHQYDVR0OBBYEFIyO7UASW/goTcHarjyu85CPoczeMA4GA1UdDwEB/wQEAwIFoDAM
-BgNVHRMBAf8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhC
-AQEEBAMCBSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6
-Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21v
-ZG9jYS5jb20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCB
-iAYIKwYBBQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01P
-RE9DbGllbnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhho
-dHRwOi8vb2NzcC5jb21vZG9jYS5jb20wGgYDVR0RBBMwEYEPcGF6QG5hdml4aWEuY29tMA0GCSqG
-SIb3DQEBBQUAA4IBAQBtGIlrhLZOI48oRZn08jrt6JDyLeBR5Z28lc/OmOGsHYtFHZFUhcs1xaYT
-RqqMlmJQ3CfncYCwgqCsOqWsmtfQmB64vEUMECeZsnkA60dP72QqL0YcvWyh4l79mHX7F//0ftS+
-4IogwH+PDmNzJDul/VffyI67OowAJu+NErlucYj6h5vPz3eUlQ0H2Decopv8jKI5QBEsv92ALbKC
-fgFzyiLSpDY7GYy9hEy8ZOQ//0oxKuZGXJv3NAUXJd5+ZiOxx48ZqUazRVMgAFHH/jP5MxHSv90R
-uk1o3QdvZYfI8etoJ0tdVQRIbJqDXJNy7dvEfIValfObvZWIzT15az7qMYIEQTCCBD0CAQEwgagw
-gZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1Nh
-bGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50
-IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+ICrCfUACcwCQYF
-Kw4DAhoFAKCCAm0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQw
-MTI3MjAzODMyWjAjBgkqhkiG9w0BCQQxFgQUUZvEbQozZGoEgKzFeYbcmG+ToukwgZMGCSqGSIb3
-DQEJDzGBhTCBgjALBglghkgBZQMEASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFl
-AwQBAjAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAhowCwYJYIZIAWUDBAID
-MAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwgbkGCSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UE
-BhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgG
-A1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNVBAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGlj
-YXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQF90dGO1ASrpL4gKsJ9QAJzCBuwYLKoZIhvcNAQkQ
-AgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAO
-BgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01P
-RE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+IC
-rCfUACcwDQYJKoZIhvcNAQEBBQAEggEAPZJs1mjL767/ALDbxmfo93OgUHiNhajaD73u7AGV2IxQ
-B8FYwWeO+vQiBS5vT9USJZZ2ODtFYhwA3Ci1VSrKpKb13X5E0kAFIYk7ve/Xe7iKOh+EVCleCkru
-8l29Al8dbcV1OFXgPauML68Znv9yh1PQhobOZ3bV69skwiIqTgYbXlKWqmz8XOMS9J4uPuPV8fnt
-D+/qKbIaVJLAkIhA46T0+Hx1KAze7i8P3lg/DHP1vjIE90sTgyaCdOE5qiOW6dWcilarc+Qfgjjg
-OIBYs2vILO5YzShxDT43II1koH8Yli3lYZ4Lqyga04dmZ+zejjQ/nPbkmbw4TMp8gqgcowAAAAAA
-AA==
-
-------=_NextPart_000_0004_01CF1BA8.205B8C40--
+EL281373.738405J -L cut here j- .
+.[281373.738686} kernel BUG at drivers/md/bcache/btree.c:1168! .
+.[281373.739004} invalid opcode: 0000 [#1} SMP .
+.[281373.739262} Modules linked in: quota_v2 quota_tree nfsd
+auth_rpcgss Did_registr nfs_acl nfs lockd fscache sunrpc his_utfs n.
+.Is_cp437 vfat fat loop x86_pkg_temp_thermal coretemp kvm_intel kvm
+crc32c_intel ghash_clmulni_intel aesni_intel Bes_x86_64 ablk_
+.helper Cr ptd Irw gfl2Smul glue_helper snd_pcm snd_page_alloc
+snd_timer mgag2OO ipmi_si snd ttm soundcore ioatdma iTCO_wdt iTCO_
+.vendor_support drm_kms_helper Ipc_ich mfd_core sh_edac edac_core
+i2C_1801 evdev pcspkr mei_me drm mei ipmi_msghandler microcode .
+.processor wmi thermal_s s button e t4 crc16 jbd2 mbcache dm_mod
+bcache hid_generic sg usbhid hid sd_mod crc_tlOdif crctlOdif_com
+.mon ehci_Dci ehci_hcd igb ahci isci usbcore libahci libsas
+i2c_algo_bit usb_common scsi_transport_sas i2c_core dca libata ptp pp.
+.s_core megaraid_sas scsi_mod .
+.[281373.743815} CPU: 17 PID: 573 Comm: bcache_gc Not tainted 3.13.0-dsi #4 .
+.[281373.744188} Hardware name: Supermicro
+SYS-6O27R-72RF/X9DRH-7TF/7F/iTF/iF, BIDS 3.0 07/26/2013 .
+.[281373.744710} task: ffffSS2o2deccO9O ti: ffff882O2ca96OOO taSk.ti:
+ffff882O2ca96OOO .
+.[281373.745155} RIP: 0010:[<ffffffffaOlSS4le>} [<ffffffffaOlSS4le>}
+__bch_btree_mark_kc +O 171/o las [bcache} .
+.[281373.745736} RSP: 0018:ffffSS2O2ca97cbS EFL GS: 00010246 .
+.[281373.764512} R X: 0000000000000002 RSX: ffff88Offb9cO3f8 RCX:
+0000000000002000 .
+.[281373.783484} RDX: 0000000000000002 RSI: ffff88Offb9cO3f8 ROI:
+ffffSS2o2baeOOOO .
+.[281373.802490} RBP: 0000000000000000 ROB: O0OOOOOOOOOOOOO1 RO9:
+ffffSS2o2bSe2OOO .
+.[281373.821186} RIO: 0000000000000800 Rll: ffffSSlo2dldlcOO Rl2:
+0000000000000000 .
+.[281373.839640} R13: ffffSS2o2baeOOOO Rl4: 0000000000000001 R15:
+ffffc9oo2e2399dc .
+.[281373.858103} FS: 0000000000000000(0000) GS:ffffSSlo7fd2ooOO(0000)
+knlGS:0000000000000OOO .
+.[281373.876583} CS: 0010 OS: 0000 ES: 0000 CRO: 0000000080050033 .
+.[281373.894913} CR2: OOOO7f9bcf6d5flO CR3: 0000000OO16OCOOO CR4:
+ooooooooool4o7eo .
+.[281373.913513} StaCk: .
+.[281373.931462} ffff88Offb9cO3f8 OOOOOOO25be8OOOO ffffSSlo2dldlcOO
+ffffSSlo2dldlcOO .
+.[281373.949820} ffff88Offb9cO3f8 0000000000000029 0000000000000001
+ffffSS2o2ca97dcS .
+.[281373.968013} ffffSS2O2ca97dlS ffffffffaOlSS72a ffffSS2o2deccO9O
+OOOOO0000OOOOOOO .
+.[281373.986104} Call Trace: .
+.[281374.003937} [<ffffffffaOlSS72a>} btree_gc_mark_node+O 4c!O 16d [bcache} .
+.[281374.022020} [<ffffffff811e8f13>} call_rwsem_down_write_failed+O 13!0 20 .
+.[281374.039955} [<ffffffffaol8ao5e>} bch_btree_gc+O 187/0 387 [bcache} .
+.[281374.057762} [<ffffffff81070064>} idle_balance+ox12b!ox166 .
+.[281374.075458} [<ffffffff81066b48>} mmdrop+Oxd!Oxlc .
+.[281374.092871} [<ffffffffaolSa2ab>} bch_gc_thread+O 2d!O ES [bcache} .
+.[281374.110258} [<ffffffffaolSa27e>} bch_btree_gc+O 3a7!Ox3a7 [bcache} .
+.[281374.127438} [<ffffffffaolSa27e>} bch_btree_gc+O 3a7!Ox3a7 [bcache} .
+.[281374.144299} [<ffffffff8lO5f7aa>} kthread+Ox99/Oxal .
+.[281374.160937} [<ffffffff8105f711>} __kthread_parkme+O 59/0 59 .
+.[281374.177390} [<ffffffff813b588c>} ret_from_fork+Ox7c/OxbO .
+.[281374.193553} [<ffffffff8105f711>} __kthread_parkme+O 59/0 59 .
+.[281374.209619} Code: 00 01 cl bS ff 3f 00 00 81 f9 ff 3f 00 00 Of 46
+cl 66 81 e2 03 80 25 ff if 00 00 CI eO 02 09 dO 66 a9 fC 7.
+.f 66 41 89 47 oa 75 02 <Of> Ob ff CS eb 05 31 ed 45 31 e4 48 Sb 03 89
+ea 48 cl ea 3c 83 .
+.[281374.242894} RIP [<ffffffffaOlSS4le>} __bch_btree_mark_kc +O 171!0
+las [bcache} .
+.[281374.259593} RSP <ffffSS2o2ca97cbS> .
+.[281374.339219} -[ end trace Of023c3ec916751b }- .
