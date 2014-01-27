@@ -1,96 +1,179 @@
-From: Ross Anderson <rosander@dsotm.net>
-Subject: Kernel Panic 3.13
-Date: Mon, 27 Jan 2014 06:50:29 -0600
-Message-ID: <52E65615.4050308@dsotm.net>
+From: Patrick Zwahlen <paz@navixia.com>
+Subject: RE: bcache using in case of 5 hdd disks
+Date: Mon, 27 Jan 2014 20:38:33 +0000
+Message-ID: <c25cf68c80584a4a80e6adf3395738b9@navex1.navixia.local>
+References: <CACaajQvHG=Y-ZywBYi6sNbxEDb1wXOWYLsLJGyNLSL84PYHgxQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
+	micalg=SHA1; boundary="----=_NextPart_000_0004_01CF1BA8.205B8C40"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtprelay0014.b.hostedemail.com ([64.98.42.14]:46741 "EHLO
-	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751431AbaA0M7k (ORCPT
+Received: from 62-2-213-50.static.cablecom.ch ([62.2.213.50]:13650 "EHLO
+	navfw1a.navixia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875AbaA0UjE (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 27 Jan 2014 07:59:40 -0500
-Received: from smtprelay.b.hostedemail.com (10.5.19.251.rfc1918.com [10.5.19.251])
-	by smtpgrave02.b.hostedemail.com (Postfix) with ESMTP id B62B113E8DA
-	for <linux-bcache@vger.kernel.org>; Mon, 27 Jan 2014 12:49:25 +0000 (UTC)
-Received: from filter.hostedemail.com (b-bigip1 [10.5.19.254])
-	by smtprelay01.b.hostedemail.com (Postfix) with ESMTP id D352F2D2B5E
-	for <linux-bcache@vger.kernel.org>; Mon, 27 Jan 2014 12:49:14 +0000 (UTC)
-Received: from [192.168.2.200] (c-24-118-251-104.hsd1.mn.comcast.net [24.118.251.104])
-	(Authenticated sender: rosander@dsotm.net)
-	by omf07.b.hostedemail.com (Postfix) with ESMTPA
-	for <linux-bcache@vger.kernel.org>; Mon, 27 Jan 2014 12:49:14 +0000 (UTC)
+	Mon, 27 Jan 2014 15:39:04 -0500
+Received: from navex1.navixia.local (navex1.navixia.local [172.29.96.60])
+	by navfw1a.navixia.com (8.14.5/8.14.5) with ESMTP id s0RKcv96013032
+	(version=TLSv1/SSLv3 cipher=RC4-SHA bits=128 verify=FAIL)
+	for <linux-bcache@vger.kernel.org>; Mon, 27 Jan 2014 21:38:57 +0100
+In-Reply-To: <CACaajQvHG=Y-ZywBYi6sNbxEDb1wXOWYLsLJGyNLSL84PYHgxQ@mail.gmail.com>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Greetings,
+------=_NextPart_000_0004_01CF1BA8.205B8C40
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: 7bit
 
-The following kernel panic occured on a new 3.13 kernel version running 
-SCST on top of bcache.
-Gcc  x86_64-pc-linux-gnu-4.7.3
+Hi!
 
-The system has been running version 3.11.6 and 3.12.2 for sometime 
-without errors.
+> -----Original Message-----
+> From: linux-bcache-owner@vger.kernel.org [mailto:linux-bcache-
+> owner@vger.kernel.org] On Behalf Of Vasiliy Tolstov
+> Sent: jeudi 23 janvier 2014 20:26
+> To: linux-bcache@vger.kernel.org
+> Subject: bcache using in case of 5 hdd disks
+>
+> Hi all.
+> I'm very happy with bcache on current production system (raid1 with 1
+> sata hdd + 1 ssd). But now i get new platform with 5 sata hdd and 1
+> ssd disk.
+> Each of sata hdd i need to format with some fs (ext4 or btrfs?) to
+> store data. How can i use bcache in this case? I'm unerstand that i
+> can create5 partitions on ssd drive and use each partition to each
+> drive. But does it possible to use whole ssd disk to cache in this
+> case?
+
+My understanding is that a single "cacheset" (in your case, your SSD) can be 
+shared between multiple backing devices.
+
+You should be able to attach a single cacheset's UUID to multiple devices.
+
+Can anyone else confirm ?
+
+>
+> Thanks!
+>
+> --
+> Vasiliy Tolstov,
+> e-mail: v.tolstov@selfip.ru
+> jabber: vase@selfip.ru
+> --
 
 
-[365057.392767] ------------[ cut here ]------------
-[365057.392855] kernel BUG at drivers/md/bcache/btree.c:1168!
-[365057.392943] invalid opcode: 0000 [#1] SMP
-[365057.393018] Modules linked in: zfs(PO) zunicode(PO) zavl(PO) 
-zcommon(PO) znvpair(PO) spl(O) qla2x00tgt(O) w83792d w83627hf hwmon_vid 
-qla2xxx iscsi_scst(O) scst_vdisk(O) scst(O) ipv6 p4_clockmod 
-speedstep_lib e1000e ptp e100 mii pps_core coretemp snd_ca0106 
-snd_ac97_codec ac97_bus snd_rawmidi arcmsr(O) [last unloaded: zfs]
-[365057.393797] CPU: 4 PID: 2269 Comm: bcache_gc Tainted: P           O 
-3.13.0 #1
-[365057.393900] Hardware name: Supermicro X7DVL/X7DVL, BIOS 2.1a 12/20/2008
-[365057.394000] task: ffff88041cc38050 ti: ffff880418d62000 task.ti: 
-ffff880418d62000
-[365057.394115] RIP: 0010:[<ffffffff8166c083>] [<ffffffff8166c083>] 
-__bch_btree_mark_key+0x263/0x2a0
-[365057.394271] RSP: 0018:ffff880418d63ca8  EFLAGS: 00010246
-[365057.394354] RAX: 0000000000000002 RBX: 0000000000000000 RCX: 
-0000000000001e00
-[365057.394456] RDX: 0000000000000002 RSI: 0000000000000001 RDI: 
-0000000000000000
-[365057.394559] RBP: ffff880419700578 R08: ffffc90002f75b28 R09: 
-0000000000003fff
-[365057.394662] R10: 0000001000000000 R11: 0000000000000001 R12: 
-ffff8800cb1e0000
-[365057.394765] R13: 0000000000000000 R14: 000007ffffffffff R15: 
-0000000000000001
-[365057.394869] FS:  0000000000000000(0000) GS:ffff88042fd00000(0000) 
-knlGS:0000000000000000
-[365057.394991] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[365057.395074] CR2: 00007ffecbebb000 CR3: 0000000416871000 CR4: 
-00000000000007e0
-[365057.395177] Stack:
-[365057.395218]  ffff88041b567800 ffff880418d63d18 ffffffff81668880 
-ffff880419700578
-[365057.395380]  ffff880418d63d18 ffff88041b567800 ffff880418d63dd8 
-0000000000000001
-[365057.395542]  0000000000000039 0000000000000000 ffff880419700578 
-ffffffff8166c462
-[365057.395705] Call Trace:
-[365057.395750]  [<ffffffff81668880>] ? bch_cache_allocator_init+0x70/0x70
-[365057.395848]  [<ffffffff8166c462>] ? btree_gc_mark_node+0x72/0x1e0
-[365057.395947]  [<ffffffff8136c213>] ? 
-call_rwsem_down_write_failed+0x13/0x20
-[365057.396057]  [<ffffffff8166e4dd>] ? bch_btree_gc+0x1bd/0x4c0
-[365057.396137]  [<ffffffff81067fe5>] ? try_to_wake_up+0x1e5/0x280
-[365057.396226]  [<ffffffff8166e808>] ? bch_gc_thread+0x28/0xf0
-[365057.396318]  [<ffffffff8166e7e0>] ? bch_btree_gc+0x4c0/0x4c0
-[365057.396398]  [<ffffffff8105df5c>] ? kthread+0xbc/0xe0
-[365057.396473]  [<ffffffff8105dea0>] ? __kthread_parkme+0x70/0x70
-[365057.396563]  [<ffffffff8183487c>] ? ret_from_fork+0x7c/0xb0
-[365057.396655]  [<ffffffff8105dea0>] ? __kthread_parkme+0x70/0x70
-[365057.396742] Code: 89 4c 24 10 4c 89 54 24 08 e8 9a ff 00 00 4c 8b 44 
-24 18 84 c0 44 8b 4c 24 10 4c 8b 54 24 08 75 0c 41 0f b7 40 0a e9 c5 fe 
-ff ff <0f> 0b 4c 89 44 24 18 44 89 4c 24 10 4c 89 54 24 08 e8 73 bc 1b
-[365057.397528] RIP  [<ffffffff8166c083>] __bch_btree_mark_key+0x263/0x2a0
-[365057.397640]  RSP <ffff880418d63ca8>
-[365057.422535] ---[ end trace 0677b5ad54c8ddaa ]---
+------=_NextPart_000_0004_01CF1BA8.205B8C40
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
 
-thanks,
+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
+xCZU7wO94CTLVBowHQYDVR0OBBYEFImCZ33EnSZwAEu0UEh83j2uBG59MA4GA1UdDwEB/wQEAwIB
+BjAPBgNVHRMBAf8EBTADAQH/MBEGA1UdIAQKMAgwBgYEVR0gADBEBgNVHR8EPTA7MDmgN6A1hjNo
+dHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vQWRkVHJ1c3RFeHRlcm5hbENBUm9vdC5jcmwwNQYIKwYB
+BQUHAQEEKTAnMCUGCCsGAQUFBzABhhlodHRwOi8vb2NzcC51c2VydHJ1c3QuY29tMA0GCSqGSIb3
+DQEBBQUAA4IBAQABvJzjYyiw8zEBwt973WKgAZ0jMQ+cknNTUeofTPrWn8TKL2d+eDMPdBa5kYeR
+9Yom+mRwANge+QsEYlCHk4HU2vUj2zS7hVa0cDRueIM3HoUcxREVkl+HF72sav3xwtHMiV+xfPA+
+UfI183zsYJhrOivg79+zfYbrtRv1W+yifJgT1wBQudEtc94DeHThBYUxXsuauZ2UxrmUN3Vy3ET7
+Z+jw+iUeUqfaJelH4KDHPKBOsQo2+3dIn++Xivu0/uOUFKiDvFwtP9JgcWDuwnGCDOmINuPaILSj
+oGyqlku4gI51ykkH9jsUut/cBdmf2+Cy5k2geCbn5y1uf1/GHogVMIIFGjCCBAKgAwIBAgIQbRnq
+pxlPajMi5iIyeqpx3jANBgkqhkiG9w0BAQUFADCBrjELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAlVU
+MRcwFQYDVQQHEw5TYWx0IExha2UgQ2l0eTEeMBwGA1UEChMVVGhlIFVTRVJUUlVTVCBOZXR3b3Jr
+MSEwHwYDVQQLExhodHRwOi8vd3d3LnVzZXJ0cnVzdC5jb20xNjA0BgNVBAMTLVVUTi1VU0VSRmly
+c3QtQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBFbWFpbDAeFw0xMTA0MjgwMDAwMDBaFw0yMDA1
+MzAxMDQ4MzhaMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3JlYXRlciBNYW5jaGVzdGVyMRAw
+DgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGltaXRlZDE5MDcGA1UEAxMwQ09N
+T0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVtYWlsIENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkoSEW0tXmNReL4uk4UDIo1NYX2Zl8TJO958yfVXQeExVt0KU
+4PkncQfFxmmkuTLE8UAakMwnVmJ/F7Vxaa7lIBvky2NeYMqiQfZq4aP/uN8fSG1lQ4wqLitjOHff
+sReswtqCAtbUMmrUZ28gE49cNfrlVICv2HEKHTcKAlBTbJUdqRAUtJmVWRIx/wmi0kzcUtve4kAB
+W0ho3cVKtODtJB86r3FfB+OsvxQ7sCVxaD30D9YXWEYVgTxoi4uDD216IVfmNLDbMn7jSuGlUnJk
+JpFOpZIP/+CxYP0ab2hRmWONGoulzEKbm30iY9OpoPzOnpDfRBn0XFs1uhbzp5v/wQIDAQABo4IB
+SzCCAUcwHwYDVR0jBBgwFoAUiYJnfcSdJnAAS7RQSHzePa4Ebn0wHQYDVR0OBBYEFHoTTgB0W8Z4
+Y2QnwS/ioFu8ecV7MA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgEAMBEGA1UdIAQK
+MAgwBgYEVR0gADBYBgNVHR8EUTBPME2gS6BJhkdodHRwOi8vY3JsLnVzZXJ0cnVzdC5jb20vVVRO
+LVVTRVJGaXJzdC1DbGllbnRBdXRoZW50aWNhdGlvbmFuZEVtYWlsLmNybDB0BggrBgEFBQcBAQRo
+MGYwPQYIKwYBBQUHMAKGMWh0dHA6Ly9jcnQudXNlcnRydXN0LmNvbS9VVE5BZGRUcnVzdENsaWVu
+dF9DQS5jcnQwJQYIKwYBBQUHMAGGGWh0dHA6Ly9vY3NwLnVzZXJ0cnVzdC5jb20wDQYJKoZIhvcN
+AQEFBQADggEBAIXWvnhXVW0zf0RS/kLVBqgBA4CK+w2y/Uq/9q9BSfUbWsXSrRtzbj7pJnzmTJjB
+MCjfy/tCPKElPgp11tA9OYZm0aGbtU2bb68obB2v5ep0WqjascDxdXovnrqTecr+4pEeVnSy+I3T
+4ENyG+2P/WA5IEf7i686ZUg8mD2lJb+972DgSeUWyOs/Q4Pw4O4NwdPNM1+b0L1garM7/vrUyTo8
+H+2b/5tJM75CKTmD7jNpLoKdRU2oadqAGx490hpdfEeZpZsIbRKZhtZdVwcbpzC+S0lEuJB+ytF5
+OOu0M/qgOl0mWJ5hVRi0IdWZ1eBDQEIwvuql55TSsP7zdfl/bucwggUfMIIEB6ADAgECAhAX3R0Y
+7UBKukviAqwn1AAnMA0GCSqGSIb3DQEBBQUAMIGTMQswCQYDVQQGEwJHQjEbMBkGA1UECBMSR3Jl
+YXRlciBNYW5jaGVzdGVyMRAwDgYDVQQHEwdTYWxmb3JkMRowGAYDVQQKExFDT01PRE8gQ0EgTGlt
+aXRlZDE5MDcGA1UEAxMwQ09NT0RPIENsaWVudCBBdXRoZW50aWNhdGlvbiBhbmQgU2VjdXJlIEVt
+YWlsIENBMB4XDTEzMDcwMzAwMDAwMFoXDTE0MDcwMzIzNTk1OVowIDEeMBwGCSqGSIb3DQEJARYP
+cGF6QG5hdml4aWEuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0F0TmZlMK9tI
+OxjMw+RotD8HyeA/WMCh4WgkRErJKDA1clpy0rTE+e54cRsd1yYMRpzxFlPHBSu6wdwD3r1g/lNP
+ArFhvr1azGCO0Jcq14fyNfv7SA+gyg2Fu1Oym1xZBFYECimMMrp7nRSTqRehQ8q4byidSqmFLTZa
+6TwMOdKTqdIxewO/CH2bxIcrawASjQCHLmT6lOe+Ebec0bvg+W+t9nkGWQbXlXUMYcx5QAgAYy5T
+utLVen4svpbNW2TzM2U+r8JvIBrZmPOIJ9c3OBAKrDyemESY/RPtFuU2qrG0M86T0yQYtOkNLs2N
+FYnvSwOVdBpde8w8CLncCKvK6QIDAQABo4IB3zCCAdswHwYDVR0jBBgwFoAUehNOAHRbxnhjZCfB
+L+KgW7x5xXswHQYDVR0OBBYEFIyO7UASW/goTcHarjyu85CPoczeMA4GA1UdDwEB/wQEAwIFoDAM
+BgNVHRMBAf8EAjAAMCAGA1UdJQQZMBcGCCsGAQUFBwMEBgsrBgEEAbIxAQMFAjARBglghkgBhvhC
+AQEEBAMCBSAwRgYDVR0gBD8wPTA7BgwrBgEEAbIxAQIBAQEwKzApBggrBgEFBQcCARYdaHR0cHM6
+Ly9zZWN1cmUuY29tb2RvLm5ldC9DUFMwVwYDVR0fBFAwTjBMoEqgSIZGaHR0cDovL2NybC5jb21v
+ZG9jYS5jb20vQ09NT0RPQ2xpZW50QXV0aGVudGljYXRpb25hbmRTZWN1cmVFbWFpbENBLmNybDCB
+iAYIKwYBBQUHAQEEfDB6MFIGCCsGAQUFBzAChkZodHRwOi8vY3J0LmNvbW9kb2NhLmNvbS9DT01P
+RE9DbGllbnRBdXRoZW50aWNhdGlvbmFuZFNlY3VyZUVtYWlsQ0EuY3J0MCQGCCsGAQUFBzABhhho
+dHRwOi8vb2NzcC5jb21vZG9jYS5jb20wGgYDVR0RBBMwEYEPcGF6QG5hdml4aWEuY29tMA0GCSqG
+SIb3DQEBBQUAA4IBAQBtGIlrhLZOI48oRZn08jrt6JDyLeBR5Z28lc/OmOGsHYtFHZFUhcs1xaYT
+RqqMlmJQ3CfncYCwgqCsOqWsmtfQmB64vEUMECeZsnkA60dP72QqL0YcvWyh4l79mHX7F//0ftS+
+4IogwH+PDmNzJDul/VffyI67OowAJu+NErlucYj6h5vPz3eUlQ0H2Decopv8jKI5QBEsv92ALbKC
+fgFzyiLSpDY7GYy9hEy8ZOQ//0oxKuZGXJv3NAUXJd5+ZiOxx48ZqUazRVMgAFHH/jP5MxHSv90R
+uk1o3QdvZYfI8etoJ0tdVQRIbJqDXJNy7dvEfIValfObvZWIzT15az7qMYIEQTCCBD0CAQEwgagw
+gZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1Nh
+bGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50
+IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+ICrCfUACcwCQYF
+Kw4DAhoFAKCCAm0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQw
+MTI3MjAzODMyWjAjBgkqhkiG9w0BCQQxFgQUUZvEbQozZGoEgKzFeYbcmG+ToukwgZMGCSqGSIb3
+DQEJDzGBhTCBgjALBglghkgBZQMEASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFl
+AwQBAjAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAhowCwYJYIZIAWUDBAID
+MAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwgbkGCSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UE
+BhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4GA1UEBxMHU2FsZm9yZDEaMBgG
+A1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOTA3BgNVBAMTMENPTU9ETyBDbGllbnQgQXV0aGVudGlj
+YXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQF90dGO1ASrpL4gKsJ9QAJzCBuwYLKoZIhvcNAQkQ
+AgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAO
+BgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01P
+RE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+IC
+rCfUACcwDQYJKoZIhvcNAQEBBQAEggEAPZJs1mjL767/ALDbxmfo93OgUHiNhajaD73u7AGV2IxQ
+B8FYwWeO+vQiBS5vT9USJZZ2ODtFYhwA3Ci1VSrKpKb13X5E0kAFIYk7ve/Xe7iKOh+EVCleCkru
+8l29Al8dbcV1OFXgPauML68Znv9yh1PQhobOZ3bV69skwiIqTgYbXlKWqmz8XOMS9J4uPuPV8fnt
+D+/qKbIaVJLAkIhA46T0+Hx1KAze7i8P3lg/DHP1vjIE90sTgyaCdOE5qiOW6dWcilarc+Qfgjjg
+OIBYs2vILO5YzShxDT43II1koH8Yli3lYZ4Lqyga04dmZ+zejjQ/nPbkmbw4TMp8gqgcowAAAAAA
+AA==
+
+------=_NextPart_000_0004_01CF1BA8.205B8C40--
