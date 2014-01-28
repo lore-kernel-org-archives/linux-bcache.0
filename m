@@ -1,73 +1,102 @@
 From: Patrick Zwahlen <paz@navixia.com>
-Subject: Moving a backing device between 2 cachesets
-Date: Tue, 28 Jan 2014 21:59:02 +0000
-Message-ID: <338c5bf03af2422ab712a3552c981390@navex1.navixia.local>
+Subject: RE: How important is bcache cache device in write-thru mode? (was
+ Re: Tiered bcache)
+Date: Tue, 28 Jan 2014 22:21:39 +0000
+Message-ID: <8b2600931cad463fb934a5c25deeef93@navex1.navixia.local>
+References: Patrick Zwahlen <paz@navixia.com>       "RE: How important is
+ bcache cache device in write-thru mode? (was Re: Tiered bcache)" (Jan 21,
+  6:44pm) <201401281420.s0SEK0sb008045@wind.enjellic.com>
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/x-pkcs7-signature";
-	micalg=SHA1; boundary="----=_NextPart_000_0018_01CF1C7C.88466170"
+	micalg=SHA1; boundary="----=_NextPart_000_0069_01CF1C7F.B12DD930"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 62-2-213-50.static.cablecom.ch ([62.2.213.50]:16023 "EHLO
+Received: from 62-2-213-50.static.cablecom.ch ([62.2.213.50]:16112 "EHLO
 	navfw1a.navixia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923AbaA1V7j (ORCPT
+	with ESMTP id S1754923AbaA1WV6 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 28 Jan 2014 16:59:39 -0500
+	Tue, 28 Jan 2014 17:21:58 -0500
 Received: from navex1.navixia.local (navex1.navixia.local [172.29.96.60])
-	by navfw1a.navixia.com (8.14.5/8.14.5) with ESMTP id s0SLxZUH023993
+	by navfw1a.navixia.com (8.14.5/8.14.5) with ESMTP id s0SMLrPR008781
 	(version=TLSv1/SSLv3 cipher=RC4-SHA bits=128 verify=FAIL)
-	for <linux-bcache@vger.kernel.org>; Tue, 28 Jan 2014 22:59:35 +0100
+	for <linux-bcache@vger.kernel.org>; Tue, 28 Jan 2014 23:21:54 +0100
+In-Reply-To: <201401281420.s0SEK0sb008045@wind.enjellic.com>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-------=_NextPart_000_0018_01CF1C7C.88466170
+------=_NextPart_000_0069_01CF1C7F.B12DD930
 Content-Type: text/plain;
 	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
 
-Hi,
+> -----Original Message-----
+> From: Dr. Greg Wettstein [mailto:greg@wind.enjellic.com]
+> Sent: mardi 28 janvier 2014 15:20
+> To: Patrick Zwahlen; linux-bcache@vger.kernel.org
+> Cc: scst-devel@lists.sourceforge.net
+> Subject: RE: How important is bcache cache device in write-thru mode?
+> (was Re: Tiered bcache)
+> 
+> Interestingly enough we have been working on infrastructure to support
+> this type of model for some time.  Our primary focus is on
+> accelerating SCST based storage targets and software defined storage
+> (SDS) devices.
+> 
+> At one point in time we had entertained discussions with the SCST
+> developers to pay for an implementation of RAM based block device
+> cacheing in SCST itself, for a variety of reasons that didn't move
+> forward.  We recognized early on that Kent's work with bcache was
+> going to make that strategy irrelevant.
+> 
+> SCST using FILEIO is blindingly fast but I don't know of any serious
+> storage architects that are going to trust 50-60 gigabytes of a
+> database or filesystem to the Linux pagecache and associated vagaries
+> of VM writeback behavior.  So the architectural question becomes how
+> to take advantage of the fact that it is now tractable to provision
+> commodity based storage targets with a quarter terrabyte of RAM and
+> how to take advantage of this in a manner which protects data and
+> provides deterministic performance characteristics.
+> 
+> So Izzy (our golden retriever) and I spent a lot of time down at our
+> lake place over the holidays cross-country skiing and working on a
+> hugepage backed block device driver.  We are in the process of putting
+> the beta through various beatings and addressing some issues with the
+> device model implementation.  We are hoping to have something to
+> release in the next week or so before we leave for Colorado and some
+> downhill skiing.
+> 
+> The goal for this driver is a block based interface to RAM for use as
+> a cache set for bcache.  Since it sits directly on the physical
+> hugepage allocator and associated page magazine the block devices can
+> be dynamically configured, unlike the current RAM based block device,
+> which also has the disadvantage of being implemented on top of page
+> cache.  None of this should be construed as a gripe against the Linux
+> VM but obviously one does not want memory pressure to start driving a
+> high speed cache store out onto disk.
 
-We're working on a 2-nodes pacemaker cluster that provides iSCSI LUNs via
-SCST. The LUNs are either software RAID arrays located in a shared JBOD, or
-DRBD ressources (active/passive).
+Our initial idea with btier and bcache was to use both SSD and DRAM. I
+understand that you focus on DRAM only.
 
-We are adding bcache to the game with local SSDs (ie not shared, but
-dedicated to each cluster node).
+However, I also understand that at some point we might be able to mix
+several cachesets so we can dream of a kind of tiered cache implemented
+entirely within bcache.
 
-We are using write-through.
+> 
+> This model is obviously dependent on solid behavior of bcache in
+> write-through mode.  We are testing aggressively against 3.10.x and
+> haven't tipped it over it but we will turn up the pressure on that and
+> see if it gives.  I'm pretty confident there is enough community and
+> commercial interest in all this to get the bugs beaten out pretty
+> thoroughly, provided people report them back.... :-)
+> 
+> We will copy both the bcache and SCST lists when we have something up
+> on the FTP site as it would seem to be of interest to both
+> communities.
 
-I need to evaluate the risk when moving a backing device (md) from cacheset1
-(on node #1) to cacheset2 (on node #2) and then back to cacheset #1.
+Regards, - Patrick -
 
-Scenario
-- md attached to cacheset1 and working (on node 1)
-- md detached from cacheset1
-- md stopped on node 1
-- md started on node 2
-- md attached to cacheset2 on node 2
-
-At this point, cacheset1 is attached to nothing, but still has valid blocks
-"linked" to the backing md device
-
-- md detached from cacheset2
-- md stopped on node 2
-- md started on node 1
-- md RE-attached to cacheset1 on node 1
-
-At this point, I need to make sure that bcache will not serve "old" blocks
-that were linked to the backing device.
-
-My understanding is that as we have attached the backing device to a new
-cacheset (#2) in-between, this will be "recorded" in the bcache headers and
-all the blocks that used to be valid in the first place won't be served.
-
-Can you please validate if this is safe or if we need to take special care
-about invalidating the original cacheset ?
-
-Thanks a lot, - Patrick -
-
-
-------=_NextPart_000_0018_01CF1C7C.88466170
+------=_NextPart_000_0069_01CF1C7F.B12DD930
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="smime.p7s"
@@ -163,7 +192,7 @@ gZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAOBgNVBAcTB1Nh
 bGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01PRE8gQ2xpZW50
 IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+ICrCfUACcwCQYF
 Kw4DAhoFAKCCAm0wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTQw
-MTI4MjE1OTAwWjAjBgkqhkiG9w0BCQQxFgQUMpfoI9dxGkuGrdLPfSUSVaT2XuAwgZMGCSqGSIb3
+MTI4MjIyMTM3WjAjBgkqhkiG9w0BCQQxFgQULnimgCGhDkkl3IhSO03roV4W5ccwgZMGCSqGSIb3
 DQEJDzGBhTCBgjALBglghkgBZQMEASowCwYJYIZIAWUDBAEWMAoGCCqGSIb3DQMHMAsGCWCGSAFl
 AwQBAjAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAhowCwYJYIZIAWUDBAID
 MAsGCWCGSAFlAwQCAjALBglghkgBZQMEAgEwgbkGCSsGAQQBgjcQBDGBqzCBqDCBkzELMAkGA1UE
@@ -173,11 +202,11 @@ YXRpb24gYW5kIFNlY3VyZSBFbWFpbCBDQQIQF90dGO1ASrpL4gKsJ9QAJzCBuwYLKoZIhvcNAQkQ
 AgsxgauggagwgZMxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAO
 BgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTkwNwYDVQQDEzBDT01P
 RE8gQ2xpZW50IEF1dGhlbnRpY2F0aW9uIGFuZCBTZWN1cmUgRW1haWwgQ0ECEBfdHRjtQEq6S+IC
-rCfUACcwDQYJKoZIhvcNAQEBBQAEggEAuIAbmhMc3O0DdUM75nkxr+2oCflOggCtzIJqP2I21trN
-jJOGnj21DjlgW2xo8NaacPfztrDGsmq0SrlbI4n6OIkc5uRFCqgcyHRRagwR4UZOboe2LJVhnnd5
-EUPI67lIikrfqal0ELoVAlCBCjwJhsw92sVhWMS4zEPlyxbcNR83O9k74Qr8GBRvkYX4AD1cE7sE
-tkNldWPZQWa/U7kuFO901mU3r32PeFWWQa+yQRBDc4k7AGbPRI8tMuLYH9Dbeh6vIsC+jT1LGEo3
-/COEHImdTJ7+h3fJ9CiqBNsZjDq81elFUxI4VhoyeOzAdUHHDo4WffO6f3UHMAP0t0HRjAAAAAAA
+rCfUACcwDQYJKoZIhvcNAQEBBQAEggEAPBFJYSChuyahVcBwrm3JsXvKUPz3IVJoqAGMGO23VY97
+Kjh5hlgptvTuJpwOV/YW0sXeD+UkwsDL+AlMe1xoXgywElYrFnu+IC4UnBTOPAbft3yoaRHMOOFe
+KsGvRHEPjOj060Fx8pqr/J6ZNkzlA8HGMf2aZfmofGW+kX16L8ftAJnwEthoeY0cXzFQXgRq6GSm
+m3dxqHiCXeveJZmyuY8J/LmkUMka9eWwYwuS8emk7ODcQ/UsOuZNJOe7WSh+xJiuNB13ctgfj4Vm
+jf9+3E0Hn6JeUGwa6UQmZX7iY1TYjKrsKkuEwChj1jRGUD2QF07QegJA9f0k2oXx7wi5QwAAAAAA
 AA==
 
-------=_NextPart_000_0018_01CF1C7C.88466170--
+------=_NextPart_000_0069_01CF1C7F.B12DD930--
