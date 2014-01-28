@@ -1,39 +1,49 @@
-From: matthew patton <pattonme@yahoo.com>
-Subject: Re: Moving a backing device between 2 cachesets
-Date: Tue, 28 Jan 2014 14:35:48 -0800 (PST)
-Message-ID: <1390948548.72639.YahooMailNeo@web181502.mail.ne1.yahoo.com>
-References: <338c5bf03af2422ab712a3552c981390@navex1.navixia.local>
-Reply-To: matthew patton <pattonme@yahoo.com>
+From: Dan Williams <dan.j.williams@intel.com>
+Subject: [LSF/MM TOPIC][ATTEND] Plumbing I/O Cache / Tiered Storage Hints
+Date: Tue, 28 Jan 2014 14:57:01 -0800
+Message-ID: <CAPcyv4hLT8GfueboyOwi5Rf+A++RmJU3LrmV4ZePTbSzfZf0rw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from nm5-vm7.access.bullet.mail.bf1.yahoo.com ([216.109.114.134]:38479
-	"EHLO nm5-vm7.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755483AbaA1Wmo (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 28 Jan 2014 17:42:44 -0500
-In-Reply-To: <338c5bf03af2422ab712a3552c981390@navex1.navixia.local>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Return-path: <linux-scsi-owner@vger.kernel.org>
+Sender: linux-scsi-owner@vger.kernel.org
+To: lsf-pc@lists.linux-foundation.org
+Cc: dm-devel@redhat.com, linux-bcache@vger.kernel.org, IDE/ATA development list <linux-ide@vger.kernel.org>, linux-scsi <linux-scsi@vger.kernel.org>, Jason B Akers <jason.b.akers@intel.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Patrick Zwahlen <paz@navixia.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
+In addition to disk drives with internally tiered-storage (solid-state
++ magnetic media) the kernel has also grown native I/O-caching /
+tiered-storage implementations in bcache and dm-cache.
 
+Currently, all these solutions depend on heuristics to determine what
+tier the data referenced in an I/O belongs.  However, the presence of
+hinting proposals from SCSI [1], ATA [2], and bcache [3] indicate that
+these devices (hardware or virtual) want to consume explicit hints
+indicating the value of caching data in a higher performing tier.
 
->Scenario
->- md attached to cacheset1 and working (on node 1)
->- md detached from cacheset1
+At LSF I want to discuss options and opportunities for plumbing cache
+hints from userspace, through the I/O stack to devices.  My colleague,
+Jason Akers, is also interested in this discussion as he is
+investigating how to exploit these hints from userspace.  I
+participated in the LSF 2012 discussion of this topic, see that it was
+raised again at LSF 2013, and note that we have not settled on an
+enabling path.  What's new for this year is an effort to set aside,
+for now, the deeper complexities of the device specification proposals
+and focus on a minimal set of hints that can be specified per-process
+(ionice) and maybe per-file (fadvise).
 
-You can't just detach, you must flush everything out of cacheset1 and destroy/revoke/disassemble the relationship between the cache and MD. 'destroy-bcache(8) or make-bcache -D' if you will. Not that such a tool exists AFAIK.
+My suspicion is that AIO attributes is useful for applications that
+want access to the full range of access hints exposed by a device.
+However, for the general buffered-I/O / tiered-storage case, a small
+set of hints achieves the bulk of the value.
 
->- md stopped on node 1
->- md started on node 2
->- md attached to cacheset2 on node 2
+I am also interested in:
+Volatile ranges
+SMR Enabling
+Integrity passthrough
 
-No, you don't attache it, you have to create a new relationship; ala 'make-bcache -C ...'
+--
+Dan
 
->At this point, cacheset1 is attached to nothing, but still has valid blocks
->"linked" to the backing md device
-
-If you do, your data is hopelessly gone.
-
-The only way you can bounce a bcache device from one node to the other is the ENTIRE stack moves back and forth. So the SSDs have to be in the shared JBOD. And you can skip all the malarky of attach/detach. You can write udev-rules to mask/ignore certain devices so that each node only knows about it's own devices and when it's time to cross-mount the peer's, you register them with the receiving system, do the 'probe-bcache' and resume operations. That's assuming the writes the client sent to the original node really got committed (write-thru not withstanding).
+[1] T10 LBA Access Hints
+[2] T13 Hybrid Information Feature
+[3] AIO Attributes: http://marc.info/?l=linux-aio&m=136580574523674&w=2
