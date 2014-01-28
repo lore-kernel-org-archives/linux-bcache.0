@@ -1,58 +1,73 @@
-From: matthew patton <pattonme@yahoo.com>
-Subject: Re: [Scst-devel] How important is bcache cache device in write-thru mode? (was Re: Tiered bcache)
-Date: Tue, 28 Jan 2014 07:45:31 -0800 (PST)
-Message-ID: <1390923931.67583.YahooMailNeo@web181502.mail.ne1.yahoo.com>
-References: Patrick Zwahlen <paz@navixia.com> "RE: How important is bcache cache device in write-thru mode? (was Re: Tiered bcache)" (Jan 21, 6:44pm) <201401281420.s0SEK0sb008045@wind.enjellic.com>
-Reply-To: matthew patton <pattonme@yahoo.com>
+From: <jason@warr.net>
+Subject: Re: How important is bcache cache device in write-thru mode? (was
+ Tiered bcache)
+Date: Tue, 28 Jan 2014 18:06:50 +0000 (UTC)
+Message-ID: <213734143.48979.1390932410356.JavaMail.mail@webmail05>
+References: <201401281420.s0SEK0sb008045@wind.enjellic.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from nm14.access.bullet.mail.gq1.yahoo.com ([216.39.62.45]:26811
-	"EHLO nm14.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755118AbaA1Pv2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 28 Jan 2014 10:51:28 -0500
-In-Reply-To: <201401281420.s0SEK0sb008045@wind.enjellic.com>
+Received: from smtprelay0095.hostedemail.com ([216.40.44.95]:43529 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754599AbaA1SG6 (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 28 Jan 2014 13:06:58 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Cc: "scst-devel@lists.sourceforge.net" <scst-devel@lists.sourceforge.net>
-
-<quote>
-SCST using FILEIO is blindingly fast but I don't know of any serious
-storage architects that are going to trust 50-60 gigabytes of a
-database or filesystem to the Linux pagecache and associated vagaries
-of VM writeback behavior.
-</quote>
-
-Maybe it's not much and with memory footprints that big, my solution is=
- too small. But why not write the EXT3/4 journal to a NVRAM board? The =
-512MB ones are pretty darn cheap on EBAY. I've got a fistful myself. If=
- you journal meta+data at least you have recovery points. Otherwise a R=
-AID set of high-quality SSD could be a reliable journal, no?
-
-Linux VFS has lots of tunables, and I think you'd be able to find a hap=
-py medium between absorbing sudden, big writes, and reliably de-staging=
- to disk. I wish EXT4/XFS et. al. had the ability to do round-robbin jo=
-urnaling ala Oracle LogWriter so that once the first chunk of ~256MB wa=
-s written to the journal everything didn't come to a screeching stop un=
-til the corresponding bits got written out to 'permanent' storage. But =
-I guess at that point maybe the answer is to use ZFS?
-
->=A0block based interface to RAM
-
-I could have sworn there already was such a driver...Yeah 'brd'. Did th=
-at not fit the intended use?
-http://www.cs.fsu.edu/~baker/devices/lxr/http/source/linux/drivers/bloc=
-k/brd.c
-
-and another exercise
-http://www.linuxforu.com/2012/02/device-drivers-disk-on-ram-block-drive=
-rs/
+To: greg@enjellic.com
+Cc: paz@navixia.com, linux-bcache@vger.kernel.org, scst-devel@lists.sourceforge.net
 
 
-though this one is probably more interesting yet
-http://rapiddisk.org/index.php?title=3DChangelog
+on Jan 28, 2014, Dr. Greg Wettstein <greg@wind.enjellic.com> wrote:
+>
+>The goal for this driver is a block based interface to RAM for use as
+>a cache set for bcache. Since it sits directly on the physical
+>hugepage allocator and associated page magazine the block devices can
+>be dynamically configured, unlike the current RAM based block device,
+>which also has the disadvantage of being implemented on top of page
+>cache. None of this should be construed as a gripe against the Linux
+>VM but obviously one does not want memory pressure to start driving a
+>high speed cache store out onto disk.
 
-http://rapiddisk.org/index.php?title=3DRapidCache
+Thank you.  In my opinion a dynamic ram disk is one of the few pieces still needed in the block device layer.  I would be happy to help beat the crap out of it!
+ 
+Any thoughts on this driver making use of the DM or MD framework?  Obviously your not going to have data persist across a reboot but do you know how you will handle boot time configuration on a device(s) that you want to come back without manual or scripted intervention?
+
+>
+>This model is obviously dependent on solid behavior of bcache in
+>write-through mode. We are testing aggressively against 3.10.x and
+>haven't tipped it over it but we will turn up the pressure on that and
+>see if it gives. I'm pretty confident there is enough community and
+>commercial interest in all this to get the bugs beaten out pretty
+>thoroughly, provided people report them back.... :-)
+>
+>We will copy both the bcache and SCST lists when we have something up
+>on the FTP site as it would seem to be of interest to both
+>communities.
+>
+>> - Patrick -
+>
+>Have a good week.
+>
+>Greg
+>
+>}-- End of excerpt from Patrick Zwahlen
+>
+>As always,
+>Greg Wettstein, Ph.D. Enjellic Systems Development, LLC.
+>4206 N. 19th Ave. Specializing in information infra-structure
+>Fargo, ND 58102 development.
+>PH: 701-281-1686
+>FAX: 701-281-3949 EMAIL: greg@enjellic.com
+>------------------------------------------------------------------------------
+>"Heaven goes by favor. If it went by merit, you would stay out and your
+> dog would go in."
+> -- Mark Twain
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at http://vger.kernel.org/majordomo-info.html
+>
+>
+ 
