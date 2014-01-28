@@ -1,132 +1,58 @@
-From: "Dr. Greg Wettstein" <greg@wind.enjellic.com>
-Subject: RE: How important is bcache cache device in write-thru mode? (was Re: Tiered bcache)
-Date: Tue, 28 Jan 2014 08:20:00 -0600
-Message-ID: <201401281420.s0SEK0sb008045@wind.enjellic.com>
-References: <paz@navixia.com>
-Reply-To: greg@enjellic.com
+From: matthew patton <pattonme@yahoo.com>
+Subject: Re: [Scst-devel] How important is bcache cache device in write-thru mode? (was Re: Tiered bcache)
+Date: Tue, 28 Jan 2014 07:45:31 -0800 (PST)
+Message-ID: <1390923931.67583.YahooMailNeo@web181502.mail.ne1.yahoo.com>
+References: Patrick Zwahlen <paz@navixia.com> "RE: How important is bcache cache device in write-thru mode? (was Re: Tiered bcache)" (Jan 21, 6:44pm) <201401281420.s0SEK0sb008045@wind.enjellic.com>
+Reply-To: matthew patton <pattonme@yahoo.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from wind.enjellic.com ([76.10.64.91]:42009 "EHLO wind.enjellic.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754635AbaA1Osc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 28 Jan 2014 09:48:32 -0500
-In-Reply-To: Patrick Zwahlen <paz@navixia.com>
-       "RE: How important is bcache cache device in write-thru mode? (was Re: Tiered bcache)" (Jan 21,  6:44pm)
+Received: from nm14.access.bullet.mail.gq1.yahoo.com ([216.39.62.45]:26811
+	"EHLO nm14.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755118AbaA1Pv2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 28 Jan 2014 10:51:28 -0500
+In-Reply-To: <201401281420.s0SEK0sb008045@wind.enjellic.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Patrick Zwahlen <paz@navixia.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Cc: scst-devel@lists.sourceforge.net
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Cc: "scst-devel@lists.sourceforge.net" <scst-devel@lists.sourceforge.net>
 
-On Jan 21,  6:44pm, Patrick Zwahlen wrote:
-} Subject: RE: How important is bcache cache device in write-thru mode? (was
-
-Hi, hope the week is going well for everyone.
-
-> > -----Original Message-----
-> > From: linux-bcache-owner@vger.kernel.org [mailto:linux-bcache-
-> > owner@vger.kernel.org] On Behalf Of matthew patton
-> > Sent: mardi 21 janvier 2014 18:35
-> > To: linux-bcache@vger.kernel.org
-> > Cc: Patrick Zwahlen
-> > Subject: How important is bcache cache device in write-thru mode? (was
-> > Re: Tiered bcache)
-> > 
-> > >>  wait, the cache DEVICE for bcache is a Btier device composed of an
-> > SSD
-> > >>  and RAM? So in effect you want btier to move the really hot blocks
-> > >>  within the bcache cache device into RAM? So effectively bcache
-> > metadata
-> > >>  and any really hot blocks will live in RAM and the rest of the
-> > > 'read'
-> > >>  cache will sit on the SSD.
-> > >
-> > > Exactly! Apologies if that wasn't clear in the first place but that
-> > > describes 100% what we're currently testing.
-
-> > you REALLY want to check with Kent as to what happens when the bcache
-> > caching device (and any meta-data it stores there) routinely get blown
-> > away or run a high risk of experiencing sudden destruction. I'm afraid
-> > this is not a test case that has undergone enough scrutiny.
-
-> Thanks Matthew for raising this in this list.
->
-> I should add that we have two SAN servers sharing the
-> JBOD. Clustering is managed by pacemaker. During normal operations,
-> we can migrate a whole RAID from one node to the other and we do a
-> proper cache detach on node #1 (that would even write dirty data if
-> were doing write-back) and re-attach the RAID to the existing cache
-> on the node #2. Beauty here is we can "share" a cache set between
-> multiple backend devices.
->
-> We made the assumption that as bcache is designed for potentially
-> failing SSDs, moving to a potentially failing SSD+RAM shouldn't make
-> a difference.
->
-> I'm definitely not expert enough to assess the risk any further and
-> I rely on you guys.
-
-Interestingly enough we have been working on infrastructure to support
-this type of model for some time.  Our primary focus is on
-accelerating SCST based storage targets and software defined storage
-(SDS) devices.
-
-At one point in time we had entertained discussions with the SCST
-developers to pay for an implementation of RAM based block device
-cacheing in SCST itself, for a variety of reasons that didn't move
-forward.  We recognized early on that Kent's work with bcache was
-going to make that strategy irrelevant.
-
+<quote>
 SCST using FILEIO is blindingly fast but I don't know of any serious
 storage architects that are going to trust 50-60 gigabytes of a
 database or filesystem to the Linux pagecache and associated vagaries
-of VM writeback behavior.  So the architectural question becomes how
-to take advantage of the fact that it is now tractable to provision
-commodity based storage targets with a quarter terrabyte of RAM and
-how to take advantage of this in a manner which protects data and
-provides deterministic performance characteristics.
+of VM writeback behavior.
+</quote>
 
-So Izzy (our golden retriever) and I spent a lot of time down at our
-lake place over the holidays cross-country skiing and working on a
-hugepage backed block device driver.  We are in the process of putting
-the beta through various beatings and addressing some issues with the
-device model implementation.  We are hoping to have something to
-release in the next week or so before we leave for Colorado and some
-downhill skiing.
+Maybe it's not much and with memory footprints that big, my solution is=
+ too small. But why not write the EXT3/4 journal to a NVRAM board? The =
+512MB ones are pretty darn cheap on EBAY. I've got a fistful myself. If=
+ you journal meta+data at least you have recovery points. Otherwise a R=
+AID set of high-quality SSD could be a reliable journal, no?
 
-The goal for this driver is a block based interface to RAM for use as
-a cache set for bcache.  Since it sits directly on the physical
-hugepage allocator and associated page magazine the block devices can
-be dynamically configured, unlike the current RAM based block device,
-which also has the disadvantage of being implemented on top of page
-cache.  None of this should be construed as a gripe against the Linux
-VM but obviously one does not want memory pressure to start driving a
-high speed cache store out onto disk.
+Linux VFS has lots of tunables, and I think you'd be able to find a hap=
+py medium between absorbing sudden, big writes, and reliably de-staging=
+ to disk. I wish EXT4/XFS et. al. had the ability to do round-robbin jo=
+urnaling ala Oracle LogWriter so that once the first chunk of ~256MB wa=
+s written to the journal everything didn't come to a screeching stop un=
+til the corresponding bits got written out to 'permanent' storage. But =
+I guess at that point maybe the answer is to use ZFS?
 
-This model is obviously dependent on solid behavior of bcache in
-write-through mode.  We are testing aggressively against 3.10.x and
-haven't tipped it over it but we will turn up the pressure on that and
-see if it gives.  I'm pretty confident there is enough community and
-commercial interest in all this to get the bugs beaten out pretty
-thoroughly, provided people report them back.... :-)
+>=A0block based interface to RAM
 
-We will copy both the bcache and SCST lists when we have something up
-on the FTP site as it would seem to be of interest to both
-communities.
+I could have sworn there already was such a driver...Yeah 'brd'. Did th=
+at not fit the intended use?
+http://www.cs.fsu.edu/~baker/devices/lxr/http/source/linux/drivers/bloc=
+k/brd.c
 
-> - Patrick -
+and another exercise
+http://www.linuxforu.com/2012/02/device-drivers-disk-on-ram-block-drive=
+rs/
 
-Have a good week.
 
-Greg
+though this one is probably more interesting yet
+http://rapiddisk.org/index.php?title=3DChangelog
 
-}-- End of excerpt from Patrick Zwahlen
-
-As always,
-Greg Wettstein, Ph.D.       Enjellic Systems Development, LLC.
-4206 N. 19th Ave.           Specializing in information infra-structure
-Fargo, ND  58102            development.
-PH: 701-281-1686
-FAX: 701-281-3949           EMAIL: greg@enjellic.com
-------------------------------------------------------------------------------
-"Heaven goes by favor.  If it went by merit, you would stay out and your
- dog would go in."
-                                -- Mark Twain
+http://rapiddisk.org/index.php?title=3DRapidCache
