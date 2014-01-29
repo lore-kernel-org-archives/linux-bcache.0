@@ -1,39 +1,51 @@
-From: matthew patton <pattonme@yahoo.com>
-Subject: Re: Moving a backing device between 2 cachesets
-Date: Wed, 29 Jan 2014 10:42:36 -0800 (PST)
-Message-ID: <1391020956.64142.YahooMailNeo@web181506.mail.ne1.yahoo.com>
-References: <338c5bf03af2422ab712a3552c981390@navex1.navixia.local> <lcalu5$iek$1@ger.gmane.org> <56b62eb646f94bbe868ae6b2f26d94e8@navex1.navixia.local> <1391017855.88192.YahooMailNeo@web181502.mail.ne1.yahoo.com> <561910454003456ea6d49ac8b93af44c@navex1.navixia.local>
-Reply-To: matthew patton <pattonme@yahoo.com>
+From: Kent Overstreet <kmo@daterainc.com>
+Subject: [GIT PULL] bcache fixes for 3.14
+Date: Wed, 29 Jan 2014 13:15:09 -0800
+Message-ID: <20140129211509.GA2362@kmo>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from nm1-vm4.access.bullet.mail.bf1.yahoo.com ([216.109.114.75]:43155
-	"EHLO nm1-vm4.access.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751116AbaA2Smh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 29 Jan 2014 13:42:37 -0500
-In-Reply-To: <561910454003456ea6d49ac8b93af44c@navex1.navixia.local>
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60966 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaA2VPM (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 29 Jan 2014 16:15:12 -0500
+Received: by mail-pa0-f43.google.com with SMTP id rd3so2274874pab.2
+        for <linux-bcache@vger.kernel.org>; Wed, 29 Jan 2014 13:15:12 -0800 (PST)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Patrick Zwahlen <paz@navixia.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 
+Jens, couple small bcache fixes for you:
 
+The following changes since commit 9dd6358a21daf4fc6a5b2b779267a62f0d1d3181:
 
-> Moving a resource from one cachet to the other will be a rare event
-> (maintenance, patch, test, crash)
+  bcache: Fix auxiliary search trees for key size > cacheline size (2014-01-08 13:05:15 -0800)
 
-The crash aspect of this needs more investigation IMO. So there are way=
-s to forcibly turn on a backing disk even if it's cache device is gone =
-(because it's now running on the other head-unit). In write-thru at lea=
-st you hope the written data is there (modulo caching further up the st=
-ack like in the application, or linux filesystem, or downstream at the =
-HBA and on-disk caches).=A0
+are available in the git repository at:
 
-Once the crashed head is booted you'll need to invalidate all associati=
-ons still present in the cache device. I don't see how you can "echo <C=
-SET-UUID> > /sys/block/bcache0/bcache/dettach" when 'bcache0' doesn't e=
-xist anymore on that head. so now we've got no way to clean up the cach=
-eset except to blow it away and re-init with 'make-bcache -C <ssd>' or =
-do we accomplish the same thing by=A0
-'echo=A0unregister > /sys/fs/bcache/<cset-uuid>/bdev'?
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.14
+
+for you to fetch changes up to e3b4825b85eab879b618af6ea18529ca7ab9a64f:
+
+  bcache: bugfix - gc thread now gets woken when cache is full (2014-01-29 13:06:42 -0800)
+
+----------------------------------------------------------------
+Darrick J. Wong (1):
+      bcache: fix BUG_ON due to integer overflow with GC_SECTORS_USED
+
+Kent Overstreet (1):
+      bcache: Minor fixes from kbuild robot
+
+Nicholas Swenson (1):
+      bcache: bugfix - gc thread now gets woken when cache is full
+
+ drivers/md/bcache/bcache.h  | 4 +++-
+ drivers/md/bcache/bset.c    | 7 +++++--
+ drivers/md/bcache/btree.c   | 4 ++--
+ drivers/md/bcache/extents.c | 2 +-
+ drivers/md/bcache/request.c | 6 +++---
+ drivers/md/bcache/sysfs.c   | 2 +-
+ 6 files changed, 15 insertions(+), 10 deletions(-)
