@@ -1,23 +1,16 @@
 From: "Darrick J. Wong" <kmo@daterainc.com>
 Subject: [PATCH] bcache: fix BUG_ON due to integer overflow with
  GC_SECTORS_USED
-Date: Tue, 11 Feb 2014 10:01:38 -0800
-Message-ID: <20140211180138.GA6204@kmo>
+Date: Tue, 11 Feb 2014 10:02:57 -0800
+Message-ID: <20140211180257.GA26313@kmo>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:61220 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaBKSBl (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 11 Feb 2014 13:01:41 -0500
-Received: by mail-pd0-f172.google.com with SMTP id p10so7864079pdj.3
-        for <linux-bcache@vger.kernel.org>; Tue, 11 Feb 2014 10:01:40 -0800 (PST)
+Return-path: <stable-owner@vger.kernel.org>
 Content-Disposition: inline
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
-To: linux-stable@vger.kernel.org
+Sender: stable-owner@vger.kernel.org
+To: stable@vger.kernel.org
 Cc: linux-bcache@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 
 The BUG_ON at the end of __bch_btree_mark_key can be triggered due to
 an integer overflow error:
@@ -44,7 +37,6 @@ BUG_ON checks for too-large values, but that's a separate patch.
 Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 ---
-
 Greg, stable team et. all - can you apply this asap to 3.13? It hasn't hit
 Linus's tree yet (it's on its way via Jens), but multiple users are hitting this
 BUG_ON() and the fix has been tested.
