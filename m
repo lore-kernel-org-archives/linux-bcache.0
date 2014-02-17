@@ -1,44 +1,78 @@
-From: Marc Smith <marc.smith@mcc.edu>
-Subject: HA Question
-Date: Sun, 16 Feb 2014 22:37:23 -0500
-Message-ID: <CAHkw+Lf9GRdTWVHbFYhA_C4J=QdSWyiRRP+bcnu3vLXHcA3RRw@mail.gmail.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: New bcache compiler warning (was: Re: bcache: Minor fixes from kbuild robot)
+Date: Mon, 17 Feb 2014 22:00:22 +0100
+Message-ID: <CAMuHMdUYZLv4X3VBEOgcf+Dr22Pi1xWx-6oMPX7usBk6HJHTMw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:34458 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751105AbaBQDhZ (ORCPT
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:39549 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbaBQVAX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 16 Feb 2014 22:37:25 -0500
-Received: by mail-qc0-f179.google.com with SMTP id e16so23429739qcx.10
-        for <linux-bcache@vger.kernel.org>; Sun, 16 Feb 2014 19:37:23 -0800 (PST)
+	Mon, 17 Feb 2014 16:00:23 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org
 
-Hi,
+On Fri, Feb 14, 2014 at 8:04 PM, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+>    bcache: Minor fixes from kbuild robot
 
-I am new to bcache and I have a question regarding its use in a high
-availability (HA) setup. I'll be using the new LSI Syncro CS
-controllers with Enterprise Storage OS (ESOS) for an upcoming project.
-The LSI controller includes the CacheCade option for caching with
-SSDs, however, its only read cache in this model, so I'm primarily
-interested in the write-back cache feature of bcache.
+> diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+> index 4f6b594..3f74b4b 100644
+> --- a/drivers/md/bcache/bset.c
+> +++ b/drivers/md/bcache/bset.c
+> @@ -23,7 +23,7 @@ void bch_dump_bset(struct btree_keys *b, struct bse=
+t *i, unsigned set)
+>         for (k =3D i->start; k < bset_bkey_last(i); k =3D next) {
+>                 next =3D bkey_next(k);
+>
+> -               printk(KERN_ERR "block %u key %zi/%u: ", set,
+> +               printk(KERN_ERR "block %u key %li/%u: ", set,
+>                        (uint64_t *) k - i->d, i->keys);
+>
+>                 if (b->ops->key_dump)
 
-The Syncro CS setup puts a RAID controller in each of two hosts, and
-allows both hosts to share JBOD enclosures. Configured logical volumes
-are available for read/write on both hosts simultaneously.
+On 32-bit (m68k):
+drivers/md/bcache/bset.c: In function =E2=80=98bch_dump_bset=E2=80=99:
+drivers/md/bcache/bset.c:27: warning: format =E2=80=98%li=E2=80=99 expe=
+cts type =E2=80=98long
+int=E2=80=99, but argument 3 has type =E2=80=98int=E2=80=99
 
-The idea (example) is to create a shared RAID10 volume of SSDs to use
-as the cache device for bcache, and then some other RAID group of 15K
-disks for the backing volume. Then add the bcache device on each host
--- is this possible with bcache? Data corruption? We would control IO
-to the servers, so its not round-robin or anything like that... data
-would flow to only one server, and then only in the event of a
-fail-over, IO would be redirected to the other server. Or it might
-work, but we'd be asking for trouble? =)
+What are you trying to print here? It looks a bit strange to me.
+Technically, the difference between two pointers is of type ptrdiff_.
+The kernel had
 
+typedef __kernel_ptrdiff_t      ptrdiff_t;
 
-Thanks,
+and
 
-Marc
+#if __BITS_PER_LONG !=3D 64
+typedef unsigned int    __kernel_size_t;
+typedef int             __kernel_ssize_t;
+typedef int             __kernel_ptrdiff_t;
+#else
+typedef __kernel_ulong_t __kernel_size_t;
+typedef __kernel_long_t __kernel_ssize_t;
+typedef __kernel_long_t __kernel_ptrdiff_t;
+#endif
+
+So I'd expect "%zi" to be the right way, and a quick test compile on
+32-bit (m68k)
+and 64-bit (amd64) comfirms that. What was wrong with it?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-=
+m68k.org
+
+In personal conversations with technical people, I call myself a hacker=
+=2E But
+when I'm talking to journalists I just say "programmer" or something li=
+ke that.
+                                -- Linus Torvalds
