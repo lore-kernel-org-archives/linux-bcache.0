@@ -1,68 +1,37 @@
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: New bcache compiler warning (was: Re: bcache: Minor fixes from
- kbuild robot)
-Date: Tue, 18 Feb 2014 10:01:54 +0100
-Message-ID: <CAMuHMdVOwWq4AOEjiRSfZ7V_YOSE_LMK9PNJyw8-hJVY9RJekQ@mail.gmail.com>
-References: <CAMuHMdUYZLv4X3VBEOgcf+Dr22Pi1xWx-6oMPX7usBk6HJHTMw@mail.gmail.com>
-	<530279EC.5010605@infradead.org>
-	<CAMuHMdUnCdEoyD+seYXJD+e4bED9=ceUCC7NYsoRa1_vc3g4Hw@mail.gmail.com>
-	<20140217214553.GB11655@kmo>
+From: Rolf Fokkens <rolf@rolffokkens.nl>
+Subject: Changes in /sys/bcache in kernel 3.13
+Date: Tue, 18 Feb 2014 23:28:24 +0100
+Message-ID: <5303DE88.3090801@rolffokkens.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61879 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754625AbaBRJBz (ORCPT
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:51515 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675AbaBRW21 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 18 Feb 2014 04:01:55 -0500
-In-Reply-To: <20140217214553.GB11655@kmo>
+	Tue, 18 Feb 2014 17:28:27 -0500
+Received: by mail-ea0-f177.google.com with SMTP id m10so5609473eaj.36
+        for <linux-bcache@vger.kernel.org>; Tue, 18 Feb 2014 14:28:26 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, "Darrick J. Wong" <darrick.wong@oracle.com>
 
-On Mon, Feb 17, 2014 at 10:45 PM, Kent Overstreet <kmo@daterainc.com> wrote:
-> *swears* Actually, I'm just going to cast this to unsigned (that's definitely
-> safe here):
->
->
-> commit 70bc49d421c793f73a772ae1f50622a39c6136d9
-> Author: Kent Overstreet <kmo@daterainc.com>
-> Date:   Mon Feb 17 13:44:06 2014 -0800
->
->     bcache: Fix another compiler warning on m68k
+Hi All,
 
-JFYI, you also get this warning on other 32-bit platforms (e.g. ARM).
+bcache-status stopped working in kernel 3.13, see also: 
+https://bugzilla.redhat.com/show_bug.cgi?id=1066555
 
->     Use a bigger hammer this time
+It's probably related to the change "Fix dirty_data accounting" in 
+kernel 3.13-rc4. What specifically has changes is the fact that that 
+/sys/fs/bcache/<UUID>/dirty_data has been removed, which breaks 
+bcache-status (https://gist.github.com/djwong/6343451). Just removing 
+the check / reference to this dirty_data item fixes bcache-status. Or 
+has it been replaced by a specific item?
 
-Looks like it's big enough, now ;-)
+Oh, BTW: bcache.txt still refers to dirty_data in /sys/fs/bcache/<UUID> 
+which doesn't seem correct to me.
 
->     Signed-off-by: Kent Overstreet <kmo@daterainc.com>
->
-> diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
-> index 3f74b4b074..5454164153 100644
-> --- a/drivers/md/bcache/bset.c
-> +++ b/drivers/md/bcache/bset.c
-> @@ -23,8 +23,8 @@ void bch_dump_bset(struct btree_keys *b, struct bset *i, unsigned set)
->         for (k = i->start; k < bset_bkey_last(i); k = next) {
->                 next = bkey_next(k);
->
-> -               printk(KERN_ERR "block %u key %li/%u: ", set,
-> -                      (uint64_t *) k - i->d, i->keys);
-> +               printk(KERN_ERR "block %u key %u/%u: ", set,
-> +                      (unsigned) ((u64 *) k - i->d), i->keys);
->
->                 if (b->ops->key_dump)
->                         b->ops->key_dump(b, k);
+Cheers,
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Rolf
