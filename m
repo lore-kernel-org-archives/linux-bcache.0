@@ -1,56 +1,47 @@
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-Subject: Re: Changes in /sys/bcache in kernel 3.13
-Date: Tue, 18 Feb 2014 18:32:13 -0800
-Message-ID: <20140219023213.GF24805@birch.djwong.org>
-References: <5303DE88.3090801@rolffokkens.nl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: Lars Ellenberg <lars@linbit.com>
+Subject: [PATCH] bcache: fix NULL pointer deref in blk_add_request_payload
+Date: Wed, 19 Feb 2014 13:07:14 +0000
+Message-ID: <1392815234-27015-1-git-send-email-lars@linbit.com>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from userp1040.oracle.com ([156.151.31.81]:41199 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512AbaBSCcT (ORCPT
+Received: from zimbra13.linbit.com ([212.69.166.240]:59684 "EHLO
+	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094AbaBSNPY (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 18 Feb 2014 21:32:19 -0500
-Content-Disposition: inline
-In-Reply-To: <5303DE88.3090801@rolffokkens.nl>
+	Wed, 19 Feb 2014 08:15:24 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Rolf Fokkens <rolf@rolffokkens.nl>
-Cc: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, Lars Ellenberg <lars@linbit.com>
 
-On Tue, Feb 18, 2014 at 11:28:24PM +0100, Rolf Fokkens wrote:
-> Hi All,
-> 
-> bcache-status stopped working in kernel 3.13, see also:
-> https://bugzilla.redhat.com/show_bug.cgi?id=1066555
+bch_generic_make_request_hack() tries to be smart,
+and fake a bi_max_bvecs = bi_vcnt.
 
-Oh, there are RH bugzillas about bcache-status problems?  I guess that makes me
-'upstream'.  :D
+If those bios have been REQ_DISCARD, and get submitted to a driver
+(md raid) that uses bio_clone, the clone will end up with bi_io_vec == NULL,
+passed down the stack, end up in sd_prep_fn and blk_add_request_payload,
+which then tries to use bio->bi_io_vec->page.
 
-Well, I guess I'll fix the no-newline-at-end problem too.
+Fix: try to be even smarter in bch_generic_make_request_hack(),
+and always pretend to have at least bi_max_vecs of 1,
+unless the incoming bio was already created without a single bvec.
 
-> It's probably related to the change "Fix dirty_data accounting" in
-> kernel 3.13-rc4. What specifically has changes is the fact that that
-> /sys/fs/bcache/<UUID>/dirty_data has been removed, which breaks
-> bcache-status (https://gist.github.com/djwong/6343451). Just
-> removing the check / reference to this dirty_data item fixes
-> bcache-status. Or has it been replaced by a specific item?
+Signed-off-by: Lars Ellenberg <lars@linbit.com>
+---
+ drivers/md/bcache/io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-<shrug> I simply removed the dirty_data line and prettied up some of the
-formatting too.  I don't have a problem with pulling the dirty data stats off
-the backing device.
-
-Gist updated.
-
---D
-> 
-> Oh, BTW: bcache.txt still refers to dirty_data in
-> /sys/fs/bcache/<UUID> which doesn't seem correct to me.
-> 
-> Cheers,
-> 
-> Rolf
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index 9056632..a638ac6 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -47,7 +47,7 @@ static void bch_generic_make_request_hack(struct bio *bio)
+ 	 *
+ 	 * To be taken out once immutable bvec stuff is in.
+ 	 */
+-	bio->bi_max_vecs = bio->bi_vcnt;
++	bio->bi_max_vecs = bio->bi_vcnt ?: (bio->bi_io_vec ? 1 : 0);
+ 
+ 	generic_make_request(bio);
+ }
+-- 
+1.7.10.4
