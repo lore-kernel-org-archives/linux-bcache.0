@@ -1,36 +1,70 @@
-From: Ryan Tucker <rtucker@gmail.com>
-Subject: Re: bcache deadlock with /dev/ramX + partition
-Date: Fri, 21 Feb 2014 13:23:03 -0500
-Message-ID: <CAN6-qxbAzS=LYf5cd5HucDx42CjO32ZhjkvvnJX0kC7NtkM4NQ@mail.gmail.com>
-References: <alpine.DEB.2.02.1402201818410.14562@noise.cbg.collabora.co.uk>
-	<loom.20140221T180753-160@post.gmane.org>
+From: Juan Antonio Martinez <jantonio-oytJ0Z/vEwre5aOfsHch1g@public.gmane.org>
+Subject: bcache on NBD block devices
+Date: Tue, 25 Feb 2014 15:40:08 +0100
+Message-ID: <1393339208.26501.42.camel@jonsy>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:64102 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909AbaBUSXE (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 21 Feb 2014 13:23:04 -0500
-Received: by mail-qc0-f169.google.com with SMTP id e9so4378246qcy.0
-        for <linux-bcache@vger.kernel.org>; Fri, 21 Feb 2014 10:23:03 -0800 (PST)
-In-Reply-To: <loom.20140221T180753-160@post.gmane.org>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>
+List-Unsubscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
+	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://sourceforge.net/mailarchive/forum.php?forum_name=nbd-general>
+List-Post: <mailto:nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>
+List-Help: <mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=help>
+List-Subscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
+	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=subscribe>
+Errors-To: nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
+To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
-To: Max Kutsevol <max@kutsevol.com>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On Fri, Feb 21, 2014 at 12:08 PM, Max Kutsevol <max@kutsevol.com> wrote:
-> Hello.
->
-> Try this patch: http://evilpiepirate.org/git/linux-bcache.git/commit/?
-> h=bcache-for-3.14&id=947174476701fbc84ea8c7ec9664270f9d80b076
-
-Hmm, from what I've seen, the problem fixed by that patch manifested
-itself differently (bch_ptr_invalid at the top of the call trace, RIP
-set to __bch_btree_mark_key), and I believe it was only present in
-3.13.x where 0 <= x < 4.  Doesn't look like Vivek's runs with 3.13
-lasted long enough to hit that bug, alas!  -rt
-
--- 
-Ryan Tucker <rtucker@gmail.com>
+SGkgYWxsCgooVGhpcyBpcyBteSBmaXJzdCBwb3N0IG9uIHRoaXMgbGlzdC4gSSdtIHN0aWxsIGEg
+bm92aWNlIG9uIGJjYWNoZSBhbmQKcHJvcGVyIG5ldHRpcXVldGUgb24gdGhpcyBsaXN0LCBzbyBh
+cG9sb2dpemUgZm9yIG15IG1pc3Rha2VzKQoKU2NlbmFyaW86IHNldmVyYWwgTkJEIExUU1AgRmF0
+IENsaWVudHMgb24gKGEgYml0KSBvYnNvbGV0ZSBoYXJkd2FyZQprZXJuZWwgMy4xMS4wLTE1IG9u
+IFVidW50dSAxMy4xMAoKL2Rldi9zZGExIGFzIGxvY2FsIGNhY2hlIGRldmljZQovZGV2L25iZDEg
+YXMgcmVtb3RlIE5CRCBiYWNraW5nIGJjYWNoZSBkZXZpY2UKCi0gSSd2ZSBjcmVhdGVkIGFuZCBy
+ZWdpc3RlcmVkIC9kZXYvc2RhMSBhcyBjYWNoZSBkZXZpY2Ugd2l0aG91dCBwcm9ibGVtcwotIFRv
+IGNyZWF0ZSBuYmQgZmlsZSB0byBiZSBleHBvcnRlZCBJJ3ZlIHR5cGVkIGZvbGxvd2luZyBzZXF1
+ZW5jZToKCiMgY3JlYXRlIGFuIGVtcHR5IGZpbGUKcm9vdCMgZGQgaWY9L2Rldi96ZXJvIG9mPWJj
+YWNoZV90ZXN0LmltZyBicz0xTSBjb3VudD02NAojIHVzZSBpdCBhcyBsb29wIGJsb2NrIGRldmlj
+ZQpyb290IyBsb3NldHVwIC9kZXYvbG9vcDAKIyBtYWtlIGl0IGEgYmFja2luZyBiY2FjaGUgZGV2
+aWNlCnJvb3QjIG1ha2UtYmNhY2hlIC1CIC9kZXYvbG9vcDAKIyBjcmVhdGUgYSB0aW55IGZzIG9u
+IGl0CnJvb3QjIG1rc3F1YXNoZnMgL3Vzci9sb2NhbCAvZGV2L2JjYWNoZTAgLW5vYXBwZW5kCgpO
+b3RpY2UgdGhlIHNxdWFzaGZzOiBJIG9ubHkgbmVlZCB0byBleHBvcnQgZnMgaW4gcmVhZC1vbmx5
+IG1vZGUKCkF0IHRoaXMgcG9pbnQgSSBjYW4gbW91bnQgZmlsZSB0aHJvdWdodCBiY2FjaGUgdy9v
+IHByb2JsZW1zLApzbyB1bnJlZ2lzdGVyLCBkZS1sb29waXplIGFuZCBjb3B5IHJhdyBiY2FjaGVf
+dGVzdC5pbWcgZmlsZSB0byBuYmQKc2VydmVyIGhvc3QgdG8gYmUgZXhwb3J0ZWQuCgpuYmQtc2Vy
+dmVyIGlzIHByb3Blcmx5IGNvbmZpZ3VyZTogSSBjYW4gbGlzdCwgY29ubmVjdCBhbmQgdXNlIGZp
+bGU6Cgpyb290IyBuYmQtY2xpZW50IHNlcnZlciAtTiBiY2FjaGVfdGVzdCAvZGV2L25iZDEgLXBl
+cnNpc3QgLXRpbWVvdXQgNjAgCk5lZ290aWF0aW9uOiAuLnNpemUgPSA2NE1CCmJzPTEwMjQsIHN6
+PTY3MTA4ODY0IGJ5dGVzCnRpbWVvdXQ9NjAKClVzaW5nIGJjYWNoZS1zdXBlci1zaG93IHRlbGxz
+IG1lIHRoYXQgZmlsZSBpcyBvayBmb3IgYmNhY2hlCgpyb290IyAgYmNhY2hlLXN1cGVyLXNob3cg
+L2Rldi9uYmQxCnNiLm1hZ2ljCQlvawpzYi5maXJzdF9zZWN0b3IJCTggW21hdGNoXQpzYi5jc3Vt
+CQkJQUMxNjBCRjhERkZCODA4RCBbbWF0Y2hdCnNiLnZlcnNpb24JCTEgW2JhY2tpbmcgZGV2aWNl
+XQoKZGV2LmxhYmVsCQkoZW1wdHkpCmRldi51dWlkCQk5MzZmOGJlNC03YTkwLTRkMmItYjExOC01
+YTQ1YTFlMzc2MDMKZGV2LnNlY3RvcnNfcGVyX2Jsb2NrCTEKZGV2LnNlY3RvcnNfcGVyX2J1Y2tl
+dAkxMDI0CmRldi5kYXRhLmZpcnN0X3NlY3RvcgkxNgpkZXYuZGF0YS5jYWNoZV9tb2RlCTAgW3dy
+aXRldGhyb3VnaF0KZGV2LmRhdGEuY2FjaGVfc3RhdGUJMSBbY2xlYW5dCgpjc2V0LnV1aWQJCTQ3
+OWIwZGYwLTU2ZDMtNGYzMS05NTFmLWZmYjY5ZDhkMjMzYgoKQnV0Li4uLiBBdCB0aGlzIHBvaW50
+IC9kZXYvYmNhY2hlMCBpcyBub3QgY3JlYXRlZCBzbyBjYW5ub3QgcmVnaXN0ZXIgaXQKbWFudWFs
+bHkgd2l0aCAiZWNobyA8Q1NFVC1VVUlEPiA+IC9zeXMvYmxvY2svYmNhY2hlMC9iY2FjaGUvYXR0
+YWNoIgoKSXRlbSB3b3JzZTogTkJEIGRvZXNuJ3QgcHJvdmlkZSBiY2FjaGUgZGlyZWN0b3J5IHVu
+ZGVyIC9zeXMvYmxvY2svbmJkMSwKc28gY2FuJ3QgZXhlY3V0ZSAiZWNobyAxID4gL3N5cy9ibG9j
+ay9uYmQxL2JjYWNoZS9ydW5uaW5nIgoKTm90aWNlIHRoYXQgSWYgSSAiZGQiIC9kZXYvbmJkMSB0
+byBhIGxvY2FsIGZpbGUgYW5kICJsb3NldHVwIiBvbgppdCwgL2Rldi9iY2FjaGUwIGFwcGVhcnMg
+YXV0b21hZ2ljYWxseSBhdHRhY2hlZCB0byAvZGV2L2xvb3AwCgrCv0FueSBpZGVhcz8Kwr9Eb2Vz
+IE5CRCBzdXBwb3J0cyBiY2FjaGUgaW4ga2VybmVsIDMuMTE/CsK/SWYgZG9lc24ndCwgYW55IGlk
+ZWEgb24gdGhlIGJlc3Qgd2F5IHRvIHByb3ZpZGUgbG9jYWwgZGlzayBjYWNoZSBmb3IKTkJEIHJl
+bW90ZSBkZXZpY2VzPwoKVGhhbmtzIGluIGFkdmFuY2UKSnVhbiBBbnRvbmlvCgoKCi0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLQpGbG93LWJhc2VkIHJlYWwtdGltZSB0cmFmZmljIGFuYWx5dGljcyBzb2Z0
+d2FyZS4gQ2lzY28gY2VydGlmaWVkIHRvb2wuCk1vbml0b3IgdHJhZmZpYywgU0xBcywgUW9TLCBN
+ZWRpYW5ldCwgV0FBUyBldGMuIHdpdGggTmV0RmxvdyBBbmFseXplcgpDdXN0b21pemUgeW91ciBv
+d24gZGFzaGJvYXJkcywgc2V0IHRyYWZmaWMgYWxlcnRzIGFuZCBnZW5lcmF0ZSByZXBvcnRzLgpO
+ZXR3b3JrIGJlaGF2aW9yYWwgYW5hbHlzaXMgJiBzZWN1cml0eSBtb25pdG9yaW5nLiBBbGwtaW4t
+b25lIHRvb2wuCmh0dHA6Ly9wdWJhZHMuZy5kb3VibGVjbGljay5uZXQvZ2FtcGFkL2Nsaz9pZD0x
+MjY4MzkwNzEmaXU9LzQxNDAvb3N0Zy5jbGt0cmsKX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fX19fX19fX19fX19fX19fX18KTmJkLWdlbmVyYWwgbWFpbGluZyBsaXN0Ck5iZC1nZW5lcmFs
+QGxpc3RzLnNvdXJjZWZvcmdlLm5ldApodHRwczovL2xpc3RzLnNvdXJjZWZvcmdlLm5ldC9saXN0
+cy9saXN0aW5mby9uYmQtZ2VuZXJhbAo=
