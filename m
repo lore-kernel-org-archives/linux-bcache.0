@@ -1,11 +1,12 @@
-From: Juan Antonio Martinez <jantonio-oytJ0Z/vEwre5aOfsHch1g@public.gmane.org>
-Subject: bcache on NBD block devices
-Date: Tue, 25 Feb 2014 15:40:08 +0100
-Message-ID: <1393339208.26501.42.camel@jonsy>
+From: Paul Clements <paul.clements-eviPjrN/1CxBDgjK7y7TUQ@public.gmane.org>
+Subject: Re: bcache on NBD block devices
+Date: Tue, 25 Feb 2014 11:33:33 -0500
+Message-ID: <CAECXXi5OHR9g9L5fHy4MXaVo2P7QkB4hAWnVAqJwr_pT_SE=2Q@mail.gmail.com>
+References: <1393339208.26501.42.camel@jonsy>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+Content-Type: multipart/mixed; boundary="===============8206783942516560703=="
 Return-path: <nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>
+In-Reply-To: <1393339208.26501.42.camel@jonsy>
 List-Unsubscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
 	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=unsubscribe>
 List-Archive: <http://sourceforge.net/mailarchive/forum.php?forum_name=nbd-general>
@@ -14,57 +15,107 @@ List-Help: <mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.g
 List-Subscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
 	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=subscribe>
 Errors-To: nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
-To: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-Cc: nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
+To: Juan Antonio Martinez <jantonio-oytJ0Z/vEwre5aOfsHch1g@public.gmane.org>
+Cc: "nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org" <nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-SGkgYWxsCgooVGhpcyBpcyBteSBmaXJzdCBwb3N0IG9uIHRoaXMgbGlzdC4gSSdtIHN0aWxsIGEg
-bm92aWNlIG9uIGJjYWNoZSBhbmQKcHJvcGVyIG5ldHRpcXVldGUgb24gdGhpcyBsaXN0LCBzbyBh
-cG9sb2dpemUgZm9yIG15IG1pc3Rha2VzKQoKU2NlbmFyaW86IHNldmVyYWwgTkJEIExUU1AgRmF0
-IENsaWVudHMgb24gKGEgYml0KSBvYnNvbGV0ZSBoYXJkd2FyZQprZXJuZWwgMy4xMS4wLTE1IG9u
-IFVidW50dSAxMy4xMAoKL2Rldi9zZGExIGFzIGxvY2FsIGNhY2hlIGRldmljZQovZGV2L25iZDEg
-YXMgcmVtb3RlIE5CRCBiYWNraW5nIGJjYWNoZSBkZXZpY2UKCi0gSSd2ZSBjcmVhdGVkIGFuZCBy
-ZWdpc3RlcmVkIC9kZXYvc2RhMSBhcyBjYWNoZSBkZXZpY2Ugd2l0aG91dCBwcm9ibGVtcwotIFRv
-IGNyZWF0ZSBuYmQgZmlsZSB0byBiZSBleHBvcnRlZCBJJ3ZlIHR5cGVkIGZvbGxvd2luZyBzZXF1
-ZW5jZToKCiMgY3JlYXRlIGFuIGVtcHR5IGZpbGUKcm9vdCMgZGQgaWY9L2Rldi96ZXJvIG9mPWJj
-YWNoZV90ZXN0LmltZyBicz0xTSBjb3VudD02NAojIHVzZSBpdCBhcyBsb29wIGJsb2NrIGRldmlj
-ZQpyb290IyBsb3NldHVwIC9kZXYvbG9vcDAKIyBtYWtlIGl0IGEgYmFja2luZyBiY2FjaGUgZGV2
-aWNlCnJvb3QjIG1ha2UtYmNhY2hlIC1CIC9kZXYvbG9vcDAKIyBjcmVhdGUgYSB0aW55IGZzIG9u
-IGl0CnJvb3QjIG1rc3F1YXNoZnMgL3Vzci9sb2NhbCAvZGV2L2JjYWNoZTAgLW5vYXBwZW5kCgpO
-b3RpY2UgdGhlIHNxdWFzaGZzOiBJIG9ubHkgbmVlZCB0byBleHBvcnQgZnMgaW4gcmVhZC1vbmx5
-IG1vZGUKCkF0IHRoaXMgcG9pbnQgSSBjYW4gbW91bnQgZmlsZSB0aHJvdWdodCBiY2FjaGUgdy9v
-IHByb2JsZW1zLApzbyB1bnJlZ2lzdGVyLCBkZS1sb29waXplIGFuZCBjb3B5IHJhdyBiY2FjaGVf
-dGVzdC5pbWcgZmlsZSB0byBuYmQKc2VydmVyIGhvc3QgdG8gYmUgZXhwb3J0ZWQuCgpuYmQtc2Vy
-dmVyIGlzIHByb3Blcmx5IGNvbmZpZ3VyZTogSSBjYW4gbGlzdCwgY29ubmVjdCBhbmQgdXNlIGZp
-bGU6Cgpyb290IyBuYmQtY2xpZW50IHNlcnZlciAtTiBiY2FjaGVfdGVzdCAvZGV2L25iZDEgLXBl
-cnNpc3QgLXRpbWVvdXQgNjAgCk5lZ290aWF0aW9uOiAuLnNpemUgPSA2NE1CCmJzPTEwMjQsIHN6
-PTY3MTA4ODY0IGJ5dGVzCnRpbWVvdXQ9NjAKClVzaW5nIGJjYWNoZS1zdXBlci1zaG93IHRlbGxz
-IG1lIHRoYXQgZmlsZSBpcyBvayBmb3IgYmNhY2hlCgpyb290IyAgYmNhY2hlLXN1cGVyLXNob3cg
-L2Rldi9uYmQxCnNiLm1hZ2ljCQlvawpzYi5maXJzdF9zZWN0b3IJCTggW21hdGNoXQpzYi5jc3Vt
-CQkJQUMxNjBCRjhERkZCODA4RCBbbWF0Y2hdCnNiLnZlcnNpb24JCTEgW2JhY2tpbmcgZGV2aWNl
-XQoKZGV2LmxhYmVsCQkoZW1wdHkpCmRldi51dWlkCQk5MzZmOGJlNC03YTkwLTRkMmItYjExOC01
-YTQ1YTFlMzc2MDMKZGV2LnNlY3RvcnNfcGVyX2Jsb2NrCTEKZGV2LnNlY3RvcnNfcGVyX2J1Y2tl
-dAkxMDI0CmRldi5kYXRhLmZpcnN0X3NlY3RvcgkxNgpkZXYuZGF0YS5jYWNoZV9tb2RlCTAgW3dy
-aXRldGhyb3VnaF0KZGV2LmRhdGEuY2FjaGVfc3RhdGUJMSBbY2xlYW5dCgpjc2V0LnV1aWQJCTQ3
-OWIwZGYwLTU2ZDMtNGYzMS05NTFmLWZmYjY5ZDhkMjMzYgoKQnV0Li4uLiBBdCB0aGlzIHBvaW50
-IC9kZXYvYmNhY2hlMCBpcyBub3QgY3JlYXRlZCBzbyBjYW5ub3QgcmVnaXN0ZXIgaXQKbWFudWFs
-bHkgd2l0aCAiZWNobyA8Q1NFVC1VVUlEPiA+IC9zeXMvYmxvY2svYmNhY2hlMC9iY2FjaGUvYXR0
-YWNoIgoKSXRlbSB3b3JzZTogTkJEIGRvZXNuJ3QgcHJvdmlkZSBiY2FjaGUgZGlyZWN0b3J5IHVu
-ZGVyIC9zeXMvYmxvY2svbmJkMSwKc28gY2FuJ3QgZXhlY3V0ZSAiZWNobyAxID4gL3N5cy9ibG9j
-ay9uYmQxL2JjYWNoZS9ydW5uaW5nIgoKTm90aWNlIHRoYXQgSWYgSSAiZGQiIC9kZXYvbmJkMSB0
-byBhIGxvY2FsIGZpbGUgYW5kICJsb3NldHVwIiBvbgppdCwgL2Rldi9iY2FjaGUwIGFwcGVhcnMg
-YXV0b21hZ2ljYWxseSBhdHRhY2hlZCB0byAvZGV2L2xvb3AwCgrCv0FueSBpZGVhcz8Kwr9Eb2Vz
-IE5CRCBzdXBwb3J0cyBiY2FjaGUgaW4ga2VybmVsIDMuMTE/CsK/SWYgZG9lc24ndCwgYW55IGlk
-ZWEgb24gdGhlIGJlc3Qgd2F5IHRvIHByb3ZpZGUgbG9jYWwgZGlzayBjYWNoZSBmb3IKTkJEIHJl
-bW90ZSBkZXZpY2VzPwoKVGhhbmtzIGluIGFkdmFuY2UKSnVhbiBBbnRvbmlvCgoKCi0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLQpGbG93LWJhc2VkIHJlYWwtdGltZSB0cmFmZmljIGFuYWx5dGljcyBzb2Z0
-d2FyZS4gQ2lzY28gY2VydGlmaWVkIHRvb2wuCk1vbml0b3IgdHJhZmZpYywgU0xBcywgUW9TLCBN
-ZWRpYW5ldCwgV0FBUyBldGMuIHdpdGggTmV0RmxvdyBBbmFseXplcgpDdXN0b21pemUgeW91ciBv
-d24gZGFzaGJvYXJkcywgc2V0IHRyYWZmaWMgYWxlcnRzIGFuZCBnZW5lcmF0ZSByZXBvcnRzLgpO
-ZXR3b3JrIGJlaGF2aW9yYWwgYW5hbHlzaXMgJiBzZWN1cml0eSBtb25pdG9yaW5nLiBBbGwtaW4t
-b25lIHRvb2wuCmh0dHA6Ly9wdWJhZHMuZy5kb3VibGVjbGljay5uZXQvZ2FtcGFkL2Nsaz9pZD0x
-MjY4MzkwNzEmaXU9LzQxNDAvb3N0Zy5jbGt0cmsKX19fX19fX19fX19fX19fX19fX19fX19fX19f
-X19fX19fX19fX19fX19fX19fX18KTmJkLWdlbmVyYWwgbWFpbGluZyBsaXN0Ck5iZC1nZW5lcmFs
-QGxpc3RzLnNvdXJjZWZvcmdlLm5ldApodHRwczovL2xpc3RzLnNvdXJjZWZvcmdlLm5ldC9saXN0
-cy9saXN0aW5mby9uYmQtZ2VuZXJhbAo=
+--===============8206783942516560703==
+Content-Type: multipart/alternative; boundary=e89a8ffbaed334b23504f33da68e
+
+--e89a8ffbaed334b23504f33da68e
+Content-Type: text/plain; charset=ISO-8859-1
+
+On Tue, Feb 25, 2014 at 9:40 AM, Juan Antonio Martinez
+<jantonio-oytJ0Z/vEwre5aOfsHch1g@public.gmane.org>wrote:
+
+> Hi all
+>
+> (This is my first post on this list. I'm still a novice on bcache and
+> proper nettiquete on this list, so apologize for my mistakes)
+>
+> Scenario: several NBD LTSP Fat Clients on (a bit) obsolete hardware
+> kernel 3.11.0-15 on Ubuntu 13.10
+>
+> /dev/sda1 as local cache device
+> /dev/nbd1 as remote NBD backing bcache device
+>
+> - I've created and registered /dev/sda1 as cache device without problems
+> - To create nbd file to be exported I've typed following sequence:
+>
+> # create an empty file
+> root# dd if=/dev/zero of=bcache_test.img bs=1M count=64
+> # use it as loop block device
+> root# losetup /dev/loop0
+> # make it a backing bcache device
+> root# make-bcache -B /dev/loop0
+>
+
+have you tried doing this step from the client machine instead, i.e.:
+
+make-bache -B /dev/nbd1
+
+after the nbd connection is up? does that work?
+
+--e89a8ffbaed334b23504f33da68e
+Content-Type: text/html; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><br><div class=3D"gmail_extra"><br><br><div class=3D"gmail=
+_quote">On Tue, Feb 25, 2014 at 9:40 AM, Juan Antonio Martinez <span dir=3D=
+"ltr">&lt;<a href=3D"mailto:jantonio-oytJ0Z/vEwre5aOfsHch1g@public.gmane.org" target=3D"_blank">jantonio=
+@dit.upm.es</a>&gt;</span> wrote:<br>
+<blockquote class=3D"gmail_quote" style=3D"margin:0 0 0 .8ex;border-left:1p=
+x #ccc solid;padding-left:1ex">Hi all<br>
+<br>
+(This is my first post on this list. I&#39;m still a novice on bcache and<b=
+r>
+proper nettiquete on this list, so apologize for my mistakes)<br>
+<br>
+Scenario: several NBD LTSP Fat Clients on (a bit) obsolete hardware<br>
+kernel 3.11.0-15 on Ubuntu 13.10<br>
+<br>
+/dev/sda1 as local cache device<br>
+/dev/nbd1 as remote NBD backing bcache device<br>
+<br>
+- I&#39;ve created and registered /dev/sda1 as cache device without problem=
+s<br>
+- To create nbd file to be exported I&#39;ve typed following sequence:<br>
+<br>
+# create an empty file<br>
+root# dd if=3D/dev/zero of=3Dbcache_test.img bs=3D1M count=3D64<br>
+# use it as loop block device<br>
+root# losetup /dev/loop0<br>
+# make it a backing bcache device<br>
+root# make-bcache -B /dev/loop0<br></blockquote><div><br></div><div>have yo=
+u tried doing this step from the client machine instead, i.e.:</div><div><b=
+r></div><div>make-bache -B /dev/nbd1</div><div><br></div><div>after the nbd=
+ connection is up? does that work?</div>
+<div><br></div><div><br></div></div></div></div>
+
+--e89a8ffbaed334b23504f33da68e--
+
+
+--===============8206783942516560703==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+------------------------------------------------------------------------------
+Flow-based real-time traffic analytics software. Cisco certified tool.
+Monitor traffic, SLAs, QoS, Medianet, WAAS etc. with NetFlow Analyzer
+Customize your own dashboards, set traffic alerts and generate reports.
+Network behavioral analysis & security monitoring. All-in-one tool.
+http://pubads.g.doubleclick.net/gampad/clk?id=126839071&iu=/4140/ostg.clktrk
+--===============8206783942516560703==
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+_______________________________________________
+Nbd-general mailing list
+Nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
+https://lists.sourceforge.net/lists/listinfo/nbd-general
+
+--===============8206783942516560703==--
