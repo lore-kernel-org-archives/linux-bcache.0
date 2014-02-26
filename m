@@ -1,49 +1,66 @@
-From: Paul Clements <paul.clements@us.sios.com>
-Subject: Re: [Nbd] bcache on NBD block devices
-Date: Tue, 25 Feb 2014 11:37:23 -0500
-Message-ID: <CAECXXi68Q=5aXQ_NnubkMNsGxPPefCiz77pnYthNU-Jk88qQeg@mail.gmail.com>
+From: Juan Antonio Martinez <jantonio-oytJ0Z/vEwre5aOfsHch1g@public.gmane.org>
+Subject: Re: bcache on NBD block devices
+Date: Wed, 26 Feb 2014 09:31:50 +0100
+Message-ID: <1393403510.17548.15.camel@jonsy>
+References: <CAECXXi68Q=5aXQ_NnubkMNsGxPPefCiz77pnYthNU-Jk88qQeg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:65319 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaBYQhY (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 25 Feb 2014 11:37:24 -0500
-Received: by mail-pb0-f41.google.com with SMTP id jt11so2986730pbb.28
-        for <linux-bcache@vger.kernel.org>; Tue, 25 Feb 2014 08:37:23 -0800 (PST)
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>
+In-Reply-To: <CAECXXi68Q=5aXQ_NnubkMNsGxPPefCiz77pnYthNU-Jk88qQeg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
+List-Unsubscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
+	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://sourceforge.net/mailarchive/forum.php?forum_name=nbd-general>
+List-Post: <mailto:nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>
+List-Help: <mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=help>
+List-Subscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
+	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=subscribe>
+Errors-To: nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
+To: nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
+Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
-To: Juan Antonio Martinez <jantonio@dit.upm.es>
-Cc: linux-bcache@vger.kernel.org
 
-On Tue, Feb 25, 2014 at 9:40 AM, Juan Antonio Martinez
-<jantonio@dit.upm.es> wrote:
->
-> Hi all
->
-> (This is my first post on this list. I'm still a novice on bcache and
-> proper nettiquete on this list, so apologize for my mistakes)
->
-> Scenario: several NBD LTSP Fat Clients on (a bit) obsolete hardware
-> kernel 3.11.0-15 on Ubuntu 13.10
->
-> /dev/sda1 as local cache device
-> /dev/nbd1 as remote NBD backing bcache device
->
-> - I've created and registered /dev/sda1 as cache device without problems
-> - To create nbd file to be exported I've typed following sequence:
->
-> # create an empty file
-> root# dd if=/dev/zero of=bcache_test.img bs=1M count=64
-> # use it as loop block device
-> root# losetup /dev/loop0
-> # make it a backing bcache device
-> root# make-bcache -B /dev/loop0
-
-
-have you tried doing this step from the client machine instead, i.e.:
-
-make-bache -B /dev/nbd1
-
-after the nbd connection is up? does that work?
+RWwgbWFyLCAyNS0wMi0yMDE0IGEgbGFzIDExOjM3IC0wNTAwLCBQYXVsIENsZW1lbnRzIGVzY3Jp
+YmnDszoKPiBPbiBUdWUsIEZlYiAyNSwgMjAxNCBhdCA5OjQwIEFNLCBKdWFuIEFudG9uaW8gTWFy
+dGluZXoKPiA8amFudG9uaW9AZGl0LnVwbS5lcz4gd3JvdGU6Cj4gPiBIaSBhbGwKPiA+IChUaGlz
+IGlzIG15IGZpcnN0IHBvc3Qgb24gdGhpcyBsaXN0LiBJJ20gc3RpbGwgYSBub3ZpY2Ugb24gYmNh
+Y2hlIGFuZAo+ID4gcHJvcGVyIG5ldHRpcXVldGUgb24gdGhpcyBsaXN0LCBzbyBhcG9sb2dpemUg
+Zm9yIG15IG1pc3Rha2VzKQo+ID4gU2NlbmFyaW86IHNldmVyYWwgTkJEIExUU1AgRmF0IENsaWVu
+dHMgb24gKGEgYml0KSBvYnNvbGV0ZSBoYXJkd2FyZQo+ID4ga2VybmVsIDMuMTEuMC0xNSBvbiBV
+YnVudHUgMTMuMTAKPiA+IC9kZXYvc2RhMSBhcyBsb2NhbCBjYWNoZSBkZXZpY2UKPiA+IC9kZXYv
+bmJkMSBhcyByZW1vdGUgTkJEIGJhY2tpbmcgYmNhY2hlIGRldmljZQo+ID4gLSBJJ3ZlIGNyZWF0
+ZWQgYW5kIHJlZ2lzdGVyZWQgL2Rldi9zZGExIGFzIGNhY2hlIGRldmljZSB3aXRob3V0IHByb2Js
+ZW1zCj4gPiAtIFRvIGNyZWF0ZSBuYmQgZmlsZSB0byBiZSBleHBvcnRlZCBJJ3ZlIHR5cGVkIGZv
+bGxvd2luZyBzZXF1ZW5jZToKPiA+ICMgY3JlYXRlIGFuIGVtcHR5IGZpbGUKPiA+IHJvb3QjIGRk
+IGlmPS9kZXYvemVybyBvZj1iY2FjaGVfdGVzdC5pbWcgYnM9MU0gY291bnQ9NjQKPiA+ICMgdXNl
+IGl0IGFzIGxvb3AgYmxvY2sgZGV2aWNlCj4gPiByb290IyBsb3NldHVwIC9kZXYvbG9vcDAKPiA+
+ICMgbWFrZSBpdCBhIGJhY2tpbmcgYmNhY2hlIGRldmljZQo+ID4gcm9vdCMgbWFrZS1iY2FjaGUg
+LUIgL2Rldi9sb29wMAoKPiBoYXZlIHlvdSB0cmllZCBkb2luZyB0aGlzIHN0ZXAgZnJvbSB0aGUg
+Y2xpZW50IG1hY2hpbmUgaW5zdGVhZCwgaS5lLjoKPiBtYWtlLWJhY2hlIC1CIC9kZXYvbmJkMQo+
+IGFmdGVyIHRoZSBuYmQgY29ubmVjdGlvbiBpcyB1cD8gZG9lcyB0aGF0IHdvcms/CgpKdXN0IHRl
+c3RlZDogd29ya3MgZmluZS4uLi4gYnV0IG9ubHkgaW4gdGhlIExUU1AgY2xpZW50IHdoZXJlIEkg
+ZGlkIHRoZQpjaGFuZ2VzLCBhbmQgaGFkIHRvIHRlbGwgbmJkLXNlcnZlciB0byBleHBvcnQgaW1h
+Z2VmaWxlIGluIHJlYWQtd3JpdGUKbW9kZQoKUmVtZW1iZXIgdGhhdCBteSBjb25maWd1cmF0aW9u
+IGNvbnNpc3QgaW4gc2V2ZXJhbCAoPjI1MCEpIExUU1AtTkJECmNsaWVudHMgc2hhcmluZyBfdGhl
+X3NhbWVfIG1vdW50ZWQgc3F1YXNoZnMgaW1hZ2UgZmlsZS4gSSBjYW5ub3QgZm9yCm9iaW91cyBy
+ZWFzb25zIG1ha2UgdGhlIGltYWdlIGZpbGUgdG8gYmUgc2hhcmVkIHJlYWQtd3JpdGUgb24gZXZl
+cnkKY2xpZW50cyBhdCB0aGUgc2FtZSB0aW1lLi4uIGFuZCBzZWVtcyB0aGF0IGJjYWNoZSBuZWVk
+cyB3cml0ZSBhY2Nlc3MgdG8KdGhlIGJhY2tpbmcgYmxvY2sgZGV2aWNlIHRvIHdvcmsKCsK/SXMg
+dGhpcyBjb3JyZWN0PyBJZiBzbywgYmNhY2hlIGlzIG5vdCBmb3IgbWUgOi0oIMK/QW55IGFsdGVy
+bmF0aXZlcz8gCgpQZXJoYXBzIEkgY291bHQgdHJ5IHRvIGNyZWF0ZSBiY2FjaGUnZCBpbWFnZSBm
+aWxlLCBhbmQgdGhlbiBtb2RpZnkgTkJECnNlcnZlciBwZXJtaXNzaW9ucyB0byBleHBvcnQgaW4g
+Y29weS1vbi13cml0ZS1tb2RlLi4uIGJ1dCB0aGlzIHdvdWxkCndvcmsgaWYgYmNhY2hlIG9ubHkg
+d3JpdGVzIGluIGJjYWNoZSBzdXBlcmJsb2NrICggbXkgaW1hZ2UgZmlsZXMgYXJlCnR5cGljYWxs
+eSA4R2Igc2l6ZSBlYWNoKSBhcyB0aGlzIHdpbGwgY3JlYXRlIG9uZSBjb3cgZmlsZSBwZXIgY2xp
+ZW50IG9uCnNlcnZlcgoKQ2hlZXJzCkp1YW4gQW50b25pbwoKCi0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LQpGbG93LWJhc2VkIHJlYWwtdGltZSB0cmFmZmljIGFuYWx5dGljcyBzb2Z0d2FyZS4gQ2lzY28g
+Y2VydGlmaWVkIHRvb2wuCk1vbml0b3IgdHJhZmZpYywgU0xBcywgUW9TLCBNZWRpYW5ldCwgV0FB
+UyBldGMuIHdpdGggTmV0RmxvdyBBbmFseXplcgpDdXN0b21pemUgeW91ciBvd24gZGFzaGJvYXJk
+cywgc2V0IHRyYWZmaWMgYWxlcnRzIGFuZCBnZW5lcmF0ZSByZXBvcnRzLgpOZXR3b3JrIGJlaGF2
+aW9yYWwgYW5hbHlzaXMgJiBzZWN1cml0eSBtb25pdG9yaW5nLiBBbGwtaW4tb25lIHRvb2wuCmh0
+dHA6Ly9wdWJhZHMuZy5kb3VibGVjbGljay5uZXQvZ2FtcGFkL2Nsaz9pZD0xMjY4MzkwNzEmaXU9
+LzQxNDAvb3N0Zy5jbGt0cmsKX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fX19fX18KTmJkLWdlbmVyYWwgbWFpbGluZyBsaXN0Ck5iZC1nZW5lcmFsQGxpc3RzLnNvdXJj
+ZWZvcmdlLm5ldApodHRwczovL2xpc3RzLnNvdXJjZWZvcmdlLm5ldC9saXN0cy9saXN0aW5mby9u
+YmQtZ2VuZXJhbAo=
