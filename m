@@ -1,66 +1,84 @@
-From: Juan Antonio Martinez <jantonio-oytJ0Z/vEwre5aOfsHch1g@public.gmane.org>
+From: Juan Antonio Martinez <jantonio@dit.upm.es>
 Subject: Re: bcache on NBD block devices
-Date: Wed, 26 Feb 2014 09:31:50 +0100
-Message-ID: <1393403510.17548.15.camel@jonsy>
+Date: Wed, 26 Feb 2014 11:18:37 +0100
+Message-ID: <1393409917.17548.21.camel@jonsy>
 References: <CAECXXi68Q=5aXQ_NnubkMNsGxPPefCiz77pnYthNU-Jk88qQeg@mail.gmail.com>
+	 <1393403510.17548.15.camel@jonsy>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
-Return-path: <nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>
-In-Reply-To: <CAECXXi68Q=5aXQ_NnubkMNsGxPPefCiz77pnYthNU-Jk88qQeg-JsoAwUIsXosN+BqQ9rBEUg@public.gmane.org>
-List-Unsubscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
-	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=unsubscribe>
-List-Archive: <http://sourceforge.net/mailarchive/forum.php?forum_name=nbd-general>
-List-Post: <mailto:nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>
-List-Help: <mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=help>
-List-Subscribe: <https://lists.sourceforge.net/lists/listinfo/nbd-general>,
-	<mailto:nbd-general-request-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org?subject=subscribe>
-Errors-To: nbd-general-bounces-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
-To: nbd-general-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org
-Cc: linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail.dit.upm.es ([138.4.2.7]:37289 "EHLO mail.dit.upm.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748AbaBZKSz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 26 Feb 2014 05:18:55 -0500
+In-Reply-To: <1393403510.17548.15.camel@jonsy>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: nbd-general@lists.sourceforge.net
+Cc: linux-bcache@vger.kernel.org
 
-RWwgbWFyLCAyNS0wMi0yMDE0IGEgbGFzIDExOjM3IC0wNTAwLCBQYXVsIENsZW1lbnRzIGVzY3Jp
-YmnDszoKPiBPbiBUdWUsIEZlYiAyNSwgMjAxNCBhdCA5OjQwIEFNLCBKdWFuIEFudG9uaW8gTWFy
-dGluZXoKPiA8amFudG9uaW9AZGl0LnVwbS5lcz4gd3JvdGU6Cj4gPiBIaSBhbGwKPiA+IChUaGlz
-IGlzIG15IGZpcnN0IHBvc3Qgb24gdGhpcyBsaXN0LiBJJ20gc3RpbGwgYSBub3ZpY2Ugb24gYmNh
-Y2hlIGFuZAo+ID4gcHJvcGVyIG5ldHRpcXVldGUgb24gdGhpcyBsaXN0LCBzbyBhcG9sb2dpemUg
-Zm9yIG15IG1pc3Rha2VzKQo+ID4gU2NlbmFyaW86IHNldmVyYWwgTkJEIExUU1AgRmF0IENsaWVu
-dHMgb24gKGEgYml0KSBvYnNvbGV0ZSBoYXJkd2FyZQo+ID4ga2VybmVsIDMuMTEuMC0xNSBvbiBV
-YnVudHUgMTMuMTAKPiA+IC9kZXYvc2RhMSBhcyBsb2NhbCBjYWNoZSBkZXZpY2UKPiA+IC9kZXYv
-bmJkMSBhcyByZW1vdGUgTkJEIGJhY2tpbmcgYmNhY2hlIGRldmljZQo+ID4gLSBJJ3ZlIGNyZWF0
-ZWQgYW5kIHJlZ2lzdGVyZWQgL2Rldi9zZGExIGFzIGNhY2hlIGRldmljZSB3aXRob3V0IHByb2Js
-ZW1zCj4gPiAtIFRvIGNyZWF0ZSBuYmQgZmlsZSB0byBiZSBleHBvcnRlZCBJJ3ZlIHR5cGVkIGZv
-bGxvd2luZyBzZXF1ZW5jZToKPiA+ICMgY3JlYXRlIGFuIGVtcHR5IGZpbGUKPiA+IHJvb3QjIGRk
-IGlmPS9kZXYvemVybyBvZj1iY2FjaGVfdGVzdC5pbWcgYnM9MU0gY291bnQ9NjQKPiA+ICMgdXNl
-IGl0IGFzIGxvb3AgYmxvY2sgZGV2aWNlCj4gPiByb290IyBsb3NldHVwIC9kZXYvbG9vcDAKPiA+
-ICMgbWFrZSBpdCBhIGJhY2tpbmcgYmNhY2hlIGRldmljZQo+ID4gcm9vdCMgbWFrZS1iY2FjaGUg
-LUIgL2Rldi9sb29wMAoKPiBoYXZlIHlvdSB0cmllZCBkb2luZyB0aGlzIHN0ZXAgZnJvbSB0aGUg
-Y2xpZW50IG1hY2hpbmUgaW5zdGVhZCwgaS5lLjoKPiBtYWtlLWJhY2hlIC1CIC9kZXYvbmJkMQo+
-IGFmdGVyIHRoZSBuYmQgY29ubmVjdGlvbiBpcyB1cD8gZG9lcyB0aGF0IHdvcms/CgpKdXN0IHRl
-c3RlZDogd29ya3MgZmluZS4uLi4gYnV0IG9ubHkgaW4gdGhlIExUU1AgY2xpZW50IHdoZXJlIEkg
-ZGlkIHRoZQpjaGFuZ2VzLCBhbmQgaGFkIHRvIHRlbGwgbmJkLXNlcnZlciB0byBleHBvcnQgaW1h
-Z2VmaWxlIGluIHJlYWQtd3JpdGUKbW9kZQoKUmVtZW1iZXIgdGhhdCBteSBjb25maWd1cmF0aW9u
-IGNvbnNpc3QgaW4gc2V2ZXJhbCAoPjI1MCEpIExUU1AtTkJECmNsaWVudHMgc2hhcmluZyBfdGhl
-X3NhbWVfIG1vdW50ZWQgc3F1YXNoZnMgaW1hZ2UgZmlsZS4gSSBjYW5ub3QgZm9yCm9iaW91cyBy
-ZWFzb25zIG1ha2UgdGhlIGltYWdlIGZpbGUgdG8gYmUgc2hhcmVkIHJlYWQtd3JpdGUgb24gZXZl
-cnkKY2xpZW50cyBhdCB0aGUgc2FtZSB0aW1lLi4uIGFuZCBzZWVtcyB0aGF0IGJjYWNoZSBuZWVk
-cyB3cml0ZSBhY2Nlc3MgdG8KdGhlIGJhY2tpbmcgYmxvY2sgZGV2aWNlIHRvIHdvcmsKCsK/SXMg
-dGhpcyBjb3JyZWN0PyBJZiBzbywgYmNhY2hlIGlzIG5vdCBmb3IgbWUgOi0oIMK/QW55IGFsdGVy
-bmF0aXZlcz8gCgpQZXJoYXBzIEkgY291bHQgdHJ5IHRvIGNyZWF0ZSBiY2FjaGUnZCBpbWFnZSBm
-aWxlLCBhbmQgdGhlbiBtb2RpZnkgTkJECnNlcnZlciBwZXJtaXNzaW9ucyB0byBleHBvcnQgaW4g
-Y29weS1vbi13cml0ZS1tb2RlLi4uIGJ1dCB0aGlzIHdvdWxkCndvcmsgaWYgYmNhY2hlIG9ubHkg
-d3JpdGVzIGluIGJjYWNoZSBzdXBlcmJsb2NrICggbXkgaW1hZ2UgZmlsZXMgYXJlCnR5cGljYWxs
-eSA4R2Igc2l6ZSBlYWNoKSBhcyB0aGlzIHdpbGwgY3JlYXRlIG9uZSBjb3cgZmlsZSBwZXIgY2xp
-ZW50IG9uCnNlcnZlcgoKQ2hlZXJzCkp1YW4gQW50b25pbwoKCi0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LQpGbG93LWJhc2VkIHJlYWwtdGltZSB0cmFmZmljIGFuYWx5dGljcyBzb2Z0d2FyZS4gQ2lzY28g
-Y2VydGlmaWVkIHRvb2wuCk1vbml0b3IgdHJhZmZpYywgU0xBcywgUW9TLCBNZWRpYW5ldCwgV0FB
-UyBldGMuIHdpdGggTmV0RmxvdyBBbmFseXplcgpDdXN0b21pemUgeW91ciBvd24gZGFzaGJvYXJk
-cywgc2V0IHRyYWZmaWMgYWxlcnRzIGFuZCBnZW5lcmF0ZSByZXBvcnRzLgpOZXR3b3JrIGJlaGF2
-aW9yYWwgYW5hbHlzaXMgJiBzZWN1cml0eSBtb25pdG9yaW5nLiBBbGwtaW4tb25lIHRvb2wuCmh0
-dHA6Ly9wdWJhZHMuZy5kb3VibGVjbGljay5uZXQvZ2FtcGFkL2Nsaz9pZD0xMjY4MzkwNzEmaXU9
-LzQxNDAvb3N0Zy5jbGt0cmsKX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
-X19fX19fX18KTmJkLWdlbmVyYWwgbWFpbGluZyBsaXN0Ck5iZC1nZW5lcmFsQGxpc3RzLnNvdXJj
-ZWZvcmdlLm5ldApodHRwczovL2xpc3RzLnNvdXJjZWZvcmdlLm5ldC9saXN0cy9saXN0aW5mby9u
-YmQtZ2VuZXJhbAo=
+I answer mySelf: exporting NBD image file in copy-on-write mode, and
+starting several clients at the same time I can see that diff file is
+only 4096 bytes long ( the size of backing device bcache superblock) an=
+d
+seems not to increase size. So I can continue working with bcache :-)
+
+Thanks for your time. Cheers
+Juan Antonio
+
+El mi=C3=A9, 26-02-2014 a las 09:31 +0100, Juan Antonio Martinez escrib=
+i=C3=B3:
+> El mar, 25-02-2014 a las 11:37 -0500, Paul Clements escribi=C3=B3:
+> > On Tue, Feb 25, 2014 at 9:40 AM, Juan Antonio Martinez
+> > <jantonio@dit.upm.es> wrote:
+> > > Hi all
+> > > (This is my first post on this list. I'm still a novice on bcache=
+ and
+> > > proper nettiquete on this list, so apologize for my mistakes)
+> > > Scenario: several NBD LTSP Fat Clients on (a bit) obsolete hardwa=
+re
+> > > kernel 3.11.0-15 on Ubuntu 13.10
+> > > /dev/sda1 as local cache device
+> > > /dev/nbd1 as remote NBD backing bcache device
+> > > - I've created and registered /dev/sda1 as cache device without p=
+roblems
+> > > - To create nbd file to be exported I've typed following sequence=
+:
+> > > # create an empty file
+> > > root# dd if=3D/dev/zero of=3Dbcache_test.img bs=3D1M count=3D64
+> > > # use it as loop block device
+> > > root# losetup /dev/loop0
+> > > # make it a backing bcache device
+> > > root# make-bcache -B /dev/loop0
+>=20
+> > have you tried doing this step from the client machine instead, i.e=
+=2E:
+> > make-bache -B /dev/nbd1
+> > after the nbd connection is up? does that work?
+>=20
+> Just tested: works fine.... but only in the LTSP client where I did t=
+he
+> changes, and had to tell nbd-server to export imagefile in read-write
+> mode
+>=20
+> Remember that my configuration consist in several (>250!) LTSP-NBD
+> clients sharing _the_same_ mounted squashfs image file. I cannot for
+> obious reasons make the image file to be shared read-write on every
+> clients at the same time... and seems that bcache needs write access =
+to
+> the backing block device to work
+>=20
+> =C2=BFIs this correct? If so, bcache is not for me :-( =C2=BFAny alte=
+rnatives?=20
+>=20
+> Perhaps I coult try to create bcache'd image file, and then modify NB=
+D
+> server permissions to export in copy-on-write-mode... but this would
+> work if bcache only writes in bcache superblock ( my image files are
+> typically 8Gb size each) as this will create one cow file per client =
+on
+> server
+>=20
+> Cheers
+> Juan Antonio
