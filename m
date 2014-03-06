@@ -1,213 +1,105 @@
-From: IT-Support <it-support@spreadshirt.net>
-Subject: bcache oops in bch_btree_node_read_done
-Date: Tue, 04 Mar 2014 14:28:46 +0100
-Message-ID: <5315D50E.8030200@spreadshirt.net>
+From: Sitsofe Wheeler <sitsofe@yahoo.com>
+Subject: bcache questions
+Date: Thu, 6 Mar 2014 09:33:57 +0000
+Message-ID: <20140306093341.GA31900@sucs.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.spreadomat.net ([85.239.103.149]:55577 "EHLO
-	mx.spreadomat.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757081AbaCDNio (ORCPT
+Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:35967 "EHLO
+	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaCFKDL (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 4 Mar 2014 08:38:44 -0500
-Received: from localhost (localhost [127.0.0.1])
-	by mx.spreadomat.net (Postfix) with ESMTP id CD94858014B
-	for <linux-bcache@vger.kernel.org>; Tue,  4 Mar 2014 14:28:47 +0100 (CET)
-Received: from mx.spreadomat.net ([127.0.0.1])
-	by localhost (mx.spreadomat.net [127.0.0.1]) (amavisd-new, port 10024)
-	with ESMTP id sv2+NS8lLJ0K for <linux-bcache@vger.kernel.org>;
-	Tue,  4 Mar 2014 14:28:46 +0100 (CET)
-Received: from [10.100.10.86] (lpz-66.sprd.net [88.79.226.66])
-	by mx.spreadomat.net (Postfix) with ESMTPA id C208F580119
-	for <linux-bcache@vger.kernel.org>; Tue,  4 Mar 2014 14:28:46 +0100 (CET)
+	Thu, 6 Mar 2014 05:03:11 -0500
+Received: from sits by silver.sucs.swan.ac.uk with local (Exim 4.80)
+	(envelope-from <sits@sucs.org>)
+	id 1WLUgf-0007uG-H9
+	for linux-bcache@vger.kernel.org; Thu, 06 Mar 2014 09:33:57 +0000
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-Hello,
+Hi,
 
-we operate 4 equal servers (HP DL360 G5), each with 6 hard disks. These
-disks are used for ceph OSD's and they are configured to use bcache.
-Once per week one of the servers stops with an Oops.
+I have a few bcache questions:
 
-System is Ubuntu 12.04 LTS 64bit with kernel package
-linux-image-3.11.0-15-generic.
+How does clear_stats work? For example if I do the following:
+dd if=/dev/zero of=/dev/bcache0 bs=512 count=1 oflag=direct
+grep -r . /sys/block/bcache0/bcache/stats_five_minute/
+echo 1 > /sys/block/bcache0/bcache/clear_stats
+grep -r .  /sys/block/bcache0/bcache/stats_five_minute/
 
-Here are the kernel messages of 2 incidents on different servers:
-(done with OCR, so there may be wrong characters)
+the results of the grep are the same on 3.13.5-200.fc20.x86_64 . Is this
+to be expected?
 
-[1335759.070167] BUG: unable to handle kernel NULL pointer dereference
-at 0000000000000008
-[1335759.070340] IP: [<ffffffffa021b59f>]
-bch_btree_node_read_done+0x4f/0x430 [bcache]
-[1335759.070494] PGD 802573067 PUD 800a1c067 PMD 0
-[1335759.070612] Oops: 0002 [#1] SMP
-[1335759.070685] Modules linked in: ufs qnx4 hfsplus hfs minix ntfs
-msdos jfs reiserfs ext2 mptctl mptbase ipmi_de_intf bonding
-radeon xfs coretemp ttm i5000_edac edac_core drm_kms_helper bridge
-ipmi_si drm gpio_ich psmouse ipmi_msghandler i5k_amb hpwdt sh
-pchp lpc_ich i2c_algo_bit hpilo serio_raw stp mac_hid llc lp parport
-bcache ses enclosure btrfs hid_eneric usbhid hid hpsa raid
-6_pq mpt2sas bnx2 scsi_transport_sas raid_class cciss xor zlib_deflate
-[1335759.072181] CPU: 1 PID: 18619 Comm: kworker/1:2 Not tainted
-3.11.0-15-generic #25~precise1-Ubuntu
-[1335759.072323] Hardware name: HP ProLiant DL360 G5, BIOS P58 05/02/20=
-11
-[1335759.072427] Workqueue: bcache bch_journal [bcache]
-[1335759.072518] task: ffff880782425dc0 ti: ffff880776cfa000 task.ti:
-ffff880776cfa000
-[1335759.072640] RIP: 0010:[<ffffffffa021b59f>]  [<ffffffffa021b59f>]
-bch_btree_node_read_done+0x4f/0x430 [bcache]
-[1335759.072798] RSP: 0018:ffff880776cfbb38  EFLAGS: 00010246
-[1335759.072896] RAX: 0000000000000400 RBX: ffff8807f97bc000 RCX:
-ffff8807f5480000
-[1335759.073007] RDX: 0000000000000000 RSI: 0000000000000282 RDI:
-0000000000000282
-[1335759.073117] RBP: ffff880776cfbb68 R08: 0000000000011200 R09:
-0000000000000f7d
-[1335759.073226] R10: 0000000000007d24 R11: 0000000000000000 R12:
-0000000000000000
-[1335759.073336] R13: ffff880004980000 R14: ffff88030f4e2020 R15:
-ffff880782425dc0
-[1335759.073446] FS:  0000000000000000(0000) GS:ffff88082fa40000(0000)
-knlGS:0000000000000000
-[1335759.073575] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[1335759.073665] CR2: 0000000000000008 CR3: 0000000802224000 CR4:
-00000000000006e0
-[1335759.073774] Stack:
-[1335759.073820]  ffff880776cfbb68 ffff8807f97bc000 ffff880776cfbb78
-0004bedda4b293fc
-[1335759.074011]  ffff88030f4e2020 ffff880782425dc0 ffff880776cfbbd8
-ffffffffa021d420
-[1335759.074140]  0000000000000000 ffff880782425dc0 0000000000000000
-0000000000000000
-[1335759.074140] Call Trace:
-[1335759.074140]  [<ffffffffa021d420>] bch_btree_node_read+0x150/0x1a0
-[bcache]
-[1335759.074140]  [<ffffffffa021e737>] bch_btree_node_et+0x147/0x290
-[bcache]
-[1335759.074140]  [<ffffffffa0220f5b>]
-bch_btree_insert_recurse+0x36b/0x510 [bcache]
-[1335759.074140]  [<ffffffffa0221256>] bch_btree_insert+0x156/0x330 [bc=
-ache]
-[1335759.074140]  [<ffffffffa022d61a>] bch_btree_insert_async+0x1a/0xe0
-[bcache]
-[1335759.074140]  [<ffffffffa0228139>] bch_journal+0x49/0x300 [bcache]
-[1335759.074140]  [<ffffffff81081060>] process_one_work+0x170/0x4a0
-[1335759.074140]  [<ffffffff81082121>] worker_thread+0x121/0x390
-[1335759.074140]  [<ffffffff81082000>] ? manage_workers.isra.21+0x170/0=
-x170
-[1335759.074140]  [<ffffffff81088fe0>] kthread+0xc0/0xd0
-[1335759.074140]  [<ffffffff81088f20>] ? flush_kthread_worker+0xb0/0xb0
-[1335759.074140]  [<ffffffff817508ec>] ret_from_fork+0x7c/0xb0
-[1335759.074140]  [<ffffffff81088f20>] ? flush_kthread_worker+0xb0/0xb0
-[1335759.074140] Code: af c0 00 00 00 48 8b b8 50 35 00 00 e8 8b 04 f3
-e0 48 8b 8b 80 00 00 00 49 89 c4 31 d2 0f b7 81 32 04 00
-00 66 f7 b1 30 04 00 00 <49> c7 44 24 08 00 00 00 00 0f b7 c0 49 89 04
-24 49 8b 45 10 48
-[1335759.074140] RIP  [<ffffffffa021b59f>]
-bch_btree_node_read_done+0x4f/0x430 [bcache]
-[1335759.074140]  RSP <ffff880776cfbb38>
-[1335759.074140] CR2: 0000000000000008
+Is it possible to quickly invalidate the cache so that it is known that
+it is empty? Will doing
+echo d8c40aa6-27b8-420e-abe2-1e2e7b31e74a > /sys/block/bcache0/bcache/detach
+echo d8c40aa6-27b8-420e-abe2-1e2e7b31e74a > /sys/block/bcache0/bcache/attach
 
-[922864.546138] BUG: unable to handle kernel NULL pointer dereference a=
-t
-0000000000000008
-[922864.546303] IP: [<ffffffffa01dd59f>]
-bch_btree_node_read_done+0x4f/0x430 [bcache]
-[922864.546460] PGD 0
-[922864.546509] Oops: 0002 [#1] SMP
-[922864.546578] Modules linked in: mptctl mptbase ipmi_de_intf xfs
-radeon ttm gpio_ich i5000_edac drm_kms_helper drm edac_core l
-pc_ich i2c_algo_bit coretemp i5k_amb psmouse ipmi_si shpchp serio_raw
-hpilo bonding ipmi_msghandler hpwdt mac_hid lp parport bca
-che ses enclosure btrfs hid_eneric usbhid hid hpsa raid6_q mpt2sas bnx2
-scsi_transport_sas raid_class cciss xor zlib_deflate
-[922864.547799] CPU: 7 PID: 7846 Comm: kworker/7:0 Not tainted
-3.11.0-15-generic #25~precise1-Ubuntu
-[922864.547935] Hardware name: HP ProLiant DL360 G5, BIOS P58 05/02/201=
-1
-[922864.548036] Workqueue: bcache bch_journal [bcache]
-[922864.548124] task: ffff88010d1f0000 ti: ffff8806058aa000 task.ti:
-ffff8806058aa000
-[922864.548243] RIP: 0010:[<ffffffffa01dd59f>]  [<ffffffffa01dd59f>]
-bch_btree_node_read_done+0x4f/0x430 [bcache]
-[922864.548412] RSP: 0018:ffff8806058abb38  EFLAGS: 00010246
-[922864.548499] RAX: 0000000000000400 RBX: ffff8807f52cac00 RCX:
-ffff8807f7360000
-[922864.548613] RDX: 0000000000000000 RSI: 0000000000000282 RDI:
-0000000000000282
-[922864.548720] RBP: ffff8806058abb68 R08: 0000000000011200 R09:
-0000000000000f7d
-[922864.548827] R10: 0000000000007d24 R11: 0000000000000001 R12:
-0000000000000000
-[922864.548933] R13: ffff8800b40c0000 R14: ffff88009f735020 R15:
-ffff88010d1f0000
-[922864.549041] FS:  0000000000000000(0000) GS:ffff88082fbc0000(0000)
-knlGS:0000000000000000
-[922864.549166] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[922864.549253] CR2: 0000000000000008 CR3: 0000000001c0d000 CR4:
-00000000000006e0
-[922864.549360] Stack:
-[922864.549403]  ffff8806058abb68 ffff8807f52cac00 ffff8806058abb78
-00034757253e6300
-[922864.549583]  ffff88009f735020 ffff88010d1f0000 ffff8806058abbd8
-ffffffffa01df420
-[922864.549767]  0000000000000000 ffff88010d1f0000 0000000000000000
-0000000000000000
-[922864.549944] Call Trace:
-[922864.549996]  [<ffffffffa01df420>] bch_btree_node_read+0x150/0x1a0
-[bcache]
-[922864.550110]  [<ffffffffa01e0737>] bch_btree_node_et+0x147/0x290 [bc=
-ache]
-[922864.550110]  [<ffffffffa01e2f5b>]
-bch_btree_insert_recurse+0x36b/0x510 [bcache]
-[922864.550110]  [<ffffffffa01e3256>] bch_btree_insert+0x156/0x330 [bca=
-che]
-[922864.550110]  [<ffffffffa01ef61a>] bch_btree_insert_async+0x1a/0xe0
-[bcache]
-[922864.550110]  [<ffffffffa01ea139>] bch_journal+0x49/0x300 [bcache]
-[922864.550110]  [<ffffffff81081060>] process_one_work+0x170/0x4a0
-[922864.550110]  [<ffffffff81082121>] worker_thread+0x121/0x390
-[922864.550110]  [<ffffffff81082000>] ? manage_workers.isra.21+0x170/0x=
-170
-[922864.550110]  [<ffffffff81088fe0>] kthread+0xc0/0xd0
-[922864.550110]  [<ffffffff81088f20>] ? flush_kthread_worker+0xb0/0xb0
-[922864.550110]  [<ffffffff817508ec>] ret_from_fork+0x7c/0xb0
-[922864.550110]  [<ffffffff81088f20>] ? flush_kthread_worker+0xb0/0xb0
-[922864.550110] Code: af c0 00 00 00 48 8b b8 50 35 00 00 e8 8b e4 f6 e=
-0
-48 8b 8b 80 00 00 00 49 89 c4 31 d2 0f b7 81 32 04 00 0
-0 66 f7 b1 30 04 00 00 <49> c7 44 24 08 00 00 00 00 0f b7 c0 49 89 04 2=
-4
-49 8b 45 10 48
-[922864.550110] RIP  [<ffffffffa01dd59f>]
-bch_btree_node_read_done+0x4f/0x430 [bcache]
-[922864.550110]  RSP <ffff8806058abb38>
-[922864.550110] CR2: 0000000000000008
+throw away the contents of the caching device?
 
-Any help appreciated.
+Is it possible to invalidate the cache without destroying /dev/bcache0 ?
 
-Thanks.
+How do I flush the cache to backing device as quickly as possible
+regardless of the usual throttling?
 
-Tino
+Should attaching the same cache set multiple times be producing WARNINGs?
+[ 2043.396173] ------------[ cut here ]------------
+[ 2043.396223] WARNING: CPU: 1 PID: 814 at fs/sysfs/dir.c:486 sysfs_warn_dup+0x86/0xa0()
+[ 2043.396291] sysfs: cannot create duplicate filename '/devices/LNXSYSTM:00/device:00/PNP0A03:00/device:08/VMBUS:00/vmbus_0_5/host3/target3:0:0/3:0:0:4/block/sdf/bcache/cache'
+[ 2043.396399] Modules linked in: iscsi_target_mod target_core_mod iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi crct10dif_pclmul crc32_pclmul ghash_clmulni_intel microcode serio_raw hyperv_keyboard snd_pcsp hv_netvsc i2c_piix4 i2c_core snd_pcm snd_page_alloc snd_timer snd soundcore hv_utils hyperv_fb bcache hid_hyperv hv_storvsc crc32c_intel ata_generic pata_acpi hv_vmbus dm_multipath
+[ 2043.396791] CPU: 1 PID: 814 Comm: bash Not tainted 3.13.5-200.fc20.x86_64 #1
+[ 2043.396880] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[ 2043.397006]  0000000000000009 ffff8800f3233c58 ffffffff81686fdc ffff8800f3233ca0
+[ 2043.397113]  ffff8800f3233c90 ffffffff8106d47d ffff8800e403f000 ffff8800e403f000
+[ 2043.397218]  ffff88007ec5f620 0000000000000001 0000000000000000 ffff8800f3233cf0
+[ 2043.397319] Call Trace:
+[ 2043.397365]  [<ffffffff81686fdc>] dump_stack+0x45/0x56
+[ 2043.397440]  [<ffffffff8106d47d>] warn_slowpath_common+0x7d/0xa0
+[ 2043.397525]  [<ffffffff8106d4ec>] warn_slowpath_fmt+0x4c/0x50
+[ 2043.397634]  [<ffffffff812307a6>] sysfs_warn_dup+0x86/0xa0
+[ 2043.397710]  [<ffffffff81230800>] sysfs_add_one+0x40/0x50
+[ 2043.397786]  [<ffffffff81231371>] sysfs_do_create_link_sd.isra.2+0xc1/0x1f0
+[ 2043.397883]  [<ffffffff812314c5>] sysfs_create_link+0x25/0x50
+[ 2043.397976]  [<ffffffffa005cf2e>] bcache_device_link+0x9e/0xf0 [bcache]
+[ 2043.398080]  [<ffffffffa005e832>] bch_cached_dev_attach+0x212/0x450 [bcache]
+[ 2043.398184]  [<ffffffffa00643cb>] bch_cached_dev_store+0x6db/0x770 [bcache]
+[ 2043.398252]  [<ffffffff8122f260>] ? sysfs_write_file+0x60/0x1c0
+[ 2043.398299]  [<ffffffff8122f328>] sysfs_write_file+0x128/0x1c0
+[ 2043.398344]  [<ffffffff811b8ab4>] vfs_write+0xb4/0x1f0
+[ 2043.398383]  [<ffffffff811b94e9>] SyS_write+0x49/0xa0
+[ 2043.398423]  [<ffffffff81695fa9>] system_call_fastpath+0x16/0x1b
+[ 2043.398466] ---[ end trace e55ca2066db90472 ]---
+[ 2043.398502] ------------[ cut here ]------------
+[ 2043.398545] WARNING: CPU: 1 PID: 814 at drivers/md/bcache/super.c:689 bcache_device_link+0xbc/0xf0 [bcache]()
+[ 2043.398651] Couldn't create device <-> cache set symlinks
+[ 2043.398717] Modules linked in:
+[ 2043.400814]  iscsi_target_mod target_core_mod iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi crct10dif_pclmul crc32_pclmul ghash_clmulni_intel microcode serio_raw hyperv_keyboard snd_pcsp hv_netvsc i2c_piix4 i2c_core snd_pcm snd_page_alloc snd_timer snd soundcore hv_utils hyperv_fb bcache hid_hyperv hv_storvsc crc32c_intel ata_generic pata_acpi hv_vmbus dm_multipath
+[ 2043.407935] CPU: 1 PID: 814 Comm: bash Tainted: G        W    3.13.5-200.fc20.x86_64 #1
+[ 2043.409841] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS 090006  05/23/2012
+[ 2043.413376]  0000000000000009 ffff8800f3233d00 ffffffff81686fdc ffff8800f3233d48
+[ 2043.415145]  ffff8800f3233d38 ffffffff8106d47d ffff8800f073008c ffff8800f0730040
+[ 2043.416965]  ffff88007eec0040 ffffffffa006ac98 ffff88007eec0cd0 ffff8800f3233d98
+[ 2043.418686] Call Trace:
+[ 2043.420428]  [<ffffffff81686fdc>] dump_stack+0x45/0x56
+[ 2043.422112]  [<ffffffff8106d47d>] warn_slowpath_common+0x7d/0xa0
+[ 2043.423784]  [<ffffffff8106d4ec>] warn_slowpath_fmt+0x4c/0x50
+[ 2043.425478]  [<ffffffffa005cf4c>] bcache_device_link+0xbc/0xf0 [bcache]
+[ 2043.427298]  [<ffffffffa005e832>] bch_cached_dev_attach+0x212/0x450 [bcache]
+[ 2043.428963]  [<ffffffffa00643cb>] bch_cached_dev_store+0x6db/0x770 [bcache]
+[ 2043.430563]  [<ffffffff8122f260>] ? sysfs_write_file+0x60/0x1c0
+[ 2043.432145]  [<ffffffff8122f328>] sysfs_write_file+0x128/0x1c0
+[ 2043.433743]  [<ffffffff811b8ab4>] vfs_write+0xb4/0x1f0
+[ 2043.435335]  [<ffffffff811b94e9>] SyS_write+0x49/0xa0
+[ 2043.436877]  [<ffffffff81695fa9>] system_call_fastpath+0x16/0x1b
+[ 2043.438434] ---[ end trace e55ca2066db90473 ]---
+[ 2043.439973] bcache: bch_cached_dev_attach() Caching sdf as bcache0 on set d8c40aa6-27b8-420e-abe2-1e2e7b31e74a
+[ 2112.863194] bcache: bch_cached_dev_attach() Can't attach sdf: already attached
+[ 2112.863256] bcache: __cached_dev_store() Can't attach d8c40aa6-27b8-420e-abe2-1e2e7b31e74a
 
---=20
-Internal Services
+Finally, is it possible to limit the amount of cache a particular
+backing device can use?
 
-phone: +49 (0)341 594 00 5531
-
-sprd.net AG
-Gie=DFerstra=DFe 27
-04229 Leipzig
-Germany
-
-http://www.spreadshirt.net/
-
-Vorstand/Executive Board: Matthias Spie=DF, Tobias Schaugg, Philip Rook=
-e
-Aufsichtsratsvorsitzender/Chairman of the Supervisory Board: Lukasz Gad=
-owski
-Handelsregister/Trade Register: Amtsgericht Leipzig, HRB 22478
-Umsatzsteuer-IdentNummer/VAT-ID: DE 8138 7149 4
+-- 
+Sitsofe | http://sucs.org/~sits/
