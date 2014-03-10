@@ -1,37 +1,47 @@
-From: Vivek Dasmohapatra <vivek@collabora.co.uk>
-Subject: Re: bcache questions
-Date: Sun, 9 Mar 2014 01:50:53 +0000 (GMT)
-Message-ID: <alpine.DEB.2.02.1403090146430.17442@noise.cbg.collabora.co.uk>
-References: <20140306093341.GA31900@sucs.org>
+From: Larkin Lowrey <llowrey@nuclearwinter.com>
+Subject: Slow writing of dirty data (bcache)
+Date: Mon, 10 Mar 2014 11:34:45 -0500
+Message-ID: <531DE9A5.90801@nuclearwinter.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:52912 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751724AbaCIBu5 (ORCPT
+Received: from titan.nuclearwinter.com ([174.136.96.186]:50594 "EHLO
+	mail.nuclearwinter.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753362AbaCJRHV (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 8 Mar 2014 20:50:57 -0500
-In-Reply-To: <20140306093341.GA31900@sucs.org>
+	Mon, 10 Mar 2014 13:07:21 -0400
+Received: from [IPv6:2601:e:1200:c80:52e5:49ff:febe:9a2b] ([IPv6:2601:e:1200:c80:52e5:49ff:febe:9a2b])
+	(authenticated bits=0)
+	by mail.nuclearwinter.com (8.14.4/8.14.4) with ESMTP id s2AGYgYn015143
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES128-SHA bits=128 verify=NO)
+	for <linux-bcache@vger.kernel.org>; Mon, 10 Mar 2014 11:34:43 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-> Finally, is it possible to limit the amount of cache a particular
-> backing device can use?
+I'm seeing an odd behavior after updating to kernel
+3.13.5-202.fc20.x86_64 from 3.12.7-300.fc20.x86_64.
 
-I'm not sure if it is, but you might be able to get the same end result
-by using partitions on the cache device to make separate sets: That is,
-instead of:
+I have a bcache device (bcache2) which backs a raid5 array (md2) that
+has 160+MB of dirty data. The dirty data is being written at a rate of 1
+page per second (8 sectors). At this rate it'll take 11 hrs to finish. I
+like to keep this array spun down when inactive but the drives can't
+spin down since they're being written to once a second.
 
-   { cache: backing }
-   { sdb  : sda1 }
-   { sdb  : sda3 }
+# cat /sys/block/bcache2/bcache/writeback_rate
+512
 
-You could try
+# cat /sys/block/bcache2/bcache/writeback_rate_debug
+rate:           512/sec
+dirty:          161M
+target:         40.8G
+proportional:   -35.2M
+derivative:     0
+change:         -35.2M/sec
+next io:        624ms
 
-   { sdb1 : sda1 }
-   { sdb2 : sda3 }
+This never happened when running 3.12.7. Is there anything I can do
+about this?
 
-and so forth, partitioning sdb appropriately.
-[ Disclaimer: I have not actually tried this ]
+--Larkin
