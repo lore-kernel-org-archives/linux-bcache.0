@@ -1,70 +1,49 @@
-From: Larkin Lowrey <llowrey@nuclearwinter.com>
-Subject: Re: Slow writing of dirty data (bcache)
-Date: Mon, 10 Mar 2014 16:14:41 -0500
-Message-ID: <531E2B41.5030605@nuclearwinter.com>
-References: <531DE9A5.90801@nuclearwinter.com> <CALJ65zm4O8KeA1vjhupAFoqh+07qH5OaLMCbm-fShkZk6nf9MA@mail.gmail.com>
+From: Daniel J Blueman <daniel@quora.org>
+Subject: bcache writeback threads blocked
+Date: Thu, 13 Mar 2014 18:35:41 +0800
+Message-ID: <CAMVG2suZrnzGF+WS7sFx0xJMNTLRcBpcQMozKgxyU5_VaeP+OQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from titan.nuclearwinter.com ([174.136.96.186]:51436 "EHLO
-	mail.nuclearwinter.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751231AbaCJVOn (ORCPT
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:52694 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753499AbaCMKfm (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 10 Mar 2014 17:14:43 -0400
-In-Reply-To: <CALJ65zm4O8KeA1vjhupAFoqh+07qH5OaLMCbm-fShkZk6nf9MA@mail.gmail.com>
+	Thu, 13 Mar 2014 06:35:42 -0400
+Received: by mail-ob0-f175.google.com with SMTP id uy5so805495obc.6
+        for <linux-bcache@vger.kernel.org>; Thu, 13 Mar 2014 03:35:42 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: kent.overstreet@gmail.com
 
-This solved my immediate problem. Thank you very much.
+I'm seeing bcache writeback threads sleep uninterruptably for
+significant periods on 3.13.6 [1], on a NFS fileserver with 1-2
+clients, exporting a 2TB BTRFS filesystem with a write-through bcache
+overlaid from a 50GB SSD partition. The workload is low-depth and
+light (kernel builds, git activity).
 
-Should I keep this array at 0 from now on if I want it to spin down when
-idle?
+Would any information help, or is this a known issue?
 
---Larkin
+Many thanks; bcache is indeed a superb mechanism.
 
-On 3/10/2014 12:12 PM, Kent Overstreet wrote:
->
-> echo 0 > writeback_percent...
->
-> On Mar 10, 2014 6:07 PM, "Larkin Lowrey" <llowrey@nuclearwinter.com
-> <mailto:llowrey@nuclearwinter.com>> wrote:
->
->     I'm seeing an odd behavior after updating to kernel
->     3.13.5-202.fc20.x86_64 from 3.12.7-300.fc20.x86_64.
->
->     I have a bcache device (bcache2) which backs a raid5 array (md2) that
->     has 160+MB of dirty data. The dirty data is being written at a
->     rate of 1
->     page per second (8 sectors). At this rate it'll take 11 hrs to
->     finish. I
->     like to keep this array spun down when inactive but the drives can't
->     spin down since they're being written to once a second.
->
->     # cat /sys/block/bcache2/bcache/writeback_rate
->     512
->
->     # cat /sys/block/bcache2/bcache/writeback_rate_debug
->     rate:           512/sec
->     dirty:          161M
->     target:         40.8G
->     proportional:   -35.2M
->     derivative:     0
->     change:         -35.2M/sec
->     next io:        624ms
->
->     This never happened when running 3.12.7. Is there anything I can do
->     about this?
->
->     --Larkin
->
->
->     --
->     To unsubscribe from this list: send the line "unsubscribe
->     linux-bcache" in
->     the body of a message to majordomo@vger.kernel.org
->     <mailto:majordomo@vger.kernel.org>
->     More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Daniel
+
+-- [1]
+
+INFO: task :bcache_writebac345 blocked for more than 120 seconds.
+      Not tainted 3.13.6-031306-generic #201403070154
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bcache_writebac D ffffffff818114c0     0   345      2 0x00000000
+ ffff8804050bdea8 0000000000000002 ffff8804050bde58 ffff8804050bdfd8
+ 0000000000014440 0000000000014440 ffff8804095a0000 ffff880405445fc0
+ 0000000000000282 ffff880404d426c0 ffff8804038a0000 ffffffffa0099380
+Call Trace:
+ [<ffffffffa0099380>] ? write_dirty+0xc0/0xc0 [bcache]
+ [<ffffffff81747679>] schedule+0x29/0x70
+ [<ffffffff8108e424>] kthread+0xa4/0xe0
+ [<ffffffff8108e380>] ? flush_kthread_worker+0xb0/0xb0
+ [<ffffffff8175403c>] ret_from_fork+0x7c/0xb0
+ [<ffffffff8108e380>] ? flush_kthread_worker+0xb0/0xb0
+-- 
+Daniel J Blueman
