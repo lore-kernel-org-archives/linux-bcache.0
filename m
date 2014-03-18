@@ -1,262 +1,85 @@
-From: john.sheu@gmail.com
-Subject: [PATCH] bcache: remove nested function usage
-Date: Mon, 17 Mar 2014 23:13:56 -0700
-Message-ID: <1395123236-25114-1-git-send-email-john.sheu@gmail.com>
-References: <1395121859-23501-1-git-send-email-john.sheu@gmail.com>
+From: Kent Overstreet <kmo@daterainc.com>
+Subject: [GIT PULL] bcache changes for 3.15
+Date: Tue, 18 Mar 2014 12:56:03 -0700
+Message-ID: <20140318195603.GI11655@kmo>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pb0-f74.google.com ([209.85.160.74]:47012 "EHLO
-	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230AbaCRGjU (ORCPT
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:41286 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755779AbaCRT4H (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 18 Mar 2014 02:39:20 -0400
-Received: by mail-pb0-f74.google.com with SMTP id md12so840059pbc.3
-        for <linux-bcache@vger.kernel.org>; Mon, 17 Mar 2014 23:39:19 -0700 (PDT)
-In-Reply-To: <1395121859-23501-1-git-send-email-john.sheu@gmail.com>
+	Tue, 18 Mar 2014 15:56:07 -0400
+Received: by mail-pd0-f171.google.com with SMTP id r10so7540075pdi.16
+        for <linux-bcache@vger.kernel.org>; Tue, 18 Mar 2014 12:56:06 -0700 (PDT)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org, kmo@daterainc.com
-Cc: John Sheu <john.sheu@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 
-From: John Sheu <john.sheu@gmail.com>
+Jens, here's the bcache changes for 3.15. Lots of bugfixes, and some refactoring
+and cleanups.
 
-Uninlined nested functions can cause crashes when using ftrace, as they don't
-follow the normal calling convention and confuse the ftrace function graph
-tracer as it examines the stack.
+The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
 
-Also, nested functions are supported as a gcc extension, but may fail on other
-compilers (e.g. llvm).
+  Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
 
-Signed-off-by: John Sheu <john.sheu@gmail.com>
----
- drivers/md/bcache/extents.c |  21 ++++----
- drivers/md/bcache/sysfs.c   | 122 ++++++++++++++++++++++----------------------
- 2 files changed, 74 insertions(+), 69 deletions(-)
+are available in the git repository at:
 
-diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
-index 1a87d2bd..785345ac 100644
---- a/drivers/md/bcache/extents.c
-+++ b/drivers/md/bcache/extents.c
-@@ -468,6 +468,15 @@ static struct bkey *bch_extent_sort_fixup(struct btree_iter *iter,
- 	return NULL;
- }
- 
-+static void subtract_dirty(struct bkey *k,
-+			   struct cache_set *c,
-+			   uint64_t offset,
-+			   int sectors)
-+{
-+	if (KEY_CACHED(k) && bch_extent_ptrs(k))
-+		bcache_dev_sectors_dirty_add(c, KEY_INODE(k), offset, -sectors);
-+}
-+
- static bool bch_extent_insert_fixup(struct btree_keys *b,
- 				    struct bkey *insert,
- 				    struct btree_iter *iter,
-@@ -475,13 +484,6 @@ static bool bch_extent_insert_fixup(struct btree_keys *b,
- {
- 	struct cache_set *c = container_of(b, struct btree, keys)->c;
- 
--	void subtract_dirty(struct bkey *k, uint64_t offset, int sectors)
--	{
--		if (!KEY_CACHED(k) && bch_extent_ptrs(k))
--			bcache_dev_sectors_dirty_add(c, KEY_INODE(k),
--						     offset, -sectors);
--	}
--
- 	uint64_t old_offset;
- 	unsigned old_size, sectors_found = 0;
- 
-@@ -558,7 +560,8 @@ static bool bch_extent_insert_fixup(struct btree_keys *b,
- 
- 			struct bkey *top;
- 
--			subtract_dirty(k, KEY_START(insert), KEY_SIZE(insert));
-+			subtract_dirty(k, c, KEY_START(insert),
-+				       KEY_SIZE(insert));
- 
- 			if (bkey_written(b, k)) {
- 				/*
-@@ -608,7 +611,7 @@ static bool bch_extent_insert_fixup(struct btree_keys *b,
- 			}
- 		}
- 
--		subtract_dirty(k, old_offset, old_size - KEY_SIZE(k));
-+		subtract_dirty(k, c, old_offset, old_size - KEY_SIZE(k));
- 	}
- 
- check_failed:
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 9d85958e..30158f45 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -422,81 +422,81 @@ static unsigned cache_available_percent(struct cache_set *c)
- 	return div64_u64((u64) buckets_available(c) * 100, c->nbuckets);
- }
- 
--SHOW(__bch_cache_set)
-+static unsigned root_usage(struct cache_set *c)
- {
--	unsigned root_usage(struct cache_set *c)
--	{
--		unsigned bytes = 0;
--		struct bkey *k;
--		struct btree *b;
--		struct btree_iter iter;
-+	unsigned bytes = 0;
-+	struct bkey *k;
-+	struct btree *b;
-+	struct btree_iter iter;
- 
--		goto lock_root;
-+	goto lock_root;
- 
--		do {
--			rw_unlock(false, b);
-+	do {
-+		rw_unlock(false, b);
- lock_root:
--			b = c->btree_roots[BTREE_ID_EXTENTS];
--			rw_lock(false, b, b->level);
--		} while (b != c->btree_roots[BTREE_ID_EXTENTS]);
-+		b = c->btree_roots[BTREE_ID_EXTENTS];
-+		rw_lock(false, b, b->level);
-+	} while (b != c->btree_roots[BTREE_ID_EXTENTS]);
- 
--		for_each_key_filter(&b->keys, k, &iter, bch_ptr_bad)
--			bytes += bkey_bytes(k);
-+	for_each_key_filter(&b->keys, k, &iter, bch_ptr_bad)
-+		bytes += bkey_bytes(k);
- 
--		rw_unlock(false, b);
-+	rw_unlock(false, b);
- 
--		return (bytes * 100) / btree_bytes(c);
--	}
--
--	size_t cache_size(struct cache_set *c)
--	{
--		size_t ret = 0;
--		struct btree *b;
-+	return (bytes * 100) / btree_bytes(c);
-+}
- 
--		mutex_lock(&c->bucket_lock);
--		list_for_each_entry(b, &c->btree_cache, list)
--			ret += 1 << (b->keys.page_order + PAGE_SHIFT);
-+static size_t cache_size(struct cache_set *c)
-+{
-+	size_t ret = 0;
-+	struct btree *b;
- 
--		mutex_unlock(&c->bucket_lock);
--		return ret;
--	}
-+	mutex_lock(&c->bucket_lock);
-+	list_for_each_entry(b, &c->btree_cache, list)
-+		ret += 1 << (b->keys.page_order + PAGE_SHIFT);
- 
--	unsigned cache_max_chain(struct cache_set *c)
--	{
--		unsigned ret = 0;
--		struct hlist_head *h;
-+	mutex_unlock(&c->bucket_lock);
-+	return ret;
-+}
- 
--		mutex_lock(&c->bucket_lock);
-+static unsigned cache_max_chain(struct cache_set *c)
-+{
-+	unsigned ret = 0;
-+	struct hlist_head *h;
- 
--		for (h = c->bucket_hash;
--		     h < c->bucket_hash + (1 << BUCKET_HASH_BITS);
--		     h++) {
--			unsigned i = 0;
--			struct hlist_node *p;
-+	mutex_lock(&c->bucket_lock);
- 
--			hlist_for_each(p, h)
--				i++;
-+	for (h = c->bucket_hash;
-+	     h < c->bucket_hash + (1 << BUCKET_HASH_BITS);
-+	     h++) {
-+		unsigned i = 0;
-+		struct hlist_node *p;
- 
--			ret = max(ret, i);
--		}
-+		hlist_for_each(p, h)
-+			i++;
- 
--		mutex_unlock(&c->bucket_lock);
--		return ret;
-+		ret = max(ret, i);
- 	}
- 
--	unsigned btree_used(struct cache_set *c)
--	{
--		return div64_u64(c->gc_stats.key_bytes * 100,
--				 (c->gc_stats.nodes ?: 1) * btree_bytes(c));
--	}
-+	mutex_unlock(&c->bucket_lock);
-+	return ret;
-+}
- 
--	unsigned average_key_size(struct cache_set *c)
--	{
--		return c->gc_stats.nkeys
--			? div64_u64(c->gc_stats.data, c->gc_stats.nkeys)
--			: 0;
--	}
-+static unsigned btree_used(struct cache_set *c)
-+{
-+	return div64_u64(c->gc_stats.key_bytes * 100,
-+			 (c->gc_stats.nodes ?: 1) * btree_bytes(c));
-+}
-+
-+static unsigned average_key_size(struct cache_set *c)
-+{
-+	return c->gc_stats.nkeys
-+		? div64_u64(c->gc_stats.data, c->gc_stats.nkeys)
-+		: 0;
-+}
- 
-+SHOW(__bch_cache_set)
-+{
- 	struct cache_set *c = container_of(kobj, struct cache_set, kobj);
- 
- 	sysfs_print(synchronous,		CACHE_SYNC(&c->sb));
-@@ -740,6 +740,11 @@ static struct attribute *bch_cache_set_internal_files[] = {
- };
- KTYPE(bch_cache_set_internal);
- 
-+static int prio_cmp(const void *l, const void *r)
-+{
-+	return *((uint16_t *) r) - *((uint16_t *) l);
-+}
-+
- SHOW(__bch_cache)
- {
- 	struct cache *ca = container_of(kobj, struct cache, kobj);
-@@ -766,9 +771,6 @@ SHOW(__bch_cache)
- 	sysfs_print(tier,		CACHE_TIER(&ca->sb));
- 
- 	if (attr == &sysfs_priority_stats) {
--		int cmp(const void *l, const void *r)
--		{	return *((uint16_t *) r) - *((uint16_t *) l); }
--
- 		struct bucket *b;
- 		size_t n = ca->sb.nbuckets, i;
- 		size_t unused = 0, available = 0, dirty = 0, meta = 0;
-@@ -797,7 +799,7 @@ SHOW(__bch_cache)
- 			p[i] = ca->buckets[i].read_prio;
- 		mutex_unlock(&ca->set->bucket_lock);
- 
--		sort(p, n, sizeof(uint16_t), cmp, NULL);
-+		sort(p, n, sizeof(uint16_t), prio_cmp, NULL);
- 
- 		while (n &&
- 		       !cached[n - 1])
--- 
-1.9.0.279.gdc9e3eb
+  git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.15
+
+for you to fetch changes up to cb85114956dc88b287afca2872658f562acbc302:
+
+  bcache: remove nested function usage (2014-03-18 12:39:28 -0700)
+
+----------------------------------------------------------------
+John Sheu (1):
+      bcache: remove nested function usage
+
+Kent Overstreet (21):
+      bcache: Fix another compiler warning on m68k
+      bcache: Fix flash_dev_cache_miss() for real this time
+      bcache: Fix a shutdown bug
+      bcache: Fix a lockdep splat in an error path
+      bcache: Fix a null ptr deref in journal replay
+      bcache: Fix a journalling reclaim after recovery bug
+      bcache: Fix a bug recovering from unclean shutdown
+      bcache: Fix another bug recovering from unclean shutdown
+      bcache: Fix discard granularity
+      bcache: Fix moving_pred()
+      bcache: Kill dead cgroup code
+      bcache: Better alloc tracepoints
+      bcache: Improve priority_stats
+      bcache: Add bch_keylist_init_single()
+      bcache: Add a real GC_MARK_RECLAIMABLE
+      bcache: Fix a race when freeing btree nodes
+      bcache: btree locking rework
+      bcache: Kill btree_io_wq
+      bcache: Rework btree cache reserve handling
+      bcache: Kill unused freelist
+      bcache: Kill bucket->gc_gen
+
+Nicholas Swenson (2):
+      bcache: Fix moving_gc deadlocking with a foreground write
+      bcache: stop moving_gc marking buckets that can't be moved.
+
+ drivers/md/bcache/Kconfig     |   8 -
+ drivers/md/bcache/alloc.c     | 173 +++++-------
+ drivers/md/bcache/bcache.h    |  56 ++--
+ drivers/md/bcache/bset.c      |   4 +-
+ drivers/md/bcache/bset.h      |   6 +
+ drivers/md/bcache/btree.c     | 592 ++++++++++++++++++++++++------------------
+ drivers/md/bcache/btree.h     |  12 +-
+ drivers/md/bcache/extents.c   |  36 +--
+ drivers/md/bcache/journal.c   |  46 ++--
+ drivers/md/bcache/journal.h   |   1 +
+ drivers/md/bcache/movinggc.c  |  18 +-
+ drivers/md/bcache/request.c   | 201 +-------------
+ drivers/md/bcache/request.h   |  19 +-
+ drivers/md/bcache/stats.c     |   3 -
+ drivers/md/bcache/super.c     |  64 ++---
+ drivers/md/bcache/sysfs.c     | 155 ++++++-----
+ drivers/md/bcache/trace.c     |   2 +-
+ include/trace/events/bcache.h |  52 ++--
+ 18 files changed, 664 insertions(+), 784 deletions(-)
