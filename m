@@ -1,35 +1,51 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [GIT PULL] bcache changes for 3.15
-Date: Wed, 19 Mar 2014 08:35:40 -0600
-Message-ID: <5329AB3C.7000006@kernel.dk>
-References: <20140318195603.GI11655@kmo>
+From: Daniel Smedegaard Buus <danielbuus@gmail.com>
+Subject: Creating bdev on md array fails, but not quite ...
+Date: Thu, 27 Mar 2014 14:00:56 +0100
+Message-ID: <CAHnuAewuXgA0B1hRjDCNBoQyJNJCOiZtEs16LSVMTe9Y29RS+g@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20140318195603.GI11655@kmo>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:44258 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbaC0NBg (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 27 Mar 2014 09:01:36 -0400
+Received: by mail-ob0-f172.google.com with SMTP id wm4so4190884obc.3
+        for <linux-bcache@vger.kernel.org>; Thu, 27 Mar 2014 06:01:36 -0700 (PDT)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 03/18/2014 01:56 PM, Kent Overstreet wrote:
-> Jens, here's the bcache changes for 3.15. Lots of bugfixes, and some refactoring
-> and cleanups.
->
-> The following changes since commit 6d0abeca3242a88cab8232e4acd7e2bf088f3bc2:
->
->    Linux 3.14-rc3 (2014-02-16 13:30:25 -0800)
->
-> are available in the git repository at:
->
->    git://evilpiepirate.org/~kent/linux-bcache.git bcache-for-3.15
->
-> for you to fetch changes up to cb85114956dc88b287afca2872658f562acbc302:
->
->    bcache: remove nested function usage (2014-03-18 12:39:28 -0700)
+Hi :)
 
-Thanks Kent, pulled!
+I'm trying to create a scripted bcache setup for an EC2 AMI. It'll
+detect appropriate EBS devices, join them in a raid0 array, then do
+the same for ephemeral devices. This results in /dev/md0 and /dev/md1.
 
--- 
-Jens Axboe
+So far so good.
+
+My script fails when I try to create the bdev;
+
+    # make-bcache --bdev /dev/md0
+    Can't open dev /dev/md0: Device or resource busy
+
+Interesting thing is, I now have
+/sys/devices/virtual/block/md0/bcache, though no /sys/block/bcache0.
+
+I can echo 1 > /sys/devices/virtual/block/md0/bcache/stop and the
+md0/bcache directory disappears. Trying again, I get:
+
+    # make-bcache --bdev /dev/md0
+    Already a bcache device on /dev/md0, overwrite with --wipe-bcache
+    # make-bcache --bdev --wipe-bcache /dev/md0
+    Can't open dev /dev/md0: Device or resource busy
+
+And /sys/devices/virtual/block/md0/bcache reappears.
+
+What gives? This seems pretty strange to me.
+
+The kernel is 3.13.0-19-generic #39-Ubuntu SMP Fri Mar 21 14:18:44 UTC
+2014 x86_64 x86_64 x86_64 GNU/Linux
+
+Thanks,
+Daniel :)
