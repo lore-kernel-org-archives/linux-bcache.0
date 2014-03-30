@@ -1,29 +1,70 @@
-From: Daniel Smedegaard Buus <danielbuus@gmail.com>
-Subject: Re: Missing cache prevents AWS instance from booting
-Date: Fri, 28 Mar 2014 13:55:57 +0100
-Message-ID: <CAHnuAex13kMyRmbuCR4EVtf5zTd8f2gFp--7oc98fsey1RyrJw@mail.gmail.com>
-References: <CAHnuAezfCLEC5oxi7FxyC2qjCtEB5=Yc2ztfRb7uXrq1Hr7bdQ@mail.gmail.com>
+From: Francis Moreau <francis.moro@gmail.com>
+Subject: Issue (as expected) when upgrading from 3.12 to 3.13.7
+Date: Sun, 30 Mar 2014 12:53:12 +0200
+Message-ID: <lh8t08$1dd$1@ger.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:49655 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862AbaC1M4h convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 28 Mar 2014 08:56:37 -0400
-Received: by mail-oa0-f53.google.com with SMTP id j17so6080978oag.12
-        for <linux-bcache@vger.kernel.org>; Fri, 28 Mar 2014 05:56:37 -0700 (PDT)
-In-Reply-To: <CAHnuAezfCLEC5oxi7FxyC2qjCtEB5=Yc2ztfRb7uXrq1Hr7bdQ@mail.gmail.com>
+Received: from plane.gmane.org ([80.91.229.3]:59924 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752612AbaC3KwH (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 30 Mar 2014 06:52:07 -0400
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1WUDLQ-0008U1-GU
+	for linux-bcache@vger.kernel.org; Sun, 30 Mar 2014 12:52:04 +0200
+Received: from au213-1-82-235-205-153.fbx.proxad.net ([82.235.205.153])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sun, 30 Mar 2014 12:52:04 +0200
+Received: from francis.moro by au213-1-82-235-205-153.fbx.proxad.net with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sun, 30 Mar 2014 12:52:04 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 1:25 PM, Daniel Smedegaard Buus
-<danielbuus@gmail.com> wrote:
-> [Stupid things]
+Hello,
 
-Nevermind, once again it was my own retardation. It was, in fact, the
-entry in fstab which caused the kernel to halt when /dev/bcache0 was
-missing =E2=80=94 which of course it is when the cache device goes miss=
-ing :)
+As I was expecting I'm getting new issues with bcache after upgrading my
+kernel:
+
+[Mar30 12:24] INFO: task bcache_writebac:155 blocked for more than 120
+seconds.
+[  +0.000007]       Not tainted 3.13.7-1-ARCH #1
+[  +0.000002] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[  +0.000003] bcache_writebac D 0000000000000000     0   155      2
+0x00000000
+[  +0.000006]  ffff8804049c5eb8 0000000000000046 ffff880405816c00
+ffff8804049c5fd8
+[  +0.000005]  0000000000014440 0000000000014440 ffff880405816c00
+ffff8804049c5e38
+[  +0.000004]  ffffffff810925fa 24448b48e0d83524 fa83ffffee31e918
+0000000000000046
+[  +0.000004] Call Trace:
+[  +0.000010]  [<ffffffff810925fa>] ? try_to_wake_up+0x1fa/0x2c0
+[  +0.000006]  [<ffffffff81092712>] ? default_wake_function+0x12/0x20
+[  +0.000005]  [<ffffffff810a2538>] ? __wake_up_common+0x58/0x90
+[  +0.000023]  [<ffffffffa03c7470>] ? read_dirty_endio+0x60/0x60 [bcache]
+[  +0.000005]  [<ffffffff81516239>] schedule+0x29/0x70
+[  +0.000006]  [<ffffffff8108358d>] kthread+0xad/0xf0
+[  +0.000005]  [<ffffffff810834e0>] ? kthread_create_on_node+0x180/0x180
+[  +0.000005]  [<ffffffff81521abc>] ret_from_fork+0x7c/0xb0
+[  +0.000005]  [<ffffffff810834e0>] ? kthread_create_on_node+0x180/0x180
+
+That's just sad to see how unstable was/is bcache sub system and I still
+don't understand why it was not marked as experimental.
+
+3.12 was/is buggy when used with writeback mode, and I just had to live
+with cache-through. I tried to get some helps (and others too) but no
+answers.
+
+I read there were issue with 3.13, so I delayed my kernel upgrade as far
+I could due to this. I was hoping that issues were fixed in 3.13.x
+stable tree but apparently not.
+
+Hopefully this one will not be ignored.
+
+Thanks
