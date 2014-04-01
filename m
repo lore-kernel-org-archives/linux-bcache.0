@@ -1,40 +1,36 @@
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
+From: Daniel Smedegaard Buus <danielbuus@gmail.com>
 Subject: Re: Any way to allow contiguous writes to be cached?
-Date: Tue, 1 Apr 2014 10:29:14 +0100
-Message-ID: <20140401092856.GA12347@sucs.org>
+Date: Tue, 1 Apr 2014 12:50:07 +0200
+Message-ID: <CAHnuAezj9TCi8wH6yp+HoBzkjqtLcTZJ3Kj5bP5YFdh37_Hz4g@mail.gmail.com>
 References: <CAHnuAezVv20jS48FXUU7meithjgoKdBVRRZNgGJMZcGAGYv2KA@mail.gmail.com>
+ <20140401092856.GA12347@sucs.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:39211 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162AbaDAJ3Q (ORCPT
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:51798 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260AbaDAKur (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 1 Apr 2014 05:29:16 -0400
-Content-Disposition: inline
-In-Reply-To: <CAHnuAezVv20jS48FXUU7meithjgoKdBVRRZNgGJMZcGAGYv2KA@mail.gmail.com>
+	Tue, 1 Apr 2014 06:50:47 -0400
+Received: by mail-ob0-f173.google.com with SMTP id gq1so10730748obb.18
+        for <linux-bcache@vger.kernel.org>; Tue, 01 Apr 2014 03:50:47 -0700 (PDT)
+In-Reply-To: <20140401092856.GA12347@sucs.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Daniel Smedegaard Buus <danielbuus@gmail.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
 Cc: linux-bcache@vger.kernel.org
 
-Hi,
+On Tue, Apr 1, 2014 at 11:29 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
+> Hi,
+>
+> A very frequent question - see TROUBLESHOOTING PERFORMANCE in the
+> bcache.txt document
+> (http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/bcache.txt#n130
+> ) - explicitly the "Bad performance, or traffic not going to the SSD that
+> you'd expect".
+>
 
-On Tue, Apr 01, 2014 at 09:10:23AM +0200, Daniel Smedegaard Buus wrote:
-> 
-> My actual data set isn't expected to grow beyond the size that the
-> cache device offers any time soon, if ever, and so in my case, the
-> optimum behavior of bcache would be to not just cache random data, but
-> contiguous as well.
-> 
-> I realize that this isn't how bcache behaves, but I'm wondering if
-> there's any way to tell it to do so?
+Ah, that's great, thank you Sitsofe :)
 
-A very frequent question - see TROUBLESHOOTING PERFORMANCE in the
-bcache.txt document
-(http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/bcache.txt#n130
-) - explicitly the "Bad performance, or traffic not going to the SSD that
-you'd expect".
-
--- 
-Sitsofe | http://sucs.org/~sits/
+> --
+> Sitsofe | http://sucs.org/~sits/
