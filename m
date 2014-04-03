@@ -1,36 +1,74 @@
-From: Daniel Smedegaard Buus <danielbuus@gmail.com>
-Subject: Re: Any way to allow contiguous writes to be cached?
-Date: Tue, 1 Apr 2014 12:50:07 +0200
-Message-ID: <CAHnuAezj9TCi8wH6yp+HoBzkjqtLcTZJ3Kj5bP5YFdh37_Hz4g@mail.gmail.com>
-References: <CAHnuAezVv20jS48FXUU7meithjgoKdBVRRZNgGJMZcGAGYv2KA@mail.gmail.com>
- <20140401092856.GA12347@sucs.org>
+From: Francis Moreau <francis.moro@gmail.com>
+Subject: Re: Issue (as expected) when upgrading from 3.12 to 3.13.7
+Date: Thu, 03 Apr 2014 11:56:30 +0200
+Message-ID: <533D304E.10609@gmail.com>
+References: <lh8t08$1dd$1@ger.gmane.org> <20140330114747.GA15353@sucs.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51798 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260AbaDAKur (ORCPT
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:46021 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750715AbaDCJzM (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 1 Apr 2014 06:50:47 -0400
-Received: by mail-ob0-f173.google.com with SMTP id gq1so10730748obb.18
-        for <linux-bcache@vger.kernel.org>; Tue, 01 Apr 2014 03:50:47 -0700 (PDT)
-In-Reply-To: <20140401092856.GA12347@sucs.org>
+	Thu, 3 Apr 2014 05:55:12 -0400
+Received: by mail-wg0-f49.google.com with SMTP id a1so1590477wgh.32
+        for <linux-bcache@vger.kernel.org>; Thu, 03 Apr 2014 02:55:11 -0700 (PDT)
+In-Reply-To: <20140330114747.GA15353@sucs.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>, Kent Overstreet <kmo@daterainc.com>
 Cc: linux-bcache@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 11:29 AM, Sitsofe Wheeler <sitsofe@yahoo.com> wrote:
+still having the same trace with 3.13.8.
+
+On 03/30/2014 01:47 PM, Sitsofe Wheeler wrote:
 > Hi,
->
-> A very frequent question - see TROUBLESHOOTING PERFORMANCE in the
-> bcache.txt document
-> (http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/bcache.txt#n130
-> ) - explicitly the "Bad performance, or traffic not going to the SSD that
-> you'd expect".
->
-
-Ah, that's great, thank you Sitsofe :)
-
-> --
-> Sitsofe | http://sucs.org/~sits/
+> 
+> On Sun, Mar 30, 2014 at 12:53:12PM +0200, Francis Moreau wrote:
+>>
+>> As I was expecting I'm getting new issues with bcache after upgrading my
+>> kernel:
+>>
+>> [Mar30 12:24] INFO: task bcache_writebac:155 blocked for more than 120
+>> seconds.
+>> [  +0.000007]       Not tainted 3.13.7-1-ARCH #1
+>> [  +0.000002] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+>> disables this message.
+>> [  +0.000003] bcache_writebac D 0000000000000000     0   155      2
+>> 0x00000000
+>> [  +0.000006]  ffff8804049c5eb8 0000000000000046 ffff880405816c00
+>> ffff8804049c5fd8
+>> [  +0.000005]  0000000000014440 0000000000014440 ffff880405816c00
+>> ffff8804049c5e38
+>> [  +0.000004]  ffffffff810925fa 24448b48e0d83524 fa83ffffee31e918
+>> 0000000000000046
+>> [  +0.000004] Call Trace:
+>> [  +0.000010]  [<ffffffff810925fa>] ? try_to_wake_up+0x1fa/0x2c0
+>> [  +0.000006]  [<ffffffff81092712>] ? default_wake_function+0x12/0x20
+>> [  +0.000005]  [<ffffffff810a2538>] ? __wake_up_common+0x58/0x90
+>> [  +0.000023]  [<ffffffffa03c7470>] ? read_dirty_endio+0x60/0x60 [bcache]
+>> [  +0.000005]  [<ffffffff81516239>] schedule+0x29/0x70
+>> [  +0.000006]  [<ffffffff8108358d>] kthread+0xad/0xf0
+>> [  +0.000005]  [<ffffffff810834e0>] ? kthread_create_on_node+0x180/0x180
+>> [  +0.000005]  [<ffffffff81521abc>] ret_from_fork+0x7c/0xb0
+>> [  +0.000005]  [<ffffffff810834e0>] ? kthread_create_on_node+0x180/0x180
+>>
+>> That's just sad to see how unstable was/is bcache sub system and I still
+>> don't understand why it was not marked as experimental.
+>>
+>> 3.12 was/is buggy when used with writeback mode, and I just had to live
+>> with cache-through. I tried to get some helps (and others too) but no
+>> answers.
+>>
+>> I read there were issue with 3.13, so I delayed my kernel upgrade as far
+>> I could due to this. I was hoping that issues were fixed in 3.13.x
+>> stable tree but apparently not.
+>>
+>> Hopefully this one will not be ignored.
+> 
+> Francis - I've found it helps if you add all the relevant addresses
+> mentioned in https://www.kernel.org/doc/linux/MAINTAINERS . For this
+> mail I'm going to explicitly CC Kent to help this get noticed.
+> Additionally do you also see this problem with 3.14?
+> 
