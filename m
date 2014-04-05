@@ -1,78 +1,61 @@
-From: Sitsofe Wheeler <sitsofe@yahoo.com>
-Subject: Re: Performance testing with bcache
-Date: Sat, 5 Apr 2014 08:57:53 +0100
-Message-ID: <20140405075750.GA27592@sucs.org>
-References: <155722734.53464.1394740311695.JavaMail.zimbra@xes-inc.com>
- <2000529324.55683.1394741536677.JavaMail.zimbra@xes-inc.com>
- <20140313205259.GA28293@sucs.org>
- <216592761.38181.1394822496274.JavaMail.zimbra@xes-inc.com>
- <1899882151.50322.1394831787760.JavaMail.zimbra@xes-inc.com>
- <20140315175212.GA20197@sucs.org>
- <459660524.313506.1396631210130.JavaMail.zimbra@xes-inc.com>
- <CALJ65zm2C5xX0am76ZNK4N2Uai+3U8bQENHcfjU_KOOb4+1iAw@mail.gmail.com>
+From: Greg Michalec <greg@primate.net>
+Subject: Restoring/Disabling bcache
+Date: Sat, 05 Apr 2014 16:58:23 -0700
+Message-ID: <5340989F.5040300@primate.net>
+Reply-To: greg@primate.net
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from silver.sucs.swan.ac.uk ([137.44.10.1]:58309 "EHLO
-	silver.sucs.swan.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920AbaDEH56 (ORCPT
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:56994 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805AbaDEX6Z (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 5 Apr 2014 03:57:58 -0400
-Content-Disposition: inline
-In-Reply-To: <CALJ65zm2C5xX0am76ZNK4N2Uai+3U8bQENHcfjU_KOOb4+1iAw@mail.gmail.com>
+	Sat, 5 Apr 2014 19:58:25 -0400
+Received: by mail-pd0-f174.google.com with SMTP id y13so4954393pdi.33
+        for <linux-bcache@vger.kernel.org>; Sat, 05 Apr 2014 16:58:25 -0700 (PDT)
+Received: from [192.168.2.142] (c-50-156-34-49.hsd1.ca.comcast.net. [50.156.34.49])
+        by mx.google.com with ESMTPSA id j3sm26848935pbh.38.2014.04.05.16.58.24
+        for <linux-bcache@vger.kernel.org>
+        (version=TLSv1 cipher=ECDHE-RSA-RC4-SHA bits=128/128);
+        Sat, 05 Apr 2014 16:58:24 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Andrew Martin <amartin@xes-inc.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-On Fri, Apr 04, 2014 at 12:10:53PM -0700, Kent Overstreet wrote:
-> How much data is being bypassed?
-> 
-> On Fri, Apr 4, 2014 at 10:06 AM, Andrew Martin <amartin@xes-inc.com> wrote:
-> >
-> > Am I doing something wrong when running fio?
+Hi -
+Apologies in advance for asking a noob question, but I couldn't find
+this information anywhere.
 
-Andrew, 
+ 0 down vote favorite
+	
 
-There's not enough information to be able to say if something is going
-wrong at this stage as I don't know:
-a) The speed of the backing device (also the block device name (e.g.
-sda/md0 helps later)) with a given IO pattern
-b) The speed of the front device (block name also helps later) with a
-given IO pattern
-c) What bcache settings you have set
-d) What type of IO was done to the bcache device and at which points
-(e.g. was writeback happening at that point?)
-e) What statistics bcache is reporting
+I have a 20 gb SSD device on my laptop that i decided to try bcache on.
+I followed the instructions to convert my /home (ext4) to use bacache,
+and it worked fine. It seemed to work, but for some time now, I've been
+getting an error on boot:
 
-Initially while you're getting used to this I'd stick to just running
-one block size (4k). So something like:
-export RT=30; export SEED=21; export SIZE="5G"; export DEV="bcache0"; BS="4k"
+error on 0f3bbb55-6839-4ed6-8127-7976a969f726: corrupted btree at bucket
+17571, block 483, 61 keys, disabling caching
 
-Ensure you have read and implemented the appropriate pieces mentioned in
-the TROUBLESHOOTING PERFORMANCE section of
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/bcache.txt#n130
-otherwise results can be unexpected when benchmarking...
+I figure I could try and repair this, but I've decided I'm probably
+better off just disabling bcache - I don't know enough about this to
+risk losing data/hair if something breaks, and I think I'd be better off
+using the partition as root/swap.
 
-Something like the following would be easier to follow:
-Set the cache_mode to none. Run (and record)
-grep -r . /sys/block/bcache0/bcache/
-Clear the bcache total stats (see clear_stats)
-View and record the bcache backing device total stats then run
-fio benchmark-rand.fio
-View and record the bcache backing device total stats
-Set the cache_mode to writeback. Run (and record)
-grep -r . /sys/block/bcache0/bcache/
-Clear the bcache total stats then run
-View and record the bcache backing device total stats then run
-fio benchmark-rand.fio
-View and record the bcache backing device total stats
+My question is, is there a way to safely stop using bcache without
+reformatting the backing device? Is it as simple as restoring the ext4
+superblock and unregistering the device?  (Note, the filesystem on /home
+seems to be fine - i think it's just disabling the caching)
 
-If everything is working (and the front device is faster for random
-writes) I'd expect the with writeback fio job to be noticibly faster
-than none fio job (how much faster is setup dependent). Only if my
-expectation was correct would I repeat the above with the
-benchmark-seq.fio job...
+I am using /dev/sda7 as my backing device, and /dev/sdb2 as the caching
+device (/dev/sdb1 is root).
 
--- 
-Sitsofe | http://sucs.org/~sits/
+If it matters, I'm running Ubuntu 14.04 with kernel 3.13.0-21-generic.
+Here's a link to this question on stackoverflow, if you'd like to answer
+there for posterity - otherwise I'll post what ever info you respond with.
+http://stackoverflow.com/questions/22820492/how-to-disable-bcache-on-device
+
+Thank you!
+
+--greg michalec
