@@ -1,43 +1,29 @@
 From: Thorkild Stray <thorkild.stray@cxense.com>
-Subject: Fwd: Stale bcache (writethrough) leading to cache being disabled.
-Date: Wed, 9 Apr 2014 06:05:39 +0200
-Message-ID: <CAJ0Z65yHV_VM2=YWZx2T5DcQwQ=wnVz-T_acgxJWQi0JZAEFcg@mail.gmail.com>
+Subject: Re: Stale bcache (writethrough) leading to cache being disabled.
+Date: Wed, 9 Apr 2014 06:20:24 +0200
+Message-ID: <CAJ0Z65xktcwS=Y-PMzKu2sngCs=xQ5uF1+B3exV95MY2oCXnsQ@mail.gmail.com>
 References: <CAJ0Z65yaZMPVy0z0BseQf0s57Tf8wRkHKeqHLPof5TDyyZEmTw@mail.gmail.com>
+	<CAJ0Z65yHV_VM2=YWZx2T5DcQwQ=wnVz-T_acgxJWQi0JZAEFcg@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:39807 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaDIEFk (ORCPT
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:46323 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaDIEUZ (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 9 Apr 2014 00:05:40 -0400
-Received: by mail-ve0-f182.google.com with SMTP id jw12so1660762veb.27
-        for <linux-bcache@vger.kernel.org>; Tue, 08 Apr 2014 21:05:40 -0700 (PDT)
-In-Reply-To: <CAJ0Z65yaZMPVy0z0BseQf0s57Tf8wRkHKeqHLPof5TDyyZEmTw@mail.gmail.com>
+	Wed, 9 Apr 2014 00:20:25 -0400
+Received: by mail-ve0-f169.google.com with SMTP id pa12so1680695veb.0
+        for <linux-bcache@vger.kernel.org>; Tue, 08 Apr 2014 21:20:24 -0700 (PDT)
+In-Reply-To: <CAJ0Z65yHV_VM2=YWZx2T5DcQwQ=wnVz-T_acgxJWQi0JZAEFcg@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
 Hi,
 
-Setup:
-Kernel: 3.11.10-15, with "Data corruption fix"
-(http://evilpiepirate.org/git/linux-bcache.git/commit/drivers/md/bcache/bset.c?h=bcache-dev&id=ef71ec00002d92a08eb27e9d036e3d48835b6597)
-on top of it (before the fix, I could regularly reproduce data
-corruption on if the btree shrinker was enabled ).Running in
-writethrough with sequential merging turned off. The application on
-top does large sequential writes periodically, which are then accessed
-in a random-read fashion.  This gives us a substantial performance
-boost on these nodes.
-Backing md-raid directly on top of physical disks, no LVM
-Partitioned ssd where 200GB is used as cache above a raid-1 of 2 spinning disks.
+arggh. seems the mail reader decided to wrap things a bit too hard.
 
-The problem is that some of these nodes are now disabling bcache.
-(Probably) Due to writethrough, the data is still consistent (no
-corruption has been detected), so the impact is just very bad
-performance (i.e spinning disks only). Content of
-/sys/block/bcache0/bcache/state is "no cache" on these nodes after it
-disables itself.
+The kernel-messages are:
 
 The specific kernel message when it disables itself is:
 
@@ -45,10 +31,8 @@ The specific kernel message when it disables itself is:
 bcache: error on 5acb2ff8-db07-4d13-a6ca-dbfdbf1d87eb: key too stale:
 97, need_gc 97, disabling caching
 
-If I reenables the cache again, it bombs out with the same message
-again. cache_mode
+The potentially root cause message is:
 
-Digging further back in the history, I found:
 2014-03-24T13:47:34.973100+00:00 machine1 kernel: [6699681.169256]
 WARNING: CPU: 5 PID: 293092 at
 /home/thorkild/kernel-w-bcace/drivers/md/bcache/alloc.c:80
@@ -120,23 +104,5 @@ ffffc90007764bbc ffff8807f34b6000 000007ffffffffff 0000000000000000
 2014-03-24T13:47:34.973153+00:00 machine1 kernel: [6699681.169349]
 ---[ end trace 9b2a76687ddee9b0 ]---
 
-We've run for a while (probably a bit over 3 months) with the btree
-shrinker disabled (due to it leading to corruption before
-3.11.10-15+prerelease of the mentioned fix on these boxes - I seemed
-to be the only able to reproduce that issue), and I am wondering if
-this may be the root cause of the first complaint. This then leads to
-an inconsistent cache, which makes bcache then politely disable
-itself.
-
-We're now running with the btree shrinker enabled, and I was wondering:
-
-1) Is my theory about this being due to the shrinker disabled plausible?
-
-2) The cache set cleanly disabled itself, so what I would like to do
-is to just reset the cache device without touching the backing device,
-and readd it to see if the problem will occur over time with the
-shrinker enabled too. Has anybody done something like that?
-Thanks for any input. Before this, bcache has been very useful on these servers.
-
---
+-- 
 Thorkild
