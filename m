@@ -1,33 +1,37 @@
-From: Nikolay Amiantov <nikoamia@gmail.com>
-Subject: Re: [PATCH] bcache: fix uninterruptible sleep in writeback thread
-Date: Tue, 6 May 2014 02:30:34 +0400
-Message-ID: <CA+waHKU1Kaz4Bf=AogB_bXHLZ03tOYp2N5LL=JYH--Y3Yq4qow@mail.gmail.com>
-References: <1398981150-27765-1-git-send-email-sp@daterainc.com>
+From: Zhe Yang <yangzhe1990@gmail.com>
+Subject: bcache: btree_split() couldn't split
+Date: Mon, 12 May 2014 00:52:00 +0800
+Message-ID: <CANvbpLSjsFqS-Mt_OmVz2ALP9b-0pwzhh1k5yehz01W8Hj7=bA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-la0-f45.google.com ([209.85.215.45]:48625 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756971AbaEEWa4 (ORCPT
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:34844 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530AbaEKQwD (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 5 May 2014 18:30:56 -0400
-Received: by mail-la0-f45.google.com with SMTP id c6so1010860lan.18
-        for <linux-bcache@vger.kernel.org>; Mon, 05 May 2014 15:30:54 -0700 (PDT)
-In-Reply-To: <1398981150-27765-1-git-send-email-sp@daterainc.com>
+	Sun, 11 May 2014 12:52:03 -0400
+Received: by mail-lb0-f169.google.com with SMTP id s7so6925760lbd.0
+        for <linux-bcache@vger.kernel.org>; Sun, 11 May 2014 09:52:00 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-2014-05-02 1:52 GMT+04:00 Slava Pestov <sp@datera.io>:
-> There were two issues here:
->
-> - writeback thread did not start until the device first became dirty
-> - writeback thread used uninterruptible sleep once running
->
-> Without this patch I see kernel warnings printed and a load average of
-> 1.52 after booting my test VM. With this patch the warnings are gone and
-> the load average is near 0.00 as expected.
+Hello,
 
-I've tried this patch and it has indeed fixed [1]! Thanks!
+I'm a bcache user. During use of bcache, I hit this situation very
+often. Every time after this, filesystem upon bcache's device was
+automatically remounted ro and need a fsck.
 
-[1]: https://bugzilla.kernel.org/show_bug.cgi?id=69471
+I'm using archlinux with stocking 3.13.5 ~ 3.14.1 kernel. Is there any
+way to prevent hitting this situation?
+
+BTW, I'd also like to propose a feature related to performance. Bcache
+use LRU by default. So every data MISS will write bcache. But SSD
+drive can't run normally at writing 20MB/s all the time. Some SSD will
+have up to 50ms delay for each write under this kind of stress. Thus,
+the overall performance of bcache degrades to HDD, just because of the
+write of MISSed data. Could you implement a ratio, for example only
+50% MISSed data could be written to SSD?
+
+Sincerely,
+    Zhe Yang
