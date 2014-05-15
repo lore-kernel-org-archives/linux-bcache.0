@@ -1,45 +1,56 @@
-From: Mariusz Paradowski <indianin@indianin.net>
-Subject: Re: bcache: btree_split() couldn't split
-Date: Tue, 13 May 2014 22:41:35 +0200
-Message-ID: <20140513224135.1ecd1fd7eb26f1b4f7b17c73@indianin.net>
-References: <58691644935d03855d2edb9c71c6dfb0@indianin.eu.org>
-	<5370F366.7030505@rolffokkens.nl>
+From: Francis Moreau <francis.moro@gmail.com>
+Subject: Re: [PATCH] bcache: fix uninterruptible sleep in writeback thread
+Date: Thu, 15 May 2014 10:02:33 +0200
+Message-ID: <53747499.3070000@gmail.com>
+References: <1398981150-27765-1-git-send-email-sp@daterainc.com> <CA+waHKU1Kaz4Bf=AogB_bXHLZ03tOYp2N5LL=JYH--Y3Yq4qow@mail.gmail.com> <537112A5.6040709@kieser.ca>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from byf58.internetdsl.tpnet.pl ([83.19.9.58]:54563 "EHLO
-	mail.vaxvms.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753289AbaEMUlm (ORCPT
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:43903 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992AbaEOIA5 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 13 May 2014 16:41:42 -0400
-Received: from indianin (89-68-162-103.dynamic.chello.pl [89.68.162.103])
-	(using TLSv1 with cipher ECDHE-RSA-RC4-SHA (128/128 bits))
-	(Client did not present a certificate)
-	(Authenticated sender: indianin@indianin.eu.org)
-	by mail.vaxvms.net (Postfix) with ESMTPSA id 3gSrXK5D2dz13gwZb
-	for <linux-bcache@vger.kernel.org>; Tue, 13 May 2014 22:41:37 +0200 (CEST)
-In-Reply-To: <5370F366.7030505@rolffokkens.nl>
+	Thu, 15 May 2014 04:00:57 -0400
+Received: by mail-wg0-f52.google.com with SMTP id l18so2996722wgh.23
+        for <linux-bcache@vger.kernel.org>; Thu, 15 May 2014 01:00:56 -0700 (PDT)
+In-Reply-To: <537112A5.6040709@kieser.ca>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+Cc: Peter Kieser <peter@kieser.ca>, kmo@daterainc.com, linux-bcache@vger.kernel.org, axboe@kernel.dk
 
-On Mon, 12 May 2014 18:14:30 +0200,
-in 5370F366.7030505@rolffokkens.nl,
-Rolf Fokkens <rolf@rolffokkens.nl> wrote:
+Hello Jens,
 
-> So far no problems here, I have been using bcache since october. But
-> I'm currently running kernel 3.14.3, so I might be at risk?
+On 05/12/2014 08:27 PM, Peter Kieser wrote:
+> 
+> On 2014-05-05 3:30 PM, Nikolay Amiantov wrote:
+>> 2014-05-02 1:52 GMT+04:00 Slava Pestov <sp@datera.io>:
+>>> There were two issues here:
+>>>
+>>> - writeback thread did not start until the device first became dirty
+>>> - writeback thread used uninterruptible sleep once running
+>>>
+>>> Without this patch I see kernel warnings printed and a load average of
+>>> 1.52 after booting my test VM. With this patch the warnings are gone and
+>>> the load average is near 0.00 as expected.
+>> I've tried this patch and it has indeed fixed [1]! Thanks!
+>>
+>> [1]: https://bugzilla.kernel.org/show_bug.cgi?id=69471
+> 
+> Kent,
+> 
+> Could you please review this patch, and have it pushed upstream?
+> 
 
-You might. Independently of this error it may be even riskier if you
-are using bcache in writeback mode.
+Would it be possible to merge this patch directly before 3.15 is being
+released since kent don't seem to care about bugs in bcache or maybe he
+does but very selectively ?
 
+Also it would be great that stable trees will be fixed.
 
-> Is this issue there since a specific kernel version?
+Eventually I would suggest to mark bcache as an experimental thing since
+it's really not ready for production, just take a look at the bcache
+mailing list to see why. At least people won't be disappointed when
+they'll use bcache and see ton of koops.
 
-I'm not sure. My previous kernel was 3.13.11 and it was even worse -
-bcache in writeback mode destroyed my filesystem. I escaped from
-3.13.11 to 3.14.3 with bcache in writethrough mode, but with this
-version the split error occurs. Slava wrote more info on this.
--- 
-Mariusz Paradowski
+Thanks.
