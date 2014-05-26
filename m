@@ -1,55 +1,152 @@
-From: NTS <ntshad0w@wp.pl>
-Subject: Re: Dirty and cleaning of dirty data
-Date: Thu, 22 May 2014 01:31:51 +0000 (UTC)
-Message-ID: <loom.20140522T032815-582@post.gmane.org>
-References: <52661722.2050404@profihost.ag>
+From: roma1390 <roma1390@gmail.com>
+Subject: Re: bcache errors
+Date: Mon, 26 May 2014 17:59:13 +0300
+Message-ID: <CACiqTENEOaTEGKwYzgTvTGVxPpnRyD3w4=tR_MUTA+uSM9VbRQ@mail.gmail.com>
+References: <CACiqTEMeRiaio55cj0dc_ErCZe5XTGsQUwqBb90Jg22uN=FvLQ@mail.gmail.com>
+	<CALJ65z=AYx9i-zU6AjZ2E519J4FzhF1QP7T2YivQcvcR-WTFMg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:42817 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751532AbaEVCFI (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 21 May 2014 22:05:08 -0400
-Received: from list by plane.gmane.org with local (Exim 4.69)
-	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1WnINT-0000WV-NC
-	for linux-bcache@vger.kernel.org; Thu, 22 May 2014 04:05:05 +0200
-Received: from 89-78-70-121.dynamic.chello.pl ([89.78.70.121])
-        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Thu, 22 May 2014 04:05:03 +0200
-Received: from ntshad0w by 89-78-70-121.dynamic.chello.pl with local (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Thu, 22 May 2014 04:05:03 +0200
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Return-path: <linux-raid-owner@vger.kernel.org>
+In-Reply-To: <CALJ65z=AYx9i-zU6AjZ2E519J4FzhF1QP7T2YivQcvcR-WTFMg@mail.gmail.com>
+Sender: linux-raid-owner@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: Neil Brown <neilb@suse.de>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, linux-raid@vger.kernel.org, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Stefan Priebe - Profihost AG <s.priebe@...> writes:
+Hello,
 
-> 
-> Hi,
-> 
-> while having a system under heavystress - i was seeing the following:
-> 
-> Dirty Data on SSD: 35GB data
-> Writes to sata disk mostly 0-4mb/s
-> 
-> Why does bcache not start to clean this data to get free ssd space?
-> 
-> Right now the system is pretty slow as the caching device is very dirty.
-> 
-> Stefan
-> 
+can You resend it, I still waiting, and possible missed Your delivery.
 
-hi mate,
+Thank You.
 
-do U solve that problem?
-I'm testing bcache and now have same problem and don't know how to solve
-it... so how to speed up (100x-400x times!!!!)
-
-any idea how to speed up that dirty cache cleaning now and in the future?
-
-regards
-NTS
+On Mon, May 19, 2014 at 6:29 PM, Kent Overstreet <kmo@daterainc.com> wrote:
+> I'll be sending the fix out in the next pull request, in the next day or so.
+>
+> On Mon, May 19, 2014 at 8:10 AM, roma1390 <roma1390@gmail.com> wrote:
+>> Hello
+>>
+>> tryed bcache on 3.13-1-amd64 (from debian)
+>>
+>> Steps:
+>>
+>> git clone https://github.com/g2p/bcache-tools.git
+>> cd bcache-tools/
+>> make
+>>
+>> dd if=/dev/zero of=data bs=1M count=64
+>> losetup -d /dev/loop0; losetup /dev/loop0 /tmp/bb/bcache-tools/data
+>> make-bcache -C /dev/ram0 -B /dev/ram1
+>> modprobe bcache
+>> echo /dev/ram0 > /sys/fs/bcache/register
+>> echo /dev/loop0 > /sys/fs/bcache/register
+>>
+>> Got:
+>> May 19 17:32:55 bump kernel: [670838.280487] bcache: register_bdev()
+>> registered backing device ram0
+>> May 19 17:33:02 bump kernel: [670845.209612] bcache: run_cache_set()
+>> invalidating existing data
+>> May 19 17:33:02 bump kernel: [670845.277214] bcache:
+>> bch_cached_dev_attach() Caching ram0 as bcache0 on set
+>> d01c215c-f038-4e85-9f7f-d1133f080b55
+>> May 19 17:33:02 bump kernel: [670845.277230] bcache: register_cache()
+>> registered cache device loop0
+>> May 19 17:35:28 bump kernel: [670991.228242] INFO: task
+>> bcache_writebac:6378 blocked for more than 120 seconds.
+>> May 19 17:35:28 bump kernel: [670991.228246]       Tainted: G
+>> C   3.13-1-amd64 #1
+>> May 19 17:35:28 bump kernel: [670991.228247] "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> May 19 17:35:28 bump kernel: [670991.228248] bcache_writebac D
+>> ffff8804f2ab2350     0  6378      2 0x00000000
+>> May 19 17:35:28 bump kernel: [670991.228251]  ffff8804f2ab2010
+>> 0000000000000046 0000000000014280 0000000000014280
+>> May 19 17:35:28 bump kernel: [670991.228252]  ffff880725423fd8
+>> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
+>> May 19 17:35:28 bump kernel: [670991.228254]  ffffffffa0866790
+>> 0000000000000000 0000000000000000 0000000000000000
+>> May 19 17:35:28 bump kernel: [670991.228255] Call Trace:
+>> May 19 17:35:28 bump kernel: [670991.228262]  [<ffffffffa0866790>] ?
+>> write_dirty_finish+0x210/0x210 [bcache]
+>> May 19 17:35:28 bump kernel: [670991.228265]  [<ffffffff8107bb2d>] ?
+>> kthread+0x9d/0xe0
+>> May 19 17:35:28 bump kernel: [670991.228266]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
+>> May 19 17:35:28 bump kernel: [670991.228270]  [<ffffffff814aeacc>] ?
+>> ret_from_fork+0x7c/0xb0
+>> May 19 17:35:28 bump kernel: [670991.228271]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
+>> May 19 17:37:28 bump kernel: [671111.112160] INFO: task
+>> bcache_writebac:6378 blocked for more than 120 seconds.
+>> May 19 17:37:28 bump kernel: [671111.112165]       Tainted: G
+>> C   3.13-1-amd64 #1
+>> May 19 17:37:28 bump kernel: [671111.112166] "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> May 19 17:37:28 bump kernel: [671111.112167] bcache_writebac D
+>> ffff8804f2ab2350     0  6378      2 0x00000000
+>> May 19 17:37:28 bump kernel: [671111.112170]  ffff8804f2ab2010
+>> 0000000000000046 0000000000014280 0000000000014280
+>> May 19 17:37:28 bump kernel: [671111.112172]  ffff880725423fd8
+>> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
+>> May 19 17:37:28 bump kernel: [671111.112174]  ffffffffa0866790
+>> 0000000000000000 0000000000000000 0000000000000000
+>> May 19 17:37:28 bump kernel: [671111.112175] Call Trace:
+>> May 19 17:37:28 bump kernel: [671111.112183]  [<ffffffffa0866790>] ?
+>> write_dirty_finish+0x210/0x210 [bcache]
+>> May 19 17:37:28 bump kernel: [671111.112186]  [<ffffffff8107bb2d>] ?
+>> kthread+0x9d/0xe0
+>> May 19 17:37:28 bump kernel: [671111.112188]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
+>> May 19 17:37:28 bump kernel: [671111.112191]  [<ffffffff814aeacc>] ?
+>> ret_from_fork+0x7c/0xb0
+>> May 19 17:37:28 bump kernel: [671111.112193]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
+>> May 19 17:39:28 bump kernel: [671230.996097] INFO: task
+>> bcache_writebac:6378 blocked for more than 120 seconds.
+>> May 19 17:39:28 bump kernel: [671230.996101]       Tainted: G
+>> C   3.13-1-amd64 #1
+>> May 19 17:39:28 bump kernel: [671230.996102] "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> May 19 17:39:28 bump kernel: [671230.996103] bcache_writebac D
+>> ffff8804f2ab2350     0  6378      2 0x00000000
+>> May 19 17:39:28 bump kernel: [671230.996106]  ffff8804f2ab2010
+>> 0000000000000046 0000000000014280 0000000000014280
+>> May 19 17:39:28 bump kernel: [671230.996108]  ffff880725423fd8
+>> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
+>> May 19 17:39:28 bump kernel: [671230.996109]  ffffffffa0866790
+>> 0000000000000000 0000000000000000 0000000000000000
+>> May 19 17:39:28 bump kernel: [671230.996111] Call Trace:
+>> May 19 17:39:28 bump kernel: [671230.996118]  [<ffffffffa0866790>] ?
+>> write_dirty_finish+0x210/0x210 [bcache]
+>> May 19 17:39:28 bump kernel: [671230.996121]  [<ffffffff8107bb2d>] ?
+>> kthread+0x9d/0xe0
+>> May 19 17:39:28 bump kernel: [671230.996123]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
+>> May 19 17:39:28 bump kernel: [671230.996126]  [<ffffffff814aeacc>] ?
+>> ret_from_fork+0x7c/0xb0
+>> May 19 17:39:28 bump kernel: [671230.996127]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
+>> May 19 17:41:28 bump kernel: [671350.880041] INFO: task
+>> bcache_writebac:6378 blocked for more than 120 seconds.
+>> May 19 17:41:28 bump kernel: [671350.880045]       Tainted: G
+>> C   3.13-1-amd64 #1
+>> May 19 17:41:28 bump kernel: [671350.880046] "echo 0 >
+>> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> May 19 17:41:28 bump kernel: [671350.880047] bcache_writebac D
+>> ffff8804f2ab2350     0  6378      2 0x00000000
+>> May 19 17:41:28 bump kernel: [671350.880050]  ffff8804f2ab2010
+>> 0000000000000046 0000000000014280 0000000000014280
+>> May 19 17:41:28 bump kernel: [671350.880051]  ffff880725423fd8
+>> ffff8804f2ab2010 ffff8805de3bba40 ffff8807f8410000
+>> May 19 17:41:28 bump kernel: [671350.880060]  ffffffffa0866790
+>> 0000000000000000 0000000000000000 0000000000000000
+>> May 19 17:41:28 bump kernel: [671350.880062] Call Trace:
+>> May 19 17:41:28 bump kernel: [671350.880069]  [<ffffffffa0866790>] ?
+>> write_dirty_finish+0x210/0x210 [bcache]
+>> May 19 17:41:28 bump kernel: [671350.880073]  [<ffffffff8107bb2d>] ?
+>> kthread+0x9d/0xe0
+>> May 19 17:41:28 bump kernel: [671350.880074]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
+>> May 19 17:41:28 bump kernel: [671350.880078]  [<ffffffff814aeacc>] ?
+>> ret_from_fork+0x7c/0xb0
+>> May 19 17:41:28 bump kernel: [671350.880079]  [<ffffffff8107ba90>] ?
+>> kthread_create_on_node+0x180/0x180
