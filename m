@@ -1,109 +1,197 @@
-From: Eitan Mosenkis <eitan@mosenkis.net>
-Subject: Repeated corruption after reboot (using ext4 on Ubuntu 14.04)
-Date: Tue, 27 May 2014 11:10:15 -0400
-Message-ID: <CAH_5vAn7zMpNC2axhAbjZciFF3s_iAuVe5y31Or9fWG1y0=D9A@mail.gmail.com>
+From: Peter Kieser <peter@kieser.ca>
+Subject: Re: bad bcache performance - crappy SSD?
+Date: Tue, 27 May 2014 13:13:30 -0700
+Message-ID: <5384F1EA.2070402@kieser.ca>
+References: <20140526221649.GI10209@teapot>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms050907040901030807070402"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:55321 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606AbaE0PKh (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 27 May 2014 11:10:37 -0400
-Received: by mail-ve0-f175.google.com with SMTP id jw12so10777461veb.20
-        for <linux-bcache@vger.kernel.org>; Tue, 27 May 2014 08:10:37 -0700 (PDT)
-Received: from mail-ve0-f181.google.com (mail-ve0-f181.google.com [209.85.128.181])
-        by mx.google.com with ESMTPSA id ew15sm16350871veb.4.2014.05.27.08.10.35
-        for <linux-bcache@vger.kernel.org>
-        (version=TLSv1 cipher=ECDHE-RSA-RC4-SHA bits=128/128);
-        Tue, 27 May 2014 08:10:35 -0700 (PDT)
-Received: by mail-ve0-f181.google.com with SMTP id pa12so10702277veb.26
-        for <linux-bcache@vger.kernel.org>; Tue, 27 May 2014 08:10:35 -0700 (PDT)
+Received: from mail.pfak.org ([198.50.219.4]:53556 "EHLO mail.pfak.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936AbaE0UMz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 27 May 2014 16:12:55 -0400
+In-Reply-To: <20140526221649.GI10209@teapot>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Matthias Ferdinand <bcache@mfedv.net>, linux-bcache@vger.kernel.org
 
-bcache seems to work fine, but after rebooting, the ext4 filesystem
-stored in /dev/bcache0 frequently, but not always, becomes corrupted -
-seemingly, it only damages metadata for recently modified files (after
-e2fsck -y finished, I found in /lost+found a lot of files from my
-browser cache, some file lists from recently installed packages, etc.)
-Any idea what was causing the corruption or how to use bcache without
-encountering it again?
+This is a cryptographically signed message in MIME format.
 
-Timeline:
-1. I installed Ubuntu 14.04 and Windows 8.1 to a 1TB HDD.
-2. I later added a 64GB SSD.
-3. My first attempts to install blocks to convert my root partition
-failed because it depends on Python 3.3, while Ubuntu 14.04 only
-packages Python 3.4.
-4. I rebooted into Windows to look into enabling Intel Smart Response
-(the Windows equivalent of bcache), rebooted to switch the SATA mode
-from AHCI to RAID (because that's the only way Smart Response can be
-enabled), booted Windows again and enabled Smart Response to use
-~18.6GB of the SSD as cache.
-5. I booted Ubuntu and discovered that the disk partitions used by
-Windows/Smart Response were not visible.
-6. After some investigation, I discovered that Smart Response, rather
-that just using disk partitions, had created a fake RAID array,
-splitting the SSD into two parts.
-7. I installed mdadm and was able to see the two parts of the SSD under Ubuntu.
-8. I used make-bcache -C to create a cache on the rest of the SSD.
-9. I booted into Windows again, only to discover that Smart Response
-was no longer enabled and the RAID array seemed to have disappeared
-10. After a lot of work, I forced python3-blocks and its dependencies
-to install despite the Python version mismatch (it seems that Python
-3.4 is almost completely backwards compatible with Python 3.3). With a
-bit more work, I attempted to use "blocks to-bcache --maintboot
-/dev/sda8 --join some-uuid-that-looks-like-this" to convert my root
-partition to a bcache backing device. It rebooted, but when the system
-resumed, it was still using /dev/sda8 directly, the conversion hadn't
-happened.
-11. I put the Ubuntu installer image on a USB stick and booted from it
-12. I moved /boot from the HDD to the SSD.
-13. I installed Python 3.3 from the deadsnakes PPA, then forced
-python3-blocks and dependencies to install as before.
-14. I modified blocks/__main__.py to do "_ped =
-imp.load_dynamic('_ped', '/usr/lib/.../_ped.something.so')" instead of
-"import _ped" to load pyparted because it couldn't find it for reasons
-that I don't understand
-15. I successfully ran "blocks to-bcache /dev/sda8 --join
-some-uuid-that-looks-like-this"
-16. I helped Grub find /boot, then booted into Ubuntu, now with
-/dev/bcache0 mounted as the root partition, and regenerated grub's
-config.
-17. I successfully rebooted into the (now much faster) Ubuntu install.
-I rebooted several more times just to admire how fast it was. No signs
-of trouble.
-18. I turned on the computer the next morning and it booted, but found
-that Chrome wouldn't open because it couldn't get a lock to prevent
-user profile corruption, which in turn was due to the fact that the
-root partition had been automatically remounted read-only after an
-ext4 error (it was mounted originally with errors=remount-ro)
-19. I rebooted, and now found that the kernel couldn't find the root
-partition by its UUID. Running blkid on /dev/bcache0 confirmed that
-its UUID was not to be found.
-20. I rebooted to the USB stick, and ran "e2fsck -f -y" repeatedly
-until it came up clean. The first time it couldn't even find the
-superblock and I had to follow its suggestion to specify an alternate
-superblock location.
-21. I rebooted to Ubuntu running on bcache - it seemed to work fine.
-22. I reinstalled all of the installed packages one by one with
-"apt-get --reinstall" to guard against later trouble caused by
-corrupted or lost files.
-23. After the package reinstallation completed, I followed its request
-to reboot.
-24. Upon booting, it again experienced ext4 errors. I ran "e2fsck -y"
-and rebooted.
-25. Everything seemed fine again, but I had no idea what kept causing
-the corruption. I resized the Windows partition, created a new ext4
-partition, and copied /home and /root into the new partition.
-26. I deleted the partitions that I had used as cache and backing
-device and did a clean install of Ubuntu with /boot and / on the SSD
-and /home on the HDD.
-27. I restored my data from the backup partition onto the new /home
-and resized the Windows partition back to its original size.
-28. No problems since.
+--------------ms050907040901030807070402
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-Throughout all of this, the SMART self-tests on both SSD and HDD
-claimed that they were passing.
+What filesystem are you running on top of bcache? There are issues with=20
+XFS and barrier modes causing 100% util on the cache device.
+
+-Peter
+
+On 2014-05-26 3:16 PM, Matthias Ferdinand wrote:
+> Hi,
+>
+> so far I have been unable to get an actual performance improvement out
+> of bcache, and I suspect that my SSD is just crap. Any help or hint
+> appreciated. What (SATA) SSDs have you been using successfully with
+> bcache?
+>
+>
+> My host system: Ubuntu 14.04 x64.
+> kernels tried: Ubuntu stock (3.13.0-24), 3.14, 3.15-rc{5,6}.
+>
+> storage structure:
+> 3xSATA (sda,sdb,sdc) =3D> md raid5 (md125) =3D> bcache0 =3D> LVM (dm-1)=
+
+>
+> benchmark: install linux kernel header package inside kvm guest
+>
+>          cache device not attached:            0:18 minutes
+>      SSD cache device attached (writethrough): 3:27 minutes
+>      SSD cache device attached (writeback):    3:25 minutes
+>
+> With attached cache device, the ssd seems very busy (iostat %util),
+> while the raid members are not:
+>
+>      Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s =
+avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+> (5) sdc               0.00    12.33    0.00   57.33     0.00    57.00  =
+   1.99     0.06    1.07    0.00    1.07   0.79   4.53
+> (5) sdb               0.33    12.00    0.33   57.00     2.67    54.33  =
+   1.99     0.07    1.19    0.00    1.19   0.84   4.80
+> (5) sda               0.00    11.33    0.00   57.00     0.00    51.67  =
+   1.81     0.06    1.10    0.00    1.10   0.80   4.53
+> (*) sdf               0.00     0.00    0.00   54.67     0.00    27.17  =
+   0.99     0.98   18.05    0.00   18.05  17.95  98.13
+>
+>      (5) raid 5 member;  (*) SSD
+>
+>
+> when I replace the SSD with a single SATA disk:
+>      SATA cache device attached (writethrough): 0:19 minutes
+>      SATA cache device attached (writeback):    0:13 minutes
+>
+>
+> The SSD is an Intel 530, has current firmware and plenty of DISCARDed
+> blocks.  Specs claim >=3D 13.000 incompressible writes/sec for the 120G=
+B
+> model, but the above data suggests it can handle just about 60.
+>
+>
+>      =3D=3D=3D START OF INFORMATION SECTION =3D=3D=3D
+>      Device Model:     INTEL SSDSC2BW120A4
+>      Serial Number:    CVDA3393028N1207GN
+>      LU WWN Device Id: 5 5cd2e4 04b82aa5a
+>      Firmware Version: DC32
+>      User Capacity:    120,034,123,776 bytes [120 GB]
+>      Sector Size:      512 bytes logical/physical
+>      Rotation Rate:    Solid State Device
+>      Device is:        Not in smartctl database [for details use: -P sh=
+owall]
+>      ATA Version is:   ACS-2 (minor revision not indicated)
+>      SATA Version is:  SATA 3.0, 6.0 Gb/s (current: 3.0 Gb/s)
+>      Local Time is:    Sat May 24 20:37:14 2014 CEST
+>      SMART support is: Available - device has SMART capability.
+>      SMART support is: Enabled
+>
+>
+>
+> Regards
+> Matthias
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache"=
+ in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+--------------ms050907040901030807070402
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgDCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRDCCBiygAwIBAgICJYcwDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjA4MjkyMzM0MjZa
+Fw0xNDA4MzExMzE0MzFaMIGOMRkwFwYDVQQNExBpd3JteTFzNGhOaHZLMDQ0MQswCQYDVQQG
+EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
+EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOdZjqh64jWRFwTsYZZ0bKt5xOIxLlV4
+jrN0wY5KMu5RotLfYnu53fCMGJVk1n8h4QFRDxGuQmE4ugw47rv7FMDWYPb7PisPAWbcbUlG
+pmxhZB/avqpC8P2uuvJ0dsKsyNo8HeROfvrLkT6PSpYE35UXTLESoHSYkkyhcklVRf6ygChd
+PKUMNhEAMH3ZGtsw8N24hSoiW6Sb3vqv4ZCZcLvlKRVjJtOyc2vbSw8ndc62EbFMFeP+AZOw
+r7flFGQanYjfeXeeXV/29hstVPv88okwEpJCWdmSA1/gh5Yc6bjpQ7YuSxOVKP5UAl+Ehyld
+XWIcWEcUoeuZ1XeSyRuwRmcCAwEAAaOCA6owggOmMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
+MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUKlB/4e9ZfesCCiNm
+UHJOZibv8FAwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
+cGV0ZXJAa2llc2VyLmNhMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8w
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYB
+BQUHAgEWKGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsG
+AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
+aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
+bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
+bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
+IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGcBggrBgEFBQcCAjCBjzAnFiBTdGFydENv
+bSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRMaWFiaWxpdHkgYW5kIHdhcnJhbnRp
+ZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBhbmQgTGltaXRhdGlvbnMiIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwu
+c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
+MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
+BgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
+bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
+9w0BAQUFAAOCAQEAvd8Wn0ZXlB3mV+fWae/hAFquDNjyWMJ29rJymKaGOOYTCiPdmDRJNV9R
+k0YTP9+B06A0Vx6bbg+rZwIdv2k+GBSjCSb4T8IsawVphbbWMohFzxGzo36NaYZ/wCTcrlVv
+oXmPFkEaOJzqQ1DAYetJTfDMIfkBeOZSJ9KmdLos1Z9fOc0nGq9ioy/6gIPGchsWuhrl3vxW
+ej1MUPjVKn5wW967cPcLFnNLR1gxYB3fjptyHbJpRq/54rH2BMR0kicK9EyVUoDM35R6Ux6n
+djaJmH1ZFcHVc+FmalNisvlIlGSWwnkyvpmyD25LSJ+BlfZEUHE8tcicdZPAqQ8f+Yo/dTGC
+A9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
+U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAiWHMAkG
+BSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
+DTE0MDUyNzIwMTMzMFowIwYJKoZIhvcNAQkEMRYEFC+B5lAgqqunJb7ft8M4L0iPWFerMGwG
+CSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAO
+BggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgw
+gaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29t
+IEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENB
+AgIlhzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQQICJYcwDQYJKoZIhvcNAQEBBQAEggEAW5milJ5BkvnIifDi19yqprHSQoWpW95B
+CiKFsL0NpZqoZsJAGqT8Mwvb62RUwCXWrsHSfLIH1FY1MQpm0wizq1+Y12JoOmiYsps1J9S+
+LTcgnWlBrjNz/LLNVz6V5ZAHkBXDngY6AJ+R5y7mEZphVwOI/8eI1VKhPKsGENsVPjiuBFC2
+X+nJ6MGA8NYawRNAiZ99Y4Y35LIgSaJmBqFJTW3iPfyyxJ7k1N8VKTAEW0NQjWWy8TW0u7Np
+1v6d0KkA6ItT83HUFpLvSY4FYuQQRdH5vMB8WgCTmn9CXydN8U/Hc/08KAxItFUW+U4uqykj
+DB/NuqFpfDjqtBHozwzCagAAAAAAAA==
+--------------ms050907040901030807070402--
