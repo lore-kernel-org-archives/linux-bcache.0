@@ -1,40 +1,132 @@
-From: Daniel Smedegaard Buus <danielbuus@gmail.com>
+From: Peter Kieser <peter@kieser.ca>
 Subject: Re: [PATCH] bcache: fix writeback thread to sleep less intrusively
-Date: Wed, 9 Jul 2014 12:27:51 +0200
-Message-ID: <CAHnuAez0rb9PLLEU7sB79x2_w14bJre+4ZbkWKyO+YUF255Czw@mail.gmail.com>
-References: <20140411002636.GB9176@birch.djwong.org> <20140411004649.GA4817@kmo>
- <20140411014135.GA18933@birch.djwong.org> <20140412023101.GC9176@birch.djwong.org>
- <CAHnuAewaE5r0Z9L+EL93SscrrYsFphnrWCD4Vb32O8VjX2PK+w@mail.gmail.com>
- <20140430172455.GA3029@birch.djwong.org> <CAHnuAexAx_QK3tycB_2o60JDYZAHUgbec=fu3i47ZSXrL4nARg@mail.gmail.com>
- <CACHGV4+mNu_KV7JazT-34D++3S2NKhDkOmc_wo0QfrfdqpccoQ@mail.gmail.com>
+Date: Wed, 09 Jul 2014 08:53:46 -0700
+Message-ID: <53BD658A.9020100@kieser.ca>
+References: <20140411002636.GB9176@birch.djwong.org> <20140411004649.GA4817@kmo> <20140411014135.GA18933@birch.djwong.org> <20140412023101.GC9176@birch.djwong.org> <CAHnuAewaE5r0Z9L+EL93SscrrYsFphnrWCD4Vb32O8VjX2PK+w@mail.gmail.com> <20140430172455.GA3029@birch.djwong.org> <CAHnuAexAx_QK3tycB_2o60JDYZAHUgbec=fu3i47ZSXrL4nARg@mail.gmail.com> <CACHGV4+mNu_KV7JazT-34D++3S2NKhDkOmc_wo0QfrfdqpccoQ@mail.gmail.com> <CAHnuAez0rb9PLLEU7sB79x2_w14bJre+4ZbkWKyO+YUF255Czw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms060504080700010900040902"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:41984 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412AbaGIK2i (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 9 Jul 2014 06:28:38 -0400
-Received: by mail-oa0-f47.google.com with SMTP id g18so802444oah.34
-        for <linux-bcache@vger.kernel.org>; Wed, 09 Jul 2014 03:28:37 -0700 (PDT)
-In-Reply-To: <CACHGV4+mNu_KV7JazT-34D++3S2NKhDkOmc_wo0QfrfdqpccoQ@mail.gmail.com>
+Received: from mail.pfak.org ([198.50.219.4]:60320 "EHLO mail.pfak.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755177AbaGIPyk (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 9 Jul 2014 11:54:40 -0400
+In-Reply-To: <CAHnuAez0rb9PLLEU7sB79x2_w14bJre+4ZbkWKyO+YUF255Czw@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org
+Cc: Daniel Smedegaard Buus <danielbuus@gmail.com>, linux-bcache@vger.kernel.org
 
-On Thu, May 1, 2014 at 11:53 PM, Slava Pestov <sp@datera.io> wrote:
-> Hi Daniel and Darrick,
->
-> I mailed a patch that attempts to fix the uninterruptible issue while taking
-> Kent's feedback regarding your earlier patch into account. Please test it
-> out and let me know what you think.
->
+This is a cryptographically signed message in MIME format.
 
-Curious about what ever happened to this bug. This patch fixed the
-load bug, but with new problems added...
+--------------ms060504080700010900040902
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-Did anyone ever fix this properly? Or is it being attended to?
 
-Thanks, and thanks for the great work so far :)
+On 2014-07-09 3:27 AM, Daniel Smedegaard Buus wrote:
+> On Thu, May 1, 2014 at 11:53 PM, Slava Pestov<sp@datera.io>  wrote:
+>> >Hi Daniel and Darrick,
+>> >
+>> >I mailed a patch that attempts to fix the uninterruptible issue while=
+ taking
+>> >Kent's feedback regarding your earlier patch into account. Please tes=
+t it
+>> >out and let me know what you think.
+>> >
+> Curious about what ever happened to this bug. This patch fixed the
+> load bug, but with new problems added...
+What other bugs did it introduce?
 
-Daniel
+-Peter
+
+
+--------------ms060504080700010900040902
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgDCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRDCCBiygAwIBAgICJYcwDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjA4MjkyMzM0MjZa
+Fw0xNDA4MzExMzE0MzFaMIGOMRkwFwYDVQQNExBpd3JteTFzNGhOaHZLMDQ0MQswCQYDVQQG
+EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
+EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOdZjqh64jWRFwTsYZZ0bKt5xOIxLlV4
+jrN0wY5KMu5RotLfYnu53fCMGJVk1n8h4QFRDxGuQmE4ugw47rv7FMDWYPb7PisPAWbcbUlG
+pmxhZB/avqpC8P2uuvJ0dsKsyNo8HeROfvrLkT6PSpYE35UXTLESoHSYkkyhcklVRf6ygChd
+PKUMNhEAMH3ZGtsw8N24hSoiW6Sb3vqv4ZCZcLvlKRVjJtOyc2vbSw8ndc62EbFMFeP+AZOw
+r7flFGQanYjfeXeeXV/29hstVPv88okwEpJCWdmSA1/gh5Yc6bjpQ7YuSxOVKP5UAl+Ehyld
+XWIcWEcUoeuZ1XeSyRuwRmcCAwEAAaOCA6owggOmMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
+MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUKlB/4e9ZfesCCiNm
+UHJOZibv8FAwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
+cGV0ZXJAa2llc2VyLmNhMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8w
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYB
+BQUHAgEWKGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsG
+AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
+aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
+bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
+bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
+IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGcBggrBgEFBQcCAjCBjzAnFiBTdGFydENv
+bSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRMaWFiaWxpdHkgYW5kIHdhcnJhbnRp
+ZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBhbmQgTGltaXRhdGlvbnMiIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwu
+c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
+MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
+BgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
+bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
+9w0BAQUFAAOCAQEAvd8Wn0ZXlB3mV+fWae/hAFquDNjyWMJ29rJymKaGOOYTCiPdmDRJNV9R
+k0YTP9+B06A0Vx6bbg+rZwIdv2k+GBSjCSb4T8IsawVphbbWMohFzxGzo36NaYZ/wCTcrlVv
+oXmPFkEaOJzqQ1DAYetJTfDMIfkBeOZSJ9KmdLos1Z9fOc0nGq9ioy/6gIPGchsWuhrl3vxW
+ej1MUPjVKn5wW967cPcLFnNLR1gxYB3fjptyHbJpRq/54rH2BMR0kicK9EyVUoDM35R6Ux6n
+djaJmH1ZFcHVc+FmalNisvlIlGSWwnkyvpmyD25LSJ+BlfZEUHE8tcicdZPAqQ8f+Yo/dTGC
+A9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
+U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAiWHMAkG
+BSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
+DTE0MDcwOTE1NTM0NlowIwYJKoZIhvcNAQkEMRYEFHvDXhXz4F7MZV2w1sIgcvIKLAK6MGwG
+CSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAO
+BggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgw
+gaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29t
+IEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENB
+AgIlhzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQQICJYcwDQYJKoZIhvcNAQEBBQAEggEASWVa+qrjwyF5ysKRYfeYHzSv2VvSYfB/
+SSs1xdd9ls9oIbkATeE03JEjen5pMsfJeuq2L98voTQzOlzNk7ZdXtTRsg4LQAYWMo1C99c3
+sdWNYTEoZ1LocRUggH2NdQf/8wyXWfTSX36LM9MDHthY0oqLqZvp/nymDznvAfQcqO2aGucP
+eME6LLjmtwfTSPRQ1Kxo2OUBOTaB25f4crNfeeMkYFltKEOq/YhgKNYlVTX2akO8Ha3aKZ51
+C6Ri9hRTcSeLB2U1onYtMfHYG9M+RpMhqcOjgmrNg1JjryxuLNhaJUawdZbbzyZkdY1kpevs
+9VTnhrY/gIjxdxu6HzTtbwAAAAAAAA==
+--------------ms060504080700010900040902--
