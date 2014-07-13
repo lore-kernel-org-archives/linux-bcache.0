@@ -1,38 +1,41 @@
-From: Daniel Smedegaard Buus <danielbuus@gmail.com>
-Subject: Re: [PATCH] bcache: fix writeback thread to sleep less intrusively
-Date: Wed, 9 Jul 2014 21:18:50 +0200
-Message-ID: <CAHnuAex9Ft9yx2dx_NdRYShARWZBzg2S++Y7ZQD_Em2crhd4vA@mail.gmail.com>
-References: <20140411002636.GB9176@birch.djwong.org> <20140411004649.GA4817@kmo>
- <20140411014135.GA18933@birch.djwong.org> <20140412023101.GC9176@birch.djwong.org>
- <CAHnuAewaE5r0Z9L+EL93SscrrYsFphnrWCD4Vb32O8VjX2PK+w@mail.gmail.com>
- <20140430172455.GA3029@birch.djwong.org> <CAHnuAexAx_QK3tycB_2o60JDYZAHUgbec=fu3i47ZSXrL4nARg@mail.gmail.com>
- <CACHGV4+mNu_KV7JazT-34D++3S2NKhDkOmc_wo0QfrfdqpccoQ@mail.gmail.com>
- <CAHnuAez0rb9PLLEU7sB79x2_w14bJre+4ZbkWKyO+YUF255Czw@mail.gmail.com>
- <53BD658A.9020100@kieser.ca> <CAHnuAeyD2RJh+DNbBfRq4XtdsYKHGRv0kEa8yfTb+FX61Ln8kw@mail.gmail.com>
- <CACHGV4LX4r7f-gb+hsiNe0GYDODwUq8G-VsEx8_oJCxOpweQpg@mail.gmail.com>
+From: Clemens Eisserer <linuxhippy@gmail.com>
+Subject: Can usb pen drives be used as read-cache for a HDD?
+Date: Sun, 13 Jul 2014 14:42:13 +0200
+Message-ID: <CAFvQSYRaL63-kZQMnx5oyZFcxH0HwWS7+PrB5QJnfb0DbzkWhw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:64327 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289AbaGITTb (ORCPT
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:47304 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451AbaGMMmN (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 9 Jul 2014 15:19:31 -0400
-Received: by mail-oa0-f45.google.com with SMTP id o6so8749288oag.32
-        for <linux-bcache@vger.kernel.org>; Wed, 09 Jul 2014 12:19:31 -0700 (PDT)
-In-Reply-To: <CACHGV4LX4r7f-gb+hsiNe0GYDODwUq8G-VsEx8_oJCxOpweQpg@mail.gmail.com>
+	Sun, 13 Jul 2014 08:42:13 -0400
+Received: by mail-vc0-f177.google.com with SMTP id ij19so5234685vcb.8
+        for <linux-bcache@vger.kernel.org>; Sun, 13 Jul 2014 05:42:13 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Slava Pestov <sp@datera.io>
-Cc: Peter Kieser <peter@kieser.ca>, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Wed, Jul 9, 2014 at 8:19 PM, Slava Pestov <sp@datera.io> wrote:
-> I sent two patches to fix the writeback thread -- if you apply both of
-> them, everything should work fine.
->
+Hi,
 
-That's fantastic! :D Where is the right place to look for these patches?
+A friend of mine uses an old P4 based laptop for email and web browsing.
+Thanks to zram, I was able to reduce swapping to disk - however with
+just 512mb ram there is not a lot space for the page cache so the disk
+is frequently active re-reading data which would stay in pagecache
+otherwise.
 
-Thanks!
+Would it make sence to use an old usb pen drive - or even two of them
+- as read-cache in writearound mode?
+Those pen drives usually suffer from very low random write throughput,
+but usually offer arround ~1000IOps for 4k random reads and ~20mb/s
+sequentially.
+Even if they would die within a few months, I have dozens of them and
+data integrity shouldn't be compromized with writearound mode.
 
-Daniel
+Does bcache wait for the caching device (stall the read-in-progres)
+when filling the cache by writing to the caching device?
+In case the caching device isn't respondig in time (writes to cheap
+pen block the device for ~500ms), is bcache able to read from the hdd
+instead?
+
+Thank you in advance, Clemens
