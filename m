@@ -1,54 +1,83 @@
-From: Larkin Lowrey <llowrey@nuclearwinter.com>
+From: =?UTF-8?Q?F=C3=A1bio_Pfeifer?= <fmpfeifer@gmail.com>
 Subject: Re: btrfs on bcache
-Date: Wed, 30 Jul 2014 18:01:06 -0500
-Message-ID: <53D97932.8010505@nuclearwinter.com>
+Date: Mon, 4 Aug 2014 09:57:20 -0300
+Message-ID: <CABtk0xSgojne-hsPGDveadSt7CORH7h1CYaFQWJnT2Z+Nh9qYw@mail.gmail.com>
 References: <1368165877.1162129.1406757898943.JavaMail.ngmail@webmail06.arcor-online.net>
+ <53D97932.8010505@nuclearwinter.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from titan.nuclearwinter.com ([174.136.96.186]:39218 "EHLO
-	mail.nuclearwinter.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751249AbaG3XBN (ORCPT
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:64418 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912AbaHDM5m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 30 Jul 2014 19:01:13 -0400
-In-Reply-To: <1368165877.1162129.1406757898943.JavaMail.ngmail@webmail06.arcor-online.net>
+	Mon, 4 Aug 2014 08:57:42 -0400
+In-Reply-To: <53D97932.8010505@nuclearwinter.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: dptrash@arcor.de, linux-bcache@vger.kernel.org, linux-btrfs@vger.kernel.org
+To: Larkin Lowrey <llowrey@nuclearwinter.com>
+Cc: dptrash@arcor.de, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
 
-I've been running two backup servers, with 25T and 20T of data, using
-btrfs on bcache (writeback) for about 7 months. I periodically run btrfs
-scrubs and backup verifies (SHA1 hashes) and have never had a corruption
-issue.
+After completely loosing my filesystem twice because of this bug, I gav=
+e
+up using btrfs on top of bcache (also writeback). In my case, I used to
+have some subvolumes and some snapshot of these subvolumes, but not man=
+y
+of them. The btrfs mantra "backup, bakcup and backup" saved me.
 
-My use of btrfs is simple, though, with no subvolumes and no btrfs level
-raid. My bcache backing devices are LVM volumes that span multiple md
-raid6 arrays. So, either the bug has been fixed or my configuration is
-not susceptible.
+Best regards,
 
-I'm running kernel 3.15.5-200.fc20.x86_64.
+=46=C3=A1bio Pfeifer
 
---Larkin
-
-On 7/30/2014 5:04 PM, dptrash@arcor.de wrote:
-> Concerning http://thread.gmane.org/gmane.comp.file-systems.btrfs/31018, does this "bug" still exists?
+2014-07-30 20:01 GMT-03:00 Larkin Lowrey <llowrey@nuclearwinter.com>:
+> I've been running two backup servers, with 25T and 20T of data, using
+> btrfs on bcache (writeback) for about 7 months. I periodically run bt=
+rfs
+> scrubs and backup verifies (SHA1 hashes) and have never had a corrupt=
+ion
+> issue.
 >
-> Kernel 3.14
-> B: 2x HDD 1 TB
-> C: 1x SSD 256 GB
+> My use of btrfs is simple, though, with no subvolumes and no btrfs le=
+vel
+> raid. My bcache backing devices are LVM volumes that span multiple md
+> raid6 arrays. So, either the bug has been fixed or my configuration i=
+s
+> not susceptible.
 >
-> # make-bcache -B /dev/sda /dev/sdb -C /dev/sdc --cache_replacement_policy=lru
-> # mkfs.btrfs -d raid1 -m raid1 -L "BTRFS_RAID" /dev/bcache0 /dev/bcache1
+> I'm running kernel 3.15.5-200.fc20.x86_64.
 >
-> I still have no "incomplete page write" messages in "dmesg | grep btrfs" and the checksums of some manually reviewed files are okay.
+> --Larkin
 >
-> Who has more experiences about this?
+> On 7/30/2014 5:04 PM, dptrash@arcor.de wrote:
+>> Concerning http://thread.gmane.org/gmane.comp.file-systems.btrfs/310=
+18, does this "bug" still exists?
+>>
+>> Kernel 3.14
+>> B: 2x HDD 1 TB
+>> C: 1x SSD 256 GB
+>>
+>> # make-bcache -B /dev/sda /dev/sdb -C /dev/sdc --cache_replacement_p=
+olicy=3Dlru
+>> # mkfs.btrfs -d raid1 -m raid1 -L "BTRFS_RAID" /dev/bcache0 /dev/bca=
+che1
+>>
+>> I still have no "incomplete page write" messages in "dmesg | grep bt=
+rfs" and the checksums of some manually reviewed files are okay.
+>>
+>> Who has more experiences about this?
+>>
+>> Thanks,
+>>
+>> - dp
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcac=
+he" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
-> Thanks,
->
-> - dp
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
+e" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
