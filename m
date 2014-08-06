@@ -1,32 +1,35 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [GIT PULL] bcache changes for 3.17
-Date: Tue, 05 Aug 2014 10:58:48 -0600
-Message-ID: <53E10D48.1010700@kernel.dk>
-References: <20140805043346.GF541@moria.home.lan>
+From: Daniel Smedegaard Buus <danielbuus@gmail.com>
+Subject: (unknown)
+Date: Wed, 6 Aug 2014 14:06:36 +0200
+Message-ID: <CAHnuAey8g7OUZPS6QQP_4h6P07=6q8r3J6kZr8D=DJ67fwFhfQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:63047 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939AbaHEQ6x (ORCPT
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:57386 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913AbaHFMHR (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 5 Aug 2014 12:58:53 -0400
-Received: by mail-pd0-f172.google.com with SMTP id ft15so1675065pdb.3
-        for <linux-bcache@vger.kernel.org>; Tue, 05 Aug 2014 09:58:52 -0700 (PDT)
-In-Reply-To: <20140805043346.GF541@moria.home.lan>
+	Wed, 6 Aug 2014 08:07:17 -0400
+Received: by mail-oa0-f52.google.com with SMTP id o6so1720959oag.25
+        for <linux-bcache@vger.kernel.org>; Wed, 06 Aug 2014 05:07:16 -0700 (PDT)
+Subject: 
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 08/04/2014 10:33 PM, Kent Overstreet wrote:
-> Hey Jens, here's the pull request for 3.17 - typically late, but lots of tasty
-> fixes in this one :)
+Hi :)
 
-Normally I'd say no, but since it's basically just fixes, I guess we can
-pull it in. But generally, it has to be in my hands a week before this,
-so it can simmer a bit in for-next before going in...
+I just tried upgrading a server of mine from mainline kernel 3.15.4 to
+3.16, and upon reboot no bcache device in sight. Grepping dmesg for
+bcache yielded an empty output, and besides the dmesg was full of
+oopses.
 
--- 
-Jens Axboe
+This is a live server, so I immediately remove kernel 3.16, and upon
+reboot, bcache was back and happy.
+
+I know this isn't very useful for anything debugging, but as a very
+general question, I'm just wondering if there's something I should
+have done prior to upgrading, or if this might be a bug of some sort?
+
+Cheers,
+Daniel
