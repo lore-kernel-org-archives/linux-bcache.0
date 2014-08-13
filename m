@@ -1,7 +1,7 @@
-From: Jianjian Huo <samuel.huo@gmail.com>
+From: Slava Pestov <sp@datera.io>
 Subject: Re: Null pointer oops
-Date: Wed, 13 Aug 2014 14:34:15 -0700
-Message-ID: <CAB=cV2QQFnQ_TAr4nKO1Jd-PFs8jWTMCnt460q2wL+2c3xJVww@mail.gmail.com>
+Date: Wed, 13 Aug 2014 14:37:58 -0700
+Message-ID: <CACHGV4+1dMe5YgXvq46mhdWfQWbE+9bxyiOektGo5BcvHi-8Kg@mail.gmail.com>
 References: <53EAF170.90600@nuclearwinter.com>
 	<CALJ65z=25CrrO9uMc2vfYVAQWb=6eK+OhB5TGJJrCp=D4ALvrQ@mail.gmail.com>
 	<53EB9513.8010200@nuclearwinter.com>
@@ -10,32 +10,43 @@ References: <53EAF170.90600@nuclearwinter.com>
 	<CACHGV4LEGK=7tFAJAEFaO84D=c6GGDyVTg4eMWC2mz5w1Xt_2A@mail.gmail.com>
 	<53EBD6CA.2000404@nuclearwinter.com>
 	<CACHGV4+vtxLK8tmRRrS7WoB16ZTLaPicUN=aYxJYUZGM0DBHQQ@mail.gmail.com>
-	<CACHGV4LtxvPz=VrzsXb9L2c779QijzQO-moPzM188AaVr8Q9jg@mail.gmail.com>
+	<53EBD989.6030406@nuclearwinter.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:33815 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaHMVeQ (ORCPT
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:41594 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753839AbaHMVh7 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:34:16 -0400
-Received: by mail-ig0-f180.google.com with SMTP id l13so3127106iga.13
-        for <linux-bcache@vger.kernel.org>; Wed, 13 Aug 2014 14:34:15 -0700 (PDT)
-In-Reply-To: <CACHGV4LtxvPz=VrzsXb9L2c779QijzQO-moPzM188AaVr8Q9jg@mail.gmail.com>
+	Wed, 13 Aug 2014 17:37:59 -0400
+Received: by mail-oa0-f44.google.com with SMTP id eb12so297349oac.3
+        for <linux-bcache@vger.kernel.org>; Wed, 13 Aug 2014 14:37:58 -0700 (PDT)
+In-Reply-To: <53EBD989.6030406@nuclearwinter.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Slava Pestov <sp@datera.io>
-Cc: Larkin Lowrey <llowrey@nuclearwinter.com>, Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
+To: Larkin Lowrey <llowrey@nuclearwinter.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
 
-yes, it's GFP_NOIO in 3.16.
-And Line 207 could be executed before 206, due to out-of-order execution.
+Hi Larkin,
 
-On Wed, Aug 13, 2014 at 2:30 PM, Slava Pestov <sp@datera.io> wrote:
-> I was mistaken. The bug is fixed in the pull request Kent sent to Jens for 3.16:
+A mempool_alloc() failing indicates memory pressure. The SSD is not at
+fault here.
+
+On Wed, Aug 13, 2014 at 2:32 PM, Larkin Lowrey
+<llowrey@nuclearwinter.com> wrote:
+> My swap is an LVM LV on top of a raid10 backed bcache device. I have had
+> a few oopses in recent months but have not been able to pin down the
+> cause. I have begun to suspect that the swap may be involved. The SSDs
+> in that raid10 are junky OCZ Agility3s. They seem to have a reputation
+> for periodic freezes or long pauses. Could it be that the kernel wanted
+> to write to the swap but couldn't because the SSDs were in a long pause
+> and that caused mempool_alloc to return null which then blew up the world?
 >
-> http://evilpiepirate.org/git/linux-bcache.git/commit/?h=bcache-dev&id=bcf090e0040e30f8409e6a535a01e6473afb096f
+> Is there any reason not to put swap on top of a bcache device?
 >
-> On Wed, Aug 13, 2014 at 2:25 PM, Slava Pestov <sp@datera.io> wrote:
+> --Larkin
+>
+> On 8/13/2014 4:25 PM, Slava Pestov wrote:
 >> Indeed it looks like iter is NULL. I see the bug is still present in
 >> the latest dev branch. The problem is that we're not checking the
 >> return value of mempoool_alloc(), which may be NULL if we pass
@@ -525,8 +536,4 @@ On Wed, Aug 13, 2014 at 2:30 PM, Slava Pestov <sp@datera.io> wrote:
 >>>>>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 >>>>>> the body of a message to majordomo@vger.kernel.org
 >>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
