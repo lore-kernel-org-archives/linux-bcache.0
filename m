@@ -1,66 +1,80 @@
-From: =?UTF-8?B?SmVzw7pzIEfDs21leg==?= <jgomo3@gmail.com>
-Subject: Re: Boot proccess messed up after dist-upgrade from Ubuntu 14.04 to 14.04.1
-Date: Mon, 11 Aug 2014 19:20:59 -0430
-Message-ID: <CAO9z-95zourpFx=-GKCGW4=OdwFhhhYFxrXUU24LzQEKPrHFbA@mail.gmail.com>
-References: <CAO9z-97N5vc2E90Tz-hk6OX6-4JfeLK7iRkAFvffFWZB0bThEg@mail.gmail.com>
+From: Larkin Lowrey <llowrey@nuclearwinter.com>
+Subject: Null pointer oops
+Date: Wed, 13 Aug 2014 00:02:40 -0500
+Message-ID: <53EAF170.90600@nuclearwinter.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:56994 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaHKXvT convert rfc822-to-8bit (ORCPT
+Received: from titan.nuclearwinter.com ([174.136.96.186]:56997 "EHLO
+	mail.nuclearwinter.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750751AbaHMFCg (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 11 Aug 2014 19:51:19 -0400
-Received: by mail-yh0-f46.google.com with SMTP id a41so6898083yho.33
-        for <linux-bcache@vger.kernel.org>; Mon, 11 Aug 2014 16:51:19 -0700 (PDT)
-In-Reply-To: <CAO9z-97N5vc2E90Tz-hk6OX6-4JfeLK7iRkAFvffFWZB0bThEg@mail.gmail.com>
+	Wed, 13 Aug 2014 01:02:36 -0400
+Received: from [IPv6:2601:e:1200:11d0:52e5:49ff:febe:9a2b] ([IPv6:2601:e:1200:11d0:52e5:49ff:febe:9a2b])
+	(authenticated bits=0)
+	by mail.nuclearwinter.com (8.14.4/8.14.4) with ESMTP id s7D52Y9p031623
+	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES128-SHA bits=128 verify=NO)
+	for <linux-bcache@vger.kernel.org>; Wed, 13 Aug 2014 00:02:35 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-Josep Lladonosa read the mailing list and helped me to resolve this
-issue, and i would like to share with you some things.
+I got an oops while doing some heavy I/O. I have an md raid10 cache
+device (4 SSDs) and 3 md raid5/6 backing devices. This setup has been
+well behaved for about 6 months.
 
-=46irst: The solution was to install somehow the bcache-tools 1.0.7-2 i=
-n
-the system. For that i had to mount it and chroot there. I don't know
-if was the newer version which solved the problem or i just needed to
-reinstall the tools so it could rebuild the initrd image.
+If this isn't a known issue is there anything I can do to provide more
+useful information?
 
-But, here is some unexpected feedback. In order to be able to install
-bcache-tools 1.0.7-2 in Ubuntu 10.14.1, i had to manually download the
-=2Edeb file due the last version for trusty in the PPA is 1.0.7-1[1].
-Maybe this should be fixed, as anyone following the documentation
-instruction will simply do an "apt-get install bcache-tools" and he
-will receive the 1.0.7-1 version.
+I'm running kernel 3.15.8-200.fc20.x86_64.
 
-Another though about this issue is that i did a fresh install of
-Ubuntu 14.04. This is going to happen again when another person does
-it and then upgrade it's Ubuntu to 14.04.1. Could be this considered
-an Ubuntu bug?.
+[210884.047249] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[210884.055605] IP: [<ffffffffa01625fc>] bch_btree_node_read_done+0x4c/0x450 [bcache]
+[210884.063723] PGD 0
+[210884.066053] Oops: 0002 [#1] SMP
+[210884.069610] Modules linked in: lp parport binfmt_misc ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat xt_CHECKSUM iptable_mangle tun bridge stp llc xt_multiport ebtable_nat ebtables hwmon_vid ip6t_REJECT nf_conntrack_ipv6 nf_conntrack_ipv4 nf_defrag_ipv6 nf_defrag_ipv4 ip6table_filter xt_conntrack ip6_tables nf_conntrack keyspan ezusb kvm_amd kvm crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel microcode serio_raw amd64_edac_mod edac_core fam15h_power k10temp edac_mce_amd sp5100_tco i2c_piix4 igb ptp pps_core dca shpchp acpi_cpufreq btrfs bcache raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor raid6_pq raid10 i2c_algo_bit drm_kms_helper ttm drm i2c_core mpt2sas mvsas libsas raid_class scsi_transport_sas cpufreq_stats
+[210884.140704] CPU: 5 PID: 11188 Comm: kworker/5:1 Not tainted 3.15.8-200.fc20.x86_64 #1
+[210884.149069] Hardware name:  /H8DG6/H8DGi, BIOS 3.0a       07/2
+[210884.155280] Workqueue: bcache cache_lookup [bcache]
+[210884.160531] task: ffff880218633160 ti: ffff8800217b8000 task.ti: ffff8800217b8000
+[210884.168502] RIP: 0010:[<ffffffffa01625fc>]  [<ffffffffa01625fc>] bch_btree_node_read_done+0x4c/0x450 [bcache]
+[210884.179105] RSP: 0000:ffff8800217bbbe8  EFLAGS: 00010212
+[210884.184806] RAX: 0000000000000400 RBX: ffff880245ec0000 RCX: 0000000000000000
+[210884.192480] RDX: 0000000000000000 RSI: ffff880418380000 RDI: 0000000000000246
+[210884.200075] RBP: ffff8800217bbc10 R08: 0000000000000000 R09: 0000000000000f6b
+[210884.207738] R10: 0000000000000000 R11: 0000000000000400 R12: ffff880413d06c00
+[210884.215391] R13: 0000000000000000 R14: ffff8800217bbc20 R15: ffff880413d06c00
+[210884.222961] FS:  00007f73bacd6880(0000) GS:ffff88021fd40000(0000) knlGS:0000000000000000
+[210884.231516] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[210884.237557] CR2: 0000000000000008 CR3: 0000000001c11000 CR4: 00000000000407e0
+[210884.245131] Stack:
+[210884.247395]  ffff880274f4d020 ffff880413d06c00 0000bfcc44a463f8 ffff8800217bbc20
+[210884.255337]  ffff880413d06c00 ffff8800217bbc78 ffffffffa0162b68 0000000000000000
+[210884.263256]  ffff880218633160 0000000000000000 0000000000000000 0000000000000000
+[210884.271234] Call Trace:
+[210884.273985]  [<ffffffffa0162b68>] bch_btree_node_read+0x168/0x190 [bcache]
+[210884.281258]  [<ffffffffa0163f69>] bch_btree_node_get+0x169/0x290 [bcache]
+[210884.288377]  [<ffffffffa01642f5>] bch_btree_map_keys_recurse+0xd5/0x1d0 [bcache]
+[210884.296311]  [<ffffffffa016dcb0>] ? cached_dev_congested+0x180/0x180 [bcache]
+[210884.303953]  [<ffffffff8135b204>] ? call_rwsem_down_read_failed+0x14/0x30
+[210884.311158]  [<ffffffffa01673f7>] bch_btree_map_keys+0x127/0x150 [bcache]
+[210884.318273]  [<ffffffffa016dcb0>] ? cached_dev_congested+0x180/0x180 [bcache]
+[210884.325826]  [<ffffffffa016e7f5>] cache_lookup+0xf5/0x1f0 [bcache]
+[210884.332325]  [<ffffffff810a4af6>] process_one_work+0x176/0x430
+[210884.338427]  [<ffffffff810a578b>] worker_thread+0x11b/0x3a0
+[210884.344282]  [<ffffffff810a5670>] ? rescuer_thread+0x3b0/0x3b0
+[210884.350447]  [<ffffffff810ac528>] kthread+0xd8/0xf0
+[210884.355615]  [<ffffffff810ac450>] ? insert_kthread_work+0x40/0x40
+[210884.362017]  [<ffffffff816ff93c>] ret_from_fork+0x7c/0xb0
+[210884.367756]  [<ffffffff810ac450>] ? insert_kthread_work+0x40/0x40
+[210884.374234] Code: 08 01 00 00 48 8b b8 58 cb 00 00 e8 bf 25 01 e1 49 8b b4 24 80 00 00 00 49 89 c5 31 d2 0f b7 86 32 04 00 00 66 f7 b6 30 04 00 00 <49> c7 45 08 00 00 00 00 0f b7 c0 49 89 45 00 48 8b 43 10 48 85
+[210884.395405] RIP  [<ffffffffa01625fc>] bch_btree_node_read_done+0x4c/0x450 [bcache]
+[210884.403389]  RSP <ffff8800217bbbe8>
+[210884.407171] CR2: 0000000000000008
+[210884.411233] ---[ end trace 0064e6abfd068c85 ]---
+[210884.416352] BUG: unable to handle kernel paging request at ffffffffffffffd8
+[210884.423871] IP: [<ffffffff810acb10>] kthread_data+0x10/0x20
+[210884.429915] PGD 1c14067 PUD 1c16067 PMD 0
 
-That's all, and thank you for the help.
-
-[1] https://launchpad.net/~g2p/+archive/ubuntu/storage?field.series_fil=
-ter=3Dtrusty
-
-2014-08-11 12:53 GMT-04:30 Jes=C3=BAs G=C3=B3mez <jgomo3@gmail.com>:
-> Hello!
->
-> I'm using bcache for root in Ubuntu 14.04.
->
-> After dist-upgrade to 14.04.1, a BusyBox shell appears instead.
->
-> I tried set rootdelay with various values, but it doesn't work neithe=
-r.
->
-> Also, There is not a /dev/bcache0 in the BusyBox.
->
-> With a liveCD, I mounted  /dev/bcache0 and the /boot partition to
-> check for references to the uuid of /dev/bcache0 in /etc/fstab and
-> /boot/grub/grub.cfg and are ok.
->
-> Last, "grub-install"ed but nothing works.
->
-> Any Idea?.
+--Larkin
