@@ -1,197 +1,277 @@
-From: Slava Pestov <sp@datera.io>
-Subject: Re: Null pointer oops
-Date: Wed, 13 Aug 2014 11:45:25 -0700
-Message-ID: <CACHGV4LEGK=7tFAJAEFaO84D=c6GGDyVTg4eMWC2mz5w1Xt_2A@mail.gmail.com>
-References: <53EAF170.90600@nuclearwinter.com>
-	<CALJ65z=25CrrO9uMc2vfYVAQWb=6eK+OhB5TGJJrCp=D4ALvrQ@mail.gmail.com>
-	<53EB9513.8010200@nuclearwinter.com>
-	<CACHGV4LDe6YUAUAFxvzfu8XvyJJ+yjuRefGvteuRA99B-Cn2YQ@mail.gmail.com>
-	<53EBAFEB.8000109@nuclearwinter.com>
+From: Rolf Fokkens <rolf@rolffokkens.nl>
+Subject: Re: "device busy" error when registering device
+Date: Wed, 13 Aug 2014 22:24:33 +0200
+Message-ID: <53EBC981.1000303@rolffokkens.nl>
+References: <lqcd46$hvl$1@ger.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oi0-f49.google.com ([209.85.218.49]:43603 "EHLO
-	mail-oi0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaHMSp0 (ORCPT
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:33946 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaHMUYh (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 13 Aug 2014 14:45:26 -0400
-Received: by mail-oi0-f49.google.com with SMTP id u20so113995oif.22
-        for <linux-bcache@vger.kernel.org>; Wed, 13 Aug 2014 11:45:26 -0700 (PDT)
-In-Reply-To: <53EBAFEB.8000109@nuclearwinter.com>
+	Wed, 13 Aug 2014 16:24:37 -0400
+Received: by mail-wi0-f173.google.com with SMTP id f8so7996532wiw.0
+        for <linux-bcache@vger.kernel.org>; Wed, 13 Aug 2014 13:24:36 -0700 (PDT)
+In-Reply-To: <lqcd46$hvl$1@ger.gmane.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Larkin Lowrey <llowrey@nuclearwinter.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
+To: Ian Pilcher <arequipeno@gmail.com>, linux-bcache@vger.kernel.org
 
-Can you post the disassembly of the function?
+Hi Ian,
 
-On Wed, Aug 13, 2014 at 11:35 AM, Larkin Lowrey
-<llowrey@nuclearwinter.com> wrote:
-> Thanks. Trying gdb helped me find the answer. I needed to install the
-> kernel-debuginfo-3.15.8-200.fc20.x86_64  package via yum.
+Sorry for the late response. Due to holidays it escaped my attention.
+
+I'm running a very similar setup, but my system boots 100% of the time. 
+So it may be useful to find out what's causing the problems at your 
+system. You're using Intel RAID and I'm using Linux software RAID. It 
+may be relevant, I don't know.
+
+These are the details of my system, maybe you can spot a significant 
+difference:
+
+[root@home07 ~]# cat /proc/version
+Linux version 3.15.6-200.fc20.x86_64 
+(mockbuild@bkernel02.phx2.fedoraproject.org) (gcc version 4.8.3 20140624 
+(Red Hat 4.8.3-1) (GCC) ) #1 SMP Fri Jul 18 02:36:27 UTC 2014
+[root@home07 ~]#
+Filesystem                 Size  Used Avail Use% Mounted on
+/dev/mapper/BCACHE-ROOTFS   79G   56G   20G  75% /
+devtmpfs                   3.9G     0  3.9G   0% /dev
+tmpfs                      3.9G  212K  3.9G   1% /dev/shm
+tmpfs                      3.9G  9.2M  3.9G   1% /run
+tmpfs                      3.9G     0  3.9G   0% /sys/fs/cgroup
+tmpfs                      3.9G  888K  3.9G   1% /tmp
+/dev/md0                   462M  383M   56M  88% /boot
+[root@home07 ~]# vgdisplay
+   --- Volume group ---
+   VG Name               BCACHE
+   System ID
+   Format                lvm2
+   Metadata Areas        1
+   Metadata Sequence No  18
+   VG Access             read/write
+   VG Status             resizable
+   MAX LV                0
+   Cur LV                3
+   Open LV               2
+   Max PV                0
+   Cur PV                1
+   Act PV                1
+   VG Size               139.91 GiB
+   PE Size               4.00 MiB
+   Total PE              35816
+   Alloc PE / Size       35328 / 138.00 GiB
+   Free  PE / Size       488 / 1.91 GiB
+   VG UUID               jIxLKK-ASqT-hlHy-D87m-lVLu-TFFc-7Tncp6
+
+[root@home07 ~]# pvdisplay
+   --- Physical volume ---
+   PV Name               /dev/bcache0
+   VG Name               BCACHE
+   PV Size               139.91 GiB / not usable 2.87 MiB
+   Allocatable           yes
+   PE Size               4.00 MiB
+   Total PE              35816
+   Free PE               488
+   Allocated PE          35328
+   PV UUID               McXfNf-PEn1-DFEl-pAsX-3aIz-C2y6-xf75QV
+[root@home07 ~]# bcache-status -s
+--- bcache ---
+UUID                        bc9e13cb-b50d-4016-bb52-1e20390ce248
+Block Size                  512 B
+Bucket Size                 512.00 KiB
+Congested?                  False
+Read Congestion             0.0ms
+Write Congestion            0.0ms
+Total Cache Size            30 GiB
+Total Cache Used            23 GiB    (77%)
+Total Cache Unused          7 GiB    (23%)
+Evictable Cache             28 GiB    (94%)
+Replacement Policy          [lru] fifo random
+Cache Mode                  writethrough [writeback] writearound none
+Total Hits                  155910    (95%)
+Total Misses                7204
+Total Bypass Hits           5230    (100%)
+Total Bypass Misses         0
+Total Bypassed              4.0 MiB
+--- Backing Device ---
+   Device File               /dev/md2 (9:2)
+   bcache Device File        /dev/bcache0 (252:0)
+   Size                      140 GiB
+   Cache Mode                writethrough [writeback] writearound none
+   Readahead                 0
+   Sequential Cutoff         0 B
+   Merge sequential?         False
+   State                     dirty
+   Writeback?                True
+   Dirty Data                2 GiB
+   Total Hits                155910    (95%)
+   Total Misses              7204
+   Total Bypass Hits         5230    (100%)
+   Total Bypass Misses       0
+   Total Bypassed            4.0 MiB
+--- Cache Device ---
+   Device File               /dev/sdd1 (8:49)
+   Size                      30 GiB
+   Block Size                512 B
+   Bucket Size               512.00 KiB
+   Replacement Policy        [lru] fifo random
+   Discard?                  False
+   I/O Errors                0
+   Metadata Written          43.9 MiB
+   Data Written              4 GiB
+   Buckets                   61440
+   Cache Used                23 GiB    (77%)
+   Cache Unused              7 GiB    (23%)
+[root@home07 ~]# cat /proc/mdstat
+Personalities : [raid1] [raid6] [raid5] [raid4]
+md1 : active raid5 sdc3[0] sda3[1] sdb3[2]
+       1027968 blocks level 5, 64k chunk, algorithm 2 [3/3] [UUU]
+
+md0 : active raid1 sdc1[0] sda1[1] sdb1[2]
+       496896 blocks [3/3] [UUU]
+
+md2 : active raid5 sda5[1] sdc5[0] sdb5[2]
+       146705280 blocks level 5, 64k chunk, algorithm 2 [3/3] [UUU]
+
+unused devices: <none>
+[root@home07 ~]#
+
+sda, sdb and sdc are SAMSUNG HD160JJ disks
+sdd is a SanDisk SDSSDP06
+
+The following may also be relevant, your device may be loked due to 
+misidentification:
+
+[root@home07 ~]# for i in /dev/sd[abc]1 /dev/sd[abc]3 /dev/md2 /dev/sdd1 
+/dev/bcache0 ; do echo $i; wipefs "$i" | sed 's/^/   /'; done
+/dev/sda1
+    offset               type
+----------------------------------------------------------------
+    0x438                ext3   [filesystem]
+                         LABEL: BOOT
+                         UUID: a3768dfd-37ec-45d1-a01b-76280ed390d0
+
+    0x1e540000           linux_raid_member   [raid]
+                         UUID: b7036aaf-3c8d-e714-bfe7-8010bc810f04
+
+/dev/sdb1
+    offset               type
+----------------------------------------------------------------
+    0x438                ext3   [filesystem]
+                         LABEL: BOOT
+                         UUID: a3768dfd-37ec-45d1-a01b-76280ed390d0
+
+    0x1e540000           linux_raid_member   [raid]
+                         UUID: b7036aaf-3c8d-e714-bfe7-8010bc810f04
+
+/dev/sdc1
+    offset               type
+----------------------------------------------------------------
+    0x438                ext3   [filesystem]
+                         LABEL: BOOT
+                         UUID: a3768dfd-37ec-45d1-a01b-76280ed390d0
+
+    0x1e540000           linux_raid_member   [raid]
+                         UUID: b7036aaf-3c8d-e714-bfe7-8010bc810f04
+
+/dev/sda3
+    offset               type
+----------------------------------------------------------------
+    0x1f5f0000           linux_raid_member   [raid]
+                         UUID: 59d3d229-892d-7dae-e109-537ecd2580d5
+
+/dev/sdb3
+    offset               type
+----------------------------------------------------------------
+    0x218                LVM2_member   [raid]
+                         UUID: 12Zw7I-EFzj-hX5g-MXyM-0LTu-rg9d-vi25QE
+
+    0x1f5f0000           linux_raid_member   [raid]
+                         UUID: 59d3d229-892d-7dae-e109-537ecd2580d5
+
+/dev/sdc3
+    offset               type
+----------------------------------------------------------------
+    0x218                LVM2_member   [raid]
+                         UUID: 12Zw7I-EFzj-hX5g-MXyM-0LTu-rg9d-vi25QE
+
+    0x1f5f0000           linux_raid_member   [raid]
+                         UUID: 59d3d229-892d-7dae-e109-537ecd2580d5
+
+/dev/md2
+    offset               type
+----------------------------------------------------------------
+    0x1018               bcache   [other]
+                         UUID: 63aef7ae-d550-4ca6-8063-0b7d0cd63ad5
+
+/dev/sdd1
+    offset               type
+----------------------------------------------------------------
+    0x1018               bcache   [other]
+                         UUID: 0d553929-3ef5-4f65-8479-2868bbba7329
+
+/dev/bcache0
+    offset               type
+----------------------------------------------------------------
+    0x218                LVM2_member   [raid]
+                         UUID: McXfNf-PEn1-DFEl-pAsX-3aIz-C2y6-xf75QV
+
+[root@home07 ~]#
+
+
+Note the single (bcache) signature on md2.Check if your md126p2 RAID 
+device also has single signature.
+
+Also note the double signatures on sdb3 and sdc3. I wasn't aware of 
+this, these double signatures might get me into trouble if LVM would 
+claim them before linux raid. But I've been lucky apparently.
+
+Rolf
+
+On 07/19/2014 02:11 AM, Ian Pilcher wrote:
+> I just finished moving my existing Fedora 20 root filesystem onto a
+> bcache device (actually LVM on top of a bcache physical volume).
 >
-> From addr2line:
->> bch_btree_node_read_done+0x4c
->> drivers/md/bcache/btree.c:207
+> The bcache cache device is /dev/sda2, a partition on my SSD; the backing
+> device is /dev/md126p5, a partition on an Intel RAID (imsm) volume.
 >
-> Here'a a snippet from gdb:
+> This configuration only boots successfully about 50% of the time.  The
+> other 50% of the time, the bcache device is not created, and dracut
+> times out and dumps me into an emergency shell.
 >
->> (gdb) list *(bch_btree_node_read_done+0x4c)
->> 0x65fc is in bch_btree_node_read_done (drivers/md/bcache/btree.c:207).
->> 202             struct bset *i = btree_bset_first(b);
->> 203             struct btree_iter *iter;
->> 204
->> 205             iter = mempool_alloc(b->c->fill_iter, GFP_NOWAIT);
->> 206             iter->size = b->c->sb.bucket_size / b->c->sb.block_size;
->> 207             iter->used = 0;
->> 208
->> 209     #ifdef CONFIG_BCACHE_DEBUG
->> 210             iter->b = &b->keys;
->> 211     #endif
+> After changing the bcache-register script to use /sys/fs/bcache/register
+> (instead of register_quiet), I see a "device busy" error when udev
+> attempts to register the backing device:
 >
-> This doesn't make any sense to me. If iter was null I would expect line
-> 206 to blow up first.
+>    [    2.105581] bcache: register_bcache() error opening /dev/md126p5:
+> device busy
 >
-> --Larkin
+> This is kernel 3.5.15, so this doesn't mean that the device is already
+> registered; something else has it (temporarily) opened.  I say that it's
+> opened temporarily, because I am able to register the backing device
+> manually from the dracut shell -- which starts the the bcache device.
 >
-> On 8/13/2014 12:41 PM, Slava Pestov wrote:
->> You can try to use gdb:
->>
->> gdb /lib/modules/.../foo.ko
->>
->> list *(bch_btree_node_read_done+0x4c)
->>
->>
->> On Wed, Aug 13, 2014 at 9:40 AM, Larkin Lowrey
->> <llowrey@nuclearwinter.com> wrote:
->>> This is making be feel very dumb. I've googled extensively but can't
->>> figure out how to run addr2line for a module.
->>>
->>> I'm running Fedora 20 and the kernel did not have debugging symbols. I
->>> downloaded the version with symbols but I don't know if the addresses
->>> are going to be the same. Bcache is a module for me and that's where
->>> things get tricky. Do you have any tips?
->>>
->>> --Larkin
->>>
->>> On 8/13/2014 12:04 AM, Kent Overstreet wrote:
->>>> Any chance you could do an addr2line and get me the exact line where
->>>> it happened?
->>>>
->>>> On Aug 12, 2014 10:02 PM, "Larkin Lowrey" <llowrey@nuclearwinter.com
->>>> <mailto:llowrey@nuclearwinter.com>> wrote:
->>>>
->>>>     I got an oops while doing some heavy I/O. I have an md raid10 cache
->>>>     device (4 SSDs) and 3 md raid5/6 backing devices. This setup has been
->>>>     well behaved for about 6 months.
->>>>
->>>>     If this isn't a known issue is there anything I can do to provide more
->>>>     useful information?
->>>>
->>>>     I'm running kernel 3.15.8-200.fc20.x86_64.
->>>>
->>>>     [210884.047249] BUG: unable to handle kernel NULL pointer
->>>>     dereference at 0000000000000008
->>>>     [210884.055605] IP: [<ffffffffa01625fc>]
->>>>     bch_btree_node_read_done+0x4c/0x450 [bcache]
->>>>     [210884.063723] PGD 0
->>>>     [210884.066053] Oops: 0002 [#1] SMP
->>>>     [210884.069610] Modules linked in: lp parport binfmt_misc
->>>>     ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat xt_CHECKSUM
->>>>     iptable_mangle tun bridge stp llc xt_multiport ebtable_nat
->>>>     ebtables hwmon_vid ip6t_REJECT nf_conntrack_ipv6 nf_conntrack_ipv4
->>>>     nf_defrag_ipv6 nf_defrag_ipv4 ip6table_filter xt_conntrack
->>>>     ip6_tables nf_conntrack keyspan ezusb kvm_amd kvm crct10dif_pclmul
->>>>     crc32_pclmul crc32c_intel ghash_clmulni_intel microcode serio_raw
->>>>     amd64_edac_mod edac_core fam15h_power k10temp edac_mce_amd
->>>>     sp5100_tco i2c_piix4 igb ptp pps_core dca shpchp acpi_cpufreq
->>>>     btrfs bcache raid456 async_raid6_recov async_memcpy async_pq
->>>>     async_xor async_tx xor raid6_pq raid10 i2c_algo_bit drm_kms_helper
->>>>     ttm drm i2c_core mpt2sas mvsas libsas raid_class
->>>>     scsi_transport_sas cpufreq_stats
->>>>     [210884.140704] CPU: 5 PID: 11188 Comm: kworker/5:1 Not tainted
->>>>     3.15.8-200.fc20.x86_64 #1
->>>>     [210884.149069] Hardware name:  /H8DG6/H8DGi, BIOS 3.0a       07/2
->>>>     [210884.155280] Workqueue: bcache cache_lookup [bcache]
->>>>     [210884.160531] task: ffff880218633160 ti: ffff8800217b8000
->>>>     task.ti: ffff8800217b8000
->>>>     [210884.168502] RIP: 0010:[<ffffffffa01625fc>]
->>>>      [<ffffffffa01625fc>] bch_btree_node_read_done+0x4c/0x450 [bcache]
->>>>     [210884.179105] RSP: 0000:ffff8800217bbbe8  EFLAGS: 00010212
->>>>     [210884.184806] RAX: 0000000000000400 RBX: ffff880245ec0000 RCX:
->>>>     0000000000000000
->>>>     [210884.192480] RDX: 0000000000000000 RSI: ffff880418380000 RDI:
->>>>     0000000000000246
->>>>     [210884.200075] RBP: ffff8800217bbc10 R08: 0000000000000000 R09:
->>>>     0000000000000f6b
->>>>     [210884.207738] R10: 0000000000000000 R11: 0000000000000400 R12:
->>>>     ffff880413d06c00
->>>>     [210884.215391] R13: 0000000000000000 R14: ffff8800217bbc20 R15:
->>>>     ffff880413d06c00
->>>>     [210884.222961] FS:  00007f73bacd6880(0000)
->>>>     GS:ffff88021fd40000(0000) knlGS:0000000000000000
->>>>     [210884.231516] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->>>>     [210884.237557] CR2: 0000000000000008 CR3: 0000000001c11000 CR4:
->>>>     00000000000407e0
->>>>     [210884.245131] Stack:
->>>>     [210884.247395]  ffff880274f4d020 ffff880413d06c00
->>>>     0000bfcc44a463f8 ffff8800217bbc20
->>>>     [210884.255337]  ffff880413d06c00 ffff8800217bbc78
->>>>     ffffffffa0162b68 0000000000000000
->>>>     [210884.263256]  ffff880218633160 0000000000000000
->>>>     0000000000000000 0000000000000000
->>>>     [210884.271234] Call Trace:
->>>>     [210884.273985]  [<ffffffffa0162b68>]
->>>>     bch_btree_node_read+0x168/0x190 [bcache]
->>>>     [210884.281258]  [<ffffffffa0163f69>]
->>>>     bch_btree_node_get+0x169/0x290 [bcache]
->>>>     [210884.288377]  [<ffffffffa01642f5>]
->>>>     bch_btree_map_keys_recurse+0xd5/0x1d0 [bcache]
->>>>     [210884.296311]  [<ffffffffa016dcb0>] ?
->>>>     cached_dev_congested+0x180/0x180 [bcache]
->>>>     [210884.303953]  [<ffffffff8135b204>] ?
->>>>     call_rwsem_down_read_failed+0x14/0x30
->>>>     [210884.311158]  [<ffffffffa01673f7>]
->>>>     bch_btree_map_keys+0x127/0x150 [bcache]
->>>>     [210884.318273]  [<ffffffffa016dcb0>] ?
->>>>     cached_dev_congested+0x180/0x180 [bcache]
->>>>     [210884.325826]  [<ffffffffa016e7f5>] cache_lookup+0xf5/0x1f0 [bcache]
->>>>     [210884.332325]  [<ffffffff810a4af6>] process_one_work+0x176/0x430
->>>>     [210884.338427]  [<ffffffff810a578b>] worker_thread+0x11b/0x3a0
->>>>     [210884.344282]  [<ffffffff810a5670>] ? rescuer_thread+0x3b0/0x3b0
->>>>     [210884.350447]  [<ffffffff810ac528>] kthread+0xd8/0xf0
->>>>     [210884.355615]  [<ffffffff810ac450>] ? insert_kthread_work+0x40/0x40
->>>>     [210884.362017]  [<ffffffff816ff93c>] ret_from_fork+0x7c/0xb0
->>>>     [210884.367756]  [<ffffffff810ac450>] ? insert_kthread_work+0x40/0x40
->>>>     [210884.374234] Code: 08 01 00 00 48 8b b8 58 cb 00 00 e8 bf 25 01
->>>>     e1 49 8b b4 24 80 00 00 00 49 89 c5 31 d2 0f b7 86 32 04 00 00 66
->>>>     f7 b6 30 04 00 00 <49> c7 45 08 00 00 00 00 0f b7 c0 49 89 45 00
->>>>     48 8b 43 10 48 85
->>>>     [210884.395405] RIP  [<ffffffffa01625fc>]
->>>>     bch_btree_node_read_done+0x4c/0x450 [bcache]
->>>>     [210884.403389]  RSP <ffff8800217bbbe8>
->>>>     [210884.407171] CR2: 0000000000000008
->>>>     [210884.411233] ---[ end trace 0064e6abfd068c85 ]---
->>>>     [210884.416352] BUG: unable to handle kernel paging request at
->>>>     ffffffffffffffd8
->>>>     [210884.423871] IP: [<ffffffff810acb10>] kthread_data+0x10/0x20
->>>>     [210884.429915] PGD 1c14067 PUD 1c16067 PMD 0
->>>>
->>>>     --Larkin
->>>>
->>>>     --
->>>>     To unsubscribe from this list: send the line "unsubscribe
->>>>     linux-bcache" in
->>>>     the body of a message to majordomo@vger.kernel.org
->>>>     <mailto:majordomo@vger.kernel.org>
->>>>     More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Looking at /usr/lib/udev/bcache-register and the bcache_register source
+> in drivers/md/bcache/super.c, I notice 2 things.
+>
+> (1) bcache-register gives up immediately when an error occurs because of
+>      a (possibly temporary) conflict.
+>
+> (2) Although the driver logs a different message in the already
+>      registered case ("device already registered" instead of "device
+>      busy"), it doesn't provide userspace with any way to distinguish the
+>      two cases; it always returns -EINVAL.
+>
+> Suggested fix:
+>
+> (1) Change bcache_register to return -EBUSY in the device busy case
+>      (while still returning -EINVAL in the already registered case).
+>
+> (2) Change bcache-register to check the exit code of the registration
+>      attempt and retry in the EBUSY case.
+>
+> Does this make sense?
 >
