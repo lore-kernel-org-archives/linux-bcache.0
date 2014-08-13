@@ -1,36 +1,36 @@
-From: Slava Pestov <sp@datera.io>
+From: Larkin Lowrey <llowrey@nuclearwinter.com>
 Subject: Re: Null pointer oops
-Date: Wed, 13 Aug 2014 14:30:44 -0700
-Message-ID: <CACHGV4LtxvPz=VrzsXb9L2c779QijzQO-moPzM188AaVr8Q9jg@mail.gmail.com>
-References: <53EAF170.90600@nuclearwinter.com>
-	<CALJ65z=25CrrO9uMc2vfYVAQWb=6eK+OhB5TGJJrCp=D4ALvrQ@mail.gmail.com>
-	<53EB9513.8010200@nuclearwinter.com>
-	<CACHGV4LDe6YUAUAFxvzfu8XvyJJ+yjuRefGvteuRA99B-Cn2YQ@mail.gmail.com>
-	<53EBAFEB.8000109@nuclearwinter.com>
-	<CACHGV4LEGK=7tFAJAEFaO84D=c6GGDyVTg4eMWC2mz5w1Xt_2A@mail.gmail.com>
-	<53EBD6CA.2000404@nuclearwinter.com>
-	<CACHGV4+vtxLK8tmRRrS7WoB16ZTLaPicUN=aYxJYUZGM0DBHQQ@mail.gmail.com>
+Date: Wed, 13 Aug 2014 16:32:57 -0500
+Message-ID: <53EBD989.6030406@nuclearwinter.com>
+References: <53EAF170.90600@nuclearwinter.com>	<CALJ65z=25CrrO9uMc2vfYVAQWb=6eK+OhB5TGJJrCp=D4ALvrQ@mail.gmail.com>	<53EB9513.8010200@nuclearwinter.com>	<CACHGV4LDe6YUAUAFxvzfu8XvyJJ+yjuRefGvteuRA99B-Cn2YQ@mail.gmail.com>	<53EBAFEB.8000109@nuclearwinter.com>	<CACHGV4LEGK=7tFAJAEFaO84D=c6GGDyVTg4eMWC2mz5w1Xt_2A@mail.gmail.com>	<53EBD6CA.2000404@nuclearwinter.com> <CACHGV4+vtxLK8tmRRrS7WoB16ZTLaPicUN=aYxJYUZGM0DBHQQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:40822 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132AbaHMVap (ORCPT
+Received: from titan.nuclearwinter.com ([174.136.96.186]:58033 "EHLO
+	mail.nuclearwinter.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752132AbaHMVcy (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 13 Aug 2014 17:30:45 -0400
-Received: by mail-ob0-f181.google.com with SMTP id va2so286181obc.12
-        for <linux-bcache@vger.kernel.org>; Wed, 13 Aug 2014 14:30:45 -0700 (PDT)
+	Wed, 13 Aug 2014 17:32:54 -0400
 In-Reply-To: <CACHGV4+vtxLK8tmRRrS7WoB16ZTLaPicUN=aYxJYUZGM0DBHQQ@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Larkin Lowrey <llowrey@nuclearwinter.com>
+To: Slava Pestov <sp@datera.io>
 Cc: Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
 
-I was mistaken. The bug is fixed in the pull request Kent sent to Jens for 3.16:
+My swap is an LVM LV on top of a raid10 backed bcache device. I have had
+a few oopses in recent months but have not been able to pin down the
+cause. I have begun to suspect that the swap may be involved. The SSDs
+in that raid10 are junky OCZ Agility3s. They seem to have a reputation
+for periodic freezes or long pauses. Could it be that the kernel wanted
+to write to the swap but couldn't because the SSDs were in a long pause
+and that caused mempool_alloc to return null which then blew up the world?
 
-http://evilpiepirate.org/git/linux-bcache.git/commit/?h=bcache-dev&id=bcf090e0040e30f8409e6a535a01e6473afb096f
+Is there any reason not to put swap on top of a bcache device?
 
-On Wed, Aug 13, 2014 at 2:25 PM, Slava Pestov <sp@datera.io> wrote:
+--Larkin
+
+On 8/13/2014 4:25 PM, Slava Pestov wrote:
 > Indeed it looks like iter is NULL. I see the bug is still present in
 > the latest dev branch. The problem is that we're not checking the
 > return value of mempoool_alloc(), which may be NULL if we pass
@@ -520,4 +520,3 @@ On Wed, Aug 13, 2014 at 2:25 PM, Slava Pestov <sp@datera.io> wrote:
 >>>>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 >>>>> the body of a message to majordomo@vger.kernel.org
 >>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
