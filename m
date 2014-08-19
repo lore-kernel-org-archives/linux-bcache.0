@@ -1,128 +1,30 @@
-From: Peter Kieser <peter@kieser.ca>
-Subject: Re: Null pointer oops
-Date: Fri, 15 Aug 2014 22:48:07 -0700
-Message-ID: <53EEF097.20002@kieser.ca>
-References: <53EAF170.90600@nuclearwinter.com>	<CALJ65z=25CrrO9uMc2vfYVAQWb=6eK+OhB5TGJJrCp=D4ALvrQ@mail.gmail.com>	<53EB9513.8010200@nuclearwinter.com>	<CACHGV4LDe6YUAUAFxvzfu8XvyJJ+yjuRefGvteuRA99B-Cn2YQ@mail.gmail.com>	<53EBAFEB.8000109@nuclearwinter.com>	<CACHGV4LEGK=7tFAJAEFaO84D=c6GGDyVTg4eMWC2mz5w1Xt_2A@mail.gmail.com>	<53EBD6CA.2000404@nuclearwinter.com>	<CACHGV4+vtxLK8tmRRrS7WoB16ZTLaPicUN=aYxJYUZGM0DBHQQ@mail.gmail.com> <CACHGV4LtxvPz=VrzsXb9L2c779QijzQO-moPzM188AaVr8Q9jg@mail.gmail.com>
+From: Stan Hoeppner <stan@hardwarefreak.com>
+Subject: enable bcache in =?UTF-8?Q?kernel=3F?=
+Date: Mon, 18 Aug 2014 22:30:35 -0500
+Message-ID: <f0bf813a979381c1eb202655b1c55299@localhost>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms020002000706050400010802"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.pfak.org ([198.50.219.4]:38986 "EHLO mail.pfak.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918AbaHPFsQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 16 Aug 2014 01:48:16 -0400
-In-Reply-To: <CACHGV4LtxvPz=VrzsXb9L2c779QijzQO-moPzM188AaVr8Q9jg@mail.gmail.com>
+Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:29552 "EHLO
+	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbaHSDia (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 18 Aug 2014 23:38:30 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Slava Pestov <sp@datera.io>, Larkin Lowrey <llowrey@nuclearwinter.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
-
-This is a cryptographically signed message in MIME format.
-
---------------ms020002000706050400010802
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: quoted-printable
+To: linux-bcache@vger.kernel.org
 
 
-On 2014-08-13 2:30 PM, Slava Pestov wrote:
-> I was mistaken. The bug is fixed in the pull request Kent sent to Jens =
-for 3.16:
->
-> http://evilpiepirate.org/git/linux-bcache.git/commit/?h=3Dbcache-dev&id=
-=3Dbcf090e0040e30f8409e6a535a01e6473afb096f
-(Again) are these fixes going to be backported to Linux 3.10 (or other=20
-longterm kernels?)
+Is bcache available in 3.4.103?
 
--Peter
+Regardless of the answer to the above, how is bcache enabled in the
+kernel?  .config?  Doc reference please.  The bcache website simply says
+"now in mainline" without stating the source filename or anything actually
+helpful about including it in a custom kernel.
 
+Please reply-all.
 
---------------ms020002000706050400010802
-Content-Type: application/pkcs7-signature; name="smime.p7s"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Description: S/MIME Cryptographic Signature
+Thanks.
 
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIINgDCC
-BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
-DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
-Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
-MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
-KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
-8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
-DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
-2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
-zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
-Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
-HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
-MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
-dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
-c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
-Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
-c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
-UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
-p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
-+HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
-hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
-hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
-0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
-AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
-XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIHRDCCBiygAwIBAgICJYcwDQYJKoZIhvcNAQEF
-BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
-ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
-bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xMjA4MjkyMzM0MjZa
-Fw0xNDA4MzExMzE0MzFaMIGOMRkwFwYDVQQNExBpd3JteTFzNGhOaHZLMDQ0MQswCQYDVQQG
-EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
-EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
-ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOdZjqh64jWRFwTsYZZ0bKt5xOIxLlV4
-jrN0wY5KMu5RotLfYnu53fCMGJVk1n8h4QFRDxGuQmE4ugw47rv7FMDWYPb7PisPAWbcbUlG
-pmxhZB/avqpC8P2uuvJ0dsKsyNo8HeROfvrLkT6PSpYE35UXTLESoHSYkkyhcklVRf6ygChd
-PKUMNhEAMH3ZGtsw8N24hSoiW6Sb3vqv4ZCZcLvlKRVjJtOyc2vbSw8ndc62EbFMFeP+AZOw
-r7flFGQanYjfeXeeXV/29hstVPv88okwEpJCWdmSA1/gh5Yc6bjpQ7YuSxOVKP5UAl+Ehyld
-XWIcWEcUoeuZ1XeSyRuwRmcCAwEAAaOCA6owggOmMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
-MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUKlB/4e9ZfesCCiNm
-UHJOZibv8FAwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
-cGV0ZXJAa2llc2VyLmNhMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8w
-LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYB
-BQUHAgEWKGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsG
-AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
-aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
-bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
-bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
-IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGcBggrBgEFBQcCAjCBjzAnFiBTdGFydENv
-bSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRMaWFiaWxpdHkgYW5kIHdhcnJhbnRp
-ZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBhbmQgTGltaXRhdGlvbnMiIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwu
-c3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUH
-MAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBCBggr
-BgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5jbGll
-bnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkqhkiG
-9w0BAQUFAAOCAQEAvd8Wn0ZXlB3mV+fWae/hAFquDNjyWMJ29rJymKaGOOYTCiPdmDRJNV9R
-k0YTP9+B06A0Vx6bbg+rZwIdv2k+GBSjCSb4T8IsawVphbbWMohFzxGzo36NaYZ/wCTcrlVv
-oXmPFkEaOJzqQ1DAYetJTfDMIfkBeOZSJ9KmdLos1Z9fOc0nGq9ioy/6gIPGchsWuhrl3vxW
-ej1MUPjVKn5wW967cPcLFnNLR1gxYB3fjptyHbJpRq/54rH2BMR0kicK9EyVUoDM35R6Ux6n
-djaJmH1ZFcHVc+FmalNisvlIlGSWwnkyvpmyD25LSJ+BlfZEUHE8tcicdZPAqQ8f+Yo/dTGC
-A9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
-MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMv
-U3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAiWHMAkG
-BSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8X
-DTE0MDgxNjA1NDgwN1owIwYJKoZIhvcNAQkEMRYEFMo7Y4ZaLeGyJe7KBq5SCdo9f9WtMGwG
-CSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAO
-BggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgw
-gaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29t
-IEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
-BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENB
-AgIlhzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
-dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
-aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
-aWVudCBDQQICJYcwDQYJKoZIhvcNAQEBBQAEggEAU5IeYSSaLfqVW/f4VwfpYCqvIGzibFCL
-qkHa9fe/a94pRx2FIdC6gIYUQK/+Mj68lsq3JoijQBvAsQ9ES+eHOrSWwhR9StnzIoPUDX2k
-QJcwVw5WD8SXZTf6OdDWeRWjsxDrL1g8Z1oZozmxAYuf5FErAshLtdd+Zm5oawFdo6nTZJgA
-NOut0c/OzHJqppRti9DKEHP4b6vBVoVMDjPa1WybEO8YvldhWy3yu81/yGG4WSZLpDopiVWr
-aMUoDWRyJzdQJAmAV4uXOcBrnra8GcY/2nzdY9ImVXgTPThTnGdLtbDjFS513VBdQtJrsn9A
-alnRghCGsQr5bxCXnePWXAAAAAAAAA==
---------------ms020002000706050400010802--
+Stan
