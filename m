@@ -1,52 +1,44 @@
-From: Vivek Dasmohapatra <vivek@collabora.co.uk>
-Subject: Re: enable bcache in kernel?
-Date: Tue, 19 Aug 2014 10:48:39 +0100 (BST)
-Message-ID: <alpine.DEB.2.02.1408191044300.10407@noise.cbg.collabora.co.uk>
-References: <f0bf813a979381c1eb202655b1c55299@localhost>
-Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-777320272-1408441721=:10407"
+From: Stefan Bader <stefan.bader@canonical.com>
+Subject: [PATCH] bcache: prevent crash on changing writeback_running
+Date: Tue, 19 Aug 2014 15:01:33 +0200
+Message-ID: <1408453293-17917-1-git-send-email-stefan.bader@canonical.com>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:42250 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779AbaHSJsn (ORCPT
+Received: from youngberry.canonical.com ([91.189.89.112]:50456 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbaHSNBf (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 19 Aug 2014 05:48:43 -0400
-In-Reply-To: <f0bf813a979381c1eb202655b1c55299@localhost>
+	Tue, 19 Aug 2014 09:01:35 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Stan Hoeppner <stan@hardwarefreak.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Cc: Kent Overstreet <kmo@daterainc.com>
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+commit a664d0f05a2ec02c8f042db536d84d15d6e19e81
+    bcache: fix crash on shutdown in passthrough mode
 
---8323329-777320272-1408441721=:10407
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+added a safeguard in the shutdown case. At least while not being
+attached it is also possible to trigger a kernel bug by writing into
+writeback_running. This change  adds the same check before trying to
+wake up the thread for that case.
 
-On Mon, 18 Aug 2014, Stan Hoeppner wrote:
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+---
+ drivers/md/bcache/writeback.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
->
-> Is bcache available in 3.4.103?
-
-I believe it went in around 3.10 but I wouldn't use it for anything
-in production until at least 3.12.x
-
-> Regardless of the answer to the above, how is bcache enabled in the
-> kernel?  .config?  Doc reference please.  The bcache website simply says
-> "now in mainline" without stating the source filename or anything actually
-> helpful about including it in a custom kernel.
-
-From `make menuconfig'
-
-   │ Symbol: BCACHE [=m]                                                     │
-   │ Type  : tristate                                                        │
-   │ Prompt: Block device as cache                                           │
-   │   Location:                                                             │
-   │     -> Device Drivers                                                   │
-   │ (1)   -> Multiple devices driver support (RAID and LVM) (MD [=y])       │
-   │   Defined at drivers/md/bcache/Kconfig:2                                │
-   │   Depends on: MD [=y]                                                   │
-
-
---8323329-777320272-1408441721=:10407--
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 0a9dab1..073a042 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -63,7 +63,8 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
+ 
+ static inline void bch_writeback_queue(struct cached_dev *dc)
+ {
+-	wake_up_process(dc->writeback_thread);
++	if (!IS_ERR_OR_NULL(dc->writeback_thread))
++		wake_up_process(dc->writeback_thread);
+ }
+ 
+ static inline void bch_writeback_add(struct cached_dev *dc)
+-- 
+1.9.1
