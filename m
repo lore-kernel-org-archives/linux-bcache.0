@@ -1,61 +1,120 @@
-From: Ian Pilcher <arequipeno@gmail.com>
-Subject: Re: "device busy" error when registering device
-Date: Tue, 19 Aug 2014 20:38:44 -0500
-Message-ID: <53F3FC24.4000200@gmail.com>
-References: <lqcd46$hvl$1@ger.gmane.org> <53EBC981.1000303@rolffokkens.nl>
+From: Stefan Bader <stefan.bader@canonical.com>
+Subject: Re: [PATCH] bcache: prevent crash on changing writeback_running
+Date: Thu, 21 Aug 2014 09:56:56 +0200
+Message-ID: <53F5A648.6060904@canonical.com>
+References: <1408453293-17917-1-git-send-email-stefan.bader@canonical.com> <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="Gt1dHuxcd41p5h4tfoN4VresMqljECsjO"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:51489 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaHTBiz (ORCPT
+Received: from youngberry.canonical.com ([91.189.89.112]:33901 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962AbaHUH5I (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 19 Aug 2014 21:38:55 -0400
-Received: by mail-oa0-f42.google.com with SMTP id n16so5867645oag.15
-        for <linux-bcache@vger.kernel.org>; Tue, 19 Aug 2014 18:38:55 -0700 (PDT)
-In-Reply-To: <53EBC981.1000303@rolffokkens.nl>
+	Thu, 21 Aug 2014 03:57:08 -0400
+In-Reply-To: <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Rolf Fokkens <rolf@rolffokkens.nl>, linux-bcache@vger.kernel.org
+To: Slava Pestov <sp@datera.io>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
 
-On 08/13/2014 03:24 PM, Rolf Fokkens wrote:
-> I'm running a very similar setup, but my system boots 100% of the time.
-> So it may be useful to find out what's causing the problems at your
-> system. You're using Intel RAID and I'm using Linux software RAID. It
-> may be relevant, I don't know.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Gt1dHuxcd41p5h4tfoN4VresMqljECsjO
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-I suspect that the most significant difference is that my backing device
-is a partition on a RAID device, rather than the device itself.
+On 19.08.2014 20:03, Slava Pestov wrote:
+> Thanks, this is now in our development branch.
 
-In reality, however, I don't think it's worth spending a lot of time
-figuring out exactly what else is accessing the device.  If I understand
-udev correctly, this sort of "conflict" is an inevitable consequence of
-its asynchronous nature, and helper programs like bcache-register need
-to be robust enough to deal with them.
+Thanks. :) This kind of brings up another question: how are stable patche=
+s
+handled for bcache. Someone handling them centrally like for the network =
+stack
+or tagging for stable and if that missed, individual proposals?
 
-(If I'm wrong about this, then I guess this is a udev bug?)
+I am asking because it looks like for all kernels between 3.13..3.16 (inc=
+lusive)
+the set of
 
-BTW, this is what the bcache-related dmesg entries look like when I hit
-the conflict with my patches applied:
+a664d0f05a2ec02c8f042db536d84d15d6e19e81
+  bcache: fix crash on shutdown in passthrough mode
+9e5c353510b26500bd6b8309823ac9ef2837b761
+  bcache: fix uninterruptible sleep in writeback thread
 
-> [    1.761932] bcache: bch_journal_replay() journal replay done, 1972 keys in 75 entries, seq 312536
-> [    1.762043] bcache: register_cache() registered cache device sda2
-> [    1.762631] bcache: register_bcache() error opening /dev/md126p5: device busy
-> [    1.862949] bcache: register_bdev() registered backing device md126p5
-> [    1.864268] bcache: bch_cached_dev_attach() Caching md126p5 as bcache0 on set fb8d253b-6144-4b48-8ed6-7b1724ed83a7
-> [    3.553053] bcache: register_bcache() error opening /dev/sda2: device already registered
-> [    4.182180] bcache: register_bcache() error opening /dev/md126p5: device already registered
+plus the one I did would be useful. Right now I only tested with 3.13 wit=
+h those
+and at least avoid the lockdep warnings and crashes I saw before. I only =
+see an
+unexplainable load of 1 when idle but having one bcache device configured=
+ in a
+VM (Xen or KVM). Since writeback should be fixed, maybe gc...
 
-You can see that the backing device is busy when it first tries to
-register it, but it succeeds 1/10th of a second later.  (I'm assuming
-the last two "already registered" messages occur when udev replays
-its events later in the boot process.)
+-Stefan
+>=20
+> On Tue, Aug 19, 2014 at 6:01 AM, Stefan Bader
+> <stefan.bader@canonical.com> wrote:
+>> commit a664d0f05a2ec02c8f042db536d84d15d6e19e81
+>>     bcache: fix crash on shutdown in passthrough mode
+>>
+>> added a safeguard in the shutdown case. At least while not being
+>> attached it is also possible to trigger a kernel bug by writing into
+>> writeback_running. This change  adds the same check before trying to
+>> wake up the thread for that case.
+>>
+>> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+>> ---
+>>  drivers/md/bcache/writeback.h | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeba=
+ck.h
+>> index 0a9dab1..073a042 100644
+>> --- a/drivers/md/bcache/writeback.h
+>> +++ b/drivers/md/bcache/writeback.h
+>> @@ -63,7 +63,8 @@ static inline bool should_writeback(struct cached_de=
+v *dc, struct bio *bio,
+>>
+>>  static inline void bch_writeback_queue(struct cached_dev *dc)
+>>  {
+>> -       wake_up_process(dc->writeback_thread);
+>> +       if (!IS_ERR_OR_NULL(dc->writeback_thread))
+>> +               wake_up_process(dc->writeback_thread);
+>>  }
+>>
+>>  static inline void bch_writeback_add(struct cached_dev *dc)
+>> --
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache=
+" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Thanks!
 
--- 
-========================================================================
-Ian Pilcher                                         arequipeno@gmail.com
--------- "I grew up before Mark Zuckerberg invented friendship" --------
-========================================================================
+
+--Gt1dHuxcd41p5h4tfoN4VresMqljECsjO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJT9aZRAAoJEOhnXe7L7s6jn3gP/1LEAcf81q6w1/3Uz0noWiSw
+8yEhKclYc3ZbkIPb1dhVAASA0FpqQMSXWc3uKZNQnI3zjlnQyVwdICHPgVtkY7uT
+WkYV4X3fYzvnKDvEKVENxBJitk8NG5XKcvdmuxKy16NV8X0vJk9LukNzDPvIE2hT
+eoXyXA9JwFPY65oXJiX7Q8s7yjHs7Ja7+iHmWQiaeyF9XKGHg4Ad+GHBA7EGtIGf
+xivLn/jYCJcPu+A0CmvSD084k54BDviFbsGGiLbSbkhLFrubA2jM0tH2FdoxJzTf
+wOBUcY3Lvk0oHgffq8e+gV3zz92rpFcLUMDVLoCE1MoyBfTZJenyXv9WBKKwcPzE
+lDmIqDMG9sbKGMvCgqIgBuL/Lbq8Cn4wAv4677uDZG0w6eLDzRSF3g/Z13mZCjyh
+qXFTMhH6AKhYKwwaoaNP3kQiXdPlVWfLgLxKngvihj5q9pPIO9woJ5hUbWqNLKq+
+6J0BIMkj7UZBnrUsD80+eXTA7XzboG72hMg6iniJydZYt6l+a9z6QehqbEKkOUKR
+F+DU27+zVRr4VmqggLAXW5t9CkIKzR0LcQyg2aqprGuwLnP1nrC1BNtx5D+s+wtI
+SUbADRLfBE7KjbdPSGOevM9BLttMMy4++j+zJP9hUZCrheV9Lv10sMcNTzScoXlQ
+HbU7gaQ+40zoDx1QpOdB
+=bTwn
+-----END PGP SIGNATURE-----
+
+--Gt1dHuxcd41p5h4tfoN4VresMqljECsjO--
