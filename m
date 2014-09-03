@@ -1,54 +1,142 @@
-From: Thomas Klaube <thomas@klaube.net>
-Subject: Re: bcache bug / fs freeze on heavy IO
-Date: Tue, 2 Sep 2014 09:37:38 +0200 (CEST)
-Message-ID: <1858501439.6823577.1409643458898.JavaMail.zimbra@klaube.net>
-References: <318258231.4483994.1408694008758.JavaMail.zimbra@klaube.net> <58978953.4484590.1408694179180.JavaMail.zimbra@klaube.net> <CALJ65zn9yWeRLPZd8EMJSW_+ff1VeN159VBexwgCHRbfENHNCw@mail.gmail.com> <CALJ65z=ky_rC_A7-DP0mqWVBiC3RqUFYR02vju4FUfizOuXhXg@mail.gmail.com> <2025796026.5376048.1409035095370.JavaMail.zimbra@klaube.net> <CACHGV4J6YA0gin=srs4frRMOpmW23+b_gVzWN_pLH5NviO6Zpg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [PATCH 1/2] md: Resolve shadow warnings
+Date: Wed,  3 Sep 2014 02:07:08 -0700
+Message-ID: <1409735229-24186-1-git-send-email-jeffrey.t.kirsher@intel.com>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from orion.efm.de ([195.190.148.230]:58531 "EHLO orion.efm.de"
+Received: from mga14.intel.com ([192.55.52.115]:49159 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295AbaIBHhl convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 2 Sep 2014 03:37:41 -0400
-In-Reply-To: <CACHGV4J6YA0gin=srs4frRMOpmW23+b_gVzWN_pLH5NviO6Zpg@mail.gmail.com>
+	id S1753452AbaICJHL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 3 Sep 2014 05:07:11 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Slava Pestov <sp@datera.io>
-Cc: Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
+To: kmo@daterainc.com
+Cc: Mark Rustad <mark.d.rustad@intel.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 
------ Urspr=C3=BCngliche Mail -----
-> Von: "Slava Pestov" <sp@datera.io>
-> An: "Thomas Klaube" <thomas@klaube.net>
-> CC: "Kent Overstreet" <kmo@daterainc.com>, linux-bcache@vger.kernel.o=
-rg
-> Gesendet: Sonntag, 31. August 2014 22:34:52
-> Betreff: Re: bcache bug / fs freeze on heavy IO
->=20
-> Hi Thomas,
+From: Mark Rustad <mark.d.rustad@intel.com>
 
-Hi Slava,
+Resolve shadow warnings caused by having the variable "ret"
+in the RB_* macros, which matches the same local name in
+functions that use the macros. Because these inner blocks
+are defined in a macro, if the outer "ret" were passed to
+the macro, madness would ensue. Reduce the hazard by prepending
+an _ to the names of the inner block symbols, which seems to
+be standard practice anyway.
 
-> > Aug 26 01:52:06 ubuntu kernel: [18378.656038] BUG: unable to handle=
- kernel
-> > NULL pointer dereference at 0000000000000099
->=20
-> I believe this is fixed in 3.17:
->=20
-> http://evilpiepirate.org/git/linux-bcache.git/commit/?h=3Dbcache-dev&=
-id=3D2452cc89063a2a6890368f185c4b6d7d8802179e
->=20
-> Can you either try upgrading your kernel, or as a workaround try
-> increasing your bucket size. This will lower the btree depth (depth 2
-> trees won't hit this problem).
+Signed-off-by: Mark Rustad <mark.d.rustad@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
+ drivers/md/bcache/util.h | 80 ++++++++++++++++++++++++------------------------
+ 1 file changed, 40 insertions(+), 40 deletions(-)
 
-I upgraded to 3.17.0-rc3 and rerun the fio tests for 10 hours without a=
-ny=20
-problems (no suspect messages in dmesg, no fs errors and no hanging tas=
-ks=20
-or other problems). So it seems I am unable to trigger the problem in=20
-3.17.0-rc3 but I will perform some more tests....
-
-Thanx and regards
-Thomas Klaube
+diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+index 98df757..508f68b 100644
+--- a/drivers/md/bcache/util.h
++++ b/drivers/md/bcache/util.h
+@@ -484,65 +484,65 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done);
+ 
+ #define RB_INSERT(root, new, member, cmp)				\
+ ({									\
+-	__label__ dup;							\
+-	struct rb_node **n = &(root)->rb_node, *parent = NULL;		\
+-	typeof(new) this;						\
+-	int res, ret = -1;						\
++	__label__ _dup;							\
++	struct rb_node **_n = &(root)->rb_node, *_parent = NULL;	\
++	typeof(new) _this;						\
++	int _res, _ret = -1;						\
+ 									\
+-	while (*n) {							\
+-		parent = *n;						\
+-		this = container_of(*n, typeof(*(new)), member);	\
+-		res = cmp(new, this);					\
+-		if (!res)						\
+-			goto dup;					\
+-		n = res < 0						\
+-			? &(*n)->rb_left				\
+-			: &(*n)->rb_right;				\
++	while (*_n) {							\
++		_parent = *_n;						\
++		_this = container_of(*_n, typeof(*(new)), member);	\
++		_res = cmp(new, _this);					\
++		if (!_res)						\
++			goto _dup;					\
++		_n = _res < 0						\
++			? &(*_n)->rb_left				\
++			: &(*_n)->rb_right;				\
+ 	}								\
+ 									\
+-	rb_link_node(&(new)->member, parent, n);			\
++	rb_link_node(&(new)->member, _parent, _n);			\
+ 	rb_insert_color(&(new)->member, root);				\
+-	ret = 0;							\
+-dup:									\
+-	ret;								\
++	_ret = 0;							\
++_dup:									\
++	_ret;								\
+ })
+ 
+ #define RB_SEARCH(root, search, member, cmp)				\
+ ({									\
+-	struct rb_node *n = (root)->rb_node;				\
+-	typeof(&(search)) this, ret = NULL;				\
+-	int res;							\
++	struct rb_node *_n = (root)->rb_node;				\
++	typeof(&(search)) _this, _ret = NULL;				\
++	int _res;							\
+ 									\
+-	while (n) {							\
+-		this = container_of(n, typeof(search), member);		\
+-		res = cmp(&(search), this);				\
+-		if (!res) {						\
+-			ret = this;					\
++	while (_n) {							\
++		_this = container_of(_n, typeof(search), member);		\
++		_res = cmp(&(search), _this);				\
++		if (!_res) {						\
++			_ret = _this;					\
+ 			break;						\
+ 		}							\
+-		n = res < 0						\
+-			? n->rb_left					\
+-			: n->rb_right;					\
++		_n = _res < 0						\
++			? _n->rb_left					\
++			: _n->rb_right;					\
+ 	}								\
+-	ret;								\
++	_ret;								\
+ })
+ 
+ #define RB_GREATER(root, search, member, cmp)				\
+ ({									\
+-	struct rb_node *n = (root)->rb_node;				\
+-	typeof(&(search)) this, ret = NULL;				\
+-	int res;							\
++	struct rb_node *_n = (root)->rb_node;				\
++	typeof(&(search)) _this, _ret = NULL;				\
++	int _res;							\
+ 									\
+-	while (n) {							\
+-		this = container_of(n, typeof(search), member);		\
+-		res = cmp(&(search), this);				\
+-		if (res < 0) {						\
+-			ret = this;					\
+-			n = n->rb_left;					\
++	while (_n) {							\
++		_this = container_of(_n, typeof(search), member);	\
++		_res = cmp(&(search), _this);				\
++		if (_res < 0) {						\
++			_ret = _this;					\
++			_n = _n->rb_left;					\
+ 		} else							\
+-			n = n->rb_right;				\
++			_n = _n->rb_right;				\
+ 	}								\
+-	ret;								\
++	_ret;								\
+ })
+ 
+ #define RB_FIRST(root, type, member)					\
+-- 
+1.9.3
