@@ -1,71 +1,58 @@
-From: Stefan Priebe <s.priebe@profihost.ag>
+From: Greg KH <greg@kroah.com>
 Subject: Re: [GIT PULL] bcache changes for 3.17
-Date: Fri, 05 Sep 2014 20:46:01 +0200
-Message-ID: <540A04E9.6020606@profihost.ag>
-References: <20140805043346.GF541@moria.home.lan> <53E10D48.1010700@kernel.dk> <53E7251B.3080305@kieser.ca> <540966BA.9030106@gmail.com> <5409C5FC.6020406@kernel.dk> <5409D8BC.7030003@ehuk.net> <5409E7AB.7040704@kieser.ca> <F71A0899-EF6F-44A3-B207-E1DACC8721B6@cern.ch> <5409EE75.9060407@kernel.dk> <20140905183301.GB17903@daterainc.com>
+Date: Fri, 5 Sep 2014 14:45:32 -0700
+Message-ID: <20140905214532.GA30221@kroah.com>
+References: <20140805043346.GF541@moria.home.lan>
+ <53E10D48.1010700@kernel.dk>
+ <53E7251B.3080305@kieser.ca>
+ <540966BA.9030106@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20140905183301.GB17903@daterainc.com>
+Content-Disposition: inline
+In-Reply-To: <540966BA.9030106@gmail.com>
 Sender: stable-owner@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>
-Cc: Arne Wiebalck <Arne.Wiebalck@cern.ch>, Peter Kieser <peter@kieser.ca>, "eddie@ehuk.net" <eddie@ehuk.net>, Francis Moreau <francis.moro@gmail.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, stable <stable@vger.kernel.org>
+To: Francis Moreau <francis.moro@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kmo@daterainc.com>, Peter Kieser <peter@kieser.ca>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, stable <stable@vger.kernel.org>
 List-Id: linux-bcache@vger.kernel.org
 
+On Fri, Sep 05, 2014 at 09:31:06AM +0200, Francis Moreau wrote:
+> On 08/10/2014 09:54 AM, Peter Kieser wrote:
+> > 
+> > On 2014-08-05 9:58 AM, Jens Axboe wrote:
+> >> On 08/04/2014 10:33 PM, Kent Overstreet wrote:
+> >>> Hey Jens, here's the pull request for 3.17 - typically late, but lots of tasty
+> >>> fixes in this one :)
+> >> Normally I'd say no, but since it's basically just fixes, I guess we can
+> >> pull it in. But generally, it has to be in my hands a week before this,
+> >> so it can simmer a bit in for-next before going in...
+> >>
+> > Are these fixes going to be backported to 3.10 or other stable releases?
+> > 
+> 
+> Could you please answer this question ?
+> 
+> If you don't want to maintain bcache for stable kernels (I can
+> understand that), can you mark it at least as unstable/experimental
+> stuff since it really is ?
 
-Am 05.09.2014 20:33, schrieb Kent Overstreet:
-> On Fri, Sep 05, 2014 at 11:10:13AM -0600, Jens Axboe wrote:
->> On 09/05/2014 11:03 AM, Arne Wiebalck wrote:
->>>
->>> On Sep 5, 2014, at 6:41 PM, Peter Kieser <peter@kieser.ca>
->>>   wrote:
->>>
->>>>
->>>> On 2014-09-05 8:37 AM, Eddie Chapman wrote:
->>>>> On 05/09/14 15:17, Jens Axboe wrote:
->>>>>> (from oldest to newest). And that's just from 3.16 to 3.17-rc3, going
->>>>>> all the way back to 3.10 would be a lot of work. If there's anyone that
->>>>>> cares about bcache on stable kernels (and actually use it), now would be
->>>>>> a good time to pipe up.
->>>>>
->>>>> Just "piping up" as I care about bcache and actually use it in production on 3.10! Shame I don't have the knowledge to try and backport these though :-)
->>>>>
->>>>> Eddie
->>>>
->>>> I'm "piping up" as well, I use bcache on 3.10 in production.
->>>>
->>>> -Peter
->>>>
->>>
->>>
->>> More "piping up": we currently use bcache on a few nodes in production, on 3.14 and 3.15, and plan to roll it out on a wider scale now.
->>> If necessary we'll go with these kernels, but we'd certainly prefer our usual 3.10-based CentOS kernel.
->>
->> OK, so we definitely have people using it in production. My concern was
->> that whomever does the backport of the appropriate patches to 3.10/14/15
->> stable would have an audience for getting some amount of testing of such
->> a patch series.
->>
->> Now we just need someone to line up to do the work...
->
-> I can try and make some time for backporting; if we've got people lined up for
-> testing that will help a lot.
->
-> Backporting fixes to 3.10 will be harder, but if memory serves there hasn't been
-> as much churn since 3.14 so backporting fixes to then shouldn't be too bad. If
-> Stefan wants to post what he's got for 3.10 though I can try and backport some
-> more fixes on top of that, though
+WTF?
 
-You'll find them here:
-https://github.com/profihost/linux-stable/commits/bcache_latest_fixes
+Just because a maintainer/developer doesn't want to do anything for the
+stable kernel releases does _NOT_ mean the code is
+"unstable/expreimental" at all.
 
-Most probably you don't want the last four.
+That's not how stable kernel releases work.  _IF_ a maintainer wants to
+/ has the time to, they can mark patches for inclusion in stable kernel
+releases.  Given the huge list of patches that Jens just posted, I doubt
+that those are really something I would ever take for a stable kernel
+release.
 
-Stefan
+Please read Documentation/stable_kernel_rules.txt for more details
+please.  And don't ask others to do backporting work for you, it's not
+ok, and is something that I have always said is never required, and is
+not going to be.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+thanks,
+
+greg k-h
