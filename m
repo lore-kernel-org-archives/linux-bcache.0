@@ -1,56 +1,66 @@
-From: Chuck Ebbert <cebbert.lkml@gmail.com>
-Subject: Re: [GIT PULL] bcache changes for 3.17
-Date: Fri, 5 Sep 2014 19:33:54 -0500
-Message-ID: <20140905193354.4a123a4c@as>
-References: <20140805043346.GF541@moria.home.lan>
-	<53E10D48.1010700@kernel.dk>
-	<53E7251B.3080305@kieser.ca>
-	<540966BA.9030106@gmail.com>
-	<5409C5FC.6020406@kernel.dk>
-	<5409D8BC.7030003@ehuk.net>
-	<5409E7AB.7040704@kieser.ca>
-	<F71A0899-EF6F-44A3-B207-E1DACC8721B6@cern.ch>
+From: Rolf Fokkens <rolf@rolffokkens.nl>
+Subject: Re: "device busy" error when registering device
+Date: Sat, 6 Sep 2014 07:34:58 +0000 (UTC)
+Message-ID: <loom.20140906T092457-907@post.gmane.org>
+References: <lqcd46$hvl$1@ger.gmane.org> <53EBC981.1000303@rolffokkens.nl> <53F3FC24.4000200@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <F71A0899-EF6F-44A3-B207-E1DACC8721B6@cern.ch>
-Sender: stable-owner@vger.kernel.org
-To: Arne Wiebalck <Arne.Wiebalck@cern.ch>
-Cc: Peter Kieser <peter@kieser.ca>, "eddie@ehuk.net" <eddie@ehuk.net>, Jens Axboe <axboe@kernel.dk>, Francis Moreau <francis.moro@gmail.com>, Kent Overstreet <kmo@daterainc.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, stable <stable@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from plane.gmane.org ([80.91.229.3]:60168 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750849AbaIFHpG (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sat, 6 Sep 2014 03:45:06 -0400
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1XQAgC-0003go-Ck
+	for linux-bcache@vger.kernel.org; Sat, 06 Sep 2014 09:45:04 +0200
+Received: from D9787662.cm-3-1b.dynamic.ziggo.nl ([217.120.118.98])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sat, 06 Sep 2014 09:45:04 +0200
+Received: from rolf by D9787662.cm-3-1b.dynamic.ziggo.nl with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sat, 06 Sep 2014 09:45:04 +0200
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Fri, 5 Sep 2014 17:03:57 +0000
-Arne Wiebalck <Arne.Wiebalck@cern.ch> wrote:
+Ian Pilcher <arequipeno <at> gmail.com> writes:
 
+> I suspect that the most significant difference is that my backing device
+> is a partition on a RAID device, rather than the device itself.
+> In reality, however, I don't think it's worth spending a lot of time
+> figuring out exactly what else is accessing the device.  If I understand
+> udev correctly, this sort of "conflict" is an inevitable consequence of
+> its asynchronous nature, and helper programs like bcache-register need
+> to be robust enough to deal with them.
 > 
-> On Sep 5, 2014, at 6:41 PM, Peter Kieser <peter@kieser.ca>
->  wrote:
+> (If I'm wrong about this, then I guess this is a udev bug?)
 > 
-> > 
-> > On 2014-09-05 8:37 AM, Eddie Chapman wrote:
-> >> On 05/09/14 15:17, Jens Axboe wrote:
-> >>> (from oldest to newest). And that's just from 3.16 to 3.17-rc3,
-> >>> going all the way back to 3.10 would be a lot of work. If there's
-> >>> anyone that cares about bcache on stable kernels (and actually
-> >>> use it), now would be a good time to pipe up.
-> >> 
-> >> Just "piping up" as I care about bcache and actually use it in
-> >> production on 3.10! Shame I don't have the knowledge to try and
-> >> backport these though :-)
-> >> 
-> >> Eddie
-> > 
-> > I'm "piping up" as well, I use bcache on 3.10 in production.
-> > 
-> > -Peter
-> > 
+> BTW, this is what the bcache-related dmesg entries look like when I hit
+> the conflict with my patches applied:
 > 
+> > [    1.761932] bcache: bch_journal_replay() journal replay done, 1972
+keys in 75 entries, seq 312536
+> > [    1.762043] bcache: register_cache() registered cache device sda2
+> > [    1.762631] bcache: register_bcache() error opening /dev/md126p5:
+device busy
+> > [    1.862949] bcache: register_bdev() registered backing device md126p5
+> > [    1.864268] bcache: bch_cached_dev_attach() Caching md126p5 as
+bcache0 on set fb8d253b-6144-4b48-8ed6-7b1724ed83a7
+> > [    3.553053] bcache: register_bcache() error opening /dev/sda2: device
+already registered
+> > [    4.182180] bcache: register_bcache() error opening /dev/md126p5:
+device already registered
 > 
-> More "piping up": we currently use bcache on a few nodes in
-> production, on 3.14 and 3.15, and plan to roll it out on a wider
-> scale now. If necessary we'll go with these kernels, but we'd
-> certainly prefer our usual 3.10-based CentOS kernel.
-> 
+> You can see that the backing device is busy when it first tries to
+> register it, but it succeeds 1/10th of a second later.  (I'm assuming
+> the last two "already registered" messages occur when udev replays
+> its events later in the boot process.)
 
-CentOS does not ship bcache at all. In retrospect it's obvious why.
+To me your assumption makes sense. I would be good though if Gabriel (bcache
+userspace) and/or Kent (bcache kernel) would respond to this.
+
+I'll add some retries to bcache tools (in case of any error) and see if that
+works and add a pull request here: https://github.com/g2p/bcache-tools
