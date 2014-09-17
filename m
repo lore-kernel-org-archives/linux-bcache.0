@@ -1,137 +1,114 @@
-From: Stefan Priebe <s.priebe@profihost.ag>
-Subject: Re: kernel crash with kernel 3.17-rc4
-Date: Mon, 15 Sep 2014 20:35:32 +0200
-Message-ID: <54173174.10203@profihost.ag>
-References: <15506745.rmJNHLbm6l@rather> <9699E135-38D8-4C09-88B1-BB8BE398035E@profihost.ag> <17001056.KAGdUDRv9p@rather>
+From: Robie Basak <robie.basak@ubuntu.com>
+Subject: Re: bcache-tools ITP
+Date: Wed, 17 Sep 2014 12:55:38 +0100
+Message-ID: <20140917115538.GW29881@mal.justgohome.co.uk>
+References: <20140530155757.GU2893@mal.justgohome.co.uk>
+ <175f4ae1c88f5506984eb3a1673829a5@de.mcbf.net>
+ <20140715111552.GA17765@mal.justgohome.co.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="jozmn01XJZjDjM3N"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:33698 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425AbaIOSfa (ORCPT
+Received: from youngberry.canonical.com ([91.189.89.112]:33275 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754244AbaIQLzl (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 15 Sep 2014 14:35:30 -0400
-In-Reply-To: <17001056.KAGdUDRv9p@rather>
+	Wed, 17 Sep 2014 07:55:41 -0400
+Content-Disposition: inline
+In-Reply-To: <20140715111552.GA17765@mal.justgohome.co.uk>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Thomas Stein <himbeere@meine-oma.de>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: 708132@bugs.debian.org, linux-bcache@vger.kernel.org
+Cc: Gabriel de Perthuis <g2p.code+debian@gmail.com>, David Mohr <david@mcbf.net>, James Page <james.page@canonical.com>
 
-No it's not and also the load problem is the same.
 
-I think we need to wait for a response from kent.
+--jozmn01XJZjDjM3N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Stefan
+I have some progress to report. I also think that this is ready to
+upload, though we should sort out a couple of things first.
 
-Excuse my typo sent from my mobile phone.
+I've added the bcache list (this is the Debian packaging bug) since
+there is a question about some of these commits that seem to be relevant
+to upstream but aren't in the upstream branch.
 
-Am 15.09.2014 um 19:47 schrieb Thomas Stein <himbeere@meine-oma.de 
-<mailto:himbeere@meine-oma.de>>:
+I've done some (functional only) testing of bcache itself with a
+colleague, and we haven't seen any major issues.
 
-> On Monday 15 September 2014 19:47:18 Stefan Priebe - Profihost AG wrote:
->> Same to me.
->
-> Hello Stefan.
->
-> Is the 3.16.2 working better? Uhh and what happend to load bug? Even with
-> 3.17-rc4 i have a constant load of 2.00 on an otherwise idle system.
->
-> cheers
-> t.
->
->> Stefan
->>
->> Excuse my typo sent from my mobile phone.
->>
->>> Am 15.09.2014 um 19:26 schrieb Thomas Stein <himbeere@meine-oma.de 
->>> <mailto:himbeere@meine-oma.de>>:
->>>
->>> Hello eveybody.
->>>
->>> Just played around with 3.17-rc4 and bcache. I've build bcache with 
->>> a 120G
->>> SSD as caching device and a Raid1 device (md4) as backing device. Today
->>> under heavy i/o load (moving a 100G VM Image) the machine froze. Call
->>> trace is this:
->>>
->>> Sep 15 10:13:48 hn kernel: [82567.843075] Task dump for CPU 0:
->>> Sep 15 10:13:48 hn kernel: [82567.843078] bcache_gc       R  running 
->>> task
->>> 12248 28611      2 0x00080808
->>> Sep 15 10:13:48 hn kernel: [82567.843083]  ffffffff81c411c0
->>> ffff88083fa03d78 ffffffff81071492 0000000000000000
->>> Sep 15 10:13:48 hn kernel: [82567.843087]  ffffffff81c411c0
->>> ffff88083fa03d98 ffffffff810740b8 ffff88083fa03dd8
->>> Sep 15 10:13:48 hn kernel: [82567.843090]  0000000000000000
->>> ffff88083fa03dc8 ffffffff8108f335 ffff88083fa0d280
->>> Sep 15 10:13:48 hn kernel: [82567.843093] Call Trace:
->>> Sep 15 10:13:48 hn kernel: [82567.843096]  <IRQ>  [<ffffffff81071492>]
->>> sched_show_task+0xc2/0x130
->>> Sep 15 10:13:48 hn kernel: [82567.843108]  [<ffffffff810740b8>]
->>> dump_cpu_task+0x38/0x40
->>> Sep 15 10:13:48 hn kernel: [82567.843119]  [<ffffffff8108f335>]
->>> rcu_dump_cpu_stacks+0x85/0xc0
->>> Sep 15 10:13:48 hn kernel: [82567.843131]  [<ffffffff81092610>]
->>> rcu_check_callbacks+0x3c0/0x680
->>> Sep 15 10:13:48 hn kernel: [82567.843135]  [<ffffffff81096e13>]
->>> update_process_times+0x43/0x80
->>> Sep 15 10:13:48 hn kernel: [82567.843139]  [<ffffffff810a54f1>]
->>> tick_sched_handle.isra.13+0x31/0x40
->>> Sep 15 10:13:48 hn kernel: [82567.843142]  [<ffffffff810a5667>]
->>> tick_sched_timer+0x47/0x70
->>> Sep 15 10:13:48 hn kernel: [82567.843146]  [<ffffffff8109766b>]
->>> __run_hrtimer+0x7b/0x1c0
->>> Sep 15 10:13:48 hn kernel: [82567.843149]  [<ffffffff810a5620>] ?
->>> tick_sched_do_timer+0x30/0x30
->>> Sep 15 10:13:48 hn kernel: [82567.843153]  [<ffffffff81097e37>]
->>> hrtimer_interrupt+0xf7/0x230
->>> Sep 15 10:13:48 hn kernel: [82567.843158]  [<ffffffff81033196>]
->>> local_apic_timer_interrupt+0x36/0x60
->>> Sep 15 10:13:48 hn kernel: [82567.843162]  [<ffffffff810334de>]
->>> smp_apic_timer_interrupt+0x3e/0x60
->>> Sep 15 10:13:48 hn kernel: [82567.843166]  [<ffffffff8166994a>]
->>> apic_timer_interrupt+0x6a/0x70
->>> Sep 15 10:13:48 hn kernel: [82567.843168]  <EOI>  [<ffffffff8148f848>] ?
->>> btree_gc_count_keys+0x28/0x60
->>> Sep 15 10:13:48 hn kernel: [82567.843175]  [<ffffffff8148f869>] ?
->>> btree_gc_count_keys+0x49/0x60
->>> Sep 15 10:13:48 hn kernel: [82567.843178]  [<ffffffff814950b5>]
->>> btree_gc_recurse+0x1b5/0x320
->>> Sep 15 10:13:48 hn kernel: [82567.843182]  [<ffffffff814904f3>] ?
->>> btree_gc_mark_node+0x63/0x240
->>> Sep 15 10:13:48 hn kernel: [82567.843186]  [<ffffffff81080b2e>] ?
->>> __wake_up+0x4e/0x70
->>> Sep 15 10:13:48 hn kernel: [82567.843190]  [<ffffffff81495635>]
->>> bch_btree_gc+0x415/0x5a0
->>> Sep 15 10:13:48 hn kernel: [82567.843194]  [<ffffffff81080780>] ?
->>> finish_wait+0x80/0x80
->>> Sep 15 10:13:48 hn kernel: [82567.843197]  [<ffffffff814957f8>]
->>> bch_gc_thread+0x38/0x120
->>> Sep 15 10:13:48 hn kernel: [82567.843200]  [<ffffffff814957c0>] ?
->>> bch_btree_gc+0x5a0/0x5a0
->>> Sep 15 10:13:48 hn kernel: [82567.843204]  [<ffffffff810672b4>]
->>> kthread+0xc4/0xe0
->>> Sep 15 10:13:48 hn kernel: [82567.843207]  [<ffffffff810671f0>] ?
->>> kthread_worker_fn+0x150/0x150
->>> Sep 15 10:13:48 hn kernel: [82567.843211]  [<ffffffff81668aac>]
->>> ret_from_fork+0x7c/0xb0
->>> Sep 15 10:13:48 hn kernel: [82567.843214]  [<ffffffff810671f0>] ?
->>> kthread_worker_fn+0x150/0x150
->>>
->>> That's it.  Should i be worried? It's a testing machine of course.
->>>
->>> thanks and best regards
->>> t.
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe 
->>> linux-bcache" in
->>> the body of a message to majordomo@vger.kernel.org 
->>> <mailto:majordomo@vger.kernel.org>
->>> More majordomo info at http://vger.kernel.org/majordomo-info.html
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org 
-> <mailto:majordomo@vger.kernel.org>
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
+I think the packaging is good to go, though I've added a removal of one
+extraneous file and updated debian/copyright. This is in
+github.com/basak/bcache-tools. I haven't submitted any pull requests to
+avoid confusion (see below).
+
+A colleague (James Page) is a DD and is prepared to upload, provided
+that we all agree on who will maintain the package first. I'm happy to
+step up. Who else does?
+
+I found following all the various git trees confusing, and think we
+should resolve this soon after upload. There are three git trees I'm
+aware of, and I've added a fourth:
+
+1) http://evilpiepirate.org/git/bcache-tools.git
+2) git://github.com/g2p/bcache-tools.git
+3) git://github.com/squisher/bcache-tools.git
+4) git://github.com/basak/bcache-tools.git
+
+Vcs-Git points to 2 (g2p). I also noted that the github branches seem to
+contain commits to the upstream source, too, that aren't present in the
+"upstream" repository (1).
+
+Can we define which the canonical upstream source tree is, please, and
+where the canonical Debian packaging branch should be? Then we can work
+on pushing the changes back to the right places, rather than having
+scattered branches all over the place. I noticed some changes to the
+upstream source that don't appear to be in branch 1, for example.
+
+I think it would be easiest to upload, since I think it's good to go and
+this will at least result in a definitive packaging state that we can
+work from.
+
+In the meantime, I think branch 3 contained everything, so I cloned that
+one to add my two commits. To keep Vcs-Git correct g2p should pull my
+commits, or else we can change Vcs-Git.
+
+So in summary:
+
+1) Define and agree maintainers.
+2) g2p to pull my commits, or we agree to change Vcs-Git, or we drop
+Vcs-Git for now.
+3) Upload. Either my colleague (James Page) can do it as he's already
+reviewed the packaging itself, or someone else. Let me know if there are
+any objections to James uploading.
+4) Sort out which trees are canonical upstream and packaging branches,
+and push all commits to those places.
+
+In the meantime, I'll upload to Ubuntu as I can do that straight away
+and we're quite close to release now. I hope that we can get Debian
+straightened out soon.
+
+Robie
+
+--jozmn01XJZjDjM3N
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUGXa6AAoJEOVkucJ1vdUuiK0QAINleheDt2yjSVGTdBdxo80p
+EpQl5RarCaw6nTMZeHAFt8nRdhclf0B36a5+Pn0qWDyKs6hje5S2pQ1rY04kj1Yn
+gNjBiBOKShyS+nqS/C9ED9n/2ZymSvdBO+RsYcVI/94NBTJVnClb36Q7cUzpOARP
+ZcdIh2otu7Yf8RB3UTvgW29jHRezQNiaRO1dHdEipkKgpDbI+7C/YNad/pyiGfPY
+9Y9B80YIQAlHAB/9dMAQAI7coTxb4pRJfsXAF7s8uKGo4Z0VDZjCJWeaetxwkoM3
+HQ0rrL/3kECUgju5Yt9OqfaNdOgYs6gZ99wGXexAYitokXYofTQYX71rw22eGThs
+oK27VNTF6VZzG0N38MZ3N6Utu+TvM1z9uhf6PkbnO2IvDR8Jyxi53ji+TgDgwmX0
+jaRuzMwykfWAfxUG/sS0VbCbi1TzIJWEl2bTDHePJKrI7GZPgTHucGyfAiA6u38x
+79okeqVL4honGJ+ZFIlyG4+Xaw6qwFNQ/WFMQWOXAK1snzzwHHkmQhdZYVC2Aklf
+PPxIUE+oj991c6BL7z8LhQPubGU3LOR2UGi2EKXltw3z6FkDO7Ay3YJ+j560Ybpf
+NNhFe08kt3RL4Nk5i/7dLPL7Y+WuEbKYsRlXURO4Fye3iz67qyFfM4aGBDpJeuAf
+BMs8D4HyfOZKsuyJLpwC
+=1PDS
+-----END PGP SIGNATURE-----
+
+--jozmn01XJZjDjM3N--
