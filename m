@@ -1,47 +1,63 @@
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-Subject: Re: bcache-tools ITP
-Date: Thu, 18 Sep 2014 11:19:57 -0700
-Message-ID: <20140918181957.GC17913@birch.djwong.org>
-References: <20140530155757.GU2893@mal.justgohome.co.uk>
- <175f4ae1c88f5506984eb3a1673829a5@de.mcbf.net>
- <20140715111552.GA17765@mal.justgohome.co.uk>
- <20140917115538.GW29881@mal.justgohome.co.uk>
- <20140917232114.GB17913@birch.djwong.org>
- <20140918075958.GY29881@mal.justgohome.co.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from userp1040.oracle.com ([156.151.31.81]:47334 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932424AbaIRSUD (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 18 Sep 2014 14:20:03 -0400
-Content-Disposition: inline
-In-Reply-To: <20140918075958.GY29881@mal.justgohome.co.uk>
-Sender: linux-bcache-owner@vger.kernel.org
+From: Behan Webster <behanw@converseincode.com>
+Subject: [PATCH] md, sysfs, LLVMLinux: Remove nested function from bcache sysfs
+Date: Fri, 26 Sep 2014 18:09:29 -0700
+Message-ID: <1411780169-3260-1-git-send-email-behanw@converseincode.com>
+Return-path: <linux-raid-owner@vger.kernel.org>
+Sender: linux-raid-owner@vger.kernel.org
+To: kmo@daterainc.com
+Cc: behanw@converseincode.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, neilb@suse.de, Arnd Bergmann <arnd@arndb.de>
 List-Id: linux-bcache@vger.kernel.org
-To: Robie Basak <robie.basak@canonical.com>
-Cc: linux-bcache@vger.kernel.org
 
-On Thu, Sep 18, 2014 at 08:59:58AM +0100, Robie Basak wrote:
-> (cutting out everything but the list, since this isn't directly related
-> to the Debian ITP)
-> 
-> On Wed, Sep 17, 2014 at 04:21:14PM -0700, Darrick J. Wong wrote:
-> > If you're interested in the bcache-status[1] tool, I'd be happy to work with
-> > you to get (and keep) it in Debian.  I /think/ it's in the Fedora package.
-> > 
-> > (afaict the script is not in any of those git trees...)
-> 
-> Can we get your script upstream (wherever it is that we decide it is) so
-> that it just ships and distributions don't individually have to carry
-> it?
-> 
-> For a start, maybe send g2p a pull request?
+Replace the use of nested functions where a normal function will suffice.
 
-I sent one to Gabriel, we'll see what he says.
+Nested functions are not liked by upstream kernel developers in general. Their
+use breaks the use of clang as a compiler, and doesn't make the code any
+better.
 
---D
+This code now works for both gcc and clang.
 
-> 
-> Robie
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Suggested-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/md/bcache/sysfs.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b3ff57d..53d8baa 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -731,6 +731,11 @@ static struct attribute *bch_cache_set_internal_files[] = {
+ };
+ KTYPE(bch_cache_set_internal);
+ 
++static int __bch_cache_cmp(const void *l, const void *r)
++{
++	return *((uint16_t *) r) - *((uint16_t *) l);
++}
++
+ SHOW(__bch_cache)
+ {
+ 	struct cache *ca = container_of(kobj, struct cache, kobj);
+@@ -755,9 +760,6 @@ SHOW(__bch_cache)
+ 					       CACHE_REPLACEMENT(&ca->sb));
+ 
+ 	if (attr == &sysfs_priority_stats) {
+-		int cmp(const void *l, const void *r)
+-		{	return *((uint16_t *) r) - *((uint16_t *) l); }
+-
+ 		struct bucket *b;
+ 		size_t n = ca->sb.nbuckets, i;
+ 		size_t unused = 0, available = 0, dirty = 0, meta = 0;
+@@ -786,7 +788,7 @@ SHOW(__bch_cache)
+ 			p[i] = ca->buckets[i].prio;
+ 		mutex_unlock(&ca->set->bucket_lock);
+ 
+-		sort(p, n, sizeof(uint16_t), cmp, NULL);
++		sort(p, n, sizeof(uint16_t), __bch_cache_cmp, NULL);
+ 
+ 		while (n &&
+ 		       !cached[n - 1])
+-- 
+1.9.1
+
