@@ -1,59 +1,55 @@
-From: Stan Hoeppner <stan@hardwarefreak.com>
+From: Kai Krakow <hurikhan77@gmail.com>
 Subject: Re: tuning for mixed rate 800 stream write application
-Date: Sun, 05 Oct 2014 19:10:45 -0500
-Message-ID: <5431DE05.5010406@hardwarefreak.com>
+Date: Sat, 04 Oct 2014 21:30:05 +0200
+Message-ID: <teu5gb-oed.ln1@hurikhan77.spdns.de>
 References: <542F59FC.1080806@hardwarefreak.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7Bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mo-65-41-216-221.sta.embarqhsd.net ([65.41.216.221]:57153 "EHLO
-	greer.hardwarefreak.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751768AbaJFAK1 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 5 Oct 2014 20:10:27 -0400
-Received: from [134.64.128.215] (unknown [192.65.45.20])
-	by greer.hardwarefreak.com (Postfix) with ESMTPA id 10A966C11B
-	for <linux-bcache@vger.kernel.org>; Sun,  5 Oct 2014 19:10:25 -0500 (CDT)
-In-Reply-To: <542F59FC.1080806@hardwarefreak.com>
+Received: from plane.gmane.org ([80.91.229.3]:37485 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751289AbaJFLUG (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 6 Oct 2014 07:20:06 -0400
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1Xb6Kh-00076w-Vq
+	for linux-bcache@vger.kernel.org; Mon, 06 Oct 2014 13:20:04 +0200
+Received: from ip4d17fce2.dynamic.kabel-deutschland.de ([77.23.252.226])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Mon, 06 Oct 2014 13:20:03 +0200
+Received: from hurikhan77 by ip4d17fce2.dynamic.kabel-deutschland.de with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Mon, 06 Oct 2014 13:20:03 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-One would think with a sequential cutoff of only 1024 bytes, 2 sectors, that every sector would bypass the write cache:
+Stan Hoeppner <stan@hardwarefreak.com> schrieb:
 
-# cat /sys/block/bcache0/bcache/sequential_cutoff; cat /sys/block/bcache1/bcache/sequential_cutoff
-1.0k
-1.0k
-
-But as we can see a massive number of sectors are being cached:
-
-# cat /sys/block/bcache0/bcache/dirty_data; cat /sys/block/bcache1/bcache/dirty_data
-101G
-101G
-
-Am I misunderstanding the (sparse) documentation and not tuning correctly, or is there another problem?  I suspect bcache's 128 entry tracking table is insufficient for our workload.  If this is correct, is there any way to increase the size of this table?
-
-Thanks,
-Stan
-
-
-
-On 10/03/2014 09:22 PM, Stan Hoeppner wrote:
 > Hello fellow bcache users/developers,
 > 
 > A couple of questions.
 > 
 > 1.  How do I disable write caching?
-> 2.  How do I increase the sequential IO tracking window from 128 IOs to say 4096 IOs or nmore?
-> 
-> Our application does small random reads and data is never read twice, so we don't want any read caching.  Reads comprise less than 20% of the IO workload.  It writes ~800 streams to hundreds of preallocated files in parallel using O_DIRECT and AIO.  The stream rates vary from ~50MB/s to less than 2KB/s.  bcache currently seems to be writing a lot of data to cache that should be going directly to the two RAID LUNs, bcache0 and bcache1.  These each show over 150GB cache used or 300GB total of a 400GB SSD, with only 10GB bypassed.  It seems to be writing sequential IO to cache because it's unable to properly classify it due to the small 128 entry tracking window.  Thus throughput is actually about 20 lower than direct to LUN.  It seems clear bcache isn't doing the right thing with classific
- ation due to the large number of mixed sequential/random IOs in flight.
-> 
-> The boxes have 32 cores and 256GB of RAM so we have plenty of horsepower and memory to dedicate to bcache use.  These boxes are totally IO bound with little CPU/memory use.
-> 
-> Please advise.
-> 
-> Thanks,
-> Stan
-> 
+> 2.  How do I increase the sequential IO tracking window from 128 IOs to
+> say 4096 IOs or nmore?
+
+I don't know which of the various knobs bcache considers but you can tune 
+the IO window for the kernel IO scheduler with something like this:
+
+#!/bin/sh
+
+for nr_requests in 
+/sys/bus/scsi/devices/[012]:0:0:0/block/*/queue/nr_requests; do
+        echo -n 4096 >$nr_requests
+done
+
+I suggest switching to deadline also if you haven't done so yet.
+
+Please note that my script tunes my SATA devices. I don't use bcache yet. 
+You may want to adjust the line to work for the bcache devices.
+
+-- 
+Replies to list only preferred.
