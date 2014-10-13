@@ -1,19 +1,28 @@
-From: "Jose Calvache" <josecalvache@vodafone.es>
-Subject: Please reply
-Date: Sat, 11 Oct 2014 12:34:19 -0700
-Message-ID: <7217ced4083c969324ed66659d466f10.squirrel__42111.637563403$1413056220$gmane$org@cpanel.gruieo.concrete5.arvixe.com>
-Reply-To: josecalvache@gmx.es
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+Subject: How to invalidate all cache
+Date: Mon, 13 Oct 2014 11:03:51 +0800
+Message-ID: <20141013030351.GA12742@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from canary.arvixe.com ([50.97.138.116]:47694 "EHLO
-	canary.arvixe.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717AbaJKTgf (ORCPT
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:38870 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754145AbaJMCx1 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 11 Oct 2014 15:36:35 -0400
+	Sun, 12 Oct 2014 22:53:27 -0400
+Received: by mail-pd0-f172.google.com with SMTP id ft15so4905100pdb.3
+        for <linux-bcache@vger.kernel.org>; Sun, 12 Oct 2014 19:53:26 -0700 (PDT)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: Zheng Liu <wenqing.lz@taobao.com>
 
-Dear Sir/Madam, Here is a pdf attachment of my proposal to you. Please
-read and reply I would be grateful. Jose Calvache
+Hi all,
+
+I am trying to do some benchmarks against bcache, espeically in cache
+miss scenario, but I don't find a user interface to invalidate all
+cache.  Anyone can tell me how to do that.
+
+Thanks in advance,
+                                                - Zheng
