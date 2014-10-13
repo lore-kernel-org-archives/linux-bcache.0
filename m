@@ -1,48 +1,28 @@
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: Re: How to invalidate all cache
-Date: Mon, 13 Oct 2014 21:30:58 +0800
-Message-ID: <20141013133058.GA19065@gmail.com>
-References: <20141013030351.GA12742@gmail.com>
- <CACHGV4Jn3ML=2PO9FtoT4OXZCtpt56bOb=TmnVanv7Tm2MJyDg@mail.gmail.com>
- <20141013034536.GA13155@gmail.com>
- <178936476.20141013104314@pvgoran.name>
+From: Eric Wheeler <linux-bcache@v.ewheeler.net>
+Subject: (unknown)
+Date: Mon, 13 Oct 2014 11:13:58 -0700 (PDT)
+Message-ID: <alpine.DEB.2.02.1410131113120.12446@ware.dreamhost.com>
+References: <20141013030351.GA12742@gmail.com> <CACHGV4Jn3ML=2PO9FtoT4OXZCtpt56bOb=TmnVanv7Tm2MJyDg@mail.gmail.com> <20141013034536.GA13155@gmail.com> <178936476.20141013104314@pvgoran.name> <20141013133058.GA19065@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62665 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257AbaJMNUd (ORCPT
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:56062 "EHLO
+	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754501AbaJMSN7 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 13 Oct 2014 09:20:33 -0400
-Received: by mail-pa0-f45.google.com with SMTP id rd3so5881577pab.32
-        for <linux-bcache@vger.kernel.org>; Mon, 13 Oct 2014 06:20:33 -0700 (PDT)
-Content-Disposition: inline
-In-Reply-To: <178936476.20141013104314@pvgoran.name>
+	Mon, 13 Oct 2014 14:13:59 -0400
+Received: from homiemail-a10.g.dreamhost.com (localhost [127.0.0.1])
+	by homiemail-a10.g.dreamhost.com (Postfix) with ESMTP id 50E3C280075
+	for <linux-bcache@vger.kernel.org>; Mon, 13 Oct 2014 11:13:59 -0700 (PDT)
+Received: from ware.dreamhost.com (ware.dreamhost.com [64.111.127.160])
+	(using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
+	(No client certificate requested)
+	(Authenticated sender: ewheeler@ewheeler.net)
+	by homiemail-a10.g.dreamhost.com (Postfix) with ESMTPSA id 1D166280073
+	for <linux-bcache@vger.kernel.org>; Mon, 13 Oct 2014 11:13:59 -0700 (PDT)
+In-Reply-To: <20141013133058.GA19065@gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Pavel Goran <via-bcache@pvgoran.name>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Mon, Oct 13, 2014 at 10:43:14AM +0700, Pavel Goran wrote:
-> Hello Zheng,
-> 
-> Monday, October 13, 2014, 10:45:37 AM, you wrote:
-> 
-> > Yes, detaching a backing device will make all dirty data to be written
-> > back to the backing device.  But if I understand correctly it couldn't
-> > invalidate all data in cache device.  That means that after attaching
-> > backing device the data in cache device is still valid.
-> 
-> It  would  be  a  bug if cached data were considered valid after detaching and
-> re-attaching. Because while a cache device an a backing device were separated,
-> data  could be written to a backing device, this would possibly make data in a
-> "disconnected" cache obsolete.
-
-Ah, Thanks for pointing it out.  I got it.
-
-BTW, there is a bug when I tried to detach/attach a backing device.
-A patch has sent out to the mailing list.  That would be great if some
-one can review it.
-
-Regards,
-                                                - Zheng
+unsubscribe linux-bcache
