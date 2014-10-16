@@ -1,28 +1,54 @@
-From: Eric Wheeler <linux-bcache@v.ewheeler.net>
-Subject: (unknown)
-Date: Mon, 13 Oct 2014 11:13:58 -0700 (PDT)
-Message-ID: <alpine.DEB.2.02.1410131113120.12446@ware.dreamhost.com>
-References: <20141013030351.GA12742@gmail.com> <CACHGV4Jn3ML=2PO9FtoT4OXZCtpt56bOb=TmnVanv7Tm2MJyDg@mail.gmail.com> <20141013034536.GA13155@gmail.com> <178936476.20141013104314@pvgoran.name> <20141013133058.GA19065@gmail.com>
+From: Ian Pilcher <arequipeno@gmail.com>
+Subject: Re: initramfs issues with mdraid/bcache-tools/lvm2 on debian wheezy-backports
+ 3.16
+Date: Thu, 16 Oct 2014 17:06:25 -0500
+Message-ID: <m1pfh2$ltn$1@ger.gmane.org>
+References: <54394FD1.4090708@paivola.fi>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:56062 "EHLO
-	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754501AbaJMSN7 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 13 Oct 2014 14:13:59 -0400
-Received: from homiemail-a10.g.dreamhost.com (localhost [127.0.0.1])
-	by homiemail-a10.g.dreamhost.com (Postfix) with ESMTP id 50E3C280075
-	for <linux-bcache@vger.kernel.org>; Mon, 13 Oct 2014 11:13:59 -0700 (PDT)
-Received: from ware.dreamhost.com (ware.dreamhost.com [64.111.127.160])
-	(using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
-	(No client certificate requested)
-	(Authenticated sender: ewheeler@ewheeler.net)
-	by homiemail-a10.g.dreamhost.com (Postfix) with ESMTPSA id 1D166280073
-	for <linux-bcache@vger.kernel.org>; Mon, 13 Oct 2014 11:13:59 -0700 (PDT)
-In-Reply-To: <20141013133058.GA19065@gmail.com>
+Received: from plane.gmane.org ([80.91.229.3]:44022 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752383AbaJPWGn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 16 Oct 2014 18:06:43 -0400
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1XetBs-00059d-Ix
+	for linux-bcache@vger.kernel.org; Fri, 17 Oct 2014 00:06:36 +0200
+Received: from pool-173-57-185-5.dllstx.fios.verizon.net ([173.57.185.5])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Fri, 17 Oct 2014 00:06:36 +0200
+Received: from arequipeno by pool-173-57-185-5.dllstx.fios.verizon.net with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Fri, 17 Oct 2014 00:06:36 +0200
+In-Reply-To: <54394FD1.4090708@paivola.fi>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-unsubscribe linux-bcache
+On 10/11/2014 10:42 AM, Tero Marttila wrote:
+> 
+> part seems to give (based on udev_log="debug" output): 
+> 
+> 	write error: Invalid arument
+> 
+> without any additional info in dmesg.
+> 
+> However, running the identical command:
+> 
+> 	/lib/udev/bcache-register /dev/md0
+> 
+> by hand a short while later from within the initramfs prompts works..
+> 
+
+This sounds like the error I reported back in July:
+
+  http://article.gmane.org/gmane.linux.kernel.bcache.devel/2594
+
+-- 
+========================================================================
+Ian Pilcher                                         arequipeno@gmail.com
+-------- "I grew up before Mark Zuckerberg invented friendship" --------
+========================================================================
