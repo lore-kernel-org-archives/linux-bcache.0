@@ -1,54 +1,35 @@
-From: Ian Pilcher <arequipeno@gmail.com>
-Subject: Re: initramfs issues with mdraid/bcache-tools/lvm2 on debian wheezy-backports
- 3.16
-Date: Thu, 16 Oct 2014 17:06:25 -0500
-Message-ID: <m1pfh2$ltn$1@ger.gmane.org>
-References: <54394FD1.4090708@paivola.fi>
+From: "T. Bolten" <t.bolten@gmx.com>
+Subject: Multiple BLE connections to one GATT-Server
+Date: Fri, 17 Oct 2014 10:48:51 +0200
+Message-ID: <trinity-16d4caae-4274-403b-b40b-3565db16dd0e-1413535730986@3capp-mailcom-bs11>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:44022 "EHLO plane.gmane.org"
+Received: from mout.gmx.net ([212.227.17.21]:54516 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752383AbaJPWGn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 16 Oct 2014 18:06:43 -0400
-Received: from list by plane.gmane.org with local (Exim 4.69)
-	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1XetBs-00059d-Ix
-	for linux-bcache@vger.kernel.org; Fri, 17 Oct 2014 00:06:36 +0200
-Received: from pool-173-57-185-5.dllstx.fios.verizon.net ([173.57.185.5])
-        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 17 Oct 2014 00:06:36 +0200
-Received: from arequipeno by pool-173-57-185-5.dllstx.fios.verizon.net with local (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 17 Oct 2014 00:06:36 +0200
-In-Reply-To: <54394FD1.4090708@paivola.fi>
+	id S1753377AbaJQIsw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 17 Oct 2014 04:48:52 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-On 10/11/2014 10:42 AM, Tero Marttila wrote:
-> 
-> part seems to give (based on udev_log="debug" output): 
-> 
-> 	write error: Invalid arument
-> 
-> without any additional info in dmesg.
-> 
-> However, running the identical command:
-> 
-> 	/lib/udev/bcache-register /dev/md0
-> 
-> by hand a short while later from within the initramfs prompts works..
-> 
+Hello,
 
-This sounds like the error I reported back in July:
+I'm new in the area of Bluetooth-programming and I hope this is the right place for my question. A web search at the usual web portals was not very helpful due to contradictory statements and I'm "lost" in the Bluetooth Core specification.
 
-  http://article.gmane.org/gmane.linux.kernel.bcache.devel/2594
+Basically my question related to Bluetooth Low Energy is the following:
 
--- 
-========================================================================
-Ian Pilcher                                         arequipeno@gmail.com
--------- "I grew up before Mark Zuckerberg invented friendship" --------
-========================================================================
+Is it technically possible to connect multiple BLE GATT Clients (in my case smartphones, called in the bluetooth terminology central/master device?) to one BLE GATT Server (in my case a Linux box with Bluez, called in the bluetooth terminology slave or peripheral device?)?
+
+
+The basic idea here is that several different smartphones should simultaneously read (read-only, not write) some self-defined service characteristics to inform the clients about some kind of progress or event state. These progress-information is unfortunately to large to be included in the advertisement package.
+
+
+I have already an implementation that advertises a service with some self defined characteristics but I can connect to this GATT service only with one smartphone - then the advertising stops and I'm unable to connect to this service with an other device.
+
+After reading a lot of web posts I'm unsure if my idea can work or it is already "broken by design"?
+
+I am grateful for any suggestion.
+
+Greetings
+T. Bolten
