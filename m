@@ -1,47 +1,72 @@
-From: "T. Bolten" <t.bolten@gmx.com>
-Subject: Re: Multiple BLE connections to one GATT-Server
-Date: Fri, 17 Oct 2014 11:31:24 +0200
-Message-ID: <5440E1EC.2080207@gmx.com>
-References: <trinity-16d4caae-4274-403b-b40b-3565db16dd0e-1413535730986@3capp-mailcom-bs11>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+From: Zheng Liu <gnehzuil.liu@gmail.com>
+Subject: [PATCH] bcache: fix a livelock in btree lock
+Date: Sat, 18 Oct 2014 20:51:44 +0800
+Message-ID: <1413636704-18462-1-git-send-email-wenqing.lz@taobao.com>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mout.gmx.net ([212.227.15.19]:51037 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835AbaJQJb2 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 17 Oct 2014 05:31:28 -0400
-In-Reply-To: <trinity-16d4caae-4274-403b-b40b-3565db16dd0e-1413535730986@3capp-mailcom-bs11>
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63682 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaJRMlP (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Sat, 18 Oct 2014 08:41:15 -0400
+Received: by mail-pa0-f46.google.com with SMTP id fa1so2379075pad.5
+        for <linux-bcache@vger.kernel.org>; Sat, 18 Oct 2014 05:41:14 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
+Cc: Zheng Liu <wenqing.lz@taobao.com>
 
-Sorry at all.
+From: Zheng Liu <wenqing.lz@taobao.com>
 
-I hit the send button while the wrong address was set - please simply 
-ignore my embarrassing mistake.
+This commit tries to fix a livelock in bcache.  This livelock might
+happen when we causes a huge number of cache misses simultaneously.
 
-Sorry and greetings
-T. Bolten
+When we get a cache miss, bcache will execute the following path.
 
-Am 17.10.2014 um 10:48 schrieb T. Bolten:
-> Hello,
->
-> I'm new in the area of Bluetooth-programming and I hope this is the right place for my question. A web search at the usual web portals was not very helpful due to contradictory statements and I'm "lost" in the Bluetooth Core specification.
->
-> Basically my question related to Bluetooth Low Energy is the following:
->
-> Is it technically possible to connect multiple BLE GATT Clients (in my case smartphones, called in the bluetooth terminology central/master device?) to one BLE GATT Server (in my case a Linux box with Bluez, called in the bluetooth terminology slave or peripheral device?)?
->
->
-> The basic idea here is that several different smartphones should simultaneously read (read-only, not write) some self-defined service characteristics to inform the clients about some kind of progress or event state. These progress-information is unfortunately to large to be included in the advertisement package.
->
->
-> I have already an implementation that advertises a service with some self defined characteristics but I can connect to this GATT service only with one smartphone - then the advertising stops and I'm unable to connect to this service with an other device.
->
-> After reading a lot of web posts I'm unsure if my idea can work or it is already "broken by design"?
->
-> I am grateful for any suggestion.
->
-> Greetings
-> T. Bolten
+->cached_dev_make_request()
+  ->cached_dev_read()
+    ->cached_lookup()
+      ->bch->btree_map_keys()
+        ->btree_root()  <------------------------
+          ->bch_btree_map_keys_recurse()        |
+            ->cache_lookup_fn()                 |
+              ->cached_dev_cache_miss()         |
+                ->bch_btree_insert_check_key() -|
+                  [If btree->seq is not equal to seq + 1, we should return
+                   EINTR and traverse btree again.]
+
+In bch_btree_insert_check_key() function we first need to check upgrade
+flag (op->lock == -1), and when this flag is true we need to release
+read btree->lock and try to take write btree->lock.  During taking and
+releasing this write lock, btree->seq will be monotone increased in
+order to prevent other threads modify this in cache miss (see btree.h:74).
+But if there are some cache misses caused by some requested, we could
+meet a livelock because btree->seq is always changed by others.  Thus no
+one can make progress.
+
+This commit will try to take write btree->lock if it encounters a race
+when we traverse btree.  Although it sacrifice the scalability but we
+can ensure that only one can modify the btree.
+
+Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+---
+ drivers/md/bcache/btree.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 00cde40..d14560a 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -2162,8 +2162,10 @@ int bch_btree_insert_check_key(struct btree *b, struct btree_op *op,
+ 		rw_lock(true, b, b->level);
+ 
+ 		if (b->key.ptr[0] != btree_ptr ||
+-		    b->seq != seq + 1)
++		    b->seq != seq + 1) {
++			op->lock = b->c->root->level + 1;
+ 			goto out;
++		}
+ 	}
+ 
+ 	SET_KEY_PTRS(check_key, 1);
+-- 
+1.7.1
