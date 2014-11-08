@@ -1,65 +1,119 @@
-From: Rolf Fokkens <rolf@rolffokkens.nl>
-Subject: Re: Is bcache dead?
-Date: Thu, 06 Nov 2014 23:12:39 +0100
-Message-ID: <545BF257.6020708@rolffokkens.nl>
-References: <545229F8.8000502@profihost.ag> <CALJ65zm0UpNKZKZmT26Gv6+CA6ijTS60+PVoCroLA4aipo-bPg@mail.gmail.com> <54529797.2020004@hardwarefreak.com> <20141030233425.GA28233@kmo-pixel> <545B8DDC.4070905@bahj.com>
+From: =?UTF-8?Q?Erik_Hjelm=C3=A5s?= <erik.hjelmas@gmail.com>
+Subject: Performance issues (XFS-bcache-P400-S3700)
+Date: Sat, 8 Nov 2014 07:18:35 +0100
+Message-ID: <CAPgH3iFKnFs-96VRQ0VVLNmO9WHwdcv0QVrKsC6aDotkp4m+ag@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:62221 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069AbaKFWUi (ORCPT
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:52275 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125AbaKHGSg (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 6 Nov 2014 17:20:38 -0500
-Received: by mail-wi0-f177.google.com with SMTP id ex7so2912505wid.4
-        for <linux-bcache@vger.kernel.org>; Thu, 06 Nov 2014 14:20:36 -0800 (PST)
-In-Reply-To: <545B8DDC.4070905@bahj.com>
+	Sat, 8 Nov 2014 01:18:36 -0500
+Received: by mail-ie0-f179.google.com with SMTP id rl12so6579203iec.38
+        for <linux-bcache@vger.kernel.org>; Fri, 07 Nov 2014 22:18:36 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Zachary Palmer <zep_kernel.org@bahj.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-bcache <linux-bcache@vger.kernel.org>
 
-Another happy user experience: I started packaging bcache-tools for 
-Fedora 20 summer 2013, just because I wanted to use bcache. After 
-alligning bcache-tools with util-linux, Dracut and LVM2 (all these 
-packages needed minor tweaks, that were all integrated upstream) I have 
-been using bcache myself (of course). I've been living on the edge by 
-using writeback caching and a cheap SSD, and it has all been working 
-like a charm! Well, I've been living over the edge actually by 
-attempting to enable TRIM - I blame the resulting corruptions on the 
-cheap SSD. And I had occasional "bcache_writeback 100% CPU" issues, but 
-those seem to be gone (currently kernel 3.16).
+Hi, I have a HP 380 G5 server (with P400 raid controller without battery
+backup so not using write cache) where c0d0 is Intel S3500 SSD, c0d1 is Intel
+S3700 SSD and c0d2 is a slow RAID5 array:
 
-And searching for bcache at bugzilla.redhat.com: no bugs pop up. Could 
-be that there are no bcache users at all, but I know for fact that 
-that's not true.
+root@storage01:~# fdisk -l /dev/cciss/c0d{0,1,2} | grep 'Disk /dev'
+Disk /dev/cciss/c0d0: 80.0 GB, 79990456320 bytes
+Disk /dev/cciss/c0d1: 100.0 GB, 99994337280 bytes
+Disk /dev/cciss/c0d2: 2500.4 GB, 2500371439616 bytes
 
-So (when not using TRIM): excellent performance and stability. Thanks 
-for the good work!
+c0d1 is the caching device and c0d2 is the backing device, and everything
+seems to look ok. Ive enabled drive write caches (since SSD's performance
+depend on it), running ubuntu 14.04 upgraded today (in case my problem was
+the uninterruptable sleep status of bcache_writebac, but it wasn't), and
+Ive mounted XFS with nobarrier since I also read something about that:
 
-Rolf
+root@storage01:~# mount | grep bcache
+/dev/bcache0 on /brick0 type xfs (rw,nobarrier)
 
-On 11/06/2014 04:03 PM, Zachary Palmer wrote:
-> If I can throw mine in as well, I've been running bcache on my Debian 
-> Wheezy laptop for around a year now.  (I'm using the Debian backports 
-> 3.12 kernel.)  When I first moved to bcache, I noticed that certain 
-> operations -- interacting with Git repositories and building LaTeX 
-> documents, for instance -- became much snappier. I'm using a feeble 
-> little 32GB SSD that came with the laptop to cache a 1TB drive and I'm 
-> even using writethrough caching (more out of paranoia about the 
-> quality of my cheap little SSD than anything else), but it makes a 
-> difference.
->
-> Since then, it has been quietly humming along and I've stopped paying 
-> attention to it.  And that's the beauty of a good tool like this: I 
-> can stop paying attention to it.  I've enjoyed a year of better I/O 
-> and, other than in the initial setup, I haven't paid anything in 
-> maintenance burden: no instability, no hiccups, no unexplained hangs.  
-> So for my part as an end user just trying to get a little edge out of 
-> my laptop hardware, thank you!  I expect I'm speaking on behalf of 
-> quite a few people when I say that you've made things better in a 
-> subtle but significant way.  :)
->
-> Cheers,
->
-> Zach
+status of bcache seems ok:
+
+root@storage01:~# dmesg | grep bcac
+[    7.453145] bcache: bch_journal_replay() journal replay done, 1017
+keys in 462 entries, seq 76745658
+[    7.523539] bcache: register_cache() registered cache device cciss/c0d1
+[    7.561245] bcache: register_bdev() registered backing device cciss/c0d2
+[    7.684531] bcache: bch_cached_dev_attach() Caching cciss/c0d2 as
+bcache0 on set 6c7ad3b1-388e-47df-904a-94da0a092669
+[    8.781182] XFS (bcache0): Mounting Filesystem
+[    8.980111] XFS (bcache0): Ending clean mount
+root@storage01:~# cat /sys/block/bcache0/bcache/writeback_running
+1
+root@storage01:~# cat /sys/block/bcache0/bcache/cache_mode
+writethrough [writeback] writearound none
+root@storage01:~# cat /sys/block/bcache0/bcache/dirty_data
+9.3G
+root@storage01:~# cat /sys/block/bcache0/bcache/sequential_cutoff
+4.0M
+root@storage01:~# cat /sys/block/bcache0/bcache/state
+dirty
+root@storage01:~# cat /sys/block/bcache0/bcache/writeback_rate_debug
+rate:           512/sec
+dirty:          9.2G
+target:         9.3G
+proportional:   -20.5k
+derivative:     0
+change:         -20.5k/sec
+next io:        482ms
+
+Unfortunately performance is not very good (random write IOPS is about 200
+when I would expect it to be about 5000-10000):
+
+(the fio.bash script I run is available at
+http://www.ansatt.hig.no/erikh/sysadm/fio.bash)
+
+root@storage01:~# ./fio.bash /brick0/tmp/
+Baseline reads with hdparm
+ /dev/bcache0:
+  Timing cached reads:   5870 MB in  2.00 seconds = 2936.42 MB/sec
+  Timing buffered disk reads: 252 MB in  3.01 seconds =  83.83 MB/sec
+Sequential read
+  read : io=359784KB, bw=35622KB/s, iops=8905, runt= 10100msec
+Sequential write
+  write: io=18508KB, bw=1745.8KB/s, iops=436, runt= 10602msec
+Random read
+  read : io=43716KB, bw=4244.3KB/s, iops=1061, runt= 10300msec
+Random write
+  write: io=10288KB, bw=883208B/s, iops=215, runt= 11928msec
+Mixed 70/30 random read and write with 8K block size
+  read : io=23272KB, bw=2128.2KB/s, iops=266, runt= 10936msec
+  write: io=10376KB, bw=971564B/s, iops=118, runt= 10936msec
+
+If I run the same test on the root filesystem on c0d0 (which is EXT4-LVM on
+Intel S3500 SSD, and the S3500 is supposed to have much worse random write
+performance compared to the much more expensive S3700 which my bcache uses)
+random write performance (and in general) is 50x better:
+
+root@storage01:~# ./fio.bash /root/
+Baseline reads with hdparm
+ /dev/mapper/storage01--vg-root:
+  Timing cached reads:   6370 MB in  2.00 seconds = 3186.45 MB/sec
+  Timing buffered disk reads: 392 MB in  3.00 seconds = 130.66 MB/sec
+Sequential read
+  read : io=490832KB, bw=48985KB/s, iops=12246, runt= 10020msec
+Sequential write
+  write: io=492388KB, bw=49180KB/s, iops=12294, runt= 10012msec
+Random read
+  read : io=262656KB, bw=26203KB/s, iops=6550, runt= 10024msec
+Random write
+  write: io=498980KB, bw=49848KB/s, iops=12462, runt= 10010msec
+Mixed 70/30 random read and write with 8K block size
+  read : io=288480KB, bw=28773KB/s, iops=3596, runt= 10026msec
+  write: io=121216KB, bw=12090KB/s, iops=1511, runt= 10026msec
+
+When I have IOPS-numbers around 200 that sounds very much like spinning
+drives, but my setup is as far as I can tell correct with a Intel S3700
+high performance SSD as caching device on c0d1, so I can't make sense of
+this.
+
+any help greatly appreciated :)
+
+/Erik
