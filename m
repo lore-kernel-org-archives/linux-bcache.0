@@ -1,50 +1,133 @@
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-Subject: [PATCH 1/1] bcache: Deletion of an unnecessary check before the function
- call "kobject_put"
-Date: Wed, 19 Nov 2014 21:34:20 +0100
-Message-ID: <546CFECC.8020309@users.sourceforge.net>
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.so
- urceforge.net>
+From: Stefan Seyfried <stefan.seyfried@googlemail.com>
+Subject: Re: 3.17-rc6: bcache_gc: BUG: soft lockup - CPU#2 stuck for 23s!
+Date: Fri, 21 Nov 2014 23:54:44 +0100
+Message-ID: <546FC2B4.5020201@message-id.invalid.com>
+References: <alpine.DEB.2.00.1409281651340.15834@ware.dreamhost.com> <20141101204447.GB22219@kmo-pixel>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mout.web.de ([212.227.15.3]:49214 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132AbaKSUef (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 19 Nov 2014 15:34:35 -0500
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Received: from mx1.b1-systems.de ([84.200.69.220]:52661 "EHLO
+	mx1.b1-systems.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751755AbaKUXDI (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 21 Nov 2014 18:03:08 -0500
+In-Reply-To: <20141101204447.GB22219@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-raid@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+To: Kent Overstreet <kmo@daterainc.com>, Eric Wheeler <linux-bcache@lists.ewheeler.net>
+Cc: linux-bcache@vger.kernel.org, Ross Anderson <rosander@dsotm.net>, Stefan Priebe <s.priebe@profihost.ag>
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Wed, 19 Nov 2014 21:25:39 +0100
+Hi Kent,
 
-The kobject_put() function tests whether its argument is NULL and then
-returns immediately. Thus the test around the call is not needed.
+Am 01.11.2014 um 21:44 schrieb Kent Overstreet:
+> On Sun, Sep 28, 2014 at 05:25:37PM -0700, Eric Wheeler wrote:
+>> Hello Kent, Ross, all:
+>>
+>> We're getting bcache_gc backtraces and soft lockups; the system cont=
+inues to
+>> be responsive and eventually recovers.  We are running 3.17-rc6. (Th=
+is
+>> appears to be a continuation of the thread from 2014-09-15)
+>>
+>> Please see the following two backtraces.  The first shows up in
+>> btree_gc_count_keys(), the other is triggered somehow by rcu_sched. =
+ We will
+>> test with -rc7 this week, though I didn't see any bcache commits in =
+rc7.
+>>
+>> The server is quite busy:
+>>   dd in userspace from dm-thinp snapshots to another server
+>>   two DRBD verify's active backed by dm-thinp volumes
+>>   note that, dd fills up the buffers so this could be operating with=
+ few
+>>   pages free. (Though we have min-mem set to 256MB.)
+>>
+>> I see we are hitting functions like bch_ptr_bad() and bch_extent_bad=
+().
+>> Could that indicate a cache corruption on our volume?
+>=20
+> No - those are the normal "check the validity of medata" functions.
+>=20
+>> I'm happy to test patches if you have any suggestions or tests that =
+I should
+>> run it through.
+>=20
+> I think it might just be a missing cond_resched()... there's a check =
+during
+> garbage collection for need_resched() but it appears we might not act=
+ually be
+> calling schedule() then.
 
-This issue was detected by using the Coccinelle software.
+I'm still hitting this quite often (once per week?), the machine does
+not recover and for I cannot shut it down but need to reboot it hard.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/md/bcache/super.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+I have seen this with 3.16.6 (openSUSE 13.2 standard kernel) and 3.17.2
+(latest stable as of that boot).
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index d4713d0..1443c55 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2076,8 +2076,7 @@ static void bcache_exit(void)
- {
- 	bch_debug_exit();
- 	bch_request_exit();
--	if (bcache_kobj)
--		kobject_put(bcache_kobj);
-+	kobject_put(bcache_kobj);
- 	if (bcache_wq)
- 		destroy_workqueue(bcache_wq);
- 	if (bcache_major)
--- 
-2.1.3
+This is on an old core2 duo, one CPU is always spinning in the kernel
+when this happens.
+I have also seen the machine recover from this, but the last occurences
+have been deadly.
+
+My setup is:
+* a 60GB LV on a Crucial CT240M500 SSD as cache device (other LVs on
+that SSD are for testing other stuff)
+* 30GB /home   on rotating rust (a LV on a 2TB WD 2.5" drive)
+* 750GB /space a LV on the same rotating rust
+* 4GB /var/log/journal again a LV on the 2.5" drive
+
+/space is used for both big-file storage (ISOs, some videos) and for
+lots-of-small-files storage (yocto project embedded development, ccache
+directory, ....)
+/var/log/journal is the latest addition to the bcache set, after
+updating to openSUSE 13.2. I would say that I only see the problems
+since I added /var/log/journal, but that happened directly after
+updating to 13.2 which also includes a kernel update from 3.11.10 to
+3.16.x, so it could be both.
+
+I cannot see that any specific action triggers the but, the machine is
+just idling along and suddenly the soft lockup detector triggers...
+
+>=20
+> Try this patch:
+>=20
+> commit a64afc92e17e709bdd1618edd04bc608f6a44c55
+> Author: Kent Overstreet <kmo@daterainc.com>
+> Date:   Sat Nov 1 13:44:13 2014 -0700
+>=20
+>     bcache: Add a cond_resched() call to gc
+>    =20
+>     Change-Id: Id4f18c533b80ddb40df94ed0bb5e2a236a4bc325
+>=20
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index 00cde40db5..218f21ac02 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -1741,6 +1741,7 @@ static void bch_btree_gc(struct cache_set *c)
+>  	do {
+>  		ret =3D btree_root(gc_root, c, &op, &writes, &stats);
+>  		closure_sync(&writes);
+> +		cond_resched();
+> =20
+>  		if (ret && ret !=3D -EAGAIN)
+>  			pr_warn("gc failed!");
+>=20
+
+I have rebuilt the 3.17.3 bcache module with this patch now and will se=
+e
+if that helps. This is not yet in 3.18-rc, is there a reason why this i=
+s
+not going upstream? The issue is certainly annoying...
+
+Best regards,
+
+	Stefan
+--=20
+Stefan Seyfried
+Linux Consultant & Developer
+Mail: seyfried@b1-systems.de GPG Key: 0x731B665B
+
+B1 Systems GmbH
+Osterfeldstra=C3=9Fe 7 / 85088 Vohburg / http://www.b1-systems.de
+GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
