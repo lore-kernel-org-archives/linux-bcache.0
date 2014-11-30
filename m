@@ -1,20 +1,20 @@
 From: Kent Overstreet <kmo@daterainc.com>
 Subject: Re: bcache and hibernation
-Date: Sun, 30 Nov 2014 15:24:45 -0800
-Message-ID: <20141130232445.GA4327@kmo-pixel>
+Date: Sun, 30 Nov 2014 15:29:59 -0800
+Message-ID: <20141130232959.GA8123@kmo-pixel>
 References: <87h9y3xl6l.fsf@bluescreen303.nl>
  <20141113221134.GA15711@kmo-pixel>
  <874mtg7dhc.fsf@bluescreen303.nl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39736 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752123AbaK3XW2 (ORCPT
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:38760 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751908AbaK3X1l (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 30 Nov 2014 18:22:28 -0500
-Received: by mail-pd0-f172.google.com with SMTP id y13so9641835pdi.31
-        for <linux-bcache@vger.kernel.org>; Sun, 30 Nov 2014 15:22:27 -0800 (PST)
+	Sun, 30 Nov 2014 18:27:41 -0500
+Received: by mail-pa0-f49.google.com with SMTP id eu11so9802219pac.22
+        for <linux-bcache@vger.kernel.org>; Sun, 30 Nov 2014 15:27:41 -0800 (PST)
 Content-Disposition: inline
 In-Reply-To: <874mtg7dhc.fsf@bluescreen303.nl>
 Sender: linux-bcache-owner@vger.kernel.org
@@ -46,9 +46,7 @@ On Sun, Nov 30, 2014 at 07:25:03PM +0100, Mathijs Kwik wrote:
 > bookkeeping/flushing. What I don't get, is how this will protect the
 > system in the short phase before resume, when my initrd activates bcache
 > and lvm, _before_ it checks for a resume image.
-
-Wait what? Ohh... you must be talking about hibernate, not suspend...
-
+> 
 > I guess bcache will just start running as usual. Maybe flushing some
 > dirty buckets, cache some new stuff (when lvm searches for volumes and
 > udev reads labels & more).
@@ -56,23 +54,6 @@ Wait what? Ohh... you must be talking about hibernate, not suspend...
 > Then finally the resume mechanism loads the old hibernated system, while
 > the cache has changed in the mean time! Won't this cause issues?
 
-I have no idea how hibernate works, but yeah, quite possibly...
-
-> > The dev branch is getting a true read only mode (still in progress), but this
-> > isn't relevant to hibernation.
-> >
-> > bcache kernel threads (allocator thread, gc thread) should be correct w.r.t.
-> > hibernation, but - maybe the workqueue usage isn't.
-> >
-> > I'm probably not going to be able to get to this in the next couple days, but
-> > this is a pretty serious issue. Can you ping me again every couple days until I
-> > get a fix out for this, and myabe file a bug somewhere? (i think
-> > bugzilla.kernel.org has been used for bcache bugs before...)
-> 
-> I will file a report once I'm sure what the exact cause for my data-loss
-> was. If I understand you correctly, all should be safe and well, no
-> matter what (initramfs) userspace does in between and the only thing
-> that might not be safe is the workqueue?
-
-I was thinking suspend to ram, not hibernate. gonna have to look into how
-hibernate works now.
+BTW - it sounds like you're ahead of me on how this is put together - could you
+point me at the userspace side of hibernate that you're using (those initramfs
+scripts, and in particular whatever device mapper does)? that'll help a lot.
