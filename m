@@ -1,99 +1,79 @@
-From: Stefan Bader <stefan.bader@canonical.com>
-Subject: Re: [PATCH] bcache: prevent crash on changing writeback_running
-Date: Tue, 02 Dec 2014 09:49:45 +0100
-Message-ID: <547D7D29.8000602@canonical.com>
-References: <1408453293-17917-1-git-send-email-stefan.bader@canonical.com> <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
+From: Damien Robert <damien.olivier.robert@gmail.com>
+Subject: clearing inconsistent bcache state
+Date: Tue, 2 Dec 2014 23:18:48 +0100
+Message-ID: <20141202221848.GB14759@mithrim>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN"
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <CACHGV4J8pQM7pt+0NXJL60OJHxMUQu2S9U_DnKFh0BW0=1XpuA@mail.gmail.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Slava Pestov <sp@datera.io>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:38766 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933286AbaLBWSx (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 2 Dec 2014 17:18:53 -0500
+Received: by mail-wg0-f42.google.com with SMTP id z12so18299773wgg.1
+        for <linux-bcache@vger.kernel.org>; Tue, 02 Dec 2014 14:18:52 -0800 (PST)
+Received: from mithrim (LAubervilliers-656-1-193-56.w193-252.abo.wanadoo.fr. [193.252.61.56])
+        by mx.google.com with ESMTPSA id m6sm24993947wix.10.2014.12.02.14.18.51
+        for <linux-bcache@vger.kernel.org>
+        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Tue, 02 Dec 2014 14:18:51 -0800 (PST)
+Content-Disposition: inline
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+I had enabled bcache on writeback, but once when booting my laptop I got
+the following error message
+error on ...: corrupted btree at bucket ... disabling caching
 
-On 19.08.2014 20:03, Slava Pestov wrote:
-> Thanks, this is now in our development branch.
+Since I was on a plane I just forced bcache to continue by doing
+  echo 1 > bcache/running
 
-It has been a while but I just went back there and checked linux and linu=
-x-next
-but cannot find this change anywhere. I think it is a rather simple bugfi=
-x. So I
-start to wonder where it went and when it would get pushed.
+Amazingly the backing device recovered without problem
+(the power of btrfs, I even checked with btrfs scrub); probably there was
+not a lot of dirty data.
 
--Stefan
+So I'd like to enable bcache caching again (even if there was an error
+previously, all my data is backuped to several other computers so I can
+afford to lose it).
 
->=20
-> On Tue, Aug 19, 2014 at 6:01 AM, Stefan Bader
-> <stefan.bader@canonical.com> wrote:
->> commit a664d0f05a2ec02c8f042db536d84d15d6e19e81
->>     bcache: fix crash on shutdown in passthrough mode
->>
->> added a safeguard in the shutdown case. At least while not being
->> attached it is also possible to trigger a kernel bug by writing into
->> writeback_running. This change  adds the same check before trying to
->> wake up the thread for that case.
->>
->> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
->> ---
->>  drivers/md/bcache/writeback.h | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeba=
-ck.h
->> index 0a9dab1..073a042 100644
->> --- a/drivers/md/bcache/writeback.h
->> +++ b/drivers/md/bcache/writeback.h
->> @@ -63,7 +63,8 @@ static inline bool should_writeback(struct cached_de=
-v *dc, struct bio *bio,
->>
->>  static inline void bch_writeback_queue(struct cached_dev *dc)
->>  {
->> -       wake_up_process(dc->writeback_thread);
->> +       if (!IS_ERR_OR_NULL(dc->writeback_thread))
->> +               wake_up_process(dc->writeback_thread);
->>  }
->>
->>  static inline void bch_writeback_add(struct cached_dev *dc)
->> --
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache=
-" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I recreated my caching device again with make-bcache -B (after cleaning up
+the signature so it would accept to run), and attached the device to the
+backing device again.
 
+The problem is that it detect that the backing device was uncleanly cut
+away from its caching device, and 'state' is inconsistent:
 
+Mithrim /sys/block/bcache0/bcache $ sudo bcache-super-show /dev/sda3
+sb.magic                ok
+sb.first_sector         8 [match]
+sb.csum                 9694497C61198C4 [match]
+sb.version              1 [backing device]
 
---qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+dev.label               (empty)
+dev.uuid                56e8d6b3-9a68-4df3-8f4a-dfbf535a9575
+dev.sectors_per_block   1
+dev.sectors_per_bucket  1024
+dev.data.first_sector   16
+dev.data.cache_mode     1 [writeback]
+dev.data.cache_state    3 [inconsistent]
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+cset.uuid               b67e71bc-8b3d-43c5-9048-c3b182cc77ec
 
-iQIcBAEBCgAGBQJUfX0pAAoJEOhnXe7L7s6jyCgP/RSClzHGIlrqMrR4P9cYh2We
-YYfDduKPwhwuLl6WtmtV05gGClcKXIYhnv62R0Z6E4r6F7b+LtT4XooYYi3gIHHk
-GjPetA8EFoVEQD+JSvSVAKiuRAV4QKAHuzNtEbg3h3PRuoOx/2GuP64oM9RSLg/L
-Xct421mlpf/xilSLq0KEQPXaUA/3CeyjXd/Z6Wz33gH6v6TPtlOyZAHfWvLOuA7Z
-6/ZRegqw8NMnTVOc9CM4Rj6MRVmQYcD4pkF18fIt/DKpJaSDVjXTqSdIVS2k0A4E
-POFT530lnC9QfRaaTIEAiCnXJH2fNfnG6ohuK3cTInqbpfPdN87Bf6HyLhO3v9e/
-VyNWuyuCi7BTFholZvTSca98ttvkQNN9AqRVjeAkBIvXz+DuupUoyvo1PpIiq6Uk
-ni/D13C2y7TMLfPJzJTbb5d7/oETRb5aa8bhxnj0WLzn/EU56nX1ZSdULLx3XVLM
-3VMM/yqhNK3qOJ7RhWrhkI+gyvH80/o7+uiGZK61wHZuI/MPU97ZxM38zwzGTAko
-PQHWhHSABmaglV7iuQWXe7ASm3wBTVW2/VdNcCz4BxYZteXySilXPhA3nB2Q/eDJ
-SPqTiisYYUXl/0oEuAQa+aupAAOZ3ILYnrzKzakCO7RWvQAtXRn17r/FEadPUY/O
-DF0d6IQLhAz5JLJSy3P8
-=DGMF
------END PGP SIGNATURE-----
+Of course this disable all effective caching, as seen in the stats or in
+the caching device bcache/written which are all 0.
 
---qdDUVglFDHIE23h9W6HH2rKf98aaXIFaN--
+So I have two questions:
+1) was there a better way to recover from the corrupted btree than forcing
+   the backing device to run without the cache?
+2) Is there a way to tell bcache to put the backing device back in a consistent
+   state so that caching get enabled again?
+   [I would like not to format it again via a make-bcache -B, my data is
+   backuped but reinstalling the laptop and transfering the data back is
+   annoying]
+
+Thanks!
+
+-- 
+Damien Robert
+http://www.normalesup.org/~robert/pro
