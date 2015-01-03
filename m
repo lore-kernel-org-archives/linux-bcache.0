@@ -1,45 +1,56 @@
 From: Rolf Fokkens <rolf@rolffokkens.nl>
-Subject: Re: bcache fails after reboot if discard is enabled
-Date: Sat, 03 Jan 2015 17:32:32 +0100
-Message-ID: <54A819A0.9010501@rolffokkens.nl>
-References: <54A66945.6030403@profihost.ag> <54A66C44.6070505@profihost.ag>
+Subject: Re: 3.18.1 + latest bcache-dev
+Date: Sat, 03 Jan 2015 17:40:24 +0100
+Message-ID: <54A81B78.2070409@rolffokkens.nl>
+References: <20141228023534.GA25860@cuci.nl> <CACHGV4K8aK8=isPftZLsMHCqUf31t1B=kFXDUD1PFCKzDC-D=g@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:40582 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbbACQhn (ORCPT
+Received: from mail-we0-f170.google.com ([74.125.82.170]:51894 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017AbbACQk1 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 3 Jan 2015 11:37:43 -0500
-Received: by mail-wg0-f51.google.com with SMTP id x12so25117903wgg.24
-        for <linux-bcache@vger.kernel.org>; Sat, 03 Jan 2015 08:37:42 -0800 (PST)
-In-Reply-To: <54A66C44.6070505@profihost.ag>
+	Sat, 3 Jan 2015 11:40:27 -0500
+Received: by mail-we0-f170.google.com with SMTP id w61so5775371wes.15
+        for <linux-bcache@vger.kernel.org>; Sat, 03 Jan 2015 08:40:26 -0800 (PST)
+In-Reply-To: <CACHGV4K8aK8=isPftZLsMHCqUf31t1B=kFXDUD1PFCKzDC-D=g@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Cc: Kent Overstreet <kmo@daterainc.com>
+To: Slava Pestov <sp@datera.io>, "Stephen R. van den Berg" <srb@cuci.nl>
+Cc: linux-bcache@vger.kernel.org
 
-I've been using discard for a while, but I ran a few times in serious FS 
-corruptions. After disabling discard bcache was stable again.
+Hi Slava,
 
-So far I tributed the corruptions to a low-cost SSD which probably 
-didn't handle discard very well. But this was only an assumptions.
+Sounds like the kernel (using bcache-dev) is not able to handle the 
+current format. If so, bcache-tools may help in "reformatting" bcache 
+devices, but that's no solution for existing systems.
 
-I didn't experience specific reboot problems like you describe.
+So is my understanding correct that there's no easy kernel upgrade path 
+(to bcache-dev) ?
 
-On 01/02/2015 11:00 AM, Stefan Priebe - Profihost AG wrote:
-> I'm sorry the backtraces were incomplete.
+Rolf
+
+On 12/29/2014 05:05 AM, Slava Pestov wrote:
+> Hi Stephen,
 >
-> Am 02.01.2015 um 10:47 schrieb Stefan Priebe - Profihost AG:
->> Hi,
+> The bcache-dev branch has on-disk format changes that require a new
+> bcache-tools. I'm not sure where Kent posts the source for that.
+>
+> On Sat, Dec 27, 2014 at 6:35 PM, Stephen R. van den Berg <srb@cuci.nl> wrote:
+>> Now I tried this:
+>> Combine 3.18.1 and rebase all the patches from bcache-dev onto that.
+>> But, in trying that, I get a consistent:
 >>
->> while running 3.10 or 3.18 kernel i've problems enabling discard.
->> Strangely this only appears on reboot or crash. While these situations
->> work fine without discard.
+>> register_bcache() error opening /dev/sdb3: Invalid superblock: member info area missing
 >>
->> bcache completely fails when discard is enabled for reboot or crash.
->> Strangely it works fine while "running".
+>> Anything I overlooked?   The bcache-tools are straight from git too.
+>> --
+>> Stephen.
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 > the body of a message to majordomo@vger.kernel.org
