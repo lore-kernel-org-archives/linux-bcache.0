@@ -1,30 +1,86 @@
-From: Rolf Fokkens <rolf@rolffokkens.nl>
-Subject: Re: 3.18.1 + latest bcache-dev
-Date: Thu, 08 Jan 2015 20:47:44 +0100
-Message-ID: <54AEDEE0.9090601@rolffokkens.nl>
-References: <20141228023534.GA25860@cuci.nl> <CACHGV4K8aK8=isPftZLsMHCqUf31t1B=kFXDUD1PFCKzDC-D=g@mail.gmail.com> <54A81B78.2070409@rolffokkens.nl> <20150104004621.GA4460@kmo-pixel> <54A94A1C.9050906@rolffokkens.nl> <CACHGV4KV-y3JD=i6jy_0jaapZYBKxOYr1+PL=0dsAe+M83Y_Ew@mail.gmail.com> <54AC5F22.6040200@rolffokkens.nl> <alpine.DEB.2.02.1501071214210.19734@ware.dreamhost.com> <20150108023054.GB1263@kmo-pixel>
+From: Frank Banul <frank.banul@ghs.com>
+Subject: bch_btree_node_read page_fault
+Date: Fri, 9 Jan 2015 15:18:53 +0000
+Message-ID: <71113EA8-4F6E-43D2-A187-0F2F920A8877@ghs.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:56411 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707AbbAHTrs (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 8 Jan 2015 14:47:48 -0500
-Received: by mail-wg0-f44.google.com with SMTP id b13so4483107wgh.3
-        for <linux-bcache@vger.kernel.org>; Thu, 08 Jan 2015 11:47:46 -0800 (PST)
-In-Reply-To: <20150108023054.GB1263@kmo-pixel>
+Received: from barracuda.ghs.com ([209.234.187.110]:53214 "EHLO fang.ghs.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757899AbbAIPS7 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 9 Jan 2015 10:18:59 -0500
+Received: from allegro.ghs.com (allegro.ghs.com [192.168.64.231]) by fang.ghs.com with ESMTP id FLi0YUO9ICYbIKkJ for <linux-bcache@vger.kernel.org>; Fri, 09 Jan 2015 07:18:57 -0800 (PST)
+Received: from exchange.ghs.com (exsvr2.ghs.com [192.168.64.22])
+	by allegro.ghs.com (Postfix) with ESMTP id 6289970018A
+	for <linux-bcache@vger.kernel.org>; Fri,  9 Jan 2015 07:18:57 -0800 (PST)
+Content-Language: en-US
+Content-ID: <A0FC88AF9EA3FA44ACED3F75A96BD879@ghs.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kmo@daterainc.com>, Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Slava Pestov <sp@datera.io>, "Stephen R. van den Berg" <srb@cuci.nl>, linux-bcache@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On 01/08/2015 03:30 AM, Kent Overstreet wrote:
-> On Wed, Jan 07, 2015 at 12:17:19PM -0800, Eric Wheeler wrote:
->> Would it make sense to call this bcache2 and merge both into the 
->> linux tree once bcache2 is stable enough for broader testing? 
-> Yeah that might be what happens.
-I would be very much in favour if this approach. The (temporary) 
-availability of both bcache and bcache2 gives users not only time to 
-test it, but to migrate as well.
+SGksDQoNClVidW50dSAxNC4wNC4xIExUUyBzeXN0ZW0gZW5jb3VudGVyZWQgYSBwYWdlX2ZhdWx0
+LCA1MTJHQiBTU0QgY2FjaGUsIDRUIGh5YnJpZCBIREQgYmFja2luZyBzdG9yZS4gQmVsb3cgaXMg
+dGhlIE9DUiBvZiB0aGUgY3Jhc2guIElmIHlvdSBuZWVkIG9mZnNldHMgb3IgbW9yZSBpbmZvLCBs
+ZXQgbWUga25vdy4NCg0KSXMgdGhlcmUgYW55dGhpbmcgSSBjYW4gYWRqdXN0IG9yIG1vZGlmeSB0
+byBhdm9pZD8gUGVyZm9ybWFuY2UgaXMgcHJldHR5IGFtYXppbmcgb3RoZXJ3aXNlLg0KDQp0aGFu
+a3MsDQpGcmFuaw0KDQpDNzAzOTcyIC4xODgzMTIxIFIxODogcnJycnJycnI4MTMzZjY1YSBSMTE6
+IHJycnJlYTAwMDVlYzI2YzAnIFIxMmk6Ln4nbGZpZml0cmVlMHoxcmM1MzE4MDENCmMxYTNDMzEy
+LjFlOXM5MTEgUjEzOiBlIGVhb29lZWEwMGUxIFIxMTogcnJycmU4MDFlMTF6cnJyZSBSMTU6IHJy
+dHJlZWFpIGF0IDEzYTAwMA0KYzFlMzk3MiAuMTk4ODg4MSBGUzogZWVlYWVlZW9vb29lLjBhMGVj
+ZWUwZT4gR3M6IHJycnI4ZTAyMXJjMWUwMGVjZTAwZT4ga25sR1MgOjAwMDAwMDAwMDAwMDAwMDAN
+Cls3ODMnNzIuMTkyMTU1MSBDUzogMDAxMCBEUzogODg4OSBFUzogMDgwOSBDUjk6IDAwMDAwMDA5
+ODAwNTAwM2INCmw3ODM5NzIgLjE5MzQzMjEgQ1IyOiAyOCBDUjM6IGVlZWVlZWUxMWQ5ZWRvb2Ug
+Q1I0OiBlZTAwMGUwMGUwMDBlMWUwDQooNzgzOTcyLjE5NDcxNzEgU3RhY2s6DQpjMWV+MTIuMTk1
+OTBzMSBycnJyZTg4ODc1N2ViODM5IHJycnJycnJyZTFlODFyczEgcnJycmE4ZTFlMTEzZTAwMCBy
+cnJyODgwMDc1N2ViODkwDQpDNzgzOTcyLjE5NzI4MkogcnJycnJycnJlMTEyMWRhOSBycnIgZTFl
+MTEzIHJycnI4ODA5NzU3ZWJmZDggZTBlMDBlMDAwMGUxMzQ5MA0KYzFlMzkxMi4xOThzMTExIDEz
+NDg5IHJycnI4OGUxZTExM2VlZWUgcnJycmVlZTFlMTEzMDZzZSBycnJyZTgwMWUxMTJycnJlDQpb
+NzgzOTcyLjE5OTg2MTEgQ2FsbCBUcmFjZToNCig3ODM5NzIuMjgxMTI5MSBDPHJycnJycnJyZTFl
+ZTFyczE+MSB3cV93b3JrZXJfc2xlZXBpbmcrMHgxMS9HeDkwDQpbNzgzOTcyLjI4MjQ4OTEgQzxm
+ZmZmZmZmZjgxNzI0ZGE5PkogX19zY2hlZHVsZSsweDU4OS8weDdkMA0KKDc4Mzk3Mi4yODM2Nzcx
+IEM8ZmZmZmZmZmY4MTcyNTgxOT5sIHNjaGVkdWxlKzB4MjkvMHg3MA0KKDc5Mzk3Mi4yODQ5NDEx
+IGw8ZmZmZmZmZmY4MTA2YTE1Zj5sIGRvX2V4aXQrMHg2ZGYvMHhhNTANCig3ODM5NzIuMjk2MTk4
+MSBDPHJycnJycnJyZTExMmExNjk+bCBvb3BzX2VuZCsweGE5LzB4MTUwDQpbNzgzOTcyLjIwNzQ1
+ODEgQzxmZmZmZmZmZjgxNzE5N2RkPmwgbm9fY29udGV4dCsweDI3ZS8weDI4Yg0KKDc4Mzk3Mi4y
+MDg2OTkxIEM8ZmZmZmZmZmY4MTcxOTg1ZD5sIF9fYmFkX2FyZWFfbm9zZW1hcGhvcmUrMHg3My8w
+eDFjYQ0KKDc4Mzk3Mi4yMDk5NDIxIGw8ZmZmZmZmZmY4MTcxOTljNz5sIGJhZF9hcmVhX25vc2Vt
+YXBob3JlKzB4MTMvMHgxNQ0KKDc5Mzk3Mi4yMTExNzQxIEM8ZmZmZmZmZmY4MTcyY2IzNz5sIGRv
+X3BhZ2VfZmF1bHQrMHhhNy8weDU2MA0KKDc4Mzk3Mi4yMTIxMTExIEM8cnJycnJycnJlMTE5Nzdh
+Mz5sID8gYWxsb2NfcGFnZXNfY3VycmVudCsweGEzLzB4MTYwDQpDNzgzOTcyLjIxMzY1RzEgQzxy
+cnJycnJycmUxMTUzOGRlPjEgPyBfX2dldF9mcmVlX3BhZ2VzKzB4ZS9leDUwDQooNzgzOTcyLjIx
+NDg4OTEgQzxycnJycnJycmUxMTFlID5sID8ga25hbGxvY19vcmRlcl90cmFjZSsweDJlLzB4YTgN
+Cig3ODM5NzIuMjE2MTI4MSBDPHJycnJycnJyZXQ3MmQ4R2E+MSBkb19wYWdlX2ZhdWx0Kzh4dGEu
+MWV4MWUNCls3ODM5NzIuMjE3MzY4MSBDPHJycnJycnJyZXR0YVo5NTE+bCA/IF9fa21hbGxvYys4
+eDIxMS8weDIzMA0KWzc4Mzk3Mi4yMTg1OTYxIEM8cnJycnJycnJldDcyOTQ2Qj5sIHBhZ2VfZmF1
+bHQrZXgyOC4xOHgzMA0KKDc4Mzk3Mi4yMTk3ODQxIEM8cnJycnJycnJhODk5ZDk3Nj5sID8gYmNo
+X2J0cmVlX25vZGVfcmVhZCsweDE3Ni4xOHg1NTAgQ2JjYWNoZWwNCls3MDM5NzIuMjI5OTE3MSBD
+PHJycnJycnJyYTg5OWVmNDU+MSBiY2hfYnRyZWVfbm9kZV9nZXQrOHgxNjUuMTh4MjkwIENiY2Fj
+aGVsDQooNzkzOTcyLjIyMjkzODEgQzxycnJycnJycmE4MDlmMTg4PmwgYmNoX2J0cmVlX21hcF9u
+b2Rlc19yZWN1cnNlKzl4OTguMTB4MTQ4IENiY2FjaGVsDQpbNzkzOTcyLjIyMzE1NzEgQzxycnJy
+cnJycmFlZWExYjk4PmwgPyBiY2hfYnRyZWVfaW5zZXJ0X2NoZWNrX2tleSs4eDE5ODEnOXgxOTAg
+Q2JjYWNoZWwNCig3OTM5NzIuMjI0MjgxMSBDPHJycnJycnJyODE5OTA4MDY+MSA/IHNyY3Vfbm90
+aWZpZXJfY2FsbF9jaGFpbis4eDE2LjE4eDIwDQooNzkzOTcyLjIyNTQwMjEgcjxycnJycnJycmV0
+ODc0NGI3PjEgPyBpbnRlcm5hbF9hZGRfdGltZXIrOXgxNy4xOXg0OQ0KKDc5Mzk3Mi4yMjY1MjMx
+IEM8cnJycnJycnJhODhhMjNjOT4xIF9fYmNoX2J0cmVlX21hcF9ub2RlcytleDEzOS4xOHgxYzkg
+Q2JjYWNoZWwNCig3OTM5NzIuMjI3NjUxMSBDPHJycnJycnJyYTg4YTFiOTg+bCA/IGJjaF9idHJl
+ZV9pbnNlcnRfY2hlY2tfa2V5Kzl4MTkwLjEweDE5OCBDYmNhY2hlbA0KKDc5Mzk3Mi4yMjg3ODYx
+IEM8ZmZmZmZmZmZhODhhMjUwND5sIGJjaF9idHJlZV9pbnNlcnQrOHhiNC50OHgxMjggQ2JjYWNo
+ZWwNCig3OTM5NzIuMjI5ODk4MSBDPHJycnJycnJyYWVlYWM3YmE+bCBiY2hfZGF0YV9pbnNlcnRf
+a2V5cytPeDNhLjE4eDE2OSBDYmNhY2hlbA0KKDc4Mzk3Mi4yMzg5ODMxIEM8cnJycnJycmY4MTg4
+M2E1Mj4xIHByb2Nlc3Nfb25lX3dvcmsrOHgxODIudDB4NDU4DQooNzkzOTcyLjIzMjA0MzEgQzxy
+cnJycnJycjgxMDg0ODQxPjEgd29ya2VyX3RocmVhZCs4eDEyMS50OHg0MTgNCls3ODM5NzIuMjMz
+MDc4MSBDPHJycnJycnJyQjE4ODQ3Mjk+MSA/IHJlc2N1ZXJfdGhyZWFkKzh4NDMwLnQ4eDQzMA0K
+KDc5Mzk3Mi4yMzQ4ODcxIEM8cnJycnJycnI4MTg4YjU3Mj4xIGt0aHJlYWQrOHhkMi4xOHhmOA0K
+KDc5Mzk3Mi4yMzU4NjkxIEM8cnJycnJycmY4MTg4YjRhOD4xID8ga3RocmVhZF9jcmVhdGVfb25f
+bm9kZSs4eDFjOC4xMHgxYzgNCig3MDM5NzIuMjM2ODM2MSBDPHJycnJycnJyODE3MzFTcmM+bCBy
+ZXRfZnJvbV9mb3JrKzB4N2MudDh4YjgNCls3MDM5NzIuMjM2OTk0MSBDPHJycnJycnJyODE4OGI0
+YTg+bCA/IGt0aHJlYWRfY3JlYXRlX29uX25vZGUrOHgxYzguMTh4MWM4DQpbNzAzOTcyLjIzNzk0
+ODEgQ29kZTogODggNDggODkgZTUgU2QgNDggOGIgNDggYzggNDggY3QgZTggMDIgODMgZTggODEg
+YzMgNjYgMmUgZXIgMWYgODQgODggMDAgMDAgMDAgMDAgNjYgNjYgNjYgNjYgOTAgNDggQmIgODcg
+Yw0KbyA5MyBlZSBlZSA1NSA0OCA4OSBlcyA8NDg+IEJiIDQ4IGRCIFNkIGMzIDY2IDJlIGVyIHRy
+IDg0IDAwIDAwIDAwIDAwIDAwIDY2IDY2IDY2IDY2IDkwDQooNzAzOTcyLjI0ODEzODEgUklQIEM8
+cnJycnJycnI4MTA4YmMxOD5sIGt0aHJlYWRfZGF0YSsweDEwLnQweDIwDQrCozcwMzk3Mi4yNDEx
+NzMxIFJTUCA8cnJycjg4MDA3NTdlYjgxOD4NCmMxMDM5MTIuMjEyMjAzMSBjUjI6IHJycnJycnJy
+cnJycnJyZDg=
