@@ -1,86 +1,39 @@
-From: Frank Banul <frank.banul@ghs.com>
-Subject: bch_btree_node_read page_fault
-Date: Fri, 9 Jan 2015 15:18:53 +0000
-Message-ID: <71113EA8-4F6E-43D2-A187-0F2F920A8877@ghs.com>
+From: "lilofile" <lilofile@aliyun.com>
+Subject: =?UTF-8?B?YmNhY2hlIHBlcmZvcm1hbmNl?=
+Date: Sun, 11 Jan 2015 22:16:27 +0800
+Message-ID: <544e0c43-6081-4360-8153-3391caf1582a@aliyun.com>
+Reply-To: "lilofile" <lilofile@aliyun.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from barracuda.ghs.com ([209.234.187.110]:53214 "EHLO fang.ghs.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757899AbbAIPS7 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 9 Jan 2015 10:18:59 -0500
-Received: from allegro.ghs.com (allegro.ghs.com [192.168.64.231]) by fang.ghs.com with ESMTP id FLi0YUO9ICYbIKkJ for <linux-bcache@vger.kernel.org>; Fri, 09 Jan 2015 07:18:57 -0800 (PST)
-Received: from exchange.ghs.com (exsvr2.ghs.com [192.168.64.22])
-	by allegro.ghs.com (Postfix) with ESMTP id 6289970018A
-	for <linux-bcache@vger.kernel.org>; Fri,  9 Jan 2015 07:18:57 -0800 (PST)
-Content-Language: en-US
-Content-ID: <A0FC88AF9EA3FA44ACED3F75A96BD879@ghs.com>
+Received: from smtpcm9-112.freemail.mail.aliyun.com ([115.124.18.12]:41080
+	"EHLO smtpcm9-112.freemail.mail.aliyun.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752319AbbAKOd0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 11 Jan 2015 09:33:26 -0500
+References: 19072dac-785e-404a-9a47-f9649de83311@aliyun.com
+In-Reply-To: 19072dac-785e-404a-9a47-f9649de83311@aliyun.com
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: lilofile <lilofile@aliyun.com>, linux-bcache <linux-bcache@vger.kernel.org>
 
-SGksDQoNClVidW50dSAxNC4wNC4xIExUUyBzeXN0ZW0gZW5jb3VudGVyZWQgYSBwYWdlX2ZhdWx0
-LCA1MTJHQiBTU0QgY2FjaGUsIDRUIGh5YnJpZCBIREQgYmFja2luZyBzdG9yZS4gQmVsb3cgaXMg
-dGhlIE9DUiBvZiB0aGUgY3Jhc2guIElmIHlvdSBuZWVkIG9mZnNldHMgb3IgbW9yZSBpbmZvLCBs
-ZXQgbWUga25vdy4NCg0KSXMgdGhlcmUgYW55dGhpbmcgSSBjYW4gYWRqdXN0IG9yIG1vZGlmeSB0
-byBhdm9pZD8gUGVyZm9ybWFuY2UgaXMgcHJldHR5IGFtYXppbmcgb3RoZXJ3aXNlLg0KDQp0aGFu
-a3MsDQpGcmFuaw0KDQpDNzAzOTcyIC4xODgzMTIxIFIxODogcnJycnJycnI4MTMzZjY1YSBSMTE6
-IHJycnJlYTAwMDVlYzI2YzAnIFIxMmk6Ln4nbGZpZml0cmVlMHoxcmM1MzE4MDENCmMxYTNDMzEy
-LjFlOXM5MTEgUjEzOiBlIGVhb29lZWEwMGUxIFIxMTogcnJycmU4MDFlMTF6cnJyZSBSMTU6IHJy
-dHJlZWFpIGF0IDEzYTAwMA0KYzFlMzk3MiAuMTk4ODg4MSBGUzogZWVlYWVlZW9vb29lLjBhMGVj
-ZWUwZT4gR3M6IHJycnI4ZTAyMXJjMWUwMGVjZTAwZT4ga25sR1MgOjAwMDAwMDAwMDAwMDAwMDAN
-Cls3ODMnNzIuMTkyMTU1MSBDUzogMDAxMCBEUzogODg4OSBFUzogMDgwOSBDUjk6IDAwMDAwMDA5
-ODAwNTAwM2INCmw3ODM5NzIgLjE5MzQzMjEgQ1IyOiAyOCBDUjM6IGVlZWVlZWUxMWQ5ZWRvb2Ug
-Q1I0OiBlZTAwMGUwMGUwMDBlMWUwDQooNzgzOTcyLjE5NDcxNzEgU3RhY2s6DQpjMWV+MTIuMTk1
-OTBzMSBycnJyZTg4ODc1N2ViODM5IHJycnJycnJyZTFlODFyczEgcnJycmE4ZTFlMTEzZTAwMCBy
-cnJyODgwMDc1N2ViODkwDQpDNzgzOTcyLjE5NzI4MkogcnJycnJycnJlMTEyMWRhOSBycnIgZTFl
-MTEzIHJycnI4ODA5NzU3ZWJmZDggZTBlMDBlMDAwMGUxMzQ5MA0KYzFlMzkxMi4xOThzMTExIDEz
-NDg5IHJycnI4OGUxZTExM2VlZWUgcnJycmVlZTFlMTEzMDZzZSBycnJyZTgwMWUxMTJycnJlDQpb
-NzgzOTcyLjE5OTg2MTEgQ2FsbCBUcmFjZToNCig3ODM5NzIuMjgxMTI5MSBDPHJycnJycnJyZTFl
-ZTFyczE+MSB3cV93b3JrZXJfc2xlZXBpbmcrMHgxMS9HeDkwDQpbNzgzOTcyLjI4MjQ4OTEgQzxm
-ZmZmZmZmZjgxNzI0ZGE5PkogX19zY2hlZHVsZSsweDU4OS8weDdkMA0KKDc4Mzk3Mi4yODM2Nzcx
-IEM8ZmZmZmZmZmY4MTcyNTgxOT5sIHNjaGVkdWxlKzB4MjkvMHg3MA0KKDc5Mzk3Mi4yODQ5NDEx
-IGw8ZmZmZmZmZmY4MTA2YTE1Zj5sIGRvX2V4aXQrMHg2ZGYvMHhhNTANCig3ODM5NzIuMjk2MTk4
-MSBDPHJycnJycnJyZTExMmExNjk+bCBvb3BzX2VuZCsweGE5LzB4MTUwDQpbNzgzOTcyLjIwNzQ1
-ODEgQzxmZmZmZmZmZjgxNzE5N2RkPmwgbm9fY29udGV4dCsweDI3ZS8weDI4Yg0KKDc4Mzk3Mi4y
-MDg2OTkxIEM8ZmZmZmZmZmY4MTcxOTg1ZD5sIF9fYmFkX2FyZWFfbm9zZW1hcGhvcmUrMHg3My8w
-eDFjYQ0KKDc4Mzk3Mi4yMDk5NDIxIGw8ZmZmZmZmZmY4MTcxOTljNz5sIGJhZF9hcmVhX25vc2Vt
-YXBob3JlKzB4MTMvMHgxNQ0KKDc5Mzk3Mi4yMTExNzQxIEM8ZmZmZmZmZmY4MTcyY2IzNz5sIGRv
-X3BhZ2VfZmF1bHQrMHhhNy8weDU2MA0KKDc4Mzk3Mi4yMTIxMTExIEM8cnJycnJycnJlMTE5Nzdh
-Mz5sID8gYWxsb2NfcGFnZXNfY3VycmVudCsweGEzLzB4MTYwDQpDNzgzOTcyLjIxMzY1RzEgQzxy
-cnJycnJycmUxMTUzOGRlPjEgPyBfX2dldF9mcmVlX3BhZ2VzKzB4ZS9leDUwDQooNzgzOTcyLjIx
-NDg4OTEgQzxycnJycnJycmUxMTFlID5sID8ga25hbGxvY19vcmRlcl90cmFjZSsweDJlLzB4YTgN
-Cig3ODM5NzIuMjE2MTI4MSBDPHJycnJycnJyZXQ3MmQ4R2E+MSBkb19wYWdlX2ZhdWx0Kzh4dGEu
-MWV4MWUNCls3ODM5NzIuMjE3MzY4MSBDPHJycnJycnJyZXR0YVo5NTE+bCA/IF9fa21hbGxvYys4
-eDIxMS8weDIzMA0KWzc4Mzk3Mi4yMTg1OTYxIEM8cnJycnJycnJldDcyOTQ2Qj5sIHBhZ2VfZmF1
-bHQrZXgyOC4xOHgzMA0KKDc4Mzk3Mi4yMTk3ODQxIEM8cnJycnJycnJhODk5ZDk3Nj5sID8gYmNo
-X2J0cmVlX25vZGVfcmVhZCsweDE3Ni4xOHg1NTAgQ2JjYWNoZWwNCls3MDM5NzIuMjI5OTE3MSBD
-PHJycnJycnJyYTg5OWVmNDU+MSBiY2hfYnRyZWVfbm9kZV9nZXQrOHgxNjUuMTh4MjkwIENiY2Fj
-aGVsDQooNzkzOTcyLjIyMjkzODEgQzxycnJycnJycmE4MDlmMTg4PmwgYmNoX2J0cmVlX21hcF9u
-b2Rlc19yZWN1cnNlKzl4OTguMTB4MTQ4IENiY2FjaGVsDQpbNzkzOTcyLjIyMzE1NzEgQzxycnJy
-cnJycmFlZWExYjk4PmwgPyBiY2hfYnRyZWVfaW5zZXJ0X2NoZWNrX2tleSs4eDE5ODEnOXgxOTAg
-Q2JjYWNoZWwNCig3OTM5NzIuMjI0MjgxMSBDPHJycnJycnJyODE5OTA4MDY+MSA/IHNyY3Vfbm90
-aWZpZXJfY2FsbF9jaGFpbis4eDE2LjE4eDIwDQooNzkzOTcyLjIyNTQwMjEgcjxycnJycnJycmV0
-ODc0NGI3PjEgPyBpbnRlcm5hbF9hZGRfdGltZXIrOXgxNy4xOXg0OQ0KKDc5Mzk3Mi4yMjY1MjMx
-IEM8cnJycnJycnJhODhhMjNjOT4xIF9fYmNoX2J0cmVlX21hcF9ub2RlcytleDEzOS4xOHgxYzkg
-Q2JjYWNoZWwNCig3OTM5NzIuMjI3NjUxMSBDPHJycnJycnJyYTg4YTFiOTg+bCA/IGJjaF9idHJl
-ZV9pbnNlcnRfY2hlY2tfa2V5Kzl4MTkwLjEweDE5OCBDYmNhY2hlbA0KKDc5Mzk3Mi4yMjg3ODYx
-IEM8ZmZmZmZmZmZhODhhMjUwND5sIGJjaF9idHJlZV9pbnNlcnQrOHhiNC50OHgxMjggQ2JjYWNo
-ZWwNCig3OTM5NzIuMjI5ODk4MSBDPHJycnJycnJyYWVlYWM3YmE+bCBiY2hfZGF0YV9pbnNlcnRf
-a2V5cytPeDNhLjE4eDE2OSBDYmNhY2hlbA0KKDc4Mzk3Mi4yMzg5ODMxIEM8cnJycnJycmY4MTg4
-M2E1Mj4xIHByb2Nlc3Nfb25lX3dvcmsrOHgxODIudDB4NDU4DQooNzkzOTcyLjIzMjA0MzEgQzxy
-cnJycnJycjgxMDg0ODQxPjEgd29ya2VyX3RocmVhZCs4eDEyMS50OHg0MTgNCls3ODM5NzIuMjMz
-MDc4MSBDPHJycnJycnJyQjE4ODQ3Mjk+MSA/IHJlc2N1ZXJfdGhyZWFkKzh4NDMwLnQ4eDQzMA0K
-KDc5Mzk3Mi4yMzQ4ODcxIEM8cnJycnJycnI4MTg4YjU3Mj4xIGt0aHJlYWQrOHhkMi4xOHhmOA0K
-KDc5Mzk3Mi4yMzU4NjkxIEM8cnJycnJycmY4MTg4YjRhOD4xID8ga3RocmVhZF9jcmVhdGVfb25f
-bm9kZSs4eDFjOC4xMHgxYzgNCig3MDM5NzIuMjM2ODM2MSBDPHJycnJycnJyODE3MzFTcmM+bCBy
-ZXRfZnJvbV9mb3JrKzB4N2MudDh4YjgNCls3MDM5NzIuMjM2OTk0MSBDPHJycnJycnJyODE4OGI0
-YTg+bCA/IGt0aHJlYWRfY3JlYXRlX29uX25vZGUrOHgxYzguMTh4MWM4DQpbNzAzOTcyLjIzNzk0
-ODEgQ29kZTogODggNDggODkgZTUgU2QgNDggOGIgNDggYzggNDggY3QgZTggMDIgODMgZTggODEg
-YzMgNjYgMmUgZXIgMWYgODQgODggMDAgMDAgMDAgMDAgNjYgNjYgNjYgNjYgOTAgNDggQmIgODcg
-Yw0KbyA5MyBlZSBlZSA1NSA0OCA4OSBlcyA8NDg+IEJiIDQ4IGRCIFNkIGMzIDY2IDJlIGVyIHRy
-IDg0IDAwIDAwIDAwIDAwIDAwIDY2IDY2IDY2IDY2IDkwDQooNzAzOTcyLjI0ODEzODEgUklQIEM8
-cnJycnJycnI4MTA4YmMxOD5sIGt0aHJlYWRfZGF0YSsweDEwLnQweDIwDQrCozcwMzk3Mi4yNDEx
-NzMxIFJTUCA8cnJycjg4MDA3NTdlYjgxOD4NCmMxMDM5MTIuMjEyMjAzMSBjUjI6IHJycnJycnJy
-cnJycnJyZDg=
+when I test bcache on linux 3.10 kernel, use writeback cache mode, the capability of the ssd cache is 240G.
+ 
+fio -filename=/dev/bcache0 -direct=1 -iodepth 1 -thread -rw=randwrite -ioengine=psync -bs=4k -size=80G -numjobs=8 -runtime=30000 -group_reporting -name=mytes 
+ 
+the performance can reach to 1.2w. after two hours running, the performance drop to 500. what is the reason?
+when stop fio,  iostat show results:
+ 
+Device:            tps    MB_read/s    MB_wrtn/s    MB_read    MB_wrtn
+sde            2697.00         0.00        10.54          0         10
+sdc               0.00         0.00         0.00          0          0
+sdd               0.00         0.00         0.00          0          0
+sda               0.00         0.00         0.00          0          0
+sdb            2715.00        10.55         0.06         10          0
+dm-0              0.00         0.00         0.00          0          0
+dm-1              0.00         0.00         0.00          0          0
+dm-2              0.00         0.00         0.00          0          0
+dm-3              0.00         0.00         0.00          0          0
+dm-4              0.00         0.00         0.00          0          0
+bcache0           0.00         0.00         0.00          0          0
