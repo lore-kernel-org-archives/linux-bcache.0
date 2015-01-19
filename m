@@ -1,39 +1,48 @@
-From: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] bcache: Make sure to pass GFP_WAIT to mempool_alloc()
-Date: Thu, 15 Jan 2015 10:35:37 -0800
-Message-ID: <20150115183537.GA23990@kroah.com>
-References: <54B7EA3D.7050203@gmail.com>
+From: Michael Russo <mike@papersolve.com>
+Subject: Re: Is bcache dead?
+Date: Mon, 19 Jan 2015 18:36:59 +0000 (UTC)
+Message-ID: <loom.20150119T192952-870@post.gmane.org>
+References: <545229F8.8000502@profihost.ag> <CALJ65zm0UpNKZKZmT26Gv6+CA6ijTS60+PVoCroLA4aipo-bPg@mail.gmail.com> <54529797.2020004@hardwarefreak.com> <20141030233425.GA28233@kmo-pixel> <545B8DDC.4070905@bahj.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <stable-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <54B7EA3D.7050203@gmail.com>
-Sender: stable-owner@vger.kernel.org
-To: Gabriel de Perthuis <g2p.code@gmail.com>
-Cc: stable@vger.kernel.org, bcache <linux-bcache@vger.kernel.org>
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from plane.gmane.org ([80.91.229.3]:52065 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936AbbASSkG (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 19 Jan 2015 13:40:06 -0500
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1YDHF6-0005am-1l
+	for linux-bcache@vger.kernel.org; Mon, 19 Jan 2015 19:40:04 +0100
+Received: from pool-98-113-243-220.nycmny.fios.verizon.net ([98.113.243.220])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Mon, 19 Jan 2015 19:40:04 +0100
+Received: from mike by pool-98-113-243-220.nycmny.fios.verizon.net with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Mon, 19 Jan 2015 19:40:04 +0100
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 05:26:37PM +0100, Gabriel de Perthuis wrote:
-> this was very wrong - mempool_alloc() only guarantees success with GFP_WAIT.
-> bcache uses GFP_NOWAIT in various other places where we have a fallback,
-> circuits must've gotten crossed when writing this code or something.
-> 
-> Signed-off-by: Kent Overstreet <kmo@daterainc.com>
-> ---
-> 
-> The bug was introduced in v3.11, fixed in v3.17.
-> 
-> Jens mentioned bcache has many stable@ candidates previously:
-> https://lkml.org/lkml/2014/9/5/360
-> 
-> I'm cherry-picking this fix because I was getting crashes.
-> 
-> ---
->  drivers/md/bcache/btree.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Zachary Palmer <zep_kernel.org <at> bahj.com> writes:
 
-What exactly is the commit id for this in Linus's tree?
+>  I expect I'm speaking on behalf of quite a few 
+> people when I say that you've made things better in a subtle but 
+> significant way.  :)
+> 
+> Cheers,
+> 
+> Zach
+> 
 
-thanks,
-
-greg k-h
+I am a little late in this thread but I also wanted to say I appreciate the hard
+ work put into bcache and I've had no trouble with it at all, except when my 
+crappy OCZ VERTEX4 disappears (happens maybe once a month, or if the case gets a
+ little too hot inside).  Then I'll need to reboot whether I'm in writeback 
+OR writethrough mode (I've got bcache as my root FS and in both cases it's 
+remounted r/o and bcache won't let me remount it r/w).  But it really makes 
+things  faster (in either mode, though of course faster in writeback). Hopefully
+ the stress level will go down and you will get some more time to work on 
+bcache.
