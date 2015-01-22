@@ -1,67 +1,62 @@
 From: "Stephen R. van den Berg" <srb@cuci.nl>
-Subject: Re: 3.18.3 + latest bcache-dev
-Date: Thu, 22 Jan 2015 00:04:26 +0100
-Message-ID: <20150121230426.GB15237@cuci.nl>
+Subject: patch (Re: 3.18.3 + latest bcache-dev)
+Date: Thu, 22 Jan 2015 13:33:32 +0100
+Message-ID: <20150122123332.GA23810@cuci.nl>
 References: <20150121012424.GB5533@cuci.nl>
  <CALJ65znLYCJaN2fHx0-7P8RQHPUVkaBpw=ckt0_tQjznth35rw@mail.gmail.com>
  <20150121110400.GA14729@cuci.nl>
- <CACHGV4J3Ler_+RHcd6x0nEfSKTnWQLqhrze97XzcFe-30+xu6A@mail.gmail.com>
+ <20150121164553.GA15237@cuci.nl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from aristoteles.cuci.nl ([212.125.128.18]:40482 "EHLO
+Received: from aristoteles.cuci.nl ([212.125.128.18]:59844 "EHLO
 	aristoteles.cuci.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752042AbbAUXE1 (ORCPT
+	with ESMTP id S1751452AbbAVMde (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 21 Jan 2015 18:04:27 -0500
+	Thu, 22 Jan 2015 07:33:34 -0500
 Content-Disposition: inline
-In-Reply-To: <CACHGV4J3Ler_+RHcd6x0nEfSKTnWQLqhrze97XzcFe-30+xu6A@mail.gmail.com>
+In-Reply-To: <20150121164553.GA15237@cuci.nl>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Slava Pestov <sp@datera.io>
-Cc: Kent Overstreet <kmo@daterainc.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Slava Pestov wrote:
->On Wed, Jan 21, 2015 at 3:04 AM, Stephen R. van den Berg <srb@cuci.nl> wrote:
->> Jan 21 11:21:40 ip144 kernel: ata11.00: exception Emask 0x0 SAct 0x7fffffff SErr 0x0 action 0x0
->> Jan 21 11:21:40 ip144 kernel: ata11.00: irq_stat 0x40000008
->> Jan 21 11:21:40 ip144 kernel: ata11.00: failed command: READ FPDMA QUEUED
->> Jan 21 11:21:40 ip144 kernel: ata11.00: cmd 60/00:c0:10:d0:d9/04:00:01:00:00/40 tag 24 ncq 524288 in
->> Jan 21 11:21:40 ip144 kernel:         res 41/40:00:d0:d1:d9/00:00:01:00:00/00 Emask 0x409 (media error) <F>
->> Jan 21 11:21:40 ip144 kernel: ata11.00: status: { DRDY ERR }
->> Jan 21 11:21:40 ip144 kernel: ata11.00: error: { UNC }
->> Jan 21 11:21:40 ip144 kernel: ata11.00: configured for UDMA/133
+Stephen R. van den Berg wrote:
+>What I notice are:
+>- The 100% CPU usage for four bcache_writebac processes is back.  I've
+>  already tried raising the value you suggested from 30 to 60, but I did
+>  not have an opportunity to reboot yet.  Will report back on this.
 
->I'm not sure this is related. Do you see it during normal operation
->ever? It is possible that we're spinning in softirq context or
->something, starving the device, but I'm not sure...
+What I saw:
+a. After running several hours, copying roughly 3.0TB through the two
+   SSD caching devices onto the BTRFS backing device consisting of
+   four HDDs, the bcache_writebac processes were still eating 100% CPU each.
+b. Then did a manual umount of the fs, then stopped the bcache device
+   through the proc filesystem.
+c. Rebooted.
+d. Came back in a patched kernel, 100% CPU usage is gone.
 
-In the second run now, with increased traffic, I do not see the above
-happening.
+The patch I used (I did not investigate the correctness of the value
+picked, I simply doubled it as an initial guess):
 
-Maybe I cut it short, the whole message is:
-Jan 21 12:09:14 ip144 kernel: ata11.00: exception Emask 0x0 SAct 0x3000 SErr 0x0 action 0x0
-Jan 21 12:09:14 ip144 kernel: ata11.00: irq_stat 0x40000008
-Jan 21 12:09:14 ip144 kernel: ata11.00: failed command: READ FPDMA QUEUED
-Jan 21 12:09:14 ip144 kernel: ata11.00: cmd 60/00:68:e8:2b:da/01:00:01:00:00/40 tag 13 ncq 131072 in
-Jan 21 12:09:14 ip144 kernel:         res 41/40:00:b0:2c:da/00:00:01:00:00/00 Emask 0x409 (media error) <F>
-Jan 21 12:09:14 ip144 kernel: ata11.00: status: { DRDY ERR }
-Jan 21 12:09:14 ip144 kernel: ata11.00: error: { UNC }
-Jan 21 12:09:14 ip144 kernel: ata11.00: configured for UDMA/133
-Jan 21 12:09:14 ip144 kernel: sd 10:0:0:0: [sdg]  
-Jan 21 12:09:14 ip144 kernel: Result: hostbyte=0x00 driverbyte=0x08
-Jan 21 12:09:14 ip144 kernel: sd 10:0:0:0: [sdg]  
-Jan 21 12:09:14 ip144 kernel: Sense Key : 0x3 [current] [descriptor]
-Jan 21 12:09:14 ip144 kernel: Descriptor sense data with sense descriptors (in hex):
-Jan 21 12:09:14 ip144 kernel:        72 03 11 04 00 00 00 0c 00 0a 80 00 00 00 00 00 
-Jan 21 12:09:14 ip144 kernel:        01 da 2c b0 
-Jan 21 12:09:14 ip144 kernel: sd 10:0:0:0: [sdg]  
-Jan 21 12:09:14 ip144 kernel: ASC=0x11 ASCQ=0x4
-Jan 21 12:09:14 ip144 kernel: sd 10:0:0:0: [sdg] CDB: 
-Jan 21 12:09:14 ip144 kernel: cdb[0]=0x88: 88 00 00 00 00 00 01 da 2b e8 00 00 01 00 00 00
-Jan 21 12:09:14 ip144 kernel: blk_update_request: I/O error, dev sdg, sector 31075504
-Jan 21 12:09:14 ip144 kernel: ata11: EH complete
+commit 2abecdbd214c94741012de32759bb0de4c6adbf9
+Author: Stephen R. van den Berg <srb@cuci.nl>
+Date:   Tue Jan 13 23:24:52 2015 +0100
 
-And it always happens upon a read error from HDD.
+    Increase btree_scan_ratelimit to avoid 100% CPU hogging.
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 653419b..5fff8ad 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -867,7 +867,7 @@ static struct cache_set *bch_cache_set_alloc(struct cache *ca)
+ 	c->error_limit	= 16 << IO_ERROR_SHIFT;
+ 
+ 	c->tiering_percent = 10;
+-	c->btree_scan_ratelimit = 30;
++	c->btree_scan_ratelimit = 60;
+ 
+ 	c->copy_gc_enabled = 1;
+ 	c->tiering_enabled = 1;
 -- 
 Stephen.
