@@ -1,33 +1,32 @@
-From: "Wesley W. Terpstra" <wesley@terpstra.ca>
-Subject: bcache read-only mode?
-Date: Sat, 24 Jan 2015 23:55:41 +0100
-Message-ID: <CAA-O0Xj7G=G_56YoReN1ShiTWwMZeapz_WjZQPySqnBobBTF3A@mail.gmail.com>
+From: David Mohr <damailings@mcbf.net>
+Subject: Git repositories
+Date: Mon, 26 Jan 2015 14:24:58 -0700
+Message-ID: <baa05f9cf5caef3dd4101b22d13fcbae@de.mcbf.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:61116 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbbAXWzm (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 24 Jan 2015 17:55:42 -0500
-Received: by mail-yh0-f43.google.com with SMTP id 29so1175944yhl.2
-        for <linux-bcache@vger.kernel.org>; Sat, 24 Jan 2015 14:55:41 -0800 (PST)
+Received: from seeker.mcbf.net ([109.239.49.157]:45883 "EHLO seeker.mcbf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751517AbbAZVmP (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 26 Jan 2015 16:42:15 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
+Cc: robie.basak@ubuntu.com
 
-Good evening!
+Hi,
 
-I've been using bcache happily for some months now, but unfortunately,
-something bad happened to the backing device in my bcache setup. To
-confirm that I've corrected the problem, I would like to run bcache in
-read-only mode. Is this possible?
+in discussions around the Debian packaging the question came up why
+   http://evilpiepirate.org/git/bcache-tools.git/
+is the official repository when it seems like the current stable 
+development takes place in
+   https://github.com/g2p/bcache-tools
 
-My bcache was in writeback mode, so part of the filesystem information
-is in the cache drive. Thus, I can't filesystem check the backing disk
-without involving the cache. I want to prevent bcache from making any
-changes to the cache and backing drives. I just want to be able to
-include the writeback information so that I can see if the data is
-consistent.
+Would it be possible to merge Gabriel's work back into the main 
+repository so that we can refer to evilpiepirate.org as the definitive 
+upstream? If not, what's the relationship between the repositories?
 
-Thanks!
+Thanks,
+~David
