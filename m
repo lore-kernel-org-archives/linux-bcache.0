@@ -1,142 +1,91 @@
-From: Joshua Schmid <jschmid@suse.de>
-Subject: Re: bcache_gc: BUG: soft lockup - CPU#2 stuck for 23s!
-Date: Tue, 03 Feb 2015 12:26:29 +0100
-Message-ID: <54D0B065.4010205@suse.de>
-References: <54D0A4CF.4040204@suse.de>
+From: Zhu Yanhai <zhu.yanhai@gmail.com>
+Subject: Re: [PATCH] bcache: fix a livelock in btree lock
+Date: Wed, 4 Feb 2015 11:00:40 +0800
+Message-ID: <CAC8teKVatzjZS9RSixtXCxbKe52Ji9VYi_haO878ED_fhtBreA@mail.gmail.com>
+References: <1422962468-25011-1-git-send-email-jschmid@suse.com>
 Mime-Version: 1.0
-Content-Type: multipart/mixed;
- boundary="------------070709060701060000080700"
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from cantor2.suse.de ([195.135.220.15]:51914 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755566AbbBCL0b (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 3 Feb 2015 06:26:31 -0500
-Received: from relay1.suse.de (charybdis-ext.suse.de [195.135.220.254])
-	by mx2.suse.de (Postfix) with ESMTP id 77700AB46
-	for <linux-bcache@vger.kernel.org>; Tue,  3 Feb 2015 11:26:29 +0000 (UTC)
-In-Reply-To: <54D0A4CF.4040204@suse.de>
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:57099 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751202AbbBDDBL (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 3 Feb 2015 22:01:11 -0500
+Received: by mail-qc0-f180.google.com with SMTP id r5so38545701qcx.11
+        for <linux-bcache@vger.kernel.org>; Tue, 03 Feb 2015 19:01:10 -0800 (PST)
+In-Reply-To: <1422962468-25011-1-git-send-email-jschmid@suse.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Joshua Schmid <jschmid@suse.com>
+Cc: linux-bcache@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>
 
-This is a multi-part message in MIME format.
---------------070709060701060000080700
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Zheng,
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+It should be 'op->lock = b->level', not 'op->lock = b->c->root->level
++ 1', otherwise we will stop all concurrency writes unconditionally in
+the second round. Isn't it?
 
+-zyh
 
-
-On 02/03/2015 11:37 AM, Joshua Schmid wrote:
-> Hi,
-> 
-> 
-> 
-> I tested this patch for some time and it really helps to fix the
-> gc issue we are running in. Since it might got lost, i will resend
-> it.
-
-patch attached*
-
-> 
-> 
-> 
-> Best Regards, Joshua
-> 
-> 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJU0LBlAAoJEPUnwXO0u5uWMVgP/iUGNroCzUSW0lGvV+awLyPX
-+p7O5tERuzs7Uq+yKBoE8Zvad76WuS1vnrLqjZgfI+3P4dGJPpf1DlLHlFU7dHkF
-/UBgqQFf6OT5MgXk+TXKLXitH+55Chl7WaVe3RMgXEMP3Q5R/rjvLM8Po5gLfRc8
-uru7k0oFi+B7cnOmxXruD74baCXY+nwuXoE7PTyOzH+1Wf7SHsz8ygGNVbDhVWI4
-A1zaTqoBMNXribBd3wN5uRV7XDHL5un+zF7sR8P9BiXHn1GKPwH7qLesHHTT2nvs
-joN7+xMx8In0cR4uloSDqgmwT/6OdeFCujKErwIkVIl57YqEUimByxcA4lGzXvXZ
-C5n760Ei/nw0X70qeA2Jkfg/Zk1HfwPcfkHVIi5KB4LelfVa1jbIEaSzdnclH2aD
-GlakovGJOkrcPhBgH0xc+7h2eH1kv6Vw8Al1AbTNho92vzVCKmcmGMUyuBpkmxnD
-zdxoXUKZLEuGWCt0ExYBU8tIw3twpatCA15sZ9kbgwkggqri7HHqjA8M/cMjPXKC
-VNStPPnscMbMjxDvZiJyNrCchi2kInJWLKJWNofk5RZs7f2eQcT1bXKYWxXPGIxn
-QZhKsrItZ/k0g2GrxWCRxH6fymHVKkokzt6R0FZcs/1Quf+CnwrhJ5ZPQivkdKLX
-BUIG+BeOeYwkLm27/VoH
-=XQtd
------END PGP SIGNATURE-----
-
---------------070709060701060000080700
-Content-Type: text/x-patch;
- name="0001-3.17-rc6-bcache_gc-BUG-soft-lockup-CPU-2-stuck-for-2.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-3.17-rc6-bcache_gc-BUG-soft-lockup-CPU-2-stuck-for-2.pa";
- filename*1="tch"
-
-From ab8c276a4997f394e252688f855e1b35374aedee Mon Sep 17 00:00:00 2001
-From: Kent Overstreet <kmo@daterainc.com>
-Date: Sat, 1 Nov 2014 13:44:47 -0700
-Subject: [PATCH] 3.17-rc6: bcache_gc: BUG: soft lockup - CPU#2 stuck for 23s!
-
-On Sun, Sep 28, 2014 at 05:25:37PM -0700, Eric Wheeler wrote:
-> Hello Kent, Ross, all:
+2015-02-03 19:21 GMT+08:00 Joshua Schmid <jschmid@suse.com>:
+> From: Zheng Liu <wenqing.lz@taobao.com>
 >
-> We're getting bcache_gc backtraces and soft lockups; the system continues to
-> be responsive and eventually recovers.  We are running 3.17-rc6. (This
-> appears to be a continuation of the thread from 2014-09-15)
+> This commit tries to fix a livelock in bcache.  This livelock might
+> happen when we causes a huge number of cache misses simultaneously.
 >
-> Please see the following two backtraces.  The first shows up in
-> btree_gc_count_keys(), the other is triggered somehow by rcu_sched.  We will
-> test with -rc7 this week, though I didn't see any bcache commits in rc7.
+> When we get a cache miss, bcache will execute the following path.
 >
-> The server is quite busy:
->   dd in userspace from dm-thinp snapshots to another server
->   two DRBD verify's active backed by dm-thinp volumes
->   note that, dd fills up the buffers so this could be operating with few
->   pages free. (Though we have min-mem set to 256MB.)
+> ->cached_dev_make_request()
+>   ->cached_dev_read()
+>     ->cached_lookup()
+>       ->bch->btree_map_keys()
+>         ->btree_root()  <------------------------
+>           ->bch_btree_map_keys_recurse()        |
+>             ->cache_lookup_fn()                 |
+>               ->cached_dev_cache_miss()         |
+>                 ->bch_btree_insert_check_key() -|
+>                   [If btree->seq is not equal to seq + 1, we should return
+>                    EINTR and traverse btree again.]
 >
-> I see we are hitting functions like bch_ptr_bad() and bch_extent_bad().
-> Could that indicate a cache corruption on our volume?
-
-No - those are the normal "check the validity of medata" functions.
-
-> I'm happy to test patches if you have any suggestions or tests that I should
-> run it through.
-
-I think it might just be a missing cond_resched()... there's a check during
-garbage collection for need_resched() but it appears we might not actually be
-calling schedule() then.
-
-Try this patch:
-
-Hi, i tested this patch and it fixes our hangups. I'm afraid it got lost so i am resending it.
-
-commit a64afc92e17e709bdd1618edd04bc608f6a44c55
-Author: Kent Overstreet <kmo@daterainc.com>
-Date:   Sat Nov 1 13:44:13 2014 -0700
-
-    bcache: Add a cond_resched() call to gc
-
-    Change-Id: Id4f18c533b80ddb40df94ed0bb5e2a236a4bc325
-
-Tested-By: Joshua Schmid <jschmid@suse.com>
----
- drivers/md/bcache/btree.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 00cde40..218f21a 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1741,6 +1741,7 @@ static void bch_btree_gc(struct cache_set *c)
- 	do {
- 		ret = btree_root(gc_root, c, &op, &writes, &stats);
- 		closure_sync(&writes);
-+		cond_resched();
- 
- 		if (ret && ret != -EAGAIN)
- 			pr_warn("gc failed!");
--- 
-2.1.2
-
-
---------------070709060701060000080700--
+> In bch_btree_insert_check_key() function we first need to check upgrade
+> flag (op->lock == -1), and when this flag is true we need to release
+> read btree->lock and try to take write btree->lock.  During taking and
+> releasing this write lock, btree->seq will be monotone increased in
+> order to prevent other threads modify this in cache miss (see btree.h:74).
+> But if there are some cache misses caused by some requested, we could
+> meet a livelock because btree->seq is always changed by others.  Thus no
+> one can make progress.
+>
+> This commit will try to take write btree->lock if it encounters a race
+> when we traverse btree.  Although it sacrifice the scalability but we
+> can ensure that only one can modify the btree.
+>
+> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+> Tested-by: Joshua Schmid <jschmid@suse.com>
+> ---
+>  drivers/md/bcache/btree.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index 218f21a..f1c224f 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -2163,8 +2163,10 @@ int bch_btree_insert_check_key(struct btree *b, struct btree_op *op,
+>                 rw_lock(true, b, b->level);
+>
+>                 if (b->key.ptr[0] != btree_ptr ||
+> -                   b->seq != seq + 1)
+> +                   b->seq != seq + 1) {
+> +                       op->lock = b->c->root->level + 1;
+>                         goto out;
+> +               }
+>         }
+>
+>         SET_KEY_PTRS(check_key, 1);
+> --
+> 2.1.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
