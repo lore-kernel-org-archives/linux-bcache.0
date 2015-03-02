@@ -1,79 +1,36 @@
-From: Zheng Liu <gnehzuil.liu@gmail.com>
-Subject: [PATCH v2] bcache: fix a livelock in btree lock
-Date: Wed, 25 Feb 2015 20:32:09 +0800
-Message-ID: <1424867529-19748-1-git-send-email-wenqing.lz@taobao.com>
+From: "Mr. Juan Sebastian Morato" <noreply@popfax.com>
+Subject: Confidential Letter
+Date: Mon, 02 Mar 2015 01:34:36 +0100
+Message-ID: <20150302003446.370893EE0FC@mail.quartzbg.ro>
+Reply-To: juan_morato@yahoo.es
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:41807 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbbBYMTH (ORCPT
+Received: from mail.quartzbg.ro ([82.79.64.94]:44685 "EHLO mail.quartzbg.ro"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753529AbbCBS4w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 25 Feb 2015 07:19:07 -0500
-Received: by padfb1 with SMTP id fb1so4858264pad.8
-        for <linux-bcache@vger.kernel.org>; Wed, 25 Feb 2015 04:19:07 -0800 (PST)
+	Mon, 2 Mar 2015 13:56:52 -0500
+Content-Description: Mail message body
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: Zheng Liu <wenqing.lz@taobao.com>, Joshua Schmid <jschmid@suse.com>, Zhu Yanhai <zhu.yanhai@gmail.com>, Kent Overstreet <kmo@daterainc.com>
+To: Recipients <noreply@popfax.com>
 
-From: Zheng Liu <wenqing.lz@taobao.com>
+Dear Friend, 
 
-This commit tries to fix a livelock in bcache.  This livelock might
-happen when we causes a huge number of cache misses simultaneously.
+I am Mr. Juan Sebastian Morato, the Auditor General of Unicaja Bank Madrid. In the course of my auditing, I discovered a floating fund in an account, which was opened in 1990 at Cam Bank before it was bought over by Unicaja Group which I am the auditor belonging to a dead foreigner Mr. Kenny who died in 2004. Every effort made to track any member of his family or next of kin has since failed; hence I got in contact with you to stand as his next of kin since you bear the same last name. He died leaving no heir or a will.
 
-When we get a cache miss, bcache will execute the following path.
+My intention is to transfer this sum of 5.5M in the aforementioned account to a safe account. I am therefore proposing that you quietly partner with me and provide an account or set up a new one that will serve the purpose of receiving this fund. For your assistance in this venture, I am ready to part with a good percentage of the entire funds. After going through the deceased person's records and files, I discovered that:
 
-->cached_dev_make_request()
-  ->cached_dev_read()
-    ->cached_lookup()
-      ->bch->btree_map_keys()
-        ->btree_root()  <------------------------
-          ->bch_btree_map_keys_recurse()        |
-            ->cache_lookup_fn()                 |
-              ->cached_dev_cache_miss()         |
-                ->bch_btree_insert_check_key() -|
-                  [If btree->seq is not equal to seq + 1, we should return
-                   EINTR and traverse btree again.]
+(1) No one has operated this account since 2004
+(2) He died without an heir; hence the money has been floating.
+(3) No other person knows about this account and there was no known beneficiary.
 
-In bch_btree_insert_check_key() function we first need to check upgrade
-flag (op->lock == -1), and when this flag is true we need to release
-read btree->lock and try to take write btree->lock.  During taking and
-releasing this write lock, btree->seq will be monotone increased in
-order to prevent other threads modify this in cache miss (see btree.h:74).
-But if there are some cache misses caused by some requested, we could
-meet a livelock because btree->seq is always changed by others.  Thus no
-one can make progress.
+If I do not remit this money urgently, it would be forfeited and subsequently converted to company's funds, which will benefit only the directors of my firm. This money can be approved to you legally as with all the necessary documentary approvals in your name. However, you would be required to show some proof of claim, which I will provide you with and also guide you on how to make your applications.
 
-This commit will try to take write btree->lock if it encounters a race
-when we traverse btree.  Although it sacrifice the scalability but we
-can ensure that only one can modify the btree.
+Please do give me a reply on my private e-mail juan.morato1@1email.eu or fax 00 34 917 692 656 so that I can send you detailed information on the modalities of my proposition. I completely trust you to keep this proposition absolutely confidential. Kindly forward your telephone number where I can reach you easily. I look forward to your prompt response.
 
-Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
-Tested-by: Joshua Schmid <jschmid@suse.com>
-Cc: Joshua Schmid <jschmid@suse.com>
-Cc: Zhu Yanhai <zhu.yanhai@gmail.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
----
-changelog:
-v2: fix a bug that stops all concurrency writes unconditionally.
-
- drivers/md/bcache/btree.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 00cde40..2a74635 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -2162,8 +2162,10 @@ int bch_btree_insert_check_key(struct btree *b, struct btree_op *op,
- 		rw_lock(true, b, b->level);
- 
- 		if (b->key.ptr[0] != btree_ptr ||
--		    b->seq != seq + 1)
-+		    b->seq != seq + 1) {
-+			op->lock = b->level;
- 			goto out;
-+		}
- 	}
- 
- 	SET_KEY_PTRS(check_key, 1);
--- 
-1.7.9.7
+Best Regards,
+Mr. Juan Sebastian Morato
+Fax: 00 34 917 692 656
