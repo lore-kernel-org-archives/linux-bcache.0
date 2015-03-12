@@ -1,32 +1,48 @@
-From: Thanos Makatos <thanos.makatos@onapp.com>
-Subject: Fwd: bcache memory footprint
-Date: Thu, 5 Mar 2015 15:01:05 +0000
-Message-ID: <CAM2wQBtzFrZ9Zwx6tNv0aOXMtLXAw-dX09PodE1QUdSyoS0A5w@mail.gmail.com>
-References: <CAM2wQBuQeSS_pJeDsCkA24nr16km+ecrsqXf_Ac4G9SCxH951g@mail.gmail.com>
-	<CAM2wQBu8cTjv=moA5MzwbYsccowsoy0UAiAT+G4FXfCp0xJ8cQ@mail.gmail.com>
+From: Scott Wood <scottwood@freescale.com>
+Subject: [PATCH 04/22] md/bcache: %pF is only for function pointers
+Date: Wed, 11 Mar 2015 22:13:39 -0500
+Message-ID: <1426130037-17956-4-git-send-email-scottwood@freescale.com>
+References: <1426130037-17956-1-git-send-email-scottwood@freescale.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:36341 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846AbbCEPBF (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 5 Mar 2015 10:01:05 -0500
-Received: by ierx19 with SMTP id x19so77154872ier.3
-        for <linux-bcache@vger.kernel.org>; Thu, 05 Mar 2015 07:01:05 -0800 (PST)
-In-Reply-To: <CAM2wQBu8cTjv=moA5MzwbYsccowsoy0UAiAT+G4FXfCp0xJ8cQ@mail.gmail.com>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1426130037-17956-1-git-send-email-scottwood@freescale.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: trivial@kernel.org, linux-kernel@vger.kernel.org
+Cc: Scott Wood <scottwood@freescale.com>, linux-bcache@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Is there a simple way to determine the memory footprint of bcache for
-a given cache? I had a look at http://bcache.evilpiepirate.org/Design/
-but it doesn't seem to clearly mention the memory footprint of bcache.
+Use %pS for actual addresses, otherwise you'll get bad output
+on arches like ppc64 where %pF expects a function descriptor.
 
-I'd expect the metadata to play a major role in the memory footprint,
-but is there anything else that affects it (e.g. bucket size, block
-size, write through vs. write back, size of the SSD and HDD)? Does
-bcache's memory usage fluctuate depending on the work load or is it
-static?
+Signed-off-by: Scott Wood <scottwood@freescale.com>
+Cc: linux-bcache@vger.kernel.org
+Cc: Kent Overstreet <kmo@daterainc.com>
+---
+ drivers/md/bcache/closure.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Is this information readily available or do I have to dive into the code?
+diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+index 7a228de..87abf53 100644
+--- a/drivers/md/bcache/closure.c
++++ b/drivers/md/bcache/closure.c
+@@ -177,7 +177,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
+ 	list_for_each_entry(cl, &closure_list, all) {
+ 		int r = atomic_read(&cl->remaining);
+ 
+-		seq_printf(f, "%p: %pF -> %pf p %p r %i ",
++		seq_printf(f, "%p: %pS -> %pf p %p r %i ",
+ 			   cl, (void *) cl->ip, cl->fn, cl->parent,
+ 			   r & CLOSURE_REMAINING_MASK);
+ 
+@@ -189,7 +189,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
+ 			   r & CLOSURE_SLEEPING	? "Sl" : "");
+ 
+ 		if (r & CLOSURE_WAITING)
+-			seq_printf(f, " W %pF\n",
++			seq_printf(f, " W %pS\n",
+ 				   (void *) cl->waiting_on);
+ 
+ 		seq_printf(f, "\n");
+-- 
+2.1.0
