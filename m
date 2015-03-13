@@ -1,48 +1,41 @@
-From: Scott Wood <scottwood@freescale.com>
-Subject: [PATCH 04/22] md/bcache: %pF is only for function pointers
-Date: Wed, 11 Mar 2015 22:13:39 -0500
-Message-ID: <1426130037-17956-4-git-send-email-scottwood@freescale.com>
-References: <1426130037-17956-1-git-send-email-scottwood@freescale.com>
+From: Sameer Naik <sameer.subscriptions@damagehead.com>
+Subject: Improving the performance of my secondary HDD
+Date: Fri, 13 Mar 2015 14:46:35 +0530
+Message-ID: <CAJ5s_igfWQCUfzJ11OC-8uJ_DUc5s95sHYTfKN9Pp6L4LKrp6g@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1426130037-17956-1-git-send-email-scottwood@freescale.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: trivial@kernel.org, linux-kernel@vger.kernel.org
-Cc: Scott Wood <scottwood@freescale.com>, linux-bcache@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>
+Content-Type: text/plain; charset=UTF-8
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:32863 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124AbbCMJQ4 (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 13 Mar 2015 05:16:56 -0400
+Received: by ykt10 with SMTP id 10so9930628ykt.0
+        for <linux-bcache@vger.kernel.org>; Fri, 13 Mar 2015 02:16:56 -0700 (PDT)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-Use %pS for actual addresses, otherwise you'll get bad output
-on arches like ppc64 where %pF expects a function descriptor.
+Hi,
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Cc: linux-bcache@vger.kernel.org
-Cc: Kent Overstreet <kmo@daterainc.com>
----
- drivers/md/bcache/closure.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Recently I purchased an SSD and started using bcache to speed up my
+secondary HDD. My entire linux installation and home directory is
+setup on the SSD and I have set aside a 20GB partition for bcache.
 
-diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
-index 7a228de..87abf53 100644
---- a/drivers/md/bcache/closure.c
-+++ b/drivers/md/bcache/closure.c
-@@ -177,7 +177,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
- 	list_for_each_entry(cl, &closure_list, all) {
- 		int r = atomic_read(&cl->remaining);
- 
--		seq_printf(f, "%p: %pF -> %pf p %p r %i ",
-+		seq_printf(f, "%p: %pS -> %pf p %p r %i ",
- 			   cl, (void *) cl->ip, cl->fn, cl->parent,
- 			   r & CLOSURE_REMAINING_MASK);
- 
-@@ -189,7 +189,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
- 			   r & CLOSURE_SLEEPING	? "Sl" : "");
- 
- 		if (r & CLOSURE_WAITING)
--			seq_printf(f, " W %pF\n",
-+			seq_printf(f, " W %pS\n",
- 				   (void *) cl->waiting_on);
- 
- 		seq_printf(f, "\n");
--- 
-2.1.0
+My secondary storage has multiple partitions all of which are setup as
+backing devices and are used to store various types of file,
+virtualbox disk images, etc. which are seldom accessed.
+
+I would like to know if bcache would really be effective in my setup,
+say for example to speed up the virtual machines since the HDD
+partitions are being cached using bcache? Considering that my virtual
+machine image sizes would be between 8 - 16 GB, would I need to
+perform some level of tuning to achieve a noticeable performance
+improvement.
+
+Lastly, should I be noticing a marked improvement in the HDD write
+operations or would I need to turn on "write back" mode?
+
+Please do share your inputs.
+
+Thanks and Regards
