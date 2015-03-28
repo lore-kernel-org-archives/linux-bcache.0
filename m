@@ -1,53 +1,144 @@
-From: David Mohr <damailings@mcbf.net>
-Subject: Tiny Makefile fix
-Date: Fri, 20 Mar 2015 12:01:17 -0600
-Message-ID: <be69c3afa89bbcd7b67c04cd0ee5aac9@de.mcbf.net>
+From: Peter Kieser <peter@kieser.ca>
+Subject: Poor performance with qemu and bcache FUA
+Date: Sat, 28 Mar 2015 09:49:57 -0700
+Message-ID: <5516DBB5.1070708@kieser.ca>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms050301020806000701070802"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from seeker.mcbf.net ([109.239.49.157]:55619 "EHLO seeker.mcbf.net"
+Received: from mail.pfak.org ([198.50.219.4]:46158 "EHLO mail.pfak.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871AbbCTScw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 20 Mar 2015 14:32:52 -0400
-Received: from localhost ([127.0.0.1] helo=de.mcbf.net)
-	by seeker.mcbf.net with esmtp (Exim 4.80)
-	(envelope-from <damailings@mcbf.net>)
-	id 1YZ1ET-0005EG-Fo
-	for linux-bcache@vger.kernel.org; Fri, 20 Mar 2015 19:01:17 +0100
+	id S1751697AbbC1Q6h (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sat, 28 Mar 2015 12:58:37 -0400
+Received: from mail.pfak.org (localhost [127.0.0.1])
+	by mail.pfak.org (Postfix) with ESMTP id 8594440195DC
+	for <linux-bcache@vger.kernel.org>; Sat, 28 Mar 2015 16:49:41 +0000 (UTC)
+Received: from [192.168.3.5] (unknown [192.168.3.5])
+	(using TLSv1 with cipher RC4-SHA (128/128 bits))
+	(No client certificate requested)
+	(Authenticated sender: peter@kieser.ca)
+	by mail.pfak.org (Postfix) with ESMTPSA id 2B15640195DB
+	for <linux-bcache@vger.kernel.org>; Sat, 28 Mar 2015 16:49:41 +0000 (UTC)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Linux Bcache <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-Hi all,
+This is a cryptographically signed message in MIME format.
 
-just a tiny fix that you may want to apply.
+--------------ms050301020806000701070802
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-~David
+Hello,
 
---
+I finally was able to track down the commit that was causing poor=20
+performance with qemu and LVM or qcow2 backed storage on virtual=20
+machines since 2013 that use barriers on their guest FS (the default.)=20
+This was most obvious with tools like apt-get and installing=20
+linux-headers (it would take ~8 minutes on my system with 2 Intel 530=20
+SSDs in RAID1):
 
- From: David Mohr <david@mcbf.net>
-Date: Fri, 20 Mar 2015 11:42:54 -0600
-Subject: Clean should remove bcache-register
+http://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commi=
+t/?h=3Dlinux-3.10.y&id=3D3fcbc17636c83da9d85e2604de4af56c215e6e3c
 
----
-  Makefile | 2 +-
-  1 file changed, 1 insertion(+), 1 deletion(-)
+Looks like FUA implemented in bcache does not play nicely with qemu. I=20
+reverted this commit, and now a single virtual machine is no longer able =
 
-diff --git a/Makefile b/Makefile
-index c824ae3..afdb2f3 100644
---- a/Makefile
-+++ b/Makefile
-@@ -18,7 +18,7 @@ install: make-bcache probe-bcache bcache-super-show
-  #	$(INSTALL) -m0755 bcache-test $(DESTDIR)${PREFIX}/sbin/
+to DoS all other virtual machines on the system. The symptoms would be=20
+that the cache devices would be fully utilized with a small number of=20
+writes.
 
-  clean:
--	$(RM) -f make-bcache probe-bcache bcache-super-show bcache-test -- *.o
-+	$(RM) -f make-bcache probe-bcache bcache-super-show bcache-test 
-bcache-register -- *.o
+Are there any plans to revisit this? I don't like the idea of leaving=20
+FUA unadvertised as data loss could occur if there is a power failure.
 
-  bcache-test: LDLIBS += `pkg-config --libs openssl` -lm
-  make-bcache: LDLIBS += `pkg-config --libs uuid blkid`
+Thank you,
+
+-Peter
+
+
+--------------ms050301020806000701070802
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIMqzCC
+BjQwggQcoAMCAQICASAwDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoT
+DVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxKTAnBgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3
+MTAyNDIxMDI1NVoXDTE3MTAyNDIxMDI1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1T
+dGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWdu
+aW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENs
+aWVudCBDQTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMsohUWcASz7GfKrpTOM
+KqANy9BV7V0igWdGxA8IU77L3aTxErQ+fcxtDYZ36Z6GH0YFn7fq5RADteP0AYzrCA+EQTfi
+8q1+kA3m0nwtwXG94M5sIqsvs7lRP1aycBke/s5g9hJHryZ2acScnzczjBCAo7X1v5G3yw8M
+DP2m2RCye0KfgZ4nODerZJVzhAlOD9YejvAXZqHksw56HzElVIoYSZ3q4+RJuPXXfIoyby+Y
+2m1E+YzX5iCZXBx05gk6MKAW1vaw4/v2OOLy6FZH3XHHtOkzUreG//CsFnB9+uaYSlR65cdG
+zTsmoIK8WH1ygoXhRBm98SD7Hf/r3FELNvUCAwEAAaOCAa0wggGpMA8GA1UdEwEB/wQFMAMB
+Af8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBSuVYNv7DHKufcd+q9rMfPIHeOsuzAfBgNV
+HSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRaMFgwJwYIKwYBBQUH
+MAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYhaHR0cDovL3d3
+dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5jb20v
+c2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBADqp
+Jw3I07QWke9plNBpxUxcffc7nUrIQpJHDci91DFG7fVhHRkMZ1J+BKg5UNUxIFJ2Z9B90Mic
+c/NXcs7kPBRdn6XGO/vPc87Y6R+cWS9Nc9+fp3Enmsm94OxOwI9wn8qnr/6o3mD4noP9Jphw
+UPTXwHovjavRnhUQHLfo/i2NG0XXgTHXS2Xm0kVUozXqpYpAdumMiB/vezj1QHQJDmUdPYMc
+p+reg9901zkyT3fDW/ivJVv6pWtkh6Pw2ytZT7mvg7YhX3V50Nv860cV11mocUVcqBLv0gcT
++HBDYtbuvexNftwNQKD5193A7zN4vG7CTYkXxytSjKuXrpEatEiFPxWgb84nVj25SU5q/r1X
+hwby6mLhkbaXslkVtwEWT3Van49rKjlK4XrUKYYWtnfzq6aSak5u0Vpxd1rY79tWhD3EdCvO
+hNz/QplNa+VkIsrcp7+8ZhP1l1b2U6MaxIVteuVMD3X0vziIwr7jxYae9FZjbxlpUemqXjcC
+0QaFfN7qI0JsQMALL7iGRBg7K0CoOBzECdD3fuZil5kU/LP9cr1BK31U0Uy651bFnAMMMkqh
+AChIbn0ei72VnbpSsrrSdF0BAGYQ8vyHae5aCg+H75dVCV33K6FuxZrf09yTz+Vx/PkdRUYk
+XmZz/OTfyJXsUOUXrym6KvI2rYpccSk5MIIGbzCCBVegAwIBAgICUcswDQYJKoZIhvcNAQEF
+BQAwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJT
+ZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBD
+bGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTAeFw0xNDA4MTcxMDM5MDla
+Fw0xNjA4MTcxMzU1MzFaMIGOMRkwFwYDVQQNExBKSHI4SWdkNjhlbUUweVF6MQswCQYDVQQG
+EwJDQTEZMBcGA1UECBMQQnJpdGlzaCBDb2x1bWJpYTESMBAGA1UEBxMJVmFuY291dmVyMRUw
+EwYDVQQDEwxQZXRlciBLaWVzZXIxHjAcBgkqhkiG9w0BCQEWD3BldGVyQGtpZXNlci5jYTCC
+ASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL/NmLSwzKyhFa8wVY4On4D2atW+jO4k
+qzGjt32GITxEhweeR2AeQFhmBXTwwAHGnAEWU+lQSXoIoV9Hdi8GhTeFz3A5LPTLl/wa6dmv
+8VCfYaREvoSxjEN4nsCtdU8P6NLUE4mqBe7ZiP9lDkqWgmd0fDEYjiOnJU3cdoLh5vDHOyu+
+9mmPDVEBELFgbbdQsyiINKQN5fwElQ/5hwip/5lFCrT8SYYVS7s2JwEPtvPmpl+JyOwRJakh
+VRv4Wd8Lyv/rchK4riwfMyHhuKwbbKRxs3HzSHjtsjGZ2tS1UzDEalL7ZRsHC4EvZmgBGg5E
+0l1Bz7cC4JcPIy+8G14OjZkCAwEAAaOCAtUwggLRMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSw
+MB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUvDcOWQqoGGEK+KDc
+6opnV1iupIkwHwYDVR0jBBgwFoAUrlWDb+wxyrn3HfqvazHzyB3jrLswGgYDVR0RBBMwEYEP
+cGV0ZXJAa2llc2VyLmNhMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASow
+LgYIKwYBBQUHAgEWImh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsG
+AQUFBwICMIHqMCcWIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5U
+aGlzIGNlcnRpZmljYXRlIHdhcyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAyIFZh
+bGlkYXRpb24gcmVxdWlyZW1lbnRzIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlh
+bmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhl
+IHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9j
+cmwuc3RhcnRzc2wuY29tL2NydHUyLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYB
+BQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MyL2NsaWVudC9jYTBC
+BggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNzMi5j
+bGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAycbEJG6nvyfbv2X4npgq1ceU+y1qYmXczCBNvNRJ2yvVXc8ljjQs
+KRDzpr8JhTCg4SMZh3C3AIOBGxrYCsyaxRL3Ssfh/6Ptg3ExIfVNj6CobB1piTrusORaVDYS
+jEtZZRR4iYt9mDRo/mZRhh4QRManZYwCXPG4mrguqQ4NLYVdgTsHYgCTRymMbyrQ0+eIGdAO
+/szcirRovADyxroMclw+TTlB7nQrovIsTVteGqe0renKR0bzdWsexQEntKpBxJLy/HTSIHeQ
+HU5r7hwjk/v1aoKlimuaKbdGTJl10BYk8+pbU8JGEl1sm1cNn4MKYwhnWFRTBEPEiXP6VyNc
+PTGCA9owggPWAgEBMIGTMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRk
+LjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UE
+AxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAlHL
+MAkGBSsOAwIaBQCgggIbMBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkF
+MQ8XDTE1MDMyODE2NDk1N1owIwYJKoZIhvcNAQkEMRYEFCdwgD07UXdxM64yY6Czzn+vmOoB
+MGwGCSqGSIb3DQEJDzFfMF0wCwYJYIZIAWUDBAEqMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0D
+BzAOBggqhkiG9w0DAgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwIC
+ASgwgaQGCSsGAQQBgjcQBDGBljCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcx
+ODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50
+IENBAgJRyzCBpgYLKoZIhvcNAQkQAgsxgZaggZMwgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQK
+Ew1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBT
+aWduaW5nMTgwNgYDVQQDEy9TdGFydENvbSBDbGFzcyAyIFByaW1hcnkgSW50ZXJtZWRpYXRl
+IENsaWVudCBDQQICUcswDQYJKoZIhvcNAQEBBQAEggEALBJcvOJ6HbYYLX5v6iv1h4hS4889
+x1t1HnKsdk6H0aJsZCGyBZUcse0lMOIPuhI23/WoPti/E8tH+RV9GUtLlTbWkXqG2V5cqorx
+IlkXMOYoS5f7GwXEUQAtQpfqAw1ETwSq+2zyU3wuHMqkdTwXMPwY7NdcAAWk9wrJN30CPByI
+6WPqXqOiF0JxSVk6Z4G1TDnVu5T7l1BnjePZIaADhGQRUSs5XkTr2D9aOeDP8BaA+0hkF3H0
+CV2kYG6Jdp9zLylL9+jU/kqrqy8w1QNgJ0cLCF6zZ5gmSoht45pwi+DjCDsUNuVpdMg00llM
+pSvnP35+ZcmhjIkbSCBrPaCPZAAAAAAAAA==
+--------------ms050301020806000701070802--
