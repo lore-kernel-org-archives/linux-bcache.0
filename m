@@ -1,40 +1,57 @@
-From: David Mohr <david@mcbf.net>
+From: arnaud gaboury <arnaud.gaboury@gmail.com>
 Subject: Re: caching device setup
-Date: Mon, 06 Apr 2015 09:57:16 -0600
-Message-ID: <498317a297a1038028f1393da9b49231@de.mcbf.net>
+Date: Mon, 6 Apr 2015 19:44:30 +0200
+Message-ID: <CAK1hC9upqSZG14A6dabgdiPh4WkHLXWkoNMJeLH3Ym5oqcC1qA@mail.gmail.com>
 References: <CAK1hC9vTG=TEsUzNgxym=+0swhPoxBNaaPAiWk1kBf-D+_Hftg@mail.gmail.com>
+	<CAPBO7TY13PYVh3d0bt3tkc_+_vJVybCy-kBBT223VfPmQkjuWw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from seeker.mcbf.net ([109.239.49.157]:34208 "EHLO seeker.mcbf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525AbbDFQcw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 6 Apr 2015 12:32:52 -0400
-In-Reply-To: <CAK1hC9vTG=TEsUzNgxym=+0swhPoxBNaaPAiWk1kBf-D+_Hftg@mail.gmail.com>
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:35320 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbbDFRoc (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 6 Apr 2015 13:44:32 -0400
+Received: by lbbuc2 with SMTP id uc2so21360936lbb.2
+        for <linux-bcache@vger.kernel.org>; Mon, 06 Apr 2015 10:44:31 -0700 (PDT)
+In-Reply-To: <CAPBO7TY13PYVh3d0bt3tkc_+_vJVybCy-kBBT223VfPmQkjuWw@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: arnaud gaboury <arnaud.gaboury@gmail.com>
-Cc: linux-bcache@vger.kernel.org, linux-bcache-owner@vger.kernel.org
+To: Josep Lladonosa <jlladono@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-On 2015-04-06 09:44, arnaud gaboury wrote:
-> Here is my overall plan:
-> 
-> root filesystem & OS on a SSD
-> DB and other stuff on HD.
-> Use ssd as caching device and HD as backing.
-> 
-> Shall I partition the SSD with : one partition for OS and one empty
-> for bcache? Or install the OS on the whole SSD and use the whole SSD
-> as caching device?
-> 
-> Thank you for hint.
+On Mon, Apr 6, 2015 at 6:03 PM, Josep Lladonosa <jlladono@gmail.com> wrote:
+>
+> On 6 Apr 2015 17:46, "arnaud gaboury" <arnaud.gaboury@gmail.com> wrote:
+>>
+>> Here is my overall plan:
+>>
+>> root filesystem & OS on a SSD
+>> DB and other stuff on HD.
+>> Use ssd as caching device and HD as backing.
+>>
+>> Shall I partition the SSD with : one partition for OS and one empty
+>> for bcache? Or install the OS on the whole SSD and use the whole SSD
+>> as caching device?
+>
+> You need a specific partition as a caching device for bcache.
 
-So this is just depending on your preference, how big the SSD is, and 
-how much space you expect your OS to take up.
+Thank you.
 
-Personally I split my SSD into two partitions: one for the root FS, and 
-the other as a caching device for /home.
 
-~David
+>>
+>> Thank you for hint.
+>>
+>> --
+>>
+>> google.com/+arnaudgabourygabx
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
+-- 
+
+google.com/+arnaudgabourygabx
