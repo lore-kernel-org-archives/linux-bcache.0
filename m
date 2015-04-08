@@ -1,65 +1,52 @@
 From: Kai Krakow <hurikhan77@gmail.com>
-Subject: Re: caching device setup
-Date: Wed, 08 Apr 2015 20:56:41 +0200
-Message-ID: <98agvb-l7r.ln1@hurikhan77.spdns.de>
-References: <CAK1hC9vTG=TEsUzNgxym=+0swhPoxBNaaPAiWk1kBf-D+_Hftg@mail.gmail.com> <498317a297a1038028f1393da9b49231@de.mcbf.net>
+Subject: Re: Bcache on btrfs: the perfect setup or the perfect storm?
+Date: Wed, 08 Apr 2015 21:02:08 +0200
+Message-ID: <hiagvb-l7r.ln1@hurikhan77.spdns.de>
+References: <CAK1hC9v9ADdguR+frFPix02U2u-+fuJgaV-cJi0F55fOfeECtg@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7Bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:57706 "EHLO plane.gmane.org"
+Received: from plane.gmane.org ([80.91.229.3]:58101 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752083AbbDHS4t (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 8 Apr 2015 14:56:49 -0400
+	id S1751651AbbDHTCT (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 8 Apr 2015 15:02:19 -0400
 Received: from list by plane.gmane.org with local (Exim 4.69)
 	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1Yfv9c-0007MF-A1
-	for linux-bcache@vger.kernel.org; Wed, 08 Apr 2015 20:56:48 +0200
+	id 1YfvEv-0001J2-FK
+	for linux-bcache@vger.kernel.org; Wed, 08 Apr 2015 21:02:17 +0200
 Received: from ip18864262.dynamic.kabel-deutschland.de ([24.134.66.98])
         by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
         id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Wed, 08 Apr 2015 20:56:48 +0200
+        for <linux-bcache@vger.kernel.org>; Wed, 08 Apr 2015 21:02:17 +0200
 Received: from hurikhan77 by ip18864262.dynamic.kabel-deutschland.de with local (Gmexim 0.1 (Debian))
         id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Wed, 08 Apr 2015 20:56:48 +0200
+        for <linux-bcache@vger.kernel.org>; Wed, 08 Apr 2015 21:02:17 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-David Mohr <david@mcbf.net> schrieb:
+arnaud gaboury <arnaud.gaboury@gmail.com> schrieb:
 
-> On 2015-04-06 09:44, arnaud gaboury wrote:
->> Here is my overall plan:
->> 
->> root filesystem & OS on a SSD
->> DB and other stuff on HD.
->> Use ssd as caching device and HD as backing.
->> 
->> Shall I partition the SSD with : one partition for OS and one empty
->> for bcache? Or install the OS on the whole SSD and use the whole SSD
->> as caching device?
->> 
->> Thank you for hint.
+> I plan to setup Bcache on  Btrfs SSD/HD caching/backing device. The
+> box will be a server, but not a production one.
 > 
-> So this is just depending on your preference, how big the SSD is, and
-> how much space you expect your OS to take up.
+> I know this scheme is not recommended and can be a cause of filesystem
+> corruption. But as I like living on the edge, I want to give a try,
+> with a tight backup policy.
 > 
-> Personally I split my SSD into two partitions: one for the root FS, and
-> the other as a caching device for /home.
+> Any advice? Any settings that could be worth to avoid future drama?
 
-The other preference is valid, too: I chose to put bcache only on the SSD to 
-get maximum benefit from its capacity, rootfs and home dynamically share the 
-cache then depending on demands. So rootfs is a bit slower as natively on 
-SSD but home can gain much more because unsed parts of the rootfs are 
-available for caching.
+See my recommendations about partitioning here I just posted:
+http://permalink.gmane.org/gmane.linux.kernel.bcache.devel/2865
 
-The split-setup preference in turn gives you a fallback boot option in case 
-bcache chokes: You still have a working rootfs to do repairs or restore 
-backups. In my setup I encounter that problem with a working USB3-HD mirror 
-of my system I can boot and restore from which is synced and snapshotted 
-every night (so it also protects against accidental file deletion synced 
-undetected into the backup). Most valuable data is stored remotely (photos, 
-source code, documents, configuration, etc).
+Take care of the warnings about trimming/enabling discard. I'd at least test 
+it if you want to use it before trusting your kitty to it. ;-)
+
+BTW: I'm planning on a similar system tho the plans may well be 1 or 2 years 
+in the future and the system is planned to be based off bcache/btrfs. It 
+should become a production container-VM host. We'll see. Fallback plan is to 
+use a battery-backed RAID controller with CacheCade (SSDs as volume cache).
 
 -- 
 Replies to list only preferred.
