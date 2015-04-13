@@ -1,78 +1,111 @@
-From: Dan Merillat <dan.merillat@gmail.com>
-Subject: Re: bcache fails after reboot if discard is enabled
-Date: Sun, 12 Apr 2015 01:56:56 -0400
-Message-ID: <CAPL5yKdFhQ+7wwfTj-8i6bm1RHGKZbMPNzEEt=rffKqeRQEn=w@mail.gmail.com>
-References: <54A66945.6030403@profihost.ag>
-	<54A66C44.6070505@profihost.ag>
-	<54A819A0.9010501@rolffokkens.nl>
-	<54A843BC.608@profihost.ag>
-	<loom.20150105T010336-763@post.gmane.org>
-	<tcfnqb-u59.ln1@hurikhan77.spdns.de>
-	<CAPL5yKf4Tz1oUDNTEz20+CXh-UEeZaNBZCD9pevg47kGnWmDQQ@mail.gmail.com>
-	<alpine.DEB.2.02.1504081115550.2587@ware.dreamhost.com>
-	<55257303.8020008@profihost.ag>
-	<alpine.DEB.2.02.1504081228581.2587@ware.dreamhost.com>
-	<3ldgvb-het.ln1@hurikhan77.spdns.de>
-	<CAPL5yKdH97vJaYZxdu9ZHhrmK0OOAvEqtAk3Efz2+TvtOBUShw@mail.gmail.com>
-	<5a1mvb-6k.ln1@hurikhan77.spdns.de>
-	<3k5mvb-c14.ln1@hurikhan77.spdns.de>
-	<CAPL5yKdfdtwPOQM-edwNJPkQDoBR2Oyagb6JWRP+-26xQvxyKQ@mail.gmail.com>
-	<CAPL5yKcGvjC7ubzdKNjCFX6ZLc+qrr-Q0BQCX6W0zbueTkndPg@mail.gmail.com>
-	<bf0nvb-uvd.ln1@hurikhan77.spdns.de>
-	<CAPL5yKfpk8+6VwcUVcwJ9QxAZJQmqaa98spCyT7+LekkRvkeAw@mail.gmail.com>
-	<albovb-v7m.ln1@hurikhan77.spdns.de>
+From: "Lidong Zhong" <lzhong@suse.com>
+Subject: Re: caching device setup
+Date: Mon, 13 Apr 2015 01:58:41 -0600
+Message-ID: <552BE7B1020000E100020AE9@relay2.provo.novell.com>
+References: <CAK1hC9vTG=TEsUzNgxym=+0swhPoxBNaaPAiWk1kBf-D+_Hftg@mail.gmail.com>
+ <498317a297a1038028f1393da9b49231@de.mcbf.net>
+ <98agvb-l7r.ln1@hurikhan77.spdns.de>
+ <55265CE0020000E100020423@relay2.provo.novell.com>
+ <u8vlvb-ciu.ln1@hurikhan77.spdns.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:32916 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720AbbDLF45 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 12 Apr 2015 01:56:57 -0400
-Received: by iebmp1 with SMTP id mp1so44321207ieb.0
-        for <linux-bcache@vger.kernel.org>; Sat, 11 Apr 2015 22:56:56 -0700 (PDT)
-In-Reply-To: <albovb-v7m.ln1@hurikhan77.spdns.de>
+Received: from relay2.provo.novell.com ([137.65.250.214]:38111 "EHLO
+	relay2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbbDMH6u (ORCPT
+	<rfc822;groupwise-linux-bcache@vger.kernel.org:1:1>);
+	Mon, 13 Apr 2015 03:58:50 -0400
+In-Reply-To: <u8vlvb-ciu.ln1@hurikhan77.spdns.de>
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kai Krakow <hurikhan77@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Sat, Apr 11, 2015 at 4:09 PM, Kai Krakow <hurikhan77@gmail.com> wrote:
+>> On 4/11/2015 at 06:26 AM, in message <u8vlvb-ciu.ln1@hurikhan77.spdn=
+s.de>, Kai
+Krakow <hurikhan77@gmail.com> wrote:=20
+> Lidong Zhong <lzhong@suse.com> schrieb:=20
+> =20
+>>>>> On 4/9/2015 at 02:56 AM, in message=20
+>>>>> <98agvb-l7r.ln1@hurikhan77.spdns.de>, Kai=20
+> > Krakow <hurikhan77@gmail.com> wrote:=20
+> >> David Mohr <david@mcbf.net> schrieb:=20
+> >>  =20
+> > I am curious about how rootfs and home share the SSD dynamically. A=
+re they=20
+> > on the same partition? Sorry for stupid questions since I just touc=
+hed=20
+> > bcache recently.=20
+> =20
+> Cache and backing device association is not 1:1. You can attach multi=
+ple =20
+> backing partitions (even from distinct filesystems) to the one and sa=
+me =20
+> caching partition. So, accesses to one of the cached filesystems will=
+ go =20
+> through the same bcache, thus sharing the cache space through bcache'=
+s LRU =20
+> implementation (or if you change it from the default, even something =
+else =20
+> like LRU).=20
+> =20
+> Here's my setup (shortened):=20
+> =20
+> =E2=94=9C=E2=94=80sdb3        8:19   0  79,5G  0 part=20
+> =E2=94=82 =E2=94=9C=E2=94=80bcache0 252:0    0 925,5G  0 disk=20
+> =E2=94=82 =E2=94=9C=E2=94=80bcache1 252:1    0 925,5G  0 disk=20
+> =E2=94=82 =E2=94=94=E2=94=80bcache2 252:2    0 925,5G  0 disk=20
+> =20
+> with sdb3 being the one and only bcache partition on SSD:=20
+> =20
+> $ ls -al /sys/fs/bcache/=20
+> insgesamt 0=20
+> drwxr-xr-x  3 root root    0 11. Apr 00:25 .=20
+> drwxr-xr-x 11 root root    0  6. Apr 19:07 ..=20
+> drwxr-xr-x  7 root root    0  8. Apr 20:33 bf2b67f9-a261-4d27-=20
+> a6ef-2961f2ce2cc2=20
+> --w-------  1 root root 4096  8. Apr 20:33 register=20
+> --w-------  1 root root 4096  6. Apr 19:08 register_quiet=20
+> =20
+> $ ls -al /sys/fs/bcache/bf2b67f9-a261-4d27-a6ef-2961f2ce2cc2/=20
+> insgesamt 0=20
+> drwxr-xr-x 7 root root    0 11. Apr 00:25 .=20
+> drwxr-xr-x 3 root root    0 11. Apr 00:25 ..=20
+> -r--r--r-- 1 root root 4096  8. Apr 20:33 average_key_size=20
+> lrwxrwxrwx 1 root root    0  8. Apr 20:33 bdev0 -> =20
+> ../../../devices/pci0000:00/0000:00:1f.2/ata3/host2/target2:0:0/2:0:0=
+:0/bloc=20
+> k/sdc/sdc2/bcache=20
+> lrwxrwxrwx 1 root root    0  8. Apr 20:33 bdev1 -> =20
+> ../../../devices/pci0000:00/0000:00:1f.2/ata4/host3/target3:0:0/3:0:0=
+:0/bloc=20
+> k/sdd/sdd2/bcache=20
+> lrwxrwxrwx 1 root root    0  8. Apr 20:33 bdev2 -> =20
+> ../../../devices/pci0000:00/0000:00:1f.2/ata5/host4/target4:0:0/4:0:0=
+:0/bloc=20
+> k/sde/sde2/bcache=20
+> -r--r--r-- 1 root root 4096  8. Apr 20:33 block_size=20
+> -r--r--r-- 1 root root 4096  8. Apr 20:33 btree_cache_size=20
+> -r--r--r-- 1 root root 4096  8. Apr 20:33 bucket_size=20
+> lrwxrwxrwx 1 root root    0  8. Apr 20:33 cache0 -> =20
+> ../../../devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0=
+:0/bloc=20
+> k/sdb/sdb3/bcache=20
+> [...]=20
+> =20
+Thank you for your detailed explanation.
 
-> With this knowledge, I guess that bcache could probably detect its backing
-> device signature twice - once through the underlying raw device and once
-> through the md device. From your logs I'm not sure if they were complete
-
-It doesn't, the system is smarter than you think it is.
-
-> enough to see that case. But to be sure I'd modify the udev rules to exclude
-> the md parent devices from being run through probe-bcache. Otherwise all
-> sorts of strange things may happen (like one process accessing the backing
-> device through md, while bcache access it through the parent device -
-> probably even on different mirror stripes).
-
-This didn't occur, I copied all the lines pertaining to bcache but
-skipped the superfluous ones.
-
-> It's your setup, but personally I'd avoid MD for that reason and go with
-> lvm. MD is just not modern, neither appropriate for modern system setups. It
-> should really be just there for legacy setups and migration paths.
-
-Not related to bcache at all.  Perhaps complain about MD on the
-appropriate list?  I'm not seeing any evidence that MD had anything to
-do with this, especially since the issues with bcache are entirely
-confined to the direct SATA access to /dev/sda4.
-
-In that vein, I'm reading the on-disk format of bcache and seeing
-exactly what's still valid on my system.  It looks like I've got
-65,000 good buckets before the first bad one.  My idea is to go
-through, look for valid data in the buckets and use a COW in
-user-mode-linux to write that data back to the (copy-on-write version
-of) the backing device.  Basically, anything that passes checksum and
-is still 'dirty', force-write-it-out.  Then see what the status of my
-backing-store is.  If it works, do it outside UML to the real backing
-store.
-
-Are there any diagnostic tools outside the bcache-tools repo? Not much
-there other than show the superblock info.  Otherwise I'll just finish
-writing it myself.
+Regards,
+Lidong
+> =20
+> -- =20
+> Replies to list only preferred.=20
+> =20
+> --=20
+> To unsubscribe from this list: send the line "unsubscribe linux-bcach=
+e" in=20
+> the body of a message to majordomo@vger.kernel.org=20
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html=20
+> =20
+> =20
