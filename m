@@ -1,7 +1,7 @@
-From: Dan Merillat <dan.merillat@gmail.com>
+From: Ming Lin <mlin@kernel.org>
 Subject: Re: bcache fails after reboot if discard is enabled
-Date: Wed, 29 Apr 2015 13:48:38 -0400
-Message-ID: <CAPL5yKe63Q4mTkNqvVW1jYAsdU=ftS3eQS+RzhCpX1WxcXg3hQ@mail.gmail.com>
+Date: Wed, 29 Apr 2015 11:00:02 -0700
+Message-ID: <CAF1ivSZMg-LeoEqODzDprKkF4jY_cB6yuKUR9-z12Bs9FeqQrw@mail.gmail.com>
 References: <54A66945.6030403@profihost.ag>
 	<54A66C44.6070505@profihost.ag>
 	<54A819A0.9010501@rolffokkens.nl>
@@ -22,69 +22,42 @@ References: <54A66945.6030403@profihost.ag>
 	<CAPL5yKfpk8+6VwcUVcwJ9QxAZJQmqaa98spCyT7+LekkRvkeAw@mail.gmail.com>
 	<albovb-v7m.ln1@hurikhan77.spdns.de>
 	<CAPL5yKdFhQ+7wwfTj-8i6bm1RHGKZbMPNzEEt=rffKqeRQEn=w@mail.gmail.com>
+	<CAPL5yKe63Q4mTkNqvVW1jYAsdU=ftS3eQS+RzhCpX1WxcXg3hQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:34627 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291AbbD2Rsj (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 29 Apr 2015 13:48:39 -0400
-Received: by iedfl3 with SMTP id fl3so54382209ied.1
-        for <linux-bcache@vger.kernel.org>; Wed, 29 Apr 2015 10:48:39 -0700 (PDT)
-In-Reply-To: <CAPL5yKdFhQ+7wwfTj-8i6bm1RHGKZbMPNzEEt=rffKqeRQEn=w@mail.gmail.com>
+Received: from mail.kernel.org ([198.145.29.136]:59833 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031701AbbD2SAF (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 29 Apr 2015 14:00:05 -0400
+Received: from mail.kernel.org (localhost [127.0.0.1])
+	by mail.kernel.org (Postfix) with ESMTP id 34CC2201C8
+	for <linux-bcache@vger.kernel.org>; Wed, 29 Apr 2015 18:00:04 +0000 (UTC)
+Received: from mail-vn0-f50.google.com (mail-vn0-f50.google.com [209.85.216.50])
+	(using TLSv1.2 with cipher AES128-GCM-SHA256 (128/128 bits))
+	(No client certificate requested)
+	by mail.kernel.org (Postfix) with ESMTPSA id 4693F2015A
+	for <linux-bcache@vger.kernel.org>; Wed, 29 Apr 2015 18:00:03 +0000 (UTC)
+Received: by vnbf129 with SMTP id f129so4295118vnb.9
+        for <linux-bcache@vger.kernel.org>; Wed, 29 Apr 2015 11:00:02 -0700 (PDT)
+In-Reply-To: <CAPL5yKe63Q4mTkNqvVW1jYAsdU=ftS3eQS+RzhCpX1WxcXg3hQ@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kai Krakow <hurikhan77@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: Dan Merillat <dan.merillat@gmail.com>
+Cc: Kai Krakow <hurikhan77@gmail.com>, linux-bcache@vger.kernel.org
 
-Killed it again - enabled bcache discard, copied a few TB of data from
-the backup the the drive, rebooted, different error
-"bcache: bch_cached_dev_attach() Couldn't find uuid for <REDACTED> in set"
+On Wed, Apr 29, 2015 at 10:48 AM, Dan Merillat <dan.merillat@gmail.com> wrote:
+> Killed it again - enabled bcache discard, copied a few TB of data from
+> the backup the the drive, rebooted, different error
+> "bcache: bch_cached_dev_attach() Couldn't find uuid for <REDACTED> in set"
+>
+> The exciting failure that required reboot this time was an infinite
+> spin in bcache_writeback.
+>
+> I'll give it another shot at narrowing down exactly what causes the
+> failure before I give up on bcache entirely.
 
-The exciting failure that required reboot this time was an infinite
-spin in bcache_writeback.
+Don't know if it helps or not.Maybe you can have a try these patches:
+https://git.kernel.org/cgit/linux/kernel/git/mlin/linux.git/log/?h=bcache
 
-I'll give it another shot at narrowing down exactly what causes the
-failure before I give up on bcache entirely.
-
-On Sun, Apr 12, 2015 at 1:56 AM, Dan Merillat <dan.merillat@gmail.com> wrote:
-> On Sat, Apr 11, 2015 at 4:09 PM, Kai Krakow <hurikhan77@gmail.com> wrote:
->
->> With this knowledge, I guess that bcache could probably detect its backing
->> device signature twice - once through the underlying raw device and once
->> through the md device. From your logs I'm not sure if they were complete
->
-> It doesn't, the system is smarter than you think it is.
->
->> enough to see that case. But to be sure I'd modify the udev rules to exclude
->> the md parent devices from being run through probe-bcache. Otherwise all
->> sorts of strange things may happen (like one process accessing the backing
->> device through md, while bcache access it through the parent device -
->> probably even on different mirror stripes).
->
-> This didn't occur, I copied all the lines pertaining to bcache but
-> skipped the superfluous ones.
->
->> It's your setup, but personally I'd avoid MD for that reason and go with
->> lvm. MD is just not modern, neither appropriate for modern system setups. It
->> should really be just there for legacy setups and migration paths.
->
-> Not related to bcache at all.  Perhaps complain about MD on the
-> appropriate list?  I'm not seeing any evidence that MD had anything to
-> do with this, especially since the issues with bcache are entirely
-> confined to the direct SATA access to /dev/sda4.
->
-> In that vein, I'm reading the on-disk format of bcache and seeing
-> exactly what's still valid on my system.  It looks like I've got
-> 65,000 good buckets before the first bad one.  My idea is to go
-> through, look for valid data in the buckets and use a COW in
-> user-mode-linux to write that data back to the (copy-on-write version
-> of) the backing device.  Basically, anything that passes checksum and
-> is still 'dirty', force-write-it-out.  Then see what the status of my
-> backing-store is.  If it works, do it outside UML to the real backing
-> store.
->
-> Are there any diagnostic tools outside the bcache-tools repo? Not much
-> there other than show the superblock info.  Otherwise I'll just finish
-> writing it myself.
+Ming
