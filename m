@@ -1,353 +1,347 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
 Subject: Re: bcache and load average
-Date: Fri, 15 May 2015 10:55:32 -0700 (PDT)
-Message-ID: <alpine.DEB.2.02.1505151053020.8760@ware.dreamhost.com>
+Date: Fri, 15 May 2015 13:37:36 -0700
+Message-ID: <20150515203736.GB24997@birch.djwong.org>
 References: <20150515185032.6b129595@harpe.intellique.com>
+ <alpine.DEB.2.02.1505151053020.8760@ware.dreamhost.com>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1866506367-117624659-1431712533=:8760"
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:40104 "EHLO
-	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751919AbbEORze (ORCPT
+Received: from userp1040.oracle.com ([156.151.31.81]:32563 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934056AbbEOUhm (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 15 May 2015 13:55:34 -0400
-In-Reply-To: <20150515185032.6b129595@harpe.intellique.com>
+	Fri, 15 May 2015 16:37:42 -0400
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1505151053020.8760@ware.dreamhost.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Emmanuel Florac <eflorac@intellique.com>
-Cc: linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Emmanuel Florac <eflorac@intellique.com>, linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1866506367-117624659-1431712533=:8760
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-
-> Going through various forum messages and bug reports (for Debian: 
-> https://lists.debian.org/debian-kernel/2015/03/msg00060.html for Arch: 
-> https://bugs.archlinux.org/task/38843 for some other distro: 
-> https://groups.google.com/forum/#!msg/esos-users/NXp8tG7sVE8/QXZyPdZ2saIJ 
-> ) it looks like the bcache_writeback kernel thread, being in 
-> uninterruptible sleep, keeps the load average at 1.0 (or maybe more) 
-> always. Could you please confirm this ?
-
-Try the attached patches that I've been collecting over the past year or 
-two. I do not believe they have been merged into mainline (BUT SOMEONE 
-NEEDS TO).
-
-I am not sure that these address the load bug, but if the load is being 
-increased by a large amount of dmesg output caused by rcu traces, then the 
-patches will help.
-
--Eric
- 
+On Fri, May 15, 2015 at 10:55:32AM -0700, Eric Wheeler wrote:
+> > Going through various forum messages and bug reports (for Debian: 
+> > https://lists.debian.org/debian-kernel/2015/03/msg00060.html for Arch: 
+> > https://bugs.archlinux.org/task/38843 for some other distro: 
+> > https://groups.google.com/forum/#!msg/esos-users/NXp8tG7sVE8/QXZyPdZ2saIJ 
+> > ) it looks like the bcache_writeback kernel thread, being in 
+> > uninterruptible sleep, keeps the load average at 1.0 (or maybe more) 
+> > always. Could you please confirm this ?
 > 
->  - this behaviour should be described in the bcache documentation
->    because it feels to me (and many other) like a true gotcha. It's
->    apparently completely undocumented. A "CAVEATS" section at the
->    bottom of bcache.txt in the kernel Documentation explaining this
->    would be nice, what do you think?
+> Try the attached patches that I've been collecting over the past year or 
+> two. I do not believe they have been merged into mainline (BUT SOMEONE 
+> NEEDS TO).
 > 
->  - Is there any way around this? Some people seem to grow uneasy (maybe
->    irrationnally) having a constant load on an otherwise unused system
->    (I know that a sleeping thread actually does nothing, but many 
->    system administrators can't wrap their head around this idea). 
+> I am not sure that these address the load bug, but if the load is being 
+> increased by a large amount of dmesg output caused by rcu traces, then the 
+> patches will help.
+
+I just put all five of them into a 4.0.3 kernel, but sadly they don't
+fix the load average bug.  That said, they look like pretty reasonable
+bugfixes to me.  Maybe someone should just send them to Linus, if the
+maintainer hasn't otherwise objected?
+
+(Shrug, I haven't been following bcache enough to be familiar with the
+status of these patches.)
+
+--D
+
 > 
-> I've tried some advice I've found on the web, like switching to
-> writethrough and "echo 0 > /sys/block/bcache0/bcache/writeback_running"
-> but to absolutely no effect.
+> -Eric
+>  
+> > 
+> >  - this behaviour should be described in the bcache documentation
+> >    because it feels to me (and many other) like a true gotcha. It's
+> >    apparently completely undocumented. A "CAVEATS" section at the
+> >    bottom of bcache.txt in the kernel Documentation explaining this
+> >    would be nice, what do you think?
+> > 
+> >  - Is there any way around this? Some people seem to grow uneasy (maybe
+> >    irrationnally) having a constant load on an otherwise unused system
+> >    (I know that a sleeping thread actually does nothing, but many 
+> >    system administrators can't wrap their head around this idea). 
+> > 
+> > I've tried some advice I've found on the web, like switching to
+> > writethrough and "echo 0 > /sys/block/bcache0/bcache/writeback_running"
+> > but to absolutely no effect.
+> > 
+> > Any advice and idea is welcome :)
+> > 
+> > -- 
+> > ------------------------------------------------------------------------
+> > Emmanuel Florac     |   Direction technique
+> >                     |   Intellique
+> >                     |	<eflorac@intellique.com>
+> >                     |   +33 1 78 94 84 02
+> > ------------------------------------------------------------------------
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+
+> From: Zheng Liu <wenqing.lz@taobao.com>
 > 
-> Any advice and idea is welcome :)
+> In bcache_init() function it forgot to unregister reboot notifier if
+> bcache fails to unregister a block device.  This commit fixes this.
 > 
+> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+> Tested-by: Joshua Schmid <jschmid@suse.com>
+> ---
+>  drivers/md/bcache/super.c | 4 +++-
+>   1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 4dd2bb7..fdbb211 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -2100,8 +2100,10 @@ static int __init bcache_init(void)
+>  	closure_debug_init();
+>  
+>  	bcache_major = register_blkdev(0, "bcache");
+> -	if (bcache_major < 0)
+> +	if (bcache_major < 0) {
+> +		unregister_reboot_notifier(&reboot);
+>  		return bcache_major;
+> +	}
+>  
+>  	if (!(bcache_wq = create_workqueue("bcache")) ||
+>  	    !(bcache_kobj = kobject_create_and_add("bcache", fs_kobj)) ||
+
+> 	
+> From:	Zheng Liu <gnehzuil.liu@gmail.com>
+> To:	linux-bcache@vger.kernel.org
+> Cc:	Zheng Liu <wenqing.lz@taobao.com>, Joshua Schmid <jschmid@suse.com>, Zhu Yanhai <zhu.yanhai@gmail.com>, Kent Overstreet <kmo@daterainc.com>
+> Subject:	[PATCH v2] bcache: fix a livelock in btree lock
+> Date:	Wed, 25 Feb 2015 20:32:09 +0800 (02/25/2015 04:32:09 AM)
+> From: Zheng Liu <wenqing.lz@taobao.com>
+> 
+> This commit tries to fix a livelock in bcache.  This livelock might
+> happen when we causes a huge number of cache misses simultaneously.
+> 
+> When we get a cache miss, bcache will execute the following path.
+> 
+> ->cached_dev_make_request()
+>   ->cached_dev_read()
+>     ->cached_lookup()
+>       ->bch->btree_map_keys()
+>         ->btree_root()  <------------------------
+>           ->bch_btree_map_keys_recurse()        |
+>             ->cache_lookup_fn()                 |
+>               ->cached_dev_cache_miss()         |
+>                 ->bch_btree_insert_check_key() -|
+>                   [If btree->seq is not equal to seq + 1, we should return
+>                    EINTR and traverse btree again.]
+> 
+> In bch_btree_insert_check_key() function we first need to check upgrade
+> flag (op->lock == -1), and when this flag is true we need to release
+> read btree->lock and try to take write btree->lock.  During taking and
+> releasing this write lock, btree->seq will be monotone increased in
+> order to prevent other threads modify this in cache miss (see btree.h:74).
+> But if there are some cache misses caused by some requested, we could
+> meet a livelock because btree->seq is always changed by others.  Thus no
+> one can make progress.
+> 
+> This commit will try to take write btree->lock if it encounters a race
+> when we traverse btree.  Although it sacrifice the scalability but we
+> can ensure that only one can modify the btree.
+> 
+> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+> Tested-by: Joshua Schmid <jschmid@suse.com>
+> Cc: Joshua Schmid <jschmid@suse.com>
+> Cc: Zhu Yanhai <zhu.yanhai@gmail.com>
+> Cc: Kent Overstreet <kmo@daterainc.com>
+> ---
+> changelog:
+> v2: fix a bug that stops all concurrency writes unconditionally.
+> 
+>  drivers/md/bcache/btree.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index 218f21a..43829d9 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -2163,8 +2163,10 @@ int bch_btree_insert_check_key(struct btree *b, struct btree_op *op,
+>  		rw_lock(true, b, b->level);
+>  
+>  		if (b->key.ptr[0] != btree_ptr ||
+> -		    b->seq != seq + 1)
+> +                   b->seq != seq + 1) {
+> +                       op->lock = b->level;
+>  			goto out;
+> +               }
+>  	}
+>  
+>  	SET_KEY_PTRS(check_key, 1);
+
+> 
+> From: Joshua Schmid <jschmid@suse.com>
+> Subject: [PATCH] fix a leak in bch_cached_dev_run()
+> Newsgroups: gmane.linux.kernel.bcache.devel
+> Date: 2015-02-03 11:24:06 GMT (3 weeks, 2 days, 11 hours and 43 minutes ago)
+> 
+> From: Al Viro <viro@ZenIV.linux.org.uk>
+> 
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> Tested-by: Joshua Schmid <jschmid@suse.com>
+> ---
+>  drivers/md/bcache/super.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 8c2d657..53f1512 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -880,8 +880,11 @@ void bch_cached_dev_run(struct cached_dev *dc)
+>  	buf[SB_LABEL_SIZE] = '\0';
+>  	env[2] = kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", buf);
+> 
+> -	if (atomic_xchg(&dc->running, 1))
+> +	if (atomic_xchg(&dc->running, 1)) {
+> +		kfree(env[1]);
+> +		kfree(env[2]);
+>  		return;
+> +	}
+> 
+>  	if (!d->c &&
+>  	    BDEV_STATE(&dc->sb) != BDEV_STATE_NONE) {
 > -- 
-> ------------------------------------------------------------------------
-> Emmanuel Florac     |   Direction technique
->                     |   Intellique
->                     |	<eflorac@intellique.com>
->                     |   +33 1 78 94 84 02
-> ------------------------------------------------------------------------
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 2.1.2
 > 
---1866506367-117624659-1431712533=:8760
-Content-Type: TEXT/x-diff; name=bcache-unregister-reboot-notifier.patch
-Content-Transfer-Encoding: BASE64
-Content-Description: 
-Content-Disposition: attachment; filename=bcache-unregister-reboot-notifier.patch
 
-RnJvbTogWmhlbmcgTGl1IDx3ZW5xaW5nLmx6QHRhb2Jhby5jb20+DQoNCklu
-IGJjYWNoZV9pbml0KCkgZnVuY3Rpb24gaXQgZm9yZ290IHRvIHVucmVnaXN0
-ZXIgcmVib290IG5vdGlmaWVyIGlmDQpiY2FjaGUgZmFpbHMgdG8gdW5yZWdp
-c3RlciBhIGJsb2NrIGRldmljZS4gIFRoaXMgY29tbWl0IGZpeGVzIHRoaXMu
-DQoNClNpZ25lZC1vZmYtYnk6IFpoZW5nIExpdSA8d2VucWluZy5sekB0YW9i
-YW8uY29tPg0KVGVzdGVkLWJ5OiBKb3NodWEgU2NobWlkIDxqc2NobWlkQHN1
-c2UuY29tPg0KLS0tDQogZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYyB8IDQg
-KysrLQ0KICAxIGZpbGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAxIGRl
-bGV0aW9uKC0pDQoNCmRpZmYgLS1naXQgYS9kcml2ZXJzL21kL2JjYWNoZS9z
-dXBlci5jIGIvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYw0KaW5kZXggNGRk
-MmJiNy4uZmRiYjIxMSAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvbWQvYmNhY2hl
-L3N1cGVyLmMNCisrKyBiL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMNCkBA
-IC0yMTAwLDggKzIxMDAsMTAgQEAgc3RhdGljIGludCBfX2luaXQgYmNhY2hl
-X2luaXQodm9pZCkNCiAJY2xvc3VyZV9kZWJ1Z19pbml0KCk7DQogDQogCWJj
-YWNoZV9tYWpvciA9IHJlZ2lzdGVyX2Jsa2RldigwLCAiYmNhY2hlIik7DQot
-CWlmIChiY2FjaGVfbWFqb3IgPCAwKQ0KKwlpZiAoYmNhY2hlX21ham9yIDwg
-MCkgew0KKwkJdW5yZWdpc3Rlcl9yZWJvb3Rfbm90aWZpZXIoJnJlYm9vdCk7
-DQogCQlyZXR1cm4gYmNhY2hlX21ham9yOw0KKwl9DQogDQogCWlmICghKGJj
-YWNoZV93cSA9IGNyZWF0ZV93b3JrcXVldWUoImJjYWNoZSIpKSB8fA0KIAkg
-ICAgIShiY2FjaGVfa29iaiA9IGtvYmplY3RfY3JlYXRlX2FuZF9hZGQoImJj
-YWNoZSIsIGZzX2tvYmopKSB8fA0K
+> From f0e6320a7874af434575f37a11ec6e4992cef790 Mon Sep 17 00:00:00 2001
+> From: Kent Overstreet <kmo@daterainc.com>
+> Date: Sat, 1 Nov 2014 13:44:47 -0700
+> Subject: [PATCH 1/5] bcache: Add a cond_resched() call to gc
+> Git-commit: f0e6320a7874af434575f37a11ec6e4992cef790
+> Patch-mainline: Submitted
+> References: bnc#910440
+> 
+> Change-id: Id4f18c533b80ddb40df94ed0bb5e2a236a4bc325
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> 
+> ---
+>  drivers/md/bcache/btree.c | 1 +
+>   1 file changed, 1 insertion(+)
+> 
+> --- a/drivers/md/bcache/btree.c	2014-11-03 16:51:01.720000000 -0800
+> +++ b/drivers/md/bcache/btree.c	2014-11-03 16:51:26.456000000 -0800
+> @@ -1741,6 +1741,7 @@
+>  	do {
+>  		ret = btree_root(gc_root, c, &op, &writes, &stats);
+>  		closure_sync(&writes);
+> +		cond_resched();
+>  
+>  		if (ret && ret != -EAGAIN)
+>  			pr_warn("gc failed!");
 
---1866506367-117624659-1431712533=:8760
-Content-Type: TEXT/x-diff; name=bcache-rcu-sched-bugfix.patch
-Content-Transfer-Encoding: BASE64
-Content-Description: 
-Content-Disposition: attachment; filename=bcache-rcu-sched-bugfix.patch
-
-CQ0KRnJvbToJWmhlbmcgTGl1IDxnbmVoenVpbC5saXVAZ21haWwuY29tPg0K
-VG86CWxpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5vcmcNCkNjOglaaGVuZyBM
-aXUgPHdlbnFpbmcubHpAdGFvYmFvLmNvbT4sIEpvc2h1YSBTY2htaWQgPGpz
-Y2htaWRAc3VzZS5jb20+LCBaaHUgWWFuaGFpIDx6aHUueWFuaGFpQGdtYWls
-LmNvbT4sIEtlbnQgT3ZlcnN0cmVldCA8a21vQGRhdGVyYWluYy5jb20+DQpT
-dWJqZWN0OglbUEFUQ0ggdjJdIGJjYWNoZTogZml4IGEgbGl2ZWxvY2sgaW4g
-YnRyZWUgbG9jaw0KRGF0ZToJV2VkLCAyNSBGZWIgMjAxNSAyMDozMjowOSAr
-MDgwMCAoMDIvMjUvMjAxNSAwNDozMjowOSBBTSkNCkZyb206IFpoZW5nIExp
-dSA8d2VucWluZy5sekB0YW9iYW8uY29tPg0KDQpUaGlzIGNvbW1pdCB0cmll
-cyB0byBmaXggYSBsaXZlbG9jayBpbiBiY2FjaGUuICBUaGlzIGxpdmVsb2Nr
-IG1pZ2h0DQpoYXBwZW4gd2hlbiB3ZSBjYXVzZXMgYSBodWdlIG51bWJlciBv
-ZiBjYWNoZSBtaXNzZXMgc2ltdWx0YW5lb3VzbHkuDQoNCldoZW4gd2UgZ2V0
-IGEgY2FjaGUgbWlzcywgYmNhY2hlIHdpbGwgZXhlY3V0ZSB0aGUgZm9sbG93
-aW5nIHBhdGguDQoNCi0+Y2FjaGVkX2Rldl9tYWtlX3JlcXVlc3QoKQ0KICAt
-PmNhY2hlZF9kZXZfcmVhZCgpDQogICAgLT5jYWNoZWRfbG9va3VwKCkNCiAg
-ICAgIC0+YmNoLT5idHJlZV9tYXBfa2V5cygpDQogICAgICAgIC0+YnRyZWVf
-cm9vdCgpICA8LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tDQogICAgICAgICAg
-LT5iY2hfYnRyZWVfbWFwX2tleXNfcmVjdXJzZSgpICAgICAgICB8DQogICAg
-ICAgICAgICAtPmNhY2hlX2xvb2t1cF9mbigpICAgICAgICAgICAgICAgICB8
-DQogICAgICAgICAgICAgIC0+Y2FjaGVkX2Rldl9jYWNoZV9taXNzKCkgICAg
-ICAgICB8DQogICAgICAgICAgICAgICAgLT5iY2hfYnRyZWVfaW5zZXJ0X2No
-ZWNrX2tleSgpIC18DQogICAgICAgICAgICAgICAgICBbSWYgYnRyZWUtPnNl
-cSBpcyBub3QgZXF1YWwgdG8gc2VxICsgMSwgd2Ugc2hvdWxkIHJldHVybg0K
-ICAgICAgICAgICAgICAgICAgIEVJTlRSIGFuZCB0cmF2ZXJzZSBidHJlZSBh
-Z2Fpbi5dDQoNCkluIGJjaF9idHJlZV9pbnNlcnRfY2hlY2tfa2V5KCkgZnVu
-Y3Rpb24gd2UgZmlyc3QgbmVlZCB0byBjaGVjayB1cGdyYWRlDQpmbGFnIChv
-cC0+bG9jayA9PSAtMSksIGFuZCB3aGVuIHRoaXMgZmxhZyBpcyB0cnVlIHdl
-IG5lZWQgdG8gcmVsZWFzZQ0KcmVhZCBidHJlZS0+bG9jayBhbmQgdHJ5IHRv
-IHRha2Ugd3JpdGUgYnRyZWUtPmxvY2suICBEdXJpbmcgdGFraW5nIGFuZA0K
-cmVsZWFzaW5nIHRoaXMgd3JpdGUgbG9jaywgYnRyZWUtPnNlcSB3aWxsIGJl
-IG1vbm90b25lIGluY3JlYXNlZCBpbg0Kb3JkZXIgdG8gcHJldmVudCBvdGhl
-ciB0aHJlYWRzIG1vZGlmeSB0aGlzIGluIGNhY2hlIG1pc3MgKHNlZSBidHJl
-ZS5oOjc0KS4NCkJ1dCBpZiB0aGVyZSBhcmUgc29tZSBjYWNoZSBtaXNzZXMg
-Y2F1c2VkIGJ5IHNvbWUgcmVxdWVzdGVkLCB3ZSBjb3VsZA0KbWVldCBhIGxp
-dmVsb2NrIGJlY2F1c2UgYnRyZWUtPnNlcSBpcyBhbHdheXMgY2hhbmdlZCBi
-eSBvdGhlcnMuICBUaHVzIG5vDQpvbmUgY2FuIG1ha2UgcHJvZ3Jlc3MuDQoN
-ClRoaXMgY29tbWl0IHdpbGwgdHJ5IHRvIHRha2Ugd3JpdGUgYnRyZWUtPmxv
-Y2sgaWYgaXQgZW5jb3VudGVycyBhIHJhY2UNCndoZW4gd2UgdHJhdmVyc2Ug
-YnRyZWUuICBBbHRob3VnaCBpdCBzYWNyaWZpY2UgdGhlIHNjYWxhYmlsaXR5
-IGJ1dCB3ZQ0KY2FuIGVuc3VyZSB0aGF0IG9ubHkgb25lIGNhbiBtb2RpZnkg
-dGhlIGJ0cmVlLg0KDQpTaWduZWQtb2ZmLWJ5OiBaaGVuZyBMaXUgPHdlbnFp
-bmcubHpAdGFvYmFvLmNvbT4NClRlc3RlZC1ieTogSm9zaHVhIFNjaG1pZCA8
-anNjaG1pZEBzdXNlLmNvbT4NCkNjOiBKb3NodWEgU2NobWlkIDxqc2NobWlk
-QHN1c2UuY29tPg0KQ2M6IFpodSBZYW5oYWkgPHpodS55YW5oYWlAZ21haWwu
-Y29tPg0KQ2M6IEtlbnQgT3ZlcnN0cmVldCA8a21vQGRhdGVyYWluYy5jb20+
-DQotLS0NCmNoYW5nZWxvZzoNCnYyOiBmaXggYSBidWcgdGhhdCBzdG9wcyBh
-bGwgY29uY3VycmVuY3kgd3JpdGVzIHVuY29uZGl0aW9uYWxseS4NCg0KIGRy
-aXZlcnMvbWQvYmNhY2hlL2J0cmVlLmMgfCAgICA0ICsrKy0NCiAxIGZpbGUg
-Y2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9uKC0pDQoNCmRp
-ZmYgLS1naXQgYS9kcml2ZXJzL21kL2JjYWNoZS9idHJlZS5jIGIvZHJpdmVy
-cy9tZC9iY2FjaGUvYnRyZWUuYw0KaW5kZXggMjE4ZjIxYS4uNDM4MjlkOSAx
-MDA2NDQNCi0tLSBhL2RyaXZlcnMvbWQvYmNhY2hlL2J0cmVlLmMNCisrKyBi
-L2RyaXZlcnMvbWQvYmNhY2hlL2J0cmVlLmMNCkBAIC0yMTYzLDggKzIxNjMs
-MTAgQEAgaW50IGJjaF9idHJlZV9pbnNlcnRfY2hlY2tfa2V5KHN0cnVjdCBi
-dHJlZSAqYiwgc3RydWN0IGJ0cmVlX29wICpvcCwNCiAJCXJ3X2xvY2sodHJ1
-ZSwgYiwgYi0+bGV2ZWwpOw0KIA0KIAkJaWYgKGItPmtleS5wdHJbMF0gIT0g
-YnRyZWVfcHRyIHx8DQotCQkgICAgYi0+c2VxICE9IHNlcSArIDEpDQorICAg
-ICAgICAgICAgICAgICAgIGItPnNlcSAhPSBzZXEgKyAxKSB7DQorICAgICAg
-ICAgICAgICAgICAgICAgICBvcC0+bG9jayA9IGItPmxldmVsOw0KIAkJCWdv
-dG8gb3V0Ow0KKyAgICAgICAgICAgICAgIH0NCiAJfQ0KIA0KIAlTRVRfS0VZ
-X1BUUlMoY2hlY2tfa2V5LCAxKTsNCg==
-
---1866506367-117624659-1431712533=:8760
-Content-Type: TEXT/x-diff; name=bcache-fix-memleak-bch_cached_dev_run.patch
-Content-Transfer-Encoding: BASE64
-Content-Description: 
-Content-Disposition: attachment; filename=bcache-fix-memleak-bch_cached_dev_run.patch
-
-DQpGcm9tOiBKb3NodWEgU2NobWlkIDxqc2NobWlkQHN1c2UuY29tPg0KU3Vi
-amVjdDogW1BBVENIXSBmaXggYSBsZWFrIGluIGJjaF9jYWNoZWRfZGV2X3J1
-bigpDQpOZXdzZ3JvdXBzOiBnbWFuZS5saW51eC5rZXJuZWwuYmNhY2hlLmRl
-dmVsDQpEYXRlOiAyMDE1LTAyLTAzIDExOjI0OjA2IEdNVCAoMyB3ZWVrcywg
-MiBkYXlzLCAxMSBob3VycyBhbmQgNDMgbWludXRlcyBhZ28pDQoNCkZyb206
-IEFsIFZpcm8gPHZpcm9AWmVuSVYubGludXgub3JnLnVrPg0KDQpTaWduZWQt
-b2ZmLWJ5OiBBbCBWaXJvIDx2aXJvQHplbml2LmxpbnV4Lm9yZy51az4NClRl
-c3RlZC1ieTogSm9zaHVhIFNjaG1pZCA8anNjaG1pZEBzdXNlLmNvbT4NCi0t
-LQ0KIGRyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMgfCA1ICsrKystDQogMSBm
-aWxlIGNoYW5nZWQsIDQgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQ0K
-DQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYyBiL2Ry
-aXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMNCmluZGV4IDhjMmQ2NTcuLjUzZjE1
-MTIgMTAwNjQ0DQotLS0gYS9kcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jDQor
-KysgYi9kcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jDQpAQCAtODgwLDggKzg4
-MCwxMSBAQCB2b2lkIGJjaF9jYWNoZWRfZGV2X3J1bihzdHJ1Y3QgY2FjaGVk
-X2RldiAqZGMpDQogCWJ1ZltTQl9MQUJFTF9TSVpFXSA9ICdcMCc7DQogCWVu
-dlsyXSA9IGthc3ByaW50ZihHRlBfS0VSTkVMLCAiQ0FDSEVEX0xBQkVMPSVz
-IiwgYnVmKTsNCg0KLQlpZiAoYXRvbWljX3hjaGcoJmRjLT5ydW5uaW5nLCAx
-KSkNCisJaWYgKGF0b21pY194Y2hnKCZkYy0+cnVubmluZywgMSkpIHsNCisJ
-CWtmcmVlKGVudlsxXSk7DQorCQlrZnJlZShlbnZbMl0pOw0KIAkJcmV0dXJu
-Ow0KKwl9DQoNCiAJaWYgKCFkLT5jICYmDQogCSAgICBCREVWX1NUQVRFKCZk
-Yy0+c2IpICE9IEJERVZfU1RBVEVfTk9ORSkgew0KLS0gDQoyLjEuMg0KDQo=
-
---1866506367-117624659-1431712533=:8760
-Content-Type: TEXT/x-diff; name=bcache-cond_resched.patch
-Content-Transfer-Encoding: BASE64
-Content-Description: 
-Content-Disposition: attachment; filename=bcache-cond_resched.patch
-
-RnJvbSBmMGU2MzIwYTc4NzRhZjQzNDU3NWYzN2ExMWVjNmU0OTkyY2VmNzkw
-IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogS2VudCBPdmVyc3Ry
-ZWV0IDxrbW9AZGF0ZXJhaW5jLmNvbT4NCkRhdGU6IFNhdCwgMSBOb3YgMjAx
-NCAxMzo0NDo0NyAtMDcwMA0KU3ViamVjdDogW1BBVENIIDEvNV0gYmNhY2hl
-OiBBZGQgYSBjb25kX3Jlc2NoZWQoKSBjYWxsIHRvIGdjDQpHaXQtY29tbWl0
-OiBmMGU2MzIwYTc4NzRhZjQzNDU3NWYzN2ExMWVjNmU0OTkyY2VmNzkwDQpQ
-YXRjaC1tYWlubGluZTogU3VibWl0dGVkDQpSZWZlcmVuY2VzOiBibmMjOTEw
-NDQwDQoNCkNoYW5nZS1pZDogSWQ0ZjE4YzUzM2I4MGRkYjQwZGY5NGVkMGJi
-NWUyYTIzNmE0YmMzMjUNClNpZ25lZC1vZmYtYnk6IFRha2FzaGkgSXdhaSA8
-dGl3YWlAc3VzZS5kZT4NCg0KLS0tDQogZHJpdmVycy9tZC9iY2FjaGUvYnRy
-ZWUuYyB8IDEgKw0KICAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKykN
-Cg0KLS0tIGEvZHJpdmVycy9tZC9iY2FjaGUvYnRyZWUuYwkyMDE0LTExLTAz
-IDE2OjUxOjAxLjcyMDAwMDAwMCAtMDgwMA0KKysrIGIvZHJpdmVycy9tZC9i
-Y2FjaGUvYnRyZWUuYwkyMDE0LTExLTAzIDE2OjUxOjI2LjQ1NjAwMDAwMCAt
-MDgwMA0KQEAgLTE3NDEsNiArMTc0MSw3IEBADQogCWRvIHsNCiAJCXJldCA9
-IGJ0cmVlX3Jvb3QoZ2Nfcm9vdCwgYywgJm9wLCAmd3JpdGVzLCAmc3RhdHMp
-Ow0KIAkJY2xvc3VyZV9zeW5jKCZ3cml0ZXMpOw0KKwkJY29uZF9yZXNjaGVk
-KCk7DQogDQogCQlpZiAocmV0ICYmIHJldCAhPSAtRUFHQUlOKQ0KIAkJCXBy
-X3dhcm4oImdjIGZhaWxlZCEiKTsNCg==
-
---1866506367-117624659-1431712533=:8760
-Content-Type: TEXT/x-diff; name=bcache-attach-detach-cleanup.patch
-Content-Transfer-Encoding: BASE64
-Content-Description: 
-Content-Disposition: attachment; filename=bcache-attach-detach-cleanup.patch
-
-RnJvbTogSm9zaHVhIFNjaG1pZCA8anNjaG1pZEBzdXNlLmNvbT4NClN1Ympl
-Y3Q6IFtQQVRDSF0gYmNhY2hlOiBbQlVHXSBjbGVhciBCQ0FDSEVfREVWX1VO
-TElOS19ET05FIGZsYWcgd2hlbiBhdHRhY2hpbmcgYSBiYWNraW5nIGRldmlj
-ZQ0KTmV3c2dyb3VwczogZ21hbmUubGludXgua2VybmVsLmJjYWNoZS5kZXZl
-bA0KRGF0ZTogMjAxNS0wMi0wMyAxMToxODowMSBHTVQgKDMgd2Vla3MsIDIg
-ZGF5cywgMTEgaG91cnMgYW5kIDQ1IG1pbnV0ZXMgYWdvKQ0KDQpGcm9tOiBa
-aGVuZyBMaXUgPHdlbnFpbmcubHpAdGFvYmFvLmNvbT4NCg0KVGhpcyBidWcg
-Y2FuIGJlIHJlcHJvZHVjZWQgYnkgdGhlIGZvbGxvd2luZyBzY3JpcHQ6DQoN
-CiAgIyEvYmluL2Jhc2gNCg0KICBiY2FjaGVfc3lzZnM9Ii9zeXMvZnMvYmNh
-Y2hlIg0KDQogIGZ1bmN0aW9uIGNsZWFyX2NhY2hlKCkNCiAgew0KICAJaWYg
-WyAhIC1lICRiY2FjaGVfc3lzZnMgXTsgdGhlbg0KICAJCWVjaG8gIm5vIGJj
-YWNoZSBzeXNmcyINCiAgCQlleGl0DQogIAlmaQ0KDQogIAljc2V0X3V1aWQ9
-JChscyAtbCAkYmNhY2hlX3N5c2ZzfGhlYWQgLW4gMnx0YWlsIC1uIDF8YXdr
-ICd7cHJpbnQgJDl9JykNCiAgCXN1ZG8gc2ggLWMgImVjaG8gJGNzZXRfdXVp
-ZCA+IC9zeXMvYmxvY2svc2RiL3NkYjEvYmNhY2hlL2RldGFjaCINCiAgCXNs
-ZWVwIDUNCiAgCXN1ZG8gc2ggLWMgImVjaG8gJGNzZXRfdXVpZCA+IC9zeXMv
-YmxvY2svc2RiL3NkYjEvYmNhY2hlL2F0dGFjaCINCiAgfQ0KDQogIGZvciAo
-KGk9MDtpPDEwO2krKykpOyBkbw0KICAJY2xlYXJfY2FjaGUNCiAgZG9uZQ0K
-DQpUaGUgd2FybmluZyBtZXNzYWdlcyBsb29rIGxpa2UgYmVsb3c6DQpbICAy
-NzUuOTQ4NjExXSAtLS0tLS0tLS0tLS1bIGN1dCBoZXJlIF0tLS0tLS0tLS0t
-LS0NClsgIDI3NS45NjM4NDBdIFdBUk5JTkc6IGF0IGZzL3N5c2ZzL2Rpci5j
-OjUxMiBzeXNmc19hZGRfb25lKzB4YjgvMHhkMCgpIChUYWludGVkOiBQICAg
-ICAgICBXIA0KLS0tLS0tLS0tLS0tLS0tICAgKQ0KWyAgMjc1Ljk3OTI1M10g
-SGFyZHdhcmUgbmFtZTogVGVjYWwgUkgyMjg1DQpbICAyNzUuOTk0MTA2XSBz
-eXNmczogY2Fubm90IGNyZWF0ZSBkdXBsaWNhdGUgZmlsZW5hbWUgJy9kZXZp
-Y2VzL3BjaTAwMDA6MDAvMDAwMDowMDowOS4wLzAwMDA6MDg6MDAuMC9ob3N0
-NC90YXJnZXQ0OjI6MS80OjI6MTowL2Jsb2NrL3NkYi9zZGIxL2JjYWNoZS9j
-YWNoZScNClsgIDI3Ni4wMjQxMDVdIE1vZHVsZXMgbGlua2VkIGluOiBiY2Fj
-aGUgdGNwX2RpYWcgaW5ldF9kaWFnIGlwbWlfZGV2aW50ZiBpcG1pX3NpIGlw
-bWlfbXNnaGFuZGxlcg0KYm9uZGluZyA4MDIxcSBnYXJwIHN0cCBsbGMgaXB2
-NiBleHQzIGpiZCBsb29wIHNnIGlvbWVtb3J5X3ZzbChQKSBibngyIG1pY3Jv
-Y29kZSBzZXJpb19yYXcgaTJjX2k4MDENCmkyY19jb3JlIGlUQ09fd2R0IGlU
-Q09fdmVuZG9yX3N1cHBvcnQgaTdjb3JlX2VkYWMgZWRhY19jb3JlIHNocGNo
-cCBleHQ0IGpiZDIgbWJjYWNoZSBtZWdhcmFpZF9zYXMNCnBhdGFfYWNwaSBh
-dGFfZ2VuZXJpYyBhdGFfcGlpeCBkbV9tb2QgW2xhc3QgdW5sb2FkZWQ6IHNj
-c2lfd2FpdF9zY2FuXQ0KWyAgMjc2LjA3MjY0M10gUGlkOiAyNzY1LCBjb21t
-OiBzaCBUYWludGVkOiBQICAgICAgICBXICAtLS0tLS0tLS0tLS0tLS0gICAg
-Mi42LjMyICMxDQpbICAyNzYuMDg5MzE1XSBDYWxsIFRyYWNlOg0KWyAgMjc2
-LjEwNTgwMV0gIFs8ZmZmZmZmZmY4MTA3MGZlNz5dID8gd2Fybl9zbG93cGF0
-aF9jb21tb24rMHg4Ny8weGMwDQpbICAyNzYuMTIyNjUwXSAgWzxmZmZmZmZm
-ZjgxMDcxMGQ2Pl0gPyB3YXJuX3Nsb3dwYXRoX2ZtdCsweDQ2LzB4NTANClsg
-IDI3Ni4xMzkzNjFdICBbPGZmZmZmZmZmODEyMDVjMDg+XSA/IHN5c2ZzX2Fk
-ZF9vbmUrMHhiOC8weGQwDQpbICAyNzYuMTU2MDEyXSAgWzxmZmZmZmZmZjgx
-MjA2MDliPl0gPyBzeXNmc19kb19jcmVhdGVfbGluaysweDEyYi8weDE3MA0K
-WyAgMjc2LjE3MjY4Ml0gIFs8ZmZmZmZmZmY4MTIwNjExMz5dID8gc3lzZnNf
-Y3JlYXRlX2xpbmsrMHgxMy8weDIwDQpbICAyNzYuMTg5MjgyXSAgWzxmZmZm
-ZmZmZmEwM2JkYTIxPl0gPyBiY2FjaGVfZGV2aWNlX2xpbmsrMHhjMS8weDEx
-MCBbYmNhY2hlXQ0KWyAgMjc2LjIwNTk5M10gIFs8ZmZmZmZmZmZhMDNiZmEw
-OD5dID8gYmNoX2NhY2hlZF9kZXZfYXR0YWNoKzB4NDc4LzB4NGYwIFtiY2Fj
-aGVdDQpbICAyNzYuMjIyNzk0XSAgWzxmZmZmZmZmZmEwM2M0YTE3Pl0gPyBi
-Y2hfY2FjaGVkX2Rldl9zdG9yZSsweDYyNy8weDc4MCBbYmNhY2hlXQ0KWyAg
-Mjc2LjIzOTY4MF0gIFs8ZmZmZmZmZmY4MTE2NzgzYT5dID8gYWxsb2NfcGFn
-ZXNfY3VycmVudCsweGFhLzB4MTEwDQpbICAyNzYuMjU2NTk0XSAgWzxmZmZm
-ZmZmZjgxMjAzYjE1Pl0gPyBzeXNmc193cml0ZV9maWxlKzB4ZTUvMHgxNzAN
-ClsgIDI3Ni4yNzMzNjRdICBbPGZmZmZmZmZmODExODg3Yjg+XSA/IHZmc193
-cml0ZSsweGI4LzB4MWEwDQpbICAyNzYuMjkwMTMzXSAgWzxmZmZmZmZmZjgx
-MTg5MGIxPl0gPyBzeXNfd3JpdGUrMHg1MS8weDkwDQpbICAyNzYuMzA2MzY4
-XSAgWzxmZmZmZmZmZjgxMDBjMDcyPl0gPyBzeXN0ZW1fY2FsbF9mYXN0cGF0
-aCsweDE2LzB4MWINClsgIDI3Ni4zMjIzMDFdIC0tLVsgZW5kIHRyYWNlIDlm
-NWQ0ZmNkZDBjM2VkZmIgXS0tLQ0KWyAgMjc2LjMzODI0MV0gLS0tLS0tLS0t
-LS0tWyBjdXQgaGVyZSBdLS0tLS0tLS0tLS0tDQpbICAyNzYuMzU0MTA5XSBX
-QVJOSU5HOiBhdCAvaG9tZS93ZW5xaW5nLmx6L2JjYWNoZS9iY2FjaGUvc3Vw
-ZXIuYzo3MjANCmJjYWNoZV9kZXZpY2VfbGluaysweGRmLzB4MTEwIFtiY2Fj
-aGVdKCkgKFRhaW50ZWQ6IFAgICAgICAgIFcgIC0tLS0tLS0tLS0tLS0tLSAg
-ICkNClsgIDI3Ni4zODYwMTddIEhhcmR3YXJlIG5hbWU6IFRlY2FsIFJIMjI4
-NQ0KWyAgMjc2LjQwMTQzMF0gQ291bGRuJ3QgY3JlYXRlIGRldmljZSA8LT4g
-Y2FjaGUgc2V0IHN5bWxpbmtzDQpbICAyNzYuNDAxNzU5XSBNb2R1bGVzIGxp
-bmtlZCBpbjogYmNhY2hlIHRjcF9kaWFnIGluZXRfZGlhZyBpcG1pX2Rldmlu
-dGYgaXBtaV9zaSBpcG1pX21zZ2hhbmRsZXINCmJvbmRpbmcgODAyMXEgZ2Fy
-cCBzdHAgbGxjIGlwdjYgZXh0MyBqYmQgbG9vcCBzZyBpb21lbW9yeV92c2wo
-UCkgYm54MiBtaWNyb2NvZGUgc2VyaW9fcmF3IGkyY19pODAxDQppMmNfY29y
-ZSBpVENPX3dkdCBpVENPX3ZlbmRvcl9zdXBwb3J0IGk3Y29yZV9lZGFjIGVk
-YWNfY29yZSBzaHBjaHAgZXh0NCBqYmQyIG1iY2FjaGUgbWVnYXJhaWRfc2Fz
-DQpwYXRhX2FjcGkgYXRhX2dlbmVyaWMgYXRhX3BpaXggZG1fbW9kIFtsYXN0
-IHVubG9hZGVkOiBzY3NpX3dhaXRfc2Nhbl0NClsgIDI3Ni40NjU0NzddIFBp
-ZDogMjc2NSwgY29tbTogc2ggVGFpbnRlZDogUCAgICAgICAgVyAgLS0tLS0t
-LS0tLS0tLS0tICAgIDIuNi4zMiAjMQ0KWyAgMjc2LjQ4MjE2OV0gQ2FsbCBU
-cmFjZToNClsgIDI3Ni40OTg2MTBdICBbPGZmZmZmZmZmODEwNzBmZTc+XSA/
-IHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4ODcvMHhjMA0KWyAgMjc2LjUxNTQw
-NV0gIFs8ZmZmZmZmZmY4MTA3MTBkNj5dID8gd2Fybl9zbG93cGF0aF9mbXQr
-MHg0Ni8weDUwDQpbICAyNzYuNTMyMDU5XSAgWzxmZmZmZmZmZmEwM2JkYTNm
-Pl0gPyBiY2FjaGVfZGV2aWNlX2xpbmsrMHhkZi8weDExMCBbYmNhY2hlXQ0K
-WyAgMjc2LjU0ODgwOF0gIFs8ZmZmZmZmZmZhMDNiZmEwOD5dID8gYmNoX2Nh
-Y2hlZF9kZXZfYXR0YWNoKzB4NDc4LzB4NGYwIFtiY2FjaGVdDQpbICAyNzYu
-NTY1NTY5XSAgWzxmZmZmZmZmZmEwM2M0YTE3Pl0gPyBiY2hfY2FjaGVkX2Rl
-dl9zdG9yZSsweDYyNy8weDc4MCBbYmNhY2hlXQ0KWyAgMjc2LjU4MjQxOF0g
-IFs8ZmZmZmZmZmY4MTE2NzgzYT5dID8gYWxsb2NfcGFnZXNfY3VycmVudCsw
-eGFhLzB4MTEwDQpbICAyNzYuNTk5MzQxXSAgWzxmZmZmZmZmZjgxMjAzYjE1
-Pl0gPyBzeXNmc193cml0ZV9maWxlKzB4ZTUvMHgxNzANClsgIDI3Ni42MTYx
-NDJdICBbPGZmZmZmZmZmODExODg3Yjg+XSA/IHZmc193cml0ZSsweGI4LzB4
-MWEwDQpbICAyNzYuNjMyNjA3XSAgWzxmZmZmZmZmZjgxMTg5MGIxPl0gPyBz
-eXNfd3JpdGUrMHg1MS8weDkwDQpbICAyNzYuNjQ4NjcxXSAgWzxmZmZmZmZm
-ZjgxMDBjMDcyPl0gPyBzeXN0ZW1fY2FsbF9mYXN0cGF0aCsweDE2LzB4MWIN
-ClsgIDI3Ni42NjQ3NTZdIC0tLVsgZW5kIHRyYWNlIDlmNWQ0ZmNkZDBjM2Vk
-ZmMgXS0tLQ0KDQpXZSBmb3JnZXQgdG8gY2xlYXIgQkNBQ0hFX0RFVl9VTkxJ
-TktfRE9ORSBmbGFnIGluIGJjYWNoZV9kZXZpY2VfYXR0YWNoKCkNCmZ1bmN0
-aW9uIHdoZW4gd2UgYXR0YWNoIGEgYmFja2luZyBkZXZpY2UgZmlyc3QgdGlt
-ZS4gIEFmdGVyIGRldGFjaGluZyB0aGlzDQpiYWNraW5nIGRldmljZSwgdGhp
-cyBmbGFnIHdpbGwgYmUgdHJ1ZSBhbmQgc3lzZnNfcmVtb3ZlX2xpbmsoKSBp
-c24ndCBjYWxsZWQgaW4NCmJjYWNoZV9kZXZpY2VfdW5saW5rKCkuICBUaGVu
-IHdoZW4gd2UgYXR0YWNoIHRoaXMgYmFja2luZyBkZXZpY2UgYWdhaW4sDQpz
-eXNmc19jcmVhdGVfbGluaygpIHdpbGwgcmV0dXJuIEVFWElTVCBlcnJvciBp
-biBiY2FjaGVfZGV2aWNlX2xpbmsoKS4NCg0KU28gdGhlIGZpeCBpcyB0cml2
-YWwgYW5kIHdlIGNsZWFyIHRoaXMgZmxhZyBpbiBiY2FjaGVfZGV2aWNlX2xp
-bmsoKS4NCg0KU2lnbmVkLW9mZi1ieTogWmhlbmcgTGl1IDx3ZW5xaW5nLmx6
-QHRhb2Jhby5jb20+DQpUZXN0ZWQtYnk6IEpvc2h1YSBTY2htaWQgPGpzY2ht
-aWRAc3VzZS5jb20+DQotLS0NCiBkcml2ZXJzL21kL2JjYWNoZS9zdXBlci5j
-IHwgMiArKw0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKykNCg0K
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMgYi9kcml2
-ZXJzL21kL2JjYWNoZS9zdXBlci5jDQppbmRleCA0ZGQyYmI3Li5mNjI0YWU4
-IDEwMDY0NA0KLS0tIGEvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYw0KKysr
-IGIvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYw0KQEAgLTcwOCw2ICs3MDgs
-OCBAQCBzdGF0aWMgdm9pZCBiY2FjaGVfZGV2aWNlX2xpbmsoc3RydWN0IGJj
-YWNoZV9kZXZpY2UgKmQsIHN0cnVjdCBjYWNoZV9zZXQgKmMsDQogCVdBUk4o
-c3lzZnNfY3JlYXRlX2xpbmsoJmQtPmtvYmosICZjLT5rb2JqLCAiY2FjaGUi
-KSB8fA0KIAkgICAgIHN5c2ZzX2NyZWF0ZV9saW5rKCZjLT5rb2JqLCAmZC0+
-a29iaiwgZC0+bmFtZSksDQogCSAgICAgIkNvdWxkbid0IGNyZWF0ZSBkZXZp
-Y2UgPC0+IGNhY2hlIHNldCBzeW1saW5rcyIpOw0KKw0KKwljbGVhcl9iaXQo
-QkNBQ0hFX0RFVl9VTkxJTktfRE9ORSwgJmQtPmZsYWdzKTsNCiB9DQoNCiBz
-dGF0aWMgdm9pZCBiY2FjaGVfZGV2aWNlX2RldGFjaChzdHJ1Y3QgYmNhY2hl
-X2RldmljZSAqZCkNCi0tIA0KMi4xLjINCg0K
-
---1866506367-117624659-1431712533=:8760--
+> From: Joshua Schmid <jschmid@suse.com>
+> Subject: [PATCH] bcache: [BUG] clear BCACHE_DEV_UNLINK_DONE flag when attaching a backing device
+> Newsgroups: gmane.linux.kernel.bcache.devel
+> Date: 2015-02-03 11:18:01 GMT (3 weeks, 2 days, 11 hours and 45 minutes ago)
+> 
+> From: Zheng Liu <wenqing.lz@taobao.com>
+> 
+> This bug can be reproduced by the following script:
+> 
+>   #!/bin/bash
+> 
+>   bcache_sysfs="/sys/fs/bcache"
+> 
+>   function clear_cache()
+>   {
+>   	if [ ! -e $bcache_sysfs ]; then
+>   		echo "no bcache sysfs"
+>   		exit
+>   	fi
+> 
+>   	cset_uuid=$(ls -l $bcache_sysfs|head -n 2|tail -n 1|awk '{print $9}')
+>   	sudo sh -c "echo $cset_uuid > /sys/block/sdb/sdb1/bcache/detach"
+>   	sleep 5
+>   	sudo sh -c "echo $cset_uuid > /sys/block/sdb/sdb1/bcache/attach"
+>   }
+> 
+>   for ((i=0;i<10;i++)); do
+>   	clear_cache
+>   done
+> 
+> The warning messages look like below:
+> [  275.948611] ------------[ cut here ]------------
+> [  275.963840] WARNING: at fs/sysfs/dir.c:512 sysfs_add_one+0xb8/0xd0() (Tainted: P        W 
+> ---------------   )
+> [  275.979253] Hardware name: Tecal RH2285
+> [  275.994106] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:09.0/0000:08:00.0/host4/target4:2:1/4:2:1:0/block/sdb/sdb1/bcache/cache'
+> [  276.024105] Modules linked in: bcache tcp_diag inet_diag ipmi_devintf ipmi_si ipmi_msghandler
+> bonding 8021q garp stp llc ipv6 ext3 jbd loop sg iomemory_vsl(P) bnx2 microcode serio_raw i2c_i801
+> i2c_core iTCO_wdt iTCO_vendor_support i7core_edac edac_core shpchp ext4 jbd2 mbcache megaraid_sas
+> pata_acpi ata_generic ata_piix dm_mod [last unloaded: scsi_wait_scan]
+> [  276.072643] Pid: 2765, comm: sh Tainted: P        W  ---------------    2.6.32 #1
+> [  276.089315] Call Trace:
+> [  276.105801]  [<ffffffff81070fe7>] ? warn_slowpath_common+0x87/0xc0
+> [  276.122650]  [<ffffffff810710d6>] ? warn_slowpath_fmt+0x46/0x50
+> [  276.139361]  [<ffffffff81205c08>] ? sysfs_add_one+0xb8/0xd0
+> [  276.156012]  [<ffffffff8120609b>] ? sysfs_do_create_link+0x12b/0x170
+> [  276.172682]  [<ffffffff81206113>] ? sysfs_create_link+0x13/0x20
+> [  276.189282]  [<ffffffffa03bda21>] ? bcache_device_link+0xc1/0x110 [bcache]
+> [  276.205993]  [<ffffffffa03bfa08>] ? bch_cached_dev_attach+0x478/0x4f0 [bcache]
+> [  276.222794]  [<ffffffffa03c4a17>] ? bch_cached_dev_store+0x627/0x780 [bcache]
+> [  276.239680]  [<ffffffff8116783a>] ? alloc_pages_current+0xaa/0x110
+> [  276.256594]  [<ffffffff81203b15>] ? sysfs_write_file+0xe5/0x170
+> [  276.273364]  [<ffffffff811887b8>] ? vfs_write+0xb8/0x1a0
+> [  276.290133]  [<ffffffff811890b1>] ? sys_write+0x51/0x90
+> [  276.306368]  [<ffffffff8100c072>] ? system_call_fastpath+0x16/0x1b
+> [  276.322301] ---[ end trace 9f5d4fcdd0c3edfb ]---
+> [  276.338241] ------------[ cut here ]------------
+> [  276.354109] WARNING: at /home/wenqing.lz/bcache/bcache/super.c:720
+> bcache_device_link+0xdf/0x110 [bcache]() (Tainted: P        W  ---------------   )
+> [  276.386017] Hardware name: Tecal RH2285
+> [  276.401430] Couldn't create device <-> cache set symlinks
+> [  276.401759] Modules linked in: bcache tcp_diag inet_diag ipmi_devintf ipmi_si ipmi_msghandler
+> bonding 8021q garp stp llc ipv6 ext3 jbd loop sg iomemory_vsl(P) bnx2 microcode serio_raw i2c_i801
+> i2c_core iTCO_wdt iTCO_vendor_support i7core_edac edac_core shpchp ext4 jbd2 mbcache megaraid_sas
+> pata_acpi ata_generic ata_piix dm_mod [last unloaded: scsi_wait_scan]
+> [  276.465477] Pid: 2765, comm: sh Tainted: P        W  ---------------    2.6.32 #1
+> [  276.482169] Call Trace:
+> [  276.498610]  [<ffffffff81070fe7>] ? warn_slowpath_common+0x87/0xc0
+> [  276.515405]  [<ffffffff810710d6>] ? warn_slowpath_fmt+0x46/0x50
+> [  276.532059]  [<ffffffffa03bda3f>] ? bcache_device_link+0xdf/0x110 [bcache]
+> [  276.548808]  [<ffffffffa03bfa08>] ? bch_cached_dev_attach+0x478/0x4f0 [bcache]
+> [  276.565569]  [<ffffffffa03c4a17>] ? bch_cached_dev_store+0x627/0x780 [bcache]
+> [  276.582418]  [<ffffffff8116783a>] ? alloc_pages_current+0xaa/0x110
+> [  276.599341]  [<ffffffff81203b15>] ? sysfs_write_file+0xe5/0x170
+> [  276.616142]  [<ffffffff811887b8>] ? vfs_write+0xb8/0x1a0
+> [  276.632607]  [<ffffffff811890b1>] ? sys_write+0x51/0x90
+> [  276.648671]  [<ffffffff8100c072>] ? system_call_fastpath+0x16/0x1b
+> [  276.664756] ---[ end trace 9f5d4fcdd0c3edfc ]---
+> 
+> We forget to clear BCACHE_DEV_UNLINK_DONE flag in bcache_device_attach()
+> function when we attach a backing device first time.  After detaching this
+> backing device, this flag will be true and sysfs_remove_link() isn't called in
+> bcache_device_unlink().  Then when we attach this backing device again,
+> sysfs_create_link() will return EEXIST error in bcache_device_link().
+> 
+> So the fix is trival and we clear this flag in bcache_device_link().
+> 
+> Signed-off-by: Zheng Liu <wenqing.lz@taobao.com>
+> Tested-by: Joshua Schmid <jschmid@suse.com>
+> ---
+>  drivers/md/bcache/super.c | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 4dd2bb7..f624ae8 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -708,6 +708,8 @@ static void bcache_device_link(struct bcache_device *d, struct cache_set *c,
+>  	WARN(sysfs_create_link(&d->kobj, &c->kobj, "cache") ||
+>  	     sysfs_create_link(&c->kobj, &d->kobj, d->name),
+>  	     "Couldn't create device <-> cache set symlinks");
+> +
+> +	clear_bit(BCACHE_DEV_UNLINK_DONE, &d->flags);
+>  }
+> 
+>  static void bcache_device_detach(struct bcache_device *d)
+> -- 
+> 2.1.2
+> 
