@@ -1,59 +1,353 @@
-From: Emmanuel Florac <eflorac@intellique.com>
-Subject: bcache and load average
-Date: Fri, 15 May 2015 18:50:32 +0200
-Message-ID: <20150515185032.6b129595@harpe.intellique.com>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: bcache and load average
+Date: Fri, 15 May 2015 10:55:32 -0700 (PDT)
+Message-ID: <alpine.DEB.2.02.1505151053020.8760@ware.dreamhost.com>
+References: <20150515185032.6b129595@harpe.intellique.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="1866506367-117624659-1431712533=:8760"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:46744 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753443AbbEOQud (ORCPT
+Received: from homie.mail.dreamhost.com ([208.97.132.208]:40104 "EHLO
+	homiemail-a2.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751919AbbEORze (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 15 May 2015 12:50:33 -0400
-Received: from smtp5-g21.free.fr (smtp5-g21.free.fr [212.27.42.5])
-	by smtpfb1-g21.free.fr (Postfix) with ESMTP id 8F6D17943CB
-	for <linux-bcache@vger.kernel.org>; Fri, 15 May 2015 18:50:29 +0200 (CEST)
-Received: from harpe.intellique.com (unknown [82.225.196.72])
-	by smtp5-g21.free.fr (Postfix) with ESMTP id F2047D480CD
-	for <linux-bcache@vger.kernel.org>; Fri, 15 May 2015 18:46:35 +0200 (CEST)
+	Fri, 15 May 2015 13:55:34 -0400
+In-Reply-To: <20150515185032.6b129595@harpe.intellique.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Emmanuel Florac <eflorac@intellique.com>
+Cc: linux-bcache@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi everyone,
+--1866506367-117624659-1431712533=:8760
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 
-Going through various forum messages and bug reports (for
-Debian: https://lists.debian.org/debian-kernel/2015/03/msg00060.html for
-Arch: https://bugs.archlinux.org/task/38843 for some other distro:
-https://groups.google.com/forum/#!msg/esos-users/NXp8tG7sVE8/QXZyPdZ2saIJ
-) it looks like the bcache_writeback kernel thread, being in
-uninterruptible sleep, keeps the load average at 1.0 (or maybe more)
-always. Could you please confirm this ?
+> Going through various forum messages and bug reports (for Debian: 
+> https://lists.debian.org/debian-kernel/2015/03/msg00060.html for Arch: 
+> https://bugs.archlinux.org/task/38843 for some other distro: 
+> https://groups.google.com/forum/#!msg/esos-users/NXp8tG7sVE8/QXZyPdZ2saIJ 
+> ) it looks like the bcache_writeback kernel thread, being in 
+> uninterruptible sleep, keeps the load average at 1.0 (or maybe more) 
+> always. Could you please confirm this ?
 
+Try the attached patches that I've been collecting over the past year or 
+two. I do not believe they have been merged into mainline (BUT SOMEONE 
+NEEDS TO).
 
- - this behaviour should be described in the bcache documentation
-   because it feels to me (and many other) like a true gotcha. It's
-   apparently completely undocumented. A "CAVEATS" section at the
-   bottom of bcache.txt in the kernel Documentation explaining this
-   would be nice, what do you think?
+I am not sure that these address the load bug, but if the load is being 
+increased by a large amount of dmesg output caused by rcu traces, then the 
+patches will help.
 
- - Is there any way around this? Some people seem to grow uneasy (maybe
-   irrationnally) having a constant load on an otherwise unused system
-   (I know that a sleeping thread actually does nothing, but many 
-   system administrators can't wrap their head around this idea). 
+-Eric
+ 
+> 
+>  - this behaviour should be described in the bcache documentation
+>    because it feels to me (and many other) like a true gotcha. It's
+>    apparently completely undocumented. A "CAVEATS" section at the
+>    bottom of bcache.txt in the kernel Documentation explaining this
+>    would be nice, what do you think?
+> 
+>  - Is there any way around this? Some people seem to grow uneasy (maybe
+>    irrationnally) having a constant load on an otherwise unused system
+>    (I know that a sleeping thread actually does nothing, but many 
+>    system administrators can't wrap their head around this idea). 
+> 
+> I've tried some advice I've found on the web, like switching to
+> writethrough and "echo 0 > /sys/block/bcache0/bcache/writeback_running"
+> but to absolutely no effect.
+> 
+> Any advice and idea is welcome :)
+> 
+> -- 
+> ------------------------------------------------------------------------
+> Emmanuel Florac     |   Direction technique
+>                     |   Intellique
+>                     |	<eflorac@intellique.com>
+>                     |   +33 1 78 94 84 02
+> ------------------------------------------------------------------------
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+--1866506367-117624659-1431712533=:8760
+Content-Type: TEXT/x-diff; name=bcache-unregister-reboot-notifier.patch
+Content-Transfer-Encoding: BASE64
+Content-Description: 
+Content-Disposition: attachment; filename=bcache-unregister-reboot-notifier.patch
 
-I've tried some advice I've found on the web, like switching to
-writethrough and "echo 0 > /sys/block/bcache0/bcache/writeback_running"
-but to absolutely no effect.
+RnJvbTogWmhlbmcgTGl1IDx3ZW5xaW5nLmx6QHRhb2Jhby5jb20+DQoNCklu
+IGJjYWNoZV9pbml0KCkgZnVuY3Rpb24gaXQgZm9yZ290IHRvIHVucmVnaXN0
+ZXIgcmVib290IG5vdGlmaWVyIGlmDQpiY2FjaGUgZmFpbHMgdG8gdW5yZWdp
+c3RlciBhIGJsb2NrIGRldmljZS4gIFRoaXMgY29tbWl0IGZpeGVzIHRoaXMu
+DQoNClNpZ25lZC1vZmYtYnk6IFpoZW5nIExpdSA8d2VucWluZy5sekB0YW9i
+YW8uY29tPg0KVGVzdGVkLWJ5OiBKb3NodWEgU2NobWlkIDxqc2NobWlkQHN1
+c2UuY29tPg0KLS0tDQogZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYyB8IDQg
+KysrLQ0KICAxIGZpbGUgY2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAxIGRl
+bGV0aW9uKC0pDQoNCmRpZmYgLS1naXQgYS9kcml2ZXJzL21kL2JjYWNoZS9z
+dXBlci5jIGIvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYw0KaW5kZXggNGRk
+MmJiNy4uZmRiYjIxMSAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvbWQvYmNhY2hl
+L3N1cGVyLmMNCisrKyBiL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMNCkBA
+IC0yMTAwLDggKzIxMDAsMTAgQEAgc3RhdGljIGludCBfX2luaXQgYmNhY2hl
+X2luaXQodm9pZCkNCiAJY2xvc3VyZV9kZWJ1Z19pbml0KCk7DQogDQogCWJj
+YWNoZV9tYWpvciA9IHJlZ2lzdGVyX2Jsa2RldigwLCAiYmNhY2hlIik7DQot
+CWlmIChiY2FjaGVfbWFqb3IgPCAwKQ0KKwlpZiAoYmNhY2hlX21ham9yIDwg
+MCkgew0KKwkJdW5yZWdpc3Rlcl9yZWJvb3Rfbm90aWZpZXIoJnJlYm9vdCk7
+DQogCQlyZXR1cm4gYmNhY2hlX21ham9yOw0KKwl9DQogDQogCWlmICghKGJj
+YWNoZV93cSA9IGNyZWF0ZV93b3JrcXVldWUoImJjYWNoZSIpKSB8fA0KIAkg
+ICAgIShiY2FjaGVfa29iaiA9IGtvYmplY3RfY3JlYXRlX2FuZF9hZGQoImJj
+YWNoZSIsIGZzX2tvYmopKSB8fA0K
 
-Any advice and idea is welcome :)
+--1866506367-117624659-1431712533=:8760
+Content-Type: TEXT/x-diff; name=bcache-rcu-sched-bugfix.patch
+Content-Transfer-Encoding: BASE64
+Content-Description: 
+Content-Disposition: attachment; filename=bcache-rcu-sched-bugfix.patch
 
--- 
-------------------------------------------------------------------------
-Emmanuel Florac     |   Direction technique
-                    |   Intellique
-                    |	<eflorac@intellique.com>
-                    |   +33 1 78 94 84 02
-------------------------------------------------------------------------
+CQ0KRnJvbToJWmhlbmcgTGl1IDxnbmVoenVpbC5saXVAZ21haWwuY29tPg0K
+VG86CWxpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5vcmcNCkNjOglaaGVuZyBM
+aXUgPHdlbnFpbmcubHpAdGFvYmFvLmNvbT4sIEpvc2h1YSBTY2htaWQgPGpz
+Y2htaWRAc3VzZS5jb20+LCBaaHUgWWFuaGFpIDx6aHUueWFuaGFpQGdtYWls
+LmNvbT4sIEtlbnQgT3ZlcnN0cmVldCA8a21vQGRhdGVyYWluYy5jb20+DQpT
+dWJqZWN0OglbUEFUQ0ggdjJdIGJjYWNoZTogZml4IGEgbGl2ZWxvY2sgaW4g
+YnRyZWUgbG9jaw0KRGF0ZToJV2VkLCAyNSBGZWIgMjAxNSAyMDozMjowOSAr
+MDgwMCAoMDIvMjUvMjAxNSAwNDozMjowOSBBTSkNCkZyb206IFpoZW5nIExp
+dSA8d2VucWluZy5sekB0YW9iYW8uY29tPg0KDQpUaGlzIGNvbW1pdCB0cmll
+cyB0byBmaXggYSBsaXZlbG9jayBpbiBiY2FjaGUuICBUaGlzIGxpdmVsb2Nr
+IG1pZ2h0DQpoYXBwZW4gd2hlbiB3ZSBjYXVzZXMgYSBodWdlIG51bWJlciBv
+ZiBjYWNoZSBtaXNzZXMgc2ltdWx0YW5lb3VzbHkuDQoNCldoZW4gd2UgZ2V0
+IGEgY2FjaGUgbWlzcywgYmNhY2hlIHdpbGwgZXhlY3V0ZSB0aGUgZm9sbG93
+aW5nIHBhdGguDQoNCi0+Y2FjaGVkX2Rldl9tYWtlX3JlcXVlc3QoKQ0KICAt
+PmNhY2hlZF9kZXZfcmVhZCgpDQogICAgLT5jYWNoZWRfbG9va3VwKCkNCiAg
+ICAgIC0+YmNoLT5idHJlZV9tYXBfa2V5cygpDQogICAgICAgIC0+YnRyZWVf
+cm9vdCgpICA8LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tDQogICAgICAgICAg
+LT5iY2hfYnRyZWVfbWFwX2tleXNfcmVjdXJzZSgpICAgICAgICB8DQogICAg
+ICAgICAgICAtPmNhY2hlX2xvb2t1cF9mbigpICAgICAgICAgICAgICAgICB8
+DQogICAgICAgICAgICAgIC0+Y2FjaGVkX2Rldl9jYWNoZV9taXNzKCkgICAg
+ICAgICB8DQogICAgICAgICAgICAgICAgLT5iY2hfYnRyZWVfaW5zZXJ0X2No
+ZWNrX2tleSgpIC18DQogICAgICAgICAgICAgICAgICBbSWYgYnRyZWUtPnNl
+cSBpcyBub3QgZXF1YWwgdG8gc2VxICsgMSwgd2Ugc2hvdWxkIHJldHVybg0K
+ICAgICAgICAgICAgICAgICAgIEVJTlRSIGFuZCB0cmF2ZXJzZSBidHJlZSBh
+Z2Fpbi5dDQoNCkluIGJjaF9idHJlZV9pbnNlcnRfY2hlY2tfa2V5KCkgZnVu
+Y3Rpb24gd2UgZmlyc3QgbmVlZCB0byBjaGVjayB1cGdyYWRlDQpmbGFnIChv
+cC0+bG9jayA9PSAtMSksIGFuZCB3aGVuIHRoaXMgZmxhZyBpcyB0cnVlIHdl
+IG5lZWQgdG8gcmVsZWFzZQ0KcmVhZCBidHJlZS0+bG9jayBhbmQgdHJ5IHRv
+IHRha2Ugd3JpdGUgYnRyZWUtPmxvY2suICBEdXJpbmcgdGFraW5nIGFuZA0K
+cmVsZWFzaW5nIHRoaXMgd3JpdGUgbG9jaywgYnRyZWUtPnNlcSB3aWxsIGJl
+IG1vbm90b25lIGluY3JlYXNlZCBpbg0Kb3JkZXIgdG8gcHJldmVudCBvdGhl
+ciB0aHJlYWRzIG1vZGlmeSB0aGlzIGluIGNhY2hlIG1pc3MgKHNlZSBidHJl
+ZS5oOjc0KS4NCkJ1dCBpZiB0aGVyZSBhcmUgc29tZSBjYWNoZSBtaXNzZXMg
+Y2F1c2VkIGJ5IHNvbWUgcmVxdWVzdGVkLCB3ZSBjb3VsZA0KbWVldCBhIGxp
+dmVsb2NrIGJlY2F1c2UgYnRyZWUtPnNlcSBpcyBhbHdheXMgY2hhbmdlZCBi
+eSBvdGhlcnMuICBUaHVzIG5vDQpvbmUgY2FuIG1ha2UgcHJvZ3Jlc3MuDQoN
+ClRoaXMgY29tbWl0IHdpbGwgdHJ5IHRvIHRha2Ugd3JpdGUgYnRyZWUtPmxv
+Y2sgaWYgaXQgZW5jb3VudGVycyBhIHJhY2UNCndoZW4gd2UgdHJhdmVyc2Ug
+YnRyZWUuICBBbHRob3VnaCBpdCBzYWNyaWZpY2UgdGhlIHNjYWxhYmlsaXR5
+IGJ1dCB3ZQ0KY2FuIGVuc3VyZSB0aGF0IG9ubHkgb25lIGNhbiBtb2RpZnkg
+dGhlIGJ0cmVlLg0KDQpTaWduZWQtb2ZmLWJ5OiBaaGVuZyBMaXUgPHdlbnFp
+bmcubHpAdGFvYmFvLmNvbT4NClRlc3RlZC1ieTogSm9zaHVhIFNjaG1pZCA8
+anNjaG1pZEBzdXNlLmNvbT4NCkNjOiBKb3NodWEgU2NobWlkIDxqc2NobWlk
+QHN1c2UuY29tPg0KQ2M6IFpodSBZYW5oYWkgPHpodS55YW5oYWlAZ21haWwu
+Y29tPg0KQ2M6IEtlbnQgT3ZlcnN0cmVldCA8a21vQGRhdGVyYWluYy5jb20+
+DQotLS0NCmNoYW5nZWxvZzoNCnYyOiBmaXggYSBidWcgdGhhdCBzdG9wcyBh
+bGwgY29uY3VycmVuY3kgd3JpdGVzIHVuY29uZGl0aW9uYWxseS4NCg0KIGRy
+aXZlcnMvbWQvYmNhY2hlL2J0cmVlLmMgfCAgICA0ICsrKy0NCiAxIGZpbGUg
+Y2hhbmdlZCwgMyBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9uKC0pDQoNCmRp
+ZmYgLS1naXQgYS9kcml2ZXJzL21kL2JjYWNoZS9idHJlZS5jIGIvZHJpdmVy
+cy9tZC9iY2FjaGUvYnRyZWUuYw0KaW5kZXggMjE4ZjIxYS4uNDM4MjlkOSAx
+MDA2NDQNCi0tLSBhL2RyaXZlcnMvbWQvYmNhY2hlL2J0cmVlLmMNCisrKyBi
+L2RyaXZlcnMvbWQvYmNhY2hlL2J0cmVlLmMNCkBAIC0yMTYzLDggKzIxNjMs
+MTAgQEAgaW50IGJjaF9idHJlZV9pbnNlcnRfY2hlY2tfa2V5KHN0cnVjdCBi
+dHJlZSAqYiwgc3RydWN0IGJ0cmVlX29wICpvcCwNCiAJCXJ3X2xvY2sodHJ1
+ZSwgYiwgYi0+bGV2ZWwpOw0KIA0KIAkJaWYgKGItPmtleS5wdHJbMF0gIT0g
+YnRyZWVfcHRyIHx8DQotCQkgICAgYi0+c2VxICE9IHNlcSArIDEpDQorICAg
+ICAgICAgICAgICAgICAgIGItPnNlcSAhPSBzZXEgKyAxKSB7DQorICAgICAg
+ICAgICAgICAgICAgICAgICBvcC0+bG9jayA9IGItPmxldmVsOw0KIAkJCWdv
+dG8gb3V0Ow0KKyAgICAgICAgICAgICAgIH0NCiAJfQ0KIA0KIAlTRVRfS0VZ
+X1BUUlMoY2hlY2tfa2V5LCAxKTsNCg==
+
+--1866506367-117624659-1431712533=:8760
+Content-Type: TEXT/x-diff; name=bcache-fix-memleak-bch_cached_dev_run.patch
+Content-Transfer-Encoding: BASE64
+Content-Description: 
+Content-Disposition: attachment; filename=bcache-fix-memleak-bch_cached_dev_run.patch
+
+DQpGcm9tOiBKb3NodWEgU2NobWlkIDxqc2NobWlkQHN1c2UuY29tPg0KU3Vi
+amVjdDogW1BBVENIXSBmaXggYSBsZWFrIGluIGJjaF9jYWNoZWRfZGV2X3J1
+bigpDQpOZXdzZ3JvdXBzOiBnbWFuZS5saW51eC5rZXJuZWwuYmNhY2hlLmRl
+dmVsDQpEYXRlOiAyMDE1LTAyLTAzIDExOjI0OjA2IEdNVCAoMyB3ZWVrcywg
+MiBkYXlzLCAxMSBob3VycyBhbmQgNDMgbWludXRlcyBhZ28pDQoNCkZyb206
+IEFsIFZpcm8gPHZpcm9AWmVuSVYubGludXgub3JnLnVrPg0KDQpTaWduZWQt
+b2ZmLWJ5OiBBbCBWaXJvIDx2aXJvQHplbml2LmxpbnV4Lm9yZy51az4NClRl
+c3RlZC1ieTogSm9zaHVhIFNjaG1pZCA8anNjaG1pZEBzdXNlLmNvbT4NCi0t
+LQ0KIGRyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMgfCA1ICsrKystDQogMSBm
+aWxlIGNoYW5nZWQsIDQgaW5zZXJ0aW9ucygrKSwgMSBkZWxldGlvbigtKQ0K
+DQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYyBiL2Ry
+aXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMNCmluZGV4IDhjMmQ2NTcuLjUzZjE1
+MTIgMTAwNjQ0DQotLS0gYS9kcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jDQor
+KysgYi9kcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jDQpAQCAtODgwLDggKzg4
+MCwxMSBAQCB2b2lkIGJjaF9jYWNoZWRfZGV2X3J1bihzdHJ1Y3QgY2FjaGVk
+X2RldiAqZGMpDQogCWJ1ZltTQl9MQUJFTF9TSVpFXSA9ICdcMCc7DQogCWVu
+dlsyXSA9IGthc3ByaW50ZihHRlBfS0VSTkVMLCAiQ0FDSEVEX0xBQkVMPSVz
+IiwgYnVmKTsNCg0KLQlpZiAoYXRvbWljX3hjaGcoJmRjLT5ydW5uaW5nLCAx
+KSkNCisJaWYgKGF0b21pY194Y2hnKCZkYy0+cnVubmluZywgMSkpIHsNCisJ
+CWtmcmVlKGVudlsxXSk7DQorCQlrZnJlZShlbnZbMl0pOw0KIAkJcmV0dXJu
+Ow0KKwl9DQoNCiAJaWYgKCFkLT5jICYmDQogCSAgICBCREVWX1NUQVRFKCZk
+Yy0+c2IpICE9IEJERVZfU1RBVEVfTk9ORSkgew0KLS0gDQoyLjEuMg0KDQo=
+
+--1866506367-117624659-1431712533=:8760
+Content-Type: TEXT/x-diff; name=bcache-cond_resched.patch
+Content-Transfer-Encoding: BASE64
+Content-Description: 
+Content-Disposition: attachment; filename=bcache-cond_resched.patch
+
+RnJvbSBmMGU2MzIwYTc4NzRhZjQzNDU3NWYzN2ExMWVjNmU0OTkyY2VmNzkw
+IE1vbiBTZXAgMTcgMDA6MDA6MDAgMjAwMQ0KRnJvbTogS2VudCBPdmVyc3Ry
+ZWV0IDxrbW9AZGF0ZXJhaW5jLmNvbT4NCkRhdGU6IFNhdCwgMSBOb3YgMjAx
+NCAxMzo0NDo0NyAtMDcwMA0KU3ViamVjdDogW1BBVENIIDEvNV0gYmNhY2hl
+OiBBZGQgYSBjb25kX3Jlc2NoZWQoKSBjYWxsIHRvIGdjDQpHaXQtY29tbWl0
+OiBmMGU2MzIwYTc4NzRhZjQzNDU3NWYzN2ExMWVjNmU0OTkyY2VmNzkwDQpQ
+YXRjaC1tYWlubGluZTogU3VibWl0dGVkDQpSZWZlcmVuY2VzOiBibmMjOTEw
+NDQwDQoNCkNoYW5nZS1pZDogSWQ0ZjE4YzUzM2I4MGRkYjQwZGY5NGVkMGJi
+NWUyYTIzNmE0YmMzMjUNClNpZ25lZC1vZmYtYnk6IFRha2FzaGkgSXdhaSA8
+dGl3YWlAc3VzZS5kZT4NCg0KLS0tDQogZHJpdmVycy9tZC9iY2FjaGUvYnRy
+ZWUuYyB8IDEgKw0KICAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKykN
+Cg0KLS0tIGEvZHJpdmVycy9tZC9iY2FjaGUvYnRyZWUuYwkyMDE0LTExLTAz
+IDE2OjUxOjAxLjcyMDAwMDAwMCAtMDgwMA0KKysrIGIvZHJpdmVycy9tZC9i
+Y2FjaGUvYnRyZWUuYwkyMDE0LTExLTAzIDE2OjUxOjI2LjQ1NjAwMDAwMCAt
+MDgwMA0KQEAgLTE3NDEsNiArMTc0MSw3IEBADQogCWRvIHsNCiAJCXJldCA9
+IGJ0cmVlX3Jvb3QoZ2Nfcm9vdCwgYywgJm9wLCAmd3JpdGVzLCAmc3RhdHMp
+Ow0KIAkJY2xvc3VyZV9zeW5jKCZ3cml0ZXMpOw0KKwkJY29uZF9yZXNjaGVk
+KCk7DQogDQogCQlpZiAocmV0ICYmIHJldCAhPSAtRUFHQUlOKQ0KIAkJCXBy
+X3dhcm4oImdjIGZhaWxlZCEiKTsNCg==
+
+--1866506367-117624659-1431712533=:8760
+Content-Type: TEXT/x-diff; name=bcache-attach-detach-cleanup.patch
+Content-Transfer-Encoding: BASE64
+Content-Description: 
+Content-Disposition: attachment; filename=bcache-attach-detach-cleanup.patch
+
+RnJvbTogSm9zaHVhIFNjaG1pZCA8anNjaG1pZEBzdXNlLmNvbT4NClN1Ympl
+Y3Q6IFtQQVRDSF0gYmNhY2hlOiBbQlVHXSBjbGVhciBCQ0FDSEVfREVWX1VO
+TElOS19ET05FIGZsYWcgd2hlbiBhdHRhY2hpbmcgYSBiYWNraW5nIGRldmlj
+ZQ0KTmV3c2dyb3VwczogZ21hbmUubGludXgua2VybmVsLmJjYWNoZS5kZXZl
+bA0KRGF0ZTogMjAxNS0wMi0wMyAxMToxODowMSBHTVQgKDMgd2Vla3MsIDIg
+ZGF5cywgMTEgaG91cnMgYW5kIDQ1IG1pbnV0ZXMgYWdvKQ0KDQpGcm9tOiBa
+aGVuZyBMaXUgPHdlbnFpbmcubHpAdGFvYmFvLmNvbT4NCg0KVGhpcyBidWcg
+Y2FuIGJlIHJlcHJvZHVjZWQgYnkgdGhlIGZvbGxvd2luZyBzY3JpcHQ6DQoN
+CiAgIyEvYmluL2Jhc2gNCg0KICBiY2FjaGVfc3lzZnM9Ii9zeXMvZnMvYmNh
+Y2hlIg0KDQogIGZ1bmN0aW9uIGNsZWFyX2NhY2hlKCkNCiAgew0KICAJaWYg
+WyAhIC1lICRiY2FjaGVfc3lzZnMgXTsgdGhlbg0KICAJCWVjaG8gIm5vIGJj
+YWNoZSBzeXNmcyINCiAgCQlleGl0DQogIAlmaQ0KDQogIAljc2V0X3V1aWQ9
+JChscyAtbCAkYmNhY2hlX3N5c2ZzfGhlYWQgLW4gMnx0YWlsIC1uIDF8YXdr
+ICd7cHJpbnQgJDl9JykNCiAgCXN1ZG8gc2ggLWMgImVjaG8gJGNzZXRfdXVp
+ZCA+IC9zeXMvYmxvY2svc2RiL3NkYjEvYmNhY2hlL2RldGFjaCINCiAgCXNs
+ZWVwIDUNCiAgCXN1ZG8gc2ggLWMgImVjaG8gJGNzZXRfdXVpZCA+IC9zeXMv
+YmxvY2svc2RiL3NkYjEvYmNhY2hlL2F0dGFjaCINCiAgfQ0KDQogIGZvciAo
+KGk9MDtpPDEwO2krKykpOyBkbw0KICAJY2xlYXJfY2FjaGUNCiAgZG9uZQ0K
+DQpUaGUgd2FybmluZyBtZXNzYWdlcyBsb29rIGxpa2UgYmVsb3c6DQpbICAy
+NzUuOTQ4NjExXSAtLS0tLS0tLS0tLS1bIGN1dCBoZXJlIF0tLS0tLS0tLS0t
+LS0NClsgIDI3NS45NjM4NDBdIFdBUk5JTkc6IGF0IGZzL3N5c2ZzL2Rpci5j
+OjUxMiBzeXNmc19hZGRfb25lKzB4YjgvMHhkMCgpIChUYWludGVkOiBQICAg
+ICAgICBXIA0KLS0tLS0tLS0tLS0tLS0tICAgKQ0KWyAgMjc1Ljk3OTI1M10g
+SGFyZHdhcmUgbmFtZTogVGVjYWwgUkgyMjg1DQpbICAyNzUuOTk0MTA2XSBz
+eXNmczogY2Fubm90IGNyZWF0ZSBkdXBsaWNhdGUgZmlsZW5hbWUgJy9kZXZp
+Y2VzL3BjaTAwMDA6MDAvMDAwMDowMDowOS4wLzAwMDA6MDg6MDAuMC9ob3N0
+NC90YXJnZXQ0OjI6MS80OjI6MTowL2Jsb2NrL3NkYi9zZGIxL2JjYWNoZS9j
+YWNoZScNClsgIDI3Ni4wMjQxMDVdIE1vZHVsZXMgbGlua2VkIGluOiBiY2Fj
+aGUgdGNwX2RpYWcgaW5ldF9kaWFnIGlwbWlfZGV2aW50ZiBpcG1pX3NpIGlw
+bWlfbXNnaGFuZGxlcg0KYm9uZGluZyA4MDIxcSBnYXJwIHN0cCBsbGMgaXB2
+NiBleHQzIGpiZCBsb29wIHNnIGlvbWVtb3J5X3ZzbChQKSBibngyIG1pY3Jv
+Y29kZSBzZXJpb19yYXcgaTJjX2k4MDENCmkyY19jb3JlIGlUQ09fd2R0IGlU
+Q09fdmVuZG9yX3N1cHBvcnQgaTdjb3JlX2VkYWMgZWRhY19jb3JlIHNocGNo
+cCBleHQ0IGpiZDIgbWJjYWNoZSBtZWdhcmFpZF9zYXMNCnBhdGFfYWNwaSBh
+dGFfZ2VuZXJpYyBhdGFfcGlpeCBkbV9tb2QgW2xhc3QgdW5sb2FkZWQ6IHNj
+c2lfd2FpdF9zY2FuXQ0KWyAgMjc2LjA3MjY0M10gUGlkOiAyNzY1LCBjb21t
+OiBzaCBUYWludGVkOiBQICAgICAgICBXICAtLS0tLS0tLS0tLS0tLS0gICAg
+Mi42LjMyICMxDQpbICAyNzYuMDg5MzE1XSBDYWxsIFRyYWNlOg0KWyAgMjc2
+LjEwNTgwMV0gIFs8ZmZmZmZmZmY4MTA3MGZlNz5dID8gd2Fybl9zbG93cGF0
+aF9jb21tb24rMHg4Ny8weGMwDQpbICAyNzYuMTIyNjUwXSAgWzxmZmZmZmZm
+ZjgxMDcxMGQ2Pl0gPyB3YXJuX3Nsb3dwYXRoX2ZtdCsweDQ2LzB4NTANClsg
+IDI3Ni4xMzkzNjFdICBbPGZmZmZmZmZmODEyMDVjMDg+XSA/IHN5c2ZzX2Fk
+ZF9vbmUrMHhiOC8weGQwDQpbICAyNzYuMTU2MDEyXSAgWzxmZmZmZmZmZjgx
+MjA2MDliPl0gPyBzeXNmc19kb19jcmVhdGVfbGluaysweDEyYi8weDE3MA0K
+WyAgMjc2LjE3MjY4Ml0gIFs8ZmZmZmZmZmY4MTIwNjExMz5dID8gc3lzZnNf
+Y3JlYXRlX2xpbmsrMHgxMy8weDIwDQpbICAyNzYuMTg5MjgyXSAgWzxmZmZm
+ZmZmZmEwM2JkYTIxPl0gPyBiY2FjaGVfZGV2aWNlX2xpbmsrMHhjMS8weDEx
+MCBbYmNhY2hlXQ0KWyAgMjc2LjIwNTk5M10gIFs8ZmZmZmZmZmZhMDNiZmEw
+OD5dID8gYmNoX2NhY2hlZF9kZXZfYXR0YWNoKzB4NDc4LzB4NGYwIFtiY2Fj
+aGVdDQpbICAyNzYuMjIyNzk0XSAgWzxmZmZmZmZmZmEwM2M0YTE3Pl0gPyBi
+Y2hfY2FjaGVkX2Rldl9zdG9yZSsweDYyNy8weDc4MCBbYmNhY2hlXQ0KWyAg
+Mjc2LjIzOTY4MF0gIFs8ZmZmZmZmZmY4MTE2NzgzYT5dID8gYWxsb2NfcGFn
+ZXNfY3VycmVudCsweGFhLzB4MTEwDQpbICAyNzYuMjU2NTk0XSAgWzxmZmZm
+ZmZmZjgxMjAzYjE1Pl0gPyBzeXNmc193cml0ZV9maWxlKzB4ZTUvMHgxNzAN
+ClsgIDI3Ni4yNzMzNjRdICBbPGZmZmZmZmZmODExODg3Yjg+XSA/IHZmc193
+cml0ZSsweGI4LzB4MWEwDQpbICAyNzYuMjkwMTMzXSAgWzxmZmZmZmZmZjgx
+MTg5MGIxPl0gPyBzeXNfd3JpdGUrMHg1MS8weDkwDQpbICAyNzYuMzA2MzY4
+XSAgWzxmZmZmZmZmZjgxMDBjMDcyPl0gPyBzeXN0ZW1fY2FsbF9mYXN0cGF0
+aCsweDE2LzB4MWINClsgIDI3Ni4zMjIzMDFdIC0tLVsgZW5kIHRyYWNlIDlm
+NWQ0ZmNkZDBjM2VkZmIgXS0tLQ0KWyAgMjc2LjMzODI0MV0gLS0tLS0tLS0t
+LS0tWyBjdXQgaGVyZSBdLS0tLS0tLS0tLS0tDQpbICAyNzYuMzU0MTA5XSBX
+QVJOSU5HOiBhdCAvaG9tZS93ZW5xaW5nLmx6L2JjYWNoZS9iY2FjaGUvc3Vw
+ZXIuYzo3MjANCmJjYWNoZV9kZXZpY2VfbGluaysweGRmLzB4MTEwIFtiY2Fj
+aGVdKCkgKFRhaW50ZWQ6IFAgICAgICAgIFcgIC0tLS0tLS0tLS0tLS0tLSAg
+ICkNClsgIDI3Ni4zODYwMTddIEhhcmR3YXJlIG5hbWU6IFRlY2FsIFJIMjI4
+NQ0KWyAgMjc2LjQwMTQzMF0gQ291bGRuJ3QgY3JlYXRlIGRldmljZSA8LT4g
+Y2FjaGUgc2V0IHN5bWxpbmtzDQpbICAyNzYuNDAxNzU5XSBNb2R1bGVzIGxp
+bmtlZCBpbjogYmNhY2hlIHRjcF9kaWFnIGluZXRfZGlhZyBpcG1pX2Rldmlu
+dGYgaXBtaV9zaSBpcG1pX21zZ2hhbmRsZXINCmJvbmRpbmcgODAyMXEgZ2Fy
+cCBzdHAgbGxjIGlwdjYgZXh0MyBqYmQgbG9vcCBzZyBpb21lbW9yeV92c2wo
+UCkgYm54MiBtaWNyb2NvZGUgc2VyaW9fcmF3IGkyY19pODAxDQppMmNfY29y
+ZSBpVENPX3dkdCBpVENPX3ZlbmRvcl9zdXBwb3J0IGk3Y29yZV9lZGFjIGVk
+YWNfY29yZSBzaHBjaHAgZXh0NCBqYmQyIG1iY2FjaGUgbWVnYXJhaWRfc2Fz
+DQpwYXRhX2FjcGkgYXRhX2dlbmVyaWMgYXRhX3BpaXggZG1fbW9kIFtsYXN0
+IHVubG9hZGVkOiBzY3NpX3dhaXRfc2Nhbl0NClsgIDI3Ni40NjU0NzddIFBp
+ZDogMjc2NSwgY29tbTogc2ggVGFpbnRlZDogUCAgICAgICAgVyAgLS0tLS0t
+LS0tLS0tLS0tICAgIDIuNi4zMiAjMQ0KWyAgMjc2LjQ4MjE2OV0gQ2FsbCBU
+cmFjZToNClsgIDI3Ni40OTg2MTBdICBbPGZmZmZmZmZmODEwNzBmZTc+XSA/
+IHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4ODcvMHhjMA0KWyAgMjc2LjUxNTQw
+NV0gIFs8ZmZmZmZmZmY4MTA3MTBkNj5dID8gd2Fybl9zbG93cGF0aF9mbXQr
+MHg0Ni8weDUwDQpbICAyNzYuNTMyMDU5XSAgWzxmZmZmZmZmZmEwM2JkYTNm
+Pl0gPyBiY2FjaGVfZGV2aWNlX2xpbmsrMHhkZi8weDExMCBbYmNhY2hlXQ0K
+WyAgMjc2LjU0ODgwOF0gIFs8ZmZmZmZmZmZhMDNiZmEwOD5dID8gYmNoX2Nh
+Y2hlZF9kZXZfYXR0YWNoKzB4NDc4LzB4NGYwIFtiY2FjaGVdDQpbICAyNzYu
+NTY1NTY5XSAgWzxmZmZmZmZmZmEwM2M0YTE3Pl0gPyBiY2hfY2FjaGVkX2Rl
+dl9zdG9yZSsweDYyNy8weDc4MCBbYmNhY2hlXQ0KWyAgMjc2LjU4MjQxOF0g
+IFs8ZmZmZmZmZmY4MTE2NzgzYT5dID8gYWxsb2NfcGFnZXNfY3VycmVudCsw
+eGFhLzB4MTEwDQpbICAyNzYuNTk5MzQxXSAgWzxmZmZmZmZmZjgxMjAzYjE1
+Pl0gPyBzeXNmc193cml0ZV9maWxlKzB4ZTUvMHgxNzANClsgIDI3Ni42MTYx
+NDJdICBbPGZmZmZmZmZmODExODg3Yjg+XSA/IHZmc193cml0ZSsweGI4LzB4
+MWEwDQpbICAyNzYuNjMyNjA3XSAgWzxmZmZmZmZmZjgxMTg5MGIxPl0gPyBz
+eXNfd3JpdGUrMHg1MS8weDkwDQpbICAyNzYuNjQ4NjcxXSAgWzxmZmZmZmZm
+ZjgxMDBjMDcyPl0gPyBzeXN0ZW1fY2FsbF9mYXN0cGF0aCsweDE2LzB4MWIN
+ClsgIDI3Ni42NjQ3NTZdIC0tLVsgZW5kIHRyYWNlIDlmNWQ0ZmNkZDBjM2Vk
+ZmMgXS0tLQ0KDQpXZSBmb3JnZXQgdG8gY2xlYXIgQkNBQ0hFX0RFVl9VTkxJ
+TktfRE9ORSBmbGFnIGluIGJjYWNoZV9kZXZpY2VfYXR0YWNoKCkNCmZ1bmN0
+aW9uIHdoZW4gd2UgYXR0YWNoIGEgYmFja2luZyBkZXZpY2UgZmlyc3QgdGlt
+ZS4gIEFmdGVyIGRldGFjaGluZyB0aGlzDQpiYWNraW5nIGRldmljZSwgdGhp
+cyBmbGFnIHdpbGwgYmUgdHJ1ZSBhbmQgc3lzZnNfcmVtb3ZlX2xpbmsoKSBp
+c24ndCBjYWxsZWQgaW4NCmJjYWNoZV9kZXZpY2VfdW5saW5rKCkuICBUaGVu
+IHdoZW4gd2UgYXR0YWNoIHRoaXMgYmFja2luZyBkZXZpY2UgYWdhaW4sDQpz
+eXNmc19jcmVhdGVfbGluaygpIHdpbGwgcmV0dXJuIEVFWElTVCBlcnJvciBp
+biBiY2FjaGVfZGV2aWNlX2xpbmsoKS4NCg0KU28gdGhlIGZpeCBpcyB0cml2
+YWwgYW5kIHdlIGNsZWFyIHRoaXMgZmxhZyBpbiBiY2FjaGVfZGV2aWNlX2xp
+bmsoKS4NCg0KU2lnbmVkLW9mZi1ieTogWmhlbmcgTGl1IDx3ZW5xaW5nLmx6
+QHRhb2Jhby5jb20+DQpUZXN0ZWQtYnk6IEpvc2h1YSBTY2htaWQgPGpzY2ht
+aWRAc3VzZS5jb20+DQotLS0NCiBkcml2ZXJzL21kL2JjYWNoZS9zdXBlci5j
+IHwgMiArKw0KIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlvbnMoKykNCg0K
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMgYi9kcml2
+ZXJzL21kL2JjYWNoZS9zdXBlci5jDQppbmRleCA0ZGQyYmI3Li5mNjI0YWU4
+IDEwMDY0NA0KLS0tIGEvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYw0KKysr
+IGIvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYw0KQEAgLTcwOCw2ICs3MDgs
+OCBAQCBzdGF0aWMgdm9pZCBiY2FjaGVfZGV2aWNlX2xpbmsoc3RydWN0IGJj
+YWNoZV9kZXZpY2UgKmQsIHN0cnVjdCBjYWNoZV9zZXQgKmMsDQogCVdBUk4o
+c3lzZnNfY3JlYXRlX2xpbmsoJmQtPmtvYmosICZjLT5rb2JqLCAiY2FjaGUi
+KSB8fA0KIAkgICAgIHN5c2ZzX2NyZWF0ZV9saW5rKCZjLT5rb2JqLCAmZC0+
+a29iaiwgZC0+bmFtZSksDQogCSAgICAgIkNvdWxkbid0IGNyZWF0ZSBkZXZp
+Y2UgPC0+IGNhY2hlIHNldCBzeW1saW5rcyIpOw0KKw0KKwljbGVhcl9iaXQo
+QkNBQ0hFX0RFVl9VTkxJTktfRE9ORSwgJmQtPmZsYWdzKTsNCiB9DQoNCiBz
+dGF0aWMgdm9pZCBiY2FjaGVfZGV2aWNlX2RldGFjaChzdHJ1Y3QgYmNhY2hl
+X2RldmljZSAqZCkNCi0tIA0KMi4xLjINCg0K
+
+--1866506367-117624659-1431712533=:8760--
