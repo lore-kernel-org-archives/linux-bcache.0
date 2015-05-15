@@ -1,31 +1,59 @@
-From: Lucas Clemente Vella <lvella@gmail.com>
-Subject: Extreme slowdown
-Date: Fri, 8 May 2015 12:05:40 -0300
-Message-ID: <CAGCathwwYPfTCzQMQHH+hE4antbjfZZYEoPY7SYcb1Cp_q9XUQ@mail.gmail.com>
+From: Emmanuel Florac <eflorac@intellique.com>
+Subject: bcache and load average
+Date: Fri, 15 May 2015 18:50:32 +0200
+Message-ID: <20150515185032.6b129595@harpe.intellique.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:33706 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632AbbEHPGD (ORCPT
+Received: from smtpfb1-g21.free.fr ([212.27.42.9]:46744 "EHLO
+	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753443AbbEOQud (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 8 May 2015 11:06:03 -0400
-Received: by iepj10 with SMTP id j10so62363049iep.0
-        for <linux-bcache@vger.kernel.org>; Fri, 08 May 2015 08:06:01 -0700 (PDT)
+	Fri, 15 May 2015 12:50:33 -0400
+Received: from smtp5-g21.free.fr (smtp5-g21.free.fr [212.27.42.5])
+	by smtpfb1-g21.free.fr (Postfix) with ESMTP id 8F6D17943CB
+	for <linux-bcache@vger.kernel.org>; Fri, 15 May 2015 18:50:29 +0200 (CEST)
+Received: from harpe.intellique.com (unknown [82.225.196.72])
+	by smtp5-g21.free.fr (Postfix) with ESMTP id F2047D480CD
+	for <linux-bcache@vger.kernel.org>; Fri, 15 May 2015 18:46:35 +0200 (CEST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-I don't know what is causing it, maybe the poor SSD quality, but I am
-downloading a game on Steam with rate of 2.2 MB/s, and it is clogging
-the filesystem access. Opening a new website halts for several seconds
-on checking the local cache. Same thing on opening applications and
-even clicking the XFCE menu.
 
-My home and root partitions shares the same backing SSD device,
-configured in writeback mode. Is there any configuration I could make
-to mitigate the issue?
+Hi everyone,
+
+Going through various forum messages and bug reports (for
+Debian: https://lists.debian.org/debian-kernel/2015/03/msg00060.html for
+Arch: https://bugs.archlinux.org/task/38843 for some other distro:
+https://groups.google.com/forum/#!msg/esos-users/NXp8tG7sVE8/QXZyPdZ2saIJ
+) it looks like the bcache_writeback kernel thread, being in
+uninterruptible sleep, keeps the load average at 1.0 (or maybe more)
+always. Could you please confirm this ?
+
+
+ - this behaviour should be described in the bcache documentation
+   because it feels to me (and many other) like a true gotcha. It's
+   apparently completely undocumented. A "CAVEATS" section at the
+   bottom of bcache.txt in the kernel Documentation explaining this
+   would be nice, what do you think?
+
+ - Is there any way around this? Some people seem to grow uneasy (maybe
+   irrationnally) having a constant load on an otherwise unused system
+   (I know that a sleeping thread actually does nothing, but many 
+   system administrators can't wrap their head around this idea). 
+
+I've tried some advice I've found on the web, like switching to
+writethrough and "echo 0 > /sys/block/bcache0/bcache/writeback_running"
+but to absolutely no effect.
+
+Any advice and idea is welcome :)
 
 -- 
-Lucas Clemente Vella
-lvella@gmail.com
+------------------------------------------------------------------------
+Emmanuel Florac     |   Direction technique
+                    |   Intellique
+                    |	<eflorac@intellique.com>
+                    |   +33 1 78 94 84 02
+------------------------------------------------------------------------
