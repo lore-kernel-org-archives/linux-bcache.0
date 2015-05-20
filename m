@@ -1,41 +1,42 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache and load average
-Date: Tue, 19 May 2015 10:54:51 -0700 (PDT)
-Message-ID: <alpine.DEB.2.02.1505191052290.18976@ware.dreamhost.com>
-References: <20150515185032.6b129595@harpe.intellique.com> <alpine.DEB.2.02.1505151053020.8760@ware.dreamhost.com> <20150515203736.GB24997@birch.djwong.org> <CAF1ivSb32U+KGfe1EAUsM04ASjYp=qFB8wD+sxqx2-7PJOYuEA@mail.gmail.com> <alpine.DEB.2.02.1505181214530.7900@ware.dreamhost.com>
- <CAF1ivSZAkeSAznsoKWFbnMEUFOvYBEK7ZQ8EZrK-aucQ96se6A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from homie.mail.dreamhost.com ([208.97.132.208]:48424 "EHLO
-	homiemail-a10.g.dreamhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754175AbbESRyx (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 19 May 2015 13:54:53 -0400
-In-Reply-To: <CAF1ivSZAkeSAznsoKWFbnMEUFOvYBEK7ZQ8EZrK-aucQ96se6A@mail.gmail.com>
-Sender: linux-bcache-owner@vger.kernel.org
+From: Joe Perches <joe@perches.com>
+Subject: [PATCH 00/12] treewide: Use DECLARE_BITMAP
+Date: Tue, 19 May 2015 18:37:48 -0700
+Message-ID: <cover.1432085659.git.joe@perches.com>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org, linux-rdma@vger.kernel.org, linux-bcache@vger.kernel.org, netdev@vger.kernel.org, linux-scsi@vger.kernel.org, logfs@logfs.org
+Cc: dmaengine@vger.kernel.org, linux-raid@vger.kernel.org, linux-s390@vger.kernel.org, linux-nfs@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lin <mlin@kernel.org>
-Cc: linux-bcache@vger.kernel.org
 
-> >> I have put the patches here.
-> >> https://git.kernel.org/cgit/linux/kernel/git/mlin/linux.git/log/?h=bcache
-> >>
-> >> I'm new to bcache code.
-> >> I'll read these patches and run some tests.
-> >>
-> >> Ming
-> >
-> > Excellent! Will these flow into Linus' kernel?
-> 
-> I'm going to reproduce the problems these patches fixed.
-> Then I'll send these to block layer maintainer Jens Axboe.
-> 
-> Can I add your "Tested-by"?
+Use the standard method to declare a bitmap array.
 
-Sure, Tested-by: bcache@linux.ewheeler.net
+Joe Perches (12):
+  ARM: mach-imx: iomux-imx31: Use DECLARE_BITMAP
+  dmaengine: rcar-dmac: Use DECLARE_BITMAP
+  drm/amdkfd: Use DECLARE_BITMAP
+  drm/radeon: Use DECLARE_BITMAP
+  IB/ehca: Use DECLARE_BITMAP
+  bcache: Use DECLARE_BITMAP
+  spider_net: Use DECLARE_BITMAP
+  s390/sclp: Use DECLARE_BITMAP
+  [SCSI] qla4xxx: Use DECLARE_BITMAP
+  scsi: Use DECLARE_BITMAP
+  logfs: Use DECLARE_BITMAP
+  sunrpc: Use DECLARE_BITMAP
 
---
-Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
-888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
-www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
+ arch/arm/mach-imx/iomux-imx31.c           | 2 +-
+ drivers/dma/sh/rcar-dmac.c                | 2 +-
+ drivers/gpu/drm/amd/amdkfd/kfd_priv.h     | 5 ++---
+ drivers/gpu/drm/radeon/radeon.h           | 2 +-
+ drivers/infiniband/hw/ehca/ipz_pt_fn.h    | 2 +-
+ drivers/md/bcache/journal.c               | 2 +-
+ drivers/net/ethernet/toshiba/spider_net.c | 3 +--
+ drivers/s390/char/sclp_cmd.c              | 2 +-
+ drivers/scsi/qla4xxx/ql4_def.h            | 2 +-
+ drivers/scsi/sr.c                         | 2 +-
+ fs/logfs/logfs.h                          | 2 +-
+ net/sunrpc/auth_gss/svcauth_gss.c         | 2 +-
+ 12 files changed, 13 insertions(+), 15 deletions(-)
+
+-- 
+2.1.2
