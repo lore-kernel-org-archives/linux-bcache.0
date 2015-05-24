@@ -1,20 +1,38 @@
-From: robert@project.com
-Subject: Update
-Date: Tue, 08 Dec 2015 20:43:13 -0600
-Message-ID: <20151209025519.EF16624F6F__28340.7423332848$1449629897$gmane$org@smtp.altrodesign.cz>
-Reply-To: beckfordchambs@gmail.com
+From: Peter <pkozbial@gmail.com>
+Subject: SSD failed - can I recover data from HDDs
+Date: Sun, 24 May 2015 00:46:33 +0000 (UTC)
+Message-ID: <loom.20150524T023926-291@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtp2.altrodesign.cz ([109.123.203.224]:43856 "EHLO
-	smtp2.altrodesign.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbbLIC5p convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 8 Dec 2015 21:57:45 -0500
-Content-Description: Mail message body
+Received: from plane.gmane.org ([80.91.229.3]:48603 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751017AbbLKDKI (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 10 Dec 2015 22:10:08 -0500
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1a7E5t-0003v4-I5
+	for linux-bcache@vger.kernel.org; Fri, 11 Dec 2015 04:10:05 +0100
+Received: from 108-123-127-34.pools.spcsdns.net ([108-123-127-34.pools.spcsdns.net])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Fri, 11 Dec 2015 04:10:05 +0100
+Received: from pkozbial by 108-123-127-34.pools.spcsdns.net with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Fri, 11 Dec 2015 04:10:05 +0100
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Recipients <robert@project.com>
+To: linux-bcache@vger.kernel.org
 
-Good day, hoping you read this email and respond to me in good time.I do not intend to solicit for funds but your time and energy in using my own resources to assist the less privileged becauseI am medically ill and confined at the moment hence I request your indulgence.I will give you a comprehensive brief once I hear from you.  Thanks and reply. Robert Grondahl
+I've set up bcache with one SSD and two HDD (using btrfs). 
+
+Unfortunately after power failure the first SSD partition (root) is
+corrupted, the second (swap) and the third (bcache caching) are fine. 
+
+I have two (btrfs formatted) hard drives and would really really love to
+have my data recovered from the hard drives (2 x 5TB). Is there any guide
+how to do that?
+
+Thank you,
+Peter 
