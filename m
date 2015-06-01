@@ -1,66 +1,32 @@
-From: jdd <jdd@dodin.org>
-Subject: Re: reading an ex linux bcache disk
-Date: Thu, 28 May 2015 12:01:42 +0200
-Message-ID: <5566E786.2000805@dodin.org>
-References: <5566BEE5.4020108@dodin.org> <322068851.20150528150913@pvgoran.name>
+From: David Mohr <david@mcbf.net>
+Subject: udev 220 rules broken for bcache
+Date: Mon, 01 Jun 2015 09:20:42 -0600
+Message-ID: <52ebcffefc58302c14a9c4eff437b421@de.mcbf.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252;
-	format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtp5-g21.free.fr ([212.27.42.5]:20733 "EHLO smtp5-g21.free.fr"
+Received: from seeker.mcbf.net ([109.239.49.157]:50508 "EHLO seeker.mcbf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753704AbbE1KBq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 28 May 2015 06:01:46 -0400
-Received: from [192.168.0.22] (unknown [82.228.87.93])
-	by smtp5-g21.free.fr (Postfix) with ESMTP id 5AD8CD48054
-	for <linux-bcache@vger.kernel.org>; Thu, 28 May 2015 11:57:18 +0200 (CEST)
-In-Reply-To: <322068851.20150528150913@pvgoran.name>
+	id S1751340AbbFAPUp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 1 Jun 2015 11:20:45 -0400
+Received: from localhost ([127.0.0.1] helo=de.mcbf.net)
+	by seeker.mcbf.net with esmtp (Exim 4.80)
+	(envelope-from <david@mcbf.net>)
+	id 1YzRW6-00083M-Hj
+	for linux-bcache@vger.kernel.org; Mon, 01 Jun 2015 17:20:42 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Linux Bcache <linux-bcache@vger.kernel.org>
 
-Le 28/05/2015 11:09, Pavel Goran a =E9crit :
+Hi,
 
-got it!
+just a heads up to other distros that the udev rules broke bcache 
+/dev/disk/by-uuid symlinks (and hence booting if the fstab uses UUIDs) 
+in v220. The fix is already applied, but afaik not released yet.
 
-> echo 1 > /sys/block/sda/sda3/bcache/running
+The small patch to fix it is at 
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=787367
 
-was the key :-)! thanks!
-
-the manual says:
-
-"make-bcache has the ability to format multiple devices at the same tim=
-e"
-
-but then:
-
-To get started:
-
-   mkfs.ext4 /dev/bcache0
-
-so the word "format" is not used always with the same meaning (for me,=20
-formatting is creating a file system).
-
-gladfully, make-bcache do *not* format the partition :-)
-
-What I did:
-
-* install a new system elsewhere (same distro I used with bcache).=20
-kernel 3.16.7
-install bcache-tools
-
-make-bcache -B /dev/sda8 (the old bcache backing)
-
-tried to find /sys/block/sda/bcache, but it do not exist. Your example=20
-made me think the manual lacked a level, it have to be=20
-sys/block/sda/sda8/bcache
-
-echo 1 > /sys/block/sda/sda3/bcache/running
-
-and then /dev/bcache0 shows up!
-
-mount /dev/bcache0 /mnt allows me to access the files on the partition
-
-so good, thanks!
-jdd
+~David
