@@ -1,24 +1,24 @@
-From: aswamina@purdue.edu
-Subject: Re: Thanks for responding
-Date: Tue, 09 Jun 2015 17:17:12 +0200
-Message-ID: <SRV-XCHANGE0m4Vps420001a435@srv-xchange.rupaligroup.com>
-Reply-To: r.gsvaso@gmail.com
+From: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Subject: Klientskie bazi tel +79133913837 Email: nonen22pp@gmail.com ICQ:6288862 Yznaite podrobnee!!!
+Date: Thu, 11 Jun 2015 05:55:27 +0400
+Message-ID: <956F2C644094BA09D5D0992450B88FD1@vger.kernel.org>
+Reply-To: "linux-bcache@vger.kernel.org" <nonen22pp@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain;
+	format=flowed;
+	charset="utf-8";
+	reply-type=original
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from corp.multi.net.pk ([202.141.229.26]:37886 "EHLO
-	corp.multi.net.pk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955AbbFIQAN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 9 Jun 2015 12:00:13 -0400
-Content-Description: Mail message body
+Received: from rvrjcce.ac.in ([218.248.4.101]:39862 "EHLO ibmppc.internet"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750856AbbFKGJt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 11 Jun 2015 02:09:49 -0400
+Received: from 218.248.4.101 (localhost [127.0.0.1])
+	by ibmppc.internet (Postfix) with SMTP id A8E83D5C821
+	for <linux-bcache@vger.kernel.org>; Thu, 11 Jun 2015 05:04:18 +0530 (IST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "r.gsvaso@yahoo.com.ph" <aswamina@purdue.edu>
+To: linux-bcache@vger.kernel.org
 
-Hi,
-
-I am diagnosed with laryngeal cancer, I' want to give my money to you & my body to science. Respond with this ref SvaSo so I know you got this.
-
-Ruby
+Klientskie bazi tel +79133913837 Email: nonen22pp@gmail.com ICQ:6288862 Yznaite podrobnee!!!
