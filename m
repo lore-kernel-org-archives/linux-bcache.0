@@ -1,43 +1,36 @@
 From: Donald Pearson <donaldwhpearson@gmail.com>
-Subject: Re: change/recreate cache device?
-Date: Fri, 3 Jul 2015 15:51:13 -0500
-Message-ID: <CAC=t97BREcSCV4kO2vdMkpOHJg6qR62sJzCdkDCA+SwQTMqjQg@mail.gmail.com>
-References: <CAC=t97ATr7fd-_4_14vggBVqvprnKWHDMny6TknQ5DdqBeS_xg@mail.gmail.com>
- <5596F21C.4070100@gmail.com>
+Subject: attching with multiple backing devices
+Date: Fri, 3 Jul 2015 16:02:23 -0500
+Message-ID: <CAC=t97D_Yr0Ya2qu=sGk89JaODtz9K4QiQcCF8G2PX=Y+0zeYQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:34264 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414AbbGCUve (ORCPT
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:33167 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878AbbGCVCm (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 3 Jul 2015 16:51:34 -0400
-Received: by oigx81 with SMTP id x81so84519493oig.1
-        for <linux-bcache@vger.kernel.org>; Fri, 03 Jul 2015 13:51:33 -0700 (PDT)
-In-Reply-To: <5596F21C.4070100@gmail.com>
+	Fri, 3 Jul 2015 17:02:42 -0400
+Received: by obpn3 with SMTP id n3so75131983obp.0
+        for <linux-bcache@vger.kernel.org>; Fri, 03 Jul 2015 14:02:42 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Yurii Kolesnykov <yurikoles@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-That was the ticket, thank you sir!
+The example information I've been able to find isn't clear on proper
+implementation with multiple backing devices.  The following is an
+exerpt from the documentation.  I have 12 backing devices (bcache0 -
+bcache11).. do I run this just once against any one of the 12, one of
+the 12 in particular, or do I run this 12 times, once for each of the
+12 backing devices that I want cached?
 
-On Fri, Jul 3, 2015 at 3:35 PM, Yurii Kolesnykov <yurikoles@gmail.com> wrote:
-> Yes, I had same issue many times. To resolve it you need to `echo 1 > /sys/fs/bcache/<UUID>/stop`, but maybe even `echo <UUID> > /sys/block/bcacheN/bcache/detach` before it.
->
-> On 03.07.15 23:25, Donald Pearson wrote:
->> This is my first crack at bcache and I configured a cache device with
->> defaults using make-bcache -C /dev/sda
->>
->> Now I've got better info on my SSD and know what the block and bucket
->> sizes should be, however I can't run the command again with errors
->> that the device is busy.
->>
->> I never did anythign beyond just creating the cache and backing
->> devices.  I never registered the cache device, never created a
->> filesystem.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+ATTACHING:
+
+After your cache device and backing device are registered, the backing device
+must be attached to your cache set to enable caching. Attaching a backing
+device to a cache set is done thusly, with the UUID of the cache set in
+/sys/fs/bcache:
+
+  echo <UUID> > /sys/block/bcache0/bcache/attach
+
+Regards,
+Donald
