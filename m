@@ -1,67 +1,66 @@
-From: Donald Pearson <donaldwhpearson@gmail.com>
-Subject: Re: attching with multiple backing devices
-Date: Tue, 7 Jul 2015 14:04:01 -0500
-Message-ID: <CAC=t97BUnxrXWbmWCu4c48R3Ec58xWfuYOL2YxaWFU0NJ=1G0w@mail.gmail.com>
-References: <CAC=t97D_Yr0Ya2qu=sGk89JaODtz9K4QiQcCF8G2PX=Y+0zeYQ@mail.gmail.com>
- <CAO2mnoy7=eY2wurNfuAWF=X_wfdzFVgxavcim94=Xsm_dm0+hg@mail.gmail.com>
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+Subject: Re: [PATCH] bcache: Deletion of an unnecessary check before the
+ function call "kobject_put"
+Date: Wed, 8 Jul 2015 19:48:13 +0200
+Message-ID: <559D625D.2020408@users.sourceforge.net>
+References: <5307CAA2.8060406@users.sourceforge.net>
+ <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6>
+ <530A086E.8010901@users.sourceforge.net>
+ <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6>
+ <530A72AA.3000601@users.sourceforge.net>
+ <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6>
+ <530B5FB6.6010207@users.sourceforge.net>
+ <alpine.DEB.2.10.1402241710370.2074@hadrien>
+ <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
+ <530DD06F.4090703@users.sourceforge.net>
+ <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
+ <5317A59D.4@users.sourceforge.net> <546CFECC.8020309@users.sourceforge.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:35833 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932789AbbGGTEV (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 7 Jul 2015 15:04:21 -0400
-Received: by obbop1 with SMTP id op1so135302639obb.2
-        for <linux-bcache@vger.kernel.org>; Tue, 07 Jul 2015 12:04:20 -0700 (PDT)
-In-Reply-To: <CAO2mnoy7=eY2wurNfuAWF=X_wfdzFVgxavcim94=Xsm_dm0+hg@mail.gmail.com>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <546CFECC.8020309@users.sourceforge.net>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>, Neil Brown <neilb@suse.de>, linux-bcache@vger.kernel.org
+Cc: linux-raid@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
 List-Id: linux-bcache@vger.kernel.org
-To: Denis Bychkov <manover@gmail.com>
-Cc: linux-bcache@vger.kernel.org
 
-Thanks Denis.  That's what I ended up trying and confirmed that it works.
+> From: Markus Elfring <elfring@users.sourceforge.net>
+> Date: Wed, 19 Nov 2014 21:25:39 +0100
+> 
+> The kobject_put() function tests whether its argument is NULL and then
+> returns immediately. Thus the test around the call is not needed.
+> 
+> This issue was detected by using the Coccinelle software.
+> 
+> Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+> ---
+>  drivers/md/bcache/super.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index d4713d0..1443c55 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -2076,8 +2076,7 @@ static void bcache_exit(void)
+>  {
+>  	bch_debug_exit();
+>  	bch_request_exit();
+> -	if (bcache_kobj)
+> -		kobject_put(bcache_kobj);
+> +	kobject_put(bcache_kobj);
+>  	if (bcache_wq)
+>  		destroy_workqueue(bcache_wq);
+>  	if (bcache_major)
+> 
 
-On Tue, Jul 7, 2015 at 2:01 PM, Denis Bychkov <manover@gmail.com> wrote:
-> Hi,
->
-> By running this command you tell bcache you want the backing device
-> associated with a particular cache set (currently only one cache set is
-> supported, but nevermind), so yes, you run it 12 times feeding it 12
-> different UUIDs. Until you register a backing device, it won't be associated
-> with any cache set, so it will be perfectly accessible but be working in a
-> pass-through mode.
->
-> On Fri, Jul 3, 2015 at 5:02 PM, Donald Pearson <donaldwhpearson@gmail.com>
-> wrote:
->>
->> The example information I've been able to find isn't clear on proper
->> implementation with multiple backing devices.  The following is an
->> exerpt from the documentation.  I have 12 backing devices (bcache0 -
->> bcache11).. do I run this just once against any one of the 12, one of
->> the 12 in particular, or do I run this 12 times, once for each of the
->> 12 backing devices that I want cached?
->>
->> ATTACHING:
->>
->> After your cache device and backing device are registered, the backing
->> device
->> must be attached to your cache set to enable caching. Attaching a backing
->> device to a cache set is done thusly, with the UUID of the cache set in
->> /sys/fs/bcache:
->>
->>   echo <UUID> > /sys/block/bcache0/bcache/attach
->>
->> Regards,
->> Donald
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
->
->
-> --
->
-> Denis
+Would you like to integrate this update suggestion
+into another source code repository?
+
+Regards,
+Markus
