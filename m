@@ -1,61 +1,66 @@
-From: Stefan Bader <stefan.bader@canonical.com>
-Subject: [PATCH resend] bcache: prevent crash on changing writeback_running
-Date: Fri, 10 Jul 2015 16:10:56 +0200
-Message-ID: <1436537456-17338-1-git-send-email-stefan.bader@canonical.com>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: [ANNOUNCE] bcachefs!
+Date: Mon, 13 Jul 2015 17:58:25 -0700
+Message-ID: <20150714005825.GA24027@kmo-pixel>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from youngberry.canonical.com ([91.189.89.112]:43024 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754455AbbGJOK7 (ORCPT
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:33717 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767AbbGNA6a (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 10 Jul 2015 10:10:59 -0400
+	Mon, 13 Jul 2015 20:58:30 -0400
+Received: by padck2 with SMTP id ck2so51246427pad.0
+        for <linux-bcache@vger.kernel.org>; Mon, 13 Jul 2015 17:58:30 -0700 (PDT)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
+To: linux-bcache@vger.kernel.org
+Cc: sviatoslavpestov@gmail.com, mrubin@google.com, adam.berkan@gmail.com, zab@zabbo.net, rickyb@google.com
 
-I sent this out quite a while ago. Back then it was said that it
-was applied to the development tree. But it seems it never made its
-way upstream. 
-I re-tested with a 4.0.7 kernel and compared this against a 4.0 kernel
-with this patch applied. Still it is possible to trigger a NULL pointer
-violation when writing 0 into writeback_running of a bcache device that
-is not attached to a cache set (without the patch).
+Short announcement, because I'm in the process of moving - but I wanted to get
+this out there because the code is up and I think it's reasonably stable right
+now.
 
--Stefan
+Bcachefs is a posix filesystem that I've been working towards for - well, quite
+awhile now: it's intended as a competitor/replacement for ext4/xfs/btrfs.
 
+Current features
+ - multiple devices
+ - replication
+ - tiering
+ - data checksumming and compression (zlib only; also the code doesn't work with
+   tiering yet)
+ - most of the normal posix fs features (no fallocate or quotas yet)
 
----
+Planned features:
+ - snapshots!
+ - erasure coding
+ - more
 
-From e949c64fa6acbdaab999410250855a6a4fc6bad1 Mon Sep 17 00:00:00 2001
-From: Stefan Bader <stefan.bader@canonical.com>
-Date: Mon, 18 Aug 2014 20:00:13 +0200
-Subject: [PATCH] bcache: prevent crash on changing writeback_running
+There will be a longer announcement on LKML/linux-fs in the near future (after
+I'm finished moving) - but I'd like to get it a bit more testing from a wider
+audience first, if possible.
 
-commit a664d0f05a2e ("bcache: fix crash on shutdown in passthrough mode")
+You need the bcache-dev branch, and the new bcache tools - be warned, this code
+is _not_ compatible with the upstream bcache on disk format:
 
-added a safeguard in the shutdown case. At least while not being
-attached it is also possible to trigger a kernel bug by writing into
-writeback_running. This change  adds the same check before trying to
-wake up the thread for that case.
+$ git clone -b bcache-dev http://evilpiepirate.org/git/linux-bcache.git
+$ git clone -b dev http://evilpiepirate.org/git/bcache-tools.git
 
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
----
- drivers/md/bcache/writeback.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Then do the usual compiling...
 
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 0a9dab1..073a042 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -63,7 +63,8 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
- 
- static inline void bch_writeback_queue(struct cached_dev *dc)
- {
--	wake_up_process(dc->writeback_thread);
-+	if (!IS_ERR_OR_NULL(dc->writeback_thread))
-+		wake_up_process(dc->writeback_thread);
- }
- 
- static inline void bch_writeback_add(struct cached_dev *dc)
--- 
-1.9.1
+# bcacheadm format -C /dev/sda1
+# mount /dev/sda1 /mnt
+
+The usual caveats apply - it might eat your data, the on disk format has _not_
+been stabilized yet, etc. But it's been reasonably stable for me, and passes all
+but 2-3 of the supported xfstests.
+
+Try it out and let me know how it goes!
+
+Also, programmers please check out the bcache guide - feedback is appreciated:
+
+http://bcache.evilpiepirate.org/BcacheGuide/
+
+Thanks!
