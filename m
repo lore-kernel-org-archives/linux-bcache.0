@@ -1,40 +1,77 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
+From: Ming Lin <mlin@kernel.org>
 Subject: Re: [ANNOUNCE] bcachefs!
-Date: Fri, 17 Jul 2015 16:17:01 -0700
-Message-ID: <20150717231700.GA4166@kmo-pixel>
+Date: Fri, 17 Jul 2015 16:35:55 -0700
+Message-ID: <1437176155.9009.0.camel@ssi>
 References: <20150714005825.GA24027@kmo-pixel>
- <1436940689.6520.1.camel@hasee>
- <CAC7rs0sbg2ci6=niQ0X11AONZbr2AOYhRbxfDH_w4N4A7dyPLw@mail.gmail.com>
- <1436944556.6520.5.camel@hasee>
- <CAF1ivSa4bZaw2w9nu1tQeYx7JBb2_fVDV67Le=ybC2m8OdX3gg@mail.gmail.com>
+	 <1436940689.6520.1.camel@hasee>
+	 <CAC7rs0sbg2ci6=niQ0X11AONZbr2AOYhRbxfDH_w4N4A7dyPLw@mail.gmail.com>
+	 <1436944556.6520.5.camel@hasee>
+	 <CAF1ivSa4bZaw2w9nu1tQeYx7JBb2_fVDV67Le=ybC2m8OdX3gg@mail.gmail.com>
+	 <20150717231700.GA4166@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:34991 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbbGQXRF (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 17 Jul 2015 19:17:05 -0400
-Received: by pdrg1 with SMTP id g1so68440532pdr.2
-        for <linux-bcache@vger.kernel.org>; Fri, 17 Jul 2015 16:17:04 -0700 (PDT)
-Content-Disposition: inline
-In-Reply-To: <CAF1ivSa4bZaw2w9nu1tQeYx7JBb2_fVDV67Le=ybC2m8OdX3gg@mail.gmail.com>
+Received: from mail.kernel.org ([198.145.29.136]:56820 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752238AbbGQXgW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 17 Jul 2015 19:36:22 -0400
+In-Reply-To: <20150717231700.GA4166@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lin <mlin@kernel.org>
+To: Kent Overstreet <kent.overstreet@gmail.com>
 Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On Wed, Jul 15, 2015 at 12:39:36AM -0700, Ming Lin wrote:
-> On Wed, Jul 15, 2015 at 12:15 AM, Ming Lin <mlin@kernel.org> wrote:
-> > On Tue, 2015-07-14 at 23:58 -0700, Kent Overstreet wrote:
-> >> Can you strace it?
-> >
-> > Strange. Now error message changed.
-> 
-> I mean sometimes it showed:
-> 
-> mount: /dev/sdt already mounted or /mnt/ busy
 
-I have no idea what's going on, it works for me - is there anything unusual
-about your setup? what kind of block device is /dev/sdt? is there any chance
-there's another process that has it open? maybe try rebooting?
+On Fri, 2015-07-17 at 16:17 -0700, Kent Overstreet wrote:
+> On Wed, Jul 15, 2015 at 12:39:36AM -0700, Ming Lin wrote:
+> > On Wed, Jul 15, 2015 at 12:15 AM, Ming Lin <mlin@kernel.org> wrote:
+> > > On Tue, 2015-07-14 at 23:58 -0700, Kent Overstreet wrote:
+> > >> Can you strace it?
+> > >
+> > > Strange. Now error message changed.
+> > 
+> > I mean sometimes it showed:
+> > 
+> > mount: /dev/sdt already mounted or /mnt/ busy
+> 
+> I have no idea what's going on, it works for me - is there anything unusual
+> about your setup? what kind of block device is /dev/sdt? is there any chance
+> there's another process that has it open? maybe try rebooting?
+
+It's a regular HDD. I tried rebooting several times.
+
+Now I try in qemu-kvm. Only the first time it can be mounted.
+
+On host: qemu-img create hdd1.img 20G
+On guest: it's /dev/vda
+
+root@block:~# bcacheadm format -C /dev/vda 
+UUID:			4730ed95-4c57-42db-856c-dbce36085625
+Set UUID:		e69ef0e0-0344-40d7-a6b1-c23d14745a32
+version:		6
+nbuckets:		40960
+block_size:		1
+bucket_size:		1024
+nr_in_set:		1
+nr_this_dev:		0
+first_bucket:		3
+
+root@block:~# mount -t bcache /dev/vda /mnt/
+
+root@block:~# mount |grep bcache
+/dev/vda on /mnt type bcache (rw,relatime)
+
+root@block:~# reboot
+
+root@block:~# dmesg |grep -i bcache
+[    2.548754] bcache: bch_journal_replay() journal replay done, 1 keys in 1 entries, seq 3
+[    2.636217] bcache: register_cache() registered cache device vda
+
+
+root@block:~# mount -t bcache /dev/vda /mnt/
+mount: No such file or directory
+
+Now dmesg shows:
+
+bcache: bch_open_as_blockdevs() register_cache_set err device already registered
