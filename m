@@ -1,57 +1,55 @@
-From: Stefan Priebe <s.priebe@profihost.ag>
-Subject: bcache_writeback task blocked for more ...
-Date: Sat, 18 Jul 2015 07:27:30 +0200
-Message-ID: <55A9E3C2.4040608@profihost.ag>
+From: Killian De Volder <killian.de.volder@megasoft.be>
+Subject: Unable to detach caching device
+Date: Sat, 18 Jul 2015 17:29:16 +0200
+Message-ID: <55AA70CC.9000101@megasoft.be>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:17104 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbbGRF1P (ORCPT
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:36287 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbbGRP3T (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 18 Jul 2015 01:27:15 -0400
+	Sat, 18 Jul 2015 11:29:19 -0400
+Received: from mfilter44-d.gandi.net (mfilter44-d.gandi.net [217.70.178.175])
+	by relay5-d.mail.gandi.net (Postfix) with ESMTP id 66AE141C053
+	for <linux-bcache@vger.kernel.org>; Sat, 18 Jul 2015 17:29:18 +0200 (CEST)
+Received: from relay5-d.mail.gandi.net ([IPv6:::ffff:217.70.183.197])
+	by mfilter44-d.gandi.net (mfilter44-d.gandi.net [::ffff:10.0.15.180]) (amavisd-new, port 10024)
+	with ESMTP id fMICivc6KOf5 for <linux-bcache@vger.kernel.org>;
+	Sat, 18 Jul 2015 17:29:17 +0200 (CEST)
+Received: from [172.17.0.70] (cable-213-34-255-70.zeelandnet.nl [213.34.255.70])
+	(Authenticated sender: killian.de.volder@megasoft.be)
+	by relay5-d.mail.gandi.net (Postfix) with ESMTPSA id 2287741C04E
+	for <linux-bcache@vger.kernel.org>; Sat, 18 Jul 2015 17:29:16 +0200 (CEST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Cc: kent.overstreet@gmail.com, Eric Wheeler <bcache@lists.ewheeler.net>
+To: linux-bcache@vger.kernel.org
 
-Hi List,
+I'm attempting to detach a a caching device.
+However it's not working, the bcache device stays dirty.
 
-while running bcache on 3.18.18 and having added the known patches from 
-the list i still get blocked bcache_writeback tasks.
+# pwd
+/sys/block/bcache0/bcache
 
-The kernel does now show any stack trace on his own.
+# cat cache_mode state dirty_data writeback_running writeback_rate
+writethrough writeback writearound [none]
+dirty
+2.0M
+1
+512
 
-The relevant tasks look like this:
-[: ~]# cat /proc/769/stack
-[<ffffffffa01e9685>] closure_sync+0x25/0x90 [bcache]
-[<ffffffffa01feb9c>] read_dirty+0x31c/0x410 [bcache]
-[<ffffffffa01fee94>] bch_writeback_thread+0x204/0x400 [bcache]
-[<ffffffff81090af9>] kthread+0xc9/0xe0
-[<ffffffff815f9008>] ret_from_fork+0x58/0x90
-[<ffffffffffffffff>] 0xffffffffffffffff
-[: ~]# cat /proc/769/stack
-[<ffffffffa01e9685>] closure_sync+0x25/0x90 [bcache]
-[<ffffffffa01feb9c>] read_dirty+0x31c/0x410 [bcache]
-[<ffffffffa01fee94>] bch_writeback_thread+0x204/0x400 [bcache]
-[<ffffffff81090af9>] kthread+0xc9/0xe0
-[<ffffffff815f9008>] ret_from_fork+0x58/0x90
-[<ffffffffffffffff>] 0xffffffffffffffff
-[: ~]# cat /proc/773/stack
-[<ffffffff810b7601>] down+0x41/0x50
-[<ffffffffa01fea78>] read_dirty+0x1f8/0x410 [bcache]
-[<ffffffffa01fee94>] bch_writeback_thread+0x204/0x400 [bcache]
-[<ffffffff81090af9>] kthread+0xc9/0xe0
-[<ffffffff815f9008>] ret_from_fork+0x58/0x90
-[<ffffffffffffffff>] 0xffffffffffffffff
-[: ~]# cat /proc/783/stack
-[<ffffffffa01e9685>] closure_sync+0x25/0x90 [bcache]
-[<ffffffffa01feb9c>] read_dirty+0x31c/0x410 [bcache]
-[<ffffffffa01fee94>] bch_writeback_thread+0x204/0x400 [bcache]
-[<ffffffff81090af9>] kthread+0xc9/0xe0
-[<ffffffff815f9008>] ret_from_fork+0x58/0x90
-[<ffffffffffffffff>] 0xffffffffffffffff
+# cat writeback_rate_debug
+rate:        512/sec
+dirty:        2.0M
+target:        3.2G
+proportional:    -3.2M
+derivative:    0
+change:        -3.2M/sec
+next io:    0ms
 
-Greets,
-Stefan
+I'm going to leave the machine on so I can extract any information you need.
+(dmesg contains no errors)
+
+Kind regards,
+Killian De Volder
