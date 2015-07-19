@@ -1,70 +1,234 @@
-From: Killian De Volder <killian.de.volder@megasoft.be>
-Subject: Re: Unable to detach caching device
-Date: Sat, 18 Jul 2015 21:26:50 +0200
-Message-ID: <55AAA87A.7080407@megasoft.be>
-References: <55AA70CC.9000101@megasoft.be>
+From: Denis Bychkov <manover@gmail.com>
+Subject: Re: [ANNOUNCE] bcachefs!
+Date: Sun, 19 Jul 2015 03:46:41 -0400
+Message-ID: <CAO2mnoyz+R4k+P4+EDc5VONA7wDdrJ=RQBki2rqQwrbV_0aLoA@mail.gmail.com>
+References: <20150714005825.GA24027@kmo-pixel>
+	<CAO2mnowhZLM45iSYmLCFZKESrNgKCeRPR7io_tQKoU0u2SYm+Q@mail.gmail.com>
+	<20150718021245.GB3196@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary=089e011775a7321332051b359fd1
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:50597 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704AbbGRT0y (ORCPT
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:33390 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbbGSHqm (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 18 Jul 2015 15:26:54 -0400
-Received: from mfilter16-d.gandi.net (mfilter16-d.gandi.net [217.70.178.144])
-	by relay5-d.mail.gandi.net (Postfix) with ESMTP id AE40C41C04E
-	for <linux-bcache@vger.kernel.org>; Sat, 18 Jul 2015 21:26:52 +0200 (CEST)
-Received: from relay5-d.mail.gandi.net ([217.70.183.197])
-	by mfilter16-d.gandi.net (mfilter16-d.gandi.net [10.0.15.180]) (amavisd-new, port 10024)
-	with ESMTP id bl6ehppjM5If for <linux-bcache@vger.kernel.org>;
-	Sat, 18 Jul 2015 21:26:51 +0200 (CEST)
-Received: from [172.17.0.70] (cable-213-34-255-70.zeelandnet.nl [213.34.255.70])
-	(Authenticated sender: killian.de.volder@megasoft.be)
-	by relay5-d.mail.gandi.net (Postfix) with ESMTPSA id 511C441C054
-	for <linux-bcache@vger.kernel.org>; Sat, 18 Jul 2015 21:26:51 +0200 (CEST)
-In-Reply-To: <55AA70CC.9000101@megasoft.be>
+	Sun, 19 Jul 2015 03:46:42 -0400
+Received: by obbgp5 with SMTP id gp5so86653650obb.0
+        for <linux-bcache@vger.kernel.org>; Sun, 19 Jul 2015 00:46:41 -0700 (PDT)
+In-Reply-To: <20150718021245.GB3196@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org, Slava Pestov <sviatoslavpestov@gmail.com>
 
-Moved issue to new bugtracker:
-https://github.com/koverstreet/linux-bcache/issues/1
+--089e011775a7321332051b359fd1
+Content-Type: text/plain; charset=UTF-8
 
----
-Killian De Volder
+Hi,
+
+I managed to build it tonight. Although, it took some tuning. The
+problem is with bcache.h header file (the one that resides in
+include/trace/events/). It includes "alloc_types.h", but there is no
+alloc_types.h in that directory. I think, you use customized Makefile
+with extra directories added to -I argument. I fixed it by moving
+alloc_types and clock_types headers to include/trace/events/ from the
+bcache module directory. I attached the diff if anyone is interested.
+To anyone who wants to build this bcache version: you'll need to
+either rebase the code on the kernel version you are working with or
+extract a diff from bcache-dev branch against 4.1 vanilla kernel and
+then apply it to your kernel, then the patch I attached. Or probably
+Kent will fix it soon enough, so you won't need silly workarounds.
+
+On Fri, Jul 17, 2015 at 10:12 PM, Kent Overstreet
+<kent.overstreet@gmail.com> wrote:
+> On Fri, Jul 17, 2015 at 08:01:43PM -0400, Denis Bychkov wrote:
+>> Hi,
+>>
+>> I actually tried to compile that code recently (maybe 5 days ago) and
+>> it did not change since then. There was a bunch of trivial errors,
+>> that I was able to fix - files moved around without #include updated,
+>> types missing. But at some point I ran into something definitely
+>> non-trivial: there is a variable in io.c, which is supposed to have a
+>> node id in it, but the init code commented out and there is no obvious
+>> way to fix it. So I gave up. I definitely tried the branch you are
+>> talking about - bcache-dev.
+>
+> It didn't build? Weird - can you post some of the compiler errors you were
+> seeing, as well as your archictecture/gcc version? I don't know of any build
+> errors right now...
+>
+>>
+>> Here is the I code I mentioned:
+>>
+>> static void bch_read_retry(struct bbio *bbio)
+>> {
+>> struct bio *bio = &bbio->bio;
+>> struct bio *parent;
+>> u64 inode;
+>>
+>> trace_bcache_read_retry(bio);
+>>
+>> /*
+>> * This used to be a leaf bio from bch_read_fn(), but
+>> * since we don't know what happened to the btree in
+>> * the meantime, we have to re-submit it via the
+>> * top-level bch_read() entry point. Before doing that,
+>> * we have to reset the bio, preserving the biovec.
+>> *
+>> * The inode, offset and size come from the bbio's key,
+>> * which was set by bch_read_fn().
+>> */
+>> //inode = bbio->key.k.p.inode;
+>> parent = bio->bi_private;
+>>
+>> bch_bbio_reset(bbio);
+>> bio_chain(bio, parent);
+>>
+>> bch_read(bbio->ca->set, bio, inode);
+>> bio_endio(parent, 0);  /* for bio_chain() in bch_read_fn() */
+>> bio_endio(bio, 0);
+>> }
+>
+> The read retry path is currently non functional, since I added
+> checksumming/compression support - the read path needs a fair bit more work. But
+> that shouldn't cause a build error - and the race the retry path is for is damn
+> near impossible to trigger without fault injection (I don't think I've ever seen
+> it happen without fault injection).
 
 
-On 18-07-15 17:29, Killian De Volder wrote:
-> I'm attempting to detach a a caching device.
-> However it's not working, the bcache device stays dirty.
-> 
-> # pwd
-> /sys/block/bcache0/bcache
-> 
-> # cat cache_mode state dirty_data writeback_running writeback_rate
-> writethrough writeback writearound [none]
-> dirty
-> 2.0M
-> 1
-> 512
-> 
-> # cat writeback_rate_debug
-> rate:        512/sec
-> dirty:        2.0M
-> target:        3.2G
-> proportional:    -3.2M
-> derivative:    0
-> change:        -3.2M/sec
-> next io:    0ms
-> 
-> I'm going to leave the machine on so I can extract any information you need.
-> (dmesg contains no errors)
-> 
-> Kind regards,
-> Killian De Volder
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+
+-- 
+
+Denis
+
+--089e011775a7321332051b359fd1
+Content-Type: application/octet-stream; name="bcache-fix-includes.patch"
+Content-Disposition: attachment; filename="bcache-fix-includes.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ica6heyq0
+
+LS0tIGEvZHJpdmVycy9tZC9iY2FjaGUvYWxsb2NfdHlwZXMuaAorKysgL2Rldi9udWxsCkBAIC0x
+LDk3ICswLDAgQEAKLSNpZm5kZWYgX0JDQUNIRV9BTExPQ19UWVBFU19ICi0jZGVmaW5lIF9CQ0FD
+SEVfQUxMT0NfVFlQRVNfSAotCi0jaW5jbHVkZSA8bGludXgvbXV0ZXguaD4KLQotI2luY2x1ZGUg
+ImNsb2NrX3R5cGVzLmgiCi0KLS8qCi0gKiBUaGVyZSdzIHR3byBvZiB0aGVzZSBjbG9ja3MsIG9u
+ZSBmb3IgcmVhZHMgYW5kIG9uZSBmb3Igd3JpdGVzOgotICoKLSAqIEFsbCBmaWVsZHMgcHJvdGVj
+dGVkIGJ5IGJ1Y2tldF9sb2NrCi0gKi8KLXN0cnVjdCBwcmlvX2Nsb2NrIHsKLQkvKgotCSAqICJu
+b3ciIGluIChyZWFkL3dyaXRlKSBJTyB0aW1lIC0gaW5jcmVtZW50ZWQgd2hlbmV2ZXIgd2UgZG8g
+WCBhbW91bnQKLQkgKiBvZiByZWFkcyBvciB3cml0ZXMuCi0JICoKLQkgKiBHb2VzIHdpdGggdGhl
+IGJ1Y2tldCByZWFkL3dyaXRlIHByaW9zOiB3aGVuIHdlIHJlYWQgb3Igd3JpdGUgdG8gYQotCSAq
+IGJ1Y2tldCB3ZSByZXNldCB0aGUgYnVja2V0J3MgcHJpbyB0byB0aGUgY3VycmVudCBoYW5kOyB0
+aHVzIGhhbmQgLQotCSAqIHByaW8gPSB0aW1lIHNpbmNlIGJ1Y2tldCB3YXMgbGFzdCByZWFkL3dy
+aXR0ZW4uCi0JICoKLQkgKiBUaGUgdW5pdHMgYXJlIHNvbWUgYW1vdW50IChieXRlcy9zZWN0b3Jz
+KSBvZiBkYXRhIHJlYWQvd3JpdHRlbiwgYW5kCi0JICogdGhlIHVuaXRzIGNhbiBjaGFuZ2Ugb24g
+dGhlIGZseSBpZiB3ZSBuZWVkIHRvIHJlc2NhbGUgdG8gZml0Ci0JICogZXZlcnl0aGluZyBpbiBh
+IHUxNiAtIHlvdXIgb25seSBndWFyYW50ZWUgaXMgdGhhdCB0aGUgdW5pdHMgYXJlCi0JICogY29u
+c2lzdGVudC4KLQkgKi8KLQl1MTYJCQloYW5kOwotCXUxNgkJCW1pbl9wcmlvOwotCi0JaW50CQkJ
+cnc7Ci0KLQlzdHJ1Y3QgaW9fdGltZXIJCXJlc2NhbGU7Ci19OwotCi0vKiBUaGVyZSBpcyBvbmUg
+cmVzZXJ2ZSBmb3IgZWFjaCB0eXBlIG9mIGJ0cmVlLCBvbmUgZm9yIHByaW9zIGFuZCBnZW5zCi0g
+KiBhbmQgb25lIGZvciBtb3ZpbmcgR0MgKi8KLWVudW0gYWxsb2NfcmVzZXJ2ZSB7Ci0JUkVTRVJW
+RV9QUklPLAotCVJFU0VSVkVfQlRSRUUsCi0JUkVTRVJWRV9NRVRBREFUQV9MQVNUID0gUkVTRVJW
+RV9CVFJFRSwKLQlSRVNFUlZFX01PVklOR0dDLAotCi0JUkVTRVJWRV9OT05FLAotCVJFU0VSVkVf
+TlIsCi19OwotCi1zdGF0aWMgaW5saW5lIGJvb2wgYWxsb2NhdGlvbl9pc19tZXRhZGF0YShlbnVt
+IGFsbG9jX3Jlc2VydmUgaWQpCi17Ci0JcmV0dXJuIGlkIDw9IFJFU0VSVkVfTUVUQURBVEFfTEFT
+VDsKLX0KLQotLyogRW5vdWdoIGZvciAxNiBjYWNoZSBkZXZpY2VzLCAyIHRpZXJzIGFuZCBzb21l
+IGxlZnQgb3ZlciBmb3IgcGlwZWxpbmluZyAqLwotI2RlZmluZSBPUEVOX0JVQ0tFVFNfQ09VTlQJ
+MjU2Ci0KLSNkZWZpbmUgV1JJVEVfUE9JTlRfQ09VTlQJMTYKLQotc3RydWN0IG9wZW5fYnVja2V0
+IHsKLQlzdHJ1Y3QgbGlzdF9oZWFkCWxpc3Q7Ci0Jc3RydWN0IG11dGV4CQlsb2NrOwotCWF0b21p
+Y190CQlwaW47Ci0JdW5zaWduZWQJCXNlY3RvcnNfZnJlZTsKLQl1bnNpZ25lZAkJbnJfcHRyczsK
+LQlzdHJ1Y3QgYmNoX2V4dGVudF9wdHIJcHRyc1tCS0VZX0VYVEVOVF9QVFJTX01BWF07Ci19Owot
+Ci1zdHJ1Y3Qgd3JpdGVfcG9pbnQgewotCXN0cnVjdCBvcGVuX2J1Y2tldAkqYjsKLQotCS8qCi0J
+ICogVGhyb3R0bGUgd3JpdGVzIHRvIHRoaXMgd3JpdGUgcG9pbnQgaWYgdGllciAwIGlzIGZ1bGw/
+Ci0JICovCi0JYm9vbAkJCXRocm90dGxlOwotCi0JLyoKLQkgKiBJZiAwLCB1c2UgdGhlIGRlc2ly
+ZWQgcmVwbGljYSBjb3VudCBmb3IgdGhlIGNhY2hlIHNldC4KLQkgKiBPdGhlcndpc2UsIHRoaXMg
+aXMgdGhlIG51bWJlciBvZiByZXBsaWNhcyBkZXNpcmVkIChnZW5lcmFsbHkgMSkuCi0JICovCi0J
+dW5zaWduZWQJCW5yX3JlcGxpY2FzOwotCi0JLyoKLQkgKiBCdWNrZXQgcmVzZXJ2ZSB0byBhbGxv
+Y2F0ZSBmcm9tLgotCSAqLwotCWVudW0gYWxsb2NfcmVzZXJ2ZQlyZXNlcnZlOwotCi0JLyoKLQkg
+KiBJZiBub3QgTlVMTCwgY2FjaGUgZ3JvdXAgZm9yIHRpZXJpbmcsIHByb21vdGlvbiBhbmQgbW92
+aW5nIEdDIC0KLQkgKiBhbHdheXMgYWxsb2NhdGVzIGEgc2luZ2xlIHJlcGxpY2EKLQkgKi8KLQlz
+dHJ1Y3QgY2FjaGVfZ3JvdXAJKmdyb3VwOwotCi0JLyoKLQkgKiBPdGhlcndpc2UgZG8gYSBub3Jt
+YWwgcmVwbGljYXRlZCBidWNrZXQgYWxsb2NhdGlvbiB0aGF0IGNvdWxkIGNvbWUKLQkgKiBmcm9t
+IGFueSBkZXZpY2UgaW4gdGllciAwIChmb3JlZ3JvdW5kIHdyaXRlKQotCSAqLwotfTsKLQotI2Vu
+ZGlmIC8qIF9CQ0FDSEVfQUxMT0NfVFlQRVNfSCAqLwotLS0gYS9kcml2ZXJzL21kL2JjYWNoZS9j
+bG9ja190eXBlcy5oCisrKyAvZGV2L251bGwKQEAgLTEsMzIgKzAsMCBAQAotI2lmbmRlZiBfQkNB
+Q0hFX0NMT0NLX1RZUEVTX0gKLSNkZWZpbmUgX0JDQUNIRV9DTE9DS19UWVBFU19ICi0KLSNkZWZp
+bmUgTlJfSU9fVElNRVJTCQk4Ci0KLS8qCi0gKiBDbG9ja3MvdGltZXJzIGluIHVuaXRzIG9mIHNl
+Y3RvcnMgb2YgSU86Ci0gKgotICogTm90ZSAtIHRoZXkgdXNlIHBlcmNwdSBiYXRjaGluZywgc28g
+dGhleSdyZSBvbmx5IGFwcHJveGltYXRlLgotICovCi0KLXN0cnVjdCBpb190aW1lcjsKLXR5cGVk
+ZWYgdm9pZCAoKmlvX3RpbWVyX2ZuKShzdHJ1Y3QgaW9fdGltZXIgKik7Ci0KLXN0cnVjdCBpb190
+aW1lciB7Ci0JaW9fdGltZXJfZm4JCWZuOwotCXVuc2lnbmVkIGxvbmcJCWV4cGlyZTsKLX07Ci0K
+LS8qIEFtb3VudCB0byBidWZmZXIgdXAgb24gYSBwZXJjcHUgY291bnRlciAqLwotI2RlZmluZSBJ
+T19DTE9DS19QQ1BVX1NFQ1RPUlMJMTI4Ci0KLXN0cnVjdCBpb19jbG9jayB7Ci0JYXRvbWljX2xv
+bmdfdAkJbm93OwotCXUxNiBfX3BlcmNwdQkJKnBjcHVfYnVmOwotCi0Jc3BpbmxvY2tfdAkJdGlt
+ZXJfbG9jazsKLQlERUNMQVJFX0hFQVAoc3RydWN0IGlvX3RpbWVyICosIHRpbWVycyk7Ci19Owot
+Ci0jZW5kaWYgLyogX0JDQUNIRV9DTE9DS19UWVBFU19IICovCi0KLS0tIGEvZHJpdmVycy9tZC9i
+Y2FjaGUvaW8uYworKysgYi9kcml2ZXJzL21kL2JjYWNoZS9pby5jCkBAIC0xNjQ5LDYgKzE2NDks
+NyBAQAogCSAqIHdoaWNoIHdhcyBzZXQgYnkgYmNoX3JlYWRfZm4oKS4KIAkgKi8KIAkvL2lub2Rl
+ID0gYmJpby0+a2V5LmsucC5pbm9kZTsKKwlpbm9kZSA9IDA7CiAJcGFyZW50ID0gYmlvLT5iaV9w
+cml2YXRlOwogCiAJYmNoX2JiaW9fcmVzZXQoYmJpbyk7Ci0tLSAvZGV2L251bGwKKysrIGIvaW5j
+bHVkZS90cmFjZS9ldmVudHMvYWxsb2NfdHlwZXMuaApAQCAtMCwwICsxLDk3IEBACisjaWZuZGVm
+IF9CQ0FDSEVfQUxMT0NfVFlQRVNfSAorI2RlZmluZSBfQkNBQ0hFX0FMTE9DX1RZUEVTX0gKKwor
+I2luY2x1ZGUgPGxpbnV4L211dGV4Lmg+CisKKyNpbmNsdWRlICJjbG9ja190eXBlcy5oIgorCisv
+KgorICogVGhlcmUncyB0d28gb2YgdGhlc2UgY2xvY2tzLCBvbmUgZm9yIHJlYWRzIGFuZCBvbmUg
+Zm9yIHdyaXRlczoKKyAqCisgKiBBbGwgZmllbGRzIHByb3RlY3RlZCBieSBidWNrZXRfbG9jawor
+ICovCitzdHJ1Y3QgcHJpb19jbG9jayB7CisJLyoKKwkgKiAibm93IiBpbiAocmVhZC93cml0ZSkg
+SU8gdGltZSAtIGluY3JlbWVudGVkIHdoZW5ldmVyIHdlIGRvIFggYW1vdW50CisJICogb2YgcmVh
+ZHMgb3Igd3JpdGVzLgorCSAqCisJICogR29lcyB3aXRoIHRoZSBidWNrZXQgcmVhZC93cml0ZSBw
+cmlvczogd2hlbiB3ZSByZWFkIG9yIHdyaXRlIHRvIGEKKwkgKiBidWNrZXQgd2UgcmVzZXQgdGhl
+IGJ1Y2tldCdzIHByaW8gdG8gdGhlIGN1cnJlbnQgaGFuZDsgdGh1cyBoYW5kIC0KKwkgKiBwcmlv
+ID0gdGltZSBzaW5jZSBidWNrZXQgd2FzIGxhc3QgcmVhZC93cml0dGVuLgorCSAqCisJICogVGhl
+IHVuaXRzIGFyZSBzb21lIGFtb3VudCAoYnl0ZXMvc2VjdG9ycykgb2YgZGF0YSByZWFkL3dyaXR0
+ZW4sIGFuZAorCSAqIHRoZSB1bml0cyBjYW4gY2hhbmdlIG9uIHRoZSBmbHkgaWYgd2UgbmVlZCB0
+byByZXNjYWxlIHRvIGZpdAorCSAqIGV2ZXJ5dGhpbmcgaW4gYSB1MTYgLSB5b3VyIG9ubHkgZ3Vh
+cmFudGVlIGlzIHRoYXQgdGhlIHVuaXRzIGFyZQorCSAqIGNvbnNpc3RlbnQuCisJICovCisJdTE2
+CQkJaGFuZDsKKwl1MTYJCQltaW5fcHJpbzsKKworCWludAkJCXJ3OworCisJc3RydWN0IGlvX3Rp
+bWVyCQlyZXNjYWxlOworfTsKKworLyogVGhlcmUgaXMgb25lIHJlc2VydmUgZm9yIGVhY2ggdHlw
+ZSBvZiBidHJlZSwgb25lIGZvciBwcmlvcyBhbmQgZ2VucworICogYW5kIG9uZSBmb3IgbW92aW5n
+IEdDICovCitlbnVtIGFsbG9jX3Jlc2VydmUgeworCVJFU0VSVkVfUFJJTywKKwlSRVNFUlZFX0JU
+UkVFLAorCVJFU0VSVkVfTUVUQURBVEFfTEFTVCA9IFJFU0VSVkVfQlRSRUUsCisJUkVTRVJWRV9N
+T1ZJTkdHQywKKworCVJFU0VSVkVfTk9ORSwKKwlSRVNFUlZFX05SLAorfTsKKworc3RhdGljIGlu
+bGluZSBib29sIGFsbG9jYXRpb25faXNfbWV0YWRhdGEoZW51bSBhbGxvY19yZXNlcnZlIGlkKQor
+eworCXJldHVybiBpZCA8PSBSRVNFUlZFX01FVEFEQVRBX0xBU1Q7Cit9CisKKy8qIEVub3VnaCBm
+b3IgMTYgY2FjaGUgZGV2aWNlcywgMiB0aWVycyBhbmQgc29tZSBsZWZ0IG92ZXIgZm9yIHBpcGVs
+aW5pbmcgKi8KKyNkZWZpbmUgT1BFTl9CVUNLRVRTX0NPVU5UCTI1NgorCisjZGVmaW5lIFdSSVRF
+X1BPSU5UX0NPVU5UCTE2CisKK3N0cnVjdCBvcGVuX2J1Y2tldCB7CisJc3RydWN0IGxpc3RfaGVh
+ZAlsaXN0OworCXN0cnVjdCBtdXRleAkJbG9jazsKKwlhdG9taWNfdAkJcGluOworCXVuc2lnbmVk
+CQlzZWN0b3JzX2ZyZWU7CisJdW5zaWduZWQJCW5yX3B0cnM7CisJc3RydWN0IGJjaF9leHRlbnRf
+cHRyCXB0cnNbQktFWV9FWFRFTlRfUFRSU19NQVhdOworfTsKKworc3RydWN0IHdyaXRlX3BvaW50
+IHsKKwlzdHJ1Y3Qgb3Blbl9idWNrZXQJKmI7CisKKwkvKgorCSAqIFRocm90dGxlIHdyaXRlcyB0
+byB0aGlzIHdyaXRlIHBvaW50IGlmIHRpZXIgMCBpcyBmdWxsPworCSAqLworCWJvb2wJCQl0aHJv
+dHRsZTsKKworCS8qCisJICogSWYgMCwgdXNlIHRoZSBkZXNpcmVkIHJlcGxpY2EgY291bnQgZm9y
+IHRoZSBjYWNoZSBzZXQuCisJICogT3RoZXJ3aXNlLCB0aGlzIGlzIHRoZSBudW1iZXIgb2YgcmVw
+bGljYXMgZGVzaXJlZCAoZ2VuZXJhbGx5IDEpLgorCSAqLworCXVuc2lnbmVkCQlucl9yZXBsaWNh
+czsKKworCS8qCisJICogQnVja2V0IHJlc2VydmUgdG8gYWxsb2NhdGUgZnJvbS4KKwkgKi8KKwll
+bnVtIGFsbG9jX3Jlc2VydmUJcmVzZXJ2ZTsKKworCS8qCisJICogSWYgbm90IE5VTEwsIGNhY2hl
+IGdyb3VwIGZvciB0aWVyaW5nLCBwcm9tb3Rpb24gYW5kIG1vdmluZyBHQyAtCisJICogYWx3YXlz
+IGFsbG9jYXRlcyBhIHNpbmdsZSByZXBsaWNhCisJICovCisJc3RydWN0IGNhY2hlX2dyb3VwCSpn
+cm91cDsKKworCS8qCisJICogT3RoZXJ3aXNlIGRvIGEgbm9ybWFsIHJlcGxpY2F0ZWQgYnVja2V0
+IGFsbG9jYXRpb24gdGhhdCBjb3VsZCBjb21lCisJICogZnJvbSBhbnkgZGV2aWNlIGluIHRpZXIg
+MCAoZm9yZWdyb3VuZCB3cml0ZSkKKwkgKi8KK307CisKKyNlbmRpZiAvKiBfQkNBQ0hFX0FMTE9D
+X1RZUEVTX0ggKi8KLS0tIC9kZXYvbnVsbAorKysgYi9pbmNsdWRlL3RyYWNlL2V2ZW50cy9jbG9j
+a190eXBlcy5oCkBAIC0wLDAgKzEsMzIgQEAKKyNpZm5kZWYgX0JDQUNIRV9DTE9DS19UWVBFU19I
+CisjZGVmaW5lIF9CQ0FDSEVfQ0xPQ0tfVFlQRVNfSAorCisjZGVmaW5lIE5SX0lPX1RJTUVSUwkJ
+OAorCisvKgorICogQ2xvY2tzL3RpbWVycyBpbiB1bml0cyBvZiBzZWN0b3JzIG9mIElPOgorICoK
+KyAqIE5vdGUgLSB0aGV5IHVzZSBwZXJjcHUgYmF0Y2hpbmcsIHNvIHRoZXkncmUgb25seSBhcHBy
+b3hpbWF0ZS4KKyAqLworCitzdHJ1Y3QgaW9fdGltZXI7Cit0eXBlZGVmIHZvaWQgKCppb190aW1l
+cl9mbikoc3RydWN0IGlvX3RpbWVyICopOworCitzdHJ1Y3QgaW9fdGltZXIgeworCWlvX3RpbWVy
+X2ZuCQlmbjsKKwl1bnNpZ25lZCBsb25nCQlleHBpcmU7Cit9OworCisvKiBBbW91bnQgdG8gYnVm
+ZmVyIHVwIG9uIGEgcGVyY3B1IGNvdW50ZXIgKi8KKyNkZWZpbmUgSU9fQ0xPQ0tfUENQVV9TRUNU
+T1JTCTEyOAorCitzdHJ1Y3QgaW9fY2xvY2sgeworCWF0b21pY19sb25nX3QJCW5vdzsKKwl1MTYg
+X19wZXJjcHUJCSpwY3B1X2J1ZjsKKworCXNwaW5sb2NrX3QJCXRpbWVyX2xvY2s7CisJREVDTEFS
+RV9IRUFQKHN0cnVjdCBpb190aW1lciAqLCB0aW1lcnMpOworfTsKKworI2VuZGlmIC8qIF9CQ0FD
+SEVfQ0xPQ0tfVFlQRVNfSCAqLworCi0tLSBhL2RyaXZlcnMvbWQvYmNhY2hlL2FsbG9jLmgKKysr
+IGIvZHJpdmVycy9tZC9iY2FjaGUvYWxsb2MuaApAQCAtMSw3ICsxLDcgQEAKICNpZm5kZWYgX0JD
+QUNIRV9BTExPQ19ICiAjZGVmaW5lIF9CQ0FDSEVfQUxMT0NfSAogCi0jaW5jbHVkZSAiYWxsb2Nf
+dHlwZXMuaCIKKyNpbmNsdWRlIDx0cmFjZS9ldmVudHMvYWxsb2NfdHlwZXMuaD4KIAogc3RydWN0
+IGJrZXk7CiBzdHJ1Y3QgYnVja2V0OwotLS0gYS9kcml2ZXJzL21kL2JjYWNoZS9iY2FjaGUuaAor
+KysgYi9kcml2ZXJzL21kL2JjYWNoZS9iY2FjaGUuaApAQCAtMjA3LDEwICsyMDcsMTAgQEAKICNk
+ZWZpbmUgYmNoX21ldGFfd3JpdGVfZmF1bHQobmFtZSkJCQkJCVwKIAkgZHluYW1pY19mYXVsdCgi
+YmNhY2hlOm1ldGE6d3JpdGU6IiBuYW1lKQogCi0jaW5jbHVkZSAiYWxsb2NfdHlwZXMuaCIKKyNp
+bmNsdWRlIDx0cmFjZS9ldmVudHMvYWxsb2NfdHlwZXMuaD4KICNpbmNsdWRlICJibG9ja2Rldl90
+eXBlcy5oIgogI2luY2x1ZGUgImJ1Y2tldHNfdHlwZXMuaCIKLSNpbmNsdWRlICJjbG9ja190eXBl
+cy5oIgorI2luY2x1ZGUgPHRyYWNlL2V2ZW50cy9jbG9ja190eXBlcy5oPgogI2luY2x1ZGUgImlv
+X3R5cGVzLmgiCiAjaW5jbHVkZSAiam91cm5hbF90eXBlcy5oIgogI2luY2x1ZGUgImtleWxpc3Rf
+dHlwZXMuaCIK
+--089e011775a7321332051b359fd1--
