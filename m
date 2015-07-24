@@ -1,61 +1,64 @@
 From: Kent Overstreet <kent.overstreet@gmail.com>
 Subject: Re: [ANNOUNCE] bcachefs!
-Date: Fri, 24 Jul 2015 12:15:57 -0700
-Message-ID: <20150724191557.GA1928@kmo-pixel>
-References: <CAF1ivSa4bZaw2w9nu1tQeYx7JBb2_fVDV67Le=ybC2m8OdX3gg@mail.gmail.com>
- <20150717231700.GA4166@kmo-pixel>
- <1437176155.9009.0.camel@ssi>
- <20150717234023.GB4166@kmo-pixel>
- <1437176911.9298.0.camel@ssi>
- <20150717235133.GC4166@kmo-pixel>
- <1437177497.9298.3.camel@ssi>
- <20150718021007.GA3196@kmo-pixel>
- <1437196863.4737.2.camel@hasee>
- <CAF1ivSaqGRWruh8mePvFaKC9CSQB8xW7aAe872dao6J34v6iFg@mail.gmail.com>
+Date: Fri, 24 Jul 2015 12:25:04 -0700
+Message-ID: <20150724192504.GB1928@kmo-pixel>
+References: <20150714005825.GA24027@kmo-pixel>
+ <CACaajQtwx45r8GcRmchrQwDts1GH-V8g0x1FwGfDvnfm02bq+Q@mail.gmail.com>
+ <20150714081105.GA18569@kmo-pixel>
+ <CAO2mnowOYReY07-YT23J7jx51wTcjd9VG9-Zy5e2+qCK6Epa+Q@mail.gmail.com>
+ <CAC7rs0uWSt85F443PRw1zvybccg+EfebaSyH9EhUwHjhTGryRA@mail.gmail.com>
+ <CAC7rs0upqkuH1CPd-OAmrpQ=8PmaDpzHYY1MaBDpAL6TS_iKyw@mail.gmail.com>
+ <CAO2mnowmtws19urvHpUOk_6vT7NMOJ_Xge1N1fMy_-vSyXTVoA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:34227 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785AbbGXTQE (ORCPT
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:34704 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752217AbbGXTZJ (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 24 Jul 2015 15:16:04 -0400
-Received: by pdbbh15 with SMTP id bh15so17725708pdb.1
-        for <linux-bcache@vger.kernel.org>; Fri, 24 Jul 2015 12:16:03 -0700 (PDT)
+	Fri, 24 Jul 2015 15:25:09 -0400
+Received: by pdbbh15 with SMTP id bh15so17815021pdb.1
+        for <linux-bcache@vger.kernel.org>; Fri, 24 Jul 2015 12:25:08 -0700 (PDT)
 Content-Disposition: inline
-In-Reply-To: <CAF1ivSaqGRWruh8mePvFaKC9CSQB8xW7aAe872dao6J34v6iFg@mail.gmail.com>
+In-Reply-To: <CAO2mnowmtws19urvHpUOk_6vT7NMOJ_Xge1N1fMy_-vSyXTVoA@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lin <mlin@kernel.org>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: Denis Bychkov <manover@gmail.com>
+Cc: Adam Berkan <adam.berkan@gmail.com>, linux-bcache@vger.kernel.org, Vasiliy Tolstov <v.tolstov@selfip.ru>, Michael Rubin <mrubin@google.com>, Slava Pestov <sviatoslavpestov@gmail.com>, zab@zabbo.net, Ricky Benitez <rickyb@google.com>
 
-On Tue, Jul 21, 2015 at 10:11:11PM -0700, Ming Lin wrote:
-> On Fri, Jul 17, 2015 at 10:21 PM, Ming Lin <mlin@kernel.org> wrote:
-> > On Fri, 2015-07-17 at 19:10 -0700, Kent Overstreet wrote:
-> >> BTW - probably the most valuable thing you could help out with is the
-> >> documentation, in particular the guide:
-> >> http://bcache.evilpiepirate.org/BcacheGuide/
-> >>
-> >> Can you read through (at least some of) that, and tell me what's useful and what
-> >> needs clarifying? And tell me what you'd like to see added to the guide next -
-> >> I'll try and work on documentation over the next two weeks, since I probably
-> >> won't be able to do much real coding with my test machines offline.
-> >
-> > Yes, I'll read through that.
-> 
-> Would you add some example to explain how the extents/inodes/dirents are stored
-> in the btree on disk?
+On Sun, Jul 19, 2015 at 10:52:09PM -0400, Denis Bychkov wrote:
+> I don't think I found anything in the design description or anywhere
+> else explaining how tiering works and what data, when and why ends up
+> on the next tier. And how to control this. The old bcache has a pretty
+> advanced set of knobs allowing you to fine-tune this behavior
+> (read-ahead limit, sequential cutoff, congestion thresholds, etc.) If
+> I overlooked, please point me to the right direction.
 
-Can you be more specific? Like how inodes/dirents map to keys in the btree, or
-how it all ends up on disk?
+All those additional knobs don't exist yet in bcachefs/tiering land - I want to
+rethink all of that, and also wait until there's actual users/use cases that
+need that stuff so we have some idea of what we're trying to accomplish.
 
-The inodes/dirents code is pretty short, I'd look at inode.c and dirent.c
+The way it works right now is:
+ - Foreground writes always go to tier 0
 
-> I'm reading the debug code in drivers/md/bcache/debug.c.
-> It seems helpful to learn about the internal btree structure.
+   If tier 0 is full, they wait - there's code to slowly throttle foreground
+   writes if tier 0 is getting close to full and give tiering/copygc a chance to
+   catch up, so they hopefully don't get stuck waiting nearly forever when tier
+   0 gets completely full
 
-Are you interested in more the format of the btree node itself, on disk? Like
-struct btree_node, struct btree_node_entry, struct bset, and the packing?
+ - Tiering scans the extents btree looking for data that is present on tier 0
+   but not tier 1, and then writes an additional copy of that data on tier 1
 
-I could try and elaborate on that in the guide, give me some specific questions
-to cover if you've got any
+ - Extra replicas are considered cached, so the copy on tier 0 will no longer be
+   considered dirty and can be reclaimed
+
+ - On the read side, if we read from tier 1 the cache_promote() path tries to
+   write another copy to tier 0
+
+No fancy knobs yet. In the future (a ways off), if we want to readd fancy
+knobs/behaviour we should try and rethink this stuff in the context of a
+filesystem - like we could potentially have persistent inode flags for "this
+file should always live on the slow tier", and also if we want to send
+particular IOs to the slow tier possibly try and do that from the code that
+interacts with the pagecache, where we've got more information about how much
+data we're going to be reading/writing.
