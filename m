@@ -1,72 +1,48 @@
-From: Ming Lin <mlin@kernel.org>
-Subject: Re: [ANNOUNCE] bcachefs!
-Date: Fri, 24 Jul 2015 13:47:46 -0700
-Message-ID: <1437770866.21988.16.camel@ssi>
-References: <CAF1ivSa4bZaw2w9nu1tQeYx7JBb2_fVDV67Le=ybC2m8OdX3gg@mail.gmail.com>
-	 <20150717231700.GA4166@kmo-pixel> <1437176155.9009.0.camel@ssi>
-	 <20150717234023.GB4166@kmo-pixel> <1437176911.9298.0.camel@ssi>
-	 <20150717235133.GC4166@kmo-pixel> <1437177497.9298.3.camel@ssi>
-	 <20150718021007.GA3196@kmo-pixel> <1437196863.4737.2.camel@hasee>
-	 <CAF1ivSaqGRWruh8mePvFaKC9CSQB8xW7aAe872dao6J34v6iFg@mail.gmail.com>
-	 <20150724191557.GA1928@kmo-pixel>
+From: Killian De Volder <killian.de.volder@megasoft.be>
+Subject: Upgrade path to bcachefs
+Date: Sat, 25 Jul 2015 10:15:41 +0200
+Message-ID: <55B345AD.9050204@megasoft.be>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.kernel.org ([198.145.29.136]:54325 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753504AbbGXUrx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 24 Jul 2015 16:47:53 -0400
-In-Reply-To: <20150724191557.GA1928@kmo-pixel>
+Received: from slow1-d.mail.gandi.net ([217.70.178.86]:48799 "EHLO
+	slow1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747AbbGYIUd (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Sat, 25 Jul 2015 04:20:33 -0400
+Received: from relay2-d.mail.gandi.net (relay2-d.mail.gandi.net [217.70.183.194])
+	by slow1-d.mail.gandi.net (Postfix) with ESMTP id 26A4147E4F3
+	for <linux-bcache@vger.kernel.org>; Sat, 25 Jul 2015 10:15:45 +0200 (CEST)
+Received: from mfilter38-d.gandi.net (mfilter38-d.gandi.net [217.70.178.169])
+	by relay2-d.mail.gandi.net (Postfix) with ESMTP id 6595AC5A41
+	for <linux-bcache@vger.kernel.org>; Sat, 25 Jul 2015 10:15:43 +0200 (CEST)
+Received: from relay2-d.mail.gandi.net ([217.70.183.194])
+	by mfilter38-d.gandi.net (mfilter38-d.gandi.net [10.0.15.180]) (amavisd-new, port 10024)
+	with ESMTP id F4eI3ZiVH8BJ for <linux-bcache@vger.kernel.org>;
+	Sat, 25 Jul 2015 10:15:42 +0200 (CEST)
+Received: from [172.17.0.70] (cable-213-34-255-70.zeelandnet.nl [213.34.255.70])
+	(Authenticated sender: killian.de.volder@megasoft.be)
+	by relay2-d.mail.gandi.net (Postfix) with ESMTPSA id 005E6C5A40
+	for <linux-bcache@vger.kernel.org>; Sat, 25 Jul 2015 10:15:41 +0200 (CEST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-On Fri, 2015-07-24 at 12:15 -0700, Kent Overstreet wrote:
-> On Tue, Jul 21, 2015 at 10:11:11PM -0700, Ming Lin wrote:
-> > On Fri, Jul 17, 2015 at 10:21 PM, Ming Lin <mlin@kernel.org> wrote:
-> > > On Fri, 2015-07-17 at 19:10 -0700, Kent Overstreet wrote:
-> > >> BTW - probably the most valuable thing you could help out with is the
-> > >> documentation, in particular the guide:
-> > >> http://bcache.evilpiepirate.org/BcacheGuide/
-> > >>
-> > >> Can you read through (at least some of) that, and tell me what's useful and what
-> > >> needs clarifying? And tell me what you'd like to see added to the guide next -
-> > >> I'll try and work on documentation over the next two weeks, since I probably
-> > >> won't be able to do much real coding with my test machines offline.
-> > >
-> > > Yes, I'll read through that.
-> > 
-> > Would you add some example to explain how the extents/inodes/dirents are stored
-> > in the btree on disk?
-> 
-> Can you be more specific? Like how inodes/dirents map to keys in the btree, or
-> how it all ends up on disk?
+I have been wondering:
 
-How it all ends up on disk.
+If I recall correctly: the backing device is just a bunch of bytes right ?
+(Excluding the bcache header.)
 
-> 
-> The inodes/dirents code is pretty short, I'd look at inode.c and dirent.c
-> 
-> > I'm reading the debug code in drivers/md/bcache/debug.c.
-> > It seems helpful to learn about the internal btree structure.
-> 
-> Are you interested in more the format of the btree node itself, on disk? Like
-> struct btree_node, struct btree_node_entry, struct bset, and the packing?
-> 
-> I could try and elaborate on that in the guide, give me some specific questions
-> to cover if you've got any
+If the bcachefs header (for the backing device)  isn't bigger then bcache,
+one should be able to write a tool to wipe the bcache header.
+Could one copy the dev.data.first_sector from the bcache-header and write a new bcachefs-header using this information ?
 
-Only textbook knowledge of b+tree.
+So the steps could be:
+ 1) Remove the caching device.
+ 2) Unmount it (could be tricky in some situation, like the root mount)
+ 3) Run make-bcachefs --upgrade /dev/xxx
+ 4) Add your caching device.
 
-Yes, I'm interested in the format of btree on disk.
-Some graph like this could help.
-https://btrfs.wiki.kernel.org/index.php/Btrfs_design
-
-And I want to learn how the btree node insert/delete/update happens on
-disk. These maybe too detail. I'm going to write a small tool to dump
-the file system. Then I could understand better the on disk btree
-format.
-
-Thanks.
+-- 
+Killian De Volder
