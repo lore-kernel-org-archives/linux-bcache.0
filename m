@@ -1,55 +1,68 @@
-From: Ming Lin <mlin@kernel.org>
-Subject: Re: [ANNOUNCE] bcachefs!
-Date: Tue, 28 Jul 2015 11:45:40 -0700
-Message-ID: <CAF1ivSZKw4Te-hixrbeq1bWUfkrQT-gjroG7jF+1Tm8sc+Pp=A@mail.gmail.com>
-References: <CAF1ivSa4bZaw2w9nu1tQeYx7JBb2_fVDV67Le=ybC2m8OdX3gg@mail.gmail.com>
-	<20150717231700.GA4166@kmo-pixel>
-	<1437176155.9009.0.camel@ssi>
-	<20150717234023.GB4166@kmo-pixel>
-	<1437176911.9298.0.camel@ssi>
-	<20150717235133.GC4166@kmo-pixel>
-	<1437177497.9298.3.camel@ssi>
-	<20150718021007.GA3196@kmo-pixel>
-	<1437196863.4737.2.camel@hasee>
-	<CAF1ivSaqGRWruh8mePvFaKC9CSQB8xW7aAe872dao6J34v6iFg@mail.gmail.com>
-	<20150724191557.GA1928@kmo-pixel>
-	<1437770866.21988.16.camel@ssi>
-	<CAF1ivSZhj2WuafP0yFey47OyAhjF7-Sznnb1WBXA+Hm5Rem31Q@mail.gmail.com>
+From: =?UTF-8?B?0JPQtdC+0YDQs9C40Lkg0KHRgtCw0YDQuNC60L7Qsg==?=
+	<gstarikov@gmail.com>
+Subject: Fwd: cant mount bcachefs
+Date: Wed, 29 Jul 2015 20:36:51 +0300
+Message-ID: <CAOOKTyC1Xa2PKpZH1R5s-n9nSLpSOd=7su0SDh9dkQ-D6zjceA@mail.gmail.com>
+References: <CAOOKTyBohkud24RBZegyHhEqpo+FV6H-o2MgPyr+CVvSvc1s-A@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.kernel.org ([198.145.29.136]:43910 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752853AbbG1Spo (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 28 Jul 2015 14:45:44 -0400
-Received: from mail.kernel.org (localhost [127.0.0.1])
-	by mail.kernel.org (Postfix) with ESMTP id BCDB820770
-	for <linux-bcache@vger.kernel.org>; Tue, 28 Jul 2015 18:45:43 +0000 (UTC)
-Received: from mail-vn0-f46.google.com (mail-vn0-f46.google.com [209.85.216.46])
-	(using TLSv1.2 with cipher AES128-GCM-SHA256 (128/128 bits))
-	(No client certificate requested)
-	by mail.kernel.org (Postfix) with ESMTPSA id A334F201CD
-	for <linux-bcache@vger.kernel.org>; Tue, 28 Jul 2015 18:45:41 +0000 (UTC)
-Received: by vnav141 with SMTP id v141so46373174vna.0
-        for <linux-bcache@vger.kernel.org>; Tue, 28 Jul 2015 11:45:41 -0700 (PDT)
-In-Reply-To: <CAF1ivSZhj2WuafP0yFey47OyAhjF7-Sznnb1WBXA+Hm5Rem31Q@mail.gmail.com>
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:38201 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbbG2Rgx (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 29 Jul 2015 13:36:53 -0400
+Received: by wibxm9 with SMTP id xm9so36566463wib.1
+        for <linux-bcache@vger.kernel.org>; Wed, 29 Jul 2015 10:36:52 -0700 (PDT)
+In-Reply-To: <CAOOKTyBohkud24RBZegyHhEqpo+FV6H-o2MgPyr+CVvSvc1s-A@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lin <mlin@kernel.org>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-On Tue, Jul 28, 2015 at 11:41 AM, Ming Lin <mlin@kernel.org> wrote:
-> On Fri, Jul 24, 2015 at 1:47 PM, Ming Lin <mlin@kernel.org> wrote:
->>
->> And I want to learn how the btree node insert/delete/update happens on
->> disk. These maybe too detail. I'm going to write a small tool to dump
->> the file system. Then I could understand better the on disk btree
->> format.
->
-> Here is my simple tool to dump parts of the on-disk format.
-> http://www.minggr.net/cgit/cgit.cgi/bcache-tools/commit/?id=deb258e2
+Hello,
+I followed instruction at http://bcache.evilpiepirate.org/ and it cant mount...
+What I'm doing wrong?
 
-Actually: http://www.minggr.net/cgit/cgit.cgi/bcache-tools/commit/?id=3121eec
 
->
-> It's not in good shape, but simple enough to learn the on-disk format.
+I make:
+
+git clone -b bcache-dev http://evilpiepirate.org/git/linux-bcache.git
+git clone -b dev http://evilpiepirate.org/git/bcache-tools.git
+
+cd bcache-tools/linux-bcache/
+make oldconfig
+make -j6 deb-pkg
+make -j6 modules_install
+make -j6 install
+reboot
+
+wipefs -a /dev/sdd
+
+Then, just run
+
+bcacheadm format -C /dev/sdd
+strace -v -o bcache_mount_strace.txt mount /dev/sdd /test_bcachefs
+
+and it hangup....
+
+root@bcache:~# tail bcache_mount_strace.txt
+geteuid()                               = 0
+getgid()                                = 0
+getegid()                               = 0
+prctl(PR_GET_DUMPABLE)                  = 1
+stat("/run", {st_dev=makedev(0, 18), st_ino=2625,
+st_mode=S_IFDIR|0755, st_nlink=23, st_uid=0, st_gid=0,
+st_blksize=4096, st_blocks=0, st_size=740,
+st_atime=2015/07/17-13:07:47, st_mtime=2015/07/29-14:20:25,
+st_ctime=2015/07/29-14:20:25}) = 0
+lstat("/etc/mtab", {st_dev=makedev(8, 1), st_ino=131233,
+st_mode=S_IFLNK|0777, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096,
+st_blocks=0, st_size=12, st_atime=2015/07/29-06:40:34,
+st_mtime=2015/07/12-10:40:12, st_ctime=2015/07/12-10:40:12}) = 0
+lstat("/run/mount/utab", {st_dev=makedev(0, 18), st_ino=1968,
+st_mode=S_IFREG|0644, st_nlink=1, st_uid=0, st_gid=0, st_blksize=4096,
+st_blocks=0, st_size=0, st_atime=2015/07/17-13:10:49,
+st_mtime=2015/07/17-13:10:49, st_ctime=2015/07/17-13:10:49}) = 0
+open("/run/mount/utab", O_RDWR|O_CREAT|O_CLOEXEC, 0644) = 3
+close(3)                                = 0
+mount("/dev/sdd", "/test_bcachefs", "bcache", MS_MGC_VAL, NULL
