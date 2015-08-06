@@ -1,66 +1,94 @@
-From: "A. James Lewis" <james@fsck.co.uk>
-Subject: Re: layering question.
-Date: Thu, 06 Aug 2015 01:54:12 +0100
-Message-ID: <55C2B034.2090404@fsck.co.uk>
-References: <55C0E63F.2030007@fsck.co.uk>	<k0n89c-dgn.ln1@hurikhan77.spdns.de>	<20150805090446.Horde.VMReCuJzW3PwyI8Gh_BZ_yJ@www3.nde.ag> <poha9c-rh4.ln1@hurikhan77.spdns.de>
+From: Ming Lin <mlin@kernel.org>
+Subject: Re: [ANNOUNCE] bcachefs!
+Date: Wed, 05 Aug 2015 23:40:06 -0700
+Message-ID: <1438843206.9429.34.camel@hasee>
+References: <CAF1ivSa4bZaw2w9nu1tQeYx7JBb2_fVDV67Le=ybC2m8OdX3gg@mail.gmail.com>
+	 <20150717231700.GA4166@kmo-pixel> <1437176155.9009.0.camel@ssi>
+	 <20150717234023.GB4166@kmo-pixel> <1437176911.9298.0.camel@ssi>
+	 <20150717235133.GC4166@kmo-pixel> <1437177497.9298.3.camel@ssi>
+	 <20150718021007.GA3196@kmo-pixel> <1437196863.4737.2.camel@hasee>
+	 <CAF1ivSaqGRWruh8mePvFaKC9CSQB8xW7aAe872dao6J34v6iFg@mail.gmail.com>
+	 <20150724191557.GA1928@kmo-pixel> <1437770866.21988.16.camel@ssi>
+	 <CAF1ivSZhj2WuafP0yFey47OyAhjF7-Sznnb1WBXA+Hm5Rem31Q@mail.gmail.com>
+	 <CAF1ivSZKw4Te-hixrbeq1bWUfkrQT-gjroG7jF+1Tm8sc+Pp=A@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from dozer.fsck.co.uk ([77.246.163.77]:52023 "EHLO dozer.fsck.co.uk"
+Received: from mail.kernel.org ([198.145.29.136]:42550 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753072AbbHFAyP (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 5 Aug 2015 20:54:15 -0400
-Received: from dozer.fsck.co.uk (localhost.localdomain [127.0.0.1])
-	by dozer.fsck.co.uk (Postfix) with ESMTP id 01D1269004C
-	for <linux-bcache@vger.kernel.org>; Thu,  6 Aug 2015 02:09:20 +0100 (BST)
-Received: from [192.168.0.20] (80-46-130-192.static.dsl.as9105.com [80.46.130.192])
-	(using TLSv1 with cipher DHE-RSA-AES128-SHA (128/128 bits))
-	(No client certificate requested)
-	by dozer.fsck.co.uk (Postfix) with ESMTPSA id CD71169003F
-	for <linux-bcache@vger.kernel.org>; Thu,  6 Aug 2015 02:09:19 +0100 (BST)
-In-Reply-To: <poha9c-rh4.ln1@hurikhan77.spdns.de>
+	id S1750832AbbHFGkL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 6 Aug 2015 02:40:11 -0400
+In-Reply-To: <CAF1ivSZKw4Te-hixrbeq1bWUfkrQT-gjroG7jF+1Tm8sc+Pp=A@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-The problem is tho... with a very large backing store, I'm not really 
-happy with a single point of failure in the cache... is there another 
-way to mirror the cache device?
+On Tue, 2015-07-28 at 11:45 -0700, Ming Lin wrote:
+> On Tue, Jul 28, 2015 at 11:41 AM, Ming Lin <mlin@kernel.org> wrote:
+> > On Fri, Jul 24, 2015 at 1:47 PM, Ming Lin <mlin@kernel.org> wrote:
+> >>
+> >> And I want to learn how the btree node insert/delete/update happens on
+> >> disk. These maybe too detail. I'm going to write a small tool to dump
+> >> the file system. Then I could understand better the on disk btree
+> >> format.
+> >
+> > Here is my simple tool to dump parts of the on-disk format.
+> > http://www.minggr.net/cgit/cgit.cgi/bcache-tools/commit/?id=deb258e2
+> 
+> Actually: http://www.minggr.net/cgit/cgit.cgi/bcache-tools/commit/?id=3121eec
+> 
+> >
+> > It's not in good shape, but simple enough to learn the on-disk format.
 
-Does anyone make an M.2 raid controller... being PCIe, I don't know it 
-that could even be possible.
+Hi Kent,
 
-James
+I'm trying to understand how the root inode is stored in the inode
+btree.
 
-On 06/08/15 00:10, Kai Krakow wrote:
-> Jens-U. Mozdzen <jmozdzen@nde.ag> schrieb:
->
->> Zitat von Kai Krakow <hurikhan77@gmail.com>:
->>> A. James Lewis <james@fsck.co.uk> schrieb:
->>>
->>>> I've heard rumours that layering bcache with other block device drivers
->>>> might not be recommended... I wonder what the truth really is... perhaps
->>>> someone can advise.
->>> I think this is not just rumours. Multiple people reported problems when
->>> layering caching or backing devices on top of MD devices. This may be an
->>> implementation problem in MD which is gone in later kernel versions [...]
->> being rather new to bcache, I did only browse the last few months of
->> mailing list history - are you saying that these problems were fixed
->> (or simply vanished) some point after 3.18.8? Because if so, I'd of
->> course try to upgrade our servers to a more recent kernel :)
-> Latest posts imply it is still a problem. It fits with earlier reports:
-> Caching on native device, backing on md device... Bcache breaks within the
-> caching device (although this is not on md). There seem to still be bugs
-> with bcache and md to properly interact.
->
-> It was suspected that bcache uses a faulty discard implementation. Some
-> reports miss details about this setting. However, my setups are working fine
-> with discards fully enabled on SSD - but without using MD. And it has been
-> robust to accidental or implied reboots since all time I'm using it (even
-> with btrfs as the filesystem on bcache).
->
-> So I'd probably remove MD from your plans on using bcache.
->
-> BTW: My system uses vanilla gentoo kernel, 4.1.4 currently.
->
+dd if=/dev/zero of=fs.img bs=10M count=1
+bcacheadm format -C fs.img
+mount -t bcache -o loop fs.img /mnt
+umount /mnt
+hexdump -C fs.img > fs.hex
+
+From my simple tool, I know that the inode btree starts from offset
+0xec000
+
+000ec000  43 ef f3 df ff ff ff ff  86 c1 47 1e 99 25 51 35  |C.........G..%Q5|
+000ec010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000ec020  00 00 00 00 00 00 00 00  ff ff ff ff ff ff ff ff  |................|
+000ec030  ff ff ff ff ff ff ff ff  01 05 00 00 00 00 00 00  |................|
+000ec040  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+000ec070  88 b5 38 e2 45 36 eb f6  00 00 00 00 00 00 00 00  |..8.E6..........|
+000ec080  01 00 00 00 03 00 00 00  00 00 00 00 00 00 00 00  |................|
+000ec090  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+000ed000  31 66 fd 31 ff ff ff ff  88 b5 38 e2 45 36 eb f6  |1f.1......8.E6..|
+000ed010  02 00 00 00 00 00 00 00  01 00 00 00 03 00 0b 00  |................|
+000ed020  0b 01 80 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000ed030  00 00 00 00 00 00 00 00  00 10 00 00 00 00 00 00  |................|
+000ed040  ed 41 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |.A..............|
+000ed050  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+000ed070  02 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+000ed080  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+*
+
+btree_node (0xec000)
+    bset (0xed008)  ---> bset->u64s = 0x0b = 11
+        bkey_packed (0xed020)
+            bkey (0xed020)
+            bch_inode (0xed040 to 0xed077)  ---> root inode
+
+Is the decode above correct?
+
+I found the root inode manually. But how is it actually found by code?
+
+Could you help to explain what it is from 0xec070 to 0xed007?
+Are they also bsets?
+
+Thanks,
+Ming
