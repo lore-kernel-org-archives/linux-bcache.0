@@ -1,88 +1,61 @@
-From: Kai Krakow <hurikhan77@gmail.com>
-Subject: Re: layering question.
-Date: Fri, 07 Aug 2015 01:12:29 +0200
-Message-ID: <u76d9c-m19.ln1@hurikhan77.spdns.de>
-References: <55C0E63F.2030007@fsck.co.uk> <k0n89c-dgn.ln1@hurikhan77.spdns.de> <20150805090446.Horde.VMReCuJzW3PwyI8Gh_BZ_yJ@www3.nde.ag> <poha9c-rh4.ln1@hurikhan77.spdns.de> <55C2B034.2090404@fsck.co.uk>
+From: Ming Lin <mlin@kernel.org>
+Subject: Re: [ANNOUNCE] bcachefs!
+Date: Thu, 6 Aug 2015 16:27:51 -0700
+Message-ID: <CAF1ivSa3RCaydtMWPGyuVo=+wR+siF_5x1sPUsCL6DiDS+7yhA@mail.gmail.com>
+References: <20150717234023.GB4166@kmo-pixel>
+	<1437176911.9298.0.camel@ssi>
+	<20150717235133.GC4166@kmo-pixel>
+	<1437177497.9298.3.camel@ssi>
+	<20150718021007.GA3196@kmo-pixel>
+	<1437196863.4737.2.camel@hasee>
+	<CAF1ivSaqGRWruh8mePvFaKC9CSQB8xW7aAe872dao6J34v6iFg@mail.gmail.com>
+	<20150724191557.GA1928@kmo-pixel>
+	<1437770866.21988.16.camel@ssi>
+	<CAF1ivSZhj2WuafP0yFey47OyAhjF7-Sznnb1WBXA+Hm5Rem31Q@mail.gmail.com>
+	<20150806225834.GA2459@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:59810 "EHLO plane.gmane.org"
+Received: from mail.kernel.org ([198.145.29.136]:42762 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751825AbbHFXWL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 6 Aug 2015 19:22:11 -0400
-Received: from list by plane.gmane.org with local (Exim 4.69)
-	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1ZNUUA-0006XI-2V
-	for linux-bcache@vger.kernel.org; Fri, 07 Aug 2015 01:22:06 +0200
-Received: from ip18864262.dynamic.kabel-deutschland.de ([24.134.66.98])
-        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 07 Aug 2015 01:22:06 +0200
-Received: from hurikhan77 by ip18864262.dynamic.kabel-deutschland.de with local (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 07 Aug 2015 01:22:06 +0200
+	id S1751902AbbHFX1y (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 6 Aug 2015 19:27:54 -0400
+Received: from mail.kernel.org (localhost [127.0.0.1])
+	by mail.kernel.org (Postfix) with ESMTP id 43AEE206A6
+	for <linux-bcache@vger.kernel.org>; Thu,  6 Aug 2015 23:27:53 +0000 (UTC)
+Received: from mail-vk0-f53.google.com (mail-vk0-f53.google.com [209.85.213.53])
+	(using TLSv1.2 with cipher AES128-GCM-SHA256 (128/128 bits))
+	(No client certificate requested)
+	by mail.kernel.org (Postfix) with ESMTPSA id 3EF47206A0
+	for <linux-bcache@vger.kernel.org>; Thu,  6 Aug 2015 23:27:52 +0000 (UTC)
+Received: by vkfx1 with SMTP id x1so4261125vkf.0
+        for <linux-bcache@vger.kernel.org>; Thu, 06 Aug 2015 16:27:51 -0700 (PDT)
+In-Reply-To: <20150806225834.GA2459@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Hi!
-
-A. James Lewis <james@fsck.co.uk> schrieb:
-
-> The problem is tho... with a very large backing store, I'm not really
-> happy with a single point of failure in the cache... is there another
-> way to mirror the cache device?
-
-Well, AFAIR there are plans to add such capabilities into bcache itself - 
-read: make it possible to add more than one caching device to a cache set. 
-It will use some sort of hybrid mirror / striping to get the best 
-combination of speed and safety - at least that's what the idea is about. I 
-just don't remember where I've read about it, neither do I know the status 
-of it.
-
-If you want to eliminate the single point of failure, you may want to try 
-mdadm with its write-mostly option instead of using bcache. It's slower for 
-writes obviously but gracefully falls back if the SSD fails. Obviously, you 
-can also not benefit from having a huge storage because it's classic RAID-1 
-and thus the smallest member will limit your storage size.
-
-Bcache also has countermeasures for a failing caching device but I didn't 
-really look into that yet. You should read the documentation about it in 
-Documentation/bcache.txt (Error Handling). The safest mode to use here is 
-writethrough.
-
-> On 06/08/15 00:10, Kai Krakow wrote:
->> Jens-U. Mozdzen <jmozdzen@nde.ag> schrieb:
+On Thu, Aug 6, 2015 at 3:58 PM, Kent Overstreet
+<kent.overstreet@gmail.com> wrote:
+> On Tue, Jul 28, 2015 at 11:41:52AM -0700, Ming Lin wrote:
+>> On Fri, Jul 24, 2015 at 1:47 PM, Ming Lin <mlin@kernel.org> wrote:
+>> >
+>> > And I want to learn how the btree node insert/delete/update happens on
+>> > disk. These maybe too detail. I'm going to write a small tool to dump
+>> > the file system. Then I could understand better the on disk btree
+>> > format.
 >>
->>> Zitat von Kai Krakow <hurikhan77@gmail.com>:
->>>> A. James Lewis <james@fsck.co.uk> schrieb:
->>>>
->>>>> I've heard rumours that layering bcache with other block device
->>>>> drivers might not be recommended... I wonder what the truth really
->>>>> is... perhaps someone can advise.
->>>> I think this is not just rumours. Multiple people reported problems
->>>> when layering caching or backing devices on top of MD devices. This may
->>>> be an implementation problem in MD which is gone in later kernel
->>>> versions [...]
->>> being rather new to bcache, I did only browse the last few months of
->>> mailing list history - are you saying that these problems were fixed
->>> (or simply vanished) some point after 3.18.8? Because if so, I'd of
->>> course try to upgrade our servers to a more recent kernel :)
->> Latest posts imply it is still a problem. It fits with earlier reports:
->> Caching on native device, backing on md device... Bcache breaks within
->> the caching device (although this is not on md). There seem to still be
->> bugs with bcache and md to properly interact.
+>> Here is my simple tool to dump parts of the on-disk format.
+>> http://www.minggr.net/cgit/cgit.cgi/bcache-tools/commit/?id=deb258e2
 >>
->> It was suspected that bcache uses a faulty discard implementation. Some
->> reports miss details about this setting. However, my setups are working
->> fine with discards fully enabled on SSD - but without using MD. And it
->> has been robust to accidental or implied reboots since all time I'm using
->> it (even with btrfs as the filesystem on bcache).
->>
->> So I'd probably remove MD from your plans on using bcache.
->>
->> BTW: My system uses vanilla gentoo kernel, 4.1.4 currently.
->>
--- 
-Replies to list only preferred.
+>> It's not in good shape, but simple enough to learn the on-disk format.
+>
+> Hey! Sorry for taking so long to respond, just got my computer set up back in
+> Alaska.
+>
+> If you want to keep going with your tool, this might be a starting point for a
+> debugfs tool - which bcache definitely needs at some point.
+
+Yes, that's my goal.
+I'll improve it once I get more familiar with bcachefs on-disk format.
