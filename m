@@ -1,76 +1,72 @@
-From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
-Subject: Re: layering question.
-Date: Fri, 07 Aug 2015 18:24:13 +0200
-Message-ID: <20150807182413.Horde.gYQ0jmSi6dPcSZ7amGH5GRV@www3.nde.ag>
+From: =?gb2312?B?WkhBTkdKVU4zIFvVxb+hXQ==?= <ZHANGJUN3@kingsoft.com>
+Subject: avgrq-sz and avgqu-sz are too high
+Date: Mon, 10 Aug 2015 18:21:37 +0800
+Message-ID: <834EFB1A-9F81-41F2-B4B3-C1A3D82B48DC@kingsoft.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
+Content-Type: text/plain; charset="gb2312"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.182]:43579 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932341AbbHGQY2 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 7 Aug 2015 12:24:28 -0400
-Received: from hh2-mail.hh.nde.ag (gw-hh2.hh.nde.ag [85.183.17.20])
-	by post.strato.de (RZmta 37.8 AUTH)
-	with ESMTPA id w04f1dr77GOQfWk
-	for <linux-bcache@vger.kernel.org>;
-	Fri, 7 Aug 2015 18:24:26 +0200 (CEST)
-Received: from www3.nde.ag (hh2-www.hh.nde.ag [192.168.102.4])
-	(using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
-	(Client did not present a certificate)
-	by hh2-mail.hh.nde.ag (Postfix) with ESMTPS id DC2051C05C
-	for <linux-bcache@vger.kernel.org>; Fri,  7 Aug 2015 18:24:13 +0200 (CEST)
-Content-Disposition: inline
+Received: from kingsoft.com ([114.255.44.146]:55430 "EHLO mail02.kingsoft.com"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933255AbbHJK1d (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 10 Aug 2015 06:27:33 -0400
+Content-Language: zh-CN
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Hi James,
-
-Zitat von "A. James Lewis" <james@fsck.co.uk>:
-> OK, but in that case bcache is not between your MD RAID and it's  
-> disks, so if your disks are dropping out of the MD array, that has  
-> to be either an independent problem, or a very complex bug.
-
-My guess is that it's a rather simple timeout / locking problem, which  
-leads to an expiring timer in the MD code. And bcache has a well-known  
-history for locking problems, according to the mailing list.
-
-Regards,
-Jens
-
-> James
->
->
-> On 07/08/15 16:36, Jens-U. Mozdzen wrote:
->> Hi James,
->>
->> Zitat von "A. James Lewis" <james@fsck.co.uk>:
->>> That's interesting, are you putting your MD on top of multiple  
->>> bcache devices... rather than bcache on top of an MD device... I  
->>> wonder what the rationale behind this is?
->>
->> Hi James, no such thing here...
->>
->> bcache is running on top of two MD-RAIDs - RAID6 with 7 spinning  
->> drives and RAID1 with two SSDs.
->>
->> The stack is, from bottom to top:
->>
->> - MD-RAID6 data, MD-RAID1 cache
->> - bcache (/dev/bcache0, used as an LVM PV)
->> - LVM
->> - many LVs
->> - DRBD on top of most of the LVs
->> - Ext4 on each of the DRBD devices
->> - SCST / NFS / SMB sharing these file systems
->>
->> In the referenced incidents, SCST reports that (many) writes failed  
->> due to time-out, and MD reports a single disk faulty. No other  
->> traces in syslog, especially no stalled processes, locking problems  
->> or kernel bugs.
->>
->> The i/o pattern is highly parallel reads and writes, mostly via SCST.
->>
->> Regards,
->> Jens
+SEmjrCBndXlzo7oNCiAgICBJIHVzZSBrZXJuZWwgNC4xLjQsIGFuZCBwYWNoZWQgNSBwYXRjaGVz
+IG9uIGh0dHBzOi8vZ2l0Lmtlcm5lbC5vcmcvY2dpdC9saW51eC9rZXJuZWwvZ2l0L21saW4vbGlu
+dXguZ2l0L2xvZy8/aD1iY2FjaGWjug0KDQogICAgICAgIEluIGJjYWNoZV9pbml0KCkgZnVuY3Rp
+b24gaXQgZm9yZ290IHRvIHVucmVnaXN0ZXIgcmVib290IG5vdGlmaWVyIGlmDQogICAgICAgIGJj
+YWNoZTogZml4IGEgbGl2ZWxvY2sgaW4gYnRyZWUgbG9jaw0KICAgICAgICBmaXggYSBsZWFrIGlu
+IGJjaF9jYWNoZWRfZGV2X3J1bigpDQogICAgICAgIGJjYWNoZTogQWRkIGEgY29uZF9yZXNjaGVk
+KCkgY2FsbCB0byBnYw0KICAgICAgICBiY2FjaGU6IFtCVUddIGNsZWFyIEJDQUNIRV9ERVZfVU5M
+SU5LX0RPTkUgZmxhZyB3aGVuIGF0dGFjaGluZyBhIGJhY2tpbmcgZGV2aWNlDQoNCiAgICBNeSBw
+cm9ibGVtIGlzICBvbmNlIEkgbW91bnQgdGhlIC9kZXYvYmNhY2hlMCwgdGhlIHV0aWwgb2YgYmNh
+Y2hlIGlzIHZlcnkgaGlnaDoNCg0KMDY6MTQ6MDYgUE0gICAgICAgREVWICAgICAgIHRwcyAgcmRf
+c2VjL3MgIHdyX3NlYy9zICBhdmdycS1zeiAgYXZncXUtc3ogICAgIGF3YWl0ICAgICBzdmN0bSAg
+ICAgJXV0aWwNCjA2OjE0OjA3IFBNICAgICAgIHNkYiAgICAgIDAuMDAgICAgICAwLjAwICAgICAg
+MC4wMCAgICAgIDAuMDAgICAgICAwLjAwICAgICAgMC4wMCAgICAgIDAuMDAgICAgICAwLjAwDQow
+NjoxNDowNyBQTSAgICAgICBzZGMgICAgICAwLjAwICAgICAgMC4wMCAgICAgIDAuMDAgICAgICAw
+LjAwICAgICAgMC4wMCAgICAgIDAuMDAgICAgICAwLjAwICAgICAgMC4wMA0KMDY6MTQ6MDcgUE0g
+ICAgICAgc2RhICAgICAgMC4wMCAgICAgIDAuMDAgICAgICAwLjAwICAgICAgMC4wMCAgICAgIDAu
+MDAgICAgICAwLjAwICAgICAgMC4wMCAgICAgIDAuMDANCjA2OjE0OjA3IFBNICAgYmNhY2hlMCAg
+ICAgIDAuMDAgICAgICAwLjAwICAgICAgMC4wMCAgICAgIDAuMDAgMTQ1NjUwNS4wMCAgICAgIDAu
+MDAgICAgICAwLjAwICAgIDEwMC4wMA0KDQoNCiMgLi9iY2FjaGUtc3RhdHVzLnB5IC1zDQotLS0g
+YmNhY2hlIC0tLQ0KRGV2aWNlICAgICAgICAgICAgICAgICAgICAgIC9kZXYvYmNhY2hlMCAoMjUy
+OjApDQpVVUlEICAgICAgICAgICAgICAgICAgICAgICAgZTVmMTA4ODUtOTZmMS00YWQzLWE1YWIt
+NmUyOWE3YjIxYjhkDQpCbG9jayBTaXplICAgICAgICAgICAgICAgICAgNC4wMEtpQg0KQnVja2V0
+IFNpemUgICAgICAgICAgICAgICAgIDIuMDBNaUINCkNvbmdlc3RlZD8gICAgICAgICAgICAgICAg
+ICBGYWxzZQ0KUmVhZCBDb25nZXN0aW9uICAgICAgICAgICAgIDAuMG1zDQpXcml0ZSBDb25nZXN0
+aW9uICAgICAgICAgICAgMC4wbXMNClRvdGFsIENhY2hlIFNpemUgICAgICAgICAgICAxNzMzLjAw
+R2lCDQpUb3RhbCBDYWNoZSBVc2VkICAgICAgICAgICAgMTczMy4wMEdpQiAgKDEwMCUpDQpUb3Rh
+bCBDYWNoZSBVbnVzZWQgICAgICAgICAgMEIgICgwJSkNCkRpcnR5IERhdGEgICAgICAgICAgICAg
+ICAgICAwQiAgKDAlKQ0KRXZpY3RhYmxlIENhY2hlICAgICAgICAgICAgIDE3MzMuMDBHaUIgICgx
+MDAlKQ0KUmVwbGFjZW1lbnQgUG9saWN5ICAgICAgICAgIFtscnVdIGZpZm8gcmFuZG9tDQpDYWNo
+ZSBNb2RlICAgICAgICAgICAgICAgICAgd3JpdGV0aHJvdWdoIFt3cml0ZWJhY2tdIHdyaXRlYXJv
+dW5kIG5vbmUNClRvdGFsIEhpdHMgICAgICAgICAgICAgICAgICAxMzAgKCUpDQpUb3RhbCBNaXNz
+ZXMgICAgICAgICAgICAgICAgMTEzMjQ2DQpUb3RhbCBCeXBhc3MgSGl0cyAgICAgICAgICAgNzgg
+ICgxMDAlKQ0KVG90YWwgQnlwYXNzIE1pc3NlcyAgICAgICAgIDANClRvdGFsIEJ5cGFzc2VkICAg
+ICAgICAgICAgICAzNS4wME1pQg0KLS0tIEJhY2tpbmcgRGV2aWNlIC0tLQ0KICBEZXZpY2UgICAg
+ICAgICAgICAgICAgICAgIC9kZXYvc2RjMSAoODozMykNCiAgU2l6ZSAgICAgICAgICAgICAgICAg
+ICAgICAzMDczMy4wMEdpQg0KICBDYWNoZSBNb2RlICAgICAgICAgICAgICAgIHdyaXRldGhyb3Vn
+aCBbd3JpdGViYWNrXSB3cml0ZWFyb3VuZCBub25lDQogIFJlYWRhaGVhZCAgICAgICAgICAgICAg
+ICAgMA0KICBTZXF1ZW50aWFsIEN1dG9mZiAgICAgICAgIDBCDQogIE1lcmdlIHNlcXVlbnRpYWw/
+ICAgICAgICAgRmFsc2UNCiAgU3RhdGUgICAgICAgICAgICAgICAgICAgICBjbGVhbg0KICBXcml0
+ZWJhY2s/ICAgICAgICAgICAgICAgIFRydWUNCiAgRGlydHkgRGF0YSAgICAgICAgICAgICAgICAw
+Qg0KICBUb3RhbCBIaXRzICAgICAgICAgICAgICAgIDEzMCAoJSkNCiAgVG90YWwgTWlzc2VzICAg
+ICAgICAgICAgICAxMTMyNDYNCiAgVG90YWwgQnlwYXNzIEhpdHMgICAgICAgICA3OCAgKDEwMCUp
+DQogIFRvdGFsIEJ5cGFzcyBNaXNzZXMgICAgICAgMA0KICBUb3RhbCBCeXBhc3NlZCAgICAgICAg
+ICAgIDM1LjAwTWlCDQotLS0gQ2FjaGUgRGV2aWNlIC0tLQ0KICBEZXZpY2UgICAgICAgICAgICAg
+ICAgICAgIC9kZXYvc2RhMSAoODoxKQ0KICBTaXplICAgICAgICAgICAgICAgICAgICAgIDE3MzMu
+MDBHaUINCiAgQmxvY2sgU2l6ZSAgICAgICAgICAgICAgICA0LjAwS2lCDQogIEJ1Y2tldCBTaXpl
+ICAgICAgICAgICAgICAgMi4wME1pQg0KICBSZXBsYWNlbWVudCBQb2xpY3kgICAgICAgIFtscnVd
+IGZpZm8gcmFuZG9tDQogIERpc2NhcmQ/ICAgICAgICAgICAgICAgICAgRmFsc2UNCiAgSS9PIEVy
+cm9ycyAgICAgICAgICAgICAgICAwDQogIE1ldGFkYXRhIFdyaXR0ZW4gICAgICAgICAgNDAuMDBN
+aUINCiAgRGF0YSBXcml0dGVuICAgICAgICAgICAgICA1LjAwR2lCDQogIEJ1Y2tldHMgICAgICAg
+ICAgICAgICAgICAgODg3NzgzDQogIENhY2hlIFVzZWQgICAgICAgICAgICAgICAgMTczMy4wMEdp
+QiAgKDEwMCUpDQogIENhY2hlIFVudXNlZCAgICAgICAgICAgICAgMEIgICgwJSkNCg0KDQpUaGUg
+Y29tbWFuZCBsaW5lIG9mIG1vdW50aW5nIC9kZXYvYmNhY2hlMDoNCiAgICAjIG1vdW50IC10IHhm
+cyAtbyBkZWZhdWx0cyxub2F0aW1lLG5vZGlyYXRpbWUsbm9iYXJyaWVyIC9kZXYvYmNhY2hlMCAv
+ZGF0YS9iY2FjaGUvDQoNCg0KDQo=
