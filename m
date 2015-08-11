@@ -1,45 +1,30 @@
-From: Stefan Priebe <s.priebe@profihost.ag>
-Subject: Re: bcache deadlock
-Date: Mon, 10 Aug 2015 16:51:32 +0200
-Message-ID: <55C8BA74.2010001@profihost.ag>
-References: <55BC6268.3060407@profihost.ag>
- <CAF1ivSY=+SDonyQdWntkyYWYhEgVrgzNLxdd7x1PVmKcyH2fGA@mail.gmail.com>
- <55BF096A.5070902@profihost.ag>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: [bcachefs] Mounting the same device multiple times now works
+Date: Tue, 11 Aug 2015 00:34:53 -0800
+Message-ID: <20150811083453.GA29708@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-ph.de-nserver.de ([85.158.179.214]:31428 "EHLO
-	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341AbbHJOvW (ORCPT
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35582 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752344AbbHKIe7 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 10 Aug 2015 10:51:22 -0400
-In-Reply-To: <55BF096A.5070902@profihost.ag>
+	Tue, 11 Aug 2015 04:34:59 -0400
+Received: by pacgr6 with SMTP id gr6so46086487pac.2
+        for <linux-bcache@vger.kernel.org>; Tue, 11 Aug 2015 01:34:59 -0700 (PDT)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lin <mlin@kernel.org>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
+Cc: Ming Lin <mlin@kernel.org>
 
-Am 03.08.2015 um 08:25 schrieb Stefan Priebe - Profihost AG:
->
->
-> Am 03.08.2015 um 08:21 schrieb Ming Lin:
->> On Fri, Jul 31, 2015 at 11:08 PM, Stefan Priebe <s.priebe@profihost.ag> wrote:
->>> Hi,
->>>
->>> any ideas about this deadlock:
->>> 2015-08-01 00:05:05     "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
->>> disables this message.
->>> 2015-08-01 00:05:05     Tainted: G O 3.18.19+47-ph #1
->>> 2015-08-01 00:05:05     INFO: task xfsaild/bcache5:2437 blocked for more
->>> than 120 seconds.
->>
->> No backtrace?
->>
->
-> Yes, no backtrace.
+Like in other filesystems, you can now do
 
-Any chance or idea to fix this? This happens every day at a different 
-server and is really annoying.
+mount /dev/sda1 /foo
+mount /dev/sda1 /bar
 
-Stefan
+What this really means is that if the udev hook has registered the bcache device
+via the old style sysfs interface for caching, you'll still be able to mount the
+device like normal.
+
+Keep the bug reports coming!
