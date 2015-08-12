@@ -1,65 +1,64 @@
-From: Ming Lin <mlin@kernel.org>
-Subject: Re: [bcachefs] Mounting the same device multiple times now works
-Date: Wed, 12 Aug 2015 00:36:02 -0700
-Message-ID: <1439364962.5775.4.camel@hasee>
-References: <20150811083453.GA29708@kmo-pixel>
-	 <1439315982.19144.7.camel@ssi> <20150812013853.GA2192@kmo-pixel>
+From: Jack Wang <jack.wang.usish@gmail.com>
+Subject: Re: bcache deadlock
+Date: Wed, 12 Aug 2015 15:39:11 +0200
+Message-ID: <CA+res+RR6g4VSMOBs_qBSuaWO5z6Sukjm_BQZStDq6gwN=zbDw@mail.gmail.com>
+References: <55BC6268.3060407@profihost.ag>
+	<CAF1ivSY=+SDonyQdWntkyYWYhEgVrgzNLxdd7x1PVmKcyH2fGA@mail.gmail.com>
+	<55BF096A.5070902@profihost.ag>
+	<55C8BA74.2010001@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.kernel.org ([198.145.29.136]:52959 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933463AbbHLHgG (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 12 Aug 2015 03:36:06 -0400
-In-Reply-To: <20150812013853.GA2192@kmo-pixel>
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:34945 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814AbbHLNjM (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 12 Aug 2015 09:39:12 -0400
+Received: by igbjg10 with SMTP id jg10so42890384igb.0
+        for <linux-bcache@vger.kernel.org>; Wed, 12 Aug 2015 06:39:11 -0700 (PDT)
+In-Reply-To: <55C8BA74.2010001@profihost.ag>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: Stefan Priebe <s.priebe@profihost.ag>
+Cc: Ming Lin <mlin@kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On Tue, 2015-08-11 at 17:38 -0800, Kent Overstreet wrote:
-> On Tue, Aug 11, 2015 at 10:59:42AM -0700, Ming Lin wrote:
-> > On Tue, 2015-08-11 at 00:34 -0800, Kent Overstreet wrote:
-> > > Like in other filesystems, you can now do
-> > > 
-> > > mount /dev/sda1 /foo
-> > > mount /dev/sda1 /bar
-> > > 
-> > > What this really means is that if the udev hook has registered the bcache device
-> > > via the old style sysfs interface for caching, you'll still be able to mount the
-> > > device like normal.
-> > 
-> > Thanks!
-> > 
-> > BTW, could you share the bcachefs long term development plans and short
-> > term high priority tasks?
-> 
-> Right now, my main priority is stabilizing it and making it usable - fixing all
-> the things that people are going to trip over when they try it out. I want to
-> get it somewhat more polished before I announce on linux-fsdevel.
-> 
-> The big thing I'm working on at the moment is debugging atomic renames, I had to
-> back that code out at the last minute.
-> 
-> > I'd like to pick something to work on. Probably the debugfs tool you
-> > mentioned or other things?
-> 
-> One thing that would actually be really helpful is more benchmarking vs.
-> ext4/xfs - identifying areas where there's still more performance work to do.
-> 
-> The debugfs tool is definitely important but that's a longer term thing. If
-> you're feeling productive like that feel free to keep going with it.
-> 
-> Really though right now the main thing we need is more testing and debugging.
+Have you checked on the server when this deadlock happened?
 
-I have run xfstests. Here is the results for generic tests.
-http://minggr.net/pub/bcachefs/xfstests.log
+From my experience, you will get a trace for the warning.
 
-One thing is fallocate not supported yet. Is it known?
-
-root@bee:~# mount |grep bcache
-/dev/sda on /mnt/test type bcache (rw,relatime)
-
-root@bee:~# fallocate -l 4096 /mnt/test/hello.c
-fallocate: /mnt/test/hello.c: fallocate failed: Operation not supported
+2015-08-10 16:51 GMT+02:00 Stefan Priebe <s.priebe@profihost.ag>:
+> Am 03.08.2015 um 08:25 schrieb Stefan Priebe - Profihost AG:
+>>
+>>
+>>
+>> Am 03.08.2015 um 08:21 schrieb Ming Lin:
+>>>
+>>> On Fri, Jul 31, 2015 at 11:08 PM, Stefan Priebe <s.priebe@profihost.ag>
+>>> wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> any ideas about this deadlock:
+>>>> 2015-08-01 00:05:05     "echo 0 >
+>>>> /proc/sys/kernel/hung_task_timeout_secs"
+>>>> disables this message.
+>>>> 2015-08-01 00:05:05     Tainted: G O 3.18.19+47-ph #1
+>>>> 2015-08-01 00:05:05     INFO: task xfsaild/bcache5:2437 blocked for more
+>>>> than 120 seconds.
+>>>
+>>>
+>>> No backtrace?
+>>>
+>>
+>> Yes, no backtrace.
+>
+>
+> Any chance or idea to fix this? This happens every day at a different server
+> and is really annoying.
+>
+>
+> Stefan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
