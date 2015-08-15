@@ -1,96 +1,140 @@
-From: Killian De Volder <killian.de.volder@megasoft.be>
-Subject: Re: block and bucket sizes
-Date: Thu, 13 Aug 2015 13:32:13 +0200
-Message-ID: <55CC803D.9080700@megasoft.be>
-References: <55CC7023.1010806@buttersideup.com>
+From: =?UTF-8?B?0JPQtdC+0YDQs9C40Lkg0KHRgtCw0YDQuNC60L7Qsg==?=
+	<gstarikov@gmail.com>
+Subject: bcache cant register cache device "bad csum" & "bad magic"
+Date: Sat, 15 Aug 2015 20:54:24 +0300
+Message-ID: <CAOOKTyDfZ8-Zv4qj4zYj6hYsMzMryLtE6Lfvj5ZyCuE0d-XEhw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from slow1-d.mail.gandi.net ([217.70.178.86]:40150 "EHLO
-	slow1-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442AbbHMLtw (ORCPT
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:35038 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753173AbbHORyZ (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 13 Aug 2015 07:49:52 -0400
-Received: from relay2-d.mail.gandi.net (relay2-d.mail.gandi.net [217.70.183.194])
-	by slow1-d.mail.gandi.net (Postfix) with ESMTP id 7B035535E0D
-	for <linux-bcache@vger.kernel.org>; Thu, 13 Aug 2015 13:32:18 +0200 (CEST)
-Received: from mfilter28-d.gandi.net (mfilter28-d.gandi.net [217.70.178.159])
-	by relay2-d.mail.gandi.net (Postfix) with ESMTP id D0637C5A44
-	for <linux-bcache@vger.kernel.org>; Thu, 13 Aug 2015 13:32:16 +0200 (CEST)
-Received: from relay2-d.mail.gandi.net ([IPv6:::ffff:217.70.183.194])
-	by mfilter28-d.gandi.net (mfilter28-d.gandi.net [::ffff:10.0.15.180]) (amavisd-new, port 10024)
-	with ESMTP id y1fTsafxXT81 for <linux-bcache@vger.kernel.org>;
-	Thu, 13 Aug 2015 13:32:15 +0200 (CEST)
-Received: from [172.17.0.70] (cable-213-34-255-70.zeelandnet.nl [213.34.255.70])
-	(Authenticated sender: killian.de.volder@megasoft.be)
-	by relay2-d.mail.gandi.net (Postfix) with ESMTPSA id 372AEC5A3A
-	for <linux-bcache@vger.kernel.org>; Thu, 13 Aug 2015 13:32:14 +0200 (CEST)
-In-Reply-To: <55CC7023.1010806@buttersideup.com>
+	Sat, 15 Aug 2015 13:54:25 -0400
+Received: by wicne3 with SMTP id ne3so41700969wic.0
+        for <linux-bcache@vger.kernel.org>; Sat, 15 Aug 2015 10:54:24 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-Well the block-size == the physical block size your bcache device will have.
-(As in 4k sector disks VS 512bytes disks)
+Hi!
+I lost bcache device after a reboot and dmesg contains the following:
+[   26.991085] bcache: prio_read() bad csum reading priorities
+[   26.991088] bcache: prio_read() bad magic reading priorities
+[   26.991425] attempt to access beyond end of device
+[   26.991428] sdc: rw=48, want=3405010361836132352, limit=468862128
+[   26.991430] bcache: error on 4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27:
+accessing                                            priorities,
+disabling caching
 
-Please note that the physical-sector size (as advertised by your bcache device the OS and FS)
-can have an impact on using it:
-- FS might refuse to use smaller blocks then the sector size.
-- When using lvm, the sector-size will the biggest of all the pv's used. (AND can change while you are doing an lvextend or pvmove)
-- Possible other I don't know about.
+how to fix it?
 
-I don't know if the block-size matters for performance, but usually the above points, trump performance.
+i am using the following fix (recreate cache device with the old cuid)
+and it works till next reboot.
 
-Bucket-size should match erase size. How important is it ? Depend on how much your SSD cares about matched erase sizes.
+# bcache-super-show /dev/sdc
+sb.magic                ok
+sb.first_sector         8 [match]
+sb.csum                 F19B35ED4C357841 [match]
+sb.version              3 [cache device]
 
+dev.label               (empty)
+dev.uuid                7dddbf16-ca58-48e3-82d8-da47ae7726dc
+dev.sectors_per_block   1
+dev.sectors_per_bucket  1024
+dev.cache.first_sector  1024
+dev.cache.cache_sectors 468860928
+dev.cache.total_sectors 468861952
+dev.cache.ordered       yes
+dev.cache.discard       no
+dev.cache.pos           0
+dev.cache.replacement   0 [lru]
 
-Killian De Volder
+cset.uuid               4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27
 
+# make-bcache -C --cset-uuid 4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27 /dev/sdc
+Already a bcache device on /dev/sdc, overwrite with --wipe-bcache
 
-On 13-08-15 12:23, Tim Small wrote:
-> Hi,
-> 
-> I couldn't find much in the way of docs on the block and bucket sizes...
-> 
-> I created a bcache device (md 3 disk RAID5 backing, Intel S3500 cache),
-> and initially used the default bucket and block sizes.
-> 
-> It looks like flash erase block sizes are now almost universally larger
-> than the bcache default bucket size, so if this is important (and the
-> man page says it is), then maybe this needs to be increased?
-> 
-> After a load of googling, I think that for this SSD (which uses
-> Intel/Micron 20nm MLC), the page size is probably 8 kB, and the erase
-> block size is probably 256 x 8 kB = 2 MB
-> 
-> http://www.anandtech.com/show/7147/micron-announces-16nm-128gb-mlc-nand-ssds-in-2014
-> 
-> - if on the other hand it uses 128 Gbit parts, then this will be 16 kB
-> page size, and 8 MB erase block.
-> 
-> 
-> So, after playing around a bit, I take it that:
-> 
-> The block size for the backing and cache devices must be the same (are
-> there any implications e.g. file system compatibility - with block sizes
-> larger than 4 kB?).
-> 
-> The default bucket size is smaller than the erase block size on this SSD
-> (and probably most modern SSDs), and I was wondering if the default
-> should be increased?
-> 
-> I'm assuming most users are going to be getting these parameters "wrong"
-> - but I'm not sure how much impact this will have on performance and SSD
-> endurance?  Does this need some sort of wiki -type table with a lookup
-> between SSD model number and page/block size (which make-bcache could use)?
-> 
-> It'll be a bit of a pain to move everything off my 512 byte block size
-> backing store, and then recreate it, so should I bother?
-> 
-> Tim.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+ make-bcache -C --wipe-bcache --cset-uuid
+4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27 /dev/sdc
+Device /dev/sdc already has a non-bcache superblock, remove it using
+wipefs and wipefs -a
+
+# wipefs -a /dev/sdc
+
+# make-bcache -C --wipe-bcache --cset-uuid
+4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27 /dev/sdc
+UUID:                   f7d97543-69ea-4636-a4ff-ab925ab5abdd
+Set UUID:               4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27
+version:                0
+nbuckets:               457873
+block_size:             1
+bucket_size:            1024
+nr_in_set:              1
+nr_this_dev:            0
+first_bucket:           1
+
+# echo /dev/sdc > /sys/fs/bcache/register
+
+dmesg:
+[42999.742342] bcache: run_cache_set() invalidating existing data
+[42999.900046] bcache: bch_cached_dev_attach() Caching md0 as bcache0
+on set 4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27
+[42999.900067] bcache: register_cache() registered cache device sdc
+[43002.019693] EXT4-fs (bcache0): recovery complete
+[43002.043362] EXT4-fs (bcache0): mounted filesystem with ordered data
+mode. Opts: discard,errors=remount-ro
+
+and final steps:
+# echo writethrough > /sys/block/bcache0/bcache/cache_mode
+# echo 128k > /sys/block/bcache0/bcache/sequential_cutoff
+
+# ./bcache-status -s
+--- bcache ---
+Device                      /dev/bcache0 (251:0)
+UUID                        4ca0fbc9-d20b-4a3d-bbd1-38d9a5810c27
+Block Size                  0.50KiB
+Bucket Size                 512.00KiB
+Congested?                  False
+Read Congestion             2.0ms
+Write Congestion            20.0ms
+Total Cache Size            223.57GiB
+Total Cache Used            2.24GiB     (0%)
+Total Cache Unused          221.34GiB   (99%)
+Dirty Data                  0B  (0%)
+Evictable Cache             223.57GiB   (100%)
+Replacement Policy          [lru] fifo random
+Cache Mode                  [writethrough] writeback writearound none
+Total Hits                  139 (3%)
+Total Misses                3816
+Total Bypass Hits           0
+Total Bypass Misses         0
+Total Bypassed              0B
+--- Backing Device ---
+  Device                    /dev/md0 (9:0)
+  Size                      5.46TiB
+  Cache Mode                [writethrough] writeback writearound none
+  Readahead                 0
+  Sequential Cutoff         128.00KiB
+  Merge sequential?         False
+  State                     clean
+  Writeback?                True
+  Dirty Data                0B
+  Total Hits                139 (3%)
+  Total Misses              3816
+  Total Bypass Hits         0
+  Total Bypass Misses       0
+  Total Bypassed            0B
+--- Cache Device ---
+  Device                    /dev/sdc (8:32)
+  Size                      223.57GiB
+  Block Size                0.50KiB
+  Bucket Size               512.00KiB
+  Replacement Policy        [lru] fifo random
+  Discard?                  False
+  I/O Errors                0
+  Metadata Written          1.60MiB
+  Data Written              19.20MiB
+  Buckets                   457873
+  Cache Used                2.24GiB     (0%)
+  Cache Unused              221.34GiB   (99%)
