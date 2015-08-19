@@ -1,36 +1,41 @@
-From: Emmanuel Florac <eflorac@intellique.com>
-Subject: Why bcachefs?
-Date: Tue, 18 Aug 2015 13:29:21 +0200
-Message-ID: <20150818132921.7ef7db8b@harpe.intellique.com>
+From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
+Subject: writeback minimum rate
+Date: Wed, 19 Aug 2015 11:43:51 +0200
+Message-ID: <20150819114351.Horde.d5Yn5tRURFeroTYdYbeQcse@www3.nde.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtp5-g21.free.fr ([212.27.42.5]:36810 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750890AbbHRL3T (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 18 Aug 2015 07:29:19 -0400
-Received: from harpe.intellique.com (unknown [82.225.196.72])
-	by smtp5-g21.free.fr (Postfix) with ESMTP id D6A78D48037
-	for <linux-bcache@vger.kernel.org>; Tue, 18 Aug 2015 13:29:17 +0200 (CEST)
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.182]:55041 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935AbbHSJoA (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 19 Aug 2015 05:44:00 -0400
+Received: from hh2-mail.hh.nde.ag (gw-hh2.hh.nde.ag [85.183.17.20])
+	by post.strato.de (RZmta 37.9 AUTH)
+	with ESMTPA id a04a02r7J9hvguz
+	for <linux-bcache@vger.kernel.org>;
+	Wed, 19 Aug 2015 11:43:57 +0200 (CEST)
+Received: from www3.nde.ag (hh2-www.hh.nde.ag [192.168.102.4])
+	(using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
+	(Client did not present a certificate)
+	by hh2-mail.hh.nde.ag (Postfix) with ESMTPS id 5BC841C05C
+	for <linux-bcache@vger.kernel.org>; Wed, 19 Aug 2015 11:43:50 +0200 (CEST)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-After toying a bit with it, I'm wondering: why bcachefs? I understand
-that integrating the filesystem with the cache layer probably makes the
-job easier but overall ...  we already have several excellent
-filesystems; developing a reliable filesystem is DAMN HARD; building a
-feature-complete FS is CRAZY HARD (see btrfs); because FTL sucks anyway
-and we'd rather wait for ways to move ahead of it... 
+Hi *,
 
-So Kent, please, tell us, why? :)
+from looking at /sys/block/*/bcache/writeback_rate_debug, it seems  
+there's a minimum writeback rate of "512".
 
+Is there a configuration option to increase that value? Changes to  
+writeback_rate get overwritten by bcache's algorithm.
 
--- 
-------------------------------------------------------------------------
-Emmanuel Florac     |   Direction technique
-                    |   Intellique
-                    |	<eflorac@intellique.com>
-                    |   +33 1 78 94 84 02
-------------------------------------------------------------------------
+I'd like to influence the hysteresis boundaries - our backend can take  
+much more write action, especially at night. I don't want a "quick and  
+full write-back", though.
+
+Regards,
+Jens
