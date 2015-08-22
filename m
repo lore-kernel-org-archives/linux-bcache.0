@@ -1,64 +1,116 @@
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-Subject: Re: [ANNOUNCE] bcachefs - a general purpose COW filesystem
-Date: Sat, 22 Aug 2015 14:33:47 -0700
-Message-ID: <1440279227.2683.17.camel@ubuntu-slavad-14.04>
-References: <20150821052558.GB23571@kmo-pixel>
+From: Stefan Priebe <s.priebe@profihost.ag>
+Subject: Re: bcache deadlock
+Date: Sat, 22 Aug 2015 23:48:21 +0200
+Message-ID: <55D8EE25.50606@profihost.ag>
+References: <55BC6268.3060407@profihost.ag>
+ <CAF1ivSY=+SDonyQdWntkyYWYhEgVrgzNLxdd7x1PVmKcyH2fGA@mail.gmail.com>
+ <55BF096A.5070902@profihost.ag> <55C8BA74.2010001@profihost.ag>
+ <CA+res+RR6g4VSMOBs_qBSuaWO5z6Sukjm_BQZStDq6gwN=zbDw@mail.gmail.com>
+ <55CB50DB.5000604@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20150821052558.GB23571@kmo-pixel>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, sviatoslavpestov@gmail.com, mrubin@google.com, zab@zabbo.net, bcrl@kvack.org, ric@redhat.com, Vyacheslav.Dubeyko@hgst.com, Cyril Guyot <cyril.guyot@hgst.com>, adam.manzanares@hgst.com, damien.lemoal@hgst.com
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-ph.de-nserver.de ([85.158.179.214]:43661 "EHLO
+	mail-ph.de-nserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023AbbHVVsZ (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Sat, 22 Aug 2015 17:48:25 -0400
+In-Reply-To: <55CB50DB.5000604@profihost.ag>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Jack Wang <jack.wang.usish@gmail.com>
+Cc: Ming Lin <mlin@kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Hi Kent,
+It seems to work since i disabled irqbalance. Is this problematic for 
+bcache?
 
-On Thu, 2015-08-20 at 21:25 -0800, Kent Overstreet wrote:
-> For those who haven't kept up with bcache, the bcache codebase has been
-> evolving/metastasizing into a full blown, general purpose posix filesystem - a
-> modern COW filesystem with checksumming, compression, multiple devices, caching,
-> and eventually snapshots and all kinds of other nifty features.
-> 
-> "Yet another new filesystem? Why?"
-> 
-> Well, years ago (going back to when I was still at Google), I and the other
-> people working on bcache realized that what we were working on was, almost by
-> accident, a good chunk of the functionality of a full blown filesystem - and
-> there was a really clean and elegant design to be had there if we took it and
-> ran with it. And a fast one - the main goal of bcachefs to match ext4 and xfs on
-> performance and reliability, but with the features of btrfs/zfs.
-> 
+Stefan
 
-<snip>
-
-> 
-> PLANNED FEATURES:
->  - snapshots (might start on this soon)
->  - erasure coding
-
-What erasure coding scheme(s) do you like to use?
-
->  - native support for SMR drives, raw flash
-
-How do you imagine SMR drives support? How do you feel about libzbc [1]
-using for SMR drives support? I am not very familiar with bcachefs
-architecture yet. But I suppose that maybe libzbc model can be useful
-for SMR drives support on bcachefs side. Anyway, it makes sense to
-discuss proper model.
-
-How do you imagine raw flash support in bcachefs architecture? Frankly
-speaking, I am implementing NAND flash oriented file system. But this
-project is proprietary yet and I can't share any details. However,
-currently, I've implemented NAND flash related approaches in my file
-system only. So, maybe, it make sense to consider some joint variant of
-bcachefs and implementation on my side for NAND flash support. I need to
-be more familiar with bcachefs architecture for such decision. But,
-unfortunately, I suspect that it can be not so easy to support raw flash
-for bcachefs. Of course, I can be wrong.
-
-[1] https://github.com/hgst/libzbc
-
-Thanks,
-Vyacheslav Dubeyko.
+Am 12.08.2015 um 15:57 schrieb Stefan Priebe - Profihost AG:
+> Hi,
+> Am 12.08.2015 um 15:39 schrieb Jack Wang:
+>> Have you checked on the server when this deadlock happened?
+>>
+>>  From my experience, you will get a trace for the warning.
+>
+> sadly there is no trace as it seems the kworker is running in an endless
+> loop.
+>
+> I don't have the abbility to login - the system is running with a load
+> of 2000 or even 3000.
+>
+>  From the logs i've gathered the following informations:
+>
+> top with running processes shows only kworker running on 100% CPU.
+>
+> top - 15:02:31 up 10 days, 16:20,  1 user,  load average: 2494,67,
+> 1878,69, 905,
+> Tasks: 226 total,   2 running, 222 sleeping,   0 stopped,   2 zombie
+> %Cpu(s):  0,9 us, 12,7 sy,  0,0 ni, 36,4 id, 50,0 wa,  0,0 hi,  0,0 si,
+>   0,0 st
+> KiB Mem:  49431532 total, 48672808 used,   758724 free,       52 buffers
+> KiB Swap:  3906556 total,   152772 used,  3753784 free, 40328600 cached
+>
+>    PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM    TIME+  COMMAND
+> 21963 root      20   0     0    0    0 R 100,5  0,0   9:15.48
+> [kworker/u16:3]
+> 29978 root      20   0 62488  20m 6892 S   8,0  0,0   0:02.59
+> /usr/bin/python /
+>
+> iotop shows the same kworker permanently writing with > 1400MB/s.
+>
+> Total DISK READ:       0.00 B/s | Total DISK WRITE:       0.00 B/s
+>    PID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN      IO    COMMAND
+> 29978 be/4 root        0.00 B/s   14.69 K/s  0.00 %  0.00 % python
+> /usr/sbin/iotop -b -d 1 -n 30 -P
+> 21963 be/4 root        0.00 B/s 1428.89 M/s  0.00 %  0.00 % [kworker/u16:3]
+>
+> To me this looks like an endless loop which could also explain why there
+> is no stack trace.
+>
+> Greets,
+> Stefan
+>
+>>
+>> 2015-08-10 16:51 GMT+02:00 Stefan Priebe <s.priebe@profihost.ag>:
+>>> Am 03.08.2015 um 08:25 schrieb Stefan Priebe - Profihost AG:
+>>>>
+>>>>
+>>>>
+>>>> Am 03.08.2015 um 08:21 schrieb Ming Lin:
+>>>>>
+>>>>> On Fri, Jul 31, 2015 at 11:08 PM, Stefan Priebe <s.priebe@profihost.ag>
+>>>>> wrote:
+>>>>>>
+>>>>>> Hi,
+>>>>>>
+>>>>>> any ideas about this deadlock:
+>>>>>> 2015-08-01 00:05:05     "echo 0 >
+>>>>>> /proc/sys/kernel/hung_task_timeout_secs"
+>>>>>> disables this message.
+>>>>>> 2015-08-01 00:05:05     Tainted: G O 3.18.19+47-ph #1
+>>>>>> 2015-08-01 00:05:05     INFO: task xfsaild/bcache5:2437 blocked for more
+>>>>>> than 120 seconds.
+>>>>>
+>>>>>
+>>>>> No backtrace?
+>>>>>
+>>>>
+>>>> Yes, no backtrace.
+>>>
+>>>
+>>> Any chance or idea to fix this? This happens every day at a different server
+>>> and is really annoying.
+>>>
+>>>
+>>> Stefan
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
