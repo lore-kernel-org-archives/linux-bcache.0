@@ -1,56 +1,58 @@
 From: Vojtech Pavlik <vojtech@suse.com>
 Subject: Re: Bcache stuck at writeback of a key, consuming 100% CPU, not
  possible to detach
-Date: Mon, 31 Aug 2015 17:54:15 +0200
-Message-ID: <20150831155415.GA7394@suse.com>
+Date: Mon, 31 Aug 2015 18:45:31 +0200
+Message-ID: <20150831164531.GA9810@suse.com>
 References: <20150830085442.GA31722@suse.com>
  <20150831163937.00ca3f7a@harpe.intellique.com>
  <20150831144949.GA3276@suse.com>
- <20150831170928.56fa9bbd@harpe.intellique.com>
+ <20150831150429.GA27538@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:34150 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:36313 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125AbbHaPyR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 31 Aug 2015 11:54:17 -0400
+	id S1753302AbbHaQpd (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 31 Aug 2015 12:45:33 -0400
 Content-Disposition: inline
-In-Reply-To: <20150831170928.56fa9bbd@harpe.intellique.com>
+In-Reply-To: <20150831150429.GA27538@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Emmanuel Florac <eflorac@intellique.com>
-Cc: kmo@daterainc.com, linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: Emmanuel Florac <eflorac@intellique.com>, kmo@daterainc.com, linux-bcache@vger.kernel.org
 
-On Mon, Aug 31, 2015 at 05:09:28PM +0200, Emmanuel Florac wrote:
-> Le Mon, 31 Aug 2015 16:49:49 +0200
-> Vojtech Pavlik <vojtech@suse.cz> =C3=A9crivait:
->=20
-> > >=20
-> > > The bcache_writeback stays at 100% _even_ when in writethrough mo=
-de,
-> > > alas. So this looks normal. However dirty_data definitely should
-> > > drop to zero... =20
-> >=20
-> > This most certainly isn't normal. The ftrace shows it's looping in =
-a
-> > loop doing nothing useful.
-> >=20
->=20
-> Yep, I've had a quick look at the code, however it's not very
-> inspiring. It very much looks like there's a missing test. From your
-> trace it looks like it finds a key_bad (?) -- from the struct
-> bch_extent_keys_ops in bcache/extents.c -- but there is no code anywh=
-ere
-> to manage this case apparently.
->=20
-> Ah, and I can't download your complete trace, too : twilight.ucw.cz
-> isn't responding. :)
+On Mon, Aug 31, 2015 at 07:04:29AM -0800, Kent Overstreet wrote:
 
-Sadly, the bcache array crashed hard earlier today (with a bug in  and =
-the machine
-doesn't boot anymore. I'm recovering it now.
+> I suspect there's two different bugs here.
+> 
+>  - I'm starting to suspect there's a bug in the dirty data accounting, and it's
+>    getting out of sync - i.e. reading 2.8 GB or whatever when it's actually 0.
+>    that would explain it spinning when there actually isn't any work for it to
+>    do.
 
---=20
+That may be the case, but doesn't quite match my observation. Using this
+command line:
+
+	echo 2 > writeback_percent; echo 0 > writeback_percent; echo 100000 > writeback_rate; echo none > cache_mode; while true; do if top -b -n 1 | grep 'R.*bcache_write'; then date; echo looping; echo writeback > cache_mode; echo 40 > writeback_percent; sleep 1; echo 2 > writeback_percent; echo 0 > writeback_percent; echo 100000 > writeback_rate; echo none > cache_mode; echo fixed; cat /sys/block/bcache0/bcache/dirty_data; fi; done
+
+I managed to get down to about 200 MB od dirty data reported. If the
+reporting was off by a fixed offset, I wouldn't be getting the 100% CPU
+and running bcache_writeback at 5GB of dirty data already.
+
+At least unless the accounting of dirty data is very wrong and
+fluctuating.
+
+>  - with a large enough amount of data, the 30 second writeback_delay may be
+>    insufficient; if it takes longer than that just to scan the entire keyspace
+>    it'll never get a chance to sleep. try bumping writeback_delay up and see if
+>    that helps.
+
+That shouldn't be the case when the amount of dirty data is below a
+gigabyte, or is it?
+
+>    the ratelimiting on scanning for dirty data needs to be changed to something
+>    more sophisticated, the existing fixed delay is problematic.
+
+-- 
 Vojtech Pavlik
 Director SuSE Labs
