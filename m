@@ -1,106 +1,112 @@
-From: Vojtech Pavlik <vojtech@suse.com>
+From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
 Subject: Re: Bcache stuck at writeback of a key, consuming 100% CPU, not
  possible to detach
-Date: Sat, 5 Sep 2015 13:29:55 +0200
-Message-ID: <20150905112955.GA4078@suse.com>
+Date: Mon, 07 Sep 2015 17:13:18 +0200
+Message-ID: <20150907171318.Horde.LCssHlKH7jqwmHt1ENeCSCd@www3.nde.ag>
 References: <20150830085442.GA31722@suse.com>
  <20150905130658.Horde.bdSqYx_a293KuFa5vdTuajm@www3.nde.ag>
+ <20150905112955.GA4078@suse.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jablonecka.jablonka.cz ([91.219.244.36]:46716 "EHLO
-	jablonecka.jablonka.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbbIEL35 (ORCPT
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:58716 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbbIGPN3 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 5 Sep 2015 07:29:57 -0400
+	Mon, 7 Sep 2015 11:13:29 -0400
+In-Reply-To: <20150905112955.GA4078@suse.com>
 Content-Disposition: inline
-In-Reply-To: <20150905130658.Horde.bdSqYx_a293KuFa5vdTuajm@www3.nde.ag>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
+To: Vojtech Pavlik <vojtech@suse.com>, Kent Overstreet <kent.overstreet@gmail.com>
 Cc: linux-bcache@vger.kernel.org
 
-On Sat, Sep 05, 2015 at 01:06:57PM +0200, Jens-U. Mozdzen wrote:
+Hi Vojtech,
 
-> I've noticed similar oddities with our servers - not quite the same,
-> but close enough so I won't open a new thread:
-> 
-> We're running kernel 3.18.8 on server machines delivering SAN and
-> NAS resources. Back-end storage is a MD-RAID6 (7 WD Red 1TB 2,5"),
-> cache is
-> on MD-RAID1 (2 SSD TOSHIBA PX02SMF020 200GB). As we live migrated
-> from 128GB SSDs to the Toshibas, the cache size is still at 128 GB.
-> 
-> On one of the servers, I noticed excessive I/O load reported by our
-> monitoring tools. Having read this thread, I tried to get the amount
-> of dirty data down (cache_mode set to "writeback", writeback_percent
-> to 0, writeback_rate to 10000 and then monitoring
-> writeback_rate_debug), but unlike with the other server, the amount
-> of dirty data would not go below 186M. Unlike with the original
-> report, bcache_writeback wasn't at 100% but varying in its CPU usage
-> - but always on top of all other processes running. I/O wait was
-> unusually high, compared to the amount of data written.
+Zitat von Vojtech Pavlik <vojtech@suse.com>:
+> This matches my situation and behavior exactly. Including the fact that
+> the backing device is a md raid.
+> [...]
+> I've sent an one-liner patch to the mailing list a few moments ago that
+> fixes the issue.
 
-This matches my situation and behavior exactly. Including the fact that
-the backing device is a md raid.
+I've added your patch to our kernel. Just for your reference, the  
+system is running Opensuse 13.1, with the kernel from
 
-> I left the system rest over night, to find that the next day it
-> would not go below 197M, so that "bad spot" had changed. The load on
-> this server had increased - looking at the stats, it seemed like
-> writeback was trying to write data all the time, but for whatever
-> reason failing (which matched the lower limit of dirty data).
-> 
-> Fearing the worst, I set the cache mode to writearound to disable
-> further caching (amount of dirty still wouldn't drop below its
-> border value), stopped the clients for this server and rebooted.
-> 
-> Luckily, the server came up without a problem, and *I now could get
-> the amount of dirty data down to zero*. I switched back to
-> writeback, with writeback_percent to 0 and a fixed writeback_rate.
-> 
-> So in our case, it looks like something borked in bcache's run-time,
-> rather than on-disk (read: SSD cache content).
+--- cut here ---
+Information for package kernel-source:
+--------------------------------------
+Repository: conecenter
+Name: kernel-source
+Version: 3.18.8-5.1
+Arch: noarch
+Vendor: obs://build.opensuse.org/home:conecenter
+Installed: Yes
+Status: up-to-date
+Installed Size: 471.5 MiB
+Summary: The Linux Kernel Sources
+Description:
+Linux kernel sources with many fixes and improvements.
 
-My understanding of bcache internals is still limited: I only spent
-three days gazing into the code and adding debugging. But this is what I
-believe is happening:
 
-Bcache tries to be clever and only write whole stripes to the RAID. That
-is good as it avoids a R-M-W cycle in the RAID on the data.
+Source Timestamp: 2015-02-06 23:35:46 +0200
+GIT Revision: ec2a744f14f988690583c04bd910145cd5a1f3c9
+GIT Branch: stable
+--- cut here ---
 
-However, the stripe optimization was added on top of the usual writeback
-code and doesn't play very nicely with it, since it takes over the usage
-of the last_scanned pointer, confusing the original code.
+and the patches
 
-This means that bcache_writeback is able to write all complete stripes
-back, but gets stuck at any random small dirty data bits.
+bcache001.eml:Subject: [PATCH] bcache: [BUG] clear  
+BCACHE_DEV_UNLINK_DONE flag when attaching a backing device
+bcache002.eml:Subject: [PATCH] bcache: fix a livelock in btree lock
+bcache003.eml:Subject: [PATCH] bcache: unregister reboot notifier when  
+bcache fails to register a block device
+bcache004.eml:Subject: [PATCH] fix a leak in bch_cached_dev_run()
+bcache005.eml:Subject: [PATCH] bcache: Fix writeback_thread never  
+writing back incomplete stripes.
 
-Stuck and spinning, going to sleep only for zero-length times.
+I can confirm that running with writeback_percent to zero now works  
+much smoother (or "at all", for certain circumstances).
 
-This also explains that write traffic on the device can complete some of
-the small dirty bits to full stripes and eventually have them written
-back.
+>> PS: We're still facing random reboots (of unknown cause), which may
+>> correlate with bcache's "amount dirty" being near the limit set by
+>> writeback_percent.
 
-I've sent an one-liner patch to the mailing list a few moments ago that
-fixes the issue.
+For a test, after a few hours running the latest patch, I switched  
+from writeback_percent==0 to writeback_percent==1, and had a full  
+kernel crash within an hour! Luckily, I still had a console open on  
+the machine, so I could for the first time see a hint (but not much  
+more) of what is going on:
 
-> PS: We're still facing random reboots (of unknown cause), which may
-> correlate with bcache's "amount dirty" being near the limit set by
-> writeback_percent. 
+--- cut here ---
+Message from syslogd@san02 at Sep  7 14:56:15 ...
+  kernel:[74182.424659] Kernel panic - not syncing: stack-protector:  
+Kernel stack is corrupted in: ffffffffa001a815
 
-Being near that limit is what bcache tries to achieve. It can be below
-or above, in both cases the PID regulator will just do its thing.
+Message from syslogd@san02 at Sep  7 14:56:15 ...
+  kernel:[74182.424659]
 
-> I'm trying to work-around this these days by
-> running with writeback_percent set to zero and using a
-> writeback_rate that lets the cache clean up over the day... so far,
-> so good, but it's too early to tell for sure. Since switching to the
-> new SSDs, the reboot rate went down to about once a week and I've
-> made this change only two days ago.
+Message from syslogd@san02 at Sep  7 14:56:15 ...
+  kernel:[74182.474050] Kernel Offset: 0x0 from 0xffffffff81000000  
+(relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+--- cut here ---
 
-With the fix I posted, setting writeback_percent to zero finally works
-again without the risk of writeback_thread spinning.
+Since there's no stack trace, this lets much room for speculation. But  
+at least I now have an idea where the reboots (and two other "full  
+stops") might stem from: stack corruption. I have run  
+scripts/checkstack.pl on the bcache module and found no excessive  
+stack use, but checking for memset() and memcpy() in bcache's code  
+gave a number of hits - I'll have to have a look at them, one by one,  
+and hope to find my way around.
 
--- 
-Vojtech Pavlik
-Director SUSE Labs
+I'll give my servers at least two weeks to run with your patch and  
+writeback_percent==0 to see if we're hit by reboots with that code as  
+well. If not, I'll take that as an indicator that the implementation  
+of the "PID regulator" may need a closer look.
+
+Kent, do you remember having fixed anything that might explain this  
+stack corruption behavior, in code later than what's included in  
+kernel 3.18.8?
+
+Regards,
+Jens
