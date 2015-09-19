@@ -1,8 +1,8 @@
 From: Denis Bychkov <manover@gmail.com>
 Subject: Re: [PATCH] bcache: Fix writeback_thread never writing back
  incomplete stripes.
-Date: Thu, 17 Sep 2015 16:54:20 -0400
-Message-ID: <CAO2mnoyeEbzGR2fkPP-6XNbxg073nN8qmb34dp4e_XOqd8tyKQ@mail.gmail.com>
+Date: Sat, 19 Sep 2015 00:47:33 -0400
+Message-ID: <CAO2mnozJ+GDiA0HB9sfKjysfvEGp+YvcwA0gzeCvzw5ScPTkCQ@mail.gmail.com>
 References: <20150905111012.GA17180@suse.com>
 	<20150916113206.GA16164@kmo-pixel>
 	<CAO2mnozhTeuWwxsmQZor93xmyS5_r34YpGXy0ec=9vFCBGbO1w@mail.gmail.com>
@@ -12,41 +12,26 @@ References: <20150905111012.GA17180@suse.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-la0-f49.google.com ([209.85.215.49]:36414 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751928AbbIQUyW (ORCPT
+Received: from mail-la0-f45.google.com ([209.85.215.45]:35136 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbbISErf (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 17 Sep 2015 16:54:22 -0400
+	Sat, 19 Sep 2015 00:47:35 -0400
 In-Reply-To: <20150917183154.GB28032@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: Kent Overstreet <kent.overstreet@gmail.com>
 Cc: Vojtech Pavlik <vojtech@suse.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Emmanuel Florac <eflorac@intellique.com>, Jiri Kosina <jkosina@suse.com>, Jens Axboe <axboe@kernel.dk>
 
-Yes, sure, I'll try it.
-And yes, this was exactly my setup - several backing devices sharing
-the same cache set, all in write back mode.
-When I decided to try your patch yesterday, I created a few more and
-attached them to the same cache set. Did not want to experiment with
-the live ones - so just remounted them RO to make sure they won't send
-any writes. Instead of switching the md array into RO mode - I am an
-idiot.
-And today, after I detached the botched XFS partition from the cache
-(to make sure, there are no more dirty data left) and looked at the
-area where there used to be an XFS super block, I found a super block
-belonging to one of the new devices I created. So there is no mistake
-here, this is exactly what happened, I think you pinned it.
-The only thing I don't understand is how those writes ended up on a
-different device. I'd understand it if it was the same device,
-different partition, we would write to the sectors that belong to a
-different partition on the same disk. But this is not the case, it is
-a different md device that received the unwanted writes. Unless ...
-unless, of course, the addresses of the write requests that are stored
-in bcache cache set have already been translated into a physical
-interface (ATA/SCSI) address. Have they? If that is the case, they
-share the same address space, because they are the same SATA drives.
-But, that can't be true, right? Bcache can not and does not store
-physical drive addresses in the cache, does it?
+Hi Kent,
+
+After running a day with this new version of your patch, I did not
+notice any problems, so I assume, it works. I'll keep an eye on it and
+report back if find anything bad. I believe, you finally fixed that
+long lasting bug with writeback threads spinning CPU.
+To Vojtech Pavlik: thank you for catching it! For a long time I had to
+run bcache with the partial_stripes_expensive branch disabled, which
+seriously affected its performance on my RAID-6.
 
 On Thu, Sep 17, 2015 at 2:31 PM, Kent Overstreet
 <kent.overstreet@gmail.com> wrote:
