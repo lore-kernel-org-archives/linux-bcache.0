@@ -1,86 +1,53 @@
-From: Mike Snitzer <snitzer@redhat.com>
-Subject: Re: [PATCH 1/5] fs: Verify access of user towards block device file
- when mounting
-Date: Wed, 30 Sep 2015 19:42:15 -0400
-Message-ID: <20150930234215.GA24127@redhat.com>
-References: <1443644116-41366-1-git-send-email-seth.forshee@canonical.com>
- <1443644116-41366-2-git-send-email-seth.forshee@canonical.com>
+From: Tim Small <tim@buttersideup.com>
+Subject: Re: [PATCH] bcache: Fix writeback_thread never writing back incomplete
+ stripes.
+Date: Thu, 01 Oct 2015 10:01:42 +0100
+Message-ID: <560CF676.6020102@buttersideup.com>
+References: <20150905111012.GA17180@suse.com> <20150916113206.GA16164@kmo-pixel> <CAO2mnozhTeuWwxsmQZor93xmyS5_r34YpGXy0ec=9vFCBGbO1w@mail.gmail.com> <CAO2mnowurDEfqaZZk6MLmCtTFJ4MkgGEG9DKYytwkDSv1W4dnQ@mail.gmail.com> <20150917164054.GA28032@kmo-pixel> <20150917183154.GB28032@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-fsdevel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <1443644116-41366-2-git-send-email-seth.forshee@canonical.com>
-Sender: linux-fsdevel-owner@vger.kernel.org
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Kent Overstreet <kent.overstreet@gmail.com>, Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com, Neil Brown <neilb@suse.com>, David Woodhouse <dwmw2@infradead.org>, Brian Norris <computersforpeace@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.com>, Jeff Layton <jlayton@poochiereds.net>, "J. Bruce Fields" <bfields@fieldses.org>, Serge Hallyn <serge.hallyn@canonical.com>, Andy Lutomirski <luto@amacapital.net>, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov, linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from relay1.allsecuredomains.com ([78.47.251.4]:36556 "EHLO
+	relay1.allsecuredomains.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755383AbbJAJil (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 1 Oct 2015 05:38:41 -0400
+In-Reply-To: <20150917183154.GB28032@kmo-pixel>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-On Wed, Sep 30 2015 at  4:15pm -0400,
-Seth Forshee <seth.forshee@canonical.com> wrote:
+On 17/09/15 19:31, Kent Overstreet wrote:
+> Here's an updated patch that has a fix for _that_ theory, and also a new
+> BUG_ON(). Any chance you could test it?
 
-> When mounting a filesystem on a block device there is currently
-> no verification that the user has appropriate access to the
-> device file passed to mount. This has not been an issue so far
-> since the user in question has always been root, but this must
-> be changed before allowing unprivileged users to mount in user
-> namespaces.
-> 
-> To fix this, add an argument to lookup_bdev() to specify the
-> required permissions. If the mask of permissions is zero, or
-> if the user has CAP_SYS_ADMIN, the permission check is skipped,
-> otherwise the lookup fails if the user does not have the
-> specified access rights for the inode at the supplied path.
-> 
-> Callers associated with mounting are updated to pass permission
-> masks to lookup_bdev() so that these mounts will fail for an
-> unprivileged user who lacks permissions for the block device
-> inode. All other callers pass 0 to maintain their current
-> behaviors.
-> 
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> ---
->  drivers/md/bcache/super.c |  2 +-
->  drivers/md/dm-table.c     |  2 +-
->  drivers/mtd/mtdsuper.c    |  6 +++++-
->  fs/block_dev.c            | 18 +++++++++++++++---
->  fs/quota/quota.c          |  2 +-
->  include/linux/fs.h        |  2 +-
->  6 files changed, 24 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-> index e76ed003769e..35bb3ea4cbe2 100644
-> --- a/drivers/md/dm-table.c
-> +++ b/drivers/md/dm-table.c
-> @@ -380,7 +380,7 @@ int dm_get_device(struct dm_target *ti, const char *path, fmode_t mode,
->  	BUG_ON(!t);
->  
->  	/* convert the path to a device */
-> -	bdev = lookup_bdev(path);
-> +	bdev = lookup_bdev(path, 0);
->  	if (IS_ERR(bdev)) {
->  		dev = name_to_dev_t(path);
->  		if (!dev)
+I've applied your patch (to the Ubuntu 4.2.1 tree - since I need some of
+their non-mainline apparmour changes on this box) , and it's stopped the
+excessive CPU usage by the bcache_writebac thread.
 
-Given dm_get_device() is passed @mode why not have it do something like
-you did in blkdev_get_by_path()? e.g.:
+I'd first experienced this CPU spinning when I tried to disable cache
+usage (I'd had some lockups on the machine and I was trying to get to
+debug, so I tried switching bcache cache_mode to none whilst I debugged
+as part of my process of elimination).  I assume the bug was hit whilst
+trying to flush the dirty cache data.
 
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index 26cee058dc02..54d94cd64577 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -1394,9 +1394,14 @@ struct block_device *blkdev_get_by_path(const char *path, fmode_t mode,
->  					void *holder)
->  {
->  	struct block_device *bdev;
-> +	int perm = 0;
->  	int err;
->  
-> -	bdev = lookup_bdev(path);
-> +	if (mode & FMODE_READ)
-> +		perm |= MAY_READ;
-> +	if (mode & FMODE_WRITE)
-> +		perm |= MAY_WRITE;
-> +	bdev = lookup_bdev(path, perm);
->  	if (IS_ERR(bdev))
->  		return bdev;
->  
+I now have:
+
+root@magic:~# cat /sys/block/bcache0/bcache/state
+clean
+root@magic:~# cat /sys/block/bcache0/bcache/dirty_data
+1.5M
+root@magic:~# cat /sys/block/bcache0/bcache/cache_mode
+writethrough writeback writearound [none]
+root@magic:~# uname -a
+Linux magic 4.2.1 #2 SMP Sat Sep 26 10:00:40 UTC 2015 x86_64 x86_64
+x86_64 GNU/Linux
+
+i.e. state and cache_mode are inconsistent with dirty_data.  Is this of
+any concern and/or likely to cause problems if I re-enable the cache?
+
+Cheers,
+
+Tim.
