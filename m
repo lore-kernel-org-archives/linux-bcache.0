@@ -1,38 +1,142 @@
-From: Andrew Thrift <andrew@networklabs.co.nz>
-Subject: Fwd: Bcache Status
-Date: Mon, 12 Oct 2015 12:04:39 +1300
-Message-ID: <CAEC_uJM_CZbxdMyPct0=Mc4CMzY5u4HYhzQA48dtG7kqfSi_Pg@mail.gmail.com>
+From: Peter Kieser <peter@kieser.ca>
+Subject: Re: Fwd: Bcache Status
+Date: Mon, 12 Oct 2015 09:36:12 -0700
+Message-ID: <561BE17C.5020402@kieser.ca>
 References: <CAEC_uJOv7gmb3ddTa0yNHDXHPbX_0Mr2uZsDGM2iNMSrPKex4A@mail.gmail.com>
+ <CAEC_uJM_CZbxdMyPct0=Mc4CMzY5u4HYhzQA48dtG7kqfSi_Pg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha-256; boundary="------------ms040200030905090205040405"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oi0-f52.google.com ([209.85.218.52]:33723 "EHLO
-	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752591AbbJKXEk (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 11 Oct 2015 19:04:40 -0400
-Received: by oiar126 with SMTP id r126so28441591oia.0
-        for <linux-bcache@vger.kernel.org>; Sun, 11 Oct 2015 16:04:40 -0700 (PDT)
-In-Reply-To: <CAEC_uJOv7gmb3ddTa0yNHDXHPbX_0Mr2uZsDGM2iNMSrPKex4A@mail.gmail.com>
+Received: from mail.pfak.org ([198.50.219.4]:40058 "EHLO mail.pfak.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750890AbbJLQgO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 12 Oct 2015 12:36:14 -0400
+In-Reply-To: <CAEC_uJM_CZbxdMyPct0=Mc4CMzY5u4HYhzQA48dtG7kqfSi_Pg@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Andrew Thrift <andrew@networklabs.co.nz>, linux-bcache@vger.kernel.org
+Cc: Greg KH <greg@kroah.com>, Jens Axboe <axboe@kernel.dk>
 
-Hello,
+This is a cryptographically signed message in MIME format.
 
-I notice over the past 18 months there have been a number of patches
-posted to this mailing list to resolve known issues with bcache.
-
-I cant see that these have been merged into the main bcache git at
-http://evilpiepirate.org/git/linux-bcache.git, is this actually the
-case or am I mistaken?
-
-Will these patches ever be seen in mainline ?
-
-
-Thanks,
+--------------ms040200030905090205040405
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
 
 
+On 2015-10-11 4:04 PM, Andrew Thrift wrote:
+> I notice over the past 18 months there have been a number of patches
+> posted to this mailing list to resolve known issues with bcache.
+>
+> I cant see that these have been merged into the main bcache git at
+> http://evilpiepirate.org/git/linux-bcache.git, is this actually the
+> case or am I mistaken?
+>
+> Will these patches ever be seen in mainline ?
+Backports of critical bug fixes not being done was brought to attention=20
+of Greg KH in September 2014, where Jens and myself mentioned that=20
+bcache stable patches (data corruption, stability, etc.) were not being=20
+backported to the Linux stable branches. The response from the author of =
 
-Andrew
+bcache was "This kind of unnecessary hostility is why I don't bother=20
+with stable much anymore. I get enough of this bullshit at work, thank yo=
+u."
+
+Unfortunately, the situation hasn't cahnged. bcache still will eat your=20
+data under certain use cases, and there is no warning and bcache still=20
+doesn't have a testing/experimental flag set on it. I guess the ultimate =
+
+answer was "backport and submit a pull request yourself" but I'm not=20
+sure this is appropriate.
+
+-Peter
+
+
+--------------ms040200030905090205040405
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExDzANBglghkgBZQMEAgEFADCABgkqhkiG9w0BBwEAAKCC
+DKswggY0MIIEHKADAgECAgEgMA0GCSqGSIb3DQEBBQUAMH0xCzAJBgNVBAYTAklMMRYwFAYD
+VQQKEw1TdGFydENvbSBMdGQuMSswKQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0
+ZSBTaWduaW5nMSkwJwYDVQQDEyBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTAe
+Fw0wNzEwMjQyMTAyNTVaFw0xNzEwMjQyMTAyNTVaMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UE
+ChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUg
+U2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0
+ZSBDbGllbnQgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDLKIVFnAEs+xny
+q6UzjCqgDcvQVe1dIoFnRsQPCFO+y92k8RK0Pn3MbQ2Gd+mehh9GBZ+36uUQA7Xj9AGM6wgP
+hEE34vKtfpAN5tJ8LcFxveDObCKrL7O5UT9WsnAZHv7OYPYSR68mdmnEnJ83M4wQgKO19b+R
+t8sPDAz9ptkQsntCn4GeJzg3q2SVc4QJTg/WHo7wF2ah5LMOeh8xJVSKGEmd6uPkSbj113yK
+Mm8vmNptRPmM1+YgmVwcdOYJOjCgFtb2sOP79jji8uhWR91xx7TpM1K3hv/wrBZwffrmmEpU
+euXHRs07JqCCvFh9coKF4UQZvfEg+x3/69xRCzb1AgMBAAGjggGtMIIBqTAPBgNVHRMBAf8E
+BTADAQH/MA4GA1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUrlWDb+wxyrn3HfqvazHzyB3jrLsw
+HwYDVR0jBBgwFoAUTgvvGqRAW6UXaYcwyjRoQ9BBrvIwZgYIKwYBBQUHAQEEWjBYMCcGCCsG
+AQUFBzABhhtodHRwOi8vb2NzcC5zdGFydHNzbC5jb20vY2EwLQYIKwYBBQUHMAKGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNydDBbBgNVHR8EVDBSMCegJaAjhiFodHRwOi8v
+d3d3LnN0YXJ0c3NsLmNvbS9zZnNjYS5jcmwwJ6AloCOGIWh0dHA6Ly9jcmwuc3RhcnRzc2wu
+Y29tL3Nmc2NhLmNybDCBgAYDVR0gBHkwdzB1BgsrBgEEAYG1NwECATBmMC4GCCsGAQUFBwIB
+FiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMA0GCSqGSIb3DQEBBQUAA4IC
+AQA6qScNyNO0FpHvaZTQacVMXH33O51KyEKSRw3IvdQxRu31YR0ZDGdSfgSoOVDVMSBSdmfQ
+fdDInHPzV3LO5DwUXZ+lxjv7z3PO2OkfnFkvTXPfn6dxJ5rJveDsTsCPcJ/Kp6/+qN5g+J6D
+/SaYcFD018B6L42r0Z4VEBy36P4tjRtF14Ex10tl5tJFVKM16qWKQHbpjIgf73s49UB0CQ5l
+HT2DHKfq3oPfdNc5Mk93w1v4ryVb+qVrZIej8NsrWU+5r4O2IV91edDb/OtHFddZqHFFXKgS
+79IHE/hwQ2LW7r3sTX7cDUCg+dfdwO8zeLxuwk2JF8crUoyrl66RGrRIhT8VoG/OJ1Y9uUlO
+av69V4cG8upi4ZG2l7JZFbcBFk91Wp+Payo5SuF61CmGFrZ386umkmpObtFacXda2O/bVoQ9
+xHQrzoTc/0KZTWvlZCLK3Ke/vGYT9ZdW9lOjGsSFbXrlTA919L84iMK+48WGnvRWY28ZaVHp
+ql43AtEGhXze6iNCbEDACy+4hkQYOytAqDgcxAnQ937mYpeZFPyz/XK9QSt9VNFMuudWxZwD
+DDJKoQAoSG59Hou9lZ26UrK60nRdAQBmEPL8h2nuWgoPh++XVQld9yuhbsWa39Pck8/lcfz5
+HUVGJF5mc/zk38iV7FDlF68puiryNq2KXHEpOTCCBm8wggVXoAMCAQICAlHLMA0GCSqGSIb3
+DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UE
+CxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRD
+b20gQ2xhc3MgMiBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcNMTQwODE3MTAz
+OTA5WhcNMTYwODE3MTM1NTMxWjCBjjEZMBcGA1UEDRMQSkhyOElnZDY4ZW1FMHlRejELMAkG
+A1UEBhMCQ0ExGTAXBgNVBAgTEEJyaXRpc2ggQ29sdW1iaWExEjAQBgNVBAcTCVZhbmNvdXZl
+cjEVMBMGA1UEAxMMUGV0ZXIgS2llc2VyMR4wHAYJKoZIhvcNAQkBFg9wZXRlckBraWVzZXIu
+Y2EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC/zZi0sMysoRWvMFWODp+A9mrV
+vozuJKsxo7d9hiE8RIcHnkdgHkBYZgV08MABxpwBFlPpUEl6CKFfR3YvBoU3hc9wOSz0y5f8
+GunZr/FQn2GkRL6EsYxDeJ7ArXVPD+jS1BOJqgXu2Yj/ZQ5KloJndHwxGI4jpyVN3HaC4ebw
+xzsrvvZpjw1RARCxYG23ULMoiDSkDeX8BJUP+YcIqf+ZRQq0/EmGFUu7NicBD7bz5qZficjs
+ESWpIVUb+FnfC8r/63ISuK4sHzMh4bisG2ykcbNx80h47bIxmdrUtVMwxGpS+2UbBwuBL2Zo
+ARoORNJdQc+3AuCXDyMvvBteDo2ZAgMBAAGjggLVMIIC0TAJBgNVHRMEAjAAMAsGA1UdDwQE
+AwIEsDAdBgNVHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwQwHQYDVR0OBBYEFLw3DlkKqBhh
+Cvig3OqKZ1dYrqSJMB8GA1UdIwQYMBaAFK5Vg2/sMcq59x36r2sx88gd46y7MBoGA1UdEQQT
+MBGBD3BldGVyQGtpZXNlci5jYTCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMw
+ggEqMC4GCCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3
+BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEB
+GoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3Mg
+MiBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCBy
+ZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9m
+IHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRw
+Oi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1Mi1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMi9jbGllbnQv
+Y2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFz
+czIuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8w
+DQYJKoZIhvcNAQEFBQADggEBAMnGxCRup78n279l+J6YKtXHlPstamJl3MwgTbzUSdsr1V3P
+JY40LCkQ86a/CYUwoOEjGYdwtwCDgRsa2ArMmsUS90rH4f+j7YNxMSH1TY+gqGwdaYk67rDk
+WlQ2EoxLWWUUeImLfZg0aP5mUYYeEETGp2WMAlzxuJq4LqkODS2FXYE7B2IAk0cpjG8q0NPn
+iBnQDv7M3Iq0aLwA8sa6DHJcPk05Qe50K6LyLE1bXhqntK3pykdG83VrHsUBJ7SqQcSS8vx0
+0iB3kB1Oa+4cI5P79WqCpYprmim3RkyZddAWJPPqW1PCRhJdbJtXDZ+DCmMIZ1hUUwRDxIlz
++lcjXD0xggPqMIID5gIBATCBkzCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29t
+IEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENB
+AgJRyzANBglghkgBZQMEAgEFAKCCAicwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkq
+hkiG9w0BCQUxDxcNMTUxMDEyMTYzNjEyWjAvBgkqhkiG9w0BCQQxIgQgUTvETS2WTN8LqY6R
+zSnM2m8CrouxvJGMu2vEiZedEQIwbAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJ
+YIZIAWUDBAECMAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAH
+BgUrDgMCBzANBggqhkiG9w0DAgIBKDCBpAYJKwYBBAGCNxAEMYGWMIGTMIGMMQswCQYDVQQG
+EwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwg
+Q2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMiBQcmltYXJ5
+IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAlHLMIGmBgsqhkiG9w0BCRACCzGBlqCBkzCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBE
+aWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDIg
+UHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgJRyzANBgkqhkiG9w0BAQEFAASCAQCb
+otUZjQpiZnzH7Of7pLkThsOS1FD/rL54PUfrpuQwrPSttK7Yr83y+wCMX0ldQlOwcqyImXq3
+51QCS9JqO2w4X0CUW4oFd/n5KDmiBsRAMnpdSdJmjfj7z33Dh7q9oTuMG15BenWFwcjKfPCk
+4NceQcp+F3uAGqI6czjAEmssPEFKRUeUaEV+41iI9BVSaRUoN2SzLgwB0s0y8J+ilrGirNgk
+mJOh8yqMw5257KnzChnv0EU6a2bm+kfHrDL4fR154N5JvwlNx52fIoEuuy2t1Js2Y0HvvZjC
+JJsL1Yr0G5LsWcX7W8KAK3onbjH7AQoxiL8uaG3pF08FzxTsTdPJAAAAAAAA
+--------------ms040200030905090205040405--
