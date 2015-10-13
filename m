@@ -1,53 +1,48 @@
-From: contact@getmobipromo.com
-Subject: Proposal: mobile app for bcache
-Date: Mon, 12 Oct 2015 18:45:32 +0000
-Message-ID: <000001505d5f3829-19b1dff1-92f4-4322-8590-96fd2c063ce9-000000@eu-west-1.amazonses.com>
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from a6-246.smtp-out.eu-west-1.amazonses.com ([54.240.6.246]:49163
-	"EHLO a6-246.smtp-out.eu-west-1.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751944AbbJLTE1 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 12 Oct 2015 15:04:27 -0400
-Sender: linux-bcache-owner@vger.kernel.org
+From: Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH v2 0/7] User namespace mount updates
+Date: Tue, 13 Oct 2015 12:04:13 -0500
+Message-ID: <1444755861-54997-1-git-send-email-seth.forshee@canonical.com>
+Return-path: <linux-fsdevel-owner@vger.kernel.org>
+Sender: linux-fsdevel-owner@vger.kernel.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Hello,
+Hi Eric,
 
-We are contacting you regarding your Facebook page bcache.
-We are MobiPromo and we create mobile applications based on Facebook pages.
+Here's an update to the last round of patches for mounts in user
+namespaces. The only change since last time is to split up the patch to
+verify access towards block devices when mounting into several patches,
+one to update lookup_bdev and one patch each for the call sites which
+require updates.
 
-You need a mobile app if:
+Thanks,
+Seth
 
-1) you are a business owner looking for new ways to promote your business:
-learn more at http://getmobipromo.com/
+Andy Lutomirski (1):
+  fs: Treat foreign mounts as nosuid
 
-2) your are a Facebook page admin looking for a new revenue source:
-see a calculation of how much you could be earning at:
-http://getmobipromo.com/ads.html?id=194224427432838&n=0
+Seth Forshee (6):
+  block_dev: Support checking inode permissions in lookup_bdev()
+  block_dev: Check permissions towards block device inode when mounting
+  mtd: Check permissions towards mtd block device inode when mounting
+  selinux: Add support for unprivileged mounts from user namespaces
+  userns: Replace in_userns with current_in_userns
+  Smack: Handle labels consistently in untrusted mounts
 
-Thank you for reading up to this point.
----------------------------------------------------
-We'd like to offer you a coupon for a 50% discount:
-MBP50OFF
----------------------------------------------------
-With the coupon above you can get your app
-for as low as $49.5 (one-off payment).
-http://getmobipromo.com/#/pricing
+ drivers/md/bcache/super.c      |  2 +-
+ drivers/md/dm-table.c          |  2 +-
+ drivers/mtd/mtdsuper.c         |  6 +++++-
+ fs/block_dev.c                 | 18 +++++++++++++++---
+ fs/exec.c                      |  2 +-
+ fs/namespace.c                 | 13 +++++++++++++
+ fs/quota/quota.c               |  2 +-
+ include/linux/fs.h             |  2 +-
+ include/linux/mount.h          |  1 +
+ include/linux/user_namespace.h |  6 ++----
+ kernel/user_namespace.c        |  6 +++---
+ security/commoncap.c           |  4 ++--
+ security/selinux/hooks.c       | 25 ++++++++++++++++++++++++-
+ security/smack/smack_lsm.c     | 28 ++++++++++++++++++----------
+ 14 files changed, 88 insertions(+), 29 deletions(-)
 
-Please contact us if you have any questions.
-(we aim to reply the same business day)
-
-Best regards,
-The MobiPromo Team
-
------
-Unsubscribe:
-http://getmobipromo.com/unsubscribe.html?e=linux-bcache%40vger.kernel.org
-
-If you feel this email is inappropriate you can report it here:
-http://getmobipromo.com/report.html
