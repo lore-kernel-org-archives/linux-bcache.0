@@ -1,85 +1,56 @@
-From: Johannes Thumshirn <jthumshirn@suse.de>
-Subject: [PATCH] bcache: register_bdev can fail, make it failable
-Date: Wed,  4 Nov 2015 16:22:24 +0100
-Message-ID: <1446650544-24411-1-git-send-email-jthumshirn@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:55594 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932303AbbKDPWb (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 4 Nov 2015 10:22:31 -0500
-Sender: linux-bcache-owner@vger.kernel.org
+From: Jiri Kosina <jikos@kernel.org>
+Subject: Re: [PATCH] bcache: Really show state of work pending bit
+Date: Fri, 6 Nov 2015 20:55:17 +0100 (CET)
+Message-ID: <alpine.LNX.2.00.1511061507140.23146@pobox.suse.cz>
+References: <1444048792-22847-1-git-send-email-pmladek@suse.com>
+Mime-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1444048792-22847-1-git-send-email-pmladek@suse.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Petr Mladek <pmladek@suse.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Tejun Heo <tj@kernel.org>, Neil Brown <neilb@suse.com>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org, Johannes Thumshirn <jthumshirn@suse.de>
 
-Registering a bcache can actually fail for some reasons, but register_bdev()
-assumes it to go all well. Make register_bdev() return errors to it's caller
-register_bcache().
+On Mon, 5 Oct 2015, Petr Mladek wrote:
 
-Signed-off-by: Johannes Thumshirn <jthumshirn@suse.de>
----
- drivers/md/bcache/super.c | 21 ++++++++++++++++-----
- 1 file changed, 16 insertions(+), 5 deletions(-)
+> WORK_STRUCT_PENDING is a mask for testing the pending bit.
+> test_bit() expects the number of the bit and we need to
+> use WORK_STRUCT_PENDING_BIT there.
+> 
+> Also work_data_bits() is defined in workqueues.h now.
+> 
+> I have noticed this just by chance when looking how
+> WORK_STRUCT_PENDING_BIT is used. The change is compile
+> tested.
+> 
+> Signed-off-by: Petr Mladek <pmladek@suse.com>
+> ---
+>  drivers/md/bcache/closure.c | 4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+> index 7a228de95fd7..9eaf1d6e8302 100644
+> --- a/drivers/md/bcache/closure.c
+> +++ b/drivers/md/bcache/closure.c
+> @@ -167,8 +167,6 @@ EXPORT_SYMBOL(closure_debug_destroy);
+>  
+>  static struct dentry *debug;
+>  
+> -#define work_data_bits(work) ((unsigned long *)(&(work)->data))
+> -
+>  static int debug_seq_show(struct seq_file *f, void *data)
+>  {
+>  	struct closure *cl;
+> @@ -182,7 +180,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
+>  			   r & CLOSURE_REMAINING_MASK);
+>  
+>  		seq_printf(f, "%s%s%s%s\n",
+> -			   test_bit(WORK_STRUCT_PENDING,
+> +			   test_bit(WORK_STRUCT_PENDING_BIT,
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 679a093..76aea03 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1126,7 +1126,7 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
- 
- /* Cached device - bcache superblock */
- 
--static void register_bdev(struct cache_sb *sb, struct page *sb_page,
-+static int register_bdev(struct cache_sb *sb, struct page *sb_page,
- 				 struct block_device *bdev,
- 				 struct cached_dev *dc)
- {
-@@ -1157,17 +1157,25 @@ static void register_bdev(struct cache_sb *sb, struct page *sb_page,
- 	pr_info("registered backing device %s", bdevname(bdev, name));
- 
- 	list_add(&dc->list, &uncached_devices);
--	list_for_each_entry(c, &bch_cache_sets, list)
--		bch_cached_dev_attach(dc, c);
-+	list_for_each_entry(c, &bch_cache_sets, list) {
-+		int ret;
-+
-+		ret = bch_cached_dev_attach(dc, c);
-+		if (ret)
-+			goto err;
-+	}
- 
- 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_NONE ||
- 	    BDEV_STATE(&dc->sb) == BDEV_STATE_STALE)
- 		bch_cached_dev_run(dc);
-+	else
-+		goto err;
- 
--	return;
-+	return 0;
- err:
- 	pr_notice("error opening %s: %s", bdevname(bdev, name), err);
- 	bcache_device_stop(&dc->disk);
-+	return 1;
- }
- 
- /* Flash only volumes */
-@@ -1946,13 +1954,16 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 		goto err_close;
- 
- 	if (SB_IS_BDEV(sb)) {
-+		int ret;
- 		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
- 		if (!dc)
- 			goto err_close;
- 
- 		mutex_lock(&bch_register_lock);
--		register_bdev(sb, sb_page, bdev, dc);
-+		ret = register_bdev(sb, sb_page, bdev, dc);
- 		mutex_unlock(&bch_register_lock);
-+		if (ret)
-+			goto err_close;
- 	} else {
- 		struct cache *ca = kzalloc(sizeof(*ca), GFP_KERNEL);
- 		if (!ca)
+I don't see this in linux-next as of today, so I am picking it up for 4.4.
+
 -- 
-2.6.2
+Jiri Kosina 
+SUSE Labs
