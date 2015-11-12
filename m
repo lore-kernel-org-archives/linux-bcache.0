@@ -1,56 +1,27 @@
-From: Jiri Kosina <jikos@kernel.org>
-Subject: Re: [PATCH] bcache: Really show state of work pending bit
-Date: Fri, 6 Nov 2015 20:55:17 +0100 (CET)
-Message-ID: <alpine.LNX.2.00.1511061507140.23146@pobox.suse.cz>
-References: <1444048792-22847-1-git-send-email-pmladek@suse.com>
+From: Johannes Thumshirn <jthumshirn@suse.de>
+Subject: Re: [PATCH] bcache: register_bdev can fail, make it failable
+Date: Thu, 12 Nov 2015 10:03:32 +0100
+Message-ID: <1447319012.2616.9.camel@suse.de>
+References: <1446650544-24411-1-git-send-email-jthumshirn@suse.de>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1444048792-22847-1-git-send-email-pmladek@suse.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Petr Mladek <pmladek@suse.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Tejun Heo <tj@kernel.org>, Neil Brown <neilb@suse.com>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:38158 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754008AbbKLJDd (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 12 Nov 2015 04:03:33 -0500
+In-Reply-To: <1446650544-24411-1-git-send-email-jthumshirn@suse.de>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-On Mon, 5 Oct 2015, Petr Mladek wrote:
+On Wed, 2015-11-04 at 16:22 +0100, Johannes Thumshirn wrote:
+> Registering a bcache can actually fail for some reasons, but
+> register_bdev()
+> assumes it to go all well. Make register_bdev() return errors to it's
+> caller
+> register_bcache().
 
-> WORK_STRUCT_PENDING is a mask for testing the pending bit.
-> test_bit() expects the number of the bit and we need to
-> use WORK_STRUCT_PENDING_BIT there.
-> 
-> Also work_data_bits() is defined in workqueues.h now.
-> 
-> I have noticed this just by chance when looking how
-> WORK_STRUCT_PENDING_BIT is used. The change is compile
-> tested.
-> 
-> Signed-off-by: Petr Mladek <pmladek@suse.com>
-> ---
->  drivers/md/bcache/closure.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
-> index 7a228de95fd7..9eaf1d6e8302 100644
-> --- a/drivers/md/bcache/closure.c
-> +++ b/drivers/md/bcache/closure.c
-> @@ -167,8 +167,6 @@ EXPORT_SYMBOL(closure_debug_destroy);
->  
->  static struct dentry *debug;
->  
-> -#define work_data_bits(work) ((unsigned long *)(&(work)->data))
-> -
->  static int debug_seq_show(struct seq_file *f, void *data)
->  {
->  	struct closure *cl;
-> @@ -182,7 +180,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
->  			   r & CLOSURE_REMAINING_MASK);
->  
->  		seq_printf(f, "%s%s%s%s\n",
-> -			   test_bit(WORK_STRUCT_PENDING,
-> +			   test_bit(WORK_STRUCT_PENDING_BIT,
-
-I don't see this in linux-next as of today, so I am picking it up for 4.4.
-
--- 
-Jiri Kosina 
-SUSE Labs
+Please retract that patch, I found a regression with it.
