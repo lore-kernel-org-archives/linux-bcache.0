@@ -1,66 +1,147 @@
-From: "Yannis Aribaud" <bugs@d6bell.net>
-Subject: Re: bcache_gc: BUG: soft lockup
-Date: Mon, 16 Nov 2015 10:26:18 +0000
-Message-ID: <00dfbe23dbb94c22c8873ecaf5d1dfbc@rcube.hebserv.net>
-References: <1447661397.2726.1.camel@suse.de>
- <2f979d1d6e991272cebc8ff40a955c8a@rcube.hebserv.net>
- <1447419912.2616.19.camel@suse.de> <1447418245.2616.15.camel@suse.de>
- <648d9a0567372b10a3861eee8320328c@rcube.hebserv.net>
- <7d53afb3c7a34bb1022f0d9b6c079022@rcube.hebserv.net>
- <9c96132d5fce4a5a77b1b086f7c6095d@rcube.hebserv.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from dbmail.hebserv.net ([78.40.121.80]:38518 "EHLO
-	dbmail.hebserv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751059AbbKPK0X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 16 Nov 2015 05:26:23 -0500
-In-Reply-To: <1447661397.2726.1.camel@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
+From: Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH v3 1/7] block_dev: Support checking inode permissions in lookup_bdev()
+Date: Tue, 17 Nov 2015 10:39:04 -0600
+Message-ID: <1447778351-118699-2-git-send-email-seth.forshee@canonical.com>
+References: <1447778351-118699-1-git-send-email-seth.forshee@canonical.com>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1447778351-118699-1-git-send-email-seth.forshee@canonical.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>, Kent Overstreet <kent.overstreet@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Neil Brown <neilb@suse.com>, David Woodhouse <dwmw2@infradead.org>, Brian Norris <computersforpeace@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.com>, Jeff Layton <jlayton@poochiereds.net>, "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>, Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov, Seth Forshee <seth.forshee@canonical.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Johannes Thumshirn <jthumshirn@suse.de>, linux-bcache@vger.kernel.org
 
-Hi,
+When looking up a block device by path no permission check is
+done to verify that the user has access to the block device inode
+at the specified path. In some cases it may be necessary to
+check permissions towards the inode, such as allowing
+unprivileged users to mount block devices in user namespaces.
 
-I got this stack trace on an other node running the same 4.1.12 kernel, but this time on a live node (not during shutdown).
+Add an argument to lookup_bdev() to optionally perform this
+permission check. A value of 0 skips the permission check and
+behaves the same as before. A non-zero value specifies the mask
+of access rights required towards the inode at the specified
+path. The check is always skipped if the user has CAP_SYS_ADMIN.
 
+All callers of lookup_bdev() currently pass a mask of 0, so this
+patch results in no functional change. Subsequent patches will
+add permission checks where appropriate.
 
-[1181894.806808] Modules linked in: cbc rbd libceph ipmi_si mpt2sas raid_class scsi_transport_sas ipmi_devintf dell_rbu tun nfsd auth_rpcgss oid_registry nfs_acl nfs lockd grace fscache sunrpc bridge 8021q garp mrp stp llc bonding xfs libcrc32c bcache uhci_hcd ohci_hcd joydev hid_generic usbhid hid iTCO_wdt iTCO_vendor_support x86_pkg_temp_thermal coretemp kvm_intel dcdbas kvm shpchp aesni_intel aes_x86_64 ablk_helper cryptd lrw gf128mul glue_helper microcode evdev ehci_pci ehci_hcd sb_edac usbcore edac_core usb_common lpc_ich ipmi_msghandler mfd_core acpi_cpufreq processor wmi thermal_sys acpi_power_meter button ext4 crc16 mbcache jbd2 btrfs xor raid6_pq dm_mod sg sd_mod crc32c_intel igb megaraid_sas i2c_algo_bit i2c_core dca ptp scsi_mod pps_core [last unloaded: ipmi_si]
-[1181894.806839] CPU: 13 PID: 74 Comm: migration/13 Tainted: G             L  4.1.12-ig1 #2
-[1181894.806840] Hardware name: Dell Inc. PowerEdge R730xd/0H21J3, BIOS 1.1.4 11/03/2014
-[1181894.806841] task: ffff8820786894b0 ti: ffff882078698000 task.ti: ffff882078698000
-[1181894.806842] RIP: 0010:[<ffffffff810a72e6>]  [<ffffffff810a72e6>] multi_cpu_stop+0x52/0x99
-[1181894.806846] RSP: 0000:ffff88207869bdb8  EFLAGS: 00000293
-[1181894.806847] RAX: 0000000000000000 RBX: 0000000000000187 RCX: ffff88207eccfd18
-[1181894.806848] RDX: 0000000000000001 RSI: 0000000000000282 RDI: ffff88202f1e3bc0
-[1181894.806849] RBP: 0000000000000001 R08: ffff882078698000 R09: ffff882078698000
-[1181894.806850] R10: 0000000000000000 R11: ffff8820361280d0 R12: 0000000000000000
-[1181894.806851] R13: ffff88207ecd4f00 R14: 0000000d00000004 R15: ffff88107f454f00
-[1181894.806853] FS:  0000000000000000(0000) GS:ffff88207ecc0000(0000) knlGS:0000000000000000
-[1181894.806854] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[1181894.806855] CR2: 0000000016053400 CR3: 000000000160b000 CR4: 00000000001406e0
-[1181894.806856] Stack:
-[1181894.806857]  ffff8820361280d0 ffff88207eccfd10 ffff88202f1e3be8 ffff88202f1e3bc0
-[1181894.806859]  ffffffff810a7294 ffffffff810a718a ffff882078689a08 ffff8820786894b0
-[1181894.806860]  ffff88207ecd4f00 ffffffff8105bae5 ffff88207ecd4f00 ffff8820786894b0
-[1181894.806862] Call Trace:
-[1181894.806865]  [<ffffffff810a7294>] ? cpu_stop_should_run+0x3d/0x3d
-[1181894.806866]  [<ffffffff810a718a>] ? cpu_stopper_thread+0x68/0xde
-[1181894.806868]  [<ffffffff8105bae5>] ? finish_task_switch+0x51/0xcb
-[1181894.806871]  [<ffffffff8138ff4f>] ? console_conditional_schedule+0xf/0xf
-[1181894.806872]  [<ffffffff8138e43f>] ? __schedule+0x3f5/0x4e0
-[1181894.806875]  [<ffffffff81058604>] ? sort_range+0x19/0x19
-[1181894.806877]  [<ffffffff8105872a>] ? smpboot_thread_fn+0x126/0x13e
-[1181894.806878]  [<ffffffff81056225>] ? kthread+0x99/0xa1
-[1181894.806880]  [<ffffffff8105618c>] ? __kthread_parkme+0x58/0x58
-[1181894.806882]  [<ffffffff81390d12>] ? ret_from_fork+0x42/0x70
-[1181894.806883]  [<ffffffff8105618c>] ? __kthread_parkme+0x58/0x58
-[1181894.806884] Code: 02 00 00 e8 51 60 12 00 39 c5 41 0f 94 c4 eb 0e 89 ed 48 0f a3 28 19 ed 85 ed 41 0f 95 c4 31 c0 31 d2 eb 02 89 ea f3 90 8b 6b 20 <39> d5 74 20 83 fd 02 74 07 83 fd 03 75 10 eb 03 fa eb 0b 45 84 
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ drivers/md/bcache/super.c |  2 +-
+ drivers/md/dm-table.c     |  2 +-
+ drivers/mtd/mtdsuper.c    |  2 +-
+ fs/block_dev.c            | 13 ++++++++++---
+ fs/quota/quota.c          |  2 +-
+ include/linux/fs.h        |  2 +-
+ 6 files changed, 15 insertions(+), 8 deletions(-)
 
-dmesg keeps filling with such message and devices are unresponsive. Forced to reboot.
-
-Regards,
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 679a093a3bf6..e8287b0d1dac 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1926,7 +1926,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 				  sb);
+ 	if (IS_ERR(bdev)) {
+ 		if (bdev == ERR_PTR(-EBUSY)) {
+-			bdev = lookup_bdev(strim(path));
++			bdev = lookup_bdev(strim(path), 0);
+ 			mutex_lock(&bch_register_lock);
+ 			if (!IS_ERR(bdev) && bch_is_open(bdev))
+ 				err = "device already registered";
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index e76ed003769e..35bb3ea4cbe2 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -380,7 +380,7 @@ int dm_get_device(struct dm_target *ti, const char *path, fmode_t mode,
+ 	BUG_ON(!t);
+ 
+ 	/* convert the path to a device */
+-	bdev = lookup_bdev(path);
++	bdev = lookup_bdev(path, 0);
+ 	if (IS_ERR(bdev)) {
+ 		dev = name_to_dev_t(path);
+ 		if (!dev)
+diff --git a/drivers/mtd/mtdsuper.c b/drivers/mtd/mtdsuper.c
+index 20c02a3b7417..b5b60e1af31c 100644
+--- a/drivers/mtd/mtdsuper.c
++++ b/drivers/mtd/mtdsuper.c
+@@ -176,7 +176,7 @@ struct dentry *mount_mtd(struct file_system_type *fs_type, int flags,
+ 	/* try the old way - the hack where we allowed users to mount
+ 	 * /dev/mtdblock$(n) but didn't actually _use_ the blockdev
+ 	 */
+-	bdev = lookup_bdev(dev_name);
++	bdev = lookup_bdev(dev_name, 0);
+ 	if (IS_ERR(bdev)) {
+ 		ret = PTR_ERR(bdev);
+ 		pr_debug("MTDSB: lookup_bdev() returned %d\n", ret);
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 26cee058dc02..f1f0aa7214a3 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1396,7 +1396,7 @@ struct block_device *blkdev_get_by_path(const char *path, fmode_t mode,
+ 	struct block_device *bdev;
+ 	int err;
+ 
+-	bdev = lookup_bdev(path);
++	bdev = lookup_bdev(path, 0);
+ 	if (IS_ERR(bdev))
+ 		return bdev;
+ 
+@@ -1706,12 +1706,14 @@ EXPORT_SYMBOL(ioctl_by_bdev);
+ /**
+  * lookup_bdev  - lookup a struct block_device by name
+  * @pathname:	special file representing the block device
++ * @mask:	rights to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
+  *
+  * Get a reference to the blockdevice at @pathname in the current
+  * namespace if possible and return it.  Return ERR_PTR(error)
+- * otherwise.
++ * otherwise.  If @mask is non-zero, check for access rights to the
++ * inode at @pathname.
+  */
+-struct block_device *lookup_bdev(const char *pathname)
++struct block_device *lookup_bdev(const char *pathname, int mask)
+ {
+ 	struct block_device *bdev;
+ 	struct inode *inode;
+@@ -1726,6 +1728,11 @@ struct block_device *lookup_bdev(const char *pathname)
+ 		return ERR_PTR(error);
+ 
+ 	inode = d_backing_inode(path.dentry);
++	if (mask != 0 && !capable(CAP_SYS_ADMIN)) {
++		error = __inode_permission(inode, mask);
++		if (error)
++			goto fail;
++	}
+ 	error = -ENOTBLK;
+ 	if (!S_ISBLK(inode->i_mode))
+ 		goto fail;
+diff --git a/fs/quota/quota.c b/fs/quota/quota.c
+index 3746367098fd..a40eaecbd5cc 100644
+--- a/fs/quota/quota.c
++++ b/fs/quota/quota.c
+@@ -733,7 +733,7 @@ static struct super_block *quotactl_block(const char __user *special, int cmd)
+ 
+ 	if (IS_ERR(tmp))
+ 		return ERR_CAST(tmp);
+-	bdev = lookup_bdev(tmp->name);
++	bdev = lookup_bdev(tmp->name, 0);
+ 	putname(tmp);
+ 	if (IS_ERR(bdev))
+ 		return ERR_CAST(bdev);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 458ee7b213be..cc18dfb0b98e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2388,7 +2388,7 @@ static inline void unregister_chrdev(unsigned int major, const char *name)
+ #define BLKDEV_MAJOR_HASH_SIZE	255
+ extern const char *__bdevname(dev_t, char *buffer);
+ extern const char *bdevname(struct block_device *bdev, char *buffer);
+-extern struct block_device *lookup_bdev(const char *);
++extern struct block_device *lookup_bdev(const char *, int mask);
+ extern void blkdev_show(struct seq_file *,off_t);
+ 
+ #else
 -- 
-Open is better
+1.9.1
