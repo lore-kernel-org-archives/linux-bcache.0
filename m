@@ -1,59 +1,93 @@
-From: "Serge E. Hallyn" <serge.hallyn@ubuntu.com>
-Subject: Re: [PATCH v3 0/7] User namespace mount updates
-Date: Fri, 20 Nov 2015 11:33:29 -0600
-Message-ID: <20151120173329.GA20909@mail.hallyn.com>
-References: <20151117172551.GA108807@ubuntu-hedt>
- <20151117175506.GW22011@ZenIV.linux.org.uk>
- <20151117183444.GB108807@ubuntu-hedt>
- <CAFLxGvx1UqJOhM3wqAGqT+TrkapeP1zkmg0a1K=DjySePx4mEA@mail.gmail.com>
- <20151117192141.GD108807@ubuntu-hedt>
- <CAE1zotLNq1v_ZegT9LyFsTiHWQnOAow+KKQFFvOYKUyRWPjfGA@mail.gmail.com>
- <564B8A20.9090607@nod.at>
- <CAE1zotJRp3=G2Vdud7kVbkToKe2YsTF3gXUnLCNzKV6F0oumdg@mail.gmail.com>
- <20151119152347.GA45540@ubuntu-hedt>
- <CAE1zot+G=SohXzuV6Gs7APdCo5pu9xLwE38kZKNUuWRnSh++BA@mail.gmail.com>
+From: Alex Vorona <alex@vorona.com.ua>
+Subject: write deadlocks
+Date: Sun, 22 Nov 2015 18:04:36 +0200
+Message-ID: <5651E794.1060700@vorona.com.ua>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from h2.hallyn.com ([78.46.35.8]:36938 "EHLO h2.hallyn.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759664AbbKTRdc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 20 Nov 2015 12:33:32 -0500
-Content-Disposition: inline
-In-Reply-To: <CAE1zot+G=SohXzuV6Gs7APdCo5pu9xLwE38kZKNUuWRnSh++BA@mail.gmail.com>
+Received: from mail.vorona.com.ua ([78.46.163.58]:50030 "EHLO
+	mail.vorona.com.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711AbbKVQMo (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 22 Nov 2015 11:12:44 -0500
+Received: from MBP-IraMac.nest.kh.ua (unknown [193.178.146.68])
+	by mail.vorona.com.ua (Postfix) with ESMTPSA id BA82F906D0
+	for <linux-bcache@vger.kernel.org>; Sun, 22 Nov 2015 17:04:37 +0100 (CET)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Octavian Purdila <octavian.purdila@intel.com>
-Cc: Seth Forshee <seth.forshee@canonical.com>, Richard Weinberger <richard@nod.at>, Al Viro <viro@zeniv.linux.org.uk>, "Eric W. Biederman" <ebiederm@xmission.com>, linux-bcache@vger.kernel.org, device-mapper development <dm-devel@redhat.com>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, LSM <linux-security-module@vger.kernel.org>, selinux@tycho.nsa.gov, Serge Hallyn <serge.hallyn@canonical.com>, Andy Lutomirski <luto@amacapital.net>, LKML <linux-kernel@vger.kernel.org>, Theodore Ts'o <tytso@mit.edu>
+To: linux-bcache@vger.kernel.org
 
-On Thu, Nov 19, 2015 at 06:19:10PM +0200, Octavian Purdila wrote:
-> On Thu, Nov 19, 2015 at 5:23 PM, Seth Forshee
-> > And for the second:
-> >
-> >  stress-ng --class filesystem --seq 0 -v -t 60
-> >
-> > There really wasn't anything interesting in the lklfuse output for the
-> > first run, but for the second run I pasted the output here:
-> > http://paste.ubuntu.com/13346993/
-> 
-> lklfuse allocates a fixed 100MB to the kernel and this is probably not
-> enough. For the short term I can add a parameter to lklfuse that
-> allows the user to specify the amount of memory to allocate to lkl. A
-> better fix would probably be to dynamically adjust the memory size of
-> lkl. I am thinking of using the ballon virtio driver or the memory
-> hotplug infrastructure. Any other suggestions?
+Hello,
 
-Hi Octavian,
+We got following bcache-related problem today in one second 03:17:56
 
-Like Seth said this was very nice to install and run.  But I think I'm
-doing something wrong.  I cloned the lkl/linux git tree into a 9G ext4
-loopback file, both one mounted with lkl and one mounted as loopback.
-The results were worse than I expected - loopback was 0m10.078s for
-clone and 0m0.877s for rm -rf;  lkl was 5m5.625s for clone and 0m44.332s
-for rm -rf.  I assume this has to do with the 100MB buffer and subsequent
-thrashing?  How should I tune this to  make it perform better?
+INFO: task bcache_writebac:3182 blocked for more than 120 seconds.
+      Not tainted 4.1.6-1.el6.elrepo.x86_64 #1
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bcache_writebac D ffff881021233d38     0  3182      2 0x00000080
+ffff881021233d38 ffff881032d18050 ffff8810389280d0 0000000000000000
+ffff881021230008 ffff881036910ae8 ffff881032d18050 ffff881036910b00
+ffffffff00000000 ffff881021233d58 ffffffff816dff8e ffff881032d18050
+Call Trace:
+[<ffffffff816dff8e>] schedule+0x3e/0x90
+[<ffffffff816e2585>] rwsem_down_write_failed+0xf5/0x210
+[<ffffffff81308a73>] call_rwsem_down_write_failed+0x13/0x20
+[<ffffffff816e1e71>] ? down_write+0x31/0x50
+[<ffffffffa058fb92>] bch_writeback_thread+0x62/0x4d0 [bcache]
+[<ffffffffa058fb30>] ? read_dirty+0x400/0x400 [bcache]
+[<ffffffffa058fb30>] ? read_dirty+0x400/0x400 [bcache]
+[<ffffffff81095c4e>] kthread+0xce/0xf0
+[<ffffffff81095b80>] ? kthread_freezable_should_stop+0x70/0x70
+[<ffffffff816e3d22>] ret_from_fork+0x42/0x70
+[<ffffffff81095b80>] ? kthread_freezable_should_stop+0x70/0x70
+INFO: task qemu-kvm:591 blocked for more than 120 seconds.
+      Not tainted 4.1.6-1.el6.elrepo.x86_64 #1
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+qemu-kvm        D ffff88054e71b860     0   591      1 0x00000080
+ffff88054e71b860 ffff880102ba6010 ffff880100e23010 ffffffff812c901a
+ffff88054e718008 ffff881036910ae8 ffff88054e71b958 ffff88054e71b948
+ffff880d175047e0 ffff88054e71b880 ffffffff816dff8e ffff881032406922
+Call Trace:
+[<ffffffff812c901a>] ? bio_alloc_bioset+0xba/0x220
+[<ffffffff816dff8e>] schedule+0x3e/0x90
+[<ffffffff816e2435>] rwsem_down_read_failed+0xa5/0x100
+[<ffffffff81308a44>] call_rwsem_down_read_failed+0x14/0x30
+[<ffffffff816e1eb4>] ? down_read+0x24/0x30
+[<ffffffffa05824d1>] cached_dev_write+0x81/0x470 [bcache]
+[<ffffffffa0583593>] cached_dev_make_request+0x3b3/0x470 [bcache]
+[<ffffffffa0004a96>] ? dm_make_request+0x86/0xe0 [dm_mod]
+[<ffffffffa0005141>] ? dm_table_find_target+0x51/0x80 [dm_mod]
+[<ffffffff812cffd0>] generic_make_request+0xc0/0x100
+[<ffffffff812d008f>] submit_bio+0x7f/0x160
+[<ffffffff8121fb78>] do_blockdev_direct_IO+0xa88/0xbc0
+[<ffffffff8121aa20>] ? I_BDEV+0x10/0x10
+[<ffffffff8121aa20>] ? I_BDEV+0x10/0x10
+[<ffffffff8121fcf3>] __blockdev_direct_IO+0x43/0x50
+[<ffffffff8121b98c>] blkdev_direct_IO+0x4c/0x50
+[<ffffffff8116d91e>] generic_file_direct_write+0xae/0x170
+[<ffffffff8116da9b>] __generic_file_write_iter+0xbb/0x1b0
+[<ffffffff8121b12b>] blkdev_write_iter+0xab/0x110
+[<ffffffff811e2c65>] __vfs_write+0xd5/0x100
+[<ffffffff811e2f0b>] vfs_write+0xab/0x120
+[<ffffffff811e3adc>] SyS_pwrite64+0x8c/0x90
+[<ffffffff816e392e>] system_call_fastpath+0x12/0x71
 
-No crashes from this, though.
+and a couple of same qemu-kvm stacktraces.  We got LA 400+ and blocked 
+IO in all qemu-kvm instances.
 
-thanks,
--serge
+Kernel 4.1.6-1.el6.elrepo.x86_64, bcache writeback over 2x240GB SSD md 
+RAID1 + 2x2TB HDD md RAID1. There was linux raid-check running over HDDs 
+and @03:15 daily cronjobs started in all qemu-kvm instances so there was 
+IO spike.
+
+It looks like all qemu-kvm processes got a deadlock in bio_alloc_bioset 
+and bcache_writebac just waits for down_write writeback_lock
+
+I had noted bio_alloc_bioset can cause deadlock according to 
+https://www.kernel.org/doc/htmldocs/filesystems/API-bio-alloc-bioset.html when 
+used with GFP_WAIT. bio_alloc_bioset is used in request.c with GFP_NOIO 
+with same value as GFP_WAIT. Maybe bioset pool of 4 bios is too small ?
+
+Thanks,
+Alex
