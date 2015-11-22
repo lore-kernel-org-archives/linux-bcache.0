@@ -1,19 +1,19 @@
 From: Alex Vorona <alex@vorona.com.ua>
-Subject: write deadlocks
-Date: Sun, 22 Nov 2015 18:04:36 +0200
-Message-ID: <5651E794.1060700@vorona.com.ua>
+Subject: writeback deadlocks
+Date: Sun, 22 Nov 2015 18:44:18 +0200
+Message-ID: <5651F0E2.1010208@vorona.com.ua>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.vorona.com.ua ([78.46.163.58]:50030 "EHLO
+Received: from mail.vorona.com.ua ([78.46.163.58]:50056 "EHLO
 	mail.vorona.com.ua" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbbKVQMo (ORCPT
+	with ESMTP id S1751803AbbKVQoU (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 22 Nov 2015 11:12:44 -0500
+	Sun, 22 Nov 2015 11:44:20 -0500
 Received: from MBP-IraMac.nest.kh.ua (unknown [193.178.146.68])
-	by mail.vorona.com.ua (Postfix) with ESMTPSA id BA82F906D0
-	for <linux-bcache@vger.kernel.org>; Sun, 22 Nov 2015 17:04:37 +0100 (CET)
+	by mail.vorona.com.ua (Postfix) with ESMTPSA id BB8A7906D0
+	for <linux-bcache@vger.kernel.org>; Sun, 22 Nov 2015 17:44:18 +0100 (CET)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
@@ -73,7 +73,7 @@ Call Trace:
 [<ffffffff811e3adc>] SyS_pwrite64+0x8c/0x90
 [<ffffffff816e392e>] system_call_fastpath+0x12/0x71
 
-and a couple of same qemu-kvm stacktraces.  We got LA 400+ and blocked 
+and a couple of same qemu-kvm stack traces.  We got LA 400+ and blocked 
 IO in all qemu-kvm instances.
 
 Kernel 4.1.6-1.el6.elrepo.x86_64, bcache writeback over 2x240GB SSD md 
