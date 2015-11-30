@@ -1,52 +1,71 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache_gc: BUG: soft lockup
-Date: Sun, 29 Nov 2015 17:49:26 -0800 (PST)
-Message-ID: <alpine.LRH.2.11.1511291738340.5445@mail.ewheeler.net>
-References: <1448626993.2877.112.camel@suse.de> <2f979d1d6e991272cebc8ff40a955c8a@rcube.hebserv.net> <1447419912.2616.19.camel@suse.de> <1447418245.2616.15.camel@suse.de> <648d9a0567372b10a3861eee8320328c@rcube.hebserv.net> <7d53afb3c7a34bb1022f0d9b6c079022@rcube.hebserv.net>
- <9c96132d5fce4a5a77b1b086f7c6095d@rcube.hebserv.net> <594053ea9538352f4f3e01b954c6080d@rcube.hebserv.net>
+Subject: [PULL REQUEST]: bcache stability patches
+Date: Sun, 29 Nov 2015 20:13:36 -0800 (PST)
+Message-ID: <alpine.LRH.2.11.1511291750520.5445@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1701589203-1448848249=:5445"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [71.19.153.34] ([71.19.153.34]:58846 "EHLO mail.ewheeler.net"
+Received: from [71.19.153.34] ([71.19.153.34]:59137 "EHLO mail.ewheeler.net"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751340AbbK3Bv0 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 29 Nov 2015 20:51:26 -0500
-In-Reply-To: <594053ea9538352f4f3e01b954c6080d@rcube.hebserv.net>
+	id S1751788AbbK3EO2 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 29 Nov 2015 23:14:28 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Yannis Aribaud <bugs@d6bell.net>
-Cc: Johannes Thumshirn <jthumshirn@suse.de>, linux-bcache@vger.kernel.org
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-bcache@vger.kernel.org, Zheng Liu <wenqing.lz@taobao.com>, Joshua Schmid <jschmid@suse.com>, Al Viro <viro@zeniv.linux.org.uk>, Takashi Iwai <tiwai@suse.de>, Zheng Liu <gnehzuil.liu@gmail.com>, manover@gmail.com, g2p.code@gmail.com, stefan.bader@canonical.com
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello all,
 
---1641074820-1701589203-1448848249=:5445
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Please pull this bcache branch with stability patches and see if it fixes 
+any issue that you might have!  If you have stability patches (*that you 
+have tested*) which are not part of this branch, then please forward them 
+so they can be included.
+
+We have been using bcache with great performance and stability for over a 
+year; it is the best SSD caching mechanism that we have found for our 
+workload.  
+
+I've been collecting these fixes for a while now and just put them up on 
+github so they can be easily merged.  I continue to see mailing list 
+discussions about problems that users are having which these patches 
+address, so hopefully we can get these merged:
+ 
+  https://github.com/ewheelerinc/linux/commits/bcache-patches-for-3.17
+  git add remote ewheelerinc https://github.com/ewheelerinc/linux.git
+  git fetch ewheelerinc
+  git merge ewheelerinc/bcache-patches-for-3.17
+
+This branch is from a clone of Linus's tree circa 3.17-rc so git merge 
+should bring this in cleanly to any later branch.  This will merge cleanly 
+into kernel.org longerm versions v4.1.13 and v3.18.24.  The original 
+author is cited in each commit; you are being Cc'ed in this email if you 
+are an author on any of these patches or are part of a mailing list thread 
+indicating problems that this pull may fix.
+
+Each commit includes `Cc: stable@vger.kernel.org` so if they get pulled 
+into mainline we will see bcache stable on the newer LTS branches of 
+kernel.org.
+
+This git branch includes patches that have been collected and tested by 
+Denis Bychkov from his post on 2015-09-16 with one exception: the 
+refill_dirty() patch has been updated to the latest stable version which 
+Kent posted the next day.  The refill_dirty patch addresses issues when 
+bcache is backed by raid5/6 md's causing 
+queue_limits->partial_stripes_expensive to be nonzero.
 
 
-(intentional top-post)
+Kent,
 
-There are a number of stability patches that haven't found their way to 
-mainstream yet.  We have been using bcache for over a year now with great 
-stability and no dataloss with these patches.  Try pulling the branch that 
-I just set up to maintain these commits:
+Can this be sent to Jens for a pull into mainline?  If you can give your 
+OK on this patchset then I'll approach Jens and see if he can pull this 
+in.  Maybe Cc him in your response.
 
-https://github.com/ewheelerinc/linux/commits/bcache-patches-for-3.17
+If there's anything in here that you would like to omit or change from 
+this pull then let me know and I'll rebase.
 
-git add remote ewheelerinc https://github.com/ewheelerinc/linux.git
-git fetch ewheelerinc
-git merge ewheelerinc/bcache-patches-for-3.17
+Thanks!
 
-This is a clone of Linus's tree circa 3.17-rc1 so git merge should bring 
-this in cleanly to any later branch.  You could cherry-pick as well.  
-I've tested and this will also merge cleanly into v4.1.13.
-
-Note that I've not written any of these patches, I just keep them around 
-since they make the difference between stable and unstable for bcache.  
-The original authors and their discussions are included in the commit 
-notes.
-
+-Eric
 
 
 
@@ -54,23 +73,3 @@ notes.
 Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
 888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
 www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
-
-On Fri, 27 Nov 2015, Yannis Aribaud wrote:
-
-> 27 novembre 2015 13:23 "Johannes Thumshirn" <jthumshirn@suse.de> a écrit:
-> > Sorry to disappoint you, but I couldn't find anything that could be related to
-> > your lockup.
-> 
-> Well even I you didn't found anything, thank you for your time.
-> 
-> I just upgraded my kernel to 4.2.6 vanilla to see if this lockup occurs again.
-> 
-> Regards,
-> -- 
-> Open is better
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
---1641074820-1701589203-1448848249=:5445--
