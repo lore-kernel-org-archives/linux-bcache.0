@@ -1,38 +1,117 @@
-From: Peter <pkozbial@gmail.com>
-Subject: SSD failed - can I recover data from HDDs
-Date: Sun, 24 May 2015 00:46:33 +0000 (UTC)
-Message-ID: <loom.20150524T023926-291@post.gmane.org>
+From: Christoph Nelles <evilazrael@evilazrael.de>
+Subject: [PATCH] bcache: backing device set to clean after finishing detach
+Date: Fri, 11 Dec 2015 11:55:22 +0100
+Message-ID: <566AAB9A.8040201@evilazrael.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:48603 "EHLO plane.gmane.org"
+Received: from evilazrael.net ([5.10.172.2]:32768 "EHLO mail.evilazrael.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751017AbbLKDKI (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 10 Dec 2015 22:10:08 -0500
-Received: from list by plane.gmane.org with local (Exim 4.69)
-	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1a7E5t-0003v4-I5
-	for linux-bcache@vger.kernel.org; Fri, 11 Dec 2015 04:10:05 +0100
-Received: from 108-123-127-34.pools.spcsdns.net ([108-123-127-34.pools.spcsdns.net])
-        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 11 Dec 2015 04:10:05 +0100
-Received: from pkozbial by 108-123-127-34.pools.spcsdns.net with local (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 11 Dec 2015 04:10:05 +0100
+	id S1752118AbbLKLAq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 11 Dec 2015 06:00:46 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
 
-I've set up bcache with one SSD and two HDD (using btrfs). 
+Hi,
+first time sending a patch, please be kind.
 
-Unfortunately after power failure the first SSD partition (root) is
-corrupted, the second (swap) and the third (bcache caching) are fine. 
+Detaching a cache set from a backing device set to writeback with dirty
+data in it may cause the backing device to get a final state of
+BDEV_STATE_CLEAN instead of BDEV_STATE_NONE. bcache-supert-show will
+show this as:
 
-I have two (btrfs formatted) hard drives and would really really love to
-have my data recovered from the hard drives (2 x 5TB). Is there any guide
-how to do that?
+dev.data.cache_state        1 [clean]
 
-Thank you,
-Peter 
+cset.uuid                00000000-0000-0000-0000-000000000000
+
+When trying to register this device, the kernel will log the message
+"bcache: register_bdev() registered backing device md126" but no
+/dev/bcache* and /sys/block/bcache* device will show up. Registering the
+device a second time will hang the echo. Unloading the bcache module is
+not possible as the refcount is increased. There's no way to stop this
+device within bcache as there is no sysfs entry. The issue is persistent.
+
+Johannes Thumshirn fron SUSE assuemes it may only happen when using
+Software RAIDs for the bcache devices.
+
+
+Steps to reproduce:
+Setup /dev/md/cache as bcache caching device
+Setup /dev/md/storage as bcache caching device in writeback mode
+Startup bcache and make sure the cache set is attached
+Format /dev/bcache0 with XFS and mount it at /x
+./fio --name=test --filename=/x/test.dat --bs=1M --rw=randwrite
+--size=128G --fallocate=none
+There should be >100GB of dirty data for /dev/bcache0 (check from
+/sys/block/bcache0/bcache/dirty_data)
+Then immediately do echo 1 > /sys/block/bcache0/bcache/detach
+Wait until all dirty data was written back. With a high probability
+/sys/block/bcache0/bcache/state will be clean instead of "no cache"
+
+Reboot the system, try to register the device
+# echo /dev/md/storage > /sys/fs/bcache/register
+# dmesg |tail
+[ 1248.965231] bcache: register_bdev() registered backing device md127
+# ls -al /dev/bcache?
+ls: cannot access /dev/bcache?: No such file or directory
+# ls -al /sys/block/bcache?
+ls: cannot access /sys/block/bcache?: No such file or directory
+# grep ^bcache /proc/modules
+bcache 238115 1 - Live 0xffffffffa0582000
+# rmmod bcache
+rmmod: ERROR: Module bcache is in use
+
+
+
+I looked into the code. There are only two places in the kernel where
+the cache state is set to "clean". It looks that due to the asynchrony
+in the bcache module  SET_BDEV_STATE() in writeback.c/refill_dirty() may
+be called after the function super.c/cached_dev_detach_finished() and
+sets the the state from BDEV_STATE_NONE (set by
+cached_dev_detach_finished()) to BDEV_STATE_CLEAN. I do not understand
+completely the flow in bcache  but adding an additional check in
+refill_dirty() to not change the state from NONE to CLEAN is probably
+the most minimal change to prevent having a detached backing device in
+the state CLEAN.
+I tested the patch multiple times and with different operations, the
+issue is gone and there were no side-effects.
+
+The patch is against 3.12.
+
+Signed-off-by: Christoph Nelles <evilazrael@evilazrael.de>
+Reviewed-by: Johannes Thumshirn <jthumshirn@suse.de>
+
+
+diff -rup linux/drivers/md/bcache/writeback.c
+linux-fix/drivers/md/bcache/writeback.c
+--- linux/drivers/md/bcache/writeback.c	2015-10-05 12:08:10.000000000 +0200
++++ linux-fix/drivers/md/bcache/writeback.c	2015-12-09
+15:55:46.524238412 +0100
+@@ -169,8 +169,11 @@ static void refill_dirty(struct closure
+ 	down_write(&dc->writeback_lock);
+
+ 	if (!atomic_read(&dc->has_dirty)) {
+-		SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
+-		bch_write_bdev_super(dc, NULL);
++
++		if (BDEV_STATE(&dc->sb) != BDEV_STATE_NONE) {		
++			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
++			bch_write_bdev_super(dc, NULL);
++		}
+
+ 		up_write(&dc->writeback_lock);
+ 		closure_return(cl);
+
+
+
+
+-- 
+Christoph Nelles
+
+E-Mail    : evilazrael@evilazrael.de
+Jabber    : eazrael@evilazrael.net      ICQ       : 78819723
+
+PGP-Key   : ID 0x3123487D on subkeys.pgp.net
+            or https://evilazrael.net/pgp.txt
