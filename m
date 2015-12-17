@@ -1,64 +1,25 @@
-From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
-Subject: Re: SSD failed - can I recover data from HDDs
-Date: Fri, 11 Dec 2015 15:05:23 +0100
-Message-ID: <20151211150523.Horde.FPYUrIAxjf2RB9mfwnBrrvR@www3.nde.ag>
-References: <loom.20150524T023926-291@post.gmane.org>
+From: Michael@mail.microamerica.com.pe,
+	"J.Tynan <f.digeronimo"@federconsumatori.abruzzo.it
+Subject: Review & Reply
+Date: Thu, 17 Dec 2015 07:55:35 +0700
+Message-ID: <20151217005626.624DE89D5DD1__17212.5051649802$1450343072$gmane$org@mail.microamerica.com.pe>
+Reply-To: michaeljtynan8@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:61285 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbbLKOLa (ORCPT
+Received: from mail.microamerica.com.pe ([200.37.170.69]:34740 "EHLO
+	mail.microamerica.com.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450AbbLQJER convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 11 Dec 2015 09:11:30 -0500
-In-Reply-To: <loom.20150524T023926-291@post.gmane.org>
-Content-Disposition: inline
+	Thu, 17 Dec 2015 04:04:17 -0500
+Content-Description: Mail message body
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Peter <pkozbial@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: Recipients <f.digeronimo@federconsumatori.abruzzo.it>
 
-Hi Peter,
-
-first of all, is there some date setup problem with your client  
-machine or has the issue been resolved as it is from May? ;)
-
-> Received: [...]
->        for <linux-bcache@vger.kernel.org>; Fri, 11 Dec 2015 04:10:05 +0100
-> X-Injected-Via-Gmane: http://gmane.org/
-> To:	linux-bcache@vger.kernel.org
-> From:	Peter <pkozbial@gmail.com>
-> Subject: SSD failed - can I recover data from HDDs
-> Date:	Sun, 24 May 2015 00:46:33 +0000 (UTC)
-
-
-Zitat von Peter <pkozbial@gmail.com>:
-
-> I've set up bcache with one SSD and two HDD (using btrfs).
->
-> Unfortunately after power failure the first SSD partition (root) is
-> corrupted, the second (swap) and the third (bcache caching) are fine.
->
-> I have two (btrfs formatted) hard drives and would really really love to
-> have my data recovered from the hard drives (2 x 5TB). Is there any guide
-> how to do that?
-
-have you tried booting the machine via some recovery media, loading  
-the bcache module and then manually registering both the cache and the  
-backing devices? If both HDDs and the caching partition on the SSD are  
-intact, this should work.
-
-Generally, I'd then backup the data that you want to keep safe.
-
-Depending on what you intent to do with the SSD and how bcache was set  
-up, you then may want to make sure the cache is fully migrated to the  
-HDDs. That should enable you to replace the SSD, if desired.
-
-You have not indicated what you want to do to recover the remainders  
-of your system - if you simply want to reload some backup, then  
-setting up bcache manually should be ok. If you're reinstalling your  
-"root" (without touching the bcache'd devices nor the bcache  
-partition) and set up bcache afterward, you ought to be fine, too.
-
-Regards,
-Jens
+Greetings,
+My name is Mr.Michael J. Tynan, I am a banker with Bank Of America. It is true that we have not meet each other in person, but I strongly believe in trust and friendship in every business. I have a Lebanese deceased customer's abandoned fund, which I am his personal financial adviser before his accidental death, that being the main reason why I alone working in the bank here, know much about the existence of this fund and the secrets surrounding this money. But before I disclose the full details to you, I will like to know your interest and willingness to assist me. You can call me as soon you receive my message, so that i will send to you full details about the transaction.
+My best regards,
+Mr.Michael J. Tynan
+MOBILE: +1 347 269 3740
