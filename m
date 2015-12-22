@@ -1,55 +1,90 @@
-From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
-Subject: dynamically resizing bcache devices
-Date: Tue, 22 Dec 2015 12:40:44 +0100
-Message-ID: <20151222124044.Horde.yBZenQERTNZN7P0HR3WeoI_@www3.nde.ag>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
+From: <shraddha.6596@gmail.com>
+Subject: [PATCH 1/2] md: bcache: Replace get_seconds with ktime_get_seconds
+Date: Tue, 22 Dec 2015 18:32:59 +0530
+Message-ID: <1450789379-31062-1-git-send-email-shraddha.6596@gmail.com>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.182]:58158 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922AbbLVLkr (ORCPT
+Received: from mail-pf0-f173.google.com ([209.85.192.173]:34577 "EHLO
+	mail-pf0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbbLVNEp (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 22 Dec 2015 06:40:47 -0500
-Received: from hh2-mail.hh.nde.ag (gw-hh2.hh.nde.ag [85.183.17.20])
-	by post.strato.de (RZmta 37.15 AUTH)
-	with ESMTPA id n04c45rBMBeiNeA
-	for <linux-bcache@vger.kernel.org>;
-	Tue, 22 Dec 2015 12:40:44 +0100 (CET)
-Received: from www3.nde.ag (hh2-www.hh.nde.ag [192.168.102.4])
-	(using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
-	(Client did not present a certificate)
-	by hh2-mail.hh.nde.ag (Postfix) with ESMTPS id 66CAC1C05C
-	for <linux-bcache@vger.kernel.org>; Tue, 22 Dec 2015 12:40:44 +0100 (CET)
-Content-Disposition: inline
+	Tue, 22 Dec 2015 08:04:45 -0500
+Received: by mail-pf0-f173.google.com with SMTP id u7so59913106pfb.1
+        for <linux-bcache@vger.kernel.org>; Tue, 22 Dec 2015 05:04:45 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Neil Brown <neilb@suse.com>, Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>, Shraddha Barke <shraddha.6596@gmail.com>
 
-Hi,
+From: Shraddha Barke <shraddha.6596@gmail.com>
 
-an earlier, similar question went by unanswered, so let me give it  
-another try:
+32-bit systems using function get_seconds will break in the year 2038,
+in order to avoid that replace the code with more appropriate
+function ktime_get_seconds which is y2038 safe.
+Function ktime_get_seconds is used since it uses monotonic instead of
+real time and thus will not cause overflow.
 
-I have set up a bcache device on top of DMRAID devices for cache and  
-backing device.
+Signed-off-by: Shraddha Barke <shraddha.6596@gmail.com>
+---
+ drivers/md/bcache/super.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-While I can dynamically resize both RAIDs, the bcache device will not  
-catch up with the changes "live". This conforms to what Kent wrote in  
-2012 (http://comments.gmane.org/gmane.linux.kernel.bcache.devel/249):
-
---- cut here ---
-For the backing device, I think things will just work - you'll just
-have to close and reopen the backing device in order for bcache to
-notice the new size. Bcache's superblock doesn't remember the size, it
-just goes off of what the size of the backing device is when it's
-registered.
-
-There's currently no way to make bcache notice the backing device has
-grown to do it at runtime, though that ought to be fairly simple too.
---- cut here ---
-
-If this currently is still not implemented, has anyone started to work  
-on some "resizebcache" tool, if only handling the backing device?
-
-Regards,
-Jens
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 679a093..f4bd17d 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -188,7 +188,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+ 		goto err;
+ 	}
+ 
+-	sb->last_mount = get_seconds();
++	sb->last_mount = ktime_get_seconds();
+ 	err = NULL;
+ 
+ 	get_page(bh->b_page);
+@@ -696,7 +696,7 @@ static void bcache_device_detach(struct bcache_device *d)
+ 
+ 		SET_UUID_FLASH_ONLY(u, 0);
+ 		memcpy(u->uuid, invalid_uuid, 16);
+-		u->invalidated = cpu_to_le32(get_seconds());
++		u->invalidated = cpu_to_le32(ktime_get_seconds());
+ 		bch_uuid_write(d->c);
+ 	}
+ 
+@@ -927,7 +927,7 @@ void bch_cached_dev_detach(struct cached_dev *dc)
+ 
+ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ {
+-	uint32_t rtime = cpu_to_le32(get_seconds());
++	uint32_t rtime = cpu_to_le32(ktime_get_seconds());
+ 	struct uuid_entry *u;
+ 	char buf[BDEVNAME_SIZE];
+ 
+@@ -959,7 +959,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	    (BDEV_STATE(&dc->sb) == BDEV_STATE_STALE ||
+ 	     BDEV_STATE(&dc->sb) == BDEV_STATE_NONE)) {
+ 		memcpy(u->uuid, invalid_uuid, 16);
+-		u->invalidated = cpu_to_le32(get_seconds());
++		u->invalidated = cpu_to_le32(ktime_get_seconds());
+ 		u = NULL;
+ 	}
+ 
+@@ -1261,7 +1261,7 @@ int bch_flash_dev_create(struct cache_set *c, uint64_t size)
+ 
+ 	get_random_bytes(u->uuid, 16);
+ 	memset(u->label, 0, 32);
+-	u->first_reg = u->last_reg = cpu_to_le32(get_seconds());
++	u->first_reg = u->last_reg = cpu_to_le32(ktime_get_seconds());
+ 
+ 	SET_UUID_FLASH_ONLY(u, 1);
+ 	u->sectors = size >> 9;
+@@ -1670,7 +1670,7 @@ static void run_cache_set(struct cache_set *c)
+ 		goto err;
+ 
+ 	closure_sync(&cl);
+-	c->sb.last_mount = get_seconds();
++	c->sb.last_mount = ktime_get_seconds();
+ 	bcache_write_super(c);
+ 
+ 	list_for_each_entry_safe(dc, t, &uncached_devices, list)
+-- 
+2.1.4
