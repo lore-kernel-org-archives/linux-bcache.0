@@ -1,23 +1,35 @@
-From: "zikdx" <mgrhfmisha8888877777777709999999@gmail.com>
-Subject: Klientskie bazi dannix Mnogo! Bistro! Nedorogo! tel/viber/whatsapp: +79139393506 Skype: prodawez389 Email: mamontova260@gmail.com Yznaite podrobnee!!! Zwonite!!
-Date: Sun, 20 Dec 2015 05:40:36 +0600
-Message-ID: <4144F2A1AA7E51924E4B02BCB8D040F0@gmail.com>
-Reply-To: "zikdx" <nonen22pp@gmail.com>
+From: "Jeff Skoll" <verna.viajar@icdd.uni-kassel.de>
+Subject: Charity Donation
+Date: Mon, 28 Dec 2015 16:48:16 -0500
+Message-ID: <auto-000005344232@mailadmin.uni-kassel.de>
+Reply-To: jeff.skoll@skollcharity.org
 Mime-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="utf-8";
-	reply-type=original
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [112.170.41.49] ([112.170.41.49]:52414 "EHLO
-	network.localdomain" rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751204AbbLZTZv (ORCPT
+Received: from mx3.its.uni-kassel.de ([141.51.12.64]:20821 "EHLO
+	mx3.its.uni-kassel.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbbL1X0K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 26 Dec 2015 14:25:51 -0500
+	Mon, 28 Dec 2015 18:26:10 -0500
+Content-Description: Mail message body
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Me <verna.viajar@icdd.uni-kassel.de>
 
-S2xpZW50c2tpZSBiYXppIGRhbm5peCBNbm9nbyEgQmlzdHJvISBOZWRvcm9nbyEgdGVsL3ZpYmVy
-L3doYXRzYXBwOiArNzkxMzM5MTM4MzcgU2t5cGU6IHByb2Rhd2V6Mzg5IEVtYWlsOiBnbWFydGlu
-b3ZhMjlAZ21haWwuY29tIFl6bmFpdGUgcG9kcm9ibmVlISEhIFp2b25pdGUhISENCg==
+Hi,
+My name is Jeffrey Skoll, a philanthropist and the founder of one of th=
+e largest private foundations in the world. I believe strongly in =E2=80=
+=98giving while living.=E2=80=99 I had one idea that never changed in m=
+y mind =E2=80=94 that you should use your wealth to help people and I h=
+ave decided to secretly give USD2.498 Million to a randomly selected in=
+dividual. On receipt of this email, you should count yourself as the in=
+dividual. Kindly get back to me at your earliest convenience, so I know=
+ your email address is valid.
+
+Visit the web page to know more about me: http://www.theglobeandmail.co=
+m/news/national/meet-the-canadian-billionaire-whos-giving-it-all-away/a=
+rticle4209888/ or you can read an article of me on Wikipedia.
+
+Regards,
+Jeffrey Skoll.
