@@ -1,121 +1,109 @@
 From: Denis Bychkov <manover@gmail.com>
 Subject: Re: [PULL] Re: bcache stability patches
-Date: Thu, 31 Dec 2015 02:23:50 -0500
-Message-ID: <CAO2mnowCXj84eq4+-O9k9yiFbqDeL1W9tmkYXbVt4sC-=bA+KA@mail.gmail.com>
+Date: Thu, 31 Dec 2015 16:19:03 -0500
+Message-ID: <CAO2mnoyrPvUg+FQ1F-N5nz3v8BBb3UJUCjkhWTZc=MtHsEQDjA@mail.gmail.com>
 References: <CAO2mnow-HG_0pnDVFGfU0e+hPXfT=zMTrdemwiv=pxgJ+m4o2w@mail.gmail.com>
 	<alpine.LRH.2.11.1512291807510.30746@mail.ewheeler.net>
+	<56841B8B.6070306@kernel.dk>
+	<20151231031500.GA8265@kmo-pixel>
+	<5684A030.1040306@kernel.dk>
+	<20151231051830.GB8265@kmo-pixel>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-lf0-f66.google.com ([209.85.215.66]:34973 "EHLO
-	mail-lf0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbbLaHXw (ORCPT
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:35629 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751483AbbLaVTF (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 31 Dec 2015 02:23:52 -0500
-In-Reply-To: <alpine.LRH.2.11.1512291807510.30746@mail.ewheeler.net>
+	Thu, 31 Dec 2015 16:19:05 -0500
+Received: by mail-lb0-f180.google.com with SMTP id bc4so130600013lbc.2
+        for <linux-bcache@vger.kernel.org>; Thu, 31 Dec 2015 13:19:04 -0800 (PST)
+In-Reply-To: <20151231051830.GB8265@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kent.overstreet@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>, g2p.code@gmail.com, Jiri Kosina <jkosina@suse.com>, Joshua Schmid <jschmid@suse.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, stefan.bader@canonical.com, Takashi Iwai <tiwai@suse.de>, Vojtech Pavlik <vojtech@suse.com>, Zheng Liu <gnehzuil.liu@gmail.com>, Zheng Liu <wenqing.lz@taobao.com>
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-On Tue, Dec 29, 2015 at 10:00 PM, Eric Wheeler
-<bcache@lists.ewheeler.net> wrote:
-> Hi Jens and Kent,
+On Thu, Dec 31, 2015 at 12:18 AM, Kent Overstreet
+<kent.overstreet@gmail.com> wrote:
+> On Wed, Dec 30, 2015 at 08:25:36PM -0700, Jens Axboe wrote:
+>> On 12/30/2015 08:15 PM, Kent Overstreet wrote:
+>> >On Wed, Dec 30, 2015 at 10:59:39AM -0700, Jens Axboe wrote:
+>> >>Looking over these, most are really simple one-liners, and nothing sticks
+>> >>out as being overly complicated. Kent, do you have any plans to maintain the
+>> >>in-kernel bcache?
+>> >
+>> >Yeah - these patches are all fine, go ahead and pull.
+>>
+>> Great, thanks.
+>>
+>> >I may start doing maintainence again at some point (but if there's someone
+>> >willing to step up and take over and do a good job of it, I'd gladly hand things
+>> >off)
+>>
+>> As long as we have a path into mainline for stability fixes, at least that's
+>> better than before.
 >
-> This affects many users, so please take a look when you have a moment:
+> I'd really like to get the improvements from the bcache-dev branch upstream -
+> there's a lot of _huge_ improvements (performance and otherwise), but
+> backporting the non on disk format changes has turned out to be... not really
+> practical.
 >
-> There is a growing bcache user community with a well-tested patchset that
-> is necessary for production bcache use.  The diffstat is small and we all
-> want someone to pull it in and get it into mainline.  This would serve
-> many people if this can get pulled in upstream.
->
-> More below:
->
-> On Tue, 22 Dec 2015, Denis Bychkov wrote:
->> There is a set of bcache stability patches elevating bcache stability to
->> production level. As far as I know, there is no single reported and peer
->> confirmed bug that is not solved by this set. Unfortunately, for some
->> reason, Kent does not have enough time and/or energy to review them and
->> send them upstream. Let's come up with a solution that would allow to
->> review all these patches (some of them written by Ken himself, some of
->> them produced by the community), review them and hand them to the
->> maintainer who is willing to apply them upstream. Without that, bcache
->> is just another half-assed unstable and buggy cache layer. These patches
->> will allow people to start use bcache in production systems. Please find
->> the patch set attached. (The patches apply cleanly to 4.3 and 4.4 kernel
->> series).
->
-> Hi Dennis,
->
-> I'm maintaining a branch here that is ready to merge.  We have been
-> testing this for about a year in production and works great.  All Cc's and
-> authors are correct and it (should) have every stability patch below,
-> possibly others too.  Please tell me if there are any patches missing:
+> So one of the major obstacles has been that there's a ton of very worthwhile
+> code I'd really like to get upstream, but at this point it's pretty much going
+> to have to be as drivers/md/bcache2 - effectively a fork that wouldn't support
+> the original on disk format. And that's a high hurdle.
 
-Just went through all the patches I have, looks like you did not miss any. The
-only small correction - the author of commit
-53803810fce7826feff7d5632a7ab3cc991e6243
-is me, not Gabriel de Perthuis. Gabriel wrote the original patch which
-I mention in
-the comment, but it was broken (did not release the mutex), so I
-created a new one,
-that actually fixed the problem with device_busy error.
+Hey Kent,
 
->
-> git pull https://github.com/ewheelerinc/linux.git bcache-patches-for-3.17
-> (Yes, github for hosting only, I don't edit with their web interfaces.)
->
-> Note that this branch still merges cleanly through v4.4-rc7 and as far
-> back as 3.17-rc1 (maybe earlier).  Each patch provides Cc: stable@vger.kernel.org.
->
-> It is ready to merge!  We just need Jens or Kent or someone to pull it in.
-> Here is the diffstat and shortlog against v4.4-rc7:
->
->  drivers/md/bcache/btree.c     |  5 ++++-
->  drivers/md/bcache/super.c     | 16 ++++++++++++----
->  drivers/md/bcache/writeback.c | 37 ++++++++++++++++++++++++++++++-------
->  drivers/md/bcache/writeback.h |  3 ++-
->  4 files changed, 48 insertions(+), 13 deletions(-)
->
-> Al Viro (1):
->       bcache: fix a leak in bch_cached_dev_run()
->
-> Gabriel de Perthuis (1):
->       bcache: allows use of register in udev to avoid "device_busy" error.
->
-> Kent Overstreet (2):
->       bcache: Add a cond_resched() call to gc
->       bcache: Change refill_dirty() to always scan entire disk if
-> necessary
->
-> Stefan Bader (1):
->       bcache: prevent crash on changing writeback_running
->
-> Zheng Liu (3):
->       bcache: fix a livelock when we cause a huge number of cache misses
->       bcache: clear BCACHE_DEV_UNLINK_DONE flag when attaching a backing device
->       bcache: unregister reboot notifier if bcache fails to unregister device
->
-> See also these threads:
->   https://lkml.org/lkml/2015/12/5/38
->   https://www.mail-archive.com/linux-bcache@vger.kernel.org/msg03159.html
->
-> Quickly view commits here, too:
->   https://github.com/ewheelerinc/linux/commits/bcache-patches-for-3.17
->
->
-> Cheers,
->
-> -Eric
->
->
-> --
-> Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
-> 888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
-> www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
->
+Why is it so important to keep the same on-disk format? We are are
+talking about the
+caching device, not the backing device (which does not have its own
+on-disk layout, it's
+just the layout of the FS it backs, correct?)
+So what's so big of a deal if the caching device format changes? You
+just disconnect the cache set
+before the upgrade, flushing all the cached data that is not on the
+backing device, disable caching for
+this device (bcache can work without the caching device in
+write-through mode), then upgrade the
+kernel and re-create the caching device with the new format. Yes, all
+you cache is invalidated, but it
+will take few days or, in case of very intensive use/lots of new data,
+even few hours. And those who
+can't tolerate this warm-up period can stick with the old code. But,
+if you say there is A LOT of performance
+improvements, it definitely should be worth it.
+It's not like you are going to lose your backing device data, only
+invalidate the cache.
+So, can you please tell me where I am wrong here and why can't we do this?
+
+> If the user community is willing to step up and help out (and realistically,
+> that'd have to include financial support) - that's probably what I'd like to see
+> happen. But it's a non trivial amount of work to get sufficient testing and to
+> get the new on disk format stabilized enough to go upstream.
+
+Speaking for myself I can help with maintenance/coding/unit test
+writing/code reviewing.
+I realize, you have no idea about my skills, but I do have some
+experience with low level/
+systems programming. I don't have a lot of DEEP knowledge about linux
+kernel, but I did a lot of
+driver-related programming back in the day, when memory was a scarce
+resource (OS/2 in 90s :).
+It was long ago, I admit, but I can learn pretty quick and, besides,
+can help with some trivial stuff
+like regression tests/debugging, etc
 
 
+>
+>> Thanks Eric for collecting these. I've reformatted some of them a bit, not
+>> sure if that's github crappery, or if they came like that. It's pushed out
+>> now.
+>
+> Thanks Eric - and let me know if you'd be willing to take on more maintainence
+> work, I may have had some more patches in my backlog and we could talk about
+> testing.
 
 -- 
 
