@@ -1,62 +1,19 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PULL] Re: bcache stability patches
-Date: Thu, 7 Jan 2016 18:02:51 -0800 (PST)
-Message-ID: <alpine.LRH.2.11.1601071755430.14336@mail.ewheeler.net>
-References: <CAO2mnow-HG_0pnDVFGfU0e+hPXfT=zMTrdemwiv=pxgJ+m4o2w@mail.gmail.com> <alpine.LRH.2.11.1512291807510.30746@mail.ewheeler.net> <56841B8B.6070306@kernel.dk> <20151231031500.GA8265@kmo-pixel> <5684A030.1040306@kernel.dk>
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 00/35 v2] separate operations from flags in the
+ bio/request structs
+Date: Fri, 8 Jan 2016 05:32:37 -0800
+Message-ID: <20160108133237.GA7663@infradead.org>
+References: <1452027218-32303-1-git-send-email-mchristi@redhat.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([71.19.153.34]:54311 "EHLO mail.ewheeler.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753109AbcAHCCy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 7 Jan 2016 21:02:54 -0500
-In-Reply-To: <5684A030.1040306@kernel.dk>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <1452027218-32303-1-git-send-email-mchristi@redhat.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: mchristi@redhat.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
 List-Id: linux-bcache@vger.kernel.org
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Al Viro <viro@zeniv.linux.org.uk>, Denis Bychkov <manover@gmail.com>, g2p.code@gmail.com, Jiri Kosina <jkosina@suse.com>, Joshua Schmid <jschmid@suse.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, stefan.bader@canonical.com, Takashi Iwai <tiwai@suse.de>, Vojtech Pavlik <vojtech@suse.com>, Zheng Liu <gnehzuil.liu@gmail.com>, Zheng Liu <wenqing.lz@taobao.com>
 
-On Wed, 30 Dec 2015, Jens Axboe wrote:
-
-> On 12/30/2015 08:15 PM, Kent Overstreet wrote:
-> > On Wed, Dec 30, 2015 at 10:59:39AM -0700, Jens Axboe wrote:
-> > > Looking over these, most are really simple one-liners, and nothing sticks
-> > > out as being overly complicated. Kent, do you have any plans to maintain
-> > > the
-> > > in-kernel bcache?
-> >
-> > Yeah - these patches are all fine, go ahead and pull.
-> 
-> Great, thanks.
-> 
-> > I may start doing maintainence again at some point (but if there's someone
-> > willing to step up and take over and do a good job of it, I'd gladly hand
-> > things
-> > off)
-
-We use this in production internally, so I'll keep collecting patches and 
-may ask for pulls from time to time.  
-
-> As long as we have a path into mainline for stability fixes, at least that's
-> better than before.
-> 
-> Thanks Eric for collecting these. I've reformatted some of them a bit, not
-> sure if that's github crappery, or if they came like that. It's pushed out
-> now.
-
-You're welcome.  It could be github crappery, however, these were 
-copy-pasted and cleaned up in various ways such that they merge into 
-3.17-rc1 and then merge forward into 4.1.15 which we build against---so 
-who knows about formatting, whitspace, and other minor issues.  I'm just 
-glad they are on their way to 4.5 with stable@ Cc's!
-
-BTW, can someone suggest an alternate git host with less crappery?
-
--Eric
-
-> 
-> -- 
-> Jens Axboe
-> 
-> 
-> 
+This looks good to me from a highlevel point of view.
+Do you also have a git tree to take a look at all the changes in a
+single big diff?
