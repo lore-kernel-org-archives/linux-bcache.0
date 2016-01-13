@@ -1,926 +1,528 @@
-From: mchristi@redhat.com
-Subject: [PATCH 30/35] block, fs,
-	drivers: do not test bi_rw for REQ_OPs
-Date: Mon, 11 Jan 2016 14:21:28 -0600
-Message-ID: <1452543693-4440-31-git-send-email-mchristi@redhat.com>
-References: <1452543693-4440-1-git-send-email-mchristi@redhat.com>
-Reply-To: device-mapper development <dm-devel@redhat.com>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: bcache: remove driver private bio splitting code
+Date: Tue, 12 Jan 2016 18:00:49 -0800 (PST)
+Message-ID: <alpine.LRH.2.11.1601121759100.10151@mail.ewheeler.net>
+References: <1439363241-31772-1-git-send-email-mlin@kernel.org> <1439363241-31772-4-git-send-email-mlin@kernel.org> <alpine.LRH.2.11.1601071743540.14336@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <dm-devel-bounces@redhat.com>
-In-Reply-To: <1452543693-4440-1-git-send-email-mchristi@redhat.com>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/dm-devel>
-List-Post: <mailto:dm-devel@redhat.com>
-List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=subscribe>
-Sender: dm-devel-bounces@redhat.com
-Errors-To: dm-devel-bounces@redhat.com
-To: linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
-Cc: Mike Christie <mchristi@redhat.com>
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1616232939-1452650454=:10151"
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx.ewheeler.net ([71.19.153.34]:36041 "EHLO mail.ewheeler.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754000AbcAMCBD (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 12 Jan 2016 21:01:03 -0500
+In-Reply-To: <alpine.LRH.2.11.1601071743540.14336@mail.ewheeler.net>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: vojtech@suse.com
+Cc: linux-bcache@vger.kernel.org
 
-From: Mike Christie <mchristi@redhat.com>
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-We no longer use the bio->bi_rw field for REQ_OPs: REQ_WRITE,
-REQ_DISCARD, REQ_WRITE_SAME, so this patch stops checking
-for them in bi_rw and also removes the related compat code.
+--1641074820-1616232939-1452650454=:10151
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 
-v2:
+Hi Vojtìch,
 
-1. Remove compat code in __get_request.
+Have you tested the patch below in SLE12-* when bcache is backed by md
+raid5/6?
 
-Signed-off-by: Mike Christie <mchristi@redhat.com>
----
- block/bio.c                                 |  6 ++---
- block/blk-core.c                            | 34 ++++++++---------------------
- block/blk-merge.c                           | 14 ++++++------
- block/blk-mq.c                              |  3 +--
- drivers/ata/libata-scsi.c                   |  2 +-
- drivers/block/brd.c                         |  2 +-
- drivers/block/drbd/drbd_main.c              | 15 +++++++------
- drivers/block/drbd/drbd_worker.c            |  4 ++--
- drivers/block/loop.c                        |  6 ++---
- drivers/block/rbd.c                         |  2 +-
- drivers/block/rsxx/dma.c                    |  2 +-
- drivers/block/umem.c                        |  2 +-
- drivers/block/zram/zram_drv.c               |  2 +-
- drivers/ide/ide-floppy.c                    |  2 +-
- drivers/lightnvm/rrpc.c                     |  2 +-
- drivers/md/bcache/request.c                 | 10 ++++-----
- drivers/md/dm-cache-target.c                | 10 +++++----
- drivers/md/dm-crypt.c                       |  2 +-
- drivers/md/dm-log-writes.c                  |  2 +-
- drivers/md/dm-raid1.c                       |  8 +++----
- drivers/md/dm-region-hash.c                 |  4 ++--
- drivers/md/dm-stripe.c                      |  4 ++--
- drivers/md/dm-thin.c                        | 15 ++++++++-----
- drivers/md/dm.c                             |  6 ++---
- drivers/md/linear.c                         |  2 +-
- drivers/md/raid0.c                          |  2 +-
- drivers/scsi/osd/osd_initiator.c            |  4 ++--
- drivers/staging/lustre/lustre/llite/lloop.c |  8 +++----
- include/linux/bio.h                         | 15 ++++++++-----
- include/linux/fs.h                          | 25 +++++++--------------
- 30 files changed, 100 insertions(+), 115 deletions(-)
+FYI: I was compared the drivers/md/bcache/io.c functions in the various
+branches here:
+  https://github.com/openSUSE/kernel
+I compared the presence of bch_generic_make_request() (which the patch
+below removes).  It looks like the branch SLE12-SP2 has the patch, but
+version before SLE12-SP2 and openSUSE-* do not (as they still have
+bch_generic_make_request).
 
-diff --git a/block/bio.c b/block/bio.c
-index 3b8e970..ca0c52d 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -669,10 +669,10 @@ struct bio *bio_clone_bioset(struct bio *bio_src, gfp_t gfp_mask,
- 	bio->bi_iter.bi_sector	= bio_src->bi_iter.bi_sector;
- 	bio->bi_iter.bi_size	= bio_src->bi_iter.bi_size;
- 
--	if (bio->bi_rw & REQ_DISCARD)
-+	if (bio->bi_op == REQ_OP_DISCARD)
- 		goto integrity_clone;
- 
--	if (bio->bi_rw & REQ_WRITE_SAME) {
-+	if (bio->bi_op == REQ_OP_WRITE_SAME) {
- 		bio->bi_io_vec[bio->bi_vcnt++] = bio_src->bi_io_vec[0];
- 		goto integrity_clone;
- 	}
-@@ -1792,7 +1792,7 @@ struct bio *bio_split(struct bio *bio, int sectors,
- 	 * Discards need a mutable bio_vec to accommodate the payload
- 	 * required by the DSM TRIM and UNMAP commands.
- 	 */
--	if (bio->bi_rw & REQ_DISCARD)
-+	if (bio->bi_op == REQ_OP_DISCARD)
- 		split = bio_clone_bioset(bio, gfp, bs);
- 	else
- 		split = bio_clone_fast(bio, gfp, bs);
-diff --git a/block/blk-core.c b/block/blk-core.c
-index dacbd68..b3db65c 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1151,8 +1151,7 @@ static struct request *__get_request(struct request_list *rl, int op,
- 
- 	blk_rq_init(q, rq);
- 	blk_rq_set_rl(rq, rl);
--	/* tmp compat - allow users to check either one for the op */
--	rq->cmd_flags = op | op_flags | REQ_ALLOCED;
-+	rq->cmd_flags = op_flags | REQ_ALLOCED;
- 	rq->op = op;
- 
- 	/* init elvpriv */
-@@ -1704,8 +1703,7 @@ void init_request_from_bio(struct request *req, struct bio *bio)
- {
- 	req->cmd_type = REQ_TYPE_FS;
- 
--	/* tmp compat. Allow users to set bi_op or bi_rw */
--	req->cmd_flags |= (bio->bi_rw | bio->bi_op) & REQ_COMMON_MASK;
-+	req->cmd_flags |= bio->bi_rw & REQ_COMMON_MASK;
- 	if (bio->bi_rw & REQ_RAHEAD)
- 		req->cmd_flags |= REQ_FAILFAST_MASK;
- 
-@@ -1855,9 +1853,9 @@ static void handle_bad_sector(struct bio *bio)
- 	char b[BDEVNAME_SIZE];
- 
- 	printk(KERN_INFO "attempt to access beyond end of device\n");
--	printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
-+	printk(KERN_INFO "%s: rw=%d,%ld, want=%Lu, limit=%Lu\n",
- 			bdevname(bio->bi_bdev, b),
--			bio->bi_rw,
-+			bio->bi_op, bio->bi_rw,
- 			(unsigned long long)bio_end_sector(bio),
- 			(long long)(i_size_read(bio->bi_bdev->bd_inode) >> 9));
- }
-@@ -1978,14 +1976,14 @@ generic_make_request_checks(struct bio *bio)
- 		}
- 	}
- 
--	if ((bio->bi_rw & REQ_DISCARD) &&
-+	if ((bio->bi_op == REQ_OP_DISCARD) &&
- 	    (!blk_queue_discard(q) ||
- 	     ((bio->bi_rw & REQ_SECURE) && !blk_queue_secdiscard(q)))) {
- 		err = -EOPNOTSUPP;
- 		goto end_io;
- 	}
- 
--	if (bio->bi_rw & REQ_WRITE_SAME && !bdev_write_same(bio->bi_bdev)) {
-+	if (bio->bi_op == REQ_OP_WRITE_SAME && !bdev_write_same(bio->bi_bdev)) {
- 		err = -EOPNOTSUPP;
- 		goto end_io;
- 	}
-@@ -2039,12 +2037,6 @@ blk_qc_t generic_make_request(struct bio *bio)
- 	struct bio_list bio_list_on_stack;
- 	blk_qc_t ret = BLK_QC_T_NONE;
- 
--	/* tmp compat. Allow users to set either one or both.
--	 * This will be removed when we have converted
--	 * everyone in the next patches.
--	 */
--	bio->bi_rw |= bio->bi_op;
--
- 	if (!generic_make_request_checks(bio))
- 		goto out;
- 
-@@ -2114,12 +2106,6 @@ EXPORT_SYMBOL(generic_make_request);
-  */
- blk_qc_t submit_bio(struct bio *bio)
- {
--	/* tmp compat. Allow users to set either one or both.
--	 * This will be removed when we have converted
--	 * everyone in the next patches.
--	 */
--	bio->bi_rw |= bio->bi_op;
--
- 	/*
- 	 * If it's a regular read/write or a barrier with data attached,
- 	 * go through the normal accounting stuff before submission.
-@@ -2127,12 +2113,12 @@ blk_qc_t submit_bio(struct bio *bio)
- 	if (bio_has_data(bio)) {
- 		unsigned int count;
- 
--		if (unlikely(bio->bi_rw & REQ_WRITE_SAME))
-+		if (unlikely(bio->bi_op == REQ_OP_WRITE_SAME))
- 			count = bdev_logical_block_size(bio->bi_bdev) >> 9;
- 		else
- 			count = bio_sectors(bio);
- 
--		if (bio->bi_rw & WRITE) {
-+		if (op_is_write(bio->bi_op)) {
- 			count_vm_events(PGPGOUT, count);
- 		} else {
- 			task_io_account_read(bio->bi_iter.bi_size);
-@@ -2143,7 +2129,7 @@ blk_qc_t submit_bio(struct bio *bio)
- 			char b[BDEVNAME_SIZE];
- 			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
- 			current->comm, task_pid_nr(current),
--				(bio->bi_rw & WRITE) ? "WRITE" : "READ",
-+				op_is_write(bio->bi_op) ? "WRITE" : "READ",
- 				(unsigned long long)bio->bi_iter.bi_sector,
- 				bdevname(bio->bi_bdev, b),
- 				count);
-@@ -2991,8 +2977,6 @@ EXPORT_SYMBOL_GPL(__blk_end_request_err);
- void blk_rq_bio_prep(struct request_queue *q, struct request *rq,
- 		     struct bio *bio)
- {
--	/* tmp compat. Allow users to set bi_op or bi_rw */
--	rq->cmd_flags |= bio_data_dir(bio);
- 	rq->op = bio->bi_op;
- 
- 	if (bio_has_data(bio))
-diff --git a/block/blk-merge.c b/block/blk-merge.c
-index de73ed1..f53fefc 100644
---- a/block/blk-merge.c
-+++ b/block/blk-merge.c
-@@ -147,9 +147,9 @@ void blk_queue_split(struct request_queue *q, struct bio **bio,
- 	struct bio *split, *res;
- 	unsigned nsegs;
- 
--	if ((*bio)->bi_rw & REQ_DISCARD)
-+	if ((*bio)->bi_op == REQ_OP_DISCARD)
- 		split = blk_bio_discard_split(q, *bio, bs, &nsegs);
--	else if ((*bio)->bi_rw & REQ_WRITE_SAME)
-+	else if ((*bio)->bi_op == REQ_OP_WRITE_SAME)
- 		split = blk_bio_write_same_split(q, *bio, bs, &nsegs);
- 	else
- 		split = blk_bio_segment_split(q, *bio, q->bio_split, &nsegs);
-@@ -188,10 +188,10 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
- 	 * This should probably be returning 0, but blk_add_request_payload()
- 	 * (Christoph!!!!)
- 	 */
--	if (bio->bi_rw & REQ_DISCARD)
-+	if (bio->bi_op == REQ_OP_DISCARD)
- 		return 1;
- 
--	if (bio->bi_rw & REQ_WRITE_SAME)
-+	if (bio->bi_op == REQ_OP_WRITE_SAME)
- 		return 1;
- 
- 	fbio = bio;
-@@ -364,7 +364,7 @@ static int __blk_bios_map_sg(struct request_queue *q, struct bio *bio,
- 	nsegs = 0;
- 	cluster = blk_queue_cluster(q);
- 
--	if (bio->bi_rw & REQ_DISCARD) {
-+	if (bio->bi_op == REQ_OP_DISCARD) {
- 		/*
- 		 * This is a hack - drivers should be neither modifying the
- 		 * biovec, nor relying on bi_vcnt - but because of
-@@ -379,7 +379,7 @@ static int __blk_bios_map_sg(struct request_queue *q, struct bio *bio,
- 		return 0;
- 	}
- 
--	if (bio->bi_rw & REQ_WRITE_SAME) {
-+	if (bio->bi_op == REQ_OP_WRITE_SAME) {
- single_segment:
- 		*sg = sglist;
- 		bvec = bio_iovec(bio);
-@@ -418,7 +418,7 @@ int blk_rq_map_sg(struct request_queue *q, struct request *rq,
- 	}
- 
- 	if (q->dma_drain_size && q->dma_drain_needed(rq)) {
--		if (rq->cmd_flags & REQ_WRITE)
-+		if (op_is_write(rq->op))
- 			memset(q->dma_drain_buffer, 0, q->dma_drain_size);
- 
- 		sg_unmark_end(sg);
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 745dae8..72a028b 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -170,8 +170,7 @@ static void blk_mq_rq_ctx_init(struct request_queue *q, struct blk_mq_ctx *ctx,
- 	rq->q = q;
- 	rq->mq_ctx = ctx;
- 	rq->op = op;
--	/* tmp compat - allow users to check either one for the op */
--	rq->cmd_flags |= op | op_flags;
-+	rq->cmd_flags |= op_flags;
- 	/* do not touch atomic flags, it needs atomic ops against the timer */
- 	rq->cpu = -1;
- 	INIT_HLIST_NODE(&rq->hash);
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 7e959f9..05ab70e 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -1125,7 +1125,7 @@ static int atapi_drain_needed(struct request *rq)
- 	if (likely(rq->cmd_type != REQ_TYPE_BLOCK_PC))
- 		return 0;
- 
--	if (!blk_rq_bytes(rq) || (rq->cmd_flags & REQ_WRITE))
-+	if (!blk_rq_bytes(rq) || op_is_write(rq->op))
- 		return 0;
- 
- 	return atapi_cmd_type(rq->cmd[0]) == ATAPI_MISC;
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 5e6eb98..c7c25b1 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -339,7 +339,7 @@ static blk_qc_t brd_make_request(struct request_queue *q, struct bio *bio)
- 	if (bio_end_sector(bio) > get_capacity(bdev->bd_disk))
- 		goto io_error;
- 
--	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
-+	if (unlikely(bio->bi_op == REQ_OP_DISCARD)) {
- 		if (sector & ((PAGE_SIZE >> SECTOR_SHIFT) - 1) ||
- 		    bio->bi_iter.bi_size & PAGE_MASK)
- 			goto io_error;
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index f6626e5..76ff804 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -1603,15 +1603,16 @@ static int _drbd_send_zc_ee(struct drbd_peer_device *peer_device,
- 	return 0;
- }
- 
--static u32 bio_flags_to_wire(struct drbd_connection *connection, unsigned long bi_rw)
-+static u32 bio_flags_to_wire(struct drbd_connection *connection,
-+			     struct bio *bio)
- {
- 	if (connection->agreed_pro_version >= 95)
--		return  (bi_rw & REQ_SYNC ? DP_RW_SYNC : 0) |
--			(bi_rw & REQ_FUA ? DP_FUA : 0) |
--			(bi_rw & REQ_FLUSH ? DP_FLUSH : 0) |
--			(bi_rw & REQ_DISCARD ? DP_DISCARD : 0);
-+		return  (bio->bi_rw & REQ_SYNC ? DP_RW_SYNC : 0) |
-+			(bio->bi_rw & REQ_FUA ? DP_FUA : 0) |
-+			(bio->bi_rw & REQ_FLUSH ? DP_FLUSH : 0) |
-+			(bio->bi_op == REQ_OP_DISCARD ? DP_DISCARD : 0);
- 	else
--		return bi_rw & REQ_SYNC ? DP_RW_SYNC : 0;
-+		return bio->bi_rw & REQ_SYNC ? DP_RW_SYNC : 0;
- }
- 
- /* Used to send write or TRIM aka REQ_DISCARD requests
-@@ -1636,7 +1637,7 @@ int drbd_send_dblock(struct drbd_peer_device *peer_device, struct drbd_request *
- 	p->sector = cpu_to_be64(req->i.sector);
- 	p->block_id = (unsigned long)req;
- 	p->seq_num = cpu_to_be32(atomic_inc_return(&device->packet_seq));
--	dp_flags = bio_flags_to_wire(peer_device->connection, req->master_bio->bi_rw);
-+	dp_flags = bio_flags_to_wire(peer_device->connection, req->master_bio);
- 	if (device->state.conn >= C_SYNC_SOURCE &&
- 	    device->state.conn <= C_PAUSED_SYNC_T)
- 		dp_flags |= DP_MAY_SET_IN_SYNC;
-diff --git a/drivers/block/drbd/drbd_worker.c b/drivers/block/drbd/drbd_worker.c
-index f92f533..4335f2d 100644
---- a/drivers/block/drbd/drbd_worker.c
-+++ b/drivers/block/drbd/drbd_worker.c
-@@ -174,7 +174,7 @@ void drbd_peer_request_endio(struct bio *bio)
- 	struct drbd_peer_request *peer_req = bio->bi_private;
- 	struct drbd_device *device = peer_req->peer_device->device;
- 	int is_write = bio_data_dir(bio) == WRITE;
--	int is_discard = !!(bio->bi_rw & REQ_DISCARD);
-+	int is_discard = !!(bio->bi_op == REQ_OP_DISCARD);
- 
- 	if (bio->bi_error && __ratelimit(&drbd_ratelimit_state))
- 		drbd_warn(device, "%s: error=%d s=%llus\n",
-@@ -248,7 +248,7 @@ void drbd_request_endio(struct bio *bio)
- 
- 	/* to avoid recursion in __req_mod */
- 	if (unlikely(bio->bi_error)) {
--		if (bio->bi_rw & REQ_DISCARD)
-+		if (bio->bi_op == REQ_OP_DISCARD)
- 			what = (bio->bi_error == -EOPNOTSUPP)
- 				? DISCARD_COMPLETED_NOTSUPP
- 				: DISCARD_COMPLETED_WITH_ERROR;
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index e771bab..1afc03c 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -447,7 +447,7 @@ static int lo_req_flush(struct loop_device *lo, struct request *rq)
- 
- static inline void handle_partial_read(struct loop_cmd *cmd, long bytes)
- {
--	if (bytes < 0 || (cmd->rq->cmd_flags & REQ_WRITE))
-+	if (bytes < 0 || op_is_write(cmd->rq->op))
- 		return;
- 
- 	if (unlikely(bytes < blk_rq_bytes(cmd->rq))) {
-@@ -535,7 +535,7 @@ static int do_req_filebacked(struct loop_device *lo, struct request *rq)
- 
- 	pos = ((loff_t) blk_rq_pos(rq) << 9) + lo->lo_offset;
- 
--	if (rq->cmd_flags & REQ_WRITE) {
-+	if (op_is_write(rq->op)) {
- 		if (rq->cmd_flags & REQ_FLUSH)
- 			ret = lo_req_flush(lo, rq);
- 		else if (rq->op == REQ_OP_DISCARD)
-@@ -1666,7 +1666,7 @@ static int loop_queue_rq(struct blk_mq_hw_ctx *hctx,
- 
- static void loop_handle_cmd(struct loop_cmd *cmd)
- {
--	const bool write = cmd->rq->cmd_flags & REQ_WRITE;
-+	const bool write = op_is_write(cmd->rq->op);
- 	struct loop_device *lo = cmd->rq->q->queuedata;
- 	int ret = 0;
- 
-diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
-index ea326ef..0afccb1 100644
---- a/drivers/block/rbd.c
-+++ b/drivers/block/rbd.c
-@@ -3375,7 +3375,7 @@ static void rbd_queue_workfn(struct work_struct *work)
- 
- 	if (rq->op == REQ_OP_DISCARD)
- 		op_type = OBJ_OP_DISCARD;
--	else if (rq->cmd_flags & REQ_WRITE)
-+	else if (rq->op == REQ_OP_WRITE)
- 		op_type = OBJ_OP_WRITE;
- 	else
- 		op_type = OBJ_OP_READ;
-diff --git a/drivers/block/rsxx/dma.c b/drivers/block/rsxx/dma.c
-index cf8cd29..dfc189e 100644
---- a/drivers/block/rsxx/dma.c
-+++ b/drivers/block/rsxx/dma.c
-@@ -705,7 +705,7 @@ int rsxx_dma_queue_bio(struct rsxx_cardinfo *card,
- 		dma_cnt[i] = 0;
- 	}
- 
--	if (bio->bi_rw & REQ_DISCARD) {
-+	if (bio->bi_op == REQ_OP_DISCARD) {
- 		bv_len = bio->bi_iter.bi_size;
- 
- 		while (bv_len > 0) {
-diff --git a/drivers/block/umem.c b/drivers/block/umem.c
-index 7939b9f..a24ccbc 100644
---- a/drivers/block/umem.c
-+++ b/drivers/block/umem.c
-@@ -462,7 +462,7 @@ static void process_page(unsigned long data)
- 				le32_to_cpu(desc->local_addr)>>9,
- 				le32_to_cpu(desc->transfer_size));
- 			dump_dmastat(card, control);
--		} else if ((bio->bi_rw & REQ_WRITE) &&
-+		} else if (op_is_write(bio->bi_op) &&
- 			   le32_to_cpu(desc->local_addr) >> 9 ==
- 				card->init_size) {
- 			card->init_size += le32_to_cpu(desc->transfer_size) >> 9;
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 47915d7..8d14cea 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -849,7 +849,7 @@ static void __zram_make_request(struct zram *zram, struct bio *bio)
- 	offset = (bio->bi_iter.bi_sector &
- 		  (SECTORS_PER_PAGE - 1)) << SECTOR_SHIFT;
- 
--	if (unlikely(bio->bi_rw & REQ_DISCARD)) {
-+	if (unlikely(bio->bi_op == REQ_OP_DISCARD)) {
- 		zram_bio_discard(zram, index, offset, bio);
- 		bio_endio(bio);
- 		return;
-diff --git a/drivers/ide/ide-floppy.c b/drivers/ide/ide-floppy.c
-index 2fb5350..f079d8d 100644
---- a/drivers/ide/ide-floppy.c
-+++ b/drivers/ide/ide-floppy.c
-@@ -206,7 +206,7 @@ static void idefloppy_create_rw_cmd(ide_drive_t *drive,
- 	memcpy(rq->cmd, pc->c, 12);
- 
- 	pc->rq = rq;
--	if (rq->cmd_flags & REQ_WRITE)
-+	if (cmd == WRITE)
- 		pc->flags |= PC_FLAG_WRITING;
- 
- 	pc->flags |= PC_FLAG_DMA_OK;
-diff --git a/drivers/lightnvm/rrpc.c b/drivers/lightnvm/rrpc.c
-index c20cb18..9b5a8c3 100644
---- a/drivers/lightnvm/rrpc.c
-+++ b/drivers/lightnvm/rrpc.c
-@@ -853,7 +853,7 @@ static blk_qc_t rrpc_make_rq(struct request_queue *q, struct bio *bio)
- 	struct nvm_rq *rqd;
- 	int err;
- 
--	if (bio->bi_rw & REQ_DISCARD) {
-+	if (bio->bi_op == REQ_OP_DISCARD) {
- 		rrpc_discard(rrpc, bio);
- 		return BLK_QC_T_NONE;
- 	}
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index cd6837c..be8cd63f 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -378,7 +378,7 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
- 
- 	if (test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) ||
- 	    c->gc_stats.in_use > CUTOFF_CACHE_ADD ||
--	    (bio->bi_rw & REQ_DISCARD))
-+	    (bio->bi_op == REQ_OP_DISCARD))
- 		goto skip;
- 
- 	if (mode == CACHE_MODE_NONE ||
-@@ -899,7 +899,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 	 * But check_overlapping drops dirty keys for which io hasn't started,
- 	 * so we still want to call it.
- 	 */
--	if (bio->bi_rw & REQ_DISCARD)
-+	if (bio->bi_op == REQ_OP_DISCARD)
- 		s->iop.bypass = true;
- 
- 	if (should_writeback(dc, s->orig_bio,
-@@ -913,7 +913,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 		s->iop.bio = s->orig_bio;
- 		bio_get(s->iop.bio);
- 
--		if (!(bio->bi_rw & REQ_DISCARD) ||
-+		if (!(bio->bi_op == REQ_OP_DISCARD) ||
- 		    blk_queue_discard(bdev_get_queue(dc->bdev)))
- 			closure_bio_submit(bio, cl);
- 	} else if (s->iop.writeback) {
-@@ -993,7 +993,7 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
- 				cached_dev_read(dc, s);
- 		}
- 	} else {
--		if ((bio->bi_rw & REQ_DISCARD) &&
-+		if ((bio->bi_op == REQ_OP_DISCARD) &&
- 		    !blk_queue_discard(bdev_get_queue(dc->bdev)))
- 			bio_endio(bio);
- 		else
-@@ -1104,7 +1104,7 @@ static blk_qc_t flash_dev_make_request(struct request_queue *q,
- 					&KEY(d->id, bio->bi_iter.bi_sector, 0),
- 					&KEY(d->id, bio_end_sector(bio), 0));
- 
--		s->iop.bypass		= (bio->bi_rw & REQ_DISCARD) != 0;
-+		s->iop.bypass		= (bio->bi_op == REQ_OP_DISCARD) != 0;
- 		s->iop.writeback	= true;
- 		s->iop.bio		= bio;
- 
-diff --git a/drivers/md/dm-cache-target.c b/drivers/md/dm-cache-target.c
-index 5780acc..4c54326 100644
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -788,7 +788,8 @@ static void check_if_tick_bio_needed(struct cache *cache, struct bio *bio)
- 
- 	spin_lock_irqsave(&cache->lock, flags);
- 	if (cache->need_tick_bio &&
--	    !(bio->bi_rw & (REQ_FUA | REQ_FLUSH | REQ_DISCARD))) {
-+	    !(bio->bi_rw & (REQ_FUA | REQ_FLUSH)) &&
-+	    bio->bi_op != REQ_OP_DISCARD) {
- 		pb->tick = true;
- 		cache->need_tick_bio = false;
- 	}
-@@ -851,7 +852,7 @@ static void inc_ds(struct cache *cache, struct bio *bio,
- static bool accountable_bio(struct cache *cache, struct bio *bio)
- {
- 	return ((bio->bi_bdev == cache->origin_dev->bdev) &&
--		!(bio->bi_rw & REQ_DISCARD));
-+		bio->bi_op != REQ_OP_DISCARD);
- }
- 
- static void accounted_begin(struct cache *cache, struct bio *bio)
-@@ -1062,7 +1063,8 @@ static void dec_io_migrations(struct cache *cache)
- 
- static bool discard_or_flush(struct bio *bio)
- {
--	return bio->bi_rw & (REQ_FLUSH | REQ_FUA | REQ_DISCARD);
-+	return bio->bi_op == REQ_OP_DISCARD ||
-+	       bio->bi_rw & (REQ_FLUSH | REQ_FUA);
- }
- 
- static void __cell_defer(struct cache *cache, struct dm_bio_prison_cell *cell)
-@@ -1975,7 +1977,7 @@ static void process_deferred_bios(struct cache *cache)
- 
- 		if (bio->bi_rw & REQ_FLUSH)
- 			process_flush_bio(cache, bio);
--		else if (bio->bi_rw & REQ_DISCARD)
-+		else if (bio->bi_op == REQ_OP_DISCARD)
- 			process_discard_bio(cache, &structs, bio);
- 		else
- 			process_bio(cache, &structs, bio);
-diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
-index f466fec..b7cbd39 100644
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -1913,7 +1913,7 @@ static int crypt_map(struct dm_target *ti, struct bio *bio)
- 	 * - for REQ_FLUSH device-mapper core ensures that no IO is in-flight
- 	 * - for REQ_DISCARD caller must use flush if IO ordering matters
- 	 */
--	if (unlikely(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))) {
-+	if (unlikely(bio->bi_rw & REQ_FLUSH || bio->bi_op == REQ_OP_DISCARD)) {
- 		bio->bi_bdev = cc->dev->bdev;
- 		if (bio_sectors(bio))
- 			bio->bi_iter.bi_sector = cc->start +
-diff --git a/drivers/md/dm-log-writes.c b/drivers/md/dm-log-writes.c
-index f63bbf4..813bb4d 100644
---- a/drivers/md/dm-log-writes.c
-+++ b/drivers/md/dm-log-writes.c
-@@ -557,7 +557,7 @@ static int log_writes_map(struct dm_target *ti, struct bio *bio)
- 	int i = 0;
- 	bool flush_bio = (bio->bi_rw & REQ_FLUSH);
- 	bool fua_bio = (bio->bi_rw & REQ_FUA);
--	bool discard_bio = (bio->bi_rw & REQ_DISCARD);
-+	bool discard_bio = (bio->bi_op == REQ_OP_DISCARD);
- 
- 	pb->block = NULL;
- 
-diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
-index 6b61b62..54cc0c7 100644
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -626,7 +626,7 @@ static void write_callback(unsigned long error, void *context)
- 	 * If the bio is discard, return an error, but do not
- 	 * degrade the array.
- 	 */
--	if (bio->bi_rw & REQ_DISCARD) {
-+	if (bio->bi_op == REQ_OP_DISCARD) {
- 		bio->bi_error = -EOPNOTSUPP;
- 		bio_endio(bio);
- 		return;
-@@ -665,7 +665,7 @@ static void do_write(struct mirror_set *ms, struct bio *bio)
- 		.client = ms->io_client,
- 	};
- 
--	if (bio->bi_rw & REQ_DISCARD) {
-+	if (bio->bi_op == REQ_OP_DISCARD) {
- 		io_req.bi_op = REQ_OP_DISCARD;
- 		io_req.mem.type = DM_IO_KMEM;
- 		io_req.mem.ptr.addr = NULL;
-@@ -705,7 +705,7 @@ static void do_writes(struct mirror_set *ms, struct bio_list *writes)
- 
- 	while ((bio = bio_list_pop(writes))) {
- 		if ((bio->bi_rw & REQ_FLUSH) ||
--		    (bio->bi_rw & REQ_DISCARD)) {
-+		    (bio->bi_op == REQ_OP_DISCARD)) {
- 			bio_list_add(&sync, bio);
- 			continue;
- 		}
-@@ -1253,7 +1253,7 @@ static int mirror_end_io(struct dm_target *ti, struct bio *bio, int error)
- 	 * We need to dec pending if this was a write.
- 	 */
- 	if (rw == WRITE) {
--		if (!(bio->bi_rw & (REQ_FLUSH | REQ_DISCARD)))
-+		if (!(bio->bi_rw & REQ_FLUSH) && bio->bi_op != REQ_OP_DISCARD)
- 			dm_rh_dec(ms->rh, bio_record->write_region);
- 		return error;
- 	}
-diff --git a/drivers/md/dm-region-hash.c b/drivers/md/dm-region-hash.c
-index 74cb7b9..ce4af57 100644
---- a/drivers/md/dm-region-hash.c
-+++ b/drivers/md/dm-region-hash.c
-@@ -403,7 +403,7 @@ void dm_rh_mark_nosync(struct dm_region_hash *rh, struct bio *bio)
- 		return;
- 	}
- 
--	if (bio->bi_rw & REQ_DISCARD)
-+	if (bio->bi_op == REQ_OP_DISCARD)
- 		return;
- 
- 	/* We must inform the log that the sync count has changed. */
-@@ -526,7 +526,7 @@ void dm_rh_inc_pending(struct dm_region_hash *rh, struct bio_list *bios)
- 	struct bio *bio;
- 
- 	for (bio = bios->head; bio; bio = bio->bi_next) {
--		if (bio->bi_rw & (REQ_FLUSH | REQ_DISCARD))
-+		if (bio->bi_rw & REQ_FLUSH || bio->bi_op == REQ_OP_DISCARD)
- 			continue;
- 		rh_inc(rh, dm_rh_bio_to_region(rh, bio));
- 	}
-diff --git a/drivers/md/dm-stripe.c b/drivers/md/dm-stripe.c
-index 797ddb9..12b1630 100644
---- a/drivers/md/dm-stripe.c
-+++ b/drivers/md/dm-stripe.c
-@@ -292,8 +292,8 @@ static int stripe_map(struct dm_target *ti, struct bio *bio)
- 		bio->bi_bdev = sc->stripe[target_bio_nr].dev->bdev;
- 		return DM_MAPIO_REMAPPED;
- 	}
--	if (unlikely(bio->bi_rw & REQ_DISCARD) ||
--	    unlikely(bio->bi_rw & REQ_WRITE_SAME)) {
-+	if (unlikely(bio->bi_op == REQ_OP_DISCARD) ||
-+	    unlikely(bio->bi_op == REQ_OP_WRITE_SAME)) {
- 		target_bio_nr = dm_bio_get_target_bio_nr(bio);
- 		BUG_ON(target_bio_nr >= sc->stripes);
- 		return stripe_map_range(sc, bio, target_bio_nr);
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index 5e1d281..0b2c6c1 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -705,7 +705,7 @@ static void inc_all_io_entry(struct pool *pool, struct bio *bio)
- {
- 	struct dm_thin_endio_hook *h;
- 
--	if (bio->bi_rw & REQ_DISCARD)
-+	if (bio->bi_op == REQ_OP_DISCARD)
- 		return;
- 
- 	h = dm_per_bio_data(bio, sizeof(struct dm_thin_endio_hook));
-@@ -868,7 +868,8 @@ static void __inc_remap_and_issue_cell(void *context,
- 	struct bio *bio;
- 
- 	while ((bio = bio_list_pop(&cell->bios))) {
--		if (bio->bi_rw & (REQ_DISCARD | REQ_FLUSH | REQ_FUA))
-+		if (bio->bi_rw & (REQ_FLUSH | REQ_FUA) ||
-+		    bio->bi_op == REQ_OP_DISCARD)
- 			bio_list_add(&info->defer_bios, bio);
- 		else {
- 			inc_all_io_entry(info->tc->pool, bio);
-@@ -1646,7 +1647,8 @@ static void __remap_and_issue_shared_cell(void *context,
- 
- 	while ((bio = bio_list_pop(&cell->bios))) {
- 		if ((bio_data_dir(bio) == WRITE) ||
--		    (bio->bi_rw & (REQ_DISCARD | REQ_FLUSH | REQ_FUA)))
-+		    (bio->bi_rw & (REQ_FLUSH | REQ_FUA) ||
-+		     bio->bi_op == REQ_OP_DISCARD))
- 			bio_list_add(&info->defer_bios, bio);
- 		else {
- 			struct dm_thin_endio_hook *h = dm_per_bio_data(bio, sizeof(struct dm_thin_endio_hook));;
-@@ -2035,7 +2037,7 @@ static void process_thin_deferred_bios(struct thin_c *tc)
- 			break;
- 		}
- 
--		if (bio->bi_rw & REQ_DISCARD)
-+		if (bio->bi_op == REQ_OP_DISCARD)
- 			pool->process_discard(tc, bio);
- 		else
- 			pool->process_bio(tc, bio);
-@@ -2122,7 +2124,7 @@ static void process_thin_deferred_cells(struct thin_c *tc)
- 				return;
- 			}
- 
--			if (cell->holder->bi_rw & REQ_DISCARD)
-+			if (cell->holder->bi_op == REQ_OP_DISCARD)
- 				pool->process_discard_cell(tc, cell);
- 			else
- 				pool->process_cell(tc, cell);
-@@ -2558,7 +2560,8 @@ static int thin_bio_map(struct dm_target *ti, struct bio *bio)
- 		return DM_MAPIO_SUBMITTED;
- 	}
- 
--	if (bio->bi_rw & (REQ_DISCARD | REQ_FLUSH | REQ_FUA)) {
-+	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA) ||
-+	    bio->bi_op == REQ_OP_DISCARD) {
- 		thin_defer_bio_with_throttle(tc, bio);
- 		return DM_MAPIO_SUBMITTED;
- 	}
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 0e7ddc4..4200164 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1016,7 +1016,7 @@ static void clone_endio(struct bio *bio)
- 		}
- 	}
- 
--	if (unlikely(r == -EREMOTEIO && (bio->bi_rw & REQ_WRITE_SAME) &&
-+	if (unlikely(r == -EREMOTEIO && (bio->bi_op == REQ_OP_WRITE_SAME) &&
- 		     !bdev_get_queue(bio->bi_bdev)->limits.max_write_same_sectors))
- 		disable_write_same(md);
- 
-@@ -1690,9 +1690,9 @@ static int __split_and_process_non_flush(struct clone_info *ci)
- 	struct dm_target *ti;
- 	unsigned len;
- 
--	if (unlikely(bio->bi_rw & REQ_DISCARD))
-+	if (unlikely(bio->bi_op == REQ_OP_DISCARD))
- 		return __send_discard(ci);
--	else if (unlikely(bio->bi_rw & REQ_WRITE_SAME))
-+	else if (unlikely(bio->bi_op == REQ_OP_WRITE_SAME))
- 		return __send_write_same(ci);
- 
- 	ti = dm_table_find_target(ci->map, ci->sector);
-diff --git a/drivers/md/linear.c b/drivers/md/linear.c
-index b7fe7e9..aad82c7 100644
---- a/drivers/md/linear.c
-+++ b/drivers/md/linear.c
-@@ -252,7 +252,7 @@ static void linear_make_request(struct mddev *mddev, struct bio *bio)
- 		split->bi_iter.bi_sector = split->bi_iter.bi_sector -
- 			start_sector + data_offset;
- 
--		if (unlikely((split->bi_rw & REQ_DISCARD) &&
-+		if (unlikely((split->bi_op == REQ_OP_DISCARD) &&
- 			 !blk_queue_discard(bdev_get_queue(split->bi_bdev)))) {
- 			/* Just ignore it */
- 			bio_endio(split);
-diff --git a/drivers/md/raid0.c b/drivers/md/raid0.c
-index 2ea12c6..e0d1b8c 100644
---- a/drivers/md/raid0.c
-+++ b/drivers/md/raid0.c
-@@ -488,7 +488,7 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
- 		split->bi_iter.bi_sector = sector + zone->dev_start +
- 			tmp_dev->data_offset;
- 
--		if (unlikely((split->bi_rw & REQ_DISCARD) &&
-+		if (unlikely((split->bi_op == REQ_OP_DISCARD) &&
- 			 !blk_queue_discard(bdev_get_queue(split->bi_bdev)))) {
- 			/* Just ignore it */
- 			bio_endio(split);
-diff --git a/drivers/scsi/osd/osd_initiator.c b/drivers/scsi/osd/osd_initiator.c
-index 4e7b440..680d9e4 100644
---- a/drivers/scsi/osd/osd_initiator.c
-+++ b/drivers/scsi/osd/osd_initiator.c
-@@ -824,7 +824,7 @@ void osd_req_write(struct osd_request *or,
- {
- 	_osd_req_encode_common(or, OSD_ACT_WRITE, obj, offset, len);
- 	WARN_ON(or->out.bio || or->out.total_bytes);
--	WARN_ON(0 == (bio->bi_rw & REQ_WRITE));
-+	WARN_ON(!op_is_write(bio->bi_op));
- 	or->out.bio = bio;
- 	or->out.total_bytes = len;
- }
-@@ -875,7 +875,7 @@ void osd_req_read(struct osd_request *or,
- {
- 	_osd_req_encode_common(or, OSD_ACT_READ, obj, offset, len);
- 	WARN_ON(or->in.bio || or->in.total_bytes);
--	WARN_ON(bio->bi_rw & REQ_WRITE);
-+	WARN_ON(op_is_write(bio->bi_op));
- 	or->in.bio = bio;
- 	or->in.total_bytes = len;
- }
-diff --git a/drivers/staging/lustre/lustre/llite/lloop.c b/drivers/staging/lustre/lustre/llite/lloop.c
-index 420d391..37a52ed 100644
---- a/drivers/staging/lustre/lustre/llite/lloop.c
-+++ b/drivers/staging/lustre/lustre/llite/lloop.c
-@@ -212,9 +212,9 @@ static int do_bio_lustrebacked(struct lloop_device *lo, struct bio *head)
- 	io->ci_lockreq = CILR_NEVER;
- 
- 	LASSERT(head != NULL);
--	rw = head->bi_rw;
-+	rw = bio_data_dir(head);
- 	for (bio = head; bio != NULL; bio = bio->bi_next) {
--		LASSERT(rw == bio->bi_rw);
-+		LASSERT(rw == bio_data_dir(bio));
- 
- 		offset = (pgoff_t)(bio->bi_iter.bi_sector << 9) + lo->lo_offset;
- 		bio_for_each_segment(bvec, bio, iter) {
-@@ -305,9 +305,9 @@ static unsigned int loop_get_bio(struct lloop_device *lo, struct bio **req)
- 	/* TODO: need to split the bio, too bad. */
- 	LASSERT(first->bi_vcnt <= LLOOP_MAX_SEGMENTS);
- 
--	rw = first->bi_rw;
-+	rw = bio_data_dir(first);
- 	bio = &lo->lo_bio;
--	while (*bio && (*bio)->bi_rw == rw) {
-+	while (*bio && bio_data_dir(*bio) == rw) {
- 		CDEBUG(D_INFO, "bio sector %llu size %u count %u vcnt%u \n",
- 		       (unsigned long long)(*bio)->bi_iter.bi_sector,
- 		       (*bio)->bi_iter.bi_size,
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index 9f0e2cf..1e4b3b5 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -106,18 +106,23 @@ static inline bool bio_has_data(struct bio *bio)
- {
- 	if (bio &&
- 	    bio->bi_iter.bi_size &&
--	    !(bio->bi_rw & REQ_DISCARD))
-+	    !(bio->bi_op == REQ_OP_DISCARD))
- 		return true;
- 
- 	return false;
- }
- 
-+static inline bool bio_no_advance_iter(struct bio *bio)
-+{
-+	return bio->bi_op == REQ_OP_DISCARD || bio->bi_op == REQ_OP_WRITE_SAME;
-+}
-+
- static inline bool bio_is_rw(struct bio *bio)
- {
- 	if (!bio_has_data(bio))
- 		return false;
- 
--	if (bio->bi_rw & BIO_NO_ADVANCE_ITER_MASK)
-+	if (bio_no_advance_iter(bio))
- 		return false;
- 
- 	return true;
-@@ -225,7 +230,7 @@ static inline void bio_advance_iter(struct bio *bio, struct bvec_iter *iter,
- {
- 	iter->bi_sector += bytes >> 9;
- 
--	if (bio->bi_rw & BIO_NO_ADVANCE_ITER_MASK)
-+	if (bio_no_advance_iter(bio))
- 		iter->bi_size -= bytes;
- 	else
- 		bvec_iter_advance(bio->bi_io_vec, iter, bytes);
-@@ -253,10 +258,10 @@ static inline unsigned bio_segments(struct bio *bio)
- 	 * differently:
- 	 */
- 
--	if (bio->bi_rw & REQ_DISCARD)
-+	if (bio->bi_op == REQ_OP_DISCARD)
- 		return 1;
- 
--	if (bio->bi_rw & REQ_WRITE_SAME)
-+	if (bio->bi_op == REQ_OP_WRITE_SAME)
- 		return 1;
- 
- 	bio_for_each_segment(bv, bio, iter)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 204ea4c..0a9fe5a 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2419,33 +2419,24 @@ static inline bool op_is_write(int op)
- }
- 
- /*
-- * return READ, READA, or WRITE
-+ * return data direction, READ or WRITE
-  */
--static inline int bio_rw(struct bio *bio)
-+static inline int bio_data_dir(struct bio *bio)
- {
--	/*
--	 * tmp cpmpat. Allow users to set either op or rw, until
--	 * all code is converted in the next patches.
--	 */
- 	if (op_is_write(bio->bi_op))
- 		return WRITE;
--
--	return bio->bi_rw & (RW_MASK | RWA_MASK);
-+	return READ;
- }
- 
- /*
-- * return data direction, READ or WRITE
-+ * return READ, READA, or WRITE
-  */
--static inline int bio_data_dir(struct bio *bio)
-+static inline int bio_rw(struct bio *bio)
- {
--	/*
--	 * tmp cpmpat. Allow users to set either op or rw, until
--	 * all code is converted in the next patches.
--	 */
--	if (op_is_write(bio->bi_op))
--		return WRITE;
-+	if (bio->bi_rw & RWA_MASK)
-+		return READA;
- 
--	return bio->bi_rw & 1;
-+	return bio_data_dir(bio);
- }
- 
- extern void check_disk_size_change(struct gendisk *disk,
--- 
-1.8.3.1
+Since the patch does exist in SLE12-SP2, I'm guessing that is been tested,
+though I am curious if it has been tested specifically when being backed
+by md raid5/6 so that queue->limits->partial_stripes_expensive is nonzero.
+
+If you have and it is stable, then I want to get it to Kent and Jens for 
+upstream integration.
+
+Thanks!
+
+-Eric
+
+
+
+--
+Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
+888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
+www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
+
+On Thu, 7 Jan 2016, Eric Wheeler wrote:
+
+> > From: Kent Overstreet Wed, 12 Aug 2015 00:07:13 -0700
+> > The bcache driver has always accepted arbitrarily large bios and split
+> > them internally.  Now that every driver must accept arbitrarily large
+> > bios this code isn't nessecary anymore.
+> 
+> Hi Kent,
+> 
+> Does your patch below make any kernel version assumptions about bio 
+> splitting?  That doesn't appear so based on the commit message, but 
+> thought I'd double-check.
+> 
+> If there is a kernel dependency, then, how far back should this be safe?  
+> I'd like to apply to 3.17-rc1 like the other stable commits and stamp it 
+> with Cc: stable@ so it will merge forward into 3.18 and onward if it fixes 
+> my problem below:
+> 
+> This question comes up because I'm getting the following 
+> (discard-related?) backtrace and would like to try the patch.  If it fixes 
+> the problem I'll stamp it with stable and get it to Jens.  Note that 
+> bch_generic_make_request() doesn't even exist after this patch, so this 
+> backtrace would at least be simplified and possibly fixed:
+> 
+> [  294.059255]  [<ffffffffa049a20d>] bch_generic_make_request+0x15d/0x1f0 [bcache]
+> [  294.059578]  [<ffffffffa049a3b9>] __bch_submit_bbio+0x79/0x80 [bcache]
+> [  294.059794]  [<ffffffffa049a3eb>] bch_submit_bbio+0x2b/0x30 [bcache]
+> [  294.059983]  [<ffffffffa049fabb>] bch_data_insert_start+0xcb/0x5a0 [bcache]
+> [  294.060169]  [<ffffffffa049ffe1>] bch_data_insert+0x51/0xc0 [bcache]
+> [  294.060354]  [<ffffffffa04a0cc4>] cached_dev_make_request+0xbe4/0xdf0 [bcache]
+> [  294.060652]  [<ffffffff81317c20>] generic_make_request+0xe0/0x130
+> [  294.060830]  [<ffffffff81317ce7>] submit_bio+0x77/0x150
+> [  294.061012]  [<ffffffff81312906>] ? bio_alloc_bioset+0x1d6/0x330
+> [  294.061194]  [<ffffffffa04cef90>] ? le64_dec+0x20/0x20 [dm_persistent_data]
+> [  294.061377]  [<ffffffffa04e49be>] __blkdev_issue_discard_async.constprop.59+0x17e/0x210 [dm_thin_pool]
+> [  294.061695]  [<ffffffffa04e55dc>] process_prepared_discard_passdown+0x9c/0x230 [dm_thin_pool]
+> [  294.062007]  [<ffffffff811ac73f>] ? mempool_free+0x2f/0x90
+> [  294.062207]  [<ffffffffa04e0772>] process_prepared+0x92/0xc0 [dm_thin_pool]
+> [  294.062404]  [<ffffffffa04e5f78>] do_worker+0xb8/0x880 [dm_thin_pool]
+> [  294.062606]  [<ffffffff81014693>] ? __switch_to+0x1e3/0x580
+> [  294.062796]  [<ffffffff810dc71c>] ? put_prev_task_fair+0x2c/0x40
+> [  294.062989]  [<ffffffff810ba18d>] process_one_work+0x14d/0x420
+> [  294.063171]  [<ffffffff810ba952>] worker_thread+0x112/0x520
+> [  294.063355]  [<ffffffff810ba840>] ? rescuer_thread+0x3e0/0x3e0
+> [  294.063560]  [<ffffffff810c06a8>] kthread+0xd8/0xf0
+> [  294.063737]  [<ffffffff810c05d0>] ? kthread_create_on_node+0x1b0/0x1b0
+> [  294.063943]  [<ffffffff816e4aa2>] ret_from_fork+0x42/0x70
+> [  294.064133]  [<ffffffff810c05d0>] ? kthread_create_on_node+0x1b0/0x1b0
+> 
+> 
+> Thanks!
+> 
+> -Eric
+>  
+> > Cc: linux-bcache@vger.kernel.org
+> > Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
+> > [dpark: add more description in commit message]
+> > Signed-off-by: Dongsu Park <dpark@posteo.net>
+> > Signed-off-by: Ming Lin <ming.l@ssi.samsung.com>
+> > ---
+> >  drivers/md/bcache/bcache.h    |  18 --------
+> >  drivers/md/bcache/io.c        | 101 +-----------------------------------------
+> >  drivers/md/bcache/journal.c   |   4 +-
+> >  drivers/md/bcache/request.c   |  16 +++----
+> >  drivers/md/bcache/super.c     |  32 +------------
+> >  drivers/md/bcache/util.h      |   5 ++-
+> >  drivers/md/bcache/writeback.c |   4 +-
+> >  7 files changed, 18 insertions(+), 162 deletions(-)
+> > 
+> > diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> > index 04f7bc2..6b420a5 100644
+> > --- a/drivers/md/bcache/bcache.h
+> > +++ b/drivers/md/bcache/bcache.h
+> > @@ -243,19 +243,6 @@ struct keybuf {
+> >  	DECLARE_ARRAY_ALLOCATOR(struct keybuf_key, freelist, KEYBUF_NR);
+> >  };
+> >  
+> > -struct bio_split_pool {
+> > -	struct bio_set		*bio_split;
+> > -	mempool_t		*bio_split_hook;
+> > -};
+> > -
+> > -struct bio_split_hook {
+> > -	struct closure		cl;
+> > -	struct bio_split_pool	*p;
+> > -	struct bio		*bio;
+> > -	bio_end_io_t		*bi_end_io;
+> > -	void			*bi_private;
+> > -};
+> > -
+> >  struct bcache_device {
+> >  	struct closure		cl;
+> >  
+> > @@ -288,8 +275,6 @@ struct bcache_device {
+> >  	int (*cache_miss)(struct btree *, struct search *,
+> >  			  struct bio *, unsigned);
+> >  	int (*ioctl) (struct bcache_device *, fmode_t, unsigned, unsigned long);
+> > -
+> > -	struct bio_split_pool	bio_split_hook;
+> >  };
+> >  
+> >  struct io {
+> > @@ -454,8 +439,6 @@ struct cache {
+> >  	atomic_long_t		meta_sectors_written;
+> >  	atomic_long_t		btree_sectors_written;
+> >  	atomic_long_t		sectors_written;
+> > -
+> > -	struct bio_split_pool	bio_split_hook;
+> >  };
+> >  
+> >  struct gc_stat {
+> > @@ -873,7 +856,6 @@ void bch_bbio_endio(struct cache_set *, struct bio *, int, const char *);
+> >  void bch_bbio_free(struct bio *, struct cache_set *);
+> >  struct bio *bch_bbio_alloc(struct cache_set *);
+> >  
+> > -void bch_generic_make_request(struct bio *, struct bio_split_pool *);
+> >  void __bch_submit_bbio(struct bio *, struct cache_set *);
+> >  void bch_submit_bbio(struct bio *, struct cache_set *, struct bkey *, unsigned);
+> >  
+> > diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+> > index bf6a9ca..86a0bb8 100644
+> > --- a/drivers/md/bcache/io.c
+> > +++ b/drivers/md/bcache/io.c
+> > @@ -11,105 +11,6 @@
+> >  
+> >  #include <linux/blkdev.h>
+> >  
+> > -static unsigned bch_bio_max_sectors(struct bio *bio)
+> > -{
+> > -	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
+> > -	struct bio_vec bv;
+> > -	struct bvec_iter iter;
+> > -	unsigned ret = 0, seg = 0;
+> > -
+> > -	if (bio->bi_rw & REQ_DISCARD)
+> > -		return min(bio_sectors(bio), q->limits.max_discard_sectors);
+> > -
+> > -	bio_for_each_segment(bv, bio, iter) {
+> > -		struct bvec_merge_data bvm = {
+> > -			.bi_bdev	= bio->bi_bdev,
+> > -			.bi_sector	= bio->bi_iter.bi_sector,
+> > -			.bi_size	= ret << 9,
+> > -			.bi_rw		= bio->bi_rw,
+> > -		};
+> > -
+> > -		if (seg == min_t(unsigned, BIO_MAX_PAGES,
+> > -				 queue_max_segments(q)))
+> > -			break;
+> > -
+> > -		if (q->merge_bvec_fn &&
+> > -		    q->merge_bvec_fn(q, &bvm, &bv) < (int) bv.bv_len)
+> > -			break;
+> > -
+> > -		seg++;
+> > -		ret += bv.bv_len >> 9;
+> > -	}
+> > -
+> > -	ret = min(ret, queue_max_sectors(q));
+> > -
+> > -	WARN_ON(!ret);
+> > -	ret = max_t(int, ret, bio_iovec(bio).bv_len >> 9);
+> > -
+> > -	return ret;
+> > -}
+> > -
+> > -static void bch_bio_submit_split_done(struct closure *cl)
+> > -{
+> > -	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
+> > -
+> > -	s->bio->bi_end_io = s->bi_end_io;
+> > -	s->bio->bi_private = s->bi_private;
+> > -	bio_endio(s->bio, 0);
+> > -
+> > -	closure_debug_destroy(&s->cl);
+> > -	mempool_free(s, s->p->bio_split_hook);
+> > -}
+> > -
+> > -static void bch_bio_submit_split_endio(struct bio *bio, int error)
+> > -{
+> > -	struct closure *cl = bio->bi_private;
+> > -	struct bio_split_hook *s = container_of(cl, struct bio_split_hook, cl);
+> > -
+> > -	if (error)
+> > -		clear_bit(BIO_UPTODATE, &s->bio->bi_flags);
+> > -
+> > -	bio_put(bio);
+> > -	closure_put(cl);
+> > -}
+> > -
+> > -void bch_generic_make_request(struct bio *bio, struct bio_split_pool *p)
+> > -{
+> > -	struct bio_split_hook *s;
+> > -	struct bio *n;
+> > -
+> > -	if (!bio_has_data(bio) && !(bio->bi_rw & REQ_DISCARD))
+> > -		goto submit;
+> > -
+> > -	if (bio_sectors(bio) <= bch_bio_max_sectors(bio))
+> > -		goto submit;
+> > -
+> > -	s = mempool_alloc(p->bio_split_hook, GFP_NOIO);
+> > -	closure_init(&s->cl, NULL);
+> > -
+> > -	s->bio		= bio;
+> > -	s->p		= p;
+> > -	s->bi_end_io	= bio->bi_end_io;
+> > -	s->bi_private	= bio->bi_private;
+> > -	bio_get(bio);
+> > -
+> > -	do {
+> > -		n = bio_next_split(bio, bch_bio_max_sectors(bio),
+> > -				   GFP_NOIO, s->p->bio_split);
+> > -
+> > -		n->bi_end_io	= bch_bio_submit_split_endio;
+> > -		n->bi_private	= &s->cl;
+> > -
+> > -		closure_get(&s->cl);
+> > -		generic_make_request(n);
+> > -	} while (n != bio);
+> > -
+> > -	continue_at(&s->cl, bch_bio_submit_split_done, NULL);
+> > -	return;
+> > -submit:
+> > -	generic_make_request(bio);
+> > -}
+> > -
+> >  /* Bios with headers */
+> >  
+> >  void bch_bbio_free(struct bio *bio, struct cache_set *c)
+> > @@ -139,7 +40,7 @@ void __bch_submit_bbio(struct bio *bio, struct cache_set *c)
+> >  	bio->bi_bdev		= PTR_CACHE(c, &b->key, 0)->bdev;
+> >  
+> >  	b->submit_time_us = local_clock_us();
+> > -	closure_bio_submit(bio, bio->bi_private, PTR_CACHE(c, &b->key, 0));
+> > +	closure_bio_submit(bio, bio->bi_private);
+> >  }
+> >  
+> >  void bch_submit_bbio(struct bio *bio, struct cache_set *c,
+> > diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+> > index 418607a..727ca9b 100644
+> > --- a/drivers/md/bcache/journal.c
+> > +++ b/drivers/md/bcache/journal.c
+> > @@ -61,7 +61,7 @@ reread:		left = ca->sb.bucket_size - offset;
+> >  		bio->bi_private = &cl;
+> >  		bch_bio_map(bio, data);
+> >  
+> > -		closure_bio_submit(bio, &cl, ca);
+> > +		closure_bio_submit(bio, &cl);
+> >  		closure_sync(&cl);
+> >  
+> >  		/* This function could be simpler now since we no longer write
+> > @@ -648,7 +648,7 @@ static void journal_write_unlocked(struct closure *cl)
+> >  	spin_unlock(&c->journal.lock);
+> >  
+> >  	while ((bio = bio_list_pop(&list)))
+> > -		closure_bio_submit(bio, cl, c->cache[0]);
+> > +		closure_bio_submit(bio, cl);
+> >  
+> >  	continue_at(cl, journal_write_done, NULL);
+> >  }
+> > diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> > index f292790..ab093a8 100644
+> > --- a/drivers/md/bcache/request.c
+> > +++ b/drivers/md/bcache/request.c
+> > @@ -718,7 +718,7 @@ static void cached_dev_read_error(struct closure *cl)
+> >  
+> >  		/* XXX: invalidate cache */
+> >  
+> > -		closure_bio_submit(bio, cl, s->d);
+> > +		closure_bio_submit(bio, cl);
+> >  	}
+> >  
+> >  	continue_at(cl, cached_dev_cache_miss_done, NULL);
+> > @@ -841,7 +841,7 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
+> >  	s->cache_miss	= miss;
+> >  	s->iop.bio	= cache_bio;
+> >  	bio_get(cache_bio);
+> > -	closure_bio_submit(cache_bio, &s->cl, s->d);
+> > +	closure_bio_submit(cache_bio, &s->cl);
+> >  
+> >  	return ret;
+> >  out_put:
+> > @@ -849,7 +849,7 @@ out_put:
+> >  out_submit:
+> >  	miss->bi_end_io		= request_endio;
+> >  	miss->bi_private	= &s->cl;
+> > -	closure_bio_submit(miss, &s->cl, s->d);
+> > +	closure_bio_submit(miss, &s->cl);
+> >  	return ret;
+> >  }
+> >  
+> > @@ -914,7 +914,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+> >  
+> >  		if (!(bio->bi_rw & REQ_DISCARD) ||
+> >  		    blk_queue_discard(bdev_get_queue(dc->bdev)))
+> > -			closure_bio_submit(bio, cl, s->d);
+> > +			closure_bio_submit(bio, cl);
+> >  	} else if (s->iop.writeback) {
+> >  		bch_writeback_add(dc);
+> >  		s->iop.bio = bio;
+> > @@ -929,12 +929,12 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+> >  			flush->bi_end_io = request_endio;
+> >  			flush->bi_private = cl;
+> >  
+> > -			closure_bio_submit(flush, cl, s->d);
+> > +			closure_bio_submit(flush, cl);
+> >  		}
+> >  	} else {
+> >  		s->iop.bio = bio_clone_fast(bio, GFP_NOIO, dc->disk.bio_split);
+> >  
+> > -		closure_bio_submit(bio, cl, s->d);
+> > +		closure_bio_submit(bio, cl);
+> >  	}
+> >  
+> >  	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
+> > @@ -950,7 +950,7 @@ static void cached_dev_nodata(struct closure *cl)
+> >  		bch_journal_meta(s->iop.c, cl);
+> >  
+> >  	/* If it's a flush, we send the flush to the backing device too */
+> > -	closure_bio_submit(bio, cl, s->d);
+> > +	closure_bio_submit(bio, cl);
+> >  
+> >  	continue_at(cl, cached_dev_bio_complete, NULL);
+> >  }
+> > @@ -994,7 +994,7 @@ static void cached_dev_make_request(struct request_queue *q, struct bio *bio)
+> >  		    !blk_queue_discard(bdev_get_queue(dc->bdev)))
+> >  			bio_endio(bio, 0);
+> >  		else
+> > -			bch_generic_make_request(bio, &d->bio_split_hook);
+> > +			generic_make_request(bio);
+> >  	}
+> >  }
+> >  
+> > diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> > index 94980bf..db70c9e 100644
+> > --- a/drivers/md/bcache/super.c
+> > +++ b/drivers/md/bcache/super.c
+> > @@ -59,29 +59,6 @@ struct workqueue_struct *bcache_wq;
+> >  
+> >  #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
+> >  
+> > -static void bio_split_pool_free(struct bio_split_pool *p)
+> > -{
+> > -	if (p->bio_split_hook)
+> > -		mempool_destroy(p->bio_split_hook);
+> > -
+> > -	if (p->bio_split)
+> > -		bioset_free(p->bio_split);
+> > -}
+> > -
+> > -static int bio_split_pool_init(struct bio_split_pool *p)
+> > -{
+> > -	p->bio_split = bioset_create(4, 0);
+> > -	if (!p->bio_split)
+> > -		return -ENOMEM;
+> > -
+> > -	p->bio_split_hook = mempool_create_kmalloc_pool(4,
+> > -				sizeof(struct bio_split_hook));
+> > -	if (!p->bio_split_hook)
+> > -		return -ENOMEM;
+> > -
+> > -	return 0;
+> > -}
+> > -
+> >  /* Superblock */
+> >  
+> >  static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+> > @@ -537,7 +514,7 @@ static void prio_io(struct cache *ca, uint64_t bucket, unsigned long rw)
+> >  	bio->bi_private = ca;
+> >  	bch_bio_map(bio, ca->disk_buckets);
+> >  
+> > -	closure_bio_submit(bio, &ca->prio, ca);
+> > +	closure_bio_submit(bio, &ca->prio);
+> >  	closure_sync(cl);
+> >  }
+> >  
+> > @@ -757,7 +734,6 @@ static void bcache_device_free(struct bcache_device *d)
+> >  		put_disk(d->disk);
+> >  	}
+> >  
+> > -	bio_split_pool_free(&d->bio_split_hook);
+> >  	if (d->bio_split)
+> >  		bioset_free(d->bio_split);
+> >  	kvfree(d->full_dirty_stripes);
+> > @@ -804,7 +780,6 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+> >  		return minor;
+> >  
+> >  	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
+> > -	    bio_split_pool_init(&d->bio_split_hook) ||
+> >  	    !(d->disk = alloc_disk(1))) {
+> >  		ida_simple_remove(&bcache_minor, minor);
+> >  		return -ENOMEM;
+> > @@ -1793,8 +1768,6 @@ void bch_cache_release(struct kobject *kobj)
+> >  		ca->set->cache[ca->sb.nr_this_dev] = NULL;
+> >  	}
+> >  
+> > -	bio_split_pool_free(&ca->bio_split_hook);
+> > -
+> >  	free_pages((unsigned long) ca->disk_buckets, ilog2(bucket_pages(ca)));
+> >  	kfree(ca->prio_buckets);
+> >  	vfree(ca->buckets);
+> > @@ -1839,8 +1812,7 @@ static int cache_alloc(struct cache_sb *sb, struct cache *ca)
+> >  					  ca->sb.nbuckets)) ||
+> >  	    !(ca->prio_buckets	= kzalloc(sizeof(uint64_t) * prio_buckets(ca) *
+> >  					  2, GFP_KERNEL)) ||
+> > -	    !(ca->disk_buckets	= alloc_bucket_pages(GFP_KERNEL, ca)) ||
+> > -	    bio_split_pool_init(&ca->bio_split_hook))
+> > +	    !(ca->disk_buckets	= alloc_bucket_pages(GFP_KERNEL, ca)))
+> >  		return -ENOMEM;
+> >  
+> >  	ca->prio_last_buckets = ca->prio_buckets + prio_buckets(ca);
+> > diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+> > index 1d04c48..cf2cbc2 100644
+> > --- a/drivers/md/bcache/util.h
+> > +++ b/drivers/md/bcache/util.h
+> > @@ -4,6 +4,7 @@
+> >  
+> >  #include <linux/blkdev.h>
+> >  #include <linux/errno.h>
+> > +#include <linux/blkdev.h>
+> >  #include <linux/kernel.h>
+> >  #include <linux/llist.h>
+> >  #include <linux/ratelimit.h>
+> > @@ -570,10 +571,10 @@ static inline sector_t bdev_sectors(struct block_device *bdev)
+> >  	return bdev->bd_inode->i_size >> 9;
+> >  }
+> >  
+> > -#define closure_bio_submit(bio, cl, dev)				\
+> > +#define closure_bio_submit(bio, cl)					\
+> >  do {									\
+> >  	closure_get(cl);						\
+> > -	bch_generic_make_request(bio, &(dev)->bio_split_hook);		\
+> > +	generic_make_request(bio);					\
+> >  } while (0)
+> >  
+> >  uint64_t bch_crc64_update(uint64_t, const void *, size_t);
+> > diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> > index f1986bc..ca38362 100644
+> > --- a/drivers/md/bcache/writeback.c
+> > +++ b/drivers/md/bcache/writeback.c
+> > @@ -188,7 +188,7 @@ static void write_dirty(struct closure *cl)
+> >  	io->bio.bi_bdev		= io->dc->bdev;
+> >  	io->bio.bi_end_io	= dirty_endio;
+> >  
+> > -	closure_bio_submit(&io->bio, cl, &io->dc->disk);
+> > +	closure_bio_submit(&io->bio, cl);
+> >  
+> >  	continue_at(cl, write_dirty_finish, system_wq);
+> >  }
+> > @@ -208,7 +208,7 @@ static void read_dirty_submit(struct closure *cl)
+> >  {
+> >  	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
+> >  
+> > -	closure_bio_submit(&io->bio, cl, &io->dc->disk);
+> > +	closure_bio_submit(&io->bio, cl);
+> >  
+> >  	continue_at(cl, write_dirty, system_wq);
+> >  }
+> > -- 
+> > 2.1.4
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+--1641074820-1616232939-1452650454=:10151--
