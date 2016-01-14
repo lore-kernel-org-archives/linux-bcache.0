@@ -1,65 +1,59 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache: remove driver private bio splitting code
-Date: Wed, 13 Jan 2016 15:03:41 -0800 (PST)
-Message-ID: <alpine.LRH.2.11.1601131501290.24343@mail.ewheeler.net>
-References: <1439363241-31772-1-git-send-email-mlin@kernel.org> <1439363241-31772-4-git-send-email-mlin@kernel.org> <alpine.LRH.2.11.1601071743540.14336@mail.ewheeler.net> <alpine.LRH.2.11.1601121759100.10151@mail.ewheeler.net>
- <20160113055400.GA32697@suse.com>
+From: Miu Vlad-Cosmin <miuvlad@gmail.com>
+Subject: writeback: Stability issue (BUG) on 4.4 with =?utf-8?b?d3JpdGViYWNrX3BlcmNlbnQ=?=
+Date: Thu, 14 Jan 2016 07:22:23 +0000 (UTC)
+Message-ID: <loom.20160114T081429-882@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([71.19.153.34]:37778 "EHLO mail.ewheeler.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752174AbcAMXDs (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 13 Jan 2016 18:03:48 -0500
-In-Reply-To: <20160113055400.GA32697@suse.com>
+Received: from plane.gmane.org ([80.91.229.3]:34561 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361AbcANHZH (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 14 Jan 2016 02:25:07 -0500
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1aJcHI-00071c-Le
+	for linux-bcache@vger.kernel.org; Thu, 14 Jan 2016 08:25:04 +0100
+Received: from 188-173-3-123.next-gen.ro ([188-173-3-123.next-gen.ro])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Thu, 14 Jan 2016 08:25:04 +0100
+Received: from miuvlad by 188-173-3-123.next-gen.ro with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Thu, 14 Jan 2016 08:25:04 +0100
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Vojtech Pavlik <vojtech@suse.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-> On Tue, Jan 12, 2016 at 06:00:49PM -0800, Eric Wheeler wrote:
-> 
-> Hello Eric,
-> 
-> > Have you tested the patch below in SLE12-* when bcache is backed by md
-> > raid5/6?
-> > 
-> > FYI: I was compared the drivers/md/bcache/io.c functions in the various
-> > branches here:
-> >   https://github.com/openSUSE/kernel
-> > I compared the presence of bch_generic_make_request() (which the patch
-> > below removes).  It looks like the branch SLE12-SP2 has the patch, but
-> > version before SLE12-SP2 and openSUSE-* do not (as they still have
-> > bch_generic_make_request).
-> > 
-> > Since the patch does exist in SLE12-SP2, I'm guessing that is been tested,
-> > though I am curious if it has been tested specifically when being backed
-> > by md raid5/6 so that queue->limits->partial_stripes_expensive is nonzero.
-> > 
-> > If you have and it is stable, then I want to get it to Kent and Jens for 
-> > upstream integration.
-> 
-> The SLES12-SP2 kernel branch is very fresh, created this week. So while
-> the patch was tested by Johannes before adding it, and by our per-commit
-> automated tests, it didn't go through fully qualified QA test cycle yet.
-> So I won't say it's proven stable just yet.
+Hello,
 
-Good to know, thank you for that!  
+In a rather basic bcache setup (one cache + mdraid backing),
+I encounter a kernel problem related to bcache with 4.4.0.
 
-I encourage you to include md-based raid5/6 backed bcache volumes in your 
-testing if it is not already.  This particular patch may affect that use 
-case.  Please keep us posted, I look forward to learning about the 
-bcache-specific test cycle results.
+In order to trigger this bug, fill the cache with some dirty data.
+When there is some dirty data, wait for the bcache_writeback to 
+start writing it to the backing device (0-3 minutes) 
+and the BUG triggers.
 
--Eric
+Please find more info here: https://bugzilla.kernel.org/show_bug.cgi?id=110771
 
+[<ffffffff815822af>] make_request+0x47f/0xca0
+[<ffffffff815a5d3d>] md_make_request+0xdd/0x220
+[<ffffffff810c53ce>] ? pick_next_task_fair+0x12e/0x450
+[<ffffffff81311d2e>] generic_make_request+0xce/0x1b0
+[<ffffffff815a1b70>] write_dirty+0x60/0xb0
+[<ffffffff810aafa7>] process_one_work+0x147/0x3d0
+[<ffffffff810ab546>] worker_thread+0x46/0x440
+[<ffffffff810ab500>] ? rescuer_thread+0x2d0/0x2d0
+[<ffffffff810ab500>] ? rescuer_thread+0x2d0/0x2d0
+[<ffffffff810afeb4>] kthread+0xc4/0xe0
+[<ffffffff810afdf0>] ? kthread_park+0x50/0x50
+[<ffffffff8170c85f>] ret_from_fork+0x3f/0x70
 
-> 
-> -- 
-> Vojtech Pavlik
-> Director SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+A bisect shows "[578270bfbd2803dc7b0b03fbc2ac119efbc73195] 
+block: fix segment split" as the problem.
+
+Anyone can confirm this ?
+
+Thanks,
+Vlad
