@@ -1,75 +1,31 @@
-From: Ming Lei <ming.lei@canonical.com>
-Subject: Re: writeback: Stability issue (BUG) on 4.4 with writeback_percent
-Date: Fri, 15 Jan 2016 11:19:08 +0800
-Message-ID: <CACVXFVOKVusaPagOXn_5gye0h0gA9ACTuHWSzjZD8evbdsnXrQ@mail.gmail.com>
-References: <loom.20160114T081429-882@post.gmane.org>
-	<CAF1ivSY9urc58Ff6axkNrQX8hYxCZNRhAMcH6cEPyyeiBO+=MA@mail.gmail.com>
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 00/35 v3] eparate operations from flags in the
+ bio/request structs
+Date: Mon, 18 Jan 2016 10:15:47 -0800
+Message-ID: <20160118181547.GA30789@infradead.org>
+References: <1452543693-4440-1-git-send-email-mchristi@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from youngberry.canonical.com ([91.189.89.112]:51160 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbcAODTL (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 14 Jan 2016 22:19:11 -0500
-In-Reply-To: <CAF1ivSY9urc58Ff6axkNrQX8hYxCZNRhAMcH6cEPyyeiBO+=MA@mail.gmail.com>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-btrfs-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <1452543693-4440-1-git-send-email-mchristi@redhat.com>
+Sender: linux-btrfs-owner@vger.kernel.org
+To: mchristi@redhat.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lin <mlin@kernel.org>
-Cc: Miu Vlad-Cosmin <miuvlad@gmail.com>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
 
-Cc raid list.
+The whole sries looks fine to me:
 
-On Fri, Jan 15, 2016 at 1:51 AM, Ming Lin <mlin@kernel.org> wrote:
-> On Wed, Jan 13, 2016 at 11:22 PM, Miu Vlad-Cosmin <miuvlad@gmail.com> wrote:
->> Hello,
->>
->> In a rather basic bcache setup (one cache + mdraid backing),
->> I encounter a kernel problem related to bcache with 4.4.0.
->>
->> In order to trigger this bug, fill the cache with some dirty data.
->> When there is some dirty data, wait for the bcache_writeback to
->> start writing it to the backing device (0-3 minutes)
->> and the BUG triggers.
->>
->> Please find more info here: https://bugzilla.kernel.org/show_bug.cgi?id=110771
->>
->> [<ffffffff815822af>] make_request+0x47f/0xca0
->> [<ffffffff815a5d3d>] md_make_request+0xdd/0x220
->> [<ffffffff810c53ce>] ? pick_next_task_fair+0x12e/0x450
->> [<ffffffff81311d2e>] generic_make_request+0xce/0x1b0
->> [<ffffffff815a1b70>] write_dirty+0x60/0xb0
->> [<ffffffff810aafa7>] process_one_work+0x147/0x3d0
->> [<ffffffff810ab546>] worker_thread+0x46/0x440
->> [<ffffffff810ab500>] ? rescuer_thread+0x2d0/0x2d0
->> [<ffffffff810ab500>] ? rescuer_thread+0x2d0/0x2d0
->> [<ffffffff810afeb4>] kthread+0xc4/0xe0
->> [<ffffffff810afdf0>] ? kthread_park+0x50/0x50
->> [<ffffffff8170c85f>] ret_from_fork+0x3f/0x70
->>
->> A bisect shows "[578270bfbd2803dc7b0b03fbc2ac119efbc73195]
->> block: fix segment split" as the problem.
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-It is the 2nd time to report this commit as 'regression', and last time
-it is because bio bounce is after splitting. The commit itself is correct
-and the report should be false positive,  the real bug might be related
-with bio splitting.
+There are a few pieces of future work on top of this I'd rather see
+sooner than later though:
 
-> [   83.436844] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-> [   83.437025] IP: [<ffffffff81309ce5>] bio_trim+0x15/0xe0
-
-0028 should be offset of 'bio->bi_iter.bi_size', so looks 'read_bio' from
-bio_clone_mddev() is NULL?
-
-BTW,  can some write loading trigger the bug just on raid1 without bcache?
-
-Thanks,
-
->
-> CC Ming Lei.
->
->>
->> Anyone can confirm this ?
->>
->> Thanks,
->> Vlad
+ - use REQ_OP_FLUSH for all empty flushes, including those at the bio
+   level.
+ - merge the req->cmd_type values into req->op.  Right now that's
+   basically only a new REQ_OP_BLOCK_PC (or better REQ_OP_SCSI while
+   we're at it) and a REQ_OP_DRV_PRIV as the last value.
+ - drop as many of the crazy defines based on REQ_* in fs.h (e.g.
+   (READ_SYNC, WRITE_SYNC, WRITE_ODIRECT, WRITE_FLUSH, WRITE_FUA,
+   WRITE_FLUSH_FUA, RW_MASK, RWA_MASK)
