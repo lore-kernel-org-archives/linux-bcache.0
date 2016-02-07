@@ -1,81 +1,50 @@
-From: "Yannis Aribaud" <bugs@d6bell.net>
-Subject: Re: bcache_writeback: bch_writeback_thread...blk_queue_bio IO
- hang [was BUG: soft lockup]
-Date: Tue, 02 Feb 2016 07:58:24 +0000
-Message-ID: <c110be9e2bccb346cf07c76f29a95a06@rcube.hebserv.net>
-References: <alpine.LRH.2.11.1602011108460.21204@mail.ewheeler.net>
+From: Nikolaus Rath <Nikolaus@rath.org>
+Subject: bcache and LVM
+Date: Sun, 07 Feb 2016 09:20:48 -0800
+Message-ID: <87k2mgo2rz.fsf@vostro.rath.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from dbmail.hebserv.net ([78.40.121.80]:52610 "EHLO
-	dbmail.hebserv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbcBBH61 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 2 Feb 2016 02:58:27 -0500
-In-Reply-To: <alpine.LRH.2.11.1602011108460.21204@mail.ewheeler.net>
+Received: from plane.gmane.org ([80.91.229.3]:34811 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750749AbcBGSfI (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 7 Feb 2016 13:35:08 -0500
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1aSUAr-000263-I0
+	for linux-bcache@vger.kernel.org; Sun, 07 Feb 2016 19:35:05 +0100
+Received: from ebox.rath.org ([45.79.69.51])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sun, 07 Feb 2016 19:35:05 +0100
+Received: from Nikolaus by ebox.rath.org with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sun, 07 Feb 2016 19:35:05 +0100
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>, Johannes Thumshirn <jthumshirn@suse.de>
-Cc: linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, linux-kernel@vger.kernel.org, vojtech@suse.com
+To: linux-bcache@vger.kernel.org
 
-Hi,
+Hello,
 
-1 f=C3=A9vrier 2016 20:42 "Eric Wheeler" <bcache@lists.ewheeler.net> a =
-=C3=A9crit:
-> [ changed subject, more below ]
-
-> Are you using md-based raid5/raid6?
-
-Not at all. In my setup Bcache is used on two bare drives (HDD and SSD)=
-=20
-behing a hardware RAID controller (disks configured in non-RAID mode).
-
->=20
-> If so, it could be the raid_partial_stripes_expensive bug.
->=20
-> If it *is* the bcache optimizations around partial_stripes_expensive,=
- then
-> please try the patch below and then do this *before* loading the bcac=
-he
-> module (or at least before registering the bcache backing volume):
-> echo 0 > /sys/block/BLK/queue/limits/raid_partial_stripes_expensive
-> where BLK is your backing volume.
->=20
-> I wrote this patch because we use hardware RAID5/6 and wanted to get =
-the
-> partial_stripes_expensive optimizations on by setting
-> raid_partial_stripes_expensive=3D1 and io_opt=3Dour_stride_width.
-> Unfortunately it caused the backtrace in the LKML thread below, so we
-> stopped using it.
->=20
-> See also this thread, however, it shows a backtrace prior to
-> removing the bio splitting code:
-> https://lkml.org/lkml/2016/1/7/844
-
-I'll take a look.
-
-> Note that commit 749b61dab30736eb95b1ee23738cae90973d4fc3 might not
-> exactly address this issue, but it might prevent full hangs. Make sur=
+The internet claims that using bcache with LVM is not a good idea
+(eg. on https://wiki.archlinux.org/index.php/Bcache )- but I wasn't abl=
 e
-> you cherry-pick commit 749b61dab30736eb95b1ee23738cae90973d4fc3 and
-> hand-clean-up as necessary. It simplifies the bio code and deletes a =
-bunch
-> of stuff. It showed up in 4.4 and isn't in my patchset.
->=20
-> After commit the commit above and setting
-> raid_partial_stripes_expensive=3D1
-> we still get errors like this:
-> bcache: bch_count_io_errors() dm-3: IO error on writing data to cache=
-,
-> recovering but they don't lock up the system. Ultimately we run with
-> raid_partial_stripes_expensive=3D0 because of these related problemsa=
-nd
-> haven't had any issues. Also, fwiw, we run 4.1.y as our stable branch
-> backed by hardware raid.
+to find any substantial information other than this general
+recommendation.
 
-I'll give a try if find some time to do so.
+Is this still (or has ever been) correct? If so, what issues can arise?
+And does this happen only when using bcache on top of an LVM LV, or als=
+o
+when using a bcache device as an LVM PV?
 
-Thks.
+
+Best,
+-Nikolaus
+
 --=20
-Open is better
+GPG encrypted emails preferred. Key id: 0xD113FCAC3C4E599F
+=46ingerprint: ED31 791B 2C5C 1613 AF38 8B8A D113 FCAC 3C4E 599F
+
+             =C2=BBTime flies like an arrow, fruit flies like a Banana.=
+=C2=AB
