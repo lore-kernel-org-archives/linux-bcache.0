@@ -1,63 +1,89 @@
 From: Nikolaus Rath <Nikolaus@rath.org>
-Subject: Re: lvmcache performance
-Date: Mon, 08 Feb 2016 14:05:24 -0800
-Message-ID: <87mvrarh7f.fsf@thinkpad.rath.org>
-References: <87a8nctl7x.fsf@vostro.rath.org> <20160208091705.GA1612@rh-vpn>
+Subject: Re: bcache and LVM
+Date: Mon, 08 Feb 2016 14:02:52 -0800
+Message-ID: <87r3gmrhbn.fsf@thinkpad.rath.org>
+References: <87k2mgo2rz.fsf@vostro.rath.org>
+	<20160208144419.Horde.Ci1_2KcBCEnOa-WxsDN90oU@www3.nde.ag>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out2-smtp.messagingengine.com ([66.111.4.26]:55117 "EHLO
-	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756756AbcBHWF1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 8 Feb 2016 17:05:27 -0500
-Received: from compute3.internal (compute3.nyi.internal [10.202.2.43])
-	by mailout.nyi.internal (Postfix) with ESMTP id A27C0207E2
-	for <linux-bcache@vger.kernel.org>; Mon,  8 Feb 2016 17:05:26 -0500 (EST)
-Received: from ebox.rath.org (ebox.rath.org [45.79.69.51])
-	by mail.messagingengine.com (Postfix) with ESMTPA id 55AA9680154
-	for <linux-bcache@vger.kernel.org>; Mon,  8 Feb 2016 17:05:26 -0500 (EST)
-Received: from thinkpad.rath.org (thinkpad [192.168.12.2])
-	by ebox.rath.org (Postfix) with ESMTPS id 4FA361CC874
-	for <linux-bcache@vger.kernel.org>; Mon,  8 Feb 2016 22:05:25 +0000 (UTC)
-In-Reply-To: <20160208091705.GA1612@rh-vpn> (Joe Thornber's message of "Mon, 8
-	Feb 2016 09:17:06 +0000")
+Received: from plane.gmane.org ([80.91.229.3]:51072 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753464AbcBHWIO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 8 Feb 2016 17:08:14 -0500
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1aStyc-0005LV-9t
+	for linux-bcache@vger.kernel.org; Mon, 08 Feb 2016 23:08:10 +0100
+Received: from ebox.rath.org ([45.79.69.51])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Mon, 08 Feb 2016 23:08:10 +0100
+Received: from Nikolaus by ebox.rath.org with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Mon, 08 Feb 2016 23:08:10 +0100
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-On Feb 08 2016, Joe Thornber <thornber@redhat.com> wrote:
-> On Sun, Feb 07, 2016 at 10:43:30AM -0800, Nikolaus Rath wrote:
->> Is that the wrong expectation? But even then, shouldn't I at least s=
-ee
->> some improvement?
+On Feb 08 2016, "Jens-U. Mozdzen" <jmozdzen@nde.ag> wrote:
+> Hi Nikolaus,
 >
-> Firstly, if you have the latest software, I suggest you switch to the
-> smq cache policy which is generally out performing the old mq policy
-> substantially.
+> Zitat von Nikolaus Rath <Nikolaus@rath.org>:
+>> Hello,
+>>
+>> The internet claims that using bcache with LVM is not a good idea
+>> (eg. on https://wiki.archlinux.org/index.php/Bcache )- but I wasn't =
+able
+>> to find any substantial information other than this general
+>> recommendation.
+>
+> looking at that article, it only references possibly ill-handled
+> "discard" operations, when running bcache on top of LVM.
 
-Will try, thanks.
+Well, it says:
+
+| Warning:
+|=20
+|     it is widely recommended to use Bcache underneath any other block
+|    layer.
 
 
-> Secondly, I think you may need to reset your expectations a bit.
-> dm-cache is a slow moving cache.  It monitors IO, detectings hotspots
-> on the disk and then 'promotes' those regions to the SSD.  You may
-> find that the reads that occur during a boot, occur only infrequently
-> once the system is booted.
+To me this implies that running it on top of another block layer is
+dangerous (why warn about it otherwise?).=20
 
-Well, yes, but since in my case the cache is bigger than the origin,
-shouldn't eventually *everything* end-up in the cache?
+> The article itself does positively mention sub-dividing bcache device=
+s
+> using LVM.
 
-Is there a way to tell how often I need to access a block for it to be
-promoted? I was hoping that the {read,write}_promote_adjustement
-settings would actually cause promotion on the first access.
+Yep, but the talk page then says:
+
+| Initially, LVM did not recognize my /dev/bcache0 when I wanted to
+| create a physical volume on it. For anyone else who has that issue,
+| this may be relevant:
+| http://www.redhat.com/archives/linux-lvm/2012-March/msg00005.html.
+
+
+>> Is this still (or has ever been) correct? If so, what issues can ari=
+se?
+>> And does this happen only when using bcache on top of an LVM LV, or =
+also
+>> when using a bcache device as an LVM PV?
+>
+> We're running bcache between MD-RAID (RAID6 for the HDD backing store
+> and RAID1 for caching SSDs) and LVM2 (using bcache0 as the only PV fo=
+r
+> the volume group) without any noticeable problem, for moderate to
+> significant load (SAN/NAS servers with NFS, Samba, and virtual
+> machines' storage via SCST/FC and SCST/iSCSI).
+
+Thanks for the datapoint! What kernel version do you use?
 
 
 Best,
 -Nikolaus
 
-(No Cc on replies please, I'm reading the list)
 --=20
 GPG encrypted emails preferred. Key id: 0xD113FCAC3C4E599F
 =46ingerprint: ED31 791B 2C5C 1613 AF38 8B8A D113 FCAC 3C4E 599F
