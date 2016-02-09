@@ -1,89 +1,55 @@
 From: Nikolaus Rath <Nikolaus@rath.org>
-Subject: Re: bcache and LVM
-Date: Mon, 08 Feb 2016 14:02:52 -0800
-Message-ID: <87r3gmrhbn.fsf@thinkpad.rath.org>
-References: <87k2mgo2rz.fsf@vostro.rath.org>
-	<20160208144419.Horde.Ci1_2KcBCEnOa-WxsDN90oU@www3.nde.ag>
+Subject: How to use multiple backing devices
+Date: Mon, 08 Feb 2016 20:47:10 -0800
+Message-ID: <87oabq8p81.fsf@vostro.rath.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:51072 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753464AbcBHWIO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 8 Feb 2016 17:08:14 -0500
-Received: from list by plane.gmane.org with local (Exim 4.69)
-	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1aStyc-0005LV-9t
-	for linux-bcache@vger.kernel.org; Mon, 08 Feb 2016 23:08:10 +0100
-Received: from ebox.rath.org ([45.79.69.51])
-        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Mon, 08 Feb 2016 23:08:10 +0100
-Received: from Nikolaus by ebox.rath.org with local (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Mon, 08 Feb 2016 23:08:10 +0100
+Received: from out2-smtp.messagingengine.com ([66.111.4.26]:42872 "EHLO
+	out2-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754054AbcBIErM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 8 Feb 2016 23:47:12 -0500
+Received: from compute4.internal (compute4.nyi.internal [10.202.2.44])
+	by mailout.nyi.internal (Postfix) with ESMTP id D017720BF0
+	for <linux-bcache@vger.kernel.org>; Mon,  8 Feb 2016 23:47:11 -0500 (EST)
+Received: from ebox.rath.org (ebox.rath.org [45.79.69.51])
+	by mail.messagingengine.com (Postfix) with ESMTPA id 82CDB6800D6
+	for <linux-bcache@vger.kernel.org>; Mon,  8 Feb 2016 23:47:11 -0500 (EST)
+Received: from vostro.rath.org (vostro [192.168.12.4])
+	by ebox.rath.org (Postfix) with ESMTPS id B1D1B1CD0B4
+	for <linux-bcache@vger.kernel.org>; Tue,  9 Feb 2016 04:47:10 +0000 (UTC)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-On Feb 08 2016, "Jens-U. Mozdzen" <jmozdzen@nde.ag> wrote:
-> Hi Nikolaus,
->
-> Zitat von Nikolaus Rath <Nikolaus@rath.org>:
->> Hello,
->>
->> The internet claims that using bcache with LVM is not a good idea
->> (eg. on https://wiki.archlinux.org/index.php/Bcache )- but I wasn't =
-able
->> to find any substantial information other than this general
->> recommendation.
->
-> looking at that article, it only references possibly ill-handled
-> "discard" operations, when running bcache on top of LVM.
+Hello,
 
-Well, it says:
+If I'm understanding Documentation/bcache.txt correctly, I should be
+able to use one SSD to cache multiple spinning disks.
 
-| Warning:
-|=20
-|     it is widely recommended to use Bcache underneath any other block
-|    layer.
+However, I'm at a loss of how to set this up in practice. I believe I
+need to do
+
+  make-bcache -B /dev/sda  # spinning rust
+  make-bcache -B /dev/sdb  # spinning rust=20
+  make-bcache -C /dev/sdc  # ssd
+
+and then something like
+
+  echo <CSET-UUID> > /sys/block/bcacheX/bcache/attach
 
 
-To me this implies that running it on top of another block layer is
-dangerous (why warn about it otherwise?).=20
-
-> The article itself does positively mention sub-dividing bcache device=
-s
-> using LVM.
-
-Yep, but the talk page then says:
-
-| Initially, LVM did not recognize my /dev/bcache0 when I wanted to
-| create a physical volume on it. For anyone else who has that issue,
-| this may be relevant:
-| http://www.redhat.com/archives/linux-lvm/2012-March/msg00005.html.
+But what do I have to put for X, and what for CSET-UUID? I believe for
+at least one of those values I will have two options (because there are
+two backing devices).
 
 
->> Is this still (or has ever been) correct? If so, what issues can ari=
-se?
->> And does this happen only when using bcache on top of an LVM LV, or =
-also
->> when using a bcache device as an LVM PV?
->
-> We're running bcache between MD-RAID (RAID6 for the HDD backing store
-> and RAID1 for caching SSDs) and LVM2 (using bcache0 as the only PV fo=
-r
-> the volume group) without any noticeable problem, for moderate to
-> significant load (SAN/NAS servers with NFS, Samba, and virtual
-> machines' storage via SCST/FC and SCST/iSCSI).
-
-Thanks for the datapoint! What kernel version do you use?
-
-
-Best,
+Thanks,
 -Nikolaus
 
+(No Cc on replies please, I'm reading the list)
 --=20
 GPG encrypted emails preferred. Key id: 0xD113FCAC3C4E599F
 =46ingerprint: ED31 791B 2C5C 1613 AF38 8B8A D113 FCAC 3C4E 599F
