@@ -1,106 +1,82 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache and LVM --- works great.
-Date: Wed, 24 Feb 2016 07:18:24 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1602240655380.32077@mail.ewheeler.net>
-References: <87k2mgo2rz.fsf@vostro.rath.org> <87mvr9tddy.fsf@vostro.rath.org>
+Subject: Re: bcache stability patches: Now mainlined!
+Date: Wed, 24 Feb 2016 07:34:12 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1602240719080.32077@mail.ewheeler.net>
+References: <CAO2mnow-HG_0pnDVFGfU0e+hPXfT=zMTrdemwiv=pxgJ+m4o2w@mail.gmail.com> <alpine.LRH.2.11.1512291807510.30746@mail.ewheeler.net> <56841B8B.6070306@kernel.dk> <20151231031500.GA8265@kmo-pixel> <5684A030.1040306@kernel.dk>
+ <alpine.LRH.2.11.1602240626110.32077@mail.ewheeler.net> <56CD5443.8030609@profihost.ag>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1278092237-1456296964=:32077"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([71.19.153.34]:36721 "EHLO mail.ewheeler.net"
+Received: from mx.ewheeler.net ([71.19.153.34]:36754 "EHLO mail.ewheeler.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752047AbcBXHS2 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 24 Feb 2016 02:18:28 -0500
-In-Reply-To: <87mvr9tddy.fsf@vostro.rath.org>
+	id S1752047AbcBXHeV (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 24 Feb 2016 02:34:21 -0500
+In-Reply-To: <56CD5443.8030609@profihost.ag>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Nikolaus Rath <Nikolaus@rath.org>
-Cc: linux-bcache@vger.kernel.org
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>, Denis Bychkov <manover@gmail.com>, g2p.code@gmail.com, Jiri Kosina <jkosina@suse.com>, Joshua Schmid <jschmid@suse.com>, linux-bcache@vger.kernel.org, stefan.bader@canonical.com, Takashi Iwai <tiwai@suse.de>, Vojtech Pavlik <vojtech@suse.com>, Zheng Liu <gnehzuil.liu@gmail.com>, Zheng Liu <wenqing.lz@taobao.com>
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1641074820-1278092237-1456296964=:32077
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-
-On Tue, 9 Feb 2016, Nikolaus Rath wrote:
-> On Feb 07 2016, Nikolaus Rath <Nikolaus@rath.org> wrote:
-> > Hello,
-> >
-> > The internet claims that using bcache with LVM is not a good idea
-> > (eg. on https://wiki.archlinux.org/index.php/Bcache )- but I wasn't able
-> > to find any substantial information other than this general
-> > recommendation.
-> >
-> > Is this still (or has ever been) correct? If so, what issues can arise?
-> > And does this happen only when using bcache on top of an LVM LV, or also
-> > when using a bcache device as an LVM PV?
-
-We use bcache0 as the PV for our LVs and our caching device is actually an 
-LV sliced from an SSD PV backed by hardware raid10 (Areca).  We have 
-hot-detached the cache, lvresized it, re-make-bcache'd the cache, and 
-re-attached it without needing a reboot (backing dev resizes can't be hot 
-though---also not sure what would happen if we re-attached after resize 
-without make-bcache'ing the cache).  We haven't tried making the backing 
-device an LV, but the caching device works great as an LV.
-
-With LVM on both top and bottom of our bcache stack we have been stable 
-for a year with 100's of TBs written.  We burned out the Samsung 840's 
-after about 150 TB written and replaced them hot.  Even though they 
-started to stutter, no data lost and no issue.  In fact we replaced the 
-aging SSDs without rebooting the hardware (and moved from raid1 to raid10 
-at the same time).
-
-> I now have the following stack:
+On Wed, 24 Feb 2016, Stefan Priebe - Profihost AG wrote:
+> Am 24.02.2016 um 07:45 schrieb Eric Wheeler:
+> > I would like to thank everyone involved in getting these patches 
+> > mainlined.  Bcache should now be stable on the following releases:
+> > 
+> > 	mainline: 4.5-rc1 (and later)
+> > 	longterm: 4.1.18
+> > 	longterm: 3.18.27
 > 
-> btrfs on LUKS on LVM on bcache
-> 
-> The VG contains two bcache PVs with backing devices on different
-> spinning disks, and a shared cache device on SSD. I'm using Kernel 4.3.
+> the new longterm 4.4.2 should also contain them all.
 
-4.3 is missing the bcache stability patches, so be sure you have 
-pulled them in.  (4.3 is EOL too, so change if you can.)
+I agree, it should, but it doesn't appear to:
 
-Be sure to cherry-pick these from linux 4.5-rc1:
-        git cherry-pick 2ef9ccbf~1..627ccd20
+https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/log/?id=refs/tags/v4.4.2
 
-or use one of the 4.1 or 3.18 longterm kernels.  4.1.17 is rock solid.  
-Haven't tried 4.1.18 yet, but it has the stability patches now and I 
-expect 4.1.18 will be a great kernel too.
+# git log --grep="bcache:" --oneline | head
+532eb52 bcache: remove driver private bio splitting code
+9ea18f8 Merge branch 'for-3.19/drivers' of git://git.kernel.dk/linux-block
+aae4933 md/bcache: use generic io stats accounting functions to simplify 
+  io stat accounting d429a36 Merge branch 'for-3.17/drivers' of 
+  git://git.kernel.dk/linux-block
+[...]
 
-> I'm super happy with the performance, boot times increased from 1:30
-> minutes to X11 and 2:00 to Firefox to roughly 0:10 to X11 and 0:30 to
-> Firefox.
-> 
-> Time will tell if it also keeps my data intact, but I hope btrfs would
-> at least detect any corruption. 
-
-Excellent!  
-
-We have great success with bcache as well with possibly PB's of data 
-written and well over a year of use. Our VM stack looks something like 
-this:
-   KVM{btrfs -> lvm -> virtio-scsi+unmap} -> 
-	LV -> PV -> bcache0(writeback) -> 
-		backing device: hardware raid5 (full blockdev)
-		caching device: lvm->pv->(hardware raid10 ssd)
-	  
+Maybe in 4.4.3 after GKH merges the Cc: stable@ tagged commits.
+  
+It does, however, have the bio splitting code removal in 532eb52, which 
+earlier releases do not.
 
 -Eric
- 
+
+> > 
+> > Please test on your favorite branch and let us know how it goes.
+> > 
+> > For those working from another branch, please see:
+> > 	git log 2ef9ccbf~1..627ccd20
+> > 
+> > and cherry-pick with
+> > 	git cherry-pick 2ef9ccbf~1..627ccd20
+> > 
+> > 
+> > Cheers,	
+> > 
+> > 
+> > --
+> > Eric Wheeler
+> > Linux since 1996!  
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
 > 
-> Best,
-> -Nikolaus
-> 
-> (No Cc on replies please, I'm reading the list)
-> -- 
-> GPG encrypted emails preferred. Key id: 0xD113FCAC3C4E599F
-> Fingerprint: ED31 791B 2C5C 1613 AF38 8B8A D113 FCAC 3C4E 599F
-> 
->              »Time flies like an arrow, fruit flies like a Banana.«
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
---1641074820-1278092237-1456296964=:32077--
+
+
+
+
+
+--
+Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
+888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
+www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
