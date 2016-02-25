@@ -1,213 +1,135 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: can't use ramdisk as cache device. Receive "Can't attach [UUID]:
- cache set not found" error
-Date: Thu, 25 Feb 2016 07:26:32 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1602250726030.3635@mail.ewheeler.net>
-References: <CABXj3oCqcw0dYGPWZTjEAgWwtA9QMWPT2vsdRBK04S55Mukocg@mail.gmail.com> <alpine.LRH.2.11.1602240735220.32077@mail.ewheeler.net> <CABXj3oBdEo4NrVxgiDGk2Byte-4x_4dpn2Z5HPdySyo89cJKBA@mail.gmail.com> <alpine.LRH.2.11.1602250641360.3635@mail.ewheeler.net>
- <CABXj3oDg+6XCnh6YmrLfK7afd99EMnzmOfDQTQX_f8Q2jdtuzw@mail.gmail.com>
+Subject: Re: bcache: register_cache() error opening sdh2: cannot allocate
+ memory => BUG NULL pointer
+Date: Thu, 25 Feb 2016 07:29:36 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1602250727120.3635@mail.ewheeler.net>
+References: <20160225061821.GB15421@merlins.org>
 Mime-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([71.19.153.34]:39086 "EHLO mail.ewheeler.net"
+Received: from mx.ewheeler.net ([71.19.153.34]:39101 "EHLO mail.ewheeler.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756834AbcBYH0f (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 25 Feb 2016 02:26:35 -0500
-In-Reply-To: <CABXj3oDg+6XCnh6YmrLfK7afd99EMnzmOfDQTQX_f8Q2jdtuzw@mail.gmail.com>
+	id S1756834AbcBYH3i (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 25 Feb 2016 02:29:38 -0500
+In-Reply-To: <20160225061821.GB15421@merlins.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Scott McGillivray <scott.mcgillivray@gmail.com>
-Cc: linux-bcache <linux-bcache@vger.kernel.org>
+To: Marc MERLIN <marc@merlins.org>
+Cc: linux-bcache@vger.kernel.org
 
-On Thu, 25 Feb 2016, Scott McGillivray wrote:
+On Wed, 24 Feb 2016, Marc MERLIN wrote:
 
-> that doesn't work either. It gives the same error from my opening
-> post. Although this time it's also giving a new message in dmesg about
-> block size.
-> 
-> 
-> bcache: bch_cached_dev_attach() Couldn't attach sdf: block size less
-> than set's block size
-> bcache: __cached_dev_store() Can't attach 0bba8852-ad4f-41f4-bfa3-679a886a14ad
->                : cache set not found
-> 
-> which is strange because both devices block size are the same
-> 
-> $ blockdev --getbsz /dev/sdf
-> 4096
-> 
-> $ blockdev --getbsz /dev/zram0
-> 4096
+> I understand I have an underlying memory problem, but could bcache handle
+> memory issues and not crash on null pointer?
+
+Try this patch.  It adds some error handling:
+
+=======================================================================================
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index a542b58..5d95816 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1829,11 +1829,12 @@ static int cache_alloc(struct cache_sb *sb, struct cache *ca)
+ 	return 0;
+ }
+ 
+-static void register_cache(struct cache_sb *sb, struct page *sb_page,
++static int register_cache(struct cache_sb *sb, struct page *sb_page,
+ 				struct block_device *bdev, struct cache *ca)
+ {
+ 	char name[BDEVNAME_SIZE];
+-	const char *err = "cannot allocate memory";
++	const char *err = NULL; 
++	int ret = 0;
+ 
+ 	memcpy(&ca->sb, sb, sizeof(struct cache_sb));
+ 	ca->bdev = bdev;
+@@ -1848,27 +1849,34 @@ static void register_cache(struct cache_sb *sb, struct page *sb_page,
+ 	if (blk_queue_discard(bdev_get_queue(ca->bdev)))
+ 		ca->discard = CACHE_DISCARD(&ca->sb);
+ 
+-	if (cache_alloc(sb, ca) != 0)
++	if ((ret = cache_alloc(sb, ca)) != 0) 
+ 		goto err;
+ 
+-	err = "error creating kobject";
+-	if (kobject_add(&ca->kobj, &part_to_dev(bdev->bd_part)->kobj, "bcache"))
+-		goto err;
++	if (kobject_add(&ca->kobj, &part_to_dev(bdev->bd_part)->kobj, "bcache")) {
++		err = "error calling kobject_add";
++		ret = -ENOMEM;
++		goto out;
++	}
+ 
+ 	mutex_lock(&bch_register_lock);
+ 	err = register_cache_set(ca);
+ 	mutex_unlock(&bch_register_lock);
+ 
+-	if (err)
+-		goto err;
+-
++	if (err) {
++		ret = -ENODEV;
++		goto out;
++	}
++	
+ 	pr_info("registered cache device %s", bdevname(bdev, name));
++
+ out:
+ 	kobject_put(&ca->kobj);
+-	return;
++
+ err:
+-	pr_notice("error opening %s: %s", bdevname(bdev, name), err);
+-	goto out;
++	if (err)
++		pr_notice("error opening %s: %s", bdevname(bdev, name), err);
++
++	return ret;
+ }
+ 
+ /* Global interfaces/init */
+@@ -1964,7 +1972,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 		if (!ca)
+ 			goto err_close;
+ 
+-		register_cache(sb, sb_page, bdev, ca);
++		if (register_cache(sb, sb_page, bdev, ca) != 0)
++			goto err_close;
+ 	}
+ out:
+ 	if (sb_page)
+===================================================================
 
 
-Try this:
-  make-bcache -w 4096 -C /dev/zram0
+-Eric
+
 
 > 
+> gargamel:/sys/block/md5/bcache# echo /dev/sdh2 > /sys/fs/bcache/register
+> gave:
+> bcache: register_cache() error opening sdh2: cannot allocate memory
+> BUG: unable to handle kernel NULL pointer dereference at 00000000000009b8
+> IP: [<ffffffffc05a7e8d>] cache_set_flush+0x102/0x15c [bcache]
+> PGD 120dff067 PUD 1119a3067 PMD 0 
+> Oops: 0000 [#1] SMP 
+> Modules linked in: veth ip6table_filter ip6_tables
+> (...)
+> CPU: 4 PID: 3371 Comm: kworker/4:3 Not tainted 4.4.2-amd64-i915-volpreempt-20160213bc1 #3
+> Hardware name: System manufacturer System Product Name/P8H67-M PRO, BIOS 3904 04/27/2013
+> Workqueue: events cache_set_flush [bcache]
+> task: ffff88020d5dc280 ti: ffff88020b6f8000 task.ti: ffff88020b6f8000
+> RIP: 0010:[<ffffffffc05a7e8d>]  [<ffffffffc05a7e8d>] cache_set_flush+0x102/0x15c [bcache]
 > 
-> On 25 February 2016 at 14:44, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> > On Thu, 25 Feb 2016, Scott McGillivray wrote:
-> >
-> >> No, doesn't' work either i'm afraid. Below is example of failing
-> >> silently with ram disk and succeeded with HDD as cache device.
-> >>
-> >> Tested with /lib/modules/4.5.0-rc3+/kernel/drivers/md/bcache/bcache.ko
-> >>
-> >>
-> >> with zram - doesn't work
-> >> =================
-> >>
-> >> $ ls -al /sys/fs/bcache/
-> >> total 0
-> >> drwxr-xr-x 2 root root    0 Feb 25 13:42 .
-> >> drwxr-xr-x 9 root root    0 Feb 25 13:40 ..
-> >> --w------- 1 root root 4096 Feb 25 13:40 register
-> >> --w------- 1 root root 4096 Feb 25 13:40 register_quiet
-> >>
-> >> $ file /dev/zram0
-> >> /dev/zram0: block special (250/0)
-> >>
-> >> $ fdisk -l /dev/zram0
-> >> Disk /dev/zram0: 1 GiB, 1073741824 bytes, 262144 sectors
-> >>
-> >> $ make-bcache -C /dev/zram0
-> >> UUID: 87e63981-7bd8-4cc3-93db-9ca275367c21
-> >> Set UUID: 0bba8852-ad4f-41f4-bfa3-679a886a14ad
-> >> version: 0
-> >> nbuckets: 2048
-> >> block_size: 8
-> >> bucket_size: 1024
-> >> nr_in_set: 1
-> >> nr_this_dev: 0
-> >> first_bucket: 1
-> >
-> > did you   `echo /dev/zram0 > /sys/fs/bcache/register`
-> > and then  `echo <CSET-UUID> > /sys/block/bcache0/bcache/attach`
-> >
-> > Not sure which UUID is the CSET UUID.  Probably
-> > 0bba8852-ad4f-41f4-bfa3-679a886a14ad.
-> >
-> > See attaching bcache0 to a cache:
-> > https://www.kernel.org/doc/Documentation/bcache.txt
-> >
-> > -Eric
-> >
-> >>
-> >>
-> >> No errors, but nothing in dmesg and contents of /sys/fs/bcache/ remain
-> >> exactly the same... no UUID. Seems to just silently fail.
-> >>
-> >>
-> >> with HDD - works as expected.
-> >> =====================
-> >>
-> >> $ fdisk -l /dev/sdf
-> >> Disk /dev/sdf: 1 GiB, 1073741824 bytes, 2097152 sectors
-> >>
-> >> $ file /dev/sdf
-> >> /dev/sdf: block special (8/80)
-> >>
-> >> $ make-bcache -C /dev/sdf
-> >> UUID: 3234c9e7-8186-4a7c-99a8-ae6a371c6f2c
-> >> Set UUID: 9a71faf7-a408-4f4d-906e-e5d67e43291f
-> >> version: 0
-> >> nbuckets: 2048
-> >> block_size: 1
-> >> bucket_size: 1024
-> >> nr_in_set: 1
-> >> nr_this_dev: 0
-> >> first_bucket: 1
-> >>
-> >> $ ls -al /sys/fs/bcache/
-> >> total 0
-> >> drwxr-xr-x 3 root root    0 Feb 25 13:48 .
-> >> drwxr-xr-x 9 root root    0 Feb 25 13:40 ..
-> >> drwxr-xr-x 7 root root    0 Feb 25 13:48 9a71faf7-a408-4f4d-906e-e5d67e43291f
-> >> --w------- 1 root root 4096 Feb 25 13:40 register
-> >> --w------- 1 root root 4096 Feb 25 13:40 register_quiet
-> >>
-> >> $ dmesg
-> >> [  714.168488] bcache: register_cache() registered cache device sdf
-> >>
-> >>
-> >> Thank you.
-> >>
-> >> On 24 February 2016 at 15:37, Eric Wheeler <lists@ewheeler.net> wrote:
-> >> >
-> >> > On Tue, 16 Feb 2016, Scott McGillivray wrote:
-> >> >
-> >> >> Hello
-> >> >>
-> >> >> I am using Ubuntu 15.10 with latest nightly 4.5 kernel. Ubuntu creates
-> >> >> 16 RAM drives as /dev/ram0 - ram16 by default and i am trying to test
-> >> >> bcache and use one of these as a cache device.
-> >> >>
-> >> >> wipefs /dev/sdd
-> >> >> wipefs /dev/sdd -a
-> >> >> wipefs /dev/ram0
-> >> >> wipefs /dev/ram0 -a
-> >> >> make-bcache -B /dev/sdd -C /dev/ram0
-> >> >
-> >> > Does it work with /dev/zram0?   You would prep it something like this:
-> >> >
-> >> >         modprobe zram
-> >> >         echo $((1024*1024*1024)) > /sys/block/zram0/disksize # 1GB
-> >> >         make-bcache  -C /dev/zram0
-> >> >
-> >> > -Eric
-> >> >
-> >> >
-> >> >
-> >> >> At this point there were no errors output but there is also no UUID
-> >> >> entry in /sys/fs/bcache/. Only register and register_quiet.
-> >> >>
-> >> >> bache-super-show correctly prints info about both block and cache
-> >> >> devices when queried but when i try to manually attach the cache
-> >> >> device with echo cset.uuid > /sys/block/bcache0/bcache/attach i get no
-> >> >> error but in dmesg i see
-> >> >>
-> >> >> bcache: __cached_dev_store() Can't attach
-> >> >> 3f2521a6-2103-4e2e-a47d-cc56558e8f7d: cache set not found
-> >> >>
-> >> >> If i repeat this example but use another sd block device as cache then
-> >> >> it works OK.
-> >> >>
-> >> >> Can anyone confirm if it should be possible to use the ramdisk based
-> >> >> block device as a caching device with bcache ?
-> >> >>
-> >> >> I also tried to use a loop device as cache and that didn't work
-> >> >> either.. i got "kernel bug" in dmesg for
-> >> >> drivers/md/bcache/super.c:1812. RIP []
-> >> >> cache_alloc.isra.21+0x646/0x670[bcache]
-> >> >>
-> >> >> Does bcache need the cache device to be a certain block type i.e sd 8
-> >> >> ? Should i be able to use any block device from /proc/devices as a
-> >> >> cache device ?
-> >> >>
-> >> >> The kernel options used for ramdisk are:
-> >> >>
-> >> >> CONFIG_BLK_DEV_RAM=y
-> >> >> CONFIG_BLK_DEV_RAM_COUNT=16
-> >> >> CONFIG_BLK_DEV_RAM_SIZE=65536
-> >> >> CONFIG_BLK_DEV_RAM_DAX=y
-> >> >>
-> >> >> Thank you.
-> >> >> Scott
-> >> >> --
-> >> >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> >> >> the body of a message to majordomo@vger.kernel.org
-> >> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> >>
-> >> >
-> >> >
-> >> >
-> >> > --
-> >> > Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
-> >> > 888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
-> >> > www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
-> >> >
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>
+> Thanks,
+> Marc
+> -- 
+> "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+> Microsoft is to operating systems ....
+>                                       .... what McDonalds is to gourmet cooking
+> Home page: http://marc.merlins.org/  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
