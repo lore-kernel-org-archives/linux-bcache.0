@@ -1,84 +1,61 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: BUG: drivers/md/bcache/writeback.c:237
-Date: Thu, 25 Feb 2016 00:58:23 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1602250052530.2131@mail.ewheeler.net>
-References: <20160224204530.GA13079@merlins.org>
+From: Pradeep Fernando <pradeepfn@gmail.com>
+Subject: Few questions on bcache internals
+Date: Wed, 24 Feb 2016 20:38:15 -0500
+Message-ID: <CAPSEm=aMgfe5Eaa64sepiyepFd1va+jMQCuGCT1EcS=6GY8bHA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([71.19.153.34]:38504 "EHLO mail.ewheeler.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752579AbcBYA63 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 24 Feb 2016 19:58:29 -0500
-In-Reply-To: <20160224204530.GA13079@merlins.org>
+Received: from mail-yw0-f182.google.com ([209.85.161.182]:34514 "EHLO
+	mail-yw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751270AbcBYBif (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 24 Feb 2016 20:38:35 -0500
+Received: by mail-yw0-f182.google.com with SMTP id h129so31356461ywb.1
+        for <linux-bcache@vger.kernel.org>; Wed, 24 Feb 2016 17:38:35 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kent.overstreet@gmail.com
-Cc: Christoph Nelles <evilazrael@evilazrael.de>, linux-bcache@vger.kernel.org, Marc MERLIN <marc@merlins.org>
+To: linux-bcache@vger.kernel.org
 
-[ +cc: kent ]
+Hi All,
 
-On Wed, 24 Feb 2016, Marc MERLIN wrote:
+I'm trying to get familiar with the bcache internals. I went through
+this detailed write-up [1] and
+looked in to the code found in stable Linux kernel release (not the
+latest bcache code) as well.
 
-> On Wed, Feb 24, 2016 at 06:53:05AM +0000, Eric Wheeler wrote:
-> > Be sure to cherry-pick these from linux 4.5-rc1:
-> > 	git cherry-pick 2ef9ccbf~1..627ccd20
-> > or use one of the 4.1 or 3.18 longterm kernels.
->  
-> So, I added these patches to my 4.4.2 kernel, but it still crashes when
-> seeing one cache device at boot.
-> 
-> Crash:
-> https://goo.gl/photos/8H1DtYjSijK4ngFv6
-> 
+I have few questions on the topic.
 
-> static void read_dirty(struct cached_dev *dc)
-> [...]
-> 	while (!kthread_should_stop()) {
-> 		try_to_freeze();
-> 
-> 		w = bch_keybuf_next(&dc->writeback_keys);
-> 		if (!w)
-> 			break;
-> 
-> >>>>>		BUG_ON(ptr_stale(dc->disk.c, &w->key, 0));
-> 
-> 		if (KEY_START(&w->key) != dc->last_read ||
+Here is my abstract model on how bcache work.
 
-Kent, any idea whats going on here?  What is this BUG_ON checking?
+- format the caching device and the backing device with its own bucket
+based file system (bcacheFS)
+- exposes a virtual block device to the applications (/dev/bcache0)
+- the data is organized as buckets, indexed by b+tree structures and
+auxilary search structures.
+- when a request comes in, search the b+tree based on <inode:offset>
+and try finding the data
+on caching device, else send the request to backing device.
 
-It looks like dirty data is being read immediately after register, 
-possibly due to a crash.
 
--Eric
+1. Why bcache refers to inodes ? The block driver layer does not have
+an idea about the file system layed on top of it. (ext4). Is this
+inode refers to device file? As per my
+understanding the block layer gets bio_structure, it does not have a
+notion of inodes...
 
-> 
-> I have to remove the partition for my system to boot.
-> 
-> Before I destroy it, any other patches I should try?
-> 
-> And to be fair, it's a huge pain to deal with this, there should be an
-> easier way to just turn bcache off from the kernel command line. In this
-> case it was really a lot of work to get back to even a booting system.
-> 
-> You also said:
-> > 4.1.18 has the patches, so unless there is something specific in 4.4 that
-> > you need, I recommend 4.1.  We've been running 4.1.17 with patches in
-> > production for a while and it works great.  Haven't tried vanilla 4.1.18
-> > yet, but I plan to soon.
-> 
-> Sadly, I run btrfs, I can't just go to random old kernels like this.
-> Is bcache not stable in up to date kernels?
-> 
-> Thanks,
-> Marc
-> -- 
-> "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> Microsoft is to operating systems ....
->                                       .... what McDonalds is to gourmet cooking
-> Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+2. How the cache eviction work. ? for an example in processor caches
+we evict the cache lines
+within a set in a set associative cache using LRU/etc. How does
+eviction happens in bcache/policy?
+
+3. Can i use any file system in backing device other than bcacheFS. ?
+My abstract model on bcache says NO.
+
+I'm new to Linux driver programming. so I might be missing few trivial
+details and hence the confusion..
+appreciate if someone can shed some light on the above questions...
+
+[1] bcache.evilpiepirate.org/BcacheGuide
+
+thanks
+Pradeep
