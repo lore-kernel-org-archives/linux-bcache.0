@@ -1,97 +1,169 @@
-From: Marc MERLIN <marc@merlins.org>
-Subject: Re: Disabling bcache from boot when it crashes?
-Date: Wed, 24 Feb 2016 21:48:04 -0800
-Message-ID: <20160225054804.GA15421@merlins.org>
-References: <20160215060410.GA30802@merlins.org> <alpine.LRH.2.11.1602240403300.32077@mail.ewheeler.net> <20160224163716.GA19447@merlins.org> <alpine.LRH.2.11.1602241904140.32077@mail.ewheeler.net>
+From: Scott McGillivray <scott.mcgillivray@gmail.com>
+Subject: Re: can't use ramdisk as cache device. Receive "Can't attach [UUID]:
+ cache set not found" error
+Date: Thu, 25 Feb 2016 13:55:01 +0800
+Message-ID: <CABXj3oBdEo4NrVxgiDGk2Byte-4x_4dpn2Z5HPdySyo89cJKBA@mail.gmail.com>
+References: <CABXj3oCqcw0dYGPWZTjEAgWwtA9QMWPT2vsdRBK04S55Mukocg@mail.gmail.com>
+ <alpine.LRH.2.11.1602240735220.32077@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from magic.merlins.org ([209.81.13.136]:37932 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759272AbcBYFsP (ORCPT
+Received: from mail-yk0-f171.google.com ([209.85.160.171]:33329 "EHLO
+	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932191AbcBYFzV (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 25 Feb 2016 00:48:15 -0500
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1602241904140.32077@mail.ewheeler.net>
+	Thu, 25 Feb 2016 00:55:21 -0500
+Received: by mail-yk0-f171.google.com with SMTP id z13so18109044ykd.0
+        for <linux-bcache@vger.kernel.org>; Wed, 24 Feb 2016 21:55:21 -0800 (PST)
+In-Reply-To: <alpine.LRH.2.11.1602240735220.32077@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: linux-bcache@vger.kernel.org
+To: Eric Wheeler <lists@ewheeler.net>
+Cc: linux-bcache <linux-bcache@vger.kernel.org>
 
-On Wed, Feb 24, 2016 at 07:10:07PM +0000, Eric Wheeler wrote:
-> On Wed, 24 Feb 2016, Marc MERLIN wrote:
-> 
-> > On Wed, Feb 24, 2016 at 06:53:05AM +0000, Eric Wheeler wrote:
-> > > Do you have the bcache stability patches? 4.3.3 might be missing some 
-> > > critical patches.
-> > > 
-> > > Be sure to cherry-pick these from linux 4.5-rc1:
-> > > 	git cherry-pick 2ef9ccbf~1..627ccd20
-> > > or use one of the 4.1 or 3.18 longterm kernels.
-> > > 
-> > > I've not see any memory allocation issues before in bcache, but you 
-> > > definitely want those patches for general stability.
-> > 
-> > I'm running 4.4.2, so I'm assuming I don't have those fixes, thanks for the
-> > heads up.
-> 
-> 4.1.18 has the patches, so unless there is something specific in 4.4 that 
-> you need, I recommend 4.1.  We've been running 4.1.17 with patches in 
-> production for a while and it works great.  Haven't tried vanilla 4.1.18 
-> yet, but I plan to soon.
->  
-> > Well, your message is timely, just as you wrote this, I got bcache that
-> > crashed my system as I was shutting down, and then I was unable to ever
-> > reboot because bcache would detect my partitions, start bcache, and crash
-> > before I could do anything to fix it.
-> > 
-> > A few questions though:
-> > 1) is there any bcache boot option I can give to disable bcache at boot
-> > time?
-> 
-> This is probably distribution specific.  Exclude bcache from your initrd 
-> unless your rootfs is bcache (update-initramfs, dracut, etc).  Maybe 
-> blacklist the module and manually modprobe it when you are ready to load 
-> it.
-  
-So I gave this some more thought. This is not how things work.
-You have bcache either built in your kernel, so you can't remove it, or as
-an early loaded module in initrd, and it's pretty damn hard to stop that
-module from loading if your kernel crashes before you can even get a shell.
+No, doesn't' work either i'm afraid. Below is example of failing
+silently with ram disk and succeeded with HDD as cache device.
 
-Either way, when you hit a crashing bug with bcache, your kernel will
-consistently crash until you remove or delete the contents of the partition,
-which you can only do from rescue media.
-In my experience, the rescue media doesn't have make-bcache, or even a
-version of wipefs recent enough to clear the cache partition, so you're left
-with dd or just deleting the partition.
-Needless to say that it's very sub optimal for the average user who doesn't
-have rescue media on hand and can't look up the internet easily to find otu
-what to do after their system doesn't boot.
+Tested with /lib/modules/4.5.0-rc3+/kernel/drivers/md/bcache/bcache.ko
 
-So, I hope it makes sense that it would be good to have something like
-bcache=off as a command line option to recover when things go wrong (in my
-job, it's 'when', not 'if' ;) ).
 
-> I think the superblock is in the first 2MB of the disk, so you could do 
-> something like this:
-> 	dd if=/dev/zero bs=1M count=2 of=/cachedev
- 
-Thanks.
-I'll still wait for you to tell me that there is nothing you'd like me to
-try to help you find out why bcache is crashing before I wipe the data on my
-now corrupted cache partition.
+with zram - doesn't work
+=================
 
-> > "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> 
-> Funny, I use my mouse the same way!
+$ ls -al /sys/fs/bcache/
+total 0
+drwxr-xr-x 2 root root    0 Feb 25 13:42 .
+drwxr-xr-x 9 root root    0 Feb 25 13:40 ..
+--w------- 1 root root 4096 Feb 25 13:40 register
+--w------- 1 root root 4096 Feb 25 13:40 register_quiet
 
-:)
+$ file /dev/zram0
+/dev/zram0: block special (250/0)
 
-Cheers,
-Marc
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/  
+$ fdisk -l /dev/zram0
+Disk /dev/zram0: 1 GiB, 1073741824 bytes, 262144 sectors
+
+$ make-bcache -C /dev/zram0
+UUID: 87e63981-7bd8-4cc3-93db-9ca275367c21
+Set UUID: 0bba8852-ad4f-41f4-bfa3-679a886a14ad
+version: 0
+nbuckets: 2048
+block_size: 8
+bucket_size: 1024
+nr_in_set: 1
+nr_this_dev: 0
+first_bucket: 1
+
+
+No errors, but nothing in dmesg and contents of /sys/fs/bcache/ remain
+exactly the same... no UUID. Seems to just silently fail.
+
+
+with HDD - works as expected.
+=====================
+
+$ fdisk -l /dev/sdf
+Disk /dev/sdf: 1 GiB, 1073741824 bytes, 2097152 sectors
+
+$ file /dev/sdf
+/dev/sdf: block special (8/80)
+
+$ make-bcache -C /dev/sdf
+UUID: 3234c9e7-8186-4a7c-99a8-ae6a371c6f2c
+Set UUID: 9a71faf7-a408-4f4d-906e-e5d67e43291f
+version: 0
+nbuckets: 2048
+block_size: 1
+bucket_size: 1024
+nr_in_set: 1
+nr_this_dev: 0
+first_bucket: 1
+
+$ ls -al /sys/fs/bcache/
+total 0
+drwxr-xr-x 3 root root    0 Feb 25 13:48 .
+drwxr-xr-x 9 root root    0 Feb 25 13:40 ..
+drwxr-xr-x 7 root root    0 Feb 25 13:48 9a71faf7-a408-4f4d-906e-e5d67e43291f
+--w------- 1 root root 4096 Feb 25 13:40 register
+--w------- 1 root root 4096 Feb 25 13:40 register_quiet
+
+$ dmesg
+[  714.168488] bcache: register_cache() registered cache device sdf
+
+
+Thank you.
+
+On 24 February 2016 at 15:37, Eric Wheeler <lists@ewheeler.net> wrote:
+>
+> On Tue, 16 Feb 2016, Scott McGillivray wrote:
+>
+>> Hello
+>>
+>> I am using Ubuntu 15.10 with latest nightly 4.5 kernel. Ubuntu creates
+>> 16 RAM drives as /dev/ram0 - ram16 by default and i am trying to test
+>> bcache and use one of these as a cache device.
+>>
+>> wipefs /dev/sdd
+>> wipefs /dev/sdd -a
+>> wipefs /dev/ram0
+>> wipefs /dev/ram0 -a
+>> make-bcache -B /dev/sdd -C /dev/ram0
+>
+> Does it work with /dev/zram0?   You would prep it something like this:
+>
+>         modprobe zram
+>         echo $((1024*1024*1024)) > /sys/block/zram0/disksize # 1GB
+>         make-bcache  -C /dev/zram0
+>
+> -Eric
+>
+>
+>
+>> At this point there were no errors output but there is also no UUID
+>> entry in /sys/fs/bcache/. Only register and register_quiet.
+>>
+>> bache-super-show correctly prints info about both block and cache
+>> devices when queried but when i try to manually attach the cache
+>> device with echo cset.uuid > /sys/block/bcache0/bcache/attach i get no
+>> error but in dmesg i see
+>>
+>> bcache: __cached_dev_store() Can't attach
+>> 3f2521a6-2103-4e2e-a47d-cc56558e8f7d: cache set not found
+>>
+>> If i repeat this example but use another sd block device as cache then
+>> it works OK.
+>>
+>> Can anyone confirm if it should be possible to use the ramdisk based
+>> block device as a caching device with bcache ?
+>>
+>> I also tried to use a loop device as cache and that didn't work
+>> either.. i got "kernel bug" in dmesg for
+>> drivers/md/bcache/super.c:1812. RIP []
+>> cache_alloc.isra.21+0x646/0x670[bcache]
+>>
+>> Does bcache need the cache device to be a certain block type i.e sd 8
+>> ? Should i be able to use any block device from /proc/devices as a
+>> cache device ?
+>>
+>> The kernel options used for ramdisk are:
+>>
+>> CONFIG_BLK_DEV_RAM=y
+>> CONFIG_BLK_DEV_RAM_COUNT=16
+>> CONFIG_BLK_DEV_RAM_SIZE=65536
+>> CONFIG_BLK_DEV_RAM_DAX=y
+>>
+>> Thank you.
+>> Scott
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+>
+>
+> --
+> Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
+> 888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
+> www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
+>
