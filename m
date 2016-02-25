@@ -1,102 +1,97 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: Few questions on bcache internals
-Date: Thu, 25 Feb 2016 04:20:59 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1602250409120.3635@mail.ewheeler.net>
-References: <CAPSEm=aMgfe5Eaa64sepiyepFd1va+jMQCuGCT1EcS=6GY8bHA@mail.gmail.com>
+From: Marc MERLIN <marc@merlins.org>
+Subject: Re: Disabling bcache from boot when it crashes?
+Date: Wed, 24 Feb 2016 21:48:04 -0800
+Message-ID: <20160225054804.GA15421@merlins.org>
+References: <20160215060410.GA30802@merlins.org> <alpine.LRH.2.11.1602240403300.32077@mail.ewheeler.net> <20160224163716.GA19447@merlins.org> <alpine.LRH.2.11.1602241904140.32077@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([71.19.153.34]:38779 "EHLO mail.ewheeler.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756602AbcBYEVJ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 24 Feb 2016 23:21:09 -0500
-In-Reply-To: <CAPSEm=aMgfe5Eaa64sepiyepFd1va+jMQCuGCT1EcS=6GY8bHA@mail.gmail.com>
+Received: from magic.merlins.org ([209.81.13.136]:37932 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759272AbcBYFsP (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 25 Feb 2016 00:48:15 -0500
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.11.1602241904140.32077@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Pradeep Fernando <pradeepfn@gmail.com>
+To: Eric Wheeler <bcache@lists.ewheeler.net>
 Cc: linux-bcache@vger.kernel.org
 
-
-On Wed, 24 Feb 2016, Pradeep Fernando wrote:
-
-> Hi All,
+On Wed, Feb 24, 2016 at 07:10:07PM +0000, Eric Wheeler wrote:
+> On Wed, 24 Feb 2016, Marc MERLIN wrote:
 > 
-> I'm trying to get familiar with the bcache internals. 
-
-do you mean bcache or bcachefs?
-
-> I went through this detailed write-up [1] and looked in to the code 
-> found in stable Linux kernel release (not the latest bcache code) as 
-> well.
+> > On Wed, Feb 24, 2016 at 06:53:05AM +0000, Eric Wheeler wrote:
+> > > Do you have the bcache stability patches? 4.3.3 might be missing some 
+> > > critical patches.
+> > > 
+> > > Be sure to cherry-pick these from linux 4.5-rc1:
+> > > 	git cherry-pick 2ef9ccbf~1..627ccd20
+> > > or use one of the 4.1 or 3.18 longterm kernels.
+> > > 
+> > > I've not see any memory allocation issues before in bcache, but you 
+> > > definitely want those patches for general stability.
+> > 
+> > I'm running 4.4.2, so I'm assuming I don't have those fixes, thanks for the
+> > heads up.
 > 
-> I have few questions on the topic.
+> 4.1.18 has the patches, so unless there is something specific in 4.4 that 
+> you need, I recommend 4.1.  We've been running 4.1.17 with patches in 
+> production for a while and it works great.  Haven't tried vanilla 4.1.18 
+> yet, but I plan to soon.
+>  
+> > Well, your message is timely, just as you wrote this, I got bcache that
+> > crashed my system as I was shutting down, and then I was unable to ever
+> > reboot because bcache would detect my partitions, start bcache, and crash
+> > before I could do anything to fix it.
+> > 
+> > A few questions though:
+> > 1) is there any bcache boot option I can give to disable bcache at boot
+> > time?
 > 
-> Here is my abstract model on how bcache work.
+> This is probably distribution specific.  Exclude bcache from your initrd 
+> unless your rootfs is bcache (update-initramfs, dracut, etc).  Maybe 
+> blacklist the module and manually modprobe it when you are ready to load 
+> it.
+  
+So I gave this some more thought. This is not how things work.
+You have bcache either built in your kernel, so you can't remove it, or as
+an early loaded module in initrd, and it's pretty damn hard to stop that
+module from loading if your kernel crashes before you can even get a shell.
+
+Either way, when you hit a crashing bug with bcache, your kernel will
+consistently crash until you remove or delete the contents of the partition,
+which you can only do from rescue media.
+In my experience, the rescue media doesn't have make-bcache, or even a
+version of wipefs recent enough to clear the cache partition, so you're left
+with dd or just deleting the partition.
+Needless to say that it's very sub optimal for the average user who doesn't
+have rescue media on hand and can't look up the internet easily to find otu
+what to do after their system doesn't boot.
+
+So, I hope it makes sense that it would be good to have something like
+bcache=off as a command line option to recover when things go wrong (in my
+job, it's 'when', not 'if' ;) ).
+
+> I think the superblock is in the first 2MB of the disk, so you could do 
+> something like this:
+> 	dd if=/dev/zero bs=1M count=2 of=/cachedev
+ 
+Thanks.
+I'll still wait for you to tell me that there is nothing you'd like me to
+try to help you find out why bcache is crashing before I wipe the data on my
+now corrupted cache partition.
+
+> > "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
 > 
-> - format the caching device and the backing device with its own bucket
-> based file system (bcacheFS)
+> Funny, I use my mouse the same way!
 
-bcachefs is new and still in development.  Eventually its caching code 
-will supply bcache with a cache superblock version 2 and better 
-performance. bcache is available from mainline since 3.10 iirc.
+:)
 
-> - exposes a virtual block device to the applications (/dev/bcache0)
-
-yes
-
-> - the data is organized as buckets, indexed by b+tree structures and
-> auxilary search structures.
-
-That sounds reasonable, though I've not been digging in the metadata 
-structure.
-
-> - when a request comes in, search the b+tree based on <inode:offset>
-
-Maybe in bcachefs, but not in bcache at the block layer (current in-kernel 
-version).
-
-> and try finding the data on caching device, else send the request to 
-> backing device.
-> 
-> 
-> 1. Why bcache refers to inodes ? The block driver layer does not have
-> an idea about the file system layed on top of it. (ext4). Is this
-> inode refers to device file? As per my
-> understanding the block layer gets bio_structure, it does not have a
-> notion of inodes...
-
-You're probably looking at bcachefs, not bcache.
-
-If you're interested in looking at bcache, it would be great if you can 
-check out the most recent list issues and see if there is one you can work 
-on: the "Re: BUG: drivers/md/bcache/writeback.c:237" thread, for example.
-
-Also there are some places that could use a mempool.
-
-> 2. How the cache eviction work. ? for an example in processor caches
-> we evict the cache lines
-> within a set in a set associative cache using LRU/etc. How does
-> eviction happens in bcache/policy?
-
-configurable: lru/fifo
-
-> 3. Can i use any file system in backing device other than bcacheFS. ?
-> My abstract model on bcache says NO.
-
-bcache, yes.  bcachefs, no (without loopback)
-
--Eric
-
-> I'm new to Linux driver programming. so I might be missing few trivial
-> details and hence the confusion..
-> appreciate if someone can shed some light on the above questions...
-> 
-> [1] bcache.evilpiepirate.org/BcacheGuide
-> 
-> thanks
-> Pradeep
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Cheers,
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/  
