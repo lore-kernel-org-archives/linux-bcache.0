@@ -1,36 +1,40 @@
-From: Mike Christie <michaelc@cs.wisc.edu>
-Subject: Re: [PATCH 00/35 v4] separate operations from flags in the
-	bio/request structs
-Date: Mon, 29 Feb 2016 11:30:22 -0600
-Message-ID: <56D4802E.3090507@cs.wisc.edu>
-References: <1456343292-14535-1-git-send-email-mchristi@redhat.com>
-	<20160229171339.GA17755@infradead.org>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: [PULL] bcache fixes for v4.5-rc6
+Date: Tue, 1 Mar 2016 01:08:32 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1602292216450.3635@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <xfs-bounces@oss.sgi.com>
-In-Reply-To: <20160229171339.GA17755@infradead.org>
-List-Unsubscribe: <http://oss.sgi.com/mailman/options/xfs>,
-	<mailto:xfs-request@oss.sgi.com?subject=unsubscribe>
-List-Archive: <http://oss.sgi.com/pipermail/xfs>
-List-Post: <mailto:xfs@oss.sgi.com>
-List-Help: <mailto:xfs-request@oss.sgi.com?subject=help>
-List-Subscribe: <http://oss.sgi.com/mailman/listinfo/xfs>,
-	<mailto:xfs-request@oss.sgi.com?subject=subscribe>
-Errors-To: xfs-bounces@oss.sgi.com
-Sender: xfs-bounces@oss.sgi.com
-To: Christoph Hellwig <hch@infradead.org>, mchristi@redhat.com
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com, linux-scsi@vger.kernel.org, konrad.wilk@oracle.com, linux-kernel@vger.kernel.org, philipp.reisner@linbit.com, linux-f2fs-devel@lists.sourceforge.net, linux-raid@vger.kernel.org, dm-devel@redhat.com, target-devel@vger.kernel.org, linux-mtd@lists.infradead.org, osd-dev@open-osd.org, linux-fsdevel@vger.kernel.org, lars.ellenberg@linbit.com, linux-ext4@vger.kernel.org, linux-btrfs@vger.kernel.org, drbd-dev@lists.linbit.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx.ewheeler.net ([71.19.153.34]:48217 "EHLO mail.ewheeler.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750832AbcCABIe (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 29 Feb 2016 20:08:34 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: axboe@kernel.dk
+Cc: Marc MERLIN <marc@merlins.org>, linux-bcache@vger.kernel.org, Zhu Yanhai <zhu.yanhai@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, Christoph Nelles <evilazrael@evilazrael.de>
 
-On 02/29/2016 11:13 AM, Christoph Hellwig wrote:
-> Any reason you've dropped my ACK for the previous version?
+Hi Jens,
 
-Sorry. I think I accidentally dropped it when I rebased back over to
-linux-next. It looks like it only got stuck on the first patch. I will
-fix that up on the resend for those kbuild errors.
+Can we still get these in for 4.5?  One is a race, the other is just error 
+handling.
 
-_______________________________________________
-xfs mailing list
-xfs@oss.sgi.com
-http://oss.sgi.com/mailman/listinfo/xfs
+Please pull:
+  git pull https://bitbucket.org/ewheelerinc/linux.git v4.5-rc6-bcache-fixes 
+
+bcache: fix race of writeback thread starting before complete initialization
+bcache: cleaned up error handling around register_cache()
+
+
+# git diff --stat HEAD~2
+ drivers/md/bcache/super.c | 44 
+++++++++++++++++++++++++++++++--------------
+ 1 file changed, 30 insertions(+), 14 deletions(-)
+
+-Eric
+
+
+--
+Eric Wheeler, President           eWheeler, Inc. dba Global Linux Security
+888-LINUX26 (888-546-8926)        Fax: 503-716-3878           PO Box 25107
+www.GlobalLinuxSecurity.pro       Linux since 1996!     Portland, OR 97298
