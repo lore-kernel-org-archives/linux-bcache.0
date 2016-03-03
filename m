@@ -1,62 +1,67 @@
-From: Laison Computech Inc <7sales@laiisoncomputech.com>
-Subject: CISCO AND AVAYA IP Phones
-Date: Wed, 02 Mar 2016 03:10:34 +0700
-Message-ID: <20160301210941.D8278574BAE__27982.8583858491$1456877695$gmane$org@srv-mta.gcmillenium.com.br>
-Reply-To: sales@laiisoncomputech.com
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PULL] bcache fixes for v4.5-rc6
+Date: Thu, 3 Mar 2016 02:09:46 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1603021947130.3635@mail.ewheeler.net>
+References: <alpine.LRH.2.11.1602292216450.3635@mail.ewheeler.net> <56D5B8E3.9050000@kernel.dk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from srv-mta.gcmillenium.com.br ([177.125.218.132]:43264 "EHLO
-	srv-mta.gcmillenium.com.br" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932457AbcCBAO3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 1 Mar 2016 19:14:29 -0500
-Content-Description: Mail message body
+Received: from mx.ewheeler.net ([71.19.153.34]:59695 "EHLO mail.ewheeler.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751624AbcCCCJx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 2 Mar 2016 21:09:53 -0500
+In-Reply-To: <56D5B8E3.9050000@kernel.dk>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Recipients <7sales@laiisoncomputech.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Marc MERLIN <marc@merlins.org>, linux-bcache@vger.kernel.org, Zhu Yanhai <zhu.yanhai@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, Christoph Nelles <evilazrael@evilazrael.de>
 
-Hi,
+On Tue, 1 Mar 2016, Jens Axboe wrote:
 
-Clean tested working pulls CPUs and QTYs in stock.
+> On 02/29/2016 06:08 PM, Eric Wheeler wrote:
+> > Hi Jens,
+> >
+> > Can we still get these in for 4.5?  One is a race, the other is just error
+> > handling.
+> >
+> > Please pull:
+> >    git pull https://bitbucket.org/ewheelerinc/linux.git
+> >    v4.5-rc6-bcache-fixes
+> >
+> > bcache: fix race of writeback thread starting before complete initialization
+> > bcache: cleaned up error handling around register_cache()
+> 
+> They look simple enough, though I generally don't like collapsing things like
+> this:
+> 
+> if ((ret = cache_alloc(sb, ca)) != 0)
+> 
+> it's easy to screw up, doing
+> 
+> ret = cache_alloc(sb, ca);
+> if (ret != 0)
+>     ...
 
-115 X X5650
-65 X E5410
-75 X X5660
-145 X E5530
-100 X E5645
-40 X X5680
-75 X X5690
+Done.  Rebased, fixed, and push --force'ed.  
 
-Brand new sealed IP phones and QTYs in stock.
+BTW, Is there a better (preferred) way vs. push --force?  Some say push 
+--force can break things.
 
-55 x CP-7937G
-77 x CP-7942G
-54 x CP-7945G
-75 x CP-7962G
-=2E.....
-45 x Avaya 9630
-65 x Avaya 9641
-55 x Avaya 9640=20
+> 
+> is a lot more readable and harder to screw up. Can we get that cleaned up? We
+> can still make 4.5, I've got a bunch pending that's going out today, and these
+> two would have missed the boat for today anyway. But that doesn't mean we
+> can't get them out later this week.
 
-USED IT HARDWARE FROM:
+Thanks!
 
-=46UJITSU       IBM         SUN        HP
-QUANTUM   DELL       HDS        STK
-NETAPP      SGI         Oracle      EMC=B2
+-Eric
 
-3Com, ADVA, Alcatel, Brocade, Cisco,
-Cabletron, Enterasys, Extreme Networks,
-Huawei, Marconi, Nortel, Qlogic, Avaya
-
-Let me know if you're interested. We are very open to offers and willin=
-g to work with you to make sure that we have a deal.
-
-Sincerely
-Barbara Johnson
-Laison Computech Inc
-Tel: +1-657-205-7860
-=46ax: +1-347-214-0478
-Email: sales@laiisoncomputech.com
-Web: www.laisoncomputech.com
+> -- 
+> Jens Axboe
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
