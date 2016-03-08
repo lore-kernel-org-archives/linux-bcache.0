@@ -1,43 +1,46 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: [PULL] bcache: fix cache_set_flush() NULL pointer dereference on
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PULL] bcache: fix cache_set_flush() NULL pointer dereference on
  OOM
-Date: Mon, 7 Mar 2016 23:36:21 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1603072326410.11530@mail.ewheeler.net>
+Date: Tue, 8 Mar 2016 09:20:22 -0700
+Message-ID: <56DEFBC6.5040905@kernel.dk>
+References: <alpine.LRH.2.11.1603072326410.11530@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([71.19.153.34]:43547 "EHLO mail.ewheeler.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932518AbcCGXgY (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 7 Mar 2016 18:36:24 -0500
+Received: from mail-io0-f174.google.com ([209.85.223.174]:32901 "EHLO
+	mail-io0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932361AbcCHQUZ (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 8 Mar 2016 11:20:25 -0500
+Received: by mail-io0-f174.google.com with SMTP id n190so32167769iof.0
+        for <linux-bcache@vger.kernel.org>; Tue, 08 Mar 2016 08:20:25 -0800 (PST)
+In-Reply-To: <alpine.LRH.2.11.1603072326410.11530@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: axboe@kernel.dk
+To: Eric Wheeler <bcache@lists.ewheeler.net>
 Cc: linux-bcache@vger.kernel.org, kent.overstreet@gmail.com
 
-Hi Jens,
+On 03/07/2016 04:36 PM, Eric Wheeler wrote:
+> Hi Jens,
+>
+> Here is another OOM fix for bcache.  Please pull:
+>
+>    git pull https://bitbucket.org/ewheelerinc/linux.git v4.5-rc7-bcache-fixes
+>
+>   # git diff --stat v4.5-rc7
+>   drivers/md/bcache/super.c | 3 +++
+>   1 file changed, 3 insertions(+)
 
-Here is another OOM fix for bcache.  Please pull:
+I pulled this and the previous, but for 4.6. They are all marked stable, 
+so that should be fine.
 
-  git pull https://bitbucket.org/ewheelerinc/linux.git v4.5-rc7-bcache-fixes 
+Note that your 2nd patch in the -rc6 branch, this one:
 
- # git diff --stat v4.5-rc7
- drivers/md/bcache/super.c | 3 +++
- 1 file changed, 3 insertions(+)
+bcache: cleaned up error handling around register_cache()
 
--Eric
+had a 4 cases of trailing white space. Please ensure that future patches 
+are cleaned up, I fixed that one up.
 
-commit 87264e96886f785922d741750a8a1794e71af1e7
-Author: Eric Wheeler <git@linux.ewheeler.net>
-Date:   Mon Mar 7 15:17:50 2016 -0800
-
-    bcache: fix cache_set_flush() NULL pointer dereference on OOM
-    
-    When bch_cache_set_alloc() fails to kzalloc the cache_set, the
-    asyncronous closure handling tries to dereference a cache_set that
-    hadn't yet been allocated inside of cache_set_flush() which is called
-    by __cache_set_unregister() during cleanup.  This appears to happen only
-    during an OOM condition on bcache_register.
-    
-    Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
-    Cc: stable@vger.kernel.org
+-- 
+Jens Axboe
