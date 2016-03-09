@@ -1,53 +1,68 @@
-From: Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: [PATCH RESEND v2 16/18] fuse: Support fuse filesystems outside of init_user_ns
-Date: Wed, 9 Mar 2016 16:51:42 +0100
-Message-ID: <CAJfpegv5KR_Hi-79a8oyb+R+tv9W3RYqy5pngUKSyauVNk2ScQ@mail.gmail.com>
-References: <1451930639-94331-1-git-send-email-seth.forshee@canonical.com>
-	<1451930639-94331-17-git-send-email-seth.forshee@canonical.com>
-	<20160309112923.GF8655@tucsk>
-	<20160309141840.GC23399@ubuntu-xps13>
-	<CAJfpegv5JmB15yHpjYxVeOYdWWkoLMftr9-e_iS93Y_7m=t4Zw@mail.gmail.com>
-	<20160309152505.GA28779@ubuntu-hedt>
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PULL] bcache: fix cache_set_flush() NULL pointer dereference on
+ OOM
+Date: Wed, 9 Mar 2016 09:23:52 -0700
+Message-ID: <56E04E18.1060805@kernel.dk>
+References: <alpine.LRH.2.11.1603072326410.11530@mail.ewheeler.net>
+ <56DEFBC6.5040905@kernel.dk>
+ <alpine.LRH.2.11.1603090330430.15354@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Return-path: <linux-security-module-owner@vger.kernel.org>
-In-Reply-To: <20160309152505.GA28779@ubuntu-hedt>
-Sender: owner-linux-security-module@vger.kernel.org
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, fuse-devel <fuse-devel@lists.sourceforge.net>, LSM <linux-security-module@vger.kernel.org>, selinux@tycho.nsa.gov
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-io0-f180.google.com ([209.85.223.180]:34764 "EHLO
+	mail-io0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933047AbcCIQXz (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 9 Mar 2016 11:23:55 -0500
+Received: by mail-io0-f180.google.com with SMTP id m184so72083555iof.1
+        for <linux-bcache@vger.kernel.org>; Wed, 09 Mar 2016 08:23:55 -0800 (PST)
+In-Reply-To: <alpine.LRH.2.11.1603090330430.15354@mail.ewheeler.net>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: linux-bcache@vger.kernel.org
 
-On Wed, Mar 9, 2016 at 4:25 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
-> On Wed, Mar 09, 2016 at 03:48:22PM +0100, Miklos Szeredi wrote:
-
->> Can't we use current_cred()->uid/gid? Or fsuid/fsgid maybe?
+On 03/08/2016 08:36 PM, Eric Wheeler wrote:
+> On Tue, 8 Mar 2016, Jens Axboe wrote:
 >
-> That would be a departure from the current behavior in the !allow_other
-> case for unprivileged users. Since those mounts are done by an suid
-> helper all of those ids would be root in the userns, wouldn't they?
-
-Well, actually this is what the helper does:
-
-    sprintf(d, "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
-        fd, rootmode, getuid(), getgid());
-
-So it just uses the current uid/gid.  Apparently no reason to do this
-in userland, we could just as well set these in the kernel.  Except
-for possible backward compatibility problems for things not using the
-helper.
-
-BUT if the mount is unprivileged or it's a userns mount, or anything
-previously not possible, then we are not constrained by the backward
-compatibility issues, and can go with the saner solution.
-
-Does that not make sense?
-
->> When we have true unprivileged mounts, the user_id/group_id options
->> become redundant anyway and we can just use the current credentials.
+>> On 03/07/2016 04:36 PM, Eric Wheeler wrote:
+>>> Hi Jens,
+>>>
+>>> Here is another OOM fix for bcache.  Please pull:
+>>>
+>>>     git pull https://bitbucket.org/ewheelerinc/linux.git
+>>>     v4.5-rc7-bcache-fixes
+>>>
+>>>    # git diff --stat v4.5-rc7
+>>>    drivers/md/bcache/super.c | 3 +++
+>>>    1 file changed, 3 insertions(+)
+>>
+>> I pulled this and the previous, but for 4.6. They are all marked stable, so
+>> that should be fine.
+>>
+>> Note that your 2nd patch in the -rc6 branch, this one:
+>>
+>> bcache: cleaned up error handling around register_cache()
+>>
+>> had a 4 cases of trailing white space. Please ensure that future patches are
+>> cleaned up, I fixed that one up.
 >
-> True, but we don't yet have that.
+> Interesting, do you mean whitespace at the end of a line with code or
+> empty lines containing whitespace or both?  Something matched by [ ]+$  ?
 
-What's missing?
+Both. You had both trailing white space at the end of a line, and a 
+space at the start of a new line.
 
-Thanks,
-Miklos
+> Is it acceptable to have empty likes whith whitespace leading up to the
+> indent level?  eg:
+> 	if (1) {
+> 		foo
+> 		<<whitespace-to-here but line is blank
+> 		bar
+> 	}
+
+Nope
+
+-- 
+Jens Axboe
