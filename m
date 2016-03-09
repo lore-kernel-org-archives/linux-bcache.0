@@ -1,82 +1,86 @@
-From: "Garnett, James" <JGarnett@HAP.ORG>
-Subject: RE: Bcache on SLES 12
-Date: Wed, 9 Mar 2016 19:29:57 +0000
-Message-ID: <EDB95D300F23B3448D28C7C92472D214013515F4FD@xchangedb2.HAP.ORG>
-References: <EDB95D300F23B3448D28C7C92472D214013515F45F@xchangedb2.HAP.ORG>
- <56E076A8.8050308@evilazrael.de>
+From: Marc MERLIN <marc@merlins.org>
+Subject: Re: Bcache still unstable for me (memory problems)
+Date: Wed, 9 Mar 2016 12:55:26 -0800
+Message-ID: <20160309205526.GJ27437@merlins.org>
+References: <20160308235252.GB27437@merlins.org>
+ <alpine.LRH.2.11.1603090337300.15354@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mxmail2.hap.org ([70.142.149.11]:21391 "EHLO mxmail2.hap.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933626AbcCITcD convert rfc822-to-8bit (ORCPT
+Received: from magic.merlins.org ([209.81.13.136]:47800 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934154AbcCIUza (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 9 Mar 2016 14:32:03 -0500
-In-Reply-To: <56E076A8.8050308@evilazrael.de>
-Content-Language: en-US
+	Wed, 9 Mar 2016 15:55:30 -0500
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.11.1603090337300.15354@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Christoph Nelles <evilazrael@evilazrael.de>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: linux-bcache@vger.kernel.org
 
-Thanks for the reply, I did not find any documentation on Suse/Novell website to assist with the config, I'm sure they have other customers that would think that bcache does not work or is bugged.
+On Wed, Mar 09, 2016 at 03:59:30AM +0000, Eric Wheeler wrote:
+> > gargamel:/mnt/mnt# cat /proc/sys/vm/min_free_kbytes
+> > 19712
+> 
+> Ours is set to 256mb (256*1024) and I've never had a problem.  
+> 
+> > Should I change it?
+> 
+> Could try it, shrug.
 
-Dependencies should be added to bcache_tools for SLES12 that will point to the specific Development Kit tools i.e. libraries that are needed.
+Done :)
 
-As for me I'll stop the script I created, reboot; and then try modprobe bcache.
+> > So clearly on this boot too, it got registered late (20h-ish after boot)
+> 
+> I find it interesting that it re-registered md5 within 5 minutes of 24 
+> hours after initial registration: (86242-102)/3600 = 23:55:40
+ 
+Oh, I didn't do the math, but yeah, that looks very suspicous :)
 
-Thanks
+> Is there some kind of cron.daily thing going on?  If you have timestamps 
+> for that kernel log, maybe check cron for logs too.
 
+I don't have any cronjobs that do anything with bcache, but I have
+cronjobs that scan all drives and save all partitions plus other related
+stuff.
+That said, if I recall correctly, it died just when I restarted a copy
+to that filesystem (but my memory of that event is getting hazy now).
 
------Original Message-----
-From: Christoph Nelles [mailto:evilazrael@evilazrael.de] 
-Sent: Wednesday, March 09, 2016 2:17 PM
-To: Garnett, James <JGarnett@HAP.ORG>; linux-bcache@vger.kernel.org
-Subject: Re: Bcache on SLES 12
+I checked syslog around that time though 
+Mar  6 06:29:50 gargamel kernel: [204255.678548] bcache-register: page allocation failure: order:7, mode:0x24080c0
+and found nothing related to a cronjob or /dev/sdl disappearing and
+coming back.
 
-Hi,
+> Are there any intevening non-bcache lines indicating a disk was removed 
+> (eg, bad usb cable) and re-added?  
 
-a modprobe bcache would have done the job as the kernel module is not automatically loaded per default on SLES 12.
+Good question, none that I can find.
+ 
+> > > Do you have this patch?
+> > > https://bitbucket.org/ewheelerinc/linux/commits/a7044848050ac60e178798d20ea8a3ef2be36bc7?at=master
+> >  
+> > I got the other patches you sent me last time, but didn't end up with
+> > this one, sorry if you sent it to me and I dropped it.
+> > I'll apply it now, thanks.
+> 
+> All of the patches related to troubleshooting with you are here:
+> 
+>   https://bitbucket.org/ewheelerinc/linux/branch/v4.5-rc6-bcache-fixes
+> and here:
+>   https://bitbucket.org/ewheelerinc/linux/branch/v4.5-rc7-bcache-fixes
+> 
+> so make sure all 3 are applied.  It might still OOM, but it shouldn't 
+> crash if we got it all.
 
-Regards
+Thanks. I just checked that I have all those paatches now.
 
-Christoph
+I will report back if I get more interesting output :)
 
-Am 09.03.2016 um 19:03 schrieb Garnett, James:
-> Here is a description of a problem I found with setting up Bcache on SLES 12 and also the fix.
->
-> Bcache-tools Version: 0.1.g71-2.12
-> Linux Kernel Uname level: 3.12.51-52.39-default
-> SuSE-release: VERSION = 12 PATCHLEVEL = 0
->
-> Problem: After running make-bcache -B '/dev/sdx' example make-bcache 
-> -B /dev/sdb and running 'echo /dev/sdb > /sys/fs/bcache/register'. I received an invalid command error because /sys/fs/bcache/register does not exist.
-> I then ran the script '/lib/udev/bcache-register' which still did not create /sys/fs/bcache/register.
->
-> Fix: I ran YAST and added /Software/Add-On Products/SUSE Linux Enterprise Software Development Kit 12. After adding a group of libraries automatically installed.
-> Afterwards I reran '/lib/udev/bcache-register' which successfully created /sys/fs/bcache/register. Lastly I was able to follow the Getting Started section of the Bcache documentation located at evilpiepirate.
-> Upon reboot; /sys/fs/bcache/register still does not exist so I created a script that fixes the problem and mounts /dev/bcach0. See Below:
->
-> /lib/udev/bcache-register
-> echo /dev/sdb > /sys/fs/bcache/register echo /dev/msdp_images/IMAGES > 
-> /sys/fs/bcache/register mount /dev/bcache0 /msdp/images
->
->
-> James Garnett
-> Sr. Systems Architect
-> Health Alliance Plan of Michigan
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe 
-> linux-bcache" in the body of a message to majordomo@vger.kernel.org 
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
---
-Christoph Nelles
-
-E-Mail    : evilazrael@evilazrael.de
-Jabber    : eazrael@evilazrael.net      ICQ       : 78819723
-
-PGP-Key   : ID 0x424FB55B on subkeys.pgp.net
-             or http://evilazrael.net/pgp.txt
+Thanks,
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
