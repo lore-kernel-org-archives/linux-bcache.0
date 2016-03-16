@@ -1,73 +1,29 @@
-From: Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: [PATCH RESEND v2 16/18] fuse: Support fuse filesystems outside of init_user_ns
-Date: Mon, 14 Mar 2016 21:58:43 +0100
-Message-ID: <CAJfpegvTuR-LZAVxeJAmojs=gcrM-t5dd-QyZM-bOYMYLRL6Dg@mail.gmail.com>
-References: <1451930639-94331-1-git-send-email-seth.forshee@canonical.com>
-	<1451930639-94331-17-git-send-email-seth.forshee@canonical.com>
-	<20160309112923.GF8655@tucsk>
-	<20160309141840.GC23399@ubuntu-xps13>
-	<CAJfpegv5JmB15yHpjYxVeOYdWWkoLMftr9-e_iS93Y_7m=t4Zw@mail.gmail.com>
-	<20160309152505.GA28779@ubuntu-hedt>
-	<CAJfpegv5KR_Hi-79a8oyb+R+tv9W3RYqy5pngUKSyauVNk2ScQ@mail.gmail.com>
-	<20160309170726.GB28779@ubuntu-hedt>
+From: =?UTF-8?Q?Marcin_Miros=c5=82aw?= <marcin@mejor.pl>
+Subject: Testing bcachefs - beginners questions
+Date: Wed, 16 Mar 2016 16:13:43 +0100
+Message-ID: <56E97827.6090203@mejor.pl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oi0-f67.google.com ([209.85.218.67]:33481 "EHLO
-	mail-oi0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755317AbcCNU6o (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 14 Mar 2016 16:58:44 -0400
-Received: by mail-oi0-f67.google.com with SMTP id c203so11836754oia.0
-        for <linux-bcache@vger.kernel.org>; Mon, 14 Mar 2016 13:58:44 -0700 (PDT)
-In-Reply-To: <20160309170726.GB28779@ubuntu-hedt>
+Received: from jowisz.mejor.pl ([81.4.120.72]:9688 "EHLO jowisz.mejor.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932331AbcCPPUd (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 16 Mar 2016 11:20:33 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, fuse-devel <fuse-devel@lists.sourceforge.net>, LSM <linux-security-module@vger.kernel.org>, selinux@tycho.nsa.gov
+To: linux-bcache@vger.kernel.org
 
-On Wed, Mar 9, 2016 at 6:07 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
-> On Wed, Mar 09, 2016 at 04:51:42PM +0100, Miklos Szeredi wrote:
->> On Wed, Mar 9, 2016 at 4:25 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
->> > On Wed, Mar 09, 2016 at 03:48:22PM +0100, Miklos Szeredi wrote:
->>
->> >> Can't we use current_cred()->uid/gid? Or fsuid/fsgid maybe?
->> >
->> > That would be a departure from the current behavior in the !allow_other
->> > case for unprivileged users. Since those mounts are done by an suid
->> > helper all of those ids would be root in the userns, wouldn't they?
->>
->> Well, actually this is what the helper does:
->>
->>     sprintf(d, "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
->>         fd, rootmode, getuid(), getgid());
->
-> Sorry, I was thinking of euid. So this may not be a problem.
->
->> So it just uses the current uid/gid.  Apparently no reason to do this
->> in userland, we could just as well set these in the kernel.  Except
->> for possible backward compatibility problems for things not using the
->> helper.
->>
->> BUT if the mount is unprivileged or it's a userns mount, or anything
->> previously not possible, then we are not constrained by the backward
->> compatibility issues, and can go with the saner solution.
->>
->> Does that not make sense?
->
-> But we generally do want backwards compatibility, and we want userspace
-> software to be able to expect the same behavior whether or not it's
-> running in a user namespaced container. Obviously we can't always have
-> things 100% identical, but we shouldn't break things unless we really
-> need to.
->
-> However it may be that this isn't actually going to break assumptions of
-> existing software like I had feared. My preference is still to not
-> change any userspace-visible behaviors since we never know what software
-> might have made assumptions based on those behaviors. But if you're
-> confident that it won't break anything I'm willing to give it a try.
+Hello!
 
-I'm quite confident it won't make a difference.
+I'd like to try to use and test how bcachefs works. I've found page
+https://lkml.org/lkml/2015/8/21/22 where are described working and
+planned features. What changed since mentioned email? Do I see correctly
+that web page with documentation is rather outdated?
+How can I check bcachefs without using all kernel from
+https://evilpiepirate.org/git/linux-bcache.git ? Is it enough to copy
+directory drivers/md/bcache to currently used kernel sources and compile
+or I've to use kernel from mentioned git repo?
 
-Thanks,
-Miklos
+Thank you for any answer,
+Marcin
