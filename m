@@ -1,39 +1,87 @@
-From: David Kedogo <johnson.mabila@gmail.com>
-Subject: FOR YOUR INFORMATION DEAR BENEFICIARY,
-Date: Mon, 21 Mar 2016 20:00:08 +0100
-Message-ID: <CALjegnwQVeBD5mR7aKq0jXfVKDO_xdiBeQ9Q9uudA+8ioYG4vA@mail.gmail.com>
-Reply-To: peterakupa112@gmail.com
+From: Laison@seymour.toledo.br, Computech@seymour.toledo.br,
+	"Inc <support"@ensuretech.com
+Subject: CISCO IP PHONES AND CPU's
+Date: Thu, 24 Mar 2016 01:45:20 +0700
+Message-ID: <20160323200919.E7ED4A68C6__46965.5662811876$1458765588$gmane$org@seymour.toledo.br>
+Reply-To: sales@laisoncomputertech.us
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wm0-f68.google.com ([74.125.82.68]:35951 "EHLO
-	mail-wm0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756262AbcCUTsz (ORCPT
+Received: from seymour.toledo.br ([200.148.142.55]:34372 "EHLO
+	seymour.toledo.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756772AbcCWUjK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 21 Mar 2016 15:48:55 -0400
-Received: by mail-wm0-f68.google.com with SMTP id l68so24551182wml.3
-        for <linux-bcache@vger.kernel.org>; Mon, 21 Mar 2016 12:48:54 -0700 (PDT)
+	Wed, 23 Mar 2016 16:39:10 -0400
+Content-Description: Mail message body
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Recipients <support@ensuretech.com>
 
-FOR YOUR INFORMATION DEAR BENEFICIARY,
+Hi,
 
-Your Over-due ATM Card payment of $1.5MUSD by the UN Office have
-deposited to the ATM MASTER CARD OFFICE. All you have to do now is to
-contact the Office Manager Dr. peter Akupa Boni at:
-(peterakupa112@gmail.com) and Phone number: +229 61 31 07 78  , he
-will give you direction on how you will receive your ATM MASTER CARD
-immediately.
+Our Stock list.
 
-Contact person: Dr. peter Akupa,
-E-mail: (peterakupa112@gmail.com )
+Brand NEW
+96 x Cisco 7900 IP Phone
+87 x Unified IP Phone 6900
+12 x Unified IP Phone 8900
+76 x Unified IP Phone 9900
+55 x Unified IP Phone 8800
+67 x Cisco 1921
+67 x Cisco 1941
+56 x Cisco CP-7961G 7961G
+34 x Cisco CP-7971G-GE 7971G
+19 x Cisco Unified IP Conference Station 7937G Model: 7937 CP-7937G
+20 x Cisco CP-7975G 7975G
 
-You have to also contact him with the following details:
+Brand New Sealed :
 
-1. Your full name:
-2. Your contact cell phone number:
-3. Your age:
-4. your Email
+23 x  CISCO1921-SEC/K9
+Conditions: Brand New Sealed
+Description: CISCO 1921 Security Bundle w/SEC license PAK
 
-Thanks
-David Kedogo
+45 x CISCO1921/K9
+Conditions: Brand New Sealed
+Description: CISCO 1921 Modular Router, 2 GE, 2 EHWIC slots, 512DRAM, IP Base
+
+(1)  WS-C4500X-16SFP+
+Serial number:  JAE183501L3
+US&#36;2600
+
+(1)  WS-C3850-48PW-S
+Serial number:  FCW1823C0EW
+US&#36;2650
+
+(1)  WS-X6908-10G-2T
+Serial number:  SAL1620CKUB
+US&#36;3650
+
+(1)  ASR1000-ESP10
+Serial number:  JAE181306C3
+US&#36;3800
+
+(1)  AIR-CT5508-250-K9   (this is new but box is open!)
+Serial number:  FCW1521L038
+US&#36;4000
+
+CPUs part number below
+
+89 x  X5650
+
+975 x  X5660
+
+150 x  X5680
+
+265 x  X5690
+
+Kindly make your price offers.
+
+Sincerely
+Barbara Johnson
+Laison Computech
+210 N Scoring Ave,
+Rialto California, 92376
+Tel: +1-657-232-7047
+Fax: +1-347-214-0478
+Email: sales@laisoncomputertech.us
