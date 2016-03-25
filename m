@@ -1,76 +1,81 @@
-From: Sebastian Roesner <sroesner-kernelorg@roesner-online.de>
-Subject: Re: Bug - bcache: "unable to handle kernel NULL pointer dereference"
- when trying to add a md caching device
-Date: Fri, 25 Mar 2016 15:11:30 +0100
-Message-ID: <56F54712.6090202@roesner-online.de>
-References: <56F4058B.1030309@roesner-online.de>
- <alpine.LRH.2.11.1603250126110.13440@mail.ewheeler.net>
- <alpine.LRH.2.11.1603250416030.13440@mail.ewheeler.net>
+From: Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: [PATCH RESEND v2 16/18] fuse: Support fuse filesystems outside
+ of init_user_ns
+Date: Fri, 25 Mar 2016 15:31:48 -0500
+Message-ID: <20160325203148.GA4055@ubuntu-xps13>
+References: <1451930639-94331-1-git-send-email-seth.forshee@canonical.com>
+ <1451930639-94331-17-git-send-email-seth.forshee@canonical.com>
+ <20160309112923.GF8655@tucsk>
+ <20160309141840.GC23399@ubuntu-xps13>
+ <CAJfpegv5JmB15yHpjYxVeOYdWWkoLMftr9-e_iS93Y_7m=t4Zw@mail.gmail.com>
+ <20160309152505.GA28779@ubuntu-hedt>
+ <CAJfpegv5KR_Hi-79a8oyb+R+tv9W3RYqy5pngUKSyauVNk2ScQ@mail.gmail.com>
+ <20160309170726.GB28779@ubuntu-hedt>
+ <CAJfpegvTuR-LZAVxeJAmojs=gcrM-t5dd-QyZM-bOYMYLRL6Dg@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from euler.f0o.de ([85.88.6.196]:54632 "EHLO mail.f0o.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752703AbcCYOLt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 25 Mar 2016 10:11:49 -0400
-In-Reply-To: <alpine.LRH.2.11.1603250416030.13440@mail.ewheeler.net>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-security-module-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <CAJfpegvTuR-LZAVxeJAmojs=gcrM-t5dd-QyZM-bOYMYLRL6Dg@mail.gmail.com>
+Sender: owner-linux-security-module@vger.kernel.org
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, Linux-Fsdevel <linux-fsdevel@vger.kernel.org>, fuse-devel <fuse-devel@lists.sourceforge.net>, LSM <linux-security-module@vger.kernel.org>, selinux@tycho.nsa.gov
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: linux-bcache@vger.kernel.org
 
-Hi Eric,
+On Mon, Mar 14, 2016 at 09:58:43PM +0100, Miklos Szeredi wrote:
+> On Wed, Mar 9, 2016 at 6:07 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
+> > On Wed, Mar 09, 2016 at 04:51:42PM +0100, Miklos Szeredi wrote:
+> >> On Wed, Mar 9, 2016 at 4:25 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
+> >> > On Wed, Mar 09, 2016 at 03:48:22PM +0100, Miklos Szeredi wrote:
+> >>
+> >> >> Can't we use current_cred()->uid/gid? Or fsuid/fsgid maybe?
+> >> >
+> >> > That would be a departure from the current behavior in the !allow_other
+> >> > case for unprivileged users. Since those mounts are done by an suid
+> >> > helper all of those ids would be root in the userns, wouldn't they?
+> >>
+> >> Well, actually this is what the helper does:
+> >>
+> >>     sprintf(d, "fd=%i,rootmode=%o,user_id=%u,group_id=%u",
+> >>         fd, rootmode, getuid(), getgid());
+> >
+> > Sorry, I was thinking of euid. So this may not be a problem.
+> >
+> >> So it just uses the current uid/gid.  Apparently no reason to do this
+> >> in userland, we could just as well set these in the kernel.  Except
+> >> for possible backward compatibility problems for things not using the
+> >> helper.
+> >>
+> >> BUT if the mount is unprivileged or it's a userns mount, or anything
+> >> previously not possible, then we are not constrained by the backward
+> >> compatibility issues, and can go with the saner solution.
+> >>
+> >> Does that not make sense?
+> >
+> > But we generally do want backwards compatibility, and we want userspace
+> > software to be able to expect the same behavior whether or not it's
+> > running in a user namespaced container. Obviously we can't always have
+> > things 100% identical, but we shouldn't break things unless we really
+> > need to.
+> >
+> > However it may be that this isn't actually going to break assumptions of
+> > existing software like I had feared. My preference is still to not
+> > change any userspace-visible behaviors since we never know what software
+> > might have made assumptions based on those behaviors. But if you're
+> > confident that it won't break anything I'm willing to give it a try.
+> 
+> I'm quite confident it won't make a difference.
 
-Am 25.03.2016 um 05:18 schrieb Eric Wheeler:
-> Please send this output:
->
-> tail /sys/block/md2/queue/discard_*
+I was just about to go make these changes and discovered that the
+user_id and group_id options are already mandatory, due to this check at
+the bottom of parse_fuse_opt():
 
->> git pull https://bitbucket.org/ewheelerinc/linux v4.5-rc6-bcache-fixes
->> git pull https://bitbucket.org/ewheelerinc/linux v4.5-rc7-bcache-fixes
->
-> Try this patch and see if it BUGs:
- > [..]
+        if (!d->fd_present || !d->rootmode_present ||
+            !d->user_id_present || !d->group_id_present)
+                return 0;
 
-# tail /sys/block/md2/queue/discard_*
-==> /sys/block/md2/queue/discard_granularity <==
-4096
+So I'll simply drop those two lines which supply default values for
+these options.
 
-==> /sys/block/md2/queue/discard_max_bytes <==
-2147450880
-
-==> /sys/block/md2/queue/discard_max_hw_bytes <==
-2147450880
-
-==> /sys/block/md2/queue/discard_zeroes_data <==
-0
-
-root@gropius:/home/sroesner# echo /dev/md2 > /sys/fs/bcache/register
-sroesner@gropius:~$
-
--> it killed my bash.
-
-Trace with patches and BUG_ON patch:
-
-[  172.660142] BUG: unable to handle kernel NULL pointer dereference at 
-0000000000000028
-[  172.660229] IP: [<ffffffff811e53b4>] bio_trim+0xf/0x2a
-[  172.660289] PGD 7faf3e067 PUD 7f9279067 PMD 0
-[  172.660399] Oops: 0000 [#1] SMP
-[...]
-[  172.664780] Call Trace:
-[  172.664813]  [<ffffffffa007f3be>] ? raid1_make_request+0x2e8/0xad7 
-[raid1]
-[  172.664846]  [<ffffffff811f07da>] ? blk_queue_split+0x377/0x3d4
-[  172.664880]  [<ffffffffa005fb5f>] ? md_make_request+0xf6/0x1e9 [md_mod]
-[  172.664912]  [<ffffffff811eb860>] ? generic_make_request+0xb5/0x155
-[  172.664947]  [<ffffffffa0445c89>] ? prio_io+0x85/0x95 [bcache]
-[  172.664981]  [<ffffffffa0448252>] ? register_cache_set+0x355/0x8d0 
-[bcache]
-[  172.665016]  [<ffffffffa04497d3>] ? register_bcache+0x1006/0x1174 
-[bcache]
-
-See http://pastebin.com/6CHtky2x for complete traces.
-
-Sebastian
+Thanks,
+Seth
