@@ -1,106 +1,87 @@
-From: Ming Lei <ming.lei@canonical.com>
-Subject: Re: [BUG] NULL pointer in raid1_make_request passed to bio_trim when
- adding md as bcache caching dev
-Date: Tue, 29 Mar 2016 09:28:17 +0800
-Message-ID: <CACVXFVO23Zsrvjd-T0xFinYnoWah5Lr4Gz=-P+X-Q1UHChJZ_Q@mail.gmail.com>
-References: <56F4058B.1030309@roesner-online.de>
-	<alpine.LRH.2.11.1603250126110.13440@mail.ewheeler.net>
-	<alpine.LRH.2.11.1603250416030.13440@mail.ewheeler.net>
-	<56F54712.6090202@roesner-online.de>
-	<alpine.LRH.2.11.1603251954220.13440@mail.ewheeler.net>
-	<CACVXFVO7ARehcQHvBuRoVHZhc0BgA5kKxaPQTqMT7Y=4Ca6urw@mail.gmail.com>
-	<56F6BCD8.70504@roesner-online.de>
-	<20160328181059.GA83819@kernel.org>
+From: Pradeep Jindal <praddyjindal@gmail.com>
+Subject: Re: 84% -> 60% cache hit ratio for same workflow, different conf
+Date: Tue, 29 Mar 2016 11:32:31 +0530
+Message-ID: <CANEjr_QxDn9tac-Py3MGHXzUgCHZoaQiu3Eb4VFtJUdMryYrWQ@mail.gmail.com>
+References: <CANEjr_S08oB9=3zcmBJktKTHH=NQwad95o2mfsxAeTPTgmL2YQ@mail.gmail.com>
+	<20160328191723.GA15859@suse.cz>
+	<CANEjr_Tspy0hyNgTQwL38X0jvcNUon_g2HMyoqZFQS+7e2qKow@mail.gmail.com>
+	<20160328201907.GA20296@suse.cz>
+	<CANEjr_TWKkUB54rYOr84UmKXrGeJdN7c2z5Z-QerwNRT1Lz-9Q@mail.gmail.com>
+	<CANEjr_R3csk=C=_9FQ-odgF70FD5imivqh2QBWk=17Z7wR21Sg@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from youngberry.canonical.com ([91.189.89.112]:55631 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827AbcC2B2U (ORCPT
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:36382 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752030AbcC2GCc (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 28 Mar 2016 21:28:20 -0400
-In-Reply-To: <20160328181059.GA83819@kernel.org>
+	Tue, 29 Mar 2016 02:02:32 -0400
+Received: by mail-ig0-f172.google.com with SMTP id nk17so68629256igb.1
+        for <linux-bcache@vger.kernel.org>; Mon, 28 Mar 2016 23:02:31 -0700 (PDT)
+In-Reply-To: <CANEjr_R3csk=C=_9FQ-odgF70FD5imivqh2QBWk=17Z7wR21Sg@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Shaohua Li <shli@kernel.org>
-Cc: Sebastian Roesner <sroesner-kernelorg@roesner-online.de>, Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, Ming Lin <mlin@kernel.org>, Vlad-Cosmin Miu <miuvlad@gmail.com>, rjones@redhat.com, Kent Overstreet <kent.overstreet@gmail.com>, Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <axboe@fb.com>
+To: Vojtech Pavlik <vojtech@suse.com>
+Cc: linux-bcache@vger.kernel.org
 
-On Tue, Mar 29, 2016 at 2:10 AM, Shaohua Li <shli@kernel.org> wrote:
-> On Sat, Mar 26, 2016 at 05:46:16PM +0100, Sebastian Roesner wrote:
->> Hello Ming, Eric,
+On my new configuration the bset unwritten key bytes are non-zero
+whereas on older config that is zero:
+
+btree nodes:            1192
+written sets:           2377
+unwritten sets:         1186
+written key bytes:      204048256
+unwritten key bytes:    115448
+floats:                 68721067953
+failed:                 367
+
+What does that indicate?
+
+Also, could you please clarify on how advertising stripe size would
+affect writearound cache mode?
+- Pradeep Jindal
+
+
+On Tue, Mar 29, 2016 at 1:56 AM, Pradeep Jindal <praddyjindal@gmail.com> wrote:
+> I am using writearound cache mode and have xfs on bcache device
+> - Pradeep Jindal
+>
+>
+> On Tue, Mar 29, 2016 at 1:52 AM, Pradeep Jindal <praddyjindal@gmail.com> wrote:
+>> But in my new configuration backing device is a bare disk, no LVM, caching
+>> device is on LVM though.
 >>
->> Am 26.03.2016 um 16:40 schrieb Ming Lei:
->> > From the trace, looks the bio returned from bio_clone_mddev() is NULL,
->> >and maybe the source bio is buggy, something like the attached patch
->> >might be helpful, could you apply the attached debug patch, reproduce
->> >and post the log?
->>
->> I was able to reproduce it on a non-productive system, but only after
->> copying the bcache superblocks/partition starts from the original system,
->> with new created ones it worked fine.
->>
->> Full trace and check_bio output can be found here:
->>
->> http://pastebin.com/ngvGGHBZ
->
-> 320 bvecs exceeds what bio-clone_set can handle. Could you please try below patch?
->
-
-The source bio is still a cloned bio which includes 320 bvecs, which is weried.
-And I guess bio_add_page() isn't used for the initial source bio from bcache.
-
-From the stack trace, looks it is related with prio_io(), which just
-sets bio size as
-the bucket size, so could you check what the bucket size is about your
-bcache device via bcache-super-show or sysfs?
-
-If the bucket size is (320 * 4K), looks we should limit the queue's max
-sector as 1MB.
-
-BTW, in my bcache block, the bucket size is 512K, and I can't reproduce
-the issue, and it is stored in superblock.
-
-> commit 92761dad7ff6e1bf25de247e0064dd398e797599
-> Author: Shaohua Li <shli@fb.com>
-> Date:   Mon Mar 28 10:54:35 2016 -0700
->
->     block: don't make BLK_DEF_MAX_SECTORS too big
->
->     bio_alloc_bioset() allocates bvecs from bvec_slabs which can only allocate
->     maximum 256 bvec (eg, 1M for 4k pages). We can't bump BLK_DEF_MAX_SECTORS to
->     exceed this value otherwise bio_alloc_bioset will fail.
->
->     This fixes commit 30e2bc08b2bb7c069. We probably should make the bvec_slabs
->     hold bigger bvecs if bigger bio size is required.
->
->     Signed-off-by: Shaohua Li <shli@fb.com>
->
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 7e5d7e0..da64325 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -1153,7 +1153,11 @@ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
->  enum blk_default_limits {
->         BLK_MAX_SEGMENTS        = 128,
->         BLK_SAFE_MAX_SECTORS    = 255,
-> -       BLK_DEF_MAX_SECTORS     = 2560,
-> +       /*
-> +        * if you change this, please also change bvec_alloc and BIO_MAX_PAGES.
-> +        * Otherwise bio_alloc_bioset will break.
-> +        */
-> +       BLK_DEF_MAX_SECTORS     = BIO_MAX_SECTORS,
->         BLK_MAX_SEGMENT_SIZE    = 65536,
->         BLK_SEG_BOUNDARY_MASK   = 0xFFFFFFFFUL,
->  };
-
-This change should work.
-
-But, when multipage bvecs is ready, I think the above limit can be increased
-too. I suggest to use (BIO_MAX_PAGES << (PAGE_SHIFT - 9)) instead of
-BIO_MAX_SECTORS, which is removed in my following patch and there is
-only one user of this macro:
-
-       http://marc.info/?l=linux-kernel&m=145862727620599&w=2
-
-Thanks,
-Ming
+>> On Mar 29, 2016 1:49 AM, "Vojtech Pavlik" <vojtech@suse.com> wrote:
+>>>
+>>> On Tue, Mar 29, 2016 at 01:35:32AM +0530, Pradeep Jindal wrote:
+>>>
+>>> > > > I am facing a weird problem, I earlier had a configuration wherein
+>>> > > > my
+>>> > > > backing device was a logical volume (LVM) backed by 3 software RAID0
+>>> > > > arrays having 2x1TB disks each, so totally 6TB of storage for
+>>> > > > backing
+>>> > > > device and 300GB logical volume (LVM) backed by SSD as a caching
+>>> > > > device. Both were configured as a cache set and I was getting around
+>>> > > > 84% cache hit ratio.
+>>> > > >
+>>> > > > Now, I have changed the backing device to a bare (no LVM, no raid)
+>>> > > > 6TB
+>>> > > > disk while everything else stays same (caching device on LVM, 300GB)
+>>> > > > and for exactly same workload I am only getting 58-60% cache hit
+>>> > > > ratio.
+>>> > > >
+>>> > > > I am confused, what could be the reason?
+>>> > >
+>>> > > Full stripe size writes are configured according to the backing
+>>> > > device,
+>>> > > for example.
+>>>
+>>> > Didn't quite get it, could you please elaborate?
+>>>
+>>> Backing devices that advertise a stripe size cause bcache to enable a
+>>> mode where it tries to always write a full stripe to the backing
+>>> devices, hence changing behavior of the cache.
+>>>
+>>> --
+>>> Vojtech Pavlik
+>>> Director SuSE Labs
