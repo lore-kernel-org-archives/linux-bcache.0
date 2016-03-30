@@ -1,93 +1,99 @@
-From: =?UTF-8?Q?Marcin_Miros=c5=82aw?= <marcin@mejor.pl>
-Subject: Re: Compilation error: ERROR: "pagecache_add_put"
- [drivers/md/bcache/bcache.ko] undefined!
-Date: Wed, 30 Mar 2016 15:09:58 +0200
-Message-ID: <56FBD026.9080201@mejor.pl>
-References: <56FA8D3C.60307@mejor.pl> <20160329210139.GA8239@kmo-pixel>
- <56FB86AE.4090300@mejor.pl> <20160330082023.GA9561@kmo-pixel>
- <56FB9EAF.3030908@mejor.pl> <20160330101423.GA10615@kmo-pixel>
+From: Seth Forshee <seth.forshee@canonical.com>
+Subject: Re: [PATCH RESEND v2 11/18] fs: Ensure the mounter of a filesystem
+ is privileged towards its inodes
+Date: Wed, 30 Mar 2016 09:58:20 -0500
+Message-ID: <20160330145820.GA41461@ubuntu-hedt>
+References: <1451930639-94331-1-git-send-email-seth.forshee@canonical.com>
+ <1451930639-94331-12-git-send-email-seth.forshee@canonical.com>
+ <20160303170201.GA30224@ubuntu-hedt>
+ <87twkl50g5.fsf@x220.int.ebiederm.org>
+ <20160328165936.GC137406@ubuntu-hedt>
+ <87twjoiw6u.fsf@x220.int.ebiederm.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:32473 "EHLO jowisz.mejor.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751805AbcC3NKr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 30 Mar 2016 09:10:47 -0400
-In-Reply-To: <20160330101423.GA10615@kmo-pixel>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-security-module-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <87twjoiw6u.fsf@x220.int.ebiederm.org>
+Sender: owner-linux-security-module@vger.kernel.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org
 
-W dniu 30.03.2016 o 12:14, Kent Overstreet pisze:
-> On Wed, Mar 30, 2016 at 11:38:55AM +0200, Marcin Miros=C5=82aw wrote:
->> W dniu 30.03.2016 o 10:20, Kent Overstreet pisze:
->>> On Wed, Mar 30, 2016 at 09:56:30AM +0200, Marcin Miros=C5=82aw wrot=
-e:
->>>> W dniu 29.03.2016 o 23:01, Kent Overstreet pisze:
->>>>> On Tue, Mar 29, 2016 at 04:12:12PM +0200, Marcin Miros=C5=82aw wr=
-ote:
->>>>>> Hi again!
->>>>>> Since commit 53b6273b131a864947a2c55a18c07e86487e0a87 I'm gettin=
-g errors:
->>>>>> Kernel: arch/x86/boot/bzImage is ready  (#6)
->>>>>>   Building modules, stage 2.
->>>>>>   MODPOST 538 modules
->>>>>> ERROR: "pagecache_add_put" [drivers/md/bcache/bcache.ko] undefin=
-ed!
->>>>>
->>>>> Thanks, fixed.
->>>>>
->>>>> Also pushed another small patch for the memory allocation failure=
- in the lz4
->>>>> code - it ought to work reliably in practice now.
->>>>
->>>> I didn't expect such fast fix for lz4:)
->>>> BTW, I'd like to ask how should I update my working tree via git. =
-I run
->>>> git pull in tree to fetch your fix and (again) I got conflict:
->>>> git pull
->>>> remote: Counting objects: 251, done.
->>>> remote: Compressing objects: 100% (52/52), done.
->>>> remote: Total 251 (delta 219), reused 231 (delta 199)
->>>> Receiving objects: 100% (251/251), 36.73 KiB | 0 bytes/s, done.
->>>> Resolving deltas: 100% (219/219), completed with 63 local objects.=
-=09
->>>> From https://evilpiepirate.org/git/linux-bcache
->>>>  + 800353d...97951d0 bcache-dev -> origin/bcache-dev  (forced upda=
-te)
->>>>  + ad59dfd...eda3e8b bcache-dev-wip -> origin/bcache-dev-wip  (for=
-ced
->>>> update)
->>>> Auto-merging mm/filemap.c
->>>> CONFLICT (content): Merge conflict in mm/filemap.c
->>>> Auto-merging drivers/md/bcache/fs-io.c
->>>> CONFLICT (content): Merge conflict in drivers/md/bcache/fs-io.c
->>>> Auto-merging drivers/md/bcache/extents.h
->>>> CONFLICT (content): Merge conflict in drivers/md/bcache/extents.h
->>>> Automatic merge failed; fix conflicts and then commit the result.
->>>>
->>>>
->>>> How I should update bcache git tree?
->>>
->>> git reset --hard origin/bcache-dev
->>
->>
->> Hmm, I'm using:
->> url =3D https://evilpiepirate.org/git/linux-bcache.git
->> branch "bcache-dev"
->>
->> should I expect fix of building in this branch? I'm still at
->> commit 97951d039d3991d29035390ba5f0497af4e32ca3
->>     bcachefs: fix fallocate + compression
->=20
-> yeah, that commit should work - I squashed the fix with the faulty co=
-mmit,
-> that's why you got the merge conflicts
+On Tue, Mar 29, 2016 at 08:36:09PM -0500, Eric W. Biederman wrote:
+> Seth Forshee <seth.forshee@canonical.com> writes:
+> 
+> > On Fri, Mar 04, 2016 at 04:43:06PM -0600, Eric W. Biederman wrote:
+> >> In general this is only an issue if uids and gids on the filesystem
+> >> do not map into the user namespace.
+> >> 
+> >> Therefore the general fix is to limit the logic of checking for
+> >> capabilities in s_user_ns if we are dealing with INVALID_UID and
+> >> INVALID_GID.  For proc and kernfs that should never be the case
+> >> so the problem becomes a non-issue.
+> >> 
+> >> Further I would look at limiting that relaxation to just
+> >> inode_change_ok. 
+> >
+> > Finally got around to implementing this today; is the patch below what
+> > you had in mind?
+> 
+> Pretty much.
+> 
+> For the same reason that capble_wrt_inode_uidgid(inode) had to look
+> at both inode->i_uid and inode->i_gid I think we need to look at
+> both inode->i_uid and inode->i_gid in those case.
+> 
+> I am worried about chgrp_ok in cases such as inode->i_uid is valid
+> but unmapped.  I have a similiar worry about chown_ok where
+> inode->i_gid is valid but unmapped (although that worry is less
+> serious).
 
-I still live in svn world with immutable commits;)
-Thank you for help. I'm using bcachefs with lz4 since a few hours and I
-don't have any problem.
+That makes sense.
 
-Marcin
+So then what is wanted is to check that the other id is either invalid,
+or else it maps into s_user_ns. So for chown_ok() something like this:
+
+    if (!uid_valid(inode->i_uid) &&
+        (!gid_valid(inode->i_gid) || kgid_has_mapping(inode->i_sb->s_user_ns, inode->i_gid)) &&
+        ns_capable(inode->i_sb->s_user_ns, CAP_CHOWN))
+            return true;
+
+and likewise for chgrp_ok(). Does that satisfy your concerns?
+
+> >> So that we can easily wrap that check per filesystem
+> >> and deny the relaxation for proc and kernfs.  proc and kernfs already
+> >> have wrappers for .setattr so denying changes when !uid_vaid and
+> >> !gid_valid would be a trivial addition, and ensure calamity does
+> >> not ensure.
+> >
+> > I'm confused about this part though. As you say above, proc and kernfs
+> > will never have inodes with invalid ids, so it's not an issue. Do you
+> > just mean this to be extra insurance against problems?
+> 
+> I meant two things.
+> 1) As filesystems explicitly have to call inode_change_ok they can
+>    over ride the default if it is possible.
+> 
+> 2) Because being paranoid about backward compatibility matters, it
+>    almost certainly workth add adding a check:
+>    "if (!uid_valid(inode->i_uid) ||!gid_valid(inode->i_gid)) return -EPERM"
+>    To proc and sysfs just before they call inode_change_ok just so we
+>    don't need to analyze them and confirm that they don't use
+>    INVALID_UID.
+> 
+>    That just makes the patch more robust.
+> 
+>    The we could leave removing that code for a follow on patch where
+>    someone takes the time to read through and audit all of the proc and
+>    sysfs code to ensure that the case does not arise, instead of just
+>    implicitily assuming it.
+> 
+>    That is the usual pattern when pushing down changes.  Do something
+>    that is easily guaranteed to work, and leave the careful looking for
+>    a patch all of it's own.
+
+Okay, I'll add checks.
+
+Thanks,
+Seth
+
