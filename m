@@ -1,72 +1,79 @@
-From: ebiederm@xmission.com (Eric W. Biederman)
-Subject: Re: [PATCH RESEND v2 11/18] fs: Ensure the mounter of a filesystem is privileged towards its inodes
-Date: Wed, 30 Mar 2016 15:18:28 -0500
-Message-ID: <87oa9viusr.fsf@x220.int.ebiederm.org>
-References: <1451930639-94331-1-git-send-email-seth.forshee@canonical.com>
-	<1451930639-94331-12-git-send-email-seth.forshee@canonical.com>
-	<20160303170201.GA30224@ubuntu-hedt>
-	<87twkl50g5.fsf@x220.int.ebiederm.org>
-	<20160328165936.GC137406@ubuntu-hedt>
-	<87twjoiw6u.fsf@x220.int.ebiederm.org>
-	<20160330145820.GA41461@ubuntu-hedt>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [BUG] NULL pointer in raid1_make_request passed to bio_trim when
+ adding md as bcache caching dev
+Date: Fri, 1 Apr 2016 18:14:53 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1604011812170.5949@mail.ewheeler.net>
+References: <56F4058B.1030309@roesner-online.de> <alpine.LRH.2.11.1603250126110.13440@mail.ewheeler.net> <alpine.LRH.2.11.1603250416030.13440@mail.ewheeler.net> <56F54712.6090202@roesner-online.de> <alpine.LRH.2.11.1603251954220.13440@mail.ewheeler.net>
+ <CACVXFVO7ARehcQHvBuRoVHZhc0BgA5kKxaPQTqMT7Y=4Ca6urw@mail.gmail.com> <56F6BCD8.70504@roesner-online.de> <20160328181059.GA83819@kernel.org>
 Mime-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out03.mta.xmission.com ([166.70.13.233]:39673 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbcC3U27 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 30 Mar 2016 16:28:59 -0400
-In-Reply-To: <20160330145820.GA41461@ubuntu-hedt> (Seth Forshee's message of
-	"Wed, 30 Mar 2016 09:58:20 -0500")
+Received: from mx.ewheeler.net ([71.19.153.34]:48105 "EHLO mail.ewheeler.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751022AbcDASPE (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 1 Apr 2016 14:15:04 -0400
+In-Reply-To: <20160328181059.GA83819@kernel.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Seth Forshee <seth.forshee@canonical.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov
+To: Sebastian Roesner <sroesner-kernelorg@roesner-online.de>
+Cc: Shaohua Li <shli@kernel.org>, Ming Lei <ming.lei@canonical.com>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, Ming Lin <mlin@kernel.org>, Vlad-Cosmin Miu <miuvlad@gmail.com>, rjones@redhat.com, Kent Overstreet <kent.overstreet@gmail.com>, jmoyer@redhat.com, axboe@fb.com
 
-Seth Forshee <seth.forshee@canonical.com> writes:
+On Mon, 28 Mar 2016, Shaohua Li wrote:
+> On Sat, Mar 26, 2016 at 05:46:16PM +0100, Sebastian Roesner wrote:
+> > Hello Ming, Eric,
+> > 
+> > Am 26.03.2016 um 16:40 schrieb Ming Lei:
+> > I was able to reproduce it on a non-productive system, but only after
+> > copying the bcache superblocks/partition starts from the original system,
+> > with new created ones it worked fine.
 
-> On Tue, Mar 29, 2016 at 08:36:09PM -0500, Eric W. Biederman wrote:
->> Seth Forshee <seth.forshee@canonical.com> writes:
->> 
->> > On Fri, Mar 04, 2016 at 04:43:06PM -0600, Eric W. Biederman wrote:
->> >> In general this is only an issue if uids and gids on the filesystem
->> >> do not map into the user namespace.
->> >> 
->> >> Therefore the general fix is to limit the logic of checking for
->> >> capabilities in s_user_ns if we are dealing with INVALID_UID and
->> >> INVALID_GID.  For proc and kernfs that should never be the case
->> >> so the problem becomes a non-issue.
->> >> 
->> >> Further I would look at limiting that relaxation to just
->> >> inode_change_ok. 
->> >
->> > Finally got around to implementing this today; is the patch below what
->> > you had in mind?
->> 
->> Pretty much.
->> 
->> For the same reason that capble_wrt_inode_uidgid(inode) had to look
->> at both inode->i_uid and inode->i_gid I think we need to look at
->> both inode->i_uid and inode->i_gid in those case.
->> 
->> I am worried about chgrp_ok in cases such as inode->i_uid is valid
->> but unmapped.  I have a similiar worry about chown_ok where
->> inode->i_gid is valid but unmapped (although that worry is less
->> serious).
->
-> That makes sense.
->
-> So then what is wanted is to check that the other id is either invalid,
-> or else it maps into s_user_ns. So for chown_ok() something like this:
->
->     if (!uid_valid(inode->i_uid) &&
->         (!gid_valid(inode->i_gid) || kgid_has_mapping(inode->i_sb->s_user_ns, inode->i_gid)) &&
->         ns_capable(inode->i_sb->s_user_ns, CAP_CHOWN))
->             return true;
->
-> and likewise for chgrp_ok(). Does that satisfy your concerns?
+Hey Sebastian,
 
-Yes it does.
+Have you had a chance to test the patch below from Shaohua Li?
 
-Eric
+--
+Eric Wheeler
+
+
+> > 
+> > Full trace and check_bio output can be found here:
+> > 
+> > http://pastebin.com/ngvGGHBZ
+> 
+> 320 bvecs exceeds what bio-clone_set can handle. Could you please try below patch?
+> 
+> commit 92761dad7ff6e1bf25de247e0064dd398e797599
+> Author: Shaohua Li <shli@fb.com>
+> Date:   Mon Mar 28 10:54:35 2016 -0700
+> 
+>     block: don't make BLK_DEF_MAX_SECTORS too big
+>     
+>     bio_alloc_bioset() allocates bvecs from bvec_slabs which can only allocate
+>     maximum 256 bvec (eg, 1M for 4k pages). We can't bump BLK_DEF_MAX_SECTORS to
+>     exceed this value otherwise bio_alloc_bioset will fail.
+>     
+>     This fixes commit 30e2bc08b2bb7c069. We probably should make the bvec_slabs
+>     hold bigger bvecs if bigger bio size is required.
+>     
+>     Signed-off-by: Shaohua Li <shli@fb.com>
+> 
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 7e5d7e0..da64325 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -1153,7 +1153,11 @@ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
+>  enum blk_default_limits {
+>  	BLK_MAX_SEGMENTS	= 128,
+>  	BLK_SAFE_MAX_SECTORS	= 255,
+> -	BLK_DEF_MAX_SECTORS	= 2560,
+> +	/*
+> +	 * if you change this, please also change bvec_alloc and BIO_MAX_PAGES.
+> +	 * Otherwise bio_alloc_bioset will break.
+> +	 */
+> +	BLK_DEF_MAX_SECTORS	= BIO_MAX_SECTORS,
+>  	BLK_MAX_SEGMENT_SIZE	= 65536,
+>  	BLK_SEG_BOUNDARY_MASK	= 0xFFFFFFFFUL,
+>  };
+> 
+
+	
