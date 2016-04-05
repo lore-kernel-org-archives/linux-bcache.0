@@ -1,118 +1,97 @@
-From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
-Subject: Re: dm-cache performance behaviour
-Date: Tue, 5 Apr 2016 13:37:51 +0300
-Message-ID: <20160405103751.GW2461@reaktio.net>
-References: <20160405071253.GB27444@suselix.suse.de>
-	<570378FC.3030701@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <dm-devel-bounces@redhat.com>
-Content-Disposition: inline
-In-Reply-To: <570378FC.3030701@redhat.com>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/dm-devel>
-List-Post: <mailto:dm-devel@redhat.com>
-List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=subscribe>
-Sender: dm-devel-bounces@redhat.com
-Errors-To: dm-devel-bounces@redhat.com
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: linux-block@vger.kernel.org, Andreas Herrmann <aherrmann@suse.com>, dm-devel@redhat.com, linux-bcache@vger.kernel.org
+From: Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH 00/27] block: cleanup direct access on .bi_vcnt & .bi_io_vec
+Date: Tue,  5 Apr 2016 19:56:45 +0800
+Message-ID: <1459857443-20611-1-git-send-email-tom.leiming@gmail.com>
+Return-path: <linux-pm-owner@vger.kernel.org>
+Sender: linux-pm-owner@vger.kernel.org
+To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Boaz Harrosh <boaz@plexistor.com>, Ming Lei <tom.leiming@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>, Andreas Dilger <andreas.dilger@intel.com>, Andrew Morton <akpm@linux-foundation.org>, "open list:STAGING SUBSYSTEM" <devel@driverdev.osuosl.org>, "open list:DEVICE-MAPPER LVM" <dm-devel@redhat.com>, "open list:DRBD DRIVER" <drbd-dev@lists.linbit.com>, Frank Zago <fzago@cray.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Hannes Reinecke <hare@suse.de>, James Simmons <jsimmons@infradead.org>, Jan Kara <jack@suse.cz>, Jarod Wilson <jarod@redhat.com>, Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>, "John L. Hammond" <john.hammond@intel.com>, Julia Lawall <Julia.Lawall@lip6.fr>, Keith Busch <keith.busch@intel.com>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Apr 05, 2016 at 10:36:12AM +0200, Zdenek Kabelac wrote:
-> Dne 5.4.2016 v 09:12 Andreas Herrmann napsal(a):
-> >Hi,
-> >
-> >I've recently looked at performance behaviour of dm-cache and bcache.
-> >I've repeatedly observed very low performance with dm-cache in
-> >different tests. (Similar tests with bcache showed no such oddities.)
-> >
-> >To rule out user errors that might have caused this, I shortly describe
-> >what I've done and observed.
-> >
-> >- tested kernel version: 4.5.0
-> >
-> >- backing device: 1.5 TB spinning drive
-> >
-> >- caching device: 128 GB SSD (used for metadata and cache and size
-> >   of metadata part calculated based on
-> >   https://www.redhat.com/archives/dm-devel/2012-December/msg00046.html)
-> >
-> >- my test procedure consisted of a sequence of tests performing fio
-> >   runs with different data sets, fio randread performance (bandwidth
-> >   and IOPS) were compared, fio was invoked using something like
-> >
-> >   fio --directory=/cached-device --rw=randread --name=fio-1 \
-> >     --size=50G --group_reporting --ioengine=libaio \
-> >     --direct=1 --iodepth=1 --runtime=40 --numjobs=1
-> >
-> >   I've iterated over 10 runs for each of numjobs=1,2,3 and varied the
-> >   name parameter to operate with different data sets.
-> >
-> >   This procedure implied that with 3 jobs the underlying data set for
-> >   the test consisted of 3 files with 50G each which exceeds the size
-> >   of the caching device.
-> >
-> >- Between some tests I've tried to empty the cache. For dm-cache I did
-> >   this by unmounting the "compound" cache device, switching to cleaner
-> >   target, zeroing metadata part of the caching device, recreating
-> >   caching device and finally recreating the compound cache device
-> >   (during this procedure I kept the backing device unmodified).
-> >
-> >   I used dmsetup status to check for success of this operation
-> >   (checking for #used_cache_blocks).
-> >   If there is an easier way to do this please let me know -- If it's
-> >   documented I've missed it.
-> >
-> >- dm-cache parameters:
-> >   * cache_mode: writeback
-> >   * block size: 512 sectors
-> >   * migration_threshold 2048 (default)
-> >
-> >I've observed two oddities:
-> >
-> >   (1) Only fio tests with the first data set created (and thus
-> >   initially occupying the cache) showed decent performance
-> >   results. Subsequent fio tests with another data set showed poor
-> >   performance. I think this indicates that SMQ policy does not
-> >   properly promote/demote data to/from caching device in my tests.
-> >
-> >   (2) I've seen results where performance was actually below "native"
-> >   (w/o caching) performance of the backing device. I think that this
-> >   should not happen. If a data access falls back to the backing device
-> >   due to a cache miss I would have expected to see almost the
-> >   performance of the backing device. Maybe this points to a
-> >   performance issue in SMQ -- spending too much time in policy code
-> >   before falling back to the backing device.
-> >
-> >I've tried to figure out what actually happened in SMQ code in these
-> >cases - but eventually dismissed this. Next I want to check whether
-> >there might be a flaw in my test setup/dm-cache configuration.
-> 
-> Hi
-> 
-> The dm-cache SMQ/MQ is a 'slow moving' hot-spot cache.
-> 
-> So before the block is 'promoted' to the cache - there needs to be a
-> reason for it - and it's not a plain single read.
-> 
-> So if the other cache promotes the block to the cache with a single
-> block access you may observe different performance.
-> 
-> dm-cache is not targeted for 'quick' promoting of read blocks into a
-> cache - rather 'slow' moving of often used blocks.
-> 
+Hi Guys,
 
-Are there currently any plans to add some kind of write-back caching of new blocks (writes) to dm-cache ? 
+It is always not a good practice to access bio->bi_vcnt and
+bio->bi_io_vec from drivers directly. Also this kind of direct
+access will cause trouble when converting to multipage bvecs.
 
-Earlier I did some benchmarks with dm-cache aswell, and it didn't perform well with write-back caching of new blocks,
-while for example enhanceIO performed nicely.. (and yes I understand currently dm-cache isn't even supposed to help much with this use case).
+The 1st patch introduces the following 4 bio helpers which can be
+used inside drivers for avoiding direct access to .bi_vcnt and .bi_io_vec.
 
+	bio_pages()
+	bio_is_full()
+	bio_get_base_vec()
+	bio_set_vec_table()
+
+Both bio_pages() and bio_is_full() can be easy to convert to
+multipage bvecs.
+
+For bio_get_base_vec() and bio_set_vec_table(), they are often used
+during initializing a new bio or in case of single bvec bio. With the
+two new helpers, it becomes quite easy to audit access to .bi_io_vec
+and .bi_vcnt.
+
+Most of the other patches use the 4 helpers to clean up most of direct
+access to .bi_vcnt and .bi_io_vec from drivers, except for MD and btrfs,
+which two subsystems will be done in the future. 
+
+Also bio_add_page() is used in floppy, dm-crypt and fs/logfs to
+avoiding direct access to .bi_vcnt & .bi_io_vec.
 
 Thanks,
+Ming
 
--- Pasi
+Ming Lei (27):
+  block: bio: introduce 4 helpers for cleanup
+  block: drbd: use bio_get_base_vec() to retrieve the 1st bvec
+  block: drbd: remove impossible failure handling
+  block: loop: use bio_get_base_vec() to retrive bvec table
+  block: pktcdvd: use bio_get_base_vec() to retrive bvec table
+  block: floppy: use bio_set_vec_table()
+  block: floppy: use bio_add_page()
+  staging: lustre: avoid to use bio->bi_vcnt directly
+  target: use bio_is_full()
+  bcache: debug: avoid to access .bi_io_vec directly
+  bcache: io.c: use bio_set_vec_table
+  bcache: journal.c: use bio_set_vec_table()
+  bcache: movinggc: use bio_set_vec_table()
+  bcache: writeback: use bio_set_vec_table()
+  bcache: super: use bio_set_vec_table()
+  bcache: super: use bio_get_base_vec
+  dm: crypt: use bio_add_page()
+  dm: dm-io.c: use bio_get_base_vec()
+  dm: dm.c: replace 'bio->bi_vcnt == 1' with !bio_multiple_segments
+  dm: dm-bufio.c: use bio_set_vec_table()
+  fs: logfs: use bio_set_vec_table()
+  fs: logfs: convert to bio_add_page() in sync_request()
+  fs: logfs: use bio_add_page() in __bdev_writeseg()
+  fs: logfs: use bio_add_page() in do_erase()
+  fs: logfs: remove unnecesary check
+  kernel/power/swap.c: use bio_get_base_vec()
+  mm: page_io.c: use bio_get_base_vec()
+
+ drivers/block/drbd/drbd_bitmap.c            |   4 +-
+ drivers/block/drbd/drbd_receiver.c          |  14 +---
+ drivers/block/floppy.c                      |   9 +--
+ drivers/block/loop.c                        |   5 +-
+ drivers/block/pktcdvd.c                     |   3 +-
+ drivers/md/bcache/debug.c                   |  11 ++-
+ drivers/md/bcache/io.c                      |   3 +-
+ drivers/md/bcache/journal.c                 |   3 +-
+ drivers/md/bcache/movinggc.c                |   6 +-
+ drivers/md/bcache/super.c                   |  28 +++++---
+ drivers/md/bcache/writeback.c               |   4 +-
+ drivers/md/dm-bufio.c                       |   3 +-
+ drivers/md/dm-crypt.c                       |   8 +--
+ drivers/md/dm-io.c                          |   7 +-
+ drivers/md/dm.c                             |   3 +-
+ drivers/staging/lustre/lustre/llite/lloop.c |   9 +--
+ drivers/target/target_core_pscsi.c          |   2 +-
+ fs/logfs/dev_bdev.c                         | 107 +++++++++++-----------------
+ include/linux/bio.h                         |  28 ++++++++
+ kernel/power/swap.c                         |  10 ++-
+ mm/page_io.c                                |  18 ++++-
+ 21 files changed, 156 insertions(+), 129 deletions(-)
+
+-- 
+1.9.1
+
