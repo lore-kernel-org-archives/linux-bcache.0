@@ -1,56 +1,37 @@
-From: Vasiliy Tolstov <v.tolstov@selfip.ru>
-Subject: Re: dm-cache performance behaviour
-Date: Thu, 7 Apr 2016 18:10:16 +0300
-Message-ID: <CACaajQu6H96ZGpXSWtBOzaDaE3zDPOacJjcQw7GFrfMw96-Tiw@mail.gmail.com>
-References: <20160405071253.GB27444@suselix.suse.de> <20160405133109.GF27444@suselix.suse.de>
- <alpine.LRH.2.11.1604070115070.12121@mail.ewheeler.net>
+From: Sebastian Roesner <sroesner-kernelorg@roesner-online.de>
+Subject: Re: [BUG] NULL pointer in raid1_make_request passed to bio_trim when
+ adding md as bcache caching dev
+Date: Sun, 10 Apr 2016 20:01:30 +0200
+Message-ID: <570A94FA.7040906@roesner-online.de>
+References: <56F4058B.1030309@roesner-online.de>
+ <alpine.LRH.2.11.1603250126110.13440@mail.ewheeler.net>
+ <alpine.LRH.2.11.1603250416030.13440@mail.ewheeler.net>
+ <56F54712.6090202@roesner-online.de>
+ <alpine.LRH.2.11.1603251954220.13440@mail.ewheeler.net>
+ <CACVXFVO7ARehcQHvBuRoVHZhc0BgA5kKxaPQTqMT7Y=4Ca6urw@mail.gmail.com>
+ <56F6BCD8.70504@roesner-online.de> <20160328181059.GA83819@kernel.org>
+ <alpine.LRH.2.11.1604011812170.5949@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wm0-f68.google.com ([74.125.82.68]:36557 "EHLO
-	mail-wm0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235AbcDGPKi (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 7 Apr 2016 11:10:38 -0400
-Received: by mail-wm0-f68.google.com with SMTP id l6so5112465wml.3
-        for <linux-bcache@vger.kernel.org>; Thu, 07 Apr 2016 08:10:38 -0700 (PDT)
-In-Reply-To: <alpine.LRH.2.11.1604070115070.12121@mail.ewheeler.net>
+Received: from euler.f0o.de ([85.88.6.196]:53926 "EHLO mail.f0o.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756053AbcDJSBj (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 10 Apr 2016 14:01:39 -0400
+In-Reply-To: <alpine.LRH.2.11.1604011812170.5949@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Andreas Herrmann <aherrmann@suse.com>, Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>, Heinz Mauelshagen <heinzm@redhat.com>, dm-devel@redhat.com, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>, Shaohua Li <shli@kernel.org>
+Cc: Ming Lei <ming.lei@canonical.com>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, Ming Lin <mlin@kernel.org>, Vlad-Cosmin Miu <miuvlad@gmail.com>, rjones@redhat.com, Kent Overstreet <kent.overstreet@gmail.com>, jmoyer@redhat.com, axboe@fb.com
 
-2016-04-07 4:24 GMT+03:00 Eric Wheeler <bcache@lists.ewheeler.net>:
-> You might consider tweaking {read,write}_promote_adjustment with
->         dmsetup message /dev/mapper/foo 0 read_promote_adjustment X
-> or at initial table creation time to shorten cache heat time.
->
-> You could use this with LVM tools:
->   lvchange --cachesettings 'read_promote_adjustment = 1' vg/cachedvol
->
-> See descriptions here:
->
-> https://www.kernel.org/doc/Documentation/device-mapper/cache-policies.txt
->
-> When we used dm-cache I would set the promote values to 1 (or 0?) to heat
-> up the cache and then increment them after the cache filled.
->
->> bcache:
->> - writeback cache mode
->> - LRU cache policy
->
-> bcache defaults to 512k bucket size iirc, you'll want to specify -b 256k
-> on your make-bcache call for an apples-to-apples comparison.  FWIW, I like
-> the 64k size best for our workload.
->
-> --
-> Eric Wheeler
+Hello Eric, Shaohua,
 
+Am 01.04.2016 um 20:14 schrieb Eric Wheeler:
+ > Hey Sebastian,
+ >
+ > Have you had a chance to test the patch below from Shaohua Li?
 
-Does somebody can test bcache vs dm-writeboost vs dm-cache on latest
-stable kernels ?
+I just tried the patch and it did not crash anymore.
 
-
--- 
-Vasiliy Tolstov,
-e-mail: v.tolstov@selfip.ru
+Sebastian
