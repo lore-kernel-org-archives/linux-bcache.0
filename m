@@ -1,14 +1,14 @@
 From: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH v1 13/27] bcache: movinggc: use bio_set_vec_table()
-Date: Thu, 14 Apr 2016 20:02:31 +0800
-Message-ID: <1460635375-28282-14-git-send-email-tom.leiming@gmail.com>
+Subject: [PATCH v1 15/27] bcache: super: use bio_set_vec_table()
+Date: Thu, 14 Apr 2016 20:02:33 +0800
+Message-ID: <1460635375-28282-16-git-send-email-tom.leiming@gmail.com>
 References: <1460635375-28282-1-git-send-email-tom.leiming@gmail.com>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-oi0-f67.google.com ([209.85.218.67]:34182 "EHLO
-	mail-oi0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979AbcDNMDi (ORCPT
+Received: from mail-ob0-f196.google.com ([209.85.214.196]:33249 "EHLO
+	mail-ob0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754885AbcDNMDf (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 14 Apr 2016 08:03:38 -0400
+	Thu, 14 Apr 2016 08:03:35 -0400
 In-Reply-To: <1460635375-28282-1-git-send-email-tom.leiming@gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
@@ -18,26 +18,43 @@ Cc: linux-block@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Ming Lei
 
 Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- drivers/md/bcache/movinggc.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/md/bcache/super.c | 10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/bcache/movinggc.c b/drivers/md/bcache/movinggc.c
-index b929fc9..dbe5af2 100644
---- a/drivers/md/bcache/movinggc.c
-+++ b/drivers/md/bcache/movinggc.c
-@@ -85,10 +85,10 @@ static void moving_init(struct moving_io *io)
- 	bio_set_prio(bio, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_IDLE, 0));
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index f5dbb4e..3fa1ecf 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1151,8 +1151,7 @@ static void register_bdev(struct cache_sb *sb, struct page *sb_page,
+ 	dc->bdev->bd_holder = dc;
  
- 	bio->bi_iter.bi_size	= KEY_SIZE(&io->w->key) << 9;
--	bio->bi_max_vecs	= DIV_ROUND_UP(KEY_SIZE(&io->w->key),
--					       PAGE_SECTORS);
- 	bio->bi_private		= &io->cl;
--	bio->bi_io_vec		= bio->bi_inline_vecs;
-+	bio_set_vec_table(bio, bio->bi_inline_vecs,
-+			  DIV_ROUND_UP(KEY_SIZE(&io->w->key),
-+			  PAGE_SECTORS));
- 	bch_bio_map(bio, NULL);
- }
+ 	bio_init(&dc->sb_bio);
+-	dc->sb_bio.bi_max_vecs	= 1;
+-	dc->sb_bio.bi_io_vec	= dc->sb_bio.bi_inline_vecs;
++	bio_set_vec_table(&dc->sb_bio, dc->sb_bio.bi_inline_vecs, 1);
+ 	dc->sb_bio.bi_io_vec[0].bv_page = sb_page;
+ 	get_page(sb_page);
+ 
+@@ -1812,8 +1811,8 @@ static int cache_alloc(struct cache_sb *sb, struct cache *ca)
+ 	kobject_init(&ca->kobj, &bch_cache_ktype);
+ 
+ 	bio_init(&ca->journal.bio);
+-	ca->journal.bio.bi_max_vecs = 8;
+-	ca->journal.bio.bi_io_vec = ca->journal.bio.bi_inline_vecs;
++	bio_set_vec_table(&ca->journal.bio,
++			  ca->journal.bio.bi_inline_vecs, 8);
+ 
+ 	free = roundup_pow_of_two(ca->sb.nbuckets) >> 10;
+ 
+@@ -1850,8 +1849,7 @@ static int register_cache(struct cache_sb *sb, struct page *sb_page,
+ 	ca->bdev->bd_holder = ca;
+ 
+ 	bio_init(&ca->sb_bio);
+-	ca->sb_bio.bi_max_vecs	= 1;
+-	ca->sb_bio.bi_io_vec	= ca->sb_bio.bi_inline_vecs;
++	bio_set_vec_table(&ca->sb_bio, ca->sb_bio.bi_inline_vecs, 1);
+ 	ca->sb_bio.bi_io_vec[0].bv_page = sb_page;
+ 	get_page(sb_page);
  
 -- 
 1.9.1
