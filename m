@@ -1,332 +1,133 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PULL v4.6-rc1] bcache: documentation updates
-Date: Thu, 14 Apr 2016 07:11:10 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1604130636080.26685@mail.ewheeler.net>
-References: <20160312050003.GN26973@merlins.org> <alpine.LRH.2.11.1603120706310.30893@mail.ewheeler.net> <alpine.LRH.2.11.1603290106450.13440@mail.ewheeler.net> <CAKhhfD7C+CAnUEXfUX=g3bT=TX3QkyLvQnh0eWNJxcK4MeYnHA@mail.gmail.com>
+From: Ming Lei <tom.leiming-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: [PATCH v1 00/27] block: cleanup direct access to
+	.bi_vcnt & .bi_io_vec
+Date: Thu, 14 Apr 2016 20:02:18 +0800
+Message-ID: <1460635375-28282-1-git-send-email-tom.leiming@gmail.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [66.155.3.69] ([66.155.3.69]:49378 "EHLO mail.ewheeler.net"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750796AbcDNHST (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 14 Apr 2016 03:18:19 -0400
-In-Reply-To: <CAKhhfD7C+CAnUEXfUX=g3bT=TX3QkyLvQnh0eWNJxcK4MeYnHA@mail.gmail.com>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Return-path: <lustre-devel-bounces-aLEFhgZF4x6X6Mz3xDxJMA@public.gmane.org>
+List-Unsubscribe: <http://lists.lustre.org/options.cgi/lustre-devel-lustre.org>,
+	<mailto:lustre-devel-request-aLEFhgZF4x6X6Mz3xDxJMA@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://lists.lustre.org/pipermail/lustre-devel-lustre.org/>
+List-Post: <mailto:lustre-devel-aLEFhgZF4x6X6Mz3xDxJMA@public.gmane.org>
+List-Help: <mailto:lustre-devel-request-aLEFhgZF4x6X6Mz3xDxJMA@public.gmane.org?subject=help>
+List-Subscribe: <http://lists.lustre.org/listinfo.cgi/lustre-devel-lustre.org>,
+	<mailto:lustre-devel-request-aLEFhgZF4x6X6Mz3xDxJMA@public.gmane.org?subject=subscribe>
+Errors-To: lustre-devel-bounces-aLEFhgZF4x6X6Mz3xDxJMA@public.gmane.org
+Sender: "lustre-devel" <lustre-devel-bounces-aLEFhgZF4x6X6Mz3xDxJMA@public.gmane.org>
+To: Jens Axboe <axboe-b10kYP2dOMg@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: Jan Kara <jack-AlSwsSmVLrQ@public.gmane.org>, Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, NeilBrown <neilb-l3A5Bk7waGM@public.gmane.org>, Ming Lei <tom.leiming-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Rasmus Villemoes <linux-qQsb+v5E8BnlAoU/VqSP6n9LOBIZ5rWg@public.gmane.org>, Oleg Drokin <green-SOTZviwpzew/JUsKyNonYw@public.gmane.org>, Keith Busch <keith.busch-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>, "open list:MEMORY MANAGEMENT" <linux-mm-Bw31MaZKKs3YtjvyW6yDsg@public.gmane.org>, "open list:DEVICE-MAPPER  LVM" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "open list:TARGET SUBSYSTEM" <target-devel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Miklos Szeredi <mszeredi-AlSwsSmVLrQ@public.gmane.org>, "open list:DRBD DRIVER" <drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>, "open list:STAGING SUBSYSTEM" <devel-gWbeCf7V1WCQmaza687I9mD2FQJk+8+b@public.gmane.org>, "open list:TARGET SUBSYSTEM" <linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Minchan Kim <minchan-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, Jarod Wilson <jarod-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Christoph Hellwig <hch-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>, Swee Hua Law <sweehua81-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, "open list:HIBERNATION aka Software Suspend,
+	aka swsusp" <linux-pm-u79uwXL29TaqPxH82wqD4g@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
-To: Marc MERLIN <marc@merlins.org>
-Cc: linux-bcache@vger.kernel.org, linux-doc@vger.kernel.org, kent.overstreet@gmail.com
 
-[ +cc: linux-doc, kent ]
+Hi Guys,
 
-On Tue, 12 Apr 2016, Marc MERLIN wrote:
-> On Mon, Mar 28, 2016 at 6:09 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
-> 
-> Hi Eric,
-> 
-> Do I have a way to find out if your patch was pulled?
+It is always not a good practice to access bio->bi_vcnt and
+bio->bi_io_vec from drivers directly. Also this kind of direct
+access will cause trouble when converting to multipage bvecs
+because currently drivers may suppose one bvec always include
+one page, and use the two fields to figure out how to handle
+pages.
 
-I've not seen them in the commit history for 4.6-rc3:
-  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/log/?id=v4.6-rc3&qt=grep&q=bcache:
+Even the actual meaning of the two fields arn't change from
+block subsystem's view, but it may change from driver or fs's
+view, so this patchset takes a conservative approach to cleanup
+direct access to the two fields for avoiding regressions.
 
+The 1st patch introduces the following 3 bio helpers which can be
+used inside drivers for avoiding direct access to .bi_vcnt and .bi_io_vec.
 
-Hello linux-doc list!
+        bio_pages()
+        bio_get_base_vec()
+        bio_set_vec_table()
 
-There is a bcache documentation update available:
+bio_pages() can be easy to convert to multipage bvecs.
 
-> > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
+For bio_get_base_vec() and bio_set_vec_table(), they are often used
+during initializing a new bio or in case of single bvec bio. With the
+two new helpers, it becomes quite easy to audit access to .bi_io_vec
+and .bi_vcnt.
 
-Is this the right list to submit such documentation?
+Most of the other patches use the 3 helpers to clean up most of direct
+access to .bi_vcnt and .bi_io_vec from drivers, except for MD and btrfs,
+which two subsystems will be handled with different way in future.
 
---
-Eric Wheeler
+For btrfs, its direct access to .bi_vcnt & .bi_io_vec need to be cleanuped
+and audited that there isn't issue once converting to multipage bvecs.
 
+For raid(md), given its usage is quite complicated, we can just
+not enable multipage bvecs for raid queue until all its usage
+are cleaned up and audited. So it won't be a blocker for multipage
+bvecs.
 
-> 
-> Thanks,
-> Marc
-> 
-> On Mon, Mar 28, 2016 at 6:09 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> > Hi Jens,
-> >
-> > I've rebased documentation updates against 4.6-rc1.  There is some reflow
-> > and trailing whitespace cleanup, so its not pretty---but it cleans
-> > fills in some missing documentation and adds corrections:
-> >
-> > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
-> >
-> >
-> > --
-> > Eric Wheeler
-> >
-> > On Sat, 12 Mar 2016, Eric Wheeler wrote:
-> >
-> >> Hi Jens,
-> >>
-> >> Please pull:
-> >>
-> >> Documentation updates for bcache:
-> >>   git pull https://bitbucket.org/ewheelerinc/linux.git v4.5-rc7-bcache-fixes-2
-> >>
-> >>
-> >> --
-> >> Eric Wheeler
-> >>
-> >> On Fri, 11 Mar 2016, Marc MERLIN wrote:
-> >>
-> >> > Bcache documentation updates:
-> >> > - Added new HOWTO/COOKBOOK section
-> >> > - fixed a few typos
-> >> > - /sys/block/bcache0/cache_mode is /sys/block/bcache0/bcache/cache_mode
-> >> >
-> >> > Signed-off-by: Marc MERLIN <marc@merlins.org>
-> >> > ---
-> >> >  Documentation/bcache.txt | 160 ++++++++++++++++++++++++++++++++++++++++++++---
-> >> >  1 file changed, 152 insertions(+), 8 deletions(-)
-> >> >
-> >> > diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
-> >> > index 32b6c31..b8302f9 100644
-> >> > --- a/Documentation/bcache.txt
-> >> > +++ b/Documentation/bcache.txt
-> >> > @@ -1,4 +1,4 @@
-> >> > -Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
-> >> > +Say you've got a big slow raid 6, and an ssd or three. Wouldn't it be
-> >> >  nice if you could use them as cache... Hence bcache.
-> >> >
-> >> >  Wiki and git repositories are at:
-> >> > @@ -8,7 +8,7 @@ Wiki and git repositories are at:
-> >> >
-> >> >  It's designed around the performance characteristics of SSDs - it only allocates
-> >> >  in erase block sized buckets, and it uses a hybrid btree/log to track cached
-> >> > -extants (which can be anywhere from a single sector to the bucket size). It's
-> >> > +extents (which can be anywhere from a single sector to the bucket size). It's
-> >> >  designed to avoid random writes at all costs; it fills up an erase block
-> >> >  sequentially, then issues a discard before reusing it.
-> >> >
-> >> > @@ -55,7 +55,10 @@ immediately.  Without udev, you can manually register devices like this:
-> >> >  Registering the backing device makes the bcache device show up in /dev; you can
-> >> >  now format it and use it as normal. But the first time using a new bcache
-> >> >  device, it'll be running in passthrough mode until you attach it to a cache.
-> >> > -See the section on attaching.
-> >> > +If you are thinking about using bcache later, it is recommended to setup all your
-> >> > +slow devices as bcache backing devices without a cache, and you can choose to add
-> >> > +a caching device later.
-> >> > +See 'ATTACHING' section below.
-> >> >
-> >> >  The devices show up as:
-> >> >
-> >> > @@ -72,12 +75,14 @@ To get started:
-> >> >    mount /dev/bcache0 /mnt
-> >> >
-> >> >  You can control bcache devices through sysfs at /sys/block/bcache<N>/bcache .
-> >> > +You can also control them through /sys/fs//bcache/<cset-uuid>/ .
-> >> >
-> >> >  Cache devices are managed as sets; multiple caches per set isn't supported yet
-> >> >  but will allow for mirroring of metadata and dirty data in the future. Your new
-> >> >  cache set shows up as /sys/fs/bcache/<UUID>
-> >> >
-> >> > -ATTACHING:
-> >> > +ATTACHING
-> >> > +---------
-> >> >
-> >> >  After your cache device and backing device are registered, the backing device
-> >> >  must be attached to your cache set to enable caching. Attaching a backing
-> >> > @@ -105,7 +110,8 @@ but all the cached data will be invalidated. If there was dirty data in the
-> >> >  cache, don't expect the filesystem to be recoverable - you will have massive
-> >> >  filesystem corruption, though ext4's fsck does work miracles.
-> >> >
-> >> > -ERROR HANDLING:
-> >> > +ERROR HANDLING
-> >> > +--------------
-> >> >
-> >> >  Bcache tries to transparently handle IO errors to/from the cache device without
-> >> >  affecting normal operation; if it sees too many errors (the threshold is
-> >> > @@ -127,7 +133,143 @@ the backing devices to passthrough mode.
-> >> >     writeback mode). It currently doesn't do anything intelligent if it fails to
-> >> >     read some of the dirty data, though.
-> >> >
-> >> > -TROUBLESHOOTING PERFORMANCE:
-> >> > +
-> >> > +HOWTO/COOKBOOK
-> >> > +--------------
-> >> > +
-> >> > +A) Your bcache doesn't start.
-> >> > +   Starting and starting a bcache with a missing caching device
-> >> > +
-> >> > +Registering the backing device doesn't help, it's already there, you just need
-> >> > +to force it to run without the cache:
-> >> > +host:~# echo /dev/sdb1 > /sys/fs/bcache/register
-> >> > +[  119.844831] bcache: register_bcache() error opening /dev/sdb1: device already registered
-> >> > +
-> >> > +Next, you try to register your caching device if it's present. However if it's
-> >> > +absent, or registration fails for some reason, you can still start your bcache
-> >> > +without its cache, like so:
-> >> > +host:/sys/block/sdb/sdb1/bcache# echo 1 > running
-> >> > +
-> >> > +
-> >> > +B) Bcache not finding its cache and not starting
-> >> > +
-> >> > +This does not work:
-> >> > +host:/sys/block/md5/bcache# echo 0226553a-37cf-41d5-b3ce-8b1e944543a8 > attach
-> >> > +[ 1933.455082] bcache: bch_cached_dev_attach() Couldn't find uuid for md5 in set
-> >> > +[ 1933.478179] bcache: __cached_dev_store() Can't attach 0226553a-37cf-41d5-b3ce-8b1e944543a8
-> >> > +[ 1933.478179] : cache set not found
-> >> > +
-> >> > +In this case, the caching device was simply not registered at boot or
-> >> > +disappeared and came back, and needs to be (re-)registered:
-> >> > +host:/sys/block/md5/bcache# echo /dev/sdh2 > /sys/fs/bcache/register
-> >> > +
-> >> > +
-> >> > +C) Corrupt bcache caching device crashes the kernel on startup/boot
-> >> > +
-> >> > +You'll have to wipe the caching device, start the backing device without the
-> >> > +cache, and you can re-attach the cleaned up caching device then. This does
-> >> > +require booting with a kernel/rescue media where bcache is disabled
-> >> > +since it will otherwise try to access your device and probably crash
-> >> > +again before you have a chance to wipe it.
-> >> > +(or if you plan ahead, compile a backup kernel with bcache disabled and keep it
-> >> > +in your grub config for a rainy day)
-> >> > +If bcache is not available in the kernel, a filesystem on the backing device is
-> >> > +still available at an 8KiB offset. So either via a loopdev of the backing device
-> >> > +created with --offset 8K or by temporarily increasing the start sector of the
-> >> > +partition by 16 (512byte sectors).
-> >> > +
-> >> > +This is how you wipe the caching device:
-> >> > +host:~# wipefs -a /dev/sdh2
-> >> > +16 bytes were erased at offset 0x1018 (bcache)
-> >> > +they were: c6 85 73 f6 4e 1a 45 ca 82 65 f5 7f 48 ba 6d 81
-> >> > +
-> >> > +After you boot back with bcache enabled, you recreate the cache and attach it:
-> >> > +host:~# make-bcache -C /dev/sdh2
-> >> > +UUID:                   7be7e175-8f4c-4f99-94b2-9c904d227045
-> >> > +Set UUID:               5bc072a8-ab17-446d-9744-e247949913c1
-> >> > +version:                0
-> >> > +nbuckets:               106874
-> >> > +block_size:             1
-> >> > +bucket_size:            1024
-> >> > +nr_in_set:              1
-> >> > +nr_this_dev:            0
-> >> > +first_bucket:           1
-> >> > +[  650.511912] bcache: run_cache_set() invalidating existing data
-> >> > +[  650.549228] bcache: register_cache() registered cache device sdh2
-> >> > +
-> >> > +start backing device with missing cache:
-> >> > +host:/sys/block/md5/bcache# echo 1 > running
-> >> > +
-> >> > +attach new cache:
-> >> > +host:/sys/block/md5/bcache# echo 5bc072a8-ab17-446d-9744-e247949913c1 > attach
-> >> > +[  865.276616] bcache: bch_cached_dev_attach() Caching md5 as bcache0 on set 5bc072a8-ab17-446d-9744-e247949913c1
-> >> > +
-> >> > +
-> >> > +D) Remove or replace a caching device
-> >> > +
-> >> > +host:/sys/block/sda/sda7/bcache# echo 1 > detach
-> >> > +[  695.872542] bcache: cached_dev_detach_finish() Caching disabled for sda7
-> >> > +
-> >> > +host:~# wipefs -a /dev/nvme0n1p4
-> >> > +wipefs: error: /dev/nvme0n1p4: probing initialization failed: Device or resource busy
-> >> > +Ooops, it's disabled, but not unregistered, so it's still protected
-> >> > +
-> >> > +We need to go and unregister it:
-> >> > +host:/sys/fs/bcache/b7ba27a1-2398-4649-8ae3-0959f57ba128# ls -l cache0
-> >> > +lrwxrwxrwx 1 root root 0 Feb 25 18:33 cache0 -> ../../../devices/pci0000:00/0000:00:1d.0/0000:70:00.0/nvme/nvme0/nvme0n1/nvme0n1p4/bcache/
-> >> > +host:/sys/fs/bcache/b7ba27a1-2398-4649-8ae3-0959f57ba128# echo 1 > stop
-> >> > +kernel: [  917.041908] bcache: cache_set_free() Cache set b7ba27a1-2398-4649-8ae3-0959f57ba128 unregistered
-> >> > +
-> >> > +Now we can wipe it:
-> >> > +host:~# wipefs -a /dev/nvme0n1p4
-> >> > +/dev/nvme0n1p4: 16 bytes were erased at offset 0x00001018 (bcache): c6 85 73 f6 4e 1a 45 ca 82 65 f5 7f 48 ba 6d 81
-> >> > +
-> >> > +
-> >> > +E) dmcrypt and bcache
-> >> > +
-> >> > +First setup bcache unencrypted and then install dmcrypt on top of /dev/bcache<N>
-> >> > +This will work faster than if you dmcrypt both the backing and caching
-> >> > +devices and then install bcache on top.
-> >> > +
-> >> > +
-> >> > +F) Stop/free a registered bcache to wipe and/or recreate it
-> >> > +(or maybe you need to free up all bcache references so that you can have fdisk
-> >> > +run and re-register a changed partition table, which won't work if there are any
-> >> > +active backing or caching devices left on it)
-> >> > +
-> >> > +1) Is it present in /dev/bcache* ? (there are times where it won't be)
-> >> > +If so, it's easy:
-> >> > +host:/sys/block/bcache0/bcache# echo 1 > stop
-> >> > +
-> >> > +2) But if your backing device is gone, this won't work:
-> >> > +host:/sys/block/bcache0# cd bcache
-> >> > +bash: cd: bcache: No such file or directory
-> >> > +
-> >> > +In this case, you may have to unregister the dmcrypt block device that
-> >> > +references this bcache to free it up:
-> >> > +host:~# dmsetup remove oldds1
-> >> > +bcache: bcache_device_free() bcache0 stopped
-> >> > +bcache: cache_set_free() Cache set 5bc072a8-ab17-446d-9744-e247949913c1 unregistered
-> >> > +
-> >> > +This causes the backing bcache to be removed from /sys/fs/bcache and then it can
-> >> > +be reused
-> >> > +
-> >> > +3) In other cases, you can also look in /sys/fs/bcache/:
-> >> > +host:/sys/fs/bcache# ls -l */{cache?,bdev?}
-> >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 0226553a-37cf-41d5-b3ce-8b1e944543a8/bdev1 -> ../../../devices/virtual/block/dm-1/bcache/
-> >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 0226553a-37cf-41d5-b3ce-8b1e944543a8/cache0 -> ../../../devices/virtual/block/dm-4/bcache/
-> >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 5bc072a8-ab17-446d-9744-e247949913c1/cache0 -> ../../../devices/pci0000:00/0000:00:01.0/0000:01:00.0/ata10/host9/target9:0:0/9:0:0:0/block/sdl/sdl2/bcache/
-> >> > +
-> >> > +The device names will show which UUID is relevant, cd in that directory
-> >> > +and stop the cache:
-> >> > +host:/sys/fs/bcache/5bc072a8-ab17-446d-9744-e247949913c1# echo 1 > stop
-> >> > +this will free up bcache references and let you reuse the partition for other
-> >> > +purposes.
-> >> > +
-> >> > +
-> >> > +
-> >> > +TROUBLESHOOTING PERFORMANCE
-> >> > +---------------------------
-> >> >
-> >> >  Bcache has a bunch of config options and tunables. The defaults are intended to
-> >> >  be reasonable for typical desktop and server workloads, but they're not what you
-> >> > @@ -140,7 +282,7 @@ want for getting the best possible numbers when benchmarking.
-> >> >     maturity, but simply because in writeback mode you'll lose data if something
-> >> >     happens to your SSD)
-> >> >
-> >> > -   # echo writeback > /sys/block/bcache0/cache_mode
-> >> > +   # echo writeback > /sys/block/bcache0/bcache/cache_mode
-> >> >
-> >> >   - Bad performance, or traffic not going to the SSD that you'd expect
-> >> >
-> >> > @@ -193,7 +335,9 @@ want for getting the best possible numbers when benchmarking.
-> >> >     Solution: warm the cache by doing writes, or use the testing branch (there's
-> >> >     a fix for the issue there).
-> >> >
-> >> > -SYSFS - BACKING DEVICE:
-> >> > +
-> >> > +SYSFS - BACKING DEVICE
-> >> > +----------------------
-> >> >
-> >> >  Available at /sys/block/<bdev>/bcache, /sys/block/bcache*/bcache and
-> >> >  (if attached) /sys/fs/bcache/<cset-uuid>/bdev*
-> >> > --
-> >> > 2.5.3
-> >> >
-> >> >
-> >> > --
-> >> > "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> >> > Microsoft is to operating systems ....
-> >> >                                       .... what McDonalds is to gourmet cooking
-> >> > Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
-> >> > --
-> >> > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> >> > the body of a message to majordomo@vger.kernel.org
-> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> >
-> >>
-> 
-> 
-> 
-> -- 
-> "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> Microsoft is to operating systems & security ....
->                                       .... what McDonalds is to gourmet cooking
-> Home page: http://marc.merlins.org/
-> 
+Also bio_add_page() is used in floppy, dm-crypt and fs/logfs to
+avoiding direct access to .bi_vcnt & .bi_io_vec.
+
+The patchset can be found in the following tree:
+
+https://github.com/ming1/linux/tree/v4.6-rc-block-next-mpbvecs-cleanup.v1
+
+V1:
+	- add Reviewed-by
+	- remove bio_is_full() helper because target can find it
+	via the return value of bio_add_pc_page() (9/27)
+	- add comment on another two uses of bio_get_base_vec() (16/27)
+	- rebased on latest for-next branch of block tree
+
+Ming Lei (27):
+  block: bio: introduce 3 helpers for cleanup
+  block: drbd: use bio_get_base_vec() to retrieve the 1st bvec
+  block: drbd: remove impossible failure handling
+  block: loop: use bio_get_base_vec() to retrive bvec table
+  block: pktcdvd: use bio_get_base_vec() to retrive bvec table
+  block: floppy: use bio_set_vec_table()
+  block: floppy: use bio_add_page()
+  staging: lustre: avoid to use bio->bi_vcnt directly
+  target: avoid to access .bi_vcnt directly
+  bcache: debug: avoid to access .bi_io_vec directly
+  bcache: io.c: use bio_set_vec_table
+  bcache: journal.c: use bio_set_vec_table()
+  bcache: movinggc: use bio_set_vec_table()
+  bcache: writeback: use bio_set_vec_table()
+  bcache: super: use bio_set_vec_table()
+  bcache: super: use bio_get_base_vec
+  dm: crypt: use bio_add_page()
+  dm: dm-io.c: use bio_get_base_vec()
+  dm: dm.c: replace 'bio->bi_vcnt == 1' with !bio_multiple_segments
+  dm: dm-bufio.c: use bio_set_vec_table()
+  fs: logfs: use bio_set_vec_table()
+  fs: logfs: convert to bio_add_page() in sync_request()
+  fs: logfs: use bio_add_page() in __bdev_writeseg()
+  fs: logfs: use bio_add_page() in do_erase()
+  fs: logfs: remove unnecesary check
+  kernel/power/swap.c: use bio_get_base_vec()
+  mm: page_io.c: use bio_get_base_vec()
+
+ drivers/block/drbd/drbd_bitmap.c            |   4 +-
+ drivers/block/drbd/drbd_receiver.c          |  14 +---
+ drivers/block/floppy.c                      |   9 +--
+ drivers/block/loop.c                        |   5 +-
+ drivers/block/pktcdvd.c                     |   3 +-
+ drivers/md/bcache/debug.c                   |  11 ++-
+ drivers/md/bcache/io.c                      |   3 +-
+ drivers/md/bcache/journal.c                 |   3 +-
+ drivers/md/bcache/movinggc.c                |   6 +-
+ drivers/md/bcache/super.c                   |  33 ++++++---
+ drivers/md/bcache/writeback.c               |   4 +-
+ drivers/md/dm-bufio.c                       |   3 +-
+ drivers/md/dm-crypt.c                       |   8 +--
+ drivers/md/dm-io.c                          |   7 +-
+ drivers/md/dm.c                             |   3 +-
+ drivers/staging/lustre/lustre/llite/lloop.c |   9 +--
+ drivers/target/target_core_pscsi.c          |   8 +--
+ fs/logfs/dev_bdev.c                         | 107 +++++++++++-----------------
+ include/linux/bio.h                         |  21 ++++++
+ kernel/power/swap.c                         |  10 ++-
+ mm/page_io.c                                |  18 ++++-
+ 21 files changed, 155 insertions(+), 134 deletions(-)
+
+Thanks,
+Ming
+-- 
+1.9.1
