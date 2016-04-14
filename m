@@ -1,162 +1,53 @@
-From: mchristi@redhat.com
-Subject: [PATCH 38/42] block, fs: remove old REQ definitions.
-Date: Wed, 13 Apr 2016 14:36:24 -0500
-Message-ID: <1460576188-5751-39-git-send-email-mchristi@redhat.com>
+From: Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH 00/42] v5: separate operations from flags in the
+ bio/request structs
+Date: Thu, 14 Apr 2016 08:09:30 +0200
+Message-ID: <570F341A.2040108@suse.de>
 References: <1460576188-5751-1-git-send-email-mchristi@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <ocfs2-devel-bounces@oss.oracle.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:47370 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253AbcDNGJg (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 14 Apr 2016 02:09:36 -0400
 In-Reply-To: <1460576188-5751-1-git-send-email-mchristi@redhat.com>
-List-Unsubscribe: <https://oss.oracle.com/mailman/listinfo/ocfs2-devel>,
-	<mailto:ocfs2-devel-request@oss.oracle.com?subject=unsubscribe>
-List-Archive: <http://oss.oracle.com/pipermail/ocfs2-devel>
-List-Post: <mailto:ocfs2-devel@oss.oracle.com>
-List-Help: <mailto:ocfs2-devel-request@oss.oracle.com?subject=help>
-List-Subscribe: <https://oss.oracle.com/mailman/listinfo/ocfs2-devel>,
-	<mailto:ocfs2-devel-request@oss.oracle.com?subject=subscribe>
-Sender: ocfs2-devel-bounces@oss.oracle.com
-Errors-To: ocfs2-devel-bounces@oss.oracle.com
-To: linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
-Cc: Mike Christie <mchristi@redhat.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: mchristi@redhat.com, linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
 
-From: Mike Christie <mchristi@redhat.com>
+On 04/13/2016 09:35 PM, mchristi@redhat.com wrote:
+> The following patches begin to cleanup the request->cmd_flags and
+> bio->bi_rw mess. We currently use cmd_flags to specify the operation,
+> attributes and state of the request. For bi_rw we use it for similar
+> info and also the priority but then also have another bi_flags field
+> for state. At some point, we abused them so much we just made cmd_fla=
+gs
+> 64 bits, so we could add more.
+>=20
+> The following patches seperate the operation (read, write discard,
+> flush, etc) from cmd_flags/bi_rw.
+>=20
+> This patchset was made against linux-next from today April 13
+> (git tag next-20160413).
+>=20
+> I put a git tree here:
+> https://github.com/mikechristie/linux-kernel.git
+> The patches are in the op branch.
+>=20
+A round of applause for you.
 
-We no longer use REQ_WRITE. REQ_WRITE_SAME and REQ_DISCARD,
-so this patch removes them.
+=46or the entire series:
 
-Signed-off-by: Mike Christie <mchristi@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
----
- include/linux/blk_types.h   | 21 ++++++---------------
- include/linux/fs.h          | 21 +++++++++++----------
- include/trace/events/f2fs.h |  1 -
- 3 files changed, 17 insertions(+), 26 deletions(-)
+Reviewed-by: Hannes Reinecke <hare@suse.com>
 
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 6e49c91..b4251ed 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -151,7 +151,6 @@ struct bio {
-  */
- enum rq_flag_bits {
- 	/* common flags */
--	__REQ_WRITE,		/* not set, read. set, write */
- 	__REQ_FAILFAST_DEV,	/* no driver retries of device errors */
- 	__REQ_FAILFAST_TRANSPORT, /* no driver retries of transport errors */
- 	__REQ_FAILFAST_DRIVER,	/* no driver retries of driver errors */
-@@ -159,9 +158,7 @@ enum rq_flag_bits {
- 	__REQ_SYNC,		/* request is sync (sync write or read) */
- 	__REQ_META,		/* metadata io request */
- 	__REQ_PRIO,		/* boost priority in cfq */
--	__REQ_DISCARD,		/* request to discard sectors */
--	__REQ_SECURE,		/* secure discard (used with __REQ_DISCARD) */
--	__REQ_WRITE_SAME,	/* write same block many times */
-+	__REQ_SECURE,		/* secure discard (used with REQ_OP_DISCARD) */
- 
- 	__REQ_NOIDLE,		/* don't anticipate more IO after this one */
- 	__REQ_INTEGRITY,	/* I/O includes block integrity payload */
-@@ -197,28 +194,22 @@ enum rq_flag_bits {
- 	__REQ_NR_BITS,		/* stops here */
- };
- 
--#define REQ_WRITE		(1ULL << __REQ_WRITE)
- #define REQ_FAILFAST_DEV	(1ULL << __REQ_FAILFAST_DEV)
- #define REQ_FAILFAST_TRANSPORT	(1ULL << __REQ_FAILFAST_TRANSPORT)
- #define REQ_FAILFAST_DRIVER	(1ULL << __REQ_FAILFAST_DRIVER)
- #define REQ_SYNC		(1ULL << __REQ_SYNC)
- #define REQ_META		(1ULL << __REQ_META)
- #define REQ_PRIO		(1ULL << __REQ_PRIO)
--#define REQ_DISCARD		(1ULL << __REQ_DISCARD)
--#define REQ_WRITE_SAME		(1ULL << __REQ_WRITE_SAME)
- #define REQ_NOIDLE		(1ULL << __REQ_NOIDLE)
- #define REQ_INTEGRITY		(1ULL << __REQ_INTEGRITY)
- 
- #define REQ_FAILFAST_MASK \
- 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
- #define REQ_COMMON_MASK \
--	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | \
--	 REQ_DISCARD | REQ_WRITE_SAME | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | \
--	 REQ_SECURE | REQ_INTEGRITY)
-+	(REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | REQ_NOIDLE | \
-+	 REQ_FLUSH | REQ_FUA | REQ_SECURE | REQ_INTEGRITY)
- #define REQ_CLONE_MASK		REQ_COMMON_MASK
- 
--#define BIO_NO_ADVANCE_ITER_MASK	(REQ_DISCARD|REQ_WRITE_SAME)
--
- /* This mask is used for both bio and request merge checking */
- #define REQ_NOMERGE_FLAGS \
- 	(REQ_NOMERGE | REQ_STARTED | REQ_SOFTBARRIER | REQ_FLUSH | REQ_FUA | REQ_FLUSH_SEQ)
-@@ -250,9 +241,9 @@ enum rq_flag_bits {
- 
- enum req_op {
- 	REQ_OP_READ,
--	REQ_OP_WRITE		= REQ_WRITE,
--	REQ_OP_DISCARD		= REQ_DISCARD,
--	REQ_OP_WRITE_SAME	= REQ_WRITE_SAME,
-+	REQ_OP_WRITE,
-+	REQ_OP_DISCARD,		/* request to discard sectors */
-+	REQ_OP_WRITE_SAME,	/* write same block many times */
- };
- 
- typedef unsigned int blk_qc_t;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 9becf20..509e21f 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -153,9 +153,10 @@ typedef void (dax_iodone_t)(struct buffer_head *bh_map, int uptodate);
- #define CHECK_IOVEC_ONLY -1
- 
- /*
-- * The below are the various read and write types that we support. Some of
-+ * The below are the various read and write flags that we support. Some of
-  * them include behavioral modifiers that send information down to the
-- * block layer and IO scheduler. Terminology:
-+ * block layer and IO scheduler. They should be used along with a req_op.
-+ * Terminology:
-  *
-  *	The block layer uses device plugging to defer IO a little bit, in
-  *	the hope that we will see more IO very shortly. This increases
-@@ -194,19 +195,19 @@ typedef void (dax_iodone_t)(struct buffer_head *bh_map, int uptodate);
-  *			non-volatile media on completion.
-  *
-  */
--#define RW_MASK			REQ_WRITE
-+#define RW_MASK			REQ_OP_WRITE
- #define RWA_MASK		REQ_RAHEAD
- 
--#define READ			0
-+#define READ			REQ_OP_READ
- #define WRITE			RW_MASK
- #define READA			RWA_MASK
- 
--#define READ_SYNC		(READ | REQ_SYNC)
--#define WRITE_SYNC		(WRITE | REQ_SYNC | REQ_NOIDLE)
--#define WRITE_ODIRECT		(WRITE | REQ_SYNC)
--#define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH)
--#define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FUA)
--#define WRITE_FLUSH_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
-+#define READ_SYNC		REQ_SYNC
-+#define WRITE_SYNC		(REQ_SYNC | REQ_NOIDLE)
-+#define WRITE_ODIRECT		REQ_SYNC
-+#define WRITE_FLUSH		(REQ_SYNC | REQ_NOIDLE | REQ_FLUSH)
-+#define WRITE_FUA		(REQ_SYNC | REQ_NOIDLE | REQ_FUA)
-+#define WRITE_FLUSH_FUA		(REQ_SYNC | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
- 
- /*
-  * Attribute flags.  These should be or-ed together to figure out what
-diff --git a/include/trace/events/f2fs.h b/include/trace/events/f2fs.h
-index db75d69..20f708e 100644
---- a/include/trace/events/f2fs.h
-+++ b/include/trace/events/f2fs.h
-@@ -31,7 +31,6 @@ TRACE_DEFINE_ENUM(BG_GC);
- TRACE_DEFINE_ENUM(LFS);
- TRACE_DEFINE_ENUM(SSR);
- TRACE_DEFINE_ENUM(__REQ_RAHEAD);
--TRACE_DEFINE_ENUM(__REQ_WRITE);
- TRACE_DEFINE_ENUM(__REQ_SYNC);
- TRACE_DEFINE_ENUM(__REQ_NOIDLE);
- TRACE_DEFINE_ENUM(__REQ_FLUSH);
--- 
-2.7.2
+Cheers,
+
+Hannes
+--=20
+Dr. Hannes Reinecke		   Teamlead Storage & Networking
+hare@suse.de			               +49 911 74053 688
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=FCrnberg
+GF: F. Imend=F6rffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
+HRB 21284 (AG N=FCrnberg)
