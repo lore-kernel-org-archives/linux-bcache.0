@@ -1,53 +1,332 @@
-From: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 00/42] v5: separate operations from flags in the
- bio/request structs
-Date: Thu, 14 Apr 2016 08:09:30 +0200
-Message-ID: <570F341A.2040108@suse.de>
-References: <1460576188-5751-1-git-send-email-mchristi@redhat.com>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PULL v4.6-rc1] bcache: documentation updates
+Date: Thu, 14 Apr 2016 07:11:10 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1604130636080.26685@mail.ewheeler.net>
+References: <20160312050003.GN26973@merlins.org> <alpine.LRH.2.11.1603120706310.30893@mail.ewheeler.net> <alpine.LRH.2.11.1603290106450.13440@mail.ewheeler.net> <CAKhhfD7C+CAnUEXfUX=g3bT=TX3QkyLvQnh0eWNJxcK4MeYnHA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:47370 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253AbcDNGJg (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 14 Apr 2016 02:09:36 -0400
-In-Reply-To: <1460576188-5751-1-git-send-email-mchristi@redhat.com>
+Received: from [66.155.3.69] ([66.155.3.69]:49378 "EHLO mail.ewheeler.net"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750796AbcDNHST (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 14 Apr 2016 03:18:19 -0400
+In-Reply-To: <CAKhhfD7C+CAnUEXfUX=g3bT=TX3QkyLvQnh0eWNJxcK4MeYnHA@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: mchristi@redhat.com, linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
+To: Marc MERLIN <marc@merlins.org>
+Cc: linux-bcache@vger.kernel.org, linux-doc@vger.kernel.org, kent.overstreet@gmail.com
 
-On 04/13/2016 09:35 PM, mchristi@redhat.com wrote:
-> The following patches begin to cleanup the request->cmd_flags and
-> bio->bi_rw mess. We currently use cmd_flags to specify the operation,
-> attributes and state of the request. For bi_rw we use it for similar
-> info and also the priority but then also have another bi_flags field
-> for state. At some point, we abused them so much we just made cmd_fla=
-gs
-> 64 bits, so we could add more.
->=20
-> The following patches seperate the operation (read, write discard,
-> flush, etc) from cmd_flags/bi_rw.
->=20
-> This patchset was made against linux-next from today April 13
-> (git tag next-20160413).
->=20
-> I put a git tree here:
-> https://github.com/mikechristie/linux-kernel.git
-> The patches are in the op branch.
->=20
-A round of applause for you.
+[ +cc: linux-doc, kent ]
 
-=46or the entire series:
+On Tue, 12 Apr 2016, Marc MERLIN wrote:
+> On Mon, Mar 28, 2016 at 6:09 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
+> > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
+> 
+> Hi Eric,
+> 
+> Do I have a way to find out if your patch was pulled?
 
-Reviewed-by: Hannes Reinecke <hare@suse.com>
+I've not seen them in the commit history for 4.6-rc3:
+  https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/log/?id=v4.6-rc3&qt=grep&q=bcache:
 
-Cheers,
 
-Hannes
---=20
-Dr. Hannes Reinecke		   Teamlead Storage & Networking
-hare@suse.de			               +49 911 74053 688
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=FCrnberg
-GF: F. Imend=F6rffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
-HRB 21284 (AG N=FCrnberg)
+Hello linux-doc list!
+
+There is a bcache documentation update available:
+
+> > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
+
+Is this the right list to submit such documentation?
+
+--
+Eric Wheeler
+
+
+> 
+> Thanks,
+> Marc
+> 
+> On Mon, Mar 28, 2016 at 6:09 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
+> > Hi Jens,
+> >
+> > I've rebased documentation updates against 4.6-rc1.  There is some reflow
+> > and trailing whitespace cleanup, so its not pretty---but it cleans
+> > fills in some missing documentation and adds corrections:
+> >
+> > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
+> >
+> >
+> > --
+> > Eric Wheeler
+> >
+> > On Sat, 12 Mar 2016, Eric Wheeler wrote:
+> >
+> >> Hi Jens,
+> >>
+> >> Please pull:
+> >>
+> >> Documentation updates for bcache:
+> >>   git pull https://bitbucket.org/ewheelerinc/linux.git v4.5-rc7-bcache-fixes-2
+> >>
+> >>
+> >> --
+> >> Eric Wheeler
+> >>
+> >> On Fri, 11 Mar 2016, Marc MERLIN wrote:
+> >>
+> >> > Bcache documentation updates:
+> >> > - Added new HOWTO/COOKBOOK section
+> >> > - fixed a few typos
+> >> > - /sys/block/bcache0/cache_mode is /sys/block/bcache0/bcache/cache_mode
+> >> >
+> >> > Signed-off-by: Marc MERLIN <marc@merlins.org>
+> >> > ---
+> >> >  Documentation/bcache.txt | 160 ++++++++++++++++++++++++++++++++++++++++++++---
+> >> >  1 file changed, 152 insertions(+), 8 deletions(-)
+> >> >
+> >> > diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
+> >> > index 32b6c31..b8302f9 100644
+> >> > --- a/Documentation/bcache.txt
+> >> > +++ b/Documentation/bcache.txt
+> >> > @@ -1,4 +1,4 @@
+> >> > -Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
+> >> > +Say you've got a big slow raid 6, and an ssd or three. Wouldn't it be
+> >> >  nice if you could use them as cache... Hence bcache.
+> >> >
+> >> >  Wiki and git repositories are at:
+> >> > @@ -8,7 +8,7 @@ Wiki and git repositories are at:
+> >> >
+> >> >  It's designed around the performance characteristics of SSDs - it only allocates
+> >> >  in erase block sized buckets, and it uses a hybrid btree/log to track cached
+> >> > -extants (which can be anywhere from a single sector to the bucket size). It's
+> >> > +extents (which can be anywhere from a single sector to the bucket size). It's
+> >> >  designed to avoid random writes at all costs; it fills up an erase block
+> >> >  sequentially, then issues a discard before reusing it.
+> >> >
+> >> > @@ -55,7 +55,10 @@ immediately.  Without udev, you can manually register devices like this:
+> >> >  Registering the backing device makes the bcache device show up in /dev; you can
+> >> >  now format it and use it as normal. But the first time using a new bcache
+> >> >  device, it'll be running in passthrough mode until you attach it to a cache.
+> >> > -See the section on attaching.
+> >> > +If you are thinking about using bcache later, it is recommended to setup all your
+> >> > +slow devices as bcache backing devices without a cache, and you can choose to add
+> >> > +a caching device later.
+> >> > +See 'ATTACHING' section below.
+> >> >
+> >> >  The devices show up as:
+> >> >
+> >> > @@ -72,12 +75,14 @@ To get started:
+> >> >    mount /dev/bcache0 /mnt
+> >> >
+> >> >  You can control bcache devices through sysfs at /sys/block/bcache<N>/bcache .
+> >> > +You can also control them through /sys/fs//bcache/<cset-uuid>/ .
+> >> >
+> >> >  Cache devices are managed as sets; multiple caches per set isn't supported yet
+> >> >  but will allow for mirroring of metadata and dirty data in the future. Your new
+> >> >  cache set shows up as /sys/fs/bcache/<UUID>
+> >> >
+> >> > -ATTACHING:
+> >> > +ATTACHING
+> >> > +---------
+> >> >
+> >> >  After your cache device and backing device are registered, the backing device
+> >> >  must be attached to your cache set to enable caching. Attaching a backing
+> >> > @@ -105,7 +110,8 @@ but all the cached data will be invalidated. If there was dirty data in the
+> >> >  cache, don't expect the filesystem to be recoverable - you will have massive
+> >> >  filesystem corruption, though ext4's fsck does work miracles.
+> >> >
+> >> > -ERROR HANDLING:
+> >> > +ERROR HANDLING
+> >> > +--------------
+> >> >
+> >> >  Bcache tries to transparently handle IO errors to/from the cache device without
+> >> >  affecting normal operation; if it sees too many errors (the threshold is
+> >> > @@ -127,7 +133,143 @@ the backing devices to passthrough mode.
+> >> >     writeback mode). It currently doesn't do anything intelligent if it fails to
+> >> >     read some of the dirty data, though.
+> >> >
+> >> > -TROUBLESHOOTING PERFORMANCE:
+> >> > +
+> >> > +HOWTO/COOKBOOK
+> >> > +--------------
+> >> > +
+> >> > +A) Your bcache doesn't start.
+> >> > +   Starting and starting a bcache with a missing caching device
+> >> > +
+> >> > +Registering the backing device doesn't help, it's already there, you just need
+> >> > +to force it to run without the cache:
+> >> > +host:~# echo /dev/sdb1 > /sys/fs/bcache/register
+> >> > +[  119.844831] bcache: register_bcache() error opening /dev/sdb1: device already registered
+> >> > +
+> >> > +Next, you try to register your caching device if it's present. However if it's
+> >> > +absent, or registration fails for some reason, you can still start your bcache
+> >> > +without its cache, like so:
+> >> > +host:/sys/block/sdb/sdb1/bcache# echo 1 > running
+> >> > +
+> >> > +
+> >> > +B) Bcache not finding its cache and not starting
+> >> > +
+> >> > +This does not work:
+> >> > +host:/sys/block/md5/bcache# echo 0226553a-37cf-41d5-b3ce-8b1e944543a8 > attach
+> >> > +[ 1933.455082] bcache: bch_cached_dev_attach() Couldn't find uuid for md5 in set
+> >> > +[ 1933.478179] bcache: __cached_dev_store() Can't attach 0226553a-37cf-41d5-b3ce-8b1e944543a8
+> >> > +[ 1933.478179] : cache set not found
+> >> > +
+> >> > +In this case, the caching device was simply not registered at boot or
+> >> > +disappeared and came back, and needs to be (re-)registered:
+> >> > +host:/sys/block/md5/bcache# echo /dev/sdh2 > /sys/fs/bcache/register
+> >> > +
+> >> > +
+> >> > +C) Corrupt bcache caching device crashes the kernel on startup/boot
+> >> > +
+> >> > +You'll have to wipe the caching device, start the backing device without the
+> >> > +cache, and you can re-attach the cleaned up caching device then. This does
+> >> > +require booting with a kernel/rescue media where bcache is disabled
+> >> > +since it will otherwise try to access your device and probably crash
+> >> > +again before you have a chance to wipe it.
+> >> > +(or if you plan ahead, compile a backup kernel with bcache disabled and keep it
+> >> > +in your grub config for a rainy day)
+> >> > +If bcache is not available in the kernel, a filesystem on the backing device is
+> >> > +still available at an 8KiB offset. So either via a loopdev of the backing device
+> >> > +created with --offset 8K or by temporarily increasing the start sector of the
+> >> > +partition by 16 (512byte sectors).
+> >> > +
+> >> > +This is how you wipe the caching device:
+> >> > +host:~# wipefs -a /dev/sdh2
+> >> > +16 bytes were erased at offset 0x1018 (bcache)
+> >> > +they were: c6 85 73 f6 4e 1a 45 ca 82 65 f5 7f 48 ba 6d 81
+> >> > +
+> >> > +After you boot back with bcache enabled, you recreate the cache and attach it:
+> >> > +host:~# make-bcache -C /dev/sdh2
+> >> > +UUID:                   7be7e175-8f4c-4f99-94b2-9c904d227045
+> >> > +Set UUID:               5bc072a8-ab17-446d-9744-e247949913c1
+> >> > +version:                0
+> >> > +nbuckets:               106874
+> >> > +block_size:             1
+> >> > +bucket_size:            1024
+> >> > +nr_in_set:              1
+> >> > +nr_this_dev:            0
+> >> > +first_bucket:           1
+> >> > +[  650.511912] bcache: run_cache_set() invalidating existing data
+> >> > +[  650.549228] bcache: register_cache() registered cache device sdh2
+> >> > +
+> >> > +start backing device with missing cache:
+> >> > +host:/sys/block/md5/bcache# echo 1 > running
+> >> > +
+> >> > +attach new cache:
+> >> > +host:/sys/block/md5/bcache# echo 5bc072a8-ab17-446d-9744-e247949913c1 > attach
+> >> > +[  865.276616] bcache: bch_cached_dev_attach() Caching md5 as bcache0 on set 5bc072a8-ab17-446d-9744-e247949913c1
+> >> > +
+> >> > +
+> >> > +D) Remove or replace a caching device
+> >> > +
+> >> > +host:/sys/block/sda/sda7/bcache# echo 1 > detach
+> >> > +[  695.872542] bcache: cached_dev_detach_finish() Caching disabled for sda7
+> >> > +
+> >> > +host:~# wipefs -a /dev/nvme0n1p4
+> >> > +wipefs: error: /dev/nvme0n1p4: probing initialization failed: Device or resource busy
+> >> > +Ooops, it's disabled, but not unregistered, so it's still protected
+> >> > +
+> >> > +We need to go and unregister it:
+> >> > +host:/sys/fs/bcache/b7ba27a1-2398-4649-8ae3-0959f57ba128# ls -l cache0
+> >> > +lrwxrwxrwx 1 root root 0 Feb 25 18:33 cache0 -> ../../../devices/pci0000:00/0000:00:1d.0/0000:70:00.0/nvme/nvme0/nvme0n1/nvme0n1p4/bcache/
+> >> > +host:/sys/fs/bcache/b7ba27a1-2398-4649-8ae3-0959f57ba128# echo 1 > stop
+> >> > +kernel: [  917.041908] bcache: cache_set_free() Cache set b7ba27a1-2398-4649-8ae3-0959f57ba128 unregistered
+> >> > +
+> >> > +Now we can wipe it:
+> >> > +host:~# wipefs -a /dev/nvme0n1p4
+> >> > +/dev/nvme0n1p4: 16 bytes were erased at offset 0x00001018 (bcache): c6 85 73 f6 4e 1a 45 ca 82 65 f5 7f 48 ba 6d 81
+> >> > +
+> >> > +
+> >> > +E) dmcrypt and bcache
+> >> > +
+> >> > +First setup bcache unencrypted and then install dmcrypt on top of /dev/bcache<N>
+> >> > +This will work faster than if you dmcrypt both the backing and caching
+> >> > +devices and then install bcache on top.
+> >> > +
+> >> > +
+> >> > +F) Stop/free a registered bcache to wipe and/or recreate it
+> >> > +(or maybe you need to free up all bcache references so that you can have fdisk
+> >> > +run and re-register a changed partition table, which won't work if there are any
+> >> > +active backing or caching devices left on it)
+> >> > +
+> >> > +1) Is it present in /dev/bcache* ? (there are times where it won't be)
+> >> > +If so, it's easy:
+> >> > +host:/sys/block/bcache0/bcache# echo 1 > stop
+> >> > +
+> >> > +2) But if your backing device is gone, this won't work:
+> >> > +host:/sys/block/bcache0# cd bcache
+> >> > +bash: cd: bcache: No such file or directory
+> >> > +
+> >> > +In this case, you may have to unregister the dmcrypt block device that
+> >> > +references this bcache to free it up:
+> >> > +host:~# dmsetup remove oldds1
+> >> > +bcache: bcache_device_free() bcache0 stopped
+> >> > +bcache: cache_set_free() Cache set 5bc072a8-ab17-446d-9744-e247949913c1 unregistered
+> >> > +
+> >> > +This causes the backing bcache to be removed from /sys/fs/bcache and then it can
+> >> > +be reused
+> >> > +
+> >> > +3) In other cases, you can also look in /sys/fs/bcache/:
+> >> > +host:/sys/fs/bcache# ls -l */{cache?,bdev?}
+> >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 0226553a-37cf-41d5-b3ce-8b1e944543a8/bdev1 -> ../../../devices/virtual/block/dm-1/bcache/
+> >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 0226553a-37cf-41d5-b3ce-8b1e944543a8/cache0 -> ../../../devices/virtual/block/dm-4/bcache/
+> >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 5bc072a8-ab17-446d-9744-e247949913c1/cache0 -> ../../../devices/pci0000:00/0000:00:01.0/0000:01:00.0/ata10/host9/target9:0:0/9:0:0:0/block/sdl/sdl2/bcache/
+> >> > +
+> >> > +The device names will show which UUID is relevant, cd in that directory
+> >> > +and stop the cache:
+> >> > +host:/sys/fs/bcache/5bc072a8-ab17-446d-9744-e247949913c1# echo 1 > stop
+> >> > +this will free up bcache references and let you reuse the partition for other
+> >> > +purposes.
+> >> > +
+> >> > +
+> >> > +
+> >> > +TROUBLESHOOTING PERFORMANCE
+> >> > +---------------------------
+> >> >
+> >> >  Bcache has a bunch of config options and tunables. The defaults are intended to
+> >> >  be reasonable for typical desktop and server workloads, but they're not what you
+> >> > @@ -140,7 +282,7 @@ want for getting the best possible numbers when benchmarking.
+> >> >     maturity, but simply because in writeback mode you'll lose data if something
+> >> >     happens to your SSD)
+> >> >
+> >> > -   # echo writeback > /sys/block/bcache0/cache_mode
+> >> > +   # echo writeback > /sys/block/bcache0/bcache/cache_mode
+> >> >
+> >> >   - Bad performance, or traffic not going to the SSD that you'd expect
+> >> >
+> >> > @@ -193,7 +335,9 @@ want for getting the best possible numbers when benchmarking.
+> >> >     Solution: warm the cache by doing writes, or use the testing branch (there's
+> >> >     a fix for the issue there).
+> >> >
+> >> > -SYSFS - BACKING DEVICE:
+> >> > +
+> >> > +SYSFS - BACKING DEVICE
+> >> > +----------------------
+> >> >
+> >> >  Available at /sys/block/<bdev>/bcache, /sys/block/bcache*/bcache and
+> >> >  (if attached) /sys/fs/bcache/<cset-uuid>/bdev*
+> >> > --
+> >> > 2.5.3
+> >> >
+> >> >
+> >> > --
+> >> > "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+> >> > Microsoft is to operating systems ....
+> >> >                                       .... what McDonalds is to gourmet cooking
+> >> > Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
+> >> > --
+> >> > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> >> > the body of a message to majordomo@vger.kernel.org
+> >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> >
+> >>
+> 
+> 
+> 
+> -- 
+> "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+> Microsoft is to operating systems & security ....
+>                                       .... what McDonalds is to gourmet cooking
+> Home page: http://marc.merlins.org/
+> 
