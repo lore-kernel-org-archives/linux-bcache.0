@@ -1,52 +1,33 @@
-From: Mike Snitzer <snitzer@redhat.com>
-Subject: Re: [PATCH 00/42] v7: separate operations from flags in the
- bio/request structs
-Date: Fri, 15 Apr 2016 15:44:32 -0400
-Message-ID: <20160415194432.GA30077@redhat.com>
-References: <1460747777-8479-1-git-send-email-mchristi@redhat.com>
+From: Maciej Piechotka <uzytkownik2@gmail.com>
+Subject: bcache hangs on suspend when cache device is attached
+Date: Fri, 15 Apr 2016 15:45:49 +0000 (UTC)
+Message-ID: <loom.20160415T174321-594@post.gmane.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <1460747777-8479-1-git-send-email-mchristi@redhat.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: mchristi@redhat.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from plane.gmane.org ([80.91.229.3]:43838 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751993AbcDQCPO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sat, 16 Apr 2016 22:15:14 -0400
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1arcEq-00061q-P7
+	for linux-bcache@vger.kernel.org; Sun, 17 Apr 2016 04:15:05 +0200
+Received: from c-50-168-49-114.hsd1.ca.comcast.net ([50.168.49.114])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sun, 17 Apr 2016 04:15:04 +0200
+Received: from uzytkownik2 by c-50-168-49-114.hsd1.ca.comcast.net with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Sun, 17 Apr 2016 04:15:04 +0200
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Fri, Apr 15 2016 at  3:15pm -0400,
-mchristi@redhat.com <mchristi@redhat.com> wrote:
+Hi,
 
-> The following patches begin to cleanup the request->cmd_flags and
-> bio->bi_rw mess. We currently use cmd_flags to specify the operation,
-> attributes and state of the request. For bi_rw we use it for similar
-> info and also the priority but then also have another bi_flags field
-> for state. At some point, we abused them so much we just made cmd_flags
-> 64 bits, so we could add more.
-> 
-> The following patches seperate the operation (read, write discard,
-> flush, etc) from cmd_flags/bi_rw.
-> 
-> This patchset was made against linux-next from today April 15
-> (git tag next-20160415).
-> 
-> I put a git tree here:
-> https://github.com/mikechristie/linux-kernel.git
-> The patches are in the op branch.
-> 
-> v7:
-> 1. Fix broken feature_flush/fua use.
-> 
-> v6 and maybe hopfully the last version:
-> 1. Adapt patch 41 to Jens's QUEUE_FLAG_WC/FUA patchset.
+My system hangs during suspend when cache device is attached. If I detach it
+before suspending it works fine. Is this a known bug?
 
-Why are you blasting out the entire patchset for updates to individual
-patches at the end of the series?
-
-Mail is cheap but look at how wide you're repeatedly spamming this
-series.
-
-Also, look at what you've done to the dm-devel patchwork:
-https://patchwork.kernel.org/project/dm-devel/list/?state=*
-
-Just sayin'... ;)
+Maciej
