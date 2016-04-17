@@ -1,46 +1,40 @@
-From: Juergen Gross <kernel@pfupf.net>
-Subject: Re: [PATCH 41/42] block: do not use REQ_FLUSH for tracking flush
- support
-Date: Sun, 17 Apr 2016 10:46:59 +0200
-Message-ID: <57134D83.8020309@pfupf.net>
-References: <1460747777-8479-1-git-send-email-mchristi@redhat.com>
- <1460747777-8479-42-git-send-email-mchristi@redhat.com>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: bcache hangs on suspend when cache device is attached
+Date: Sun, 17 Apr 2016 18:08:59 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1604171807510.16630@mail.ewheeler.net>
+References: <loom.20160415T174321-594@post.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:46508 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316AbcDQIrJ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 17 Apr 2016 04:47:09 -0400
-In-Reply-To: <1460747777-8479-42-git-send-email-mchristi@redhat.com>
+Received: from [66.155.3.69] ([66.155.3.69]:60411 "EHLO mail.ewheeler.net"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750730AbcDQSJc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 17 Apr 2016 14:09:32 -0400
+In-Reply-To: <loom.20160415T174321-594@post.gmane.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: mchristi@redhat.com, linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
+To: Maciej Piechotka <uzytkownik2@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-On 15/04/16 21:16, mchristi@redhat.com wrote:
-> From: Mike Christie <mchristi@redhat.com>
-> 
-> The last patch added a REQ_OP_FLUSH for request_fn drivers
-> and the next patch renames REQ_FLUSH to REQ_PREFLUSH which
-> will be used by file systems and make_request_fn drivers so
-> they can send a write/flush combo.
-> 
-> This patch drops xen's use of REQ_FLUSH to track if it supports
-> REQ_OP_FLUSH requests, so REQ_FLUSH can be deleted.
-> 
-> v7:
-> - Fix feature_flush/fua use.
-> 
-> v6:
-> - Dropped parts of patch handled by Jens's QUEUE_FLAG_WC/FUA
-> patches and modified patch to check feature_flush/fua bits.
-> 
-> Signed-off-by: Mike Christie <mchristi@redhat.com>
-> Reviewed-by: Hannes Reinecke <hare@suse.com>
-> Cc: Juergen Gross <kernel@pfupf.net>
+On Fri, 15 Apr 2016, Maciej Piechotka wrote:
 
-Acked-by: Juergen Gross <jgross@suse.com>
+> Hi,
+> 
+> My system hangs during suspend when cache device is attached. If I detach it
+> before suspending it works fine. Is this a known bug?
+
+Interesting.  Can you collect the dmesg output as it suspends/resumes via 
+serial or something other means?
+
+--
+Eric Wheeler
 
 
-Juergen
+> 
+> Maciej
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
