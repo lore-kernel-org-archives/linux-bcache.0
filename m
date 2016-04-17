@@ -1,33 +1,46 @@
-From: Maciej Piechotka <uzytkownik2@gmail.com>
-Subject: bcache hangs on suspend when cache device is attached
-Date: Fri, 15 Apr 2016 15:45:49 +0000 (UTC)
-Message-ID: <loom.20160415T174321-594@post.gmane.org>
+From: Juergen Gross <kernel@pfupf.net>
+Subject: Re: [PATCH 41/42] block: do not use REQ_FLUSH for tracking flush
+ support
+Date: Sun, 17 Apr 2016 10:46:59 +0200
+Message-ID: <57134D83.8020309@pfupf.net>
+References: <1460747777-8479-1-git-send-email-mchristi@redhat.com>
+ <1460747777-8479-42-git-send-email-mchristi@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:43838 "EHLO plane.gmane.org"
+Received: from mx2.suse.de ([195.135.220.15]:46508 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751993AbcDQCPO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Sat, 16 Apr 2016 22:15:14 -0400
-Received: from list by plane.gmane.org with local (Exim 4.69)
-	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1arcEq-00061q-P7
-	for linux-bcache@vger.kernel.org; Sun, 17 Apr 2016 04:15:05 +0200
-Received: from c-50-168-49-114.hsd1.ca.comcast.net ([50.168.49.114])
-        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Sun, 17 Apr 2016 04:15:04 +0200
-Received: from uzytkownik2 by c-50-168-49-114.hsd1.ca.comcast.net with local (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Sun, 17 Apr 2016 04:15:04 +0200
+	id S1751316AbcDQIrJ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Sun, 17 Apr 2016 04:47:09 -0400
+In-Reply-To: <1460747777-8479-42-git-send-email-mchristi@redhat.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: mchristi@redhat.com, linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
 
-Hi,
+On 15/04/16 21:16, mchristi@redhat.com wrote:
+> From: Mike Christie <mchristi@redhat.com>
+> 
+> The last patch added a REQ_OP_FLUSH for request_fn drivers
+> and the next patch renames REQ_FLUSH to REQ_PREFLUSH which
+> will be used by file systems and make_request_fn drivers so
+> they can send a write/flush combo.
+> 
+> This patch drops xen's use of REQ_FLUSH to track if it supports
+> REQ_OP_FLUSH requests, so REQ_FLUSH can be deleted.
+> 
+> v7:
+> - Fix feature_flush/fua use.
+> 
+> v6:
+> - Dropped parts of patch handled by Jens's QUEUE_FLAG_WC/FUA
+> patches and modified patch to check feature_flush/fua bits.
+> 
+> Signed-off-by: Mike Christie <mchristi@redhat.com>
+> Reviewed-by: Hannes Reinecke <hare@suse.com>
+> Cc: Juergen Gross <kernel@pfupf.net>
 
-My system hangs during suspend when cache device is attached. If I detach it
-before suspending it works fine. Is this a known bug?
+Acked-by: Juergen Gross <jgross@suse.com>
 
-Maciej
+
+Juergen
