@@ -1,40 +1,36 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache hangs on suspend when cache device is attached
-Date: Sun, 17 Apr 2016 18:08:59 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1604171807510.16630@mail.ewheeler.net>
-References: <loom.20160415T174321-594@post.gmane.org>
+From: <verifelaw@gmx.com>
+Subject: IMPORTANT MAIL TO YOU
+Date: Mon, 18 Apr 2016 13:09:41 +0200
+Message-ID: <613fad89-f8e9-4340-bd2b-935a5631973f__22074.2820216858$1460977883$gmane$org@GSCADMINS22.gsc.org.uk>
+Reply-To: <lawrencetyman@gmx.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [66.155.3.69] ([66.155.3.69]:60411 "EHLO mail.ewheeler.net"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750730AbcDQSJc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 17 Apr 2016 14:09:32 -0400
-In-Reply-To: <loom.20160415T174321-594@post.gmane.org>
+Received: from mail-db3hn0248.outbound.protection.outlook.com ([157.55.234.248]:41114
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752661AbcDRLKX (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 18 Apr 2016 07:10:23 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Maciej Piechotka <uzytkownik2@gmail.com>
-Cc: linux-bcache@vger.kernel.org
 
-On Fri, 15 Apr 2016, Maciej Piechotka wrote:
+I am Capt. Lawrence Tyman, an officer in US Army,and also a West Point
+Graduate, serving in the Military with the 82nd Air Borne Division
+Peace keeping force deployed from Afganistan to Syria.  
+We were moved to Syria from Iraq as the last batch just left,and i
+really need your help in assisting me with the safe keeping of 1 military
+trunk box contain funds amount of $10.2M which i secured on a raiding we carried out in 
+January in one of the chief Syrian IsIs base which i headed the squard as the 
+Captain.  With every possible arrangement to lift this box out, is intended to arrive 
+Belgium from there a diplomat will deliver it to your designated location
+I hope you can be trusted? You will be rewarded handsomely if you could help
+me secure the funds until I conclude my service here in 3 month to meet you while we can 
+plan head to head on a good and profitable business or company i can invest my funds in your country.
+If you can be trusted and willing to support me in securing this safely kindly indicate 
+by Letting me know this (1) Your name (2) Your address (3) Age (4) Occupation and 
+i will explain further when i get a response from you
+kindly contact me in this my private email address below: lawrencetyman@gmx.com
 
-> Hi,
-> 
-> My system hangs during suspend when cache device is attached. If I detach it
-> before suspending it works fine. Is this a known bug?
-
-Interesting.  Can you collect the dmesg output as it suspends/resumes via 
-serial or something other means?
-
---
-Eric Wheeler
-
-
-> 
-> Maciej
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Regards,
+Capt. Lawrence Tyman
