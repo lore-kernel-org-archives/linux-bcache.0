@@ -1,36 +1,111 @@
-From: <verifelaw@gmx.com>
-Subject: IMPORTANT MAIL TO YOU
-Date: Mon, 18 Apr 2016 13:09:41 +0200
-Message-ID: <613fad89-f8e9-4340-bd2b-935a5631973f__22074.2820216858$1460977883$gmane$org@GSCADMINS22.gsc.org.uk>
-Reply-To: <lawrencetyman@gmx.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: Re: [PATCH 16/42] nilfs: set bi_op to REQ_OP
+Date: Tue, 19 Apr 2016 01:04:15 +0900 (JST)
+Message-ID: <20160419.010415.105960685033839882.konishi.ryusuke@lab.ntt.co.jp>
+References: <1460747777-8479-1-git-send-email-mchristi@redhat.com>
+	<1460747777-8479-17-git-send-email-mchristi@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-db3hn0248.outbound.protection.outlook.com ([157.55.234.248]:41114
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752661AbcDRLKX (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 18 Apr 2016 07:10:23 -0400
-Sender: linux-bcache-owner@vger.kernel.org
+Return-path: <linux-btrfs-owner@vger.kernel.org>
+In-Reply-To: <1460747777-8479-17-git-send-email-mchristi@redhat.com>
+Sender: linux-btrfs-owner@vger.kernel.org
+To: Mike Christie <mchristi@redhat.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
 List-Id: linux-bcache@vger.kernel.org
 
-I am Capt. Lawrence Tyman, an officer in US Army,and also a West Point
-Graduate, serving in the Military with the 82nd Air Borne Division
-Peace keeping force deployed from Afganistan to Syria.  
-We were moved to Syria from Iraq as the last batch just left,and i
-really need your help in assisting me with the safe keeping of 1 military
-trunk box contain funds amount of $10.2M which i secured on a raiding we carried out in 
-January in one of the chief Syrian IsIs base which i headed the squard as the 
-Captain.  With every possible arrangement to lift this box out, is intended to arrive 
-Belgium from there a diplomat will deliver it to your designated location
-I hope you can be trusted? You will be rewarded handsomely if you could help
-me secure the funds until I conclude my service here in 3 month to meet you while we can 
-plan head to head on a good and profitable business or company i can invest my funds in your country.
-If you can be trusted and willing to support me in securing this safely kindly indicate 
-by Letting me know this (1) Your name (2) Your address (3) Age (4) Occupation and 
-i will explain further when i get a response from you
-kindly contact me in this my private email address below: lawrencetyman@gmx.com
+On Fri, 15 Apr 2016 14:15:51 -0500, mchristi@redhat.com wrote:
+> From: Mike Christie <mchristi@redhat.com>
+> 
+> This patch has nilfs use bio->bi_op for REQ_OPs and rq_flag_bits
+> to bio->bi_rw.
+> 
+> Signed-off-by: Mike Christie <mchristi@redhat.com>
+> Reviewed-by: Christoph Hellwig <hch@lst.de>
+> Reviewed-by: Hannes Reinecke <hare@suse.com>
+> ---
+>  fs/nilfs2/segbuf.c | 18 ++++++++++--------
+>  1 file changed, 10 insertions(+), 8 deletions(-)
 
-Regards,
-Capt. Lawrence Tyman
+Looks good to me.
+
+Acked-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+
+Thanks,
+Ryuske Konishi
+
+> 
+> diff --git a/fs/nilfs2/segbuf.c b/fs/nilfs2/segbuf.c
+> index 7666f1d..7b13e14 100644
+> --- a/fs/nilfs2/segbuf.c
+> +++ b/fs/nilfs2/segbuf.c
+> @@ -350,7 +350,8 @@ static void nilfs_end_bio_write(struct bio *bio)
+>  }
+>  
+>  static int nilfs_segbuf_submit_bio(struct nilfs_segment_buffer *segbuf,
+> -				   struct nilfs_write_info *wi, int mode)
+> +				   struct nilfs_write_info *wi, int mode,
+> +				   int mode_flags)
+>  {
+>  	struct bio *bio = wi->bio;
+>  	int err;
+> @@ -368,7 +369,8 @@ static int nilfs_segbuf_submit_bio(struct nilfs_segment_buffer *segbuf,
+>  
+>  	bio->bi_end_io = nilfs_end_bio_write;
+>  	bio->bi_private = segbuf;
+> -	bio->bi_rw = mode;
+> +	bio->bi_op = mode;
+> +	bio->bi_rw = mode_flags;
+>  	submit_bio(bio);
+>  	segbuf->sb_nbio++;
+>  
+> @@ -442,7 +444,7 @@ static int nilfs_segbuf_submit_bh(struct nilfs_segment_buffer *segbuf,
+>  		return 0;
+>  	}
+>  	/* bio is FULL */
+> -	err = nilfs_segbuf_submit_bio(segbuf, wi, mode);
+> +	err = nilfs_segbuf_submit_bio(segbuf, wi, mode, 0);
+>  	/* never submit current bh */
+>  	if (likely(!err))
+>  		goto repeat;
+> @@ -466,19 +468,19 @@ static int nilfs_segbuf_write(struct nilfs_segment_buffer *segbuf,
+>  {
+>  	struct nilfs_write_info wi;
+>  	struct buffer_head *bh;
+> -	int res = 0, rw = WRITE;
+> +	int res = 0;
+>  
+>  	wi.nilfs = nilfs;
+>  	nilfs_segbuf_prepare_write(segbuf, &wi);
+>  
+>  	list_for_each_entry(bh, &segbuf->sb_segsum_buffers, b_assoc_buffers) {
+> -		res = nilfs_segbuf_submit_bh(segbuf, &wi, bh, rw);
+> +		res = nilfs_segbuf_submit_bh(segbuf, &wi, bh, REQ_OP_WRITE);
+>  		if (unlikely(res))
+>  			goto failed_bio;
+>  	}
+>  
+>  	list_for_each_entry(bh, &segbuf->sb_payload_buffers, b_assoc_buffers) {
+> -		res = nilfs_segbuf_submit_bh(segbuf, &wi, bh, rw);
+> +		res = nilfs_segbuf_submit_bh(segbuf, &wi, bh, REQ_OP_WRITE);
+>  		if (unlikely(res))
+>  			goto failed_bio;
+>  	}
+> @@ -488,8 +490,8 @@ static int nilfs_segbuf_write(struct nilfs_segment_buffer *segbuf,
+>  		 * Last BIO is always sent through the following
+>  		 * submission.
+>  		 */
+> -		rw |= REQ_SYNC;
+> -		res = nilfs_segbuf_submit_bio(segbuf, &wi, rw);
+> +		res = nilfs_segbuf_submit_bio(segbuf, &wi, REQ_OP_WRITE,
+> +					      REQ_SYNC);
+>  	}
+>  
+>   failed_bio:
+> -- 
+> 2.7.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
