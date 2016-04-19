@@ -1,27 +1,61 @@
-From: andreas122@elisaandreas.biz
-Subject: Greetings!!!
-Date: Mon, 18 Apr 2016 21:12:04 +0100
-Message-ID: <777136.35773.qm__4256.43874700672$1461010766$gmane$org@smtp105.biz.mail.ne1.yahoo.com>
-Reply-To: J_ericdaniels111@outlook.com
+From: Jiri Kosina <jikos@kernel.org>
+Subject: [PATCH] bcache: bch_writeback_thread() is not freezable
+Date: Tue, 19 Apr 2016 14:33:54 +0200 (CEST)
+Message-ID: <alpine.LNX.2.00.1604191421130.27368@cbobk.fhfr.pm>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtp105.biz.mail.ne1.yahoo.com ([98.138.207.12]:27587 "EHLO
-	smtp105.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752524AbcDRUTK convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 18 Apr 2016 16:19:10 -0400
-Content-Description: Mail message body
+Received: from mx2.suse.de ([195.135.220.15]:49774 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752486AbcDSMd5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 19 Apr 2016 08:33:57 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "Mr. Eric" <andreas122@elisaandreas.biz>
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Hi, how are you? My name is J Eric Denials, External Financial Auditor =
-at Lloyds Banking Group plc., London. It is a pleasure to contact you a=
-t this time through this medium. I have a cool and legitimate deal to d=
-o with you as you're a foreigner, it will be mutually beneficial to bot=
-h. If you=E2=80=99re interested, urgently, get back to me for more expl=
-anation about the deal.
-Regards
-Eric
+From: Jiri Kosina <jkosina@suse.cz>
+
+bch_writeback_thread() is calling try_to_freeze(), but that's just an 
+expensive no-op given the fact that the thread is not marked freezable.
+
+I/O helper kthreads, exactly such as the bcache writeback thread, actually 
+shouldn't be freezable, because they are potentially necessary for 
+finalizing the image write-out.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+ drivers/md/bcache/writeback.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index b9346cd..6012367 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -12,7 +12,6 @@
+ #include "writeback.h"
+ 
+ #include <linux/delay.h>
+-#include <linux/freezer.h>
+ #include <linux/kthread.h>
+ #include <trace/events/bcache.h>
+ 
+@@ -228,7 +227,6 @@ static void read_dirty(struct cached_dev *dc)
+ 	 */
+ 
+ 	while (!kthread_should_stop()) {
+-		try_to_freeze();
+ 
+ 		w = bch_keybuf_next(&dc->writeback_keys);
+ 		if (!w)
+@@ -433,7 +431,6 @@ static int bch_writeback_thread(void *arg)
+ 			if (kthread_should_stop())
+ 				return 0;
+ 
+-			try_to_freeze();
+ 			schedule();
+ 			continue;
+ 		}
+-- 
+Jiri Kosina
+SUSE Labs
