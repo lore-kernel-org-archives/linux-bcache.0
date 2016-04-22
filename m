@@ -1,47 +1,138 @@
-From: Maciej Piechotka <uzytkownik2@gmail.com>
-Subject: Re: bcache hangs on suspend when cache device is attached
-Date: Fri, 22 Apr 2016 01:33:40 +0000 (UTC)
-Message-ID: <loom.20160422T033159-792@post.gmane.org>
-References: <loom.20160415T174321-594@post.gmane.org> <alpine.LRH.2.11.1604171807510.16630@mail.ewheeler.net> <loom.20160419T225909-455@post.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from plane.gmane.org ([80.91.229.3]:38642 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594AbcDVBdz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 21 Apr 2016 21:33:55 -0400
-Received: from list by plane.gmane.org with local (Exim 4.69)
-	(envelope-from <glbd-linux-bcache@m.gmane.org>)
-	id 1atPyf-0008Lw-3V
-	for linux-bcache@vger.kernel.org; Fri, 22 Apr 2016 03:33:49 +0200
-Received: from c-50-168-49-114.hsd1.ca.comcast.net ([50.168.49.114])
-        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 22 Apr 2016 03:33:49 +0200
-Received: from uzytkownik2 by c-50-168-49-114.hsd1.ca.comcast.net with local (Gmexim 0.1 (Debian))
-        id 1AlnuQ-0007hv-00
-        for <linux-bcache@vger.kernel.org>; Fri, 22 Apr 2016 03:33:49 +0200
-Sender: linux-bcache-owner@vger.kernel.org
+From: Seth Forshee <seth.forshee@canonical.com>
+Subject: [PATCH v3 00/21] Support fuse mounts in user namespaces
+Date: Fri, 22 Apr 2016 10:38:17 -0500
+Message-ID: <1461339521-123191-1-git-send-email-seth.forshee@canonical.com>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net, cgroups@vger.kernel.org, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Miklos Szeredi <mszeredi@redhat.com>, Pavel Tikhomirov <ptikhomirov@virtuozzo.com>, linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Maciej Piechotka <uzytkownik2 <at> gmail.com> writes:
+Hi Eric,
 
-> 
-> Eric Wheeler <bcache <at> lists.ewheeler.net> writes:
-> 
-> > 
-> > Interesting.  Can you collect the dmesg output as it suspends/resumes via 
-> > serial or something other means?
-> > 
-> 
-> I'll try to capture the output today.
-> 
-> 
+Sorry that it's taken a while to get this update sent out. In part
+that's because of a few problems I found, which resulted in some new
+patches.
 
+I wanted to point out one problem in particular because I'm not fully
+settled on the solution. It turns out that for the sysfs and cgroup
+filesystems we already have use cases where a super block is mounted
+from multiple user namespaces. With sysfs this is done when criu is used
+to snapshot a container; it will mount sysfs in the container's network
+namespace but the host's user namespace. cgroup fs uses the same super
+block for all mounts of a given hierarchy, and the addition of cgroup
+namespaces makes this possible from within non-init user namepsaces. So
+the check in sget_userns() which forbids mounting an existing super
+block in a different user namespace causes regressions, and really it's
+not necessary for these filesystems since ids in the inodes aren't
+subect to translation relative to s_user_ns.
 
-The USB-to-serial I was using requires firmware which for some reasons in my
-setup (luks + lvm + dracut) prevents the whole thing from working - I'm able
-to set up serial connection between 2 computers (including getty) but not
-loging. I'll try netconsole later on - maybe with better result.
+I've tried several ways to fix this. The one I'm sending here is to
+exempt these filesystems from this requirement, which is the simplest
+solution. The down side is that I couldn't find any existing property of
+these file systems to use for excluding them, so I'm using a new file
+system flag. My second-best option was to change kernfs_test_super() to
+return false if the existing super block is in a different user
+namespace. This is also pretty simple and works fine for sysfs, but
+cgroups require some updating in order to get its internal reference
+counting to work out.
+
+These patches are based on the for-testing branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace.git
+with everything rebased onto 4.6-rc4. I've also pushed everything to:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/sforshee/linux.git fuse-userns
+
+Changes since v2:
+
+ - Add patch from Pavel Tikhomirov to fix a potential memory leak in
+   sget_userns().
+ - Add a patch to fix a bug in the fs_fully_visible() MNT_LOCK_NODEV
+   handling which was introduced by "userns: Simpilify MNT_NODEV
+   handling."
+ - Drop patch to make root in s_user_ns capable towards that superblock
+   and replace it with a patch to allow root in s_user_ns to change
+   ownership of inodes with invalid ids.
+ - Use make_k[ug]id() in fuse_fillattr() instead of copying ids from
+   inode.
+ - Remove unnecessary initialization of user_id and group_id in fuse
+   mount options.
+ - Add a comment to get_file_caps() to indicate that the duplicate
+   in_userns() check is intentional.
+ - Fix incorrect statements in commit message of "fuse: Add support for
+   pid namespaces"
+ - Added acks.
+
+Thanks,
+Seth
+
+---
+
+Andy Lutomirski (1):
+  fs: Treat foreign mounts as nosuid
+
+Pavel Tikhomirov (1):
+  fs: fix a posible leak of allocated superblock
+
+Seth Forshee (19):
+  fs: Remove check of s_user_ns for existing mounts in
+    fs_fully_visible()
+  fs: Allow sysfs and cgroupfs to share super blocks between user
+    namespaces
+  block_dev: Support checking inode permissions in lookup_bdev()
+  block_dev: Check permissions towards block device inode when mounting
+  selinux: Add support for unprivileged mounts from user namespaces
+  userns: Replace in_userns with current_in_userns
+  Smack: Handle labels consistently in untrusted mounts
+  fs: Check for invalid i_uid in may_follow_link()
+  cred: Reject inodes with invalid ids in set_create_file_as()
+  fs: Refuse uid/gid changes which don't map into s_user_ns
+  fs: Update posix_acl support to handle user namespace mounts
+  fs: Allow superblock owner to change ownership of inodes with
+    unmappable ids
+  fs: Don't remove suid for CAP_FSETID in s_user_ns
+  fs: Allow superblock owner to access do_remount_sb()
+  capabilities: Allow privileged user in s_user_ns to set security.*
+    xattrs
+  fuse: Add support for pid namespaces
+  fuse: Support fuse filesystems outside of init_user_ns
+  fuse: Restrict allow_other to the superblock's namespace or a
+    descendant
+  fuse: Allow user namespace mounts
+
+ drivers/md/bcache/super.c       |  2 +-
+ drivers/md/dm-table.c           |  2 +-
+ drivers/mtd/mtdsuper.c          |  2 +-
+ fs/attr.c                       | 58 ++++++++++++++++++++++++++++++-----
+ fs/block_dev.c                  | 18 +++++++++--
+ fs/exec.c                       |  2 +-
+ fs/fuse/cuse.c                  |  3 +-
+ fs/fuse/dev.c                   | 26 ++++++++++++----
+ fs/fuse/dir.c                   | 16 +++++-----
+ fs/fuse/file.c                  | 22 +++++++++++---
+ fs/fuse/fuse_i.h                | 10 +++++-
+ fs/fuse/inode.c                 | 40 +++++++++++++++---------
+ fs/inode.c                      |  3 +-
+ fs/kernfs/inode.c               |  2 ++
+ fs/namei.c                      |  2 +-
+ fs/namespace.c                  | 20 +++++++++---
+ fs/posix_acl.c                  | 67 ++++++++++++++++++++++++++---------------
+ fs/proc/base.c                  |  2 ++
+ fs/proc/generic.c               |  3 ++
+ fs/proc/proc_sysctl.c           |  2 ++
+ fs/quota/quota.c                |  2 +-
+ fs/super.c                      |  7 ++++-
+ fs/sysfs/mount.c                |  3 +-
+ fs/xattr.c                      | 19 +++++++++---
+ include/linux/fs.h              |  3 +-
+ include/linux/mount.h           |  1 +
+ include/linux/posix_acl_xattr.h | 17 ++++++++---
+ include/linux/uidgid.h          | 10 ++++++
+ include/linux/user_namespace.h  |  6 ++--
+ kernel/cgroup.c                 |  4 +--
+ kernel/cred.c                   |  2 ++
+ kernel/user_namespace.c         |  6 ++--
+ security/commoncap.c            | 22 ++++++++++----
+ security/selinux/hooks.c        | 25 ++++++++++++++-
+ security/smack/smack_lsm.c      | 29 ++++++++++++------
+ 35 files changed, 339 insertions(+), 119 deletions(-)
