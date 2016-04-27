@@ -1,67 +1,44 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: writeback mode behaviour on proper shut down
-Date: Wed, 27 Apr 2016 02:10:10 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1604270209100.21555@mx.ewheeler.net>
-References: <CACHiF8AEZ0Ppoa9mzou76o8j5UC-gXyjt25EDvnqq9S-Kk0B8Q@mail.gmail.com> <alpine.LRH.2.11.1604261953230.21555@mx.ewheeler.net> <CACHiF8C0A+Gmr5xYCRhB+dm0zLu3iyYysuQXNYAVLOmDUix5hg@mail.gmail.com>
+From: James Morris <jmorris-gx6/JNMH7DfYtjvyW6yDsg@public.gmane.org>
+Subject: Re: [PATCH v4 17/21] capabilities: Allow privileged user in s_user_ns
+ to set security.* xattrs
+Date: Wed, 27 Apr 2016 17:22:02 +1000 (AEST)
+Message-ID: <alpine.LRH.2.20.1604271721471.796@namei.org>
+References: <1461699396-33000-1-git-send-email-seth.forshee@canonical.com> <1461699396-33000-18-git-send-email-seth.forshee@canonical.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [66.155.3.69] ([66.155.3.69]:53506 "EHLO mx.ewheeler.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752170AbcD0CK1 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 26 Apr 2016 22:10:27 -0400
-In-Reply-To: <CACHiF8C0A+Gmr5xYCRhB+dm0zLu3iyYysuQXNYAVLOmDUix5hg@mail.gmail.com>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Return-path: <cgroups-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+In-Reply-To: <1461699396-33000-18-git-send-email-seth.forshee-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org>
+Sender: cgroups-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+To: Seth Forshee <seth.forshee-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org>
+Cc: "Eric W. Biederman" <ebiederm-aS9lmoZGLiVWk0Htik3J/w@public.gmane.org>, Serge Hallyn <serge.hallyn-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org>, James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>, "Serge E. Hallyn" <serge-A9i7LUbDfNHQT0dZR+AlfA@public.gmane.org>, Alexander Viro <viro-RmSDqhL/yNMiFSDQTTA3OLVCufUGDwFn@public.gmane.org>, Richard Weinberger <richard.weinberger-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Austin S Hemmelgarn <ahferroin7-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Miklos Szeredi <mszeredi-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Pavel Tikhomirov <ptikhomirov-5HdwGun5lf+gSpxsJD1C4w@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-mtd-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org, linux-fsdevel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, fuse-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org, linux-security-module-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, selinux-+05T5uksL2qpZYMLLGbcSA@public.gmane.org, cgroups-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
-To: ching lu <lsching17@gmail.com>
-Cc: linux-bcache@vger.kernel.org
 
+On Tue, 26 Apr 2016, Seth Forshee wrote:
 
-On Wed, 27 Apr 2016, ching lu wrote:
-
-> is there any command for forcing flushing cache or invalidate cache?
-
-I think you would benefit from reading this:
-
-https://www.kernel.org/doc/Documentation/bcache.txt
-
-
---
-Eric Wheeler
-
-	
-
+> A privileged user in s_user_ns will generally have the ability to
+> manipulate the backing store and insert security.* xattrs into
+> the filesystem directly. Therefore the kernel must be prepared to
+> handle these xattrs from unprivileged mounts, and it makes little
+> sense for commoncap to prevent writing these xattrs to the
+> filesystem. The capability and LSM code have already been updated
+> to appropriately handle xattrs from unprivileged mounts, so it
+> is safe to loosen this restriction on setting xattrs.
 > 
-> On Wed, Apr 27, 2016 at 3:57 AM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> > On Tue, 26 Apr 2016, ching lu wrote:
-> >
-> >> Hi all,
-> >>
-> >> if i have 1 SSD caching 1 HDD using bcache, the cache mode is writeback
-> >>
-> >> if the PC shutdown/unmount normally, will all dirty data in the cache
-> >> be flushed to backing device before poweroff?
-> >
-> > No, it will remain in the cache.
-> >
-> >> i am afraid that SSD lose data if left without power for a long time.
-> >> e.g. hoilday.
-> >
-> > Wouldn't your data be retained if you used the SSD alone?  SSDs should be
-> > stable in a powered off state unless it is a bad device.
-> >
-> > There exist RAM-based disks that may be volatile, but that is unlikely to
-> > be your situation.
-> >
-> > --
-> > Eric Wheeler
-> >
-> >>
-> >> Thanks in advance,
-> >> C
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >>
+> The exception to this logic is that writing xattrs to a mounted
+> filesystem may also cause the LSM inode_post_setxattr or
+> inode_setsecurity callbacks to be invoked. SELinux will deny the
+> xattr update by virtue of applying mountpoint labeling to
+> unprivileged userns mounts, and Smack will deny the writes for
+> any user without global CAP_MAC_ADMIN, so loosening the
+> capability check in commoncap is safe in this respect as well.
 > 
+> Signed-off-by: Seth Forshee <seth.forshee-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org>
+> Acked-by: Serge Hallyn <serge.hallyn-Z7WLFzj8eWMS+FvcfC7Uqw@public.gmane.org>
+
+
+Acked-by: James Morris <james.l.morris-QHcLZuEGTsvQT0dZR+AlfA@public.gmane.org>
+
+
+-- 
+James Morris
+<jmorris-gx6/JNMH7DfYtjvyW6yDsg@public.gmane.org>
