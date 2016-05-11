@@ -1,68 +1,114 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: scrub backing device
-Date: Wed, 11 May 2016 12:13:22 -0700 (PDT)
-Message-ID: <alpine.LRH.2.11.1605111212540.22680@mx.ewheeler.net>
-References: <CACHiF8Bm9i=m-nCVv2MnSFVDcgmnOzSytzYo0gzjkfp0u8Y52A@mail.gmail.com> <alpine.LRH.2.11.1605101814280.22680@mx.ewheeler.net> <CACHiF8AdwiO3FKV9=sNrFMom8pb1DiUzXAdvb4ze+k+U0N_-1g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] bcache: Remove redundant block_size assignment
+Date: Wed, 11 May 2016 12:16:28 -0700 (PDT)
+Message-ID: <alpine.LRH.2.11.1605111216020.22680@mx.ewheeler.net>
+References: <1462869529-11293-1-git-send-email-wangyijing@huawei.com> <1462869529-11293-3-git-send-email-wangyijing@huawei.com> <alpine.LRH.2.11.1605101839350.22680@mx.ewheeler.net> <57328F7A.9000508@huawei.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="1595348259-490524224-1462994188=:22680"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [66.155.3.69] ([66.155.3.69]:33915 "EHLO mx.ewheeler.net"
+Received: from [66.155.3.69] ([66.155.3.69]:33928 "EHLO mx.ewheeler.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932072AbcEKTNN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 11 May 2016 15:13:13 -0400
-In-Reply-To: <CACHiF8AdwiO3FKV9=sNrFMom8pb1DiUzXAdvb4ze+k+U0N_-1g@mail.gmail.com>
+	id S1751824AbcEKTQU (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 11 May 2016 15:16:20 -0400
+In-Reply-To: <57328F7A.9000508@huawei.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: ching lu <lsching17@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: wangyijing <wangyijing@huawei.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
 
-On Wed, 11 May 2016, ching lu wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> The read cache prevent the program to scrub the backing device directly.
+--1595348259-490524224-1462994188=:22680
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 11 May 2016, wangyijing wrote:
+
 > 
-> if a few bits flipped in the backing device, the cache may still
-> return healthy data for a while.
 > 
-> Must i remove cache device before scrubbing?
+> 在 2016/5/11 9:41, Eric Wheeler 写道:
+> > On Tue, 10 May 2016, Yijing Wang wrote:
+> > 
+> >> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> >> ---
+> >>  drivers/md/bcache/super.c |    1 -
+> >>  1 files changed, 0 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> >> index 1ccb9be..64d0be6 100644
+> >> --- a/drivers/md/bcache/super.c
+> >> +++ b/drivers/md/bcache/super.c
+> >> @@ -134,7 +134,6 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+> >>  	case BCACHE_SB_VERSION_CDEV:
+> >>  	case BCACHE_SB_VERSION_CDEV_WITH_UUID:
+> >>  		sb->nbuckets	= le64_to_cpu(s->nbuckets);
+> >> -		sb->block_size	= le16_to_cpu(s->block_size);
+> >>  		sb->bucket_size	= le16_to_cpu(s->bucket_size);
+> > 
+> > 
+> > Are you sure we want to do that?  
+> > 
+> > The bcache superblock allows us to assign the block size presented by 
+> > bcache and we wouldn't want 4k users to suddenly revert to 512b.  
+> 
+> Hi, I have nothing functional to change here, we have assigned block_size already before here.
+> 
+> 	sb->block_size	= le16_to_cpu(s->block_size);    //first assignment
 
-What do you mean by scrub?
+I agree. Ack'ed.   
+
 
 --
 Eric Wheeler
 
+
+> 
+> 	err = "Superblock block size smaller than device block size";
+> 	if (sb->block_size << 9 < bdev_logical_block_size(bdev))
+> 		goto err;
+> 
+> 	switch (sb->version) {
+> 	case BCACHE_SB_VERSION_BDEV:
+> 		sb->data_offset	= BDEV_DATA_START_DEFAULT;
+> 		break;
+> 	case BCACHE_SB_VERSION_BDEV_WITH_OFFSET:
+> 		sb->data_offset	= le64_to_cpu(s->data_offset);
+> 
+> 		err = "Bad data offset";
+> 		if (sb->data_offset < BDEV_DATA_START_DEFAULT)
+> 			goto err;
+> 
+> 		break;
+> 	case BCACHE_SB_VERSION_CDEV:
+> 	case BCACHE_SB_VERSION_CDEV_WITH_UUID:
+> 		sb->nbuckets	= le64_to_cpu(s->nbuckets);
+> 		sb->block_size	= le16_to_cpu(s->block_size);       //redundant one
+> 
+> Thanks!
+> Yijing.
 > 
 > 
-> On Wed, May 11, 2016 at 9:15 AM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> > On Fri, 29 Apr 2016, ching lu wrote:
-> >
-> >> Hello,
-> >>
-> >> i want to develop a script to perform data scrubbing periodically.
-> >
-> > I think you want to set dirty_percent to 0 and cache_mode=writethrough.
-> > Then wait a long time for dirty_percent to actually reach 0.
-> >
+> > 
+> > 
 > > --
 > > Eric Wheeler
-> >
-> >
+> > 
+> > 
+> > 
+> >>  
+> >>  		sb->nr_in_set	= le16_to_cpu(s->nr_in_set);
+> >> -- 
+> >> 1.7.1
 > >>
-> >> For my use case, i think it is meaningless to scrub cached data.
-> >>
-> >> If i change the cache mode to "none", will it turn off the read cache too?
-> >>
-> >> Furthermore, will this invalidate cached data? (i do not want to "warm
-> >> up" the cache again after the scrubbing)
-> >>
-> >> Thanks in advance,
-> >> c
 > >> --
 > >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 > >> the body of a message to majordomo@vger.kernel.org
 > >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > >>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> > .
+> > 
 > 
+> 
+--1595348259-490524224-1462994188=:22680--
