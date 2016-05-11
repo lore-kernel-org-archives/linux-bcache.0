@@ -1,39 +1,45 @@
-From: Yijing Wang <wangyijing@huawei.com>
-Subject: [UPDATE][PATCH 3/3] bcache: Remove redundant block_size assignment
-Date: Wed, 11 May 2016 14:02:04 +0800
-Message-ID: <1462946524-11639-1-git-send-email-wangyijing@huawei.com>
+From: Jiri Kosina <jikos@kernel.org>
+Subject: Re: [PATCH] bcache: bch_writeback_thread() is not freezable
+Date: Wed, 11 May 2016 09:55:51 +0200 (CEST)
+Message-ID: <alpine.LNX.2.00.1605110954310.31937@cbobk.fhfr.pm>
+References: <alpine.LNX.2.00.1604191421130.27368@cbobk.fhfr.pm> <alpine.LNX.2.00.1605020916001.27942@cbobk.fhfr.pm> <alpine.LRH.2.11.1605101812240.22680@mx.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from szxga02-in.huawei.com ([119.145.14.65]:4693 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751789AbcEKF4C (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 11 May 2016 01:56:02 -0400
+Received: from mx2.suse.de ([195.135.220.15]:60907 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbcEKHzw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 11 May 2016 03:55:52 -0400
+In-Reply-To: <alpine.LRH.2.11.1605101812240.22680@mx.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org, Yijing Wang <wangyijing@huawei.com>
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, Maciej Piechotka <uzytkownik2@gmail.com>
 
-We have assigned sb->block_size before the switch,
-so remove the redundant one.
+On Tue, 10 May 2016, Eric Wheeler wrote:
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/md/bcache/super.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> > > bch_writeback_thread() is calling try_to_freeze(), but that's just an 
+> > > expensive no-op given the fact that the thread is not marked freezable.
+> > > 
+> > > I/O helper kthreads, exactly such as the bcache writeback thread, actually 
+> > > shouldn't be freezable, because they are potentially necessary for 
+> > > finalizing the image write-out.
+> > > 
+> > > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> > 
+> > Let's send a friendly ping on these three patches after two weeks...
+> 
+> Maciej,
+> 
+> Were you able to get a backtrace?
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 1ccb9be..64d0be6 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -134,7 +134,6 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 	case BCACHE_SB_VERSION_CDEV:
- 	case BCACHE_SB_VERSION_CDEV_WITH_UUID:
- 		sb->nbuckets	= le64_to_cpu(s->nbuckets);
--		sb->block_size	= le16_to_cpu(s->block_size);
- 		sb->bucket_size	= le16_to_cpu(s->bucket_size);
- 
- 		sb->nr_in_set	= le16_to_cpu(s->nr_in_set);
+While I'd definitely like to understand the issues in interaction between 
+hibernation and bcache Maciej is supposedly seeing, this shouldn't hold 
+the application of the three patches in this series, as they are just a 
+cleanup that doesn't affect the behavior of the code in question.
+
+Thanks,
+
 -- 
-1.7.1
+Jiri Kosina
+SUSE Labs
