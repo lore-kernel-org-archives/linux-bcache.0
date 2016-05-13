@@ -1,58 +1,41 @@
-From: <rhsinfo@genesishcc.com>
-Subject: (unknown)
-Date: Thu, 13 May 2016 13:33:07 0000
-Message-ID: <000101d1ad1b$fbea4f60$c0a80001@iprolink.ch>
+From: Marc MERLIN <marc@merlins.org>
+Subject: Re: scrub backing device
+Date: Fri, 13 May 2016 15:10:20 -0700
+Message-ID: <20160513221020.GC18290@merlins.org>
+References: <CACHiF8Bm9i=m-nCVv2MnSFVDcgmnOzSytzYo0gzjkfp0u8Y52A@mail.gmail.com>
+ <alpine.LRH.2.11.1605101814280.22680@mx.ewheeler.net>
+ <CACHiF8AdwiO3FKV9=sNrFMom8pb1DiUzXAdvb4ze+k+U0N_-1g@mail.gmail.com>
+ <alpine.LRH.2.11.1605111212540.22680@mx.ewheeler.net>
+ <E3BCB47C-9466-4B3F-8AE2-DC7183B3B08D@gmail.com>
+ <20160511235748.GR18290@merlins.org>
+ <89674CAE-8843-40DC-BA2B-3D29919E5859@gmail.com>
 Mime-Version: 1.0
-Content-Type: application/zip; name="EMAIL_0651116_linux-bcache.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from tcmail.iprolink.ch ([194.158.11.11]:42628 "HELO iprolink.ch"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751287AbcEMHdL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 13 May 2016 03:33:11 -0400
-Subject: 
-Content-Disposition: attachment
+Received: from magic.merlins.org ([209.81.13.136]:37263 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498AbcEMWKb (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 13 May 2016 18:10:31 -0400
+Content-Disposition: inline
+In-Reply-To: <89674CAE-8843-40DC-BA2B-3D29919E5859@gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache <linux-bcache@vger.kernel.org>
+To: ching <lsching17@gmail.com>
+Cc: Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org
 
+On Thu, May 12, 2016 at 06:25:27PM +0800, ching wrote:
+> it may be a mess that if there is 2 btrfs partition (1 via bcache, 1 via dm) with same UUID appear at the same time.
+> 
+> https://btrfs.wiki.kernel.org/index.php/Gotchas
+> 
+> Currently, i think removing cache device would be simpler.
 
+You make a good point, and I agree with your assessment.
 
-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
-AAAA
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
