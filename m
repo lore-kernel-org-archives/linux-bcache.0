@@ -1,83 +1,84 @@
-From: ching <lsching17@gmail.com>
-Subject: Re: scrub backing device
-Date: Mon, 16 May 2016 07:56:46 +0800
-Message-ID: <CE3A0A9A-B4F1-4CF2-A7B8-D2A4AE357F3C@gmail.com>
-References: <CACHiF8Bm9i=m-nCVv2MnSFVDcgmnOzSytzYo0gzjkfp0u8Y52A@mail.gmail.com> <alpine.LRH.2.11.1605101814280.22680@mx.ewheeler.net> <CACHiF8AdwiO3FKV9=sNrFMom8pb1DiUzXAdvb4ze+k+U0N_-1g@mail.gmail.com> <alpine.LRH.2.11.1605111212540.22680@mx.ewheeler.net> <E3BCB47C-9466-4B3F-8AE2-DC7183B3B08D@gmail.com> <20160511235748.GR18290@merlins.org> <20160513222133.GA3784@kmo-pixel>
+From: "Yannis Aribaud" <bugs@d6bell.net>
+Subject: Re: bcache_gc: BUG: soft lockup
+Date: Mon, 16 May 2016 11:01:17 +0000
+Message-ID: <7d0c5f9662d8cf10cea50e62b410198a@rcube.hebserv.net>
+References: <alpine.LRH.2.11.1605101750050.22680@mx.ewheeler.net>
+ <6ee4d38a0d4cfffc288f0ee527ea7d14@rcube.hebserv.net>
+ <20160129115444.GA30565@c203.arch.suse.de>
+ <1448626993.2877.112.camel@suse.de>
+ <2f979d1d6e991272cebc8ff40a955c8a@rcube.hebserv.net>
+ <1447419912.2616.19.camel@suse.de> <1447418245.2616.15.camel@suse.de>
+ <648d9a0567372b10a3861eee8320328c@rcube.hebserv.net>
+ <7d53afb3c7a34bb1022f0d9b6c079022@rcube.hebserv.net>
+ <9c96132d5fce4a5a77b1b086f7c6095d@rcube.hebserv.net>
+ <594053ea9538352f4f3e01b954c6080d@rcube.hebserv.net>
+ <alpine.LRH.2.11.1511291738340.5445@mail.ewheeler.net>
+ <df4137dc888a7058b4b6a290613bf890@rcube.hebserv.net>
+ <b91ce8156337b782c82317d25b3228bd@rcube.hebserv.net>
 Mime-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pa0-f65.google.com ([209.85.220.65]:36101 "EHLO
-	mail-pa0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895AbcEOX46 (ORCPT
+Received: from dbmail.hebserv.net ([78.40.121.80]:33620 "EHLO
+	dbmail.hebserv.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415AbcEPLBU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Sun, 15 May 2016 19:56:58 -0400
-Received: by mail-pa0-f65.google.com with SMTP id xm6so2395577pab.3
-        for <linux-bcache@vger.kernel.org>; Sun, 15 May 2016 16:56:58 -0700 (PDT)
-In-Reply-To: <20160513222133.GA3784@kmo-pixel>
+	Mon, 16 May 2016 07:01:20 -0400
+In-Reply-To: <alpine.LRH.2.11.1605101750050.22680@mx.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>, Marc MERLIN <marc@merlins.org>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Johannes Thumshirn <jthumshirn@suse.de>, linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA512
+Hi,
 
-it seems to be a kernel config, and the kernel panic cannot be handled by userspace program
 
-On May 14, 2016 6:21:33 AM GMT+08:00, Kent Overstreet <kent.overstreet@gmail.com> wrote:
->On Wed, May 11, 2016 at 04:57:48PM -0700, Marc MERLIN wrote:
->> On Thu, May 12, 2016 at 07:34:26AM +0800, ching wrote:
->> > for example
->https://btrfs.wiki.kernel.org/index.php/Manpage/btrfs-scrub
->>
->> btrfs scrub is designed to make sure all the blocks and checksums are
->> consistent.
->> Ching makes a good point that it would be helpful to have a way to
->> access the underlying backing device directly to ensure it is
->> consistent.
->>
->> I think currently you can use dmsetup with an offset to get the real
->> filesystem past the bcache header, mount that read only somewhere and
->> scrub that.
->> Not ideal because scrub will not be able to fix issues that are
->fixable,
->> but at least it should report errors.
->
->Look at the verify code in drivers/md/bcache/debug.c, there's a
->CONFIG_BCACHE_DEBUG mode where every time it reads clean cached data it
->reads
->the data from the backing device and compares.
->
->But for a scrub though you really want to walk all the _cached_ data,
->so it'd
->take a bit more code than that.
------BEGIN PGP SIGNATURE-----
-Version: APG v1.1.1
+11 mai 2016 03:10 "Eric Wheeler" <bcache@lists.ewheeler.net> a =C3=A9cr=
+it:
+> Can you describe your disk stack in more detail? What is below ceph?
+>=20
+> I think this is the first time I've heard of Ceph being used in a bca=
+che
+> stack on the list. Are there any others out there with success? If so=
+,
+> what kernel versions and disk stack configuration?
 
-iQQ6BAEBCgAkBQJXOQy8HRxjaGluZyA8dG9tLmx1QGFsdW1uaS51c3QuaGs+AAoJ
-EJh7yMFRxEtkK/cgAN9XBFqqZ7mhctx8IzSKKZx5GrP4xv7Ew7rITiX4J6J2JLqn
-5NZUW9rGReRXKj1MaVz0MGFeD/Lnndzf5gRLwD6cwQtPQAydTm6krd0qsld1V4O+
-o9plFThE9IjdKRhWoIr6yA11wKN04MmIInucGtjtNITVBx+vut3MHAcDuRxeIG/Y
-sGmTrA4VbI34agltybanTn7XfnKULFdXOpfmf35dyqyrgShk22+5atcOW4hug112
-5sPOpBo2S1jAwVZLKorwh4gIqeII4pFl+sfo5axJ60qLAZNXHwWeOGidmpcXFJMG
-/NnSsWRmbrJvMlSsRk/hKTHjvkzZ/Ci7ZU9aB+ICkZQgqk58udRLXc990RhKMpvK
-mKv9SHhltVYls+zoaaITxM6dS5rlIUwk++OhOU0qjjCOu9TI4yGmeBM5YmA29srb
-hOc5mtwWnjORcWAf7uttfNS1ECxJ0AlYJIRL9rF5FFCvxEugfxd1UQnZXz3qBj6q
-KDJo5JARiJvx+ayAw8I3cuh49Gc1U7VktUbRn5y/9Pm+Lj483Eb2Mp5kDyyAZTG5
-X2baUtmkH0SkNID62ZzpBT7LE29oaw+PQ02czODIRYgAgJfuuCTEiCq0Q6zvRCDr
-rG6SO6K4W4CsgN3Hm5W5b832vRuGK/pfWj/DaNmK2XJ30XlckQSGXXV92MitHrs+
-bF82odaF2qFHQQA8/W3MX1CcaPazyulvZfVMh6n6+K0cehOd3Gb94J/yQSdcRIM6
-ynVu/7DJ+Ig9aH/2MvpzH/y6X1UZZEPvhV+CUyQPcXIXfhm5VMbLEKRq8gpZaq24
-3+z/Tf2Vcbw4Wa4+GShGssavHljNr7Q2s4D8Nf6Mfn2fLb6tjIciAms//t+ywXnV
-DbLx34csTWTRWADq/Izsg2qJT5nAJ82HsAoY0Zg16pJHVgqCvg8gQPUnMvd06VK6
-VPr9jcFv6yC3nijC/y78hkCcj2KVU4sx02hk4nxPo7mbbj2dJtrzdMW0HhT4iXhW
-ELIuNnDYbRX7OzkkggDO9092Y+oCuRPyJdkfVp/kxtpHVBaZzI8BPmJHVusEzanx
-6IvS4QgPDTVfmYfvyxHqfRL8d5jc7uvws2uwnsM3hEBoOvTq/bAPSdoM/wibsU9f
-LmxEs2y5tX+AEHsT62o2FT1hc6ilvHzuRdJzNY+MPIsIFTBCPMF0wJFeL77tYYWE
-71SUNDrBL8zT/eqeeneqfn1rbgEuDxucKOUuwLz0oYkWYGk0bhYieoWBrqyZGuq8
-CKg2KPUB+2KJuS9Y9wXfL93QohzQOLc8RzOwf2oqCio7uVKn+DNyyE0gF66k0WOV
-HfSvyfdcSb83CnQxXwVtQbEz9jHyUFe0J5Y6CK4=
-=aTFB
------END PGP SIGNATURE-----
+I'm using one SSD as caching device (one cache set) and several SATA dr=
+ives
+ as backing devices.
+No RAID, no MD, no LVM, nothing fancy, only bare devices and Bcache.
+
+Bcache devices are XFS formatted and used by Ceph OSD (journaling on th=
+e same=20
+device). One OSD per bcache device.
+
+
+> So you are using one cache for multiple backing devices in a single c=
+ache
+> set? I remember seeing a thread on the list about someone having a
+> similar issue (multiple backends, but not ceph). I put some time into
+> looking for the thread, it might be this one:
+> bcache: Fix writeback_thread never writing back incomplete stripes.
+>=20
+> but there was a patch for that which should be in 4.4.y back in March=
+=2E
+>=20
+> Make sure you have this commit:
+>=20
+> https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/=
+commit/?id=3Da556b804dfa654f054f3
+> 304c2c4d274ffe81f92
+
+My kernel already has this commit.
+
+> Also, does your backing device(s) set raid_partial_stripes_expensive=3D=
+1 in
+> queue_limits (eg, md raid5/6)? I've seen bugs around that flag that m=
+ight
+> not be fixed yet.
+
+Nope. This is set to 0.
+
+Regards,
+--=20
+Yannis Aribaud
