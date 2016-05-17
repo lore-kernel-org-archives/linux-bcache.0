@@ -1,43 +1,56 @@
-From: Tim Small <tim@buttersideup.com>
-Subject: Re: bcache gets stuck flushing writeback cache when used in
- combination with LUKS/dm-crypt and non-default bucket size
-Date: Mon, 16 May 2016 17:08:27 +0100
-Message-ID: <5739F07A.5090608@buttersideup.com>
-References: <044401d1a958$ea7ef4e0$bf7cdea0$@codenest.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Subject: Re: [PATCH v4 03/21] fs: Allow sysfs and cgroupfs to share super blocks between user namespaces
+Date: Tue, 17 May 2016 17:39:33 -0500
+Message-ID: <87shxgxqai.fsf@x220.int.ebiederm.org>
+References: <1461699046-30485-1-git-send-email-seth.forshee@canonical.com>
+	<1461699046-30485-4-git-send-email-seth.forshee@canonical.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from relay1.allsecuredomains.com ([78.47.251.4]:42760 "EHLO
-	relay1.allsecuredomains.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753410AbcEPQIo (ORCPT
+Received: from out03.mta.xmission.com ([166.70.13.233]:58481 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbcEQWum (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 16 May 2016 12:08:44 -0400
-In-Reply-To: <044401d1a958$ea7ef4e0$bf7cdea0$@codenest.com>
+	Tue, 17 May 2016 18:50:42 -0400
+In-Reply-To: <1461699046-30485-4-git-send-email-seth.forshee@canonical.com>
+	(Seth Forshee's message of "Tue, 26 Apr 2016 14:30:26 -0500")
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: James Johnston <johnstonj.public@codenest.com>, 'Kent Overstreet' <kent.overstreet@gmail.com>, 'Alasdair Kergon' <agk@redhat.com>, 'Mike Snitzer' <snitzer@redhat.com>
-Cc: linux-bcache@vger.kernel.org, dm-devel@redhat.com, dm-crypt@saout.de
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Jeff Layton <jlayton@poochiereds.net>, "J. Bruce Fields" <bfields@fieldses.org>, Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Miklos Szeredi <mszeredi@redhat.com>, Pavel Tikhomirov <ptikhomirov@virtuozzo.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov, cgroups@vger.kernel.org
 
-On 08/05/16 19:39, James Johnston wrote:
-> I've run into a problem where the bcache writeback cache can't be flushed to
-> disk when the backing device is a LUKS / dm-crypt device and the cache set has
-> a non-default bucket size.  Basically, only a few megabytes will be flushed to
-> disk, and then it gets stuck.  Stuck means that the bcache writeback task
-> thrashes the disk by constantly reading hundreds of MB/second from the cache set
-> in an infinite loop, while not actually progressing (dirty_data never decreases
-> beyond a certain point).
+Seth Forshee <seth.forshee@canonical.com> writes:
 
-> [...]
+> Both of these filesystems already have use cases for mounting the
+> same super block from multiple user namespaces. For sysfs this
+> happens when using criu for snapshotting a container, where sysfs
+> is mnounted in the containers network ns but the hosts user ns.
+> The cgroup filesystem shares the same super block for all mounts
+> of the same hierarchy regardless of the namespace.
+>
+> As a result, the restriction on mounting a super block from a
+> single user namespace creates regressions for existing uses of
+> these filesystems. For these specific filesystems this
+> restriction isn't really necessary since the backing store is
+> objects in kernel memory and thus the ids assigned from inodes
+> is not subject to translation relative to s_user_ns.
+>
+> Add a new filesystem flag, FS_USERNS_SHARE_SB, which when set
+> causes sget_userns() to skip the check of s_user_ns. Set this
+> flag for the sysfs and cgroup filesystems to fix the
+> regressions.
 
-> The situation is basically unrecoverable as far as I can tell: if you attempt
-> to detach the cache set then the cache set disk gets thrashed extra-hard
-> forever, and it's impossible to actually get the cache set detached.  The only
-> solution seems to be to back up the data and destroy the volume...
+So this one needs to be sget_userns(..., &init_user_ns, ...).
+And not a new special case.
 
-You can boot an older kernel to flush the device without destroying it
-(I'm guessing that's because older kernels split down the big requests
-which are failing on the 4.4 kernel).  Once flushed you could put the
-cache into writethrough mode, or use a smaller bucket size.
+Apologies for not catching this earlier.
 
-Tim.
+I am looking at folding all of this into the patch that introduces
+sget_userns so that even bisects won't have regresssions.
+
+We loose the ability to call mount -o remount and actually affect
+these filesystems (which we don't have without s_user_ns) but we gain a
+whole lot of simplicity, and we don't break the xattr and security label
+on sysfs code.
+
+Eric
