@@ -1,76 +1,78 @@
-From: Vlad <vovan@vovan.nl>
-Subject: Re: block size question
-Date: Wed, 18 May 2016 18:24:45 +0200
-Message-ID: <573C974D.3040008@net.home>
-References: <573C02B3.5010501@net.home> <573C8E6E.8030008@megasoft.be>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Subject: Re: [PATCH v4 03/21] fs: Allow sysfs and cgroupfs to share super blocks between user namespaces
+Date: Wed, 18 May 2016 11:27:12 -0500
+Message-ID: <87bn43qqlb.fsf@x220.int.ebiederm.org>
+References: <1461699046-30485-1-git-send-email-seth.forshee@canonical.com>
+	<1461699046-30485-4-git-send-email-seth.forshee@canonical.com>
+	<87shxgxqai.fsf@x220.int.ebiederm.org>
+	<20160517235834.GA104031@ubuntu-hedt>
+	<8760ubs738.fsf@x220.int.ebiederm.org>
+	<20160518161618.GC129218@ubuntu-hedt>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtp-3.concepts.nl ([213.197.30.127]:40443 "EHLO
-	smtp-3.concepts.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609AbcERQZU (ORCPT
+Received: from out03.mta.xmission.com ([166.70.13.233]:53597 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753453AbcERQi4 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 18 May 2016 12:25:20 -0400
-Received: from [77.174.73.212] (helo=srv2.net.home)
-	by smtp-3.concepts.nl with esmtp (Exim 4.80.1)
-	(envelope-from <vovan@vovan.nl>)
-	id 1b34Hc-000ClD-Hy
-	for linux-bcache@vger.kernel.org; Wed, 18 May 2016 18:25:16 +0200
-Received: from localhost (localhost [127.0.0.1])
-	by srv2.net.home (Postfix) with ESMTP id 3506175846C
-	for <linux-bcache@vger.kernel.org>; Wed, 18 May 2016 18:24:46 +0200 (CEST)
-Received: from srv2.net.home ([127.0.0.1])
-	by localhost (webmail.net.home [127.0.0.1]) (amavisd-new, port 10024)
-	with LMTP id cbC-TwfwJ1g0 for <linux-bcache@vger.kernel.org>;
-	Wed, 18 May 2016 18:24:46 +0200 (CEST)
-Received: from [192.168.1.2] (vovan.net.home [192.168.1.2])
-	(Authenticated sender: vovan)
-	by srv2.net.home (Postfix) with ESMTPSA id 08941758465
-	for <linux-bcache@vger.kernel.org>; Wed, 18 May 2016 18:24:46 +0200 (CEST)
-In-Reply-To: <573C8E6E.8030008@megasoft.be>
+	Wed, 18 May 2016 12:38:56 -0400
+In-Reply-To: <20160518161618.GC129218@ubuntu-hedt> (Seth Forshee's message of
+	"Wed, 18 May 2016 11:16:18 -0500")
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Jeff Layton <jlayton@poochiereds.net>, "J. Bruce Fields" <bfields@fieldses.org>, Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Miklos Szeredi <mszeredi@redhat.com>, Pavel Tikhomirov <ptikhomirov@virtuozzo.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov, cgroups@vger.kernel.org
 
-Killian,
+Seth Forshee <seth.forshee@canonical.com> writes:
 
-Thanks for your help! I think it's the best to reformat both bcache
-devices with block size of 4k in my case where cached device has block
-size of 512 and backing device 4k.
+> On Wed, May 18, 2016 at 10:45:31AM -0500, Eric W. Biederman wrote:
+>> > But if we do that it violates some of the assumptions of the patch to
+>> > rework MNT_NODEV on your testing branch (and also those behind patch 2
+>> > in this series). Something will need to be changed there to prevent a
+>> > regression in mount behavior when a user ns tries to mount without
+>> > MNT_NODEV when the mount inherited from its parent has it set.
+>> 
+>> Thank you for pointing that out.  I will look into that.
+>> 
+>> I believe I know exactly what you are talking about.  Of the choices I
+>> think it is better to a minor localized change in the fs_fully_visible
+>> logic than it is to cause problems elsewhere.
+>
+> Agreed.
+>
+>> >> Apologies for not catching this earlier.
+>> >
+>> > Actually this is a more recent patch, so you possibly hadn't seen it
+>> > before.
+>> >
+>> >> I am looking at folding all of this into the patch that introduces
+>> >> sget_userns so that even bisects won't have regresssions.
+>> >
+>> > That's fine with me.
+>> 
+>> And thank you for keeping everything as separate patches.  That is at
+>> least helping me catch up.  Even if I don't agree that these things
+>> should be separate come merge time.
+>
+> Honestly I probably would have squashed some of them into that first
+> patch myself if you hadn't already applied it to your testing branch, so
+> that's all just luck.
+>
+> Keep in mind that I also have that patch for mqueue that isn't in this
+> series, and I haven't yet checked to see if the 4.7 merges introduce
+> anything which is going to require updating these patches. I was
+> planning to wait and send out updates after -rc1, but if you want that
+> stuff sooner just let me know.
 
-Regards,
-Vlad.
+As unfortunately I don't have anything going into -rc1 I am working on
+this right now.
 
-On 18/05/16 17:46, Killian De Volder wrote:
-> Done some testing for you:
-> The -B --block size has to be a a power2 of -C --block size.
->
-> (Note: all information is about bcache1 not bcachefs if that is what you are talking about)
->
-> Killian De Volder
->
->
-> On 18-05-16 07:50, Vlad wrote:
->> Hallo,
->>
->> What would be the optimal block size in case if physical block sizes
->> different for cache and backing devices? Can I use different block sizes
->> for cache and backing devices, like:
->> make-bcache --block 4k -B /dev/sdc
->> make-bcache --block 512 -C /dev/sda
->>
->> I have a feeling that the block size should be the same and the biggest
->> block size should be used, but I'd appreciate any thoughts about that.
->>
->> Thanks in advance,
->> Vlad.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Let me finish sorting out the sget_userns and mnt nodev mess and I will
+push something out and then we can compare notes.  I think I have mqueue
+covered by other changes.  As it is in the set of filesystems that
+should just use sget_userns.
+
+I am sorting through the nodev corner of this now.  It should just be a
+day or two.
+
+Eric
