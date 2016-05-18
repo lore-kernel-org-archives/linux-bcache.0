@@ -1,66 +1,57 @@
-From: Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [PATCH v4 03/21] fs: Allow sysfs and cgroupfs to share super
- blocks between user namespaces
-Date: Tue, 17 May 2016 18:58:34 -0500
-Message-ID: <20160517235834.GA104031@ubuntu-hedt>
-References: <1461699046-30485-1-git-send-email-seth.forshee@canonical.com>
- <1461699046-30485-4-git-send-email-seth.forshee@canonical.com>
- <87shxgxqai.fsf@x220.int.ebiederm.org>
+From: Martin McClure <martin.mcclure@gemtalksystems.com>
+Subject: Re: bcachefs with cache device and backing device
+Date: Tue, 17 May 2016 19:46:33 -0700
+Message-ID: <573BD789.9030406@gemtalksystems.com>
+References: <573532E2.1040201@gemtalksystems.com>
+ <20160513043603.GA1407@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-fsdevel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <87shxgxqai.fsf@x220.int.ebiederm.org>
-Sender: linux-fsdevel-owner@vger.kernel.org
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Jeff Layton <jlayton@poochiereds.net>, "J. Bruce Fields" <bfields@fieldses.org>, Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>, Johannes Weiner <hannes@cmpxchg.org>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Miklos Szeredi <mszeredi@redhat.com>, Pavel Tikhomirov <ptikhomirov@virtuozzo.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov, cgroups@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from 50-240-19-49-static.hfc.comcastbusiness.net ([50.240.19.49]:42129
+	"EHLO office-ns.gemtalksystems.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752400AbcERCqf (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 17 May 2016 22:46:35 -0400
+In-Reply-To: <20160513043603.GA1407@kmo-pixel>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-On Tue, May 17, 2016 at 05:39:33PM -0500, Eric W. Biederman wrote:
-> Seth Forshee <seth.forshee@canonical.com> writes:
+On 05/12/2016 09:36 PM, Kent Overstreet wrote:
 > 
-> > Both of these filesystems already have use cases for mounting the
-> > same super block from multiple user namespaces. For sysfs this
-> > happens when using criu for snapshotting a container, where sysfs
-> > is mnounted in the containers network ns but the hosts user ns.
-> > The cgroup filesystem shares the same super block for all mounts
-> > of the same hierarchy regardless of the namespace.
-> >
-> > As a result, the restriction on mounting a super block from a
-> > single user namespace creates regressions for existing uses of
-> > these filesystems. For these specific filesystems this
-> > restriction isn't really necessary since the backing store is
-> > objects in kernel memory and thus the ids assigned from inodes
-> > is not subject to translation relative to s_user_ns.
-> >
-> > Add a new filesystem flag, FS_USERNS_SHARE_SB, which when set
-> > causes sget_userns() to skip the check of s_user_ns. Set this
-> > flag for the sysfs and cgroup filesystems to fix the
-> > regressions.
+> Yeah - tiering replaces cache/backing devices
 > 
-> So this one needs to be sget_userns(..., &init_user_ns, ...).
-> And not a new special case.
+> IIRC,
+> 
+> bcache format --tier 0 -C <SSD> --tier 1 -C <spinning rust>
+> 
+> (the -C is going to go away at some point)
+> 
 
-This is actually what I wanted to do, but based on a previous discussion
-where I had suggested doing this (for a different reason) I came away
-thinking you did not want it that way. So I'm happy with that change.
+Had a chance to play with this some more, but still not getting it to
+work...
 
-But if we do that it violates some of the assumptions of the patch to
-rework MNT_NODEV on your testing branch (and also those behind patch 2
-in this series). Something will need to be changed there to prevent a
-regression in mount behavior when a user ns tries to mount without
-MNT_NODEV when the mount inherited from its parent has it set.
+Formatting seems to work, and once I do this:
 
-> Apologies for not catching this earlier.
+  echo /dev/sdd1 > /sys/fs/bcache/register
+  echo /dev/nvme0n1 > /sys/fs/bcache/register
+  echo 1 > /sys/fs/bcache/<set-uuid>/blockdev_volume_create
 
-Actually this is a more recent patch, so you possibly hadn't seen it
-before.
+a /dev/bcache0 has been created. However, if I try to mount it:
 
-> I am looking at folding all of this into the patch that introduces
-> sget_userns so that even bisects won't have regresssions.
+  mount -t bcache /dev/bcache0 /mnt
 
-That's fine with me.
+it says:
+
+  mount: No such file or directory
+
+with a return code of 32, which is documented as "mount failure".
+
+At this point I reach the limit of my current understanding, but would
+like to understand more.
 
 Thanks,
-Seth
 
+-Martin
