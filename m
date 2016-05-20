@@ -1,100 +1,49 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache_gc: BUG: soft lockup
-Date: Thu, 19 May 2016 16:26:52 -0700 (PDT)
-Message-ID: <alpine.LRH.2.11.1605191623370.22436@mx.ewheeler.net>
-References: <alpine.LRH.2.11.1605101750050.22680@mx.ewheeler.net> <6ee4d38a0d4cfffc288f0ee527ea7d14@rcube.hebserv.net> <20160129115444.GA30565@c203.arch.suse.de> <1448626993.2877.112.camel@suse.de> <2f979d1d6e991272cebc8ff40a955c8a@rcube.hebserv.net>
- <1447419912.2616.19.camel@suse.de> <1447418245.2616.15.camel@suse.de> <648d9a0567372b10a3861eee8320328c@rcube.hebserv.net> <7d53afb3c7a34bb1022f0d9b6c079022@rcube.hebserv.net> <9c96132d5fce4a5a77b1b086f7c6095d@rcube.hebserv.net> <594053ea9538352f4f3e01b954c6080d@rcube.hebserv.net>
- <alpine.LRH.2.11.1511291738340.5445@mail.ewheeler.net> <df4137dc888a7058b4b6a290613bf890@rcube.hebserv.net> <b91ce8156337b782c82317d25b3228bd@rcube.hebserv.net> <7d0c5f9662d8cf10cea50e62b410198a@rcube.hebserv.net>
+From: Martin McClure <martin.mcclure@gemtalksystems.com>
+Subject: Re: bcachefs with cache device and backing device
+Date: Thu, 19 May 2016 17:41:08 -0700
+Message-ID: <573E5D24.604@gemtalksystems.com>
+References: <573532E2.1040201@gemtalksystems.com>
+ <20160513043603.GA1407@kmo-pixel> <573BD789.9030406@gemtalksystems.com>
+ <20160518040103.GA13870@moria.home.lan>
+ <1463547999.21115.1@mail.cooperteam.net>
+ <20160518054124.GA1354@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1595348259-625439907-1463700412=:22436"
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [66.155.3.69] ([66.155.3.69]:45843 "EHLO mx.ewheeler.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755333AbcESX0k (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 19 May 2016 19:26:40 -0400
-In-Reply-To: <7d0c5f9662d8cf10cea50e62b410198a@rcube.hebserv.net>
+Received: from 50-240-19-49-static.hfc.comcastbusiness.net ([50.240.19.49]:42158
+	"EHLO office-ns.gemtalksystems.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754988AbcETAlL (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 19 May 2016 20:41:11 -0400
+In-Reply-To: <20160518054124.GA1354@moria.home.lan>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Yannis Aribaud <bugs@d6bell.net>
-Cc: Johannes Thumshirn <jthumshirn@suse.de>, linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
+To: Kent Overstreet <kent.overstreet@gmail.com>, Christopher James Halse Rogers <chris@cooperteam.net>
+Cc: linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1595348259-625439907-1463700412=:22436
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 16 May 2016, Yannis Aribaud wrote:
-
-> Hi,
+On 05/17/2016 10:41 PM, Kent Overstreet wrote:
+> Actually, I just tested and mounting multile devices directly _does_ work - you
+> just pass a colon separated list of devices to mount:
 > 
+> mount -t bcache /dev/sdb:/dev/sdc /mnt
 > 
-> 11 mai 2016 03:10 "Eric Wheeler" <bcache@lists.ewheeler.net> a écrit:
-> > Can you describe your disk stack in more detail? What is below ceph?
-> > 
-> > I think this is the first time I've heard of Ceph being used in a bcache
-> > stack on the list. Are there any others out there with success? If so,
-> > what kernel versions and disk stack configuration?
-> 
-> I'm using one SSD as caching device (one cache set) and several SATA drives
->  as backing devices.
-> No RAID, no MD, no LVM, nothing fancy, only bare devices and Bcache.
-> 
-> Bcache devices are XFS formatted and used by Ceph OSD (journaling on the same 
-> device). One OSD per bcache device.
- 
-What bcache bucket size are you using?  Review this thread and see if it 
-sounds similar:
-  http://www.spinics.net/lists/linux-bcache/msg03796.html
+> I could have sworn this was broken, but worked just now...
 
-I wonder if XFS is sending writes down that are too large as speculated 
-in the thread above.
+This works for me. Thanks for the feedback!
 
+For any others wanting to walk this path in the near future, here's the
+entire sequence that is working for me (as of kernel and tools pulled on
+2016-05-13):
 
-Please also try these two patches and see if they help:
+  bcache format --tier 0 --bucket=512k --cache_mode=writeback \
+      -C /dev/nvme0n1 \
+      --tier 1 -C /dev/sdd1
 
-  https://lkml.org/lkml/2016/4/5/1046
+  echo /dev/sdd1 > /sys/fs/bcache/register
+  echo /dev/nvme0n1 > /sys/fs/bcache/register
+  mount -t bcache /dev/nvme0n1:/dev/sdd1 /mnt/whatever
 
-  http://www.spinics.net/lists/raid/msg51830.html
+Regards,
 
---
-Eric Wheeler
-
-> 
-> > So you are using one cache for multiple backing devices in a single cache
-> > set? I remember seeing a thread on the list about someone having a
-> > similar issue (multiple backends, but not ceph). I put some time into
-> > looking for the thread, it might be this one:
-> > bcache: Fix writeback_thread never writing back incomplete stripes.
-> > 
-> > but there was a patch for that which should be in 4.4.y back in March.
-> > 
-> > Make sure you have this commit:
-> > 
-> > https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/commit/?id=a556b804dfa654f054f3
-> > 304c2c4d274ffe81f92
-> 
-> My kernel already has this commit.
-> 
-> > Also, does your backing device(s) set raid_partial_stripes_expensive=1 in
-> > queue_limits (eg, md raid5/6)? I've seen bugs around that flag that might
-> > not be fixed yet.
-> 
-> Nope. This is set to 0.
-
-
-
-
-
---
-Eric Wheeler
-
-
-
-> 
-> Regards,
-> -- 
-> Yannis Aribaud
-> 
---1595348259-625439907-1463700412=:22436--
+-Martin
