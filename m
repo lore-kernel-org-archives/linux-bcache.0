@@ -1,10 +1,12 @@
 From: Jiri Kosina <jikos@kernel.org>
-Subject: [PATCH 1/4] bcache: bch_writeback_thread() is not freezable
-Date: Tue, 24 May 2016 16:38:10 +0200 (CEST)
-Message-ID: <alpine.LNX.2.00.1605241634270.31937@cbobk.fhfr.pm>
+Subject: [PATCH 3/4] bcache: bch_gc_thread() is not freezable
+Date: Tue, 24 May 2016 16:38:34 +0200 (CEST)
+Message-ID: <alpine.LNX.2.00.1605241636220.31937@cbobk.fhfr.pm>
+References: <alpine.LNX.2.00.1605241634270.31937@cbobk.fhfr.pm>
 Mime-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <alpine.LNX.2.00.1605241634270.31937@cbobk.fhfr.pm>
 Sender: linux-kernel-owner@vger.kernel.org
 To: Jens Axboe <axboe@kernel.dk>
 Cc: Kent Overstreet <kent.overstreet@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
@@ -12,50 +14,34 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Jiri Kosina <jkosina@suse.cz>
 
-bch_writeback_thread() is calling try_to_freeze(), but that's just an 
-expensive no-op given the fact that the thread is not marked freezable.
-
-I/O helper kthreads, exactly such as the bcache writeback thread, actually 
-shouldn't be freezable, because they are potentially necessary for 
-finalizing the image write-out.
+bch_gc_thread() doesn't mark itself freezable, so calling try_to_freeze() 
+in its context is just an expensive no-op.
 
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
+ drivers/md/bcache/btree.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-This is a resend of a series sent more than a month ago and pinged 
-multiple time since then.
-
- drivers/md/bcache/writeback.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index b9346cd..6012367 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -12,7 +12,6 @@
- #include "writeback.h"
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 22b9e34..eab505e 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -27,7 +27,6 @@
  
- #include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <linux/bitops.h>
 -#include <linux/freezer.h>
+ #include <linux/hash.h>
  #include <linux/kthread.h>
- #include <trace/events/bcache.h>
+ #include <linux/prefetch.h>
+@@ -1787,7 +1786,6 @@ again:
  
-@@ -228,7 +227,6 @@ static void read_dirty(struct cached_dev *dc)
- 	 */
+ 		mutex_unlock(&c->bucket_lock);
  
- 	while (!kthread_should_stop()) {
 -		try_to_freeze();
+ 		schedule();
+ 	}
  
- 		w = bch_keybuf_next(&dc->writeback_keys);
- 		if (!w)
-@@ -433,7 +431,6 @@ static int bch_writeback_thread(void *arg)
- 			if (kthread_should_stop())
- 				return 0;
- 
--			try_to_freeze();
- 			schedule();
- 			continue;
- 		}
 -- 
 Jiri Kosina
 SUSE Labs
