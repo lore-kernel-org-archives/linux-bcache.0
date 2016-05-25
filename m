@@ -1,229 +1,59 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: [BISECT dbba42d8] dm: regression: large bio splits fail with dm-crypt
- under bcache in dm_make_request()
-Date: Tue, 24 May 2016 12:35:10 -0700 (PDT)
-Message-ID: <alpine.LRH.2.11.1605241224220.24690@mx.ewheeler.net>
+From: Jiri Kosina <jikos@kernel.org>
+Subject: Re: [PATCH 4/4] MAINTAINERS: mark bcache as orphan
+Date: Wed, 25 May 2016 07:07:12 +0200 (CEST)
+Message-ID: <alpine.LNX.2.00.1605250705210.31937@cbobk.fhfr.pm>
+References: <alpine.LNX.2.00.1605241634270.31937@cbobk.fhfr.pm>  <alpine.LNX.2.00.1605241636520.31937@cbobk.fhfr.pm> <1464101004.1835.14.camel@perches.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [66.155.3.69] ([66.155.3.69]:48382 "EHLO mx.ewheeler.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754337AbcEXTfF (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 24 May 2016 15:35:05 -0400
+Received: from mx2.suse.de ([195.135.220.15]:49401 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751670AbcEYFHM (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 25 May 2016 01:07:12 -0400
+In-Reply-To: <1464101004.1835.14.camel@perches.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: James Johnston <johnstonj.public@codenest.com>
-Cc: 'Tim Small' <tim@buttersideup.com>, 'Kent Overstreet' <kent.overstreet@gmail.com>, 'Alasdair Kergon' <agk@redhat.com>, 'Mike Snitzer' <snitzer@redhat.com>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, dm-crypt@saout.de, 'Neil Brown' <neilb@suse.com>, linux-raid@vger.kernel.org, 'Mikulas Patocka' <mpatocka@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kent.overstreet@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 
-[ New subject after bisect:
-  Was: bcache gets stuck flushing writeback cache when used in 
-       combination with LUKS/dm-crypt and non-default bucket size ]
+On Tue, 24 May 2016, Joe Perches wrote:
 
+> > The submitted patches are not being reacted upon, and Jens is only =
+picking=A0
+> > up stable fixes on an rather ad-hoc basis.
+> >=20
+> > Link: lkml.kernel.org/r/574462C5.40307@kernel.dk
+> > Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> > ---
+> > =A0MAINTAINERS | 2 +-
+> > =A01 file changed, 1 insertion(+), 1 deletion(-)
+> >=20
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 5f83015..c9906d6 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -2288,7 +2288,7 @@ BCACHE (BLOCK LAYER CACHE)
+> > =A0M:=A0=A0=A0=A0=A0Kent Overstreet <kent.overstreet@gmail.com>
+> > =A0L:=A0=A0=A0=A0=A0linux-bcache@vger.kernel.org
+> > =A0W:=A0=A0=A0=A0=A0http://bcache.evilpiepirate.org
+> > -S:=A0=A0=A0=A0=A0Maintained
+> > +S:=A0=A0=A0=A0=A0Orphan
+> > =A0F:=A0=A0=A0=A0=A0drivers/md/bcache/
+>=20
+> Sections marked as Orphan generally
+> don't also have a named maintainer.
+>=20
+> Should Kent still be listed here?
 
-Mikulas, Mike, please see below when you have a minute.  This bisect found 
-a commit with your signoffs.  This affects all kernels >= v4.4.
+Thanks for the remark. I'd leave this up to Jens, as apparently at the =
+end=20
+of the day he's the one relaying stability bugfixes upstream; so it mig=
+ht=20
+actually make sense to have him listed there eventually (while keeping =
+the=20
+Orphan status).
 
-Should the commit be reverted, or is there a better fix?  
-
-Intentional top post, more below:
-
-On Sun, 22 May 2016, James Johnston wrote:
-
-> > On Fri, 20 May 2016, James Johnston wrote:
-> > 
-> > > > On Mon, 16 May 2016, Tim Small wrote:
-> > > >
-> > > > > On 08/05/16 19:39, James Johnston wrote:
-> > > > > > I've run into a problem where the bcache writeback cache can't be flushed to
-> > > > > > disk when the backing device is a LUKS / dm-crypt device and the cache set has
-> > > > > > a non-default bucket size.  Basically, only a few megabytes will be flushed to
-> > > > > > disk, and then it gets stuck.  Stuck means that the bcache writeback task
-> > > > > > thrashes the disk by constantly reading hundreds of MB/second from the cache set
-> > > > > > in an infinite loop, while not actually progressing (dirty_data never decreases
-> > > > > > beyond a certain point).
-> > > > >
-> > > > > > [...]
-> > > > >
-> > > > > > The situation is basically unrecoverable as far as I can tell: if you attempt
-> > > > > > to detach the cache set then the cache set disk gets thrashed extra-hard
-> > > > > > forever, and it's impossible to actually get the cache set detached.  The only
-> > > > > > solution seems to be to back up the data and destroy the volume...
-> > > > >
-> > > > > You can boot an older kernel to flush the device without destroying it
-> > > > > (I'm guessing that's because older kernels split down the big requests
-> > > > > which are failing on the 4.4 kernel).  Once flushed you could put the
-> > > > > cache into writethrough mode, or use a smaller bucket size.
-> > > >
-> > > > Indeed, can someone test 4.1.y and see if the problem persists with a 2M
-> > > > bucket size?  (If someone has already tested 4.1, then appologies as I've
-> > > > not yet seen that report.)
-> > > >
-> > > > If 4.1 works, then I think a bisect is in order.  Such a bisect would at
-> > > > least highlight the problem and might indicate a (hopefully trivial) fix.
-> > >
-> > > To help narrow this down, I tested the following generic pre-compiled mainline kernels
-> > > on Ubuntu 15.10:
-> > >
-> > >  * WORKS:  http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.3.6-wily/
-> > >  * DOES NOT WORK:  http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.4-rc1+cod1-wily/
-> > >
-> > > I also tried the default & latest distribution-provided 4.2 kernel.  It worked.
-> > > This one also worked:
-> > >
-> > >  * WORKS:  http://kernel.ubuntu.com/~kernel-ppa/mainline/v4.2.8-wily/
-> > >
-> > > So it seems to me that it is a regression from 4.3.6 kernel to any 4.4 kernel.  That
-> > > should help save time with bisection...
-> > 
-> > Below is the patchlist for md and block that might help with a place to
-> > start.  Are there any other places in the Linux tree where we should watch
-> > for changes?
-> > 
-> > I'm wondering if it might be in dm-4.4-changes since this is dm-crypt
-> > related, but it could be ac322de which was quite large.
-> > 
-> > James or Tim,
-> > 
-> > Can you try building ac322de?  If that produces the problem, then there
-> > are only 3 more to try (unless this was actually a problem in 4.3 which
-> > was fixed in 4.3.y, but hopefully that isn't so).
-> > 
-> > ccf21b6 is probably the next to test to rule out neil's big md patch,
-> > which Linus abreviated in the commit log so it must be quite long.  OTOH,
-> > if dm-4.4-changes works, then I'm not sure what commit might produce the
-> > problem because the rest are not obviously relevant to the issue that are
-> > more recent. 
-> 
-> So I decided to go ahead and bisect it today.  Looks like the bad commit is
-> this one.  The commit prior flushed the bcache writeback cache without
-> incident; this one does not and I guess caused this bcache regression.
-> (FWIW ac322de came up during bisection, and tested good.)
-> 
-> johnstonj@kernel-build:~/linux$ git bisect bad
-> dbba42d8a9ebddcc1c1412e8457f79f3cb6ef6e7 is the first bad commit
-> commit dbba42d8a9ebddcc1c1412e8457f79f3cb6ef6e7
-> Author: Mikulas Patocka <mpatocka@redhat.com>
-> Date:   Wed Oct 21 16:34:20 2015 -0400
-> 
->     dm: eliminate unused "bioset" process for each bio-based DM device
-> 
->     Commit 54efd50bfd873e2dbf784e0b21a8027ba4299a3e ("block: make
->     generic_make_request handle arbitrarily sized bios") makes it possible
->     for block devices to process large bios.  In doing so that commit
->     allocates a new queue->bio_split bioset for each block device, this
->     bioset is used for allocating bios when the driver needs to split large
->     bios.
-> 
->     Each bioset allocates a workqueue process, thus the above commit
->     increases the number of processes allocated per block device.
-> 
->     DM doesn't need the queue->bio_split bioset, thus we can deallocate it.
->     This reduces the number of allocated processes per bio-based DM device
->     from 3 to 2.  Also remove the call to blk_queue_split(), it is not
->     needed because DM does its own splitting.
-> 
->     Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
->     Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-> 
-> The patch for this commit is very brief; reproduced here:
-> 
-> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-> index 9555843..64b50b7 100644
-> --- a/drivers/md/dm.c
-> +++ b/drivers/md/dm.c
-> @@ -1763,8 +1763,6 @@ static void dm_make_request(struct request_queue *q, struct bio *bio)
-> 
->         map = dm_get_live_table(md, &srcu_idx);
-> 
-> -       blk_queue_split(q, &bio, q->bio_split);
-> -
->         generic_start_io_acct(rw, bio_sectors(bio), &dm_disk(md)->part0);
-> 
->         /* if we're suspended, we have to queue this io for later */
-> @@ -2792,6 +2790,12 @@ int dm_setup_md_queue(struct mapped_device *md)
->         case DM_TYPE_BIO_BASED:
->                 dm_init_old_md_queue(md);
->                 blk_queue_make_request(md->queue, dm_make_request);
-> +               /*
-> +                * DM handles splitting bios as needed.  Free the bio_split bioset
-> +                * since it won't be used (saves 1 process per bio-based DM device).
-> +                */
-> +               bioset_free(md->queue->bio_split);
-> +               md->queue->bio_split = NULL;
->                 break;
->         }
-> 
-> Here is the bisect log:
-> 
-> johnstonj@kernel-build:~/linux$ git bisect log
-> git bisect start
-> # good: [6a13feb9c82803e2b815eca72fa7a9f5561d7861] Linux 4.3
-> git bisect good 6a13feb9c82803e2b815eca72fa7a9f5561d7861
-> # bad: [8005c49d9aea74d382f474ce11afbbc7d7130bec] Linux 4.4-rc1
-> git bisect bad 8005c49d9aea74d382f474ce11afbbc7d7130bec
-> # bad: [118c216e16c5ccb028cd03a0dcd56d17a07ff8d7] Merge tag 'staging-4.4-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging
-> git bisect bad 118c216e16c5ccb028cd03a0dcd56d17a07ff8d7
-> # good: [e627078a0cbdc0c391efeb5a2c4eb287328fd633] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux
-> git bisect good e627078a0cbdc0c391efeb5a2c4eb287328fd633
-> # good: [c17c6da659571a115c7b4983da6c6ac464317c34] staging: wilc1000: rename pfScanResult of struct scan_attr
-> git bisect good c17c6da659571a115c7b4983da6c6ac464317c34
-> # good: [7bdb7d554e0e433b92b63f3472523cc3067f8ab4] Staging: rtl8192u: ieee80211: corrected indent
-> git bisect good 7bdb7d554e0e433b92b63f3472523cc3067f8ab4
-> # good: [ac322de6bf5416cb145b58599297b8be73cd86ac] Merge tag 'md/4.4' of git://neil.brown.name/md
-> git bisect good ac322de6bf5416cb145b58599297b8be73cd86ac
-> # good: [a4d8e93c3182a54d8d21a4d1cec6538ae1be9e16] Merge tag 'usb-for-v4.4' of git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb into usb-next
-> git bisect good a4d8e93c3182a54d8d21a4d1cec6538ae1be9e16
-> # good: [4f56f3fdca43c9a18339b6e0c3b1aa2f57f6d0b0] serial: 8250: Tolerate clock variance for max baud rate
-> git bisect good 4f56f3fdca43c9a18339b6e0c3b1aa2f57f6d0b0
-> # good: [e052c6d15c61cc4caff2f06cbca72b183da9f15e] tty: Use unbound workqueue for all input workers
-> git bisect good e052c6d15c61cc4caff2f06cbca72b183da9f15e
-> # good: [b9ca0c948c921e960006aaf319a29c004917cdf6] uwb: neh: Use setup_timer
-> git bisect good b9ca0c948c921e960006aaf319a29c004917cdf6
-> # bad: [aad9ae4550755edc020b5c511a8b54f0104b2f47] dm switch: simplify conditional in alloc_region_table()
-> git bisect bad aad9ae4550755edc020b5c511a8b54f0104b2f47
-> # good: [a3d939ae7b5f82688a6d3450f95286eaea338328] dm: convert ffs to __ffs
-> git bisect good a3d939ae7b5f82688a6d3450f95286eaea338328
-> # bad: [00272c854ee17b804ce81ef706f611dac17f4f89] dm linear: remove redundant target name from error messages
-> git bisect bad 00272c854ee17b804ce81ef706f611dac17f4f89
-> # bad: [4c7da06f5a780bbf44ebd7547789e48536d0a823] dm persistent data: eliminate unnecessary return values
-> git bisect bad 4c7da06f5a780bbf44ebd7547789e48536d0a823
-> # bad: [dbba42d8a9ebddcc1c1412e8457f79f3cb6ef6e7] dm: eliminate unused "bioset" process for each bio-based DM device
-> git bisect bad dbba42d8a9ebddcc1c1412e8457f79f3cb6ef6e7
-> # first bad commit: [dbba42d8a9ebddcc1c1412e8457f79f3cb6ef6e7] dm: eliminate unused "bioset" process for each bio-based DM device
-> 
-> Commands used for testing:
-> 
-> # Make cache set
-> make-bcache --bucket 2M -C /dev/sdb
-> # Set up backing device crypto
-> cryptsetup luksFormat /dev/sdc
-> cryptsetup open --type luks /dev/sdc backCrypt
-> # Make backing device & enable writeback
-> make-bcache -B /dev/mapper/backCrypt
-> bcache-super-show /dev/sdb | grep cset.uuid | cut -f 3 > /sys/block/bcache0/bcache/attach
-> echo writeback > /sys/block/bcache0/bcache/cache_mode
-> 
-> # KILL SEQUENCE
-> 
-> cd /sys/block/bcache0/bcache
-> echo 0 > sequential_cutoff
-> # Verify that the cache is attached (i.e. does not say "no cache")
-> cat state
-> dd if=/dev/urandom of=/dev/bcache0 bs=1M count=250
-> cat dirty_data
-> cat state
-> # Next line causes severe disk thrashing and failure to flush writeback cache
-> # on bad commits.
-> echo 1 > detach
-> cat dirty_data
-> cat state
-> 
-> Hope this provides some insight into the problem...
-> 
-> James
-> 
-> 
-> 
-
---
-Eric Wheeler
+--=20
+Jiri Kosina
+SUSE Labs
