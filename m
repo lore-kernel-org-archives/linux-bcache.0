@@ -1,57 +1,43 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 4/4] MAINTAINERS: mark bcache as orphan
-Date: Wed, 25 May 2016 11:35:28 -0600
-Message-ID: <5745E260.5010703@kernel.dk>
-References: <alpine.LNX.2.00.1605241634270.31937@cbobk.fhfr.pm>
- <alpine.LNX.2.00.1605241636520.31937@cbobk.fhfr.pm>
- <1464101004.1835.14.camel@perches.com>
- <alpine.LNX.2.00.1605250705210.31937@cbobk.fhfr.pm>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: bcachefs: can bcachefs export block devices?
+Date: Wed, 25 May 2016 14:47:29 -0700 (PDT)
+Message-ID: <alpine.LRH.2.11.1605251440480.24690@mx.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <alpine.LNX.2.00.1605250705210.31937@cbobk.fhfr.pm>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Jiri Kosina <jikos@kernel.org>, Joe Perches <joe@perches.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx.ewheeler.net ([66.155.3.69]:60823 "EHLO mx.ewheeler.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751411AbcEYVrQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 25 May 2016 17:47:16 -0400
+Received: from localhost (localhost [127.0.0.1])
+	by mx.ewheeler.net (Postfix) with ESMTP id 31040A0F4B
+	for <linux-bcache@vger.kernel.org>; Wed, 25 May 2016 14:47:30 -0700 (PDT)
+Received: from mx.ewheeler.net ([127.0.0.1])
+	by localhost (mx.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
+	with LMTP id JJ-0StTlTTmX for <linux-bcache@vger.kernel.org>;
+	Wed, 25 May 2016 14:47:29 -0700 (PDT)
+Received: from 23-95-35-21-host.colocrossing.com (unknown [23.95.35.21])
+	(using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
+	(No client certificate requested)
+	by mx.ewheeler.net (Postfix) with ESMTPSA id C8E77A0F4A
+	for <linux-bcache@vger.kernel.org>; Wed, 25 May 2016 14:47:29 -0700 (PDT)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 05/24/2016 11:07 PM, Jiri Kosina wrote:
-> On Tue, 24 May 2016, Joe Perches wrote:
->
->>> The submitted patches are not being reacted upon, and Jens is only picking
->>> up stable fixes on an rather ad-hoc basis.
->>>
->>> Link: lkml.kernel.org/r/574462C5.40307@kernel.dk
->>> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
->>> ---
->>>   MAINTAINERS | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>>
->>> diff --git a/MAINTAINERS b/MAINTAINERS
->>> index 5f83015..c9906d6 100644
->>> --- a/MAINTAINERS
->>> +++ b/MAINTAINERS
->>> @@ -2288,7 +2288,7 @@ BCACHE (BLOCK LAYER CACHE)
->>>   M:     Kent Overstreet <kent.overstreet@gmail.com>
->>>   L:     linux-bcache@vger.kernel.org
->>>   W:     http://bcache.evilpiepirate.org
->>> -S:     Maintained
->>> +S:     Orphan
->>>   F:     drivers/md/bcache/
->>
->> Sections marked as Orphan generally
->> don't also have a named maintainer.
->>
->> Should Kent still be listed here?
->
-> Thanks for the remark. I'd leave this up to Jens, as apparently at the end
-> of the day he's the one relaying stability bugfixes upstream; so it might
-> actually make sense to have him listed there eventually (while keeping the
-> Orphan status).
 
-Let's leave the entry. Kent is still around, it's just not actively 
-being maintained.
+I have a few bcachefs questions that pertain to its use with block 
+devices.  
 
--- 
-Jens Axboe
+Does bcachefs's implementation reuse and update the existing 
+bcache code such that the block device driver inherits the bcachefs 
+improvements?  I understand the cache superblock changed, maybe the cached 
+dev super too.
+
+Can bcachefs provide /dev/bcacheN devices without loop.ko?  
+
+If so, are these simply filesystem objects (files)?
+
+
+--
+Eric Wheeler
