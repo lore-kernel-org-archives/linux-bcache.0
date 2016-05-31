@@ -1,355 +1,144 @@
-From: Marc MERLIN <marc@merlins.org>
-Subject: Re: [PULL v4.6-rc1] bcache: documentation updates
-Date: Mon, 30 May 2016 07:43:09 -0700
-Message-ID: <20160530144309.GC21737@merlins.org>
-References: <20160312050003.GN26973@merlins.org>
- <alpine.LRH.2.11.1603120706310.30893@mail.ewheeler.net>
- <alpine.LRH.2.11.1603290106450.13440@mail.ewheeler.net>
- <CAKhhfD7C+CAnUEXfUX=g3bT=TX3QkyLvQnh0eWNJxcK4MeYnHA@mail.gmail.com>
- <alpine.LRH.2.11.1604130636080.26685@mail.ewheeler.net>
+From: Joe Landman <landman@scalableinformatics.com>
+Subject: hang/stuck loop in bch_ptr_bad/bch_btree_iter_next_filter
+Date: Tue, 31 May 2016 08:20:21 -0400
+Message-ID: <574D8185.5070105@scalableinformatics.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from magic.merlins.org ([209.81.13.136]:34003 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704AbcE3OnT (ORCPT
+Received: from mail-io0-f175.google.com ([209.85.223.175]:36781 "EHLO
+	mail-io0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857AbcEaMU0 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 30 May 2016 10:43:19 -0400
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1604130636080.26685@mail.ewheeler.net>
+	Tue, 31 May 2016 08:20:26 -0400
+Received: by mail-io0-f175.google.com with SMTP id f8so131381485ioe.3
+        for <linux-bcache@vger.kernel.org>; Tue, 31 May 2016 05:20:26 -0700 (PDT)
+Received: from [192.168.5.50] ([70.88.96.213])
+        by smtp.googlemail.com with ESMTPSA id m71sm9475020ita.5.2016.05.31.05.20.24
+        for <linux-bcache@vger.kernel.org>
+        (version=TLSv1/SSLv3 cipher=OTHER);
+        Tue, 31 May 2016 05:20:24 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>, Jonathan Corbet <corbet@lwn.net>
-Cc: linux-bcache@vger.kernel.org, linux-doc@vger.kernel.org, kent.overstreet@gmail.com
+To: linux-bcache@vger.kernel.org
 
-On Thu, Apr 14, 2016 at 07:11:10AM +0000, Eric Wheeler wrote:
-> [ +cc: linux-doc, kent ]
+Hi folks:
 
-+jon
+   3.8.20 kernel on a system with 256GB ram, Xeon E5-2680 v3 cpus (2x 6 
+cores).  (Debian 7) OS booted from PXE into a ramdisk
 
-> On Tue, 12 Apr 2016, Marc MERLIN wrote:
-> > On Mon, Mar 28, 2016 at 6:09 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> > > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
-> > 
-> > Hi Eric,
-> > 
-> > Do I have a way to find out if your patch was pulled?
-> 
-> I've not seen them in the commit history for 4.6-rc3:
->   https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/log/?id=v4.6-rc3&qt=grep&q=bcache:
-> 
-> 
-> Hello linux-doc list!
-> 
-> There is a bcache documentation update available:
-> 
-> > > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
-> 
-> Is this the right list to submit such documentation?
+df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           8.0G  3.8G  4.3G  47% /
 
-Howdy,
+Swap set up on a file:
 
-I just pulled 4.6 and noticed the doc updates from Eric and me don't
-seem to have made it.
+swapon -s
+Filename                Type        Size    Used    Priority
+/data/swap/swapfile                     file        33554428    0 0
 
-Jon, would you know who can help getting those in? I wrote them before
-4.5 came out :)
 
-Thanks,
-Marc
+Bcache set up atop the devices (SSD /dev/sdb and spinning disk RAID 
+/dev/sda)
 
-> > 
-> > Thanks,
-> > Marc
-> > 
-> > On Mon, Mar 28, 2016 at 6:09 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> > > Hi Jens,
-> > >
-> > > I've rebased documentation updates against 4.6-rc1.  There is some reflow
-> > > and trailing whitespace cleanup, so its not pretty---but it cleans
-> > > fills in some missing documentation and adds corrections:
-> > >
-> > > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation
-> > >
-> > >
-> > > --
-> > > Eric Wheeler
-> > >
-> > > On Sat, 12 Mar 2016, Eric Wheeler wrote:
-> > >
-> > >> Hi Jens,
-> > >>
-> > >> Please pull:
-> > >>
-> > >> Documentation updates for bcache:
-> > >>   git pull https://bitbucket.org/ewheelerinc/linux.git v4.5-rc7-bcache-fixes-2
-> > >>
-> > >>
-> > >> --
-> > >> Eric Wheeler
-> > >>
-> > >> On Fri, 11 Mar 2016, Marc MERLIN wrote:
-> > >>
-> > >> > Bcache documentation updates:
-> > >> > - Added new HOWTO/COOKBOOK section
-> > >> > - fixed a few typos
-> > >> > - /sys/block/bcache0/cache_mode is /sys/block/bcache0/bcache/cache_mode
-> > >> >
-> > >> > Signed-off-by: Marc MERLIN <marc@merlins.org>
-> > >> > ---
-> > >> >  Documentation/bcache.txt | 160 ++++++++++++++++++++++++++++++++++++++++++++---
-> > >> >  1 file changed, 152 insertions(+), 8 deletions(-)
-> > >> >
-> > >> > diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
-> > >> > index 32b6c31..b8302f9 100644
-> > >> > --- a/Documentation/bcache.txt
-> > >> > +++ b/Documentation/bcache.txt
-> > >> > @@ -1,4 +1,4 @@
-> > >> > -Say you've got a big slow raid 6, and an X-25E or three. Wouldn't it be
-> > >> > +Say you've got a big slow raid 6, and an ssd or three. Wouldn't it be
-> > >> >  nice if you could use them as cache... Hence bcache.
-> > >> >
-> > >> >  Wiki and git repositories are at:
-> > >> > @@ -8,7 +8,7 @@ Wiki and git repositories are at:
-> > >> >
-> > >> >  It's designed around the performance characteristics of SSDs - it only allocates
-> > >> >  in erase block sized buckets, and it uses a hybrid btree/log to track cached
-> > >> > -extants (which can be anywhere from a single sector to the bucket size). It's
-> > >> > +extents (which can be anywhere from a single sector to the bucket size). It's
-> > >> >  designed to avoid random writes at all costs; it fills up an erase block
-> > >> >  sequentially, then issues a discard before reusing it.
-> > >> >
-> > >> > @@ -55,7 +55,10 @@ immediately.  Without udev, you can manually register devices like this:
-> > >> >  Registering the backing device makes the bcache device show up in /dev; you can
-> > >> >  now format it and use it as normal. But the first time using a new bcache
-> > >> >  device, it'll be running in passthrough mode until you attach it to a cache.
-> > >> > -See the section on attaching.
-> > >> > +If you are thinking about using bcache later, it is recommended to setup all your
-> > >> > +slow devices as bcache backing devices without a cache, and you can choose to add
-> > >> > +a caching device later.
-> > >> > +See 'ATTACHING' section below.
-> > >> >
-> > >> >  The devices show up as:
-> > >> >
-> > >> > @@ -72,12 +75,14 @@ To get started:
-> > >> >    mount /dev/bcache0 /mnt
-> > >> >
-> > >> >  You can control bcache devices through sysfs at /sys/block/bcache<N>/bcache .
-> > >> > +You can also control them through /sys/fs//bcache/<cset-uuid>/ .
-> > >> >
-> > >> >  Cache devices are managed as sets; multiple caches per set isn't supported yet
-> > >> >  but will allow for mirroring of metadata and dirty data in the future. Your new
-> > >> >  cache set shows up as /sys/fs/bcache/<UUID>
-> > >> >
-> > >> > -ATTACHING:
-> > >> > +ATTACHING
-> > >> > +---------
-> > >> >
-> > >> >  After your cache device and backing device are registered, the backing device
-> > >> >  must be attached to your cache set to enable caching. Attaching a backing
-> > >> > @@ -105,7 +110,8 @@ but all the cached data will be invalidated. If there was dirty data in the
-> > >> >  cache, don't expect the filesystem to be recoverable - you will have massive
-> > >> >  filesystem corruption, though ext4's fsck does work miracles.
-> > >> >
-> > >> > -ERROR HANDLING:
-> > >> > +ERROR HANDLING
-> > >> > +--------------
-> > >> >
-> > >> >  Bcache tries to transparently handle IO errors to/from the cache device without
-> > >> >  affecting normal operation; if it sees too many errors (the threshold is
-> > >> > @@ -127,7 +133,143 @@ the backing devices to passthrough mode.
-> > >> >     writeback mode). It currently doesn't do anything intelligent if it fails to
-> > >> >     read some of the dirty data, though.
-> > >> >
-> > >> > -TROUBLESHOOTING PERFORMANCE:
-> > >> > +
-> > >> > +HOWTO/COOKBOOK
-> > >> > +--------------
-> > >> > +
-> > >> > +A) Your bcache doesn't start.
-> > >> > +   Starting and starting a bcache with a missing caching device
-> > >> > +
-> > >> > +Registering the backing device doesn't help, it's already there, you just need
-> > >> > +to force it to run without the cache:
-> > >> > +host:~# echo /dev/sdb1 > /sys/fs/bcache/register
-> > >> > +[  119.844831] bcache: register_bcache() error opening /dev/sdb1: device already registered
-> > >> > +
-> > >> > +Next, you try to register your caching device if it's present. However if it's
-> > >> > +absent, or registration fails for some reason, you can still start your bcache
-> > >> > +without its cache, like so:
-> > >> > +host:/sys/block/sdb/sdb1/bcache# echo 1 > running
-> > >> > +
-> > >> > +
-> > >> > +B) Bcache not finding its cache and not starting
-> > >> > +
-> > >> > +This does not work:
-> > >> > +host:/sys/block/md5/bcache# echo 0226553a-37cf-41d5-b3ce-8b1e944543a8 > attach
-> > >> > +[ 1933.455082] bcache: bch_cached_dev_attach() Couldn't find uuid for md5 in set
-> > >> > +[ 1933.478179] bcache: __cached_dev_store() Can't attach 0226553a-37cf-41d5-b3ce-8b1e944543a8
-> > >> > +[ 1933.478179] : cache set not found
-> > >> > +
-> > >> > +In this case, the caching device was simply not registered at boot or
-> > >> > +disappeared and came back, and needs to be (re-)registered:
-> > >> > +host:/sys/block/md5/bcache# echo /dev/sdh2 > /sys/fs/bcache/register
-> > >> > +
-> > >> > +
-> > >> > +C) Corrupt bcache caching device crashes the kernel on startup/boot
-> > >> > +
-> > >> > +You'll have to wipe the caching device, start the backing device without the
-> > >> > +cache, and you can re-attach the cleaned up caching device then. This does
-> > >> > +require booting with a kernel/rescue media where bcache is disabled
-> > >> > +since it will otherwise try to access your device and probably crash
-> > >> > +again before you have a chance to wipe it.
-> > >> > +(or if you plan ahead, compile a backup kernel with bcache disabled and keep it
-> > >> > +in your grub config for a rainy day)
-> > >> > +If bcache is not available in the kernel, a filesystem on the backing device is
-> > >> > +still available at an 8KiB offset. So either via a loopdev of the backing device
-> > >> > +created with --offset 8K or by temporarily increasing the start sector of the
-> > >> > +partition by 16 (512byte sectors).
-> > >> > +
-> > >> > +This is how you wipe the caching device:
-> > >> > +host:~# wipefs -a /dev/sdh2
-> > >> > +16 bytes were erased at offset 0x1018 (bcache)
-> > >> > +they were: c6 85 73 f6 4e 1a 45 ca 82 65 f5 7f 48 ba 6d 81
-> > >> > +
-> > >> > +After you boot back with bcache enabled, you recreate the cache and attach it:
-> > >> > +host:~# make-bcache -C /dev/sdh2
-> > >> > +UUID:                   7be7e175-8f4c-4f99-94b2-9c904d227045
-> > >> > +Set UUID:               5bc072a8-ab17-446d-9744-e247949913c1
-> > >> > +version:                0
-> > >> > +nbuckets:               106874
-> > >> > +block_size:             1
-> > >> > +bucket_size:            1024
-> > >> > +nr_in_set:              1
-> > >> > +nr_this_dev:            0
-> > >> > +first_bucket:           1
-> > >> > +[  650.511912] bcache: run_cache_set() invalidating existing data
-> > >> > +[  650.549228] bcache: register_cache() registered cache device sdh2
-> > >> > +
-> > >> > +start backing device with missing cache:
-> > >> > +host:/sys/block/md5/bcache# echo 1 > running
-> > >> > +
-> > >> > +attach new cache:
-> > >> > +host:/sys/block/md5/bcache# echo 5bc072a8-ab17-446d-9744-e247949913c1 > attach
-> > >> > +[  865.276616] bcache: bch_cached_dev_attach() Caching md5 as bcache0 on set 5bc072a8-ab17-446d-9744-e247949913c1
-> > >> > +
-> > >> > +
-> > >> > +D) Remove or replace a caching device
-> > >> > +
-> > >> > +host:/sys/block/sda/sda7/bcache# echo 1 > detach
-> > >> > +[  695.872542] bcache: cached_dev_detach_finish() Caching disabled for sda7
-> > >> > +
-> > >> > +host:~# wipefs -a /dev/nvme0n1p4
-> > >> > +wipefs: error: /dev/nvme0n1p4: probing initialization failed: Device or resource busy
-> > >> > +Ooops, it's disabled, but not unregistered, so it's still protected
-> > >> > +
-> > >> > +We need to go and unregister it:
-> > >> > +host:/sys/fs/bcache/b7ba27a1-2398-4649-8ae3-0959f57ba128# ls -l cache0
-> > >> > +lrwxrwxrwx 1 root root 0 Feb 25 18:33 cache0 -> ../../../devices/pci0000:00/0000:00:1d.0/0000:70:00.0/nvme/nvme0/nvme0n1/nvme0n1p4/bcache/
-> > >> > +host:/sys/fs/bcache/b7ba27a1-2398-4649-8ae3-0959f57ba128# echo 1 > stop
-> > >> > +kernel: [  917.041908] bcache: cache_set_free() Cache set b7ba27a1-2398-4649-8ae3-0959f57ba128 unregistered
-> > >> > +
-> > >> > +Now we can wipe it:
-> > >> > +host:~# wipefs -a /dev/nvme0n1p4
-> > >> > +/dev/nvme0n1p4: 16 bytes were erased at offset 0x00001018 (bcache): c6 85 73 f6 4e 1a 45 ca 82 65 f5 7f 48 ba 6d 81
-> > >> > +
-> > >> > +
-> > >> > +E) dmcrypt and bcache
-> > >> > +
-> > >> > +First setup bcache unencrypted and then install dmcrypt on top of /dev/bcache<N>
-> > >> > +This will work faster than if you dmcrypt both the backing and caching
-> > >> > +devices and then install bcache on top.
-> > >> > +
-> > >> > +
-> > >> > +F) Stop/free a registered bcache to wipe and/or recreate it
-> > >> > +(or maybe you need to free up all bcache references so that you can have fdisk
-> > >> > +run and re-register a changed partition table, which won't work if there are any
-> > >> > +active backing or caching devices left on it)
-> > >> > +
-> > >> > +1) Is it present in /dev/bcache* ? (there are times where it won't be)
-> > >> > +If so, it's easy:
-> > >> > +host:/sys/block/bcache0/bcache# echo 1 > stop
-> > >> > +
-> > >> > +2) But if your backing device is gone, this won't work:
-> > >> > +host:/sys/block/bcache0# cd bcache
-> > >> > +bash: cd: bcache: No such file or directory
-> > >> > +
-> > >> > +In this case, you may have to unregister the dmcrypt block device that
-> > >> > +references this bcache to free it up:
-> > >> > +host:~# dmsetup remove oldds1
-> > >> > +bcache: bcache_device_free() bcache0 stopped
-> > >> > +bcache: cache_set_free() Cache set 5bc072a8-ab17-446d-9744-e247949913c1 unregistered
-> > >> > +
-> > >> > +This causes the backing bcache to be removed from /sys/fs/bcache and then it can
-> > >> > +be reused
-> > >> > +
-> > >> > +3) In other cases, you can also look in /sys/fs/bcache/:
-> > >> > +host:/sys/fs/bcache# ls -l */{cache?,bdev?}
-> > >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 0226553a-37cf-41d5-b3ce-8b1e944543a8/bdev1 -> ../../../devices/virtual/block/dm-1/bcache/
-> > >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 0226553a-37cf-41d5-b3ce-8b1e944543a8/cache0 -> ../../../devices/virtual/block/dm-4/bcache/
-> > >> > +lrwxrwxrwx 1 root root 0 Mar  5 09:39 5bc072a8-ab17-446d-9744-e247949913c1/cache0 -> ../../../devices/pci0000:00/0000:00:01.0/0000:01:00.0/ata10/host9/target9:0:0/9:0:0:0/block/sdl/sdl2/bcache/
-> > >> > +
-> > >> > +The device names will show which UUID is relevant, cd in that directory
-> > >> > +and stop the cache:
-> > >> > +host:/sys/fs/bcache/5bc072a8-ab17-446d-9744-e247949913c1# echo 1 > stop
-> > >> > +this will free up bcache references and let you reuse the partition for other
-> > >> > +purposes.
-> > >> > +
-> > >> > +
-> > >> > +
-> > >> > +TROUBLESHOOTING PERFORMANCE
-> > >> > +---------------------------
-> > >> >
-> > >> >  Bcache has a bunch of config options and tunables. The defaults are intended to
-> > >> >  be reasonable for typical desktop and server workloads, but they're not what you
-> > >> > @@ -140,7 +282,7 @@ want for getting the best possible numbers when benchmarking.
-> > >> >     maturity, but simply because in writeback mode you'll lose data if something
-> > >> >     happens to your SSD)
-> > >> >
-> > >> > -   # echo writeback > /sys/block/bcache0/cache_mode
-> > >> > +   # echo writeback > /sys/block/bcache0/bcache/cache_mode
-> > >> >
-> > >> >   - Bad performance, or traffic not going to the SSD that you'd expect
-> > >> >
-> > >> > @@ -193,7 +335,9 @@ want for getting the best possible numbers when benchmarking.
-> > >> >     Solution: warm the cache by doing writes, or use the testing branch (there's
-> > >> >     a fix for the issue there).
-> > >> >
-> > >> > -SYSFS - BACKING DEVICE:
-> > >> > +
-> > >> > +SYSFS - BACKING DEVICE
-> > >> > +----------------------
-> > >> >
-> > >> >  Available at /sys/block/<bdev>/bcache, /sys/block/bcache*/bcache and
-> > >> >  (if attached) /sys/fs/bcache/<cset-uuid>/bdev*
-> > >> > --
-> > >> > 2.5.3
-> > >> >
-> > >> >
-> > >> > --
-> > >> > "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> > >> > Microsoft is to operating systems ....
-> > >> >                                       .... what McDonalds is to gourmet cooking
-> > >> > Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
-> > >> > --
-> > >> > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> > >> > the body of a message to majordomo@vger.kernel.org
-> > >> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > >> >
-> > >>
-> > 
-> > 
-> > 
-> > -- 
-> > "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> > Microsoft is to operating systems & security ....
-> >                                       .... what McDonalds is to gourmet cooking
-> > Home page: http://marc.merlins.org/
-> > 
-> 
+df -h /data
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/bcache0     12T  6.6T  5.3T  56% /data
+
+(yes, swap is on top of that as well, which might be a/the problem)
+
+This is in writeback mode.
+
+What we are seeing is this (cpu stuck in bcache_gc, with a bad 
+pointer).  I am wondering if the swap on the cache is a problem. Seems 
+to occur after significant IO loads and heavy computing tasks have been 
+running for a few hours.  After restart (forced), the dirty data is 
+slowly dropping:
+
+cat /sys/block/bcache0/bcache/dirty_data
+97.9G
+
+
+  44 00 00 eb d8 0f 1f 00
+[1374092.191983] NMI watchdog: BUG: soft lockup - CPU#12 stuck for 23s! 
+[bcache_gc:2989]
+[1374092.199907] Modules linked in: 8021q garp mrp stp llc bonding 
+rdma_ucm ib_ucm ib_uverbs ib_umad ib_ipoib mlx4_ib(O) mlx_compat(O) 
+af_packet ixgbe i40e igb cpufreq_ondemand cpufreq_powersave 
+cpufreq_stats cpufreq_userspace cpufreq_conservative ib_iser rdma_cm 
+iw_cm ib_cm ib_sa ib_mad ib_core ib_addr ipv6 nfsd dm_crypt joydev 
+hid_generic usbhid hid iTCO_wdt iTCO_vendor_support x86_pkg_temp_thermal 
+coretemp kvm_intel kvm crc32_pclmul crc32c_intel ghash_clmulni_intel 
+aesni_intel aes_x86_64 ablk_helper cryptd lrw gf128mul glue_helper 
+microcode pcspkr sb_edac edac_core snd_hda_codec_realtek 
+snd_hda_codec_generic snd_hda_intel snd_hda_controller snd_hda_codec 
+ehci_pci ehci_hcd snd_pcm i2c_i801 mei_me snd_timer lpc_ich usbcore snd 
+i2c_core shpchp mfd_core usb_common soundcore mei ioatdma tpm_tis tpm 
+ipmi_si rtc_cmos ipmi_msghandler evdev processor thermal_sys 
+acpi_power_meter button dm_mirror dm_region_hash dm_log dm_mod iscsi_tcp 
+libiscsi_tcp libiscsi scsi_transport_iscsi configfs e1000e raid1 md_mod 
+sg ses enclosure sd_mod vxlan ip6_udp_tunnel dca udp_tunnel ptp ahci 
+libahci libata aacraid scsi_mod pps_core [last unloaded: cpuid]
+[1374092.314940] CPU: 12 PID: 2989 Comm: bcache_gc Tainted: G W  O L 
+3.18.20.scalable #1
+[1374092.323475] Hardware name: Supermicro X10DRG-Q/X10DRG-Q, BIOS 1.0b 
+01/07/2015
+[1374092.330876] task: ffff883fd0e34960 ti: ffff883fa3cb0000 task.ti: 
+ffff883fa3cb0000
+[1374092.338621] RIP: 0010:[<ffffffff81634625>] [<ffffffff81634625>] 
+bch_extent_bad+0x135/0x1c0
+[1374092.347297] RSP: 0000:ffff883fa3cb3ae8  EFLAGS: 00000206
+[1374092.352859] RAX: 0000000000000007 RBX: ffffffff816344b5 RCX: 
+000000000000000b
+[1374092.360258] RDX: ffff881fa3ff8000 RSI: 00000165a662b007 RDI: 
+0000000000000001
+[1374092.367657] RBP: ffff883fa3cb3b08 R08: ffff881f9f040000 R09: 
+0000000000000000
+[1374092.375056] R10: 000007ffffffffff R11: 0000000000000001 R12: 
+ffff881f9f040000
+[1374092.382457] R13: ffff883d942c4dd8 R14: ffff883fa3cb3a58 R15: 
+ffff883fa3cb3cf0
+[1374092.389857] FS:  0000000000000000(0000) GS:ffff883ffde00000(0000) 
+knlGS:0000000000000000
+[1374092.398212] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[1374092.404207] CR2: 00007f61fba73ec0 CR3: 0000000001c14000 CR4: 
+00000000001407e0
+[1374092.411605] Stack:
+[1374092.413862]  ffffffff00000001 ffff883d942c4dd8 ffff883fa3cb3b58 
+ffffffff8162b560
+[1374092.421757]  ffff883fa3cb3b18 ffffffff8162b56a ffff883fa3cb3b48 
+ffffffff8162b389
+[1374092.429650]  00000000000009b7 ffff883bc4a679c8 ffff883fa3cb3cf0 
+ffff881fa93bc1c8
+[1374092.437545] Call Trace:
+[1374092.440236]  [<ffffffff8162b560>] ? bch_ptr_invalid+0x10/0x10
+[1374092.446231]  [<ffffffff8162b56a>] bch_ptr_bad+0xa/0x10
+[1374092.451616]  [<ffffffff8162b389>] bch_btree_iter_next_filter+0x39/0x50
+[1374092.458393]  [<ffffffff8162b7d1>] btree_gc_count_keys+0x51/0x70
+[1374092.464561]  [<ffffffff816314af>] btree_gc_recurse+0x1bf/0x330
+[1374092.470640]  [<ffffffff8162cc23>] ? btree_gc_mark_node+0x63/0x240
+[1374092.476985]  [<ffffffff8109a071>] ? down_write_nested+0x91/0xb0
+[1374092.483152]  [<ffffffff81631752>] ? bch_btree_gc+0x132/0x5d0
+[1374092.489060]  [<ffffffff81631abd>] bch_btree_gc+0x49d/0x5d0
+[1374092.494792]  [<ffffffff81093c80>] ? __init_waitqueue_head+0x60/0x60
+[1374092.501309]  [<ffffffff81631c28>] bch_gc_thread+0x38/0x140
+[1374092.507043]  [<ffffffff81631bf0>] ? bch_btree_gc+0x5d0/0x5d0
+[1374092.512950]  [<ffffffff81073244>] kthread+0xe4/0x100
+[1374092.518163]  [<ffffffff81073160>] ? __init_kthread_worker+0x70/0x70
+[1374092.524680]  [<ffffffff8178f898>] ret_from_fork+0x58/0x90
+[1374092.530327]  [<ffffffff81073160>] ? __init_kthread_worker+0x70/0x70
+[1374092.536839] Code: 0f 00 00 49 8b 94 c0 d0 0c 00 00 48 89 f0 48 c1 
+e8 08 4c 21 d0 48 d3 e8 4c 8b a2 08 0b 00 00 48 8d 04 40 49 8d 04 84 0f 
+b6 40 06 <29> f0 3c 80 77 85 0f b6 d0 83 fa 60 0f 86 71 ff ff ff 41 0f b6
+
+Thanks in advance for any guidance/advice
 
 -- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
+Joseph Landman, Ph.D
+Founder and CEO
+Scalable Informatics, Inc.
+e: landman@scalableinformatics.com
+w: http://scalableinformatics.com
+t: @scalableinfo
+p: +1 734 786 8423 x121
+c: +1 734 612 4615
