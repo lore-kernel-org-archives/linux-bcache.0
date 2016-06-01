@@ -1,50 +1,58 @@
-From: "James Johnston" <johnstonj.public@codenest.com>
-Subject: RE: [PATCH] dm-log-writes: fix bug with too large bios
-Date: Wed, 1 Jun 2016 04:23:17 -0000
-Message-ID: <07bf01d1bbbd$53991750$facb45f0$@codenest.com>
-References: <alpine.LRH.2.02.1605271047280.2109@file01.intranet.prod.int.rdu2.redhat.com>
+From: Zhengyuan Liu <liuzhengyuang521@gmail.com>
+Subject: super-block written got dislocation while 64K PAGE_SIZE enable.
+Date: Wed, 1 Jun 2016 16:20:47 +0800
+Message-ID: <CAOOPZo6+dtw9VWHnMhR8LEeFxEdNGOMthCw-PqRNmnLP2eAq1g@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from sender163-mail.zoho.com ([74.201.84.163]:24166 "EHLO
-	sender163-mail.zoho.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755805AbcFAEXg (ORCPT
+Received: from mail-vk0-f68.google.com ([209.85.213.68]:32963 "EHLO
+	mail-vk0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbcFAIUs (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 1 Jun 2016 00:23:36 -0400
-In-Reply-To: <alpine.LRH.2.02.1605271047280.2109@file01.intranet.prod.int.rdu2.redhat.com>
-Content-Language: en-us
+	Wed, 1 Jun 2016 04:20:48 -0400
+Received: by mail-vk0-f68.google.com with SMTP id m81so1973262vka.0
+        for <linux-bcache@vger.kernel.org>; Wed, 01 Jun 2016 01:20:47 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: 'Mikulas Patocka' <mpatocka@redhat.com>, "'Alasdair G. Kergon'" <agk@redhat.com>, 'Mike Snitzer' <msnitzer@redhat.com>, 'Josef Bacik' <jbacik@fb.com>
-Cc: dm-devel@redhat.com, 'Eric Wheeler' <bcache@lists.ewheeler.net>, 'Tim Small' <tim@buttersideup.com>, 'Kent Overstreet' <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, dm-crypt@saout.de, 'Neil Brown' <neilb@suse.com>, linux-raid@vger.kernel.org
+To: linux-bcache@vger.kernel.org, kent.overstreet@gmail.com, dm-devel@redhat.com
+Cc: huhai@kylinos.cn
 
-Hi Mikulas,
+Hi, I have created a mapped block device (bcach0) using make-bcache on
+ARM64 server which has kernel enable 64K page size. However, the
+bcach0 disappeared after the server reboot and there is no or dirty
+metadata on super block of both cache device and back device . The
+output of command  bcache-super-show was as bellow showed:
+   [root@master Linux-4.4-LTS-storage]# bcache-super-show  /dev/sdb
+   sb.magic bad magic
+   Invalid superblock (bad magic)
+/dev/sdb was the backing device and cache device got bad magic too.
 
-> bio_alloc can allocate a bio with at most BIO_MAX_PAGES (256) vector
-> entries. However, the incoming bio may have more vector entries if it was
-> allocated by other means. For example, bcache submits bios with more than
-> BIO_MAX_PAGES entries. This results in bio_alloc failure.
-> 
-> To avoid the failure, change the code so that it allocates bio with at
-> most BIO_MAX_PAGES entries. If the incoming bio has more entries,
-> bio_add_page will fail and a new bio will be allocated - the code that
-> handles bio_add_page failure already exists in the dm-log-writes target.
-> 
-> Also, move atomic_inc(&lc->io_blocks) before bio_alloc to fix a bug that
-> the target hangs if bio_alloc fails. The error path does put_io_block(lc),
-> so we must do atomic_inc(&lc->io_blocks) before invoking the error path to
-> avoid underflow of lc->io_blocks.
-> 
-> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> Cc: stable@vger.kernel.org	# v4.1+
+I tried to traced the written process of super block in bcache source
+code and found that is the issue of PAGE_SIZE. It seems that the
+bcache  was designed only considering for 4K PAGE_SIZE and it works
+right only on 4K PAGE_SIZE exactly. To make bcache work correctly on
+64K PAGE_SIZE, I committed a patch as bellow showd:
+    diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+    index 330cd6e..ef567cd 100644
+    --- a/drivers/md/bcache/super.c
+    +++ b/drivers/md/bcache/super.c
+    @@ -224,6 +224,12 @@ static void __write_super(struct cache_sb
+*sb, struct bio     *bio
+        bio->bi_iter.bi_size    = SB_SIZE;
+        bch_bio_map(bio, NULL);
 
-How does this relate to the previous patch you made to dm-crypt?  How best
-should I test this?  It looks like the dm-crypt patch fixed the problem.
+    +#ifdef CONFIG_ARM64_64K_PAGES
+    +       out = (struct cache_sb *)((char *)out + (SB_SECTOR<<9));
+    +       pr_debug("sb_page_adress %x, sb_address %x,page_size
+          %d\n",page_address(bio
+    +       bio->bi_io_vec[0].bv_offset = (SB_SECTOR<<9);
+    +#endif
 
-Should I test by applying this patch ONLY and reverting the dm-crypt patch?
-(i.e. does this patch also fix the problem.)  Or should I just test with
-both patches applied simultaneously?
+        out->offset             = cpu_to_le64(sb->offset);
+        out->version            = cpu_to_le64(sb->version);
 
-James
+Does it not recommend to use bcache on 64K PAGE_SIZE? or it only
+considers for 4K PAGE_SIZE for bcache currently?
+Maybe it is more suitable  for me to redefine some macro such as
+SB_SECTOR, BDEV_DATA_START_DEFAULT to make bcache work correctly on
+both 64K PAGE_SIZE and 4K PAGE_SIZE.
