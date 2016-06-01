@@ -1,25 +1,24 @@
-From: Mike Snitzer <snitzer@redhat.com>
-Subject: Re: dm-log-writes: fix bug with too large bios
-Date: Wed, 1 Jun 2016 10:02:43 -0400
-Message-ID: <20160601140243.GC30759@redhat.com>
-References: <alpine.LRH.2.02.1605271047280.2109@file01.intranet.prod.int.rdu2.redhat.com>
- <07bf01d1bbbd$53991750$facb45f0$@codenest.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
+Subject: RE: [PATCH] dm-log-writes: fix bug with too large bios
+Date: Wed, 1 Jun 2016 13:32:59 -0400 (EDT)
+Message-ID: <alpine.LRH.2.02.1606010621140.6561@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1605271047280.2109@file01.intranet.prod.int.rdu2.redhat.com> <07bf01d1bbbd$53991750$facb45f0$@codenest.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx1.redhat.com ([209.132.183.28]:38383 "EHLO mx1.redhat.com"
+Received: from mx1.redhat.com ([209.132.183.28]:51116 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758054AbcFAOCp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Wed, 1 Jun 2016 10:02:45 -0400
-Content-Disposition: inline
+	id S1751624AbcFARdF (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Wed, 1 Jun 2016 13:33:05 -0400
 In-Reply-To: <07bf01d1bbbd$53991750$facb45f0$@codenest.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: James Johnston <johnstonj.public@codenest.com>
-Cc: 'Mikulas Patocka' <mpatocka@redhat.com>, "'Alasdair G. Kergon'" <agk@redhat.com>, 'Josef Bacik' <jbacik@fb.com>, 'Eric Wheeler' <bcache@lists.ewheeler.net>, dm-crypt@saout.de, dm-devel@redhat.com, 'Neil Brown' <neilb@suse.com>, linux-raid@vger.kernel.org, linux-bcache@vger.kernel.org, 'Kent Overstreet' <kent.overstreet@gmail.com>, 'Tim Small' <tim@buttersideup.com>
+Cc: "'Alasdair G. Kergon'" <agk@redhat.com>, 'Mike Snitzer' <msnitzer@redhat.com>, 'Josef Bacik' <jbacik@fb.com>, dm-devel@redhat.com, 'Eric Wheeler' <bcache@lists.ewheeler.net>, 'Tim Small' <tim@buttersideup.com>, 'Kent Overstreet' <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, dm-crypt@saout.de, 'Neil Brown' <neilb@suse.com>, linux-raid@vger.kernel.org
 
-On Wed, Jun 01 2016 at 12:23am -0400,
-James Johnston <johnstonj.public@codenest.com> wrote:
+
+
+On Wed, 1 Jun 2016, James Johnston wrote:
 
 > Hi Mikulas,
 > 
@@ -47,7 +46,43 @@ James Johnston <johnstonj.public@codenest.com> wrote:
 > Should I test by applying this patch ONLY and reverting the dm-crypt patch?
 > (i.e. does this patch also fix the problem.)  Or should I just test with
 > both patches applied simultaneously?
+> 
+> James
 
-The dm-log-writes patch has nothing to do with the dm-crypt patch.  It
-is just that both targets have comparable issues with bcache issuing
-really large bios.
+When I found a bug in dm-crypt, I searched the other targets for the same 
+problem and found out that the same bug is also present in dm-log-writes.
+
+The bug in dm-log-writes can be reproduced if you make a bcache device 
+with 2MiB bucket size and place in on the dm-log-writes target.
+
+When the bug is present, the dm-log-writes target reports "device-mapper: 
+log-writes: Couldn't alloc log bio".
+
+This is a script that triggers the bug for dm-log-writes. Before running 
+the script, create devices /dev/mapper/loop-test1, loop-test2 and 
+loop-test3.
+
+Mikulas
+
+
+wipefs -a /dev/mapper/loop-test1
+./make-bcache --wipe-bcache --bucket 2M -C /dev/mapper/loop-test1
+dmsetup create backCrypt --table "0 `blockdev --getsize /dev/mapper/loop-test2` log-writes /dev/mapper/loop-test2 /dev/mapper/loop-test3"
+wipefs -a /dev/mapper/backCrypt
+./make-bcache --wipe-bcache -B /dev/mapper/backCrypt
+modprobe bcache
+echo /dev/mapper/loop-test1 > /sys/fs/bcache/register
+echo /dev/mapper/backCrypt > /sys/fs/bcache/register
+./bcache-super-show /dev/mapper/loop-test1 | grep cset.uuid | cut -f 3 >/sys/block/bcache0/bcache/attach
+echo writeback > /sys/block/bcache0/bcache/cache_mode
+
+cd /sys/block/bcache0/bcache
+echo 0 > sequential_cutoff
+# Verify that the cache is attached (i.e. does not say "no cache")
+cat state
+dd if=/dev/urandom of=/dev/bcache0 bs=1M count=250
+cat dirty_data
+cat state
+echo 1 > detach
+cat dirty_data
+cat state
