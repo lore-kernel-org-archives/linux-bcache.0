@@ -1,56 +1,59 @@
-From: Marc MERLIN <marc@merlins.org>
-Subject: Re: [PULL v4.6-rc1] bcache: documentation updates
-Date: Tue, 31 May 2016 16:02:16 -0700
-Message-ID: <20160531230216.GE23248@merlins.org>
-References: <20160312050003.GN26973@merlins.org> <alpine.LRH.2.11.1603120706310.30893@mail.ewheeler.net> <alpine.LRH.2.11.1603290106450.13440@mail.ewheeler.net> <CAKhhfD7C+CAnUEXfUX=g3bT=TX3QkyLvQnh0eWNJxcK4MeYnHA@mail.gmail.com> <alpine.LRH.2.11.1604130636080.26685@mail.ewheeler.net> <20160530144309.GC21737@merlins.org> <20160531165508.215100e6@lwn.net>
+From: "James Johnston" <johnstonj.public@codenest.com>
+Subject: RE: [PATCH] dm-crypt: Fix error with too large bios (was: bcache gets stuck flushing writeback cache when used in combination with LUKS/dm-crypt and non-default bucket size)
+Date: Wed, 1 Jun 2016 04:19:11 -0000
+Message-ID: <07be01d1bbbc$c2e37f70$48aa7e50$@codenest.com>
+References: <044401d1a958$ea7ef4e0$bf7cdea0$@codenest.com> <5739F07A.5090608@buttersideup.com> <alpine.LRH.2.11.1605191618560.22436@mx.ewheeler.net> <02b101d1b265$2bc46fb0$834d4f10$@codenest.com> <alpine.LRH.2.11.1605201322530.26328@mx.ewheeler.net> <034e01d1b3e2$1de2f910$59a8eb30$@codenest.com> <alpine.LRH.2.02.1605271037470.2109@file01.intranet.prod.int.rdu2.redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from magic.merlins.org ([209.81.13.136]:55509 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756553AbcEaXCS (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 31 May 2016 19:02:18 -0400
-Content-Disposition: inline
-In-Reply-To: <20160531165508.215100e6@lwn.net>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-raid-owner@vger.kernel.org>
+In-Reply-To: <alpine.LRH.2.02.1605271037470.2109@file01.intranet.prod.int.rdu2.redhat.com>
+Content-Language: en-us
+Sender: linux-raid-owner@vger.kernel.org
+To: 'Mikulas Patocka' <mpatocka@redhat.com>
+Cc: 'Eric Wheeler' <bcache@lists.ewheeler.net>, 'Tim Small' <tim@buttersideup.com>, 'Kent Overstreet' <kent.overstreet@gmail.com>, 'Alasdair Kergon' <agk@redhat.com>, 'Mike Snitzer' <snitzer@redhat.com>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, dm-crypt@saout.de, 'Neil Brown' <neilb@suse.com>, linux-raid@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org, linux-doc@vger.kernel.org, kent.overstreet@gmail.com
 
-On Tue, May 31, 2016 at 04:55:08PM -0600, Jonathan Corbet wrote:
-> On Mon, 30 May 2016 07:43:09 -0700
-> Marc MERLIN <marc@merlins.org> wrote:
+On Fri, 27 May 2016, Mikulas Patocka wrote:
+> dm-crypt: Fix error with too large bios
 > 
-> > > There is a bcache documentation update available:
-> > >   
-> > > > > git pull https://bitbucket.org/ewheelerinc/linux v4.6-rc1-bcache-documentation  
-> > > 
-> > > Is this the right list to submit such documentation?  
-> > 
-> > Howdy,
-> > 
-> > I just pulled 4.6 and noticed the doc updates from Eric and me don't
-> > seem to have made it.
-> > 
-> > Jon, would you know who can help getting those in? I wrote them before
-> > 4.5 came out :)
+> When dm-crypt processes writes, it allocates a new bio in the function
+> crypt_alloc_buffer. The bio is allocated from a bio set and it can have at
+> most BIO_MAX_PAGES vector entries, however the incoming bio can be larger
+> if it was allocated by other means. For example, bcache creates bios
+> larger than BIO_MAX_PAGES. If the incoming bio is larger, bio_alloc_bioset
+> fails and error is returned.
 > 
-> I don't think I ever saw this, was it sent to me?
- 
-No I think Eric Emailed linux-doc@vger.kernel.org, instead of you directly.
+> To avoid the error, we test for too large bio in the function crypt_map
+> and dm_accept_partial_bio to split the bio. dm_accept_partial_bio trims
+> the current bio to the desired size and requests that the device mapper
+> core sends another bio with the rest of the data.
+> 
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> Cc: stable@vger.kernel.org	# v3.16+
 
-> How about we post the docs as patches and go from there?
+Tested-by: James Johnston <johnstonj.public@codenest.com>
 
-His posted tree contains them. Here are the 2 patches:
-https://bitbucket.org/ewheelerinc/linux/commits/606d51faf12382a2a8ab049a5a931533be720386?at=v4.6-rc1-bcache-documentation
-https://bitbucket.org/ewheelerinc/linux/commits/69d2dc24a24415901983a045e1f9c7ab1ebb71c4?at=v4.6-rc1-bcache-documentation
-(both should be applied)
+I tested this patch by:
 
-Thanks for looking at this.
-Marc
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/  
+1.  Building v4.7-rc1 from Torvalds git repo.  Confirmed that original bug
+    still occurs on Ubuntu 15.10.
+
+2.  Applying your patch to v4.7-rc1.  My kill sequence no longer works,
+    and the writeback cache is now successfully flushed to disk, and the
+    cache can be detached from the backing device.
+
+3.  To check data integrity, copied 250 MB of /dev/urandom to some file
+    on main volume.  Then, dd copy this file to /dev/bcache0.  Then,
+    detached the cache device from the backing device.  Then, rebooted.
+    Then, dd copy /dev/bcache0 to another file on main volume.  Then,
+    diff the files and confirm no changes.
+
+So it looks like it works, based on this admittedly brief testing.  Thanks!
+
+Best regards,
+
+James Johnston
+
+
