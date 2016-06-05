@@ -1,321 +1,283 @@
-From: Zhengyuan Liu <liuzhengyuang521@gmail.com>
-Subject: Re: super-block written got dislocation while 64K
-	PAGE_SIZE enable.
-Date: Thu, 2 Jun 2016 11:49:59 +0800
-Message-ID: <CAOOPZo4V4WyxsniDbpC9SOM=+Cp0OapGnXa4xot9xYUkpBzGjQ@mail.gmail.com>
-References: <CAOOPZo6+dtw9VWHnMhR8LEeFxEdNGOMthCw-PqRNmnLP2eAq1g@mail.gmail.com>
-	<alpine.LRH.2.11.1606011057370.9562@mail.ewheeler.net>
-	<20160601231633.GA32542@kmo-pixel>
+From: mchristi@redhat.com
+Subject: [PATCH 00/45] v8: separate operations from flags in the bio/request
+	structs
+Date: Sun,  5 Jun 2016 14:31:40 -0500
+Message-ID: <1465155145-10812-1-git-send-email-mchristi@redhat.com>
 Mime-Version: 1.0
-Content-Type: multipart/mixed; boundary="===============8834368123680032586=="
-Return-path: <dm-devel-bounces@redhat.com>
-In-Reply-To: <20160601231633.GA32542@kmo-pixel>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/dm-devel>
-List-Post: <mailto:dm-devel@redhat.com>
-List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=subscribe>
-Sender: dm-devel-bounces@redhat.com
-Errors-To: dm-devel-bounces@redhat.com
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org, dm-devel@redhat.com, Eric Wheeler <bcache@lists.ewheeler.net>, huhai@kylinos.cn
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Return-path: <xfs-bounces@oss.sgi.com>
+List-Unsubscribe: <http://oss.sgi.com/mailman/options/xfs>,
+	<mailto:xfs-request@oss.sgi.com?subject=unsubscribe>
+List-Archive: <http://oss.sgi.com/pipermail/xfs>
+List-Post: <mailto:xfs@oss.sgi.com>
+List-Help: <mailto:xfs-request@oss.sgi.com?subject=help>
+List-Subscribe: <http://oss.sgi.com/mailman/listinfo/xfs>,
+	<mailto:xfs-request@oss.sgi.com?subject=subscribe>
+Errors-To: xfs-bounces@oss.sgi.com
+Sender: xfs-bounces@oss.sgi.com
+To: linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
 List-Id: linux-bcache@vger.kernel.org
 
---===============8834368123680032586==
-Content-Type: multipart/alternative; boundary=94eb2c0433fe0e04060534438055
+The following patches begin to cleanup the request->cmd_flags and
+bio->bi_rw mess. We currently use cmd_flags to specify the operation,
+attributes and state of the request. For bi_rw we use it for similar
+info and also the priority but then also have another bi_flags field
+for state. At some point, we abused them so much we just made cmd_flags
+64 bits, so we could add more.
 
---94eb2c0433fe0e04060534438055
-Content-Type: text/plain; charset=UTF-8
+The following patches seperate the operation (read, write discard,
+flush, etc) from cmd_flags/bi_rw. They were made against Linus's
+tree.
 
-To support arbitrary page size for superblock,include 4K/8K/64K currently,
-the off_set of SB_SECTOR should be a LCM(least common multiple) and that is
-64. I redefine macro SB_SECTOR and BDEV_DATA_START_DEFAULT just as bellow
-patch showed:
-        diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-        index ef567cd..1622f44 100644
-        --- a/drivers/md/bcache/super.c
-        +++ b/drivers/md/bcache/super.c
-        @@ -74,7 +74,7 @@ static const char *read_super(struct cache_sb
-*sb, struct block_device *bdev,
-         {
-                const char *err;
-                struct cache_sb *s;
-        -       struct buffer_head *bh = __bread(bdev, 1, SB_SIZE);
-        +       *struct buffer_head *bh = __bread(bdev, 16, SB_SIZE);*
-                unsigned i;
+I put a git tree here:
 
-                if (!bh)
-        diff --git a/include/uapi/linux/bcache.h
-b/include/uapi/linux/bcache.h
-        index 22b6ad3..eb948c8 100644
-        --- a/include/uapi/linux/bcache.h
-        +++ b/include/uapi/linux/bcache.h
-        @@ -144,14 +144,14 @@ static inline struct bkey *bkey_idx(const
-struct bkey *k, unsigned nr_keys)
-         #define BCACHE_SB_VERSION_BDEV_WITH_OFFSET 4
-         #define BCACHE_SB_MAX_VERSION          4
+https://github.com/mikechristie/linux-kernel/tree/op
 
-        -#define SB_SECTOR                      8
-        *+#define SB_SECTOR                      128*
-         #define SB_SIZE                                4096
-         #define SB_LABEL_SIZE                  32
-         #define SB_JOURNAL_BUCKETS             256U
-         /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
-         #define MAX_CACHES_PER_SET             8
+The patches are in the op branch.
 
-        -#define BDEV_DATA_START_DEFAULT                16      /* sectors
-*/
-        *+#define BDEV_DATA_START_DEFAULT                    256 /* sectors
-*/*
+Note that I made it against linus's tree, but right now the only
+major conflicts with -next are in the dm tree from the dm-rq related
+changes. I have patches for that and can submit them. I was just not
+sure how to coordinate everything.
 
-         struct cache_sb {
-                __u64                   csum;
+v8:
+1. Handle Jens's review comments from LSF.  Instead of adding a op
+field, store the value in bi_rw/cmd_flags and access via accessors.
 
-The second arg of *__bread(bdev, 16, SB_SIZE)  *has unit of block size and
-it need be relocated too.
-To suitable this change, bcache-tools need be fixed up too.
-As for btree_node_size issues about page size, expecting somebody to commit
-a patch.
+v7:
+1. Fix broken feature_flush/fua use.
 
-Kent, maybe you could use qemu to simulate ARM64 arch and there is always
-ubuntu image for ARM64 on the internet.
+v6 and maybe hopfully the last version:
+1. Adapt patch 41 to Jens's QUEUE_FLAG_WC/FUA patchset.
 
-2016-06-02 7:16 GMT+08:00 Kent Overstreet <kent.overstreet@gmail.com>:
+v5:
+1. Missed crypto fs submit_bio_wait call.
+2. Change nfs bi_rw check to bi_op.
+3. btrfs. Convert finish_parity_scrub.
+4. Reworked against Jens's QUEUE_FLAG patches so I could drop my similar
+code.
+5. Separated the core block layer change into multiple patches for
+merging, elevator, stats, mq and non mq request allocation to try
+and make it easier to read.
 
-> On Wed, Jun 01, 2016 at 11:05:20AM -0700, Eric Wheeler wrote:
-> > On Wed, 1 Jun 2016, Zhengyuan Liu wrote:
-> >
-> > > Hi, I have created a mapped block device (bcach0) using make-bcache on
-> > > ARM64 server which has kernel enable 64K page size. However, the
-> > > bcach0 disappeared after the server reboot and there is no or dirty
-> > > metadata on super block of both cache device and back device . The
-> > > output of command  bcache-super-show was as bellow showed:
-> > >    [root@master Linux-4.4-LTS-storage]# bcache-super-show  /dev/sdb
-> > >    sb.magic bad magic
-> > >    Invalid superblock (bad magic)
-> > > /dev/sdb was the backing device and cache device got bad magic too.
-> > >
-> > > I tried to traced the written process of super block in bcache source
-> > > code and found that is the issue of PAGE_SIZE. It seems that the
-> > > bcache  was designed only considering for 4K PAGE_SIZE and it works
-> > > right only on 4K PAGE_SIZE exactly. To make bcache work correctly on
-> > > 64K PAGE_SIZE, I committed a patch as bellow showd:
-> > >     diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> > >     index 330cd6e..ef567cd 100644
-> > >     --- a/drivers/md/bcache/super.c
-> > >     +++ b/drivers/md/bcache/super.c
-> > >     @@ -224,6 +224,12 @@ static void __write_super(struct cache_sb
-> > > *sb, struct bio     *bio
-> > >         bio->bi_iter.bi_size    = SB_SIZE;
-> > >         bch_bio_map(bio, NULL);
-> > >
-> > >     +#ifdef CONFIG_ARM64_64K_PAGES
-> > >     +       out = (struct cache_sb *)((char *)out + (SB_SECTOR<<9));
-> > >     +       pr_debug("sb_page_adress %x, sb_address %x,page_size
-> > >           %d\n",page_address(bio
-> > >     +       bio->bi_io_vec[0].bv_offset = (SB_SECTOR<<9);
-> > >     +#endif
-> > >
-> > >         out->offset             = cpu_to_le64(sb->offset);
-> > >         out->version            = cpu_to_le64(sb->version);
-> > >
-> > > Does it not recommend to use bcache on 64K PAGE_SIZE? or it only
-> > > considers for 4K PAGE_SIZE for bcache currently?
-> > > Maybe it is more suitable  for me to redefine some macro such as
-> > > SB_SECTOR, BDEV_DATA_START_DEFAULT to make bcache work correctly on
-> > > both 64K PAGE_SIZE and 4K PAGE_SIZE.
-> >
-> > I think a patch to support arbitrary page size would be great.  Can
-> > you write the macros in terms of PAGE_SIZE or PAGE_SHIFT?
->
-> It shouldn't be referencing PAGE_SIZE at all - creating a new macro
-> (BCH_SB_SIZE, perhaps) is the correct approach.
->
-> The code that allocates the buffer for the superblock will have to be fixed
-> too - right now it's probably using __get_free_page(), it should probably
-> just
-> be switched to kmalloc().
->
-> > (Out of curiosity, what ARM64 hardware are you using?)
-> >
-> > Kent, this may affect bcachefs too.  Can you think of any other places
-> > that might have PAGE_SIZE!=4k issues?
->
-> Oh, there's probably a couple. There's probably some stuff that'll break if
-> btree_node_size is smaller than PAGE_SIZE, too...
->
-> If it turns out to be too much for Zhengyuan, I can probably fix upstream
-> too
-> (but I don't have any hardware to test with).
->
+v4:
+1. Rebased to current linux-next tree.
 
---94eb2c0433fe0e04060534438055
-Content-Type: text/html; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+v3:
 
-<div dir=3D"ltr">To support arbitrary page size for superblock,include 4K/8=
-K/64K currently, the off_set of SB_SECTOR should be a LCM(least common mult=
-iple) and that is 64. I redefine macro SB_SECTOR and BDEV_DATA_START_DEFAUL=
-T just as bellow patch showed:<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 diff --git a/=
-drivers/md/bcache/super.c b/drivers/md/bcache/super.c<br>=C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 index ef567cd..1622f44 100644<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 ---=
- a/drivers/md/bcache/super.c<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 +++ b/drivers/m=
-d/bcache/super.c<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 @@ -74,7 +74,7 @@ static co=
-nst char *read_super(struct cache_sb *sb, struct block_device *bdev,<br>=C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0{<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 const char *err;<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 =C2=A0 struct cache_sb *s;<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 - =
-=C2=A0 =C2=A0 =C2=A0 struct buffer_head *bh =3D __bread(bdev, 1, SB_SIZE);<=
-br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 + =C2=A0 =C2=A0 =C2=A0 <b>struct buffer_head=
- *bh =3D __bread(bdev, 16, SB_SIZE);</b><br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 unsigned i;<br>=C2=A0<br>=C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 if (!bh)<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 dif=
-f --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h<br>=C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 index 22b6ad3..eb948c8 100644<br>=C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 --- a/include/uapi/linux/bcache.h<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0=
- +++ b/include/uapi/linux/bcache.h<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 @@ -144,1=
-4 +144,14 @@ static inline struct bkey *bkey_idx(const struct bkey *k, unsi=
-gned nr_keys)<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0#define BCACHE_SB_VERSIO=
-N_BDEV_WITH_OFFSET 4<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0#define BCACHE_SB=
-_MAX_VERSION =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A04<br>=C2=A0<br>=C2=A0 =C2=A0=
- =C2=A0 =C2=A0 -#define SB_SECTOR =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=
- =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A08<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 <b>+#de=
-fine SB_SECTOR =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0128</b><br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0#define SB_SI=
-ZE =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A04096<br>=C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0#define SB_LABEL_SIZE =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 =C2=A032<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0#define SB_JOUR=
-NAL_BUCKETS =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 256U<br>=C2=A0 =C2=A0=
- =C2=A0 =C2=A0 =C2=A0/* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LO=
-NG */<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0#define MAX_CACHES_PER_SET =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 8<br>=C2=A0<br>=C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 -#define BDEV_DATA_START_DEFAULT =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 =C2=A016 =C2=A0 =C2=A0 =C2=A0/* sectors */<br>=C2=A0 =C2=A0 =
-=C2=A0 =C2=A0 <b>+#define BDEV_DATA_START_DEFAULT =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0256 /* sectors */</b><br>=C2=
-=A0<br>=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0struct cache_sb {<br>=C2=A0 =C2=A0=
- =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 __u64 =C2=A0 =C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 csum;<br><div class=3D"gmail_extra">=
-<br></div><div class=3D"gmail_extra">The second arg of=C2=A0<b>__bread(bdev=
-, 16, SB_SIZE) =C2=A0</b>has unit of block size and it need be relocated to=
-o.</div><div class=3D"gmail_extra">To suitable this change, bcache-tools ne=
-ed be fixed up too.=C2=A0</div><div class=3D"gmail_extra">As for btree_node=
-_size issues about page size, expecting somebody to commit a patch.</div><d=
-iv class=3D"gmail_extra"><br></div><div class=3D"gmail_extra">Kent, maybe y=
-ou could use qemu to simulate ARM64 arch and there is always ubuntu image f=
-or ARM64 on the internet.=C2=A0</div><div class=3D"gmail_extra"><br><div cl=
-ass=3D"gmail_quote">2016-06-02 7:16 GMT+08:00 Kent Overstreet <span dir=3D"=
-ltr">&lt;<a href=3D"mailto:kent.overstreet@gmail.com" target=3D"_blank">ken=
-t.overstreet@gmail.com</a>&gt;</span>:<br><blockquote class=3D"gmail_quote"=
- style=3D"margin:0px 0px 0px 0.8ex;border-left-width:1px;border-left-color:=
-rgb(204,204,204);border-left-style:solid;padding-left:1ex"><div class=3D"">=
-<div class=3D"h5">On Wed, Jun 01, 2016 at 11:05:20AM -0700, Eric Wheeler wr=
-ote:<br>
-&gt; On Wed, 1 Jun 2016, Zhengyuan Liu wrote:<br>
-&gt;<br>
-&gt; &gt; Hi, I have created a mapped block device (bcach0) using make-bcac=
-he on<br>
-&gt; &gt; ARM64 server which has kernel enable 64K page size. However, the<=
-br>
-&gt; &gt; bcach0 disappeared after the server reboot and there is no or dir=
-ty<br>
-&gt; &gt; metadata on super block of both cache device and back device . Th=
-e<br>
-&gt; &gt; output of command=C2=A0 bcache-super-show was as bellow showed:<b=
-r>
-&gt; &gt;=C2=A0 =C2=A0 [root@master Linux-4.4-LTS-storage]# bcache-super-sh=
-ow=C2=A0 /dev/sdb<br>
-&gt; &gt;=C2=A0 =C2=A0 sb.magic bad magic<br>
-&gt; &gt;=C2=A0 =C2=A0 Invalid superblock (bad magic)<br>
-&gt; &gt; /dev/sdb was the backing device and cache device got bad magic to=
-o.<br>
-&gt; &gt;<br>
-&gt; &gt; I tried to traced the written process of super block in bcache so=
-urce<br>
-&gt; &gt; code and found that is the issue of PAGE_SIZE. It seems that the<=
-br>
-&gt; &gt; bcache=C2=A0 was designed only considering for 4K PAGE_SIZE and i=
-t works<br>
-&gt; &gt; right only on 4K PAGE_SIZE exactly. To make bcache work correctly=
- on<br>
-&gt; &gt; 64K PAGE_SIZE, I committed a patch as bellow showd:<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0diff --git a/drivers/md/bcache/super.c b/drive=
-rs/md/bcache/super.c<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0index 330cd6e..ef567cd 100644<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0--- a/drivers/md/bcache/super.c<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0+++ b/drivers/md/bcache/super.c<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0@@ -224,6 +224,12 @@ static void __write_super=
-(struct cache_sb<br>
-&gt; &gt; *sb, struct bio=C2=A0 =C2=A0 =C2=A0*bio<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0bio-&gt;bi_iter.bi_size=C2=A0 =
-=C2=A0 =3D SB_SIZE;<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0bch_bio_map(bio, NULL);<br>
-&gt; &gt;<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0+#ifdef CONFIG_ARM64_64K_PAGES<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0+=C2=A0 =C2=A0 =C2=A0 =C2=A0out =3D (struct ca=
-che_sb *)((char *)out + (SB_SECTOR&lt;&lt;9));<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0+=C2=A0 =C2=A0 =C2=A0 =C2=A0pr_debug(&quot;sb_=
-page_adress %x, sb_address %x,page_size<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0%d\n&quot;,page_address(b=
-io<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0+=C2=A0 =C2=A0 =C2=A0 =C2=A0bio-&gt;bi_io_vec[=
-0].bv_offset =3D (SB_SECTOR&lt;&lt;9);<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0+#endif<br>
-&gt; &gt;<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0out-&gt;offset=C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0=3D cpu_to_le64(sb-&gt;offset);<br>
-&gt; &gt;=C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0out-&gt;version=C2=A0 =C2=A0 =C2=
-=A0 =C2=A0 =C2=A0 =C2=A0 =3D cpu_to_le64(sb-&gt;version);<br>
-&gt; &gt;<br>
-&gt; &gt; Does it not recommend to use bcache on 64K PAGE_SIZE? or it only<=
-br>
-&gt; &gt; considers for 4K PAGE_SIZE for bcache currently?<br>
-&gt; &gt; Maybe it is more suitable=C2=A0 for me to redefine some macro suc=
-h as<br>
-&gt; &gt; SB_SECTOR, BDEV_DATA_START_DEFAULT to make bcache work correctly =
-on<br>
-&gt; &gt; both 64K PAGE_SIZE and 4K PAGE_SIZE.<br>
-&gt;<br>
-&gt; I think a patch to support arbitrary page size would be great.=C2=A0 C=
-an<br>
-&gt; you write the macros in terms of PAGE_SIZE or PAGE_SHIFT?<br>
-<br>
-</div></div>It shouldn&#39;t be referencing PAGE_SIZE at all - creating a n=
-ew macro<br>
-(BCH_SB_SIZE, perhaps) is the correct approach.<br>
-<br>
-The code that allocates the buffer for the superblock will have to be fixed=
-<br>
-too - right now it&#39;s probably using __get_free_page(), it should probab=
-ly just<br>
-be switched to kmalloc().<br>
-<span class=3D""><br>
-&gt; (Out of curiosity, what ARM64 hardware are you using?)<br>
-&gt;<br>
-&gt; Kent, this may affect bcachefs too.=C2=A0 Can you think of any other p=
-laces<br>
-&gt; that might have PAGE_SIZE!=3D4k issues?<br>
-<br>
-</span>Oh, there&#39;s probably a couple. There&#39;s probably some stuff t=
-hat&#39;ll break if<br>
-btree_node_size is smaller than PAGE_SIZE, too...<br>
-<br>
-If it turns out to be too much for Zhengyuan, I can probably fix upstream t=
-oo<br>
-(but I don&#39;t have any hardware to test with).<br>
-</blockquote></div><br></div></div>
+1. Used "=" instead of "|="  to setup bio bi_rw.
+2. Removed __get_request cmd_flags compat code.
+3. Merged initial dm related changes requested by Mike Snitzer.
+4. Fixed ubd kbuild errors in flush related patches.
+5. Fix 80 char col issues in several patches.
+6. Fix issue with one of the btrfs patches where it looks like I reverted
+a patch when trying to fix a merge error.
 
---94eb2c0433fe0e04060534438055--
+v2
+
+1. Dropped arguments from submit_bio, and had callers setup
+bio.
+2. Add REQ_OP_FLUSH for request_fn users and renamed REQ_FLUSH
+to REQ_PREFLUSH for make_request_fn users.
+3. Dropped bio/rq_data_dir functions, and added a op_is_write
+function instead.
 
 
---===============8834368123680032586==
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
+
+Diffstat for the set:
+
+Documentation/block/writeback_cache_control.txt |   28 +++---
+ Documentation/device-mapper/log-writes.txt      |   10 +-
+ arch/um/drivers/ubd_kern.c                      |    2
+ block/bio.c                                     |   20 ++--
+ block/blk-core.c                                |  105 +++++++++++------------
+ block/blk-flush.c                               |   25 ++---
+ block/blk-lib.c                                 |   37 ++++----
+ block/blk-map.c                                 |    2
+ block/blk-merge.c                               |   24 ++---
+ block/blk-mq.c                                  |   42 ++++-----
+ block/cfq-iosched.c                             |   55 +++++++-----
+ block/elevator.c                                |    7 -
+ drivers/ata/libata-scsi.c                       |    2
+ drivers/block/brd.c                             |    2
+ drivers/block/drbd/drbd_actlog.c                |   34 ++++---
+ drivers/block/drbd/drbd_bitmap.c                |   10 +-
+ drivers/block/drbd/drbd_int.h                   |    4
+ drivers/block/drbd/drbd_main.c                  |   22 ++--
+ drivers/block/drbd/drbd_protocol.h              |    2
+ drivers/block/drbd/drbd_receiver.c              |   38 +++++---
+ drivers/block/drbd/drbd_req.c                   |    2
+ drivers/block/drbd/drbd_worker.c                |    7 -
+ drivers/block/floppy.c                          |    5 -
+ drivers/block/loop.c                            |   16 +--
+ drivers/block/mtip32xx/mtip32xx.c               |    2
+ drivers/block/nbd.c                             |    4
+ drivers/block/osdblk.c                          |    2
+ drivers/block/pktcdvd.c                         |    4
+ drivers/block/ps3disk.c                         |    4
+ drivers/block/rbd.c                             |    4
+ drivers/block/rsxx/dma.c                        |    2
+ drivers/block/skd_main.c                        |    2
+ drivers/block/umem.c                            |    2
+ drivers/block/virtio_blk.c                      |    2
+ drivers/block/xen-blkback/blkback.c             |   31 ++++--
+ drivers/block/xen-blkfront.c                    |   67 +++++++--------
+ drivers/block/zram/zram_drv.c                   |    2
+ drivers/ide/ide-cd_ioctl.c                      |    3
+ drivers/ide/ide-disk.c                          |    2
+ drivers/ide/ide-floppy.c                        |    2
+ drivers/lightnvm/rrpc.c                         |    6 -
+ drivers/md/bcache/btree.c                       |    4
+ drivers/md/bcache/debug.c                       |   10 +-
+ drivers/md/bcache/io.c                          |    2
+ drivers/md/bcache/journal.c                     |   11 +-
+ drivers/md/bcache/movinggc.c                    |    2
+ drivers/md/bcache/request.c                     |   28 +++---
+ drivers/md/bcache/super.c                       |   28 +++---
+ drivers/md/bcache/writeback.c                   |    4
+ drivers/md/bitmap.c                             |    6 -
+ drivers/md/dm-bufio.c                           |   11 +-
+ drivers/md/dm-cache-target.c                    |   22 ++--
+ drivers/md/dm-crypt.c                           |   15 +--
+ drivers/md/dm-era-target.c                      |    4
+ drivers/md/dm-flakey.c                          |    2
+ drivers/md/dm-io.c                              |   65 +++++++-------
+ drivers/md/dm-kcopyd.c                          |   11 +-
+ drivers/md/dm-log-writes.c                      |   19 ++--
+ drivers/md/dm-log.c                             |    5 -
+ drivers/md/dm-raid.c                            |    5 -
+ drivers/md/dm-raid1.c                           |   24 +++--
+ drivers/md/dm-region-hash.c                     |    8 -
+ drivers/md/dm-snap-persistent.c                 |   24 ++---
+ drivers/md/dm-snap.c                            |    6 -
+ drivers/md/dm-stats.c                           |    9 --
+ drivers/md/dm-stripe.c                          |    6 -
+ drivers/md/dm-thin.c                            |   30 +++---
+ drivers/md/dm.c                                 |   45 +++++-----
+ drivers/md/linear.c                             |    4
+ drivers/md/md.c                                 |   24 +++--
+ drivers/md/md.h                                 |    5 -
+ drivers/md/multipath.c                          |    2
+ drivers/md/raid0.c                              |    4
+ drivers/md/raid1.c                              |   38 ++++----
+ drivers/md/raid10.c                             |   54 ++++++------
+ drivers/md/raid5-cache.c                        |   35 ++++---
+ drivers/md/raid5.c                              |   48 +++++-----
+ drivers/mmc/card/block.c                        |   13 +-
+ drivers/mmc/card/queue.c                        |    6 -
+ drivers/mmc/card/queue.h                        |    8 +
+ drivers/mtd/mtd_blkdevs.c                       |    4
+ drivers/nvme/host/core.c                        |    4
+ drivers/nvme/host/nvme.h                        |    4
+ drivers/scsi/osd/osd_initiator.c                |   12 +-
+ drivers/scsi/sd.c                               |   34 ++++---
+ drivers/staging/lustre/lustre/llite/lloop.c     |    6 -
+ drivers/target/target_core_iblock.c             |   53 ++++++-----
+ drivers/target/target_core_pscsi.c              |    2
+ fs/btrfs/check-integrity.c                      |   73 ++++++++--------
+ fs/btrfs/check-integrity.h                      |    6 -
+ fs/btrfs/compression.c                          |   17 ++-
+ fs/btrfs/ctree.h                                |    2
+ fs/btrfs/disk-io.c                              |   45 ++++------
+ fs/btrfs/disk-io.h                              |    2
+ fs/btrfs/extent-tree.c                          |    2
+ fs/btrfs/extent_io.c                            |  107 +++++++++++-------------
+ fs/btrfs/extent_io.h                            |    8 -
+ fs/btrfs/inode.c                                |   74 ++++++++--------
+ fs/btrfs/raid56.c                               |   27 +++---
+ fs/btrfs/scrub.c                                |   25 +++--
+ fs/btrfs/volumes.c                              |   95 +++++++++++----------
+ fs/btrfs/volumes.h                              |    6 -
+ fs/buffer.c                                     |   75 ++++++++--------
+ fs/crypto/crypto.c                              |    5 -
+ fs/direct-io.c                                  |   37 ++++----
+ fs/exofs/ore.c                                  |    2
+ fs/ext4/balloc.c                                |    2
+ fs/ext4/ialloc.c                                |    2
+ fs/ext4/inode.c                                 |    8 -
+ fs/ext4/mmp.c                                   |    4
+ fs/ext4/namei.c                                 |    3
+ fs/ext4/page-io.c                               |    9 +-
+ fs/ext4/readpage.c                              |   11 +-
+ fs/ext4/super.c                                 |    2
+ fs/f2fs/checkpoint.c                            |   10 +-
+ fs/f2fs/data.c                                  |   51 ++++++-----
+ fs/f2fs/f2fs.h                                  |    5 -
+ fs/f2fs/gc.c                                    |    9 +-
+ fs/f2fs/inline.c                                |    3
+ fs/f2fs/node.c                                  |    8 +
+ fs/f2fs/segment.c                               |   18 ++--
+ fs/f2fs/trace.c                                 |    7 -
+ fs/fat/misc.c                                   |    2
+ fs/gfs2/bmap.c                                  |    4
+ fs/gfs2/dir.c                                   |    2
+ fs/gfs2/log.c                                   |    8 -
+ fs/gfs2/lops.c                                  |   14 +--
+ fs/gfs2/lops.h                                  |    2
+ fs/gfs2/meta_io.c                               |   20 ++--
+ fs/gfs2/ops_fstype.c                            |    5 -
+ fs/gfs2/quota.c                                 |    2
+ fs/hfsplus/hfsplus_fs.h                         |    2
+ fs/hfsplus/part_tbl.c                           |    5 -
+ fs/hfsplus/super.c                              |    6 -
+ fs/hfsplus/wrapper.c                            |   17 ++-
+ fs/isofs/compress.c                             |    2
+ fs/jbd2/commit.c                                |    6 -
+ fs/jbd2/journal.c                               |   12 +-
+ fs/jbd2/recovery.c                              |    4
+ fs/jfs/jfs_logmgr.c                             |   10 +-
+ fs/jfs/jfs_metapage.c                           |   14 +--
+ fs/logfs/dev_bdev.c                             |   27 +++---
+ fs/mpage.c                                      |   43 ++++-----
+ fs/nfs/blocklayout/blocklayout.c                |   26 +++--
+ fs/nilfs2/btnode.c                              |    6 -
+ fs/nilfs2/btnode.h                              |    2
+ fs/nilfs2/btree.c                               |    6 -
+ fs/nilfs2/gcinode.c                             |    5 -
+ fs/nilfs2/mdt.c                                 |   11 +-
+ fs/nilfs2/segbuf.c                              |   20 ++--
+ fs/ntfs/aops.c                                  |    6 -
+ fs/ntfs/compress.c                              |    2
+ fs/ntfs/file.c                                  |    2
+ fs/ntfs/logfile.c                               |    2
+ fs/ntfs/mft.c                                   |    4
+ fs/ocfs2/aops.c                                 |    2
+ fs/ocfs2/buffer_head_io.c                       |    8 -
+ fs/ocfs2/cluster/heartbeat.c                    |   22 ++--
+ fs/ocfs2/super.c                                |    2
+ fs/reiserfs/inode.c                             |    4
+ fs/reiserfs/journal.c                           |   14 +--
+ fs/reiserfs/stree.c                             |    4
+ fs/reiserfs/super.c                             |    2
+ fs/squashfs/block.c                             |    4
+ fs/udf/dir.c                                    |    2
+ fs/udf/directory.c                              |    2
+ fs/udf/inode.c                                  |    2
+ fs/ufs/balloc.c                                 |    2
+ fs/ufs/util.c                                   |    2
+ fs/xfs/xfs_aops.c                               |   27 +++---
+ fs/xfs/xfs_buf.c                                |   32 +++----
+ include/linux/bio.h                             |   37 +++-----
+ include/linux/blk-cgroup.h                      |   15 +--
+ include/linux/blk_types.h                       |   94 +++++++++++----------
+ include/linux/blkdev.h                          |   56 ++++++++----
+ include/linux/blktrace_api.h                    |    2
+ include/linux/buffer_head.h                     |   11 +-
+ include/linux/dm-io.h                           |    3
+ include/linux/elevator.h                        |    4
+ include/linux/fs.h                              |   71 +++++++++------
+ include/trace/events/bcache.h                   |   12 +-
+ include/trace/events/block.h                    |   31 ++++--
+ include/trace/events/f2fs.h                     |   37 ++++----
+ kernel/power/swap.c                             |   35 ++++---
+ kernel/trace/blktrace.c                         |   72 +++++++++-------
+ mm/page_io.c                                    |   14 +--
+ 186 files changed, 1679 insertions(+), 1413 deletions(-)
 
 
---===============8834368123680032586==--
+
+_______________________________________________
+xfs mailing list
+xfs@oss.sgi.com
+http://oss.sgi.com/mailman/listinfo/xfs
