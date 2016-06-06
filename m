@@ -1,89 +1,52 @@
-From: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 28/45] target: use bio op accessors
-Date: Mon, 6 Jun 2016 17:43:28 +0200
-Message-ID: <57559A20.10506@suse.de>
-References: <1465155145-10812-1-git-send-email-mchristi@redhat.com>
- <1465155145-10812-29-git-send-email-mchristi@redhat.com>
- <57551C57.5090507@suse.de> <57559973.1020105@redhat.com>
+From: Martin McClure <martin.mcclure@gemtalksystems.com>
+Subject: Can a bcachefs filesystem be exported via NFS?
+Date: Mon, 6 Jun 2016 14:23:22 -0700
+Message-ID: <5755E9CA.4060609@gemtalksystems.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252;
-	format=flowed
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:42445 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608AbcFFPnq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 6 Jun 2016 11:43:46 -0400
-In-Reply-To: <57559973.1020105@redhat.com>
+Received: from 50-240-19-49-static.hfc.comcastbusiness.net ([50.240.19.49]:42391
+	"EHLO office-ns.gemtalksystems.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753458AbcFFVXZ (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 6 Jun 2016 17:23:25 -0400
+Received: from [10.94.141.27] (daytank.gemtalksystems.com [10.94.141.27])
+	by office-ns.gemtalksystems.com (Postfix) with ESMTP id 997C120373
+	for <linux-bcache@vger.kernel.org>; Mon,  6 Jun 2016 14:23:22 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Mike Christie <mchristi@redhat.com>, linux-f2fs-devel@lists.sourceforge.net, linux-ext4@vger.kernel.org, konrad.wilk@oracle.com, drbd-dev@lists.linbit.com, philipp.reisner@linbit.com, lars.ellenberg@linbit.com, linux-raid@vger.kernel.org, dm-devel@redhat.com, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org, linux-mtd@lists.infradead.org, target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org, osd-dev@open-osd.org, xfs@oss.sgi.com, ocfs2-devel@oss.oracle.com
+To: linux-bcache@vger.kernel.org
 
-On 06/06/2016 05:40 PM, Mike Christie wrote:
-> On 06/06/2016 01:46 AM, Hannes Reinecke wrote:
->> On 06/05/2016 09:32 PM, mchristi@redhat.com wrote:
->>> From: Mike Christie <mchristi@redhat.com>
->>>
->>> Separate the op from the rq_flag_bits and have the target layer
->>> set/get the bio using bio_set_op_attrs/bio_op.
->>>
->>> Signed-off-by: Mike Christie <mchristi@redhat.com>
->>> ---
->>>   drivers/target/target_core_iblock.c | 29 ++++++++++++++----------=
------
->>>   drivers/target/target_core_pscsi.c  |  2 +-
->>>   2 files changed, 15 insertions(+), 16 deletions(-)
->>>
->>> diff --git a/drivers/target/target_core_iblock.c b/drivers/target/t=
-arget_core_iblock.c
->>> index c25109c..22af12f 100644
->>> --- a/drivers/target/target_core_iblock.c
->>> +++ b/drivers/target/target_core_iblock.c
->> [ .. ]
->>> @@ -689,18 +690,15 @@ iblock_execute_rw(struct se_cmd *cmd, struct =
-scatterlist *sgl, u32 sgl_nents,
->>>   		 * Force writethrough using WRITE_FUA if a volatile write cache
->>>   		 * is not enabled, or if initiator set the Force Unit Access bi=
-t.
->>>   		 */
->>> +		op =3D REQ_OP_WRITE;
->>>   		if (test_bit(QUEUE_FLAG_FUA, &q->queue_flags)) {
->>>   			if (cmd->se_cmd_flags & SCF_FUA)
->>> -				rw =3D WRITE_FUA;
->>> +				op_flags =3D WRITE_FUA;
->>>   			else if (!test_bit(QUEUE_FLAG_WC, &q->queue_flags))
->>> -				rw =3D WRITE_FUA;
->>> -			else
->>> -				rw =3D WRITE;
->>> -		} else {
->>> -			rw =3D WRITE;
->>> +				op_flags =3D WRITE_FUA;
->>>   		}
->> Wrong intendation.
->
-> It should be ok. That line is for the QUEUE_FLAG_WC test. We end up w=
-ith:
->
-> op =3D REQ_OP_WRITE;
-> if (test_bit(QUEUE_FLAG_FUA, &q->queue_flags)) {
-> 	if (cmd->se_cmd_flags & SCF_FUA)
-> 		op_flags =3D WRITE_FUA;
-> 	else if (!test_bit(QUEUE_FLAG_WC, &q->queue_flags))
-> 		op_flags =3D WRITE_FUA;
-> }
->
->
->
->
-Indeed, you are correct.
+Can a bcachefs filesystem be exported via NFS?
 
-Reviewed-by: Hannes Reinecke <hare@suse.com>
+I have a bcachefs filesystem mounted on /meteor4. When I try to export
+it, I get:
 
-Cheers,
+---
+root@meteor:~# service nfs-kernel-server restart
+ * Stopping NFS kernel daemon   [ OK ]
+ * Unexporting directories for NFS kernel daemon...      [ OK ]
+ * Exporting directories for NFS kernel daemon...
+exportfs: /meteor4 does not support NFS export
+---
 
-Hannes
---=20
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 N=FCrnberg
-GF: J. Hawn, J. Guild, F. Imend=F6rffer, HRB 16746 (AG N=FCrnberg)
+and the system log says:
+
+Jun  6 14:11:28 meteor rpc.mountd[31541]: /meteor3 and /meteor4 have
+same filehandle for *, using first
+
+Not sure what this is about. /meteor3 is a vanilla ext4 partition.
+
+If I try to access /meteor4 from another machine via NFS, Meteor's log
+shows this:
+
+Jun  6 14:15:10 meteor rpc.mountd[31541]: Cannot export /meteor4,
+possibly unsupported filesystem or fsid= required
+
+So I'm guessing it's not yet supported, but wanted to check in case I'm
+doing something wrong.
+
+Thanks,
+
+-Martin
