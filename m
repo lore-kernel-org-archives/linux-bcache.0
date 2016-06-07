@@ -1,52 +1,57 @@
-From: Martin McClure <martin.mcclure@gemtalksystems.com>
-Subject: Can a bcachefs filesystem be exported via NFS?
-Date: Mon, 6 Jun 2016 14:23:22 -0700
-Message-ID: <5755E9CA.4060609@gemtalksystems.com>
+From: Bhaktipriya Shridhar <bhaktipriya96@gmail.com>
+Subject: [PATCH] bcache: Remove deprecated create_workqueue
+Date: Wed, 8 Jun 2016 01:57:19 +0530
+Message-ID: <20160607202719.GA16208@Karyakshetra>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 50-240-19-49-static.hfc.comcastbusiness.net ([50.240.19.49]:42391
-	"EHLO office-ns.gemtalksystems.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753458AbcFFVXZ (ORCPT
+Received: from mail-pa0-f68.google.com ([209.85.220.68]:35610 "EHLO
+	mail-pa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422889AbcFGU10 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Mon, 6 Jun 2016 17:23:25 -0400
-Received: from [10.94.141.27] (daytank.gemtalksystems.com [10.94.141.27])
-	by office-ns.gemtalksystems.com (Postfix) with ESMTP id 997C120373
-	for <linux-bcache@vger.kernel.org>; Mon,  6 Jun 2016 14:23:22 -0700 (PDT)
+	Tue, 7 Jun 2016 16:27:26 -0400
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Jens Axboe <axboe@fb.com>, Eric Wheeler <git@linux.ewheeler.net>, Zheng Liu <wenqing.lz@taobao.com>, Hannes Reinecke <hare@suse.de>, Jeff Moyer <jmoyer@redhat.com>, Pekka Enberg <penberg@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Tejun Heo <tj@kernel.org>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
 
-Can a bcachefs filesystem be exported via NFS?
+alloc_workqueue replaces deprecated create_workqueue().
 
-I have a bcachefs filesystem mounted on /meteor4. When I try to export
-it, I get:
+Dedicated workqueues have been used since bcache_wq and moving_gc_wq
+are workqueues for writes and are being used on a memory reclaim path.
+WQ_MEM_RECLAIM has been set to ensure forward progress under memory
+pressure.
+Since there are only a fixed number of work items, explicit concurrency
+limit is unnecessary here.
 
+Signed-off-by: Bhaktipriya Shridhar <bhaktipriya96@gmail.com>
 ---
-root@meteor:~# service nfs-kernel-server restart
- * Stopping NFS kernel daemon   [ OK ]
- * Unexporting directories for NFS kernel daemon...      [ OK ]
- * Exporting directories for NFS kernel daemon...
-exportfs: /meteor4 does not support NFS export
----
+ drivers/md/bcache/super.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-and the system log says:
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index f5dbb4e..055c869 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1518,7 +1518,8 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 	    !(c->fill_iter = mempool_create_kmalloc_pool(1, iter_size)) ||
+ 	    !(c->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
+ 	    !(c->uuids = alloc_bucket_pages(GFP_KERNEL, c)) ||
+-	    !(c->moving_gc_wq = create_workqueue("bcache_gc")) ||
++	    !(c->moving_gc_wq = alloc_workqueue("bcache_gc",
++						WQ_MEM_RECLAIM, 0)) ||
+ 	    bch_journal_alloc(c) ||
+ 	    bch_btree_cache_alloc(c) ||
+ 	    bch_open_buckets_alloc(c) ||
+@@ -2097,7 +2098,7 @@ static int __init bcache_init(void)
+ 		return bcache_major;
+ 	}
 
-Jun  6 14:11:28 meteor rpc.mountd[31541]: /meteor3 and /meteor4 have
-same filehandle for *, using first
-
-Not sure what this is about. /meteor3 is a vanilla ext4 partition.
-
-If I try to access /meteor4 from another machine via NFS, Meteor's log
-shows this:
-
-Jun  6 14:15:10 meteor rpc.mountd[31541]: Cannot export /meteor4,
-possibly unsupported filesystem or fsid= required
-
-So I'm guessing it's not yet supported, but wanted to check in case I'm
-doing something wrong.
-
-Thanks,
-
--Martin
+-	if (!(bcache_wq = create_workqueue("bcache")) ||
++	if (!(bcache_wq = alloc_workqueue("bcache", WQ_MEM_RECLAIM, 0)) ||
+ 	    !(bcache_kobj = kobject_create_and_add("bcache", fs_kobj)) ||
+ 	    sysfs_create_files(bcache_kobj, files) ||
+ 	    bch_request_init() ||
+--
+2.1.4
