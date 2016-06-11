@@ -1,38 +1,38 @@
-From: Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PULL v4.6-rc1] bcache: documentation updates
-Date: Thu, 9 Jun 2016 13:30:56 -0600
-Message-ID: <20160609133056.7c5b5220@lwn.net>
-References: <20160312050003.GN26973@merlins.org>
-	<alpine.LRH.2.11.1603120706310.30893@mail.ewheeler.net>
-	<alpine.LRH.2.11.1603290106450.13440@mail.ewheeler.net>
-	<CAKhhfD7C+CAnUEXfUX=g3bT=TX3QkyLvQnh0eWNJxcK4MeYnHA@mail.gmail.com>
-	<alpine.LRH.2.11.1604130636080.26685@mail.ewheeler.net>
-	<20160530144309.GC21737@merlins.org>
-	<20160531165508.215100e6@lwn.net>
-	<20160531230216.GE23248@merlins.org>
+From: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] bcache: Remove deprecated create_workqueue
+Date: Sat, 11 Jun 2016 17:52:35 -0500
+Message-ID: <20160611225202.GD31708@htj.duckdns.org>
+References: <20160607202719.GA16208@Karyakshetra>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from tex.lwn.net ([70.33.254.29]:58983 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756AbcFITa7 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 9 Jun 2016 15:30:59 -0400
-In-Reply-To: <20160531230216.GE23248@merlins.org>
+Received: from mail-io0-f193.google.com ([209.85.223.193]:33551 "EHLO
+	mail-io0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111AbcFKWwm (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Sat, 11 Jun 2016 18:52:42 -0400
+Content-Disposition: inline
+In-Reply-To: <20160607202719.GA16208@Karyakshetra>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Marc MERLIN <marc@merlins.org>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org, linux-doc@vger.kernel.org, kent.overstreet@gmail.com
+To: Bhaktipriya Shridhar <bhaktipriya96@gmail.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Jens Axboe <axboe@fb.com>, Eric Wheeler <git@linux.ewheeler.net>, Zheng Liu <wenqing.lz@taobao.com>, Hannes Reinecke <hare@suse.de>, Jeff Moyer <jmoyer@redhat.com>, Pekka Enberg <penberg@kernel.org>, Al Viro <viro@ZenIV.linux.org.uk>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Tue, 31 May 2016 16:02:16 -0700
-Marc MERLIN <marc@merlins.org> wrote:
+On Wed, Jun 08, 2016 at 01:57:19AM +0530, Bhaktipriya Shridhar wrote:
+> alloc_workqueue replaces deprecated create_workqueue().
+> 
+> Dedicated workqueues have been used since bcache_wq and moving_gc_wq
+> are workqueues for writes and are being used on a memory reclaim path.
+> WQ_MEM_RECLAIM has been set to ensure forward progress under memory
+> pressure.
+> Since there are only a fixed number of work items, explicit concurrency
+> limit is unnecessary here.
+> 
+> Signed-off-by: Bhaktipriya Shridhar <bhaktipriya96@gmail.com>
 
-> > I don't think I ever saw this, was it sent to me?  
->  
-> No I think Eric Emailed linux-doc@vger.kernel.org, instead of you directly.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Eric, can you resend the patches to me, and I'll get them applied?
+Thanks.
 
-Thanks,
-
-jon
+-- 
+tejun
