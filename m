@@ -1,78 +1,49 @@
-From: Eric Wheeler <bcache@linux.ewheeler.net>
-Subject: [PATCH] bcache: register_bcache(): call blkdev_put() when
- cache_alloc() fails
-Date: Fri, 17 Jun 2016 15:01:54 -0700
-Message-ID: <S1751103AbcFQW3k/20160617222940Z+635@vger.kernel.org>
+From: Yijing Wang <wangyijing@huawei.com>
+Subject: [RESEND PATCH 1/3] bcache: Remove redundant parameter for cache_alloc()
+Date: Wed, 22 Jun 2016 10:10:46 +0800
+Message-ID: <1466561446-30443-1-git-send-email-wangyijing@huawei.com>
+Mime-Version: 1.0
+Content-Type: text/plain
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:50071 "EHLO mail.ewheeler.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750840AbcFQW3k (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 17 Jun 2016 18:29:40 -0400
-Received: from localhost (localhost [127.0.0.1])
-	by mail.ewheeler.net (Postfix) with ESMTP id 7F1ADA0F4B
-	for <linux-bcache@vger.kernel.org>; Fri, 17 Jun 2016 15:29:39 -0700 (PDT)
-Received: from mail.ewheeler.net ([127.0.0.1])
-	by localhost (mail.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
-	with LMTP id IU6zR1o-rBHy for <linux-bcache@vger.kernel.org>;
-	Fri, 17 Jun 2016 15:29:39 -0700 (PDT)
-Received: from 23-95-35-21-host.colocrossing.com (unknown [23.95.35.21])
-	(using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
-	(No client certificate requested)
-	by mail.ewheeler.net (Postfix) with ESMTPSA id 11251A0F4A
-	for <linux-bcache@vger.kernel.org>; Fri, 17 Jun 2016 15:29:39 -0700 (PDT)
+Received: from szxga03-in.huawei.com ([119.145.14.66]:13403 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751870AbcFVCIG (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Tue, 21 Jun 2016 22:08:06 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: axboe@fb.com, Kent Overstreet <kent.overstreet@gmail.com>
+Cc: Eric Wheeler <git@linux.ewheeler.net>, Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, Yijing Wang <wangyijing@huawei.com>
 
-register_cache() is supposed to return an error string on error so that
-register_bcache() will will blkdev_put and cleanup other user counters,
-but it does not set 'char *err' when cache_alloc() fails (eg, due to
-memory pressure) and thus register_bcache() performs no cleanup.
+Cache_sb is not used in cache_alloc, and we have copied
+sb info to cache->sb already, remove it.
 
-register_bcache() <----------\  <- no jump to err_close, no blkdev_put()
-   |                         |
-   +->register_cache()       |  <- fails to set char *err
-         |                   |
-         +->cache_alloc() ---/  <- returns error
-
-This patch sets `char *err` for this failure case so that register_cache()
-will cause register_bcache() to correctly jump to err_close and do
-cleanup.
-
-Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: stable@vger.kernel.org
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/md/bcache/super.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/md/bcache/super.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index f5dbb4e..9191a3c 100644
+index f5dbb4e..aecaace 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1842,7 +1842,7 @@ static int register_cache(struct cache_sb *sb, struct page *sb_page,
- 				struct block_device *bdev, struct cache *ca)
- {
- 	char name[BDEVNAME_SIZE];
--	const char *err = NULL;
-+	const char *err = NULL; /* must be set for any error case */
- 	int ret = 0;
+@@ -1803,7 +1803,7 @@ void bch_cache_release(struct kobject *kobj)
+ 	module_put(THIS_MODULE);
+ }
  
- 	memcpy(&ca->sb, sb, sizeof(struct cache_sb));
-@@ -1859,8 +1859,13 @@ static int register_cache(struct cache_sb *sb, struct page *sb_page,
+-static int cache_alloc(struct cache_sb *sb, struct cache *ca)
++static int cache_alloc(struct cache *ca)
+ {
+ 	size_t free;
+ 	struct bucket *b;
+@@ -1858,7 +1858,7 @@ static int register_cache(struct cache_sb *sb, struct page *sb_page,
+ 	if (blk_queue_discard(bdev_get_queue(ca->bdev)))
  		ca->discard = CACHE_DISCARD(&ca->sb);
  
- 	ret = cache_alloc(sb, ca);
--	if (ret != 0)
-+	if (ret != 0) {
-+		if (ret == -ENOMEM)
-+			err = "cache_alloc(): -ENOMEM";
-+		else
-+			err = "cache_alloc(): unknown error";
+-	ret = cache_alloc(sb, ca);
++	ret = cache_alloc(ca);
+ 	if (ret != 0)
  		goto err;
-+	}
  
- 	if (kobject_add(&ca->kobj, &part_to_dev(bdev->bd_part)->kobj, "bcache")) {
- 		err = "error calling kobject_add";
 -- 
-1.8.3.1
+1.7.1
