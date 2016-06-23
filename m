@@ -1,36 +1,35 @@
 From: Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH 1/3] bcache: documentation updates and corrections
-Date: Thu, 23 Jun 2016 07:57:48 -0600
-Message-ID: <20160623075748.3973d875@lwn.net>
-References: <S1754502AbcFPR0j/20160616172639Z+54@vger.kernel.org>
+Subject: Re: [PATCH 2/3] bcache: documentation formatting, edited for
+ clarity, stripe alignment notes
+Date: Thu, 23 Jun 2016 07:59:55 -0600
+Message-ID: <20160623075955.57e3e5fc@lwn.net>
+References: <S1754332AbcFPR0k/20160616172640Z+1976@vger.kernel.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from tex.lwn.net ([70.33.254.29]:43427 "EHLO vena.lwn.net"
+Received: from tex.lwn.net ([70.33.254.29]:43453 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887AbcFWN54 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-	Thu, 23 Jun 2016 09:57:56 -0400
-In-Reply-To: <S1754502AbcFPR0j/20160616172639Z+54@vger.kernel.org>
+	id S1750954AbcFWN75 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 23 Jun 2016 09:59:57 -0400
+In-Reply-To: <S1754332AbcFPR0k/20160616172640Z+1976@vger.kernel.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Marc MERLIN <marc@merlins.org>
+To: Eric Wheeler <git@linux.ewheeler.net>
 Cc: linux-bcache@vger.kernel.org
 
-On Fri, 11 Mar 2016 23:04:19 -0800
-Marc MERLIN <marc@merlins.org> wrote:
+On Fri, 11 Mar 2016 23:43:47 -0800
+Eric Wheeler <git@linux.ewheeler.net> wrote:
 
-> Bcache documentation updates:
-> - Added new HOWTO/COOKBOOK section
-> - fixed a few typos
-> - /sys/block/bcache0/cache_mode is /sys/block/bcache0/bcache/cache_mode
-> 
-> Signed-off-by: Marc MERLIN <marc@merlins.org>
+> Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
+> Cc: Marc MERLIN <marc@merlins.org>
 > Cc: stable@vger.kernel.org
+> ---
+>  Documentation/bcache.txt | 161 ++++++++++++++++++++++++++++-------------------
+>  1 file changed, 97 insertions(+), 64 deletions(-)
 
-Applied (finally!) to the docs tree.  I took out the stable tag, though;
-I don't think it really meets the stable tree rules.
+Applied to the docs tree (without stable tag), thanks.
 
-Thanks,
+Note that 3/3 isn't really something I can take through the docs tree.
 
 jon
