@@ -1,50 +1,145 @@
-From: Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH v2 1/3] bcache: Remove redundant parameter for cache_alloc()
-Date: Fri, 1 Jul 2016 17:37:46 +0800
-Message-ID: <1467365866-16290-1-git-send-email-wangyijing@huawei.com>
+From: Ming Lei <ming.lei@canonical.com>
+Subject: Re: [RFC] block: fix blk_queue_split() resource exhaustion
+Date: Sat, 2 Jul 2016 18:03:22 +0800
+Message-ID: <CACVXFVPK_g3uSVynnA=4-F3nPPoP9U_CgQRf7-tFP4sziNBD8A@mail.gmail.com>
+References: <1466583730-28595-1-git-send-email-lars.ellenberg@linbit.com>
+ <CACVXFVOtzcPpmg9Z_P6xN99dW=Sb_cCQNd-VcP0s5Nk0yHbwXQ@mail.gmail.com>
+ <20160624142711.GF3239@soda.linbit> <CACVXFVMtMi9WXYQLa3_XZi7W8ZsJe1GnnTLX+7tRMhFAMUSHtA@mail.gmail.com>
+ <20160628084534.GI3239@soda.linbit>
 Mime-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from szxga03-in.huawei.com ([119.145.14.66]:27998 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbcGAJjz (ORCPT
+Received: from youngberry.canonical.com ([91.189.89.112]:60090 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939AbcGBKD0 (ORCPT
 	<rfc822;linux-bcache@vger.kernel.org>);
-	Fri, 1 Jul 2016 05:39:55 -0400
+	Sat, 2 Jul 2016 06:03:26 -0400
+In-Reply-To: <20160628084534.GI3239@soda.linbit>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: axboe@fb.com, Kent Overstreet <kent.overstreet@gmail.com>
-Cc: Eric Wheeler <git@linux.ewheeler.net>, Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, Yijing Wang <wangyijing@huawei.com>
+To: Lars Ellenberg <lars.ellenberg@linbit.com>
+Cc: linux-block <linux-block@vger.kernel.org>, Roland Kammerer <roland.kammerer@linbit.com>, Jens Axboe <axboe@kernel.dk>, NeilBrown <neilb@suse.com>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, "open list:DEVICE-MAPPER (LVM)" <dm-devel@redhat.com>, Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>, Takashi Iwai <tiwai@suse.de>, Jiri Kosina <jkosina@suse.cz>, Zheng Liu <gnehzuil.liu@gmail.com>, Keith Busch <keith.busch@intel.com>, "Martin K. Petersen" <martin.petersen@oracle.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>, "open list:SOFTWARE RAID (Multiple Disks) SUPPORT" <linux-raid@vger.kernel.org>
 
-Cache_sb is not used in cache_alloc, and we have copied
-sb info to cache->sb already, remove it.
+On Tue, Jun 28, 2016 at 4:45 PM, Lars Ellenberg
+<lars.ellenberg@linbit.com> wrote:
+> On Sat, Jun 25, 2016 at 05:30:29PM +0800, Ming Lei wrote:
+>> On Fri, Jun 24, 2016 at 10:27 PM, Lars Ellenberg
+>> <lars.ellenberg@linbit.com> wrote:
+>> > On Fri, Jun 24, 2016 at 07:36:57PM +0800, Ming Lei wrote:
+>> >> >
+>> >> > This is not a theoretical problem.
+>> >> > At least int DRBD, and an unfortunately high IO concurrency wrt. the
+>> >> > "max-buffers" setting, without this patch we have a reproducible deadlock.
+>> >>
+>> >> Is there any log about the deadlock? And is there any lockdep warning
+>> >> if it is enabled?
+>> >
+>> > In DRBD, to avoid potentially very long internal queues as we wait for
+>> > our replication peer device and local backend, we limit the number of
+>> > in-flight bios we accept, and block in our ->make_request_fn() if that
+>> > number exceeds a configured watermark ("max-buffers").
+>> >
+>> > Works fine, as long as we could assume that once our make_request_fn()
+>> > returns, any bios we "recursively" submitted against the local backend
+>> > would be dispatched. Which used to be the case.
+>> >
+>> > commit 54efd50 block: make generic_make_request handle arbitrarily sized bios
+>> > introduced blk_queue_split(), which will split any bio that is
+>> > violating the queue limits into a smaller piece to be processed
+>> > right away, and queue the "rest" on current->bio_list to be
+>> > processed by the iteration in generic_make_request() once the
+>> > current ->make_request_fn() returns.
+>> >
+>> > Before that, any user was supposed to go through bio_add_page(),
+>> > which would call our merge bvec function, and that should already
+>> > be sufficient to not violate queue limits.
+>> >
+>> > Previously, typically the next in line bio to be processed would
+>> > be the cloned one we passed down to our backend device, which in
+>> > case of further stacking devices (e.g. logical volume, raid1 or
+>> > similar) may again push further bios on that list.
+>> > All of which would simply be processed in turn.
+>>
+>> Could you clarify if the issue is triggered in drbd without dm/md involved?
+>> Or the issue is always triggered with dm/md over drbd?
+>>
+>> As Mike mentioned, there is one known issue with dm-snapshot.
+>
+>
+> The issue can always be triggered, even if only DRBD is involved.
+>
+>> If your ->make_request_fn() is called several times, each time
+>> at least you should dispatch one bio returnd from blk_queue_split(),
+>> so I don't understand why even one bio isn't dispatched out.
+>
+> I'll try to "visualize" the mechanics of "my" deadlock here.
+>
+> Just to clarify the effect, assume we had a driver that
+> for $reasons would limit the number of in-flight IO to
+> one single bio.
+>
+> === before bio_queue_split()
+>
+> Previously, if something would want to read some range of blocks,
+> it would allocate a bio, call bio_add_page() a number of times,
+> and once the bio was "full", call generic_make_request(),
+> and fill the next bio, then submit that one.
+>
+> Stacking: "single_in_flight" (q1) -> "sda" (q2)
+>
+>   generic_make_request(bio)     current->bio_list       in-flight
+>    B_orig_1                             NULL            0
+>     q1->make_request_fn(B_orig_1)       empty
+>                                                         1
+>         recursive call, queues:         B_1_remapped
+>     iterative call:
+>     q2->make_request_fn(B_1_remapped)   empty
+>                 -> actually dispatched to hardware
+>   return of generic_make_request(B_orig_1).
+>    B_orig_2
+>     q1->make_request_fn(B_orig_1)
+>                                                         1
+>         blocks, waits for in-flight to drop
+>         ...
+>         completion of B_orig_1                          0
+>
+>         recursive call, queues:         B_2_remapped
+>     iterative call:
+>     q2->make_request_fn(B_2_remapped)   empty
+>                 -> actually dispatched to hardware
+>   return of generic_make_request(B_orig_2).
+>
+>
+> === with bio_queue_split()
+>
+> Now, uppser layers buils one large bio.
+>
+>   generic_make_request(bio)     current->bio_list       in-flight
+>    B_orig                               NULL            0
+>     q1->make_request_fn(B_orig)         empty
+>     blk_queue_split(B_orig) splits into
+>                                         B_orig_r1
+>     B_orig_s1
+>                                                         1
+>         recursive call, queues:         B_orig_r1, B_s1_remapped
+>     iterative call:
+>     q1->make_request_fn(B_orig_r1)      B_s1_remapped
+>         blocks, waits for in-flight to drop
+>         ...
+>         which never happens,
+>         because B_s1_remapped has not even been submitted to q2 yet,
+>         let alone dispatched to hardware.
+>
+>
+> Obviously we don't limit ourselves to just one request, but with larger
+> incoming bios, with the number of times we split them, with the number
+> of stacking layers below us, or even layers below us that *also*
+> call blk_queue_split (or equivalent open coded clone and split)
+> themselves to split even further, things get worse.
 
-Reviewed-by: Coly Li <colyli@suse.de>
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/md/bcache/super.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Thanks for your so detailed explanation!
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index f5dbb4e..aecaace 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1803,7 +1803,7 @@ void bch_cache_release(struct kobject *kobj)
- 	module_put(THIS_MODULE);
- }
- 
--static int cache_alloc(struct cache_sb *sb, struct cache *ca)
-+static int cache_alloc(struct cache *ca)
- {
- 	size_t free;
- 	struct bucket *b;
-@@ -1858,7 +1858,7 @@ static int register_cache(struct cache_sb *sb, struct page *sb_page,
- 	if (blk_queue_discard(bdev_get_queue(ca->bdev)))
- 		ca->discard = CACHE_DISCARD(&ca->sb);
- 
--	ret = cache_alloc(sb, ca);
-+	ret = cache_alloc(ca);
- 	if (ret != 0)
- 		goto err;
- 
--- 
-1.7.1
+Now I believe the issue is really from blk_queue_split(), and I will comment
+on your patch later.
+
+thanks,
