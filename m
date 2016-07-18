@@ -1,188 +1,96 @@
-From: keld@keldix.com
-Subject: Re: Recover filenames from failed RAID0
-Date: Mon, 18 Jul 2016 11:37:41 +0200
-Message-ID: <20160718093740.GB24856@www5.open-std.org>
-References: <CAAVC+N5m74MyDqZamHgy71vRMhcEY8w_OkiG-GMQKU=JG-QkxA@mail.gmail.com> <CAAVC+N78o675MpkJN=VO_zZhh7ePer1zU-ePLJi4eNH04ih3mw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-raid-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <CAAVC+N78o675MpkJN=VO_zZhh7ePer1zU-ePLJi4eNH04ih3mw@mail.gmail.com>
-Sender: linux-raid-owner@vger.kernel.org
-To: Michel Dubois <michel.dubois.mtl@gmail.com>
-Cc: linux-raid@vger.kernel.org, Lars Ellenberg <lars.ellenberg@linbit.com>, Jens Axboe <axboe@kernel.dk>, linux-block@vger.kernel.org, Keith Busch <keith.busch@intel.com>, "Martin K. Petersen" <martin.petersen@oracle.com>, Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>, Ming Lei <ming.lei@canonical.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, NeilBrown <neilb@suse.com>, linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>, linux-bcache@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@redhat.com>, Alasdair Kergon <agk@redhat.com>, Roland Kammerer <roland.kammerer@linbit.com>, Mike Snitzer <snitzer@redhat.com>
+From: Johannes Thumshirn <jthumshirn@suse.de>
+Subject: [PATCH] bcache: untagle cache_aolloc
+Date: Mon, 18 Jul 2016 12:11:09 +0200
+Message-ID: <1468836669-1136-1-git-send-email-jthumshirn@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:34770 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751459AbcGRKLW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Mon, 18 Jul 2016 06:11:22 -0400
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Jens Axboe <axboe@fb.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Eric Wheeler <git@linux.ewheeler.net>, Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, Johannes Thumshirn <jthumshirn@suse.de>
 
-Hi
+bcache's cache_alloc() function currenty has no way freeing memory if one of
+the allocations fails. Untangle the if + allocation statement so we have
+defined checkpoints to free previous allocations if one fails.
 
-Which file system did you use?
-I once wrote some code to get files out of an ext3 filesystem, 
-http://www.open-std.org/keld/readme-salvage.html
+Signed-off-by: Johannes Thumshirn <jthumshirn@suse.de>
+Tested-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/super.c | 51 +++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 40 insertions(+), 11 deletions(-)
 
-Maybe you can make some corrections for it to work
-as I remember the code, then if you hit a directory, it will salvage the file names and the files
-of that directory.
-
-Best regards
-keld
-
-On Sun, Jul 17, 2016 at 03:10:03PM -0400, Michel Dubois wrote:
-> Dear linux-raid mailing list,
-> 
-> I have a RAID0 array of four 3TB disks that failed on the "third" disk.
-> 
-> I am aware of the non-redundancy of RAID0 but I would like to recover
-> the filenames from that RAID0. If I could recover some data it would
-> be a bonus.
-> 
-> Below you'll find the outputs of the following commands
->  mdadm --examine /dev/sd[abcd]1
->  fdisk -l
-> 
-> where sda1, sdb1, sdc1 and sdd1 should be the 4 RAID devices.
-> 
-> What could be my next step?
-> 
-> I thank you for your time
-> 
-> Michel Dubois
-> 
-> ======================
-> mdadm --examine /dev/sd[abcd]1
-> /dev/sda1:
->           Magic : a92b4efc
->         Version : 00.90.00
->            UUID : 7d247a6e:7b5d46c8:f52d9c89:db304b21
->   Creation Time : Mon Apr 23 19:55:36 2012
->      Raid Level : raid1
->   Used Dev Size : 20980800 (20.01 GiB 21.48 GB)
->      Array Size : 20980800 (20.01 GiB 21.48 GB)
->    Raid Devices : 4
->   Total Devices : 3
-> Preferred Minor : 0
-> 
->     Update Time : Mon Jun 27 21:12:23 2016
->           State : clean
->  Active Devices : 3
-> Working Devices : 3
->  Failed Devices : 1
->   Spare Devices : 0
->        Checksum : 1a57db60 - correct
->          Events : 164275
-> 
-> 
->       Number   Major   Minor   RaidDevice State
-> this     0       8        1        0      active sync   /dev/sda1
-> 
->    0     0       8        1        0      active sync   /dev/sda1
->    1     1       8       17        1      active sync   /dev/sdb1
->    2     2       0        0        2      faulty removed
->    3     3       8       33        3      active sync   /dev/sdc1
-> /dev/sdb1:
->           Magic : a92b4efc
->         Version : 00.90.00
->            UUID : 7d247a6e:7b5d46c8:f52d9c89:db304b21
->   Creation Time : Mon Apr 23 19:55:36 2012
->      Raid Level : raid1
->   Used Dev Size : 20980800 (20.01 GiB 21.48 GB)
->      Array Size : 20980800 (20.01 GiB 21.48 GB)
->    Raid Devices : 4
->   Total Devices : 3
-> Preferred Minor : 0
-> 
->     Update Time : Mon Jun 27 21:12:23 2016
->           State : clean
->  Active Devices : 3
-> Working Devices : 3
->  Failed Devices : 1
->   Spare Devices : 0
->        Checksum : 1a57db72 - correct
->          Events : 164275
-> 
-> 
->       Number   Major   Minor   RaidDevice State
-> this     1       8       17        1      active sync   /dev/sdb1
-> 
->    0     0       8        1        0      active sync   /dev/sda1
->    1     1       8       17        1      active sync   /dev/sdb1
->    2     2       0        0        2      faulty removed
->    3     3       8       33        3      active sync   /dev/sdc1
-> /dev/sdc1:
->           Magic : a92b4efc
->         Version : 00.90.00
->            UUID : 7d247a6e:7b5d46c8:f52d9c89:db304b21
->   Creation Time : Mon Apr 23 19:55:36 2012
->      Raid Level : raid1
->   Used Dev Size : 20980800 (20.01 GiB 21.48 GB)
->      Array Size : 20980800 (20.01 GiB 21.48 GB)
->    Raid Devices : 4
->   Total Devices : 3
-> Preferred Minor : 0
-> 
->     Update Time : Mon Jun 27 21:12:23 2016
->           State : clean
->  Active Devices : 3
-> Working Devices : 3
->  Failed Devices : 1
->   Spare Devices : 0
->        Checksum : 1a57db86 - correct
->          Events : 164275
-> 
-> 
->       Number   Major   Minor   RaidDevice State
-> this     3       8       33        3      active sync   /dev/sdc1
-> 
->    0     0       8        1        0      active sync   /dev/sda1
->    1     1       8       17        1      active sync   /dev/sdb1
->    2     2       0        0        2      faulty removed
->    3     3       8       33        3      active sync   /dev/sdc1
-> 
-> ======================
-> fdisk -l
-> 
-> WARNING: GPT (GUID Partition Table) detected on '/dev/sda'! The util
-> fdisk doesn't support GPT. Use GNU Parted.
-> 
-> 
-> Disk /dev/sda: 3000.5 GB, 3000592982016 bytes
-> 255 heads, 63 sectors/track, 364801 cylinders
-> Units = cylinders of 16065 * 512 = 8225280 bytes
-> Disk identifier: 0x03afffbe
-> 
->    Device Boot      Start         End      Blocks   Id  System
-> /dev/sda1               1      267350  2147483647+  ee  EFI GPT
-> 
-> WARNING: GPT (GUID Partition Table) detected on '/dev/sdb'! The util
-> fdisk doesn't support GPT. Use GNU Parted.
-> 
-> 
-> Disk /dev/sdb: 3000.5 GB, 3000592982016 bytes
-> 255 heads, 63 sectors/track, 364801 cylinders
-> Units = cylinders of 16065 * 512 = 8225280 bytes
-> Disk identifier: 0x142a889c
-> 
->    Device Boot      Start         End      Blocks   Id  System
-> /dev/sdb1               1      267350  2147483647+  ee  EFI GPT
-> 
-> WARNING: GPT (GUID Partition Table) detected on '/dev/sdc'! The util
-> fdisk doesn't support GPT. Use GNU Parted.
-> 
-> 
-> Disk /dev/sdc: 3000.5 GB, 3000592982016 bytes
-> 255 heads, 63 sectors/track, 364801 cylinders
-> Units = cylinders of 16065 * 512 = 8225280 bytes
-> Disk identifier: 0x3daebd50
-> 
->    Device Boot      Start         End      Blocks   Id  System
-> /dev/sdc1               1      267350  2147483647+  ee  EFI GPT
-> 
-> Disk /dev/md0: 21.4 GB, 21484339200 bytes
-> 2 heads, 4 sectors/track, 5245200 cylinders
-> Units = cylinders of 8 * 512 = 4096 bytes
-> Disk identifier: 0x00000000
-> 
-> Disk /dev/md0 doesn't contain a valid partition table
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-raid" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index f5dbb4e..b5703a9 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1817,18 +1817,29 @@ static int cache_alloc(struct cache_sb *sb, struct cache *ca)
+ 
+ 	free = roundup_pow_of_two(ca->sb.nbuckets) >> 10;
+ 
+-	if (!init_fifo(&ca->free[RESERVE_BTREE], 8, GFP_KERNEL) ||
+-	    !init_fifo(&ca->free[RESERVE_PRIO], prio_buckets(ca), GFP_KERNEL) ||
+-	    !init_fifo(&ca->free[RESERVE_MOVINGGC], free, GFP_KERNEL) ||
+-	    !init_fifo(&ca->free[RESERVE_NONE], free, GFP_KERNEL) ||
+-	    !init_fifo(&ca->free_inc,	free << 2, GFP_KERNEL) ||
+-	    !init_heap(&ca->heap,	free << 3, GFP_KERNEL) ||
+-	    !(ca->buckets	= vzalloc(sizeof(struct bucket) *
+-					  ca->sb.nbuckets)) ||
+-	    !(ca->prio_buckets	= kzalloc(sizeof(uint64_t) * prio_buckets(ca) *
+-					  2, GFP_KERNEL)) ||
+-	    !(ca->disk_buckets	= alloc_bucket_pages(GFP_KERNEL, ca)))
++	if (!init_fifo(&ca->free[RESERVE_BTREE], 8, GFP_KERNEL))
+ 		return -ENOMEM;
++	if (!init_fifo(&ca->free[RESERVE_PRIO], prio_buckets(ca), GFP_KERNEL))
++		goto free_btree_fifo;
++	if (!init_fifo(&ca->free[RESERVE_MOVINGGC], free, GFP_KERNEL))
++		goto free_prio_fifo;
++	if (!init_fifo(&ca->free[RESERVE_NONE], free, GFP_KERNEL))
++		goto free_movinggc_fifo;
++	if (!init_fifo(&ca->free_inc, free << 2, GFP_KERNEL))
++		goto free_none_fifo;
++	if (!init_heap(&ca->heap, free << 3, GFP_KERNEL))
++		goto free_inc_fifo;
++	ca->buckets = vzalloc(sizeof(struct bucket) * ca->sb.nbuckets);
++	if (!ca->buckets)
++		goto free_cache_heap;
++	ca->prio_buckets = kzalloc(sizeof(uint64_t) * prio_buckets(ca) * 2,
++				   GFP_KERNEL);
++	if (!ca->prio_buckets)
++		goto free_cache_buckets;
++
++	ca->disk_buckets = alloc_bucket_pages(GFP_KERNEL, ca);
++	if (!ca->disk_buckets)
++		goto free_prio_buckets;
+ 
+ 	ca->prio_last_buckets = ca->prio_buckets + prio_buckets(ca);
+ 
+@@ -1836,6 +1847,24 @@ static int cache_alloc(struct cache_sb *sb, struct cache *ca)
+ 		atomic_set(&b->pin, 0);
+ 
+ 	return 0;
++
++free_prio_buckets:
++	kfree(ca->prio_buckets);
++free_cache_buckets:
++	vfree(ca->buckets);
++free_cache_heap:
++	free_heap(&ca->heap);
++free_inc_fifo:
++	free_fifo(&ca->free_inc);
++free_none_fifo:
++	free_fifo(&ca->free[RESERVE_NONE]);
++free_movinggc_fifo:
++	free_fifo(&ca->free[RESERVE_MOVINGGC]);
++free_prio_fifo:
++	free_fifo(&ca->free[RESERVE_PRIO]);
++free_btree_fifo:
++	free_fifo(&ca->free[RESERVE_BTREE]);
++	return -ENOMEM;
+ }
+ 
+ static int register_cache(struct cache_sb *sb, struct page *sb_page,
+-- 
+1.8.5.6
