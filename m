@@ -1,203 +1,259 @@
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-Subject: Re: [PATCH v2 1/1] block: fix blk_queue_split() resource exhaustion
-Date: Tue, 19 Jul 2016 11:00:24 +0200
-Message-ID: <20160719090024.GB20868@soda.linbit>
-References: <1467990243-3531-1-git-send-email-lars.ellenberg@linbit.com>
- <1467990243-3531-2-git-send-email-lars.ellenberg@linbit.com>
- <20160711141042.GY13335@soda.linbit>
- <87lh17efap.fsf@notabene.neil.brown.name>
- <alpine.LRH.2.11.1607121834220.16228@mail.ewheeler.net>
- <20160713023232.GA6034@redhat.com>
+From: Sheng Yang <sheng@yasker.org>
+Subject: Re: [PATCH v4 18/21] fuse: Add support for pid namespaces
+Date: Tue, 19 Jul 2016 19:44:11 -0700
+Message-ID: <CA+2rt426_pshAauQizcxkfAq16vmEpB4sJ4genW_ucosH3j=zQ@mail.gmail.com>
+References: <1461699396-33000-1-git-send-email-seth.forshee@canonical.com> <1461699396-33000-19-git-send-email-seth.forshee@canonical.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from zimbra13.linbit.com ([212.69.166.240]:34116 "EHLO
-	zimbra13.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbcGSJA3 (ORCPT
-	<rfc822;linux-bcache@vger.kernel.org>);
-	Tue, 19 Jul 2016 05:00:29 -0400
-Content-Disposition: inline
-In-Reply-To: <20160713023232.GA6034@redhat.com>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1461699396-33000-19-git-send-email-seth.forshee@canonical.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Seth Forshee <seth.forshee@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, Miklos Szeredi <miklos@szeredi.hu>, Alexander Viro <viro@zeniv.linux.org.uk>, Serge Hallyn <serge.hallyn@canonical.com>, Richard Weinberger <richard.weinberger@gmail.com>, Austin S Hemmelgarn <ahferroin7@gmail.com>, Miklos Szeredi <mszeredi@redhat.com>, Pavel Tikhomirov <ptikhomirov@virtuozzo.com>, kernel list <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org, fuse-devel@lists.sourceforge.net, linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov, cgroups@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>, NeilBrown <neilb@suse.com>, Jens Axboe <axboe@kernel.dk>, linux-block@vger.kernel.org, "Martin K. Petersen" <martin.petersen@oracle.com>, Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>, Ming Lei <ming.lei@canonical.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, Takashi Iwai <tiwai@suse.de>, linux-bcache@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, Keith Busch <keith.busch@intel.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@redhat.com>, Alasdair Kergon <agk@redhat.com>, Roland Kammerer <roland.kammerer@linbit.com>
 
-On Tue, Jul 12, 2016 at 10:32:33PM -0400, Mike Snitzer wrote:
-> On Tue, Jul 12 2016 at 10:18pm -0400,
-> Eric Wheeler <bcache@lists.ewheeler.net> wrote:
-> 
-> > On Tue, 12 Jul 2016, NeilBrown wrote:
-> > 
-> > > On Tue, Jul 12 2016, Lars Ellenberg wrote:
-> > > ....
-> > > >
-> > > > Instead, I suggest to distinguish between recursive calls to
-> > > > generic_make_request(), and pushing back the remainder part in
-> > > > blk_queue_split(), by pointing current->bio_lists to a
-> > > > 	struct recursion_to_iteration_bio_lists {
-> > > > 		struct bio_list recursion;
-> > > > 		struct bio_list queue;
-> > > > 	}
-> > > >
-> > > > By providing each q->make_request_fn() with an empty "recursion"
-> > > > bio_list, then merging any recursively submitted bios to the
-> > > > head of the "queue" list, we can make the recursion-to-iteration
-> > > > logic in generic_make_request() process deepest level bios first,
-> > > > and "sibling" bios of the same level in "natural" order.
-> > > >
-> > > > Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-> > > > Signed-off-by: Roland Kammerer <roland.kammerer@linbit.com>
-> > > 
-> > > Reviewed-by: NeilBrown <neilb@suse.com>
-> > > 
-> > > Thanks again for doing this - I think this is a very significant
-> > > improvement and could allow other simplifications.
-> > 
-> > Thank you Lars for all of this work!  
-> > 
-> > It seems like there have been many 4.3+ blockdev stacking issues and this 
-> > will certainly address some of those (maybe all of them?).  (I think we 
-> > hit this while trying drbd in 4.4 so we dropped back to 4.1 without 
-> > issue.)  It would be great to hear 4.4.y stable pick this up if 
-> > compatible.
-> > 
-> > 
-> > Do you believe that this patch would solve any of the proposals by others 
-> > since 4.3 related to bio splitting/large bios?  I've been collecting a 
-> > list, none of which appear have landed yet as of 4.7-rc7 (but correct me 
-> > if I'm wrong):
-> > 
-> > A.  [PATCH v2] block: make sure big bio is splitted into at most 256 bvecs
-> > 	by Ming Lei: https://patchwork.kernel.org/patch/9169483/
+On Tue, Apr 26, 2016 at 12:36 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> When the userspace process servicing fuse requests is running in
+> a pid namespace then pids passed via the fuse fd are not being
+> translated into that process' namespace. Translation is necessary
+> for the pid to be useful to that process.
+>
+> Since no use case currently exists for changing namespaces all
+> translations can be done relative to the pid namespace in use
+> when fuse_conn_init() is called. For fuse this translates to
+> mount time, and for cuse this is when /dev/cuse is opened. IO for
+> this connection from another namespace will return errors.
+>
+> Requests from processes whose pid cannot be translated into the
+> target namespace are not permitted, except for requests
+> allocated via fuse_get_req_nofail_nopages. For no-fail requests
+> in.h.pid will be 0 if the pid translation fails.
 
-That's an independend issue.
+Hi Seth,
 
-> > B.  block: don't make BLK_DEF_MAX_SECTORS too big
-> > 	by Shaohua Li: http://www.spinics.net/lists/linux-bcache/msg03525.html
+This patch caused a regression in our major container use case with
+FUSE in Ubuntu 16.04, as patch was checked in as Ubuntu Sauce in
+Ubuntu 4.4.0-6.21 kernel.
 
-Yet an other independend issue.
+The use case is:
+1. Create a Docker container.
+2. Inside the container, start the FUSE backend, and mounted fs.
+3. Following step 2 in the container, create a loopback device to map
+a file in the mounted fuse to create a block device, which will be
+available to the whole system.
 
-> > C.  [1/3] block: flush queued bios when process blocks to avoid deadlock
-> > 	by Mikulas Patocka: https://patchwork.kernel.org/patch/9204125/
-> > 		(was https://patchwork.kernel.org/patch/7398411/)
+It works well before this commit.
 
-As it stands now,
-this is yet an other issue, but related.
+The use case is broken because no matter which namespace losetup runs,
+the real request from loopback device seems always come from init ns,
+thus it will be in different ns running fuse backend. So the request
+will got denied, because the ns running fuse won't able to see the
+things from higher level(level 0 in fact) pid namespace.
 
-From the link above:
+I think since init pid ns has ability to access any process in the
+system, it should able to access the fuse mounted by any pid namespace
+process as well.
 
-| ** Here is the dm-snapshot deadlock that was observed:
-| 
-| 1) Process A sends one-page read bio to the dm-snapshot target. The bio
-| spans snapshot chunk boundary and so it is split to two bios by device
-| mapper.
-| 
-| 2) Device mapper creates the first sub-bio and sends it to the snapshot
-| driver.
-| 
-| 3) The function snapshot_map calls track_chunk (that allocates a
-| structure
-| dm_snap_tracked_chunk and adds it to tracked_chunk_hash) and then remaps
-| the bio to the underlying device and exits with DM_MAPIO_REMAPPED.
-| 
-| 4) The remapped bio is submitted with generic_make_request, but it isn't
-| issued - it is added to current->bio_list instead.
-| 
-| 5) Meanwhile, process B (dm's kcopyd) executes pending_complete for the
-| chunk affected be the first remapped bio, it takes down_write(&s->lock)
-| and then loops in __check_for_conflicting_io, waiting for
-| dm_snap_tracked_chunk created in step 3) to be released.
-| 
-| 6) Process A continues, it creates a second sub-bio for the rest of the
-| original bio.
+What you think?
 
-Aha.
-Here is the relation.
-If "A" had only ever processed "just the chunk it can handle now",
-and "pushed back" the rest of the incoming bio,
-it could rely on all deeper level bios to have been submitted already.
+--Sheng
 
-But this does not look like it easily fits into the current DM model.
-
-| 7) snapshot_map is called for this new bio, it waits on
-| down_write(&s->lock) that is held by Process B (in step 5).
-
-There is an other suggestion:
-Use down_trylock (or down_timeout),
-and if it fails, push back the currently to-be-processed bio.
-We can introduce a new bio helper for that.
-Kind of what blk_queue_split() does with my patch applied.
-
-Or even better, ignore the down_trylock suggestion,
-simply not iterate over all pieces first,
-but process one piece, and return back the the
-iteration in generic_make_request.
-
-A bit of conflict here may be that DM has all its own
-split and clone and queue magic, and wants to process
-"all of the bio" before returning back to generic_make_request().
-
-To change that, __split_and_process_bio() and all its helpers
-would need to learn to "push back" (pieces of) the bio they are
-currently working on, and not push back via "DM_ENDIO_REQUEUE",
-but by bio_list_add_head(&current->bio_lists->queue, piece_to_be_done_later).
-
-Then, after they processed each piece,
-*return* all the way up to the top-level generic_make_request(),
-where the recursion-to-iteration logic would then
-make sure that all deeper level bios, submitted via
-recursive calls to generic_make_request() will be processed, before the
-next, pushed back, piece of the "original incoming" bio.
-
-And *not* do their own iteration over all pieces first.
-
-Probably not as easy as dropping the while loop,
-using bio_advance, and pushing that "advanced" bio back to
-current->...queue?
-
-static void __split_and_process_bio(struct mapped_device *md,
-				    struct dm_table *map, struct bio *bio)
-...
-		ci.bio = bio;
-		ci.sector_count = bio_sectors(bio);
-		while (ci.sector_count && !error)
-			error = __split_and_process_non_flush(&ci);
-...
-		error = __split_and_process_non_flush(&ci);
-		if (ci.sector_count)
-			bio_advance()
-			bio_list_add_head(&current->bio_lists->queue, )
-...
-
-Something like that, maybe?
-Just a thought.
-
-> > D.  dm-crypt: Fix error with too large bios
-> > 	by Mikulas Patocka: https://patchwork.kernel.org/patch/9138595/
-> > 
-> > The A,B,D are known to fix large bio issues when stacking dm+bcache 
-> > (though the B,D are trivial and probably necessary even with your patch).
-> > 
-> > Patch C was mentioned earlier in this thread by Mike Snitzer and you 
-> > commented briefly that his patch might solve the issue; given that, and in 
-> > the interest of minimizing duplicate effort, which of the following best 
-> > describes the situation?
-> > 
-> >   1. Your patch could supersede Mikulas's patch; they address the same 
-> > issue.
-> > 
-> >   2. Mikulas's patch addresses different issues such and both patches 
-> > should be applied.
-> > 
-> >   3. There is overlap between both your patch and Mikulas's such that both 
-> > #1,#2 are true and effort to solve this has been duplicated.
-> > 
-> > 
-> > If #3, then what might be done to resolve the overlap?
-> 
-> Mikulas confirmed to me that he believes Lars' v2 patch will fix the
-> dm-snapshot problem, which is being tracked with this BZ:
-> https://bugzilla.kernel.org/show_bug.cgi?id=119841
-> 
-> We'll see how testing goes (currently underway).
+>
+> File locking changes based on previous work done by Eric
+> Biederman.
+>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> Acked-by: Miklos Szeredi <mszeredi@redhat.com>
+> ---
+>  fs/fuse/dev.c    | 19 +++++++++++++++----
+>  fs/fuse/file.c   | 22 +++++++++++++++++-----
+>  fs/fuse/fuse_i.h |  4 ++++
+>  fs/fuse/inode.c  |  3 +++
+>  4 files changed, 39 insertions(+), 9 deletions(-)
+>
+> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+> index cbece1221417..4e91b2ac25a7 100644
+> --- a/fs/fuse/dev.c
+> +++ b/fs/fuse/dev.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/pipe_fs_i.h>
+>  #include <linux/swap.h>
+>  #include <linux/splice.h>
+> +#include <linux/sched.h>
+>
+>  MODULE_ALIAS_MISCDEV(FUSE_MINOR);
+>  MODULE_ALIAS("devname:fuse");
+> @@ -124,11 +125,11 @@ static void __fuse_put_request(struct fuse_req *req)
+>         atomic_dec(&req->count);
+>  }
+>
+> -static void fuse_req_init_context(struct fuse_req *req)
+> +static void fuse_req_init_context(struct fuse_conn *fc, struct fuse_req *req)
+>  {
+>         req->in.h.uid = from_kuid_munged(&init_user_ns, current_fsuid());
+>         req->in.h.gid = from_kgid_munged(&init_user_ns, current_fsgid());
+> -       req->in.h.pid = current->pid;
+> +       req->in.h.pid = pid_nr_ns(task_pid(current), fc->pid_ns);
+>  }
+>
+>  void fuse_set_initialized(struct fuse_conn *fc)
+> @@ -181,10 +182,14 @@ static struct fuse_req *__fuse_get_req(struct fuse_conn *fc, unsigned npages,
+>                 goto out;
+>         }
+>
+> -       fuse_req_init_context(req);
+> +       fuse_req_init_context(fc, req);
+>         __set_bit(FR_WAITING, &req->flags);
+>         if (for_background)
+>                 __set_bit(FR_BACKGROUND, &req->flags);
+> +       if (req->in.h.pid == 0) {
+> +               fuse_put_request(fc, req);
+> +               return ERR_PTR(-EOVERFLOW);
+> +       }
+>
+>         return req;
+>
+> @@ -274,7 +279,7 @@ struct fuse_req *fuse_get_req_nofail_nopages(struct fuse_conn *fc,
+>         if (!req)
+>                 req = get_reserved_req(fc, file);
+>
+> -       fuse_req_init_context(req);
+> +       fuse_req_init_context(fc, req);
+>         __set_bit(FR_WAITING, &req->flags);
+>         __clear_bit(FR_BACKGROUND, &req->flags);
+>         return req;
+> @@ -1243,6 +1248,9 @@ static ssize_t fuse_dev_do_read(struct fuse_dev *fud, struct file *file,
+>         struct fuse_in *in;
+>         unsigned reqsize;
+>
+> +       if (task_active_pid_ns(current) != fc->pid_ns)
+> +               return -EIO;
+> +
+>   restart:
+>         spin_lock(&fiq->waitq.lock);
+>         err = -EAGAIN;
+> @@ -1872,6 +1880,9 @@ static ssize_t fuse_dev_do_write(struct fuse_dev *fud,
+>         struct fuse_req *req;
+>         struct fuse_out_header oh;
+>
+> +       if (task_active_pid_ns(current) != fc->pid_ns)
+> +               return -EIO;
+> +
+>         if (nbytes < sizeof(struct fuse_out_header))
+>                 return -EINVAL;
+>
+> diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+> index 719924d6c706..b5c616c5ec98 100644
+> --- a/fs/fuse/file.c
+> +++ b/fs/fuse/file.c
+> @@ -2067,7 +2067,8 @@ static int fuse_direct_mmap(struct file *file, struct vm_area_struct *vma)
+>         return generic_file_mmap(file, vma);
+>  }
+>
+> -static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+> +static int convert_fuse_file_lock(struct fuse_conn *fc,
+> +                                 const struct fuse_file_lock *ffl,
+>                                   struct file_lock *fl)
+>  {
+>         switch (ffl->type) {
+> @@ -2082,7 +2083,14 @@ static int convert_fuse_file_lock(const struct fuse_file_lock *ffl,
+>
+>                 fl->fl_start = ffl->start;
+>                 fl->fl_end = ffl->end;
+> -               fl->fl_pid = ffl->pid;
+> +
+> +               /*
+> +                * Convert pid into the caller's pid namespace. If the pid
+> +                * does not map into the namespace fl_pid will get set to 0.
+> +                */
+> +               rcu_read_lock();
+> +               fl->fl_pid = pid_vnr(find_pid_ns(ffl->pid, fc->pid_ns));
+> +               rcu_read_unlock();
+>                 break;
+>
+>         default:
+> @@ -2131,7 +2139,7 @@ static int fuse_getlk(struct file *file, struct file_lock *fl)
+>         args.out.args[0].value = &outarg;
+>         err = fuse_simple_request(fc, &args);
+>         if (!err)
+> -               err = convert_fuse_file_lock(&outarg.lk, fl);
+> +               err = convert_fuse_file_lock(fc, &outarg.lk, fl);
+>
+>         return err;
+>  }
+> @@ -2143,7 +2151,8 @@ static int fuse_setlk(struct file *file, struct file_lock *fl, int flock)
+>         FUSE_ARGS(args);
+>         struct fuse_lk_in inarg;
+>         int opcode = (fl->fl_flags & FL_SLEEP) ? FUSE_SETLKW : FUSE_SETLK;
+> -       pid_t pid = fl->fl_type != F_UNLCK ? current->tgid : 0;
+> +       struct pid *pid = fl->fl_type != F_UNLCK ? task_tgid(current) : NULL;
+> +       pid_t pid_nr = pid_nr_ns(pid, fc->pid_ns);
+>         int err;
+>
+>         if (fl->fl_lmops && fl->fl_lmops->lm_grant) {
+> @@ -2155,7 +2164,10 @@ static int fuse_setlk(struct file *file, struct file_lock *fl, int flock)
+>         if (fl->fl_flags & FL_CLOSE)
+>                 return 0;
+>
+> -       fuse_lk_fill(&args, file, fl, opcode, pid, flock, &inarg);
+> +       if (pid && pid_nr == 0)
+> +               return -EOVERFLOW;
+> +
+> +       fuse_lk_fill(&args, file, fl, opcode, pid_nr, flock, &inarg);
+>         err = fuse_simple_request(fc, &args);
+>
+>         /* locking is restartable */
+> diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
+> index eddbe02c4028..9145445a759a 100644
+> --- a/fs/fuse/fuse_i.h
+> +++ b/fs/fuse/fuse_i.h
+> @@ -23,6 +23,7 @@
+>  #include <linux/poll.h>
+>  #include <linux/workqueue.h>
+>  #include <linux/kref.h>
+> +#include <linux/pid_namespace.h>
+>
+>  /** Max number of pages that can be used in a single read request */
+>  #define FUSE_MAX_PAGES_PER_REQ 32
+> @@ -465,6 +466,9 @@ struct fuse_conn {
+>         /** The group id for this mount */
+>         kgid_t group_id;
+>
+> +       /** The pid namespace for this mount */
+> +       struct pid_namespace *pid_ns;
+> +
+>         /** The fuse mount flags for this mount */
+>         unsigned flags;
+>
+> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+> index 1ce67668a8e1..eade0bfa4488 100644
+> --- a/fs/fuse/inode.c
+> +++ b/fs/fuse/inode.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/random.h>
+>  #include <linux/sched.h>
+>  #include <linux/exportfs.h>
+> +#include <linux/pid_namespace.h>
+>
+>  MODULE_AUTHOR("Miklos Szeredi <miklos@szeredi.hu>");
+>  MODULE_DESCRIPTION("Filesystem in Userspace");
+> @@ -609,6 +610,7 @@ void fuse_conn_init(struct fuse_conn *fc)
+>         fc->connected = 1;
+>         fc->attr_version = 1;
+>         get_random_bytes(&fc->scramble_key, sizeof(fc->scramble_key));
+> +       fc->pid_ns = get_pid_ns(task_active_pid_ns(current));
+>  }
+>  EXPORT_SYMBOL_GPL(fuse_conn_init);
+>
+> @@ -617,6 +619,7 @@ void fuse_conn_put(struct fuse_conn *fc)
+>         if (atomic_dec_and_test(&fc->count)) {
+>                 if (fc->destroy_req)
+>                         fuse_request_free(fc->destroy_req);
+> +               put_pid_ns(fc->pid_ns);
+>                 fc->release(fc);
+>         }
+>  }
+> --
+> 2.7.4
+>
