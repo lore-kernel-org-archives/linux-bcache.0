@@ -1,218 +1,274 @@
-From: Jeff Moyer <jmoyer@redhat.com>
-Subject: Re: [PATCH v2 1/1] block: fix blk_queue_split() resource exhaustion
-Date: Mon, 25 Jul 2016 16:39:50 -0400
-Message-ID: <x49fuqxlaeh.fsf@segfault.boston.devel.redhat.com>
-References: <1467990243-3531-1-git-send-email-lars.ellenberg@linbit.com>
-	<1467990243-3531-2-git-send-email-lars.ellenberg@linbit.com>
-	<20160711141042.GY13335@soda.linbit>
-	<87lh17efap.fsf@notabene.neil.brown.name>
-	<alpine.LRH.2.11.1607121834220.16228@mail.ewheeler.net>
-	<20160713023232.GA6034@redhat.com>
-	<20160719090024.GB20868@soda.linbit>
-	<alpine.LRH.2.11.1607211547450.21453@mail.ewheeler.net>
+From: Stefan Bader <stefan.bader@canonical.com>
+Subject: Re: bcache super block corruption with non 4k pages
+Date: Tue, 26 Jul 2016 11:51:25 +0200
+Message-ID: <fce2a0a9-47d1-a052-997c-b14cd62dcf46@canonical.com>
+References: <1469091513-11233-1-git-send-email-stefan.bader@canonical.com>
 Mime-Version: 1.0
-Content-Type: text/plain
-Return-path: <linux-raid-owner@vger.kernel.org>
-In-Reply-To: <alpine.LRH.2.11.1607211547450.21453@mail.ewheeler.net> (Eric
-	Wheeler's message of "Thu, 21 Jul 2016 15:53:39 -0700 (PDT)")
-Sender: linux-raid-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Lars Ellenberg <lars.ellenberg@linbit.com>, Mike Snitzer <snitzer@redhat.com>, NeilBrown <neilb@suse.com>, Jens Axboe <axboe@kernel.dk>, linux-block@vger.kernel.org, "Martin K. Petersen" <martin.petersen@oracle.com>, Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>, Ming Lei <ming.lei@canonical.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, Takashi Iwai <tiwai@suse.de>, linux-bcache@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, Keith Busch <keith.busch@intel.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@redhat.com>, Alasdair Kergon <agk@redhat.com>, Roland Kammerer <roland.kammerer@linbit.com>, Mikulas Patocka <mpatocka@redhat.com>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="AxqHJcBG8M8CE5GlRMCKImXPqe5rVRO3l"
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1469091513-11233-1-git-send-email-stefan.bader@canonical.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, dm-devel@redhat.com, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: liuzhengyuang521@gmail.com, kent.overstreet@gmail.com, bcache@linux.ewheeler.net, apw@canonical.com, Stefan Bader <stefan.bader@canonical.com>
 List-Id: linux-bcache@vger.kernel.org
 
-Eric Wheeler <bcache@lists.ewheeler.net> writes:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--AxqHJcBG8M8CE5GlRMCKImXPqe5rVRO3l
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-> [+cc Mikulas Patocka, Jeff Moyer; Do either of you have any input on Lars' 
-> commentary related to patchwork #'s 9204125 and 7398411 and BZ#119841? ]
+On 21.07.2016 10:58, Stefan Bader wrote:
+> I was pointed at the thread which seems to address the same after
+> I wrote most of below text. Did not want to re-write this so please
+> bear with the odd layout.
+>=20
+> https://www.redhat.com/archives/dm-devel/2016-June/msg00015.html
+>=20
+> Zhengyuan tries to fix the problem by relocating the superblock on
+> disk. But I am not sure whether there is really any guarantee about
+> how __bread fills data into the buffer_head. What if there is the next
+> odd arch with 128K pages?
+>=20
+> So below is an attempt to be more generic. Still I don't feel completel=
+y
+> happy with the way that a page moves (or is shared) between buffer_head=
 
-Sorry, I don't have any time to look at this right now.
+> and biovec. What I tried to outline below is to let the register functi=
+ons
+> allocate bio+biovec memory and use the in-memory sb_cache data to initi=
+alize
+> the biovec buffer.
 
-Cheers,
-Jeff
+Any opinions here? Also adding LKML as I don't seem to get through modera=
+tion on
+dm-devel.
 
->
-> On Tue, 19 Jul 2016, Lars Ellenberg wrote:
->
->> On Tue, Jul 12, 2016 at 10:32:33PM -0400, Mike Snitzer wrote:
->> > On Tue, Jul 12 2016 at 10:18pm -0400,
->> > Eric Wheeler <bcache@lists.ewheeler.net> wrote:
->> > 
->> > > On Tue, 12 Jul 2016, NeilBrown wrote:
->> > > 
->> > > > On Tue, Jul 12 2016, Lars Ellenberg wrote:
->> > > > ....
->> > > > >
->> > > > > Instead, I suggest to distinguish between recursive calls to
->> > > > > generic_make_request(), and pushing back the remainder part in
->> > > > > blk_queue_split(), by pointing current->bio_lists to a
->> > > > > 	struct recursion_to_iteration_bio_lists {
->> > > > > 		struct bio_list recursion;
->> > > > > 		struct bio_list queue;
->> > > > > 	}
->> > > > >
->> > > > > By providing each q->make_request_fn() with an empty "recursion"
->> > > > > bio_list, then merging any recursively submitted bios to the
->> > > > > head of the "queue" list, we can make the recursion-to-iteration
->> > > > > logic in generic_make_request() process deepest level bios first,
->> > > > > and "sibling" bios of the same level in "natural" order.
->> > > > >
->> > > > > Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
->> > > > > Signed-off-by: Roland Kammerer <roland.kammerer@linbit.com>
->> > > > 
->> > > > Reviewed-by: NeilBrown <neilb@suse.com>
->> > > > 
->> > > > Thanks again for doing this - I think this is a very significant
->> > > > improvement and could allow other simplifications.
->> > > 
->> > > Thank you Lars for all of this work!  
->> > > 
->> > > It seems like there have been many 4.3+ blockdev stacking issues and this 
->> > > will certainly address some of those (maybe all of them?).  (I think we 
->> > > hit this while trying drbd in 4.4 so we dropped back to 4.1 without 
->> > > issue.)  It would be great to hear 4.4.y stable pick this up if 
->> > > compatible.
->> > > 
->> > > 
->> > > Do you believe that this patch would solve any of the proposals by others 
->> > > since 4.3 related to bio splitting/large bios?  I've been collecting a 
->> > > list, none of which appear have landed yet as of 4.7-rc7 (but correct me 
->> > > if I'm wrong):
->> > > 
->> > > A.  [PATCH v2] block: make sure big bio is splitted into at most 256 bvecs
->> > > 	by Ming Lei: https://patchwork.kernel.org/patch/9169483/
->> 
->> That's an independend issue.
->> 
->> > > B.  block: don't make BLK_DEF_MAX_SECTORS too big
->> > > 	by Shaohua Li: http://www.spinics.net/lists/linux-bcache/msg03525.html
->> 
->> Yet an other independend issue.
->> 
->> > > C.  [1/3] block: flush queued bios when process blocks to avoid deadlock
->> > > 	by Mikulas Patocka: https://patchwork.kernel.org/patch/9204125/
->> > > 		(was https://patchwork.kernel.org/patch/7398411/)
->> 
->> As it stands now,
->> this is yet an other issue, but related.
->> 
->> From the link above:
->> 
->> | ** Here is the dm-snapshot deadlock that was observed:
->> | 
->> | 1) Process A sends one-page read bio to the dm-snapshot target. The bio
->> | spans snapshot chunk boundary and so it is split to two bios by device
->> | mapper.
->> | 
->> | 2) Device mapper creates the first sub-bio and sends it to the snapshot
->> | driver.
->> | 
->> | 3) The function snapshot_map calls track_chunk (that allocates a
->> | structure
->> | dm_snap_tracked_chunk and adds it to tracked_chunk_hash) and then remaps
->> | the bio to the underlying device and exits with DM_MAPIO_REMAPPED.
->> | 
->> | 4) The remapped bio is submitted with generic_make_request, but it isn't
->> | issued - it is added to current->bio_list instead.
->> | 
->> | 5) Meanwhile, process B (dm's kcopyd) executes pending_complete for the
->> | chunk affected be the first remapped bio, it takes down_write(&s->lock)
->> | and then loops in __check_for_conflicting_io, waiting for
->> | dm_snap_tracked_chunk created in step 3) to be released.
->> | 
->> | 6) Process A continues, it creates a second sub-bio for the rest of the
->> | original bio.
->> 
->> Aha.
->> Here is the relation.
->> If "A" had only ever processed "just the chunk it can handle now",
->> and "pushed back" the rest of the incoming bio,
->> it could rely on all deeper level bios to have been submitted already.
->> 
->> But this does not look like it easily fits into the current DM model.
->> 
->> | 7) snapshot_map is called for this new bio, it waits on
->> | down_write(&s->lock) that is held by Process B (in step 5).
->> 
->> There is an other suggestion:
->> Use down_trylock (or down_timeout),
->> and if it fails, push back the currently to-be-processed bio.
->> We can introduce a new bio helper for that.
->> Kind of what blk_queue_split() does with my patch applied.
->> 
->> Or even better, ignore the down_trylock suggestion,
->> simply not iterate over all pieces first,
->> but process one piece, and return back the the
->> iteration in generic_make_request.
->> 
->> A bit of conflict here may be that DM has all its own
->> split and clone and queue magic, and wants to process
->> "all of the bio" before returning back to generic_make_request().
->> 
->> To change that, __split_and_process_bio() and all its helpers
->> would need to learn to "push back" (pieces of) the bio they are
->> currently working on, and not push back via "DM_ENDIO_REQUEUE",
->> but by bio_list_add_head(&current->bio_lists->queue, piece_to_be_done_later).
->> 
->> Then, after they processed each piece,
->> *return* all the way up to the top-level generic_make_request(),
->> where the recursion-to-iteration logic would then
->> make sure that all deeper level bios, submitted via
->> recursive calls to generic_make_request() will be processed, before the
->> next, pushed back, piece of the "original incoming" bio.
->> 
->> And *not* do their own iteration over all pieces first.
->> 
->> Probably not as easy as dropping the while loop,
->> using bio_advance, and pushing that "advanced" bio back to
->> current->...queue?
->> 
->> static void __split_and_process_bio(struct mapped_device *md,
->> 				    struct dm_table *map, struct bio *bio)
->> ...
->> 		ci.bio = bio;
->> 		ci.sector_count = bio_sectors(bio);
->> 		while (ci.sector_count && !error)
->> 			error = __split_and_process_non_flush(&ci);
->> ...
->> 		error = __split_and_process_non_flush(&ci);
->> 		if (ci.sector_count)
->> 			bio_advance()
->> 			bio_list_add_head(&current->bio_lists->queue, )
->> ...
->> 
->> Something like that, maybe?
->> Just a thought.
->> 
->> > > D.  dm-crypt: Fix error with too large bios
->> > > 	by Mikulas Patocka: https://patchwork.kernel.org/patch/9138595/
->> > > 
->> > > The A,B,D are known to fix large bio issues when stacking dm+bcache 
->> > > (though the B,D are trivial and probably necessary even with your patch).
->> > > 
->> > > Patch C was mentioned earlier in this thread by Mike Snitzer and you 
->> > > commented briefly that his patch might solve the issue; given that, and in 
->> > > the interest of minimizing duplicate effort, which of the following best 
->> > > describes the situation?
->> > > 
->> > >   1. Your patch could supersede Mikulas's patch; they address the same 
->> > > issue.
->> > > 
->> > >   2. Mikulas's patch addresses different issues such and both patches 
->> > > should be applied.
->> > > 
->> > >   3. There is overlap between both your patch and Mikulas's such that both 
->> > > #1,#2 are true and effort to solve this has been duplicated.
->> > > 
->> > > 
->> > > If #3, then what might be done to resolve the overlap?
->> > 
->> > Mikulas confirmed to me that he believes Lars' v2 patch will fix the
->> > dm-snapshot problem, which is being tracked with this BZ:
->> > https://bugzilla.kernel.org/show_bug.cgi?id=119841
->> > 
->> > We'll see how testing goes (currently underway).
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> 
+
+>=20
+> -Stefan
+>=20
+>=20
+> ---
+>=20
+> This was seen on ppc64le with 64k page size. The problem is that
+> in that case __bread returns a page where b_data is not at the
+> start of the page. And I am not really sure that the way bcache
+> re-purposes the page returned by __bread to be used as biovec=20
+> element is really a good idea.
+>=20
+> The way it is now, I saw __bread return a 64k page where b_data
+> was starting at 4k offset. Then __write_super was modifying some
+> data at offset 0 but for example not writing the magic number again.
+>=20
+> Not sure why (maybe this messes up flushes, too) but the bad data was n=
+ot
+> immediately written back when the devices were registered. So at that t=
+ime
+> bcache-super-show would report data as it was written by user-space (li=
+ke
+> the cache type still 0 and not 3, and claiming the cache to still bei
+> detached).
+>=20
+> But when stopping the cache and unregistering the cache set this change=
+d
+> and bcache-super-show was reporting a bad magic number (as expected).
+>=20
+> The patch below works around this (tested with 64k and 4k pages) but I
+> am not really sure this is a clean approach. My gut feeling would be th=
+at
+> the bio structures should be allocated speperately (I think there is a =
+way
+> of allocating a bioset without using a pool). Then that separate page c=
+ould
+> be pre-initialized from the super block structure without passing aroun=
+d
+> a page the feels more private to __bread usage...
+>=20
+> -Stefan
+>=20
+>=20
+>=20
+> From 3652e98359b876f3c1e6d7b9b7305e3411178296 Mon Sep 17 00:00:00 2001
+> From: Stefan Bader <stefan.bader@canonical.com>
+> Date: Wed, 20 Jul 2016 12:06:27 +0200
+> Subject: [PATCH] bcache: handle non 4k pages returned by __bread
+>=20
+> On non-x86 arches pages can be bigger than 4k. Currently read_super
+> returns a reference to the page used as buffer in the buffer_head
+> that is returned by __bread().
+> With 4k page size and a requested read this normally ends up with=20
+> the super block data starting at offset 0. But as seen on ppc64le
+> with 64k page size, the data can start at an offset (from what I
+> saw the offset was 4k).
+> This causes harm later on when __write_super() maps the super
+> block data at the start of the page acquired before and also
+> not writes back all fields (particularly the super block magic).
+>=20
+> Try to avoid this by also returning the potential offset within the
+> sb_page from read_super() and fully initiallize the single bvec of
+> the bio used for __write_super() calls. Doing that is the same as
+> would have been done in bch_bio_map() which now must not be used in
+> __write_super().
+>=20
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+>=20
+> removedebug
+>=20
+> Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+> ---
+>  drivers/md/bcache/super.c | 22 +++++++++++++++-------
+>  1 file changed, 15 insertions(+), 7 deletions(-)
+>=20
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index e169739..3e0d2de 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -62,7 +62,7 @@ struct workqueue_struct *bcache_wq;
+>  /* Superblock */
+> =20
+>  static const char *read_super(struct cache_sb *sb, struct block_device=
+ *bdev,
+> -			      struct page **res)
+> +			      struct page **res, unsigned int *off)
+>  {
+>  	const char *err;
+>  	struct cache_sb *s;
+> @@ -192,6 +192,7 @@ static const char *read_super(struct cache_sb *sb, =
+struct block_device *bdev,
+>  	err =3D NULL;
+> =20
+>  	get_page(bh->b_page);
+> +	*off =3D (unsigned int) (bh->b_data - ((char *) page_address(bh->b_pa=
+ge)));
+>  	*res =3D bh->b_page;
+>  err:
+>  	put_bh(bh);
+> @@ -202,19 +203,19 @@ static void write_bdev_super_endio(struct bio *bi=
+o)
+>  {
+>  	struct cached_dev *dc =3D bio->bi_private;
+>  	/* XXX: error checking */
+> -
+>  	closure_put(&dc->sb_write);
+>  }
+> =20
+>  static void __write_super(struct cache_sb *sb, struct bio *bio)
+>  {
+> -	struct cache_sb *out =3D page_address(bio->bi_io_vec[0].bv_page);
+> +	struct cache_sb *out =3D page_address(bio->bi_io_vec[0].bv_page) +
+> +			       bio->bi_io_vec[0].bv_offset;
+>  	unsigned i;
+> =20
+>  	bio->bi_iter.bi_sector	=3D SB_SECTOR;
+>  	bio->bi_rw		=3D REQ_SYNC|REQ_META;
+>  	bio->bi_iter.bi_size	=3D SB_SIZE;
+> -	bch_bio_map(bio, NULL);
+> +	// bch_bio_map(bio, NULL);
+> =20
+>  	out->offset		=3D cpu_to_le64(sb->offset);
+>  	out->version		=3D cpu_to_le64(sb->version);
+> @@ -1139,6 +1140,7 @@ static int cached_dev_init(struct cached_dev *dc,=
+ unsigned block_size)
+>  /* Cached device - bcache superblock */
+> =20
+>  static void register_bdev(struct cache_sb *sb, struct page *sb_page,
+> +				 unsigned int sb_off,
+>  				 struct block_device *bdev,
+>  				 struct cached_dev *dc)
+>  {
+> @@ -1154,6 +1156,8 @@ static void register_bdev(struct cache_sb *sb, st=
+ruct page *sb_page,
+>  	dc->sb_bio.bi_max_vecs	=3D 1;
+>  	dc->sb_bio.bi_io_vec	=3D dc->sb_bio.bi_inline_vecs;
+>  	dc->sb_bio.bi_io_vec[0].bv_page =3D sb_page;
+> +	dc->sb_bio.bi_io_vec[0].bv_len =3D SB_SIZE;
+> +	dc->sb_bio.bi_io_vec[0].bv_offset =3D sb_off;
+>  	get_page(sb_page);
+> =20
+>  	if (cached_dev_init(dc, sb->block_size << 9))
+> @@ -1839,6 +1843,7 @@ static int cache_alloc(struct cache_sb *sb, struc=
+t cache *ca)
+>  }
+> =20
+>  static int register_cache(struct cache_sb *sb, struct page *sb_page,
+> +				unsigned int sb_off,
+>  				struct block_device *bdev, struct cache *ca)
+>  {
+>  	char name[BDEVNAME_SIZE];
+> @@ -1853,6 +1858,8 @@ static int register_cache(struct cache_sb *sb, st=
+ruct page *sb_page,
+>  	ca->sb_bio.bi_max_vecs	=3D 1;
+>  	ca->sb_bio.bi_io_vec	=3D ca->sb_bio.bi_inline_vecs;
+>  	ca->sb_bio.bi_io_vec[0].bv_page =3D sb_page;
+> +	ca->sb_bio.bi_io_vec[0].bv_len  =3D SB_SIZE;
+> +	ca->sb_bio.bi_io_vec[0].bv_offset =3D sb_off;
+>  	get_page(sb_page);
+> =20
+>  	if (blk_queue_discard(bdev_get_queue(ca->bdev)))
+> @@ -1936,6 +1943,7 @@ static ssize_t register_bcache(struct kobject *k,=
+ struct kobj_attribute *attr,
+>  	struct cache_sb *sb =3D NULL;
+>  	struct block_device *bdev =3D NULL;
+>  	struct page *sb_page =3D NULL;
+> +	unsigned int sb_off;
+> =20
+>  	if (!try_module_get(THIS_MODULE))
+>  		return -EBUSY;
+> @@ -1967,7 +1975,7 @@ static ssize_t register_bcache(struct kobject *k,=
+ struct kobj_attribute *attr,
+>  	if (set_blocksize(bdev, 4096))
+>  		goto err_close;
+> =20
+> -	err =3D read_super(sb, bdev, &sb_page);
+> +	err =3D read_super(sb, bdev, &sb_page, &sb_off);
+>  	if (err)
+>  		goto err_close;
+> =20
+> @@ -1977,14 +1985,14 @@ static ssize_t register_bcache(struct kobject *=
+k, struct kobj_attribute *attr,
+>  			goto err_close;
+> =20
+>  		mutex_lock(&bch_register_lock);
+> -		register_bdev(sb, sb_page, bdev, dc);
+> +		register_bdev(sb, sb_page, sb_off, bdev, dc);
+>  		mutex_unlock(&bch_register_lock);
+>  	} else {
+>  		struct cache *ca =3D kzalloc(sizeof(*ca), GFP_KERNEL);
+>  		if (!ca)
+>  			goto err_close;
+> =20
+> -		if (register_cache(sb, sb_page, bdev, ca) !=3D 0)
+> +		if (register_cache(sb, sb_page, sb_off, bdev, ca) !=3D 0)
+>  			goto err_close;
+>  	}
+>  out:
+>=20
+
+
+
+--AxqHJcBG8M8CE5GlRMCKImXPqe5rVRO3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCgAGBQJXlzKtAAoJEOhnXe7L7s6juv8QAJTv330oYKhoKUjn87+YKKNI
+MNdPhkUDGsDZQVUz6R6vhkyEfIVCiPJF0uD1s/vEVVc3glYXXxlEoK/LkHulq2HN
+wDFOWRl7KhCbZTagSGD4SasbYIvPWwIVpM3MNIiUe2h9jilFPxVQzEMLNUGIjp62
+JkJJ6Inrmw8RTBGnl94coQB/RuKB7NcxVhWhqQ6HzEAXaR41XMyeullQ8X/at2cJ
+YrDLVR320ZWRXSl3JCZQSO8qFGdoSRfgb/sAT2GSXYzpM+DCqws4jEauBUZvr8+5
+MneNV4DBSdr4Ds2K12wxkduScBhyNGTC8hTIA0dywFreV2/xB5e18aMnfcy6YWcl
+lYJhjdl1dzqrDvfG3uNwZ9C2YIdO6UC3PU1rKsDEc+dSSrVppcIKkj1sEMOq6KtH
+wwm58+v7UocAgkUcYCq30GH0EYbfFYuYntm/2k/VCVImbMdLwl93u2YbR7ET3SS/
+q1lg9bXMjVD4Dov5drA28WswlibvRgKYMmELmHoA71yGw/DJkJM+THwR6fog6UrU
+NHzHREJVxF0S3xC/45kqZN+YAPQ+7I1fpbtS1J/8XnLOykLxP/+zGM5am6z/w6MU
+D/fQh8YOb3h263nsqHp6snTH4+bB4pwTytR080WGpWB+UXM7A1BhSFRw5YZ044tK
+1+fb6q344EiVnYglpQf2
+=VI0c
+-----END PGP SIGNATURE-----
+
+--AxqHJcBG8M8CE5GlRMCKImXPqe5rVRO3l--
