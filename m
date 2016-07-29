@@ -1,50 +1,85 @@
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
+From: Kai Krakow <hurikhan77@gmail.com>
 Subject: Re: To add, or not to add, a bio REQ_ROTATIONAL flag
-Date: Thu, 28 Jul 2016 21:16:16 -0400
-Message-ID: <yq1y44l2qhr.fsf@sermon.lab.mkp.net>
+Date: Fri, 29 Jul 2016 18:28:11 +0200
+Message-ID: <20160729182811.27c0595c@jupiter.sol.kaishome.de>
 References: <alpine.LRH.2.11.1607281603530.10662@mail.ewheeler.net>
+	<579AABAA.2020200@youngman.org.uk>
 Mime-Version: 1.0
-Content-Type: text/plain
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <alpine.LRH.2.11.1607281603530.10662@mail.ewheeler.net> (Eric
-	Wheeler's message of "Thu, 28 Jul 2016 17:50:14 -0700 (PDT)")
-Sender: linux-block-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: linux-block@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from plane.gmane.org ([80.91.229.3]:52703 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640AbcG2Q20 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+	Fri, 29 Jul 2016 12:28:26 -0400
+Received: from list by plane.gmane.org with local (Exim 4.69)
+	(envelope-from <glbd-linux-bcache@m.gmane.org>)
+	id 1bTAe8-0000Da-3N
+	for linux-bcache@vger.kernel.org; Fri, 29 Jul 2016 18:28:24 +0200
+Received: from ip1f11faa0.dynamic.kabel-deutschland.de ([31.17.250.160])
+        by main.gmane.org with esmtp (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Fri, 29 Jul 2016 18:28:24 +0200
+Received: from hurikhan77 by ip1f11faa0.dynamic.kabel-deutschland.de with local (Gmexim 0.1 (Debian))
+        id 1AlnuQ-0007hv-00
+        for <linux-bcache@vger.kernel.org>; Fri, 29 Jul 2016 18:28:24 +0200
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-raid@vger.kernel.org, linux-block@vger.kernel.org, dm-devel@redhat.com, linux-kernel@vger.kernel.orglinux-raid@vger.kernel.orglinux-block@vger.kernel.orgdm-devel@redhat.comlinux-raid@vger.kernel.orgdm-devel@redhat.comlinux-kernel@vger.kernel.org
 
->>>>> "Eric" == Eric Wheeler <bcache@lists.ewheeler.net> writes:
+Am Fri, 29 Jul 2016 02:04:42 +0100
+schrieb Wols Lists <antlists@youngman.org.uk>:
 
-Eric,
+> On 29/07/16 01:50, Eric Wheeler wrote:
+> > Hello all,
+> > 
+> > With the many SSD caching layers being developed (bcache, dm-cache, 
+> > dm-writeboost, etc), how could we flag a bio from userspace to
+> > indicate whether the bio is preferred to hit spinning disks instead
+> > of an SSD?
+> > 
+> > Unnecessary promotions, evections, and writeback increase the write
+> > burden on the caching layer and burns out SSDs too fast (TBW), thus
+> > requring equipment replacement.  
+> 
+> What's the spec of these devices? How long are they expected to last?
+> 
+> Other recent posts on this (linux-raid) mailing list refer to tests on
+> SSDs that indicates their typical life is way beyond their nominal
+> life, and that in normal usage they are actually likely to outlive
+> "spinning rust".
 
-Eric> However, just because FADV_SEQUENTIAL is flagged doesn't mean the
-Eric> cache should bypass.  Filesystems can fragment, and while the file
-Eric> being read may be read sequentially, the blocks on which it
-Eric> resides may not be.  Same thing for higher-level block devices
-Eric> such as dm-thinp where one might sequentially read a thin volume
-Eric> but its _tdata might not be in linear order.  This may imply that
-Eric> we need a new way to flag cache bypass from userspace that is
-Eric> neither io-priority nor fadvise driven.
+Well, using SSD as a caching layer is probably everything else but
+normal usage. Caching involves writing a lot of data given the fact
+that it usually backs huge storage pools and is there to eliminate/hide
+inefficient usage patterns of rotational media. Caching layers like
+bcache do its best to turn writes to the device into optimal write
+patterns at best - but still, it writes a lot of data.
 
-Why conflate the two? Something being a background task is orthogonal to
-whether it is being read sequentially or not.
+> http://techreport.com/review/24841/introducing-the-ssd-endurance-experiment
+> 
+> http://techreport.com/review/27909/the-ssd-endurance-experiment-theyre-all-dead/3
+> 
+> Looking at the results, the FIRST drives only started failing once
+> they'd written some 700 Terabytes. How long is it going to take you to
+> write that much data over a SATA3 link?
 
-Eric> So what are our options?  What might be the best way to do this?
+I had a Crucial MX100 128GB SSD as bcache (writeback mode) in the past.
+It lasted exactly 12-13 months when I was forced to replace it: The
+lifetime of the SSD reached around 95% according to smartctl. The specs
+say, it has a lifetime guarantee of 85TB written. I guess it could have
+lasted longer due to bcache's optimized access patterns - but I didn't
+want to test it. Bigger SSDs usually last a lot longer, so now I'm
+using a Samsung 850 Evo 500GB which has a guarantee of 150TBW.
+According to tests, it probably goes a lot higher before failing (like
+250TBW estimated) but I don't want to test this is writeback mode.
 
-For the SCSI I/O hints I use the idle I/O priority to classify
-backups. Works fine.
-
-Eric> Are FADV_NOREUSE/FADV_DONTNEED reasonable candidates?
-
-FADV_DONTNEED was intended for this. There have been patches posted in
-the past that tied the loop between the fadvise flags and the bio. I
-would like to see those revived.
-
-Eric> Perhaps ionice could be used used, but the concept of "priority"
-Eric> doesn't exactly encompass the concept of cache-bypass---so is
-Eric> something else needed?
-
-The idle class explicitly does not have a priority.
+So the idea of reducing writes to the caching layer, or better
+eliminate useless writes altogether, would be very welcome.
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+Regards,
+Kai
+
+Replies to list-only preferred.
