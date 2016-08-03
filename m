@@ -1,176 +1,126 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: To add, or not to add, a bio REQ_ROTATIONAL flag
-Date: Sun, 31 Jul 2016 19:58:50 -0700 (PDT)
-Message-ID: <alpine.LRH.2.11.1607291113060.10662@mail.ewheeler.net>
-References: <alpine.LRH.2.11.1607281603530.10662@mail.ewheeler.net> <yq1y44l2qhr.fsf@sermon.lab.mkp.net>
+From: Ross Zwisler <zwisler@gmail.com>
+Subject: Re: [PATCH 42/45] block, fs, drivers: remove REQ_OP compat defs and
+	related code
+Date: Wed, 3 Aug 2016 10:25:02 -0600
+Message-ID: <CAOxpaSVzkR+9anramDg7nHxjb5hp0q_oKGRdEpiU07jWM=tzdQ@mail.gmail.com>
+References: <1465155145-10812-1-git-send-email-mchristi@redhat.com>
+	<1465155145-10812-43-git-send-email-mchristi@redhat.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <yq1y44l2qhr.fsf@sermon.lab.mkp.net>
-Sender: linux-block-owner@vger.kernel.org
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: linux-block@vger.kernel.org, dm-devel@redhat.com, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, hurikhan77@gmail.com, antlists@youngman.org.uk, Dan Williams <dan.j.williams@intel.com>, "Jason B. Akers" <jason.b.akers@intel.com>, Kapil Karkra <kapil.karkra@intel.com>, Jens Axboe <axboe@fb.com>, Jeff Moyer <jmoyer@redhat.com>, david@fromorbit.com
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Return-path: <xfs-bounces@oss.sgi.com>
+In-Reply-To: <1465155145-10812-43-git-send-email-mchristi@redhat.com>
+List-Unsubscribe: <http://oss.sgi.com/mailman/options/xfs>,
+	<mailto:xfs-request@oss.sgi.com?subject=unsubscribe>
+List-Archive: <http://oss.sgi.com/pipermail/xfs>
+List-Post: <mailto:xfs@oss.sgi.com>
+List-Help: <mailto:xfs-request@oss.sgi.com?subject=help>
+List-Subscribe: <http://oss.sgi.com/mailman/listinfo/xfs>,
+	<mailto:xfs-request@oss.sgi.com?subject=subscribe>
+Errors-To: xfs-bounces@oss.sgi.com
+Sender: xfs-bounces@oss.sgi.com
+To: mchristi@redhat.com, axboe@fb.com, Ross Zwisler <ross.zwisler@linux.intel.com>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, XFS Developers <xfs@oss.sgi.com>, ocfs2-devel@oss.oracle.com, linux-scsi@vger.kernel.org, konrad.wilk@oracle.com, LKML <linux-kernel@vger.kernel.org>, philipp.reisner@linbit.com, linux-f2fs-devel@lists.sourceforge.net, linux-raid@vger.kernel.org, dm-devel@redhat.com, target-devel@vger.kernel.org, linux-mtd@lists.infradead.org, osd-dev@open-osd.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>, lars.ellenberg@linbit.com, linux-ext4 <linux-ext4@vger.kernel.org>, linux-btrfs@vger.kernel.org, drbd-dev@lists.linbit.com
 List-Id: linux-bcache@vger.kernel.org
 
-[+cc from "Enable use of Solid State Hybrid Drives"
-	https://lkml.org/lkml/2014/10/29/698 ]
+On Sun, Jun 5, 2016 at 1:32 PM,  <mchristi@redhat.com> wrote:
+> From: Mike Christie <mchristi@redhat.com>
+>
+> This patch drops the compat definition of req_op where it matches
+> the rq_flag_bits definitions, and drops the related old and compat
+> code that allowed users to set either the op or flags for the operation.
+>
+> We also then store the operation in the bi_rw/cmd_flags field similar
+> to how we used to store the bio ioprio where it sat in the upper bits
+> of the field.
+>
+> Signed-off-by: Mike Christie <mchristi@redhat.com>
 
-On Thu, 28 Jul 2016, Martin K. Petersen wrote:
-> >>>>> "Eric" == Eric Wheeler <bcache@lists.ewheeler.net> writes:
-> Eric> [...]  This may imply that
-> Eric> we need a new way to flag cache bypass from userspace [...]
-> Eric> So what are our options?  What might be the best way to do this?
-[...] 
-> Eric> Are FADV_NOREUSE/FADV_DONTNEED reasonable candidates?
-> 
-> FADV_DONTNEED was intended for this. There have been patches posted in
-> the past that tied the loop between the fadvise flags and the bio. I
-> would like to see those revived.
+I was doing some xfstests testing yesterday using linux/master, and
+hit a kernel BUG that bisected to this change.  The failing test is
+generic/008 + ext2, without DAX.  This BUG reproduces with this test
+100% as of this change, and 0% with the previous commit.
 
-That sounds like a good start, this looks about right from 2014:
-	https://lkml.org/lkml/2014/10/29/698
-	https://lwn.net/Articles/619058/
+Here's the kernel commit that I bisected to:
 
-I read through the thread and have summarized the relevant parts here 
-with additional commentary below the summary:
+commit 4e1b2d52a80d79296a5d899d73249748dea71a53
+Author: Mike Christie <mchristi@redhat.com>
+Date:   Sun Jun 5 14:32:22 2016 -0500
 
-/* Summary 
+block, fs, drivers: remove REQ_OP compat defs and related code
 
-They were seeking to do basically the same in 2014 thing we want with 
-stacked block caching drivers today: hint to the IO layer so the (ATA 3.2) 
-driver can decide whether a block should hit the cache or spinning disk.  
-This was done by adding bitflags to ioprio for IOPRIO_ADV_ advice.
+Here are the steps to reproduce the BUG using a pair of 1 GiB BRD ramdisks:
 
-There are two arguments throughout the thread: one that the cache hint 
-should be per-process (ionice) and the other, that hints should be per 
-inode via fadvise (and maybe madvise).  Dan Williams noted with respect to 
-fadvise for their implementation that "It's straightforward to add, but I 
-think "80%" of the benefit can be had by just having a per-thread cache 
-priority."
+SCRATCH_DEV=/dev/ram0
+TEST_DEV=/dev/ram1
+mkfs.ext2 -F $SCRATCH_DEV
+mkfs.ext2 -F $TEST_DEV
+cd ~/xfstests
+./check generic/008
 
-Kapil Karkra extended the page flags so the ioprio advice bits can be 
-copied into bio->bi_rw, to which Jens said "is a bit...icky. I see why 
-it's done, though, it requires the least amount of plumbing."
+Here is the BUG output for that commit, passed through
+kasan_symbolize.py.  The line numbers are for the commit listed above,
+not for linux/master:
 
-Martin K. Petersen provides a matrix of desires for actual use cases here:
-	https://lkml.org/lkml/2014/10/29/1014 
-and asks "Are there actually people asking for sub-file granularity? I 
-didn't get any requests for that in the survey I did this summer. [...] In 
-any case I thought it was interesting that pretty much every use case that 
-people came up with could be adequately described by a handful of I/O 
-classes."
+ run fstests generic/008 at 2016-08-03 09:54:56
+page:ffffea0017af04c0 count:3 mapcount:0 mapping:ffff8805eb059200 index:0x0
+flags: 0x3fff8000002828(uptodate|lru|private|writeback)
+page dumped because: VM_BUG_ON_PAGE(!PageLocked(page))
+page->mem_cgroup:ffff8806098e0800
+------------[ cut here ]------------
+kernel BUG at mm/filemap.c:833!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: brd dax_pmem nd_pmem dax nd_btt nd_e820 libnvdimm
+CPU: 0 PID: 2522 Comm: xfs_io Not tainted 4.7.0-rc2-00042-g4e1b2d52 #18
+Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS
+rel-1.9.1-0-gb3ef39f-prebuilt.qemu-project.org 04/01/2014
+task: ffff8805ebae4ec0 ti: ffff8805eba3c000 task.ti: ffff8805eba3c000
+RIP: 0010:[<ffffffff811de115>] [<ffffffff811de115>] unlock_page+0xa5/0xb0
+RSP: 0018:ffff8805eba3fa60 EFLAGS: 00010282
+RAX: 0000000000000021 RBX: 0000000000000000 RCX: 0000000000000006
+RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff8806109ce200
+RBP: ffff8805eba3fa60 R08: 0000000000000001 R09: 0000000000000001
+R10: ffff8805ebae4ec0 R11: 0000000000000001 R12: ffffea0017af04c0
+R13: 0000000000028000 R14: ffffffffa00202c0 R15: ffff88060eff1200
+FS: 00007f87a31cf700(0000) GS:ffff880610800000(0000) knlGS:0000000000000000
+CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f87a31e6000 CR3: 000000060da31000 CR4: 00000000001406f0
+Stack:
+ffff8805eba3fa98 ffffffff812bd782 ffff8805eba3fdb0 0000000000001000
+ffffea0017af04c0 0000000000000000 0000000000000088 ffff8805eba3fbe0
+ffffffff812c3ff1 ffff8805eba3fd00 0000000000028000 0000000c00000000
+Call Trace:
+[<ffffffff812bd782>] bdev_write_page+0xb2/0xe0 fs/block_dev.c:462
+[<ffffffff812c3ff1>] __mpage_writepage+0x5c1/0x750 fs/mpage.c:604
+[<ffffffff811eedbd>] write_cache_pages+0x20d/0x5f0 mm/page-writeback.c:2261
+[<ffffffff812c3955>] mpage_writepages+0x75/0xe0 fs/mpage.c:703
+[<ffffffff8137951b>] ext2_writepages+0x3b/0x40 fs/ext2/inode.c:887
+[<ffffffff811f27a1>] do_writepages+0x21/0x30 mm/page-writeback.c:2361
+[<ffffffff811e1396>] __filemap_fdatawrite_range+0xc6/0x100 mm/filemap.c:300
+[<ffffffff811e1514>] filemap_write_and_wait_range+0x44/0x90 mm/filemap.c:490
+[<ffffffff812a7707>] __generic_file_fsync+0x27/0x90 fs/libfs.c:937
+[<ffffffff812a7789>] generic_file_fsync+0x19/0x40 fs/libfs.c:974
+[<ffffffff81377e9e>] ext2_fsync+0x2e/0x70 fs/ext2/file.c:149
+[<ffffffff812b549b>] vfs_fsync_range+0x4b/0xb0 fs/sync.c:195
+[< inline >] vfs_fsync fs/sync.c:209
+[<ffffffff812b555d>] do_fsync+0x3d/0x70 fs/sync.c:219
+[< inline >] SYSC_fsync fs/sync.c:227
+[<ffffffff812b5810>] SyS_fsync+0x10/0x20 fs/sync.c:225
+[<ffffffff81acd33c>] entry_SYSCALL_64_fastpath+0x1f/0xbd
+arch/x86/entry/entry_64.S:207
+Code: 00 00 48 d3 ea 89 d2 48 8d 0c 92 48 8d 14 4a 48 8d 3c d0 31 d2
+e8 bc fc f1 ff 5d c3 48 c7 c6 20 1d ec 81 4c 89 c7 e8 bb 8d 03 00 <0f>
+0b 66 0f 1f 84 00 00 00 00 00 66 66 66 66 90 55 b9 08 00 00
+RIP [<ffffffff811de115>] unlock_page+0xa5/0xb0 mm/filemap.c:833
+RSP <ffff8805eba3fa60>
+---[ end trace d419bf59bba263fb ]---
 
-Further, Jens notes that "I think we've needed a proper API for passing in 
-appropriate hints on a per-io basis for a LONG time. [...] We've tried 
-(and failed) in the past to define a set of hints that make sense. It'd be 
-a shame to add something that's specific to a given transport/technology. 
-That said, this set of hints do seem pretty basic and would not 
-necessarily be a bad place to start. But they are still very specific to 
-this use case."
-*/
+I'm happy to provide any additional info you need, or to test fixes.
 
+Thanks,
+- Ross
 
-So, perhaps it is time to plan the hint API and figure out how to plumb 
-it.  These are some design considerations based on the thread:
-
-a. People want per-process cache hinting (ionice, or some other tool).
-b. Per inode+range hinting would be useful to some (fadvise, ioctl, etc)
-c. Don't use page flags to convey cache hints---or find a clean way to do so.
-d. Per IO hints would be useful to both stacking and hardware drivers.
-e. Cache layers will implement their own device assignment choice based 
-on the caching hint; for example, an IO flagged to miss the cache might 
-hit if already in cache due to unrelated IO and such a determination would 
-be made per-cache-implementation.
-
-
-I can see this go two ways:
-
-1. A dedicated implementation for cache hinting.
-2. An API for generalized hinting, upon which cache hinting may be 
-implemented.
-
-To consider #2, what hinting is wanted from processes and inodes down to 
-bio's?  Does it justify an entire API for generalized hinting, or do we 
-just need a cache hinting implementation?  If we do want #2, then what are 
-all of the features wanted by the community so it can be designed as such?
-
-If #1 is sufficient, then what is the preferred mechanism and 
-implementation for cache hinting?
-
-In either direction, how can those hints pass down to bio's in an 
-appropriate way (ie, not page flags)?
-
-
-With the interest of a cache hinting implementation independent of 
-transport/technology, I have been playing with an idea to use two per-IO 
-"TTL" counters, both of which tend toward zero; I've not yet started an 
-implementation:
-
-cacheskip: 
-	Decrement until zero to skip cache layers (slow medium)
-	Ignore cachedepth until cacheskip==0.
-	
-cachedepth:
-	Initialize to positive, negative, or zero value.  Once zero, no 
-	special treatment is given to the IO.  When less than zero, prefer the 
-	slower medium.  When greater than zero, prefer the faster medium.  
-	Inc/decrement toward zero each time the IO passes through a 
-	caching layer.
-
-Independent of how we might apply these counters to a pid/inode, the cache 
-layers might look something like this:
-
-cachedepth	description
-  0		direct IO
-+-1		pagecache
-+-2		som arbitrary
-+-3		caching
-+-4		driver
-+-n		...
-
-Layers beyond the pagecache are assigned arbitrarily by the driver 
-stacking order implemented by the end user. For example, if passing 
-through dm-cache, then dm-cache would use its own preference logic to 
-decide whether it should cache or not if cachedepth is zero.  If nonzero, 
-it would cache/bypass appropriately and then inc/decrements cachedepth 
-toward zero after making its decision.  Understandably, extenuating 
-circumstances may require a layer to ignore the hint---such as a 
-bypass-hinted IO that gets cached because it is already hot.
-
-Consider the following scenarios for this contrived cache stack:
-
-1. pagecache
-2. dm-cache
-3. bcache
-4. HBA supporting cache hints (ATA 3.2, perhaps)
-
-cacheskip	cachedepth	description
--------------------------------------------
-	0		0	use pagecache; lower layers do what they want
-	1		0	skip pagecache (direct IO); lower layers do what they want
-	0		-1	same as previous
-	2		1	skip pagecache, dmcache; prefer bcache-ssd
-	0		-3	skip pagecache; dmcache bypass; bcache bypass
-	1		2	skip pagecache; prefer dmcache-ssd, prefer bcache-ssd
-	3		1	hint to prefer HBA cache only
-
-This would empower the user to decide where caching should begin, and for 
-how many layers caching should hint for slow(-) or fast(+) backing devices 
-before letting the IO stack make its own hintless choice.  Hopefully this 
-lets each layer make their own choices that best fit their implementation.
-
-Note that this would not support multi-device tiering as written.  If some 
-layer supports multiple IO performance tiers (more than 2) at the same 
-layer, then this hinting algorithm is insufficient unless a 
-cache-layer-specific datastructure could be passed with the IO hinting 
-request.  Also, an eviction hint is not supported by this model.
-
-
-Please comment with your thoughts.  I look forward to feedback and 
-implementation ideas for what would be the best way to plumb cache hinting 
-for whatever implementation is chosen.
-
---
-Eric Wheeler
-
-
+_______________________________________________
+xfs mailing list
+xfs@oss.sgi.com
+http://oss.sgi.com/mailman/listinfo/xfs
