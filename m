@@ -1,104 +1,25 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH] NULL pointer in raid1_make_request passed to bio_trim
- when adding md as bcache caching dev
-Date: Wed, 10 Aug 2016 23:52:15 -0700 (PDT)
-Message-ID: <alpine.LRH.2.11.1608102344080.10662@mail.ewheeler.net>
-References: <alpine.LRH.2.11.1608102035180.10662@mail.ewheeler.net>
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH v2] block: make sure big bio is splitted into at most 256
+ bvecs
+Date: Thu, 11 Aug 2016 07:02:53 -0700
+Message-ID: <20160811140253.GA2867@infradead.org>
+References: <1459914212-9330-1-git-send-email-ming.lei@canonical.com>
+ <alpine.LRH.2.11.1608102132120.10662@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <alpine.LRH.2.11.1608102035180.10662@mail.ewheeler.net>
-Sender: linux-block-owner@vger.kernel.org
-To: Shaohua Li <shli@kernel.org>
-Cc: Ming Lei <ming.lei@canonical.com>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, Ming Lin <mlin@kernel.org>, Vlad-Cosmin Miu <miuvlad@gmail.com>, rjones@redhat.com, Kent Overstreet <kent.overstreet@gmail.com>, jmoyer@redhat.com, axboe@fb.com, Sebastian Roesner <sroesner-kernelorg@roesner-online.de>, linux-block@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from bombadil.infradead.org ([198.137.202.9]:48335 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752463AbcHKOC4 (ORCPT
+	<rfc822;linux-bcache@vger.kernel.org>);
+	Thu, 11 Aug 2016 10:02:56 -0400
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.11.1608102132120.10662@mail.ewheeler.net>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Ming Lei <ming.lei@canonical.com>, Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, kent.overstreet@gmail.com, Christoph Hellwig <hch@infradead.org>, Sebastian Roesner <sroesner-kernelorg@roesner-online.de>, "4.3+" <stable@vger.kernel.org>, Shaohua Li <shli@fb.com>
 
-On Wed, 10 Aug 2016, Eric Wheeler wrote:
-
-> On Sun, 10 Apr 2016 20:01:30 +0200, Sebastian Roesner wrote:
-> > Am 01.04.2016 um 20:14 schrieb Eric Wheeler:
-> > > On Mon, 28 Mar 2016, Shaohua Li wrote:
-> > > > On Sat, Mar 26, 2016 at 05:46:16PM +0100, Sebastian Roesner wrote:
-> > > > > Hello Ming, Eric,
-> > > > > 
-> > > > > Am 26.03.2016 um 16:40 schrieb Ming Lei:
-> > > > > I was able to reproduce it on a non-productive system, but only after
-> > > > > copying the bcache superblocks/partition starts from the original system,
-> > > > > with new created ones it worked fine.
-> > > >
-> > > > 320 bvecs exceeds what bio-clone_set can handle. Could you please try below patch?
-> > > >
-> > > Hey Sebastian,
-> > > 
-> > > Have you had a chance to test the patch below from Shaohua Li?
-> > 
-> > I just tried the patch and it did not crash anymore.
->  
-> It doesn't look like this made it into v4.8-rc1 and it is known to fix at 
-> least Sebastian's issue.
-> 
-> commit 92761dad7ff6e1bf25de247e0064dd398e797599
-> Author: Shaohua Li <shli@fb.com>
-> Date:   Mon Mar 28 10:54:35 2016 -0700
-> 
->     block: don't make BLK_DEF_MAX_SECTORS too big
->     
->     bio_alloc_bioset() allocates bvecs from bvec_slabs which can only allocate
->     maximum 256 bvec (eg, 1M for 4k pages). We can't bump BLK_DEF_MAX_SECTORS to
->     exceed this value otherwise bio_alloc_bioset will fail.
->     
->     This fixes commit 30e2bc08b2bb7c069. We probably should make the bvec_slabs
->     hold bigger bvecs if bigger bio size is required.
->     
->     Signed-off-by: Shaohua Li <shli@fb.com>
-> 
-> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> index 7e5d7e0..da64325 100644
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -1153,7 +1153,11 @@ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
->  enum blk_default_limits {
->  	BLK_MAX_SEGMENTS	= 128,
->  	BLK_SAFE_MAX_SECTORS	= 255,
-> -	BLK_DEF_MAX_SECTORS	= 2560,
-> +	/*
-> +	 * if you change this, please also change bvec_alloc and BIO_MAX_PAGES.
-> +	 * Otherwise bio_alloc_bioset will break.
-> +	 */
-> +	BLK_DEF_MAX_SECTORS	= BIO_MAX_SECTORS,
-
-
-It seems that I spoke too soon, as BIO_MAX_SECTORS was removed for v4.8.
-
-What should BLK_DEF_MAX_SECTORS be defined as?  
-
-Something like this?
-	-	BLK_DEF_MAX_SECTORS     = 2560,
-	+	BLK_DEF_MAX_SECTORS = (BIO_MAX_PAGES << (PAGE_SHIFT-9)
-
-Or was this issue patched by Shaohua Li solved in some other way?
-
-It appears that BLK_DEF_MAX_SECTORS is still used:
-
-$ git grep BLK_DEF_MAX_SECTORS
-block/blk-settings.c:   max_sectors = min_t(unsigned int, max_sectors, BLK_DEF_MAX_SECTORS);
-drivers/block/aoe/aoeblk.c:     blk_queue_max_hw_sectors(q, BLK_DEF_MAX_SECTORS);
-drivers/scsi/sd.c:              rw_max = BLK_DEF_MAX_SECTORS;
-
-
---
-Eric Wheeler
-
-
->  	BLK_MAX_SEGMENT_SIZE	= 65536,
->  	BLK_SEG_BOUNDARY_MASK	= 0xFFFFFFFFUL,
->  };
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Please just fix bcache to not submit bios larger than BIO_MAX_PAGES for
+now, until we can support such callers in general and enable common
+used code to do so.
