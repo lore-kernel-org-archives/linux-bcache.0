@@ -1,44 +1,41 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PULL] v4.8-rc2 bcache fixes
-Date: Fri, 19 Aug 2016 14:03:47 -0600
-Message-ID: <acd7cf13-fcf8-188c-0c09-e07457d76392@kernel.dk>
-References: <alpine.LRH.2.11.1608182036520.10662@mail.ewheeler.net>
+From: Robert David <clarkraymond377@gmail.com>
+Subject: Attention Beneficially
+Date: Sun, 21 Aug 2016 06:40:14 +0000 (UTC)
+Message-ID: <2070586141.469649.1471761614811@mail.yahoo.com>
+References: <2070586141.469649.1471761614811.ref@mail.yahoo.com>
+Reply-To: Robert David <dhlservicesbenindhl@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-it0-f49.google.com ([209.85.214.49]:37550 "EHLO
-        mail-it0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1755641AbcHSUKP (ORCPT
+Received: from nm44-vm5.bullet.mail.ne1.yahoo.com ([98.138.120.245]:42828 "EHLO
+        nm44-vm5.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1751764AbcHUGsx (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 19 Aug 2016 16:10:15 -0400
-Received: by mail-it0-f49.google.com with SMTP id f6so34487497ith.0
-        for <linux-bcache@vger.kernel.org>; Fri, 19 Aug 2016 13:10:14 -0700 (PDT)
-In-Reply-To: <alpine.LRH.2.11.1608182036520.10662@mail.ewheeler.net>
+        Sun, 21 Aug 2016 02:48:53 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
+
+Attention Beneficially
 
 
+WESTERN UNION
 
-On 08/19/2016 01:55 PM, Eric Wheeler wrote:
-> Hello Jens,
->
-> Please pull this bcache branch based on v4.8-rc2.  These fix one deadlock,
-> one use blkdev_put() use counter, and one dmesg output with a better
-> pr_err() description.
->
-> git pull https://bitbucket.org/ewheelerinc/linux.git v4.8-rc2-bcache-fixes
->
->  drivers/md/bcache/super.c | 14 ++++++++++----
->  1 file changed, 10 insertions(+), 4 deletions(-)
->
-> 9070609 bcache: pr_err: more meaningful error message when nr_stripes is invalid
-> acc9cf8 bcache: RESERVE_PRIO is too small by one when prio_buckets() is a power of two.
-> d9dc170 bcache: register_bcache(): call blkdev_put() when cache_alloc() fails
+This is very urgent Our Operation manager has sent your first payment of $5000.00 to you. Here is what we need from you to complete the
+transfer, Your Name, Your Address,A Copy Of Your ID and Your Telephone Number: Noted That Only Fee Request from You Is to
+Reactivate Transfer Files which is Sum Of $65Only, No More Fee again after that.
+Western Union Agent: Mr. Peterson Godwin
+Direct phone line is: + 229 98782817
+E-mail ::(westernunion8087@gmail.com)
 
-Pulled, thanks.
+Bellow is your first payment for $5000usd sent today in your name.
+Sender Name: Mr. 
+MTCN: 
+Question
+Answer
+Amount Sent: $5000.00
 
--- 
-Jens Axboe
+You can use this link to confirm the payment,
+
+Best Regards,
+Mr.Joseph Ezo
