@@ -1,52 +1,58 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
+From: =?UTF-8?Q?Marcin_Miros=c5=82aw?= <marcin@mejor.pl>
 Subject: Re: How to create bcachefs?
-Date: Wed, 24 Aug 2016 15:52:06 -0800
-Message-ID: <20160824235206.tq75ghe5n5gjciqm@kmo-pixel>
+Date: Thu, 25 Aug 2016 11:21:47 +0200
+Message-ID: <2f1e41df-3f3e-0115-e21b-2f1fb2148934@mejor.pl>
 References: <e6d5ceae4a7dd53daf2667e25b76539b@mejor.pl>
  <20160824065212.fzs2nk3rg7z7iudb@kmo-pixel>
  <f92c1177-565d-47a1-b3ad-1876774003d4@mejor.pl>
- <alpine.LRH.2.11.1608241611270.10662@mail.ewheeler.net>
+ <1472083387.31787.0@mail.cooperteam.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:34537 "EHLO
-        mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S933380AbcHYI2P (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 25 Aug 2016 04:28:15 -0400
-Received: by mail-pa0-f43.google.com with SMTP id fi15so14981204pac.1
-        for <linux-bcache@vger.kernel.org>; Thu, 25 Aug 2016 01:28:15 -0700 (PDT)
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1608241611270.10662@mail.ewheeler.net>
+Received: from jowisz.mejor.pl ([81.4.120.72]:34439 "EHLO jowisz.mejor.pl"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751540AbcHYJ0V (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 25 Aug 2016 05:26:21 -0400
+In-Reply-To: <1472083387.31787.0@mail.cooperteam.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: marcin@mejor.pl, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Wed, Aug 24, 2016 at 04:12:22PM -0700, Eric Wheeler wrote:
-> On Wed, 24 Aug 2016, marcin@mejor.pl wrote:
-> 
-> > W dniu 24.08.2016 o 08:52, Kent Overstreet pisze:
-> > [...]
-> > 
-> > Hi!
-> > > Hey, sorry for the long delay, been sick past several days.
-> > 
-> > I was afraid that I'm asking to easy question:) And I hope everything is
-> > fine with you now!
-> > 
-> > 
-> > > The way arguments
-> > > were passed to bcache format was a holdover from old style make-bcache, and
-> > > didn't make much sense for bcachefs - -C was used for all devices, and
-> > > --tier
-> > > specifies fast devices and slow devices.
-> > > 
-> > > I finally got around to redoing the option parsing so we don't need the -C
-> > > argument today - update your bcache tools, and the command you want is now:
-> > > 
-> > > bcache format --tier 0 /dev/sde1 --tier 1 /dev/sdd1
-> 
-> Neat!  How many performance tiers are (will be) supported?  Arbitrary?
+W dniu 25.08.2016 o 02:03, Christopher James Halse Rogers pisze:
 
-Currently the code just handles two, but the on disk format allows for up to 16.
+Hi!
+
+> On Thu, Aug 25, 2016 at 7:21 AM, marcin@mejor.pl wrote:
+[...]
+>> Does it means that cache is unavailable and only tiering will be in
+>> bcachefs?
+>> And... How to mount tiered FS? When I pass one device in mount I'm
+>> getting:
+>>  bcache: bch_open_as_blockdevs() register_cache_set err insufficient
+>> devices
+> 
+> Tiering gets you all the advantages of caching, plus you can (with some
+> effort) have the combined filesystem size be the sum of the SSD + HDD
+> capacities, rather than the capacity be determined solely by the
+> capacity of the slow tier (this is not currently the case for bcachefs).
+
+I think that cacheing has at least such advantages over tiering:
+- allow fast read and write to files compressed with slow alghoritm (gzip)
+- can be optimized for using SSD drives
+
+> To mount a tiered FS you can either pass all the relevant devices to
+> mount, like:
+>    mount -t bcache /dev/sda:/dev/sdb:/dev/sdc /mountpoint
+> (I haven't tested this recently) or ensure that all the relevant devices
+> have been registered with bcache, like so:
+>    echo /dev/sda | sudo tee /sys/fs/bcache/register_quiet
+>    echo /dev/sdb | sudo tee /sys/fs/bcache/register_quiet
+>    echo /dev/sdc | sudo tee /sys/fs/bcache/register_quiet
+>    mount -t bcache /dev/sdb /mountpoint
+> (you can use any member of the set as the device to mount in this case).
+
+
+Thanks for tip, good to know other way to mount.
+
+Marcin
