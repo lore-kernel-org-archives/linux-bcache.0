@@ -1,171 +1,109 @@
 From: =?UTF-8?Q?Marcin_Miros=c5=82aw?= <marcin@mejor.pl>
-Subject: Re: Testing tiering: a little scary message "IO error" ; I can't
- unregister tier device
-Date: Fri, 26 Aug 2016 10:01:34 +0200
-Message-ID: <a84b971d-9b39-165e-84b8-79d360c10822@mejor.pl>
-References: <d6c6187a-497c-043e-29ff-a1d47eb2c456@mejor.pl>
- <20160826022615.qqfsbpwfs3p5utud@kmo-pixel>
+Subject: Re: How to create bcachefs?
+Date: Fri, 26 Aug 2016 10:23:58 +0200
+Message-ID: <7759c379-67a3-29d2-7f41-154c98ffcb40@mejor.pl>
+References: <e6d5ceae4a7dd53daf2667e25b76539b@mejor.pl>
+ <20160824065212.fzs2nk3rg7z7iudb@kmo-pixel>
+ <f92c1177-565d-47a1-b3ad-1876774003d4@mejor.pl>
+ <1472083387.31787.0@mail.cooperteam.net>
+ <2f1e41df-3f3e-0115-e21b-2f1fb2148934@mejor.pl>
+ <1472123394.15072.7@mail.cooperteam.net>
+ <13f3920b-638f-bf04-40ec-7cece2c34b78@mejor.pl>
+ <1472173610.31787.2@mail.cooperteam.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:54141 "EHLO jowisz.mejor.pl"
+Received: from jowisz.mejor.pl ([81.4.120.72]:55587 "EHLO jowisz.mejor.pl"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751168AbcHZIF6 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 26 Aug 2016 04:05:58 -0400
-In-Reply-To: <20160826022615.qqfsbpwfs3p5utud@kmo-pixel>
+        id S1751492AbcHZIY5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 26 Aug 2016 04:24:57 -0400
+In-Reply-To: <1472173610.31787.2@mail.cooperteam.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
+To: Christopher James Halse Rogers <chris@cooperteam.net>
+Cc: linux-bcache@vger.kernel.org
 
-W dniu 26.08.2016 o 04:26, Kent Overstreet pisze:
-> On Thu, Aug 25, 2016 at 12:13:53PM +0200, Marcin Mirosław wrote:
->> Hi!
+W dniu 26.08.2016 o 03:06, Christopher James Halse Rogers pisze:
+Hi!
+
+
+> On Thu, Aug 25, 2016 at 10:11 PM, Marcin Mirosław <marcin@mejor.pl> wrote:
+>> W dniu 25.08.2016 o 13:09, Christopher James Halse Rogers pisze:
+>>>
+>>>
+>>>  On Thu, Aug 25, 2016 at 7:21 PM, Marcin MirosÅ‚aw <marcin@mejor.pl>
+>>> wrote:
+>>>>  W dniu 25.08.2016 o 02:03, Christopher James Halse Rogers pisze:
+>>>>
+>>>>  Hi!
+>>>>
+>>>>>   On Thu, Aug 25, 2016 at 7:21 AM, marcin@mejor.pl wrote:
+>>>>  [...]
+>>>>>>   Does it means that cache is unavailable and only tiering will be in
+>>>>>>   bcachefs?
+>>>>>>   And... How to mount tiered FS? When I pass one device in mount I'm
+>>>>>>   getting:
+>>>>>>    bcache: bch_open_as_blockdevs() register_cache_set err
+>>>>>> insufficient
+>>>>>>   devices
+>>>>>
+>>>>>   Tiering gets you all the advantages of caching, plus you can
+>>>>> (with some
+>>>>>   effort) have the combined filesystem size be the sum of the SSD +
+>>>>> HDD
+>>>>>   capacities, rather than the capacity be determined solely by the
+>>>>>   capacity of the slow tier (this is not currently the case for
+>>>>>  bcachefs).
+>>>>
+>>>>  I think that cacheing has at least such advantages over tiering:
+>>>>  - allow fast read and write to files compressed with slow alghoritm
+>>>>  (gzip)
+>>>
+>>>  I think this is getting into ā€œwhat should we call this thingā€
+>>>  arguments. A naive cache is just going to promote the gzipped data to
+>>>  the fast storage. On the other end, there's nothing much preventing a
+>>>  sophisticated tiering system from compressing/decompressing as a
+>>> part of
+>>>  tier demotion/promotion.
 >>
->> 1.
->> # ./bcache format --compression_type=lz4 --error_action=readonly
->> --tier=0 /dev/system10/bcache --tier=1 /dev/sdd1
->> /dev/system10/bcache contains a bcache filesystem
->> Proceed anyway? (y,n) y
->> /dev/sdd1 contains a bcache filesystem
->> Proceed anyway? (y,n) y
->> UUID:                   ab597c6a-7394-41ff-9138-e66c5722bc9d
->> Set UUID:               311a03a9-3646-40a8-935f-10030ee75b25
->> version:                6
->> nbuckets:               22288
->> block_size:             1
->> bucket_size:            1024
->> nr_in_set:              2
->> nr_this_dev:            0
->> first_bucket:           3
->> UUID:                   2ac11eef-6d66-4ca0-bd6e-17ac83c6942a
->> Set UUID:               311a03a9-3646-40a8-935f-10030ee75b25
->> version:                6
->> nbuckets:               40960
->> block_size:             1
->> bucket_size:            1024
->> nr_in_set:              2
->> nr_this_dev:            1
->> first_bucket:           3
->>
->>
->> # mount -o noatime -t bcache /dev/system10/bcache:/dev/sdd1 /mnt/test
->> # dd if=/dev/urandom of=/mnt/test/randomdata bs=1M count=1000
->> # md5sum /mnt/test/randomdata
->> a7d2712c673d891d9ba50f2f7157c091  /mnt/test/randomdata
->> # cat  /sys/fs/bcache/311a03a9-3646-40a8-935f-10030ee75b25/tiering_percent
->> 10
->> # echo 1 >
->> /sys/fs/bcache/311a03a9-3646-40a8-935f-10030ee75b25/tiering_percent ;
->> sleep 5 ; umount /mnt/test
->>
->> Now I'm getting in dmesg:
->> Aug 25 11:55:04 localhost kernel: [ 1366.385581] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): IO error: read only
->> Aug 25 11:55:04 localhost kernel: [ 1366.385600] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): IO error: read only
->> Aug 25 11:55:04 localhost kernel: [ 1366.390298] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): IO error: read only
->> Aug 25 11:55:04 localhost kernel: [ 1366.391076] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): IO error: read only
->> Aug 25 11:55:04 localhost kernel: [ 1366.391098] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): IO error: read only
->> Aug 25 11:55:04 localhost kernel: [ 1366.391111] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): IO error: read only
->> Aug 25 11:55:04 localhost kernel: [ 1366.417244] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): IO error: read only
->> Aug 25 11:55:04 localhost kernel: [ 1366.656319] bcache
->> (311a03a9-3646-40a8-935f-10030ee75b25): stopped
->>
->> Now:
->> # mount -o noatime -t bcache /dev/system10/bcache:/dev/sdd1 /mnt/test
->> # md5sum /mnt/test/randomdata
->> a7d2712c673d891d9ba50f2f7157c091  /mnt/test/randomdata
->>
->> So it is ok. But logs in dmesg are a little scary.
->> I had data corruption in similar situation like this but I can't
->> reproduce it.
->> Btw, should be bcachefs immune of power reset while IO activity?
+>> When (de|re)compressing would be part of demotion or promotion then I
+>> agree, cache device doesn't have advantages.
 > 
-> Yes, it definitely should be.
+> You also don't get (de|re)compression for free in a caching strategy
+> depending on where you put your cache. For example, a traditional bcache
+> cache backing a compressed filesystem will only ever see compressed data.
 > 
-> Do id you see in the log what caused it to go RO? Or did you do that via sysfs?
+>>
+>>>>  - can be optimized for using SSD drives
+>>>
+>>>  It's not clear to me how? Tiering and caching are doing the same
+>>> sort of
+>>>  things.
+>> I don't know how bcachefs handle SSD drives. SSD are faster in
+>> sequential write, I'm not sure if it could be achieved using tier
+>> device. Using cache device on disk format can be different than using in
+>> bcachefs and can turn random writes into sequential writes.
+> 
+> I believe you mean *HDDs* are faster in sequential write? This is
+> exactly what tiering gets you - all writes go to the fast, SSD storage¹,
+> and then data are migrated off to the slower HDD in big, sequential chunks.
 
-I changed state via sysfs only.
+
+SSD deals great with random reads but both SSD and HDD don't like random
+writes.
+I'm pasting a few links, you can read about problems with SSD
+performance. Also SSD performance is going down after a dozens minutes
+of intensive writes.
+
+https://github.com/akiradeveloper/dm-writeboost
+https://www.usenix.org/conference/fast12/sfs-random-write-considered-harmful-solid-state-drives
+http://codecapsule.com/2014/02/12/coding-for-ssds-part-5-access-patterns-and-system-optimizations/
+http://www.tomsitpro.com/articles/enterprise-ssd-testing,2-863.html
 
 
->>
->> 2. Unsuccessful try of unregister device:
->> # echo 1 >
->> /sys/fs/bcache/311a03a9-3646-40a8-935f-10030ee75b25/cache1/unregister
->>
->> and console hangs. I have acces to files from other console.
->> In dmesg is:
->> Aug 25 12:07:48 localhost kernel: [ 2130.432099] INFO: task bash:19379
->> blocked for more than 30 seconds.
->> Aug 25 12:07:48 localhost kernel: [ 2130.432105]       Tainted: P
->>    O    4.7.0-bcache+ #5
->> Aug 25 12:07:48 localhost kernel: [ 2130.432108] "echo 0 >
->> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->> Aug 25 12:07:48 localhost kernel: [ 2130.432111] bash            D
->> ffff88014857bc88     0 19379  19376 0x00000000
->> Aug 25 12:07:48 localhost kernel: [ 2130.432118]  ffff88014857bc88
->> 0000000000000000 ffff88014a1a1b40 ffff8800c8f78000
->> Aug 25 12:07:48 localhost kernel: [ 2130.432124]  ffff88014857bcb0
->> ffff88014857c000 ffffffffc0785244 ffff8800c8f78000
->> Aug 25 12:07:48 localhost kernel: [ 2130.432129]  00000000ffffffff
->> ffffffffc0785248 ffff88014857bca0 ffffffff8156fcea
->> Aug 25 12:07:48 localhost kernel: [ 2130.432135] Call Trace:
->> Aug 25 12:07:48 localhost kernel: [ 2130.432147]  [<ffffffff8156fcea>]
->> schedule+0x3a/0x90
->> Aug 25 12:07:48 localhost kernel: [ 2130.432152]  [<ffffffff81570163>]
->> schedule_preempt_disabled+0x13/0x20
->> Aug 25 12:07:48 localhost kernel: [ 2130.432155]  [<ffffffff81571c3b>]
->> __mutex_lock_slowpath+0x9b/0x140
->> Aug 25 12:07:48 localhost kernel: [ 2130.432159]  [<ffffffff81571cf2>]
->> mutex_lock+0x12/0x30
->> Aug 25 12:07:48 localhost kernel: [ 2130.432202]  [<ffffffffc075f8be>]
->> bch_cache_remove+0x1e/0xe0 [bcache]
->> Aug 25 12:07:48 localhost kernel: [ 2130.432218]  [<ffffffffc0762605>]
->> __bch_cache_store+0x245/0x650 [bcache]
->> Aug 25 12:07:48 localhost kernel: [ 2130.432234]  [<ffffffffc0762a44>]
->> bch_cache_store+0x34/0x50 [bcache]
->> Aug 25 12:07:48 localhost kernel: [ 2130.432238]  [<ffffffff81206272>]
->> sysfs_kf_write+0x32/0x40
->> Aug 25 12:07:48 localhost kernel: [ 2130.432240]  [<ffffffff812057f3>]
->> kernfs_fop_write+0x113/0x190
->> Aug 25 12:07:48 localhost kernel: [ 2130.432243]  [<ffffffff8118e5c2>]
->> __vfs_write+0x32/0x150
->> Aug 25 12:07:48 localhost kernel: [ 2130.432247]  [<ffffffff812e8a33>] ?
->> __this_cpu_preempt_check+0x13/0x20
->> Aug 25 12:07:48 localhost kernel: [ 2130.432251]  [<ffffffff8109f201>] ?
->> update_fast_ctr+0x41/0x70
->> Aug 25 12:07:48 localhost kernel: [ 2130.432253]  [<ffffffff8109f262>] ?
->> percpu_down_read+0x12/0x50
->> Aug 25 12:07:48 localhost kernel: [ 2130.432256]  [<ffffffff8118f8c3>]
->> vfs_write+0xb3/0x1b0
->> Aug 25 12:07:48 localhost kernel: [ 2130.432258]  [<ffffffff81190ce0>]
->> SyS_write+0x50/0xc0
->> Aug 25 12:07:48 localhost kernel: [ 2130.432261]  [<ffffffff811adbde>] ?
->> __close_fd+0x9e/0xc0
->> Aug 25 12:07:48 localhost kernel: [ 2130.432264]  [<ffffffff8157431f>]
->> entry_SYSCALL_64_fastpath+0x17/0x93
->>
->>
->>
->> iostat show:
->> # iostat -d 1 3 /dev/sdd1 /dev/mapper/system10-bcache
->> Linux 4.7.0-bcache+ (marcinm)   25.08.2016      _x86_64_        (4 CPU)
->>
->> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
->> sdd1              0,90         2,40        56,36       5920     138772
->> dm-14            21,32       919,34       423,55    2263587    1042859
->>
->> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
->> sdd1              1,00         0,00        64,00          0         64
->> dm-14             2,00        64,00         0,50         64          0
->>
->> Device:            tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn
->> sdd1              1,00         0,00        64,00          0         64
->> dm-14             2,00        64,00         0,50         64          0
->
+> ¹: Indeed, IIRC this is the only dataloss bug I've found in bcachefs - I
+> wrote too much data too fast, the migration from tier 0 to tier 1
+> couldn't keep up, and tier 0 filled up to the point where it could no
+> longer write necessary journal entries, resulting in the filesystem
+> being unmountable.
