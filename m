@@ -1,57 +1,67 @@
-From: =?UTF-8?Q?Marcin_Miros=c5=82aw?= <marcin@mejor.pl>
-Subject: clang doesn't like bcache-tools: libbcache.c:79:39: error: function
- definition is not allowed here
-Date: Tue, 30 Aug 2016 10:42:29 +0200
-Message-ID: <b8e1ee15-da4a-a5d3-3717-96b9286d9571@mejor.pl>
+From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
+Subject: Re: bcachefs now has its own page
+Date: Tue, 30 Aug 2016 10:49:42 +0200
+Message-ID: <20160830104942.Horde.ON8RCuYr4Vv7oabg3Cebld4@www3.nde.ag>
+References: <20160829221858.qnn7svhakzje5eut@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:29894 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752805AbcH3InH (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2016 04:43:07 -0400
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.183]:24304 "EHLO
+        mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1756907AbcH3I4M (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 30 Aug 2016 04:56:12 -0400
+In-Reply-To: <20160829221858.qnn7svhakzje5eut@kmo-pixel>
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-Hi!
-Compilation of bcache-tools (branch: dev) fails due to:
+Hi Kent,
 
-> make -j3 
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o bcache.o bcache.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o bcache-assemble.o bcache-assemble.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o bcache-device.o bcache-device.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o bcache-format.o bcache-format.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o bcache-fs.o bcache-fs.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o bcache-run.o bcache-run.c
-> bcache-fs.c:32:23: warning: unused variable 'fs' [-Wunused-variable]
->  struct bcache_handle fs = bcache_fs_open(args[0]);
->                       ^
-> bcache-fs.c:48:23: warning: unused variable 'fs' [-Wunused-variable]
->  struct bcache_handle fs = bcache_fs_open(args[0]);
->                       ^
-> bcache-fs.c:15:25: warning: unused function 'fill_fs' [-Wunused-function]
-> static struct bcache_fs fill_fs(struct bcache_handle fs)
->                         ^
-> 3 warnings generated.
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o bcache-key.o bcache-key.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o libbcache.o libbcache.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o crypto.o crypto.c
-> clang -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags      "blkid uuid libnih"`   -c -o util.o util.c
-> libbcache.c:79:39: error: function definition is not allowed here
->    u64 min_size(unsigned bucket_size) {
->                                       ^
-> libbcache.c:84:18: warning: implicit declaration of function 'min_size' is invalid in C99 [-Wimplicit-function-declaration]
->    if (i->size < min_size(block_size))
->                  ^
-> libbcache.c:85:105: warning: format specifies type 'unsigned long long' but the argument has type 'int' [-Wformat]
->     do { fprintf(stderr, "cannot format %s, too small (%llu sectors, min %llu)" "\n", i->path, i->size, min_size(block_size)); exit(1); } while (0);
->                                                                          ~~~~                           ^~~~~~~~~~~~~~~~~~~~
->                                                                          %d
-> 2 warnings and 1 error generated.
-> make: *** [<builtin>: libbcache.o] Error 1
+Zitat von Kent Overstreet <kent.overstreet@gmail.com>:
+> The code is definitely ready for wider usage, so I'm starting to work more on
+> the website and documentation - have a look:
+>
+> https://bcache.evilpiepirate.org/Bcachefs/
+>
+> Comments (and help with documentation!) appreciated.
 
+thank you for starting that separate information block. It already  
+answers one of my main questions - "why should I use bcachefs instead  
+of bcache?" - and one statement there let me take a look at the Bcache  
+page:
+
+"the bcachefs codebase is considerably more robust and mature than  
+upstream bcache"
+
+(the following statements relate to the bcache page, so they don't fit  
+the "comments on bcachefs docs" request ;) )
+
+As I still see "bcache" as the proper solution to fit *my* needs (see  
+below), I'm of course interested to run code that's as robust and  
+mature as can be. What I was looking for on the bcache page was  
+information on some bcache repository containing "more robust and  
+mature than upstream bcache" code and how to merge that into current  
+mainline kernels. For me, that was left unanswered.
+
+Looking at the bcache page I see:
+
+"Bcache has been merged into the mainline Linux kernel; for the latest  
+stable bcache release use the latest 3.10 or 3.11 stable kernel."
+
+Wasn't much effort put into pulling the latest bcache patches into the  
+4.x mainline kernel? And it might be interesting to mention if/which  
+distro maintainers (i. e. SUSE, the only one I know of for sure) put  
+patches and updates into their distributed kernels, likely making  
+their kernels more robust and mature than upstream (WRT bcache).
+
+I understand that your current focus is on bcachefs, but as I need to  
+provide fast block storage back-ends to i. e. DRBD, I'm stuck with  
+bcache (as a substitute for storage controllers with integrated  
+SSD/flash cache). Hence my comments here - and they are meant as  
+*comments*, not complaints.
 
 Regards,
-Marcin
+Jens
