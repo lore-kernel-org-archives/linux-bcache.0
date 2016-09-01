@@ -1,30 +1,46 @@
-From: =?UTF-8?Q?Marcin_Miros=c5=82aw?= <marcin@mejor.pl>
-Subject: Re: clang doesn't like bcache-tools: libbcache.c:79:39: error:
- function definition is not allowed here
-Date: Wed, 31 Aug 2016 13:30:52 +0200
-Message-ID: <a9dcce02-2bef-c6c2-b8d1-c0ba7d2d6ad0@mejor.pl>
-References: <b8e1ee15-da4a-a5d3-3717-96b9286d9571@mejor.pl>
- <20160831003203.amfuaozybcvewuuv@kmo-pixel>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH V2 00/22] Replace the CFQ I/O Scheduler with BFQ
+Date: Thu, 1 Sep 2016 14:06:02 -0700 (PDT)
+Message-ID: <alpine.LRH.2.11.1609011349290.5413@mail.ewheeler.net>
+References: <1470654917-4280-1-git-send-email-paolo.valente@linaro.org> <20160808131954.GA12647@infradead.org> <20160831220949.GD5967@sirena.org.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:12904 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1755315AbcHaLbF (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 31 Aug 2016 07:31:05 -0400
-In-Reply-To: <20160831003203.amfuaozybcvewuuv@kmo-pixel>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20160831220949.GD5967@sirena.org.uk>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Mark Brown <broonie@kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>, Paolo Valente <paolo.valente@linaro.org>, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, ulf.hansson@linaro.org, linus.walleij@linaro.org, linux-bcache@vger.kernel.org, Omar Sandoval <osandov@fb.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org
 
-W dniu 31.08.2016 o 02:32, Kent Overstreet pisze:
-> On Tue, Aug 30, 2016 at 10:42:29AM +0200, Marcin Mirosław wrote:
->> Hi!
->> Compilation of bcache-tools (branch: dev) fails due to:
-> 
-> oh yeah, clang doesn't like nested functions. fixed.
+On Wed, 31 Aug 2016, Mark Brown wrote:
+[...]
+> I personally feel that given that it looks like this is all going to
+> take a while it'd still be good to merge BFQ at least as an alternative
+> scheduler so that people can take advantage of it while the work on
+> modernising everything to use blk-mq - that way we can hopefully improve
+> the state of the art for users in the short term or at least help get
+> some wider feedback on how well this works in the real world
+> independently of the work on blk-mq.
 
+I would like to chime in agree fervently with Mark.  
 
-Clang chilled out, thank you.
+We have a pair of very busy hypervisors with a complicated block stack 
+integrating bcache, drbd, LVM, dm-thin, kvm, ggaoed (AoE target), zram 
+swap, continuous block-layer backups and snapshot verifies to tertiary 
+storage, cgroup block IO throttled limits, and lots of hourly dm-thin 
+snapshots replicated to tertiary storage.  All of this is performed under 
+heavy memory pressure (35-40% swapped out to zram).
+
+The systems work moderately well under cfq, but *amazingly well* using 
+BFQ.  I like BFQ so much that I've backported v8r2 to Linux v4.1 [1].
+
++1 to upstream this as a new scheduler without replacing CFQ.
+
+Including BFQ would be a boon for Linux and the community at large.
+
+--
+Eric Wheeler
+
+[1] Based on Linux v4.1-rc1, it cleanly merges forward into v4.7:
+	https://bitbucket.org/ewheelerinc/linux/branch/v4.1-rc1-bfq-v8
+	git pull https://bitbucket.org/ewheelerinc/linux.git v4.1-rc1-bfq-v8
