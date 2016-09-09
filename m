@@ -1,36 +1,48 @@
-From: =?UTF-8?Q?Marcin_Miros=c5=82aw?= <marcin@mejor.pl>
-Subject: [bcachefs] bcachefs-tools compilation error: crypto.h:16:59: error:
- initializer element is not constant, static const struct nonce
- bch_master_key_nonce = BCACHE_MASTER_KEY_NONCE;
-Date: Thu, 8 Sep 2016 17:21:04 +0200
-Message-ID: <21ae7146-855c-bbaa-faa1-3ec0148cce49@mejor.pl>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: [bcachefs] time of mounting filesystem with high number of dirs
+Date: Thu, 8 Sep 2016 17:56:29 -0800
+Message-ID: <20160909015629.356sy3q4gg35szbn@kmo-pixel>
+References: <5c0639691edb57d1b63b06effb5283d1@mejor.pl>
+ <20160907211212.6pvxo7p5z3v2nvhf@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:19052 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S934545AbcIHPVz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 8 Sep 2016 11:21:55 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:35522 "EHLO
+        mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750796AbcIIB4d (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 8 Sep 2016 21:56:33 -0400
+Received: by mail-pa0-f67.google.com with SMTP id pp5so3111041pac.2
+        for <linux-bcache@vger.kernel.org>; Thu, 08 Sep 2016 18:56:33 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <20160907211212.6pvxo7p5z3v2nvhf@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Marcin <marcin@mejor.pl>
+Cc: linux-bcache@vger.kernel.org
 
-Hi!
+On Wed, Sep 07, 2016 at 01:12:12PM -0800, Kent Overstreet wrote:
+> So, right now we're checking i_nlinks on every mount - mainly the dirents
+> implementation predates the transactional machinery we have now. That's almost
+> definitely what's taking so long, but I'll send you a patch to confirm later.
 
-I'm compiling bcachefs-tools on gcc-4.9.3, hardend, with pie/ssp patches.
-Compilation failed  and gcc throwed:
-cc -O2 -std=gnu99 -Wall -D_FILE_OFFSET_BITS=64 -I. `pkg-config --cflags
-"blkid uuid libnih"`   -c -o bcache-format.o bcache-format.c
-In file included from bcache-format.c:29:0:
-crypto.h:16:59: error: initializer element is not constant
- static const struct nonce bch_master_key_nonce = BCACHE_MASTER_KEY_NONCE;
-                                                           ^
+I just pushed a patch to add printks for the various stages of recovery: use
+mount -o verbose_recovery to enable.
 
-I'm confused with option "--block=size", what is default value of this
-option? 4096? 512 (according to /sys/fs/bcache/<uuid>/block_size)?
-Do I correctly understand from sources that block_size defaults to max
-value of block size from all formated devices?
+How many files does this filesystem have? (df -i will tell you).
 
-Thanks,
-Marcin
+As another data point, on my laptop mounting takes half a second - smallish
+filesystem though, 47 gb of data and 711k inodes (and it's on an SSD). My
+expectation is that mount times with the current code will be good enough as
+long as you're using SSDs (or tiering, where tier 0 is SSD) - but I could use
+more data points.
+
+Also, increasing the btree node size may help, if you're not already using max
+size btree nodes (256k). I may readd prefetching to metadata scans too, that
+should help a good bit on rotating disks...
+
+Mounting taking 12 minutes (and the amount of IO you were seeing) implies to me
+that a metadata isn't being cached as well as it should be though, which is odd
+considering outside of journal replay we aren't doing random access, all the
+metadata access is inorder scans. So yeah, definitely want that timing
+information...
