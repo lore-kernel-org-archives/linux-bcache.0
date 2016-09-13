@@ -1,117 +1,51 @@
-From: Marcin <marcin@mejor.pl>
-Subject: Re: [bcachefs] time of mounting filesystem with high number of dirs
-Date: Mon, 12 Sep 2016 14:59:35 +0200
-Message-ID: <9c9e7ab6-a654-635f-a695-033221093dd0@mejor.pl>
-References: <5c0639691edb57d1b63b06effb5283d1@mejor.pl>
- <20160907211212.6pvxo7p5z3v2nvhf@kmo-pixel>
- <20160909015629.356sy3q4gg35szbn@kmo-pixel>
- <6720d1e4-29f9-28a2-18ba-63c7380a3ee8@mejor.pl>
- <20160909090049.o45khhwy5t52icch@kmo-pixel>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Tiering in bcachefs
+Date: Mon, 12 Sep 2016 18:17:11 -0800
+Message-ID: <20160913021711.oxowdbp2sim5xwaq@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:45408 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1755843AbcILNAf (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 12 Sep 2016 09:00:35 -0400
-In-Reply-To: <20160909090049.o45khhwy5t52icch@kmo-pixel>
+Received: from mail-pf0-f177.google.com ([209.85.192.177]:34230 "EHLO
+        mail-pf0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752199AbcIMCRP (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 12 Sep 2016 22:17:15 -0400
+Received: by mail-pf0-f177.google.com with SMTP id p64so58473788pfb.1
+        for <linux-bcache@vger.kernel.org>; Mon, 12 Sep 2016 19:17:15 -0700 (PDT)
+Received: from kmo-pixel (213-168-42-72.gci.net. [72.42.168.213])
+        by smtp.gmail.com with ESMTPSA id p74sm27199464pfk.68.2016.09.12.19.17.12
+        for <linux-bcache@vger.kernel.org>
+        (version=TLS1_2 cipher=ECDHE-RSA-CHACHA20-POLY1305 bits=256/256);
+        Mon, 12 Sep 2016 19:17:13 -0700 (PDT)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-W dniu 2016-09-09 11:00, Kent Overstreet napisał(a):
-Hi!
+Just wrote a long post explaining all about tiering in bcachefs:
 
-> On Fri, Sep 09, 2016 at 09:52:56AM +0200, Marcin Mirosław wrote:
->> I'm using defaults from bcache format, knobs don't have description
->> aboutwneh I should change some options or when I should don't touch 
->> it.
->> On this, particular filesystem btree_node_size=128k according to 
->> sysfs.
-> 
-> Yeah, documentation needs work. Next time you format maybe try 256k, 
-> I'd like to
-> know if that helps.
-> 
->> > Mounting taking 12 minutes (and the amount of IO you were seeing) implies to me
->> > that a metadata isn't being cached as well as it should be though, which is odd
->> > considering outside of journal replay we aren't doing random access, all the
->> > metadata access is inorder scans. So yeah, definitely want that timing
->> > information...
->> As I mentioned in emai, box has 1GB of RAM, maybe this is bottleneck?
-> 
-> Yeah, but with fsck off we'll be down to one pass over the dirents 
-> btree, so it
-> won't matter then.
+https://www.patreon.com/posts/all-about-6751413
 
+Also, tiering should now be working! I'd appreciate help testing it.
 
->> Timing from dmesg:
->> 
->> [  375.537762] bcache (sde1): starting mark and sweep:
->> [  376.220196] bcache (sde1): mark and sweep done
->> [  376.220489] bcache (sde1): starting journal replay:
->> [  376.220493] bcache (sde1): journal replay done, 0 keys in 1 
->> entries,
->> seq 133015
->> [  376.220496] bcache (sde1): journal replay done
->> [  376.220498] bcache (sde1): starting fs gc:
->> [  575.205355] bcache (sde1): fs gc done
->> [  575.205362] bcache (sde1): starting fsck:
->> [  822.522269] bcache (sde1): fsck done
-> 
-> Initial mark and sweep (walking the extents btree) is fast - that's 
-> really good
-> to know.
-> 
-> So there's no actual need to run the fsck on every mount - I just left 
-> it that
-> way out of an abundance of caution and because on SSD it's cheap.  I 
-> just add a
-> mount option to skip the fsck - use mount -o nofsck. That'll cut 
-> another few
-> minutes off your mount time.
+Notes:
 
-<zfs mode on> Why do I ever need fsck?;) <zfs mode off>
-Maybe, near final version of bcachefs, fsck should be started only after
-unclean shutdown?
-HDD won't die in the next year or two, are you concerned especially on
-SSD support in bcachefs?
+Chris Halse Rogers (RAOF in the #bcache IRC channel) has been testing it. He has
+been seeing an intermittent deadlock while copying large amounts of data, which
+may or may not be tiering related: if anyone else hits it, I'd really appreciate
+if you could grab backtraces. Do a "echo t > /proc/sysrq-trigger" and then grab
+the full dmesg log - that should be enough to figure out what the deadlock is.
 
->> >> # time find /mnt/test/ -type d |wc -l
->> >> 10564259
->> 
->> >> real    10m30.305s
->> >> user    1m6.080s
->> >> sys     3m43.770s
->> 
->> >> # time find /mnt/test/ -type f |wc -l
->> >> 9145093
->> 
->> >> real    6m28.812s
->> >> user    1m3.940s
->> >> sys     3m46.210s
-> 
-> Do you know around how long those find operations take on ext4 with 
-> similar
-> hardware/filesystem contents? I hope we don't just suck at walking 
-> directories.
+I haven't gotten to device add/remove yet, don't try it - you'll need to create
+a new filesystem:
 
+bcache format --tier 0 <SSD> --tier 1 <HDD>
 
-ext4 with default, 4kB sector size needs at least one hour (I didn't
-wait to the end of test). I think that such comparision with ext4 or
-testing with other btree_node_size needs simple bash script. I'll wait
-with it until OOM fixes will be available in bcache-dev. I've often got
-problems with allocation failure when I played with bcachefs,ext4 and
-milions of directories.
-
-I noticed that bcachefs needs a lot lot of less space for keeping info
-about inodes. Are metadata compressed? If yes then I should do
-comparison of filesystems with and without compression.
-
-Additional question:
-Should be https://github.com/koverstreet/linux-bcache/issues using?
-
-Thanks,
-Marcin
+Also, if you've already been playing with tiering, I highly recommend you create
+a new filesystem. One of the bugs was an issue with which pointers are
+considered dirty - in an extent with a tier 0 pointer and a tier 1 pointer, the
+tier 0 pointer was being considered dirty instead of the tier 1 pointer (with
+predictably bad consequences; tier 0 would fill up because the tiering thread
+wasn't actually making anything on tier 0 clean). On a fixed kernel, as extents
+are migrated it'll end up fixing which pointers are considered dirty which may
+or may not trigger assertions as which pointers are considered dirty changes.
