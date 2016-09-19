@@ -1,210 +1,291 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [dm-devel] [PATCH v2 1/1] block: fix blk_queue_split() resource
- exhaustion
-Date: Sun, 18 Sep 2016 16:10:36 -0700 (PDT)
-Message-ID: <alpine.LRH.2.11.1609181557190.5413@mail.ewheeler.net>
-References: <1467990243-3531-1-git-send-email-lars.ellenberg@linbit.com> <1467990243-3531-2-git-send-email-lars.ellenberg@linbit.com> <20160711141042.GY13335@soda.linbit> <87lh17efap.fsf@notabene.neil.brown.name> <alpine.LRH.2.11.1607121834220.16228@mail.ewheeler.net>
- <20160916201429.GB16208@xoff>
+Subject: Re: bcachefs: Encryption (Posting for review)
+Date: Sun, 18 Sep 2016 17:04:51 -0700 (PDT)
+Message-ID: <alpine.LRH.2.11.1609181610460.5413@mail.ewheeler.net>
+References: <20160902044145.mkk6eipej6kbfhhi@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:48226 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1755102AbcIRXKi (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 18 Sep 2016 19:10:38 -0400
-In-Reply-To: <20160916201429.GB16208@xoff>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1284917978-1474243491=:5413"
+Return-path: <linux-crypto-owner@vger.kernel.org>
+In-Reply-To: <20160902044145.mkk6eipej6kbfhhi@kmo-pixel>
+Sender: linux-crypto-owner@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-crypto@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Matthias Ferdinand <bcache@mfedv.net>
-Cc: linux-bcache@vger.kernel.org
+
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--1641074820-1284917978-1474243491=:5413
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+
+On Thu, 1 Sep 2016, Kent Overstreet wrote:
+
+> Encryption in bcachefs is done and working and I just finished documenting the
+> design - so now, it needs more eyeballs and vetting before letting users play
+> with it.
+> 
+> ### Algorithms
+> 
+> By virtue of working within a copy on write filesystem with provisions for ZFS
+> style checksums (that is, checksums with the pointers, not the data), we’re
+> able to use a modern AEAD style construction. We use ChaCha20 and Poly1305. We
+> use the cyphers directly instead of using the kernel AEAD library (and thus
+> means there's a bit more in the design that needs auditing).
+
+A few thoughts:
+
+Great work implementing your own monotnoically-increasing nonce in 
+bcachefs.  You have implemented your own crypto stack, I'm sure lots of 
+time went into that.  Stream ciphers are great, but not always seekable 
+(eg: output-feedback mode, OFM).  Of course if you plan to validate the 
+MAC for every read, then seekable might not matter---but you will need to 
+decrypt up to the offset you want even after MAC validation which adds 
+overhead.
+
+Since you have written a solid nonce generator, supporting the existing 
+kernel library for block ciphers in counter-mode (CTR) is probably easy 
+and would aide the validation of your protocol; indeed, it would 
+future-proof bcachefs against maintaining new ciphers if the user can 
+specify the kernel crypto library's block- or streamping- cipher.
+
+For counter mode, shift the nonce by as many bits as the extent size 
+divided by the cipher-block size.  For 64k extents and AES-128, you would 
+shift the nonce like so:
+	nonce <<= ilog2( 65536 / ilog2(128) )  
+
+This example uses 12 nonce bits leaving 2^84 extent generations before 
+wrapping.  (Of course you'll need to store the nonce in your extent 
+metadata.)
+
+You then have a counter for each 16-bytes of AES in the bottom bits of 
+the extent nonce.  Counter mode is trivial to implement:
+	ciphertext[   0] = E_k(nonce+   0) XOR plaintext[0]
+	[...]
+	ciphertext[4095] = E_k(nonce+4095) XOR plaintext[4095]
+
+This gives you cipher-block-independent parallelism, seekability, and 
+flexibility using existing and future block ciphers.  Counter mode is well 
+studied, I don't think anyone will argue against that if your nonces are 
+well founded. 
+
+[... more below ]
 
 
-On Fri, 16 Sep 2016, Matthias Ferdinand wrote:
+> The current design uses the same key for both ChaCha20 and Poly1305, but my
+> recent rereading of the Poly1305-AES paper seems to imply that the Poly1305 key
+> shouldn't be used for anything else. Guidance from actual cryptographers would
+> be appreciated here; the ChaCha20/Poly1305 AEAD RFC appears to be silent on the
+> matter.
+> 
+> Note that ChaCha20 is a stream cypher. This means that it’s critical that we use
+> a cryptographic MAC (which would be highly desirable anyways), and also avoiding
+> nonce reuse is critical. Getting nonces right is where most of the trickiness is
+> involved in bcachefs’s encryption.
+> 
+> The current algorithm choices are not hard coded. Bcachefs already has
+> selectable checksum types, and every individual data and metadata write has a
+> field that describes the checksum algorithm that was used. On disk, encrypted
+> data is represented as a new checksum type - so we now have [none, crc32c,
+> crc64, chacha20/poly1305] as possible methods for data to be
+> checksummed/encrypted. If in the future we add new encryption algorithms, users
+> will be able to switch to the new algorithm on existing encrypted filesystems;
+> new data will be written with the new algorithm and old data will be read with
+> the old algorithm until it is rewritten.
+> 
+> ### Key derivation, master key
+> 
+> Userspace tooling takes the user's passphrase and derives an encryption key with
+> scrypt. This key is made available to the kernel (via the Linux kernel's keyring
+> service) prior to mounting the filesystem.
+> 
+> On filesystem mount, the userspace provided key is used to decrypt the master
+> key, which is stored in the superblock - also with ChaCha20. The master key is
+> encrypted with an 8 byte header, so that we can tell if the correct key was
+> supplied.
+> 
+> ### Metadata
+> 
+> Except for the superblock, no metadata in bcache/bcachefs is updated in place -
+> everything is more or less log structured. Only the superblock is stored
+> unencrypted; other metadata is stored with an unencrypted header and encrypted
+> contents.
+> 
+> The superblock contains:
+>  * Label and UUIDs identifying the filesystem
+>  * A list of component devices (for multi-device filesystems), and information
+>    on their size, geometry, status (active/failed), last used timestamp
+>  * Filesystem options
+>  * The location of the journal
+> 
+> For the rest of the metadata, the unencrypted portion contains:
+> 
+>  * 128 bit checksum/MAC field
+>  * Magic number - identifies a given structure as btree/journal/allocation
+>    information, for that filesystem
+>  * Version number (of on disk format), flags (including checksum/encryption
+>    type).
+>  * Sequence numbers: journal entries have an ascending 64 bit sequence number,
+>    btree node entries have a random 64 bit sequence number identifying them as
+>    belonging to that node. Btree nodes also have a field containing the sequence
+>    number of the most recent journal entry they contain updates from; this is
+>    stored unencrypted so it can be used as part of the nonce.
+>  * Size of the btree node entry/journal entry, in u64s
+> 
+> Btree node layout information is encrypted; an attacker could tell that a given
+> location on disk was a btree node, but the part of the header that indicates
+> what range of the keyspace, or which btree ID (extents/dirents/xattrs/etc.), or
+> which level of the btree is all encrypted.
+> 
+> #### Metadata nonces
+> 
+>  * Journal entries use their sequence number - which is unique for a given
+>    filesystem. When metadata is being replicated and we're doing multiple
+>    journal writes with the same sequence number - and thus nonce - we really are
+>    writing the same data (we only checksum once, not once per write).
+> 
+>  * Btree nodes concatenate a few things for the nonce:
+>    - A 64 bit random integer, which is generated per btree node (but btree nodes
+>      are log structured, so entries within a given btree node share the same
+>      integer).
+>    - A journal sequence number. For btree node writes done at around the same
+>      point in time, this field can be identical in unrelated btree node writes -
+>      but only for btree nodes writes done relatively close in time, so the
+>      journal sequence number plus the previous random integer should be more
+>      than sufficient entropy.
+>    - And lastly the offset within the btree node, so that btree node entries
+>      sharing the same random integer are guaranteed a different nonce.
+> 
+>  * Allocation information (struct prio_set):
+>    bcache/bcachefs doesn't have allocation information persisted like other
+>    filesystems, but this is our closest equivalent - this structure mainly
+>    stores generation numbers that correspond to extent pointers.
+> 
+>    Allocation information uses a dedicated randomly generated 96 bit nonce
+>    field.
+> 
+> ### Data
+> 
+> Data writes have no unencrypted header: checksums/MACs, nonces, etc. are stored
+> with the pointers, ZFS style.
+> 
+> Bcache/bcachefs is extent based, not block based: pointers point to variable
+> sized chunks of data, and we store one checksum/MAC per extent, not per block: a
+> checksum or MAC might cover up to 64k (extents that aren't checksummed or
+> compressed may be larger). Nonces are thus also per extent, not per block.
+> 
+> Currently, the Poly1305 MAC is truncated to 64 bits - due to a desire not to
+> inflate our metadata any more than necessary. Guidance from cryptographers is
+> requested as to whether this is a reasonable option; do note that the MAC is not
+> stored with the data, but is itself stored encrypted elsewhere in the btree. 
 
-> [sorry if you get this twice - I haven't seen this message appear on the
-> list]
-> 
-> On Tue, Jul 12, 2016 at 07:18:58PM -0700, Eric Wheeler wrote:
-> > since 4.3 related to bio splitting/large bios?  I've been collecting a 
-> > list, none of which appear have landed yet as of 4.7-rc7 (but correct me 
-> > if I'm wrong):
-> > 
-> > A.  [PATCH v2] block: make sure big bio is splitted into at most 256 bvecs
-> > 	by Ming Lei: https://patchwork.kernel.org/patch/9169483/
-> > 
-> > B.  block: don't make BLK_DEF_MAX_SECTORS too big
-> > 	by Shaohua Li: http://www.spinics.net/lists/linux-bcache/msg03525.html
-> > 
-> > C.  [1/3] block: flush queued bios when process blocks to avoid deadlock
-> > 	by Mikulas Patocka: https://patchwork.kernel.org/patch/9204125/
-> > 		(was https://patchwork.kernel.org/patch/7398411/)
-> > 
-> > D.  dm-crypt: Fix error with too large bios
-> > 	by Mikulas Patocka: https://patchwork.kernel.org/patch/9138595/
-> 
-> 
-> Hi,
-> 
-> trying to run some qemu-kvm benchmarks over LVM+bcache+mdraid5(4 disks),
+Encrypted or not, MACs are already only as strong as sqrt(2^n) because of 
+birthday paradox collisions.  Truncating to 64 bits guarantees a MAC 
+collision every 2^32 generations which is too weak in my opinion.  Lost 
+space or no, it is definitely better to keep the MAC the same size as the 
+MACing function (or hash if HMAC).
 
-What is your SSD stack for the bcache cachedev?
+Another note on MACs:  Using Poly1305 sounds great, but what if it is 
+found to be weakened or broken or deprecated in the future? 
 
-> on Ubuntu 14.04 x86_64 with various kernels.
-> Especially with VMs on writeable snapshots, I either get
-> "bcache_writeback blocked" or "kernel BUG" rather quickly, even with
-> most recent 4.8.0 kernel. In my benchmark setup, I use 4 VMs each
-> running on a writeable snapshot from the same (not written to) base LV.
-> They are Ubuntu 12.04 images doing dist-upgrade including
-> Kernel-Updates. They also do quite a bit of swapping, as they have only
-> 208MB RAM.
-> 
-> Other (non-KVM) benchmarks directly on /dev/bcache0 ran for more than a
-> week (kernel 4.4.0) before eventually producing a "blocked for more than
-> 120 seconds" message and stalling I/O on it.
-> 
-> 
-> Tried patches A, B, C, E, but only E does still apply to 4.8 (with some
-> hand-work).
-> 
-> Any other patches I should try?
-> 
-> 
-> Regards
-> Matthias
-> 
-> -----------------------------------------------------------------------
-> 
->   unmodified 4.8.0-rc6:  after some time, I/O completely stops:
-> 
->     [ 1571.880480] INFO: task bcache_writebac:5469 blocked for more than 120 seconds.
->     [ 1571.916217]       Not tainted 4.8.0-rc6 #1
->     [ 1571.934039] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->     [ 1571.971060] INFO: task qemu-system-x86:6499 blocked for more than 120 seconds.
->     [ 1572.009144]       Not tainted 4.8.0-rc6 #1
->     [ 1572.028125] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+IMO, it would best to support MACs as HMACs and allow the user to specify 
+the hash function using the existing kernel crypto library.  HMAC 
+construction is as follows (|| means append):
+
+	HMAC_{HASH,key}(data) = HASH(HASH(key) || HASH(data))
 
 
-Please cat /proc/pid/stack for each hanging pid.  
-I wonder, just where are those tasks stuck?
+Of course you are welcome to support all of the above and let the user 
+decide on the MAC function (poly1305 vs HMAC_{HASH,key}) and crypto 
+function (counter-mode+block-cipher, streaming ciphers including chacha*).
 
->   4.8.0-rc5 + LGE's patch (E,
-> v2-1-1-block-fix-blk_queue_split-resource-exhaustion.patch from
-> https://patchwork.kernel.org/patch/9223697/ ):
->        runs longer than without that patch, but sometimes runs into a
->        BUG_ON. By calling "lvremove", I can reliably provoke that BUG.
-> 
->     [ 1930.459062] kernel BUG at block/bio.c:1789!
->     [ 1930.459648] invalid opcode: 0000 [#1] SMP
->     [ 1930.460208] Modules linked in: dm_snapshot dm_bufio bcache ipt_MASQUERADE nf_nat_masquerade_ipv4 iptable_nat nf_nat_ipv4 nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ipt_REJECT nf_reject_ipv4 xt_CHECKSUM iptable_mangle xt_tcpudp bridge stp llc ip6table_filter ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables intel_rapl x86_pkg_temp_thermal intel_powerclamp coretemp gpio_ich ipmi_ssif kvm_intel kvm irqbypass crct10dif_pclmul crc32_pclmul ghash_clmulni_intel cryptd dm_multipath serio_raw ipmi_si input_leds ie31200_edac ipmi_msghandler acpi_power_meter lp hpilo edac_core lpc_ich parport btrfs raid10 raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor uas usb_storage hid_generic raid6_pq libcrc32c usbhid hid raid1 tg3 raid0 ptp p
- ps_core psmouse ahci libahci multipath linear [last unloaded: bcache]
->     [ 1930.520004] CPU: 0 PID: 12673 Comm: lvremove Not tainted 4.8.0-rc5 #2
->     [ 1930.545645] Hardware name: HP ProLiant MicroServer Gen8, BIOS J06 07/16/2015
->     [ 1930.571245] task: ffff8ce733702580 task.stack: ffff8ce727900000
->     [ 1930.596750] RIP: 0010:[<ffffffff96386e2a>]  [<ffffffff96386e2a>] bio_split+0x8a/0x90
->     [ 1930.647161] RSP: 0018:ffff8ce727903b78  EFLAGS: 00010246
->     [ 1930.672259] RAX: 00000000000000a8 RBX: 000000000001f000 RCX: ffff8ce724974d00
->     [ 1930.697289] RDX: 0000000002400000 RSI: 0000000000000000 RDI: ffff8ce7296ef120
->     [ 1930.722309] RBP: ffff8ce727903b90 R08: 0000000000000000 R09: ffff8ce7296ef120
->     [ 1930.746862] R10: 00058000ffffffff R11: 0000000000000000 R12: 0000000000000000
->     [ 1930.771080] R13: 0000000000000000 R14: 0000000000000000 R15: 00000000000000a8
->     [ 1930.794656] FS:  00007fd3c64d5840(0000) GS:ffff8ce73a200000(0000) knlGS:0000000000000000
->     [ 1930.840550] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->     [ 1930.863312] CR2: 00007f8e88bb2000 CR3: 00000002e16f8000 CR4: 00000000001406f0
->     [ 1930.886799] Stack:
->     [ 1930.909851]  000000000001f000 0000000000000000 0000000000000000 ffff8ce727903c30
->     [ 1930.957581]  ffffffff96393aad ffff8ce7281eb890 ffff8ce727903bf0 ffff8ce724974d00
->     [ 1931.006067]  0000000000000000 ffff8ce725b62c60 ffff8ce727903c40 00000058281eb890
->     [ 1931.054370] Call Trace:
->     [ 1931.077608]  [<ffffffff96393aad>] blk_queue_split+0x47d/0x640
->     [ 1931.101157]  [<ffffffff9638f3a4>] blk_queue_bio+0x44/0x390
->     [ 1931.124083]  [<ffffffff9638d8c4>] generic_make_request+0x104/0x1b0
->     [ 1931.146371]  [<ffffffff9638d9dd>] submit_bio+0x6d/0x150
->     [ 1931.168393]  [<ffffffff96385649>] ? bio_alloc_bioset+0x169/0x2b0
->     [ 1931.189853]  [<ffffffff96395e68>] next_bio+0x38/0x40
->     [ 1931.210743]  [<ffffffff96395f93>] __blkdev_issue_discard+0x123/0x1c0
->     [ 1931.231522]  [<ffffffff963961c2>] blkdev_issue_discard+0x52/0xa0
->     [ 1931.251942]  [<ffffffff9639c360>] blk_ioctl_discard+0x80/0xa0
+It is appealing to have super-fast chacha20+poly1305---and equally so to 
+have the flexibility and breadth of the existing crypto suite using well 
+tested crypto constructs like counter-mode and HMAC.
 
-Looks discard related.  If you get a good way to reproduce reliabily, 
-then please report a new BUG thread and Cc linux-block.
-
-Try turning off discard and see if the issue goes away.
-
->     [ 1931.272067]  [<ffffffff9639cfb6>] blkdev_ioctl+0x716/0x8c0
->     [ 1931.291454]  [<ffffffff9621db04>] ? mntput+0x24/0x40
->     [ 1931.310551]  [<ffffffff96237231>] block_ioctl+0x41/0x50
->     [ 1931.329247]  [<ffffffff96210676>] do_vfs_ioctl+0x96/0x5a0
->     [ 1931.347634]  [<ffffffff961bb7d8>] ? do_munmap+0x298/0x390
->     [ 1931.366132]  [<ffffffff96210bf9>] SyS_ioctl+0x79/0x90
->     [ 1931.384667]  [<ffffffff967b49b6>] entry_SYSCALL_64_fastpath+0x1e/0xa8
-> 
-> 
-> 
->   4.4.0 (Ubuntu backport kernel from Ubuntu 16.04 "xenial"):
->     [  960.092547] INFO: task bcache_writebac:5260 blocked for more than 120 seconds.
->     [  960.093584]       Not tainted 4.4.0-31-generic #50~14.04.1
->     [  960.094377] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->     [  960.095553] INFO: task qemu-system-x86:6179 blocked for more than 120 seconds.
->     [  960.096593]       Not tainted 4.4.0-31-generic #50~14.04.1
->     [  960.097364] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> 
-> 
->   4.2.0 (Ubuntu backport kernel from Ubuntu 15.10 "wily")
-
-There was a lot of churn from v4.2 to v4.3 in the block layer.  Please 
-test with v4.1.31 or newer.  If you find a working version, then a bisect 
-would be useful.
 
 --
 Eric Wheeler
 
-
-
+> We do already have different fields for storing 4 byte checksums and 8 
+> byte checksums; it will be a trivial matter to add a field allowing 16 
+> byte checksums to be stored, and we will add that anyways - so this 
+> isn't a pressing design issue, this is just a matter of what the 
+> defaults should be and what we should tell users.
 > 
->     [ 4557.761416] INFO: task bcache_writebac:11995 blocked for more than 120 seconds.
->     [ 4557.762454]       Not tainted 4.2.0-36-generic #41~14.04.1-Ubuntu
->     [ 4557.763309] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->     [ 4557.764413] bcache_writebac D 0000000000000000     0 11995      2 0x00000000
->     [ 4557.764418]  ffff8803e901bd08 0000000000000046 ffff8803f5992640 ffff8803f5994c80
->     [ 4557.764420]  ffff8803e901bd28 ffff8803e901c000 ffff8800a7e80b00 ffff8800a7e80ae8
->     [ 4557.764422]  ffffffff00000000 ffffffff00000003 ffff8803e901bd28 ffffffff817bfca7
->     [ 4557.764425] Call Trace:
->     [ 4557.764433]  [<ffffffff817bfca7>] schedule+0x37/0x80
->     [ 4557.764435]  [<ffffffff817c21b0>] rwsem_down_write_failed+0x1d0/0x320
->     [ 4557.764447]  [<ffffffffc04c45d3>] ? closure_sync+0x23/0x90 [bcache]
->     [ 4557.764452]  [<ffffffff813b8f33>] call_rwsem_down_write_failed+0x13/0x20
->     [ 4557.764454]  [<ffffffff817c1a81>] ? down_write+0x31/0x50
->     [ 4557.764463]  [<ffffffffc04d960c>] bch_writeback_thread+0x4c/0x480 [bcache]
->     [ 4557.764470]  [<ffffffffc04d95c0>] ? read_dirty+0x3f0/0x3f0 [bcache]
->     [ 4557.764473]  [<ffffffff81097c62>] kthread+0xd2/0xf0
->     [ 4557.764476]  [<ffffffff81097b90>] ? kthread_create_on_node+0x1c0/0x1c0
->     [ 4557.764478]  [<ffffffff817c399f>] ret_from_fork+0x3f/0x70
->     [ 4557.764480]  [<ffffffff81097b90>] ? kthread_create_on_node+0x1c0/0x1c0
->     [ 4557.764484] INFO: task kworker/0:17:13958 blocked for more than 120 seconds.
->     [ 4557.765494]       Not tainted 4.2.0-36-generic #41~14.04.1-Ubuntu
->     [ 4557.766363] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->     [ 4557.767467] kworker/0:17    D ffff8803fa216640     0 13958      2 0x00000000
->     [ 4557.767476] Workqueue: events update_writeback_rate [bcache]
->     [ 4557.767477]  ffff880324dfbcc0 0000000000000046 ffffffff81c14500 ffff8800a894bfc0
->     [ 4557.767479]  ffffffff810e3678 ffff880324dfc000 ffff8800a7e80ae8 ffff8800a7e80b00
->     [ 4557.767482]  0000000000000000 ffff8800a7e80b28 ffff880324dfbce0 ffffffff817bfca7
->     [ 4557.767484] Call Trace:
->     [ 4557.767487]  [<ffffffff810e3678>] ? add_timer_on+0xb8/0x120
->     [ 4557.767490]  [<ffffffff817bfca7>] schedule+0x37/0x80
->     [ 4557.767492]  [<ffffffff817c23e0>] rwsem_down_read_failed+0xe0/0x120
->     [ 4557.767495]  [<ffffffff81090270>] ? try_to_grab_pending+0xb0/0x150
->     [ 4557.767498]  [<ffffffff813b8f04>] call_rwsem_down_read_failed+0x14/0x30
->     [ 4557.767500]  [<ffffffff817c1a44>] ? down_read+0x24/0x30
->     [ 4557.767506]  [<ffffffffc04d8b05>] update_writeback_rate+0x25/0x210 [bcache]
->     [ 4557.767509]  [<ffffffff81091f1d>] process_one_work+0x14d/0x3f0
->     [ 4557.767512]  [<ffffffff8109269a>] worker_thread+0x11a/0x470
->     [ 4557.767514]  [<ffffffff81092580>] ? rescuer_thread+0x310/0x310
->     [ 4557.767516]  [<ffffffff81097c62>] kthread+0xd2/0xf0
->     [ 4557.767519]  [<ffffffff81097b90>] ? kthread_create_on_node+0x1c0/0x1c0
->     [ 4557.767521]  [<ffffffff817c399f>] ret_from_fork+0x3f/0x70
->     [ 4557.767523]  [<ffffffff81097b90>] ? kthread_create_on_node+0x1c0/0x1c0
+> #### Extent nonces
+> 
+> We don't wish to simply add a random 96 bit nonce to every extent - that would
+> inflate our metadata size by a very significant amount. Instead, keys (of which
+> extents are a subset) have a 96 bit version number field; when encryption is
+> enabled, we ensure that version numbers are enabled and every new extent gets a
+> new, unique version number.
+> 
+> However, extents may be partially overwritten or split, and then to defragment
+> we may have to rewrite those partially overwritten extents elsewhere. We cannot
+> simply pick a new version number when we rewrite an extent - that would break
+> semantics other uses of version numbers expect.
+> 
+> When we rewrite an extent, we only write the currently live portions of the
+> extent - we don't rewrite the parts that were overwritten. We can't write it out
+> with the same nonce as the original extent.
+> 
+> If we concatenated the version number with the offset within the file, and the
+> extent's current size - that would work, except that it would break fcollapse(),
+> which moves extents to a new position within a file. We are forced to add some
+> additional state to extents.
+> 
+> We could add a small counter that is incremented every time the size of an
+> extent is reduced (and the data it points to changes); we can easily bound the
+> size of the counter we need by the maximum size of a checksummed extent. But
+> this approach fails when extents are split.
+> 
+> What can work is if we add a field for "offset from the start of the original
+> extent to the start of the current extent" - updating that field whenever we
+> trim the front of an extent.
+> 
+> If we have that, then we could simply skip ahead in the keystream to where the
+> currently live data lived in the original extent - there's no problem with nonce
+> reuse if you're encrypting exactly the same data. Except - that fails with
+> compression, since if we take an extent, drop the first 4k, and compress it,
+> that won't give the same data as if we compress it and then drop the first 4k of
+> the compressed data.
+> 
+> The approach almost works though, if we take that offset and use it as part of
+> our nonce: what we want to do is construct a function that will output the same
+> nonce iff two extents (fragments of the same original extent) really are the
+> same data.
+> 
+> Offset into the original extent works in the absence of compression - two
+> fragments with the same offset but different sizes will be equal in their common
+> prefix, ignoring compression. We can handle compression if we also include both
+> the current size, and the current compression function - offset + current size
+> uniquely determines the uncompressed data, so, offset + current size +
+> compression function will uniquely determine the compressed output.
+> 
+> #### Nonce reuse on startup
+> 
+> After recovery, we must ensure we don't reuse existing version numbers - we must
+> ensure that newly allocated version numbers are strictly greater than any
+> version number that has every been used before.
+> 
+> The problem here is that we use the version number to write the data before
+> adding the extent with that version number to the btree: after unclean shutdown,
+> there will have been version numbers used to write data for which we have no
+> record in the btree.
+> 
+> The rigorous solution to this is to add a field (likely to the journal header)
+> that indicates version numbers smaller than that field may have been used.
+> However, we don't do that yet - it's not completely trivial since it'll add
+> another potential dependency in the IO path that needs some analysis.
+> 
+> The current solution implemented by the code is to scan every existing version
+> number (as part of an existing pass), and set the next version number to
+> allocate to be 64k greater than the highest existing version number that was
+> found.
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
+--1641074820-1284917978-1474243491=:5413--
