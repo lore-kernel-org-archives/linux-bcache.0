@@ -1,110 +1,67 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache on shared storage
-Date: Mon, 26 Sep 2016 14:33:30 -0700 (PDT)
-Message-ID: <alpine.LRH.2.11.1609261426190.29933@mail.ewheeler.net>
-References: <ns990l$c9$1@blaine.gmane.org> <alpine.LRH.2.11.1609251543210.29933@mail.ewheeler.net> <D0761DB0-DCF7-400D-AA08-0E966C2D6E0C@gmail.com>
-Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+From: Eric Wheeler <git@linux.ewheeler.net>
+Subject: [PATCH 2/2] bcache: documentation for ioprio cache hinting
+Date: Mon, 26 Sep 2016 16:32:44 -0700
+Message-ID: <S1751690AbcIZXgs/20160926233648Z+17414@vger.kernel.org>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:54369 "EHLO mail.ewheeler.net"
+Received: from mx.ewheeler.net ([66.155.3.69]:54920 "EHLO mail.ewheeler.net"
         rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S965507AbcIZVdc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 26 Sep 2016 17:33:32 -0400
-In-Reply-To: <D0761DB0-DCF7-400D-AA08-0E966C2D6E0C@gmail.com>
+        id S1753243AbcIZXgq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 26 Sep 2016 19:36:46 -0400
+Received: from localhost (localhost [127.0.0.1])
+        by mail.ewheeler.net (Postfix) with ESMTP id 1888CA0C52
+        for <linux-bcache@vger.kernel.org>; Mon, 26 Sep 2016 16:36:46 -0700 (PDT)
+Received: from mail.ewheeler.net ([127.0.0.1])
+        by localhost (mail.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
+        with LMTP id SxUMoWYjrpjt for <linux-bcache@vger.kernel.org>;
+        Mon, 26 Sep 2016 16:36:45 -0700 (PDT)
+Received: from mx.ewheeler.net (mx.ewheeler.net [66.155.3.69])
+        (using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mail.ewheeler.net (Postfix) with ESMTPSA id 6DFEFA0C51
+        for <linux-bcache@vger.kernel.org>; Mon, 26 Sep 2016 16:36:45 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michele Brodoloni <mik.linux@gmail.com>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On Mon, 26 Sep 2016, Michele Brodoloni wrote:
+Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
+---
+ Documentation/bcache.txt | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-> Hi Eric,
-> thank you for your reply.
-> 
-> The shared storage will have LVM on top and each node will have RW 
-> access only to its own LVs (actually, these will be the virtual disks of 
-> the vms running on each node), this is meant to say that each node is 
-> likely going to access different data -- unless a vm is migrated between 
-> nodes (??). Does this change anything?
-
-You will still have cache coherency issues between nodes.  This is 
-possible if you never migrate and keep per-node volumes isolated, but you 
-would need to detach the cache on both sides before migrating (if 
-writeback) or at least on the destination node (if write-through) and 
-re-attach after migration.
-
-If you do need to migrate (or if a node fails and you must boot from 
-another), that could be rather inconvenient and may affect other VMs as 
-well.
+diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
+index a9259b5..c87d73f 100644
+--- a/Documentation/bcache.txt
++++ b/Documentation/bcache.txt
+@@ -133,6 +133,31 @@ the backing devices to passthrough mode.
+    writeback mode). It currently doesn't do anything intelligent if it fails to
+    read some of the dirty data, though.
  
-> Unfortunately, exporting luns via iSCSI/AoE is not an option since I'm 
-> going to use a DELL VRTX and the storage is provided by a DAS, where 
-> there will be both rotational and solid-state disks.
-
-It sounds like you need some kind of distributed coherency layer atop of 
-your backend storage.
-
--Eric
-
-
-
-> 
-> Regards,
-> Michele
-> 
-> 
-> 
-> > Il giorno 26/set/2016, alle ore 00:47, Eric Wheeler <bcache@lists.ewheeler.net> ha scritto:
-> > 
-> >> On Sun, 25 Sep 2016, Michele wrote:
-> >> 
-> >> Hello everybody,
-> >> 
-> >> I have a KVM virtualization cluster (3 nodes) which shares the same 
-> >> storage. It would be possible to attach a caching device on each node to 
-> >> that storage?
-> >> 
-> >> Let me explain better: I intend to create a raid-0 with two SSDs on each 
-> >> node as WT caching devices, then initialize the shared storage as bcache 
-> >> backing device, and then attach the caching device on each node to it.
-> >> 
-> >> Is this going to work?
-> > 
-> > No.  Even in writethrough mode, remote writes of one node would hit the 
-> > lower layer creating stale writethrough caches on the other nodes---that 
-> > is unless you would like to implement distributed cache coherency using 
-> > DLM.  That would be quite interesting!
-> > 
-> > You could share bcache0 to multiple nodes if you control its export via 
-> > iSCSI or AoE and place a shared filesystem (gfs, ocfs, cLVM, etc) atop of 
-> > the exported volume.  I'm not sure if it has been tested, but it would be 
-> > neat to get feadback on the subject.
-> > 
-> > --
-> > Eric Wheeler
-> > 
-> > 
-> >> 
-> >> 
-> >> Thanks,
-> >> Michele
-> >> 
-> >> 
-> >> --
-> >> Newsy for iOS
-> >> Download on the App Store:
-> >> https://itunes.apple.com/app/newsy/id598711199
-> >> 
-> >> 
-> >> 
-> >> 
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
++PER-PROCESS CACHE HINTING BY PRIORITY
++-------------------------------------
++
++Processes can be assigned an IO priority using `ionice` and bcache will
++either try to writeback or bypass the cache based on the IO priority
++level assigned to the process.
++
++Cache hinting is configurable by writing 'class,level' pairs to sysfs.
++These are the defaults:
++    echo 2,7 > /sys/block/bcache0/bcache/ioprio_bypass
++    echo 2,0 > /sys/block/bcache0/bcache/ioprio_writeback
++
++By default, Linux assigns processes the best-effort class with a class
++level of 4.  Thus, if you do nothing, your default processes will follow
++the original bcache should_writeback/should_bypass logic.
++
++	(-p) IO Class    (-n) Class level       Action
++	-----------------------------------------------------
++	(1) Realtime      0-7                   Writeback
++	(2) Best-effort     0                   Writeback
++	(2) Best-effort   1-6                   Original bcache logic
++	(2) Best-effort     7                   Bypass cache
++	(3) Idle          n/a                   Bypass cache
++
++See `man ionice` for more detail about process IO priority in Linux.
+ 
+ HOWTO/COOKBOOK
+ --------------
+-- 
+1.8.3.1
