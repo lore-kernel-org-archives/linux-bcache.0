@@ -1,73 +1,72 @@
-From: Pavel Goran <via-bcache@pvgoran.name>
-Subject: Re[2]: [PATCH 1/2] bcache: introduce ioprio-based bypass/writeback hints
-Date: Thu, 29 Sep 2016 13:57:00 +0700
-Message-ID: <1515763256.20160929135700@pvgoran.name>
-References: <S1754035AbcIZXgt/20160926233649Z+17415@vger.kernel.org>        <1610652744.20160927084309@pvgoran.name> <20160927044348.25fedb75@jupiter.sol.kaishome.de> <alpine.LRH.2.11.1609271614340.29933@mail.ewheeler.net>
-Reply-To: Pavel Goran <via-bcache@pvgoran.name>
+From: Emmanuel Florac <eflorac@intellique.com>
+Subject: Re: Partitions on bcache devices
+Date: Thu, 29 Sep 2016 16:09:03 +0200
+Message-ID: <20160929160903.10b63b45@harpe.intellique.com>
+References: <951934014.5256.1475070307225@ox.pcextreme.nl>
+        <20160928191142.2e545aa5@harpe.intellique.com>
+        <1406388200.5277.1475090090844@ox.pcextreme.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/23JbvE3DKrg2=_3+ZvAnxRG"; protocol="application/pgp-signature"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from pvgoran2.xen.prgmr.com ([71.19.149.48]:39780 "EHLO
-        v2.pvgoran.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753963AbcI2G5E (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 29 Sep 2016 02:57:04 -0400
-In-Reply-To: <alpine.LRH.2.11.1609271614340.29933@mail.ewheeler.net>
+Received: from mail1.g1.pair.com ([66.39.3.162]:32438 "EHLO mail1.g1.pair.com"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1754727AbcI2OJV (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 29 Sep 2016 10:09:21 -0400
+In-Reply-To: <1406388200.5277.1475090090844@ox.pcextreme.nl>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <linux-bcache@vger.kernel.org>
+To: Wido den Hollander <wido@42on.com>
+Cc: linux-bcache@vger.kernel.org
 
-Hello Eric,
+--Sig_/23JbvE3DKrg2=_3+ZvAnxRG
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Thursday, September 29, 2016, 1:21:53 AM, you wrote:
+Le Wed, 28 Sep 2016 21:14:50 +0200 (CEST)
+Wido den Hollander <wido@42on.com> =C3=A9crivait:
 
-> It respects policy first of course.  You can see the top of
-> should_writeback() in the patch as context:
->         if (cache_mode != CACHE_MODE_WRITEBACK || [...]
+> In both cases Ceph wants to create partitions on all disks it uses.
+> By adding bcache in between the performance can be boosted really
+> well. Fast NVM-e SSDs with some large SATA drives vastly improve
+> performance.
+>=20
+> Yes, you could use LVM in between, but that just adds more layers and
+> is rather complex to accomplish with the current tooling. If bcache
+> would support partitions it would all be a lot easier.
+>=20
+> And next to Ceph there might be other tools which can benefit from
+> partitions on bcache, who knows?
 
-So the priority-dependent logic is only applied when cache mode is
-"writeback", right? Then, what does "Original bcache logic" from the table in
-the original patch description mean? That is, how does it differ from
-"Writeback" from the same table?
+Two points: first I'm pretty sure LVM is the preferred method nowadays
+to create volumes on disks that are not boot drives. In fact, all
+enterprises distros propose to set up even the boot drive with LVM
+instead of partitionning and have been doing so for 10 years.=20
+So I'm pretty sure having in ceph the option to use LVM instead of
+partitionning would be a darn good thing :)
 
-Does "Writeback" there mean that bcache would write data to the cache
-*always*, even in case of linear write, or in other situations where the
-original writeback logic would bypass cache? If so, the table should perhaps
-be adjusted to say "Always writeback" instead of "Writeback", and "Original
-writeback logic" instead of "Original bcache logic".
+Second: are you absolutely sure you can't partition a bcache device?
+Does parted refuse to open and partition it? In which case, you may
+only be missing some appropriate udev rules.
 
-> If not already in cache, it will read from the backing device and will not
-> promote into (pollute) your cache. Having idle IOs bypass the cache can 
-> increase performance everywhere else since you probably don't care about 
-> the performance of idle IOs.
+--=20
+------------------------------------------------------------------------
+Emmanuel Florac     |   Direction technique
+                    |   Intellique
+                    |	<eflorac@intellique.com>
+                    |   +33 1 78 94 84 02
+------------------------------------------------------------------------
 
-Ok, this sounds convincing.
+--Sig_/23JbvE3DKrg2=_3+ZvAnxRG
+Content-Type: application/pgp-signature
+Content-Description: Signature digitale OpenPGP
 
-Ideally this would be handled by some kind of priority semantics within the
-cache, so that "high-priority" data would always replace "low-priority" data,
-and "low-priority" data would only replace "high-priority" data if it's really
-old. It's entirely feasible to implement within bcache, but probably it
-wouldn't be easy, and might even mean changing cache data format.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Your SSD wearout problem would (again, ideally) be handled by some kind of
-custom process attribute (no idea if the kernel even has this kind of concept,
-probably not) that would signal bcache to bypass caching for IO that
-originates from this process. The additional "bulk" priority class proposed by
-Kai would also be a good solution.
+iEYEARECAAYFAlftIJQACgkQX3jQXNUicVZYZgCeLlPiFekdfNXsEAaMzRZx7A7W
+HVsAn0zj2UDtQknPF42b/MZ9+cPJTq1c
+=G0yQ
+-----END PGP SIGNATURE-----
 
-However, given that these two approaches are supposedly unavailable, using
-existing IO priorities looks like an acceptable solution.
-
-> If you really want idle IO that can writeback, then I can set the default
-> for ioprio_writeback and/or ioprio_bypass to be disabled until a user 
-> explicitly sets them.
-
-Are you talking about bcache options available via sysfs? It would be good to
-have control over the priority-dependent logic in this way (or it's already
-implemented?). Not sure what the defaults should be, though. :) It would be
-even better to have the possibility to save these flags to the superblock, if
-it's something that can be easily implemented.
-
-Pavel Goran
-  
+--Sig_/23JbvE3DKrg2=_3+ZvAnxRG--
