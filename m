@@ -1,74 +1,145 @@
-From: Emmanuel Florac <eflorac@intellique.com>
-Subject: Re: Partitions on bcache devices
-Date: Thu, 29 Sep 2016 19:11:27 +0200
-Message-ID: <20160929191127.779f94d0@harpe.intellique.com>
-References: <951934014.5256.1475070307225@ox.pcextreme.nl>
-        <20160928191142.2e545aa5@harpe.intellique.com>
-        <1406388200.5277.1475090090844@ox.pcextreme.nl>
-        <20160929160903.10b63b45@harpe.intellique.com>
-        <20160929174056.Horde.Tkp24xa2MRhriRvK8KE1QU8@www3.nde.ag>
-        <20160929183122.3641f307@harpe.intellique.com>
-        <293451899.5382.1475167934533@ox.pcextreme.nl>
+From: Eric Wheeler <linux-bcache@vger.kernel.org>
+Subject: Re[2]: [PATCH 1/2] bcache: introduce ioprio-based bypass/writeback
+ hints
+Date: Thu, 29 Sep 2016 11:31:44 -0700 (PDT)
+Message-ID: <alpine.LRH.2.11.1609291125260.5355@mail.ewheeler.net>
+References: <S1754035AbcIZXgt/20160926233649Z+17415@vger.kernel.org>        <1610652744.20160927084309@pvgoran.name> <20160927044348.25fedb75@jupiter.sol.kaishome.de> <alpine.LRH.2.11.1609271614340.29933@mail.ewheeler.net>
+ <1515763256.20160929135700@pvgoran.name>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/1SxzsD4EoE2kw_s.sPj+yez"; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail1.g1.pair.com ([66.39.3.162]:43047 "EHLO mail1.g1.pair.com"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S934046AbcI2RLZ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 29 Sep 2016 13:11:25 -0400
-In-Reply-To: <293451899.5382.1475167934533@ox.pcextreme.nl>
+Received: from mx.ewheeler.net ([66.155.3.69]:48986 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S932987AbcI2Sbt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 29 Sep 2016 14:31:49 -0400
+In-Reply-To: <1515763256.20160929135700@pvgoran.name>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Wido den Hollander <wido@42on.com>
-Cc: "Jens-U. Mozdzen" <jmozdzen@nde.ag>, linux-bcache@vger.kernel.org
+To: Pavel Goran <via-bcache@pvgoran.name>
+Cc: linux-bcache@vger.kernel.org
 
---Sig_/1SxzsD4EoE2kw_s.sPj+yez
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+> Hello Eric,
+> 
+> Thursday, September 29, 2016, 1:21:53 AM, you wrote:
+> 
+> > It respects policy first of course.  You can see the top of
+> > should_writeback() in the patch as context:
+> >         if (cache_mode != CACHE_MODE_WRITEBACK || [...]
+> 
+> So the priority-dependent logic is only applied when cache mode is
+> "writeback", right? 
 
-Le Thu, 29 Sep 2016 18:52:14 +0200 (CEST)
-Wido den Hollander <wido@42on.com> =C3=A9crivait:
+Correct. It might be better to say that the new priority-dependent logic 
+_for writes_ is only applied when cache mode is "writeback" via the new 
+syfs entry ioprio_writeback.
 
-> > I agree, but usually you wouldn't partition an MD-RAID either, would
-> > you? OSDs are still holding (so far) ordinary filesystems locally
-> > mounted on the nodes (except for BlueStore AFAIK).
-> >  =20
->=20
-> I have partitioned MD-RAID before, works just fine.
->=20
+For reads, ioprio_bypass is hinted in both writeback and writethrough 
+modes.
 
-Yes, sure. It just doesn't feel right, my  grey-bearded Unix instinct
-tingles :)
+> Then, what does "Original bcache logic" from the table in the original 
+> patch description mean? That is, how does it differ from "Writeback" 
+> from the same table?
 
-> The question still remains, can bcache be patched that it allocates
-> the right minor in the kernel so that it allows for partitions.
+There are two hints in `struct data_insert_op`:
+	iop.bypass, iop.writeback
 
-Even looks easy... As Sam Yaple made a patch.
+bcache has an existing function `should_writeback()` which is a hint on 
+the cached_dev_write() path.  I've added the writeback portion of the 
+ioprio logic there, so if it doesn't match the ioprio set in 
+ioprio_writeback, it continues as if my code hadn't been added.
 
-> I'm not a kernel nor bcache developer, just looking for somebody who
-> would be willing to do this. Happy to assist, support and test!
+> Does "Writeback" there mean that bcache would write data to the cache
+> *always*, even in case of linear write, or in other situations where the
+> original writeback logic would bypass cache? If so, the table should perhaps
+> be adjusted to say "Always writeback" instead of "Writeback", and "Original
+> writeback logic" instead of "Original bcache logic".
 
-Well if I have some time I may give it a try next week :)
+Similarly, the function `should_bypass()` sets the iop.bypass hint.  This 
+is where the logic as to whether or not the write looks "sequential" is 
+held.
 
---=20
-------------------------------------------------------------------------
-Emmanuel Florac     |   Direction technique
-                    |   Intellique
-                    |	<eflorac@intellique.com>
-                    |   +33 1 78 94 84 02
-------------------------------------------------------------------------
+The IO is then passed to cached_dev_write() which checks 
+should_writeback().  If should_writeback() returns true, it overrides the 
+bypass flag.  Thus, iop.bypass is weaker than iop.writeback.  Bcache makes 
+other decisions which may override bypass, too, like overlapping of dirty 
+data and perhaps other reasons.  
 
---Sig_/1SxzsD4EoE2kw_s.sPj+yez
-Content-Type: application/pgp-signature
-Content-Description: Signature digitale OpenPGP
+Keep in mind that SSDs are still better at seq-writes than random writes 
+because of erase block rewrites handled by the SSD's FTL.  For realtime 
+applications 100% writeback might still be preferred, even if the IOs are 
+sequential.  This will wear your SSD faster, of course, so set your 
+io priorities appropriately.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Pseudo-code call-stack:
+	cached_dev_make_request():
+	   s->iop.bypass = check_should_bypass()
+	   cached_dev_write():
+	         if (should_writeback()) {
+                    s->iop.bypass = false;
+                    s->iop.writeback = true;
+                 }
+		 submit-based-on-hint( s )
 
-iEYEARECAAYFAlftSz8ACgkQX3jQXNUicVZeuACcC9vV8vP6269N1J3ltkL4Rayk
-qjgAnj0LH7SWDdyftaklZ2Kp7SFoOg3M
-=u1gL
------END PGP SIGNATURE-----
+> > If not already in cache, it will read from the backing device and will not
+> > promote into (pollute) your cache. Having idle IOs bypass the cache can 
+> > increase performance everywhere else since you probably don't care about 
+> > the performance of idle IOs.
+> 
+> Ok, this sounds convincing.
+> 
+> Ideally this would be handled by some kind of priority semantics within the
+> cache, so that "high-priority" data would always replace "low-priority" data,
+> and "low-priority" data would only replace "high-priority" data if it's really
+> old. It's entirely feasible to implement within bcache, but probably it
+> wouldn't be easy, and might even mean changing cache data format.
+> 
+> Your SSD wearout problem would (again, ideally) be handled by some kind of
+> custom process attribute (no idea if the kernel even has this kind of concept,
+> probably not) that would signal bcache to bypass caching for IO that
+> originates from this process. The additional "bulk" priority class proposed by
+> Kai would also be a good solution.
 
---Sig_/1SxzsD4EoE2kw_s.sPj+yez--
+Some SSDs have a SMART attribute for LBAs written---which is a good idea 
+to monitor if your SSD supports it---but its not consistent enough to 
+build a framework around.  It varies from mfg to mfg.
+ 
+> However, given that these two approaches are supposedly unavailable, using
+> existing IO priorities looks like an acceptable solution.
+
+Agreed.  
+
+> > If you really want idle IO that can writeback, then I can set the default
+> > for ioprio_writeback and/or ioprio_bypass to be disabled until a user 
+> > explicitly sets them.
+> 
+> Are you talking about bcache options available via sysfs? It would be good to
+> have control over the priority-dependent logic in this way (or it's already
+> implemented?). 
+
+This patch. It just adds sysfs files to configure ioprio_bypass and 
+ioprio_writeback with flags that hook into the existing 
+should_bypass()/should_writeback() functions.  
+
+I'm planning a v2 patch to update documentation and allow 0,0 to disable 
+either or both features.
+
+> Not sure what the defaults should be, though. :) 
+
+Does anyone else have a suggestion on best defaults? As currently written, 
+it is like so:
+	writeback for higher priority than `ionice -c2 -n0`
+	bypass    for lower  priority than `ionice -c2 -n7`
+
+Users who do not use `ionice` are unaffected by this default since 
+unprioritized pids are either "ioprio_invalid()" or have an ioprio of '-c2 -n4'.
+
+> It would be even better to have the possibility to save these flags to 
+> the superblock, if it's something that can be easily implemented.
+
+Thats definitely a neat idea.  It would be great to put other flags like 
+sequential_cutoff, writeback_*, and perhaps a few other sysfs 
+configurations into the superblock so I needn't set them at boot time.  
+A superblock patch for another time :)
+
+--
+Eric Wheeler
