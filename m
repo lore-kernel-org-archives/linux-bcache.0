@@ -1,50 +1,90 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: [bcachefs] time of mounting filesystem with high number of dirs
-Date: Thu, 6 Oct 2016 05:01:54 -0800
-Message-ID: <20161006130154.zjdy6kfcergsf6ld@kmo-pixel>
-References: <5c0639691edb57d1b63b06effb5283d1@mejor.pl>
- <20160907211212.6pvxo7p5z3v2nvhf@kmo-pixel>
- <20160909015629.356sy3q4gg35szbn@kmo-pixel>
- <6720d1e4-29f9-28a2-18ba-63c7380a3ee8@mejor.pl>
- <20160909090049.o45khhwy5t52icch@kmo-pixel>
- <9c9e7ab6-a654-635f-a695-033221093dd0@mejor.pl>
- <20160913023514.j5kcmiz3kn6iw53l@kmo-pixel>
- <00730b22-fc04-1d3e-5526-dfe3a4586415@mejor.pl>
+From: Michele Brodoloni <mik.linux@gmail.com>
+Subject: bcache: bch_btree_gc() gc failed!
+Date: Fri, 7 Oct 2016 10:46:39 +0000 (UTC)
+Message-ID: <nt7uef$u76$1@blaine.gmane.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pa0-f68.google.com ([209.85.220.68]:33928 "EHLO
-        mail-pa0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750992AbcJFNB7 (ORCPT
+Received: from [195.159.176.226] ([195.159.176.226]:35949 "EHLO
+        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+        with ESMTP id S1750866AbcJGKra (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 6 Oct 2016 09:01:59 -0400
-Received: by mail-pa0-f68.google.com with SMTP id r9so1104727paz.1
-        for <linux-bcache@vger.kernel.org>; Thu, 06 Oct 2016 06:01:59 -0700 (PDT)
-Content-Disposition: inline
-In-Reply-To: <00730b22-fc04-1d3e-5526-dfe3a4586415@mejor.pl>
+        Fri, 7 Oct 2016 06:47:30 -0400
+Received: from list by blaine.gmane.org with local (Exim 4.84_2)
+        (envelope-from <glbd-linux-bcache@m.gmane.org>)
+        id 1bsSgC-0002Sx-UL
+        for linux-bcache@vger.kernel.org; Fri, 07 Oct 2016 12:47:04 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Marcin =?utf-8?B?TWlyb3PFgmF3?= <marcin@mejor.pl>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Wed, Oct 05, 2016 at 02:51:55PM +0200, Marcin Mirosław wrote:
-> W dniu 13.09.2016 o 04:35, Kent Overstreet pisze:
-> [...]
-> Hi!
-> I'm picking thread with mention about allocation problem.
-> 
-> > Sorry I forgot to reply to your email about the OOMs - those messages are
-> > actually nothing to worry about, we have a mempool we use if that allocation
-> > fails (I'll change it to not print out that message now, just got sidetracked).
-> 
-> Today I tried to mount freshly formated filesystem (with lz4 enabled at
-> format time). Mount failed with message in dmesg:
+Hello,
+I have bcache running on a Debian 8.0 x86_64 with kernel 4.4.16.
+I got 2x Samsung PRO 850 250gb in hardware RAID0 acting as cache device 
+for
+1) a local RAID5 volume
+2) a SAN RAID10 volume in active/backup multipath fiber channel
 
-Hey - this is another one I've got a fix for in the on disk format changes
-branch :) I've got a patch that splits out the gzip and lz4 compression
-workspaces, and allocates the gzip one with vmalloc, and adds feature bits to
-the superblock so it doesn't have to allocate them at all if compression isn't
-in use.
+I noticed today that SAN backing devices got detached from cache:
 
-Hoping to get that stuff out soon...
+# bcache-super-show /dev/sdc1
+sb.magic		ok
+sb.first_sector		8 [match]
+sb.csum			2D71F678442855F6 [match]
+sb.version		3 [cache device]
+dev.label		(empty)
+dev.uuid		c3dd7b4e-04e0-4578-a0ce-b35a5745e459
+dev.sectors_per_block	1
+dev.sectors_per_bucket	1024
+dev.cache.first_sector	1024
+dev.cache.cache_sectors	629144576
+dev.cache.total_sectors	629145600
+dev.cache.ordered	yes
+dev.cache.discard	no
+dev.cache.pos		0
+dev.cache.replacement	0 [lru]
+cset.uuid		7eb257b3-940d-42ca-ab23-52752f8b17f8
+
+# bcache-super-show /dev/sdd1
+sb.magic		ok
+sb.first_sector		8 [match]
+sb.csum			514C0F59BC7C1938 [match]
+sb.version		1 [backing device]
+dev.label		(empty)
+dev.uuid		904aaaa4-473a-446d-aad5-4e55cde972a8
+dev.sectors_per_block	1
+dev.sectors_per_bucket	1024
+dev.data.first_sector	16
+dev.data.cache_mode	0 [writethrough]
+dev.data.cache_state	0 [detached]
+cset.uuid		00000000-0000-0000-0000-000000000000
+
+# bcache-super-show /dev/sde1
+sb.magic		ok
+sb.first_sector		8 [match]
+sb.csum			514C0F59BC7C1938 [match]
+sb.version		1 [backing device]
+dev.label		(empty)
+dev.uuid		904aaaa4-473a-446d-aad5-4e55cde972a8
+dev.sectors_per_block	1
+dev.sectors_per_bucket	1024
+dev.data.first_sector	16
+dev.data.cache_mode	0 [writethrough]
+dev.data.cache_state	0 [detached]
+cset.uuid		00000000-0000-0000-0000-000000000000
+
+(Obviously /dev/sdd1 and /dev/sde1 are the same device but with different 
+path)
+
+Another side effect is that my syslog, kern.log logfiles are eating all 
+my root partition space with messages like this:
+
+Oct  7 12:27:31 lnx kernel: [2300151.278097] bcache: bch_btree_gc() gc 
+failed!
+
+
+What can be done to troubleshoot this issue?
+
+Regards,
+Michele
