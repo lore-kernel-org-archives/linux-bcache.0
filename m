@@ -1,139 +1,122 @@
-From: Michele Brodoloni <mik.linux@gmail.com>
-Subject: Re: bcache: bch_btree_gc() gc failed!
-Date: Fri, 7 Oct 2016 18:01:59 +0000 (UTC)
-Message-ID: <nt8nun$r23$2@blaine.gmane.org>
-References: <nt7uef$u76$1@blaine.gmane.org> <nt860l$r23$1@blaine.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: [PATCH v2 2/2] bcache: documentation for ioprio cache hinting
+Date: Tue, 11 Oct 2016 12:08:13 -0700
+Message-ID: <S1751532AbcJKTQw/20161011191652Z+375@vger.kernel.org>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [195.159.176.226] ([195.159.176.226]:49900 "EHLO
-        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-        with ESMTP id S1755269AbcJGSCZ (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 7 Oct 2016 14:02:25 -0400
-Received: from list by blaine.gmane.org with local (Exim 4.84_2)
-        (envelope-from <glbd-linux-bcache@m.gmane.org>)
-        id 1bsZTL-0002Wt-Sb
-        for linux-bcache@vger.kernel.org; Fri, 07 Oct 2016 20:02:15 +0200
+Received: from mx.ewheeler.net ([66.155.3.69]:40318 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1751057AbcJKTQw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 11 Oct 2016 15:16:52 -0400
+Received: from localhost (localhost [127.0.0.1])
+        by mail.ewheeler.net (Postfix) with ESMTP id EAF01A0C51
+        for <linux-bcache@vger.kernel.org>; Tue, 11 Oct 2016 12:14:40 -0700 (PDT)
+Received: from mail.ewheeler.net ([127.0.0.1])
+        by localhost (mail.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
+        with LMTP id u3NLbbdXdHAD for <linux-bcache@vger.kernel.org>;
+        Tue, 11 Oct 2016 12:14:40 -0700 (PDT)
+Received: from mx.ewheeler.net (mx.ewheeler.net [66.155.3.69])
+        (using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
+        (No client certificate requested)
+        by mail.ewheeler.net (Postfix) with ESMTPSA id 421CFA0C2C
+        for <linux-bcache@vger.kernel.org>; Tue, 11 Oct 2016 12:14:40 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Ok.. I solved..
-I just detached and reattached the cache
+Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
+---
+ Documentation/bcache.txt | 80 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 80 insertions(+)
 
-# echo 7eb257b3-940d-42ca-ab23-52752f8b17f8 > /sys/block/bcache1/bcache/detach
-# echo 7eb257b3-940d-42ca-ab23-52752f8b17f8 > /sys/block/bcache1/bcache/attach
-
-that did the trick.
-
-# bcache-super-show /dev/sdd1
-sb.magic		ok
-sb.first_sector		8 [match]
-sb.csum			98719AA13E8D185F [match]
-sb.version		1 [backing device]
-dev.label		(empty)
-dev.uuid		904aaaa4-473a-446d-aad5-4e55cde972a8
-dev.sectors_per_block	1
-dev.sectors_per_bucket	1024
-dev.data.first_sector	16
-dev.data.cache_mode	0 [writethrough]
-dev.data.cache_state	1 [clean]
-cset.uuid		7eb257b3-940d-42ca-ab23-52752f8b17f8
-
-# bcache-super-show /dev/sde1
-sb.magic		ok
-sb.first_sector		8 [match]
-sb.csum			98719AA13E8D185F [match]
-sb.version		1 [backing device]
-dev.label		(empty)
-dev.uuid		904aaaa4-473a-446d-aad5-4e55cde972a8
-dev.sectors_per_block	1
-dev.sectors_per_bucket	1024
-dev.data.first_sector	16
-dev.data.cache_mode	0 [writethrough]
-dev.data.cache_state	1 [clean]
-cset.uuid		7eb257b3-940d-42ca-ab23-52752f8b17f8
-
-
-Everything is ok.
-
-Il Fri, 07 Oct 2016 12:55:50 +0000, Michele Brodoloni ha scritto:
-
-> Hi,
-> I tried to reboot the machine, but bcache is still dead.
-> /sys/block/bcache0/bcache/state reports "clean" (RAID5)
-> /sys/block/bcache1/bcache/state reports "no cache" (SAN RAID10)
-> 
-> I did not mention before that the SAN is used like a DAS, and it isn't
-> shared with other machines. There's just one server accessing it.
-> 
-> Regards,
-> Michele
-> 
-> Il Fri, 07 Oct 2016 10:46:39 +0000, Michele Brodoloni ha scritto:
-> 
->> Hello,
->> I have bcache running on a Debian 8.0 x86_64 with kernel 4.4.16.
->> I got 2x Samsung PRO 850 250gb in hardware RAID0 acting as cache device
->> for 1) a local RAID5 volume 2) a SAN RAID10 volume in active/backup
->> multipath fiber channel
->> 
->> I noticed today that SAN backing devices got detached from cache:
->> 
->> # bcache-super-show /dev/sdc1 sb.magic		ok
-> sb.first_sector		8 [match]
->> sb.csum			2D71F678442855F6 [match]
->> sb.version		3 [cache device]
->> dev.label		(empty)
->> dev.uuid		c3dd7b4e-04e0-4578-a0ce-b35a5745e459
-> dev.sectors_per_block	1
->> dev.sectors_per_bucket	1024 dev.cache.first_sector	1024
->> dev.cache.cache_sectors	629144576 dev.cache.total_sectors
-> 629145600
->> dev.cache.ordered	yes dev.cache.discard	no
-> dev.cache.pos		0
->> dev.cache.replacement	0 [lru] cset.uuid
->> 7eb257b3-940d-42ca-ab23-52752f8b17f8
->> 
->> # bcache-super-show /dev/sdd1 sb.magic		ok
-> sb.first_sector		8 [match]
->> sb.csum			514C0F59BC7C1938 [match]
->> sb.version		1 [backing device]
->> dev.label		(empty)
->> dev.uuid		904aaaa4-473a-446d-aad5-4e55cde972a8
-> dev.sectors_per_block	1
->> dev.sectors_per_bucket	1024 dev.data.first_sector	16
-> dev.data.cache_mode
->> 0 [writethrough]
->> dev.data.cache_state	0 [detached] cset.uuid
->> 00000000-0000-0000-0000-000000000000
->> 
->> # bcache-super-show /dev/sde1 sb.magic		ok
-> sb.first_sector		8 [match]
->> sb.csum			514C0F59BC7C1938 [match]
->> sb.version		1 [backing device]
->> dev.label		(empty)
->> dev.uuid		904aaaa4-473a-446d-aad5-4e55cde972a8
-> dev.sectors_per_block	1
->> dev.sectors_per_bucket	1024 dev.data.first_sector	16
-> dev.data.cache_mode
->> 0 [writethrough]
->> dev.data.cache_state	0 [detached] cset.uuid
->> 00000000-0000-0000-0000-000000000000
->> 
->> (Obviously /dev/sdd1 and /dev/sde1 are the same device but with
->> different path)
->> 
->> Another side effect is that my syslog, kern.log logfiles are eating all
->> my root partition space with messages like this:
->> 
->> Oct  7 12:27:31 lnx kernel: [2300151.278097] bcache: bch_btree_gc() gc
->> failed!
->> 
->> 
->> What can be done to troubleshoot this issue?
->> 
->> Regards,
->> Michele
+diff --git a/Documentation/bcache.txt b/Documentation/bcache.txt
+index a9259b5..c78c012 100644
+--- a/Documentation/bcache.txt
++++ b/Documentation/bcache.txt
+@@ -133,6 +133,86 @@ the backing devices to passthrough mode.
+    writeback mode). It currently doesn't do anything intelligent if it fails to
+    read some of the dirty data, though.
+ 
++SSD LONGEVITY: PER-PROCESS CACHE HINTING WITH IO PRIORITY
++---------------------------------------------------------
++
++Processes can be assigned an IO priority using `ionice` and bcache will
++either try to writeback or bypass the cache based on the IO priority
++level assigned to the process and the configuration of the syfs ioprio
++hints.  If configured properly for your workload, this can both increase
++performance and reduce SSD wear (erase/write cycles).
++
++Having idle IOs bypass the cache can increase performance elsewhere
++since you probably don't care about their performance.  In addition,
++this prevents idle IOs from promoting into (polluting) your cache and
++evicting blocks that are more important elsewhere.
++
++Default sysfs values:
++	2,7: ioprio_bypass is hinted for process IOs at-or-below best-effort-7.
++	0,0: ioprio_writeback hinting is disabled by default.
++
++Cache hinting is configured by writing 'class,level' pairs to sysfs.
++In this example, we write the following:
++
++    echo 2,7 > /sys/block/bcache0/bcache/ioprio_bypass
++    echo 2,0 > /sys/block/bcache0/bcache/ioprio_writeback
++
++Thus, processes with the following IO class (ionice -c) and level (-n)
++will the behave as shown in this table:
++
++	(-c) IO Class    (-n) Class level       Action
++	-----------------------------------------------------
++	(1) Realtime      0-7                   Writeback
++	(2) Best-effort     0                   Writeback
++	(2) Best-effort   1-6                   Normal, as if hinting were disabled
++	(2) Best-effort     7                   Bypass cache
++	(3) Idle          n/a                   Bypass cache
++
++For processes at-or-below best-effort-7 (ionice -c2 -n7), the
++ioprio_bypass behavior is as follows:
++
++* Reads will come from the backing device and will not promote into
++  (pollute) your cache.  If the block being read was already in the cache,
++  then it will be read from the cache (and remain cached).
++
++* If you are using writeback mode, then low-priority bypass-hinted writes
++  will go directly to the backing device.  If the write was dirty in
++  cache, it will cache-invalidate and write directly to the backing
++  device.  If a high-priority task later writes the same block then it
++  will writeback so no performance is lost for write-after-write.
++
++  For read-after-bypassed-write, the block will be read from the backing
++  device (not cached) so there may be a miss penalty when a low-priority
++  process write bypasses the cache followed by a high-priority read that
++  would otherwise have hit.  In practice, this is not an issue; to date,
++  none have wanted low-priority writes and high-priority reads of the
++  same block.
++
++For processes in our example at-or-above best-effort-0 (ionice -c2 -n0),
++the ioprio_writeback behavior is as follows:
++
++* The writeback hint has no effect unless your 'cache_mode' is writeback.
++  Assuming writeback mode, all writes at this priority will writeback.
++  Of course this will increase SSD wear, so only use writeback hinting
++  if you need it.
++
++* Reads are unaffected by ioprio_writeback, except that read-after-write
++  will of course read from the cache.
++
++Linux assigns processes the best-effort class with a level of 4 if
++no process is assigned  Thus, without `ionice` your processes will
++follow normal bcache should_writeback/should_bypass symantecs as if the
++ioprio_writeback/ioprio_bypass sysfs flags were disabled.
++
++Also note that in order to be hinted by ioprio_writeback/ioprio_bypass,
++the process must have a valid ioprio setting as returned by
++get_task_io_context()->ioprio. Thus, a process without an IO context
++will be ignored by the ioprio_writeback/ioprio_bypass hints even if your
++sysfs hints specify that best-effort-4 should be flagged for bypass
++or writeback.  If in doubt, explicitly set the process IO priority with
++`ionice`.
++
++See `man ionice` for more detail about per-process IO priority in Linux.
+ 
+ HOWTO/COOKBOOK
+ --------------
+-- 
+1.8.3.1
