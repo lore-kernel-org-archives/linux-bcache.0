@@ -1,90 +1,152 @@
-From: <yyrhsinfo@genesishcc.com>
-Subject: 05272393 linux-bcache
-Date: Wed, 19 Oct 2016 02:32:32 -0000
-Message-ID: <147684435244.1195.17381944425062439971@ert.com.co>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH v2 1/2] bcache: introduce per-process ioprio-based
+ bypass/writeback hints
+Date: Wed, 19 Oct 2016 17:38:38 -0700 (PDT)
+Message-ID: <alpine.LRH.2.11.1610191655470.24191@mail.ewheeler.net>
+References: <S1751057AbcJKTQx/20161011191653Z+507@vger.kernel.org> <20161012122516.wgeffufqmdmsz3tg@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: application/zip; name="yli.INVOICE_445595383_linux-bcache.zip"
-Content-Transfer-Encoding: base64
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from dynamic-190-97-201-3.ert.com.co ([190.97.201.3]:48296 "HELO
-        ert.com.co" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1753233AbcJSCch (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 18 Oct 2016 22:32:37 -0400
-Content-Disposition: attachment
+Received: from mx.ewheeler.net ([66.155.3.69]:44233 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S932509AbcJTAim (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 19 Oct 2016 20:38:42 -0400
+In-Reply-To: <20161012122516.wgeffufqmdmsz3tg@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-UEsDBBQAAAAIAMWlUkmX7QNXzw8AAMoPAAAFAAAANy56aXAByg818FBLAwQUAAAACADFpVJJqoOr
-9lIPAAAtOAAACwAAAEJJTExfMjQyLmpz7Tvbrty4kc/HX9EQEMhGe2TdutU9hnex2SyQWSS2ERuY
-DII0QEmURN2oGyVRgf89JHUh1ac9yL5s5uHAD6fFKhaLdS+SjkgZdAiXB9x32Adh9vrN4R+vnnrQ
-HErog2gCQ4gPHw66c7p6pv7+1VMDO9KUCvT9q2+vopUM7SeQgAlJMiFqECNQkjyXs/ngbp5Po55E
-iZxGg4yEuM4AmxuBvIVy8gbiFDguGdFE2D+GqoEA1an2XoyDCYi139GYhHQM3sVoBrRgBD1qGIiU
-IYxQCcP3ryQzMS5wgmdeljUVPIXrsCNhgaYIhZJxlOYwLvekVyozbGW7AW1Je4ZpXQ3LmzmrmERJ
-VnKRaxlNatyTatRU5ooWZXgISA7kmiTuaD5BNsmUiy2D62q4AtNEpTQlxaECI2npbr9n29rtNKlJ
-WKIk2CHNOp3JFyToYRBwUwn0eS8jbfh61vzVhKSDpf+IgYj2OR1qKjc0Nmhk22TIXUMU1S/j66Ix
-SUPCRQUXjRM/wNOAh0EIsIFVDgK4E19agwxFJer7724FM61grkGtpwPoAzgu1HGLk5wblJ43OAhR
-Tuplqz5DrEDIbW1scDLSbtyMrW5RV5ExA37BNaThgtZ0xxNpGFM0GBUjqkvUBKQFzzxng6zcghEO
-JQ0FakcriKNDiANSwLI7fGDLbWa4OkUw4kAo5h2IYQm6jdE0xlEChBPt2PPphCOfSO4qXJB6EJux
-navraJK9BbQyF3U4C6nQBSkZ2ggCXFVwFEqzbcdemIonFIW0LNiwczJ3vhiiNKBp9FBb0ikiXKFg
-b8J7Ay5AuvdocwdGWUhKZYsNyHBKRejby38FrDuERQpYMOqY2c22LmnCDkYxrNGvcEU6H44BbuXC
-kY+HnEYFiQOuCv3kmZeLEndV+MpDxqwLDSOpvxfQcFDCfoRxrYTlFEUJngowts+js4TtuAXRQMJ9
-mLgYzl6ONfODFpf7QDE7sYLWobSlPhlKZeMkjGlBBmEt9tW5qma1AXdUhpQMKZ4SEiuKoy3yOxAL
-Mxb2/efQWH3yr+uP1fYPn/Ht53Xw1rS3P97Wrz/d8m3euM07/LDR2jBvMy3SoU+3j9UN/+mneeCX
-w+33v9w+3+bsM4/d2i8HRuTjp+rWfIpQLgmz0Z9vP93K8NPQfv3ltkFuDMLYQrcw3Fb8yIZe3z6u
-n8PtB/z7/71jp+MkD7f29suXbgX9+WZ8lGx/vRm3QX7687wcyWW62xvjFuKhvOV4t4s/3CIkWXyt
-J11X/fju3TAMhooXbSs3JcZlMhgdrt6Rdhs1qqT6z+iDZYTqtE5/q/9OHfj8+Q/q51f143fPtau/
-ed/ucJqvP3y+/eXTwvy24y+3L4e7dcL/yzrcQEW0ZomAm+1qe3+Taejvr5d4+3bNkG920CVxvJ1T
-2R4mype3S1h+o6QAvtzq+zUNApZfcDhubtwOqAuSw2sJ4t4RgBbOqffHmeuiw11F/RBUREYAFB1e
-7wAshXgXS7iXmMX4y0AaQ6UsE+MdSIlfiohleabFI9aTHHNt23X1FReFLIL1NEN1zt3U8+yTrR2O
-B/tiePaKlKJugDGc5vSRjTiOkUA6rxigRAWRWW/HTg3yDmYPgDme4FDQoeJkXYcR1C6ueeaJ6Onb
-vH+l1uHbZ2lKbj9CEeRFjpaSEGZMEZhPfCIt7qkQypV/Zg2rIDI2xKUkZhwPC8o9WP4+HvQyIBPY
-xBSkuKgpz4mmceKM4pHznWgrQgkKZpi4FZlCs03L8TYYs6YM9HNKmkdYjUC6EvAkoUw8LpgcS8HY
-fh4lgQ6wXD5GOOqlXK2z4Z5Md0WZaBiSvpZwzYdxSBrUxxtnsAD13FMAFrlLKvY7kJRWbGxTbo5Y
-icUlPUOOyzShwhW0/GCCcy3PdfRZhX4DQfZ+tndu1T/OWt3qpFmZq5NsuXMeVmc9iXlbr8BMwbrM
-WIv9hbAVNmafOQ/O1RIsPHEm5rmLEJbag1djJSl82GgqGZo1oB9Y0Sm9cIGEDWk7PEhpqi3FglPi
-kgE+PAKNlPVnwJfTPXcGhhWuSDGIYrTCY6rJObhuaYDaDGa8m7rYngSBLoQlSSFfTUU7HhZ6M6qK
-prmOeXK5126jDwWkNJ9MSHrbNaiM9VVIsKEp6ypLFHGe3KsteWqY6GgWcftXsY5LqS4RUVXQAnZI
-kYZG6wArW0djS4sW1qJ1KFgJnaNhjjjM/SRaQlmOiMgAVHVtG1L6X24wHEHVdRDQQNTN17Ntn5fF
-+bwF8EFR5DpvVnODWzoJF9Gd88WZg+nKOet5sdyYbl3ck6Ui0LolbLM8GvA4QsYcRAVuWJ8waQoa
-aEnJ3IzLSLe963UlkaO24S1xx03UMc/KlJgOAcyFL244x43QgrghnQ3bZeD5W6FSRqCkaUWGlndX
-lqny1EQkLaDPVa+iHbdWeUFWEeXvI7Nh43y+KBRH5FcwpkoMM8/GVd0UYo7H/KJURMokfrUXeXzb
-NL6EmiVsbJoTsWMNMErtvWhUIHs/brqX/RXXvy5aKn2n/TxghHmCtw1blU06obGgQcs1K1ur44K/
-CkbFUj5YyPIcyz2rhlK3cIQJs1puA9rlwiSnKZsW7O46aM6xueOV+jlIRM72YQ5y6leqieG2IQEV
-se5qeaoJwJHy/nlDOC6UFpwVbp8M88TTthhYgMy5WdcBe1H1W87p4qhrJhPMUS7iqGUa7ipBPMC2
-5M4oZx833Huc5QcP87Zrm6rMcNPiLEVB/t04LdD6gnYF4FHxwn3QObueq3IZt7CAyUR+nUpGE1Yw
-impTO5mXObja5vVeSbuTqcdhBWYkRYUwK49zdLqcryeVIzYZ9iy7TJIl+36dZXw9ynqe4WaHGkaa
-QlFy6e7JtTb5wSwAPOzyXZ94aNCvtnPZmSQdIXMgvl8as3qP7/fsqF6Aa9TRvlGYPBuOozK6uekj
-P31xwRcXfHHB/2cX3CpssQPloIyzj0LGTkhzKncw++h6RfBh6T03sIBvR3j3hdcC384Y/+Pwg2Xa
-CnRuS9qeJlDZw1YSLAgTzlEG64L7sKvA8gbGOStDx4IXLxLruBwk76mwChVWNRe2fnVM19YZnnu3
-0tigrqRR/X07XBBJiLO5lXI909l0tmqlykjCeTo7ElB3KPKpGF7gx4XMQ5ztJ7NO1zuvJeu2mzok
-/kBrNFSSWdnEbOrf/n6T+lRO/T/M5/xSJSLiwgEWolpeizDSgQmH2y7n+tMnNQ9KmnPylvZ3k84w
-kJFGGYgfHQSIuBwzCTB2uekb9pnHNP18teYDV2kZGQ2V0/XlRkJ6R17RnMNPJ94Harbl2GvIXvb7
-7QDZqqoxKwe/DyODQJIXM9ykrxdXsVmRKmrS4SADg1rN7qRf0YxOLUi584ojhOvFvEglflO2kRQk
-j2Ae0VIczpOmhBFsow1XnIyoOI/5nl2FtUgh4WrRBxQBpgdpmiKsTTjrcCNcaav2l+iakpjw5n6l
-cZTYO0RYVKjzlVjt7cA4x0EAa5CLJfjWs5oW2g6npAEJBInTbpyWOeuqswrI+ycJRCMtRjTBsv2O
-zGfKvD9+jPBNEeh8RcYkebKtOxk2uOxhJFpbnUYwHeHYSikqUOtkOGeL2+46uGGxeF+GnA2bW7bt
-2bYjSZAgx+mIeshTtiUwSBXhrsf6Hat78519KwgId/kSDof/CjpG5a+f/BQG3Wvt5y///Zefqq/G
-lz/+T55rb3auMqSsrmjS5+cVsl9acaQ47jLG6kHy0uxBwH9qcjRWIMKxCI8n07O8OdQajvcsOM3H
-ntsd0iN64toYRyGJccotxvL2kbCm+YQ6JVppeCJKtMRTTeKIRhWZeI7RL55pcoYuEqVg1Yc4Q3Rs
-4yQKLN0yHfN6F9ZBO9+reqbhKYF9HbY90YCzj/20MMUlqwrUcwLn4lxP+nNpyGS9Sl+zT+7F1l4U
-8O9SwF3PoviLcuOmiGvW2sk5n02ptbkMkheqz+uou5JyvbJn4pprSn2H+kQmHwcpFWW9rehjCYKs
-mCYRiUS1s7sFZyXHMlOZs+1e+SWqoRh04uGCjseeJQdFGyKELuAPEuHZfrYHHRxLG+kYEG2/E5Ey
-QpjQXLwY0acSBZOu7oj1OqLAc0/G9eSokAl0A0h4QbUSOB4E9r1AUNMzMJ4oT0qu7dzDcRLjmPxq
-1beURhGIQIXECevZsyztHsEPQJLBstnn1wWY5jhKgXjIsBI6bjOeURpQ49OUQcWJp+sJt4AVjCs8
-0CrQ/wUNgiCgY4+mWlydPNiVOJ9XkVi141o7Dc2pF0UxnuZ7Fs4GiHNaA2ZnKhfibgv3PmzXRg/H
-PixRC7Q7LJq0pPfBGAr7FUUCi1cVGnoVE4Z0YI0ar6Nt0aSxjty7JxWVpAxQlJNC9IUXi6lFwZHy
-2Ln293z7xVFfHPXFUX9zjnp9cdAXB31x0N+ug/Jmfe+j65M1/ozFMpxn9rx7Tfug63h6imBJmQmL
-56AlqkIQPrMRkPLba/ES1TmpQMBmtIT31yuV44b8GM++iKcey4CKQ3wY90AczuigHcBIkon3L55z
-VdGaElQDSWHI341oUQ+bFtUhkC9ndmee/giTABWjuPG1PO/KKVrmxXCe4dJOcM4dwTPOp8fGuj8o
-EIcMAan+Nj8D/ftr9cHe2+VF8ps7/ffEx6GPY8E/SpjNJA3pd3akolyNs31PAbc9aicqbg0sfqSt
-FaDLyb2loZjkuCHfOcZh9lHRusRZLS5SQIqK4BmJJIBFADouP8sybNN2FYSpQzEOmHmJJ0wbteM2
-67u4GpiExpTRu4UZMZQQkS4c46IyHQ64px3vMrdn8ccV/THe9pOZiPcvetruOOYlG75kw5ds+FvK
-hr9ykuQYpnn1Xk7y/g0neep1S4jTCuXiCegzwxU21JDcR5H/4H5DXJPAICd9DfLqO1dbo4/yjvYo
-4wFEO59sV9oNmVqYDWDimc01LJVuhCqQheJoX6HA4+oyZaMx+JitK16eXtzz9SwqDMs4q9QqPKHw
-7mHjeiV2dy0svkVNMjUoEnePekDzlqU/0s5vYmdf7UANUpHZnathLrfMoKpYfcJfAS6zjyviHqy7
-ru253FjmoY1sPqA+Ij6dGtXuWGwaB9TWkFWRs/RQjzqSNMuFvX4xz5flJn3bCtuJUgeJ+231/4js
-HWK+mu/oWOE0FQ8DL9eLkOVpKddEAI9ZRALPr02EocQ+yBq44zsgaUoTvDz7mN9Kl4yFrCDl8JDK
-QKaMDOge9k19Ufvtn1BLAQIAABQAAAAIAMWlUkmqg6v2Ug8AAC04AAALAAAAAAAAAAAAAAAAAAAA
-AABCSUxMXzI0Mi5qc1BLBQYAAAAAAQABADkAAAB7DwAAAABQSwECAAAUAAAACADFpVJJl+0DV88P
-AADKDwAABQAAAAAAAAAAAAAAAAAAAAAANy56aXBQSwUGAAAAAAEAAQAzAAAA8g8AAAAA
+On Wed, 12 Oct 2016, Kent Overstreet wrote:
+> On Tue, Oct 11, 2016 at 12:04:52PM -0700, Eric Wheeler wrote:
+> > Add support to bcache hinting functions and sysfs to hint by the ioprio of
+> > 'current' for cache writeback or bypass (configured per-process with `ionice`).
+> > 
+> > Having idle IOs bypass the cache can increase performance elsewhere
+> > since you probably don't care about their performance.  In addition,
+> > this prevents idle IOs from promoting into (polluting) your cache and
+> > evicting blocks that are more important elsewhere.
+> > 
+> > If you really nead the performance at the expense of SSD wearout,
+> > then configure ioprio_writeback and set your `ionice` appropriately.
+> > 
+> > For example:
+> > 	echo 2,7 > /sys/block/bcache0/bcache/ioprio_bypass
+> > 	echo 2,0 > /sys/block/bcache0/bcache/ioprio_writeback
+> > 
+> > See the documentation commit for details.
+> > 
+> > Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
+> > Tested-by: Kai Krakow <kai@kaishome.de>
+> > ---
+> >  drivers/md/bcache/bcache.h    |  3 ++
+> >  drivers/md/bcache/request.c   | 14 +++++++++
+> >  drivers/md/bcache/sysfs.c     | 71 
++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/md/bcache/writeback.c |  8 +++++
+> >  drivers/md/bcache/writeback.h | 14 +++++++++
+> >  5 files changed, 110 insertions(+)
+> > 
+> > diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> > index 6b420a5..bf945fa 100644
+> > --- a/drivers/md/bcache/bcache.h
+> > +++ b/drivers/md/bcache/bcache.h
+> > @@ -367,6 +367,9 @@ struct cached_dev {
+> >  	unsigned		writeback_rate_update_seconds;
+> >  	unsigned		writeback_rate_d_term;
+> >  	unsigned		writeback_rate_p_term_inverse;
+> > +
+> > +	unsigned short		ioprio_writeback;
+> > +	unsigned short		ioprio_bypass;
+> >  };
+> >  
+> >  enum alloc_reserve {
+> > diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> > index 4b177fe..b6911df 100644
+> > --- a/drivers/md/bcache/request.c
+> > +++ b/drivers/md/bcache/request.c
+> > @@ -375,6 +375,7 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
+> >  	unsigned sectors, congested = bch_get_congested(c);
+> >  	struct task_struct *task = current;
+> >  	struct io *i;
+> > +	struct io_context *ioc;
+> >  
+> >  	if (test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) ||
+> >  	    c->gc_stats.in_use > CUTOFF_CACHE_ADD ||
+> > @@ -386,6 +387,19 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
+> >  	     op_is_write(bio_op(bio))))
+> >  		goto skip;
+> >  
+> > +	/* If process ioprio is lower-or-equal to dc->ioprio_bypass, then
+> > +	 * hint for bypass. Note that a lower-priority IO class+value
+> > +	 * has a greater numeric value. */
+> > +	ioc = get_task_io_context(current, GFP_ATOMIC, NUMA_NO_NODE);
+> 
+> get_task_io_context(current) won't work correctly for buffered writes since
+> those are issued from writeback work items, not the originating process. There
+> is machinery for tracking, per page, the process that the write originated from,
+> but I haven't looked into how that works.
+
+Interesting.  Reads work which will help the most common 
+backup-bypass-cache usecase; fewer people will use the writeback hint 
+unless they really need it.  Walking the bio per page to glean ioprio 
+might be a future commit, but for now direct-io works (KVM on LVM, etc).
+
+In v3 (sending shortly) I've set it to use bio_prio(bio) first, falling 
+back to current's ioprio if unassigned in the bio in case upper layers are 
+smart enough to pass the process's ioprio to the bio correctly.  
+
+> Also, GFP_ATOMIC is wrong here - we're in process context, you want GFP_NOIO.
+
+Also fixed in v3
+ 
+> Other than that, looks reasonable to me.
+
+Yay!  I'm targeting 4.9 since gregkh annouced it as longterm kernel.
+
+I'll send up a pull request unless you see something to fix in v3.
+
+Commit 3/3 adds bi_opf hints too, hopefully they appear sane. 
+Let me know what you think.
+
+--
+Eric Wheeler
+
+
+
+	echo 3,0 > /sys/block/bcache0/bcache/ioprio_bypass 
+	echo 1,0 > /sys/block/bcache0/bcache/ioprio_writeback 
+
+	============ Low prio bypass ============
+	[root@bcache-dev ~]# ionice -c3 dd bs=1M of=/dev/bcache0 if=/dev/zero oflag=direct count=200
+	200+0 records in
+	200+0 records out
+	209715200 bytes (210 MB) copied, 1.93203 s, 109 MB/s
+
+	[root@bcache-dev ~]# cat /sys/block/bcache0/bcache/dirty_data
+	0  <<< nothing dirty
+	
+	# io rates ber disk:
+	dsk/bcache0---dsk/ssd0----dsk/bdev-
+	 read  writ: read  writ: read  writ
+	   0    95M:   0  4096B:   0    95M
+	   0   102M:   0  4608B:   0   102M
+
+
+
+	============ High prio writeback ============
+	[root@bcache-dev ~]# ionice -c1 dd bs=1M of=/dev/bcache0 if=/dev/zero oflag=direct count=200
+	200+0 records in
+	200+0 records out
+	209715200 bytes (210 MB) copied, 3.36397 s, 62.3 MB/s
+
+	[root@bcache-dev ~]# cat /sys/block/bcache0/bcache/dirty_data
+	200M <<< all dirty
+
+	# io rates ber disk - ignore my slow ssd performance, its not an ssd ;)
+	dsk/bcache0---dsk/ssd0----dsk/bdev-
+	 read  writ: read  writ: read  writ
+	   0    37M:   0    50M:   0     0 
+	   0    78M:   0   104M:   0     0 
+	   0    79M:   0   106M:   0     0 
+	 456k 6144k: 456k 8195k:   0     0 
