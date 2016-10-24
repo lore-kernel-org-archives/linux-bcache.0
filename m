@@ -1,69 +1,38 @@
-From: <richard@oxbridgeprograms.com>
-Subject: (unknown)
-Date: Sat, 22 Oct 2016 21:34:52 -0000
-Message-ID: <147717209274.1195.13513030351466116869@rcil.gov.in>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: [PULL v4.9-rc1] bcache: ioprio bypass/writeback hints with
+ documentation
+Date: Sun, 23 Oct 2016 18:03:12 -0700 (PDT)
+Message-ID: <alpine.LRH.2.11.1610231750580.24191@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: application/zip; name="EMAIL_67034075_linux-bcache.zip"
-Content-Transfer-Encoding: base64
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from ws213-201-133-112.rcil.gov.in ([112.133.201.213]:60869 "HELO
-        rcil.gov.in" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1755759AbcJVVfA (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 22 Oct 2016 17:35:00 -0400
-Subject: 
-Content-Disposition: attachment
+Received: from mx.ewheeler.net ([66.155.3.69]:43310 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1756728AbcJXBDO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 23 Oct 2016 21:03:14 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
 
-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
+Hi Jens,
+
+Please pull for v4.9:
+
+git pull https://bitbucket.org/ewheelerinc/linux.git v4.9-rc1-bcache-sysfs-ioprio
+
+0c25a9b bcache: documentation for ioprio cache hinting
+676766a bcache: introduce per-process ioprio-based bypass/writeback hints
+
+ Documentation/bcache.txt      | 80 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/bcache.h    |  3 +++
+ drivers/md/bcache/request.c   | 24 ++++++++++++++++++++++++
+ drivers/md/bcache/sysfs.c     | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/writeback.c |  8 ++++++++
+ drivers/md/bcache/writeback.h | 24 ++++++++++++++++++++++++
+ 6 files changed, 210 insertions(+)
+
+Thank you!
+
+--
+Eric Wheeler
