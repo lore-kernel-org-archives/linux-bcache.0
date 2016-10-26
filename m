@@ -1,65 +1,82 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: ciao set_task_state() (was Re: [PATCH -v4 6/8] locking/mutex:
- Restructure wait loop)
-Date: Tue, 25 Oct 2016 09:45:58 -0800
-Message-ID: <20161025174558.nuag6uodciz4xpkd@kmo-pixel>
-References: <20161007145243.361481786@infradead.org>
- <20161007150211.271490994@infradead.org>
- <20161013151720.GB13138@arm.com>
- <20161019173403.GB3142@twins.programming.kicks-ass.net>
- <20161024015726.GA26130@linux-80c1.suse>
- <20161024142711.3yfr44jq57tkoirl@kmo-pixel>
- <alpine.LRH.2.11.1610250945390.24191@mail.ewheeler.net>
+From: James Pharaoh <james@pharaoh.uk>
+Subject: Extra write mode to close RAID5 write hole (kind of)
+Date: Wed, 26 Oct 2016 16:20:38 +0100
+Message-ID: <bd0112e0-976a-59e8-94ef-81777f240ffd@pharaoh.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1610250945390.24191@mail.ewheeler.net>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Davidlohr Bueso <dave@stgolabs.net>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from kiara-balancer-1.wellbehavedsoftware.com ([138.201.134.108]:46684
+        "EHLO kiara-balancer-1.wellbehavedsoftware.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1753786AbcJZPZ7 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 26 Oct 2016 11:25:59 -0400
+Received: from mail-backup-1.vpn.wellbehavedsoftware.com (unknown [10.109.160.60])
+        by mail-hub.vpn.wellbehavedsoftware.com (Postfix) with ESMTP id 5CECDB6BF7
+        for <linux-bcache@vger.kernel.org>; Wed, 26 Oct 2016 15:20:50 +0000 (UTC)
+Received: from [10.0.0.125] (89.red-83-46-81.dynamicip.rima-tde.net [83.46.81.89])
+        by mail-backup-1.vpn.wellbehavedsoftware.com (Postfix) with ESMTPSA id 01DF0C59B9
+        for <linux-bcache@vger.kernel.org>; Wed, 26 Oct 2016 15:20:39 +0000 (UTC)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Tue, Oct 25, 2016 at 09:55:21AM -0700, Eric Wheeler wrote:
-> Sure, I'll put it up with my -rc2 pull request to Jens.  
-> 
-> A couple of sanity checks (for my understanding at least):
-> 
-> Why does bch_data_insert_start() no longer need to call 
-> set_gc_sectors(op->c) now that bch_cache_set_alloc and bch_gc_thread do?  
+Hi all,
 
-Before, the gc thread wasn't being explicitly signalled that it was time to run
-- it was just being woken up, meaning that a spurious wakeup would cause gc to
-run. At best it was sketchy and fragile, for multiple reasons - wait_event() is
-a much better mechanism.
+I'm creating an elaborate storage system and using bcache, with great 
+success, to combine SSDs with smallish (500GB) network mounted block 
+devices, with RAID5 in between.
 
-So with wait_event() gc is explicitly checking if it's time to run - the wakeup
-doesn't really make anything happen by itself, it just pokes the gc thread so
-it's able to notice that it should run.
+I believe this should allow me to use RAID5 at large scale without high 
+risk of data loss, because I can very quickly rebuild the small number 
+of devices efficiently, across a distributed system.
 
-When you're signalling a thread this way - we're in effect setting a global
-variable that says "gc should run now", then kicking the gc thread so it can
-check the "gc should run" variable. But wakeups aren't synchronous - our call to
-wake_up() doesn't make the gc thread check that variable before it returns, all
-we know when the wake_up() call returns is that the gc thread is going to check
-that variable some point in the future. So we can't set the "gc should run"
-varible, wake up the gc thread, and then set it back to "gc shouldn't run yet" -
-what'll happen most of the time is that the gc thread won't run before we set
-the variable back to "gc shouldn't run yet", it'll never see that it was
-supposed to run and it'll go back to sleep.
+I am using separate filesystems on each and abstracting their 
+combination at a higher level, and I have redundant copies of their data 
+in different locations (different countries in fact), so even if I lose 
+one it can be recreated efficiently.
 
-So the way you make this work is you have the gc thread has to set the variable
-back to "gc shouldn't run yet" _after_ it's seen it and decided to run.
+I believe this addresses the issue of two devices failing 
+simultaneously, because it would affect an even smaller proportion of 
+the total data than a single failure, which would simply trigger a 
+number of RAID5 rebuilds.
 
-> Does bch_cache_set_alloc() even need to call set_gc_sectors since 
-> bch_gc_thread() does before calling bch_btree_gc?
+I have high faith in SSD storage, especially given drives' SMART 
+capabilities to report failure well in advance of it happening, so it 
+occurs to me that bcache is going to close the RAID5 write hole for me, 
+assuming certain things.
 
-Yes, because the gc thread only resets the counter when it's decided to run - we
-don't want it to run right away at startup.
+I am making assumptions about the ordering of writes that RAID5 makes, 
+and will post to the appropriate list about that, with the possibility 
+of another option. However, I also note that bcache "optimises" 
+sequential writes directly to the underlying device:
 
-> Also I'm curious, why change invalidate_needs_gc from a bitfield? 
+ > Since random IO is what SSDs excel at, there generally won't be much
+ > benefit to caching large sequential IO. Bcache detects sequential IO
+ > and skips it; it also keeps a rolling average of the IO sizes per
+ > task, and as long as the average is above the cutoff it will skip all
+ > IO from that task - instead of caching the first 512k after every
+ > seek. Backups and large file copies should thus entirely bypass the
+ > cache.
 
-Bitfields are particularly unsafe for multiple threads to access - the compiler
-has to emit instructions to do read/modify/write, which will clobber adjacent
-data. A bare int is also not in _general_ safe for multiple threads to access
-without a lock, but for what it's doing here it's fine.
+Since I want my bcache device to essentially be a "journal", and to 
+close the RAID5 write hole, I would prefer to disable this behaviour.
+
+I propose, therefore, a further write mode, in which data is always 
+written to the cache first, and synced, before it is written to the 
+underlying device. This could be called "journal" perhaps, or something 
+similar.
+
+I am optimistic that this would be a relatively small change to the 
+code, since it only requires to always choose the cache to write data to 
+first. Perhaps the sync behaviour is also more complex, I am not 
+familiar with the internals.
+
+So, does anyone have any idea if this is practical, if it would 
+genuinely close the write hole, or any other thoughts?
+
+I am prepared to write up what I am designing in detail and open source 
+it, I believe it would be a useful method of managing this kind of high 
+scale storage in general.
+
+James
