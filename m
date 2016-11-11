@@ -1,332 +1,190 @@
-From: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH 01/12] block: bio: pass bvec table to bio_init()
-Date: Fri, 11 Nov 2016 20:05:29 +0800
-Message-ID: <1478865957-25252-2-git-send-email-tom.leiming@gmail.com>
-References: <1478865957-25252-1-git-send-email-tom.leiming@gmail.com>
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1478865957-25252-1-git-send-email-tom.leiming@gmail.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
-Cc: linux-block@vger.kernel.org, linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Ming Lei <tom.leiming@gmail.com>, Jens Axboe <axboe@kernel.dk>, Jiri Kosina <jikos@kernel.org>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, "maintainer:DEVICE-MAPPER LVM" <dm-devel@redhat.com>, Christoph Hellwig <hch@lst.de>, Sagi Grimberg <sagi@grimberg.me>, Joern Engel <joern@logfs.org>, Prasad Joshi <prasadjoshi.linux@gmail.com>, Mike Christie <mchristi@redhat.com>, Hannes Reinecke <hare@suse.com>, Rasmus Villemoes <linux@rasmusvillemoes.dk>, Johannes Thumshirn <jthumshirn@suse.de>, Guoqing Jiang <gqjiang@suse.com>, Eric Wheeler <git@linux.ewheeler.net>
+From: Karl-Philipp Richter <krichter@posteo.de>
+Subject: bcachefs bug during file creation and removal
+Date: Fri, 11 Nov 2016 16:52:42 +0100
+Message-ID: <99daab89-f7ba-25cb-f20d-503f171e2699@posteo.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="0uS100VXGJqPrn8VqNKUaQSeicNFvgh9m"
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mout02.posteo.de ([185.67.36.66]:43213 "EHLO mout02.posteo.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1756493AbcKKPwq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 11 Nov 2016 10:52:46 -0500
+Received: from submission (posteo.de [89.146.220.130])
+        by mout02.posteo.de (Postfix) with ESMTPS id 4DE6720B3D
+        for <linux-bcache@vger.kernel.org>; Fri, 11 Nov 2016 16:52:44 +0100 (CET)
+Received: from customer (localhost [127.0.0.1])
+        by submission (posteo.de) with ESMTPSA id 3tFkvb57ZXz106Q
+        for <linux-bcache@vger.kernel.org>; Fri, 11 Nov 2016 16:52:43 +0100 (CET)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Some drivers often use external bvec table, so introduce
-this helper for this case. It is always safe to access the
-bio->bi_io_vec in this way for this case.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--0uS100VXGJqPrn8VqNKUaQSeicNFvgh9m
+Content-Type: multipart/mixed; boundary="N6EhuXhwEdjvIeW2Ti09AKgqEbDDFrTR5";
+ protected-headers="v1"
+From: Karl-Philipp Richter <krichter@posteo.de>
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Message-ID: <99daab89-f7ba-25cb-f20d-503f171e2699@posteo.de>
+Subject: bcachefs bug during file creation and removal
 
-After converting to this usage, it will becomes a bit easier
-to evaluate the remaining direct access to bio->bi_io_vec,
-so it can help to prepare for the following multipage bvec
-support.
+--N6EhuXhwEdjvIeW2Ti09AKgqEbDDFrTR5
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
----
- block/bio.c                   |  8 ++++++--
- drivers/block/floppy.c        |  3 +--
- drivers/md/bcache/io.c        |  4 +---
- drivers/md/bcache/journal.c   |  4 +---
- drivers/md/bcache/movinggc.c  |  6 ++----
- drivers/md/bcache/request.c   |  2 +-
- drivers/md/bcache/super.c     | 12 +++---------
- drivers/md/bcache/writeback.c |  5 ++---
- drivers/md/dm-bufio.c         |  4 +---
- drivers/md/dm.c               |  2 +-
- drivers/md/multipath.c        |  2 +-
- drivers/md/raid5-cache.c      |  2 +-
- drivers/md/raid5.c            |  9 ++-------
- drivers/nvme/target/io-cmd.c  |  4 +---
- fs/logfs/dev_bdev.c           |  4 +---
- include/linux/bio.h           |  3 ++-
- 16 files changed, 27 insertions(+), 47 deletions(-)
+Hi,
+During creation of an OpenAFS cache on a bcachefs mount (ca. 1 M files
+and directories) I probably got the error
 
-diff --git a/block/bio.c b/block/bio.c
-index 2cf6ebabc68c..de257ced69b1 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -270,11 +270,15 @@ static void bio_free(struct bio *bio)
- 	}
- }
- 
--void bio_init(struct bio *bio)
-+void bio_init(struct bio *bio, struct bio_vec *table,
-+	      unsigned short max_vecs)
- {
- 	memset(bio, 0, sizeof(*bio));
- 	atomic_set(&bio->__bi_remaining, 1);
- 	atomic_set(&bio->__bi_cnt, 1);
-+
-+	bio->bi_io_vec = table;
-+	bio->bi_max_vecs = max_vecs;
- }
- EXPORT_SYMBOL(bio_init);
- 
-@@ -480,7 +484,7 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
- 		return NULL;
- 
- 	bio = p + front_pad;
--	bio_init(bio);
-+	bio_init(bio, NULL, 0);
- 
- 	if (nr_iovecs > inline_vecs) {
- 		unsigned long idx = 0;
-diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
-index e3d8e4ced4a2..6a3ff2b2e3ae 100644
---- a/drivers/block/floppy.c
-+++ b/drivers/block/floppy.c
-@@ -3806,8 +3806,7 @@ static int __floppy_read_block_0(struct block_device *bdev, int drive)
- 
- 	cbdata.drive = drive;
- 
--	bio_init(&bio);
--	bio.bi_io_vec = &bio_vec;
-+	bio_init(&bio, &bio_vec, 1);
- 	bio_vec.bv_page = page;
- 	bio_vec.bv_len = size;
- 	bio_vec.bv_offset = 0;
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index e97b0acf7b8d..db45a88c0ce9 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -24,9 +24,7 @@ struct bio *bch_bbio_alloc(struct cache_set *c)
- 	struct bbio *b = mempool_alloc(c->bio_meta, GFP_NOIO);
- 	struct bio *bio = &b->bio;
- 
--	bio_init(bio);
--	bio->bi_max_vecs	 = bucket_pages(c);
--	bio->bi_io_vec		 = bio->bi_inline_vecs;
-+	bio_init(bio, bio->bi_inline_vecs, bucket_pages(c));
- 
- 	return bio;
- }
-diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index 6925023e12d4..1198e53d5670 100644
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -448,13 +448,11 @@ static void do_journal_discard(struct cache *ca)
- 
- 		atomic_set(&ja->discard_in_flight, DISCARD_IN_FLIGHT);
- 
--		bio_init(bio);
-+		bio_init(bio, bio->bi_inline_vecs, 1);
- 		bio_set_op_attrs(bio, REQ_OP_DISCARD, 0);
- 		bio->bi_iter.bi_sector	= bucket_to_sector(ca->set,
- 						ca->sb.d[ja->discard_idx]);
- 		bio->bi_bdev		= ca->bdev;
--		bio->bi_max_vecs	= 1;
--		bio->bi_io_vec		= bio->bi_inline_vecs;
- 		bio->bi_iter.bi_size	= bucket_bytes(ca);
- 		bio->bi_end_io		= journal_discard_endio;
- 
-diff --git a/drivers/md/bcache/movinggc.c b/drivers/md/bcache/movinggc.c
-index 5c4bddecfaf0..13b8a907006d 100644
---- a/drivers/md/bcache/movinggc.c
-+++ b/drivers/md/bcache/movinggc.c
-@@ -77,15 +77,13 @@ static void moving_init(struct moving_io *io)
- {
- 	struct bio *bio = &io->bio.bio;
- 
--	bio_init(bio);
-+	bio_init(bio, bio->bi_inline_vecs,
-+		 DIV_ROUND_UP(KEY_SIZE(&io->w->key), PAGE_SECTORS));
- 	bio_get(bio);
- 	bio_set_prio(bio, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_IDLE, 0));
- 
- 	bio->bi_iter.bi_size	= KEY_SIZE(&io->w->key) << 9;
--	bio->bi_max_vecs	= DIV_ROUND_UP(KEY_SIZE(&io->w->key),
--					       PAGE_SECTORS);
- 	bio->bi_private		= &io->cl;
--	bio->bi_io_vec		= bio->bi_inline_vecs;
- 	bch_bio_map(bio, NULL);
- }
- 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 0d99b5f4b3e6..f49c5417527d 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -623,7 +623,7 @@ static void do_bio_hook(struct search *s, struct bio *orig_bio)
- {
- 	struct bio *bio = &s->bio.bio;
- 
--	bio_init(bio);
-+	bio_init(bio, NULL, 0);
- 	__bio_clone_fast(bio, orig_bio);
- 	bio->bi_end_io		= request_endio;
- 	bio->bi_private		= &s->cl;
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 988edf928466..2fb5bfeb43e2 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1152,9 +1152,7 @@ static void register_bdev(struct cache_sb *sb, struct page *sb_page,
- 	dc->bdev = bdev;
- 	dc->bdev->bd_holder = dc;
- 
--	bio_init(&dc->sb_bio);
--	dc->sb_bio.bi_max_vecs	= 1;
--	dc->sb_bio.bi_io_vec	= dc->sb_bio.bi_inline_vecs;
-+	bio_init(&dc->sb_bio, dc->sb_bio.bi_inline_vecs, 1);
- 	dc->sb_bio.bi_io_vec[0].bv_page = sb_page;
- 	get_page(sb_page);
- 
-@@ -1814,9 +1812,7 @@ static int cache_alloc(struct cache *ca)
- 	__module_get(THIS_MODULE);
- 	kobject_init(&ca->kobj, &bch_cache_ktype);
- 
--	bio_init(&ca->journal.bio);
--	ca->journal.bio.bi_max_vecs = 8;
--	ca->journal.bio.bi_io_vec = ca->journal.bio.bi_inline_vecs;
-+	bio_init(&ca->journal.bio, ca->journal.bio.bi_inline_vecs, 8);
- 
- 	free = roundup_pow_of_two(ca->sb.nbuckets) >> 10;
- 
-@@ -1852,9 +1848,7 @@ static int register_cache(struct cache_sb *sb, struct page *sb_page,
- 	ca->bdev = bdev;
- 	ca->bdev->bd_holder = ca;
- 
--	bio_init(&ca->sb_bio);
--	ca->sb_bio.bi_max_vecs	= 1;
--	ca->sb_bio.bi_io_vec	= ca->sb_bio.bi_inline_vecs;
-+	bio_init(&ca->sb_bio, ca->sb_bio.bi_inline_vecs, 1);
- 	ca->sb_bio.bi_io_vec[0].bv_page = sb_page;
- 	get_page(sb_page);
- 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index e51644e503a5..69e1ae59cab8 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -106,14 +106,13 @@ static void dirty_init(struct keybuf_key *w)
- 	struct dirty_io *io = w->private;
- 	struct bio *bio = &io->bio;
- 
--	bio_init(bio);
-+	bio_init(bio, bio->bi_inline_vecs,
-+		 DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS));
- 	if (!io->dc->writeback_percent)
- 		bio_set_prio(bio, IOPRIO_PRIO_VALUE(IOPRIO_CLASS_IDLE, 0));
- 
- 	bio->bi_iter.bi_size	= KEY_SIZE(&w->key) << 9;
--	bio->bi_max_vecs	= DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS);
- 	bio->bi_private		= w;
--	bio->bi_io_vec		= bio->bi_inline_vecs;
- 	bch_bio_map(bio, NULL);
- }
- 
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index b3ba142e59a4..262e75365cc0 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -611,9 +611,7 @@ static void use_inline_bio(struct dm_buffer *b, int rw, sector_t block,
- 	char *ptr;
- 	int len;
- 
--	bio_init(&b->bio);
--	b->bio.bi_io_vec = b->bio_vec;
--	b->bio.bi_max_vecs = DM_BUFIO_INLINE_VECS;
-+	bio_init(&b->bio, b->bio_vec, DM_BUFIO_INLINE_VECS);
- 	b->bio.bi_iter.bi_sector = block << b->c->sectors_per_block_bits;
- 	b->bio.bi_bdev = b->c->bdev;
- 	b->bio.bi_end_io = inline_endio;
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 1b8b21aba34b..ffa97b742a68 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1525,7 +1525,7 @@ static struct mapped_device *alloc_dev(int minor)
- 	if (!md->bdev)
- 		goto bad;
- 
--	bio_init(&md->flush_bio);
-+	bio_init(&md->flush_bio, NULL, 0);
- 	md->flush_bio.bi_bdev = md->bdev;
- 	md->flush_bio.bi_opf = REQ_OP_WRITE | REQ_PREFLUSH;
- 
-diff --git a/drivers/md/multipath.c b/drivers/md/multipath.c
-index 673efbd6fc47..4da06d813b8f 100644
---- a/drivers/md/multipath.c
-+++ b/drivers/md/multipath.c
-@@ -130,7 +130,7 @@ static void multipath_make_request(struct mddev *mddev, struct bio * bio)
- 	}
- 	multipath = conf->multipaths + mp_bh->path;
- 
--	bio_init(&mp_bh->bio);
-+	bio_init(&mp_bh->bio, NULL, 0);
- 	__bio_clone_fast(&mp_bh->bio, bio);
- 
- 	mp_bh->bio.bi_iter.bi_sector += multipath->rdev->data_offset;
-diff --git a/drivers/md/raid5-cache.c b/drivers/md/raid5-cache.c
-index 2bca090cd64e..8491edcfb5a6 100644
---- a/drivers/md/raid5-cache.c
-+++ b/drivers/md/raid5-cache.c
-@@ -1205,7 +1205,7 @@ int r5l_init_log(struct r5conf *conf, struct md_rdev *rdev)
- 	INIT_LIST_HEAD(&log->io_end_ios);
- 	INIT_LIST_HEAD(&log->flushing_ios);
- 	INIT_LIST_HEAD(&log->finished_ios);
--	bio_init(&log->flush_bio);
-+	bio_init(&log->flush_bio, NULL, 0);
- 
- 	log->io_kc = KMEM_CACHE(r5l_io_unit, 0);
- 	if (!log->io_kc)
-diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
-index 70acdd379e44..5f9e28443c8a 100644
---- a/drivers/md/raid5.c
-+++ b/drivers/md/raid5.c
-@@ -2004,13 +2004,8 @@ static struct stripe_head *alloc_stripe(struct kmem_cache *sc, gfp_t gfp,
- 		for (i = 0; i < disks; i++) {
- 			struct r5dev *dev = &sh->dev[i];
- 
--			bio_init(&dev->req);
--			dev->req.bi_io_vec = &dev->vec;
--			dev->req.bi_max_vecs = 1;
--
--			bio_init(&dev->rreq);
--			dev->rreq.bi_io_vec = &dev->rvec;
--			dev->rreq.bi_max_vecs = 1;
-+			bio_init(&dev->req, &dev->vec, 1);
-+			bio_init(&dev->rreq, &dev->rvec, 1);
- 		}
- 	}
- 	return sh;
-diff --git a/drivers/nvme/target/io-cmd.c b/drivers/nvme/target/io-cmd.c
-index c2784cfc5e29..c58b67e61092 100644
---- a/drivers/nvme/target/io-cmd.c
-+++ b/drivers/nvme/target/io-cmd.c
-@@ -37,9 +37,7 @@ static void nvmet_inline_bio_init(struct nvmet_req *req)
- {
- 	struct bio *bio = &req->inline_bio;
- 
--	bio_init(bio);
--	bio->bi_max_vecs = NVMET_MAX_INLINE_BIOVEC;
--	bio->bi_io_vec = req->inline_bvec;
-+	bio_init(bio, req->inline_bvec, NVMET_MAX_INLINE_BIOVEC);
- }
- 
- static void nvmet_execute_rw(struct nvmet_req *req)
-diff --git a/fs/logfs/dev_bdev.c b/fs/logfs/dev_bdev.c
-index a8329cc47dec..dc8cafeee038 100644
---- a/fs/logfs/dev_bdev.c
-+++ b/fs/logfs/dev_bdev.c
-@@ -19,9 +19,7 @@ static int sync_request(struct page *page, struct block_device *bdev, int op)
- 	struct bio bio;
- 	struct bio_vec bio_vec;
- 
--	bio_init(&bio);
--	bio.bi_max_vecs = 1;
--	bio.bi_io_vec = &bio_vec;
-+	bio_init(&bio, &bio_vec, 1);
- 	bio_vec.bv_page = page;
- 	bio_vec.bv_len = PAGE_SIZE;
- 	bio_vec.bv_offset = 0;
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index d367cd37a7f7..70a7244f08a7 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -420,7 +420,8 @@ extern int bio_phys_segments(struct request_queue *, struct bio *);
- extern int submit_bio_wait(struct bio *bio);
- extern void bio_advance(struct bio *, unsigned);
- 
--extern void bio_init(struct bio *);
-+extern void bio_init(struct bio *bio, struct bio_vec *table,
-+		     unsigned short max_vecs);
- extern void bio_reset(struct bio *);
- void bio_chain(struct bio *, struct bio *);
- 
--- 
-2.7.4
+    [   15.436031] ------------[ cut here ]------------
+    [   15.436037] WARNING: CPU: 6 PID: 9147 at mm/page_alloc.c:3421
+__alloc_pages_nodemask+0xa48/0xe70
+    [   15.436038] Modules linked in: bcache btusb btrtl btbcm btintel
+bluetooth arc4 nls_iso8859_1 uvcvideo iwldvm lz4_compress libcrc32c
+videobuf2_vmalloc intel_rapl x86_pkg_temp_thermal videobuf2_memops
+videobuf2_v4l2 intel_powerclamp videobuf2_core coretemp videodev
+cdc_ether mac80211 usbnet r8152 media hid_multitouch kvm_intel kvm
+iwlwifi irqbypass crct10dif_pclmul crc32_pclmul ghash_clmulni_intel
+aesni_intel cfg80211 aes_x86_64 glue_helper lrw ablk_helper cryptd
+intel_cstate intel_rapl_perf joydev input_leds mei_me ideapad_laptop
+serio_raw mei wmi mac_hid lpc_ich sparse_keymap shpchp coda sunrpc
+parport_pc ppdev lp parport ip_tables x_tables autofs4 btrfs xor
+raid6_pq rtsx_usb_sdmmc rtsx_usb hid_generic usbhid hid i915 psmouse
+i2c_algo_bit drm_kms_helper syscopyarea sysfillrect sysimgblt fb_sys_fops=
+
+    [   15.436071]  drm r8169 video mii fjes ahci libahci
+    [   15.436076] CPU: 6 PID: 9147 Comm: mount Not tainted 10.8.0+ #2
+    [   15.436076] Hardware name: LENOVO 20221/INVALID, BIOS
+71CN51WW(V1.21) 07/12/2013
+    [   15.436078]  0000000000000286 00000000b885e0f1 ffff8c812635ba30
+ffffffffaba0c9d3
+    [   15.436080]  0000000000000000 0000000000000000 ffff8c812635ba70
+ffffffffab682e51
+    [   15.436081]  00000d5d00000000 000000000000000b ffff8c812bb88000
+00000000024040c0
+    [   15.436083] Call Trace:
+    [   15.436088]  [<ffffffffaba0c9d3>] dump_stack+0x63/0x90
+    [   15.436091]  [<ffffffffab682e51>] __warn+0xd1/0xf0
+    [   15.436093]  [<ffffffffab682f7d>] warn_slowpath_null+0x1d/0x20
+    [   15.436094]  [<ffffffffab7a6c88>] __alloc_pages_nodemask+0xa48/0xe=
+70
+    [   15.436096]  [<ffffffffab7a63ae>] ?
+__alloc_pages_nodemask+0x16e/0xe70
+    [   15.436099]  [<ffffffffab80617b>] ?
+kmem_cache_alloc_node_trace+0x13b/0x1d0
+    [   15.436101]  [<ffffffffab7e5f4f>] ? alloc_vmap_area+0x32f/0x3a0
+    [   15.436102]  [<ffffffffab7f988c>] alloc_pages_current+0x8c/0x110
+    [   15.436104]  [<ffffffffab7c7448>] kmalloc_order+0x18/0x40
+    [   15.436106]  [<ffffffffab7c7494>] kmalloc_order_trace+0x24/0xa0
+    [   15.436107]  [<ffffffffab806992>] ? __kmalloc+0x1a2/0x210
+    [   15.436109]  [<ffffffffab806992>] __kmalloc+0x1a2/0x210
+    [   15.436127]  [<ffffffffc0d56c6b>] cache_alloc+0x57b/0x950 [bcache]=
+
+    [   15.436139]  [<ffffffffc0d59c5d>]
+bch_register_cache_set+0x1fd/0x2d0 [bcache]
+    [   15.436141]  [<ffffffffab806963>] ? __kmalloc+0x173/0x210
+    [   15.436151]  [<ffffffffc0d3d111>] ? bch_mount+0x111/0x4d0 [bcache]=
+
+    [   15.436159]  [<ffffffffc0d3d179>] bch_mount+0x179/0x4d0 [bcache]
+    [   15.436162]  [<ffffffffab831c78>] mount_fs+0x38/0x170
+    [   15.436163]  [<ffffffffab7c5a85>] ? __alloc_percpu+0x15/0x20
+    [   15.436165]  [<ffffffffab84f5a7>] vfs_kern_mount+0x67/0x110
+    [   15.436166]  [<ffffffffab851ce5>] do_mount+0x1e5/0xcb0
+    [   15.436168]  [<ffffffffab829901>] ? __check_object_size+0x111/0x1e=
+2
+    [   15.436170]  [<ffffffffab7bfdef>] ? memdup_user+0x4f/0x70
+    [   15.436171]  [<ffffffffab852ab4>] SyS_mount+0x94/0xd0
+    [   15.436174]  [<ffffffffabe544f6>] entry_SYSCALL_64_fastpath+0x1e/0=
+xa8
+    [   15.436175] ---[ end trace 7ef640984da60e52 ]---
+
+which seems to result in the error
+
+    [   97.560655] ------------[ cut here ]------------
+    [   97.560677] WARNING: CPU: 6 PID: 1802 at
+drivers/md/bcache/fs.c:78 __bch_write_inode+0x2d4/0x2e0 [bcache]
+    [   97.560685] inode 506338 not found when updating
+    [   97.560687] Modules linked in:
+    [   97.560688]  rfcomm snd_hrtimer snd_seq snd_seq_device
+snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic
+snd_hda_intel snd_hda_codec snd_hwdep snd_hda_core snd_pcm snd_timer snd
+soundcore openafs(POE) iptable_filter bridge stp llc bnep bbswitch(OE)
+binfmt_misc rtsx_usb_ms memstick usblp intel_rapl x86_pkg_temp_thermal
+intel_powerclamp coretemp kvm_intel kvm irqbypass crct10dif_pclmul
+crc32_pclmul ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw
+ablk_helper cryptd bcache arc4 iwldvm intel_cstate nls_iso8859_1
+mac80211 lz4_compress libcrc32c btusb btrtl btbcm joydev btintel
+bluetooth cdc_ether usbnet intel_rapl_perf uvcvideo input_leds serio_raw
+videobuf2_vmalloc iwlwifi videobuf2_memops r8152 videobuf2_v4l2
+videobuf2_core videodev cfg80211 hid_multitouch media lpc_ich ideapad_lap=
+top
+    [   97.560719]  wmi sparse_keymap mei_me mei mac_hid shpchp sunrpc
+coda parport_pc ppdev lp parport ip_tables x_tables autofs4 btrfs xor
+raid6_pq rtsx_usb_sdmmc rtsx_usb hid_generic usbhid hid i915 psmouse
+r8169 mii i2c_algo_bit drm_kms_helper syscopyarea sysfillrect sysimgblt
+fb_sys_fops drm video fjes ahci libahci
+    [   97.560737] CPU: 6 PID: 1802 Comm: kworker/u16:7 Tainted: P
+D W  OE   10.8.0+ #2
+    [   97.560738] Hardware name: LENOVO 20221/INVALID, BIOS
+71CN51WW(V1.21) 07/12/2013
+    [   97.560742] Workqueue: writeback wb_workfn (flush-bcache-2)
+    [   97.560744]  0000000000000286 0000000003c847b4 ffff915c5be4b870
+ffffffffae80c9d3
+    [   97.560746]  ffff915c5be4b8c0 0000000000000000 ffff915c5be4b8b0
+ffffffffae482e51
+    [   97.560748]  0000004ec0ace646 ffff915c5be4ba18 ffff915c5be4b9d0
+0000000000000000
+    [   97.560750] Call Trace:
+    [   97.560754]  [<ffffffffae80c9d3>] dump_stack+0x63/0x90
+    [   97.560757]  [<ffffffffae482e51>] __warn+0xd1/0xf0
+    [   97.560758]  [<ffffffffae482ecf>] warn_slowpath_fmt+0x5f/0x80
+    [   97.560768]  [<ffffffffc0ae3084>] __bch_write_inode+0x2d4/0x2e0
+[bcache]
+    [   97.560777]  [<ffffffffc0ae8ef3>] ? bch_writepages+0x163/0x590
+[bcache]
+    [   97.560779]  [<ffffffffae80c7b0>] ? cpumask_next_and+0x30/0x50
+    [   97.560781]  [<ffffffffae4c03c7>] ? update_sd_lb_stats+0x147/0x570=
+
+    [   97.560789]  [<ffffffffc0ae3311>] bch_vfs_write_inode+0x41/0x90
+[bcache]
+    [   97.560790]  [<ffffffffae65d7c5>]
+__writeback_single_inode+0x265/0x330
+    [   97.560792]  [<ffffffffae65ddc6>] writeback_sb_inodes+0x286/0x580
+    [   97.560793]  [<ffffffffae65e14f>] __writeback_inodes_wb+0x8f/0xc0
+    [   97.560795]  [<ffffffffae65e4d2>] wb_writeback+0x282/0x310
+    [   97.560796]  [<ffffffffae65eeaa>] wb_workfn+0x2ca/0x3f0
+    [   97.560799]  [<ffffffffae49d546>] process_one_work+0x156/0x400
+    [   97.560801]  [<ffffffffae49e03e>] worker_thread+0x4e/0x4b0
+    [   97.560803]  [<ffffffffae49dff0>] ? rescuer_thread+0x380/0x380
+    [   97.560804]  [<ffffffffae49dff0>] ? rescuer_thread+0x380/0x380
+    [   97.560806]  [<ffffffffae4a3538>] kthread+0xd8/0xf0
+    [   97.560809]  [<ffffffffaec5471f>] ret_from_fork+0x1f/0x40
+    [   97.560810]  [<ffffffffae4a3460>] ? kthread_park+0x60/0x60
+    [   97.560817] ---[ end trace 5a2feb1315f23e6d ]---
+
+when removing the left over files.
+
+experienced with origin-258148-g4dff01e
+
+
+--N6EhuXhwEdjvIeW2Ti09AKgqEbDDFrTR5--
+
+--0uS100VXGJqPrn8VqNKUaQSeicNFvgh9m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+
+iQEcBAEBCAAGBQJYJelLAAoJEGadKJ8eJ7ZGvkQH/jwShHeRFN0Zg+OAgYi1CUG+
+GTeXR+OvGRcV3l0IF5hlWALg9EWbEMd4+vRdg6fjflBKA1eJndbjYNFgl1a4B4lG
+OoW0Jct56xzKy9ByEr9vvq/QthCJzEM3VrI2ykYXTaBgski8KqC3jvq9g9JKS9Sl
+h2kj1RWWjEb/tFgWymyX5gYSM77t6+lPhNWH6qu9zCVR/QFSX2okMMCKfYvjha3G
+E8avtM7mRlyknz8uIeEBrkWFjOkBMGz5hn40k0jr1/W71n0ehE4BUpF0PlYJ9v0O
+oMq+sQyFS39M/i8acOu9Kl0gBogPkzkIiklMCSFWi1dZVuQPFTLqLS/1Xww+/1w=
+=E1vw
+-----END PGP SIGNATURE-----
+
+--0uS100VXGJqPrn8VqNKUaQSeicNFvgh9m--
