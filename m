@@ -1,60 +1,82 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: Bcachefs testing needed
-Date: Sun, 6 Nov 2016 07:29:07 -0900
-Message-ID: <20161106162907.yuwnjipnbj6q4yxd@kmo-pixel>
-References: <20161105160502.5bknr5ufufzdyn3i@kmo-pixel>
- <16bf179c-6ed4-5f82-b95d-7a5a9c01d20b@gmail.com>
+From: Ming Lei <tom.leiming-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+Subject: [PATCH 00/12] block: cleanup direct access to bvec table
+Date: Fri, 11 Nov 2016 20:05:28 +0800
+Message-ID: <1478865957-25252-1-git-send-email-tom.leiming@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f195.google.com ([209.85.192.195]:34558 "EHLO
-        mail-pf0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750933AbcKFQ3M (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 6 Nov 2016 11:29:12 -0500
-Received: by mail-pf0-f195.google.com with SMTP id y68so13726299pfb.1
-        for <linux-bcache@vger.kernel.org>; Sun, 06 Nov 2016 08:29:11 -0800 (PST)
-Content-Disposition: inline
-In-Reply-To: <16bf179c-6ed4-5f82-b95d-7a5a9c01d20b@gmail.com>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Return-path: <drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+List-Unsubscribe: <http://lists.linbit.com/mailman/options/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://lists.linbit.com/pipermail/drbd-dev>
+List-Post: <mailto:drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+List-Help: <mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=help>
+List-Subscribe: <http://lists.linbit.com/mailman/listinfo/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=subscribe>
+Sender: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+Errors-To: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+To: Jens Axboe <axboe-b10kYP2dOMg@public.gmane.org>, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+Cc: Mike Snitzer <snitzer-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Ming Lei <tom.leiming-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Rasmus Villemoes <linux-qQsb+v5E8BnlAoU/VqSP6n9LOBIZ5rWg@public.gmane.org>, "open list:NVM EXPRESS TARGET DRIVER" <linux-nvme-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org>, Keith Busch <keith.busch-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>, "open list:DEVICE-MAPPER  LVM" <dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, "open list:TARGET SUBSYSTEM" <target-devel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Yijing Wang <wangyijing-hv44wF8Li93QT0dZR+AlfA@public.gmane.org>, "open list:DRBD DRIVER" <drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>, Hannes Reinecke <hare-IBi9RG/b67k@public.gmane.org>, "open list:TARGET SUBSYSTEM" <linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, Christoph Hellwig <hch-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org>, Mike Christie <mchristi-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Guoqing Jiang <gqjiang-IBi9RG/b67k@public.gmane.org>, Johannes Thumshirn <jthumshirn-l3A5Bk7waGM@public.gmane.org>, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Coly Li <colyli-l3A5Bk7waGM@public.gmane.org>, "open list:SOFTWARE RAID Multiple Disks SUPPORT" <linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "open list:BCACHE BLOCK LAYER CACHE" <linux-bcache-u79uwXL29Tb/PtFMR13I2A@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
-To: Joe Landman <joe.landman@gmail.com>
-Cc: linux-bcache@vger.kernel.org, chris@cooperteam.net, marcin@mejor.pl
 
-On Sun, Nov 06, 2016 at 10:32:14AM -0500, Joe Landman wrote:
-> 
-> On 11/05/2016 12:05 PM, Kent Overstreet wrote:
-> > Chris, Marcin, anyone else who wants to help out - the bcachefs-testing branch
-> > needs testing before I merge in those patches.
-> > 
-> > Chris was seeing filesystem corruption with the foreground btree merging
-> > patches, and I still haven't figured out what that was (although I have fixed
-> > some possible culprits), so please don't run this on anything with real data
-> > until it's seen some more testing. This branch also doesn't have btree node
-> > merging yet - it's got the btree locking changes, and some new work making
-> > iterators more rigorous and tightening up invariants. Once we're sure that stuff
-> > is all good I'll push out btree node merging again.
-> > 
-> > And I definitely could use more testers - testing is getting to be a significant
-> > bottleneck these days.
-> 
-> Last I checked, the bcachefs came as an entire specific kernel tree, and not
-> patch(sets) against kernels.  I'd be looking to test against 4.4 and
-> possibly 4.8, as we also have our own patches we need to apply and I don't
-> want to rebase everything to test this.   Patches would definitely be easier
-> for me to apply and test with.   4.4 is our current kernel, 3.18 is our
-> legacy, and 4.8 is our experimental.
-> 
-> Happy to try to generate a patch if you can tell me what tree you based it
-> on.
+Hi,
 
-bcache-dev is currently based on 4.8 - if you checkout that branch with git,
-'git diff v4.8' will give you a patch.
+This patchset cleans up direct access to bvec table.
 
-I do have changes to core kernel code, if that doesn't apply cleanly let me know
-where the conflicts are and we can decide what to do then.
+The 1st patch passes bvec table to bio_init(), so that
+direct access to bvec table in bio initialization is avoided.
 
-> FWIW:  We've got lots of kit we can test it against (large multi-disk
-> servers, lots of SSD, etc.) in our lab.
+For other patches, most of them uses bio_add_page()
+to replace hardcode style of adding page to bvec,
+and others avoids to access bio->bi_vcnt.
 
-Cool. More performance testing would be particularly helpful :)
+The most special one is to use bvec iterator helpers
+to implement .get_page/.next_page for dm-io.c
+
+One big motivation is to prepare for supporting multipage
+bvec, but this patchset is one good cleanup too even not
+for that purpose.
+
+Thanks,
+Ming
+
+Ming Lei (12):
+  block: bio: pass bvec table to bio_init()
+  block: drbd: remove impossible failure handling
+  block: floppy: use bio_add_page()
+  target: avoid to access .bi_vcnt directly
+  bcache: debug: avoid to access .bi_io_vec directly
+  dm: crypt: use bio_add_page()
+  dm: use bvec iterator helpers to implement .get_page and .next_page
+  dm: dm.c: replace 'bio->bi_vcnt == 1' with !bio_multiple_segments
+  fs: logfs: convert to bio_add_page() in sync_request()
+  fs: logfs: use bio_add_page() in __bdev_writeseg()
+  fs: logfs: use bio_add_page() in do_erase()
+  fs: logfs: remove unnecesary check
+
+ block/bio.c                        |   8 ++-
+ drivers/block/drbd/drbd_receiver.c |  14 +----
+ drivers/block/floppy.c             |  10 ++--
+ drivers/md/bcache/debug.c          |  11 ++--
+ drivers/md/bcache/io.c             |   4 +-
+ drivers/md/bcache/journal.c        |   4 +-
+ drivers/md/bcache/movinggc.c       |   6 +--
+ drivers/md/bcache/request.c        |   2 +-
+ drivers/md/bcache/super.c          |  12 ++---
+ drivers/md/bcache/writeback.c      |   5 +-
+ drivers/md/dm-bufio.c              |   4 +-
+ drivers/md/dm-crypt.c              |   8 +--
+ drivers/md/dm-io.c                 |  34 ++++++++----
+ drivers/md/dm-rq.c                 |   7 ++-
+ drivers/md/dm.c                    |   2 +-
+ drivers/md/multipath.c             |   2 +-
+ drivers/md/raid5-cache.c           |   2 +-
+ drivers/md/raid5.c                 |   9 +---
+ drivers/nvme/target/io-cmd.c       |   4 +-
+ drivers/target/target_core_pscsi.c |   8 +--
+ fs/logfs/dev_bdev.c                | 106 +++++++++++++------------------------
+ include/linux/bio.h                |   3 +-
+ 22 files changed, 107 insertions(+), 158 deletions(-)
+
+-- 
+2.7.4
