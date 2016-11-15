@@ -1,72 +1,43 @@
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Subject: bcache by-label / by-uuid symlinks missing after upgrade from debian
- wheezy to jessie
-Date: Mon, 14 Nov 2016 15:33:38 +0100
-Message-ID: <18d55c8c-c9c3-fad1-0ab5-f23a42f8187b@profihost.ag>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: bcachefs bug during file creation and removal
+Date: Tue, 15 Nov 2016 08:32:34 -0900
+Message-ID: <20161115173234.z4gpy5tojxuillmm@kmo-pixel>
+References: <99daab89-f7ba-25cb-f20d-503f171e2699@posteo.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:11221 "EHLO
-        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1752123AbcKNOjF (ORCPT
+Received: from mail-pf0-f173.google.com ([209.85.192.173]:34141 "EHLO
+        mail-pf0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752090AbcKORci (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 14 Nov 2016 09:39:05 -0500
+        Tue, 15 Nov 2016 12:32:38 -0500
+Received: by mail-pf0-f173.google.com with SMTP id c4so25325564pfb.1
+        for <linux-bcache@vger.kernel.org>; Tue, 15 Nov 2016 09:32:38 -0800 (PST)
+Content-Disposition: inline
+In-Reply-To: <99daab89-f7ba-25cb-f20d-503f171e2699@posteo.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>
+To: Karl-Philipp Richter <krichter@posteo.de>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Hello,
+On Fri, Nov 11, 2016 at 04:52:42PM +0100, Karl-Philipp Richter wrote:
+> Hi,
+> During creation of an OpenAFS cache on a bcachefs mount (ca. 1 M files
+> and directories) I probably got the error
 
-after upgrading from debian wheezy to jessie i no longer have the
-/dev/bcache/by-uuid | by-label entries on my system.
+The two errors are unrelated. The first warning is spurious - we fall back to
+vmalloc() if kmalloc() fails, so I'll silence that.
 
-I already google'd around but didn't find a solution.
 
-# ls -la /dev/bcache*
-brw-rw---- 1 root disk 254, 0 Nov 14 15:25 /dev/bcache0
-brw-rw---- 1 root disk 254, 1 Nov 14 15:10 /dev/bcache1
-brw-rw---- 1 root disk 254, 2 Nov 14 15:10 /dev/bcache2
-brw-rw---- 1 root disk 254, 3 Nov 14 15:10 /dev/bcache3
+>     [   97.560655] ------------[ cut here ]------------
+>     [   97.560677] WARNING: CPU: 6 PID: 1802 at
+> drivers/md/bcache/fs.c:78 __bch_write_inode+0x2d4/0x2e0 [bcache]
 
-# cat /lib/udev/rules.d/69-bcache.rules
-# register bcache devices as they come up
-# man 7 udev for syntax
+This one was a real bug - took awhile to track down, it was ultimately a bug in
+the whiteouts compactaction code, it was using memcpy() when it was using
+memmove() (and I couldn't reproduce it because the memcpy() I was getting did
+the copy in the direction to make it work). It's fixed though - bcache-dev
+should be working (I backed it out last week, after we figured out which commit
+it was).
 
-SUBSYSTEM!="block", GOTO="bcache_end"
-ACTION=="remove", GOTO="bcache_end"
-ENV{DM_UDEV_DISABLE_OTHER_RULES_FLAG}=="1", GOTO="bcache_end"
-KERNEL=="fd*|sr*", GOTO="bcache_end"
-
-# blkid was run by the standard udev rules
-# It recognised bcache (util-linux 2.24+)
-ENV{ID_FS_TYPE}=="bcache", GOTO="bcache_backing_found"
-# It recognised something else; bail
-ENV{ID_FS_TYPE}=="?*", GOTO="bcache_backing_end"
-
-# Backing devices: scan, symlink, register
-IMPORT{program}="probe-bcache -o udev $tempnode"
-ENV{ID_FS_TYPE}!="bcache", GOTO="bcache_backing_end"
-ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"
-
-LABEL="bcache_backing_found"
-RUN{builtin}+="kmod load bcache"
-RUN+="bcache-register $tempnode"
-LABEL="bcache_backing_end"
-
-# Cached devices: symlink
-DRIVER=="bcache", ENV{CACHED_UUID}=="?*", \
-        SYMLINK+="bcache/by-uuid/$env{CACHED_UUID}"
-DRIVER=="bcache", ENV{CACHED_LABEL}=="?*", \
-        SYMLINK+="bcache/by-label/$env{CACHED_LABEL}"
-
-LABEL="bcache_end"
-
-I've no idea why those symlinks are not created but i'm also not a udev
-expert.
-
-Has anybody seen this before?
-
-Greets,
-Stefan
+Thanks for the bug reports!
