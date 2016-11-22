@@ -1,29 +1,70 @@
-From: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 05/12] bcache: debug: avoid to access .bi_io_vec directly
-Date: Mon, 21 Nov 2016 23:30:51 -0800
-Message-ID: <20161122073051.GA21957@infradead.org>
-References: <1478865957-25252-1-git-send-email-tom.leiming@gmail.com>
- <1478865957-25252-6-git-send-email-tom.leiming@gmail.com>
+From: <clasico082@gmail.com>
+Subject: 17089 linux-bcache
+Date: Tue, 22 Nov 2016 15:21:22 -0000
+Message-ID: <147982808205.10063.17845479379614985397@ipcom.comunitel.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: application/zip; name="EMAIL_079395202_linux-bcache.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from bombadil.infradead.org ([198.137.202.9]:48960 "EHLO
-        bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752903AbcKVHaw (ORCPT
+Received: from static-172-222-85-188.ipcom.comunitel.net ([188.85.222.172]:48838
+        "HELO ipcom.comunitel.net" rhost-flags-OK-FAIL-OK-FAIL)
+        by vger.kernel.org with SMTP id S932356AbcKVPVZ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 22 Nov 2016 02:30:52 -0500
-Content-Disposition: inline
-In-Reply-To: <1478865957-25252-6-git-send-email-tom.leiming@gmail.com>
+        Tue, 22 Nov 2016 10:21:25 -0500
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org, linux-block@vger.kernel.org, linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Mike Christie <mchristi@redhat.com>, Guoqing Jiang <gqjiang@suse.com>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>, "open list:SOFTWARE RAID (Multiple Disks) SUPPORT" <linux-raid@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-On Fri, Nov 11, 2016 at 08:05:33PM +0800, Ming Lei wrote:
-> Instead we use standard iterator way to do that.
-> 
-> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-
-Looks fine,
-
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+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
+AAAA9QoAAAAA
