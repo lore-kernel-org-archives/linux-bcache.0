@@ -1,33 +1,29 @@
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Subject: bcache register fails due to blkid ID_FS_AMBIVALENT
-Date: Mon, 21 Nov 2016 18:48:36 +0100
-Message-ID: <adc6628e-268d-d0fa-e395-bbc65f378570@profihost.ag>
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 05/12] bcache: debug: avoid to access .bi_io_vec directly
+Date: Mon, 21 Nov 2016 23:30:51 -0800
+Message-ID: <20161122073051.GA21957@infradead.org>
+References: <1478865957-25252-1-git-send-email-tom.leiming@gmail.com>
+ <1478865957-25252-6-git-send-email-tom.leiming@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:27113 "EHLO
-        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1752279AbcKURsk (ORCPT
+Received: from bombadil.infradead.org ([198.137.202.9]:48960 "EHLO
+        bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752903AbcKVHaw (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 21 Nov 2016 12:48:40 -0500
+        Tue, 22 Nov 2016 02:30:52 -0500
+Content-Disposition: inline
+In-Reply-To: <1478865957-25252-6-git-send-email-tom.leiming@gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org, linux-block@vger.kernel.org, linux-fsdevel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Mike Christie <mchristi@redhat.com>, Guoqing Jiang <gqjiang@suse.com>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>, "open list:SOFTWARE RAID (Multiple Disks) SUPPORT" <linux-raid@vger.kernel.org>
 
-Hello list,
+On Fri, Nov 11, 2016 at 08:05:33PM +0800, Ming Lei wrote:
+> Instead we use standard iterator way to do that.
+> 
+> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 
-one of my bcache devices fails, as the output of blkid from the bdev
-device says:
-# /sbin/blkid -o udev -p /dev/sdg1
-ID_FS_AMBIVALENT=other:bcache other:xfs_external_log
+Looks fine,
 
-has anybody an idea how to fix this?
-
-A manual
-echo /dev/sdg1 >/sys/fs/bcache/register
-
-works fine.
-
-Greets,
-Stefan
+Reviewed-by: Christoph Hellwig <hch@lst.de>
