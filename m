@@ -1,69 +1,52 @@
 From: Coly Li <i@coly.li>
-Subject: Re: [PATCH] Avoid nested function definition
-Date: Sun, 27 Nov 2016 12:06:04 +0800
-Message-ID: <9a8a84ed-ecf7-b1dd-59e8-1a36dbcef088@coly.li>
-References: <20161126222415.13404-1-pefoley2@pefoley.com>
+Subject: Re: [PATCH 1/2] bcache: Remove redundant set_capacity
+Date: Sun, 27 Nov 2016 15:57:38 +0800
+Message-ID: <749db728-10d0-ab33-4587-9b6b0e98725e@coly.li>
+References: <1480037969-45042-1-git-send-email-wangyijing@huawei.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:57458 "EHLO server.coly.li"
+Received: from server.coly.li ([162.144.45.48]:58336 "EHLO server.coly.li"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752830AbcK0EGN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 26 Nov 2016 23:06:13 -0500
-In-Reply-To: <20161126222415.13404-1-pefoley2@pefoley.com>
+        id S1751671AbcK0H5s (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 27 Nov 2016 02:57:48 -0500
+In-Reply-To: <1480037969-45042-1-git-send-email-wangyijing@huawei.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Peter Foley <pefoley2@pefoley.com>, shli@kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kent.overstreet@gmail.com
+To: Yijing Wang <wangyijing@huawei.com>, axboe@fb.com, kent.overstreet@gmail.com
+Cc: git@linux.ewheeler.net, colyli@suse.de, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 2016/11/27 上午6:24, Peter Foley wrote:
-> Fixes below error with clang:
-> ../drivers/md/bcache/sysfs.c:759:3: error: function definition is not allowed here
->                 {       return *((uint16_t *) r) - *((uint16_t *) l); }
->                 ^
-> ../drivers/md/bcache/sysfs.c:789:32: error: use of undeclared identifier 'cmp'
->                 sort(p, n, sizeof(uint16_t), cmp, NULL);
->                                              ^
-> 2 errors generated.
+On 2016/11/25 上午9:39, Yijing Wang wrote:
+> set_capacity() has been called in bcache_device_init(),
+> remove the redundant one.
 > 
-> Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 > ---
->  drivers/md/bcache/sysfs.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
+>  drivers/md/bcache/super.c | 3 ---
+>  1 file changed, 3 deletions(-)
 > 
-> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-> index b3ff57d61dde..22ac9e6676a0 100644
-> --- a/drivers/md/bcache/sysfs.c
-> +++ b/drivers/md/bcache/sysfs.c
-> @@ -731,6 +731,11 @@ static struct attribute *bch_cache_set_internal_files[] = {
->  };
->  KTYPE(bch_cache_set_internal);
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 849ad44..b638a16 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1126,9 +1126,6 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+>  	if (ret)
+>  		return ret;
 >  
-> +static int cmp(const void *l, const void *r)
-> +{
-> +	return *((uint16_t *)r) - *((uint16_t *)l);
-> +}
-> +
->  SHOW(__bch_cache)
->  {
->  	struct cache *ca = container_of(kobj, struct cache, kobj);
-> @@ -755,9 +760,6 @@ SHOW(__bch_cache)
->  					       CACHE_REPLACEMENT(&ca->sb));
->  
->  	if (attr == &sysfs_priority_stats) {
-> -		int cmp(const void *l, const void *r)
-> -		{	return *((uint16_t *) r) - *((uint16_t *) l); }
+> -	set_capacity(dc->disk.disk,
+> -		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
 > -
->  		struct bucket *b;
->  		size_t n = ca->sb.nbuckets, i;
->  		size_t unused = 0, available = 0, dirty = 0, meta = 0;
+>  	dc->disk.disk->queue->backing_dev_info.ra_pages =
+>  		max(dc->disk.disk->queue->backing_dev_info.ra_pages,
+>  		    q->backing_dev_info.ra_pages);
 > 
 
- I agree with this fix. Anyway, Can we use a more unique name like
-__bch_cache_cmp() ?
+Hi Yijing,
 
-Thanks.
+Nice catch, it looks good to me.
+
+Acked-by: Coly Li <colyli@suse.de>
 
 -- 
 Coly Li
