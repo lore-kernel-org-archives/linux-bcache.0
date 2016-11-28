@@ -1,53 +1,67 @@
-From: wangyijing <wangyijing@huawei.com>
-Subject: Re: [PATCH 1/2] bcache: Remove redundant set_capacity
-Date: Mon, 28 Nov 2016 08:51:41 +0800
-Message-ID: <583B7F9D.3050208@huawei.com>
-References: <1480037969-45042-1-git-send-email-wangyijing@huawei.com>
- <749db728-10d0-ab33-4587-9b6b0e98725e@coly.li>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <749db728-10d0-ab33-4587-9b6b0e98725e@coly.li>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Coly Li <i@coly.li>, axboe@fb.com, kent.overstreet@gmail.com
-Cc: git@linux.ewheeler.net, colyli@suse.de, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+From: Peter Foley <pefoley2@pefoley.com>
+Subject: [PATCH v2] Avoid nested function definition
+Date: Sun, 27 Nov 2016 21:50:04 -0500
+Message-ID: <20161128025004.18782-1-pefoley2@pefoley.com>
+References: <9a8a84ed-ecf7-b1dd-59e8-1a36dbcef088@coly.li>
+Return-path: <linux-raid-owner@vger.kernel.org>
+In-Reply-To: <9a8a84ed-ecf7-b1dd-59e8-1a36dbcef088@coly.li>
+Sender: linux-raid-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org, shli@kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, i@coly.li, kent.overstreet@gmail.com
+Cc: Peter Foley <pefoley2@pefoley.com>
 List-Id: linux-bcache@vger.kernel.org
 
+Fixes below error with clang:
+../drivers/md/bcache/sysfs.c:759:3: error: function definition is not allowed here
+                {       return *((uint16_t *) r) - *((uint16_t *) l); }
+                ^
+../drivers/md/bcache/sysfs.c:789:32: error: use of undeclared identifier 'cmp'
+                sort(p, n, sizeof(uint16_t), cmp, NULL);
+                                             ^
+2 errors generated.
 
+v2:
+rename function to __bch_cache_cmp
 
-在 2016/11/27 15:57, Coly Li 写道:
-> On 2016/11/25 上午9:39, Yijing Wang wrote:
->> set_capacity() has been called in bcache_device_init(),
->> remove the redundant one.
->>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->>  drivers/md/bcache/super.c | 3 ---
->>  1 file changed, 3 deletions(-)
->>
->> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
->> index 849ad44..b638a16 100644
->> --- a/drivers/md/bcache/super.c
->> +++ b/drivers/md/bcache/super.c
->> @@ -1126,9 +1126,6 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
->>  	if (ret)
->>  		return ret;
->>  
->> -	set_capacity(dc->disk.disk,
->> -		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
->> -
->>  	dc->disk.disk->queue->backing_dev_info.ra_pages =
->>  		max(dc->disk.disk->queue->backing_dev_info.ra_pages,
->>  		    q->backing_dev_info.ra_pages);
->>
-> 
-> Hi Yijing,
-> 
-> Nice catch, it looks good to me.
-> 
-> Acked-by: Coly Li <colyli@suse.de>
+Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+---
+ drivers/md/bcache/sysfs.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Thanks!
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b3ff57d61dde..8f12089a69e7 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -731,6 +731,11 @@ static struct attribute *bch_cache_set_internal_files[] = {
+ };
+ KTYPE(bch_cache_set_internal);
+ 
++static int __bch_cache_cmp(const void *l, const void *r)
++{
++	return *((uint16_t *)r) - *((uint16_t *)l);
++}
++
+ SHOW(__bch_cache)
+ {
+ 	struct cache *ca = container_of(kobj, struct cache, kobj);
+@@ -755,9 +760,6 @@ SHOW(__bch_cache)
+ 					       CACHE_REPLACEMENT(&ca->sb));
+ 
+ 	if (attr == &sysfs_priority_stats) {
+-		int cmp(const void *l, const void *r)
+-		{	return *((uint16_t *) r) - *((uint16_t *) l); }
+-
+ 		struct bucket *b;
+ 		size_t n = ca->sb.nbuckets, i;
+ 		size_t unused = 0, available = 0, dirty = 0, meta = 0;
+@@ -786,7 +788,7 @@ SHOW(__bch_cache)
+ 			p[i] = ca->buckets[i].prio;
+ 		mutex_unlock(&ca->set->bucket_lock);
+ 
+-		sort(p, n, sizeof(uint16_t), cmp, NULL);
++		sort(p, n, sizeof(uint16_t), __bch_cache_cmp, NULL);
+ 
+ 		while (n &&
+ 		       !cached[n - 1])
+-- 
+2.11.0.rc2
 
-> 
