@@ -1,77 +1,60 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH v2] Avoid nested function definition
-Date: Mon, 28 Nov 2016 11:06:53 +0800
-Message-ID: <4e5b3f6f-695b-5bfe-3f62-c50fe9e984c3@coly.li>
-References: <20161128025004.18782-1-pefoley2@pefoley.com>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH 1/2] bcache: Remove redundant set_capacity
+Date: Tue, 29 Nov 2016 12:49:16 -0800 (PST)
+Message-ID: <alpine.LRH.2.11.1611291246140.1914@mail.ewheeler.net>
+References: <1480037969-45042-1-git-send-email-wangyijing@huawei.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:33658 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1754425AbcK1DHF (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 27 Nov 2016 22:07:05 -0500
-In-Reply-To: <20161128025004.18782-1-pefoley2@pefoley.com>
+Received: from mx.ewheeler.net ([66.155.3.69]:36048 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1755402AbcK2UtW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 29 Nov 2016 15:49:22 -0500
+In-Reply-To: <1480037969-45042-1-git-send-email-wangyijing@huawei.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Peter Foley <pefoley2@pefoley.com>, linux-kernel@vger.kernel.org, shli@kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, kent.overstreet@gmail.com
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: axboe@fb.com, kent.overstreet@gmail.com, git@linux.ewheeler.net, colyli@suse.de, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 2016/11/28 上午10:50, Peter Foley wrote:
-> Fixes below error with clang:
-> ../drivers/md/bcache/sysfs.c:759:3: error: function definition is not allowed here
->                 {       return *((uint16_t *) r) - *((uint16_t *) l); }
->                 ^
-> ../drivers/md/bcache/sysfs.c:789:32: error: use of undeclared identifier 'cmp'
->                 sort(p, n, sizeof(uint16_t), cmp, NULL);
->                                              ^
-> 2 errors generated.
+On Fri, 25 Nov 2016, Yijing Wang wrote:
+
+> set_capacity() has been called in bcache_device_init(),
+> remove the redundant one.
 > 
-> v2:
-> rename function to __bch_cache_cmp
-> 
-> Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 > ---
->  drivers/md/bcache/sysfs.c | 10 ++++++----
->  1 file changed, 6 insertions(+), 4 deletions(-)
+>  drivers/md/bcache/super.c | 3 ---
+>  1 file changed, 3 deletions(-)
 > 
-> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-> index b3ff57d61dde..8f12089a69e7 100644
-> --- a/drivers/md/bcache/sysfs.c
-> +++ b/drivers/md/bcache/sysfs.c
-> @@ -731,6 +731,11 @@ static struct attribute *bch_cache_set_internal_files[] = {
->  };
->  KTYPE(bch_cache_set_internal);
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 849ad44..b638a16 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1126,9 +1126,6 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+>  	if (ret)
+>  		return ret;
 >  
-> +static int __bch_cache_cmp(const void *l, const void *r)
-> +{
-> +	return *((uint16_t *)r) - *((uint16_t *)l);
-> +}
-> +
->  SHOW(__bch_cache)
->  {
->  	struct cache *ca = container_of(kobj, struct cache, kobj);
-> @@ -755,9 +760,6 @@ SHOW(__bch_cache)
->  					       CACHE_REPLACEMENT(&ca->sb));
->  
->  	if (attr == &sysfs_priority_stats) {
-> -		int cmp(const void *l, const void *r)
-> -		{	return *((uint16_t *) r) - *((uint16_t *) l); }
+> -	set_capacity(dc->disk.disk,
+> -		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
 > -
->  		struct bucket *b;
->  		size_t n = ca->sb.nbuckets, i;
->  		size_t unused = 0, available = 0, dirty = 0, meta = 0;
-> @@ -786,7 +788,7 @@ SHOW(__bch_cache)
->  			p[i] = ca->buckets[i].prio;
->  		mutex_unlock(&ca->set->bucket_lock);
->  
-> -		sort(p, n, sizeof(uint16_t), cmp, NULL);
-> +		sort(p, n, sizeof(uint16_t), __bch_cache_cmp, NULL);
->  
->  		while (n &&
->  		       !cached[n - 1])
+
+It probably is a duplicate set_capacity, but has anyone tested bringing on 
+a writeback volume, and late-attaching the cache volume with this patch 
+applied?
+
+Otherwise stated, is it possible to get the backing device attached 
+without setting the capacity?
+
+-Eric
+
+>  	dc->disk.disk->queue->backing_dev_info.ra_pages =
+>  		max(dc->disk.disk->queue->backing_dev_info.ra_pages,
+>  		    q->backing_dev_info.ra_pages);
+> -- 
+> 2.5.0
 > 
-
-Acked-by: Coly Li <colyli@suse.de>
-
--- 
-Coly Li
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
