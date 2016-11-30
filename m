@@ -1,125 +1,141 @@
-From: Marc MERLIN <marc@merlins.org>
-Subject: Re: 4.8.8, bcache deadlock and hard lockup
-Date: Wed, 30 Nov 2016 09:16:36 -0800
-Message-ID: <20161130171636.fpsx6rgknbbbsbks@merlins.org>
-References: <20161118164643.g7ttuzgsj74d6fbz@merlins.org>
- <20161118184915.j6dlazbgminxnxzx@merlins.org>
- <b6c3daab-d990-e873-4d0f-0f0afe2259b1@coly.li>
- <alpine.LRH.2.11.1611291255350.1914@mail.ewheeler.net>
- <20161130164646.d6ejlv72hzellddd@merlins.org>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH 1/2] bcache: Remove redundant set_capacity
+Date: Wed, 30 Nov 2016 10:34:29 -0800 (PST)
+Message-ID: <alpine.LRH.2.11.1611301030001.442@mail.ewheeler.net>
+References: <1480037969-45042-1-git-send-email-wangyijing@huawei.com> <alpine.LRH.2.11.1611291246140.1914@mail.ewheeler.net> <583E32AE.5060106@huawei.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-2125174138-1480530874=:442"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from magic.merlins.org ([209.81.13.136]:37354 "EHLO
-        mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1758200AbcK3RQm (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 30 Nov 2016 12:16:42 -0500
-Content-Disposition: inline
-In-Reply-To: <20161130164646.d6ejlv72hzellddd@merlins.org>
+Received: from mx.ewheeler.net ([66.155.3.69]:51196 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1754672AbcK3Sgu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 30 Nov 2016 13:36:50 -0500
+In-Reply-To: <583E32AE.5060106@huawei.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>, Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Coly Li <i@coly.li>, linux-bcache@vger.kernel.org, Btrfs BTRFS <linux-btrfs@vger.kernel.org>
+To: wangyijing <wangyijing@huawei.com>
+Cc: axboe@fb.com, kent.overstreet@gmail.com, git@linux.ewheeler.net, colyli@suse.de, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Wed, Nov 30, 2016 at 08:46:46AM -0800, Marc MERLIN wrote:
-> +btrfs mailing list, see below why
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--1641074820-2125174138-1480530874=:442
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 30 Nov 2016, wangyijing wrote:
+
 > 
-> On Tue, Nov 29, 2016 at 12:59:44PM -0800, Eric Wheeler wrote:
-> > On Mon, 27 Nov 2016, Coly Li wrote:
-> > > 
-> > > Yes, too many work queues... I guess the locking might be caused by some
-> > > very obscure reference of closure code. I cannot have any clue if I
-> > > cannot find a stable procedure to reproduce this issue.
-> > > 
-> > > Hmm, if there is a tool to clone all the meta data of the back end cache
-> > > and whole cached device, there might be a method to replay the oops much
-> > > easier.
-> > > 
-> > > Eric, do you have any hint ?
+> 
+> 在 2016/11/30 4:49, Eric Wheeler 写道:
+> > On Fri, 25 Nov 2016, Yijing Wang wrote:
 > > 
-> > Note that the backing device doesn't have any metadata, just a superblock. 
-> > You can easily dd that off onto some other volume without transferring the 
-> > data. By default, data starts at 8k, or whatever you used in `make-bcache 
-> > -w`.
+> >> set_capacity() has been called in bcache_device_init(),
+> >> remove the redundant one.
+> >>
+> >> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> >> ---
+> >>  drivers/md/bcache/super.c | 3 ---
+> >>  1 file changed, 3 deletions(-)
+> >>
+> >> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> >> index 849ad44..b638a16 100644
+> >> --- a/drivers/md/bcache/super.c
+> >> +++ b/drivers/md/bcache/super.c
+> >> @@ -1126,9 +1126,6 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+> >>  	if (ret)
+> >>  		return ret;
+> >>  
+> >> -	set_capacity(dc->disk.disk,
+> >> -		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
+> >> -
+> > 
+> > It probably is a duplicate set_capacity, but has anyone tested bringing on 
+> > a writeback volume, and late-attaching the cache volume with this patch 
+> > applied?
+> > 
+> > Otherwise stated, is it possible to get the backing device attached 
+> > without setting the capacity?
 > 
-> Ok, Linus helped me find a workaround for this problem:
-> https://lkml.org/lkml/2016/11/29/667
-> namely:
->    echo 2 > /proc/sys/vm/dirty_ratio
->    echo 1 > /proc/sys/vm/dirty_background_ratio
-> (it's a 24GB system, so the defaults of 20 and 10 were creating too many
-> requests in th buffers)
+> Hi Eric, I tested this case in following steps, the result is fine, the capability is setted.
 > 
-> Note that this is only a workaround, not a fix.
-
-Actually, I'm even more worried about the general bcache situation when
-caching is enabled. In the message above, Linus wrote:
-
-"One situation where I've seen something like this happen is
-
- (a) lots and lots of dirty data queued up
- (b) horribly slow storage
- (c) filesystem that ends up serializing on writeback under certain
-circumstances
-
-The usual case for (b) in the modern world is big SSD's that have bad
-worst-case behavior (ie they may do gbps speeds when doing well, and
-then they come to a screeching halt when their buffers fill up and
-they have to do rewrites, and their gbps throughput drops to mbps or
-lower).
-
-Generally you only find that kind of really nasty SSD in the USB stick
-world these days."
-
-Well, come to think of it, this is _exactly_ what bcache will create, by
-design. It'll swallow up a lot of IO cached to the SSD, until the SSD
-buffers fill up and then things will hang while bcache struggles to
-write it all to slower spinning rust storage.
-
-Looks to me like bcache and dirty_ratio need to be synced somehow, or
-things will fall over reliably.
-
-What do you think?
-
-Thanks,
-Marc
-
-
-> When I did this and re tried my big copy again, I still got 100+ kernel
-> work queues, but apparently the underlying swraid5 was able to unblock
-> and satisfy the write requests before too many accumulated and crashed
-> the kernel.
+> [root@38 sys]# make-bcache -B /dev/nvme1n1
+> UUID:			6758bd42-c226-4de9-a6d5-fb003af63f9f
+> Set UUID:		2661eadd-79b4-4c56-a2fb-9f8b505aa9fd
+> version:		1
+> block_size:		1
+> data_offset:		16
+> [root@38 sys]# ls /dev/bcache
+> bcache/  bcache0
+> [root@38 sys]# fdisk -l
+> Disk /dev/nvme1n1: 1.8 TiB, 2000398934016 bytes, 3907029168 sectors
+> Units: sectors of 1 * 512 = 512 bytes
+> Sector size (logical/physical): 512 bytes / 512 bytes
+> I/O size (minimum/optimal): 512 bytes / 512 bytes
+> ....
+> Disk /dev/bcache0: 1.8 TiB, 2000398925824 bytes, 3907029152 sectors
+> Units: sectors of 1 * 512 = 512 bytes
+> Sector size (logical/physical): 512 bytes / 512 bytes
+> I/O size (minimum/optimal): 512 bytes / 512 bytes
+> ....
+> [root@38 sys]# make-bcache -C /dev/ram0
+> UUID:			b64a4425-b9c1-4650-9cab-3856410c9566
+> Set UUID:		a0a31965-a89d-43b6-a5d6-968897abeb7a
+> version:		0
+> nbuckets:		1024
+> block_size:		1
+> bucket_size:		1024
+> nr_in_set:		1
+> nr_this_dev:		0
+> first_bucket:		1
+> [root@38 sys]# echo a0a31965-a89d-43b6-a5d6-968897abeb7a > /sys/block/bcache0/bcache/attach
+> [root@38 sys]# echo writeback > /sys/block/bcache0/bcache/cache_mode
+> [root@38 sys]# mount /dev/bcache0 /tmp
+> [root@38 sys]# cd /tmp/
+> [root@38 tmp]# fio ~/fio_write.sh
+> file1: (g=0): rw=randwrite, bs=4K-4K/4K-4K/4K-4K, ioengine=psync, iodepth=1
+> fio-2.2.8
+> Starting 1 thread
+> file1: Laying out IO file(s) (1 file(s) / 128MB)
+> Jobs: 1 (f=1): [w(1)] [0.0% done] [0KB/177.2MB/0KB /s] [0/45.4K/0 iops] [eta 05h:33m:13s]
 > 
-> I'm not a kernel coder, but seems to me that bcache needs a way to
-> throttle incoming requests if there are too many so that it does not end
-> up in a state where things blow up due to too many piled up requests.
-> 
-> You should be able to reproduce this by taking 5 spinning rust drives,
-> put raid5 on top, dmcrypt, bcache and hopefully any filesystem (although
-> I used btrfs) and send lots of requests.
-> Actually to be honest, the problems have mostly been happening when I do
-> btrfs scrub and btrfs send/receive which both generate I/O from within
-> the kernel instead of user space.
-> So here, btrfs may be a contributor to the problem too, but while btrfs
-> still trashes my system if I remove the caching device on bcache (and
-> with the default dirty ratio values), it doesn't crash the kernel.
-> 
-> I'll start another separate thread with the btrfs folks on how much
-> pressure is put on the system, but on your side it would be good to help
-> ensure that bcache doesn't crash the system altogether if too many
-> requests are allowed to pile up.
-> 
-> Thanks,
-> Marc
-> -- 
-> "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> Microsoft is to operating systems ....
->                                       .... what McDonalds is to gourmet cooking
-> Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
+> Thanks!
+> Yijing.
 
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
+I want to make sure that the set_capacity call that happens on cache 
+attachment is not necessary when a backing device is attached without 
+its dirty writeback cache since bcache0 is not presented until the cache 
+attaches in that case.
+
+Can you also unregister the volume, attach the backing device first, and 
+then the cache while the cache is dirty to make sure that the size is set 
+correctly?
+
+--
+Eric Wheeler
+
+> 
+> > 
+> > -Eric
+> > 
+> >>  	dc->disk.disk->queue->backing_dev_info.ra_pages =
+> >>  		max(dc->disk.disk->queue->backing_dev_info.ra_pages,
+> >>  		    q->backing_dev_info.ra_pages);
+> >> -- 
+> >> 2.5.0
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> > 
+> > .
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+--1641074820-2125174138-1480530874=:442--
