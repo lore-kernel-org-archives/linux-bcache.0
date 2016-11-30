@@ -1,115 +1,64 @@
-From: wangyijing <wangyijing@huawei.com>
-Subject: Re: [PATCH 1/2] bcache: Remove redundant set_capacity
-Date: Wed, 30 Nov 2016 10:00:14 +0800
-Message-ID: <583E32AE.5060106@huawei.com>
-References: <1480037969-45042-1-git-send-email-wangyijing@huawei.com>
- <alpine.LRH.2.11.1611291246140.1914@mail.ewheeler.net>
+From: <ajae@arteastottawa.com>
+Subject: (unknown)
+Date: Wed, 30 Nov 2016 09:15:30 -0000
+Message-ID: <148049733081.31657.12604659768999094206@hinet.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: application/zip; name="MESSAGE_949095530648352_linux-bcache.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from szxga05-in.huawei.com ([119.145.14.199]:43479 "EHLO
-        szxga05-in.huawei.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-        with ESMTP id S1751061AbcK3CAg (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 29 Nov 2016 21:00:36 -0500
-In-Reply-To: <alpine.LRH.2.11.1611291246140.1914@mail.ewheeler.net>
+Received: from 114-44-212-184.dynamic.hinet.net ([114.44.212.184]:37262 "HELO
+        hinet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+        id S1752818AbcK3JPh (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 30 Nov 2016 04:15:37 -0500
+Subject: 
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: axboe@fb.com, kent.overstreet@gmail.com, git@linux.ewheeler.net, colyli@suse.de, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-
-
-在 2016/11/30 4:49, Eric Wheeler 写道:
-> On Fri, 25 Nov 2016, Yijing Wang wrote:
-> 
->> set_capacity() has been called in bcache_device_init(),
->> remove the redundant one.
->>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->>  drivers/md/bcache/super.c | 3 ---
->>  1 file changed, 3 deletions(-)
->>
->> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
->> index 849ad44..b638a16 100644
->> --- a/drivers/md/bcache/super.c
->> +++ b/drivers/md/bcache/super.c
->> @@ -1126,9 +1126,6 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
->>  	if (ret)
->>  		return ret;
->>  
->> -	set_capacity(dc->disk.disk,
->> -		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
->> -
-> 
-> It probably is a duplicate set_capacity, but has anyone tested bringing on 
-> a writeback volume, and late-attaching the cache volume with this patch 
-> applied?
-> 
-> Otherwise stated, is it possible to get the backing device attached 
-> without setting the capacity?
-
-Hi Eric, I tested this case in following steps, the result is fine, the capability is setted.
-
-[root@38 sys]# make-bcache -B /dev/nvme1n1
-UUID:			6758bd42-c226-4de9-a6d5-fb003af63f9f
-Set UUID:		2661eadd-79b4-4c56-a2fb-9f8b505aa9fd
-version:		1
-block_size:		1
-data_offset:		16
-[root@38 sys]# ls /dev/bcache
-bcache/  bcache0
-[root@38 sys]# fdisk -l
-Disk /dev/nvme1n1: 1.8 TiB, 2000398934016 bytes, 3907029168 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-....
-Disk /dev/bcache0: 1.8 TiB, 2000398925824 bytes, 3907029152 sectors
-Units: sectors of 1 * 512 = 512 bytes
-Sector size (logical/physical): 512 bytes / 512 bytes
-I/O size (minimum/optimal): 512 bytes / 512 bytes
-....
-[root@38 sys]# make-bcache -C /dev/ram0
-UUID:			b64a4425-b9c1-4650-9cab-3856410c9566
-Set UUID:		a0a31965-a89d-43b6-a5d6-968897abeb7a
-version:		0
-nbuckets:		1024
-block_size:		1
-bucket_size:		1024
-nr_in_set:		1
-nr_this_dev:		0
-first_bucket:		1
-[root@38 sys]# echo a0a31965-a89d-43b6-a5d6-968897abeb7a > /sys/block/bcache0/bcache/attach
-[root@38 sys]# echo writeback > /sys/block/bcache0/bcache/cache_mode
-[root@38 sys]# mount /dev/bcache0 /tmp
-[root@38 sys]# cd /tmp/
-[root@38 tmp]# fio ~/fio_write.sh
-file1: (g=0): rw=randwrite, bs=4K-4K/4K-4K/4K-4K, ioengine=psync, iodepth=1
-fio-2.2.8
-Starting 1 thread
-file1: Laying out IO file(s) (1 file(s) / 128MB)
-Jobs: 1 (f=1): [w(1)] [0.0% done] [0KB/177.2MB/0KB /s] [0/45.4K/0 iops] [eta 05h:33m:13s]
-
-Thanks!
-Yijing.
-
-> 
-> -Eric
-> 
->>  	dc->disk.disk->queue->backing_dev_info.ra_pages =
->>  		max(dc->disk.disk->queue->backing_dev_info.ra_pages,
->>  		    q->backing_dev_info.ra_pages);
->> -- 
->> 2.5.0
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> 
-> .
-> 
+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
+AQBLAAAAsAkAAAAA
