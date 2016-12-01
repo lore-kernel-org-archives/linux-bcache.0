@@ -1,76 +1,133 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: 4.8.8, bcache deadlock and hard lockup
-Date: Thu, 1 Dec 2016 13:58:33 -0800 (PST)
-Message-ID: <alpine.LRH.2.11.1612011350290.22682@mail.ewheeler.net>
-References: <20161118164643.g7ttuzgsj74d6fbz@merlins.org> <20161118184915.j6dlazbgminxnxzx@merlins.org> <b6c3daab-d990-e873-4d0f-0f0afe2259b1@coly.li> <alpine.LRH.2.11.1611291255350.1914@mail.ewheeler.net> <20161130164646.d6ejlv72hzellddd@merlins.org>
- <alpine.LRH.2.11.1611301553420.22682@mail.ewheeler.net> <20161201000919.GB13371@merlins.org>
+Subject: Re: [PATCH 1/2] bcache: Remove redundant set_capacity
+Date: Thu, 1 Dec 2016 14:02:35 -0800 (PST)
+Message-ID: <alpine.LRH.2.11.1612011359150.22682@mail.ewheeler.net>
+References: <1480037969-45042-1-git-send-email-wangyijing@huawei.com> <alpine.LRH.2.11.1611291246140.1914@mail.ewheeler.net> <583E32AE.5060106@huawei.com> <alpine.LRH.2.11.1611301030001.442@mail.ewheeler.net> <583FEC37.1040003@huawei.com>
 Mime-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-btrfs-owner@vger.kernel.org>
-In-Reply-To: <20161201000919.GB13371@merlins.org>
-Sender: linux-btrfs-owner@vger.kernel.org
-To: Marc MERLIN <marc@merlins.org>
-Cc: Coly Li <i@coly.li>, linux-bcache@vger.kernel.org, Btrfs BTRFS <linux-btrfs@vger.kernel.org>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <583FEC37.1040003@huawei.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: wangyijing <wangyijing@huawei.com>
+Cc: axboe@fb.com, kent.overstreet@gmail.com, git@linux.ewheeler.net, colyli@suse.de, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, 30 Nov 2016, Marc MERLIN wrote:
-> On Wed, Nov 30, 2016 at 03:57:28PM -0800, Eric Wheeler wrote:
-> > > I'll start another separate thread with the btrfs folks on how much
-> > > pressure is put on the system, but on your side it would be good to help
-> > > ensure that bcache doesn't crash the system altogether if too many
-> > > requests are allowed to pile up.
-> > 
-> > Try BFQ.  It is AWESOME and helps reduce the congestion problem with bulk 
-> > writes at the request queue on its way to the spinning disk or SSD:
-> > 	http://algo.ing.unimo.it/people/paolo/disk_sched/
-> > 
-> > use the latest BFQ git here, merge it into v4.8.y:
-> > 	https://github.com/linusw/linux-bfq/commits/bfq-v8
-> > 
-> > This doesn't completely fix the dirty_ration problem, but it is far better 
-> > than CFQ or deadline in my opinion (and experience).
+On Thu, 1 Dec 2016, wangyijing wrote:
+
 > 
-> That's good to know thanks.
-> But for my uninformed opinion, is there anything bcache can do to throttle
-> incoming requests if they are piling up, or they're coming from producers
-> upstream and bcache has no choice but try and process them as quickly as
-> possible without a way to block the sender if too many are coming?
+> >>> It probably is a duplicate set_capacity, but has anyone tested bringing on 
+> >>> a writeback volume, and late-attaching the cache volume with this patch 
+> >>> applied?
+> >>>
+> >>> Otherwise stated, is it possible to get the backing device attached 
+> >>> without setting the capacity?
+> >>
+> >> Hi Eric, I tested this case in following steps, the result is fine, the capability is setted.
+> >>
+> >> [root@38 sys]# make-bcache -B /dev/nvme1n1
+> >> UUID:			6758bd42-c226-4de9-a6d5-fb003af63f9f
+> >> Set UUID:		2661eadd-79b4-4c56-a2fb-9f8b505aa9fd
+> >> version:		1
+> >> block_size:		1
+> >> data_offset:		16
+> >> [root@38 sys]# ls /dev/bcache
+> >> bcache/  bcache0
+> >> [root@38 sys]# fdisk -l
+> >> Disk /dev/nvme1n1: 1.8 TiB, 2000398934016 bytes, 3907029168 sectors
+> >> Units: sectors of 1 * 512 = 512 bytes
+> >> Sector size (logical/physical): 512 bytes / 512 bytes
+> >> I/O size (minimum/optimal): 512 bytes / 512 bytes
+> >> ....
+> >> Disk /dev/bcache0: 1.8 TiB, 2000398925824 bytes, 3907029152 sectors
+> >> Units: sectors of 1 * 512 = 512 bytes
+> >> Sector size (logical/physical): 512 bytes / 512 bytes
+> >> I/O size (minimum/optimal): 512 bytes / 512 bytes
+> >> ....
+> >> [root@38 sys]# make-bcache -C /dev/ram0
+> >> UUID:			b64a4425-b9c1-4650-9cab-3856410c9566
+> >> Set UUID:		a0a31965-a89d-43b6-a5d6-968897abeb7a
+> >> version:		0
+> >> nbuckets:		1024
+> >> block_size:		1
+> >> bucket_size:		1024
+> >> nr_in_set:		1
+> >> nr_this_dev:		0
+> >> first_bucket:		1
+> >> [root@38 sys]# echo a0a31965-a89d-43b6-a5d6-968897abeb7a > /sys/block/bcache0/bcache/attach
+> >> [root@38 sys]# echo writeback > /sys/block/bcache0/bcache/cache_mode
+> >> [root@38 sys]# mount /dev/bcache0 /tmp
+> >> [root@38 sys]# cd /tmp/
+> >> [root@38 tmp]# fio ~/fio_write.sh
+> >> file1: (g=0): rw=randwrite, bs=4K-4K/4K-4K/4K-4K, ioengine=psync, iodepth=1
+> >> fio-2.2.8
+> >> Starting 1 thread
+> >> file1: Laying out IO file(s) (1 file(s) / 128MB)
+> >> Jobs: 1 (f=1): [w(1)] [0.0% done] [0KB/177.2MB/0KB /s] [0/45.4K/0 iops] [eta 05h:33m:13s]
+> >>
+> >> Thanks!
+> >> Yijing.
+> > 
+> > I want to make sure that the set_capacity call that happens on cache 
+> > attachment is not necessary when a backing device is attached without
+> 
+> Hi Eric, set_capacity() which removed in this patch is happened at cached_dev_init()
+> which is called when register a backing device, what do you mean "set_capacity call that happens on cache
+> > attachment" ?
 
-Not really.  The congestion isn't in bcache, its at the disk queue beyond 
-bcache, but userspace processes are blocked by the (huge) pagecache dirty 
-writeback which happens before bcache gets it and must complete before 
-userspace may proceed: 
 
-fs -> pagecache -> bcache -> {ssd,disk}  
+I'm sorry, you are correct.  I though this was the cache-dev attachment, 
+not the cached-dev attachment.  Looks good.
 
-The real issue is that the dirty page cache gets really big, flushes, 
-waits for downstream devices (bcache->ssd,disk) to finish, and then 
-returns to userspace.  The only way to limit dirty cache are those options 
-that Linus mentioned.
-
-BFQ can help for processes not tied to the flush because it may re-order 
-other process requests ahead of the big flush---so even though a big flush 
-is happening and that process is stalled, others might proceed without 
-delay.
-
-See this thread, too:
-	https://groups.google.com/forum/#!msg/bfq-iosched/M2M_UhbC05A/hf6Ni9JbAQAJ
+Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
 
 --
 Eric Wheeler
 
-
-
 > 
-> Thanks,
-> Marc
-> -- 
-> "A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-> Microsoft is to operating systems ....
->                                       .... what McDonalds is to gourmet cooking
-> Home page: http://marc.merlins.org/  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> > its dirty writeback cache since bcache0 is not presented until the cache 
+> > attaches in that case.
+> 
+> I found bcache0 device present once we do make-bcache -B /dev/nvme1n1. before attach the cache set.
+> So I missed something ?
+> 
+> > 
+> > Can you also unregister the volume, attach the backing device first, and 
+> > then the cache while the cache is dirty to make sure that the size is set 
+> > correctly?
+> 
+> When I unregister the cache device, I found all the dirty data has been flushed to
+> backing device, so how can I do the test the case as you point ?
+> 
+> Thanks!
+> Yijing.
+> 
+> > 
+> > --
+> > Eric Wheeler
+> > 
+> >>
+> >>>
+> >>> -Eric
+> >>>
+> >>>>  	dc->disk.disk->queue->backing_dev_info.ra_pages =
+> >>>>  		max(dc->disk.disk->queue->backing_dev_info.ra_pages,
+> >>>>  		    q->backing_dev_info.ra_pages);
+> >>>> -- 
+> >>>> 2.5.0
+> >>>>
+> >>>> --
+> >>>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> >>>> the body of a message to majordomo@vger.kernel.org
+> >>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>>
+> >>>
+> >>> .
+> >>>
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 > 
