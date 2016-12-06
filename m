@@ -1,33 +1,33 @@
-From: Hans van den Bogert <hansbogert@gmail.com>
-Subject: Re: [PATCH v1] bcache: partition support: add 16 minors per major
-Date: Mon, 5 Dec 2016 17:14:09 +0100
-Message-ID: <AA95A776-050D-498F-A5D6-409F3F831E18@gmail.com>
-Reply-To: alpine.LRH.2.11.1610231807320.24191@mail.ewheeler.net
-Mime-Version: 1.0 (Mac OS X Mail 9.3 \(3124\))
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: [branch: =?utf-8?Q?bcachefs-performanc?=
+ =?utf-8?B?ZV0gLi9pbmNsdWRlL3RyYWNlL3RyYWNlX2V2ZW50cy5oOjMyNzoyNzogZXJy?=
+ =?utf-8?B?b3I6IGV4cGVjdGVkIGV4cHJlc3Npb24gYmVmb3JlIOKAmCnigJk=?= token
+Date: Mon, 5 Dec 2016 22:49:44 -0900
+Message-ID: <20161206074944.eyarkvg3zyevem74@kmo-pixel>
+References: <ea208bad-525d-949d-2b01-337ec46f53ce@mejor.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wj0-f180.google.com ([209.85.210.180]:35795 "EHLO
-        mail-wj0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751176AbcLEQOM (ORCPT
+Received: from mail-pg0-f65.google.com ([74.125.83.65]:35764 "EHLO
+        mail-pg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751335AbcLFHts (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 5 Dec 2016 11:14:12 -0500
-Received: by mail-wj0-f180.google.com with SMTP id v7so294719641wjy.2
-        for <linux-bcache@vger.kernel.org>; Mon, 05 Dec 2016 08:14:11 -0800 (PST)
-Received: from 192-168-168-252.maas (a83-163-87-95.adsl.xs4all.nl. [83.163.87.95])
-        by smtp.gmail.com with ESMTPSA id q7sm21146024wjh.9.2016.12.05.08.14.09
-        for <linux-bcache@vger.kernel.org>
-        (version=TLS1 cipher=ECDHE-RSA-AES128-SHA bits=128/128);
-        Mon, 05 Dec 2016 08:14:09 -0800 (PST)
+        Tue, 6 Dec 2016 02:49:48 -0500
+Received: by mail-pg0-f65.google.com with SMTP id p66so19071931pga.2
+        for <linux-bcache@vger.kernel.org>; Mon, 05 Dec 2016 23:49:48 -0800 (PST)
+Content-Disposition: inline
+In-Reply-To: <ea208bad-525d-949d-2b01-337ec46f53ce@mejor.pl>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: "marcin@mejor.pl" <marcin@mejor.pl>
+Cc: linux-bcache@vger.kernel.org
 
-Just dropping in here, replying from the linux-cache archive on spinics.
+On Mon, Dec 05, 2016 at 10:55:24AM +0100, marcin@mejor.pl wrote:
+> Hi!
+> I'm getting compilation error:
+> commit 1aae41c06651f0bffedba1a29a59afac3717d315
 
-But what=E2=80=99s the status on this? Is this going upstream or is more =
-testing needed?
-
-Regards,
-
-Hans van den Bogert=
+That branch has my WIP, known broken stuff :) Can you just test bcachefs-testing
+for now? I'll merge those patches into bcachefs-testing soon, but for now it's
+the whiteouts optimizations currently in bcachefs-testing I'm much more
+concerned about.
