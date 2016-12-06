@@ -1,33 +1,59 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: [branch: =?utf-8?Q?bcachefs-performanc?=
- =?utf-8?B?ZV0gLi9pbmNsdWRlL3RyYWNlL3RyYWNlX2V2ZW50cy5oOjMyNzoyNzogZXJy?=
- =?utf-8?B?b3I6IGV4cGVjdGVkIGV4cHJlc3Npb24gYmVmb3JlIOKAmCnigJk=?= token
-Date: Mon, 5 Dec 2016 22:49:44 -0900
-Message-ID: <20161206074944.eyarkvg3zyevem74@kmo-pixel>
-References: <ea208bad-525d-949d-2b01-337ec46f53ce@mejor.pl>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: [PULL] bcache: based on for-4.10/block, multiple updates
+Date: Tue, 6 Dec 2016 11:47:41 -0800 (PST)
+Message-ID: <alpine.LRH.2.11.1612061145430.13402@mail.ewheeler.net>
+References: <alpine.LRH.2.11.1610262037160.24191@mail.ewheeler.net> <5160da7c-e38e-1527-2b09-2ca240df57c3@kernel.dk> <alpine.LRH.2.11.1610291826250.4080@mail.ewheeler.net> <20161030140050.q6ywphi3by6yoczc@kmo-pixel>
+ <6bda49c5-5ed8-939f-aab3-faa9c8127ff0@kernel.dk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f65.google.com ([74.125.83.65]:35764 "EHLO
-        mail-pg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751335AbcLFHts (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 6 Dec 2016 02:49:48 -0500
-Received: by mail-pg0-f65.google.com with SMTP id p66so19071931pga.2
-        for <linux-bcache@vger.kernel.org>; Mon, 05 Dec 2016 23:49:48 -0800 (PST)
-Content-Disposition: inline
-In-Reply-To: <ea208bad-525d-949d-2b01-337ec46f53ce@mejor.pl>
+Received: from mx.ewheeler.net ([66.155.3.69]:51342 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1751556AbcLFTrp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 6 Dec 2016 14:47:45 -0500
+In-Reply-To: <6bda49c5-5ed8-939f-aab3-faa9c8127ff0@kernel.dk>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "marcin@mejor.pl" <marcin@mejor.pl>
-Cc: linux-bcache@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, dave@stgolabs.net, linux-kernel@vger.kernel.org, Kai Krakow <kai@kaishome.de>, Wido den Hollander <wido@widodh.nl>, Emmanuel Florac <eflorac@intellique.com>, Hans van den Bogert <hansbogert@gmail.com>, "Jens-U. Mozdzen" <jmozdzen@nde.ag>
 
-On Mon, Dec 05, 2016 at 10:55:24AM +0100, marcin@mejor.pl wrote:
-> Hi!
-> I'm getting compilation error:
-> commit 1aae41c06651f0bffedba1a29a59afac3717d315
+Hello Jens,
 
-That branch has my WIP, known broken stuff :) Can you just test bcachefs-testing
-for now? I'll merge those patches into bcachefs-testing soon, but for now it's
-the whiteouts optimizations currently in bcachefs-testing I'm much more
-concerned about.
+Please pull for 4.10:
+
+Thank you!
+
+This pull request is based on the git.kernel.dk for-4.10/block branch:
+
+The following changes since commit 333ba053d145d6f9152f6b0311a345b876f0fed1:
+
+  lightnvm: transform target get/set bad block (2016-11-29 12:12:51 -0700)
+
+are available in the git repository at:
+
+  https://bitbucket.org/ewheelerinc/linux.git for-4.10-block-bcache-updates
+
+for you to fetch changes up to 951c0a8cc489aca1c68d80e5aaa576cd7e511191:
+
+  bcache: partition support: add 16 minors per bcacheN device (2016-12-06 10:13:24 -0800)
+
+----------------------------------------------------------------
+Eric Wheeler (4):
+      bcache: introduce per-process ioprio-based bypass/writeback hints
+      bcache: documentation for ioprio cache hinting
+      bcache: update bio->bi_opf bypass/writeback REQ_ flag hints
+      bcache: partition support: add 16 minors per bcacheN device
+
+Kent Overstreet (1):
+      bcache: Make gc wakeup sane, remove set_task_state()
+
+ Documentation/bcache.txt      | 80 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/bcache.h    |  7 ++--
+ drivers/md/bcache/btree.c     | 39 +++++++++++----------
+ drivers/md/bcache/btree.h     |  3 +-
+ drivers/md/bcache/request.c   | 31 +++++++++++++++--
+ drivers/md/bcache/super.c     |  7 +++-
+ drivers/md/bcache/sysfs.c     | 71 ++++++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/writeback.c |  8 +++++
+ drivers/md/bcache/writeback.h | 27 ++++++++++++++-
+ 9 files changed, 245 insertions(+), 28 deletions(-)
