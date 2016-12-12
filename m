@@ -1,76 +1,50 @@
-From: <kholloway@isd622.org>
-Subject: (unknown)
-Date: Sun, 11 Dec 2016 18:14:08 -0000
-Message-ID: <148148004892.10256.5624570739651500832@hinet.net>
+From: "marcin@mejor.pl" <marcin@mejor.pl>
+Subject: Re: [bcachefs-testing] BUG: unable to handle kernel paging request at
+ 0000005780540006
+Date: Mon, 12 Dec 2016 11:26:08 +0100
+Message-ID: <ac5b11bb-20e7-2a32-f317-0545a9e50e78@mejor.pl>
+References: <b66c17f1-19d0-702f-f09e-acd6e5116587@mejor.pl>
+ <20161209232557.elip24quin24awq5@kmo-pixel>
 Mime-Version: 1.0
-Content-Type: application/zip; name="EMAIL_59604235363111_linux-bcache.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 114-37-214-219.dynamic.hinet.net ([114.37.214.219]:47384 "HELO
-        hinet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-        id S1751130AbcLKSOQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 11 Dec 2016 13:14:16 -0500
-Subject: 
-Content-Disposition: attachment
+Received: from jowisz.mejor.pl ([81.4.120.72]:25066 "EHLO jowisz.mejor.pl"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1754111AbcLLK1C (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 12 Dec 2016 05:27:02 -0500
+In-Reply-To: <20161209232557.elip24quin24awq5@kmo-pixel>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
-UEsDBAoAAgAAAAEAjEn/fx52KQwAACkMAAAMABwANDI4Ml9aSVAuemlwVVQJAAMhlE1YIZRNWHV4
-CwABBAAAAAAEAAAAAFBLAwQUAAIACAABAIxJeGw0+IULAAB+HwAABwAcADQyODIuanNVVAkAAyGU
-TVghlE1YdXgLAAEEAAAAAAQAAAAAxVlJj93GET5bv+LBF45gYbTEcRALTuAlcg5WHEQCbOBlDlya
-ZHNrPpJNshnkv6dra5IjKVfN4QFTZHdXV3311cI5Hi5m7t1qy8t3ly+fL8uXT2YvqwrTzg5EQ0cS
-nS4uw5d++uGeRYVdQWAT+l/VmSsKkPz2LiVRY+pGdQpkjXpHsjyNR9Xi5m4jUWdGDf/3/4h561Y1
-K4om15PI5IO7oQJNeKvrdW/xLUuSUbdV3IBEvTe8rsvdCJJfeSOV1rqMJxB19yybEjcPLkel0oFk
-RWkGFHQZC1zb6aHA21xekswVJi1R0R8HxaIucaTC6MQwaqYDVfsriereLA29dvkbK7r23sh4nfvf
-+YJTZuoeJC+esmTQqekSENUx3zC+qRlfuuT80qwaV6Jv3quWZIOqFJphZDXrzG54vctfSLAtca2a
-GUSvSTIvZnMF3k6lE8nSm01IR02CxdSl83qiG9gC3u0Deootp7K4Kk9wWm1Wa7yGZaj0rd1sh4fp
-njcyg57SmHZitXXlCjsjyt7w/cvZTQoN0H/N5zWNneKyRT3fsKLFFC+oZVLxXpna8CrLPZ9X6c41
-hTmi4DaYlpXiRbUhlS68KI8zfQSzqTtdVGQ0fmONswp3/bExYlo7qQ7fes9GG7a42tBGF/Zr5kY0
-mu4KkthhUF2hJ7wsWzLP1abX+GgQs7Zm7nBp1moBTmrR3mrlmLuZrbEditjfU2vGOEEd3vVso9Rk
-g1n00bomq1x+8pPq3NzgO69Z95tp1LzERAaMwMpRPIVA6R0dJhAwN2/KDlW68O1GH9EGMWkyjqa4
-dNlojvBqFG38a1Lxzkti0kWluBOf1sXtpssJX3wXzxJg3rZxWYPw3/6P9ZhrnSsUphw+qQ+8jkI4
-bgUsC252/zO7VN8QTW9/YSXm0mQEVNuw6kVvyC/2G37pNqoejfBKUGqHGP17P7E7e91plOR3DINe
-NTme1YwcTm5xSXtkQl1Pbm0dGnNmvrR1bZeMaCBiQlGznh1eVV3EmrfCbfGRK2xbmGp2CNefFTt9
-zmwbo4n9pZgLSj04Cv3f3/JbtnMp6vpGN0KHs84RLS/Fctugs5KP/IHVcLOPTyRb4R7PTzmxARtG
-LYz8RqCvVlWThFVfJ7XWBHNWMu7ULTuZJUtVjT7ov33OQa6XArfJONfFrcE1/1KjoDCjtJJq3iZO
-c9O0usLr30VytZnsrfh0l5qU+EKCei7c3NkJt88Zl5kd/UKQtBIsSx9j9hvZcVMfJ5SixSF6ipPR
-buRMTuT+rNaikzoGRpXEjRvxcv1zUb2pY0Tq9z9xfhpdYm7ExoILnbcmpTzN3KhX0+Fpg5CjaXNb
-0+aOqwLbNPFg8XY/fstOGuMRAR2zIwcf0qpsESYSXr2eiDPVIHQRTzohwuKtPe0v8P9TVnGNKTcN
-fC9TeZOo6ujsxNMJ8dI9e2R2WVxTrXEvJYqlfPZOssDYqC1FEZ80DK5A409K0uBak8PupDJYLRrn
-70zwevHciuqVKgB47lEXI3RbuVRXKNKSTAd1QwRNpRQ0k9sq3Ogi5H5zvqjJlpPOOjFMUHwrPWp0
-svCKvvl8h2cVpmYgVPGSHmE3tGale3/HyHRFjoLBCqls8YQSN0qcdqZOjky/VCpPXYXlTjnxWz7b
-u/bgzdEHs6IqwXIqHW1HuHwrV7ilqqBcHwfL+7RJhei7aRA6HFybqmNEbWbAq77/p3jU83Pc9+j4
-52kITiKmsv8r77TYvjpxoRnrOK8V8sVvfN5Wx3MbD3zid0xrW26byQ0pJb07cXDh7Q6SX15JCvBL
-Sz0lR7vHq8spbsXOhctVciJgk5jqYL94nmxiJiQJdS8RYofiGEQ6re2Y6ZqonCvPrdS3BgH1gk3q
-ZreSaSSM08FuKrXfeFmnlsv36eQJ6nefcX1leBd50PliwOdSX235Qt8jwVe6+Cx6+vqJzi93V1j1
-xnZ+nenurpGNnhETP1xfPly+ulyp/nl2iYoxeri+QBm3Cl4YBxnr5mVNkHGce5nz20bpLTxhJHih
-CbKo7+AtLT9Yhzxc/0APQcJFDz4X/TAS4NQbrCv23Wr/P1cu8CAJK7zSzwIp+0f9CCvr8Jx7AC+b
-UniS73vmC2iB3C1vU0rwr43LfjvPd3jpfWEDO01wsI/2h+srFAck8o1e7PpxyRt03rIIzf1M4pFV
-po2iDvanCpe9wusULGtn8CoWObICqiT/JAmnUt7yonX3X5S0kZiW69lwIniUSj45C0HtXwcIRTtY
-Qv4FU+8I4PzjhXMtVzuskgrQC5cNHiW7qlGKaoFWUjr5f9VuDdAAadaLu0d+981xEADeuHEJMrgX
-NkpBYrwEs97Jspj4TxFA1TZYEBU+eB/25PSA9pE9sILEGMC7n3aD9uUk4BwOVtzOWJGakqOJ9pby
-JQRftcMTm7zT5tSrsXIkwo7SSxB4hygFRGGalZMwxQK6+4P3oEE+o7r06yjLB8siUlbYjwuNkweF
-OOV1rCHPhoXbU+UmVkzn3d9DAo8hT4sRmv3hghDC3wmQhH23sI2MFISOduxhbYM7gfgQKi0Sp0+w
-CMWTm5GK0I40GQkxiNMciM8DxQDlYC97YjnKOx+iirvFcFIOR0mbFQIT+xKxwe4S6jE4dA7eRUti
-WyiaUh8Dmkbn19GDZQ6/W+9/aaIQSFtFYo0GYgInIuGhCQ/hB4vP8GwBxqIk758PwQ48DAFCJ6p/
-evc0aPT08p8nX5jejKb+2ufDqdTjlXBHesL1uQEOB4HSMmUSDLndc+ANHDWc+EFmKxC1eRQc9fD6
-yRe6XOzqk8tLrwCrciU70EiKleXNsmhHyzOpokQ3aJ+FGNMzQNjusJyHQbDowefvJBcugWKZYfhq
-NzgOCfasMqPnwDUw1AhvVuAQHtaElyFQeXAYkIVFpiBrXT+CIxqyhZ2nLOR4eIrDnxMiuL+EE3yJ
-8sWW+CK6Mn/8TOZEQ+D8VC55OG4OeasHHsG2K9ylBFKhHkaUStewlpoOYdedRrCVFhwS6YIVKnez
-4xA3+WeCFRb8otaaPqq0hoiZgecMwdklFDxUWSPRi4I8UkUFTowEsxovqB4RDN3T921QLUSnEoRe
-gMtAJwHqgr0ms6jSTNWfP4+5sG8Hm5R7RsQ5PXBZhYuAd6JqzyvULUlo7AxLA669PoJVS8CFmjZz
-M1T+B+bxN53TiI0rIyKwfxJMxxNF8eh+HI5PgBIyIcyo22s2GuxA4iPemB+VBi4sGuARjYnFkDyn
-CMd5O9GUDfZLow9BrxebqenF+WrYbskp5lye83wdiz55umMLPmaIfauzztheQxx2O/0/3IEOc2Ln
-Ka7/5JXYY/BKsMQpwanQDnNg2uAaujpQKX1UFHYIGxw3gy0n0evlw7OL8DgmG27ST7Cn2ZhAcMcy
-fzTC5uBU4MFMHaTd2WX4UeSc0g3GAIwgxMzVTlv0mQOK8vP2BE+LjA6D0qAs4JxHW7BTG53KGlzB
-Y/FQ5tF3IKjL2kM3N1Kpl2vuo45NDrYpodmXYNbBmEaigTpqUO7/ORfL93QQVuDBa6gN4ftTQBbB
-JPANswx9Jwv6ge44VkFc+OOuNGsFyM24DcB9Vjf34rEuRuwKk85TeUxz3nO5YgMrgYlkfiua09Ae
-yl7E4tjRDfzZNvHdncp6fc4vmNV4hnXuKAGd/GXo3HphLU0j9tMK+ky4Fx7wlgxYAE5VqKAOXjma
-FQ2xYCOVu1HOwzluaFs+iNnDBjIfEgoo9yaKhnsQo2UkpX11oIhxlnYTRjtw9MMdeevTx8lnDTnu
-Fn2kzoYf+jTKeH51eAjLaEof5DQVwXFrCMuHuz0JfHVhzvy0XvTNi7Mx6YKfIEM0f2BDqcCY9XDQ
-yHn4iDpgCh7qI/zITFf+ZgMGx4DCwv7QT0UDWAbn+jvJpDYRu7XnDovn3ydohZHhCV00GmbRR0z0
-aV747/8AUEsBAh4DFAACAAgAAQCMSXhsNPiFCwAAfh8AAAcAGAAAAAAAAQAAAKSBAAAAADQyODIu
-anNVVAUAAyGUTVh1eAsAAQQAAAAABAAAAABQSwUGAAAAAAEAAQBNAAAAxgsAAAAAUEsBAh4DCgAC
-AAAAAQCMSf9/HnYpDAAAKQwAAAwAGAAAAAAAAAAAAKSBAAAAADQyODJfWklQLnppcFVUBQADIZRN
-WHV4CwABBAAAAAAEAAAAAFBLBQYAAAAAAQABAFIAAABvDAAAAAA=
+W dniu 10.12.2016 o 00:25, Kent Overstreet pisze:
+> On Fri, Dec 09, 2016 at 11:08:05AM +0100, marcin@mejor.pl wrote:
+>> Hi all!
+>>
+>> Kernel at:
+>> commit a3cccb56d861c0092be2b58cbaf7b44e298f59bc
+>> Author: Kent Overstreet <kent.overstreet@gmail.com>
+>> Date:   Thu Dec 8 14:41:14 2016 -0900
+>>
+>>     bcache: increase default journal write delay for spinning rust
+>>
+>>
+>> Today I tried to use bcachefs as /home. After sometime, when I do backup
+>> of /home I got:
+>>
+>>> Dec  9 10:44:09 localhost kernel: [ 3517.194588] BUG: unable to handle kernel paging request at 0000005780540006
+> 
+> Ok, I see what's wrong - fix is up in bcachefs-testing
+
+
+Hi!
+Now it works stable. Thank you.
+Btw,
+# cat cache_available_percent
+108
+
+Shouldn't it be equal or below 100?
+
+Marcin
