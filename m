@@ -1,57 +1,74 @@
 From: Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH v1 08/54] block: comment on bio_alloc_pages()
-Date: Tue, 27 Dec 2016 23:55:57 +0800
-Message-ID: <1482854250-13481-9-git-send-email-tom.leiming@gmail.com>
+Subject: [PATCH v1 23/54] bcache: handle bio_clone() & bvec updating for multipage bvecs
+Date: Tue, 27 Dec 2016 23:56:12 +0800
+Message-ID: <1482854250-13481-24-git-send-email-tom.leiming@gmail.com>
 References: <1482854250-13481-1-git-send-email-tom.leiming@gmail.com>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <1482854250-13481-1-git-send-email-tom.leiming@gmail.com>
 Sender: linux-block-owner@vger.kernel.org
 To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Ming Lei <tom.leiming@gmail.com>, Jens Axboe <axboe@kernel.dk>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Mike Christie <mchristi@redhat.com>, Guoqing Jiang <gqjiang@suse.com>, Hannes Reinecke <hare@suse.com>, "open list:BCACHE BLOCK LAYER CACHE" <linux-bcache@vger.kernel.org>, "open list:SOFTWARE RAID Multiple Disks
+Cc: linux-block@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Ming Lei <tom.leiming@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Mike Christie <mchristi@redhat.com>, Guoqing Jiang <gqjiang@suse.com>, "open list:BCACHE BLOCK LAYER CACHE" <linux-bcache@vger.kernel.org>, "open list:SOFTWARE RAID Multiple Disks
         SUPPORT" <linux-raid@vger.kernel.org>
 List-Id: linux-bcache@vger.kernel.org
 
-This patch adds comment on usage of bio_alloc_pages(),
-also comments on one special case of bch_data_verify().
+The incoming bio may be too big to be cloned into
+one singlepage bvecs bio, so split the bio and
+check the splitted bio one by one.
 
 Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- block/bio.c               | 4 +++-
- drivers/md/bcache/debug.c | 6 ++++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/md/bcache/debug.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/block/bio.c b/block/bio.c
-index 2b375020fc49..d4a1e0b63ea0 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -961,7 +961,9 @@ EXPORT_SYMBOL(bio_advance);
-  * @bio: bio to allocate pages for
-  * @gfp_mask: flags for allocation
-  *
-- * Allocates pages up to @bio->bi_vcnt.
-+ * Allocates pages up to @bio->bi_vcnt, and this function should only
-+ * be called on a new initialized bio, which means all pages aren't added
-+ * to the bio via bio_add_page() yet.
-  *
-  * Returns 0 on success, -ENOMEM on failure. On failure, any allocated pages are
-  * freed.
 diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
-index 06f55056aaae..48d03e8b3385 100644
+index 48d03e8b3385..18b2d2d138e3 100644
 --- a/drivers/md/bcache/debug.c
 +++ b/drivers/md/bcache/debug.c
-@@ -110,6 +110,12 @@ void bch_data_verify(struct cached_dev *dc, struct bio *bio)
- 	struct bio_vec bv, cbv;
- 	struct bvec_iter iter, citer = { 0 };
+@@ -103,7 +103,7 @@ void bch_btree_verify(struct btree *b)
+ 	up(&b->io_mutex);
+ }
  
-+	/*
-+	 * Once multipage bvec is supported, the bio_clone()
-+	 * has to make sure page count in this bio can be held
-+	 * in the new cloned bio because each single page need
-+	 * to assign to each bvec of the new bio.
-+	 */
- 	check = bio_clone(bio, GFP_NOIO);
+-void bch_data_verify(struct cached_dev *dc, struct bio *bio)
++static void __bch_data_verify(struct cached_dev *dc, struct bio *bio)
+ {
+ 	char name[BDEVNAME_SIZE];
+ 	struct bio *check;
+@@ -116,7 +116,7 @@ void bch_data_verify(struct cached_dev *dc, struct bio *bio)
+ 	 * in the new cloned bio because each single page need
+ 	 * to assign to each bvec of the new bio.
+ 	 */
+-	check = bio_clone(bio, GFP_NOIO);
++	check = bio_clone_sp(bio, GFP_NOIO);
  	if (!check)
  		return;
+ 	check->bi_opf = REQ_OP_READ;
+@@ -151,6 +151,26 @@ void bch_data_verify(struct cached_dev *dc, struct bio *bio)
+ 	bio_put(check);
+ }
+ 
++void bch_data_verify(struct cached_dev *dc, struct bio *bio)
++{
++	struct request_queue *q = bdev_get_queue(bio->bi_bdev);
++	struct bio *clone = bio_clone_fast(bio, GFP_NOIO, q->bio_split);
++	unsigned sectors;
++
++	while (!bio_can_convert_to_sp(clone, &sectors)) {
++		struct bio *split = bio_split(clone, sectors,
++					      GFP_NOIO, q->bio_split);
++
++		__bch_data_verify(dc, split);
++		bio_put(split);
++	}
++
++	if (bio_sectors(clone))
++		__bch_data_verify(dc, clone);
++
++	bio_put(clone);
++}
++
+ #endif
+ 
+ #ifdef CONFIG_DEBUG_FS
 -- 
 2.7.4
 
