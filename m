@@ -1,458 +1,226 @@
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-Subject: Re: [PATCH v2 1/1] block: fix blk_queue_split() resource
-	exhaustion
-Date: Fri, 23 Dec 2016 12:45:53 +0100
-Message-ID: <20161223114553.GP4138@soda.linbit>
-References: <1467990243-3531-1-git-send-email-lars.ellenberg@linbit.com>
-	<1467990243-3531-2-git-send-email-lars.ellenberg@linbit.com>
-	<20160711141042.GY13335@soda.linbit>
-	<76d9bf14-d848-4405-8358-3771c0a93d39@profitbricks.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <dm-devel-bounces@redhat.com>
-Content-Disposition: inline
-In-Reply-To: <76d9bf14-d848-4405-8358-3771c0a93d39@profitbricks.com>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/dm-devel>
-List-Post: <mailto:dm-devel@redhat.com>
-List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=subscribe>
-Sender: dm-devel-bounces@redhat.com
-Errors-To: dm-devel-bounces@redhat.com
-To: Michael Wang <yun.wang@profitbricks.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-block@vger.kernel.org, "Martin K. Petersen" <martin.petersen@oracle.com>, Mike Snitzer <snitzer@redhat.com>, Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>, Ming Lei <ming.lei@canonical.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, NeilBrown <neilb@suse.com>, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, Takashi Iwai <tiwai@suse.de>, linux-bcache@vger.kernel.org, Zheng Liu <gnehzuil.liu@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, Keith Busch <keith.busch@intel.com>, dm-devel@redhat.com, Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@redhat.com>, Alasdair Kergon <agk@redhat.com>, Roland Kammerer <roland.kammerer@linbit.com>
+From: Ming Lei <tom.leiming@gmail.com>
+Subject: [PATCH v1 00/54] block: support multipage bvec
+Date: Tue, 27 Dec 2016 23:55:49 +0800
+Message-ID: <1482854250-13481-1-git-send-email-tom.leiming@gmail.com>
+Return-path: <owner-linux-mm@kvack.org>
+Sender: owner-linux-mm@kvack.org
+To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Christoph Hellwig <hch@infradead.org>, Ming Lei <tom.leiming@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Bart Van Assche <bart.vanassche@sandisk.com>, Chaitanya Kulkarni <chaitanya.kulkarni@hgst.com>, "open list:GFS2 FILE SYSTEM" <cluster-devel@redhat.com>, Damien Le Moal <damien.lemoal@hgst.com>, Dan Williams <dan.j.williams@intel.com>, "open list:DEVICE-MAPPER  LVM" <dm-devel@redhat.com>, "open list:DRBD DRIVER" <drbd-dev@lists.linbit.com>, Eric Wheeler <git@linux.ewheeler.net>, Guoqing Jiang <gqjiang@suse.com>, Hannes Reinecke <hare@suse.com>, Hannes Reinecke <hare@suse.de>, Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>, Johannes Berg <johannes.berg@intel.com>, Johannes Thumshirn <jthumshirn@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Dec 23, 2016 at 09:49:53AM +0100, Michael Wang wrote:
-> Dear Maintainers
-> 
-> I'd like to ask for the status of this patch since we hit the
-> issue too during our testing on md raid1.
-> 
-> Split remainder bio_A was queued ahead, following by bio_B for
-> lower device, at this moment raid start freezing, the loop take
-> out bio_A firstly and deliver it, which will hung since raid is
-> freezing, while the freezing never end since it waiting for
-> bio_B to finish, and bio_B is still on the queue, waiting for
-> bio_A to finish...
-> 
-> We're looking for a good solution and we found this patch
-> already progressed a lot, but we can't find it on linux-next,
-> so we'd like to ask are we still planning to have this fix
-> in upstream?
+Hi,
 
-I don't see why not, I'd even like to have it in older kernels,
-but did not have the time and energy to push it.
+This patchset brings multipage bvec into block layer. Basic
+xfstests(-a auto) over virtio-blk/virtio-scsi have been run
+and no regression is found, so it should be good enough
+to show the approach now, and any comments are welcome!
 
-Thanks for the bump.
+1) what is multipage bvec?
 
-	Lars
+Multipage bvecs means that one 'struct bio_bvec' can hold
+multiple pages which are physically contiguous instead
+of one single page used in linux kernel for long time.
 
-On 07/11/2016 04:10 PM, Lars Ellenberg wrote:
-> For a long time, generic_make_request() converts recursion into
-> iteration by queuing recursive arguments on current->bio_list.
-> 
-> This is convenient for stacking drivers,
-> the top-most driver would take the originally submitted bio,
-> and re-submit a re-mapped version of it, or one or more clones,
-> or one or more new allocated bios to its backend(s). Which
-> are then simply processed in turn, and each can again queue
-> more "backend-bios" until we reach the bottom of the driver stack,
-> and actually dispatch to the real backend device.
-> 
-> Any stacking driver ->make_request_fn() could expect that,
-> once it returns, any backend-bios it submitted via recursive calls
-> to generic_make_request() would now be processed and dispatched, before
-> the current task would call into this driver again.
-> 
-> This is changed by commit
->   54efd50 block: make generic_make_request handle arbitrarily sized bios
-> 
-> Drivers may call blk_queue_split() inside their ->make_request_fn(),
-> which may split the current bio into a front-part to be dealt with
-> immediately, and a remainder-part, which may need to be split even
-> further. That remainder-part will simply also be pushed to
-> current->bio_list, and would end up being head-of-queue, in front
-> of any backend-bios the current make_request_fn() might submit during
-> processing of the fron-part.
-> 
-> Which means the current task would immediately end up back in the same
-> make_request_fn() of the same driver again, before any of its backend
-> bios have even been processed.
-> 
-> This can lead to resource starvation deadlock.
-> Drivers could avoid this by learning to not need blk_queue_split(),
-> or by submitting their backend bios in a different context (dedicated
-> kernel thread, work_queue context, ...). Or by playing funny re-ordering
-> games with entries on current->bio_list.
-> 
-> Instead, I suggest to distinguish between recursive calls to
-> generic_make_request(), and pushing back the remainder part in
-> blk_queue_split(), by pointing current->bio_lists to a
-> 	struct recursion_to_iteration_bio_lists {
-> 		struct bio_list recursion;
-> 		struct bio_list queue;
-> 	}
-> 
-> By providing each q->make_request_fn() with an empty "recursion"
-> bio_list, then merging any recursively submitted bios to the
-> head of the "queue" list, we can make the recursion-to-iteration
-> logic in generic_make_request() process deepest level bios first,
-> and "sibling" bios of the same level in "natural" order.
-> 
-> Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-> Signed-off-by: Roland Kammerer <roland.kammerer@linbit.com>
-> ---
->  block/bio.c               | 20 +++++++++++--------
->  block/blk-core.c          | 49 +++++++++++++++++++++++++----------------------
->  block/blk-merge.c         |  5 ++++-
->  drivers/md/bcache/btree.c | 12 ++++++------
->  drivers/md/dm-bufio.c     |  2 +-
->  drivers/md/raid1.c        |  5 ++---
->  drivers/md/raid10.c       |  5 ++---
->  include/linux/bio.h       | 25 ++++++++++++++++++++++++
->  include/linux/sched.h     |  4 ++--
->  9 files changed, 80 insertions(+), 47 deletions(-)
-> 
-> diff --git a/block/bio.c b/block/bio.c
-> index 848cd35..c2606fd 100644
-> --- a/block/bio.c
-> +++ b/block/bio.c
-> @@ -366,12 +366,16 @@ static void punt_bios_to_rescuer(struct bio_set *bs)
->  	 */
->  
->  	bio_list_init(&punt);
-> -	bio_list_init(&nopunt);
->  
-> -	while ((bio = bio_list_pop(current->bio_list)))
-> +	bio_list_init(&nopunt);
-> +	while ((bio = bio_list_pop(&current->bio_lists->recursion)))
->  		bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
-> +	current->bio_lists->recursion = nopunt;
->  
-> -	*current->bio_list = nopunt;
-> +	bio_list_init(&nopunt);
-> +	while ((bio = bio_list_pop(&current->bio_lists->queue)))
-> +		bio_list_add(bio->bi_pool == bs ? &punt : &nopunt, bio);
-> +	current->bio_lists->queue = nopunt;
->  
->  	spin_lock(&bs->rescue_lock);
->  	bio_list_merge(&bs->rescue_list, &punt);
-> @@ -453,13 +457,13 @@ struct bio *bio_alloc_bioset(gfp_t gfp_mask, int nr_iovecs, struct bio_set *bs)
->  		 *
->  		 * We solve this, and guarantee forward progress, with a rescuer
->  		 * workqueue per bio_set. If we go to allocate and there are
-> -		 * bios on current->bio_list, we first try the allocation
-> -		 * without __GFP_DIRECT_RECLAIM; if that fails, we punt those
-> -		 * bios we would be blocking to the rescuer workqueue before
-> -		 * we retry with the original gfp_flags.
-> +		 * bios on current->bio_lists->{recursion,queue}, we first try the
-> +		 * allocation without __GFP_DIRECT_RECLAIM; if that fails, we
-> +		 * punt those bios we would be blocking to the rescuer
-> +		 * workqueue before we retry with the original gfp_flags.
->  		 */
->  
-> -		if (current->bio_list && !bio_list_empty(current->bio_list))
-> +		if (current_has_pending_bios())
->  			gfp_mask &= ~__GFP_DIRECT_RECLAIM;
->  
->  		p = mempool_alloc(bs->bio_pool, gfp_mask);
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 3cfd67d..2886a59b 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -2040,7 +2040,7 @@ end_io:
->   */
->  blk_qc_t generic_make_request(struct bio *bio)
->  {
-> -	struct bio_list bio_list_on_stack;
-> +	struct recursion_to_iteration_bio_lists bio_lists_on_stack;
->  	blk_qc_t ret = BLK_QC_T_NONE;
->  
->  	if (!generic_make_request_checks(bio))
-> @@ -2049,15 +2049,20 @@ blk_qc_t generic_make_request(struct bio *bio)
->  	/*
->  	 * We only want one ->make_request_fn to be active at a time, else
->  	 * stack usage with stacked devices could be a problem.  So use
-> -	 * current->bio_list to keep a list of requests submited by a
-> -	 * make_request_fn function.  current->bio_list is also used as a
-> +	 * current->bio_lists to keep a list of requests submited by a
-> +	 * make_request_fn function.  current->bio_lists is also used as a
->  	 * flag to say if generic_make_request is currently active in this
->  	 * task or not.  If it is NULL, then no make_request is active.  If
->  	 * it is non-NULL, then a make_request is active, and new requests
-> -	 * should be added at the tail
-> +	 * should be added at the tail of current->bio_lists->recursion;
-> +	 * bios resulting from a call to blk_queue_split() from
-> +	 * within ->make_request_fn() should be pushed back to the head of
-> +	 * current->bio_lists->queue.
-> +	 * After the current ->make_request_fn() returns, .recursion will be
-> +	 * merged back to the head of .queue.
->  	 */
-> -	if (current->bio_list) {
-> -		bio_list_add(current->bio_list, bio);
-> +	if (current->bio_lists) {
-> +		bio_list_add(&current->bio_lists->recursion, bio);
->  		goto out;
->  	}
->  
-> @@ -2066,35 +2071,33 @@ blk_qc_t generic_make_request(struct bio *bio)
->  	 * Before entering the loop, bio->bi_next is NULL (as all callers
->  	 * ensure that) so we have a list with a single bio.
->  	 * We pretend that we have just taken it off a longer list, so
-> -	 * we assign bio_list to a pointer to the bio_list_on_stack,
-> -	 * thus initialising the bio_list of new bios to be
-> -	 * added.  ->make_request() may indeed add some more bios
-> -	 * through a recursive call to generic_make_request.  If it
-> -	 * did, we find a non-NULL value in bio_list and re-enter the loop
-> -	 * from the top.  In this case we really did just take the bio
-> -	 * of the top of the list (no pretending) and so remove it from
-> -	 * bio_list, and call into ->make_request() again.
-> +	 * we assign bio_list to a pointer to the bio_lists_on_stack,
-> +	 * thus initialising the bio_lists of new bios to be added.
-> +	 * ->make_request() may indeed add some more bios to .recursion
-> +	 * through a recursive call to generic_make_request.  If it did,
-> +	 * we find a non-NULL value in .recursion, merge .recursion back to the
-> +	 * head of .queue, and re-enter the loop from the top.  In this case we
-> +	 * really did just take the bio of the top of the list (no pretending)
-> +	 * and so remove it from .queue, and call into ->make_request() again.
->  	 */
->  	BUG_ON(bio->bi_next);
-> -	bio_list_init(&bio_list_on_stack);
-> -	current->bio_list = &bio_list_on_stack;
-> +	bio_list_init(&bio_lists_on_stack.queue);
-> +	current->bio_lists = &bio_lists_on_stack;
->  	do {
->  		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
->  
->  		if (likely(blk_queue_enter(q, false) == 0)) {
-> +			bio_list_init(&bio_lists_on_stack.recursion);
->  			ret = q->make_request_fn(q, bio);
-> -
->  			blk_queue_exit(q);
-> -
-> -			bio = bio_list_pop(current->bio_list);
-> +			bio_list_merge_head(&bio_lists_on_stack.queue,
-> +					&bio_lists_on_stack.recursion);
->  		} else {
-> -			struct bio *bio_next = bio_list_pop(current->bio_list);
-> -
->  			bio_io_error(bio);
-> -			bio = bio_next;
->  		}
-> +		bio = bio_list_pop(&current->bio_lists->queue);
->  	} while (bio);
-> -	current->bio_list = NULL; /* deactivate */
-> +	current->bio_lists = NULL; /* deactivate */
->  
->  out:
->  	return ret;
-> diff --git a/block/blk-merge.c b/block/blk-merge.c
-> index c265348..df96327 100644
-> --- a/block/blk-merge.c
-> +++ b/block/blk-merge.c
-> @@ -172,6 +172,7 @@ void blk_queue_split(struct request_queue *q, struct bio **bio,
->  	struct bio *split, *res;
->  	unsigned nsegs;
->  
-> +	BUG_ON(!current->bio_lists);
->  	if (bio_op(*bio) == REQ_OP_DISCARD)
->  		split = blk_bio_discard_split(q, *bio, bs, &nsegs);
->  	else if (bio_op(*bio) == REQ_OP_WRITE_SAME)
-> @@ -190,7 +191,9 @@ void blk_queue_split(struct request_queue *q, struct bio **bio,
->  
->  		bio_chain(split, *bio);
->  		trace_block_split(q, split, (*bio)->bi_iter.bi_sector);
-> -		generic_make_request(*bio);
-> +		/* push back remainder, it may later be split further */
-> +		bio_list_add_head(&current->bio_lists->queue, *bio);
-> +		/* and fake submission of a suitably sized piece */
->  		*bio = split;
->  	}
->  }
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> index 76f7534..731ec3b 100644
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
-> @@ -450,7 +450,7 @@ void __bch_btree_node_write(struct btree *b, struct closure *parent)
->  
->  	trace_bcache_btree_write(b);
->  
-> -	BUG_ON(current->bio_list);
-> +	BUG_ON(current->bio_lists);
->  	BUG_ON(b->written >= btree_blocks(b));
->  	BUG_ON(b->written && !i->keys);
->  	BUG_ON(btree_bset_first(b)->seq != i->seq);
-> @@ -544,7 +544,7 @@ static void bch_btree_leaf_dirty(struct btree *b, atomic_t *journal_ref)
->  
->  	/* Force write if set is too big */
->  	if (set_bytes(i) > PAGE_SIZE - 48 &&
-> -	    !current->bio_list)
-> +	    !current->bio_lists)
->  		bch_btree_node_write(b, NULL);
->  }
->  
-> @@ -889,7 +889,7 @@ static struct btree *mca_alloc(struct cache_set *c, struct btree_op *op,
->  {
->  	struct btree *b;
->  
-> -	BUG_ON(current->bio_list);
-> +	BUG_ON(current->bio_lists);
->  
->  	lockdep_assert_held(&c->bucket_lock);
->  
-> @@ -976,7 +976,7 @@ retry:
->  	b = mca_find(c, k);
->  
->  	if (!b) {
-> -		if (current->bio_list)
-> +		if (current->bio_lists)
->  			return ERR_PTR(-EAGAIN);
->  
->  		mutex_lock(&c->bucket_lock);
-> @@ -2127,7 +2127,7 @@ static int bch_btree_insert_node(struct btree *b, struct btree_op *op,
->  
->  	return 0;
->  split:
-> -	if (current->bio_list) {
-> +	if (current->bio_lists) {
->  		op->lock = b->c->root->level + 1;
->  		return -EAGAIN;
->  	} else if (op->lock <= b->c->root->level) {
-> @@ -2209,7 +2209,7 @@ int bch_btree_insert(struct cache_set *c, struct keylist *keys,
->  	struct btree_insert_op op;
->  	int ret = 0;
->  
-> -	BUG_ON(current->bio_list);
-> +	BUG_ON(current->bio_lists);
->  	BUG_ON(bch_keylist_empty(keys));
->  
->  	bch_btree_op_init(&op.op, 0);
-> diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-> index 6571c81..ba0c325 100644
-> --- a/drivers/md/dm-bufio.c
-> +++ b/drivers/md/dm-bufio.c
-> @@ -174,7 +174,7 @@ static inline int dm_bufio_cache_index(struct dm_bufio_client *c)
->  #define DM_BUFIO_CACHE(c)	(dm_bufio_caches[dm_bufio_cache_index(c)])
->  #define DM_BUFIO_CACHE_NAME(c)	(dm_bufio_cache_names[dm_bufio_cache_index(c)])
->  
-> -#define dm_bufio_in_request()	(!!current->bio_list)
-> +#define dm_bufio_in_request()	(!!current->bio_lists)
->  
->  static void dm_bufio_lock(struct dm_bufio_client *c)
->  {
-> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> index 10e53cd..38790e3 100644
-> --- a/drivers/md/raid1.c
-> +++ b/drivers/md/raid1.c
-> @@ -876,8 +876,7 @@ static sector_t wait_barrier(struct r1conf *conf, struct bio *bio)
->  				    (!conf->barrier ||
->  				     ((conf->start_next_window <
->  				       conf->next_resync + RESYNC_SECTORS) &&
-> -				      current->bio_list &&
-> -				      !bio_list_empty(current->bio_list))),
-> +				      current_has_pending_bios())),
->  				    conf->resync_lock);
->  		conf->nr_waiting--;
->  	}
-> @@ -1014,7 +1013,7 @@ static void raid1_unplug(struct blk_plug_cb *cb, bool from_schedule)
->  	struct r1conf *conf = mddev->private;
->  	struct bio *bio;
->  
-> -	if (from_schedule || current->bio_list) {
-> +	if (from_schedule || current->bio_lists) {
->  		spin_lock_irq(&conf->device_lock);
->  		bio_list_merge(&conf->pending_bio_list, &plug->pending);
->  		conf->pending_count += plug->pending_cnt;
-> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-> index 245640b..13a5341 100644
-> --- a/drivers/md/raid10.c
-> +++ b/drivers/md/raid10.c
-> @@ -945,8 +945,7 @@ static void wait_barrier(struct r10conf *conf)
->  		wait_event_lock_irq(conf->wait_barrier,
->  				    !conf->barrier ||
->  				    (conf->nr_pending &&
-> -				     current->bio_list &&
-> -				     !bio_list_empty(current->bio_list)),
-> +				     current_has_pending_bios()),
->  				    conf->resync_lock);
->  		conf->nr_waiting--;
->  	}
-> @@ -1022,7 +1021,7 @@ static void raid10_unplug(struct blk_plug_cb *cb, bool from_schedule)
->  	struct r10conf *conf = mddev->private;
->  	struct bio *bio;
->  
-> -	if (from_schedule || current->bio_list) {
-> +	if (from_schedule || current->bio_lists) {
->  		spin_lock_irq(&conf->device_lock);
->  		bio_list_merge(&conf->pending_bio_list, &plug->pending);
->  		conf->pending_count += plug->pending_cnt;
-> diff --git a/include/linux/bio.h b/include/linux/bio.h
-> index b7e1a008..2f8a361 100644
-> --- a/include/linux/bio.h
-> +++ b/include/linux/bio.h
-> @@ -541,6 +541,24 @@ struct bio_list {
->  	struct bio *tail;
->  };
->  
-> +/* for generic_make_request() */
-> +struct recursion_to_iteration_bio_lists {
-> +	/* For stacking drivers submitting to their respective backend,
-> +	 * bios are added to the tail of .recursion, which is re-initialized
-> +	 * before each call to ->make_request_fn() and after that returns,
-> +	 * the whole .recursion queue is then merged back to the head of .queue.
-> +	 *
-> +	 * The recursion-to-iteration logic in generic_make_request() will
-> +	 * peel off of .queue.head, processing bios in deepest-level-first
-> +	 * "natural" order. */
-> +	struct bio_list recursion;
-> +
-> +	/* This keeps a list of to-be-processed bios.
-> +	 * The "remainder" part resulting from calling blk_queue_split()
-> +	 * will be pushed back to its head. */
-> +	struct bio_list queue;
-> +};
-> +
->  static inline int bio_list_empty(const struct bio_list *bl)
->  {
->  	return bl->head == NULL;
-> @@ -551,6 +569,13 @@ static inline void bio_list_init(struct bio_list *bl)
->  	bl->head = bl->tail = NULL;
->  }
->  
-> +static inline bool current_has_pending_bios(void)
-> +{
-> +	return current->bio_lists &&
-> +		(!bio_list_empty(&current->bio_lists->queue) ||
-> +		 !bio_list_empty(&current->bio_lists->recursion));
-> +}
-> +
->  #define BIO_EMPTY_LIST	{ NULL, NULL }
->  
->  #define bio_list_for_each(bio, bl) \
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 6e42ada..146eedc 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -128,7 +128,7 @@ struct sched_attr {
->  
->  struct futex_pi_state;
->  struct robust_list_head;
-> -struct bio_list;
-> +struct recursion_to_iteration_bio_lists;
->  struct fs_struct;
->  struct perf_event_context;
->  struct blk_plug;
-> @@ -1727,7 +1727,7 @@ struct task_struct {
->  	void *journal_info;
->  
->  /* stacked block device info */
-> -	struct bio_list *bio_list;
-> +	struct recursion_to_iteration_bio_lists *bio_lists;
->  
->  #ifdef CONFIG_BLOCK
->  /* stack plugging */
-> 
+2) why is multipage bvec introduced?
+
+Kent proposed the idea[1] first. 
+
+As system's RAM becomes much bigger than before, and 
+at the same time huge page, transparent huge page and
+memory compaction are widely used, it is a bit easy now
+to see physically contiguous pages from fs in I/O.
+On the other hand, from block layer's view, it isn't
+necessary to store intermediate pages into bvec, and
+it is enough to just store the physicallly contiguous
+'segment'.
+
+Also huge pages are being brought to filesystem[2], we
+can do IO a hugepage a time[3], requires that one bio can
+transfer at least one huge page one time. Turns out it isn't
+flexiable to change BIO_MAX_PAGES simply[3]. Multipage bvec
+can fit in this case very well.
+
+With multipage bvec:
+
+- bio size can be increased and it should improve some
+high-bandwidth IO case in theory[4].
+
+- Inside block layer, both bio splitting and sg map can
+become more efficient than before by just traversing the
+physically contiguous 'segment' instead of each page.
+
+- there is possibility in future to improve memory footprint
+of bvecs usage. 
+
+3) how is multipage bvec implemented in this patchset?
+
+The 1st 9 patches comment on some special cases. As we saw,
+most of cases are found as safe for multipage bvec,
+only fs/buffer, MD and btrfs need to deal with. Both fs/buffer
+and btrfs are dealt with in the following patches based on some
+new block APIs for multipage bvec. 
+
+Given a little more work is involved to cleanup MD, this patchset
+introduces QUEUE_FLAG_NO_MP for them, and this component can still
+see/use singlepage bvec. In the future, once the cleanup is done, the
+flag can be killed.
+
+The 2nd part(23 ~ 54) implements multipage bvec in block:
+
+- put all tricks into bvec/bio/rq iterators, and as far as
+drivers and fs use these standard iterators, they are happy
+with multipage bvec
+
+- bio_for_each_segment_all() changes
+this helper pass pointer of each bvec directly to user, and
+it has to be changed. Two new helpers(bio_for_each_segment_all_sp()
+and bio_for_each_segment_all_mp()) are introduced. 
+
+Also convert current bio_for_each_segment_all() into the
+above two.
+
+- bio_clone() changes
+At default bio_clone still clones one new bio in multipage bvec
+way. Also single page version of bio_clone() is introduced
+for some special cases, such as only single page bvec is used
+for the new cloned bio(bio bounce, ...)
+
+- btrfs cleanup
+just three patches for avoiding direct access to bvec table.
+
+These patches can be found in the following git tree:
+
+	https://github.com/ming1/linux/commits/mp-bvec-0.6-v4.10-rc
+
+Thanks Christoph for looking at the early version and providing
+very good suggestions, such as: introduce bio_init_with_vec_table(),
+remove another unnecessary helpers for cleanup and so on.
+
+TODO:
+	- cleanup direct access to bvec table for MD
+
+V1:
+	- against v4.10-rc1 and some cleanup in V0 are in -linus already
+	- handle queue_virt_boundary() in mp bvec change and make NVMe happy
+	- further BTRFS cleanup
+	- remove QUEUE_FLAG_SPLIT_MP
+	- rename for two new helpers of bio_for_each_segment_all()
+	- fix bounce convertion
+	- address comments in V0
+
+[1], http://marc.info/?l=linux-kernel&m=141680246629547&w=2
+[2], https://patchwork.kernel.org/patch/9451523/
+[3], http://marc.info/?t=147735447100001&r=1&w=2
+[4], http://marc.info/?l=linux-mm&m=147745525801433&w=2
+
+
+Ming Lei (54):
+  block: drbd: comment on direct access bvec table
+  block: loop: comment on direct access to bvec table
+  kernel/power/swap.c: comment on direct access to bvec table
+  mm: page_io.c: comment on direct access to bvec table
+  fs/buffer: comment on direct access to bvec table
+  f2fs: f2fs_read_end_io: comment on direct access to bvec table
+  bcache: comment on direct access to bvec table
+  block: comment on bio_alloc_pages()
+  block: comment on bio_iov_iter_get_pages()
+  block: introduce flag QUEUE_FLAG_NO_MP
+  md: set NO_MP for request queue of md
+  dm: limit the max bio size as BIO_MAX_PAGES * PAGE_SIZE
+  block: comments on bio_for_each_segment[_all]
+  block: introduce multipage/single page bvec helpers
+  block: implement sp version of bvec iterator helpers
+  block: introduce bio_for_each_segment_mp()
+  block: introduce bio_clone_sp()
+  bvec_iter: introduce BVEC_ITER_ALL_INIT
+  block: bounce: avoid direct access to bvec table
+  block: bounce: don't access bio->bi_io_vec in copy_to_high_bio_irq
+  block: introduce bio_can_convert_to_sp()
+  block: bounce: convert multipage bvecs into singlepage
+  bcache: handle bio_clone() & bvec updating for multipage bvecs
+  blk-merge: compute bio->bi_seg_front_size efficiently
+  block: blk-merge: try to make front segments in full size
+  block: blk-merge: remove unnecessary check
+  block: use bio_for_each_segment_mp() to compute segments count
+  block: use bio_for_each_segment_mp() to map sg
+  block: introduce bvec_for_each_sp_bvec()
+  block: bio: introduce single/multi page version of
+    bio_for_each_segment_all()
+  block: introduce bio_segments_all()
+  block: introduce bvec_get_last_sp()
+  block: deal with dirtying pages for multipage bvec
+  block: convert to singe/multi page version of
+    bio_for_each_segment_all()
+  bcache: convert to bio_for_each_segment_all_sp()
+  dm-crypt: don't clear bvec->bv_page in crypt_free_buffer_pages()
+  dm-crypt: convert to bio_for_each_segment_all_sp()
+  md/raid1.c: convert to bio_for_each_segment_all_sp()
+  fs/mpage: convert to bio_for_each_segment_all_sp()
+  fs/direct-io: convert to bio_for_each_segment_all_sp()
+  ext4: convert to bio_for_each_segment_all_sp()
+  xfs: convert to bio_for_each_segment_all_sp()
+  gfs2: convert to bio_for_each_segment_all_sp()
+  f2fs: convert to bio_for_each_segment_all_sp()
+  exofs: convert to bio_for_each_segment_all_sp()
+  fs: crypto: convert to bio_for_each_segment_all_sp()
+  fs/btrfs: convert to bio_for_each_segment_all_sp()
+  fs/block_dev.c: convert to bio_for_each_segment_all_sp()
+  fs/iomap.c: convert to bio_for_each_segment_all_sp()
+  fs/buffer.c: use bvec iterator to truncate the bio
+  btrfs: avoid access to .bi_vcnt directly
+  btrfs: use bvec_get_last_sp to get the last singlepage bvec
+  btrfs: comment on direct access bvec table
+  block: enable multipage bvecs
+
+ block/bio.c                      | 110 +++++++++++++++----
+ block/blk-merge.c                | 227 +++++++++++++++++++++++++++++++--------
+ block/blk-zoned.c                |   5 +-
+ block/bounce.c                   |  75 +++++++++----
+ drivers/block/drbd/drbd_bitmap.c |   1 +
+ drivers/block/loop.c             |   5 +
+ drivers/md/bcache/btree.c        |   4 +-
+ drivers/md/bcache/debug.c        |  30 +++++-
+ drivers/md/bcache/super.c        |   6 ++
+ drivers/md/bcache/util.c         |   7 ++
+ drivers/md/dm-crypt.c            |   4 +-
+ drivers/md/dm.c                  |  11 +-
+ drivers/md/md.c                  |  12 +++
+ drivers/md/raid1.c               |   3 +-
+ fs/block_dev.c                   |   6 +-
+ fs/btrfs/check-integrity.c       |  12 ++-
+ fs/btrfs/compression.c           |  12 ++-
+ fs/btrfs/disk-io.c               |   3 +-
+ fs/btrfs/extent_io.c             |  26 +++--
+ fs/btrfs/extent_io.h             |   1 +
+ fs/btrfs/file-item.c             |   6 +-
+ fs/btrfs/inode.c                 |  34 ++++--
+ fs/btrfs/raid56.c                |   6 +-
+ fs/buffer.c                      |  24 +++--
+ fs/crypto/crypto.c               |   3 +-
+ fs/direct-io.c                   |   4 +-
+ fs/exofs/ore.c                   |   3 +-
+ fs/exofs/ore_raid.c              |   3 +-
+ fs/ext4/page-io.c                |   3 +-
+ fs/ext4/readpage.c               |   3 +-
+ fs/f2fs/data.c                   |  13 ++-
+ fs/gfs2/lops.c                   |   3 +-
+ fs/gfs2/meta_io.c                |   3 +-
+ fs/iomap.c                       |   3 +-
+ fs/mpage.c                       |   3 +-
+ fs/xfs/xfs_aops.c                |   3 +-
+ include/linux/bio.h              | 164 ++++++++++++++++++++++++++--
+ include/linux/blk_types.h        |   6 ++
+ include/linux/blkdev.h           |   2 +
+ include/linux/bvec.h             | 138 ++++++++++++++++++++++--
+ kernel/power/swap.c              |   2 +
+ mm/page_io.c                     |   2 +
+ 42 files changed, 829 insertions(+), 162 deletions(-)
+
+-- 
+2.7.4
+
+--
+To unsubscribe, send a message with 'unsubscribe linux-mm' in
+the body to majordomo@kvack.org.  For more info on Linux MM,
+see: http://www.linux-mm.org/ .
+Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
