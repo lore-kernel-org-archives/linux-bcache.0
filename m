@@ -1,75 +1,113 @@
-From: =?UTF-8?Q?Jure_Erzno=C5=BEnik?= <jure.erznoznik@gmail.com>
-Subject: Re: Cache everything
-Date: Sat, 31 Dec 2016 06:20:10 +0100
-Message-ID: <CAJ=9zieBA5pKkjaPwibwWjx+3keTbFOqymbdPxRy7b4=K1-x_A@mail.gmail.com>
-References: <CAJ=9zif=Lxgcgv0EW8O7hfKDHn5g8acXKnbvygda6LjarL65Xg@mail.gmail.com>
- <586621AB.7040208@megasoft.be>
+From: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH v1 23/54] bcache: handle bio_clone() & bvec updating for
+ multipage bvecs
+Date: Sat, 31 Dec 2016 18:29:32 +0800
+Message-ID: <CACVXFVNdJjo18PzdkacA_rpBpDydcemOh9ui2NfzZ2Qd22BX_A@mail.gmail.com>
+References: <1482854250-13481-1-git-send-email-tom.leiming@gmail.com>
+ <1482854250-13481-24-git-send-email-tom.leiming@gmail.com> <4d015585-c830-17ff-de4a-60f2d5f06a0d@coly.li>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-yw0-f195.google.com ([209.85.161.195]:33973 "EHLO
-        mail-yw0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750703AbcLaFUL (ORCPT
+Received: from mail-lf0-f65.google.com ([209.85.215.65]:36601 "EHLO
+        mail-lf0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751264AbcLaK3f (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 31 Dec 2016 00:20:11 -0500
-Received: by mail-yw0-f195.google.com with SMTP id a10so30967098ywa.1
-        for <linux-bcache@vger.kernel.org>; Fri, 30 Dec 2016 21:20:10 -0800 (PST)
-In-Reply-To: <586621AB.7040208@megasoft.be>
+        Sat, 31 Dec 2016 05:29:35 -0500
+In-Reply-To: <4d015585-c830-17ff-de4a-60f2d5f06a0d@coly.li>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Killian De Volder <killian.de.volder@megasoft.be>
-Cc: linux-bcache@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: Jens Axboe <axboe@fb.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Mike Christie <mchristi@redhat.com>, Guoqing Jiang <gqjiang@suse.com>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>, "open list:SOFTWARE RAID (Multiple Disks) SUPPORT" <linux-raid@vger.kernel.org>
 
-This seems to have fixed that, thanks. I keep forgetting there's two
-places I have to check for configuration.
+Hi Coly,
 
-LP,
-Jure
+On Fri, Dec 30, 2016 at 7:01 PM, Coly Li <i@coly.li> wrote:
+> On 2016/12/27 =E4=B8=8B=E5=8D=8811:56, Ming Lei wrote:
+>> The incoming bio may be too big to be cloned into
+>> one singlepage bvecs bio, so split the bio and
+>> check the splitted bio one by one.
+>>
+>> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+>> ---
+>>  drivers/md/bcache/debug.c | 24 ++++++++++++++++++++++--
+>>  1 file changed, 22 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
+>> index 48d03e8b3385..18b2d2d138e3 100644
+>> --- a/drivers/md/bcache/debug.c
+>> +++ b/drivers/md/bcache/debug.c
+>> @@ -103,7 +103,7 @@ void bch_btree_verify(struct btree *b)
+>>       up(&b->io_mutex);
+>>  }
+>>
+>> -void bch_data_verify(struct cached_dev *dc, struct bio *bio)
+>> +static void __bch_data_verify(struct cached_dev *dc, struct bio *bio)
+>>  {
+>>       char name[BDEVNAME_SIZE];
+>>       struct bio *check;
+>> @@ -116,7 +116,7 @@ void bch_data_verify(struct cached_dev *dc, struct b=
+io *bio)
+>>        * in the new cloned bio because each single page need
+>>        * to assign to each bvec of the new bio.
+>>        */
+>> -     check =3D bio_clone(bio, GFP_NOIO);
+>> +     check =3D bio_clone_sp(bio, GFP_NOIO);
+>>       if (!check)
+>>               return;
+>>       check->bi_opf =3D REQ_OP_READ;
+>> @@ -151,6 +151,26 @@ void bch_data_verify(struct cached_dev *dc, struct =
+bio *bio)
+>>       bio_put(check);
+>>  }
+>>
+>> +void bch_data_verify(struct cached_dev *dc, struct bio *bio)
+>> +{
+>> +     struct request_queue *q =3D bdev_get_queue(bio->bi_bdev);
+>> +     struct bio *clone =3D bio_clone_fast(bio, GFP_NOIO, q->bio_split);
+>> +     unsigned sectors;
+>> +
+>> +     while (!bio_can_convert_to_sp(clone, &sectors)) {
+>> +             struct bio *split =3D bio_split(clone, sectors,
+>> +                                           GFP_NOIO, q->bio_split);
+>> +
+>> +             __bch_data_verify(dc, split);
+>> +             bio_put(split);
+>> +     }
+>> +
+>> +     if (bio_sectors(clone))
+>> +             __bch_data_verify(dc, clone);
+>> +
+>> +     bio_put(clone);
+>> +}
+>> +
+>
+> Hi Lei,
+>
+> The above patch is good IMHO. Just wondering why not use the classical
+> style ? something like,
 
-On Fri, Dec 30, 2016 at 9:58 AM, Killian De Volder
-<killian.de.volder@megasoft.be> wrote:
-> Also check  congested_write_threshold_us, if the SSD is "congested" it by=
-passes it to speedup writes.
->
-> Killian De Volder
+I don't know there is the classical style, :-)
+
 >
 >
-> On 30-12-16 09:38, Jure Erzno=C5=BEnik wrote:
->> I have a large array sitting in my server containing a bit of data
->> that is used ofter and a lot of data that is used rarely.
->> My goal is to make the platters spin up as rarely as possible while
->> bcache handles most of the requests to the array.
->>
->> I have set the disks spin-down time to 15 minutes so that during
->> high-activity periods they don't cycle power states too much.
->>
->> I have set bcache parameters such:
->> cache_mode - writeback
->> readahead - 0
->> sequential_cutoff - 0
->> writeback_delay - 3600 (one hour)
->> writeback_percent - 40 (won't go higher)
->>
->> I was hoping that this would make bcache cache everything leaving the
->> array practically untouched for an hour. However, stats_hour/bypassed
->> still shows megabytes of bypassed data and a cache_hit ratio of ~50%
->> even when I'm working ONLY with the frequently accessed data portion
->> (some 20% of total cache capacity). Also tiny writes are being made to
->> the array despite writeback_delay not expiring.
->>
->> What other parameter am I forgetting to achieve what I want?
->>
->> Thanks,
->> Jure
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" =
-in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" i=
-n
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> do {
+>         if (!bio_can_convert_to_sp(clone, &sectors))
+>                 split =3D bio_split(clone, sectors,
+>                                   GFP_NOIO, q->bio_split);
+>         else
+>                 split =3D clone;
+>
+>         __bch_data_verity(gc, split);
+>         bio_put(split);
+> } while (split !=3D clone);
+>
+>
+> I guess maybe the above style generates less binary code.
+
+Maybe, will take this style in V2.
+
+Thanks for the review!
+
+--=20
+Ming Lei
