@@ -1,113 +1,108 @@
-From: Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH v1 23/54] bcache: handle bio_clone() & bvec updating for
- multipage bvecs
-Date: Sat, 31 Dec 2016 18:29:32 +0800
-Message-ID: <CACVXFVNdJjo18PzdkacA_rpBpDydcemOh9ui2NfzZ2Qd22BX_A@mail.gmail.com>
-References: <1482854250-13481-1-git-send-email-tom.leiming@gmail.com>
- <1482854250-13481-24-git-send-email-tom.leiming@gmail.com> <4d015585-c830-17ff-de4a-60f2d5f06a0d@coly.li>
+From: Jack Wang <jack.wang.usish@gmail.com>
+Subject: Re: [dm-devel] [PATCH v2 1/1] block: fix blk_queue_split() resource exhaustion
+Date: Mon, 2 Jan 2017 15:33:02 +0100
+Message-ID: <CA+res+SjL6FrYWMroB-xjBO5gyz9pca6FQCy-arr7+4RQHeJGw@mail.gmail.com>
+References: <1467990243-3531-1-git-send-email-lars.ellenberg@linbit.com>
+ <1467990243-3531-2-git-send-email-lars.ellenberg@linbit.com>
+ <20160711141042.GY13335@soda.linbit> <76d9bf14-d848-4405-8358-3771c0a93d39@profitbricks.com>
+ <20161223114553.GP4138@soda.linbit>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-lf0-f65.google.com ([209.85.215.65]:36601 "EHLO
-        mail-lf0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751264AbcLaK3f (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 31 Dec 2016 05:29:35 -0500
-In-Reply-To: <4d015585-c830-17ff-de4a-60f2d5f06a0d@coly.li>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: multipart/mixed; boundary=94eb2c08da88da64b605451d6d02
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20161223114553.GP4138@soda.linbit>
+Sender: linux-block-owner@vger.kernel.org
+To: Lars Ellenberg <lars.ellenberg@linbit.com>
+Cc: Michael Wang <yun.wang@profitbricks.com>, Jens Axboe <axboe@kernel.dk>, linux-block@vger.kernel.org, "Martin K. Petersen" <martin.petersen@oracle.com>, Mike Snitzer <snitzer@redhat.com>, Peter Zijlstra <peterz@infradead.org>, Jiri Kosina <jkosina@suse.cz>, Ming Lei <ming.lei@canonical.com>, "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>, NeilBrown <neilb@suse.com>, linux-kernel@vger.kernel.org, linux-raid <linux-raid@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, Zheng Liu <gnehzuil.liu@gmail.com>, Kent Overstreet <kent.overstreet@gmail.com>, Keith Busch <keith.busch@intel.com>, device-mapper development <dm-devel@redhat.com>, Shaohua Li <shli@kernel.org>, Ingo Molnar <mingo@redhat.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <i@coly.li>
-Cc: Jens Axboe <axboe@fb.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-block <linux-block@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>, Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Mike Christie <mchristi@redhat.com>, Guoqing Jiang <gqjiang@suse.com>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>, "open list:SOFTWARE RAID (Multiple Disks) SUPPORT" <linux-raid@vger.kernel.org>
 
-Hi Coly,
+--94eb2c08da88da64b605451d6d02
+Content-Type: text/plain; charset=UTF-8
 
-On Fri, Dec 30, 2016 at 7:01 PM, Coly Li <i@coly.li> wrote:
-> On 2016/12/27 =E4=B8=8B=E5=8D=8811:56, Ming Lei wrote:
->> The incoming bio may be too big to be cloned into
->> one singlepage bvecs bio, so split the bio and
->> check the splitted bio one by one.
+2016-12-23 12:45 GMT+01:00 Lars Ellenberg <lars.ellenberg@linbit.com>:
+> On Fri, Dec 23, 2016 at 09:49:53AM +0100, Michael Wang wrote:
+>> Dear Maintainers
 >>
->> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->> ---
->>  drivers/md/bcache/debug.c | 24 ++++++++++++++++++++++--
->>  1 file changed, 22 insertions(+), 2 deletions(-)
+>> I'd like to ask for the status of this patch since we hit the
+>> issue too during our testing on md raid1.
 >>
->> diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
->> index 48d03e8b3385..18b2d2d138e3 100644
->> --- a/drivers/md/bcache/debug.c
->> +++ b/drivers/md/bcache/debug.c
->> @@ -103,7 +103,7 @@ void bch_btree_verify(struct btree *b)
->>       up(&b->io_mutex);
->>  }
+>> Split remainder bio_A was queued ahead, following by bio_B for
+>> lower device, at this moment raid start freezing, the loop take
+>> out bio_A firstly and deliver it, which will hung since raid is
+>> freezing, while the freezing never end since it waiting for
+>> bio_B to finish, and bio_B is still on the queue, waiting for
+>> bio_A to finish...
 >>
->> -void bch_data_verify(struct cached_dev *dc, struct bio *bio)
->> +static void __bch_data_verify(struct cached_dev *dc, struct bio *bio)
->>  {
->>       char name[BDEVNAME_SIZE];
->>       struct bio *check;
->> @@ -116,7 +116,7 @@ void bch_data_verify(struct cached_dev *dc, struct b=
-io *bio)
->>        * in the new cloned bio because each single page need
->>        * to assign to each bvec of the new bio.
->>        */
->> -     check =3D bio_clone(bio, GFP_NOIO);
->> +     check =3D bio_clone_sp(bio, GFP_NOIO);
->>       if (!check)
->>               return;
->>       check->bi_opf =3D REQ_OP_READ;
->> @@ -151,6 +151,26 @@ void bch_data_verify(struct cached_dev *dc, struct =
-bio *bio)
->>       bio_put(check);
->>  }
->>
->> +void bch_data_verify(struct cached_dev *dc, struct bio *bio)
->> +{
->> +     struct request_queue *q =3D bdev_get_queue(bio->bi_bdev);
->> +     struct bio *clone =3D bio_clone_fast(bio, GFP_NOIO, q->bio_split);
->> +     unsigned sectors;
->> +
->> +     while (!bio_can_convert_to_sp(clone, &sectors)) {
->> +             struct bio *split =3D bio_split(clone, sectors,
->> +                                           GFP_NOIO, q->bio_split);
->> +
->> +             __bch_data_verify(dc, split);
->> +             bio_put(split);
->> +     }
->> +
->> +     if (bio_sectors(clone))
->> +             __bch_data_verify(dc, clone);
->> +
->> +     bio_put(clone);
->> +}
->> +
+>> We're looking for a good solution and we found this patch
+>> already progressed a lot, but we can't find it on linux-next,
+>> so we'd like to ask are we still planning to have this fix
+>> in upstream?
 >
-> Hi Lei,
+> I don't see why not, I'd even like to have it in older kernels,
+> but did not have the time and energy to push it.
 >
-> The above patch is good IMHO. Just wondering why not use the classical
-> style ? something like,
+> Thanks for the bump.
+>
+>         Lars
+>
+Hi folks,
 
-I don't know there is the classical style, :-)
+As Michael mentioned, we hit a bug this patch is trying to fix.
+Neil suggested another way to fix it.  I attached below.
+I personal prefer Neil's version as it's less code change, and straight forward.
 
->
->
-> do {
->         if (!bio_can_convert_to_sp(clone, &sectors))
->                 split =3D bio_split(clone, sectors,
->                                   GFP_NOIO, q->bio_split);
->         else
->                 split =3D clone;
->
->         __bch_data_verity(gc, split);
->         bio_put(split);
-> } while (split !=3D clone);
->
->
-> I guess maybe the above style generates less binary code.
+Could you share your comments, we can get one fix into mainline.
 
-Maybe, will take this style in V2.
+Thanks,
+Jinpu
 
-Thanks for the review!
+--94eb2c08da88da64b605451d6d02
+Content-Type: text/x-patch; charset=US-ASCII;
+	name="0001-block-fix-deadlock-between-freeze_array-and-wait_bar.patch"
+Content-Disposition: attachment;
+	filename="0001-block-fix-deadlock-between-freeze_array-and-wait_bar.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ixg6glqx0
 
---=20
-Ming Lei
+RnJvbSA2OWE0ODI5YTU1NTAzZTQ5NmNlOWM3MzBkMmM4ZTNkZDhhMDg4NzRhIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBOZWlsQnJvd24gPG5laWxiQHN1c2UuY29tPgpEYXRlOiBXZWQs
+IDE0IERlYyAyMDE2IDE2OjU1OjUyICswMTAwClN1YmplY3Q6IFtQQVRDSF0gYmxvY2s6IGZpeCBk
+ZWFkbG9jayBiZXR3ZWVuIGZyZWV6ZV9hcnJheSgpIGFuZCB3YWl0X2JhcnJpZXIoKQoKV2hlbiB3
+ZSBjYWxsIHdhaXRfYmFycmllciwgd2UgbWlnaHQgaGF2ZSBzb21lIGJpb3Mgd2FpdGluZwppbiBj
+dXJyZW50LT5iaW9fbGlzdCwgd2hpY2ggcHJldmVudHMgdGhlIGFycmF5X2ZyZWV6ZSBjYWxsIHRv
+CmNvbXBsZXRlLiBUaG9zZSBjYW4gb25seSBiZSBpbnRlcm5hbCBSRUFEcywgd2hpY2ggaGF2ZSBh
+bHJlYWR5CnBhc3NlZCB0aGUgd2FpdF9iYXJyaWVyIGNhbGwgKHRodXMgaW5jcmVtZW50aW5nIG5y
+X3BlbmRpbmcpLCBidXQKc3RpbGwgd2VyZSBub3Qgc3VibWl0dGVkIHRvIHRoZSBsb3dlciBsZXZl
+bCwgZHVlIHRvIGdlbmVyaWNfbWFrZV9yZXF1ZXN0CmxvZ2ljIHRvIGF2b2lkIHJlY3Vyc2l2ZSBj
+YWxscy4gSW4gc3VjaCBjYXNlLCB3ZSBoYXZlIGEgZGVhZGxvY2s6Ci0gYXJyYXlfZnJvemVuIGlz
+IGFscmVhZHkgc2V0IHRvIDEsIHNvIHdhaXRfYmFycmllciB1bmNvbmRpdGlvbmFsbHkgd2FpdHMs
+IHNvCi0gaW50ZXJuYWwgUkVBRCBiaW9zIHdpbGwgbm90IGJlIHN1Ym1pdHRlZCwgdGh1cyBmcmVl
+emVfYXJyYXkgd2lsbApuZXZlciBjb21wbGV0ZXMuCgpUbyBmaXggdGhpcywgbW9kaWZ5IGdlbmVy
+aWNfbWFrZV9yZXF1ZXN0IHRvIGFsd2F5cyBzb3J0IGJpb19saXN0X29uX3N0YWNrCmZpcnN0IHdp
+dGggbG93ZXN0IGxldmVsLCB0aGVuIGhpZ2hlciwgdW50aWwgc2FtZSBsZXZlbC4KClNlbnQgdG8g
+bGludXgtcmFpZCBtYWlsIGxpc3Q6Cmh0dHBzOi8vbWFyYy5pbmZvLz9sPWxpbnV4LXJhaWQmbT0x
+NDgyMzI0NTMxMDc2ODUmdz0yCgpTdWdnZXN0ZWQtYnk6IE5laWxCcm93biA8bmVpbGJAc3VzZS5j
+b20+ClNpZ25lZC1vZmYtYnk6IEphY2sgV2FuZyA8amlucHUud2FuZ0Bwcm9maXRicmlja3MuY29t
+PgotLS0KIGJsb2NrL2Jsay1jb3JlLmMgfCAyMCArKysrKysrKysrKysrKysrKysrKwogMSBmaWxl
+IGNoYW5nZWQsIDIwIGluc2VydGlvbnMoKykKCmRpZmYgLS1naXQgYS9ibG9jay9ibGstY29yZS5j
+IGIvYmxvY2svYmxrLWNvcmUuYwppbmRleCA5ZTNhYzU2Li40N2VmMzczIDEwMDY0NAotLS0gYS9i
+bG9jay9ibGstY29yZS5jCisrKyBiL2Jsb2NrL2Jsay1jb3JlLmMKQEAgLTIxMzgsMTAgKzIxMzgs
+MzAgQEAgYmxrX3FjX3QgZ2VuZXJpY19tYWtlX3JlcXVlc3Qoc3RydWN0IGJpbyAqYmlvKQogCQlz
+dHJ1Y3QgcmVxdWVzdF9xdWV1ZSAqcSA9IGJkZXZfZ2V0X3F1ZXVlKGJpby0+YmlfYmRldik7CiAK
+IAkJaWYgKGxpa2VseShibGtfcXVldWVfZW50ZXIocSwgX19HRlBfRElSRUNUX1JFQ0xBSU0pID09
+IDApKSB7CisJCQlzdHJ1Y3QgYmlvX2xpc3QgbG93ZXIsIHNhbWUsIGhvbGQ7CisKKwkJCS8qIENy
+ZWF0ZSBhIGZyZXNoIGJpb19saXN0IGZvciBhbGwgc3Vib3JkaW5hdGUgcmVxdWVzdHMgKi8KKwkJ
+CWJpb19saXN0X2luaXQoJmhvbGQpOworCQkJYmlvX2xpc3RfbWVyZ2UoJmhvbGQsICZiaW9fbGlz
+dF9vbl9zdGFjayk7CisJCQliaW9fbGlzdF9pbml0KCZiaW9fbGlzdF9vbl9zdGFjayk7CiAKIAkJ
+CXJldCA9IHEtPm1ha2VfcmVxdWVzdF9mbihxLCBiaW8pOwogCiAJCQlibGtfcXVldWVfZXhpdChx
+KTsKKwkJCS8qIHNvcnQgbmV3IGJpb3MgaW50byB0aG9zZSBmb3IgYSBsb3dlciBsZXZlbAorCQkJ
+ICogYW5kIHRob3NlIGZvciB0aGUgc2FtZSBsZXZlbAorCQkJICovCisJCQliaW9fbGlzdF9pbml0
+KCZsb3dlcik7CisJCQliaW9fbGlzdF9pbml0KCZzYW1lKTsKKwkJCXdoaWxlICgoYmlvID0gYmlv
+X2xpc3RfcG9wKCZiaW9fbGlzdF9vbl9zdGFjaykpICE9IE5VTEwpCisJCQkJaWYgKHEgPT0gYmRl
+dl9nZXRfcXVldWUoYmlvLT5iaV9iZGV2KSkKKwkJCQkJYmlvX2xpc3RfYWRkKCZzYW1lLCBiaW8p
+OworCQkJCWVsc2UKKwkJCQkJYmlvX2xpc3RfYWRkKCZsb3dlciwgYmlvKTsKKwkJCS8qIG5vdyBh
+c3NlbWJsZSBzbyB3ZSBoYW5kbGUgdGhlIGxvd2VzdCBsZXZlbCBmaXJzdCAqLworCQkJYmlvX2xp
+c3RfbWVyZ2UoJmJpb19saXN0X29uX3N0YWNrLCAmbG93ZXIpOworCQkJYmlvX2xpc3RfbWVyZ2Uo
+JmJpb19saXN0X29uX3N0YWNrLCAmc2FtZSk7CisJCQliaW9fbGlzdF9tZXJnZSgmYmlvX2xpc3Rf
+b25fc3RhY2ssICZob2xkKTsKIAogCQkJYmlvID0gYmlvX2xpc3RfcG9wKGN1cnJlbnQtPmJpb19s
+aXN0KTsKIAkJfSBlbHNlIHsKLS0gCjIuNy40Cgo=
+--94eb2c08da88da64b605451d6d02--
