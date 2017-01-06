@@ -1,74 +1,70 @@
-From: Mike Snitzer <snitzer@redhat.com>
-Subject: Re: dm-crypt: fix lost ioprio when queuing crypto bios
- from task with ioprio
-Date: Thu, 5 Jan 2017 11:55:19 -0500
-Message-ID: <20170105165518.GA7376@redhat.com>
-References: <alpine.LRH.2.11.1612141049250.13402@mail.ewheeler.net>
-	<alpine.LRH.2.11.1612161414280.9898@mail.ewheeler.net>
-	<20161217155800.GA6580@redhat.com>
-	<alpine.LRH.2.11.1612291856160.20227@mail.ewheeler.net>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: [PATCH] mm: introduce kv[mz]alloc helpers
+Date: Fri, 6 Jan 2017 05:54:23 -0900
+Message-ID: <20170106145423.vat6pdamcdvxuxx4@moria.home.lan>
+References: <20170102133700.1734-1-mhocko@kernel.org>
+ <20170104142022.GL25453@dhcp22.suse.cz>
+ <05308767-7f1b-6c4d-12d7-3dfcb94376c5@I-love.SAKURA.ne.jp>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <dm-devel-bounces@redhat.com>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <owner-linux-mm@kvack.org>
 Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1612291856160.20227@mail.ewheeler.net>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/dm-devel>
-List-Post: <mailto:dm-devel@redhat.com>
-List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=subscribe>
-Sender: dm-devel-bounces@redhat.com
-Errors-To: dm-devel-bounces@redhat.com
-To: Eric Wheeler <dm-devel@lists.ewheeler.net>
-Cc: Jens Axboe <axboe@kernel.dk>, dm-devel@redhat.com, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>, Alasdair Kergon <agk@redhat.com>, Shaohua Li <shli@kernel.org>, kent.overstreet@gmail.com, Vivek Goyal <vgoyal@redhat.com>
+In-Reply-To: <05308767-7f1b-6c4d-12d7-3dfcb94376c5@I-love.SAKURA.ne.jp>
+Sender: owner-linux-mm@kvack.org
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Michal Hocko <mhocko@kernel.org>, Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, Dec 29 2016 at 11:08pm -0500,
-Eric Wheeler <dm-devel@lists.ewheeler.net> wrote:
-
-> On Sat, 17 Dec 2016, Mike Snitzer wrote:
-> > On Fri, Dec 16 2016 at  5:29pm -0500,
-> > Eric Wheeler <dm-devel@lists.ewheeler.net> wrote:
-> > > On Wed, 14 Dec 2016, Eric Wheeler wrote:
-> > > > Since dm-crypt queues writes (and sometimes reads) to a different kernel
-> > > > thread (workqueue), the bios will dispatch from tasks with different
-> > > > io_context->ioprio settings than the submitting task, thus giving
-> > > > incorrect ioprio hints to the io scheduler.
-> > > 
-> > > The motivation of this patch is for ioprio-driven writebackup/bypass 
-> > > hinting inside bcache when bcache is under dm-crypt which Jens is picking 
-> > > up for 4.10:
-> > >   https://lkml.org/lkml/2016/12/6/607
+On Thu, Jan 05, 2017 at 07:40:10PM +0900, Tetsuo Handa wrote:
+> On 2017/01/04 23:20, Michal Hocko wrote:
+> > OK, so I've checked the open coded implementations and converted most of
+> > them. There are few which are either confused and need some special
+> > handling or need double checking.
 > > 
-> > I now see your commits:
-> > b71de4659fba4e42c7 bcache: introduce per-process ioprio-based bypass/writeback hints
-> > 82e7192711c3855038 bcache: documentation for ioprio cache hinting
-> > 
-> > You'd think this is the type of thing that you'd have proposed to a
-> > wider audience.  
+> > diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+> > index cf2cbc211d83..9dc0f0ff0321 100644
+> > --- a/drivers/md/bcache/util.h
+> > +++ b/drivers/md/bcache/util.h
+> > @@ -44,10 +44,7 @@ struct closure;
+> >  	(heap)->size = (_size);						\
+> >  	_bytes = (heap)->size * sizeof(*(heap)->data);			\
+> >  	(heap)->data = NULL;						\
+> > -	if (_bytes < KMALLOC_MAX_SIZE)					\
+> > -		(heap)->data = kmalloc(_bytes, (gfp));			\
+> > -	if ((!(heap)->data) && ((gfp) & GFP_KERNEL))			\
+> > -		(heap)->data = vmalloc(_bytes);				\
+> > +	(heap)->data = kvmalloc(_bytes, (gfp) & GFP_KERNEL);		\
+> >  	(heap)->data;							\
+> >  })
+> >  
+> > @@ -138,10 +135,7 @@ do {									\
+> >  	(fifo)->front = (fifo)->back = 0;				\
+> >  	(fifo)->data = NULL;						\
+> >  									\
+> > -	if (_bytes < KMALLOC_MAX_SIZE)					\
+> > -		(fifo)->data = kmalloc(_bytes, (gfp));			\
+> > -	if ((!(fifo)->data) && ((gfp) & GFP_KERNEL))			\
+> > -		(fifo)->data = vmalloc(_bytes);				\
+> > +	(fifo)->data = kvmalloc(_bytes, (gfp) & GFP_KERNEL);		\
+> >  	(fifo)->data;							\
+> >  })
 > 
-> ( Its not really relevant to this bugfix, but please see this thread since 
->   you were curious about a wider audience discussion: 
->   https://www.redhat.com/archives/dm-devel/2016-July/msg00556.html )
+> These macros are doing strange checks.
+> ((gfp) & GFP_KERNEL) means any bit in GFP_KERNEL is set.
+> ((gfp) & GFP_KERNEL) == GFP_KERNEL might make sense. Actually,
+> all callers seems to be passing GFP_KERNEL to these macros.
 > 
-> The note above in the previous email was intended to explain how we 
-> discovered the dm-crypt problem, purely as an example use case.  The 
-> stable commit note discusses the real issue: lost elevator hints.
+> Kent, how do you want to correct this? You want to apply
+> a patch that removes gfp argument before applying this patch?
+> Or, you want Michal to directly overwrite by this patch?
 > 
-> This commit fixes elevator ioprio hints passing through dm-crypt and is 
-> not intended to address dm-cache, nor enable a bcache feature.
-> 
-> All impementations using ioprio hints beneath dm-crypt would 
-> benefit---most importantly, _CFQ_ !
->   
-> As it is, all ioprio hints passing through dm-crypt are lost to the 
-> elevator; the elevator looses those useful bits because of queuing to 
-> another thread for crypto operations.
+> Michal, "(fifo)->data = NULL;" line will become redundant
+> and "(gfp) & GFP_KERNEL" will become "GFP_KERNEL".
 
-How did you test the change?
+Please just go ahead and replace all that crap with a single call to kvmalloc().
 
-Or put differently: what is the easiest test to run against a dm-crypt
-device to verify that ioprio is being passed through?
+--
+To unsubscribe, send a message with 'unsubscribe linux-mm' in
+the body to majordomo@kvack.org.  For more info on Linux MM,
+see: http://www.linux-mm.org/ .
+Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
