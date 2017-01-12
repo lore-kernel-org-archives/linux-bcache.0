@@ -1,253 +1,109 @@
-From: Jan Wiele <jan@wiele.org>
-Subject: Hang in bcache/qemu
-Date: Wed, 11 Jan 2017 18:34:17 +0100
-Message-ID: <2059985.veGUll5WnS@j-t460p>
+From: Marcin <marcin@mejor.pl>
+Subject: [branch:bcachefs-testing]  BUG: unable to handle kernel paging
+ request at ffffc90006c53000
+Date: Thu, 12 Jan 2017 21:08:36 +0100
+Message-ID: <3051ee002436f948e1cf43b26c4cf1e5@mejor.pl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=US-ASCII;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from fabrik17.de ([78.47.224.236]:55861 "EHLO mail.fabrik17.de"
+Received: from jowisz.mejor.pl ([81.4.120.72]:57092 "EHLO jowisz.mejor.pl"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1030963AbdAKRjq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 11 Jan 2017 12:39:46 -0500
-Received: from j-t460p.localnet (unknown [134.147.202.177])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by mail.fabrik17.de (Postfix) with ESMTPSA id 60E6761AAF
-        for <linux-bcache@vger.kernel.org>; Wed, 11 Jan 2017 18:34:07 +0100 (CET)
+        id S1750896AbdALUIx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 12 Jan 2017 15:08:53 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
 Hi,
-I'm experiencing a possible bcache-hang in my setup. 
+all the best in 2017!
 
-Mainboard: Asrock Rack EP2C602
-CPU: 2x Intel Xeon E5-2670
-Linux: 4.8.13-1-ARCH
-Cache-device: Partition on Samsung SSD 850 EVO 500GB
-Backing-device: 500GB Western Digital Black
+I've got reproducible bug testing bcachefs:
+
+[ 9807.622253] BUG: unable to handle kernel paging request at 
+ffffc90006c53000
+[ 9807.622310] IP: [<ffffffff812bf074>] lz4_compress+0x4e4/0x830
+[ 9807.622345] PGD 9c82e067 PUD 9c82f067 PMD 2d4f6067 PTE 0
+[ 9807.622383] Oops: 0002 [#1] SMP
+[ 9807.622408] Modules linked in: cpufreq_ondemand msr af_packet bridge 
+stp llc fuse xfs coretemp hwmon kvm_intel r8188eu(C) kvm hpsa irqbypass 
+snd_pcsp cfg8
+0211 i2c_i801 snd_pcm i2c_smbus sky2 i2c_core scsi_transport_sas 
+snd_timer snd rfkill soundcore button pcrypt nf_nat_ftp nf_conntrack_ftp 
+nf_nat nf_conntrack
+  ipv6 acpi_cpufreq processor raid1 md_mod pata_jmicron ehci_pci ehci_hcd 
+dm_mod
+[ 9807.622648] CPU: 1 PID: 6560 Comm: rsync Tainted: G         C      
+4.8.0+ #2
+[ 9807.622680] Hardware name: Gigabyte Technology Co., Ltd. 
+965P-DS3/965P-DS3, BIOS F14 06/25/2009
+[ 9807.622727] task: ffff880069d63600 task.stack: ffff880069d68000
+[ 9807.622756] RIP: 0010:[<ffffffff812bf074>]  [<ffffffff812bf074>] 
+lz4_compress+0x4e4/0x830
+[ 9807.622806] RSP: 0018:ffff880069d6b8a0  EFLAGS: 00010296
+[ 9807.622833] RAX: ffffc90006c63ef9 RBX: ffffc90006c54000 RCX: 
+ffffc90006c53001
+[ 9807.622864] RDX: ffffc90006c63ecc RSI: ffffc90006c63f00 RDI: 
+ffffc90006c52ffa
+[ 9807.622894] RBP: ffff880069d6b8f8 R08: ffffc90006c63ff3 R09: 
+ffffc90006c43000
+[ 9807.622924] R10: ffffc90006c53000 R11: 0000000000000000 R12: 
+ffffc90006c63ff4
+[ 9807.622955] R13: ffff880031220000 R14: ffffc90006c63ff7 R15: 
+ffffc90006c43100
+[ 9807.622985] FS:  00007f60acdcb700(0000) GS:ffff88009fc80000(0000) 
+knlGS:0000000000000000
+[ 9807.623032] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 9807.623060] CR2: ffffc90006c53000 CR3: 00000000779a6000 CR4: 
+00000000000006e0
+[ 9807.623090] Stack:
+[ 9807.623111]  ffffc90006c43000 ffffc90006c64000 ffffc90006c63ffa 
+ffffc90006c63ff9
+[ 9807.623164]  0000000000010000 ffff880069d6ba90 ffff8800779d0000 
+ffff880069d6ba90
+[ 9807.623219]  ffff880069d6ba98 ffff880031220000 ffff880097a7fe20 
+ffff880069d6b9d0
+[ 9807.623273] Call Trace:
+[ 9807.629620]  [<ffffffff813f5f43>] __bio_compress+0x2c3/0x3c0
+[ 9807.629650]  [<ffffffff812b7123>] ? crc32c+0x63/0x90
+[ 9807.629677]  [<ffffffff813f639c>] bch_bio_compress+0xac/0xc0
+[ 9807.629706]  [<ffffffff8140a7df>] __bch_write+0x3ff/0x7f0
+[ 9807.629734]  [<ffffffff8140ac55>] bch_write+0x85/0x3d0
+[ 9807.629762]  [<ffffffff81404df7>] bch_writepage_do_io+0x57/0x80
+[ 9807.629792]  [<ffffffff81407bae>] bch_writepages+0x2be/0x530
+[ 9807.629821]  [<ffffffff8110cc26>] ? __find_get_pages+0x136/0x370
+[ 9807.629852]  [<ffffffff812a01e3>] ? radix_tree_lookup_slot+0x13/0x30
+[ 9807.629882]  [<ffffffff811198fc>] do_writepages+0x1c/0x30
+[ 9807.629910]  [<ffffffff8110d5f5>] 
+__filemap_fdatawrite_range+0xa5/0xe0
+[ 9807.629941]  [<ffffffff8110d74c>] 
+filemap_write_and_wait_range+0x3c/0x90
+[ 9807.629971]  [<ffffffff81408a41>] bch_truncate+0x1f1/0x230
+[ 9807.630000]  [<ffffffff81402573>] bch_setattr+0x93/0xa0
+[ 9807.630029]  [<ffffffff81190cc7>] notify_change+0x247/0x400
+[ 9807.630059]  [<ffffffff81172b7a>] do_truncate+0x5a/0x90
+[ 9807.630088]  [<ffffffff81172e43>] 
+do_sys_ftruncate.constprop.18+0xe3/0x100
+[ 9807.630119]  [<ffffffff81172e89>] SyS_ftruncate+0x9/0x10
+[ 9807.630148]  [<ffffffff814fcedf>] entry_SYSCALL_64_fastpath+0x17/0x93
+[ 9807.630177] Code: fa 0f 82 66 fe ff ff 41 83 fb 0e 0f 87 35 02 00 00 
+41 c1 e3 04 48 01 cf 45 88 19 48 39 cf 76 14 4c 8b 1e 48 83 c1 08 48 83 
+c6 08 <4c> 89 59 f8 48 39 cf 77 ec 49 89 c3 48 89 d0 48 8d 77 02 4c 89
+[ 9807.630404] RIP  [<ffffffff812bf074>] lz4_compress+0x4e4/0x830
+[ 9807.630435]  RSP <ffff880069d6b8a0>
+[ 9807.630459] CR2: ffffc90006c53000
+[ 9807.630759] ---[ end trace 6a05632b1eded47f ]---
 
 
-Bcache is running in writeback mode. On top of bcache, I'm running LVM, which provides a Games-LV for a Qemu Windows-10 VM (Games-HD with drive letter 'D'. Drive C is hosted on a non-bcache block device. Each VM has its own GPU via passthrough). 
-For a second/third VM, I create snapshots of the Games-LV.
 
-When playing the game Overwatch, the first VM suddenly stops to respond (after about >20min), some seconds later the second VM, too.
+Workload is simple, I'm just copying small and huge files using rsync. 
+Commit:
+commit 288a107052bd9ce13351dd7bf877537a8c430a6f
+Author: Kent Overstreet <kent.overstreet@gmail.com>
+Date:   Fri Dec 23 18:09:18 2016 -0900
 
-Currently I'm not near the machine with the problem, but I'm appending as much information as possible.
-
-
-Regards,
-Jan
+     bcache: fix run_cache_set error handling
 
 
-
-$ bcache-super-show /dev/sdb6
-sb.magic                ok
-sb.first_sector         8 [match]
-sb.csum                 617AC6C2ABF15A0D [match]
-sb.version              3 [cache device]
-
-dev.label               (empty)
-dev.uuid                73ec71d1-1353-4cc0-8b06-d798b44d593e
-dev.sectors_per_block   1
-dev.sectors_per_bucket  1024
-dev.cache.first_sector  1024
-dev.cache.cache_sectors 204692480
-dev.cache.total_sectors 204693504
-dev.cache.ordered       yes
-dev.cache.discard       no
-dev.cache.pos           0
-dev.cache.replacement   0 [lru]
-
-cset.uuid               025ec95a-c03b-481f-97e4-d6dab92ba6b1
-
-$ dmesg
-[...]
-[ 3945.367318] INFO: task kworker/22:0:146 blocked for more than 120 seconds.
-[ 3945.369245]       Not tainted 4.8.13-1-ARCH #1
-[ 3945.371113] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3945.372970] kworker/22:0    D ffff88046d2c3cd8     0   146      2 0x00000000
-[ 3945.372982] Workqueue: events update_writeback_rate [bcache]
-[ 3945.372983]  ffff88046d2c3cd8 00ff88046d2c3cd0 ffff88046148e3c0 ffff88046d270e40
-[ 3945.372986]  ffff88046fd97ff0 ffff88046d2c4000 ffff8804696f0ad8 ffff88046d2c3d10
-[ 3945.372988]  ffff8804696f0af0 ffff8804696f0b18 ffff88046d2c3cf0 ffffffff815f40ec
-[ 3945.372990] Call Trace:
-[ 3945.372995]  [<ffffffff815f40ec>] schedule+0x3c/0x90
-[ 3945.372997]  [<ffffffff815f6669>] rwsem_down_read_failed+0xf9/0x150
-[ 3945.372999]  [<ffffffff8130bb08>] call_rwsem_down_read_failed+0x18/0x30
-[ 3945.373000]  [<ffffffff815f5f07>] down_read+0x17/0x30
-[ 3945.373004]  [<ffffffffa0056dc5>] update_writeback_rate+0x25/0x210 [bcache]
-[ 3945.373006]  [<ffffffff81095ef5>] process_one_work+0x1e5/0x470
-[ 3945.373008]  [<ffffffff810961c8>] worker_thread+0x48/0x4e0
-[ 3945.373009]  [<ffffffff81096180>] ? process_one_work+0x470/0x470
-[ 3945.373011]  [<ffffffff8109be38>] kthread+0xd8/0xf0
-[ 3945.373014]  [<ffffffff8102c782>] ? __switch_to+0x2d2/0x630
-[ 3945.373016]  [<ffffffff815f823f>] ret_from_fork+0x1f/0x40
-[ 3945.373018]  [<ffffffff8109bd60>] ? kthread_worker_fn+0x170/0x170
-[ 3945.373031] INFO: task bcache_writebac:343 blocked for more than 120 seconds.
-[ 3945.374945]       Not tainted 4.8.13-1-ARCH #1
-[ 3945.376837] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3945.378724] bcache_writebac D ffff88046975fcb8     0   343      2 0x00000000
-[ 3945.378735]  ffff88046975fcb8 00ff88046fa17f80 ffffffff81a0d500 ffff88046978d580
-[ 3945.378737]  ffff88046978d500 ffff880469760000 ffff8804696f0ad8 ffff8804696f0ad8
-[ 3945.378740]  ffff8804696f0af0 ffffffff00000001 ffff88046975fcd0 ffffffff815f40ec
-[ 3945.378742] Call Trace:
-[ 3945.378744]  [<ffffffff815f40ec>] schedule+0x3c/0x90
-[ 3945.378746]  [<ffffffff815f67f2>] rwsem_down_write_failed+0x132/0x2b0
-[ 3945.378748]  [<ffffffff8130bb37>] call_rwsem_down_write_failed+0x17/0x30
-[ 3945.378750]  [<ffffffff815f5f44>] down_write+0x24/0x40
-[ 3945.378754]  [<ffffffffa005747b>] bch_writeback_thread+0x6b/0x7f0 [bcache]
-[ 3945.378758]  [<ffffffffa0057410>] ? write_dirty+0xb0/0xb0 [bcache]
-[ 3945.378762]  [<ffffffff8109be38>] kthread+0xd8/0xf0
-[ 3945.378763]  [<ffffffff8102c782>] ? __switch_to+0x2d2/0x630
-[ 3945.378765]  [<ffffffff815f823f>] ret_from_fork+0x1f/0x40
-[ 3945.378767]  [<ffffffff8109bd60>] ? kthread_worker_fn+0x170/0x170
-[ 3945.378777] INFO: task qemu-system-x86:829 blocked for more than 120 seconds.
-[ 3945.380619]       Not tainted 4.8.13-1-ARCH #1
-[ 3945.382501] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 3945.385458] qemu-system-x86 D ffff88046933b7a8     0   829      1 0x00000000
-[ 3945.385461]  ffff88046933b7a8 00ff88046933b7b0 ffff8808650faac0 ffff88086ab52ac0
-[ 3945.385463]  8000000000000000 ffff88046933c000 ffff8804696f0ad8 ffff88046933b7e0
-[ 3945.385465]  ffff8804696f0af0 ffff8804696f0000 ffff88046933b7c0 ffffffff815f40ec
-[ 3945.385467] Call Trace:
-[ 3945.385470]  [<ffffffff815f40ec>] schedule+0x3c/0x90
-[ 3945.385471]  [<ffffffff815f6669>] rwsem_down_read_failed+0xf9/0x150
-[ 3945.385475]  [<ffffffffa00457db>] ? bch_submit_bbio+0x2b/0x30 [bcache]
-[ 3945.385477]  [<ffffffff8130bb08>] call_rwsem_down_read_failed+0x18/0x30
-[ 3945.385478]  [<ffffffff815f5f07>] down_read+0x17/0x30
-[ 3945.385482]  [<ffffffffa004ab9b>] cached_dev_make_request+0x63b/0xcb0 [bcache]
-[ 3945.385485]  [<ffffffff812cd0e2>] generic_make_request+0xf2/0x1a0
-[ 3945.385487]  [<ffffffff812cd20d>] submit_bio+0x7d/0x150
-[ 3945.385490]  [<ffffffff8124a1e3>] __blockdev_direct_IO+0x31a3/0x4040
-[ 3945.385493]  [<ffffffff8121d2dd>] ? poll_freewait+0x8d/0xb0
-[ 3945.385495]  [<ffffffff81244520>] ? I_BDEV+0x20/0x20
-[ 3945.385497]  [<ffffffff81244e43>] blkdev_direct_IO+0x43/0x50
-[ 3945.385500]  [<ffffffff81179b04>] generic_file_direct_write+0xb4/0x170
-[ 3945.385502]  [<ffffffff81179c7b>] __generic_file_write_iter+0xbb/0x1d0
-[ 3945.385504]  [<ffffffff81205d34>] ? __check_object_size+0x54/0x1d6
-[ 3945.385506]  [<ffffffff81245fb0>] ? bd_acquire+0xb0/0xb0
-[ 3945.385508]  [<ffffffff8124603b>] blkdev_write_iter+0x8b/0x100
-[ 3945.385509]  [<ffffffff81245fb0>] ? bd_acquire+0xb0/0xb0
-[ 3945.385511]  [<ffffffff8131235a>] ? import_iovec+0x3a/0xe0
-[ 3945.385514]  [<ffffffff81259407>] aio_run_iocb+0x247/0x2c0
-[ 3945.385516]  [<ffffffff81256586>] ? eventfd_ctx_read+0x166/0x1e0
-[ 3945.385518]  [<ffffffff8121d4c0>] ? poll_select_copy_remaining+0x150/0x150
-[ 3945.385519]  [<ffffffff810a6c00>] ? wake_up_q+0x80/0x80
-[ 3945.385521]  [<ffffffff81227567>] ? __fget+0x77/0xb0
-[ 3945.385522]  [<ffffffff81227605>] ? __fget_light+0x25/0x60
-[ 3945.385524]  [<ffffffff81227653>] ? __fdget+0x13/0x20
-[ 3945.385526]  [<ffffffff8125ade4>] do_io_submit+0x364/0x590
-[ 3945.385528]  [<ffffffff8125b020>] SyS_io_submit+0x10/0x20
-[ 3945.385530]  [<ffffffff815f8032>] entry_SYSCALL_64_fastpath+0x1a/0xa4
-[ 4068.241562] INFO: task kworker/22:0:146 blocked for more than 120 seconds.
-[ 4068.243485]       Not tainted 4.8.13-1-ARCH #1
-[ 4068.245395] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 4068.247346] kworker/22:0    D ffff88046d2c3cd8     0   146      2 0x00000000
-[ 4068.247354] Workqueue: events update_writeback_rate [bcache]
-[ 4068.247355]  ffff88046d2c3cd8 00ff88046d2c3cd0 ffff88046148e3c0 ffff88046d270e40
-[ 4068.247358]  ffff88046fd97ff0 ffff88046d2c4000 ffff8804696f0ad8 ffff88046d2c3d10
-[ 4068.247360]  ffff8804696f0af0 ffff8804696f0b18 ffff88046d2c3cf0 ffffffff815f40ec
-[ 4068.247406] Call Trace:
-[ 4068.247409]  [<ffffffff815f40ec>] schedule+0x3c/0x90
-[ 4068.247411]  [<ffffffff815f6669>] rwsem_down_read_failed+0xf9/0x150
-[ 4068.247413]  [<ffffffff8130bb08>] call_rwsem_down_read_failed+0x18/0x30
-[ 4068.247415]  [<ffffffff815f5f07>] down_read+0x17/0x30
-[ 4068.247418]  [<ffffffffa0056dc5>] update_writeback_rate+0x25/0x210 [bcache]
-[ 4068.247421]  [<ffffffff81095ef5>] process_one_work+0x1e5/0x470
-[ 4068.247422]  [<ffffffff810961c8>] worker_thread+0x48/0x4e0
-[ 4068.247424]  [<ffffffff81096180>] ? process_one_work+0x470/0x470
-[ 4068.247426]  [<ffffffff8109be38>] kthread+0xd8/0xf0
-[ 4068.247427]  [<ffffffff8102c782>] ? __switch_to+0x2d2/0x630
-[ 4068.247429]  [<ffffffff815f823f>] ret_from_fork+0x1f/0x40
-[ 4068.247432]  [<ffffffff8109bd60>] ? kthread_worker_fn+0x170/0x170
-[ 4068.247439] INFO: task bcache_writebac:343 blocked for more than 120 seconds.
-[ 4068.249394]       Not tainted 4.8.13-1-ARCH #1
-[ 4068.251285] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 4068.253194] bcache_writebac D ffff88046975fcb8     0   343      2 0x00000000
-[ 4068.253196]  ffff88046975fcb8 00ff88046fa17f80 ffffffff81a0d500 ffff88046978d580
-[ 4068.253199]  ffff88046978d500 ffff880469760000 ffff8804696f0ad8 ffff8804696f0ad8
-[ 4068.253201]  ffff8804696f0af0 ffffffff00000001 ffff88046975fcd0 ffffffff815f40ec
-[ 4068.253203] Call Trace:
-[ 4068.253205]  [<ffffffff815f40ec>] schedule+0x3c/0x90
-[ 4068.253207]  [<ffffffff815f67f2>] rwsem_down_write_failed+0x132/0x2b0
-[ 4068.253209]  [<ffffffff8130bb37>] call_rwsem_down_write_failed+0x17/0x30
-[ 4068.253211]  [<ffffffff815f5f44>] down_write+0x24/0x40
-[ 4068.253214]  [<ffffffffa005747b>] bch_writeback_thread+0x6b/0x7f0 [bcache]
-[ 4068.253218]  [<ffffffffa0057410>] ? write_dirty+0xb0/0xb0 [bcache]
-[ 4068.253220]  [<ffffffff8109be38>] kthread+0xd8/0xf0
-[ 4068.253221]  [<ffffffff8102c782>] ? __switch_to+0x2d2/0x630
-[ 4068.253223]  [<ffffffff815f823f>] ret_from_fork+0x1f/0x40
-[ 4068.253225]  [<ffffffff8109bd60>] ? kthread_worker_fn+0x170/0x170
-[ 4068.253230] INFO: task qemu-system-x86:829 blocked for more than 120 seconds.
-[ 4068.255137]       Not tainted 4.8.13-1-ARCH #1
-[ 4068.256969] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 4068.258844] qemu-system-x86 D ffff88046933b7a8     0   829      1 0x00000000
-[ 4068.258846]  ffff88046933b7a8 00ff88046933b7b0 ffff8808650faac0 ffff88086ab52ac0
-[ 4068.258848]  8000000000000000 ffff88046933c000 ffff8804696f0ad8 ffff88046933b7e0
-[ 4068.258850]  ffff8804696f0af0 ffff8804696f0000 ffff88046933b7c0 ffffffff815f40ec
-[ 4068.258853] Call Trace:
-[ 4068.258855]  [<ffffffff815f40ec>] schedule+0x3c/0x90
-[ 4068.258856]  [<ffffffff815f6669>] rwsem_down_read_failed+0xf9/0x150
-[ 4068.258861]  [<ffffffffa00457db>] ? bch_submit_bbio+0x2b/0x30 [bcache]
-[ 4068.258863]  [<ffffffff8130bb08>] call_rwsem_down_read_failed+0x18/0x30
-[ 4068.258866]  [<ffffffff815f5f07>] down_read+0x17/0x30
-[ 4068.258870]  [<ffffffffa004ab9b>] cached_dev_make_request+0x63b/0xcb0 [bcache]
-[ 4068.258872]  [<ffffffff812cd0e2>] generic_make_request+0xf2/0x1a0
-[ 4068.258874]  [<ffffffff812cd20d>] submit_bio+0x7d/0x150
-[ 4068.258877]  [<ffffffff8124a1e3>] __blockdev_direct_IO+0x31a3/0x4040
-[ 4068.258879]  [<ffffffff8121d2dd>] ? poll_freewait+0x8d/0xb0
-[ 4068.258881]  [<ffffffff81244520>] ? I_BDEV+0x20/0x20
-[ 4068.258883]  [<ffffffff81244e43>] blkdev_direct_IO+0x43/0x50
-[ 4068.258886]  [<ffffffff81179b04>] generic_file_direct_write+0xb4/0x170
-[ 4068.258887]  [<ffffffff81179c7b>] __generic_file_write_iter+0xbb/0x1d0
-[ 4068.258889]  [<ffffffff81205d34>] ? __check_object_size+0x54/0x1d6
-[ 4068.258891]  [<ffffffff81245fb0>] ? bd_acquire+0xb0/0xb0
-[ 4068.258892]  [<ffffffff8124603b>] blkdev_write_iter+0x8b/0x100
-[ 4068.258894]  [<ffffffff81245fb0>] ? bd_acquire+0xb0/0xb0
-[ 4068.258896]  [<ffffffff8131235a>] ? import_iovec+0x3a/0xe0
-[ 4068.258898]  [<ffffffff81259407>] aio_run_iocb+0x247/0x2c0
-[ 4068.258900]  [<ffffffff81256586>] ? eventfd_ctx_read+0x166/0x1e0
-[ 4068.258901]  [<ffffffff8121d4c0>] ? poll_select_copy_remaining+0x150/0x150
-[ 4068.258903]  [<ffffffff810a6c00>] ? wake_up_q+0x80/0x80
-[ 4068.258904]  [<ffffffff81227567>] ? __fget+0x77/0xb0
-[ 4068.258906]  [<ffffffff81227605>] ? __fget_light+0x25/0x60
-[ 4068.258908]  [<ffffffff81227653>] ? __fdget+0x13/0x20
-[ 4068.258911]  [<ffffffff8125ade4>] do_io_submit+0x364/0x590
-[ 4068.258913]  [<ffffffff8125b020>] SyS_io_submit+0x10/0x20
-[ 4068.258915]  [<ffffffff815f8032>] entry_SYSCALL_64_fastpath+0x1a/0xa4
-[ 4068.258917] INFO: task qemu-system-x86:903 blocked for more than 120 seconds.
-[ 4068.260756]       Not tainted 4.8.13-1-ARCH #1
-[ 4068.262646] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 4068.264530] qemu-system-x86 D ffff8802966b77a8     0   903      1 0x00000000
-[ 4068.264533]  ffff8802966b77a8 00ff88086ab53900 ffff880460a1c740 ffff88086ab53900
-[ 4068.264535]  ffff8802966b77f8 ffff8802966b8000 ffff8804696f0ad8 ffff8802966b77e0
-[ 4068.264537]  ffff8804696f0af0 ffff8804696f0000 ffff8802966b77c0 ffffffff815f40ec
-[ 4068.264539] Call Trace:
-[ 4068.264541]  [<ffffffff815f40ec>] schedule+0x3c/0x90
-[ 4068.264543]  [<ffffffff815f6669>] rwsem_down_read_failed+0xf9/0x150
-[ 4068.264545]  [<ffffffff8130bb08>] call_rwsem_down_read_failed+0x18/0x30
-[ 4068.264546]  [<ffffffff815f5f07>] down_read+0x17/0x30
-[ 4068.264550]  [<ffffffffa004ab9b>] cached_dev_make_request+0x63b/0xcb0 [bcache]
-[ 4068.264552]  [<ffffffff812cd0e2>] generic_make_request+0xf2/0x1a0
-[ 4068.264554]  [<ffffffff812cd20d>] submit_bio+0x7d/0x150
-[ 4068.264556]  [<ffffffff8124a1e3>] __blockdev_direct_IO+0x31a3/0x4040
-[ 4068.264558]  [<ffffffff8121d2dd>] ? poll_freewait+0x8d/0xb0
-[ 4068.264560]  [<ffffffff81244520>] ? I_BDEV+0x20/0x20
-[ 4068.264562]  [<ffffffff81244e43>] blkdev_direct_IO+0x43/0x50
-[ 4068.264564]  [<ffffffff81179b04>] generic_file_direct_write+0xb4/0x170
-[ 4068.264566]  [<ffffffff81179c7b>] __generic_file_write_iter+0xbb/0x1d0
-[ 4068.264567]  [<ffffffff81205d34>] ? __check_object_size+0x54/0x1d6
-[ 4068.264569]  [<ffffffff81245fb0>] ? bd_acquire+0xb0/0xb0
-[ 4068.264571]  [<ffffffff8124603b>] blkdev_write_iter+0x8b/0x100
-[ 4068.264573]  [<ffffffff81245fb0>] ? bd_acquire+0xb0/0xb0
-[ 4068.264574]  [<ffffffff8131235a>] ? import_iovec+0x3a/0xe0
-[ 4068.264576]  [<ffffffff81259407>] aio_run_iocb+0x247/0x2c0
-[ 4068.264579]  [<ffffffff810af45c>] ? set_next_entity+0x4c/0x940
-[ 4068.264581]  [<ffffffff810b41d4>] ? put_prev_entity+0xb4/0x8c0
-[ 4068.264582]  [<ffffffff81227567>] ? __fget+0x77/0xb0
-[ 4068.264583]  [<ffffffff81227605>] ? __fget_light+0x25/0x60
-[ 4068.264585]  [<ffffffff81227653>] ? __fdget+0x13/0x20
-[ 4068.264587]  [<ffffffff8125ade4>] do_io_submit+0x364/0x590
-[ 4068.264589]  [<ffffffff8125b020>] SyS_io_submit+0x10/0x20
-[ 4068.264590]  [<ffffffff815f8032>] entry_SYSCALL_64_fastpath+0x1a/0xa4
+Marcin
