@@ -1,37 +1,41 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: Hang in bcache/qemu
-Date: Thu, 19 Jan 2017 04:42:44 -0900
-Message-ID: <20170119134244.f6bydzrfsghq57ll@moria.home.lan>
-References: <2059985.veGUll5WnS@j-t460p>
- <20170118043556.08485efe@jupiter.sol.kaishome.de>
- <20170118084830.GA3690@tuebingen.mpg.de>
- <4700072.elc5RSLsh5@j-t460p>
+From: Joyes Dadi <"YD."@biscuit.ocn.ne.jp>
+Subject: Urgent Please,,
+Date: Mon, 23 Jan 2017 23:07:49 +0900 (JST)
+Message-ID: <1028184183.25784289.1485180469689.JavaMail.root__37172.7639846087$1485181309$gmane$org@biscuit.ocn.ne.jp>
+Reply-To: Joyes Dadi <joyesdadi767@citromail.hu>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f170.google.com ([209.85.192.170]:36828 "EHLO
-        mail-pf0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753431AbdASQiO (ORCPT
+Received: from mbkd0331.ocn.ad.jp ([153.149.236.32]:32863 "EHLO
+        mbkd0331.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751220AbdAWOUz (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 19 Jan 2017 11:38:14 -0500
-Received: by mail-pf0-f170.google.com with SMTP id 189so14744321pfu.3
-        for <linux-bcache@vger.kernel.org>; Thu, 19 Jan 2017 08:38:13 -0800 (PST)
-Content-Disposition: inline
-In-Reply-To: <4700072.elc5RSLsh5@j-t460p>
+        Mon, 23 Jan 2017 09:20:55 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Jan Wiele <jan@wiele.org>
-Cc: linux-bcache@vger.kernel.org
 
-On Thu, Jan 19, 2017 at 01:22:47PM +0100, Jan Wiele wrote:
-> Am Mittwoch, 18. Januar 2017, 09:48:30 CET schrieb Andre Noll:
-> > On Wed, Jan 18, 04:35, Kai Krakow wrote
-> > 
-> > FWIW, I'm seeing this as well on different hardware, and with both
-> > deadline and CFQ, so it's not a scheduler issue. The problem seems to
-> > be the bcache writeback thread calling down_write(&dc->writeback_lock)
-> > while already holding this lock.
-> Yes, the bug doesn't get triggered when the caching mechanism is set to 
-> writethrough.
+Good Day Dear,
 
-Is there something else blocked that's holding writeback_lock?
+My name is Ms. Joyes Dadi, I am glad you are reading this letter and I hope
+we will start our communication and I know that this message will look strange,
+surprising and probably unbelievable to you, but it is the reality. I want to
+make a donation of money to you.
+
+I contact you by the will of God. I am a firm German woman specialized in
+mining gold and diamonds in Africa. But now, I'm very sick of a cancer. My
+husband died in an accident two years ago with our two children and now I have
+cancer of the esophagus that damaged almost all the cells in my system/agencies
+and I'll die soon according to my doctor.
+
+My most concern now is, we grew up in the orphanage and were married in
+orphanage. If I die this deposited fund will soon be left alone in the hand of
+the bank, and I do want to it that  way. Please, if you can be reliable and
+sincere to accept my humble proposal; I have (10.5Millions Euro) in a fixed
+deposit account; I will order the Bank to transfer the money into your account
+in your country immediately, and then you will take the fund to  your country
+and invest it to the orphanage homes Please, answer as quickly as possible.
+
+God bless you.
+Ms. Joyes Dadi
+Email: joyesdadi767@citromail.hu
