@@ -1,36 +1,28 @@
-From: shiva rkreddy <shiva.rkreddy@gmail.com>
-Subject: ceph : bcache register blocked
-Date: Tue, 31 Jan 2017 22:13:02 -0600
-Message-ID: <CAPntomAEZSnTr33AbPOLgaeXMVTraxCzd7_Fyq-4v7bmBLKdSg@mail.gmail.com>
+From: Miss Marbell <spdr3re9@friend.ocn.ne.jp>
+Subject: =?utf-8?Q?Bitte_kontaktieren_Sie_mich_f=C3=BCr_weitere_Details!?=
+Date: Wed, 1 Feb 2017 17:10:10 +0900 (JST)
+Message-ID: <19729611.132169125.1485936610060.JavaMail.root__33191.5571274751$1485937227$gmane$org@friend.ocn.ne.jp>
+Reply-To: Miss Marbell <brownson.m221@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-yw0-f177.google.com ([209.85.161.177]:36504 "EHLO
-        mail-yw0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751274AbdBAENI (ORCPT
+Received: from mbkd0222.ocn.ad.jp ([153.149.233.23]:60681 "EHLO
+        mbkd0222.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751080AbdBAIUV (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 31 Jan 2017 23:13:08 -0500
-Received: by mail-yw0-f177.google.com with SMTP id v200so54595834ywc.3
-        for <linux-bcache@vger.kernel.org>; Tue, 31 Jan 2017 20:13:03 -0800 (PST)
+        Wed, 1 Feb 2017 03:20:21 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "ceph-users@ceph.com" <ceph-users@ceph.com>, linux-bcache@vger.kernel.org
 
-Greetings to all!
+Sehr geehrte Damen und Herren,
 
-I'm experimenting bcache with sas disks as backing devices and nvme as
-cache. The backing devices are used as ceph osd mount points.
-I was able to make them part of ceph cluster and have the ceph mount
-points added to fstab using the bcache uuid.
+Ich brauche Ihre Unterstützung in Ihrem Land zu verlagern und zu investieren.Ich bitte Sie um Hilfe, weil ich nicht das Wissen über
+Geschäft und die Regeln, die Ihr Land für eine sichere Investition führen.
 
-These bcache backing devices are disappearing after rebooting the host
-that has these devices. dmesg shows, bcache_allocto blocked and later
-bcache-register blocked.
-bcache cache device is registered successfully though.
+Werden Sie versprechen, mit mir aufrichtig zu sein?
 
-Digged the mailing list and couldn't find consumable information. Did
-anyone encounter this problem ? Any thoughts on troubleshooting ..
+Bitte kontaktieren Sie mich für weitere Details!
 
-Appreciate your help!
-
-dmesg link: https://pastebin.osuosl.org/44846/
+Mit freundlichen Grüßen,
+Fräulein Marbell.
