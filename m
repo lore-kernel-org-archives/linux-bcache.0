@@ -1,28 +1,30 @@
-From: Miss Marbell <spdr3re9@friend.ocn.ne.jp>
-Subject: =?utf-8?Q?Bitte_kontaktieren_Sie_mich_f=C3=BCr_weitere_Details!?=
-Date: Wed, 1 Feb 2017 17:10:10 +0900 (JST)
-Message-ID: <19729611.132169125.1485936610060.JavaMail.root__33191.5571274751$1485937227$gmane$org@friend.ocn.ne.jp>
-Reply-To: Miss Marbell <brownson.m221@gmail.com>
+From: "marcin@mejor.pl" <marcin@mejor.pl>
+Subject: Re: bcachefs-tools: file bcache.h is symlink to local file
+Date: Wed, 1 Feb 2017 14:38:20 +0100
+Message-ID: <0c4e0880-5cbb-5103-c952-d75e22b5ed70@mejor.pl>
+References: <4fe1eab0-2539-c7dc-129a-0fea91e8a4a8@mejor.pl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mbkd0222.ocn.ad.jp ([153.149.233.23]:60681 "EHLO
-        mbkd0222.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751080AbdBAIUV (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 1 Feb 2017 03:20:21 -0500
+Received: from jowisz.mejor.pl ([81.4.120.72]:55466 "EHLO jowisz.mejor.pl"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750737AbdBANix (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 1 Feb 2017 08:38:53 -0500
+In-Reply-To: <4fe1eab0-2539-c7dc-129a-0fea91e8a4a8@mejor.pl>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-Sehr geehrte Damen und Herren,
+W dniu 25.01.2017 o 16:00, Marcin Miros�aw pisze:
+> Hi!
+> File
+> https://evilpiepirate.org/git/bcache-tools.git/tree/include/trace/events/bcache.h?h=dev
+> 
+> is symlink on local computer. My compilator don't have access to Kent's
+> box, this make gcc upset:)
+> Marcin
 
-Ich brauche Ihre Unterstützung in Ihrem Land zu verlagern und zu investieren.Ich bitte Sie um Hilfe, weil ich nicht das Wissen über
-Geschäft und die Regeln, die Ihr Land für eine sichere Investition führen.
-
-Werden Sie versprechen, mit mir aufrichtig zu sein?
-
-Bitte kontaktieren Sie mich für weitere Details!
-
-Mit freundlichen Grüßen,
-Fräulein Marbell.
+Hi!
+I see that it's fixed, thank you.
+Marcin
