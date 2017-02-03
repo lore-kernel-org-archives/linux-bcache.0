@@ -1,56 +1,34 @@
 From: "marcin@mejor.pl" <marcin@mejor.pl>
-Subject: [bcachefs] Matrix - which features should work, which are known as
- broken
-Date: Fri, 3 Feb 2017 12:59:10 +0100
-Message-ID: <b7e7d913-d75d-ae92-bdd0-f27e176e381e@mejor.pl>
+Subject: =?UTF-8?Q?[bcachefs]_./include/asm-generic/bug.h:55:35:_warning:_?=
+ =?UTF-8?Q?=e2=80=98l=5fpacked=e2=80=99_may_be_used_uninitialized_in_this_fu?=
+ =?UTF-8?Q?nction?=
+Date: Fri, 3 Feb 2017 15:14:49 +0100
+Message-ID: <eebbd36b-103f-3425-eef5-437b5ce2999b@mejor.pl>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:57292 "EHLO jowisz.mejor.pl"
+Received: from jowisz.mejor.pl ([81.4.120.72]:42118 "EHLO jowisz.mejor.pl"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751878AbdBCL74 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 3 Feb 2017 06:59:56 -0500
+        id S1752169AbdBCOO5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 3 Feb 2017 09:14:57 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-Hi!
+Hi,
+could it be a real problem?
 
-I'd like to ask what features should be tested, which features are
-unfinished and we shouldn't test it at this moment.
-From `bcache format`:
-Options:
---block=size
---btree_node=size
---metadata_checksum_type=(none|crc32c|crc64)
---data_checksum_type=(none|crc32c|crc64)
---compression_type=(none|lz4|gzip)
---error_action=(continue|readonly|panic)
-
---max_journal_entry_size=size
---label=label
---uuid=uuid
-
-
---fs_size=size
---bucket=size
---discard
---tier=#
-
-From sysfs:
-options/compression - switching between compression method
-options/(metadata|data)_checksum - switching between checksum alg
-options/(metadata|data)_replicas - it doesn't work now?
-options/posix_acl - it looks that this switch doesn't change acl behaviour
-options/str_hash - switching between hash alg
-options/inode_32bit - ???
-
-
-
-as far as I remember tiering should wait some time. What about other
-options? All of them should work and we should expect that bcachefs
-works with them?
-Kent, are you planning to allow set compression algo per file?
-
-Marcin
+>   CC      drivers/md/bcache/btree_io.o
+> In file included from ./arch/x86/include/asm/bug.h:35:0,
+>                  from ./include/linux/bug.h:4,
+>                  from drivers/md/bcache/bcache.h:181,
+>                  from drivers/md/bcache/btree_io.c:2:
+> drivers/md/bcache/btree_io.c: In function ‘sort_extent_whiteouts’:
+> ./include/asm-generic/bug.h:55:35: warning: ‘l_packed’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+>  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while (0)
+>                                    ^
+> drivers/md/bcache/btree_io.c:203:21: note: ‘l_packed’ was declared here
+>   bool prev = false, l_packed;
+>                      ^
+>   CC      drivers/md/bcache/btree_iter.o
