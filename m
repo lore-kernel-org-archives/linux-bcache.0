@@ -1,34 +1,52 @@
-From: "marcin@mejor.pl" <marcin@mejor.pl>
-Subject: =?UTF-8?Q?[bcachefs]_./include/asm-generic/bug.h:55:35:_warning:_?=
- =?UTF-8?Q?=e2=80=98l=5fpacked=e2=80=99_may_be_used_uninitialized_in_this_fu?=
- =?UTF-8?Q?nction?=
-Date: Fri, 3 Feb 2017 15:14:49 +0100
-Message-ID: <eebbd36b-103f-3425-eef5-437b5ce2999b@mejor.pl>
+From: Thomas Rosenstein <thomas@ccs.at>
+Subject: Bcache file corruption
+Date: Tue, 7 Feb 2017 12:17:16 +0100
+Message-ID: <93B8FFF8-6FC1-4DE6-AD80-EDC7180C670F@ccs.at>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; format=flowed; markup=markdown
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:42118 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752169AbdBCOO5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 3 Feb 2017 09:14:57 -0500
+Received: from mail-ve1eur01on0124.outbound.protection.outlook.com ([104.47.1.124]:65324
+        "EHLO EUR01-VE1-obe.outbound.protection.outlook.com"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1753268AbdBGLRY (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 7 Feb 2017 06:17:24 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
 Hi,
-could it be a real problem?
 
->   CC      drivers/md/bcache/btree_io.o
-> In file included from ./arch/x86/include/asm/bug.h:35:0,
->                  from ./include/linux/bug.h:4,
->                  from drivers/md/bcache/bcache.h:181,
->                  from drivers/md/bcache/btree_io.c:2:
-> drivers/md/bcache/btree_io.c: In function ‘sort_extent_whiteouts’:
-> ./include/asm-generic/bug.h:55:35: warning: ‘l_packed’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while (0)
->                                    ^
-> drivers/md/bcache/btree_io.c:203:21: note: ‘l_packed’ was declared here
->   bool prev = false, l_packed;
->                      ^
->   CC      drivers/md/bcache/btree_iter.o
+I'm trying to run bcache on a Hyper-V VM, following setup:
+
+caching device 50GB fixed disk on a Samsung 850 Pro 1 TB Raid 1
+
+backing device 700GB dynamic disk on a 8x 4 TB RAID6
+
+
+The bcache device is formatted as LVM with 1 volume XFS. The writeback 
+mode is activated.
+
+When I try to restore a 600 GB Postgresql backup, I get a file 
+corruption error.
+
+I have tried 3 times, and the file corruption is each time at a 
+different (file) location,
+additionally the corruption is not present when restoring the same 
+backup on a non-bcache disk.
+
+Based on that info, I assume that bcache has got some issue.
+
+Are there any known issues with maybe XFS, or file corruption? Does 
+anyone have an idea on how to figure out what the issue is?
+
+
+Kernel:
+
+Linux host 3.10.0-514.6.1.el7.x86_64 #1 SMP Wed Jan 18 13:06:36 UTC 2017 
+x86_64 x86_64 x86_64 GNU/Linux
+
+I compiled bcache as a module according to: 
+http://10sa.com/sql_stories/?p=1052
+
+BR
+Thomas
