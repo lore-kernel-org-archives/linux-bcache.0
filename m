@@ -1,40 +1,44 @@
-From: "marcin@mejor.pl" <marcin@mejor.pl>
-Subject: =?UTF-8?Q?Re:_[bcachefs]_./include/asm-generic/bug.h:55:35:_warning?=
- =?UTF-8?Q?:_=e2=80=98l=5fpacked=e2=80=99_may_be_used_uninitialized_in_this_?=
- =?UTF-8?Q?function?=
-Date: Tue, 7 Feb 2017 14:52:25 +0100
-Message-ID: <43b46755-17a1-1d0a-d719-36c8df587cb6@mejor.pl>
-References: <eebbd36b-103f-3425-eef5-437b5ce2999b@mejor.pl>
+From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
+Subject: Re: Bcache file corruption
+Date: Tue, 07 Feb 2017 15:59:56 +0100
+Message-ID: <20170207155956.Horde.j9Dv5b4PsA33ZMsJPwC5UA8@www3.nde.ag>
+References: <93B8FFF8-6FC1-4DE6-AD80-EDC7180C670F@ccs.at>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:41998 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1754088AbdBGNxC (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 7 Feb 2017 08:53:02 -0500
-In-Reply-To: <eebbd36b-103f-3425-eef5-437b5ce2999b@mejor.pl>
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.181]:26094 "EHLO
+        mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1754007AbdBGPAB (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 7 Feb 2017 10:00:01 -0500
+In-Reply-To: <93B8FFF8-6FC1-4DE6-AD80-EDC7180C670F@ccs.at>
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Thomas Rosenstein <thomas@ccs.at>
+Cc: linux-bcache@vger.kernel.org
 
-W dniu 03.02.2017 o 15:14, marcin@mejor.pl pisze:
+Hi Thomas,
+
+Zitat von Thomas Rosenstein <thomas@ccs.at>:
 > Hi,
-> could it be a real problem?
-> 
->>   CC      drivers/md/bcache/btree_io.o
->> In file included from ./arch/x86/include/asm/bug.h:35:0,
->>                  from ./include/linux/bug.h:4,
->>                  from drivers/md/bcache/bcache.h:181,
->>                  from drivers/md/bcache/btree_io.c:2:
->> drivers/md/bcache/btree_io.c: In function ‘sort_extent_whiteouts’:
->> ./include/asm-generic/bug.h:55:35: warning: ‘l_packed’ may be used uninitialized in this function [-Wmaybe-uninitialized]
->>  #define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while (0)
->>                                    ^
->> drivers/md/bcache/btree_io.c:203:21: note: ‘l_packed’ was declared here
->>   bool prev = false, l_packed;
->>                      ^
->>   CC      drivers/md/bcache/btree_iter.o
+>
+> I'm trying to run bcache on a Hyper-V VM, following setup:
+> [...]
+> Linux host 3.10.0-514.6.1.el7.x86_64 #1 SMP Wed Jan 18 13:06:36 UTC  
+> 2017 x86_64 x86_64 x86_64 GNU/Linux
+>
+> I compiled bcache as a module according to:  
+> http://10sa.com/sql_stories/?p=1052
 
+what catches the eye is the old kernel version. While many fixes may  
+have been back-ported by the distro developers, I have no idea to what  
+extend this was actually done. I remember having seen quite a number  
+of severe bugs, i.e. in the disk subsystem, that may well have lead to  
+the problems you face.
 
-Fixed in 44591aeaf65.
+Are you in a position to boot a more recent (mainline) kernel for a  
+test, if just to compare results?
+
+Regards,
+Jens
