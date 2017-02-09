@@ -1,58 +1,39 @@
-From: Thomas Rosenstein <thomas@ccs.at>
-Subject: Re: Bcache file corruption
-Date: Wed, 8 Feb 2017 07:45:57 +0100
-Message-ID: <DC5D87AB-B603-4E8D-BBFF-F1FA063EB6EF@ccs.at>
-References: <20170207155956.Horde.j9Dv5b4PsA33ZMsJPwC5UA8@www3.nde.ag>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format=flowed; markup=markdown
-Content-Transfer-Encoding: 8bit
+From: Jan Kara <jack@suse.cz>
+Subject: [PATCH] bcache: Fix leak of bdev reference
+Date: Thu,  9 Feb 2017 14:19:16 +0100
+Message-ID: <20170209131916.13330-1-jack@suse.cz>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-db5eur01on0137.outbound.protection.outlook.com ([104.47.2.137]:11370
-        "EHLO EUR01-DB5-obe.outbound.protection.outlook.com"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1752924AbdBHGqq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 8 Feb 2017 01:46:46 -0500
-In-Reply-To: <20170207155956.Horde.j9Dv5b4PsA33ZMsJPwC5UA8@www3.nde.ag>
+Received: from mx2.suse.de ([195.135.220.15]:36785 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750947AbdBINTx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 9 Feb 2017 08:19:53 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
-Cc: linux-bcache@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, Jan Kara <jack@suse.cz>
 
-Hi Jens,
+If blkdev_get_by_path() in register_bcache() fails, we try to lookup the
+block device using lookup_bdev() to detect which situation we are in to
+properly report error. However we never drop the reference returned to
+us from lookup_bdev(). Fix that.
 
-Linux host 4.9.8 #1 SMP Tue Feb 7 19:15:34 UTC 2017 x86_64 x86_64 x86_64 
-GNU/Linux
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ drivers/md/bcache/super.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Fixed the issue, could restore the whole DB and it could catch up.
-
-Thanks, maybe someone could add a warning? 😊
-
-Regards
-Thomas
-
-On 7 Feb 2017, at 15:59, Jens-U. Mozdzen wrote:
-
-> Hi Thomas,
->
-> Zitat von Thomas Rosenstein <thomas@ccs.at>:
->> Hi,
->>
->> I'm trying to run bcache on a Hyper-V VM, following setup:
->> [...]
->> Linux host 3.10.0-514.6.1.el7.x86_64 #1 SMP Wed Jan 18 13:06:36 UTC 
->> 2017 x86_64 x86_64 x86_64 GNU/Linux
->>
->> I compiled bcache as a module according to: 
->> http://10sa.com/sql_stories/?p=1052
->
-> what catches the eye is the old kernel version. While many fixes may 
-> have been back-ported by the distro developers, I have no idea to what 
-> extend this was actually done. I remember having seen quite a number 
-> of severe bugs, i.e. in the disk subsystem, that may well have lead to 
-> the problems you face.
->
-> Are you in a position to boot a more recent (mainline) kernel for a 
-> test, if just to compare results?
->
-> Regards,
-> Jens
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 3a19cbc8b230..2a6a4a0520f6 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1964,6 +1964,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 			else
+ 				err = "device busy";
+ 			mutex_unlock(&bch_register_lock);
++			if (!IS_ERR(bdev))
++				bdput(bdev);
+ 			if (attr == &ksysfs_register_quiet)
+ 				goto out;
+ 		}
+-- 
+2.10.2
