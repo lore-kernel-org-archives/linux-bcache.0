@@ -1,102 +1,225 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: [branch:bcachefs-testing]  BUG: unable to handle kernel paging
- request at ffffc90006c53000
-Date: Fri, 10 Feb 2017 16:11:36 -0900
-Message-ID: <20170211011136.rsyub7uqacdrn4ha@moria.home.lan>
-References: <3051ee002436f948e1cf43b26c4cf1e5@mejor.pl>
+From: Rui Hua <flowerui@gmail.com>
+Subject: Re: bcache register deadlock in bcache_bucket_alloc() between
+ bch_uuid_write and bch_prio_write
+Date: Sat, 11 Feb 2017 16:09:03 +0800
+Message-ID: <CAMO59RDYhZZZsjyg2hsCxpU8=_VEhDA6j__=TXTHZKtQVyxpBw@mail.gmail.com>
+References: <alpine.LRH.2.11.1604040040030.5857@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f67.google.com ([74.125.83.67]:32903 "EHLO
-        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752912AbdBKBLk (ORCPT
+Received: from mail-qt0-f171.google.com ([209.85.216.171]:34994 "EHLO
+        mail-qt0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750999AbdBKIJE (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 10 Feb 2017 20:11:40 -0500
-Received: by mail-pg0-f67.google.com with SMTP id 194so4227695pgd.0
-        for <linux-bcache@vger.kernel.org>; Fri, 10 Feb 2017 17:11:40 -0800 (PST)
-Content-Disposition: inline
-In-Reply-To: <3051ee002436f948e1cf43b26c4cf1e5@mejor.pl>
+        Sat, 11 Feb 2017 03:09:04 -0500
+Received: by mail-qt0-f171.google.com with SMTP id x49so53776343qtc.2
+        for <linux-bcache@vger.kernel.org>; Sat, 11 Feb 2017 00:09:04 -0800 (PST)
+In-Reply-To: <alpine.LRH.2.11.1604040040030.5857@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Marcin <marcin@mejor.pl>
+To: Eric Wheeler <bcache@lists.ewheeler.net>
 Cc: linux-bcache@vger.kernel.org
 
-On Thu, Jan 12, 2017 at 09:08:36PM +0100, Marcin wrote:
-> Hi,
-> all the best in 2017!
-> 
-> I've got reproducible bug testing bcachefs:
-> 
-> [ 9807.622253] BUG: unable to handle kernel paging request at
-> ffffc90006c53000
-> [ 9807.622310] IP: [<ffffffff812bf074>] lz4_compress+0x4e4/0x830
-> [ 9807.622345] PGD 9c82e067 PUD 9c82f067 PMD 2d4f6067 PTE 0
-> [ 9807.622383] Oops: 0002 [#1] SMP
-> [ 9807.622408] Modules linked in: cpufreq_ondemand msr af_packet bridge stp
-> llc fuse xfs coretemp hwmon kvm_intel r8188eu(C) kvm hpsa irqbypass snd_pcsp
-> cfg8
-> 0211 i2c_i801 snd_pcm i2c_smbus sky2 i2c_core scsi_transport_sas snd_timer
-> snd rfkill soundcore button pcrypt nf_nat_ftp nf_conntrack_ftp nf_nat
-> nf_conntrack
->  ipv6 acpi_cpufreq processor raid1 md_mod pata_jmicron ehci_pci ehci_hcd
-> dm_mod
-> [ 9807.622648] CPU: 1 PID: 6560 Comm: rsync Tainted: G         C      4.8.0+
-> #2
-> [ 9807.622680] Hardware name: Gigabyte Technology Co., Ltd.
-> 965P-DS3/965P-DS3, BIOS F14 06/25/2009
-> [ 9807.622727] task: ffff880069d63600 task.stack: ffff880069d68000
-> [ 9807.622756] RIP: 0010:[<ffffffff812bf074>]  [<ffffffff812bf074>]
-> lz4_compress+0x4e4/0x830
-> [ 9807.622806] RSP: 0018:ffff880069d6b8a0  EFLAGS: 00010296
-> [ 9807.622833] RAX: ffffc90006c63ef9 RBX: ffffc90006c54000 RCX:
-> ffffc90006c53001
-> [ 9807.622864] RDX: ffffc90006c63ecc RSI: ffffc90006c63f00 RDI:
-> ffffc90006c52ffa
-> [ 9807.622894] RBP: ffff880069d6b8f8 R08: ffffc90006c63ff3 R09:
-> ffffc90006c43000
-> [ 9807.622924] R10: ffffc90006c53000 R11: 0000000000000000 R12:
-> ffffc90006c63ff4
-> [ 9807.622955] R13: ffff880031220000 R14: ffffc90006c63ff7 R15:
-> ffffc90006c43100
-> [ 9807.622985] FS:  00007f60acdcb700(0000) GS:ffff88009fc80000(0000)
-> knlGS:0000000000000000
-> [ 9807.623032] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [ 9807.623060] CR2: ffffc90006c53000 CR3: 00000000779a6000 CR4:
-> 00000000000006e0
-> [ 9807.623090] Stack:
-> [ 9807.623111]  ffffc90006c43000 ffffc90006c64000 ffffc90006c63ffa
-> ffffc90006c63ff9
-> [ 9807.623164]  0000000000010000 ffff880069d6ba90 ffff8800779d0000
-> ffff880069d6ba90
-> [ 9807.623219]  ffff880069d6ba98 ffff880031220000 ffff880097a7fe20
-> ffff880069d6b9d0
-> [ 9807.623273] Call Trace:
-> [ 9807.629620]  [<ffffffff813f5f43>] __bio_compress+0x2c3/0x3c0
-> [ 9807.629650]  [<ffffffff812b7123>] ? crc32c+0x63/0x90
-> [ 9807.629677]  [<ffffffff813f639c>] bch_bio_compress+0xac/0xc0
-> [ 9807.629706]  [<ffffffff8140a7df>] __bch_write+0x3ff/0x7f0
-> [ 9807.629734]  [<ffffffff8140ac55>] bch_write+0x85/0x3d0
-> [ 9807.629762]  [<ffffffff81404df7>] bch_writepage_do_io+0x57/0x80
-> [ 9807.629792]  [<ffffffff81407bae>] bch_writepages+0x2be/0x530
-> [ 9807.629821]  [<ffffffff8110cc26>] ? __find_get_pages+0x136/0x370
-> [ 9807.629852]  [<ffffffff812a01e3>] ? radix_tree_lookup_slot+0x13/0x30
-> [ 9807.629882]  [<ffffffff811198fc>] do_writepages+0x1c/0x30
-> [ 9807.629910]  [<ffffffff8110d5f5>] __filemap_fdatawrite_range+0xa5/0xe0
-> [ 9807.629941]  [<ffffffff8110d74c>] filemap_write_and_wait_range+0x3c/0x90
-> [ 9807.629971]  [<ffffffff81408a41>] bch_truncate+0x1f1/0x230
-> [ 9807.630000]  [<ffffffff81402573>] bch_setattr+0x93/0xa0
-> [ 9807.630029]  [<ffffffff81190cc7>] notify_change+0x247/0x400
-> [ 9807.630059]  [<ffffffff81172b7a>] do_truncate+0x5a/0x90
-> [ 9807.630088]  [<ffffffff81172e43>]
-> do_sys_ftruncate.constprop.18+0xe3/0x100
-> [ 9807.630119]  [<ffffffff81172e89>] SyS_ftruncate+0x9/0x10
-> [ 9807.630148]  [<ffffffff814fcedf>] entry_SYSCALL_64_fastpath+0x17/0x93
-> [ 9807.630177] Code: fa 0f 82 66 fe ff ff 41 83 fb 0e 0f 87 35 02 00 00 41
-> c1 e3 04 48 01 cf 45 88 19 48 39 cf 76 14 4c 8b 1e 48 83 c1 08 48 83 c6 08
-> <4c> 89 59 f8 48 39 cf 77 ec 49 89 c3 48 89 d0 48 8d 77 02 4c 89
-> [ 9807.630404] RIP  [<ffffffff812bf074>] lz4_compress+0x4e4/0x830
-> [ 9807.630435]  RSP <ffff880069d6b8a0>
-> [ 9807.630459] CR2: ffffc90006c53000
-> [ 9807.630759] ---[ end trace 6a05632b1eded47f ]---
+Hi Eric,
+Does this problem fixed?
+I'm hitting a deadlock which is similar to yours: I backport bcache
+code from 4.4.24 to kernel 3.10.0-327.el7.x86_64(CentOS7.2), It has
+been working fine many days (writeback mode, the caching device is a
+Intel DC S3700 200G, attached 5 HDD disks).
+Today, I reboot the system  when running some XFS benchmarks over all
+cachedevs, After the system is startup, the task of register
+command(echo /dev/sdg > /sys/fs/bcache/register) hang, and the dmesg
+info as follow (/dev/sdg is my S3700 SSD):
 
-I think this one should be fixed - can you test the latest bcache-dev?
+[Feb10 20:31] INFO: task bash:2615 blocked for more than 120 seconds.
+[  +0.000059] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[  +0.000059] bash            D ffff88022f86a060     0  2615   2611 0x00000080
+[  +0.000007]  ffff88022e833b28 0000000000000082 ffff88022f985c00
+ffff88022e833fd8
+[  +0.000006]  ffff88022e833fd8 ffff88022e833fd8 ffff88022f985c00
+ffff88022ddc0000
+[  +0.000004]  00000000fffffffc ffff88022f86a000 ffff88022e833bb0
+ffff88022f86a060
+[  +0.000005] Call Trace:
+[  +0.000013]  [<ffffffff8163a909>] schedule+0x29/0x70
+[  +0.000016]  [<ffffffffa045701d>] __bch_btree_map_nodes+0x12d/0x150 [bcache]
+[  +0.000010]  [<ffffffffa0456700>] ?
+bch_btree_insert_check_key+0x1d0/0x1d0 [bcache]
+[  +0.000010]  [<ffffffffa0457131>] bch_btree_insert+0xf1/0x170 [bcache]
+[  +0.000006]  [<ffffffff810a6ae0>] ? wake_up_atomic_t+0x30/0x30
+[  +0.000011]  [<ffffffffa045bbda>] bch_journal_replay+0x14a/0x260 [bcache]
+[  +0.000007]  [<ffffffff8101cd69>] ? sched_clock+0x9/0x10
+[  +0.000008]  [<ffffffff810b8a66>] ? try_to_wake_up+0x1b6/0x300
+[  +0.000013]  [<ffffffffa04673dd>] run_cache_set+0x56d/0x950 [bcache]
+[  +0.000012]  [<ffffffffa0468ec3>] register_bcache+0xde3/0x1370 [bcache]
+[  +0.000008]  [<ffffffff812f4d0f>] kobj_attr_store+0xf/0x20
+[  +0.000005]  [<ffffffff81259176>] sysfs_write_file+0xc6/0x140
+[  +0.000006]  [<ffffffff811de5cd>] vfs_write+0xbd/0x1e0
+[  +0.000003]  [<ffffffff811df06f>] SyS_write+0x7f/0xe0
+[  +0.000006]  [<ffffffff81645909>] system_call_fastpath+0x16/0x1b
+[  +0.000006] INFO: task bcache_allocato:2676 blocked for more than 120 seconds.
+[  +0.000054] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[  +0.000057] bcache_allocato D 0000000000000001     0  2676      2 0x00000080
+[  +0.000004]  ffff880220edfc78 0000000000000046 ffff8800b8ed0b80
+ffff880220edffd8
+[  +0.000005]  ffff880220edffd8 ffff880220edffd8 ffff8800b8ed0b80
+ffff880220edfce0
+[  +0.000004]  ffff8800b8ed0b80 ffff88022ddd8870 ffff8800b9cae320
+0000000000000001
+[  +0.000004] Call Trace:
+[  +0.000005]  [<ffffffff8163a909>] schedule+0x29/0x70
+[  +0.000010]  [<ffffffffa0457c05>] closure_sync+0x25/0x90 [bcache]
+[  +0.000011]  [<ffffffffa045c4b8>] bch_journal+0x128/0x340 [bcache]
+[  +0.000009]  [<ffffffffa045c717>] bch_journal_meta+0x47/0x70 [bcache]
+[  +0.000005]  [<ffffffff8163a909>] ? schedule+0x29/0x70
+[  +0.000009]  [<ffffffffa0457c05>] ? closure_sync+0x25/0x90 [bcache]
+[  +0.000011]  [<ffffffffa0462f5b>] ? prio_io+0xfb/0x170 [bcache]
+[  +0.000004]  [<ffffffff81638b42>] ? mutex_lock+0x12/0x2f
+[  +0.000011]  [<ffffffffa0465407>] bch_prio_write+0x237/0x340 [bcache]
+[  +0.000008]  [<ffffffffa044ccf0>] ? invalidate_buckets+0x9c0/0x9c0 [bcache]
+[  +0.000009]  [<ffffffffa044d0b8>] bch_allocator_thread+0x3c8/0x3d0 [bcache]
+[  +0.000008]  [<ffffffffa044ccf0>] ? invalidate_buckets+0x9c0/0x9c0 [bcache]
+[  +0.000007]  [<ffffffff810a5aef>] kthread+0xcf/0xe0
+[  +0.000005]  [<ffffffff810a5a20>] ? kthread_create_on_node+0x140/0x140
+[  +0.000005]  [<ffffffff81645858>] ret_from_fork+0x58/0x90
+[  +0.000006]  [<ffffffff810a5a20>] ? kthread_create_on_node+0x140/0x140
+
+The trace info as fallow:
+[root@localhost ~]# perf record -e 'bcache:*' -o /tmp/perf.data -a
+^C[ perf record: Woken up 1 times to write data ]
+[bcache] with build id 4ce18096008788e940370b93dcb21b5711b7bed6 not
+found, continuing without symbols
+[ perf record: Captured and wrote 0.207 MB /tmp/perf.data (675 samples) ]
+[root@localhost ~]#
+[root@localhost ~]# cd /tmp/
+[root@localhost tmp]# perf script
+            bash  2615 [004]    97.000138: bcache:bcache_btree_read:
+bucket 186634
+            .......
+            bash  2615 [004]    98.708044: bcache:bcache_btree_read:
+bucket 122988
+            bash  2615 [004]    98.711088: bcache:bcache_btree_read:
+bucket 270990
+            bash  2615 [004]    98.741592:
+bcache:bcache_journal_replay_key: 3:978301904 len 16 dirty 1
+        kthreadd  2676 [002]    98.756234: bcache:bcache_alloc:
+allocated 8,98 sector=1024
+        kthreadd  2676 [002]    98.760511: bcache:bcache_alloc:
+allocated 8,98 sector=1024
+        kthreadd  2676 [002]    98.762685: bcache:bcache_journal_full: (nil)U
+
+====
+Looks like deadlock between the SSD register command and
+bcache_allocator thread? The trace info tell us the journal is full,
+so the allocator thread waits on
+bch_prio_write()->prio_io()->bch_journal_meta(), but there is no
+RESERVE_BTREE buckets to use for journal replay at this time, so
+register waits on bch_journal_replay()->bch_btree_insert()
+
+2016-04-04 9:07 GMT+08:00 Eric Wheeler <bcache@lists.ewheeler.net>:
+> Hello all,
+>
+> I have a test system that won't register.  I can register either the
+> caching dev or the cached dev fine, but as soon as I register the
+> sencond dev, bash hangs when echoing into /sys/fs/bcache/register .
+> I can register in either order (cache first or cached dev first) and
+> the deadlock still presents.
+>
+> I've narrowed down the problem to these two call stacks:
+>
+>
+> == The allocator thread is one half of the deadlock:
+>
+> [  405.619895] INFO: task bcache_allocato:3494 blocked for more than 5 seconds.
+> [  405.620897]       Tainted: G        W  O    4.1.20+ #5
+> [  405.621732] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [  405.623132] bcache_allocato D ffff88007b78fc98     0  3494      2 0x00000080
+> [  405.624406]  ffff88007b78fc98 ffff88007b78fc68 0000000000000002 ffff88007c8ddb80
+> [  405.626241]  ffff8800796e0000 ffff88007b78fc78 ffff88007b790000 0000000000000005
+> [  405.627890]  ffff880079cf0028 0000000000000001 0000000000000001 ffff88007b78fcb8
+> [  405.629730] Call Trace:
+> [  405.630362]  [<ffffffff817a9f47>] schedule+0x37/0x90
+> [  405.631230]  [<ffffffffa048e4f0>] bch_bucket_alloc+0x1b0/0x670 [bcache]
+> [  405.632261]  [<ffffffff81103860>] ? prepare_to_wait_event+0x110/0x110
+> [  405.633274]  [<ffffffffa04a90d5>] bch_prio_write+0x1b5/0x390 [bcache]
+> [  405.634362]  [<ffffffffa048e19d>] bch_allocator_thread+0x31d/0x4c0 [bcache]
+> [  405.635496]  [<ffffffffa048de80>] ? invalidate_buckets+0x980/0x980 [bcache]
+> [  405.636655]  [<ffffffff810d734e>] kthread+0xfe/0x120
+> [  405.637604]  [<ffffffff817b0440>] ? _raw_spin_unlock_irq+0x30/0x50
+> [  405.638569]  [<ffffffff810d7250>] ? kthread_create_on_node+0x240/0x240
+> [  405.639628]  [<ffffffff817b11a2>] ret_from_fork+0x42/0x70
+> [  405.640570]  [<ffffffff810d7250>] ? kthread_create_on_node+0x240/0x240
+> [  405.641568] no locks held by bcache_allocato/3494.
+>
+> There is a comment in the code inside of bch_allocator_thread() before it
+> calls bch_prio_write(ca):
+>         360  /*
+>         361   * This could deadlock if an allocation with a btree
+>         362   * node locked ever blocked - having the btree node
+>         363   * locked would block garbage collection, but here we're
+>         364   * waiting on garbage collection before we invalidate
+>         365   * and free anything.
+>         366   *
+>         367   * But this should be safe since the btree code always
+>         368   * uses btree_check_reserve() before allocating now, and
+>         369   * if it fails it blocks without btree nodes locked.
+>         370   */
+>         371   if (!fifo_full(&ca->free_inc))
+>         372           goto retry_invalidate;
+>         373
+>         374   bch_prio_write(ca);
+>
+> I think I'm hitting the deadlock which this comment speaks to.
+>
+>
+> == This is the other side of the deadlock caused by registering the cache device:
+>   echo /dev/sdb > /sys/fs/bcache/register
+>
+> [  405.578073] INFO: task bash:3490 blocked for more than 5 seconds:
+> [  405.580255] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [ ... ]
+> [  405.588984]  [<ffffffff817a9f47>] schedule+0x37/0x90
+> [  405.589986]  [<ffffffffa048e4f0>] bch_bucket_alloc+0x1b0/0x670 [bcache]
+> [  405.591084]  [<ffffffff81103860>] ? prepare_to_wait_event+0x110/0x110
+> [  405.592078]  [<ffffffffa048eb59>] __bch_bucket_alloc_set+0x109/0x1a0 [bcache]
+> [  405.593113]  [<ffffffffa048ec40>] bch_bucket_alloc_set+0x50/0x70 [bcache]
+> [  405.594153]  [<ffffffffa04a7927>] __uuid_write+0x67/0x160 [bcache]
+> [  405.595223]  [<ffffffffa04a8a06>] bch_uuid_write+0x16/0x40 [bcache]
+> [  405.596273]  [<ffffffffa04a9877>] bch_cached_dev_attach+0x157/0x490 [bcache]
+> [  405.597384]  [<ffffffffa04a6b68>] ? __write_super+0x148/0x180 [bcache]
+> [  405.598432]  [<ffffffffa04a8986>] ? bcache_write_super+0x1d6/0x240 [bcache]
+> [  405.599464]  [<ffffffffa04aa761>] run_cache_set+0x601/0x910 [bcache]
+> [  405.600548]  [<ffffffffa04ac0ce>] register_bcache+0xeae/0x1430 [bcache]
+> [...]
+> [  405.611623] 4 locks held by bash/3490:
+> [  405.612342]  #0:  (sb_writers#3){.+.+.+}, at: [<ffffffff8126f773>] vfs_write+0x183/0x1b0
+> [  405.614200]  #1:  (&of->mutex){+.+.+.}, at: [<ffffffff812faaa6>] kernfs_fop_write+0x66/0x1a0
+> [  405.615994]  #2:  (s_active#194){.+.+.+}, at: [<ffffffff812faaae>] kernfs_fop_write+0x6e/0x1a0
+> [  405.617925]  #3:  (&bch_register_lock){+.+.+.}, at: [<ffffffffa04abe70>] register_bcache+0xc50/0x1430 [bcache]
+>
+>
+> I'm rather perplexed as to why this is deadlocking because
+> bch_bucket_alloc_set() locks c->bucket_lock, and the allocator holds
+> ca->set->bucket_lock before calling bch_prio_write() .  I checked,
+> this is the same lock (same memory position).
+>
+> This implies that the allocator waits on bch_bucket_alloc_set()
+> which was invoked by bash through register_bcache, and register_bcache
+> waits on the allocator's call to bch_prio_write().
+>
+> Things that I've tried which don't work or make the problem worse:
+>   * Adding a mutex inside bch_bucket_alloc so that only one may proceed at a time
+>   * Holding bch_register_lock in the allocator thread before calling bch_prio_write.
+>
+> Does anyone else have insight here that might help solve the problem?
+>
+> -Eric
+>
+> --
+> Eric Wheeler
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
