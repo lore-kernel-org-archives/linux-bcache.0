@@ -1,105 +1,98 @@
-From: "marcin@mejor.pl" <marcin@mejor.pl>
-Subject: Re: [branch:bcachefs-testing] BUG: unable to handle kernel paging
- request at ffffc90006c53000
-Date: Tue, 14 Feb 2017 10:38:02 +0100
-Message-ID: <df8e4ebb-9705-371e-83fc-db658f68c837@mejor.pl>
-References: <3051ee002436f948e1cf43b26c4cf1e5@mejor.pl>
- <20170211011136.rsyub7uqacdrn4ha@moria.home.lan>
+From: "Jens-U. Mozdzen" <jmozdzen@nde.ag>
+Subject: Re: size limit for backing store? block sizes? ("[sdx] Bad block
+ number requested")
+Date: Tue, 14 Feb 2017 11:52:45 +0100
+Message-ID: <20170214115245.Horde.cCYA8my4OTp7nnDzpZShDYe@www3.nde.ag>
+References: <20170207133558.Horde.vMEQ46joRTaI1D7afBcEmGv@www3.nde.ag>
+ <20170207205855.3d9c0985@jupiter.sol.kaishome.de>
+ <20170208002843.Horde.s0-rn8GSuWk8FVkt60OB6Yb@www3.nde.ag>
+ <20170208005732.207098f6@jupiter.sol.kaishome.de>
+ <20170210115700.Horde.IQLnhCcS8ohxmn7nYsuxBaj@www3.nde.ag>
+ <alpine.LRH.2.11.1702101127170.5783@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8; format=flowed; DelSp=Yes
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:9554 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752646AbdBNJiL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 14 Feb 2017 04:38:11 -0500
-In-Reply-To: <20170211011136.rsyub7uqacdrn4ha@moria.home.lan>
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.182]:35394 "EHLO
+        mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752384AbdBNKwu (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 14 Feb 2017 05:52:50 -0500
+In-Reply-To: <alpine.LRH.2.11.1702101127170.5783@mail.ewheeler.net>
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
+To: Eric Wheeler <bcache@lists.ewheeler.net>
 Cc: linux-bcache@vger.kernel.org
 
-W dniu 11.02.2017 o 02:11, Kent Overstreet pisze:
-> On Thu, Jan 12, 2017 at 09:08:36PM +0100, Marcin wrote:
->> Hi,
->> all the best in 2017!
->>
->> I've got reproducible bug testing bcachefs:
->>
->> [ 9807.622253] BUG: unable to handle kernel paging request at
->> ffffc90006c53000
->> [ 9807.622310] IP: [<ffffffff812bf074>] lz4_compress+0x4e4/0x830
->> [ 9807.622345] PGD 9c82e067 PUD 9c82f067 PMD 2d4f6067 PTE 0
->> [ 9807.622383] Oops: 0002 [#1] SMP
->> [ 9807.622408] Modules linked in: cpufreq_ondemand msr af_packet bridge stp
->> llc fuse xfs coretemp hwmon kvm_intel r8188eu(C) kvm hpsa irqbypass snd_pcsp
->> cfg8
->> 0211 i2c_i801 snd_pcm i2c_smbus sky2 i2c_core scsi_transport_sas snd_timer
->> snd rfkill soundcore button pcrypt nf_nat_ftp nf_conntrack_ftp nf_nat
->> nf_conntrack
->>  ipv6 acpi_cpufreq processor raid1 md_mod pata_jmicron ehci_pci ehci_hcd
->> dm_mod
->> [ 9807.622648] CPU: 1 PID: 6560 Comm: rsync Tainted: G         C      4.8.0+
->> #2
->> [ 9807.622680] Hardware name: Gigabyte Technology Co., Ltd.
->> 965P-DS3/965P-DS3, BIOS F14 06/25/2009
->> [ 9807.622727] task: ffff880069d63600 task.stack: ffff880069d68000
->> [ 9807.622756] RIP: 0010:[<ffffffff812bf074>]  [<ffffffff812bf074>]
->> lz4_compress+0x4e4/0x830
->> [ 9807.622806] RSP: 0018:ffff880069d6b8a0  EFLAGS: 00010296
->> [ 9807.622833] RAX: ffffc90006c63ef9 RBX: ffffc90006c54000 RCX:
->> ffffc90006c53001
->> [ 9807.622864] RDX: ffffc90006c63ecc RSI: ffffc90006c63f00 RDI:
->> ffffc90006c52ffa
->> [ 9807.622894] RBP: ffff880069d6b8f8 R08: ffffc90006c63ff3 R09:
->> ffffc90006c43000
->> [ 9807.622924] R10: ffffc90006c53000 R11: 0000000000000000 R12:
->> ffffc90006c63ff4
->> [ 9807.622955] R13: ffff880031220000 R14: ffffc90006c63ff7 R15:
->> ffffc90006c43100
->> [ 9807.622985] FS:  00007f60acdcb700(0000) GS:ffff88009fc80000(0000)
->> knlGS:0000000000000000
->> [ 9807.623032] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [ 9807.623060] CR2: ffffc90006c53000 CR3: 00000000779a6000 CR4:
->> 00000000000006e0
->> [ 9807.623090] Stack:
->> [ 9807.623111]  ffffc90006c43000 ffffc90006c64000 ffffc90006c63ffa
->> ffffc90006c63ff9
->> [ 9807.623164]  0000000000010000 ffff880069d6ba90 ffff8800779d0000
->> ffff880069d6ba90
->> [ 9807.623219]  ffff880069d6ba98 ffff880031220000 ffff880097a7fe20
->> ffff880069d6b9d0
->> [ 9807.623273] Call Trace:
->> [ 9807.629620]  [<ffffffff813f5f43>] __bio_compress+0x2c3/0x3c0
->> [ 9807.629650]  [<ffffffff812b7123>] ? crc32c+0x63/0x90
->> [ 9807.629677]  [<ffffffff813f639c>] bch_bio_compress+0xac/0xc0
->> [ 9807.629706]  [<ffffffff8140a7df>] __bch_write+0x3ff/0x7f0
->> [ 9807.629734]  [<ffffffff8140ac55>] bch_write+0x85/0x3d0
->> [ 9807.629762]  [<ffffffff81404df7>] bch_writepage_do_io+0x57/0x80
->> [ 9807.629792]  [<ffffffff81407bae>] bch_writepages+0x2be/0x530
->> [ 9807.629821]  [<ffffffff8110cc26>] ? __find_get_pages+0x136/0x370
->> [ 9807.629852]  [<ffffffff812a01e3>] ? radix_tree_lookup_slot+0x13/0x30
->> [ 9807.629882]  [<ffffffff811198fc>] do_writepages+0x1c/0x30
->> [ 9807.629910]  [<ffffffff8110d5f5>] __filemap_fdatawrite_range+0xa5/0xe0
->> [ 9807.629941]  [<ffffffff8110d74c>] filemap_write_and_wait_range+0x3c/0x90
->> [ 9807.629971]  [<ffffffff81408a41>] bch_truncate+0x1f1/0x230
->> [ 9807.630000]  [<ffffffff81402573>] bch_setattr+0x93/0xa0
->> [ 9807.630029]  [<ffffffff81190cc7>] notify_change+0x247/0x400
->> [ 9807.630059]  [<ffffffff81172b7a>] do_truncate+0x5a/0x90
->> [ 9807.630088]  [<ffffffff81172e43>]
->> do_sys_ftruncate.constprop.18+0xe3/0x100
->> [ 9807.630119]  [<ffffffff81172e89>] SyS_ftruncate+0x9/0x10
->> [ 9807.630148]  [<ffffffff814fcedf>] entry_SYSCALL_64_fastpath+0x17/0x93
->> [ 9807.630177] Code: fa 0f 82 66 fe ff ff 41 83 fb 0e 0f 87 35 02 00 00 41
->> c1 e3 04 48 01 cf 45 88 19 48 39 cf 76 14 4c 8b 1e 48 83 c1 08 48 83 c6 08
->> <4c> 89 59 f8 48 39 cf 77 ec 49 89 c3 48 89 d0 48 8d 77 02 4c 89
->> [ 9807.630404] RIP  [<ffffffff812bf074>] lz4_compress+0x4e4/0x830
->> [ 9807.630435]  RSP <ffff880069d6b8a0>
->> [ 9807.630459] CR2: ffffc90006c53000
->> [ 9807.630759] ---[ end trace 6a05632b1eded47f ]---
-> 
-> I think this one should be fixed - can you test the latest bcache-dev?
+Hi Eric,
 
-Hi!
-I couldn't reproduce it since upgrade from 4.8 to 4.9.
-Marcin
+Zitat von Eric Wheeler <bcache@lists.ewheeler.net>:
+> On Fri, 10 Feb 2017, Jens-U. Mozdzen wrote:
+> [...]
+>> myserver:~ # blockdev --getss /dev/md125
+>> 4096
+>>
+>> - created the bcache super block
+>>
+>> myserver:~ # make-bcache -B --block 4096b /dev/md125
+>> UUID:                   05d4d36a-ef17-4ecb-99d4-0a0eeec03941
+>> Set UUID:               dd4165a9-47ca-4e35-9e7a-5968e1e40d92
+>> version:                1
+>> block_size:             8
+>> data_offset:            16
+>> myserver:~ # bcache-super-show /dev/md125
+>> sb.magic                ok
+>> sb.first_sector         8 [match]
+>> sb.csum                 F4E616E067FA3C45 [match]
+>> sb.version              1 [backing device]
+>>
+>> dev.label               (empty)
+>> dev.uuid                05d4d36a-ef17-4ecb-99d4-0a0eeec03941
+>> dev.sectors_per_block   8
+>> dev.sectors_per_bucket  1024
+>> dev.data.first_sector   16
+>> dev.data.cache_mode     0 [writethrough]
+>> dev.data.cache_state    0 [detached]
+>>
+>> cset.uuid               dd4165a9-47ca-4e35-9e7a-5968e1e40d92
+>> myserver:~ # [...]
+>>
+>> Why does it report 8 sectors per block? With 4k per sector, that'd  
+>> be a block
+>> size of 32k?
+>
+> Its in 512b units and 8*512=4096.  Lots of things are in units of 512 even
+> though your block size is 4096.  Its correct, it just looks funny since
+> you have 4k sectors.
+
+first of all, thank you for that information, I succeeded in setting  
+up that specific bcache scenario, have populated it and found no  
+problems so far.
+
+Once I had a few spare minutes, I double-checked the source code of  
+make-bcache and bcache-show-super and indeed, there's hardcoded the  
+factor of 512 bytes. Nothing wrong with that, but I strongly suggest  
+to change both tools to include some unit information:
+
+--- cut here ---
+myserver:~ # make-bcache -B --block 4096b /dev/md125
+[...]
+block_size:             8 (units of 512 octets)
+
+myserver:~ # bcache-super-show /dev/md125
+[...]
+dev.sectors_per_block   8 (pseudo-sectors of 512 octets each)
+--- cut here ---
+
+dev.sectors_per_block is especially misleading in its current display,  
+because that data element actually does *not* relate to native block  
+device sectors.
+
+Both changes would be purely cosmetic and not altering current functionality.
+
+It might be favorable (AKA "better readable") to instead output the  
+"block_size" in bytes/octets in both places, instead of just dumping  
+the value of the super block element.
+
+Regards,
+J
