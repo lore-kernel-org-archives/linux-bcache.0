@@ -1,27 +1,32 @@
-From: Qin's Yanjun <Qin.Yanjun@null.net>
-Subject: RE:
-Date: Thu, 23 Feb 2017 20:09:29 +0500
-Message-ID: <cf3faff95fb3db02602e6f37c5cd928f__49983.213740825$1487873430$gmane$org@mail.aknet.kz>
-Reply-To: Qin's Yanjun <Qin.Yanjun@null.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.aknet.kz ([88.151.176.20]:42649 "EHLO aknet.kz"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751049AbdBWSK1 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 23 Feb 2017 13:10:27 -0500
-Sender: linux-bcache-owner@vger.kernel.org
+From: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [linux-next] bcache: Remove duplicate inclusion of blkdev.h
+Date: Sun, 26 Feb 2017 15:02:30 +0900
+Message-ID: <20170226060230.11555-1-standby24x7@gmail.com>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, kent.overstreet@gmail.com, shli@kernel.org, linux-bcache@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
+This patch remove duplicate inclusion of blkdev.h in util.h.
+Confirm compile successfully after remove the line.
 
-How are you today and your family? I require your attention and honest
-co-operation about some issues which i will really want to discuss with you
-which.  Looking forward to read from you soon.  
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/md/bcache/util.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-Qin's
-
-
-______________________________
-
-Sky Silk, http://aknet.kz
+diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+index cf2cbc211d83..03af094d0202 100644
+--- a/drivers/md/bcache/util.h
++++ b/drivers/md/bcache/util.h
+@@ -4,7 +4,6 @@
+ 
+ #include <linux/blkdev.h>
+ #include <linux/errno.h>
+-#include <linux/blkdev.h>
+ #include <linux/kernel.h>
+ #include <linux/llist.h>
+ #include <linux/ratelimit.h>
+-- 
+2.12.0
