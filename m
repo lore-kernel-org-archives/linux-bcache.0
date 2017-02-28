@@ -1,46 +1,57 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH] [linux-next] bcache: Remove duplicate inclusion of
- blkdev.h
-Date: Sun, 26 Feb 2017 22:45:43 +0800
-Message-ID: <c74ff145-37d5-ace3-c65c-d2d6199163ef@coly.li>
-References: <20170226060230.11555-1-standby24x7@gmail.com>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PULL] bcache: based on for-4.10/block, multiple updates
+Date: Mon, 27 Feb 2017 18:00:32 -0800 (PST)
+Message-ID: <alpine.LRH.2.11.1702271800260.10923@mail.ewheeler.net>
+References: <alpine.LRH.2.11.1610262037160.24191@mail.ewheeler.net> <5160da7c-e38e-1527-2b09-2ca240df57c3@kernel.dk> <alpine.LRH.2.11.1610291826250.4080@mail.ewheeler.net> <20161030140050.q6ywphi3by6yoczc@kmo-pixel> <6bda49c5-5ed8-939f-aab3-faa9c8127ff0@kernel.dk>
+ <alpine.LRH.2.11.1612061145430.13402@mail.ewheeler.net> <alpine.LRH.2.11.1612141747470.31582@mail.ewheeler.net> <d162cba4-c1e9-d028-fe60-1e1d1fe22e29@kernel.dk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:49868 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752244AbdBZPXU (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 26 Feb 2017 10:23:20 -0500
-In-Reply-To: <20170226060230.11555-1-standby24x7@gmail.com>
+Received: from mx.ewheeler.net ([66.155.3.69]:44544 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1751612AbdB1CD3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 27 Feb 2017 21:03:29 -0500
+In-Reply-To: <d162cba4-c1e9-d028-fe60-1e1d1fe22e29@kernel.dk>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, kent.overstreet@gmail.com, shli@kernel.org, linux-bcache@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, dave@stgolabs.net, linux-kernel@vger.kernel.org, Kai Krakow <kai@kaishome.de>, Wido den Hollander <wido@widodh.nl>, Emmanuel Florac <eflorac@intellique.com>, Hans van den Bogert <hansbogert@gmail.com>, "Jens-U. Mozdzen" <jmozdzen@nde.ag>
 
-On 2017/2/26 下午2:02, Masanari Iida wrote:
-> This patch remove duplicate inclusion of blkdev.h in util.h.
-> Confirm compile successfully after remove the line.
+On Wed, 14 Dec 2016, Jens Axboe wrote:
+> On 12/14/2016 06:50 PM, Eric Wheeler wrote:
+> > Hi Jens,
+> > 
+> > I know you're busy, so when you get a moment:
+> > 
+> > I've not yet seen your ack/nack on this yet and I want to make sure it 
+> > gets in before the merge window closes for v4.10.  I rebased it on 
+> > for-4.10/block as you asked so its tested and ready to go as of 12/6 
+> > unless you see something that I've missed.
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  drivers/md/bcache/util.h | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
-> index cf2cbc211d83..03af094d0202 100644
-> --- a/drivers/md/bcache/util.h
-> +++ b/drivers/md/bcache/util.h
-> @@ -4,7 +4,6 @@
->  
->  #include <linux/blkdev.h>
->  #include <linux/errno.h>
-> -#include <linux/blkdev.h>
->  #include <linux/kernel.h>
->  #include <linux/llist.h>
->  #include <linux/ratelimit.h>
-> 
-Acked-by: Coly Li <colyli@suse.de>
+> Pulled for 4.10, sorry about the delay.
 
--- 
-Coly Li
+Hi Jens,
+
+Checking in:
+
+Can you get this in for 4.11 since it was missed for 4.10 and we're not in 
+4.11-rc1 yet?
+
+Here it is again:
+
+  https://bitbucket.org/ewheelerinc/linux.git for-4.10-block-bcache-updates
+
+
+--
+Eric Wheeler
+
+
+> 
+> -- 
+> Jens Axboe
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
