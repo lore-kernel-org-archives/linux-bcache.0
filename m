@@ -1,68 +1,114 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: how to re-align data offset
-Date: Tue, 28 Feb 2017 17:00:56 -0800 (PST)
-Message-ID: <alpine.LRH.2.11.1702281655340.21435@mail.ewheeler.net>
-References: <7bc2c18a.302.15a62165fe0.Coremail.zhangbonian17@163.com>
+From: shiva rkreddy <shiva.rkreddy@gmail.com>
+Subject: Re: Drop in Iops with fsync when using NVMe as cache
+Date: Tue, 28 Feb 2017 21:00:18 -0600
+Message-ID: <CAPntomBB0oPKUSPgP9xRAcxdVQ_U_YCXUBU7VeFBJ0xKQnxBmg@mail.gmail.com>
+References: <CAPntomBf8c6TFBLM5iBuX=OWmfQ-uGCUiDdJnXEn1+-gS7KJaw@mail.gmail.com>
+ <20170222094057.GD31967@suse.cz> <CAPntomDbChdaEeJ+6E4-La-fEYgsbrKd1wUcxgM1mVKtTtinAA@mail.gmail.com>
+ <alpine.LRH.2.11.1702281634490.21435@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1501929768-1488330056=:21435"
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:33934 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751392AbdCABEm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 28 Feb 2017 20:04:42 -0500
-In-Reply-To: <7bc2c18a.302.15a62165fe0.Coremail.zhangbonian17@163.com>
+Received: from mail-pg0-f52.google.com ([74.125.83.52]:36820 "EHLO
+        mail-pg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751435AbdCADHv (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 28 Feb 2017 22:07:51 -0500
+Received: by mail-pg0-f52.google.com with SMTP id s67so14807548pgb.3
+        for <linux-bcache@vger.kernel.org>; Tue, 28 Feb 2017 19:07:22 -0800 (PST)
+In-Reply-To: <alpine.LRH.2.11.1702281634490.21435@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?GB2312?B?1cWw2MTq?= <zhangbonian17@163.com>
-Cc: linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Vojtech Pavlik <vojtech@suse.com>, linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+The backing device is a 7.2K SAS disk, in RAID0 (Megaraid sas controller)..
 
---1641074820-1501929768-1488330056=:21435
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Thanks for comment on data-offset. Will give that a try..
 
-On Wed, 22 Feb 2017, 张柏年 wrote:
-
-> The backing device /dev/md0 was a raid 0 array with 2 disks and 64k 
-> stripe size. The bcache device was created like this:
-> 
-> sudo make-bcache -B /dev/md0
-> 
-> I have just learned from the bcache kernel document that data-offset 
-> shoud be provided for data alignment, if the backing device is an array. 
-> Is there any way to correct this? ps: /dev/bcache0 has already been 
-> formated as btrfs
-
-I think you might be stuck without a backup/format/restore.  Technically, 
-you could do something like this but its dangerous unless you get it just 
-perfect:
-
-1. shrunk btrfs to minimum size
-2. Detach any writeback bcache caches
-3. Use some tool (not sure what) to move each Nth block to the (N-1)th 
-   block location aligned to the offset you want (sounds like 64k-8k or 
-   maybe 128k-8k) starting from the *END* of the disk.
-4. Re make-bcache with the right block offset using your new start of data 
-   offset from #3.
-5. Register bcache, attach any caches you want
-6. Resize btrfs to use the full disk again.
-
-Try this at your own risk, and definitely test it on another environment 
-first!  If you are able to make this work, then please write back and let 
-us know what tool you used so we can have a procedure available for 
-others!
-
--Eric
-
-
---
-Eric Wheeler
-
-
-
-> 
-> Thanks,
-> Bonian ZhangN嫥叉靣笡y???氊b瞂???千v豝???藓{.n???壏???{眒茰呰Ф洝塄}???财爖???j:+v墾???珣赙zZ+€???zf＂穐殘???啳嗃i???鄗???畐ア???櫒璀??????撷f
---1641074820-1501929768-1488330056=:21435--
+On Tue, Feb 28, 2017 at 6:55 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
+> On Wed, 22 Feb 2017, shiva rkreddy wrote:
+>> >> fio command without fsync:
+>> >>
+>> >> # fio -filename=/dev/bcache0 -direct=1 -ioengine=libaio -rw=randwrite
+>> >> -bs=4k -name=mytest -iodepth=1 -runtime=30 -time_based
+>> >>
+>> >> iops : 35k
+>> >>
+>> >> fio command with fsync:
+>> >>
+>> >> fio -filename=/dev/bcache0 -direct=1 -ioengine=libaio -rw=randwrite
+>> >> -bs=4k -name=mytest -iodepth=1 -runtime=30 -time_based -fsync=1
+>
+> Try -runtime=25 since 30s is the default writeback delay.  More below.
+>
+>> >>
+>> >> iops: 8.1k
+>> >
+>> >> I'm quite surprised by the drop in iops with fsync turned on. Is this
+>> >> expected or am I missing some basic setting?
+>> >
+>> > It's not uncommon that fsync would have a huge performance impact.
+>> > Without fsync, most of the data never hits the storage and is only
+>> > staying in the system memory.
+>> >
+>> > May I suggest that you try to measure the performance of the same tests
+>> > when the filesystem is created on the NVMe device directly, without
+>> > using bcache? You're likely to observe a similar pattern.
+>>
+>> I've tried fio directly on nvme device and without filesystem. The
+>> drop with fsync is not that significant; 44313 vs 42713 on a 30s
+>> randwrite run with iodepth=1
+>
+> Try using `make-bcache --data-offset X ...` to align your backing device.
+> It defaults to an 8k offset which may not be optimal. By the way, what is
+> your backing device /dev/sdb?
+>
+> Try these, too:
+>
+> echo 0 > /sys/block/bcache0/bcache/sequential_cutoff
+> echo 10000000 > /sys/block/bcache0/bcache/cache/congested_read_threshold_us
+> echo 10000000 > /sys/block/bcache0/bcache/cache/congested_write_threshold_us
+>
+>
+>
+>
+>
+> --
+> Eric Wheeler
+>
+>
+>>
+>>
+>> # fio -filename=/dev/nvme0n1 -direct=1 -ioengine=libaio -rw=randwrite
+>> -bs=4k -name=mytest -iodepth=1 -runtime=30 -time_based
+>> mytest: (g=0): rw=randwrite, bs=4K-4K/4K-4K/4K-4K, ioengine=libaio, iodepth=1
+>> fio-2.1.3
+>> Starting 1 process
+>> Jobs: 1 (f=1): [w] [100.0% done] [0KB/177.6MB/0KB /s] [0/45.5K/0 iops]
+>> [eta 00m:00s]
+>> mytest: (groupid=0, jobs=1): err= 0: pid=2131: Thu Feb  9 18:56:01 2017
+>>   write: io=5193.2MB, bw=177253KB/s, iops=44313, runt= 30001msec
+>>
+>> # fio -filename=/dev/nvme0n1 -direct=1 -ioengine=libaio -rw=randwrite
+>> -bs=4k -name=mytest -iodepth=1 -runtime=30 -time_based -fsync=1
+>> mytest: (g=0): rw=randwrite, bs=4K-4K/4K-4K/4K-4K, ioengine=libaio, iodepth=1
+>> fio-2.1.3
+>> Starting 1 process
+>> Jobs: 1 (f=1): [w] [100.0% done] [0KB/167.4MB/0KB /s] [0/42.9K/0 iops]
+>> [eta 00m:00s]
+>> mytest: (groupid=0, jobs=1): err= 0: pid=2136: Thu Feb  9 19:04:54 2017
+>>   write: io=5005.5MB, bw=170853KB/s, iops=42713, runt= 30000msec
+>>
+>>
+>> On Wed, Feb 22, 2017 at 3:40 AM, Vojtech Pavlik <vojtech@suse.com> wrote:
+>> > On Tue, Feb 21, 2017 at 10:48:06AM -0600, shiva rkreddy wrote:
+>> >
+>> >
+>> > --
+>> > Vojtech Pavlik
+>> > Director SUSE Labs
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
