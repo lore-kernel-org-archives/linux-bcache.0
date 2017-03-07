@@ -1,119 +1,53 @@
-From: "Reshetova, Elena" <elena.reshetova@intel.com>
-Subject: RE: [PATCH 13/29] drivers, media: convert
- vb2_vmarea_handler.refcount from atomic_t to refcount_t
-Date: Tue, 7 Mar 2017 14:48:43 +0000
-Message-ID: <2236FBA76BA1254E88B949DDB74E612B41C558E6@IRSMSX102.ger.corp.intel.com>
-References: <1488810076-3754-1-git-send-email-elena.reshetova@intel.com>
- <1488810076-3754-14-git-send-email-elena.reshetova@intel.com>
- <20170307085005.GH3220@valkosipuli.retiisi.org.uk>
+From: Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] bcache: Fix leak of bdev reference
+Date: Tue, 7 Mar 2017 16:28:01 +0100
+Message-ID: <20170307152801.GA11412@quack2.suse.cz>
+References: <20170209131916.13330-1-jack@suse.cz>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <driverdev-devel-bounces@linuxdriverproject.org>
-In-Reply-To: <20170307085005.GH3220@valkosipuli.retiisi.org.uk>
-Content-Language: en-US
-List-Unsubscribe: <http://driverdev.linuxdriverproject.org/mailman/options/driverdev-devel>,
- <mailto:driverdev-devel-request@linuxdriverproject.org?subject=unsubscribe>
-List-Archive: <http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/>
-List-Post: <mailto:driverdev-devel@linuxdriverproject.org>
-List-Help: <mailto:driverdev-devel-request@linuxdriverproject.org?subject=help>
-List-Subscribe: <http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel>,
- <mailto:driverdev-devel-request@linuxdriverproject.org?subject=subscribe>
-Errors-To: driverdev-devel-bounces@linuxdriverproject.org
-Sender: "devel" <driverdev-devel-bounces@linuxdriverproject.org>
-To: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: "peterz@infradead.org" <peterz@infradead.org>, "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>, "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>, "linux1394-devel@lists.sourceforge.net" <linux1394-devel@lists.sourceforge.net>, "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>, "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>, "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>, "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>, "fcoe-devel@open-fcoe.org" <fcoe-devel@open-fcoe.org>, "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>, "open-iscsi@googlegroups.com" <open-iscsi@googlegroups.com>, "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>, Kees Cook <keescook@chromium.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kerne>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:49292 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S932589AbdCGQDp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 7 Mar 2017 11:03:45 -0500
+Content-Disposition: inline
+In-Reply-To: <20170209131916.13330-1-jack@suse.cz>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, Jan Kara <jack@suse.cz>
 
-> Hi Elena,
+On Thu 09-02-17 14:19:16, Jan Kara wrote:
+> If blkdev_get_by_path() in register_bcache() fails, we try to lookup the
+> block device using lookup_bdev() to detect which situation we are in to
+> properly report error. However we never drop the reference returned to
+> us from lookup_bdev(). Fix that.
 > 
-> On Mon, Mar 06, 2017 at 04:21:00PM +0200, Elena Reshetova wrote:
-> > refcount_t type and corresponding API should be
-> > used instead of atomic_t when the variable is used as
-> > a reference counter. This allows to avoid accidental
-> > refcounter overflows that might lead to use-after-free
-> > situations.
-> >
-> > Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
-> > Signed-off-by: Hans Liljestrand <ishkamiel@gmail.com>
-> > Signed-off-by: Kees Cook <keescook@chromium.org>
-> > Signed-off-by: David Windsor <dwindsor@gmail.com>
-> > ---
-> >  drivers/media/v4l2-core/videobuf2-memops.c | 6 +++---
-> >  include/media/videobuf2-memops.h           | 3 ++-
-> >  2 files changed, 5 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/drivers/media/v4l2-core/videobuf2-memops.c b/drivers/media/v4l2-
-> core/videobuf2-memops.c
-> > index 1cd322e..4bb8424 100644
-> > --- a/drivers/media/v4l2-core/videobuf2-memops.c
-> > +++ b/drivers/media/v4l2-core/videobuf2-memops.c
-> > @@ -96,10 +96,10 @@ static void vb2_common_vm_open(struct
-> vm_area_struct *vma)
-> >  	struct vb2_vmarea_handler *h = vma->vm_private_data;
-> >
-> >  	pr_debug("%s: %p, refcount: %d, vma: %08lx-%08lx\n",
-> > -	       __func__, h, atomic_read(h->refcount), vma->vm_start,
-> > +	       __func__, h, refcount_read(h->refcount), vma->vm_start,
-> >  	       vma->vm_end);
-> >
-> > -	atomic_inc(h->refcount);
-> > +	refcount_inc(h->refcount);
-> >  }
-> >
-> >  /**
-> > @@ -114,7 +114,7 @@ static void vb2_common_vm_close(struct
-> vm_area_struct *vma)
-> >  	struct vb2_vmarea_handler *h = vma->vm_private_data;
-> >
-> >  	pr_debug("%s: %p, refcount: %d, vma: %08lx-%08lx\n",
-> > -	       __func__, h, atomic_read(h->refcount), vma->vm_start,
-> > +	       __func__, h, refcount_read(h->refcount), vma->vm_start,
-> >  	       vma->vm_end);
-> >
-> >  	h->put(h->arg);
-> > diff --git a/include/media/videobuf2-memops.h b/include/media/videobuf2-
-> memops.h
-> > index 36565c7a..a6ed091 100644
-> > --- a/include/media/videobuf2-memops.h
-> > +++ b/include/media/videobuf2-memops.h
-> > @@ -16,6 +16,7 @@
-> >
-> >  #include <media/videobuf2-v4l2.h>
-> >  #include <linux/mm.h>
-> > +#include <linux/refcount.h>
-> >
-> >  /**
-> >   * struct vb2_vmarea_handler - common vma refcount tracking handler
-> > @@ -25,7 +26,7 @@
-> >   * @arg:	argument for @put callback
-> >   */
-> >  struct vb2_vmarea_handler {
-> > -	atomic_t		*refcount;
-> > +	refcount_t		*refcount;
-> 
-> This is a pointer to refcount, not refcount itself. The refcount is part of
-> a memory type specific struct, the types that you change in the following
-> three patches. I guess it would still compile and work as separate patches
-> but you'd sure get warnings at least.
+> Signed-off-by: Jan Kara <jack@suse.cz>
 
-Actually it doesn't compile without this patch if I remember it correctly back in past when I was initially splitting the patches per variable. 
+Ping? This seems to have fallen through the cracks...
 
+								Honza
+> ---
+>  drivers/md/bcache/super.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> How about merging this and the three following patches that change the memop
-> refcount types?
-
-Sounds good!
-
-Best Regards,
-Elena.
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 3a19cbc8b230..2a6a4a0520f6 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1964,6 +1964,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+>  			else
+>  				err = "device busy";
+>  			mutex_unlock(&bch_register_lock);
+> +			if (!IS_ERR(bdev))
+> +				bdput(bdev);
+>  			if (attr == &ksysfs_register_quiet)
+>  				goto out;
+>  		}
+> -- 
+> 2.10.2
 > 
-> >  	void			(*put)(void *arg);
-> >  	void			*arg;
-> >  };
-> 
-> --
-> Kind regards,
-> 
-> Sakari Ailus
-> e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+-- 
+Jan Kara <jack@suse.com>
+SUSE Labs, CR
