@@ -1,67 +1,82 @@
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Subject: Re: [PATCH 11/29] drivers, media: convert cx88_core.refcount from
- atomic_t to refcount_t
-Date: Tue, 7 Mar 2017 13:40:07 +0300
-Message-ID: <71ea983c-c2e4-9145-634b-78aef993d982@cogentembedded.com>
+From: "Reshetova, Elena" <elena.reshetova-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+Subject: RE: [PATCH 12/29] drivers, media: convert s2255_dev.num_channels
+ from atomic_t to refcount_t
+Date: Tue, 7 Mar 2017 14:45:45 +0000
+Message-ID: <2236FBA76BA1254E88B949DDB74E612B41C558C5@IRSMSX102.ger.corp.intel.com>
 References: <1488810076-3754-1-git-send-email-elena.reshetova@intel.com>
- <1488810076-3754-12-git-send-email-elena.reshetova@intel.com>
- <c6987419-f708-9923-0f9f-87b715600045@cogentembedded.com>
- <2236FBA76BA1254E88B949DDB74E612B41C556E2@IRSMSX102.ger.corp.intel.com>
+ <1488810076-3754-13-git-send-email-elena.reshetova@intel.com>
+ <20170307083016.GG3220@valkosipuli.retiisi.org.uk>
+Reply-To: open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; Format="flowed"
-Content-Transfer-Encoding: 7bit
-Return-path: <driverdev-devel-bounces@linuxdriverproject.org>
-In-Reply-To: <2236FBA76BA1254E88B949DDB74E612B41C556E2@IRSMSX102.ger.corp.intel.com>
-List-Unsubscribe: <http://driverdev.linuxdriverproject.org/mailman/options/driverdev-devel>,
- <mailto:driverdev-devel-request@linuxdriverproject.org?subject=unsubscribe>
-List-Archive: <http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/>
-List-Post: <mailto:driverdev-devel@linuxdriverproject.org>
-List-Help: <mailto:driverdev-devel-request@linuxdriverproject.org?subject=help>
-List-Subscribe: <http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel>,
- <mailto:driverdev-devel-request@linuxdriverproject.org?subject=subscribe>
-Errors-To: driverdev-devel-bounces@linuxdriverproject.org
-Sender: "devel" <driverdev-devel-bounces@linuxdriverproject.org>
-To: "Reshetova, Elena" <elena.reshetova@intel.com>, "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>, "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>, "open-iscsi@googlegroups.com" <open-iscsi@googlegroups.com>, Kees Cook <keescook@chromium.org>, "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>, David Windsor <dwindsor@gmail.com>, "peterz@infradead.org" <peterz@infradead.org>, "netdev@vger.kernel.org" <netdev@vger.kernel.org>, "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>, "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>, "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>, "devel@linuxdriverproject.org" <devel@linuxdriver>
+Content-Type: text/plain; charset=UTF-8
+Return-path: <open-iscsi+bncBCWONPVE7ANRBH4P7PCQKGQE5636XGI-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+Sender: open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org
+In-Reply-To: <20170307083016.GG3220-S+BSfZ9RZZmRSg0ZkenSGLdO1Tsj/99ntUK59QYPAWc@public.gmane.org>
+Content-Language: en-US
+List-Post: <https://groups.google.com/group/open-iscsi/post>, <mailto:open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+List-Help: <https://groups.google.com/support/>, <mailto:open-iscsi+help-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+List-Archive: <https://groups.google.com/group/open-iscsi
+List-Subscribe: <https://groups.google.com/group/open-iscsi/subscribe>, <mailto:open-iscsi+subscribe-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+List-Unsubscribe: <mailto:googlegroups-manage+856124926423+unsubscribe-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>,
+ <https://groups.google.com/group/open-iscsi/subscribe>
+To: Sakari Ailus <sakari.ailus-X3B1VOXEql0@public.gmane.org>
+Cc: "gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org" <gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org>, "linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "xen-devel-GuqFBffKawtpuQazS67q72D2FQJk+8+b@public.gmane.org" <xen-devel-GuqFBffKawtpuQazS67q72D2FQJk+8+b@public.gmane.org>, "netdev-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <netdev-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux1394-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org" <linux1394-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org>, "linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-media-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-media-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "devel-tBiZLqfeLfOHmIFyCCdPziST3g8Odh+X@public.gmane.org" <devel-tBiZLqfeLfOHmIFyCCdPziST3g8Odh+X@public.gmane.org>, "linux-pci-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-pci-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "linux-s390-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-s390-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "fcoe-devel-s9riP+hp16TNLxjTenLetw@public.gmane.org" <fcoe-devel-s9riP+hp16TNLxjTenLetw@public.gmane.org>, "linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org" <linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>, "open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org" <open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>, devel-gWbeCf7V1WCQmaza687I9uG/Ez6ZCGd0@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 3/7/2017 10:52 AM, Reshetova, Elena wrote:
 
->>> refcount_t type and corresponding API should be
->>> used instead of atomic_t when the variable is used as
->>> a reference counter. This allows to avoid accidental
->>> refcounter overflows that might lead to use-after-free
->>> situations.
->>>
->>> Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
->>> Signed-off-by: Hans Liljestrand <ishkamiel@gmail.com>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> Signed-off-by: David Windsor <dwindsor@gmail.com>
->> [...]
->>> diff --git a/drivers/media/pci/cx88/cx88.h b/drivers/media/pci/cx88/cx88.h
->>> index 115414c..16c1313 100644
->>> --- a/drivers/media/pci/cx88/cx88.h
->>> +++ b/drivers/media/pci/cx88/cx88.h
-[...]
->>> @@ -339,7 +340,7 @@ struct cx8802_dev;
->>>
->>>  struct cx88_core {
->>>  	struct list_head           devlist;
->>> -	atomic_t                   refcount;
->>> +	refcount_t                   refcount;
->>
->>     Could you please keep the name aligned with above and below?
->
-> You mean "not aligned" to devlist, but with a shift like it was before?
+> Hi Elena,
+> 
+> On Mon, Mar 06, 2017 at 04:20:59PM +0200, Elena Reshetova wrote:
+> > refcount_t type and corresponding API should be
+> > used instead of atomic_t when the variable is used as
+> > a reference counter. This allows to avoid accidental
+> > refcounter overflows that might lead to use-after-free
+> > situations.
+> >
+> > Signed-off-by: Elena Reshetova <elena.reshetova-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+> > Signed-off-by: Hans Liljestrand <ishkamiel-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> > Signed-off-by: Kees Cook <keescook-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>
+> > Signed-off-by: David Windsor <dwindsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> > ---
+> ...
+> > @@ -1688,7 +1689,7 @@ static int s2255_probe_v4l(struct s2255_dev *dev)
+> >  				"failed to register
+> video device!\n");
+> >  			break;
+> >  		}
+> > -		atomic_inc(&dev->num_channels);
+> > +		refcount_set(&dev->num_channels, 1);
+> 
+> That's not right. The loop runs four iterations and the value after the
+> loop should be indeed the number of channels.
 
-    I mean aligned, like it was before. :-)
+Oh, yes, I was blind here, sorry. The problem why it cannot be left as inc is because it would do increment from zero here, which is not allowed by refcount_t interface. 
 
-> Sure, will fix. Is the patch ok otherwise?
+> atomic_t isn't really used for reference counting here, but storing out how
+> many "channels" there are per hardware device, with maximum number of four
+> (4). I'd leave this driver using atomic_t.
+Yes, sounds like the best thing to do. I will drop this patch. 
 
-    I haven't noticed anything else...
+Thank you for reviews!
 
-> Best Regards,
-> Elena.
-[...]
+Best Regards,
+Elena.
+> 
+> >  		v4l2_info(&dev->v4l2_dev, "V4L2 device registered
+> as %s\n",
+> >  			  video_device_node_name(&vc-
+> >vdev));
+> >
+> 
+> --
+> Kind regards,
+> 
+> Sakari Ailus
+> e-mail: sakari.ailus-X3B1VOXEql0@public.gmane.org	XMPP: sailus-PCDdDYkjdNMDXYZnReoRVg@public.gmane.org
 
-MBR, Sergei
+-- 
+You received this message because you are subscribed to the Google Groups "open-iscsi" group.
+To unsubscribe from this group and stop receiving emails from it, send an email to open-iscsi+unsubscribe-/JYPxA39Uh5TLH3MbocFF+G/Ez6ZCGd0@public.gmane.org
+To post to this group, send email to open-iscsi-/JYPxA39Uh5TLH3MbocFF+G/Ez6ZCGd0@public.gmane.org
+Visit this group at https://groups.google.com/group/open-iscsi.
+For more options, visit https://groups.google.com/d/optout.
