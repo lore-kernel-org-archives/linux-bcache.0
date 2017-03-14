@@ -1,121 +1,123 @@
-From: <michele@milburnbrowning.com>
-Subject: 40154 linux-bcache
-Date: Mon, 13 Mar 2017 18:08:57 -0000
-Message-ID: <148942853769.30107.137544029666809985@zaural.ru>
-Reply-To: <michele@milburnbrowning.com>
+From: Michael Ellerman <mpe@ellerman.id.au>
+Subject: Re: [PATCH 08/29] drivers, md: convert mddev.active from atomic_t to refcount_t
+Date: Tue, 14 Mar 2017 23:11:53 +1100
+Message-ID: <87lgs8ukfq.fsf@concordia.ellerman.id.au>
+References: <1488810076-3754-1-git-send-email-elena.reshetova@intel.com> <1488810076-3754-9-git-send-email-elena.reshetova@intel.com>
 Mime-Version: 1.0
-Content-Type: application/zip; name="5.zip"
-Content-Transfer-Encoding: base64
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from ws1.164.140.zone5.zaural.ru ([5.140.164.1]:57747 "HELO
-        zaural.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1751700AbdCMSJB (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 13 Mar 2017 14:09:01 -0400
-Content-Disposition: attachment
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain
+Return-path: <netdev-owner@vger.kernel.org>
+In-Reply-To: <1488810076-3754-9-git-send-email-elena.reshetova@intel.com>
+Sender: netdev-owner@vger.kernel.org
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org, netdev@vger.kernel.org, linux1394-devel@lists.sourceforge.net, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-media@vger.kernel.org, devel@linuxdriverproject.org, linux-pci@vger.kernel.org, linux-s390@vger.kernel.org, fcoe-devel@open-fcoe.org, linux-scsi@vger.kernel.org, open-iscsi@googlegroups.com, devel@driverdev.osuosl.org, target-devel@vger.kernel.org, linux-serial@vger.kernel.org, linux-usb@vger.kernel.org, peterz@infradead.org, Elena Reshetova <elena.reshetova@intel.com>, Hans Liljestrand <ishkamiel@gmail.com>, Kees Cook <keescook@chromium.org>, David Windsor <dwindsor@gmail.com>, linuxppc-dev@lists.ozlabs.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache <linux-bcache@vger.kernel.org>
 
-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
+Elena Reshetova <elena.reshetova@intel.com> writes:
+
+> refcount_t type and corresponding API should be
+> used instead of atomic_t when the variable is used as
+> a reference counter. This allows to avoid accidental
+> refcounter overflows that might lead to use-after-free
+> situations.
+>
+> Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
+> Signed-off-by: Hans Liljestrand <ishkamiel@gmail.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Signed-off-by: David Windsor <dwindsor@gmail.com>
+> ---
+>  drivers/md/md.c | 6 +++---
+>  drivers/md/md.h | 3 ++-
+>  2 files changed, 5 insertions(+), 4 deletions(-)
+
+When booting linux-next (specifically 5be4921c9958ec) I'm seeing the
+backtrace below. I suspect this patch is just exposing an existing
+issue?
+
+cheers
+
+
+[    0.230738] md: Waiting for all devices to be available before autodetect
+[    0.230742] md: If you don't use raid, use raid=noautodetect
+[    0.230962] refcount_t: increment on 0; use-after-free.
+[    0.230988] ------------[ cut here ]------------
+[    0.230996] WARNING: CPU: 0 PID: 1 at lib/refcount.c:114 .refcount_inc+0x5c/0x70
+[    0.231001] Modules linked in:
+[    0.231006] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 4.11.0-rc1-gccN-next-20170310-g5be4921 #1
+[    0.231012] task: c000000049400000 task.stack: c000000049440000
+[    0.231016] NIP: c0000000005ac6bc LR: c0000000005ac6b8 CTR: c000000000743390
+[    0.231021] REGS: c000000049443160 TRAP: 0700   Not tainted  (4.11.0-rc1-gccN-next-20170310-g5be4921)
+[    0.231026] MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>
+[    0.231033]   CR: 24024422  XER: 0000000c
+[    0.231038] CFAR: c000000000a5356c SOFTE: 1 
+[    0.231038] GPR00: c0000000005ac6b8 c0000000494433e0 c000000001079d00 000000000000002b 
+[    0.231038] GPR04: 0000000000000000 00000000000000ef 0000000000000000 c0000000010418a0 
+[    0.231038] GPR08: 000000004af80000 c000000000ecc9a8 c000000000ecc9a8 0000000000000000 
+[    0.231038] GPR12: 0000000028024824 c000000006bb0000 0000000000000000 c000000049443a00 
+[    0.231038] GPR16: 0000000000000000 c000000049443a10 0000000000000000 0000000000000000 
+[    0.231038] GPR20: 0000000000000000 0000000000000000 c000000000f7dd20 0000000000000000 
+[    0.231038] GPR24: 00000000014080c0 c0000000012060b8 c000000001206080 0000000000000009 
+[    0.231038] GPR28: c000000000f7dde0 0000000000900000 0000000000000000 c0000000461ae800 
+[    0.231100] NIP [c0000000005ac6bc] .refcount_inc+0x5c/0x70
+[    0.231104] LR [c0000000005ac6b8] .refcount_inc+0x58/0x70
+[    0.231108] Call Trace:
+[    0.231112] [c0000000494433e0] [c0000000005ac6b8] .refcount_inc+0x58/0x70 (unreliable)
+[    0.231120] [c000000049443450] [c00000000086c008] .mddev_find+0x1e8/0x430
+[    0.231125] [c000000049443530] [c000000000872b6c] .md_open+0x2c/0x140
+[    0.231132] [c0000000494435c0] [c0000000003962a4] .__blkdev_get+0xd4/0x520
+[    0.231138] [c000000049443690] [c000000000396cc0] .blkdev_get+0x1c0/0x4f0
+[    0.231145] [c000000049443790] [c000000000336d64] .do_dentry_open.isra.1+0x2a4/0x410
+[    0.231152] [c000000049443830] [c0000000003523f4] .path_openat+0x624/0x1580
+[    0.231157] [c000000049443990] [c000000000354ce4] .do_filp_open+0x84/0x120
+[    0.231163] [c000000049443b10] [c000000000338d74] .do_sys_open+0x214/0x300
+[    0.231170] [c000000049443be0] [c000000000da69ac] .md_run_setup+0xa0/0xec
+[    0.231176] [c000000049443c60] [c000000000da4fbc] .prepare_namespace+0x60/0x240
+[    0.231182] [c000000049443ce0] [c000000000da47a8] .kernel_init_freeable+0x330/0x36c
+[    0.231190] [c000000049443db0] [c00000000000dc44] .kernel_init+0x24/0x160
+[    0.231197] [c000000049443e30] [c00000000000badc] .ret_from_kernel_thread+0x58/0x7c
+[    0.231202] Instruction dump:
+[    0.231206] 60000000 3d22ffee 89296bfb 2f890000 409effdc 3c62ffc6 39200001 3d42ffee 
+[    0.231216] 38630928 992a6bfb 484a6e79 60000000 <0fe00000> 4bffffb8 60000000 60000000 
+[    0.231226] ---[ end trace 8c51f269ad91ffc2 ]---
+[    0.231233] md: Autodetecting RAID arrays.
+[    0.231236] md: autorun ...
+[    0.231239] md: ... autorun DONE.
+[    0.234188] EXT4-fs (sda4): mounting ext3 file system using the ext4 subsystem
+[    0.250506] refcount_t: underflow; use-after-free.
+[    0.250531] ------------[ cut here ]------------
+[    0.250537] WARNING: CPU: 0 PID: 3 at lib/refcount.c:207 .refcount_dec_not_one+0x104/0x120
+[    0.250542] Modules linked in:
+[    0.250546] CPU: 0 PID: 3 Comm: kworker/0:0 Tainted: G        W       4.11.0-rc1-gccN-next-20170310-g5be4921 #1
+[    0.250553] Workqueue: events .delayed_fput
+[    0.250557] task: c000000049404900 task.stack: c000000049448000
+[    0.250562] NIP: c0000000005ac964 LR: c0000000005ac960 CTR: c000000000743390
+[    0.250567] REGS: c00000004944b530 TRAP: 0700   Tainted: G        W        (4.11.0-rc1-gccN-next-20170310-g5be4921)
+[    0.250572] MSR: 8000000000029032 <SF,EE,ME,IR,DR,RI>
+[    0.250578]   CR: 24002422  XER: 00000007
+[    0.250584] CFAR: c000000000a5356c SOFTE: 1 
+[    0.250584] GPR00: c0000000005ac960 c00000004944b7b0 c000000001079d00 0000000000000026 
+[    0.250584] GPR04: 0000000000000000 0000000000000113 0000000000000000 c0000000010418a0 
+[    0.250584] GPR08: 000000004af80000 c000000000ecc9a8 c000000000ecc9a8 0000000000000000 
+[    0.250584] GPR12: 0000000022002824 c000000006bb0000 c0000000001116d0 c000000049050200 
+[    0.250584] GPR16: 0000000000000000 0000000000000000 0000000000000000 0000000000000000 
+[    0.250584] GPR20: 0000000000000001 0000000000000000 c000000048030a98 0000000000000001 
+[    0.250584] GPR24: 000000000002001d 0000000000000000 0000000000000000 c0000000461af000 
+[    0.250584] GPR28: 0000000000000000 c000000048030bd8 c0000000461aea08 c0000000012060b8 
+[    0.250645] NIP [c0000000005ac964] .refcount_dec_not_one+0x104/0x120
+[    0.250650] LR [c0000000005ac960] .refcount_dec_not_one+0x100/0x120
+[    0.250654] Call Trace:
+[    0.250658] [c00000004944b7b0] [c0000000005ac960] .refcount_dec_not_one+0x100/0x120 (unreliable)
+[    0.250665] [c00000004944b820] [c0000000005ac9a0] .refcount_dec_and_lock+0x20/0xc0
+[    0.250671] [c00000004944b8a0] [c000000000870fa4] .mddev_put+0x34/0x180
+[    0.250677] [c00000004944b930] [c000000000396108] .__blkdev_put+0x288/0x350
+[    0.250683] [c00000004944ba30] [c0000000003968f0] .blkdev_close+0x30/0x50
+[    0.250689] [c00000004944bab0] [c00000000033e7d8] .__fput+0xc8/0x2a0
+[    0.250695] [c00000004944bb60] [c00000000033ea08] .delayed_fput+0x58/0x80
+[    0.250701] [c00000004944bbe0] [c000000000107ea0] .process_one_work+0x2a0/0x630
+[    0.250707] [c00000004944bc80] [c0000000001082c8] .worker_thread+0x98/0x6a0
+[    0.250713] [c00000004944bd70] [c000000000111868] .kthread+0x198/0x1a0
+[    0.250719] [c00000004944be30] [c00000000000badc] .ret_from_kernel_thread+0x58/0x7c
+[    0.250724] Instruction dump:
+[    0.250728] 419e000c 38210070 4e800020 7c0802a6 3c62ffc6 39200001 3d42ffee 38630958 
+[    0.250738] 992a6bfe f8010080 484a6bd1 60000000 <0fe00000> e8010080 38600001 7c0803a6 
+[    0.250748] ---[ end trace 8c51f269ad91ffc3 ]---
+[    0.262454] EXT4-fs (sda4): mounted filesystem with ordered data mode. Opts: (null)
