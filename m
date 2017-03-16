@@ -1,83 +1,136 @@
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: [PATCH 08/29] drivers, md: convert mddev.active from atomic_t
- to refcount_t
-Date: Tue, 14 Mar 2017 07:58:59 -0700
-Message-ID: <1489503539.3214.17.camel@HansenPartnership.com>
-References: <1488810076-3754-1-git-send-email-elena.reshetova@intel.com>
- <1488810076-3754-9-git-send-email-elena.reshetova@intel.com>
- <87lgs8ukfq.fsf@concordia.ellerman.id.au>
- <2236FBA76BA1254E88B949DDB74E612B41C588E8@IRSMSX102.ger.corp.intel.com>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Bcachefs - encryption, fsck, and more
+Date: Wed, 15 Mar 2017 16:01:53 -0800
+Message-ID: <20170316000153.anljwi2sbipd5uxk@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <driverdev-devel-bounces@linuxdriverproject.org>
-In-Reply-To: <2236FBA76BA1254E88B949DDB74E612B41C588E8@IRSMSX102.ger.corp.intel.com>
-List-Unsubscribe: <http://driverdev.linuxdriverproject.org/mailman/options/driverdev-devel>,
- <mailto:driverdev-devel-request@linuxdriverproject.org?subject=unsubscribe>
-List-Archive: <http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/>
-List-Post: <mailto:driverdev-devel@linuxdriverproject.org>
-List-Help: <mailto:driverdev-devel-request@linuxdriverproject.org?subject=help>
-List-Subscribe: <http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel>,
- <mailto:driverdev-devel-request@linuxdriverproject.org?subject=subscribe>
-Errors-To: driverdev-devel-bounces@linuxdriverproject.org
-Sender: "devel" <driverdev-devel-bounces@linuxdriverproject.org>
-To: "Reshetova, Elena" <elena.reshetova@intel.com>, Michael Ellerman <mpe@ellerman.id.au>, "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Cc: "peterz@infradead.org" <peterz@infradead.org>, "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>, "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>, "linux1394-devel@lists.sourceforge.net" <linux1394-devel@lists.sourceforge.net>, "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>, "linux-s390@vger.kernel.org" <linux-s390@vger.kernel.org>, "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>, "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>, "fcoe-devel@open-fcoe.org" <fcoe-devel@open-fcoe.org>, "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>, "open-iscsi@googlegroups.com" <open-iscsi@googlegroups.com>, "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>, Kees Cook <keescook@chromium.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kerne>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pg0-f67.google.com ([74.125.83.67]:35495 "EHLO
+        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750877AbdCPAIz (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 15 Mar 2017 20:08:55 -0400
+Content-Disposition: inline
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On Tue, 2017-03-14 at 12:29 +0000, Reshetova, Elena wrote:
-> > Elena Reshetova <elena.reshetova@intel.com> writes:
-> > 
-> > > refcount_t type and corresponding API should be
-> > > used instead of atomic_t when the variable is used as
-> > > a reference counter. This allows to avoid accidental
-> > > refcounter overflows that might lead to use-after-free
-> > > situations.
-> > > 
-> > > Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
-> > > Signed-off-by: Hans Liljestrand <ishkamiel@gmail.com>
-> > > Signed-off-by: Kees Cook <keescook@chromium.org>
-> > > Signed-off-by: David Windsor <dwindsor@gmail.com>
-> > > ---
-> > >  drivers/md/md.c | 6 +++---
-> > >  drivers/md/md.h | 3 ++-
-> > >  2 files changed, 5 insertions(+), 4 deletions(-)
-> > 
-> > When booting linux-next (specifically 5be4921c9958ec) I'm seeing
-> > the
-> > backtrace below. I suspect this patch is just exposing an existing
-> > issue?
-> 
-> Yes, we have actually been following this issue in the another
-> thread. 
-> It looks like the object is re-used somehow, but I can't quite
-> understand how just by reading the code. 
-> This was what I put into the previous thread:
-> 
-> "The log below indicates that you are using your refcounter in a bit
-> weird way in mddev_find(). 
-> However, I can't find the place (just by reading the code) where you
-> would increment refcounter from zero (vs. setting it to one).
-> It looks like you either iterate over existing nodes (and increment
-> their counters, which should be >= 1 at the time of increment) or
-> create a new node, but then mddev_init() sets the counter to 1. "
-> 
-> If you can help to understand what is going on with the object
-> creation/destruction, would be appreciated!
-> 
-> Also Shaohua Li stopped this patch coming from his tree since the 
-> issue was caught at that time, so we are not going to merge this 
-> until we figure it out. 
+It's been far too long since the last announcement - lots of stuff has been
+happening. The biggest milestone has been all the breaking on disk format
+changes finally landing, but there's been lots of other stuff going on, too.
 
-Asking on the correct list (dm-devel) would have got you the easy
-answer:  The refcount behind mddev->active is a genuine atomic.  It has
-refcount properties but only if the array fails to initialise (in that
-case, final put kills it).  Once it's added to the system as a gendisk,
-it cannot be freed until md_free().  Thus its ->active count can go to
-zero (when it becomes inactive; usually because of an unmount). On a
-simple allocation regardless of outcome, the last executed statement in
-md_alloc is mddev_put(): that destroys the device if we didn't manage
-to create it or returns 0 and adds an inactive device to the system
-which the user can get with mddev_find().
+On the subject of the breaking on disk format changes - there's an excellent
+chance this'll be the last breaking change, so if you're thinking about trying
+out bcachefs this is an excellent time. Also, if you have a filesystem in the
+old format, code to read your filesystem is available in the bcachefs-v0 braches
+of both linux-bcache and bcache-tools.
 
-James
+More information on getting started with bcachefs is available on the wiki:
+https://bcache.evilpiepirate.org/Bcachefs/
+
+What all has changed since the last announcement:
+
+Related to the on disk format changes, we have...
+ - Encryption
+
+   We now have whole filesystem encryption - and this is modern authenticated
+   encrypted, using ChaCha20 and Poly1305. Bcachefs's encryption isn't a direct
+   competitor to ext4's encryption - unlike ext4, we can't currently encrypt
+   only part of the filesystem, and then mount and use the rest of the
+   filesystem without providing the encryption key. It's more of a better
+   dm-crypt - block layer encryption is somewhat of a pile of hacks [1] and it's
+   not possible to do authenticated encryption at the block layer, but it is in
+   a copy on write filesystem.
+
+   In my (relatively brief) performance testing, bcachefs's encryption performs
+   for me almost identically to dm-crypt (which I was surprised by, given that
+   they're using completely different ciphers).
+
+   Before you go out and switch to bcachefs encryption though - please be aware,
+   the encryption design and code has seen some outside review but it really
+   does need more before I'd trust it with anything critical.
+
+   [1] https://sockpuppet.org/blog/2014/04/30/you-dont-want-xts/
+ 
+ - Backup superblocks
+
+   This has been badly needed since our superblocks are now often > 4k and thus
+   torn writes leading to checksum failures are a real issue.
+
+ - New inode format
+
+   The new inode format is both more compact and more easily extensible than the
+   old one - average real world inode size is now 50-60 bytes. You know what
+   makes a filesystem feel fast? Being able to fit all your metadata in ram :)
+
+ - Lots of small changes for better support for multiple devices and replication
+
+   Multiple device support (including caching/tiering) is getting to be pretty
+   robust and usable (and people are sucessfully using it for their root
+   filesystems - for awhile now, actually). The tooling is getting better, the
+   main priority at this point needs to be documentation.
+
+   For replication (i.e. raid1/10), the core functionality all works - you can
+   create a replicated filesystem, write data to it, and take one of the drives
+   offline while the filesystem is in use - it keeps working, and you can keep
+   writing data to it. However, there's still quite a few things that need to be
+   finished before it will actually be useful for protecting your data - we need
+   to add better tracking for which drives have data and how that data is
+   replicated (so we know whether we can take a drive offline or mount without
+   it without losing data), as well as replication aware disk space accounting
+   and rereplication/scrubbing. But it's coming.
+
+
+Most of the activity lately has actually been happening in the userspace
+tooling, though:
+
+We now have a userspace fsck: we've actually had most of fsck implemented for
+quite awhile, but it was implemented in the kernel so it was only possible to
+run it at mount time (it runs by default on every mount, because I err towards
+paranoia). The new userspace fsck is much more convenient though - it takes all
+the normal options (e.g. -n for dry run) and is able to prompt if it finds an
+inconsistency.
+
+We didn't get a whole new fsck tool that runs in userspace - what's actually new
+here is that I wrote a shim layer to build almost all the bcachefs code in
+userspace as part of bcache-tools, which uses it as a library.
+
+This is really cool, and it's made it easy to write some other very useful
+tools/subcommands: One is "bcache dump", which takes a filesystem and dumps all
+the metadata to a sparse qcow2 image. This is really useful for debugging - if
+your bcachefs filesystem gets into a bad state and fsck isn't able to fix it,
+dump the metadata and send it to me and I'll debug it from that. We've already
+used it for exactly that - and for me the developer, it was a hell of a lot
+easier to debug and teach fsck to fix that particular issue that way instead of
+having to either get remote access, or debug by sending him patches and waiting
+for him to test them. So of the recent changes this might be the one I'm
+happiest about :)
+
+We can also now migrate filesystems to bcachefs in place! The bcache migrate
+command takes an existing filesystem, fallocates a big file in it, creates a new
+filesystem (in userspace) on the block device but using only the space reserved
+by that file it fallocated - and then walks the contents of the original
+filesystem creating pointers to all your existing data.
+
+You can then mount that new filesystem and verify that everything is correct
+without overwriting anything in the existing filesystem (by passing mount the
+offset where bcache migrate put the superblock) - and you can even mount both
+the old and the new filesystems at the same time (use mount -o noexcl when
+mounting the bcachefs filesystem) and use rsync --itemize-changes to verify that
+the filesystems really are identical, which is how I test it.
+
+Aside from all that, there's been numerous fixes and performance improvements -
+we're still looking for benchmarks/workloads where bcachefs lags other
+filesystems, and as we find them they get fixed. Good rigorous performance
+testing with new benchmarks is always appreciated.
+
+----------
+
+If you're interested in helping out - come join us in the #bcache IRC channel,
+on OFTC. We're trying to get a new website together and get some more
+documentation written, so if you have skills in either of those areas (us kernel
+programmers don't really do web design) your help would be greatly appreciated.
+
+And as usual, I still need more funding - if you can chip in that's always
+greatly appreciated - https://www.patreon.com/bcachefs - or if you're a company
+that might be interested in making use of bcachefs, contact me.
