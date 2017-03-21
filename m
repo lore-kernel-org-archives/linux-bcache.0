@@ -1,67 +1,55 @@
-From: Marcin <marcin@mejor.pl>
-Subject: Re: [bcachefs] problem with `bcache fsck`
-Date: Fri, 17 Mar 2017 23:26:11 +0100
-Message-ID: <c63b4675d9f93acebad942c51d9c56f0@mejor.pl>
-References: <6aaaad468dd77840265bcd9f31f1878a@mejor.pl>
- <20170316203455.jgl6ovsrve55fnxi@moria.home.lan>
- <f7e0b5acca043eff08a55f424470221d@mejor.pl>
- <20170316235651.oehere2zxhewbbdh@moria.home.lan>
+From: "Nicholas A. Bellinger" <nab-IzHhD5pYlfBP7FQvKIMDCQ@public.gmane.org>
+Subject: Re: [PATCH 24/29] drivers: convert iblock_req.pending from atomic_t
+ to refcount_t
+Date: Tue, 21 Mar 2017 00:18:07 -0700
+Message-ID: <1490080687.8236.102.camel@haakon3.risingtidesystems.com>
+References: <1488810076-3754-1-git-send-email-elena.reshetova@intel.com>
+	 <1488810076-3754-25-git-send-email-elena.reshetova@intel.com>
+Reply-To: open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from jowisz.mejor.pl ([81.4.120.72]:28356 "EHLO jowisz.mejor.pl"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751061AbdCQW06 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 17 Mar 2017 18:26:58 -0400
-In-Reply-To: <20170316235651.oehere2zxhewbbdh@moria.home.lan>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Return-path: <open-iscsi+bncBDAIFWGVYMJRBMVHYPDAKGQEK4CCSNA-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+Sender: open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org
+In-Reply-To: <1488810076-3754-25-git-send-email-elena.reshetova-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+List-Post: <https://groups.google.com/group/open-iscsi/post>, <mailto:open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+List-Help: <https://groups.google.com/support/>, <mailto:open-iscsi+help-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+List-Archive: <https://groups.google.com/group/open-iscsi
+List-Subscribe: <https://groups.google.com/group/open-iscsi/subscribe>, <mailto:open-iscsi+subscribe-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>
+List-Unsubscribe: <mailto:googlegroups-manage+856124926423+unsubscribe-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org>,
+ <https://groups.google.com/group/open-iscsi/subscribe>
+To: Elena Reshetova <elena.reshetova-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+Cc: gregkh-hQyY1W1yCW8ekmWlsbkhG0B+6BGkLq7r@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, xen-devel-GuqFBffKawtpuQazS67q72D2FQJk+8+b@public.gmane.org, netdev-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux1394-devel-5NWGOfrQmneRv+LV9MX5uipxlwaOVQ5f@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-media-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, devel-tBiZLqfeLfOHmIFyCCdPziST3g8Odh+X@public.gmane.org, linux-pci-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-s390-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, fcoe-devel-s9riP+hp16TNLxjTenLetw@public.gmane.org, linux-scsi-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, open-iscsi-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org, devel-gWbeCf7V1WCQmaza687I9mD2FQJk+8+b@public.gmane.org, target-devel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-serial-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-usb-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, peterz-wEGCiKHe2LqWVfeAwA7xHQ@public.gmane.org, Hans Liljestrand <ishkamiel-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, Kees Cook <keescook-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>, David Windsor <dwindsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org
 
-W dniu 2017-03-17 00:57, Kent Overstreet napisał(a):
-> On Thu, Mar 16, 2017 at 11:07:20PM +0100, Marcin wrote:
->> If I add bcachefs to fstab openrc expects userland fsck to works this 
->> is why
->> I tried it to use.
-> 
-> Fsck should be fixed now
-> 
->> There is no new commit, I'm at
->> commit 7274700edcf99ab67d4f72eca4f07d0220b9abae
->> Author: Kent Overstreet <kent.overstreet@gmail.com>
->> Date:   Tue Mar 14 21:07:39 2017 -0800
->> 
->>     bcache: fix device hot add
-> 
-> Ok, you're good then (at least re: the buffered reads bug)
-> 
->> I suspect that problem is due to using  --metadata_replicas=2. If you 
->> have a
->> some spare time please try fileystsem formated with this parameters:
->> # bcache format --compression_type=gzip --metadata_replicas=2
->> --data_checksum_type=crc64 --metadata_checksum_type=crc64 --tier=2 
->> /dev/sde1
->> --tier=3 /dev/sdd1
-> 
-> Alright, will do
+Hi Elena,
 
-I configured logging using netconsole, I formated fs using favorite 
-killer-combo[1], when I copied ~480000 rather small files the host 
-rebooted. I only cought this:
+On Mon, 2017-03-06 at 16:21 +0200, Elena Reshetova wrote:
+> refcount_t type and corresponding API should be
+> used instead of atomic_t when the variable is used as
+> a reference counter. This allows to avoid accidental
+> refcounter overflows that might lead to use-after-free
+> situations.
+> 
+> Signed-off-by: Elena Reshetova <elena.reshetova-ral2JQCrhuEAvxtiuMwx3w@public.gmane.org>
+> Signed-off-by: Hans Liljestrand <ishkamiel-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> Signed-off-by: Kees Cook <keescook-F7+t8E8rja9g9hUCZPvPmw@public.gmane.org>
+> Signed-off-by: David Windsor <dwindsor-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>
+> ---
+>  drivers/target/target_core_iblock.c | 12 ++++++------
+>  drivers/target/target_core_iblock.h |  3 ++-
+>  2 files changed, 8 insertions(+), 7 deletions(-)
 
-Mar 17 23:17:00 [ 1247.409119] kernel BUG at 
-drivers/md/bcache/buckets.c:505!
-Mar 17 23:17:00 [ 1247.409149] invalid opcode: 0000 [#1] SMP
-Mar 17 23:17:00 [ 1247.409176] Modules linked in:
-Mar 17 23:17:00 netconsole
-Mar 17 23:17:00 tun
-[snip list of modules]
+After reading up on this thread, it looks like various subsystem
+maintainers are now picking these atomic_t -> refcount_t conversions..
 
-Marcin
+That said, applied to target-pending/for-next and will plan to include
+for v4.12-rc1 merge window.
 
-[1] bcache format --compression_type=gzip --metadata_replicas=2 
---data_checksum_type=crc64 --metadata_checksum_type=crc64 --tier=2 
-/dev/sde1 --tier=3 /dev/sdd1
+Thanks!
+
+-- 
+You received this message because you are subscribed to the Google Groups "open-iscsi" group.
+To unsubscribe from this group and stop receiving emails from it, send an email to open-iscsi+unsubscribe-/JYPxA39Uh5TLH3MbocFF+G/Ez6ZCGd0@public.gmane.org
+To post to this group, send email to open-iscsi-/JYPxA39Uh5TLH3MbocFF+G/Ez6ZCGd0@public.gmane.org
+Visit this group at https://groups.google.com/group/open-iscsi.
+For more options, visit https://groups.google.com/d/optout.
