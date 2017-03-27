@@ -1,66 +1,30 @@
-From: <richard@oxbridgeprograms.com>
-Subject: 28168 linux-bcache
-Date: Sun, 26 Mar 2017 19:38:36 -0000
-Message-ID: <149055711620.27368.18140155058469139303@hinet.net>
-Reply-To: <richard@oxbridgeprograms.com>
+From: Clemens Eisserer <linuxhippy@gmail.com>
+Subject: journal replay at each boot problematic?
+Date: Mon, 27 Mar 2017 13:33:57 +0200
+Message-ID: <CAFvQSYSTFPu9yPj-i2E+G53V_Auet8WTQk9q1vAUFQZe=VUWjQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: application/zip; name="816278515.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 1-174-88-116.dynamic.hinet.net ([1.174.88.116]:47934 "HELO
-        hinet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-        id S1751477AbdCZTiv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 26 Mar 2017 15:38:51 -0400
-Content-Disposition: attachment
+Received: from mail-pg0-f49.google.com ([74.125.83.49]:36500 "EHLO
+        mail-pg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751652AbdC0LfC (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 27 Mar 2017 07:35:02 -0400
+Received: by mail-pg0-f49.google.com with SMTP id g2so37174856pge.3
+        for <linux-bcache@vger.kernel.org>; Mon, 27 Mar 2017 04:34:08 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-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
-AAA=
+Hi,
+
+I am using bcache in writeback-mode for a very slow (~100kb/s write
+speed) backing device.
+
+At each boot I see messages like the following:
+> bcache: bch_journal_replay() journal replay done, 2297 keys in 86 entries, seq 71136
+
+Are these messages indicating an unclean shutdown / some kind of
+rollback operation - or is it part of "normal" bcache initialization?
+
+Thank you in advance, Clemens
