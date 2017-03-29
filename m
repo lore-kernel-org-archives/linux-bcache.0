@@ -1,49 +1,46 @@
-From: Kai Krakow <hurikhan77@gmail.com>
+From: Clemens Eisserer <linuxhippy@gmail.com>
 Subject: Re: journal replay at each boot problematic?
-Date: Mon, 27 Mar 2017 22:51:33 +0200
-Message-ID: <20170327225133.4aa977dd@jupiter.sol.kaishome.de>
+Date: Wed, 29 Mar 2017 14:27:11 +0200
+Message-ID: <CAFvQSYT4Jy9tPJx5CxkLew05AUMMuLFKc0Z2KnARXh4fJf95+w@mail.gmail.com>
 References: <CAFvQSYSTFPu9yPj-i2E+G53V_Auet8WTQk9q1vAUFQZe=VUWjQ@mail.gmail.com>
+ <20170327225133.4aa977dd@jupiter.sol.kaishome.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [195.159.176.226] ([195.159.176.226]:53360 "EHLO
-        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-        with ESMTP id S1751801AbdC0Uwr (ORCPT
+Received: from mail-pg0-f44.google.com ([74.125.83.44]:34133 "EHLO
+        mail-pg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S932132AbdC2M1N (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 27 Mar 2017 16:52:47 -0400
-Received: from list by blaine.gmane.org with local (Exim 4.84_2)
-        (envelope-from <glbd-linux-bcache@m.gmane.org>)
-        id 1csbcC-00014i-C0
-        for linux-bcache@vger.kernel.org; Mon, 27 Mar 2017 22:51:48 +0200
+        Wed, 29 Mar 2017 08:27:13 -0400
+Received: by mail-pg0-f44.google.com with SMTP id 21so10157436pgg.1
+        for <linux-bcache@vger.kernel.org>; Wed, 29 Mar 2017 05:27:13 -0700 (PDT)
+In-Reply-To: <20170327225133.4aa977dd@jupiter.sol.kaishome.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-Am Mon, 27 Mar 2017 13:33:57 +0200
-schrieb Clemens Eisserer <linuxhippy@gmail.com>:
+Hi Kai,
 
-> Hi,
-> 
-> I am using bcache in writeback-mode for a very slow (~100kb/s write
-> speed) backing device.
-> 
-> At each boot I see messages like the following:
-> > bcache: bch_journal_replay() journal replay done, 2297 keys in 86
-> > entries, seq 71136  
-> 
-> Are these messages indicating an unclean shutdown / some kind of
-> rollback operation - or is it part of "normal" bcache initialization?
+> As far as the docs tell, bcache is designed to shut down unclean. So
+> this is expected behavior in write-back mode.
 
-As far as the docs tell, bcache is designed to shut down unclean. So
-this is expected behavior in write-back mode.
+Yes, I also read it - but since I got a few btrfs fs errors when
+running btrfs check (mostly space-cache related) I became a bit
+alarmed.
+As all csums are ok, so I don't think the backing/caching devices are
+corrupt in any way.
 
-To cleanly detach a bcache, you would need to first put it in
-write-through or write-around mode and wait for write-back to finish.
-In turn, this mode should also avoid these messages at boot.
+> To cleanly detach a bcache, you would need to first put it in
+> write-through or write-around mode and wait for write-back to finish.
+> In turn, this mode should also avoid these messages at boot.
 
--- 
-Regards,
-Kai
+This is exactly what I do now before each shutdown: switch to
+writethrough and wait in a bash-loop until state="clean" - sorrounded
+by two calls to sync.
+However, I still get the journal replay messages at bootup:
 
-Replies to list-only preferred.
+[    2.590615] bcache: bch_journal_replay() journal replay done, 827
+keys in 37 entries, seq 145717
+
+
+Br, Clemens
