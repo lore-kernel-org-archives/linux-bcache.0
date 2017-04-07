@@ -1,84 +1,86 @@
-From: Kai Krakow <hurikhan77@gmail.com>
-Subject: Re: journal replay at each boot problematic?
-Date: Wed, 29 Mar 2017 19:59:51 +0200
-Message-ID: <20170329195951.604ad133@jupiter.sol.kaishome.de>
-References: <CAFvQSYSTFPu9yPj-i2E+G53V_Auet8WTQk9q1vAUFQZe=VUWjQ@mail.gmail.com>
-        <20170327225133.4aa977dd@jupiter.sol.kaishome.de>
-        <CAFvQSYT4Jy9tPJx5CxkLew05AUMMuLFKc0Z2KnARXh4fJf95+w@mail.gmail.com>
-        <20170329195257.0e11c5e9@jupiter.sol.kaishome.de>
+From: <rhsinfo@genesishcc.com>
+Subject: 11195 linux-bcache
+Date: Fri, 07 Apr 2017 09:11:05 -0000
+Message-ID: <149155626575.7747.15263285044612391325@saturn-internet.ru>
+Reply-To: <rhsinfo@genesishcc.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: application/zip; name="68162582926157.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [195.159.176.226] ([195.159.176.226]:57888 "EHLO
-        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-        with ESMTP id S1751717AbdC2SAN (ORCPT
+Received: from 178.161.215.18.dyn.v4.saturn-internet.ru ([178.161.215.18]:46008
+        "HELO saturn-internet.ru" rhost-flags-OK-FAIL-OK-FAIL)
+        by vger.kernel.org with SMTP id S1755120AbdDGJLK (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 29 Mar 2017 14:00:13 -0400
-Received: from list by blaine.gmane.org with local (Exim 4.84_2)
-        (envelope-from <glbd-linux-bcache@m.gmane.org>)
-        id 1ctHt2-0000lV-S8
-        for linux-bcache@vger.kernel.org; Wed, 29 Mar 2017 20:00:00 +0200
+        Fri, 7 Apr 2017 05:11:10 -0400
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: linux-bcache <linux-bcache@vger.kernel.org>
 
-Am Wed, 29 Mar 2017 19:52:57 +0200
-schrieb Kai Krakow <hurikhan77@gmail.com>:
-
-> Am Wed, 29 Mar 2017 14:27:11 +0200
-> schrieb Clemens Eisserer <linuxhippy@gmail.com>:
-> 
-> > Hi Kai,
-> >   
-> > > As far as the docs tell, bcache is designed to shut down unclean.
-> > > So this is expected behavior in write-back mode.    
-> > 
-> > Yes, I also read it - but since I got a few btrfs fs errors when
-> > running btrfs check (mostly space-cache related) I became a bit
-> > alarmed.
-> > As all csums are ok, so I don't think the backing/caching devices
-> > are corrupt in any way.  
-> 
-> This is probably related to btrfs not closed properly or some bug in
-> an older kernel. Space cache problems can usually be safely ignored as
-> long as the kernel detects them. But maybe ask about this in the btrfs
-> list. I'm pretty sure that is related to your shutdown procedure and
-> not to bcache. I don't see such messages here without special
-> workarounds in the shutdown procedure, however, I'm using initramfs
-> created by dracut. It properly unmounts btrfs.
-> 
-> > > To cleanly detach a bcache, you would need to first put it in
-> > > write-through or write-around mode and wait for write-back to
-> > > finish. In turn, this mode should also avoid these messages at
-> > > boot.    
-> > 
-> > This is exactly what I do now before each shutdown: switch to
-> > writethrough and wait in a bash-loop until state="clean" -
-> > sorrounded by two calls to sync.  
-> 
-> I don't think this is necessary. Just ensure that the FS is umounted
-> or at least RO mounted, sync, and ensure that all storage buffers are
-> flushed (SCSI, SATA, whatever). Btrfs may lazily still write data even
-> in the RO mounted mode. This may be your problem. Bcache may even
-> prevent further evil here because of its always-unclean writeback
-> behavior.
-
-Addendum: Maybe try "btrfs sync"...
-
-> > However, I still get the journal replay messages at bootup:
-> > 
-> > [    2.590615] bcache: bch_journal_replay() journal replay done, 827
-> > keys in 37 entries, seq 145717  
-> 
-> Do you properly close the FS before shutting down, i.e. unmount (and
-> not only remount RO), and flush the storage layer?
-> 
-
-
-
--- 
-Regards,
-Kai
-
-Replies to list-only preferred.
+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
+AAAAVg4AAAAA
