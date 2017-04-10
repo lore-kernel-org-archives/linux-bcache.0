@@ -1,87 +1,76 @@
-From: <rhsinfo@genesishcc.com>
-Subject: 34964 linux-bcache
-Date: Fri, 07 Apr 2017 11:14:22 -0000
-Message-ID: <149156366284.19399.10561568172269985483@charter.com>
-Reply-To: <rhsinfo@genesishcc.com>
-Mime-Version: 1.0
-Content-Type: application/zip; name="2364673431918.zip"
-Content-Transfer-Encoding: base64
+From: tang.junhui@zte.com.cn
+Subject: [PATCH 2/2] bcache: fix calling ida_simple_remove() with incorrect minor
+Date: Mon, 10 Apr 2017 16:36:38 +0800
+Message-ID: <1491813398-7344-2-git-send-email-tang.junhui@zte.com.cn>
+References: <1491813398-7344-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 71-14-28-164.static.dctr.al.charter.com ([71.14.28.164]:39006
-        "HELO charter.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-        with SMTP id S1753883AbdDGLO3 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 7 Apr 2017 07:14:29 -0400
-Content-Disposition: attachment
+Received: from out1.zte.com.cn ([202.103.147.172]:32847 "EHLO out1.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1752314AbdDJIiA (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 10 Apr 2017 04:38:00 -0400
+In-Reply-To: <1491813398-7344-1-git-send-email-tang.junhui@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache <linux-bcache@vger.kernel.org>
+To: kent.overstreet@gmail.com
+Cc: linux-bcache@vger.kernel.org, "tang.junhui" <tang.junhui@zte.com.cn>
 
-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
-AAA=
+From: "tang.junhui" <tang.junhui@zte.com.cn>
+
+bcache called ida_simple_remove() with minor which have multiplied by
+BCACHE_MINORS, it would cause minor wrong release and leakage
+
+Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/super.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 867d9a9..374b162 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -57,8 +57,11 @@ static DEFINE_IDA(bcache_minor);
+ static wait_queue_head_t unregister_wait;
+ struct workqueue_struct *bcache_wq;
+ 
+-#define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
+-#define BCACHE_MINORS		16 /* partition support */
++#define BTREE_MAX_PAGES	                  (256 * 1024 / PAGE_SIZE)
++#define BCACHE_MINORS_BITS                4 /* bcache partition support */
++#define BCACHE_MINORS                     (1 << BCACHE_MINORS_BITS)
++#define BCACHE_TO_IDA_MINORS(first_minor) ((first_minor) >> BCACHE_MINORS_BITS)
++#define IDA_TO_BCACHE_MINORS(minor)       ((minor) << BCACHE_MINORS_BITS)
+ 
+ /* Superblock */
+ 
+@@ -734,7 +737,7 @@ static void bcache_device_free(struct bcache_device *d)
+ 	if (d->disk && d->disk->queue)
+ 		blk_cleanup_queue(d->disk->queue);
+ 	if (d->disk) {
+-		ida_simple_remove(&bcache_minor, d->disk->first_minor);
++		ida_simple_remove(&bcache_minor, BCACHE_TO_IDA_MINORS(d->disk->first_minor));
+ 		put_disk(d->disk);
+ 	}
+ 
+@@ -784,7 +787,6 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+ 	if (minor < 0)
+ 		return minor;
+ 
+-	minor *= BCACHE_MINORS;
+ 
+ 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
+ 	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
+@@ -793,10 +795,10 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+ 	}
+ 
+ 	set_capacity(d->disk, sectors);
+-	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor / BCACHE_MINORS);
++	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
+ 
+ 	d->disk->major		= bcache_major;
+-	d->disk->first_minor	= minor;
++	d->disk->first_minor	= IDA_TO_BCACHE_MINORS(minor);
+ 	d->disk->fops		= &bcache_ops;
+ 	d->disk->private_data	= d;
+ 
+-- 
+2.8.1.windows.1
