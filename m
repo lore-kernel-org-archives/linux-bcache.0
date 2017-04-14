@@ -1,40 +1,29 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH 1/2] bcache: name bcache devices in an ordered sequence as bcache0, bcache1
-Date: Mon, 10 Apr 2017 16:36:37 +0800
-Message-ID: <1491813398-7344-1-git-send-email-tang.junhui@zte.com.cn>
+From: Sarah JOHNSON <sarah.johnson197070@gmail.com>
+Subject: Greetings.
+Date: Fri, 14 Apr 2017 09:22:50 +0000 (UTC)
+Message-ID: <1940046256.242872.1492161770258__16932.2992711843$1492161787$gmane$org@mail.yahoo.com>
+References: <1940046256.242872.1492161770258.ref@mail.yahoo.com>
+Reply-To: Sarah JOHNSON <sarah.johnson197070@yahoo.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx7.zte.com.cn ([202.103.147.169]:60449 "EHLO mx7.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752078AbdDJIoj (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 10 Apr 2017 04:44:39 -0400
+Received: from sonic332-29.consmr.mail.ne1.yahoo.com ([66.163.187.210]:43026
+        "EHLO sonic332-29.consmr.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1753459AbdDNJWv (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 14 Apr 2017 05:22:51 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kent.overstreet@gmail.com
-Cc: linux-bcache@vger.kernel.org, "tang.junhui" <tang.junhui@zte.com.cn>
 
-From: "tang.junhui" <tang.junhui@zte.com.cn>
+Good Day Dearest.
 
-Currently, names of bcache devices displayed as bcache0, bcache16,
-bcache32, etc. This patch changes their names as bcache0, bcache1,
-bcache2, etc.
+My name is Sarah JOHNSON I am 18 years old, the only daughter of late Mr. Raymond JOHNSON from Burkina Faso, I am contacting you to help me relocate to your country to continue my university education in  your country, before my father died he gave me a deposit slip document of ($7,000,000 USD) and made me understand that it was because of his position in the government that his government associates planed and poisoned him on a business trip with them to France and he advised me to look for a faithful and reliable foreigner who will help me to transfer this money to his country and help me to relocate over there to continue my studies.
 
-Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I hope you will help me with the good faith and trust I have in you, after you have secured the money and settle my education, I will give you 30% of the money for your good and kind assistance to me. Please Contact me e-Mail:sarah.johnson197070@yahoo.com 
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 3a19cbc..867d9a9 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -793,7 +793,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
- 	}
- 
- 	set_capacity(d->disk, sectors);
--	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
-+	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor / BCACHE_MINORS);
- 
- 	d->disk->major		= bcache_major;
- 	d->disk->first_minor	= minor;
--- 
-2.8.1.windows.1
+I am waiting on your reply
+
+Regards,
+
+Sarah.
