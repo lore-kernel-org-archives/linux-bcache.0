@@ -1,29 +1,33 @@
-From: Sarah JOHNSON <sarah.johnson197070@gmail.com>
-Subject: Greetings.
-Date: Fri, 14 Apr 2017 09:22:50 +0000 (UTC)
-Message-ID: <1940046256.242872.1492161770258__16932.2992711843$1492161787$gmane$org@mail.yahoo.com>
-References: <1940046256.242872.1492161770258.ref@mail.yahoo.com>
-Reply-To: Sarah JOHNSON <sarah.johnson197070@yahoo.com>
+From: Shay Gover <govershay@gmail.com>
+Subject: Debug cache miss
+Date: Fri, 14 Apr 2017 16:21:00 +0300
+Message-ID: <CANM5d8cpE55Wi_Dj2Ah-EG2_cHneDX9iNJpYMTsFr1pYV9s1jQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from sonic332-29.consmr.mail.ne1.yahoo.com ([66.163.187.210]:43026
-        "EHLO sonic332-29.consmr.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1753459AbdDNJWv (ORCPT
+Received: from mail-io0-f171.google.com ([209.85.223.171]:36070 "EHLO
+        mail-io0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751522AbdDNNVV (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 14 Apr 2017 05:22:51 -0400
+        Fri, 14 Apr 2017 09:21:21 -0400
+Received: by mail-io0-f171.google.com with SMTP id l7so109429720ioe.3
+        for <linux-bcache@vger.kernel.org>; Fri, 14 Apr 2017 06:21:21 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-Good Day Dearest.
+Hi everyone,
 
-My name is Sarah JOHNSON I am 18 years old, the only daughter of late Mr. Raymond JOHNSON from Burkina Faso, I am contacting you to help me relocate to your country to continue my university education in  your country, before my father died he gave me a deposit slip document of ($7,000,000 USD) and made me understand that it was because of his position in the government that his government associates planed and poisoned him on a business trip with them to France and he advised me to look for a faithful and reliable foreigner who will help me to transfer this money to his country and help me to relocate over there to continue my studies.
+Recently I'm getting complete I/O freezes (mouse still working).
+I think, it's a cache miss.
+Sometimes I see on dmesg this error:
+kernel: perf: interrupt took too long (2575 > 2500), lowering
+kernel.perf_event_max_sample_rate to 77400
+(Numbers change)
 
-I hope you will help me with the good faith and trust I have in you, after you have secured the money and settle my education, I will give you 30% of the money for your good and kind assistance to me. Please Contact me e-Mail:sarah.johnson197070@yahoo.com 
+How can I debug this? Where should I look?
+Currently I'm watching cache_bypass_misses
 
-I am waiting on your reply
+Thanks,
 
-Regards,
-
-Sarah.
+Shay
