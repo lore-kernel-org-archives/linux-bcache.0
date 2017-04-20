@@ -1,44 +1,77 @@
 From: NeilBrown <neilb@suse.com>
-Subject: [PATCH 09/11] bcache: use kmalloc to allocate bio in
- bch_data_verify()
-Date: Thu, 20 Apr 2017 15:38:50 +1000
-Message-ID: <149266673005.27388.9415706764616504556.stgit@noble>
-References: <149266645258.27388.14083229348123176454.stgit@noble>
+Subject: [PATCH 00/10] block: assorted cleanup for bio splitting
+	and cloning.
+Date: Thu, 20 Apr 2017 15:38:48 +1000
+Message-ID: <149266645258.27388.14083229348123176454.stgit@noble>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <149266645258.27388.14083229348123176454.stgit@noble>
-Sender: linux-kernel-owner@vger.kernel.org
+Content-Transfer-Encoding: base64
+Return-path: <xen-devel-bounces@lists.xen.org>
+List-Unsubscribe: <https://lists.xen.org/cgi-bin/mailman/options/xen-devel>,
+ <mailto:xen-devel-request@lists.xen.org?subject=unsubscribe>
+List-Post: <mailto:xen-devel@lists.xen.org>
+List-Help: <mailto:xen-devel-request@lists.xen.org?subject=help>
+List-Subscribe: <https://lists.xen.org/cgi-bin/mailman/listinfo/xen-devel>,
+ <mailto:xen-devel-request@lists.xen.org?subject=subscribe>
+Errors-To: xen-devel-bounces@lists.xen.org
+Sender: "Xen-devel" <xen-devel-bounces@lists.xen.org>
 To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
+Cc: Alex Elder <elder@kernel.org>, Sage Weil <sage@redhat.com>, linux-kernel@vger.kernel.org, Philipp Reisner <philipp.reisner@linbit.com>, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, Lars Ellenberg <lars.ellenberg@linbit.com>, xen-devel@lists.xenproject.org, Ilya Dryomov <idryomov@gmail.com>, ceph-devel@vger.kernel.org, drbd-dev@lists.linbit.com
 List-Id: linux-bcache@vger.kernel.org
 
-This function allocates a bio, then a collection
-of pages.  It copes with failure.
-
-It currently uses a mempool() to allocate the bio,
-but alloc_page() to allocate the pages.  These fail
-in different ways, so the usage is inconsistent.
-
-Change the bio_clone() to bio_clone_kmalloc()
-so that no pool is used either for the bio or the pages.
-
-Signed-off-by: NeilBrown <neilb@suse.com>
----
- drivers/md/bcache/debug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
-index 06f55056aaae..35a5a7210e51 100644
---- a/drivers/md/bcache/debug.c
-+++ b/drivers/md/bcache/debug.c
-@@ -110,7 +110,7 @@ void bch_data_verify(struct cached_dev *dc, struct bio *bio)
- 	struct bio_vec bv, cbv;
- 	struct bvec_iter iter, citer = { 0 };
- 
--	check = bio_clone(bio, GFP_NOIO);
-+	check = bio_clone_kmalloc(bio, GFP_NOIO);
- 	if (!check)
- 		return;
- 	check->bi_opf = REQ_OP_READ;
+VGhpcyBzZXJpZXMgY29udGFpbnMgbW9yZSB3b3JrIHRvd2FyZHMgZ2V0dGluZyByaWQgb2YgdGhl
+IGJpb3NldCB3b3JrCnF1ZXVlcyBhbmQgZ2VuZXJhbGx5IGltcHJvdmluZyB0aGUgc3BsaXR0aW5n
+IGFuZCBjbG9uaW5nIG9mIGJpb3MuCgpUaGUgZmlyc3QgdGhyZWUgcGF0Y2hlcyBhcmUgc2ltaWxh
+ciB0byBvbmVzIHRoYXQgSSBzZW50IHByZXZpb3VzbHkuClRoZXkgaGF2ZSBiZWVuIHJlYmFzZWQg
+b24gdGhlIGN1cnJlbnQgYmxvY2sgZm9yLW5leHQgdHJlZSBhbmQgaW1wcm92ZWQKYSBsaXR0bGUu
+ICBTcGVjaWZpY2FsbHkgSSBubyBsb25nZXIgY2hhbmdlIGFsbCBpbnN0YW5jZXMgb2YKYmlvc2V0
+X2NyZWF0ZSgpIHRvIGJpb3NldF9jcmVhdGVfcmVzY3VlZCgpLiAgSW5zdGVhZCBJIG9ubHkgY2hh
+bmdlCnRob3NlIHdoaWNoIGNhbm5vdCBlYXNpbHkgYmUgc2hvd24gdG8gbm90IG5lZWQgY2hhbmdp
+bmcuCgpUaGUgbmV4dCBwYXRjaCBmaXhlcyBzb21lIGlzc3VlcyB3aXRoIGJvdW5jZS5jLiAgTW9z
+dCBzaWduaWZpY2FudGx5IGl0CnVzZWQgdG8gYmUgY2FsbGVkIGFmdGVyIGJsa19xdWV1ZV9zcGxp
+dCgpLCBidXQgbm93IGl0IGlzIGNhbGxlZApiZWZvcmUuICBUaGlzIG1lYW5zIHRoYXQgaXQgY2Fu
+IG5vIGxvbmdlciBhc3N1bWUgdGhhdCB0aGUKYmlvIGhhcyBiZWVuIHNwbGl0IGlmIGl0IGNvbnRh
+aW5lZCBtb3JlIHRoYW4gQklPX01BWF9QQUdFUy4KCk1vc3Qgb2YgdGhlIHJlc3QgY2hhbmdlIGEg
+bnVtYmVyIG9mIGJpb19jbG9uZSgpIGNhbGxzIHRvCmJpb19jbG9uZV9mYXN0KCkgYXMgdGhhdCBp
+cyBvZnRlbiB3aGF0IGlzIG5lZWRlZC4gIGJpb19jbG9uZSgpIGRvZXMKbm90IHdvcmsgd2l0aCBi
+aW9zIGxhcmdlciB0aGFuIEJJT19NQVhfUEFHRVMsIGJpb19jbG9uZV9mYXN0KCkgZG9lcy4KCkZp
+bmFsbHkgd2UgcmVtb3ZlIGJpb19jbG9uZSgpICh3aGljaCBpcyBubyBsb25nZXIgdXNlZCkgYW5k
+IHN0b3AKYmxrX2Jpb19zZWdtZW50X3NwbGl0KCkgZnJvbSBzcGxpdHRpbmcgYWZ0ZXIgQklPX01B
+WF9QQUdFUywgYXMgdGhhdAppcyBubyBsb25nZXIgbmVjZXNzYXJ5LgoKLS0tCgpOZWlsQnJvd24g
+KDExKToKICAgICAgYmxrOiByZW1vdmUgYmlvX3NldCBhcmcgZnJvbSBibGtfcXVldWVfc3BsaXQo
+KQogICAgICBibGs6IG1ha2UgdGhlIGJpb3NldCByZXNjdWVfd29ya3F1ZXVlIG9wdGlvbmFsLgog
+ICAgICBibGs6IHVzZSBub24tcmVzY3VpbmcgYmlvc2V0IGZvciBxLT5iaW9fc3BsaXQuCiAgICAg
+IGJsb2NrOiBJbXByb3ZlbWVudHMgdG8gYm91bmNlLWJ1ZmZlciBoYW5kbGluZwogICAgICByYmQ6
+IHVzZSBiaW9fY2xvbmVfZmFzdCgpIGluc3RlYWQgb2YgYmlvX2Nsb25lKCkKICAgICAgZHJiZDog
+dXNlIGJpb19jbG9uZV9mYXN0KCkgaW5zdGVhZCBvZiBiaW9fY2xvbmUoKQogICAgICBwa3RjZHZk
+OiB1c2UgYmlvX2Nsb25lX2Zhc3QoKSBpbnN0ZWFkIG9mIGJpb19jbG9uZSgpCiAgICAgIHhlbi1i
+bGtmcm9udDogcmVtb3ZlIGJpbyBzcGxpdHRpbmcuCiAgICAgIGJjYWNoZTogdXNlIGttYWxsb2Mg
+dG8gYWxsb2NhdGUgYmlvIGluIGJjaF9kYXRhX3ZlcmlmeSgpCiAgICAgIGJsb2NrOiByZW1vdmUg
+YmlvX2Nsb25lKCkgYW5kIGFsbCByZWZlcmVuY2VzLgogICAgICBibG9jazogZG9uJ3QgY2hlY2sg
+Zm9yIEJJT19NQVhfUEFHRVMgaW4gYmxrX2Jpb19zZWdtZW50X3NwbGl0KCkKCgogRG9jdW1lbnRh
+dGlvbi9ibG9jay9iaW9kb2MudHh0IHwgICAgMiArCiBibG9jay9iaW8uYyAgICAgICAgICAgICAg
+ICAgICAgfCAgIDMwICsrKysrKysrKysrKysrKysrKystLS0KIGJsb2NrL2Jsay1jb3JlLmMgICAg
+ICAgICAgICAgICB8ICAgIDIgKwogYmxvY2svYmxrLW1lcmdlLmMgICAgICAgICAgICAgIHwgICAz
+MSArKystLS0tLS0tLS0tLS0tLS0tLS0tLQogYmxvY2svYmxrLW1xLmMgICAgICAgICAgICAgICAg
+IHwgICAgMiArCiBibG9jay9ib3VuY2UuYyAgICAgICAgICAgICAgICAgfCAgIDI3ICsrKysrKysr
+KysrKysrKysrKystCiBkcml2ZXJzL2Jsb2NrL2RyYmQvZHJiZF9pbnQuaCAgfCAgICAzICsrCiBk
+cml2ZXJzL2Jsb2NrL2RyYmQvZHJiZF9tYWluLmMgfCAgICA5ICsrKysrKysKIGRyaXZlcnMvYmxv
+Y2svZHJiZC9kcmJkX3JlcS5jICB8ICAgIDIgKwogZHJpdmVycy9ibG9jay9kcmJkL2RyYmRfcmVx
+LmggIHwgICAgMiArCiBkcml2ZXJzL2Jsb2NrL3BrdGNkdmQuYyAgICAgICAgfCAgIDE0ICsrKysr
+KysrLS0KIGRyaXZlcnMvYmxvY2svcHMzdnJhbS5jICAgICAgICB8ICAgIDIgKwogZHJpdmVycy9i
+bG9jay9yYmQuYyAgICAgICAgICAgIHwgICAxNiArKysrKysrKysrKy0KIGRyaXZlcnMvYmxvY2sv
+cnN4eC9kZXYuYyAgICAgICB8ICAgIDIgKwogZHJpdmVycy9ibG9jay91bWVtLmMgICAgICAgICAg
+IHwgICAgMiArCiBkcml2ZXJzL2Jsb2NrL3hlbi1ibGtmcm9udC5jICAgfCAgIDU0ICsrLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIGRyaXZlcnMvYmxvY2svenJhbS96cmFt
+X2Rydi5jICB8ICAgIDIgKwogZHJpdmVycy9saWdodG52bS9ycnBjLmMgICAgICAgIHwgICAgMiAr
+CiBkcml2ZXJzL21kL2JjYWNoZS9kZWJ1Zy5jICAgICAgfCAgICAyICsKIGRyaXZlcnMvbWQvYmNh
+Y2hlL3N1cGVyLmMgICAgICB8ICAgIDQgKy0tCiBkcml2ZXJzL21kL2RtLWNyeXB0LmMgICAgICAg
+ICAgfCAgICAyICsKIGRyaXZlcnMvbWQvZG0taW8uYyAgICAgICAgICAgICB8ICAgIDIgKwogZHJp
+dmVycy9tZC9kbS5jICAgICAgICAgICAgICAgIHwgICAgNSArKy0tCiBkcml2ZXJzL21kL21kLmMg
+ICAgICAgICAgICAgICAgfCAgICA0ICstLQogZHJpdmVycy9zMzkwL2Jsb2NrL2Rjc3NibGsuYyAg
+IHwgICAgMiArCiBkcml2ZXJzL3MzOTAvYmxvY2sveHByYW0uYyAgICAgfCAgICAyICsKIGluY2x1
+ZGUvbGludXgvYmlvLmggICAgICAgICAgICB8ICAgIDcgKy0tLS0KIGluY2x1ZGUvbGludXgvYmxr
+ZGV2LmggICAgICAgICB8ICAgIDMgKy0KIDI4IGZpbGVzIGNoYW5nZWQsIDEyMSBpbnNlcnRpb25z
+KCspLCAxMTYgZGVsZXRpb25zKC0pCgotLQpTaWduYXR1cmUKCgpfX19fX19fX19fX19fX19fX19f
+X19fX19fX19fX19fX19fX19fX19fX19fX19fXwpYZW4tZGV2ZWwgbWFpbGluZyBsaXN0Clhlbi1k
+ZXZlbEBsaXN0cy54ZW4ub3JnCmh0dHBzOi8vbGlzdHMueGVuLm9yZy94ZW4tZGV2ZWwK
