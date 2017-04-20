@@ -1,46 +1,44 @@
-From: Kai Krakow <hurikhan77@gmail.com>
-Subject: Re: Debug cache miss
-Date: Fri, 14 Apr 2017 17:32:46 +0200
-Message-ID: <20170414173246.024c0049@jupiter.sol.kaishome.de>
-References: <CANM5d8cpE55Wi_Dj2Ah-EG2_cHneDX9iNJpYMTsFr1pYV9s1jQ@mail.gmail.com>
+From: NeilBrown <neilb@suse.com>
+Subject: [PATCH 09/11] bcache: use kmalloc to allocate bio in
+ bch_data_verify()
+Date: Thu, 20 Apr 2017 15:38:50 +1000
+Message-ID: <149266673005.27388.9415706764616504556.stgit@noble>
+References: <149266645258.27388.14083229348123176454.stgit@noble>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [195.159.176.226] ([195.159.176.226]:34951 "EHLO
-        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-        with ESMTP id S1751677AbdDNPfN (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 14 Apr 2017 11:35:13 -0400
-Received: from list by blaine.gmane.org with local (Exim 4.84_2)
-        (envelope-from <glbd-linux-bcache@m.gmane.org>)
-        id 1cz3FZ-00052w-9P
-        for linux-bcache@vger.kernel.org; Fri, 14 Apr 2017 17:35:05 +0200
-Sender: linux-bcache-owner@vger.kernel.org
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <149266645258.27388.14083229348123176454.stgit@noble>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Am Fri, 14 Apr 2017 16:21:00 +0300
-schrieb Shay Gover <govershay@gmail.com>:
+This function allocates a bio, then a collection
+of pages.  It copes with failure.
 
-> Hi everyone,
-> 
-> Recently I'm getting complete I/O freezes (mouse still working).
-> I think, it's a cache miss.
-> Sometimes I see on dmesg this error:
-> kernel: perf: interrupt took too long (2575 > 2500), lowering
-> kernel.perf_event_max_sample_rate to 77400
-> (Numbers change)
-> 
-> How can I debug this? Where should I look?
-> Currently I'm watching cache_bypass_misses
+It currently uses a mempool() to allocate the bio,
+but alloc_page() to allocate the pages.  These fail
+in different ways, so the usage is inconsistent.
 
-Are you using VirtualBox somewhere? I only see such messages when
-running VirtualBox guests with high IO load. But the IO stack is not
-the problem here.
+Change the bio_clone() to bio_clone_kmalloc()
+so that no pool is used either for the bio or the pages.
 
--- 
-Regards,
-Kai
+Signed-off-by: NeilBrown <neilb@suse.com>
+---
+ drivers/md/bcache/debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Replies to list-only preferred.
+diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
+index 06f55056aaae..35a5a7210e51 100644
+--- a/drivers/md/bcache/debug.c
++++ b/drivers/md/bcache/debug.c
+@@ -110,7 +110,7 @@ void bch_data_verify(struct cached_dev *dc, struct bio *bio)
+ 	struct bio_vec bv, cbv;
+ 	struct bvec_iter iter, citer = { 0 };
+ 
+-	check = bio_clone(bio, GFP_NOIO);
++	check = bio_clone_kmalloc(bio, GFP_NOIO);
+ 	if (!check)
+ 		return;
+ 	check->bi_opf = REQ_OP_READ;
