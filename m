@@ -1,23 +1,25 @@
-From: wangyijing <wangyijing@huawei.com>
-Subject: question about writeback data
-Date: Fri, 21 Apr 2017 10:49:51 +0800
-Message-ID: <58F9734F.5010109@huawei.com>
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 09/11] bcache: use kmalloc to allocate bio in
+ bch_data_verify()
+Date: Fri, 21 Apr 2017 04:31:40 -0700
+Message-ID: <20170421113140.GH12523@infradead.org>
+References: <149266645258.27388.14083229348123176454.stgit@noble>
+ <149266673005.27388.9415706764616504556.stgit@noble>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from szxga05-in.huawei.com ([45.249.212.191]:2071 "EHLO
-        dggrg05-dlp.huawei.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-        with ESMTP id S1034574AbdDUC4E (ORCPT
+Received: from bombadil.infradead.org ([65.50.211.133]:40563 "EHLO
+        bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1038702AbdDULbl (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 20 Apr 2017 22:56:04 -0400
+        Fri, 21 Apr 2017 07:31:41 -0400
+Content-Disposition: inline
+In-Reply-To: <149266673005.27388.9415706764616504556.stgit@noble>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: NeilBrown <neilb@suse.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
 
-Hi all, recently I read bcache writeback related codes, and found there is no flush send
-during writeback flow, after a bio complete, write_dirty_finish() be called, and free the
-meta key in cache devices, if a sudden poweroff happen, the data cached in backing device cache may lost, right?
+Looks fine,
 
-Thanks!
-Yijing.
+Reviewed-by: Christoph Hellwig <hch@lst.de>
