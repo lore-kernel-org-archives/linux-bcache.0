@@ -1,37 +1,61 @@
-From: Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH 09/11] bcache: use kmalloc to allocate bio in bch_data_verify()
-Date: Fri, 21 Apr 2017 23:41:18 +0800
-Message-ID: <CACVXFVMa_Qo2eFhSnt+URaubsr2VSnhW=ypsyjEo5e=L2FG7_w@mail.gmail.com>
-References: <149266645258.27388.14083229348123176454.stgit@noble> <149266673005.27388.9415706764616504556.stgit@noble>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: Question =?utf-8?Q?about=C2=A0sequenti?=
+ =?utf-8?B?YWzCoGxhcmdlwqB3cml0ZcKgSU8=?= bypass
+Date: Mon, 24 Apr 2017 20:55:00 -0800
+Message-ID: <20170425045500.wn2wrzo5glypk3d5@moria.home.lan>
+References: <201704251238542040646@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-vk0-f67.google.com ([209.85.213.67]:34257 "EHLO
-        mail-vk0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1040151AbdDUSbB (ORCPT
+Received: from mail-io0-f181.google.com ([209.85.223.181]:35552 "EHLO
+        mail-io0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1758615AbdDYEzH (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 21 Apr 2017 14:31:01 -0400
-In-Reply-To: <149266673005.27388.9415706764616504556.stgit@noble>
+        Tue, 25 Apr 2017 00:55:07 -0400
+Received: by mail-io0-f181.google.com with SMTP id r16so202323577ioi.2
+        for <linux-bcache@vger.kernel.org>; Mon, 24 Apr 2017 21:55:07 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <201704251238542040646@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: NeilBrown <neilb@suse.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-block <linux-block@vger.kernel.org>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Kent Overstreet <kent.overstreet@gmail.com>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>
+To: tang.junhui@zte.com.cn
+Cc: linux-bcache@vger.kernel.org
 
-On Thu, Apr 20, 2017 at 1:38 PM, NeilBrown <neilb@suse.com> wrote:
-> This function allocates a bio, then a collection
-> of pages.  It copes with failure.
->
-> It currently uses a mempool() to allocate the bio,
-> but alloc_page() to allocate the pages.  These fail
-> in different ways, so the usage is inconsistent.
->
-> Change the bio_clone() to bio_clone_kmalloc()
-> so that no pool is used either for the bio or the pages.
->
-> Signed-off-by: NeilBrown <neilb@suse.com>
+On Tue, Apr 25, 2017 at 12:38:54PM +0800, tang.junhui@zte.com.cn wrote:
+> Hello all, 
+> 
+> 
+> 
+> 
+> We test sequential write IO with bs=1M by FIO,
+> 
+> and the bcache cache_mode is writeback,
+> 
+> we expect these IOs to be bypassed cache,
+> 
+> but actually they not.
+> 
+> We debug the code, and find in check_should_bypass():
+> 
+>     if (!congested &&
+> 
+>         mode == CACHE_MODE_WRITEBACK &&
+> 
+>         op_is_write(bio_op(bio)) &&
+> 
+>         (bio-＞bi_opf & REQ_SYNC))
+> 
+>         goto rescale
+> 
+> that means, If in writeback mode, a write IO with REQ_SYNC flag
+> 
+> will not be bypassed though it is a sequential large IO.
+> 
+>  
+> 
+> So, my question is: why do not we bypass these IOs ?
+> 
+> We planned to remove these codes. Does the modification do any harm?
 
-Reviewed-by : Ming Lei <ming.lei@redhat.com>
-
-
-Thanks,
-Ming Lei
+You can remove that check, it won't break anything.
