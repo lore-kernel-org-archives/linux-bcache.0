@@ -1,25 +1,46 @@
-From: Clemens Eisserer <linuxhippy@gmail.com>
-Subject: Re: Error during backup to zlib-compressed btrfs-volume (kernel stack
- frame pointer at ffff9f1f433ebf50 in kworker/u8:7:6702 has bad value (null))
-Date: Thu, 27 Apr 2017 12:27:54 +0200
-Message-ID: <CAFvQSYQs7JO6j6g_C=BbPUuVvQm8bexgTQfiW3vhOMsXd5RL5A@mail.gmail.com>
-References: <CAFvQSYR-q0OBx1QFyWCvD+GcAz52WwUMt-xu7TDtxLc+sohiWQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+From: Liang Chen <liangchen.linux@gmail.com>
+Subject: [PATCH] bcache: explicitly destory mutex while exiting
+Date: Tue,  2 May 2017 16:09:55 +0800
+Message-ID: <1493712595-21528-1-git-send-email-liangchen.linux@gmail.com>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f176.google.com ([209.85.192.176]:35640 "EHLO
-        mail-pf0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S935456AbdD0K1z (ORCPT
+Received: from mail-pf0-f193.google.com ([209.85.192.193]:35909 "EHLO
+        mail-pf0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750886AbdEBIKd (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 27 Apr 2017 06:27:55 -0400
-Received: by mail-pf0-f176.google.com with SMTP id v14so22740809pfd.2
-        for <linux-bcache@vger.kernel.org>; Thu, 27 Apr 2017 03:27:55 -0700 (PDT)
-In-Reply-To: <CAFvQSYR-q0OBx1QFyWCvD+GcAz52WwUMt-xu7TDtxLc+sohiWQ@mail.gmail.com>
+        Tue, 2 May 2017 04:10:33 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, colyli@suse.de, bcache@linux.ewheeler.net, Liang Chen <liangchen.linux@gmail.com>
 
-Please excuse the previous email, it was actually ment to be sent to
-linux-btrfs.
+mutex_destroy does nothing most of time, but it's better to call
+it to make the code future proof and it also has some meaning
+for like mutex debug.
 
-Br, Clemens
+Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+---
+ drivers/md/bcache/super.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 85e3f21..406fe03 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -2083,6 +2083,7 @@ static void bcache_exit(void)
+ 	if (bcache_major)
+ 		unregister_blkdev(bcache_major, "bcache");
+ 	unregister_reboot_notifier(&reboot);
++	mutex_destroy(&bch_register_lock);
+ }
+ 
+ static int __init bcache_init(void)
+@@ -2100,6 +2101,7 @@ static int __init bcache_init(void)
+ 
+ 	bcache_major = register_blkdev(0, "bcache");
+ 	if (bcache_major < 0) {
++		mutex_destroy(&bch_register_lock);
+ 		unregister_reboot_notifier(&reboot);
+ 		return bcache_major;
+ 	}
+-- 
+1.8.3.1
