@@ -1,73 +1,80 @@
-From: <michele@milburnbrowning.com>
-Subject: 45293 linux-bcache
-Date: Sat, 06 May 2017 10:40:38 -0000
-Message-ID: <149406723866.31455.4718257022069231997@ttknet.ru>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 2/2] bcache: fix calling ida_simple_remove() withincorrect
+ minor
+Date: Mon, 8 May 2017 14:20:15 +0800
+Message-ID: <1241af54-a3d7-58b9-fe55-b926c6956f56@coly.li>
+References: <201705081248047779480@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: application/zip; name="469777.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 186.52.access.ttknet.ru ([31.163.52.186]:39889 "HELO ttknet.ru"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1751824AbdEFKkn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 6 May 2017 06:40:43 -0400
-Content-Disposition: attachment
+Received: from server.coly.li ([162.144.45.48]:55660 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1752674AbdEHGUn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 8 May 2017 02:20:43 -0400
+In-Reply-To: <201705081248047779480@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: tang.junhui@zte.com.cn
+Cc: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
 
-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
-AFsAAADZCwAAAAA=
+On 2017/5/8 下午12:48, tang.junhui@zte.com.cn wrote:
+> Hello Coly,
+> 
+> 
+> ＞ Hi Junhui,
+> 
+> ＞ 
+> 
+> ＞ I think this is a design on purpose. Current multiple partitions bcache
+> 
+> ＞ design is per-device, not per major number, and each bcache devices as
+> 
+> ＞ 16 partitions at max.
+> 
+> ＞ 
+> 
+> ＞ This is why when you see a bcache device is initialized, the first minor
+> 
+> ＞ of the device will *BCACHE_MINORS.
+> 
+> ＞ 
+> 
+> ＞ Your patch won't make all minor numbers of the partitions of a bcache
+> 
+> ＞ device being continuous, IMHO this is not correct.
+> 
+> ＞ 
+> 
+> ＞ Thanks.
+> 
+> ＞ 
+> 
+> ＞ Coly
+> 
+> 
+> We get minor number by ida_simple_get(), but the minor what we are going to
+> 
+> relase is minor*BCACHE_MINORS, so we release a wrong minor
+> minor*BCACHE_MINORS, 
+> 
+> and the right minor number leakage occures.
+
+I mean if there are partitions on bcache devices, like
+/dev/bcache0p1, /dev/bcache0p2 ... /dev/bcache0p16
+/dev/bcache1p1, /dev/bcache1p2 ... /dev/bcache0p16
+
+
+bcache0 is not the last level to allocate minor number, bcache0p1 is.
+What we should fix might be:
+/dev/bcache0 has minor 0
+/dev/bcache1 has minor 16
+/dev/bcache2 has minor 32
+
+Maybe I didn't understand you correctly. Can your patch make sure all
+partitions of a bcache device have adjacent minor numbers ? Correct me
+if I am wrong.
+
+
+-- 
+Coly Li
