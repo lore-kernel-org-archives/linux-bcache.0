@@ -1,144 +1,100 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: Reasoning of exposing queue/rotational=0
-Date: Tue, 9 May 2017 18:11:06 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1705091804420.19359@mail.ewheeler.net>
-References: <20170504232457.13c269c0@jupiter.sol.kaishome.de>        <f99de33e-f90e-1492-7561-5a63d6814a9e@coly.li>        <20170505174438.GA22811@suse.com>        <20170505202317.68bdbc20@jupiter.sol.kaishome.de>        <20170505190231.GA31457@suse.com>
- <20170505211434.665c00f8@jupiter.sol.kaishome.de>
+Subject: Re: [PATCH] md/bcache: Fix a deadlock while calculating writeback
+ rate
+Date: Tue, 9 May 2017 18:53:16 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1705091844180.19359@mail.ewheeler.net>
+References: <20170507155222.19114-1-phillipp.roell@trafficplex.de>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1891078090-1494355468=:19359"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:53600 "EHLO mail.ewheeler.net"
+Received: from mx.ewheeler.net ([66.155.3.69]:54060 "EHLO mail.ewheeler.net"
         rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1753571AbdEISLI (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 9 May 2017 14:11:08 -0400
-In-Reply-To: <20170505211434.665c00f8@jupiter.sol.kaishome.de>
+        id S1753731AbdEISxW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 9 May 2017 14:53:22 -0400
+In-Reply-To: <20170507155222.19114-1-phillipp.roell@trafficplex.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kai Krakow <hurikhan77@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: =?ISO-8859-15?Q?Phillipp_R=F6ll?= <phillipp.roell@trafficplex.de>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
 
-On Fri, 5 May 2017, Kai Krakow wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Am Fri, 5 May 2017 21:02:31 +0200
-> schrieb Vojtech Pavlik <vojtech@suse.com>:
-> 
-> > On Fri, May 05, 2017 at 08:23:17PM +0200, Kai Krakow wrote:
-> > > > I don't think that makes much sense either - the cache device
-> > > > will not be used in the pattern that the exposed bcache device
-> > > > is, so any choice of access patterns by a higher level based on
-> > > > rotational/non-rotational will be messed up anyway.
-> > > > 
-> > > > I think the current behavior (rotational=0) is correct in most
-> > > > cases.  
-> > > 
-> > > Well, I don't want to do bikeshedding... But both didn't answer my
-> > > original question of what's the reasoning. Did anyone put thoughts
-> > > into this?   
-> > 
-> > Originally, rotational=1 is just a flag coming from the
-> > IDE/SCSI/SATA/etc. layers to the OS telling it whether the device is
-> > spinning or not. Without any specific implications as to the behavior
-> > of the device.
-> > 
-> > It is writable for a reason - not even all flash based devices report
-> > the flag correctly at the hardware level.
-> > 
-> > Linux uses the flag on the block device (queue) to tell whether seeks
-> > are very expensive compared to linear reads and whether it makes sense
-> > to spend large amounts CPU cycles and memory on reordering.
-> > 
-> > Btrfs is one user that tries to change the allocation policy and thus
-> > the likelihood of fragmentation and/or long seeks based on whether the
-> > device reports 'rotational'.
-> > 
-> > However, it actually has three modes at the fs level: 'nossd',
-> > 'ssd' and 'ssd_spread', with the last being faster on cheaper SSDs.
-> > There are large differences even between individual SSD profiles.
-> > Again, for a good reason, btrfs has these as mount options that
-> > override any 'rotational' hint.
-> > 
-> > All in all, if you want all the performance available, you need to see
-> > what works best for your workload.
-> > 
-> > The same applies to i/o schedulers. They're much less dependent on the
-> > underlying device than the workload put on them.
-> > 
-> > This is not the first time the question comes up.
-> 
-> I tried to look up information about it previously but didn't came up
-> with useful results.
-> 
-> > > Was it arbitrarily chosen? Is rotational=0 just a default that
-> > > bcache didn't bother to explicitly set?  
-> > 
-> > A bcache device performance profile is neither one of a rotational
-> > device, nor one of a SSD.
-> > 
-> > Sequential reads may be bypassed or not. If not, some parts of it may
-> > be cached, in which case there will be seeks on the backing device
-> > even when there should be none on a real rotational device.
-> > 
-> > Random reads may be fast if they're hitting cached locations.
-> > 
-> > Random and sequential writes will be always cached if writeback is
-> > enabled and so there is no point in spending CPU cycles on optimizing
-> > writes.
-> > 
-> > How much the bcache device will behave like the backing device and how
-> > much like the caching device does depend mainly on the workload and
-> > the size of its working set compared to the size of the cache.
-> > 
-> > I do not believe that the choice of rotational=0 was arbitrary or a
-> > default. It's simply that bcache changes the access pattern to both
-> > the caching and backing device so much that it no longer resembles a
-> > rotational device's performance profile in any case.
-> > 
-> > > Answering the last two questions with "yes" would suggest that it
-> > > should be rethought...
-> > > 
-> > > Answering the first with "yes" means I'd like to know more. ;-)  
-> 
-> Okay, that answers my questions. Thanks. :-)
-> 
-> But that only tells me that a "default" cannot be really chosen. Both
-> make sense.
-> 
-> I wonder if Linux chose to call the flag "non_rotational", would it
-> also default to 0 in bcache? I think nobody would know. ;-)
-> 
-> For me it looks like sticking that to rotational=1 gives overall better
-> long-time performance and btrfs filesystem layout.
-> 
-> Anyone who stumbles across this should judge on his own based on
-> Vojtech's good answer.
+--1641074820-1891078090-1494355468=:19359
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Indeed!
+On Sun, 7 May 2017, Phillipp Röll wrote:
+> A bcache foreground write holds a read lock on the writeback_lock
+> rwsem. In order to complete and release the lock after the actual
+> write, it needs to update the index, which runs out of a workqueue.
+> 
+> If the bch_writeback_thread is starting to write back dirty data while
+> the foreground write still holds the lock, it tries to get a write
+> lock on the writeback lock, thus blocking until the foreground write
+> completes.
+> 
+> If at this moment a workqueue worker starts an update of the write-
+> back rate, while foreground write completions are queued behind it,
+> the update thread will try to get a read lock, which blocks, because
+> the writeback thread is trying to get a write lock. This blocks the
+> foreground writes behind it and locks up all writeback and foreground
+> writes.
+> 
+> Removing the read lock from the writeback rate update thread is the
+> simplest solution: the worst thing that will happen when the scan
+> for dirty data is inconsistent is a wrong P-factor in the PID controller.
 
-Also note:
+Hi Phillipp,
 
-# cat /sys/block/bcache0/queue/scheduler 
-none
+Thank you for tracking this down!  Did you have an actual deadlock case 
+that this fixed?
 
-There is no scheduler for bcache, so the bio's pass through whatever your 
-backing (cache) device uses as a queue scheduler, which could differ 
-between cache/backing.  If you use hardware RAID, your 'rotational' flag 
-is probably wrong for SSDs so set it on boot somehow (udev, etc.)
+
+I wonder: in the event of a race, can the updated P-factor be invalid (ie, 
+partially populated)? I don't believe 64-bit assignments are atomic on all 
+architectures (see __update_writeback_rate) so you might get the upper or 
+lower 32 bits of the P-factor or of other values assigned therein.  Could 
+the rate be calculated in such a race by the writeback thread such that no 
+progress is made (eg, effectively rate==0)?
+
+I certainly want to see deadlocks fixed and thought this could be a 
+consideration.  Worst case we could put a spinlock around the use of the 
+dc->writeback_rate* fields.
+
+What do you think?
 
 --
 Eric Wheeler
 
-
-
 > 
+> Signed-off-by: Phillipp Röll <phillipp.roell@trafficplex.de>
+> ---
+>  drivers/md/bcache/writeback.c | 4 ----
+>  1 file changed, 4 deletions(-)
 > 
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 6ac2e48..90da3bd 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -75,14 +75,10 @@ static void update_writeback_rate(struct work_struct *work)
+>  					     struct cached_dev,
+>  					     writeback_rate_update);
+>  
+> -	down_read(&dc->writeback_lock);
+> -
+>  	if (atomic_read(&dc->has_dirty) &&
+>  	    dc->writeback_percent)
+>  		__update_writeback_rate(dc);
+>  
+> -	up_read(&dc->writeback_lock);
+> -
+>  	schedule_delayed_work(&dc->writeback_rate_update,
+>  			      dc->writeback_rate_update_seconds * HZ);
+>  }
 > -- 
-> Regards,
-> Kai
+> 2.10.0
 > 
-> Replies to list-only preferred.
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
+--1641074820-1891078090-1494355468=:19359--
