@@ -1,96 +1,63 @@
 From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 1/2] bcache: name bcache devices in an ordered sequence
- asbcache0, bcache1
-Date: Mon, 8 May 2017 23:26:10 +0800
-Message-ID: <dbdf1cc4-ed10-63a6-cab5-6828f9cade0e@coly.li>
-References: <201705081239441539415@zte.com.cn>
+Subject: Re: [PATCH 2/2] bcache: fix calling
+ ida_simple_remove()withincorrectminor
+Date: Tue, 9 May 2017 12:27:21 +0800
+Message-ID: <282b9498-2599-e5cc-35bf-2fa286397e6e@coly.li>
+References: <201705090918130663236@zte.com.cn>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:56964 "EHLO server.coly.li"
+Received: from server.coly.li ([162.144.45.48]:59136 "EHLO server.coly.li"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1755428AbdEHP0V (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 May 2017 11:26:21 -0400
-In-Reply-To: <201705081239441539415@zte.com.cn>
+        id S1750909AbdEIE12 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 9 May 2017 00:27:28 -0400
+In-Reply-To: <201705090918130663236@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: tang.junhui@zte.com.cn
 Cc: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
 
-On 2017/5/8 下午12:39, tang.junhui@zte.com.cn wrote:
-> Hello Li
+On 2017/5/9 上午9:18, tang.junhui@zte.com.cn wrote:
+> Hello Coly,
 > 
 > 
-> ＞ ＞ From: "tang.junhui" ＜tang.junhui@zte.com.cn＞
-> 
-> ＞ ＞ 
-> 
-> ＞ ＞ Currently, names of bcache devices displayed as bcache0, bcache16,
-> 
-> ＞ ＞ bcache32, etc. This patch changes their names as bcache0, bcache1,
-> 
-> ＞ ＞ bcache2, etc.
-> 
-> ＞ ＞ 
-> 
-> ＞ ＞ Signed-off-by: tang.junhui ＜tang.junhui@zte.com.cn＞
-> 
-> ＞ ＞ ---
-> 
-> ＞ ＞  drivers/md/bcache/super.c | 2 +-
-> 
-> ＞ ＞  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> ＞ ＞ 
-> 
-> ＞ ＞ diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> 
-> ＞ ＞ index 3a19cbc..867d9a9 100644
-> 
-> ＞ ＞ --- a/drivers/md/bcache/super.c
-> 
-> ＞ ＞ +++ b/drivers/md/bcache/super.c
-> 
-> ＞ ＞ @@ -793,7 +793,7 @@ static int bcache_device_init(struct
-> bcache_device *d, unsigned block_size,
-> 
-> ＞ ＞      }
-> 
-> ＞ ＞  
-> 
-> ＞ ＞      set_capacity(d-＞disk, sectors);
-> 
-> ＞ ＞ -    snprintf(d-＞disk-＞disk_name, DISK_NAME_LEN, "bcache%i", minor);
-> 
-> ＞ ＞ +    snprintf(d-＞disk-＞disk_name, DISK_NAME_LEN, "bcache%i",
-> minor / BCACHE_MINORS);
-> 
-> ＞ ＞  
-> 
-> ＞ ＞      d-＞disk-＞major        = bcache_major;
-> 
-> ＞ ＞      d-＞disk-＞first_minor    = minor;
-> 
-> ＞ ＞ 
-> 
-> ＞   
-> 
-> ＞ Can I understand that the next patch just revert this modification ? If
-> 
-> ＞ yes, I suggest to combine these 2 patch into one.
+> Your catch is nice:
 > 
 > 
-> This patch changes bcache devices names from bcache0, bcache16, ... to
-> bcache0, bcache1, ...
+> ＞ if you call ida_simple_get() like this,
 > 
-> and the other patch fix leakage of minor numbers, they are different issues.
+> ＞ 
+> 
+> ＞ minor = ida_simple_get(&bcache_minor, 0, BCACHE_TO_IDA_MONIRS(MINORMASK
+> 
+> ＞ + 1), GFP_KERNEL);
+> 
+> ＞ 
+> 
+> ＞ The overflow should be removed.
+> 
+> 
+> But I think it is better to modified it as:
+> 
+> minor = ida_simple_get(&bcache_minor, 0, BCACHE_TO_IDA_MONIRS(MINORMASK)
+> 
+> + 1, GFP_KERNEL);
+> 
 
-Yes, they might be two different issue. But this patch set only has two
-patches, and the first patch is reverted in second patch, it does not
-make sense to me.
+Sure, they are same, just use the way you want.
 
-Coly
+> 
+> Though this issue is not introduced by this patch, I would like to fix
+> it togother 
+
+Thank you!
+
+> 
+> in this patch, I will send a new patch later If you don't have any
+> question any more.
+
+Yes please, I don't have comment any more.
 
 
 -- 
