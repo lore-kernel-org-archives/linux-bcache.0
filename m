@@ -1,100 +1,113 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH] md/bcache: Fix a deadlock while calculating writeback
- rate
-Date: Tue, 9 May 2017 18:53:16 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1705091844180.19359@mail.ewheeler.net>
-References: <20170507155222.19114-1-phillipp.roell@trafficplex.de>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 2/2] bcache: fix calling ida_simple_remove() with
+ incorrect minor
+Date: Wed, 10 May 2017 13:33:13 +0800
+Message-ID: <4d83d1ef-edac-cb62-f5e8-5c66b1d2c79a@coly.li>
+References: <1494311118-10260-1-git-send-email-tang.junhui@zte.com.cn>
+ <dd09ff51-312e-8091-a6cb-5d2829163dc6@coly.li>
+ <alpine.LRH.2.11.1705091753150.19359@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1891078090-1494355468=:19359"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:54060 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1753731AbdEISxW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 9 May 2017 14:53:22 -0400
-In-Reply-To: <20170507155222.19114-1-phillipp.roell@trafficplex.de>
+Received: from server.coly.li ([162.144.45.48]:35236 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750986AbdEJFdZ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 10 May 2017 01:33:25 -0400
+In-Reply-To: <alpine.LRH.2.11.1705091753150.19359@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?ISO-8859-15?Q?Phillipp_R=F6ll?= <phillipp.roell@trafficplex.de>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@linux.ewheeler.net>
+Cc: tang.junhui@zte.com.cn, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, sam.yaple@servosity.com
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1641074820-1891078090-1494355468=:19359
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-
-On Sun, 7 May 2017, Phillipp R�ll wrote:
-> A bcache foreground write holds a read lock on the writeback_lock
-> rwsem. In order to complete and release the lock after the actual
-> write, it needs to update the index, which runs out of a workqueue.
+On 2017/5/10 上午1:56, Eric Wheeler wrote:
+> On Tue, 9 May 2017, Coly Li wrote:
 > 
-> If the bch_writeback_thread is starting to write back dirty data while
-> the foreground write still holds the lock, it tries to get a write
-> lock on the writeback lock, thus blocking until the foreground write
-> completes.
+>> On 2017/5/9 下午2:25, tang.junhui@zte.com.cn wrote:
+>>> From: "tang.junhui" <tang.junhui@zte.com.cn>
+>>>
+>>> bcache called ida_simple_remove() with minor which have multiplied by
+>>> BCACHE_MINORS, it would cause minor wrong release and leakage
+>>>
+>>> Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
+>>
+>> Reviewed-by: Coly Li <colyli@suse.de>
+>>
+>> Hi Eric:
+>>
+>> You are the original author of bcache partition support, I also include
+>> you, would you like to push this patch upstream ?
+>>
+>> Thanks.
 > 
-> If at this moment a workqueue worker starts an update of the write-
-> back rate, while foreground write completions are queued behind it,
-> the update thread will try to get a read lock, which blocks, because
-> the writeback thread is trying to get a write lock. This blocks the
-> foreground writes behind it and locks up all writeback and foreground
-> writes.
+> Well, to be certain, this was the original motivation for the patch so Sam 
+> Yaple should get the credit: https://yaple.net/2016/03/31/bcache-partitions-and-dkms/
 > 
-> Removing the read lock from the writeback rate update thread is the
-> simplest solution: the worst thing that will happen when the scan
-> for dirty data is inconsistent is a wrong P-factor in the PID controller.
 
-Hi Phillipp,
+Sure, thanks to Sam Yaple!
 
-Thank you for tracking this down!  Did you have an actual deadlock case 
-that this fixed?
+> But, to answer your question: Yes, I'll put together a pull.  There are 
+> quite a few patches that need caught up on other points as well.
+
+Thank you again, for pushing them upstream :-)
+
+Coly
 
 
-I wonder: in the event of a race, can the updated P-factor be invalid (ie, 
-partially populated)? I don't believe 64-bit assignments are atomic on all 
-architectures (see __update_writeback_rate) so you might get the upper or 
-lower 32 bits of the P-factor or of other values assigned therein.  Could 
-the rate be calculated in such a race by the writeback thread such that no 
-progress is made (eg, effectively rate==0)?
-
-I certainly want to see deadlocks fixed and thought this could be a 
-consideration.  Worst case we could put a spinlock around the use of the 
-dc->writeback_rate* fields.
-
-What do you think?
-
---
-Eric Wheeler
-
-> 
-> Signed-off-by: Phillipp R�ll <phillipp.roell@trafficplex.de>
-> ---
->  drivers/md/bcache/writeback.c | 4 ----
->  1 file changed, 4 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 6ac2e48..90da3bd 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -75,14 +75,10 @@ static void update_writeback_rate(struct work_struct *work)
->  					     struct cached_dev,
->  					     writeback_rate_update);
->  
-> -	down_read(&dc->writeback_lock);
-> -
->  	if (atomic_read(&dc->has_dirty) &&
->  	    dc->writeback_percent)
->  		__update_writeback_rate(dc);
->  
-> -	up_read(&dc->writeback_lock);
-> -
->  	schedule_delayed_work(&dc->writeback_rate_update,
->  			      dc->writeback_rate_update_seconds * HZ);
->  }
-> -- 
-> 2.10.0
-> 
-> 
-> 
---1641074820-1891078090-1494355468=:19359--
+>>> ---
+>>>  drivers/md/bcache/super.c | 16 +++++++++-------
+>>>  1 file changed, 9 insertions(+), 7 deletions(-)
+>>>
+>>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>>> index 867d9a9..5723914 100644
+>>> --- a/drivers/md/bcache/super.c
+>>> +++ b/drivers/md/bcache/super.c
+>>> @@ -57,8 +57,11 @@ static DEFINE_IDA(bcache_minor);
+>>>  static wait_queue_head_t unregister_wait;
+>>>  struct workqueue_struct *bcache_wq;
+>>>  
+>>> -#define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
+>>> -#define BCACHE_MINORS		16 /* partition support */
+>>> +#define BTREE_MAX_PAGES	                  (256 * 1024 / PAGE_SIZE)
+>>> +#define BCACHE_MINORS_BITS                4 /* bcache partition support */
+>>> +#define BCACHE_MINORS                     (1 << BCACHE_MINORS_BITS)
+>>> +#define BCACHE_TO_IDA_MINORS(first_minor) ((first_minor) >> BCACHE_MINORS_BITS)
+>>> +#define IDA_TO_BCACHE_MINORS(minor)       ((minor) << BCACHE_MINORS_BITS)
+>>>  
+>>>  /* Superblock */
+>>>  
+>>> @@ -734,7 +737,7 @@ static void bcache_device_free(struct bcache_device *d)
+>>>  	if (d->disk && d->disk->queue)
+>>>  		blk_cleanup_queue(d->disk->queue);
+>>>  	if (d->disk) {
+>>> -		ida_simple_remove(&bcache_minor, d->disk->first_minor);
+>>> +		ida_simple_remove(&bcache_minor, BCACHE_TO_IDA_MINORS(d->disk->first_minor));
+>>>  		put_disk(d->disk);
+>>>  	}
+>>>  
+>>> @@ -780,11 +783,10 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+>>>  	if (!d->full_dirty_stripes)
+>>>  		return -ENOMEM;
+>>>  
+>>> -	minor = ida_simple_get(&bcache_minor, 0, MINORMASK + 1, GFP_KERNEL);
+>>> +	minor = ida_simple_get(&bcache_minor, 0, BCACHE_TO_IDA_MONIRS(MINORMASK) + 1, GFP_KERNEL);
+>>>  	if (minor < 0)
+>>>  		return minor;
+>>>  
+>>> -	minor *= BCACHE_MINORS;
+>>>  
+>>>  	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
+>>>  	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
+>>> @@ -793,10 +795,10 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+>>>  	}
+>>>  
+>>>  	set_capacity(d->disk, sectors);
+>>> -	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor / BCACHE_MINORS);
+>>> +	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
+>>>  
+>>>  	d->disk->major		= bcache_major;
+>>> -	d->disk->first_minor	= minor;
+>>> +	d->disk->first_minor	= IDA_TO_BCACHE_MINORS(minor);
+>>>  	d->disk->fops		= &bcache_ops;
+>>>  	d->disk->private_data	= d;
+>>>  
