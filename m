@@ -1,113 +1,152 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 2/2] bcache: fix calling ida_simple_remove() with
- incorrect minor
-Date: Wed, 10 May 2017 13:33:13 +0800
-Message-ID: <4d83d1ef-edac-cb62-f5e8-5c66b1d2c79a@coly.li>
-References: <1494311118-10260-1-git-send-email-tang.junhui@zte.com.cn>
- <dd09ff51-312e-8091-a6cb-5d2829163dc6@coly.li>
- <alpine.LRH.2.11.1705091753150.19359@mail.ewheeler.net>
+From: Kai Krakow <hurikhan77@gmail.com>
+Subject: Re: Reasoning of exposing queue/rotational=0
+Date: Wed, 10 May 2017 22:18:55 +0200
+Message-ID: <20170510221855.181f621f@jupiter.sol.kaishome.de>
+References: <20170504232457.13c269c0@jupiter.sol.kaishome.de>
+        <f99de33e-f90e-1492-7561-5a63d6814a9e@coly.li>
+        <20170505174438.GA22811@suse.com>
+        <20170505202317.68bdbc20@jupiter.sol.kaishome.de>
+        <20170505190231.GA31457@suse.com>
+        <20170505211434.665c00f8@jupiter.sol.kaishome.de>
+        <alpine.LRH.2.11.1705091804420.19359@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:35236 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750986AbdEJFdZ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 10 May 2017 01:33:25 -0400
-In-Reply-To: <alpine.LRH.2.11.1705091753150.19359@mail.ewheeler.net>
+Received: from [195.159.176.226] ([195.159.176.226]:54123 "EHLO
+        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+        with ESMTP id S1754336AbdEJUTH (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 10 May 2017 16:19:07 -0400
+Received: from list by blaine.gmane.org with local (Exim 4.84_2)
+        (envelope-from <glbd-linux-bcache@m.gmane.org>)
+        id 1d8Y4Z-00062a-Ed
+        for linux-bcache@vger.kernel.org; Wed, 10 May 2017 22:18:59 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@linux.ewheeler.net>
-Cc: tang.junhui@zte.com.cn, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, sam.yaple@servosity.com
+To: linux-bcache@vger.kernel.org
 
-On 2017/5/10 上午1:56, Eric Wheeler wrote:
-> On Tue, 9 May 2017, Coly Li wrote:
+Am Tue, 9 May 2017 18:11:06 +0000 (UTC)
+schrieb Eric Wheeler <bcache@lists.ewheeler.net>:
+
+> On Fri, 5 May 2017, Kai Krakow wrote:
 > 
->> On 2017/5/9 下午2:25, tang.junhui@zte.com.cn wrote:
->>> From: "tang.junhui" <tang.junhui@zte.com.cn>
->>>
->>> bcache called ida_simple_remove() with minor which have multiplied by
->>> BCACHE_MINORS, it would cause minor wrong release and leakage
->>>
->>> Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
->>
->> Reviewed-by: Coly Li <colyli@suse.de>
->>
->> Hi Eric:
->>
->> You are the original author of bcache partition support, I also include
->> you, would you like to push this patch upstream ?
->>
->> Thanks.
+> > Am Fri, 5 May 2017 21:02:31 +0200
+> > schrieb Vojtech Pavlik <vojtech@suse.com>:
+> >   
+> > > On Fri, May 05, 2017 at 08:23:17PM +0200, Kai Krakow wrote:  
+>  [...]  
+>  [...]  
+> > > 
+> > > Originally, rotational=1 is just a flag coming from the
+> > > IDE/SCSI/SATA/etc. layers to the OS telling it whether the device
+> > > is spinning or not. Without any specific implications as to the
+> > > behavior of the device.
+> > > 
+> > > It is writable for a reason - not even all flash based devices
+> > > report the flag correctly at the hardware level.
+> > > 
+> > > Linux uses the flag on the block device (queue) to tell whether
+> > > seeks are very expensive compared to linear reads and whether it
+> > > makes sense to spend large amounts CPU cycles and memory on
+> > > reordering.
+> > > 
+> > > Btrfs is one user that tries to change the allocation policy and
+> > > thus the likelihood of fragmentation and/or long seeks based on
+> > > whether the device reports 'rotational'.
+> > > 
+> > > However, it actually has three modes at the fs level: 'nossd',
+> > > 'ssd' and 'ssd_spread', with the last being faster on cheaper
+> > > SSDs. There are large differences even between individual SSD
+> > > profiles. Again, for a good reason, btrfs has these as mount
+> > > options that override any 'rotational' hint.
+> > > 
+> > > All in all, if you want all the performance available, you need
+> > > to see what works best for your workload.
+> > > 
+> > > The same applies to i/o schedulers. They're much less dependent
+> > > on the underlying device than the workload put on them.
+> > > 
+> > > This is not the first time the question comes up.  
+> > 
+> > I tried to look up information about it previously but didn't came
+> > up with useful results.
+> >   
+>  [...]  
+> > > 
+> > > A bcache device performance profile is neither one of a rotational
+> > > device, nor one of a SSD.
+> > > 
+> > > Sequential reads may be bypassed or not. If not, some parts of it
+> > > may be cached, in which case there will be seeks on the backing
+> > > device even when there should be none on a real rotational device.
+> > > 
+> > > Random reads may be fast if they're hitting cached locations.
+> > > 
+> > > Random and sequential writes will be always cached if writeback is
+> > > enabled and so there is no point in spending CPU cycles on
+> > > optimizing writes.
+> > > 
+> > > How much the bcache device will behave like the backing device
+> > > and how much like the caching device does depend mainly on the
+> > > workload and the size of its working set compared to the size of
+> > > the cache.
+> > > 
+> > > I do not believe that the choice of rotational=0 was arbitrary or
+> > > a default. It's simply that bcache changes the access pattern to
+> > > both the caching and backing device so much that it no longer
+> > > resembles a rotational device's performance profile in any case.
+> > >   
+>  [...]  
+> > 
+> > Okay, that answers my questions. Thanks. :-)
+> > 
+> > But that only tells me that a "default" cannot be really chosen.
+> > Both make sense.
+> > 
+> > I wonder if Linux chose to call the flag "non_rotational", would it
+> > also default to 0 in bcache? I think nobody would know. ;-)
+> > 
+> > For me it looks like sticking that to rotational=1 gives overall
+> > better long-time performance and btrfs filesystem layout.
+> > 
+> > Anyone who stumbles across this should judge on his own based on
+> > Vojtech's good answer.  
 > 
-> Well, to be certain, this was the original motivation for the patch so Sam 
-> Yaple should get the credit: https://yaple.net/2016/03/31/bcache-partitions-and-dkms/
+> Indeed!
 > 
+> Also note:
+> 
+> # cat /sys/block/bcache0/queue/scheduler 
+> none
 
-Sure, thanks to Sam Yaple!
+Yes, I know that.
 
-> But, to answer your question: Yes, I'll put together a pull.  There are 
-> quite a few patches that need caught up on other points as well.
+> There is no scheduler for bcache, so the bio's pass through whatever
+> your backing (cache) device uses as a queue scheduler, which could
+> differ between cache/backing.
 
-Thank you again, for pushing them upstream :-)
+What does this exactly mean? I understand that depending on where the
+bio ends up, I'm using two different IO schedulers.
 
-Coly
+At least this is how I currently set things up: I use different
+scheduler (or different scheduler settings) to exploit exactly that
+behavior.
+
+> If you use hardware RAID, your
+> 'rotational' flag is probably wrong for SSDs so set it on boot
+> somehow (udev, etc.)
+
+No hardware RAID involved here... Just three plain disks and one SSD.
+
+I'm currently using udev to force it "1" for the bcache compound device
+(which is what I guess the filesystem is seeing). The underlying bdev
+and cdev still have their original rotational flag set, I didn't touch
+it.
 
 
->>> ---
->>>  drivers/md/bcache/super.c | 16 +++++++++-------
->>>  1 file changed, 9 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
->>> index 867d9a9..5723914 100644
->>> --- a/drivers/md/bcache/super.c
->>> +++ b/drivers/md/bcache/super.c
->>> @@ -57,8 +57,11 @@ static DEFINE_IDA(bcache_minor);
->>>  static wait_queue_head_t unregister_wait;
->>>  struct workqueue_struct *bcache_wq;
->>>  
->>> -#define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
->>> -#define BCACHE_MINORS		16 /* partition support */
->>> +#define BTREE_MAX_PAGES	                  (256 * 1024 / PAGE_SIZE)
->>> +#define BCACHE_MINORS_BITS                4 /* bcache partition support */
->>> +#define BCACHE_MINORS                     (1 << BCACHE_MINORS_BITS)
->>> +#define BCACHE_TO_IDA_MINORS(first_minor) ((first_minor) >> BCACHE_MINORS_BITS)
->>> +#define IDA_TO_BCACHE_MINORS(minor)       ((minor) << BCACHE_MINORS_BITS)
->>>  
->>>  /* Superblock */
->>>  
->>> @@ -734,7 +737,7 @@ static void bcache_device_free(struct bcache_device *d)
->>>  	if (d->disk && d->disk->queue)
->>>  		blk_cleanup_queue(d->disk->queue);
->>>  	if (d->disk) {
->>> -		ida_simple_remove(&bcache_minor, d->disk->first_minor);
->>> +		ida_simple_remove(&bcache_minor, BCACHE_TO_IDA_MINORS(d->disk->first_minor));
->>>  		put_disk(d->disk);
->>>  	}
->>>  
->>> @@ -780,11 +783,10 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
->>>  	if (!d->full_dirty_stripes)
->>>  		return -ENOMEM;
->>>  
->>> -	minor = ida_simple_get(&bcache_minor, 0, MINORMASK + 1, GFP_KERNEL);
->>> +	minor = ida_simple_get(&bcache_minor, 0, BCACHE_TO_IDA_MONIRS(MINORMASK) + 1, GFP_KERNEL);
->>>  	if (minor < 0)
->>>  		return minor;
->>>  
->>> -	minor *= BCACHE_MINORS;
->>>  
->>>  	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
->>>  	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
->>> @@ -793,10 +795,10 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
->>>  	}
->>>  
->>>  	set_capacity(d->disk, sectors);
->>> -	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor / BCACHE_MINORS);
->>> +	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
->>>  
->>>  	d->disk->major		= bcache_major;
->>> -	d->disk->first_minor	= minor;
->>> +	d->disk->first_minor	= IDA_TO_BCACHE_MINORS(minor);
->>>  	d->disk->fops		= &bcache_ops;
->>>  	d->disk->private_data	= d;
->>>  
+-- 
+Regards,
+Kai
+
+Replies to list-only preferred.
