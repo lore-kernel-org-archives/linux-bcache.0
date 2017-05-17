@@ -1,258 +1,264 @@
-From: Karl Tomlinson <karlt@karlt.net>
-Subject: hang during suspend to RAM when bcache cache device is attached
-Date: Wed, 17 May 2017 19:01:00 +1200
-Message-ID: <87pof8rmqb.fsf@karlt.net>
+From: Karl Tomlinson <bugs+kernel@karlt.net>
+Subject: Re: hang during suspend to RAM when bcache cache device is attached
+Date: Thu, 18 May 2017 09:50:44 +1200
+Message-ID: <87ziebqhjf.fsf@karlt.net>
+References: <87pof8rmqb.fsf@karlt.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx1.scl3.mozilla.com ([63.245.214.155]:42267 "EHLO
+Received: from mx2.scl3.mozilla.com ([63.245.214.156]:46280 "EHLO
         smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753223AbdEQHJb (ORCPT
+        with ESMTP id S1752689AbdEQVut (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 17 May 2017 03:09:31 -0400
+        Wed, 17 May 2017 17:50:49 -0400
+In-Reply-To: <87pof8rmqb.fsf@karlt.net> (Karl Tomlinson's message of "Wed, 17 May 2017 19:01:00 +1200")
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-I'm reproducing the same bug as reported in
-http://comments.gmane.org/gmane.linux.kernel.bcache.devel/3820
+When not panicing on the hung task, some more info is available on
+the console about the blocked sh task, which is detected after the
+kworker/0:0:4 task hang in the previous message.
 
-Attempts to suspend are hanging before reaching suspended state.
-This is reproducible when writing to the filesystem on the bcache
-device during suspend.  I've had several successful suspends while
-actively reading from a clean bcache.
+Transcripting from the display with no_console_suspend:
 
-The hangs happen even with cache_mode none, but not when the cache
-device is detached.
+task sh ... blocked for more than 120 seconds.
 
-The hang happens even with pm_async=0.
+? __schedule
+schedule
+blk_mq_freeze_queue_wait
+? wake_up_atomic_t
+blk_mq_queue_reinit_work
+blk_mq_queue_reinit_dead
+cpuhp_invoke_callback
+_cpu_down
+freeze_secondary_cpus
+suspend_devices_and_enter
+pm_suspend
+state_store
+kobj_attr_store
+sysfs_kf_write
+kernfs_fop_write
+__vfs_write
+? ...
+? ...
+? ...
+vfs_write
+SyS_write
+entry_SYSCALL_64_fastpath
 
-Below is kernel logging in efi vars pstore from
-BOOTPARAM_HUNG_TASK_PANIC with
-"echo processors > pm_test; echo mem > state"
-first without writing to bcache filesystem and second during write
+The locks held are the same as reported with the kworker/0:0:4
+task hang, including both tasks holding a cpu_hotplug.lock.
 
-<6>[  593.528983] PM: Syncing filesystems ... done.
-<7>[  593.529176] PM: Preparing system for sleep (mem)
-<6>[  593.534593] Freezing user space processes ... (elapsed 0.001 seconds) done.
-<6>[  593.535802] Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
-<7>[  593.535803] PM: Suspending system (mem)
-Panic#1 Part8
-<5>[  593.536453] sd 3:0:0:0: [sda] Synchronizing SCSI cache
-<5>[  593.536542] sd 3:0:0:0: [sda] Stopping disk
-<6>[  593.544311] ACPI : EC: event blocked
-<6>[  594.720138] PM: suspend of devices complete after 1183.841 msecs
-<6>[  594.726528] PM: late suspend of devices complete after 0.642 msecs
-<6>[  594.729983] ACPI : EC: interrupt blocked
-<6>[  594.730816] xhci_hcd 0000:00:14.0: System wakeup enabled by ACPI
-<6>[  594.876383] PM: noirq suspend of devices complete after 146.923 msecs
-<6>[  594.883276] ACPI: Preparing to enter system sleep state S3
-<6>[  594.897724] ACPI : EC: EC stopped
-<6>[  594.903503] PM: Saving platform NVS memory
-<6>[  594.909243] Disabling non-boot CPUs ...
-<6>[  594.940892] smpboot: CPU 1 is now offline
-<6>[  594.980876] smpboot: CPU 2 is now offline
-<6>[  595.034401] smpboot: CPU 3 is now offline
-<6>[  595.088590] smpboot: CPU 4 is now offline
-<6>[  595.140995] smpboot: CPU 5 is now offline
-<6>[  595.194274] smpboot: CPU 6 is now offline
-<6>[  595.244280] smpboot: CPU 7 is now offline
-<6>[  595.267167] suspend debug: Waiting for 5 second(s).
-<6>[  600.273077] Enabling non-boot CPUs ...
-<6>[  600.282830] x86: Booting SMP configuration:
-<6>[  600.285372] smpboot: Booting Node 0 Processor 1 APIC 0x2
-<4>[  600.290403]  cache: parent cpu1 should not be sleeping
-<6>[  600.293228] CPU1 is up
-<6>[  600.306196] smpboot: Booting Node 0 Processor 2 APIC 0x4
-<4>[  600.311466]  cache: parent cpu2 should not be sleeping
-<6>[  600.314370] CPU2 is up
-<6>[  600.339551] smpboot: Booting Node 0 Processor 3 APIC 0x6
-<4>[  600.344976]  cache: parent cpu3 should not be sleeping
-<6>[  600.348031] CPU3 is up
-<6>[  600.393065] smpboot: Booting Node 0 Processor 4 APIC 0x1
-<4>[  600.400233]  cache: parent cpu4 should not be sleeping
-<6>[  600.404696] CPU4 is up
-Panic#1 Part7
-<6>[  600.449772] smpboot: Booting Node 0 Processor 5 APIC 0x3
-<4>[  600.456729]  cache: parent cpu5 should not be sleeping
-<6>[  600.461185] CPU5 is up
-<6>[  600.506488] smpboot: Booting Node 0 Processor 6 APIC 0x5
-<4>[  600.513501]  cache: parent cpu6 should not be sleeping
-<6>[  600.517901] CPU6 is up
-<6>[  600.543196] smpboot: Booting Node 0 Processor 7 APIC 0x7
-<4>[  600.550184]  cache: parent cpu7 should not be sleeping
-<6>[  600.554647] CPU7 is up
-<6>[  600.570474] ACPI : EC: EC started
-<6>[  600.574349] ACPI: Waking up from system sleep state S3
-<6>[  600.599959] ACPI : EC: interrupt unblocked
-<6>[  600.616229] pcieport 0000:00:1c.0: Intel SPT PCH root port ACS workaround enabled
-<6>[  600.616232] pcieport 0000:00:1c.4: Intel SPT PCH root port ACS workaround enabled
-<6>[  600.616477] pcieport 0000:00:1c.2: Intel SPT PCH root port ACS workaround enabled
-<6>[  600.616615] pcieport 0000:00:1d.0: Intel SPT PCH root port ACS workaround enabled
-<6>[  600.619494] xhci_hcd 0000:00:14.0: System wakeup disabled by ACPI
-<6>[  601.080037] PM: noirq resume of devices complete after 480.233 msecs
-<6>[  601.085143] PM: early resume of devices complete after 0.790 msecs
-<6>[  601.087966] ACPI : EC: event unblocked
-<6>[  601.091263] rtc_cmos 00:02: System wakeup disabled by ACPI
-<5>[  601.097913] sd 3:0:0:0: [sda] Starting disk
-<6>[  601.145656] PM: resume of devices complete after 57.866 msecs
-<7>[  601.151057] PM: Finishing wakeup.
-<6>[  601.151058] Restarting tasks ... done.
-<4>[  601.152286] acpi PNP0401:00: Already enumerated
-<4>[  601.158854] acpi PNP0501:00: Still not present
-<6>[  601.418577] ata2: SATA link down (SStatus 0 SControl 300)
-<6>[  601.418737] ata4: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
-<6>[  601.432814] ata4.00: configured for UDMA/133
-Panic#1 Part6
-<6>[  679.637779] PM: Syncing filesystems ... done.
-<7>[  680.724401] PM: Preparing system for sleep (mem)
-<6>[  680.727590] Freezing user space processes ... (elapsed 0.001 seconds) done.
-<6>[  680.728801] Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
-<7>[  680.728802] PM: Suspending system (mem)
-<5>[  680.729361] sd 3:0:0:0: [sda] Synchronizing SCSI cache
-<6>[  680.731985] ACPI : EC: event blocked
-<5>[  680.756131] sd 3:0:0:0: [sda] Stopping disk
-<6>[  681.923526] PM: suspend of devices complete after 1194.294 msecs
-<6>[  681.926873] PM: late suspend of devices complete after 0.646 msecs
-<6>[  681.930111] ACPI : EC: interrupt blocked
-<6>[  681.931360] xhci_hcd 0000:00:14.0: System wakeup enabled by ACPI
-<6>[  682.076153] PM: noirq suspend of devices complete after 146.571 msecs
-<6>[  682.079208] ACPI: Preparing to enter system sleep state S3
-<6>[  682.085631] ACPI : EC: EC stopped
-<6>[  682.088298] PM: Saving platform NVS memory
-<6>[  682.090938] Disabling non-boot CPUs ...
-<6>[  682.120654] smpboot: CPU 1 is now offline
-<3>[  874.812721] INFO: task kworker/0:0:4 blocked for more than 120 seconds.
-<3>[  874.815493]       Tainted: G        W       4.9.25-gentoo #33
-<3>[  874.818282] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-<6>[  874.821137] kworker/0:0     D    0     4      2 0x00000000
-<6>[  874.823962] Workqueue: events vmstat_shepherd
-<4>[  874.826700]  ffff8808660fad00 ffff880865092540 000000000000bd64 ffff88086a298000
-<4>[  874.829583]  ffff88088dc17418 ffffc90000067ca0 ffffffff8173934b 00000000000026ab
-<4>[  874.832456]  ffff880800000000 ffff88086a2985d0 ffff88088dc17418 ffff88086a298000
-<4>[  874.835311] Call Trace:
-<4>[  874.838007]  [<ffffffff8173934b>] ? __schedule+0x27b/0x7a0
-Panic#1 Part5
-<4>[  874.840782]  [<ffffffff817398ab>] schedule+0x3b/0x90
-<4>[  874.843466]  [<ffffffff81739ba3>] schedule_preempt_disabled+0x13/0x20
-<4>[  874.846182]  [<ffffffff8173af03>] mutex_lock_nested+0x133/0x350
-<4>[  874.848911]  [<ffffffff810711de>] ? get_online_cpus+0x4e/0x70
-<4>[  874.851639]  [<ffffffff810711de>] get_online_cpus+0x4e/0x70
-<4>[  874.854336]  [<ffffffff810711a2>] ? get_online_cpus+0x12/0x70
-<4>[  874.857035]  [<ffffffff8115a91c>] vmstat_shepherd+0x1c/0xb0
-<4>[  874.859742]  [<ffffffff81088a07>] process_one_work+0x1a7/0x420
-<4>[  874.862474]  [<ffffffff810889a8>] ? process_one_work+0x148/0x420
-<4>[  874.865213]  [<ffffffff81089009>] worker_thread+0x49/0x480
-<4>[  874.867920]  [<ffffffff81088fc0>] ? rescuer_thread+0x340/0x340
-<4>[  874.870639]  [<ffffffff8108e36d>] kthread+0xed/0x110
-<4>[  874.873327]  [<ffffffff8108e280>] ? kthread_create_on_node+0x40/0x40
-<4>[  874.876074]  [<ffffffff8173fc12>] ret_from_fork+0x22/0x30
-<4>[  874.878798] 
-<4>[  874.878798] Showing all locks held in the system:
-<4>[  874.884120] 4 locks held by kworker/0:0/4:
-<4>[  874.886782]  #0:  ("events"){......}, at: [<ffffffff810889a8>] process_one_work+0x148/0x420
-<4>[  874.889732]  #1:  ((shepherd).work){......}, at: [<ffffffff810889a8>] process_one_work+0x148/0x420
-<4>[  874.892772]  #2:  (cpu_hotplug.dep_map){......}, at: [<ffffffff810711a2>] get_online_cpus+0x12/0x70
-<4>[  874.895787]  #3:  (cpu_hotplug.lock){......}, at: [<ffffffff810711de>] get_online_cpus+0x4e/0x70
-<4>[  874.898768] 2 locks held by khungtaskd/58:
-<4>[  874.901634]  #0:  (rcu_read_lock){......}, at: [<ffffffff811142fe>] watchdog+0x9e/0x360
-<4>[  874.904668]  #1:  (tasklist_lock){......}, at: [<ffffffff810b70ff>] debug_show_all_locks+0x3f/0x1b0
-<4>[  874.907659] 3 locks held by kworker/0:1/66:
-Panic#1 Part4
-<4>[  874.910499]  #0:  ("events"){......}, at: [<ffffffff810889a8>] process_one_work+0x148/0x420
-<4>[  874.913544]  #1:  ((&(&b->work)->work)){......}, at: [<ffffffff810889a8>] process_one_work+0x148/0x420
-<4>[  874.916633]  #2:  (&dev->mutex){......}, at: [<ffffffff815e0564>] btree_node_write_work+0x24/0x50
-<4>[  874.919737] 9 locks held by sh/728:
-<4>[  874.922638]  #0:  (sb_writers#4){......}, at: [<ffffffff811a05bc>] vfs_write+0x15c/0x180
-<4>[  874.925708]  #1:  (&of->mutex){......}, at: [<ffffffff8121191a>] kernfs_fop_write+0xea/0x1a0
-<4>[  874.928753]  #2:  (s_active#122){......}, at: [<ffffffff81211922>] kernfs_fop_write+0xf2/0x1a0
-<4>[  874.931801]  #3:  (pm_mutex){......}, at: [<ffffffff810bcb6e>] pm_suspend+0xae/0x2b0
-<4>[  874.934846]  #4:  (acpi_scan_lock){......}, at: [<ffffffff813c10f2>] acpi_scan_lock_acquire+0x12/0x20
-<4>[  874.937961]  #5:  (cpu_add_remove_lock){......}, at: [<ffffffff810727cc>] freeze_secondary_cpus+0x1c/0x130
-<4>[  874.941138]  #6:  (cpu_hotplug.dep_map){......}, at: [<ffffffff81072120>] cpu_hotplug_begin+0x0/0xc0
-<4>[  874.944225]  #7:  (cpu_hotplug.lock){......}, at: [<ffffffff8107218d>] cpu_hotplug_begin+0x6d/0xc0
-<4>[  874.947297]  #8:  (all_q_mutex){......}, at: [<ffffffff813112f3>] blk_mq_queue_reinit_work+0x13/0x110
-<4>[  874.950463] 
-<4>[  874.953358] =============================================
-<4>[  874.953358] 
-<4>[  874.959041] NMI backtrace for cpu 2
-<4>[  874.961803] CPU: 2 PID: 58 Comm: khungtaskd Tainted: G        W       4.9.25-gentoo #33
-<4>[  874.964763] Hardware name: Dell Inc. Precision 7710/0PMJX2, BIOS 1.10.7 02/09/2017
-<4>[  874.967791]  ffffc9000024fda0 ffffffff8132898d 0000000000000000 ffffffff810320e0
-<4>[  874.970865]  ffffc9000024fdc8 ffffffff8132d0ba 0000000000000000 ffffffff810320e0
-Panic#1 Part3
-<4>[  874.973812]  ffffffff81caf458 ffffc9000024fdf8 ffffffff8132d189 ffff88086a298000
-<4>[  874.976747] Call Trace:
-<4>[  874.979604]  [<ffffffff8132898d>] dump_stack+0x4f/0x72
-<4>[  874.982517]  [<ffffffff810320e0>] ? irq_force_complete_move+0xf0/0xf0
-<4>[  874.985428]  [<ffffffff8132d0ba>] nmi_cpu_backtrace+0x9a/0xa0
-<4>[  874.988306]  [<ffffffff810320e0>] ? irq_force_complete_move+0xf0/0xf0
-<4>[  874.991200]  [<ffffffff8132d189>] nmi_trigger_cpumask_backtrace+0xc9/0x100
-<4>[  874.994114]  [<ffffffff81032154>] arch_trigger_cpumask_backtrace+0x14/0x20
-<4>[  874.997042]  [<ffffffff811145a0>] watchdog+0x340/0x360
-<4>[  874.999909]  [<ffffffff811142fe>] ? watchdog+0x9e/0x360
-<4>[  875.002754]  [<ffffffff81114260>] ? hung_task_panic+0x20/0x20
-<4>[  875.005575]  [<ffffffff8108e36d>] kthread+0xed/0x110
-<4>[  875.008379]  [<ffffffff8108e280>] ? kthread_create_on_node+0x40/0x40
-<4>[  875.011244]  [<ffffffff8173fc12>] ret_from_fork+0x22/0x30
-<6>[  875.014096] Sending NMI from CPU 2 to CPUs 0,3-7:
-<4>[  875.016983] NMI backtrace for cpu 5 skipped: idling at pc 0xffffffff8173ebcb
-<4>[  875.019938] NMI backtrace for cpu 4 skipped: idling at pc 0xffffffff8173ebcb
-<4>[  875.023513] NMI backtrace for cpu 0
-<4>[  875.026290] CPU: 0 PID: 309 Comm: kworker/0:1H Tainted: G        W       4.9.25-gentoo #33
-<4>[  875.029304] Hardware name: Dell Inc. Precision 7710/0PMJX2, BIOS 1.10.7 02/09/2017
-<4>[  875.032387] Workqueue: kblockd blk_mq_run_work_fn
-<4>[  875.035417] task: ffff880865092540 task.stack: ffffc900007b8000
-<4>[  875.038418] RIP: 0010:[<ffffffff810b8229>]  [<ffffffff810b8229>] lock_release+0x289/0x380
-<4>[  875.041511] RSP: 0018:ffffc900007bbcb8  EFLAGS: 00000282
-<4>[  875.044553] RAX: ffff880865092540 RBX: ffff880869009c00 RCX: ffff88086945ea00
-Panic#1 Part2
-<4>[  875.047608] RDX: ffff880865092d70 RSI: 0000000000000000 RDI: 0000000000000000
-<4>[  875.050616] RBP: ffffc900007bbcd8 R08: 0000000000000000 R09: 0000000000000000
-<4>[  875.053520] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880869009c18
-<4>[  875.056428] R13: ffff880865092d70 R14: 0000000000000002 R15: 0000000000000003
-<4>[  875.059386] FS:  0000000000000000(0000) GS:ffff88088dc00000(0000) knlGS:0000000000000000
-<4>[  875.062467] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-<4>[  875.065514] CR2: 000000000181a078 CR3: 000000086186e000 CR4: 00000000003406f0
-<4>[  875.068598] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-<4>[  875.071595] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-<4>[  875.074518] Stack:
-<4>[  875.077359]  ffff880866cd5b80 ffffc900007bbd18 0000000000000000 ffff88088dc16ec0
-<4>[  875.080492]  ffffc900007bbcf0 ffffffff8173f16a ffff880869009c00 ffffc900007bbd78
-<4>[  875.083610]  ffffffff813109a9 ffff880866460000 ffff880869009c38 0000000000000000
-<4>[  875.086618] Call Trace:
-<4>[  875.089545]  [<ffffffff8173f16a>] _raw_spin_unlock+0x1a/0x50
-<4>[  875.092586]  [<ffffffff813109a9>] __blk_mq_run_hw_queue+0x1b9/0x3a0
-<4>[  875.095559]  [<ffffffff81310bbd>] blk_mq_run_work_fn+0xd/0x10
-<4>[  875.098486]  [<ffffffff81088a07>] process_one_work+0x1a7/0x420
-<4>[  875.101436]  [<ffffffff810889a8>] ? process_one_work+0x148/0x420
-<4>[  875.104375]  [<ffffffff81089009>] worker_thread+0x49/0x480
-<4>[  875.107288]  [<ffffffff81088fc0>] ? rescuer_thread+0x340/0x340
-<4>[  875.110206]  [<ffffffff8108e36d>] kthread+0xed/0x110
-<4>[  875.113094]  [<ffffffff8108e280>] ? kthread_create_on_node+0x40/0x40
-<4>[  875.116049]  [<ffffffff8173fc12>] ret_from_fork+0x22/0x30
-Panic#1 Part1
-<4>[  875.119019] Code: 00 48 c7 c7 f5 27 9e 81 31 c0 e8 e3 8c fb ff 65 48 8b 04 25 00 c6 00 00 c7 80 dc 07 00 00 00 00 00 00 ff 75 c0 9d 48 83 c4 50 5b <41> 5c 41 5d 41 5e 41 5f 5d c3 e8 f8 de 27 00 85 c0 74 2d 44 8b 
-<4>[  875.123386] NMI backtrace for cpu 3 skipped: idling at pc 0xffffffff8173ebcb
-<4>[  875.128371] NMI backtrace for cpu 6 skipped: idling at pc 0xffffffff8173ebcb
-<4>[  875.132606] NMI backtrace for cpu 7 skipped: idling at pc 0xffffffff8173ebcb
-<0>[  875.135564] Kernel panic - not syncing: hung_task: blocked tasks
-<4>[  875.139498] CPU: 2 PID: 58 Comm: khungtaskd Tainted: G        W       4.9.25-gentoo #33
-<4>[  875.143587] Hardware name: Dell Inc. Precision 7710/0PMJX2, BIOS 1.10.7 02/09/2017
-<4>[  875.147693]  ffffc9000024fd88 ffffffff8132898d ffff88086a298000 ffffffff819e5835
-<4>[  875.151859]  ffffc9000024fe08 ffffffff8113aa51 0000000000000008 ffffc9000024fe18
-<4>[  875.155937]  ffffc9000024fdb0 ffffffff810c70b2 0000000000000008 0000000080000001
-<4>[  875.159949] Call Trace:
-<4>[  875.163842]  [<ffffffff8132898d>] dump_stack+0x4f/0x72
-<4>[  875.167844]  [<ffffffff8113aa51>] panic+0xce/0x204
-<4>[  875.171750]  [<ffffffff810c70b2>] ? printk_nmi_flush+0x42/0x60
-<4>[  875.175665]  [<ffffffff811145ae>] watchdog+0x34e/0x360
-<4>[  875.179554]  [<ffffffff811142fe>] ? watchdog+0x9e/0x360
-<4>[  875.183471]  [<ffffffff81114260>] ? hung_task_panic+0x20/0x20
-<4>[  875.187358]  [<ffffffff8108e36d>] kthread+0xed/0x110
-<4>[  875.191217]  [<ffffffff8108e280>] ? kthread_create_on_node+0x40/0x40
-<4>[  875.195133]  [<ffffffff8173fc12>] ret_from_fork+0x22/0x30
-<0>[  875.199042] Kernel Offset: disabled
+The oops below looks like it may also be related.  This was with
+"echo devices > /sys/power/pm_test" and all modules loaded.
+A mem > state seemed to succeed, but may have led to some
+corruption as the subsequent freeze > state failed.  With a
+minimal set of modules, as for the previous stacks, having devices
+in pm_test detected no problems.
 
-Some discussion at https://patchwork.kernel.org/patch/8879681/ may
-perhaps be relevant.
+<6>[12239.045257] PM: Syncing filesystems ... done.
+<7>[12239.081011] PM: Preparing system for sleep (mem)
+<6>[12239.084967] Freezing user space processes ... (elapsed 0.023 seconds) done.
+<6>[12239.113587] Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
+<7>[12239.117910] PM: Suspending system (mem)
+<4>[12239.121179] Suspending console(s) (use no_console_suspend to debug)
+<5>[12239.124860] sd 3:0:0:0: [sda] Synchronizing SCSI cache
+<5>[12239.124906] sd 3:0:0:0: [sda] Stopping disk
+<6>[12239.150415] e1000e: EEE TX LPI TIMER: 00000011
+<6>[12239.180905] [drm] probing gen 2 caps for device 8086:1901 = 261ad03/e
+<6>[12239.180908] [drm] PCIE gen 3 link speeds already enabled
+<6>[12239.187387] [drm] PCIE GART of 2048M enabled (table at 0x00000000001D6000).
+<6>[12239.187524] radeon 0000:01:00.0: WB enabled
+<6>[12239.187528] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x0000000080000c00 and cpu addr 0xffff88085ca83c00
+<6>[12239.187531] radeon 0000:01:00.0: fence driver on ring 1 use gpu addr 0x0000000080000c04 and cpu addr 0xffff88085ca83c04
+<6>[12239.187533] radeon 0000:01:00.0: fence driver on ring 2 use gpu addr 0x0000000080000c08 and cpu addr 0xffff88085ca83c08
+<6>[12239.187535] radeon 0000:01:00.0: fence driver on ring 3 use gpu addr 0x0000000080000c0c and cpu addr 0xffff88085ca83c0c
+<6>[12239.187537] radeon 0000:01:00.0: fence driver on ring 4 use gpu addr 0x0000000080000c10 and cpu addr 0xffff88085ca83c10
+Oops#1 Part8
+<6>[12239.187743] radeon 0000:01:00.0: fence driver on ring 5 use gpu addr 0x0000000000075a18 and cpu addr 0xffffc90003235a18
+<3>[12239.197907] radeon 0000:01:00.0: failed VCE resume (-22).
+<6>[12239.258802] ACPI : EC: event blocked
+<6>[12239.504784] [drm] ring test on 0 succeeded in 2 usecs
+<6>[12239.504787] [drm] ring test on 1 succeeded in 1 usecs
+<6>[12239.504790] [drm] ring test on 2 succeeded in 1 usecs
+<6>[12239.504801] [drm] ring test on 3 succeeded in 8 usecs
+<6>[12239.504806] [drm] ring test on 4 succeeded in 3 usecs
+<6>[12239.681909] [drm] ring test on 5 succeeded in 2 usecs
+<6>[12239.681912] [drm] UVD initialized successfully.
+<6>[12239.681977] [drm] ib test on ring 0 succeeded in 0 usecs
+<6>[12239.682000] [drm] ib test on ring 1 succeeded in 0 usecs
+<6>[12239.682019] [drm] ib test on ring 2 succeeded in 0 usecs
+<6>[12239.682159] [drm] ib test on ring 3 succeeded in 0 usecs
+<6>[12239.682312] [drm] ib test on ring 4 succeeded in 0 usecs
+<3>[12240.848914] [drm:uvd_v1_0_ib_test [radeon]] *ERROR* radeon: fence wait timed out.
+<3>[12240.848929] [drm:radeon_ib_ring_tests [radeon]] *ERROR* radeon: failed testing IB on ring 5 (-110).
+<3>[12240.848934] radeon 0000:01:00.0: scheduling IB failed (-12).
+<3>[12240.848943] [drm:radeon_vce_get_create_msg [radeon]] *ERROR* radeon: failed to schedule ib (-12).
+<3>[12240.848954] [drm:radeon_vce_ib_test [radeon]] *ERROR* radeon: failed to get create msg (-12).
+<3>[12240.848964] [drm:radeon_ib_ring_tests [radeon]] *ERROR* radeon: failed testing IB on ring 6 (-12).
+<3>[12240.848965] radeon 0000:01:00.0: scheduling IB failed (-12).
+<3>[12240.848974] [drm:radeon_vce_get_create_msg [radeon]] *ERROR* radeon: failed to schedule ib (-12).
+Oops#1 Part7
+<3>[12240.848983] [drm:radeon_vce_ib_test [radeon]] *ERROR* radeon: failed to get create msg (-12).
+<3>[12240.848993] [drm:radeon_ib_ring_tests [radeon]] *ERROR* radeon: failed testing IB on ring 7 (-12).
+<6>[12240.853464] snd_hda_intel 0000:01:00.1: Enabling via vga_switcheroo
+<6>[12241.409056] PM: suspend of devices complete after 2284.327 msecs
+<6>[12241.409057] suspend debug: Waiting for 5 second(s).
+<6>[12246.410628] ACPI : EC: event unblocked
+<4>[12246.410784] ACPI : button: The lid device is not compliant to SW_LID.
+<6>[12246.412679] rtc_cmos 00:02: System wakeup disabled by ACPI
+<6>[12246.418677] [drm] GuC firmware load skipped
+<5>[12246.420764] sd 3:0:0:0: [sda] Starting disk
+<6>[12246.458897] [drm] probing gen 2 caps for device 8086:1901 = 261ad03/e
+<6>[12246.458899] [drm] PCIE gen 3 link speeds already enabled
+<6>[12246.462268] [drm] PCIE GART of 2048M enabled (table at 0x00000000001D6000).
+<6>[12246.462353] radeon 0000:01:00.0: WB enabled
+<6>[12246.462354] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x0000000080000c00 and cpu addr 0xffff88085ca83c00
+<6>[12246.462355] radeon 0000:01:00.0: fence driver on ring 1 use gpu addr 0x0000000080000c04 and cpu addr 0xffff88085ca83c04
+<6>[12246.462356] radeon 0000:01:00.0: fence driver on ring 2 use gpu addr 0x0000000080000c08 and cpu addr 0xffff88085ca83c08
+<6>[12246.462356] radeon 0000:01:00.0: fence driver on ring 3 use gpu addr 0x0000000080000c0c and cpu addr 0xffff88085ca83c0c
+<6>[12246.462357] radeon 0000:01:00.0: fence driver on ring 4 use gpu addr 0x0000000080000c10 and cpu addr 0xffff88085ca83c10
+<6>[12246.462530] radeon 0000:01:00.0: fence driver on ring 5 use gpu addr 0x0000000000075a18 and cpu addr 0xffffc90003235a18
+Oops#1 Part6
+<3>[12246.472645] radeon 0000:01:00.0: failed VCE resume (-22).
+<6>[12246.742457] ata2: SATA link down (SStatus 0 SControl 300)
+<6>[12246.742601] ata4: SATA link up 6.0 Gbps (SStatus 133 SControl 300)
+<6>[12246.755723] ata4.00: configured for UDMA/133
+<6>[12246.791325] [drm] ring test on 0 succeeded in 3 usecs
+<6>[12246.791328] [drm] ring test on 1 succeeded in 1 usecs
+<6>[12246.791331] [drm] ring test on 2 succeeded in 1 usecs
+<6>[12246.791342] [drm] ring test on 3 succeeded in 8 usecs
+<6>[12246.791347] [drm] ring test on 4 succeeded in 3 usecs
+<6>[12246.968475] [drm] ring test on 5 succeeded in 2 usecs
+<6>[12246.968478] [drm] UVD initialized successfully.
+<6>[12246.968514] [drm] ib test on ring 0 succeeded in 0 usecs
+<6>[12246.968536] [drm] ib test on ring 1 succeeded in 0 usecs
+<6>[12246.968560] [drm] ib test on ring 2 succeeded in 0 usecs
+<6>[12246.968591] [drm] ib test on ring 3 succeeded in 0 usecs
+<6>[12246.968639] [drm] ib test on ring 4 succeeded in 0 usecs
+<3>[12248.128804] [drm:uvd_v1_0_ib_test [radeon]] *ERROR* radeon: fence wait timed out.
+<3>[12248.128838] [drm:radeon_ib_ring_tests [radeon]] *ERROR* radeon: failed testing IB on ring 5 (-110).
+<6>[12248.165985] PM: resume of devices complete after 1755.555 msecs
+<7>[12248.360886] PM: Finishing wakeup.
+<6>[12248.363224] Restarting tasks ... done.
+<6>[12248.368768] [drm] RC6 on
+<4>[12248.395739] thermal thermal_zone9: failed to read out thermal zone (-5)
+<6>[12248.683438] e1000e: enp0s31f6 NIC Link is Down
+<6>[12248.693459] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[12248.702186] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12248.709770] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12248.846378] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+Oops#1 Part5
+<6>[12248.854054] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12248.949987] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[12248.967035] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12248.973426] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12249.104762] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12249.111913] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12249.210769] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[12249.218765] IPv6: ADDRCONF(NETDEV_UP): enp0s31f6: link is not ready
+<6>[12249.442367] IPv6: ADDRCONF(NETDEV_UP): enp0s31f6: link is not ready
+<6>[12249.491581] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[12252.061560] e1000e: enp0s31f6 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
+<6>[12252.065757] IPv6: ADDRCONF(NETDEV_CHANGE): enp0s31f6: link becomes ready
+<6>[12253.488873] snd_hda_intel 0000:01:00.1: Disabling via vga_switcheroo
+<6>[12352.023516] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12352.035082] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12352.167021] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12352.173974] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12352.271843] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[12671.021844] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12671.025361] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12671.157153] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12671.164139] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12671.262792] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[12987.024094] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12987.028675] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12987.159947] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+Oops#1 Part4
+<6>[12987.163760] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[12987.258137] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[13303.024167] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[13303.028507] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[13303.159618] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[13303.163628] iwlwifi 0000:02:00.0: L1 Enabled - LTR Enabled
+<6>[13303.253698] IPv6: ADDRCONF(NETDEV_UP): wlp2s0: link is not ready
+<6>[13360.547037] PM: Syncing filesystems ... done.
+<7>[13360.576184] PM: Preparing system for sleep (freeze)
+<6>[13360.582656] Freezing user space processes ... (elapsed 0.001 seconds) done.
+<6>[13360.589304] Freezing remaining freezable tasks ... (elapsed 0.001 seconds) done.
+<7>[13360.595787] PM: Suspending system (freeze)
+<4>[13360.601037] Suspending console(s) (use no_console_suspend to debug)
+<5>[13360.606821] sd 3:0:0:0: [sda] Synchronizing SCSI cache
+<5>[13360.606882] sd 3:0:0:0: [sda] Stopping disk
+<6>[13360.616997] e1000e: EEE TX LPI TIMER: 00000011
+<6>[13360.646031] [drm] probing gen 2 caps for device 8086:1901 = 261ad03/e
+<6>[13360.646033] [drm] PCIE gen 3 link speeds already enabled
+<6>[13360.651489] [drm] PCIE GART of 2048M enabled (table at 0x00000000001D6000).
+<6>[13360.651618] radeon 0000:01:00.0: WB enabled
+<6>[13360.651621] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x0000000080000c00 and cpu addr 0xffff88085ca83c00
+<6>[13360.651623] radeon 0000:01:00.0: fence driver on ring 1 use gpu addr 0x0000000080000c04 and cpu addr 0xffff88085ca83c04
+<6>[13360.651625] radeon 0000:01:00.0: fence driver on ring 2 use gpu addr 0x0000000080000c08 and cpu addr 0xffff88085ca83c08
+<6>[13360.651626] radeon 0000:01:00.0: fence driver on ring 3 use gpu addr 0x0000000080000c0c and cpu addr 0xffff88085ca83c0c
+Oops#1 Part3
+<6>[13360.651628] radeon 0000:01:00.0: fence driver on ring 4 use gpu addr 0x0000000080000c10 and cpu addr 0xffff88085ca83c10
+<6>[13360.651811] radeon 0000:01:00.0: fence driver on ring 5 use gpu addr 0x0000000000075a18 and cpu addr 0xffffc90003235a18
+<3>[13360.661995] radeon 0000:01:00.0: failed VCE resume (-22).
+<6>[13360.711612] ACPI : EC: event blocked
+<4>[13360.721621] ------------[ cut here ]------------
+<2>[13360.721621] kernel BUG at block/blk-mq.c:474!
+<4>[13360.721622] invalid opcode: 0000 [#1] PREEMPT SMP
+<4>[13360.721642] Modules linked in: uvcvideo videobuf2_vmalloc videobuf2_memops btusb videobuf2_v4l2 videobuf2_core btintel videodev bluetooth media crc16 dell_wmi sparse_keymap iTCO_wdt mei_wdt rtsx_pci_sdmmc mmc_core x86_pkg_temp_thermal intel_powerclamp coretemp kvm_intel kvm irqbypass crc32_pclmul intel_cstate dell_laptop dell_smbios dcdbas intel_uncore dell_smm_hwmon intel_rapl_perf efi_pstore psmouse pcspkr efivars tpm_crb snd_hda_codec_hdmi snd_hda_codec_generic arc4 vfat fat e1000e ptp pps_core iwlmvm i2c_i801 i2c_smbus mac80211 iwlwifi cfg80211 rtsx_pci snd_hda_intel snd_hda_codec snd_hda_core radeon snd_pcm snd_timer snd ttm xhci_pci soundcore xhci_hcd mei_me usbcore processor_thermal_device mei intel_soc_dts_iosf usb_common wmi battery int3403_thermal 8250 8250_base serial_core
+  dell_smo8800
+<4>[13360.721648]  pinctrl_sunrisepoint pinctrl_intel intel_lpss_acpi intel_lpss mfd_core i2c_hid int3402_thermal int340x_thermal_zone int3400_thermal acpi_thermal_rel dell_rbtn rfkill acpi_pad ac evdev tpm_tis tpm_tis_core acpi_als tpm kfifo_buf industrialio sch_fq_codel efivarfs
+<4>[13360.721650] CPU: 0 PID: 3819 Comm: kworker/u16:5 Not tainted 4.9.25-gentoo #11
+Oops#1 Part2
+<4>[13360.721650] Hardware name: Dell Inc. Precision 7710/0PMJX2, BIOS 1.10.7 02/09/2017
+<4>[13360.721653] Workqueue: events_unbound async_run_entry_fn
+<4>[13360.721654] task: ffff88085a6b8000 task.stack: ffffc90008d34000
+<4>[13360.721656] RIP: 0010:[<ffffffff812e0b25>]  [<ffffffff812e0b25>] blk_mq_requeue_request+0x25/0x30
+<4>[13360.721656] RSP: 0018:ffffc90008d37b40  EFLAGS: 00010212
+<4>[13360.721657] RAX: ffff880865330408 RBX: ffff880865330600 RCX: 0000000000002328
+<4>[13360.721657] RDX: 0000000000000007 RSI: ffff880865330600 RDI: ffff880865330600
+<4>[13360.721657] RBP: ffffc90008d37b48 R08: ffffffffffffffff R09: 0000000000000000
+<4>[13360.721658] R10: 0000000000000000 R11: 000000000000001d R12: ffff880867abf800
+<4>[13360.721658] R13: 0000000000000000 R14: ffff880869640b00 R15: 0000000000000300
+<4>[13360.721659] FS:  0000000000000000(0000) GS:ffff88088dc00000(0000) knlGS:0000000000000000
+<4>[13360.721659] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[13360.721660] CR2: 0000000001c640b8 CR3: 0000000001c07000 CR4: 00000000003406f0
+<4>[13360.721660] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>[13360.721661] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+<4>[13360.721661] Stack:
+<4>[13360.721662]  ffff880865330600 ffffc90008d37b68 ffffffff81517d4f ffff880865330600
+<4>[13360.721664]  ffff880867abf800 ffffc90008d37b90 ffffffff8151b219 ffff880865330600
+<4>[13360.721665]  ffff88088dc5f200 0000000000000000 ffffc90008d37bb8 ffffffff812e09aa
+<4>[13360.721665] Call Trace:
+<4>[13360.721668]  [<ffffffff81517d4f>] nvme_requeue_req+0xf/0x50
+<4>[13360.721669]  [<ffffffff8151b219>] nvme_complete_rq+0xe9/0x140
+<4>[13360.721671]  [<ffffffff812e09aa>] __blk_mq_complete_request+0x7a/0x100
+Oops#1 Part1
+<4>[13360.721673]  [<ffffffff812e0a47>] blk_mq_complete_request+0x17/0x20
+<4>[13360.721674]  [<ffffffff81517c9d>] nvme_cancel_request+0x3d/0x40
+<4>[13360.721675]  [<ffffffff812e2b75>] bt_tags_for_each+0x95/0xe0
+<4>[13360.721676]  [<ffffffff81517c60>] ? nvme_sysfs_rescan+0x30/0x30
+<4>[13360.721677]  [<ffffffff81517c60>] ? nvme_sysfs_rescan+0x30/0x30
+<4>[13360.721678]  [<ffffffff812e2f6c>] blk_mq_tagset_busy_iter+0x6c/0x80
+<4>[13360.721679]  [<ffffffff8151b3d2>] nvme_dev_disable+0x102/0x330
+<4>[13360.721680]  [<ffffffff8151b615>] nvme_suspend+0x15/0x20
+<4>[13360.721682]  [<ffffffff8133c5e1>] pci_pm_suspend+0x71/0x140
+<4>[13360.721683]  [<ffffffff8133c570>] ? pci_pm_freeze+0xe0/0xe0
+<4>[13360.721684]  [<ffffffff814f2679>] dpm_run_callback.isra.8+0x29/0x70
+<4>[13360.721685]  [<ffffffff814f3103>] __device_suspend+0x113/0x2a0
+<4>[13360.721686]  [<ffffffff814f32aa>] async_suspend+0x1a/0x90
+<4>[13360.721687]  [<ffffffff8108d902>] async_run_entry_fn+0x32/0xe0
+<4>[13360.721689]  [<ffffffff8108583d>] process_one_work+0x12d/0x310
+<4>[13360.721689]  [<ffffffff81085a69>] worker_thread+0x49/0x480
+<4>[13360.721690]  [<ffffffff81085a20>] ? process_one_work+0x310/0x310
+<4>[13360.721691]  [<ffffffff8108ad62>] kthread+0xd2/0xf0
+<4>[13360.721692]  [<ffffffff8108ac90>] ? kthread_create_on_node+0x40/0x40
+<4>[13360.721694]  [<ffffffff816a5392>] ret_from_fork+0x22/0x30
+<4>[13360.721708] Code: 84 00 00 00 00 00 55 48 89 e5 53 48 89 fb e8 83 ea ff ff 48 8b 03 48 39 c3 75 10 48 89 df be 01 00 00 00 e8 3e ff ff ff 5b 5d c3 <0f> 0b 66 0f 1f 84 00 00 00 00 00 55 48 81 c7 98 07 00 00 48 89 
+<1>[13360.721709] RIP  [<ffffffff812e0b25>] blk_mq_requeue_request+0x25/0x30
+<4>[13360.721709]  RSP <ffffc90008d37b40>
+<4>[13360.721710] ---[ end trace 5487c29d0b451133 ]---
