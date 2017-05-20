@@ -1,125 +1,70 @@
-From: Marc MERLIN <marc@merlins.org>
-Subject: Re: 4.11: ida_remove called for id=16 which is not allocated.
-Date: Fri, 19 May 2017 10:10:37 -0700
-Message-ID: <20170519171037.iuqjqzz25nbzog36@merlins.org>
-References: <20170514152522.u5kejltr3nz4ogmz@merlins.org>
- <alpine.LRH.2.11.1705181707030.19359@mail.ewheeler.net>
+From: <ajae@arteastottawa.com>
+Subject: (unknown)
+Date: Sat, 20 May 2017 12:27:40 -0000
+Message-ID: <149528326084.19079.8812438042243915615@hinet.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: application/zip; name="1415432.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from magic.merlins.org ([209.81.13.136]:49532 "EHLO
-        mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753364AbdESRhm (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 19 May 2017 13:37:42 -0400
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1705181707030.19359@mail.ewheeler.net>
+Received: from 111-249-48-77.dynamic-ip.hinet.net ([111.249.48.77]:34752 "HELO
+        hinet.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+        id S1750739AbdETM1r (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 20 May 2017 08:27:47 -0400
+Subject: 
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Thu, May 18, 2017 at 05:08:56PM +0000, Eric Wheeler wrote:
-> On Sun, 14 May 2017, Marc MERLIN wrote:
-> 
-> > 
-> > gargamel:/sys/block/bcache16/bcache# echo 1 > stop
-> > 
-> > bcache: bcache_device_free() bcache16 stopped
-> > ------------[ cut here ]------------
-> > WARNING: CPU: 7 PID: 11051 at lib/idr.c:383 ida_remove+0xe8/0x10b
-> > ida_remove called for id=16 which is not allocated.
-> 
-> Hi Marc,
-> 
-> Try the patch below.  I'm preparing it for a pull request---its been 
-> compile tested but not actually tested.  If you can confirm that this 
-> fixes it I'll add your Tested-by: if you like.
- 
-Thanks for the patch.
-I'll hve to try it, but it may take a little while, I'm in the middle of
-recovering 2 of my multi terabyte arrays after multiple bugs due to a
-new SAS card and apparently new issues in 4.11
-
-Marc
-
-> --
-> Eric Wheeler
-> 
-> commit 7311ad5a130ba79050e6f803f7fdb4e2b3f259d6
-> Author: tang.junhui <tang.junhui@zte.com.cn>
-> Date:   Tue May 9 12:14:06 2017 -0700
-> 
->     bcache: fix calling ida_simple_remove() with incorrect minor
->     
->     bcache called ida_simple_remove() with minor which have multiplied by
->     BCACHE_MINORS, it would cause minor wrong release and leakage.
->     
->     In addition, when adding partition support to bcache, the name assignment
->     was not updated, resulting in numbers jumping (bcache0, bcache16,
->     bcache32...). This has been fixed implicitly by the rework.
->     
->     Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
->     Reviewed-by: Coly Li <colyli@suse.de>
->     Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
->     Cc: stable@vger.kernel.org # 4.10
->     Cc: Stefan Bader <stefan.bader@canonical.com>
->     Fixes: b8c0d91 (bcache: partition support: add 16 minors per bcacheN device)
->     BugLink: https://bugs.launchpad.net/bugs/1667078
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 0f9242d..2b07933 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -58,7 +58,10 @@
->  struct workqueue_struct *bcache_wq;
->  
->  #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
-> -#define BCACHE_MINORS		16 /* partition support */
-> +#define BCACHE_MINORS_BITS                4 /* bcache partition support */
-> +#define BCACHE_MINORS                     (1 << BCACHE_MINORS_BITS)
-> +#define BCACHE_TO_IDA_MINORS(first_minor) ((first_minor) >> BCACHE_MINORS_BITS)
-> +#define IDA_TO_BCACHE_MINORS(minor)       ((minor) << BCACHE_MINORS_BITS)
->  
->  /* Superblock */
->  
-> @@ -734,7 +737,8 @@ static void bcache_device_free(struct bcache_device *d)
->  	if (d->disk && d->disk->queue)
->  		blk_cleanup_queue(d->disk->queue);
->  	if (d->disk) {
-> -		ida_simple_remove(&bcache_minor, d->disk->first_minor);
-> +		ida_simple_remove(&bcache_minor,
-> +			BCACHE_TO_IDA_MINORS(d->disk->first_minor));
->  		put_disk(d->disk);
->  	}
->  
-> @@ -776,11 +780,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
->  	if (!d->full_dirty_stripes)
->  		return -ENOMEM;
->  
-> -	minor = ida_simple_get(&bcache_minor, 0, MINORMASK + 1, GFP_KERNEL);
-> +	minor = ida_simple_get(&bcache_minor, 0,
-> +		BCACHE_TO_IDA_MINORS(MINORMASK) + 1, GFP_KERNEL);
->  	if (minor < 0)
->  		return minor;
->  
-> -	minor *= BCACHE_MINORS;
->  
->  	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
->  	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
-> @@ -792,7 +796,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
->  	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
->  
->  	d->disk->major		= bcache_major;
-> -	d->disk->first_minor	= minor;
-> +	d->disk->first_minor	= IDA_TO_BCACHE_MINORS(minor);
->  	d->disk->fops		= &bcache_ops;
->  	d->disk->private_data	= d;
->  
-> 
-
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
+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
+AAA=
