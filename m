@@ -1,133 +1,65 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH] bcache: inherit underlying queue limits for bcache
- drivers
-Date: Fri, 26 May 2017 00:34:39 +0800
-Message-ID: <a9cdf630-32ad-29ae-39c9-8442a0905d97@coly.li>
-References: <201705250912040895874@zte.com.cn>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: [PULL] bcache updates based on git.kernel.dk/linux-block:for-next
+Date: Thu, 25 May 2017 19:10:14 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1705251853530.19359@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:42642 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751861AbdEYQfA (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 25 May 2017 12:35:00 -0400
-In-Reply-To: <201705250912040895874@zte.com.cn>
+Received: from mx.ewheeler.net ([66.155.3.69]:55946 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S935251AbdEYTKR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 25 May 2017 15:10:17 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn, bcache@lists.ewheeler.net
-Cc: linux-bcache@vger.kernel.org, kent.overstreet@gmail.com
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-bcache@vger.kernel.org, Jan Kara <jack@suse.cz>, stable@vger.kernel.org, "tang.junhui" <tang.junhui@zte.com.cn>, Kent Overstreet <kent.overstreet@gmail.com>, Coly Li <colyli@suse.de>, Stefan Bader <stefan.bader@canonical.com>, Liang Chen <liangchen.linux@gmail.com>, nix@esperi.org.uk
 
-On 2017/5/25 上午9:12, tang.junhui@zte.com.cn wrote:
-> 
-> Hello Coly  Eric,
-> 
-> 
-> I find the perfomace is same after testing with `fio` by using 512GB data,
-> 
-> so 'dd' may be inaccurate, but accutually, I also test it with Ceph
-> applicatitangon,
-> 
-> the performance is also promoted after the modification. So whatever, I
-> think
-> 
-> the bcache devices would better inherit underlying queue limits to show
-> the real
-> 
-> limits to upper layer. You can remove the description of the performace
-> promotion
-> 
-> in the patch since it maybe depend on test scenarios and applications.
-> 
-> 
+Hi Jens,
 
-Junhui,
+Please pull these updates and bugfixes from the bcache community when you 
+have a minute.  If you need a rebase against something else then please 
+let me know and I would be happy to update for you.
 
-bcache_device_init() already does something overlapped with
-blk_queue_stack_limits(), which means your patch introduces redundant
-code execution. Also blk_queue_stack_limits() may fail, so if you do
-want to add this function call, you also need to check the return value
-and handle the failure condition.
-
-Currently I don't see benefit from this patch. It is probably I miss
-something from your patch, please correct me if you think so.
-
-Thanks.
-
-Coly
+Thank you for your help!
 
 
-> Regards
-> 
-> Tang Junhui
-> 
-> 
-> ＞＞＞ On 2017/5/23 下午4:14, tang.junhui@zte.com.cn wrote:
-> 
-> ＞＞＞ ＞ From: "tang.junhui" ＜tang.junhui@zte.com.cn＞
-> 
-> ＞＞＞ ＞ 
-> 
-> ＞＞＞ ＞ We'd better let the stacking driver inherit underlying queue
-> limits,
-> 
-> ＞＞＞ ＞ so, we can avoid the unnessary mergering in the top layer, and
-> It leads
-> 
-> ＞＞＞ ＞ a 10% performance promotion in large sequential IO reading
-> testing as
-> 
-> ＞＞＞ ＞ follows:
-> 
-> ＞＞＞ ＞ 
-> 
-> ＞＞＞ 
-> 
-> ＞＞＞ Hi Junhui,
-> 
-> ＞＞＞ 
-> 
-> ＞＞＞ I don't get the point why there is unnecessary merging in the upper
-> 
-> ＞＞＞ layer, and how the unnecessary merging can be avoided by set a
-> queue limit.
-> 
-> ＞＞＞ 
-> 
-> ＞＞＞ And from the testing, I see total data size is around 21GB which
-> is not
-> 
-> ＞＞＞ convinced enough. Is it possible to use a large enough data size,
-> e.g.
-> 
-> ＞＞＞ 512GB or 1TB ?
-> 
-> ＞＞
-> 
-> ＞＞
-> 
-> ＞＞Please test with `fio` with directio instead of `dd`.  I've seen too
-> many 
-> 
-> ＞＞times where DD is inaccurate for unknown reasons.  
-> 
-> ＞＞
-> 
-> ＞＞Also, this should be tested with your cache detached from bcache.
->  If it 
-> 
-> ＞＞really does improve performance that would be great.
-> 
-> ＞＞
-> 
-> ＞＞--
-> 
-> ＞＞Eric Wheeler
-> 
-> ＞
-> 
-> 
+
+The following changes since commit 0789bd7bdb5bd036fe3df96c19528f46127a0160:
+
+  Merge branch 'for-linus' into for-next (2017-05-10 07:40:47 -0600)
+
+are available in the git repository at:
+
+  https://bitbucket.org/ewheelerinc/linux.git bcache-updates-linux-block-for-next
+
+for you to fetch changes up to 8a02c3d571b895931db7a2700f05d8c70a7c6cb2:
+
+  bcache: update bio->bi_opf bypass/writeback REQ_ flag hints (2017-05-11 12:29:08 -0700)
+
+----------------------------------------------------------------
+Jan Kara (1):
+      bcache: Fix leak of bdev reference
+
+Liang Chen (1):
+      bcache: explicitly destory mutex while exiting
+
+tang.junhui (4):
+      bcache: fix sequential large write IO bypass
+      bcache: do not subtract sectors_to_gc for bypassed IO
+      bcache: fix wrong cache_misses statistics
+      bcache: fix calling ida_simple_remove() with incorrect minor
+
+Eric Wheeler (3):
+      bcache: introduce bcache sysfs entries for ioprio-based bypass/writeback hints
+      bcache: documentation for sysfs entries describing bcache cache hinting
+      bcache: update bio->bi_opf bypass/writeback REQ_ flag hints
 
 
--- 
-Coly Li
+ Documentation/bcache.txt      | 80 ++++++++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/bcache.h    |  3 ++
+ drivers/md/bcache/request.c   | 45 +++++++++++++++++-----
+ drivers/md/bcache/super.c     | 18 ++++++---
+ drivers/md/bcache/sysfs.c     | 71 +++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/writeback.c |  8 ++++
+ drivers/md/bcache/writeback.h | 27 +++++++++++++-
+ 7 files changed, 236 insertions(+), 16 deletions(-)
