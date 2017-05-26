@@ -1,65 +1,76 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: [PULL] bcache updates based on git.kernel.dk/linux-block:for-next
-Date: Thu, 25 May 2017 19:10:14 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1705251853530.19359@mail.ewheeler.net>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH] bcache: inherit underlying queue limits for bcachedrivers
+Date: Sat, 27 May 2017 03:08:11 +0800
+Message-ID: <3e05ffff-5e36-490d-ed43-cdd1fc2cf58b@coly.li>
+References: <201705261717062736400@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:55946 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S935251AbdEYTKR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 25 May 2017 15:10:17 -0400
+Received: from server.coly.li ([162.144.45.48]:46994 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S932334AbdEZTIl (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 26 May 2017 15:08:41 -0400
+In-Reply-To: <201705261717062736400@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-bcache@vger.kernel.org, Jan Kara <jack@suse.cz>, stable@vger.kernel.org, "tang.junhui" <tang.junhui@zte.com.cn>, Kent Overstreet <kent.overstreet@gmail.com>, Coly Li <colyli@suse.de>, Stefan Bader <stefan.bader@canonical.com>, Liang Chen <liangchen.linux@gmail.com>, nix@esperi.org.uk
+To: tang.junhui@zte.com.cn
+Cc: bcache@lists.ewheeler.net, linux-bcache@vger.kernel.org, kent.overstreet@gmail.com
 
-Hi Jens,
+On 2017/5/26 下午5:17, tang.junhui@zte.com.cn wrote:
+> Hello Coly,
+> 
+> 
+> ＞ bcache_device_init() already does something overlapped with
+> 
+> ＞ blk_queue_stack_limits(), which means your patch introduces redundant
+> 
+> ＞ code execution. Also blk_queue_stack_limits() may fail, so if you do
+> 
+> ＞ want to add this function call, you also need to check the return value
+> 
+> ＞ and handle the failure condition.
+> 
+> Queue Limits are assigned to default value in bcache_device_init(), and then
+> 
+> updated by inheriting underlying driver in blk_queue_stack_limits(), so
+> I think
+> 
+> there is no redundant or contradiction between them.
+> 
+> blk_queue_stack_limits() is defined as a void function, so we have no
+> need to 
+> 
+> check the return value.
+> 
 
-Please pull these updates and bugfixes from the bcache community when you 
-have a minute.  If you need a rebase against something else then please 
-let me know and I would be happy to update for you.
-
-Thank you for your help!
-
-
-
-The following changes since commit 0789bd7bdb5bd036fe3df96c19528f46127a0160:
-
-  Merge branch 'for-linus' into for-next (2017-05-10 07:40:47 -0600)
-
-are available in the git repository at:
-
-  https://bitbucket.org/ewheelerinc/linux.git bcache-updates-linux-block-for-next
-
-for you to fetch changes up to 8a02c3d571b895931db7a2700f05d8c70a7c6cb2:
-
-  bcache: update bio->bi_opf bypass/writeback REQ_ flag hints (2017-05-11 12:29:08 -0700)
-
-----------------------------------------------------------------
-Jan Kara (1):
-      bcache: Fix leak of bdev reference
-
-Liang Chen (1):
-      bcache: explicitly destory mutex while exiting
-
-tang.junhui (4):
-      bcache: fix sequential large write IO bypass
-      bcache: do not subtract sectors_to_gc for bypassed IO
-      bcache: fix wrong cache_misses statistics
-      bcache: fix calling ida_simple_remove() with incorrect minor
-
-Eric Wheeler (3):
-      bcache: introduce bcache sysfs entries for ioprio-based bypass/writeback hints
-      bcache: documentation for sysfs entries describing bcache cache hinting
-      bcache: update bio->bi_opf bypass/writeback REQ_ flag hints
+blk_queue_stack_limits() is wrapper of blk_stack_limits(). If you look
+into blk_stack_limits() you will find the redundant code I meant, as
+well as the return value I suggested to check.
 
 
- Documentation/bcache.txt      | 80 ++++++++++++++++++++++++++++++++++++++++
- drivers/md/bcache/bcache.h    |  3 ++
- drivers/md/bcache/request.c   | 45 +++++++++++++++++-----
- drivers/md/bcache/super.c     | 18 ++++++---
- drivers/md/bcache/sysfs.c     | 71 +++++++++++++++++++++++++++++++++++
- drivers/md/bcache/writeback.c |  8 ++++
- drivers/md/bcache/writeback.h | 27 +++++++++++++-
- 7 files changed, 236 insertions(+), 16 deletions(-)
+> 
+> ＞ Currently I don't see benefit from this patch. It is probably I miss
+> 
+>  something from your patch, please correct me if you think so.
+> 
+> Please consider this scenario: Bcache driver show a large max_sectors_kb,
+> 
+> then upper layer would merger seqention IOs to make the size of BIO as
+> bigger 
+> 
+> as near to max_sectors_kb. But actually, bcache driver can not send this
+> BIO to 
+> 
+> underlying driver, and have to split the big IO to smaller ones. 
+> 
+> I think these are useless work.
+
+Oh, maybe I know what you mean.
+It is very rare for the above scenario. Maybe I am wrong, but could you
+please provide a real example for the above situation ?
+
+Thanks.
+
+-- 
+Coly Li
