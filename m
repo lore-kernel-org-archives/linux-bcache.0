@@ -1,70 +1,110 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH] bcache: Subtract dirty sectors of thin flash from cache_sectors in calculating writeback rate
-Date: Thu, 1 Jun 2017 19:19:34 +0800
-Message-ID: <1496315974-9648-1-git-send-email-tang.junhui@zte.com.cn>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH] bcache: initialize stripe_sectors_dirty correctly for
+ thin flash device
+Date: Thu, 1 Jun 2017 19:45:39 +0800
+Message-ID: <8df0e7d9-9ac2-0620-08cd-e56dcc982bfe@coly.li>
+References: <1496306884-7808-1-git-send-email-tang.junhui@zte.com.cn>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out1.zte.com.cn ([202.103.147.172]:46985 "EHLO out1.zte.com.cn"
+Received: from server.coly.li ([162.144.45.48]:42046 "EHLO server.coly.li"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751556AbdFALUz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 1 Jun 2017 07:20:55 -0400
+        id S1750952AbdFALpq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 1 Jun 2017 07:45:46 -0400
+In-Reply-To: <1496306884-7808-1-git-send-email-tang.junhui@zte.com.cn>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
-Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
+To: tang.junhui@zte.com.cn, kent.overstreet@gmail.com, bcache@lists.ewheeler.net
+Cc: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 2017/6/1 下午4:48, tang.junhui@zte.com.cn wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> Thin flash device does not initialize stripe_sectors_dirty correctly, this
+> patch fixes this issue.
+> 
 
-Since dirty sectors of thin flash cannot be used to cache data for backend
-device, so we should subtract it in calculating writeback rate.
+Junhui,
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/writeback.c |  2 +-
- drivers/md/bcache/writeback.h | 19 +++++++++++++++++++
- 2 files changed, 20 insertions(+), 1 deletion(-)
+Please, please, could you please provide more patch comments, why this
+is a bug and how things go wrong without your patch, and get fixed with
+you patch.
 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 69e1ae5..434c329 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -20,7 +20,7 @@
- static void __update_writeback_rate(struct cached_dev *dc)
- {
- 	struct cache_set *c = dc->disk.c;
--	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size;
-+	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size - bcache_flash_devs_sectors_dirty(c);
- 	uint64_t cache_dirty_target =
- 		div_u64(cache_sectors * dc->writeback_percent, 100);
- 
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 629bd1a..8789b9c 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -14,6 +14,25 @@ static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
- 	return ret;
- }
- 
-+static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
-+{
-+	uint64_t i, ret = 0;
-+
-+	mutex_lock(&bch_register_lock);
-+
-+	for (i = 0; i < c->nr_uuids; i++) {
-+		struct bcache_device *d = c->devices[i];
-+
-+		if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
-+			continue;
-+	   ret += bcache_dev_sectors_dirty(d);
-+	}
-+
-+	mutex_unlock(&bch_register_lock);
-+
-+	return ret;
-+}
-+
- static inline unsigned offset_to_stripe(struct bcache_device *d,
- 					uint64_t offset)
- {
+I do appreciate for your informative patch comment :-)
+
+Coly
+
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> ---
+>  drivers/md/bcache/super.c     | 3 ++-
+>  drivers/md/bcache/writeback.c | 8 ++++----
+>  drivers/md/bcache/writeback.h | 2 +-
+>  3 files changed, 7 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 3a19cbc..cccd686 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1028,7 +1028,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+>  	}
+>  
+>  	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+> -		bch_sectors_dirty_init(dc);
+> +		bch_sectors_dirty_init(&dc->disk);
+>  		atomic_set(&dc->has_dirty, 1);
+>  		atomic_inc(&dc->count);
+>  		bch_writeback_queue(dc);
+> @@ -1230,6 +1230,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+>  		goto err;
+>  
+>  	bcache_device_attach(d, c, u - c->uuids);
+> +	bch_sectors_dirty_init(d);
+>  	bch_flash_dev_request_init(d);
+>  	add_disk(d->disk);
+>  
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 69e1ae5..8d77403 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -481,17 +481,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
+>  	return MAP_CONTINUE;
+>  }
+>  
+> -void bch_sectors_dirty_init(struct cached_dev *dc)
+> +void bch_sectors_dirty_init(struct bcache_device *d)
+>  {
+>  	struct sectors_dirty_init op;
+>  
+>  	bch_btree_op_init(&op.op, -1);
+> -	op.inode = dc->disk.id;
+> +	op.inode = d->id;
+>  
+> -	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
+> +	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
+>  			   sectors_dirty_init_fn, 0);
+>  
+> -	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
+> +	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
+>  }
+>  
+>  void bch_cached_dev_writeback_init(struct cached_dev *dc)
+> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+> index 629bd1a..c992f06 100644
+> --- a/drivers/md/bcache/writeback.h
+> +++ b/drivers/md/bcache/writeback.h
+> @@ -84,7 +84,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+>  
+>  void bcache_dev_sectors_dirty_add(struct cache_set *, unsigned, uint64_t, int);
+>  
+> -void bch_sectors_dirty_init(struct cached_dev *dc);
+> +void bch_sectors_dirty_init(struct bcache_device *);
+>  void bch_cached_dev_writeback_init(struct cached_dev *);
+>  int bch_cached_dev_writeback_start(struct cached_dev *);
+>  
+> 
+
+
 -- 
-2.8.1.windows.1
+Coly Li
