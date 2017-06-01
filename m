@@ -1,110 +1,84 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH] bcache: initialize stripe_sectors_dirty correctly for
- thin flash device
-Date: Thu, 1 Jun 2017 19:45:39 +0800
-Message-ID: <8df0e7d9-9ac2-0620-08cd-e56dcc982bfe@coly.li>
-References: <1496306884-7808-1-git-send-email-tang.junhui@zte.com.cn>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] bcache: update bucket_in_use periodically
+Date: Thu, 1 Jun 2017 19:49:16 +0800
+Message-ID: <1496317756-10480-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:42046 "EHLO server.coly.li"
+Received: from mxhk.zte.com.cn ([63.217.80.70]:52476 "EHLO mxhk.zte.com.cn"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750952AbdFALpq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 1 Jun 2017 07:45:46 -0400
-In-Reply-To: <1496306884-7808-1-git-send-email-tang.junhui@zte.com.cn>
-Content-Language: en-US
+        id S1751058AbdFALue (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 1 Jun 2017 07:50:34 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn, kent.overstreet@gmail.com, bcache@lists.ewheeler.net
-Cc: linux-bcache@vger.kernel.org
+To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
+Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
 
-On 2017/6/1 下午4:48, tang.junhui@zte.com.cn wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
-> 
-> Thin flash device does not initialize stripe_sectors_dirty correctly, this
-> patch fixes this issue.
-> 
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Junhui,
+bucket_in_use is updated in gc thread which triggered by invalidating or
+writing sectors_to_gc dirty data, It's been too long, Therefore, when we
+use it to compare with the threshold, it is often not timely, which leads
+to inaccurate judgment and often results in bucket depletion.
 
-Please, please, could you please provide more patch comments, why this
-is a bug and how things go wrong without your patch, and get fixed with
-you patch.
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/btree.c | 29 +++++++++++++++++++++++++++--
+ 1 file changed, 27 insertions(+), 2 deletions(-)
 
-I do appreciate for your informative patch comment :-)
-
-Coly
-
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> ---
->  drivers/md/bcache/super.c     | 3 ++-
->  drivers/md/bcache/writeback.c | 8 ++++----
->  drivers/md/bcache/writeback.h | 2 +-
->  3 files changed, 7 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 3a19cbc..cccd686 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -1028,7 +1028,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
->  	}
->  
->  	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
-> -		bch_sectors_dirty_init(dc);
-> +		bch_sectors_dirty_init(&dc->disk);
->  		atomic_set(&dc->has_dirty, 1);
->  		atomic_inc(&dc->count);
->  		bch_writeback_queue(dc);
-> @@ -1230,6 +1230,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
->  		goto err;
->  
->  	bcache_device_attach(d, c, u - c->uuids);
-> +	bch_sectors_dirty_init(d);
->  	bch_flash_dev_request_init(d);
->  	add_disk(d->disk);
->  
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 69e1ae5..8d77403 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -481,17 +481,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
->  	return MAP_CONTINUE;
->  }
->  
-> -void bch_sectors_dirty_init(struct cached_dev *dc)
-> +void bch_sectors_dirty_init(struct bcache_device *d)
->  {
->  	struct sectors_dirty_init op;
->  
->  	bch_btree_op_init(&op.op, -1);
-> -	op.inode = dc->disk.id;
-> +	op.inode = d->id;
->  
-> -	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
-> +	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
->  			   sectors_dirty_init_fn, 0);
->  
-> -	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
-> +	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
->  }
->  
->  void bch_cached_dev_writeback_init(struct cached_dev *dc)
-> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-> index 629bd1a..c992f06 100644
-> --- a/drivers/md/bcache/writeback.h
-> +++ b/drivers/md/bcache/writeback.h
-> @@ -84,7 +84,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
->  
->  void bcache_dev_sectors_dirty_add(struct cache_set *, unsigned, uint64_t, int);
->  
-> -void bch_sectors_dirty_init(struct cached_dev *dc);
-> +void bch_sectors_dirty_init(struct bcache_device *);
->  void bch_cached_dev_writeback_init(struct cached_dev *);
->  int bch_cached_dev_writeback_start(struct cached_dev *);
->  
-> 
-
-
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index a43eedd..44a2563 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -87,6 +87,8 @@
+ #define MAX_NEED_GC		64
+ #define MAX_SAVE_PRIO		72
+ 
++#define GC_THREAD_TIMEOUT_MS	(30 * 1000)
++
+ #define PTR_DIRTY_BIT		(((uint64_t) 1 << 36))
+ 
+ #define PTR_HASH(c, k)							\
+@@ -1757,6 +1759,23 @@ static void bch_btree_gc(struct cache_set *c)
+ 	bch_moving_gc(c);
+ }
+ 
++void bch_update_bucket_in_use(struct cache_set *c)
++{
++	struct cache *ca;
++	struct bucket *b;
++	unsigned i;
++	size_t available = 0;
++
++	for_each_cache(ca, c, i) {
++		for_each_bucket(b, ca) {
++			if (!GC_MARK(b) || GC_MARK(b) == GC_MARK_RECLAIMABLE)
++				available++;
++		}
++	}
++
++	c->gc_stats.in_use = (c->nbuckets - available) * 100 / c->nbuckets;
++}
++
+ static bool gc_should_run(struct cache_set *c)
+ {
+ 	struct cache *ca;
+@@ -1775,10 +1794,16 @@ static bool gc_should_run(struct cache_set *c)
+ static int bch_gc_thread(void *arg)
+ {
+ 	struct cache_set *c = arg;
++	long  ret;
++	unsigned long timeout = msecs_to_jiffies(GC_THREAD_TIMEOUT_MS);
+ 
+ 	while (1) {
+-		wait_event_interruptible(c->gc_wait,
+-			   kthread_should_stop() || gc_should_run(c));
++		ret = wait_event_interruptible_timeout(c->gc_wait,
++			   kthread_should_stop() || gc_should_run(c), timeout);
++		if (!ret) {
++			bch_update_bucket_in_use(c);
++			continue;
++		}
+ 
+ 		if (kthread_should_stop())
+ 			break;
 -- 
-Coly Li
+2.8.1.windows.1
