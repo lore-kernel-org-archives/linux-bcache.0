@@ -1,12 +1,12 @@
 From: tang.junhui@zte.com.cn
-Subject: [PATCH] bcache: delete redundant calling set_gc_sectors()
-Date: Thu, 8 Jun 2017 14:06:16 +0800
-Message-ID: <1496901976-10908-1-git-send-email-tang.junhui@zte.com.cn>
+Subject: [PATCH] bcache: gc does not work when triggering by manual command
+Date: Thu, 8 Jun 2017 14:39:23 +0800
+Message-ID: <1496903963-11068-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mxhk.zte.com.cn ([63.217.80.70]:31093 "EHLO mxhk.zte.com.cn"
+Received: from out1.zte.com.cn ([202.103.147.172]:49265 "EHLO out1.zte.com.cn"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751049AbdFHGID (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 8 Jun 2017 02:08:03 -0400
+        id S1751049AbdFHGlG (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 8 Jun 2017 02:41:06 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
@@ -14,26 +14,47 @@ Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
 
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
-set_gc_sectors() has been called in bch_gc_thread(), and it was called
-again in bch_btree_gc_finish() . The following call is unnecessary, so
-delete it.
+I try to execute the following command to trigger gc thread:
+[root@localhost internal]# echo 1 > trigger_gc
+But it does not work, I debug the code in gc_should_run(), It works only
+if in invalidating or sectors_to_gc < 0. So set sectors_to_gc to -1 to
+meet the condition when we trigger gc by manual command.
 
 Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/btree.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/md/bcache/btree.h | 6 ++++++
+ drivers/md/bcache/sysfs.c | 2 +-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index a43eedd..c80e64e 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1657,7 +1657,6 @@ static size_t bch_btree_gc_finish(struct cache_set *c)
+diff --git a/drivers/md/bcache/btree.h b/drivers/md/bcache/btree.h
+index 9b80417..bab07d4 100644
+--- a/drivers/md/bcache/btree.h
++++ b/drivers/md/bcache/btree.h
+@@ -263,6 +263,12 @@ static inline void wake_up_gc(struct cache_set *c)
+ 	wake_up(&c->gc_wait);
+ }
  
- 	mutex_lock(&c->bucket_lock);
++static inline void wake_up_gc_force(struct cache_set *c)
++{
++	atomic_set(&c->sectors_to_gc, -1);
++	wake_up(&c->gc_wait);
++}
++
+ #define MAP_DONE	0
+ #define MAP_CONTINUE	1
  
--	set_gc_sectors(c);
- 	c->gc_mark_valid = 1;
- 	c->need_gc	= 0;
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b3ff57d..5fdb86c 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -615,7 +615,7 @@ STORE(__bch_cache_set)
+ 	}
  
+ 	if (attr == &sysfs_trigger_gc)
+-		wake_up_gc(c);
++		wake_up_gc_force(c);
+ 
+ 	if (attr == &sysfs_prune_cache) {
+ 		struct shrink_control sc;
 -- 
 2.8.1.windows.1
