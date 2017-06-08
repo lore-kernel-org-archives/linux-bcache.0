@@ -1,12 +1,12 @@
 From: tang.junhui@zte.com.cn
 Subject: [PATCH] bcache: fix issue of writeback rate at minimum 1 block per second
-Date: Thu, 8 Jun 2017 17:28:21 +0800
-Message-ID: <1496914101-10044-1-git-send-email-tang.junhui@zte.com.cn>
+Date: Thu, 8 Jun 2017 17:34:53 +0800
+Message-ID: <1496914493-8460-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out1.zte.com.cn ([202.103.147.172]:39355 "EHLO out1.zte.com.cn"
+Received: from mxhk.zte.com.cn ([63.217.80.70]:57618 "EHLO mxhk.zte.com.cn"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751616AbdFHJaB (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 8 Jun 2017 05:30:01 -0400
+        id S1751470AbdFHJgw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 8 Jun 2017 05:36:52 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
@@ -19,21 +19,30 @@ to be 0, and delay 30 seconds in read_dirty().
 
 Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/util.c      | 15 ++++++++++-----
+ drivers/md/bcache/util.c      | 17 ++++++++++++-----
  drivers/md/bcache/writeback.c |  2 +-
- 2 files changed, 11 insertions(+), 6 deletions(-)
+ 2 files changed, 13 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-index dde6172..ba40f01 100644
+index dde6172..cf750df 100644
 --- a/drivers/md/bcache/util.c
 +++ b/drivers/md/bcache/util.c
-@@ -209,13 +209,18 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
+@@ -15,6 +15,8 @@
+ 
+ #include "util.h"
+ 
++#define ZERO_RATE_DELAY_NS	30*NSEC_PER_SEC
++
+ #define simple_strtoint(c, end, base)	simple_strtol(c, end, base)
+ #define simple_strtouint(c, end, base)	simple_strtoul(c, end, base)
+ 
+@@ -209,13 +211,18 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
  {
  	uint64_t now = local_clock();
  
 -	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
 +	if (!d->rate) {
-+		d->next += ZERO_RATE_DELAY_NS;
++		d->next = now + ZERO_RATE_DELAY_NS;
 +	}
 +	else {
 +		d->next += div_u64(done * NSEC_PER_SEC, d->rate);
