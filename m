@@ -1,27 +1,39 @@
-From: "Seydou Thieba" <seydouthieba@tiscali.co.uk>
-Subject: Investment Interest & Offer
-Date: Sat, 03 Jun 2017 00:01:51 +0100
-Message-ID: <201706022301.v52MWded028747__18669.9851336472$1496897963$gmane$org@www.brfliseberg.se>
-Reply-To: seydouthiebaconsultant@gmail.com
-Mime-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] bcache: delete redundant calling set_gc_sectors()
+Date: Thu, 8 Jun 2017 14:06:16 +0800
+Message-ID: <1496901976-10908-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from www.brfliseberg.se ([213.242.162.1]:37178 "EHLO
-        www.brfliseberg.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750917AbdFHE7S (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 8 Jun 2017 00:59:18 -0400
-Content-Description: Mail message body
+Received: from mxhk.zte.com.cn ([63.217.80.70]:31093 "EHLO mxhk.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751049AbdFHGID (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 8 Jun 2017 02:08:03 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Recipients <seydouthieba@tiscali.co.uk>
+To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
+Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
 
-We are a Fund management company located in the United Kingdom, we specialize in searching for potential investments opportunities for our high net-worth clients globally. Should this be of interest to you, please do not hesitate to email me for  further information.
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Thanks
-Seydou Thieba
+set_gc_sectors() has been called in bch_gc_thread(), and it was called
+again in bch_btree_gc_finish() . The following call is unnecessary, so
+delete it.
 
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 ---
-This email has been checked for viruses by AVG.
-http://www.avg.com
+ drivers/md/bcache/btree.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index a43eedd..c80e64e 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1657,7 +1657,6 @@ static size_t bch_btree_gc_finish(struct cache_set *c)
+ 
+ 	mutex_lock(&c->bucket_lock);
+ 
+-	set_gc_sectors(c);
+ 	c->gc_mark_valid = 1;
+ 	c->need_gc	= 0;
+ 
+-- 
+2.8.1.windows.1
