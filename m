@@ -1,74 +1,101 @@
-From: <richard@oxbridgeprograms.com>
-Subject: (unknown)
-Date: Fri, 09 Jun 2017 00:34:35 -0000
-Message-ID: <149696847503.12492.15342194323528716188@mari-el.ru>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH] bcache: fix issue of writeback rate at minimum 1 block
+ per second
+Date: Fri, 9 Jun 2017 01:40:13 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1706090138470.19359@mail.ewheeler.net>
+References: <1496914493-8460-1-git-send-email-tang.junhui@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: application/zip; name="251180749.zip"
-Content-Transfer-Encoding: base64
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 2.100.pppoe.mari-el.ru ([77.40.100.2]:33317 "HELO mari-el.ru"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1751428AbdFIAek (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 8 Jun 2017 20:34:40 -0400
-Subject: 
-Content-Disposition: attachment
+Received: from mx.ewheeler.net ([66.155.3.69]:35238 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1751445AbdFIBkQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 8 Jun 2017 21:40:16 -0400
+In-Reply-To: <1496914493-8460-1-git-send-email-tang.junhui@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: tang.junhui@zte.com.cn
+Cc: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net, linux-bcache@vger.kernel.org
 
-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
-AQABAE4AAADpCwAAAAA=
+On Thu, 8 Jun 2017, tang.junhui@zte.com.cn wrote:
+
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> When there is not enough data in writeback cache, let the writeback rate
+> to be 0, and delay 30 seconds in read_dirty().
+> 
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> ---
+>  drivers/md/bcache/util.c      | 17 ++++++++++++-----
+>  drivers/md/bcache/writeback.c |  2 +-
+>  2 files changed, 13 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+> index dde6172..cf750df 100644
+> --- a/drivers/md/bcache/util.c
+> +++ b/drivers/md/bcache/util.c
+> @@ -15,6 +15,8 @@
+>  
+>  #include "util.h"
+>  
+> +#define ZERO_RATE_DELAY_NS	30*NSEC_PER_SEC
+> +
+
+Hi tang,
+
+If you re-submit a patch to the list with changes, please annotate [PATCH v2]
+so it is clear that the previous version has been replaced.  
+
+Thank you for all of the patches!  Please include test cases whenever 
+possible so we understand what is being fixed.
+
+--
+Eric Wheeler
+
+
+
+>  #define simple_strtoint(c, end, base)	simple_strtol(c, end, base)
+>  #define simple_strtouint(c, end, base)	simple_strtoul(c, end, base)
+>  
+> @@ -209,13 +211,18 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
+>  {
+>  	uint64_t now = local_clock();
+>  
+> -	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
+> +	if (!d->rate) {
+> +		d->next = now + ZERO_RATE_DELAY_NS;
+> +	}
+> +	else {
+> +		d->next += div_u64(done * NSEC_PER_SEC, d->rate);
+>  
+> -	if (time_before64(now + NSEC_PER_SEC, d->next))
+> -		d->next = now + NSEC_PER_SEC;
+> +		if (time_before64(now + NSEC_PER_SEC, d->next))
+> +			d->next = now + NSEC_PER_SEC;
+>  
+> -	if (time_after64(now - NSEC_PER_SEC * 2, d->next))
+> -		d->next = now - NSEC_PER_SEC * 2;
+> +		if (time_after64(now - NSEC_PER_SEC * 2, d->next))
+> +			d->next = now - NSEC_PER_SEC * 2;
+> +	}
+>  
+>  	return time_after64(d->next, now)
+>  		? div_u64(d->next - now, NSEC_PER_SEC / HZ)
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 69e1ae5..8fac280 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -60,7 +60,7 @@ static void __update_writeback_rate(struct cached_dev *dc)
+>  
+>  	dc->writeback_rate.rate =
+>  		clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + change,
+> -			1, NSEC_PER_MSEC);
+> +			0, NSEC_PER_MSEC);
+>  
+>  	dc->writeback_rate_proportional = proportional;
+>  	dc->writeback_rate_derivative = derivative;
+> -- 
+> 2.8.1.windows.1
+> 
+> 
+> 
