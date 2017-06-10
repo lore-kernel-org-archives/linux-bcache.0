@@ -1,74 +1,58 @@
-From: <kholloway@isd622.org>
-Subject: (unknown)
-Date: Fri, 09 Jun 2017 08:02:43 -0000
-Message-ID: <149699536316.29695.14772158927009623933@zaural.ru>
+From: Kai Krakow <hurikhan77@gmail.com>
+Subject: Re: disk gone
+Date: Sat, 10 Jun 2017 12:17:22 +0200
+Message-ID: <20170610121722.124dbfc0@jupiter.sol.kaishome.de>
+References: <C081436D-3227-4388-A1DF-9764FB693924@gmail.com>
+        <alpine.LRH.2.11.1706090144550.19359@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: application/zip; name="006882549.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from ws230.zone31-163-176.zaural.ru ([31.163.176.230]:54234 "HELO
-        zaural.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1751670AbdFIICr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 9 Jun 2017 04:02:47 -0400
-Content-Disposition: attachment
-Subject: 
+Received: from [195.159.176.226] ([195.159.176.226]:49584 "EHLO
+        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+        with ESMTP id S1751890AbdFJKRd (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 10 Jun 2017 06:17:33 -0400
+Received: from list by blaine.gmane.org with local (Exim 4.84_2)
+        (envelope-from <glbd-linux-bcache@m.gmane.org>)
+        id 1dJdSP-0001qU-Dp
+        for linux-bcache@vger.kernel.org; Sat, 10 Jun 2017 12:17:25 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-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
+Am Fri, 9 Jun 2017 01:46:24 +0000 (UTC)
+schrieb Eric Wheeler <bcache@lists.ewheeler.net>:
+
+> On Fri, 2 Jun 2017, feng D wrote:
+> 
+> > hi:
+> > 
+> > Some time, the online machine will appear disk gone situation,
+> > although this is not very common, but we have too many machines, so
+> > still will encounter it.
+> > 
+> > That in the case of disk gone, /sys/block/bcache0/bcache/stop is
+> > not found, this case how to delete the bcache0?  
+> 
+> An interesting question.  Is it still available from the cache device
+> in /sys/fs/bcache/* somewhere?  I'm guessing not, but check.
+> 
+> Do you have a procedure to reproduce this problem
+> where /sys/block/bcache0 has been hotplugged into oblivion?
+
+You easily run into the same situation when you stop the device instead
+of detaching it. Bcache then doesn't release its cache device and
+cannot be stopped/unregistered, because every interface for shutting
+bcache down has vanished: It can only be reached through the backing
+devices but the bcache interface below those is gone.
+
+I think bcache needs a way to force unregister the cache device...
+Otherwise the cache device stays busy and cannot be registered, neither
+can any devices be attached again in this state.
+
+-- 
+Regards,
+Kai
+
+Replies to list-only preferred.
