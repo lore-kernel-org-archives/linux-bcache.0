@@ -1,58 +1,103 @@
-From: Kai Krakow <hurikhan77@gmail.com>
-Subject: Re: disk gone
-Date: Sat, 10 Jun 2017 12:17:22 +0200
-Message-ID: <20170610121722.124dbfc0@jupiter.sol.kaishome.de>
-References: <C081436D-3227-4388-A1DF-9764FB693924@gmail.com>
-        <alpine.LRH.2.11.1706090144550.19359@mail.ewheeler.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] [PATCH v2] bcache: fix issue of writeback rate at minimum 1 key per second
+Date: Mon, 12 Jun 2017 14:21:36 +0800
+Message-ID: <1497248496-11076-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [195.159.176.226] ([195.159.176.226]:49584 "EHLO
-        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-        with ESMTP id S1751890AbdFJKRd (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 10 Jun 2017 06:17:33 -0400
-Received: from list by blaine.gmane.org with local (Exim 4.84_2)
-        (envelope-from <glbd-linux-bcache@m.gmane.org>)
-        id 1dJdSP-0001qU-Dp
-        for linux-bcache@vger.kernel.org; Sat, 10 Jun 2017 12:17:25 +0200
+Received: from mxhk.zte.com.cn ([63.217.80.70]:58219 "EHLO mxhk.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1752049AbdFLGXf (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 12 Jun 2017 02:23:35 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
+Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
 
-Am Fri, 9 Jun 2017 01:46:24 +0000 (UTC)
-schrieb Eric Wheeler <bcache@lists.ewheeler.net>:
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-> On Fri, 2 Jun 2017, feng D wrote:
-> 
-> > hi:
-> > 
-> > Some time, the online machine will appear disk gone situation,
-> > although this is not very common, but we have too many machines, so
-> > still will encounter it.
-> > 
-> > That in the case of disk gone, /sys/block/bcache0/bcache/stop is
-> > not found, this case how to delete the bcache0?  
-> 
-> An interesting question.  Is it still available from the cache device
-> in /sys/fs/bcache/* somewhere?  I'm guessing not, but check.
-> 
-> Do you have a procedure to reproduce this problem
-> where /sys/block/bcache0 has been hotplugged into oblivion?
+When there is not enough dirty data in writeback cache,
+writeback rate is at minimum 1 key per second
+util all dirty data to be cleaned, it is inefficiency,
+and also causes waste of energy;
 
-You easily run into the same situation when you stop the device instead
-of detaching it. Bcache then doesn't release its cache device and
-cannot be stopped/unregistered, because every interface for shutting
-bcache down has vanished: It can only be reached through the backing
-devices but the bcache interface below those is gone.
+in this patch, When there is not enough dirty data,
+let the writeback rate to be 0, and writeback re-schedule
+in bch_writeback_thread() periodically with schedule_timeout(),
+the behaviors are as follows :
 
-I think bcache needs a way to force unregister the cache device...
-Otherwise the cache device stays busy and cannot be registered, neither
-can any devices be attached again in this state.
+1) If no dirty data have been read into dc->writeback_keys,
+goto step 2), otherwise keep writing these dirty data to
+back-end device at 1 key per second, until all these dirty data
+write over, then goto step 2).
 
+2) Loop in bch_writeback_thread() to check if there is enough
+dirty data for writeback. if there is not enough diry data for
+writing, then sleep 10 seconds, otherwise, write dirty data to
+back-end device.
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/util.c      | 9 ++++++++-
+ drivers/md/bcache/writeback.c | 7 +++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+index dde6172..d398f09 100644
+--- a/drivers/md/bcache/util.c
++++ b/drivers/md/bcache/util.c
+@@ -209,7 +209,14 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
+ {
+ 	uint64_t now = local_clock();
+ 
+-	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
++	/* 
++	  if d->rate is zero, write the left dirty data
++	  at the speed of one key per second 
++	*/
++	if(!d->rate)
++		d->next = now + NSEC_PER_SEC;
++	else
++		d->next += div_u64(done * NSEC_PER_SEC, d->rate);
+ 
+ 	if (time_before64(now + NSEC_PER_SEC, d->next))
+ 		d->next = now + NSEC_PER_SEC;
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 69e1ae5..29572f7 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -15,6 +15,8 @@
+ #include <linux/kthread.h>
+ #include <trace/events/bcache.h>
+ 
++#define WRITE_BACK_WAIT_CYCLE		10 * HZ
++
+ /* Rate limiting */
+ 
+ static void __update_writeback_rate(struct cached_dev *dc)
+@@ -60,7 +62,7 @@ static void __update_writeback_rate(struct cached_dev *dc)
+ 
+ 	dc->writeback_rate.rate =
+ 		clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + change,
+-			1, NSEC_PER_MSEC);
++			0, NSEC_PER_MSEC);
+ 
+ 	dc->writeback_rate_proportional = proportional;
+ 	dc->writeback_rate_derivative = derivative;
+@@ -419,6 +421,7 @@ static int bch_writeback_thread(void *arg)
+ 	while (!kthread_should_stop()) {
+ 		down_write(&dc->writeback_lock);
+ 		if (!atomic_read(&dc->has_dirty) ||
++		    !dc->writeback_rate.rate ||
+ 		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+ 		     !dc->writeback_running)) {
+ 			up_write(&dc->writeback_lock);
+@@ -427,7 +430,7 @@ static int bch_writeback_thread(void *arg)
+ 			if (kthread_should_stop())
+ 				return 0;
+ 
+-			schedule();
++			schedule_timeout(WRITE_BACK_WAIT_CYCLE);
+ 			continue;
+ 		}
+ 
 -- 
-Regards,
-Kai
-
-Replies to list-only preferred.
+2.8.1.windows.1
