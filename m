@@ -1,42 +1,61 @@
-From: Tony Asleson <tasleson@redhat.com>
-Subject: Having option for make-bcache to wait until udev is done
-Date: Mon, 12 Jun 2017 16:31:46 -0500
-Message-ID: <0fe6a6f0-40f6-0bd1-b957-80f8e24141fd@redhat.com>
-Reply-To: tasleson@redhat.com
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH] bcache: Correct return value for sysfs attach errors
+Date: Tue, 13 Jun 2017 13:47:07 +0800
+Message-ID: <7141227c-6fbe-2815-aa15-ec0a7c5f47e4@coly.li>
+References: <1497302306-17398-1-git-send-email-tasleson@redhat.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx1.redhat.com ([209.132.183.28]:37290 "EHLO mx1.redhat.com"
+Received: from server.coly.li ([162.144.45.48]:60336 "EHLO server.coly.li"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752756AbdFLVcH (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 12 Jun 2017 17:32:07 -0400
-Received: from smtp.corp.redhat.com (int-mx05.intmail.prod.int.phx2.redhat.com [10.5.11.15])
-        (using TLSv1.2 with cipher AECDH-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mx1.redhat.com (Postfix) with ESMTPS id 2470F285CF
-        for <linux-bcache@vger.kernel.org>; Mon, 12 Jun 2017 21:31:47 +0000 (UTC)
-Received: from tasleson.remote.csb (ovpn-116-136.phx2.redhat.com [10.3.116.136])
-        by smtp.corp.redhat.com (Postfix) with ESMTP id ECA6F52FD6
-        for <linux-bcache@vger.kernel.org>; Mon, 12 Jun 2017 21:31:46 +0000 (UTC)
+        id S1751955AbdFMFrP (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 13 Jun 2017 01:47:15 -0400
+In-Reply-To: <1497302306-17398-1-git-send-email-tasleson@redhat.com>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Tony Asleson <tasleson@redhat.com>, linux-bcache@vger.kernel.org
 
-When you run `make-bcache -B <backing-dev> -C <cache-dev>` the utility
-writes the super block(s) of all the devices specified and exits.  Then
-udev in conjunction with the bcache udev rules file will do the register
-etc. as needed to bring the device up.  Thus if someone scripts bcache
-creation there is a race condition between when make-bcache runs and
-when the user that issued the command can use the newly created device.
+On 2017/6/13 上午5:18, Tony Asleson wrote:
+> If you encounter any errors in bch_cached_dev_attach it will return a negative
+> error code.  The variable 'v' which stores the result is unsigned, thus user
+> space sees a very large value returned for bytes written which can cause
+> incorrect user space behavior.  Utilize 1 signed variable to use throughout
+> the function to preserve error return capability.
+> 
+> Signed-off-by: Tony Asleson <tasleson@redhat.com>
 
-I think it might be better to have an option to wait until done with the
-tool or make the default behavior to wait until everything is actually
-done?  Otherwise, people need to either do explicit udev settles,
-sleeps, sysfs polling, etc. to ensure operation is fully completed.
+Acked-by: Coly Li <colyli@suse.de>
 
-Thoughts, suggestions?
+Nice catch, thanks.
 
-Thanks!
--Tony
+Coly
+
+> ---
+>  drivers/md/bcache/sysfs.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+> index f90f136..ab2f8ce 100644
+> --- a/drivers/md/bcache/sysfs.c
+> +++ b/drivers/md/bcache/sysfs.c
+> @@ -192,7 +192,7 @@
+>  {
+>  	struct cached_dev *dc = container_of(kobj, struct cached_dev,
+>  					     disk.kobj);
+> -	unsigned v = size;
+> +	ssize_t v = size;
+>  	struct cache_set *c;
+>  	struct kobj_uevent_env *env;
+>  
+> @@ -227,7 +227,7 @@
+>  		bch_cached_dev_run(dc);
+>  
+>  	if (attr == &sysfs_cache_mode) {
+> -		ssize_t v = bch_read_string_list(buf, bch_cache_modes + 1);
+> +		v = bch_read_string_list(buf, bch_cache_modes + 1);
+>  
+>  		if (v < 0)
+>  			return v;
+> 
