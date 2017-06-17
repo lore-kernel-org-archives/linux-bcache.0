@@ -1,211 +1,54 @@
-From: bcache@lists.ewheeler.net
-Subject: Re: Re: [PATCH] bcache: fix issue of writeback rate at minimum 1
- blockper second
-Date: Sat, 17 Jun 2017 00:23:18 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1706162158120.17052@mail.ewheeler.net>
-References: 1496914493-8460-1-git-send-email-tang.junhui@zte.com.cn,96f83b23-bc36-55a6-2a04-236594a0abd2@coly.li,alpine.LRH.2.11.1706090140250.19359@mail.ewheeler.net <201706091026072913490@zte.com.cn>
+From: <rhsinfo@genesishcc.com>
+Subject: (unknown)
+Date: Sat, 17 Jun 2017 22:46:27 -0000
+Message-ID: <149773958699.23066.13017606803476303376@vnpt.vn>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-2105245779-1497659002=:17052"
+Content-Type: application/zip; name="05702933099528.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:52352 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751845AbdFQAXY (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 16 Jun 2017 20:23:24 -0400
-In-Reply-To: <201706091026072913490@zte.com.cn>
+Received: from static.vnpt.vn ([14.187.134.103]:55831 "HELO vnpt.vn"
+        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+        id S1752188AbdFQWqc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 17 Jun 2017 18:46:32 -0400
+Content-Disposition: attachment
+Subject: 
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: i@coly.li, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---1641074820-2105245779-1497659002=:17052
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Fri, 9 Jun 2017, tang.junhui@zte.com.cn wrote:
-> Hello Eric,
-> 
-> 
-> ＞ It would be nice if ZERO_RATE_DELAY_NS was configurable via sysfs, as some 
-> ＞ might want a longer delay than 30s.
-> 
-> How about we reuse the dc-＞writeback_delay configuration for the delay time?
-
-That seems reasonable.
-
-For small writeback caches where the cache could be exhausted while in 
-schedule_timeout(), will IOs stall until schedule_timeout() allows 
-writeback_thread to proceed?
-
-
-> ＞ Also, if zero-rate has been hit, why not have a full-writeback of 
-> whatever ＞ remains so we only use the ZERO_RATE_DELAY_NS when 
-> dirty_data==0?  No ＞ sense in leaving it slightly dirty if there is 
-> only a block or two still ＞ remaining.
-> 
-> I think it's risky, write IO maybe in continue, we should to accumulate 
-> more dirty data
-
-ok, agreed---also I note that writeback is still 10% dirty by default, so 
-it could be a large amount of data.  The cache is always seeking to hit 
-dirty_ratio and this is what the 1-sector writeback fix is targetd for.
-
-> 
-> to make writeback sequentially, otherwise, the full-writeback would be 
-> inefficient when there
-> 
-> is only a little dirty, as it is small and random IOs, and the write IO 
-> are in continue.
-> 
-> 
-> So, Eric, would you agree to just modify this patch to reuse 
-> dc-＞writeback_delay as
-> 
-> the delay time?
-
-Yes that seems OK, unless someone else says otherwise.
-
-> 
-> Acctually, we do many optimizations for writeback in our product, such 
-> as the issue that the dirty device never get clean (we start 
-> full-writeback when we find there is no more write IOs in comming), 
-> these modifications make bcache works better.
-
-I would be interested in seeing other optimization patches if you have 
-any.  Thank you for your work on this!
-
--Eric
-
-> 
-> 
-> Regards,
-> 
-> Tang Junhui
-> 
-> 
-> 
-> 
-> 原始邮件
-> 发件人： ＜bcache@lists.ewheeler.net＞;
-> 收件人： ＜i@coly.li＞;
-> 抄送人：唐军辉10074136; ＜kent.overstreet@gmail.com＞; ＜linux-bcache@vger.kernel.org＞;
-> 日 期 ：2017年06月09日 09:43
-> 主 题 ：Re: [PATCH] bcache: fix issue of writeback rate at minimum 1 blockper second
-> 
-> 
-> On Fri, 9 Jun 2017, Coly Li wrote:
-> 
-> ＞ On 2017/6/8 下午5:34, tang.junhui@zte.com.cn wrote:
-> ＞ ＞ From: Tang Junhui ＜tang.junhui@zte.com.cn＞
-> ＞ ＞ 
-> ＞ ＞ When there is not enough data in writeback cache, let the writeback rate
-> ＞ ＞ to be 0, and delay 30 seconds in read_dirty().
-> ＞ ＞ 
-> ＞ 
-> ＞ I feel uncomfortable to the above idea. Is the purpose of this change is
-> ＞ to make writeback more efficient with more dirty data ? Or some other
-> ＞ reason that you want to make this change?
-> ＞ 
-> ＞ When data writing back to the backing device, most of the writes are
-> ＞ random. If the backing device is a hard disk, the write back rate will
-> ＞ be very slow. Such a longer delay only makes more data accumulated in
-> ＞ writeback cache, does not help the writeback rate indeed.
-> ＞ 
-> ＞ Do you observe performance improvement by this patch ? If yes, I'd like
-> ＞ to see the performance number.
-> 
-> Its not a performance issue, it is a power saving issue.  Laptop users 
-> have reported that zero-rate writeback writes 512-bytes every second and 
-> never lets the HDD spin down and several users on the list have asked for 
-> such a bugfix.
-> 
-> It would be nice if ZERO_RATE_DELAY_NS was configurable via sysfs, as some 
-> might want a longer delay than 30s.
-> 
-> Also, if zero-rate has been hit, why not have a full-writeback of whatever 
-> remains so we only use the ZERO_RATE_DELAY_NS when dirty_data==0?  No 
-> sense in leaving it slightly dirty if there is only a block or two still 
-> remaining.
-> 
-> 
-> --
-> Eric Wheeler
-> 
-> 
-> 
-> ＞ 
-> ＞ Thanks.
-> ＞ 
-> ＞ Coly
-> ＞ 
-> ＞ 
-> ＞ ＞ Signed-off-by: Tang Junhui ＜tang.junhui@zte.com.cn＞
-> ＞ ＞ ---
-> ＞ ＞  drivers/md/bcache/util.c      | 17 ++++++++++++-----
-> ＞ ＞  drivers/md/bcache/writeback.c |  2 +-
-> ＞ ＞  2 files changed, 13 insertions(+), 6 deletions(-)
-> ＞ ＞ 
-> ＞ ＞ diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-> ＞ ＞ index dde6172..cf750df 100644
-> ＞ ＞ --- a/drivers/md/bcache/util.c
-> ＞ ＞ +++ b/drivers/md/bcache/util.c
-> ＞ ＞ @@ -15,6 +15,8 @@
-> ＞ ＞  
-> ＞ ＞  #include "util.h"
-> ＞ ＞  
-> ＞ ＞ +#define ZERO_RATE_DELAY_NS    30*NSEC_PER_SEC
-> ＞ ＞ +
-> ＞ ＞  #define simple_strtoint(c, end, base)    simple_strtol(c, end, base)
-> ＞ ＞  #define simple_strtouint(c, end, base)    simple_strtoul(c, end, base)
-> ＞ ＞  
-> ＞ ＞ @@ -209,13 +211,18 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
-> ＞ ＞  {
-> ＞ ＞      uint64_t now = local_clock();
-> ＞ ＞  
-> ＞ ＞ -    d-＞next += div_u64(done * NSEC_PER_SEC, d-＞rate);
-> ＞ ＞ +    if (!d-＞rate) {
-> ＞ ＞ +        d-＞next = now + ZERO_RATE_DELAY_NS;
-> ＞ ＞ +    }
-> ＞ ＞ +    else {
-> ＞ ＞ +        d-＞next += div_u64(done * NSEC_PER_SEC, d-＞rate);
-> ＞ ＞  
-> ＞ ＞ -    if (time_before64(now + NSEC_PER_SEC, d-＞next))
-> ＞ ＞ -        d-＞next = now + NSEC_PER_SEC;
-> ＞ ＞ +        if (time_before64(now + NSEC_PER_SEC, d-＞next))
-> ＞ ＞ +            d-＞next = now + NSEC_PER_SEC;
-> ＞ ＞  
-> ＞ ＞ -    if (time_after64(now - NSEC_PER_SEC * 2, d-＞next))
-> ＞ ＞ -        d-＞next = now - NSEC_PER_SEC * 2;
-> ＞ ＞ +        if (time_after64(now - NSEC_PER_SEC * 2, d-＞next))
-> ＞ ＞ +            d-＞next = now - NSEC_PER_SEC * 2;
-> ＞ ＞ +    }
-> ＞ ＞  
-> ＞ ＞      return time_after64(d-＞next, now)
-> ＞ ＞          ? div_u64(d-＞next - now, NSEC_PER_SEC / HZ)
-> ＞ ＞ diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> ＞ ＞ index 69e1ae5..8fac280 100644
-> ＞ ＞ --- a/drivers/md/bcache/writeback.c
-> ＞ ＞ +++ b/drivers/md/bcache/writeback.c
-> ＞ ＞ @@ -60,7 +60,7 @@ static void __update_writeback_rate(struct cached_dev *dc)
-> ＞ ＞  
-> ＞ ＞      dc-＞writeback_rate.rate =
-> ＞ ＞          clamp_t(int64_t, (int64_t) dc-＞writeback_rate.rate + change,
-> ＞ ＞ -            1, NSEC_PER_MSEC);
-> ＞ ＞ +            0, NSEC_PER_MSEC);
-> ＞ ＞  
-> ＞ ＞      dc-＞writeback_rate_proportional = proportional;
-> ＞ ＞      dc-＞writeback_rate_derivative = derivative;
-> ＞ ＞ 
-> ＞ --
-> ＞ To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> ＞ the body of a message to majordomo@vger.kernel.org
-> ＞ More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> ＞ 
-> 
-> 
-> 
-> 
-> 
---1641074820-2105245779-1497659002=:17052--
+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
+AQABAFsAAABoBwAAAAA=
