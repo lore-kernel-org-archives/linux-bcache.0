@@ -1,54 +1,111 @@
-From: <rhsinfo@genesishcc.com>
-Subject: (unknown)
-Date: Sat, 17 Jun 2017 22:46:27 -0000
-Message-ID: <149773958699.23066.13017606803476303376@vnpt.vn>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: =?ISO-8859-15?Q?Re=3A_Re=3A_Bug=3A_bcache=A0get_stucked?=
+Date: Tue, 20 Jun 2017 21:29:54 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1706202127460.17052@mail.ewheeler.net>
+References: 201706150944349331667@zte.com.cn,alpine.LRH.2.11.1706151925060.14877@mail.ewheeler.net <201706161033522392579@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: application/zip; name="05702933099528.zip"
-Content-Transfer-Encoding: base64
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-797641274-1497994194=:17052"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from static.vnpt.vn ([14.187.134.103]:55831 "HELO vnpt.vn"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1752188AbdFQWqc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 17 Jun 2017 18:46:32 -0400
-Content-Disposition: attachment
-Subject: 
+Received: from mx.ewheeler.net ([66.155.3.69]:43854 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1752310AbdFTV34 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 20 Jun 2017 17:29:56 -0400
+In-Reply-To: <201706161033522392579@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: tang.junhui@zte.com.cn
+Cc: i@coly.li, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
 
-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
-AQABAFsAAABoBwAAAAA=
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--1641074820-797641274-1497994194=:17052
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 16 Jun 2017, tang.junhui@zte.com.cn wrote:
+
+> 
+> Hello Eric
+> 
+> 
+> > 3.10 is pretty old...  I'm not sure what to suggest.  Is there a 
+> > writeback-gc race?
+> 
+> This issue also exists in new version(such as 4.10 branch),
+> 
+> When we test in the high branch, this problem is more easily to appear,
+> 
+> so I am sure this bug still exists in bcache current code.
+
+Hi Tang,
+
+Try the patch below and see if that solves the problem.
+
+Also, see this thread:
+
+https://www.spinics.net/lists/linux-bcache/msg04620.html
+
+--
+Eric Wheeler
+
+
+
+-------- Forwarded Message --------
+Subject: 	[PATCH] md/bcache: Fix a deadlock while calculating writeback rate
+Date: 	Sun, 7 May 2017 17:52:22 +0200
+From: 	Phillipp Röll <phillipp.roell@trafficplex.de>
+To: 	bcache@lists.ewheeler.net
+CC: 	Phillipp Röll <phillipp.roell@trafficplex.de>
+
+
+A bcache foreground write holds a read lock on the writeback_lock
+rwsem. In order to complete and release the lock after the actual
+write, it needs to update the index, which runs out of a workqueue.
+
+If the bch_writeback_thread is starting to write back dirty data while
+the foreground write still holds the lock, it tries to get a write
+lock on the writeback lock, thus blocking until the foreground write
+completes.
+
+If at this moment a workqueue worker starts an update of the write-
+back rate, while foreground write completions are queued behind it,
+the update thread will try to get a read lock, which blocks, because
+the writeback thread is trying to get a write lock. This blocks the
+foreground writes behind it and locks up all writeback and foreground
+writes.
+
+Removing the read lock from the writeback rate update thread is the
+simplest solution: the worst thing that will happen when the scan
+for dirty data is inconsistent is a wrong P-factor in the PID controller.
+
+Signed-off-by: Phillipp Röll <phillipp.roell@trafficplex.de>
+---
+ drivers/md/bcache/writeback.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 6ac2e48..90da3bd 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -75,14 +75,10 @@ static void update_writeback_rate(struct work_struct *work)
+ 					     struct cached_dev,
+ 					     writeback_rate_update);
+ 
+-	down_read(&dc->writeback_lock);
+-
+ 	if (atomic_read(&dc->has_dirty) &&
+ 	    dc->writeback_percent)
+ 		__update_writeback_rate(dc);
+ 
+-	up_read(&dc->writeback_lock);
+-
+ 	schedule_delayed_work(&dc->writeback_rate_update,
+ 			      dc->writeback_rate_update_seconds * HZ);
+ }
+-- 
+2.10.0
+
+
+
+--1641074820-797641274-1497994194=:17052--
