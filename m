@@ -1,80 +1,105 @@
-From: <kholloway@isd622.org>
-Subject: (unknown)
-Date: Wed, 21 Jun 2017 04:40:25 -0000
-Message-ID: <149802002507.29695.8475497068656608903@surnet.ru>
-Mime-Version: 1.0
-Content-Type: application/zip; name="5342408615.zip"
-Content-Transfer-Encoding: base64
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] [PATCH v3] bcache: fix issue of writeback rate at minimum 1 key per second
+Date: Wed, 21 Jun 2017 13:52:48 +0800
+Message-ID: <1498024368-7224-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from ip-90-151-227-133.dsl.surnet.ru ([90.151.227.133]:37269 "HELO
-        surnet.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1750707AbdFUEka (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 21 Jun 2017 00:40:30 -0400
-Subject: 
-Content-Disposition: attachment
+Received: from mxhk.zte.com.cn ([63.217.80.70]:57855 "EHLO mxhk.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750876AbdFUFyl (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 21 Jun 2017 01:54:41 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
+Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
 
-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
-AAAEAAAAAFBLBQYAAAAAAQABAE8AAABNDQAAAAA=
+From: Tang Junhui <tang.junhui@zte.com.cn>
+
+When there is not enough dirty data in writeback cache,
+writeback rate is at minimum 1 key per second
+util all dirty data to be cleaned, it is inefficiency,
+and also causes waste of energy;
+
+in this patch, When there is not enough dirty data,
+let the writeback rate to be 0, and writeback re-schedule
+in bch_writeback_thread() periodically with schedule_timeout(),
+the behaviors are as follows :
+
+1) If no dirty data have been read into dc->writeback_keys,
+goto step 2), otherwise keep writing these dirty data to
+back-end device at 1 key per second, until all these dirty data
+write over, then goto step 2).
+
+2) Loop in bch_writeback_thread() to check if there is enough
+dirty data for writeback. if there is not enough diry data for
+writing, then sleep 10 seconds, otherwise, write dirty data to
+back-end device.
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/util.c      |  9 ++++++++-
+ drivers/md/bcache/writeback.c | 10 ++++++----
+ 2 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+index dde6172..d398f09 100644
+--- a/drivers/md/bcache/util.c
++++ b/drivers/md/bcache/util.c
+@@ -209,7 +209,14 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
+ {
+ 	uint64_t now = local_clock();
+ 
+-	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
++	/* 
++	  if d->rate is zero, write the left dirty data
++	  at the speed of one key per second 
++	*/
++	if(!d->rate)
++		d->next = now + NSEC_PER_SEC;
++	else
++		d->next += div_u64(done * NSEC_PER_SEC, d->rate);
+ 
+ 	if (time_before64(now + NSEC_PER_SEC, d->next))
+ 		d->next = now + NSEC_PER_SEC;
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 69e1ae5..2966eab 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -15,6 +15,8 @@
+ #include <linux/kthread.h>
+ #include <trace/events/bcache.h>
+ 
++#define WRITE_BACK_WAIT_CYCLE		10 * HZ
++
+ /* Rate limiting */
+ 
+ static void __update_writeback_rate(struct cached_dev *dc)
+@@ -60,7 +62,7 @@ static void __update_writeback_rate(struct cached_dev *dc)
+ 
+ 	dc->writeback_rate.rate =
+ 		clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + change,
+-			1, NSEC_PER_MSEC);
++			0, NSEC_PER_MSEC);
+ 
+ 	dc->writeback_rate_proportional = proportional;
+ 	dc->writeback_rate_derivative = derivative;
+@@ -419,15 +421,15 @@ static int bch_writeback_thread(void *arg)
+ 	while (!kthread_should_stop()) {
+ 		down_write(&dc->writeback_lock);
+ 		if (!atomic_read(&dc->has_dirty) ||
+-		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+-		     !dc->writeback_running)) {
++		    ((!dc->writeback_rate.rate || !dc->writeback_running) &&
++		      !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))) {
+ 			up_write(&dc->writeback_lock);
+ 			set_current_state(TASK_INTERRUPTIBLE);
+ 
+ 			if (kthread_should_stop())
+ 				return 0;
+ 
+-			schedule();
++			schedule_timeout(WRITE_BACK_WAIT_CYCLE);
+ 			continue;
+ 		}
+ 
+-- 
+2.8.1.windows.1
