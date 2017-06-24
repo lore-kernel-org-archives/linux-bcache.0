@@ -1,116 +1,80 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH] bcache: fix for gc and write-back race
-Date: Sat, 24 Jun 2017 17:51:17 +0800
-Message-ID: <1498297877-8424-1-git-send-email-tang.junhui@zte.com.cn>
+From: <richard@oxbridgeprograms.com>
+Subject: (unknown)
+Date: Sat, 24 Jun 2017 19:38:42 -0000
+Message-ID: <149833312220.4332.14292786184797994988@tfn.net.tw>
+Mime-Version: 1.0
+Content-Type: application/zip; name="EMAIL_870500103142_linux-bcache.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out1.zte.com.cn ([202.103.147.172]:42046 "EHLO out1.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751272AbdFXJwk (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 24 Jun 2017 05:52:40 -0400
+Received: from 175-98-126-151.static.tfn.net.tw ([175.98.126.151]:16951 "HELO
+        tfn.net.tw" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+        id S1754937AbdFXTiu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 24 Jun 2017 15:38:50 -0400
+Subject: 
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
-Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
+To: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
-
-gc and write-back get raced (see the email "bcache get stucked" I sended
-before):
-gc thread						write-back thread
-|							|bch_writeback_thread()
-|bch_gc_thread()					|
-|							|==>read_dirty()
-|==>bch_btree_gc()					|
-|==>btree_root() //get btree root			|
-|			node write locker		|
-|==>bch_btree_gc_root()					|
-|							|==>read_dirty_submit()
-|							|==>write_dirty()
-|							|==>continue_at(cl, write_dirty_finish, system_wq);
-|							|==>write_dirty_finish()//excute in system_wq
-|							|==>bch_btree_insert()
-|							|==>bch_btree_map_leaf_nodes()
-|							|==>__bch_btree_map_nodes()
-|							|==>btree_root //try to get btree root node read lock
-|							|-----stuck here
-|==>bch_btree_set_root()				|
-|==>bch_journal_meta()					|
-|==>bch_journal()					|
-|==>journal_try_write()					|
-|==>journal_write_unlocked() //journal_full(&c->journal) condition satisfied
-|==>continue_at(cl, journal_write, system_wq); //try to excute journal_write in system_wq
-|					//but work queue is excuting write_dirty_finish()
-|==>closure_sync(); //wait journal_write execute over and wake up gc,
-|			--stuck here
-|==>release root node write locker
-
-This patch alloc a separate work-queue for write-back thread to avoid such
-race.
-
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/bcache.h    | 1 +
- drivers/md/bcache/super.c     | 2 ++
- drivers/md/bcache/writeback.c | 8 ++++++--
- 3 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index c3ea03c..02619ca 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -333,6 +333,7 @@ struct cached_dev {
- 	/* Limit number of writeback bios in flight */
- 	struct semaphore	in_flight;
- 	struct task_struct	*writeback_thread;
-+	struct workqueue_struct	*writeback_write_wq;
- 
- 	struct keybuf		writeback_keys;
- 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 3a19cbc..98470c6 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1061,6 +1061,8 @@ static void cached_dev_free(struct closure *cl)
- 	cancel_delayed_work_sync(&dc->writeback_rate_update);
- 	if (!IS_ERR_OR_NULL(dc->writeback_thread))
- 		kthread_stop(dc->writeback_thread);
-+	if (dc->writeback_write_wq)
-+		destroy_workqueue(dc->writeback_write_wq);
- 
- 	mutex_lock(&bch_register_lock);
- 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 69e1ae5..5e4e7a8 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -185,7 +185,7 @@ static void write_dirty(struct closure *cl)
- 
- 	closure_bio_submit(&io->bio, cl);
- 
--	continue_at(cl, write_dirty_finish, system_wq);
-+	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
- }
- 
- static void read_dirty_endio(struct bio *bio)
-@@ -205,7 +205,7 @@ static void read_dirty_submit(struct closure *cl)
- 
- 	closure_bio_submit(&io->bio, cl);
- 
--	continue_at(cl, write_dirty, system_wq);
-+	continue_at(cl, write_dirty, io->dc->writeback_write_wq);
- }
- 
- static void read_dirty(struct cached_dev *dc)
-@@ -515,6 +515,10 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 
- int bch_cached_dev_writeback_start(struct cached_dev *dc)
- {
-+	dc->writeback_write_wq = alloc_workqueue("bcache_writeback_wq", WQ_MEM_RECLAIM, 0);
-+	if (!dc->writeback_write_wq)
-+		return -ENOMEM;
-+
- 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
- 					      "bcache_writeback");
- 	if (IS_ERR(dc->writeback_thread))
--- 
-2.8.1.windows.1
+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
