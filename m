@@ -1,81 +1,123 @@
-From: <richard@oxbridgeprograms.com>
-Subject: (unknown)
-Date: Fri, 23 Jun 2017 17:22:51 -0000
-Message-ID: <149823857176.4332.15940595852373657671@goodline.info>
-Mime-Version: 1.0
-Content-Type: application/zip; name="EMAIL_662871_linux-bcache.zip"
-Content-Transfer-Encoding: base64
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] bcache: increase the number of open buckets
+Date: Sat, 24 Jun 2017 14:35:34 +0800
+Message-ID: <1498286134-8252-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 176-197-221-46.goodline.info ([176.197.221.46]:52456 "HELO
-        goodline.info" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-        with SMTP id S1754141AbdFWRXA (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 23 Jun 2017 13:23:00 -0400
-Subject: 
-Content-Disposition: attachment
+Received: from out1.zte.com.cn ([202.103.147.172]:42839 "EHLO out1.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751258AbdFXGgt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 24 Jun 2017 02:36:49 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: kent.overstreet@gmail.com, i@coly.li, bcache@lists.ewheeler.net
+Cc: linux-bcache@vger.kernel.org, tang.junhui@zte.com.cn
 
-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
+From: Tang Junhui <tang.junhui@zte.com.cn>
+
+In currently, we only alloc 6 open buckets for each cache set,
+but in usually, we always attach about 10 or so backend devices for
+each cache set, and the each bcache device are always accessed by
+about 10 or so threads in top application layer. So 6 open buckets
+are too few, It has led to that each of the same thread write data
+to different buckets, which would cause low efficiency write-back,
+and also cause buckets inefficient, and would be Very easy to run
+out of.
+
+I add debug message in bch_open_buckets_alloc() to print alloc bucket
+info, and test with ten bcache devices with a cache set, and each
+bcache device is accessed by ten threads, before the modification,
+the result is (only take one thread for example):
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.627798]
+task:ffff880328b99700, get open bucket ffff880c4f12e660, sectors_free=224
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.638391]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=344
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.650905]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=328
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.656232]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=296
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.661658]
+task:ffff880328b99700, get open bucket ffff880c4f12e780, sectors_free=32
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.662294]
+task:ffff880328b99700, get open bucket ffff880c4f12e780, sectors_free=0
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.662830]
+task:ffff880328b99700, get open bucket ffff880c4f12e780, sectors_free=512
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.667510]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=248
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.671484]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=240
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.681018]
+task:ffff880328b99700, get open bucket ffff880c4f12e660, sectors_free=0
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.687103]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=160
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.694447]
+task:ffff880328b99700, get open bucket ffff880c4f12e7e0, sectors_free=224
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.698684]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=72
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.701150]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=56
+Jun 24 10:51:52 ceph192-9-9-153 kernel: [  525.703619]
+task:ffff880328b99700, get open bucket ffff880c4f12e6c0, sectors_free=40
+
+after the modification, the result is (only take one thread for example):
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.015541]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=504
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.026745]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=488
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.035999]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=472
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.064842]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=456
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.072830]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=448
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.078606]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=432
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.083057]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=416
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.086987]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=400
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.091003]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=384
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.093364]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=368
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.095656]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=352
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.097968]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=336
+Jun 24 11:08:38 ceph192-9-9-153 kernel: [  486.100257]
+task:ffff88032e221700, get open bucket ffff880bfe1fdde0, sectors_free=320
+
+From the debug message, we can see that, after the modification, One
+bucket is more likely to assign to the same thread, and the data from
+the same thread are more likely to write the same bucket. Usually the
+same thread always write/read the same backend device, so it is good
+for write-back and also promote the usage efficiency of buckets.
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/alloc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index ca4abe1..cacbe2d 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -68,6 +68,8 @@
+ #include <linux/random.h>
+ #include <trace/events/bcache.h>
+ 
++#define MAX_OPEN_BUCKETS 128
++
+ /* Bucket heap / gen */
+ 
+ uint8_t bch_inc_gen(struct cache *ca, struct bucket *b)
+@@ -671,7 +673,7 @@ int bch_open_buckets_alloc(struct cache_set *c)
+ 
+ 	spin_lock_init(&c->data_bucket_lock);
+ 
+-	for (i = 0; i < 6; i++) {
++	for (i = 0; i < MAX_OPEN_BUCKETS; i++) {
+ 		struct open_bucket *b = kzalloc(sizeof(*b), GFP_KERNEL);
+ 		if (!b)
+ 			return -ENOMEM;
+-- 
+2.8.1.windows.1
