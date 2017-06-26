@@ -1,135 +1,60 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH] [PATCH v4] bcache: fix issue of writeback rate at minimum
- 1 key per second
-Date: Mon, 26 Jun 2017 18:00:14 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1706261759100.17052@mail.ewheeler.net>
-References: <1498199015-5652-1-git-send-email-tang.junhui@zte.com.cn>
+From: Henk Slager <eye1tm@gmail.com>
+Subject: Re: Add Bcache to an existing Filesystem
+Date: Mon, 26 Jun 2017 20:05:35 +0200
+Message-ID: <CAPmG0jZyiA-3xbjoQFRP4X9Xkra6aOsbojK8HJqAALdycPkajQ@mail.gmail.com>
+References: <46fc48b2-55db-471f-8318-5e60555e228e@upx.com>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:35102 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751335AbdFZSAQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 26 Jun 2017 14:00:16 -0400
-In-Reply-To: <1498199015-5652-1-git-send-email-tang.junhui@zte.com.cn>
+Received: from mail-qk0-f174.google.com ([209.85.220.174]:34491 "EHLO
+        mail-qk0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751376AbdFZSFh (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 26 Jun 2017 14:05:37 -0400
+Received: by mail-qk0-f174.google.com with SMTP id d78so7608421qkb.1
+        for <linux-bcache@vger.kernel.org>; Mon, 26 Jun 2017 11:05:36 -0700 (PDT)
+In-Reply-To: <46fc48b2-55db-471f-8318-5e60555e228e@upx.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: kent.overstreet@gmail.com, i@coly.li, linux-bcache@vger.kernel.org
+To: FERNANDO FREDIANI <fernando.frediani@upx.com>
+Cc: linux-bcache@vger.kernel.org
 
-On Fri, 23 Jun 2017, tang.junhui@zte.com.cn wrote:
+On Mon, Jun 26, 2017 at 6:12 PM, FERNANDO FREDIANI
+<fernando.frediani@upx.com> wrote:
+> Hello folks.
+>
+> I have been using Bcache in a server in production with pretty good results
+> so far.
+>
+> Now I am looking to add it also to another server that is suffering from
+> disk I/O. However this server in question has a fairly large storage running
+> (circa 8TB of used data) and therefore stopping it for a long period becomes
+> difficult.
+>
+> Question is: Can I add an SSD and Bcache to this server and use it for the
+> existing 8TB filesystem ? If so when I run make-bcache -B /dev/sdx1 to
+> create the backing device will it not overwrite what is currently on
+> /dev/sdx1 ?
 
-> From: Tang Junhui <tang.junhui@zte.com.cn>
-> 
-> When there is not enough dirty data in writeback cache,
-> writeback rate is at minimum 1 key per second
-> util all dirty data to be cleaned, it is inefficiency,
-> and also causes waste of energy;
-> 
-> in this patch, When there is not enough dirty data,
-> let the writeback rate to be 0, and writeback re-schedule
-> in bch_writeback_thread() periodically with schedule_timeout(),
-> the behaviors are as follows :
-> 
-> 1) If no dirty data have been read into dc->writeback_keys,
-> goto step 2), otherwise keep writing these dirty data to
-> back-end device at 1 key per second, until all these dirty data
-> write over, then goto step 2).
-> 
-> 2) Loop in bch_writeback_thread() to check if there is enough
-> dirty data for writeback. if there is not enough diry data for
-> writing, then sleep 10 seconds, otherwise, write dirty data to
-> back-end device.
-> 
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> ---
->  drivers/md/bcache/util.c      |  9 ++++++++-
->  drivers/md/bcache/writeback.c | 11 +++++++----
->  2 files changed, 15 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-> index dde6172..d398f09 100644
-> --- a/drivers/md/bcache/util.c
-> +++ b/drivers/md/bcache/util.c
-> @@ -209,7 +209,14 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
->  {
->  	uint64_t now = local_clock();
->  
-> -	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
-> +	/* 
-> +	  if d->rate is zero, write the left dirty data
-> +	  at the speed of one key per second 
-> +	*/
-> +	if(!d->rate)
-> +		d->next = now + NSEC_PER_SEC;
-> +	else
-> +		d->next += div_u64(done * NSEC_PER_SEC, d->rate);
->  
->  	if (time_before64(now + NSEC_PER_SEC, d->next))
->  		d->next = now + NSEC_PER_SEC;
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 69e1ae5..7313643 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -15,6 +15,8 @@
->  #include <linux/kthread.h>
->  #include <trace/events/bcache.h>
->  
-> +#define WRITE_BACK_WAIT_CYCLE		10 * HZ
-> +
->  /* Rate limiting */
->  
->  static void __update_writeback_rate(struct cached_dev *dc)
-> @@ -54,13 +56,14 @@ static void __update_writeback_rate(struct cached_dev *dc)
->  
->  	/* Don't increase writeback rate if the device isn't keeping up */
->  	if (change > 0 &&
-> +	    dc->writeback_rate.rate >0 &&
->  	    time_after64(local_clock(),
->  			 dc->writeback_rate.next + NSEC_PER_MSEC))
->  		change = 0;
->  
->  	dc->writeback_rate.rate =
->  		clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + change,
-> -			1, NSEC_PER_MSEC);
-> +			0, NSEC_PER_MSEC);
->  
->  	dc->writeback_rate_proportional = proportional;
->  	dc->writeback_rate_derivative = derivative;
-> @@ -419,15 +422,15 @@ static int bch_writeback_thread(void *arg)
->  	while (!kthread_should_stop()) {
->  		down_write(&dc->writeback_lock);
->  		if (!atomic_read(&dc->has_dirty) ||
-> -		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-> -		     !dc->writeback_running)) {
-> +		    ((!dc->writeback_rate.rate || !dc->writeback_running) &&
-> +		      !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))) {
->  			up_write(&dc->writeback_lock);
->  			set_current_state(TASK_INTERRUPTIBLE);
->  
->  			if (kthread_should_stop())
->  				return 0;
->  
-> -			schedule();
-> +			schedule_timeout(WRITE_BACK_WAIT_CYCLE);
+Yes you can if you are prepared to do some re-partition tricks. Maybe
+there is a tool/script that can do that, AFAIK there is some python
+prog called blocks for this.
 
+Anyhow, what make-bcache -B /dev/sdx1 does is write an 8KiB sized
+header at the start of /dev/sdx1. So in case this is the only GPT
+based partition on the diskdevice that currently starts at
+512-byte-sized sector 2048, there is usually some free space between
+GPT table and 2048. So make sure you have all backupped, then unmount
+the fs and use gdisk to set the starting sector of /dev/sdx1 to 2032,
+by delete first and re-create (with alignment set to 16 sectors
+first).
 
-Wouldn't bch_writeback_thread need woken up on stop or reboot?  Otherwise 
-it will hang for a while waiting to exit.  Correct me if I'm wrong here...
+Then make sure the kernel uses the new partition table (partprobe or
+reboot) and run make-bcache -C <SSD> -B /dev/sdx1. You can now access
+the fs via /dev/bcache0
 
---
-Eric Wheeler
-
-
->  			continue;
->  		}
->  
-> -- 
-> 2.8.1.windows.1
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Some people might consider this way too risky, but I have successfully
+used it, also in reverse order for removal of bcache. You might have a
+slighty different disk setup than I assume, but I hope th eprinciple
+is clear. If you would script it, it takes about the time of an
+unmount+mount, so seconds instead of hours or even days.
