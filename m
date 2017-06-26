@@ -1,79 +1,42 @@
-From: <richard@oxbridgeprograms.com>
-Subject: (unknown)
-Date: Mon, 26 Jun 2017 15:03:46 -0000
-Message-ID: <149848942639.4332.2476473178547179324@myrepublic.com.sg>
+From: FERNANDO FREDIANI <fernando.frediani@upx.com>
+Subject: Add Bcache to an existing Filesystem
+Date: Mon, 26 Jun 2017 13:12:10 -0300
+Message-ID: <46fc48b2-55db-471f-8318-5e60555e228e@upx.com>
 Mime-Version: 1.0
-Content-Type: application/zip; name="EMAIL_233235146676708_linux-bcache.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 84-206-96-66.myrepublic.com.sg ([66.96.206.84]:44299 "HELO
-        myrepublic.com.sg" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-        with SMTP id S1750852AbdFZPDy (ORCPT
+Received: from mail-qt0-f179.google.com ([209.85.216.179]:33973 "EHLO
+        mail-qt0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751402AbdFZQMO (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 26 Jun 2017 11:03:54 -0400
-Subject: 
-Content-Disposition: attachment
+        Mon, 26 Jun 2017 12:12:14 -0400
+Received: by mail-qt0-f179.google.com with SMTP id 32so5099729qtv.1
+        for <linux-bcache@vger.kernel.org>; Mon, 26 Jun 2017 09:12:13 -0700 (PDT)
+Received: from ?IPv6:2804:2870:3:0:bfdc:c1f1:6101:b5c6? ([2804:2870:3:0:bfdc:c1f1:6101:b5c6])
+        by smtp.gmail.com with ESMTPSA id w28sm416115qth.8.2017.06.26.09.12.11
+        for <linux-bcache@vger.kernel.org>
+        (version=TLS1_2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128/128);
+        Mon, 26 Jun 2017 09:12:12 -0700 (PDT)
+Content-Language: pt-BR
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
-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
+Hello folks.
+
+I have been using Bcache in a server in production with pretty good 
+results so far.
+
+Now I am looking to add it also to another server that is suffering from 
+disk I/O. However this server in question has a fairly large storage 
+running (circa 8TB of used data) and therefore stopping it for a long 
+period becomes difficult.
+
+Question is: Can I add an SSD and Bcache to this server and use it for 
+the existing 8TB filesystem ? If so when I run make-bcache -B /dev/sdx1 
+to create the backing device will it not overwrite what is currently on 
+/dev/sdx1 ?
+
+Thanks
+Fernando
