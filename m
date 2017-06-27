@@ -1,94 +1,71 @@
-From: Eric Wheeler <lists@ewheeler.net>
-Subject: Re: [PATCH] [PATCH v2] bcache: gc does not work when triggering by
- manual command
-Date: Tue, 27 Jun 2017 23:53:25 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1706272348280.17052@mail.ewheeler.net>
-References: <1496992301-10448-1-git-send-email-tang.junhui@zte.com.cn> <71e16c03-8c5b-30f9-8d3b-3d3bb8ea389b@coly.li>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: Question about gc time
+Date: Tue, 27 Jun 2017 23:59:28 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1706272355510.17052@mail.ewheeler.net>
+References: <OF3C6614C4.E95909E3-ON4825814C.004157B0-4825814C.004253A0@zte.com.cn> <e9233b6e-a898-19ab-6502-ea735f85de6f@coly.li>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1615993100-1498607605=:17052"
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-467794155-1498607969=:17052"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:37648 "EHLO mail.ewheeler.net"
+Received: from mx.ewheeler.net ([66.155.3.69]:37676 "EHLO mail.ewheeler.net"
         rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1753978AbdF0X7H (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 27 Jun 2017 19:59:07 -0400
-In-Reply-To: <71e16c03-8c5b-30f9-8d3b-3d3bb8ea389b@coly.li>
+        id S1753978AbdF0X7a (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 27 Jun 2017 19:59:30 -0400
+In-Reply-To: <e9233b6e-a898-19ab-6502-ea735f85de6f@coly.li>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: Coly Li <i@coly.li>, kent.overstreet@gmail.com, bcache@lists.ewheeler.net, linux-bcache@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: tang.junhui@zte.com.cn, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
 
   This message is in MIME format.  The first part should be readable text,
   while the remaining parts are likely unreadable without MIME-aware tools.
 
---1641074820-1615993100-1498607605=:17052
+--1641074820-467794155-1498607969=:17052
 Content-Type: TEXT/PLAIN; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 
-On Wed, 21 Jun 2017, Coly Li wrote:
+On Wed, 28 Jun 2017, Coly Li wrote:
 
-> On 2017/6/9 下午3:11, tang.junhui@zte.com.cn wrote:
-> > From: Tang Junhui <tang.junhui@zte.com.cn>
+> On 2017/6/27 下午8:04, tang.junhui@zte.com.cn wrote:
+> > Hello Eric, Coly,
 > > 
-> > I try to execute the following command to trigger gc thread:
-> > [root@localhost internal]# echo 1 > trigger_gc
-> > But it does not work, I debug the code in gc_should_run(), It works only
-> > if in invalidating or sectors_to_gc < 0. So set sectors_to_gc to -1 to
-> > meet the condition when we trigger gc by manual command.
+> > I use a 1400G SSD device a bcache cache device,
+> > and attach with 10 back-end devices,
+> > and run random small write IOs,
+> > when gc works, It takes about 15 seconds,
+> > and the up layer application IOs was suspended at this time,
+> > How could we bear such a long time IO stopping?
+> > Is there any way we can avoid this problem?
 > > 
+> > I am very anxious about this question, any comment would be valuable.
 > 
-> Hi Junhui,
-> 
-> Thanks for the patch, it totally makes sense IMHO. In most of use cases
-> I know, people writing to trigger_gc file expecting a force garbage
-> collection.
-> 
-> But assign a minus value here is quite confused for people who read the
-> code. Could you please also add some comments in the code to explain why
-> you set c->sectors_to_gc to -1 here.
+> I encounter same situation too.
+> Hmm, I assume there are some locking issue here, to prevent application
+> to send request and insert keys in LSM tree, no matter in writeback or
+> writethrough mode. This is a lazy and fast response, I need to check the
+> code then provide an accurate reply :-)
 
-I agree with Coly here.  Please do a v3 with comments explaining why -1 is 
-acceptable.
+What controls the frequency?
+
+On our system I noticed this:
+
+]# tail /sys/block/bcache0/bcache/cache/internal/*gc*
+
+==> /sys/block/bcache0/bcache/cache/internal/btree_gc_average_duration_ms <==
+1455
+
+==> /sys/block/bcache0/bcache/cache/internal/btree_gc_average_frequency_sec <==
+3521
+
+==> /sys/block/bcache0/bcache/cache/internal/btree_gc_max_duration_ms <==
+7036
+
+
+So usually it takes 1.4s, as much as 7s on our systems.  Average frequency 
+is almost an hour.   Can GC just be triggered more frequently?  Say, once 
+every 5min?  Is that configurable?
+
+-Eric
  
-> And there might be a race that when you set c->sectors_to_gc to -1, and
-> call wake_up_gc(), but before code go into gc_should_run(),
-> c->sectors_to_gc is reset by set_gc_sectors(). I have no object if you
-> don't want to handle this situation, but I do suggest to explain it in
-> code why we can ignore such a race.
-
-Also for v3, please address Coly's race condition concern or refute its 
-existence.  Lets not introduce races if we know about them.  It should 
-fail gracefully, even if it must refuse to start a gc at that moment which 
-is much better than deadlocking (eg, -EINVAL the sysfs call, use a 
-spinlock, or something).
-
-
---
-Eric Wheeler
-
-
-> 
-> > Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> > ---
-> >  drivers/md/bcache/sysfs.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-> > index b3ff57d..f5bb93a 100644
-> > --- a/drivers/md/bcache/sysfs.c
-> > +++ b/drivers/md/bcache/sysfs.c
-> > @@ -614,8 +614,10 @@ STORE(__bch_cache_set)
-> >  		bch_cache_accounting_clear(&c->accounting);
-> >  	}
-> >  
-> > -	if (attr == &sysfs_trigger_gc)
-> > +	if (attr == &sysfs_trigger_gc) {
-> > +		atomic_set(&c->sectors_to_gc, -1);
-> >  		wake_up_gc(c);
-> > +	}
-> >  
-> >  	if (attr == &sysfs_prune_cache) {
-> >  		struct shrink_control sc;
-> > 
 > 
 > 
 > -- 
@@ -98,4 +75,4 @@ Eric Wheeler
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
---1641074820-1615993100-1498607605=:17052--
+--1641074820-467794155-1498607969=:17052--
