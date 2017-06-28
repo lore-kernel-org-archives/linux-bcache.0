@@ -1,78 +1,39 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: Question about gc time
-Date: Tue, 27 Jun 2017 23:59:28 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1706272355510.17052@mail.ewheeler.net>
-References: <OF3C6614C4.E95909E3-ON4825814C.004157B0-4825814C.004253A0@zte.com.cn> <e9233b6e-a898-19ab-6502-ea735f85de6f@coly.li>
+From: Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [PATCH 1/2] bcache: silence static checker warning
+Date: Wed, 28 Jun 2017 14:47:07 +0300
+Message-ID: <20170628114707.5oy4wmslmrethlzn@mwanda>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-467794155-1498607969=:17052"
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:37676 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1753978AbdF0X7a (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 27 Jun 2017 19:59:30 -0400
-In-Reply-To: <e9233b6e-a898-19ab-6502-ea735f85de6f@coly.li>
+Received: from aserp1040.oracle.com ([141.146.126.69]:39861 "EHLO
+        aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751513AbdF1Lri (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 28 Jun 2017 07:47:38 -0400
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <i@coly.li>
-Cc: tang.junhui@zte.com.cn, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>, Jens Axboe <axboe@fb.com>
+Cc: Shaohua Li <shli@kernel.org>, Eric Wheeler <git@linux.ewheeler.net>, Ming Lei <tom.leiming@gmail.com>, NeilBrown <neilb@suse.com>, Coly Li <colyli@suse.de>, Yijing Wang <wangyijing@huawei.com>, Jan Kara <jack@suse.cz>, Michal Hocko <mhocko@suse.com>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, kernel-janitors@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+In olden times, closure_return() used to have a hidden return built in.
+We removed the hidden return but forgot to add a new return here.  If
+"c" were NULL we would oops on the next line, but fortunately "c" is
+never NULL.  Let's just remove the if statement.
 
---1641074820-467794155-1498607969=:17052
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-On Wed, 28 Jun 2017, Coly Li wrote:
-
-> On 2017/6/27 下午8:04, tang.junhui@zte.com.cn wrote:
-> > Hello Eric, Coly,
-> > 
-> > I use a 1400G SSD device a bcache cache device,
-> > and attach with 10 back-end devices,
-> > and run random small write IOs,
-> > when gc works, It takes about 15 seconds,
-> > and the up layer application IOs was suspended at this time,
-> > How could we bear such a long time IO stopping?
-> > Is there any way we can avoid this problem?
-> > 
-> > I am very anxious about this question, any comment would be valuable.
-> 
-> I encounter same situation too.
-> Hmm, I assume there are some locking issue here, to prevent application
-> to send request and insert keys in LSM tree, no matter in writeback or
-> writethrough mode. This is a lazy and fast response, I need to check the
-> code then provide an accurate reply :-)
-
-What controls the frequency?
-
-On our system I noticed this:
-
-]# tail /sys/block/bcache0/bcache/cache/internal/*gc*
-
-==> /sys/block/bcache0/bcache/cache/internal/btree_gc_average_duration_ms <==
-1455
-
-==> /sys/block/bcache0/bcache/cache/internal/btree_gc_average_frequency_sec <==
-3521
-
-==> /sys/block/bcache0/bcache/cache/internal/btree_gc_max_duration_ms <==
-7036
-
-
-So usually it takes 1.4s, as much as 7s on our systems.  Average frequency 
-is almost an hour.   Can GC just be triggered more frequently?  Say, once 
-every 5min?  Is that configurable?
-
--Eric
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 8352fad765f6..78004c54f4f6 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1374,9 +1374,6 @@ static void cache_set_flush(struct closure *cl)
+ 	struct btree *b;
+ 	unsigned i;
  
-> 
-> 
-> -- 
-> Coly Li
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
---1641074820-467794155-1498607969=:17052--
+-	if (!c)
+-		closure_return(cl);
+-
+ 	bch_cache_accounting_destroy(&c->accounting);
+ 
+ 	kobject_put(&c->internal);
