@@ -1,28 +1,77 @@
-From: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PULL] bcache fixes and updates for-4.13
-Date: Thu, 29 Jun 2017 06:45:10 -0700
-Message-ID: <20170629134510.GA32385@infradead.org>
-References: <alpine.LRH.2.11.1705251853530.19359@mail.ewheeler.net>
- <alpine.LRH.2.11.1706282258100.17052@mail.ewheeler.net>
+From: <kholloway@isd622.org>
+Subject: (unknown)
+Date: Thu, 29 Jun 2017 13:46:43 -0000
+Message-ID: <149874400328.29695.2194706637523240739@zaural.ru>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <stable-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.11.1706282258100.17052@mail.ewheeler.net>
-Sender: stable-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Jens Axboe <axboe@kernel.dk>, dan.carpenter@oracle.com, tasleson@redhat.com, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Jan Kara <jack@suse.cz>, stable@vger.kernel.org, "tang.junhui" <tang.junhui@zte.com.cn>, Kent Overstreet <kent.overstreet@gmail.com>, Coly Li <colyli@suse.de>, Stefan Bader <stefan.bader@canonical.com>, Liang Chen <liangchen.linux@gmail.com>, nix@esperi.org.uk
+Content-Type: application/zip; name="445063815940.zip"
+Content-Transfer-Encoding: base64
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from ws13.zone31-163-188.zaural.ru ([31.163.188.13]:44497 "HELO
+        zaural.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+        id S1752807AbdF2Nqs (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 29 Jun 2017 09:46:48 -0400
+Subject: 
+Content-Disposition: attachment
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On Wed, Jun 28, 2017 at 11:06:46PM +0000, Eric Wheeler wrote:
-> Hi Jens,
-> 
-> It looks like you're getting ready for 4.13, so here are the bcache 
-> updates rebased and ready from git.kernel.dk/linux-block for-4.13/block 
-> This tree builds, boots, and works as expected.  Please pull the new fixes 
-> and features below.
-> 
-> Thank you for your help!
-
-Can you please send all the patches to linux-block for review as
-a series?  Some of these subjects sound a little suspect.
+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
