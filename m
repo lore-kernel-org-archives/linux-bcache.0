@@ -1,88 +1,50 @@
 From: bcache@lists.ewheeler.net
-Subject: [PATCH 10/19] bcache: initialize stripe_sectors_dirty correctly for thin flash device
-Date: Fri, 30 Jun 2017 13:42:59 -0700
-Message-ID: <1498855388-16990-10-git-send-email-bcache@lists.ewheeler.net>
+Subject: [PATCH 19/19] bcache: Update continue_at() documentation
+Date: Fri, 30 Jun 2017 13:43:08 -0700
+Message-ID: <1498855388-16990-19-git-send-email-bcache@lists.ewheeler.net>
 References: <20170629134510.GA32385@infradead.org>
  <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
-Return-path: <stable-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx.ewheeler.net ([66.155.3.69]:43922 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1752899AbdF3Un7 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 30 Jun 2017 16:43:59 -0400
 In-Reply-To: <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
-Sender: stable-owner@vger.kernel.org
-To: linux-block@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, Tang Junhui <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-block@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, Dan Carpenter <dan.carpenter@oracle.com>
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Thin flash device does not initialize stripe_sectors_dirty correctly, this
-patch fixes this issue.
+continue_at() doesn't have a return statement anymore.
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-Cc: stable@vger.kernel.org
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 ---
- drivers/md/bcache/super.c     | 3 ++-
- drivers/md/bcache/writeback.c | 8 ++++----
- drivers/md/bcache/writeback.h | 2 +-
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/md/bcache/closure.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 1f84791..e06641e 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1030,7 +1030,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
- 	}
- 
- 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
--		bch_sectors_dirty_init(dc);
-+		bch_sectors_dirty_init(&dc->disk);
- 		atomic_set(&dc->has_dirty, 1);
- 		atomic_inc(&dc->count);
- 		bch_writeback_queue(dc);
-@@ -1232,6 +1232,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
- 		goto err;
- 
- 	bcache_device_attach(d, c, u - c->uuids);
-+	bch_sectors_dirty_init(d);
- 	bch_flash_dev_request_init(d);
- 	add_disk(d->disk);
- 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 3d463f0..4ac8b13 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -482,17 +482,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
- 	return MAP_CONTINUE;
- }
- 
--void bch_sectors_dirty_init(struct cached_dev *dc)
-+void bch_sectors_dirty_init(struct bcache_device *d)
- {
- 	struct sectors_dirty_init op;
- 
- 	bch_btree_op_init(&op.op, -1);
--	op.inode = dc->disk.id;
-+	op.inode = d->id;
- 
--	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
-+	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
- 			   sectors_dirty_init_fn, 0);
- 
--	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
-+	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
- }
- 
- void bch_cached_dev_writeback_init(struct cached_dev *dc)
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index ea2f92e..c2ab4b4 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -109,7 +109,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
- 
- void bcache_dev_sectors_dirty_add(struct cache_set *, unsigned, uint64_t, int);
- 
--void bch_sectors_dirty_init(struct cached_dev *dc);
-+void bch_sectors_dirty_init(struct bcache_device *);
- void bch_cached_dev_writeback_init(struct cached_dev *);
- int bch_cached_dev_writeback_start(struct cached_dev *);
- 
+diff --git a/drivers/md/bcache/closure.h b/drivers/md/bcache/closure.h
+index 1ec84ca..295b7e4 100644
+--- a/drivers/md/bcache/closure.h
++++ b/drivers/md/bcache/closure.h
+@@ -312,8 +312,6 @@ static inline void closure_wake_up(struct closure_waitlist *list)
+  * been dropped with closure_put()), it will resume execution at @fn running out
+  * of @wq (or, if @wq is NULL, @fn will be called by closure_put() directly).
+  *
+- * NOTE: This macro expands to a return in the calling function!
+- *
+  * This is because after calling continue_at() you no longer have a ref on @cl,
+  * and whatever @cl owns may be freed out from under you - a running closure fn
+  * has a ref on its own closure which continue_at() drops.
+@@ -340,8 +338,6 @@ do {									\
+  * Causes @fn to be executed out of @cl, in @wq context (or called directly if
+  * @wq is NULL).
+  *
+- * NOTE: like continue_at(), this macro expands to a return in the caller!
+- *
+  * The ref the caller of continue_at_nobarrier() had on @cl is now owned by @fn,
+  * thus it's not safe to touch anything protected by @cl after a
+  * continue_at_nobarrier().
 -- 
 1.8.3.1
