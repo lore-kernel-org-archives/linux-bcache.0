@@ -1,57 +1,48 @@
 From: bcache@lists.ewheeler.net
-Subject: [PATCH 02/19] bcache: fix sequential large write IO bypass
-Date: Fri, 30 Jun 2017 13:42:51 -0700
-Message-ID: <1498855388-16990-2-git-send-email-bcache@lists.ewheeler.net>
+Subject: [PATCH 06/19] bcache: explicitly destory mutex while exiting
+Date: Fri, 30 Jun 2017 13:42:55 -0700
+Message-ID: <1498855388-16990-6-git-send-email-bcache@lists.ewheeler.net>
 References: <20170629134510.GA32385@infradead.org>
  <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-block@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, Tang Junhui <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, Liang Chen <liangchen.linux@gmail.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+From: Liang Chen <liangchen.linux@gmail.com>
 
-Sequential write IOs were tested with bs=1M by FIO in writeback cache
-mode, these IOs were expected to be bypassed, but actually they did not.
-We debug the code, and find in check_should_bypass():
-    if (!congested &&
-        mode == CACHE_MODE_WRITEBACK &&
-        op_is_write(bio_op(bio)) &&
-        (bio-＞bi_opf & REQ_SYNC))
-        goto rescale
-that means, If in writeback mode, a write IO with REQ_SYNC flag will not
-be bypassed though it is a sequential large IO, It's not a correct thing
-to do actually, so this patch remove these codes.
+mutex_destroy does nothing most of time, but it's better to call
+it to make the code future proof and it also has some meaning
+for like mutex debug.
 
-Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
-Reviewed-by: Kent Overstreet <kent.overstreet@gmail.com>
+Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
 Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
 Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/request.c | 6 ------
- 1 file changed, 6 deletions(-)
+ drivers/md/bcache/super.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 019b3df..958072a 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -400,12 +400,6 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
- 	if (!congested && !dc->sequential_cutoff)
- 		goto rescale;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 48b8c20..1f84791 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -2089,6 +2089,7 @@ static void bcache_exit(void)
+ 	if (bcache_major)
+ 		unregister_blkdev(bcache_major, "bcache");
+ 	unregister_reboot_notifier(&reboot);
++	mutex_destroy(&bch_register_lock);
+ }
  
--	if (!congested &&
--	    mode == CACHE_MODE_WRITEBACK &&
--	    op_is_write(bio->bi_opf) &&
--	    op_is_sync(bio->bi_opf))
--		goto rescale;
--
- 	spin_lock(&dc->io_lock);
+ static int __init bcache_init(void)
+@@ -2106,6 +2107,7 @@ static int __init bcache_init(void)
  
- 	hlist_for_each_entry(i, iohash(dc, bio->bi_iter.bi_sector), hash)
+ 	bcache_major = register_blkdev(0, "bcache");
+ 	if (bcache_major < 0) {
++		mutex_destroy(&bch_register_lock);
+ 		unregister_reboot_notifier(&reboot);
+ 		return bcache_major;
+ 	}
 -- 
 1.8.3.1
