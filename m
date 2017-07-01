@@ -1,72 +1,102 @@
 From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 09/19] bcache: update bio->bi_opf bypass/writeback REQ_
- flag hints
-Date: Sun, 2 Jul 2017 02:49:20 +0800
-Message-ID: <f9976cdb-dcff-ac98-9a18-2d06b2d4c475@coly.li>
+Subject: Re: [PATCH 10/19] bcache: initialize stripe_sectors_dirty correctly
+ for thin flash device
+Date: Sun, 2 Jul 2017 02:52:14 +0800
+Message-ID: <46e7b8b2-7fac-6404-a6fc-696bfb1e0c61@coly.li>
 References: <20170629134510.GA32385@infradead.org>
  <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
- <1498855388-16990-9-git-send-email-bcache@lists.ewheeler.net>
+ <1498855388-16990-10-git-send-email-bcache@lists.ewheeler.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1498855388-16990-9-git-send-email-bcache@lists.ewheeler.net>
+In-Reply-To: <1498855388-16990-10-git-send-email-bcache@lists.ewheeler.net>
 Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: bcache@lists.ewheeler.net
-Cc: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, Eric Wheeler <git@linux.ewheeler.net>, Eric Wheeler <bcache@linux.ewheeler.net>
+To: Tang Junhui <tang.junhui@zte.com.cn>
+Cc: bcache@lists.ewheeler.net, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 On 2017/7/1 上午4:42, bcache@lists.ewheeler.net wrote:
-> From: Eric Wheeler <git@linux.ewheeler.net>
+> From: Tang Junhui <tang.junhui@zte.com.cn>
 > 
-> Bypass if:     bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND)
-> 
-> Writeback if:  op_is_sync(bio->bi_opf) || bio->bi_opf & (REQ_META|REQ_PRIO)
-> 
+> Thin flash device does not initialize stripe_sectors_dirty correctly, this
+> patch fixes this issue.
 
-Hi Eric,
+Hi Junhui,
 
-Could you please explain a bit how the above policy is designed ? I'd
-like to understand it more.
+Could you please explain why stripe_sectors_ditry is not correctly
+initialized and how about its negative result ?
 
 Thanks.
 
 Coly
 
-
-> Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
-> ---
->  drivers/md/bcache/request.c   | 3 +++
->  drivers/md/bcache/writeback.h | 3 ++-
->  2 files changed, 5 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index a95609f..4629b0c 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -386,6 +386,9 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
->  	     op_is_write(bio_op(bio))))
->  		goto skip;
->  
-> +	if (bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND))
-> +		goto skip;
-> +
->  	/* If the ioprio already exists on the bio, use that.  We assume that
->  	 * the upper layer properly assigned the calling process's ioprio to
->  	 * the bio being passed to bcache. Otherwise, use current's ioc. */
-> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-> index cd82fe8..ea2f92e 100644
-> --- a/drivers/md/bcache/writeback.h
-> +++ b/drivers/md/bcache/writeback.h
-> @@ -81,7 +81,8 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
->  		return true;
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/md/bcache/super.c     | 3 ++-
+>  drivers/md/bcache/writeback.c | 8 ++++----
+>  drivers/md/bcache/writeback.h | 2 +-
+>  3 files changed, 7 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 1f84791..e06641e 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1030,7 +1030,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
 >  	}
 >  
-> -	return op_is_sync(bio->bi_opf) || in_use <= CUTOFF_WRITEBACK;
-> +	return op_is_sync(bio->bi_opf) || bio->bi_opf & (REQ_META|REQ_PRIO)
-> +		|| in_use <= CUTOFF_WRITEBACK;
+>  	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+> -		bch_sectors_dirty_init(dc);
+> +		bch_sectors_dirty_init(&dc->disk);
+>  		atomic_set(&dc->has_dirty, 1);
+>  		atomic_inc(&dc->count);
+>  		bch_writeback_queue(dc);
+> @@ -1232,6 +1232,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+>  		goto err;
+>  
+>  	bcache_device_attach(d, c, u - c->uuids);
+> +	bch_sectors_dirty_init(d);
+>  	bch_flash_dev_request_init(d);
+>  	add_disk(d->disk);
+>  
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 3d463f0..4ac8b13 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -482,17 +482,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
+>  	return MAP_CONTINUE;
 >  }
 >  
->  static inline void bch_writeback_queue(struct cached_dev *dc)
-> 
+> -void bch_sectors_dirty_init(struct cached_dev *dc)
+> +void bch_sectors_dirty_init(struct bcache_device *d)
+>  {
+>  	struct sectors_dirty_init op;
+>  
+>  	bch_btree_op_init(&op.op, -1);
+> -	op.inode = dc->disk.id;
+> +	op.inode = d->id;
+>  
+> -	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
+> +	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
+>  			   sectors_dirty_init_fn, 0);
+>  
+> -	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
+> +	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
+>  }
+>  
+>  void bch_cached_dev_writeback_init(struct cached_dev *dc)
+> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+> index ea2f92e..c2ab4b4 100644
+> --- a/drivers/md/bcache/writeback.h
+> +++ b/drivers/md/bcache/writeback.h
+> @@ -109,7 +109,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+>  
+>  void bcache_dev_sectors_dirty_add(struct cache_set *, unsigned, uint64_t, int);
+>  
+> -void bch_sectors_dirty_init(struct cached_dev *dc);
+> +void bch_sectors_dirty_init(struct bcache_device *);
+>  void bch_cached_dev_writeback_init(struct cached_dev *);
+>  int bch_cached_dev_writeback_start(struct cached_dev *);
