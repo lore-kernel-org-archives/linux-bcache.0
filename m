@@ -1,60 +1,194 @@
-From: <michele@milburnbrowning.com>
-Subject: (unknown)
-Date: Wed, 05 Jul 2017 00:06:39 -0000
-Message-ID: <149921319916.29695.16632659461627019946@rusoil72.ru>
+From: Liang Chen <liangchen.linux@gmail.com>
+Subject: Re: [PATCH 06/19] bcache: explicitly destory mutex while exiting
+Date: Wed, 5 Jul 2017 19:58:53 +0800
+Message-ID: <CAKhg4tLAiRdujjhh+xUmCzaR9+bTpMgbwtht6TD_bs0zE_61rQ@mail.gmail.com>
+References: <20170629134510.GA32385@infradead.org> <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
+ <1498855388-16990-6-git-send-email-bcache@lists.ewheeler.net> <841d6190-61a6-7601-2a00-2404cf0c5a69@coly.li>
 Mime-Version: 1.0
-Content-Type: application/zip; name="EBAY_8161483_linux-bcache.zip"
-Content-Transfer-Encoding: base64
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from rusoil72.ru ([80.71.211.202]:58835 "HELO rusoil72.ru"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1752229AbdGEAGp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 4 Jul 2017 20:06:45 -0400
-Subject: 
-Content-Disposition: attachment
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <841d6190-61a6-7601-2a00-2404cf0c5a69@coly.li>
+Sender: stable-owner@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: bcache@lists.ewheeler.net, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-UEsDBBQDAAAIAByg5EqNzRr3mwgAAKcIAAAJAAAANDU3MjEuemlwdZbnOxsIAMbThlhVGlq70VZd
-qJEgVrViVBBFUPPcEaNmVUvNWhWrCDWqVlIaW2sdZ5xRxK6Z2KO2IsTMGddb3+557n0/vM/7PL8/
-4GeMBjLxAgEAVoAwcVlfyaFsb58FAGjhBQD4AACAojwMpqikoARDwBUQjgrObi4whIzbc5JlgN8I
-kvt7llflXrQeU3K++Z3FoDCc250VaCR5E+cIDE/6oEIsYkzmzD6s+jpUiNi+1fh8u9/L+VOZGRdn
-v3jJezyhVICJa+PazBAh9nPFzGTRkg4mjcBhkrZ7xLRVils0nMoXUqPxXq0f+822gepJsgDSDcRf
-zQXx2QXknTAOtJkQxDfwbuKxONV2fv3jRWZtjyYdX2mYhX/wvXcO0twaaZyukYowYSFbmfHZrw3S
-+vMYRy2IbKO+nW/xjwueQ8cTDfPUJ0IOfQ20ke5fd7Kv4J7K07INlhHe/E5y0WcDaYjNmezBqHzz
-HByOdhgUmsIev6ktejtRJCG+WH5YemQMmXXjCpr186K3owv/7EbgeKhmrMjb8vpatVNFCZTd83QT
-g7silaiEYy2UK+cuJaPxsmpHcsuuKum669O1wdj9aJ1LlD1vqayzDBAYctsED8m3W8J2IZe4LPg0
-Fo7otjHnC5iHrJ4iQgUJvuHv1H28jVDxcFxXu8b65Ab7JI03ZTsm082K55GN7rx8mYuOPofRTpAn
-sKyrU6c3IkBa3EPCEA8vEXqVpu4jvvF7ezFGNSlwWNbNK4fyqF59VPKc4hhwTXJgrVOP1NyQdhou
-SYi0DqqlpXsN3r+UO+/qWR5lWY7Y9FN64t4mTy6XH8/YvDeZTsfBMcFJ8T5vmvZa2RNfe8Kn77f0
-rJqqBqRLbmRE4T1txT4OdXifiBq/4tYpff+sEpocN9BB7Got+HA64Scy3cWJmhfLDycrpkzmnc9I
-/fJ6+ngp7ZmEDNkPoJjFOx9Q095WxeXtrP6yN0/4hAiqjiicaqjmJWkuXLo4WFOIXTGTZHzt4FKr
-zEY9ButGqAhiseuGXEKqBpUHbmYuS3YL2AGz8nSHDf4xjbeJVg/GoqFfdLOc7TnUPRRbDf7ITce2
-yd1gLNmT2ZxkJawaBGvwbmWrLTK7oIuBuKpDnf3tgNKXdNr5CiX6i2/dOGTmEmqPYY75QbA/daM/
-W7aMtP2rXy4ksvTwfNWm0uxjtpr6S/qe1HFZ+sCoQCQC1fUJrMTo5UmAcDtWUxR6vtySxfeLCPIm
-pKDsrxffdZTzi2Nj1uLiU9uyLonqfAxpGSNIfhv16izsIAwOFgTwx1rMBjpb88eCAjn1r9UWtsWf
-kCEms239BxxXpJh5qDGn7lodzJ4FgYdIhWcqsZbL+H1Azu4F1W9AH48h+vDmeFF8SFi+1xwxRaSZ
-JXhYA4/ZqNfuMERKiWFXROApMThR8/cmhaIkGitThxIUq4hgj1qTylow5ZHUqCHZ2oDgh0VRhkY3
-d79Tk34g3a471aGwCCDwQrMFPvkCpgxBELnvU1lzp2hc3GB72LdhlVYxiAKPZcBz9ofJ5jfVnb4s
-dXp8r80oFh/T4XW9p5zOxjWGXnmL0uijhKREfWsuy+nbzoux14vbatEgVYMno3qMV/aSz5COLLma
-tfomh59eRngTldHevhEP1gnmif76UqlcOedchTW98La9lkDIQCv4XTF2WZ0kfF+qo5egWXZWW8KF
-fmFz25eKMbDaYJT2LUORPRyU5KDnlo/rkfa0jFooK/hqRp2tVY5SUHCutrzYSGqJR4V2hT45fo3J
-P28KPSMnDZXyKEV7IOXxwbPj9lnRFsGR2CCfJg7u5q/LGy9EeXfdfPHMMGH5xFxYNXBAfjas1Ygs
-5HEGkBWQvUNK5YBkU96j9LJ2lDTtaYvFSSxQ0SVQ4SfzVN2EqvVjIBjiKAPspmshxeFPotMfvGtc
-E3Y6ekLdfH1B2Ha/G2d6CUqayCyobLwMTDvogZvGxF9mmrg3PifYHnots2J0s/l9yuqN2oj+VulL
-zhNVTBKn9ZklCqpUVGCinFQXvSPnFoXHjnxn4vHBUtfPk3j8+fDwSZYDTmYriTdObTvk1jlTpmXi
-GFrkpg01Et60/lGyeygzCRRrVcom2HSQudDWV8RWkESgMll0DyJvAqayY74QK0U5oU0G7EiQO4JT
-QS+MdQKFLVlLTsuOU74OZhv4wOvfxo6cq0jJ177BetGZz7DmoGCXB0o/MiJeEXPLUUs+HKFVJeU6
-f+Dem1EZ5gQyCkltkCYTaYzoK60/6IJGvmC3y8HdbWroGFyISxeo5PMf1jUk1NMTg9Zw5gNLcrdX
-1CMQva6321tcbw7qPLwCXR0Kc1h+A8gbKw2JfFqmN2Vw++1r1ahugyaJqz1ay/KhsZxX1ZhWGKrV
-pqVWG1z+8EYb6kJfFR+WCMtIvH7AowtW9vnhN9wV0AO5Ht14GbVWfdirZAcP1jtxqYWvdwSmGR0a
-7mZYvp+eDTxMVBLx8/75sW8HusWPp+lqtHTIeQX5ReE0P1WL0drmhaUvovav6SWWj5XzBQ571ilt
-+Z2uYSq3q+Zw7fqh+d3lYYJ55oo/rY1Ml4mfRd2thcq/WJ+lDEuRA+8+4PyMc3/WeY8414oC3d9R
-tj3qB6CGtvYbEr3Aqbrg4wCgL85L2DpVuFJNEsLvap2IbyM4ajpFlaeyw/zBVqr+5ED0cVXjdcse
-lui636gB7D5T+ApKX36CHFWaNJP1giXBWMB9NHdGosSh883goIGvSuYmxvzIN8s0yOxb67iYe7kS
-Yb5oO1nd1Y32qBqDIe9Iwzzb1+LCZQjK1o2PzEIdVvPgo9Omx4G2+fPZNwlOwYh6iIvtoeKyiri1
-WWSaMGzRkg0+xW+aGcAdR8xz6Er42Rh94aI68P9MQQzwb0TDPoQD/t8b2AGi/2AXAPyAMMpy543D
-kQv/XWM0M+gf5q+6/rVQ1r/fn1BLAQI/AxQDAAAIAByg5EqNzRr3mwgAAKcIAAAJACQAAAAAAAAA
-IICkgQAAAAA0NTcyMS56aXAKACAAAAAAAAEAGAAAbH3GIfXSAQBsfcYh9dIBAGx9xiH10gFQSwUG
-AAAAAAEAAQBbAAAAwggAAAAA
+Hi Coly,
+Thanks for reviewing the patch! You raised a good point about the race. I a=
+lso
+think it should be addressed. Even though the time window is small, it will
+still happen sooner or later.
+
+I would like to keep this "destory mutex" patch unchanged, and send another
+patch to fix the issue based on your approach. Please take a look. Thanks!
+
+Thanks,
+Liang
+
+On Sun, Jul 2, 2017 at 2:43 AM, Coly Li <i@coly.li> wrote:
+> On 2017/7/1 =E4=B8=8A=E5=8D=884:42, bcache@lists.ewheeler.net wrote:
+>> From: Liang Chen <liangchen.linux@gmail.com>
+>>
+>> mutex_destroy does nothing most of time, but it's better to call
+>> it to make the code future proof and it also has some meaning
+>> for like mutex debug.
+>>
+>> Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+>> Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
+>> Cc: stable@vger.kernel.org
+>> ---
+>>  drivers/md/bcache/super.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>> index 48b8c20..1f84791 100644
+>> --- a/drivers/md/bcache/super.c
+>> +++ b/drivers/md/bcache/super.c
+>> @@ -2089,6 +2089,7 @@ static void bcache_exit(void)
+>>       if (bcache_major)
+>>               unregister_blkdev(bcache_major, "bcache");
+>>       unregister_reboot_notifier(&reboot);
+>> +     mutex_destroy(&bch_register_lock>  }
+>>
+>>  static int __init bcache_init(void)
+>> @@ -2106,6 +2107,7 @@ static int __init bcache_init(void)
+>>
+>>       bcache_major =3D register_blkdev(0, "bcache");
+>>       if (bcache_major < 0) {
+>> +             mutex_destroy(&bch_register_lock);
+>>               unregister_reboot_notifier(&reboot);
+>>               return bcache_major;
+>>       }
+>>
+>
+> Hi Liang,
+>
+> Current code might have a potential race in a very corner case, see,
+> 2084 static int __init bcache_init(void)
+> 2085 {
+> 2086         static const struct attribute *files[] =3D {
+> 2087                 &ksysfs_register.attr,
+> 2088                 &ksysfs_register_quiet.attr,
+> 2089                 NULL
+> 2090         };
+> 2091
+> 2092         mutex_init(&bch_register_lock);
+> 2093         init_waitqueue_head(&unregister_wait);
+> 2094         register_reboot_notifier(&reboot);
+> 2095         closure_debug_init();
+> 2096
+> 2097         bcache_major =3D register_blkdev(0, "bcache");
+> 2098         if (bcache_major < 0) {
+> 2099                 unregister_reboot_notifier(&reboot);
+> 2100                 return bcache_major;
+> 2101         }
+> 2102
+> 2103         if (!(bcache_wq =3D alloc_workqueue("bcache", WQ_MEM_RECLAIM=
+,
+> 0)) ||
+> 2104             !(bcache_kobj =3D kobject_create_and_add("bcache",
+> fs_kobj)) ||
+> 2105             sysfs_create_files(bcache_kobj, files) ||
+> 2106             bch_request_init() ||
+> 2107             bch_debug_init(bcache_kobj))
+> 2108                 goto err;
+> 2109
+> 2110         return 0;
+> 2111 err:
+> 2112         bcache_exit();
+> 2113         return -ENOMEM;
+> 2114 }
+>
+> At line 2107, most of bache stuffs are ready to work, only a debugfs
+> entry not created yet. If in the time gap between line 2106 and line
+> 2017, another user space tool just registers cache and backing devices.
+> Then bch_debug_init() failed, and bcache_exit() gets called. In this
+> case, I doubt bcache_exit() can handle all the references correctly.
+>
+> The race is very rare, and almost won't happen in real life. So, if you
+> don't care about it, the patch can be simpler like this,
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index e57353e39168..fb5453a46a03 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -2070,6 +2070,7 @@ static struct notifier_block reboot =3D {
+>
+>  static void bcache_exit(void)
+>  {
+> +       mutex_destroy(&bch_register_lock);
+>         bch_debug_exit();
+>         bch_request_exit();
+>         if (bcache_kobj)
+> @@ -2089,7 +2090,6 @@ static int __init bcache_init(void)
+>                 NULL
+>         };
+>
+> -       mutex_init(&bch_register_lock);
+>         init_waitqueue_head(&unregister_wait);
+>         register_reboot_notifier(&reboot);
+>         closure_debug_init();
+> @@ -2107,6 +2107,7 @@ static int __init bcache_init(void)
+>             bch_debug_init(bcache_kobj))
+>                 goto err;
+>
+> +       mutex_init(&bch_register_lock);
+>         return 0;
+>  err:
+>         bcache_exit();
+> ---
+> And if you do care about the race, maybe you should do something like thi=
+s,
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index e57353e39168..ca1d8b7a7815 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -2079,6 +2079,7 @@ static void bcache_exit(void)
+>         if (bcache_major)
+>                 unregister_blkdev(bcache_major, "bcache");
+>         unregister_reboot_notifier(&reboot);
+> +       mutex_unlock(&bch_register_lock);
+>  }
+>
+>  static int __init bcache_init(void)
+> @@ -2090,6 +2091,7 @@ static int __init bcache_init(void)
+>         };
+>
+>         mutex_init(&bch_register_lock);
+> +       mutex_lock(&bch_register_lock);
+>         init_waitqueue_head(&unregister_wait);
+>         register_reboot_notifier(&reboot);
+>         closure_debug_init();
+> @@ -2097,6 +2099,8 @@ static int __init bcache_init(void)
+>         bcache_major =3D register_blkdev(0, "bcache");
+>         if (bcache_major < 0) {
+>                 unregister_reboot_notifier(&reboot);
+> +               mutex_unlock(&bch_register_lock);
+> +               mutex_destroy(&bch_register_lock);
+>                 return bcache_major;
+>         }
+>
+> @@ -2104,9 +2108,12 @@ static int __init bcache_init(void)
+>             !(bcache_kobj =3D kobject_create_and_add("bcache", fs_kobj)) =
+||
+>             sysfs_create_files(bcache_kobj, files) ||
+>             bch_request_init() ||
+> -           bch_debug_init(bcache_kobj))
+> +           bch_debug_init(bcache_kobj)) {
+> +               mutex_unlock(&bch_register_lock);
+>                 goto err;
+> +       }
+>
+> +       mutex_unlock(&bch_register_lock);
+>         return 0;
+>  err:
+>         bcache_exit();
+> ---
+>
+> Personally I think the first approach with only one new line code added,
+> your original version will add two new lines of code.
+>
+> Just FYI. Thanks.
+>
+> --
+> Coly Li
