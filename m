@@ -1,194 +1,323 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: Re: Re: Question about gc time
-Date: Fri, 7 Jul 2017 01:01:43 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1707070059230.17052@mail.ewheeler.net>
-References: <OF3C6614C4.E95909E3-ON4825814C.004157B0-4825814C.004253A0@zte.com.cn> <e9233b6e-a898-19ab-6502-ea735f85de6f@coly.li> <alpine.LRH.2.11.1706272355510.17052@mail.ewheeler.net> <OF88AF0700.94E41E34-ON48258152.001FB326-48258152.0020F635@zte.com.cn>
- <alpine.LRH.2.11.1707031912530.17052@mail.ewheeler.net> <OFCAB991B9.CC49F1AD-ON48258153.000235D7-48258154.000C1863@zte.com.cn>
+From: Konstantin Shalygin <k0ste@k0ste.ru>
+Subject: lock, Workqueue: bcache bch_data_insert_keys [bcache]
+Date: Fri, 7 Jul 2017 22:06:34 +0700
+Message-ID: <4e51563b-bb3d-efcc-0f84-76572c87c352@k0ste.ru>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1811819324-1499389304=:17052"
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:35834 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1752924AbdGGBBp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 6 Jul 2017 21:01:45 -0400
-In-Reply-To: <OFCAB991B9.CC49F1AD-ON48258153.000235D7-48258154.000C1863@zte.com.cn>
+Received: from k0ste.ru ([212.20.43.218]:52548 "EHLO k0ste.ru"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750974AbdGGPPy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 7 Jul 2017 11:15:54 -0400
+Received: from [192.168.0.200] (unknown [192.168.0.200])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        (Authenticated sender: k0ste@k0ste.ru)
+        by k0ste.ru (Postfix) with ESMTPSA id 3F34680D9CDA
+        for <linux-bcache@vger.kernel.org>; Fri,  7 Jul 2017 22:06:34 +0700 (+07)
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: Coly Li <i@coly.li>, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello. I caught lock (only hard reset helped to reboot kernel), when I 
+started "every week rsync backup" of my laptop '/home'. After reboot I 
+started the same task and this don't get any issues.
 
---1641074820-1811819324-1499389304=:17052
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+I run bcache over md raid5.
 
-On Wed, 5 Jul 2017, tang.junhui@zte.com.cn wrote:
+[k0ste@home ~]$ lsblk
+NAME        MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT
+sda           8:0    0   5.5T  0 disk
+└─md0         9:0    0    15T  0 raid5
+   └─bcache0 254:0    0    15T  0 disk  /srv/raid
+sdb           8:16   0   5.5T  0 disk
+└─md0         9:0    0    15T  0 raid5
+   └─bcache0 254:0    0    15T  0 disk  /srv/raid
+sdc           8:32   0   5.5T  0 disk
+└─md0         9:0    0    15T  0 raid5
+   └─bcache0 254:0    0    15T  0 disk  /srv/raid
+sdd           8:48   1  14.3G  0 disk
+└─sdd1        8:49   1  14.3G  0 part  /boot
+sde           8:64   0   5.5T  0 disk
+└─md0         9:0    0    15T  0 raid5
+   └─bcache0 254:0    0    15T  0 disk  /srv/raid
+sdf           8:80   0 119.2G  0 disk
+└─sdf1        8:81   0 119.2G  0 part  /
+nvme0n1     259:0    0 119.2G  0 disk
+└─bcache0   254:0    0    15T  0 disk  /srv/raid
 
-> > Perhaps.  What is the total lock time that prevents IO?  Can you note
-> > those below?
-> 
-> The total lock time that prevents IO is btree root node writer locker.
-> We take too much time in  btree_gc_mark_node - about 98% in GC, since
-> it is all memory operations, I think we can optimize it, do you have any
-> suggestions?
-
-
-I'm not familiar with that code.  Could you do it in 2 passes, the first 
-to find candidates for GC and the second to lock, re-test the candidates, 
-and GC them?  This would minimize lock time.
-
-Of course it doesn't help in the case where an IO is blocked waiting for 
-GC under contention, so that needs to be considered.  
-
-
-Maybe Kent has some way of dealing with this in bcachefs?  Maybe compare 
-his GC code in the bcachefs dev branch with the bcache block driver code.
-
---
-Eric Wheeler
+dmesg:
 
 
+> Jul 07 19:59:59 home kernel: INFO: task bcache:86 blocked for more 
+> than 120 seconds.
+> Jul 07 19:59:59 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 19:59:59 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 19:59:59 home kernel: bcache          D    0    86      2 
+> 0x00000000
+> Jul 07 19:59:59 home kernel: Workqueue: bcache bch_data_insert_keys 
+> [bcache]
+> Jul 07 19:59:59 home kernel: Call Trace:
+> Jul 07 19:59:59 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 19:59:59 home kernel:  schedule+0x3d/0x90
+> Jul 07 19:59:59 home kernel:  closure_sync+0x23/0x90 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_journal+0x115/0x3a0 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_data_insert_keys+0x95/0x130 [bcache]
+> Jul 07 19:59:59 home kernel:  process_one_work+0x1e0/0x490
+> Jul 07 19:59:59 home kernel:  rescuer_thread+0x20c/0x390
+> Jul 07 19:59:59 home kernel:  kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? cancel_delayed_work_sync+0x20/0x20
+> Jul 07 19:59:59 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 19:59:59 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 19:59:59 home kernel: INFO: task xfsaild/bcache0:5174 blocked 
+> for more than 120 seconds.
+> Jul 07 19:59:59 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 19:59:59 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 19:59:59 home kernel: xfsaild/bcache0 D    0  5174      2 
+> 0x00000000
+> Jul 07 19:59:59 home kernel: Call Trace:
+> Jul 07 19:59:59 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 19:59:59 home kernel:  schedule+0x3d/0x90
+> Jul 07 19:59:59 home kernel:  schedule_timeout+0x224/0x3c0
+> Jul 07 19:59:59 home kernel:  ? check_preempt_curr+0x27/0x80
+> Jul 07 19:59:59 home kernel:  ? ttwu_do_wakeup.isra.16+0x1e/0x170
+> Jul 07 19:59:59 home kernel:  wait_for_common+0xb9/0x180
+> Jul 07 19:59:59 home kernel:  ? wait_for_common+0xb9/0x180
+> Jul 07 19:59:59 home kernel:  ? wake_up_q+0x80/0x80
+> Jul 07 19:59:59 home kernel:  wait_for_completion+0x1d/0x20
+> Jul 07 19:59:59 home kernel:  flush_work+0x13b/0x1c0
+> Jul 07 19:59:59 home kernel:  ? flush_workqueue_prep_pwqs+0x190/0x190
+> Jul 07 19:59:59 home kernel:  xlog_cil_force_lsn+0x7c/0x200 [xfs]
+> Jul 07 19:59:59 home kernel:  ? try_to_del_timer_sync+0x53/0x80
+> Jul 07 19:59:59 home kernel:  _xfs_log_force+0x85/0x290 [xfs]
+> Jul 07 19:59:59 home kernel:  ? del_timer_sync+0x50/0x50
+> Jul 07 19:59:59 home kernel:  ? xfsaild+0x16a/0x7c0 [xfs]
+> Jul 07 19:59:59 home kernel:  xfs_log_force+0x2c/0x90 [xfs]
+> Jul 07 19:59:59 home kernel:  xfsaild+0x16a/0x7c0 [xfs]
+> Jul 07 19:59:59 home kernel:  kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? xfs_trans_ail_cursor_first+0x90/0x90 [xfs]
+> Jul 07 19:59:59 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 19:59:59 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 19:59:59 home kernel: INFO: task kworker/0:1:84671 blocked for 
+> more than 120 seconds.
+> Jul 07 19:59:59 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 19:59:59 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 19:59:59 home kernel: kworker/0:1     D    0 84671      2 
+> 0x00000000
+> Jul 07 19:59:59 home kernel: Workqueue: bcache bch_data_insert_keys 
+> [bcache]
+> Jul 07 19:59:59 home kernel: Call Trace:
+> Jul 07 19:59:59 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 19:59:59 home kernel:  schedule+0x3d/0x90
+> Jul 07 19:59:59 home kernel:  closure_sync+0x23/0x90 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_journal+0x115/0x3a0 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_data_insert_keys+0x95/0x130 [bcache]
+> Jul 07 19:59:59 home kernel:  process_one_work+0x1e0/0x490
+> Jul 07 19:59:59 home kernel:  worker_thread+0x48/0x4e0
+> Jul 07 19:59:59 home kernel:  kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? process_one_work+0x490/0x490
+> Jul 07 19:59:59 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 19:59:59 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 19:59:59 home kernel: INFO: task kworker/0:3:84673 blocked for 
+> more than 120 seconds.
+> Jul 07 19:59:59 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 19:59:59 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 19:59:59 home kernel: kworker/0:3     D    0 84673      2 
+> 0x00000000
+> Jul 07 19:59:59 home kernel: Workqueue: bcache bch_data_insert_keys 
+> [bcache]
+> Jul 07 19:59:59 home kernel: Call Trace:
+> Jul 07 19:59:59 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 19:59:59 home kernel:  schedule+0x3d/0x90
+> Jul 07 19:59:59 home kernel:  closure_sync+0x23/0x90 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_journal+0x115/0x3a0 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_data_insert_keys+0x95/0x130 [bcache]
+> Jul 07 19:59:59 home kernel:  process_one_work+0x1e0/0x490
+> Jul 07 19:59:59 home kernel:  worker_thread+0x48/0x4e0
+> Jul 07 19:59:59 home kernel:  kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? process_one_work+0x490/0x490
+> Jul 07 19:59:59 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 19:59:59 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 19:59:59 home kernel: INFO: task kworker/2:2:87164 blocked for 
+> more than 120 seconds.
+> Jul 07 19:59:59 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 19:59:59 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 19:59:59 home kernel: kworker/2:2     D    0 87164      2 
+> 0x00000000
+> Jul 07 19:59:59 home kernel: Workqueue: xfs-sync/bcache0 
+> xfs_log_worker [xfs]
+> Jul 07 19:59:59 home kernel: Call Trace:
+> Jul 07 19:59:59 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 19:59:59 home kernel:  ? find_next_bit+0xb/0x10
+> Jul 07 19:59:59 home kernel:  schedule+0x3d/0x90
+> Jul 07 19:59:59 home kernel:  schedule_timeout+0x224/0x3c0
+> Jul 07 19:59:59 home kernel:  wait_for_common+0xb9/0x180
+> Jul 07 19:59:59 home kernel:  ? wait_for_common+0xb9/0x180
+> Jul 07 19:59:59 home kernel:  ? wake_up_q+0x80/0x80
+> Jul 07 19:59:59 home kernel:  wait_for_completion+0x1d/0x20
+> Jul 07 19:59:59 home kernel:  flush_work+0x13b/0x1c0
+> Jul 07 19:59:59 home kernel:  ? flush_workqueue_prep_pwqs+0x190/0x190
+> Jul 07 19:59:59 home kernel:  xlog_cil_force_lsn+0x7c/0x200 [xfs]
+> Jul 07 19:59:59 home kernel:  ? find_next_bit+0xb/0x10
+> Jul 07 19:59:59 home kernel:  _xfs_log_force+0x85/0x290 [xfs]
+> Jul 07 19:59:59 home kernel:  ? __switch_to+0x270/0x490
+> Jul 07 19:59:59 home kernel:  ? xfs_log_worker+0x34/0x100 [xfs]
+> Jul 07 19:59:59 home kernel:  xfs_log_force+0x2c/0x90 [xfs]
+> Jul 07 19:59:59 home kernel:  xfs_log_worker+0x34/0x100 [xfs]
+> Jul 07 19:59:59 home kernel:  process_one_work+0x1e0/0x490
+> Jul 07 19:59:59 home kernel:  worker_thread+0x48/0x4e0
+> Jul 07 19:59:59 home kernel:  kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? process_one_work+0x490/0x490
+> Jul 07 19:59:59 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 19:59:59 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 19:59:59 home kernel: INFO: task kworker/1:28:89441 blocked for 
+> more than 120 seconds.
+> Jul 07 19:59:59 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 19:59:59 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 19:59:59 home kernel: kworker/1:28    D    0 89441      2 
+> 0x00000000
+> Jul 07 19:59:59 home kernel: Workqueue: xfs-cil/bcache0 
+> xlog_cil_push_work [xfs]
+> Jul 07 19:59:59 home kernel: Call Trace:
+> Jul 07 19:59:59 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 19:59:59 home kernel:  schedule+0x3d/0x90
+> Jul 07 19:59:59 home kernel: xlog_state_get_iclog_space+0xf8/0x2d0 [xfs]
+> Jul 07 19:59:59 home kernel:  ? wake_up_q+0x80/0x80
+> Jul 07 19:59:59 home kernel:  xlog_write+0x166/0x640 [xfs]
+> Jul 07 19:59:59 home kernel:  xlog_cil_push+0x2a1/0x490 [xfs]
+> Jul 07 19:59:59 home kernel:  ? put_prev_entity+0x40/0xc10
+> Jul 07 19:59:59 home kernel:  ? __switch_to+0x270/0x490
+> Jul 07 19:59:59 home kernel:  xlog_cil_push_work+0x15/0x20 [xfs]
+> Jul 07 19:59:59 home kernel:  process_one_work+0x1e0/0x490
+> Jul 07 19:59:59 home kernel:  worker_thread+0x225/0x4e0
+> Jul 07 19:59:59 home kernel:  kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? process_one_work+0x490/0x490
+> Jul 07 19:59:59 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 19:59:59 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 19:59:59 home kernel: INFO: task kworker/0:0:92924 blocked for 
+> more than 120 seconds.
+> Jul 07 19:59:59 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 19:59:59 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 19:59:59 home kernel: kworker/0:0     D    0 92924      2 
+> 0x00000000
+> Jul 07 19:59:59 home kernel: Workqueue: bcache bch_data_insert_keys 
+> [bcache]
+> Jul 07 19:59:59 home kernel: Call Trace:
+> Jul 07 19:59:59 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 19:59:59 home kernel:  schedule+0x3d/0x90
+> Jul 07 19:59:59 home kernel:  closure_sync+0x23/0x90 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_journal+0x115/0x3a0 [bcache]
+> Jul 07 19:59:59 home kernel:  bch_data_insert_keys+0x95/0x130 [bcache]
+> Jul 07 19:59:59 home kernel:  process_one_work+0x1e0/0x490
+> Jul 07 19:59:59 home kernel:  worker_thread+0x48/0x4e0
+> Jul 07 19:59:59 home kernel:  kthread+0x125/0x140
+> Jul 07 19:59:59 home kernel:  ? process_one_work+0x490/0x490
+> Jul 07 19:59:59 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 19:59:59 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 20:02:02 home kernel: INFO: task bcache:86 blocked for more 
+> than 120 seconds.
+> Jul 07 20:02:02 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 20:02:02 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 20:02:02 home kernel: bcache          D    0    86      2 
+> 0x00000000
+> Jul 07 20:02:02 home kernel: Workqueue: bcache bch_data_insert_keys 
+> [bcache]
+> Jul 07 20:02:02 home kernel: Call Trace:
+> Jul 07 20:02:02 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 20:02:02 home kernel:  schedule+0x3d/0x90
+> Jul 07 20:02:02 home kernel:  closure_sync+0x23/0x90 [bcache]
+> Jul 07 20:02:02 home kernel:  bch_journal+0x115/0x3a0 [bcache]
+> Jul 07 20:02:02 home kernel:  bch_data_insert_keys+0x95/0x130 [bcache]
+> Jul 07 20:02:02 home kernel:  process_one_work+0x1e0/0x490
+> Jul 07 20:02:02 home kernel:  rescuer_thread+0x20c/0x390
+> Jul 07 20:02:02 home kernel:  kthread+0x125/0x140
+> Jul 07 20:02:02 home kernel:  ? cancel_delayed_work_sync+0x20/0x20
+> Jul 07 20:02:02 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 20:02:02 home kernel:  ret_from_fork+0x2c/0x40
+> Jul 07 20:02:02 home kernel: INFO: task systemd-logind:412 blocked for 
+> more than 120 seconds.
+> Jul 07 20:02:02 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 20:02:02 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 20:02:02 home kernel: systemd-logind  D    0   412      1 
+> 0x00000100
+> Jul 07 20:02:02 home kernel: Call Trace:
+> Jul 07 20:02:02 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 20:02:02 home kernel:  schedule+0x3d/0x90
+> Jul 07 20:02:02 home kernel:  rwsem_down_write_failed+0x175/0x250
+> Jul 07 20:02:02 home kernel:  ? ida_get_new_above+0x1a7/0x320
+> Jul 07 20:02:02 home kernel: call_rwsem_down_write_failed+0x17/0x30
+> Jul 07 20:02:02 home kernel:  ? call_rwsem_down_write_failed+0x17/0x30
+> Jul 07 20:02:02 home kernel:  down_write+0x24/0x40
+> Jul 07 20:02:02 home kernel:  register_shrinker+0x3e/0x90
+> Jul 07 20:02:02 home kernel:  sget_userns+0x409/0x470
+> Jul 07 20:02:02 home kernel:  ? get_anon_bdev+0x110/0x110
+> Jul 07 20:02:02 home kernel:  ? shmem_remount_fs+0x1c0/0x1c0
+> Jul 07 20:02:02 home kernel:  sget+0x5e/0x80
+> Jul 07 20:02:02 home kernel:  ? get_anon_bdev+0x110/0x110
+> Jul 07 20:02:02 home kernel:  mount_nodev+0x30/0xa0
+> Jul 07 20:02:02 home kernel:  shmem_mount+0x18/0x20
+> Jul 07 20:02:02 home kernel:  mount_fs+0x32/0x160
+> Jul 07 20:02:02 home kernel:  vfs_kern_mount.part.7+0x5d/0x110
+> Jul 07 20:02:02 home kernel:  do_mount+0x528/0xc60
+> Jul 07 20:02:02 home kernel:  ? _copy_from_user+0x4b/0x80
+> Jul 07 20:02:02 home kernel:  SyS_mount+0x5a/0xe0
+> Jul 07 20:02:02 home kernel:  do_syscall_64+0x54/0xc0
+> Jul 07 20:02:02 home kernel:  entry_SYSCALL64_slow_path+0x25/0x25
+> Jul 07 20:02:02 home kernel: RIP: 0033:0x7f35e30b98da
+> Jul 07 20:02:02 home kernel: RSP: 002b:00007ffc4ed06fb8 EFLAGS: 
+> 00000202 ORIG_RAX: 00000000000000a5
+> Jul 07 20:02:02 home kernel: RAX: ffffffffffffffda RBX: 
+> 0000557b6f476480 RCX: 00007f35e30b98da
+> Jul 07 20:02:02 home kernel: RDX: 0000557b6d4f1402 RSI: 
+> 0000557b6f478b80 RDI: 0000557b6d4f1402
+> Jul 07 20:02:02 home kernel: RBP: 0000000000000000 R08: 
+> 0000557b6f478d80 R09: 0000000000000040
+> Jul 07 20:02:02 home kernel: R10: 0000000000000006 R11: 
+> 0000000000000202 R12: 00007ffc4ed07060
+> Jul 07 20:02:02 home kernel: R13: 0000557b6d4f17ff R14: 
+> 0000000000000000 R15: 0000000000000000
+> Jul 07 20:02:02 home kernel: INFO: task xfsaild/bcache0:5174 blocked 
+> for more than 120 seconds.
+> Jul 07 20:02:02 home kernel:       Tainted: G           O 4.11.7-1-ARCH #1
+> Jul 07 20:02:02 home kernel: "echo 0 > 
+> /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul 07 20:02:02 home kernel: xfsaild/bcache0 D    0  5174      2 
+> 0x00000000
+> Jul 07 20:02:02 home kernel: Call Trace:
+> Jul 07 20:02:02 home kernel:  __schedule+0x22e/0x8e0
+> Jul 07 20:02:02 home kernel:  schedule+0x3d/0x90
+> Jul 07 20:02:02 home kernel:  schedule_timeout+0x224/0x3c0
+> Jul 07 20:02:02 home kernel:  ? check_preempt_curr+0x27/0x80
+> Jul 07 20:02:02 home kernel:  ? ttwu_do_wakeup.isra.16+0x1e/0x170
+> Jul 07 20:02:02 home kernel:  wait_for_common+0xb9/0x180
+> Jul 07 20:02:02 home kernel:  ? wait_for_common+0xb9/0x180
+> Jul 07 20:02:02 home kernel:  ? wake_up_q+0x80/0x80
+> Jul 07 20:02:02 home kernel:  wait_for_completion+0x1d/0x20
+> Jul 07 20:02:02 home kernel:  flush_work+0x13b/0x1c0
+> Jul 07 20:02:02 home kernel:  ? flush_workqueue_prep_pwqs+0x190/0x190
+> Jul 07 20:02:02 home kernel:  xlog_cil_force_lsn+0x7c/0x200 [xfs]
+> Jul 07 20:02:02 home kernel:  ? try_to_del_timer_sync+0x53/0x80
+> Jul 07 20:02:02 home kernel:  _xfs_log_force+0x85/0x290 [xfs]
+> Jul 07 20:02:02 home kernel:  ? del_timer_sync+0x50/0x50
+> Jul 07 20:02:02 home kernel:  ? xfsaild+0x16a/0x7c0 [xfs]
+> Jul 07 20:02:02 home kernel:  xfs_log_force+0x2c/0x90 [xfs]
+> Jul 07 20:02:02 home kernel:  xfsaild+0x16a/0x7c0 [xfs]
+> Jul 07 20:02:02 home kernel:  kthread+0x125/0x140
+> Jul 07 20:02:02 home kernel:  ? kthread+0x125/0x140
+> Jul 07 20:02:02 home kernel:  ? xfs_trans_ail_cursor_first+0x90/0x90 [xfs]
+> Jul 07 20:02:02 home kernel:  ? kthread_create_on_node+0x70/0x70
+> Jul 07 20:02:02 home kernel:  ret_from_fork+0x2c/0x40
 
-> 
-> Tang Junhui
-> 
-> 
-> 
-> 
-> 发件人:         Eric Wheeler <bcache@lists.ewheeler.net>
-> 收件人:         tang.junhui@zte.com.cn,
-> 抄送:        Coly Li <i@coly.li>, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org,
-> linux-block@vger.kernel.org
-> 日期:         2017/07/04 03:15
-> 主题:        Re: Re: Question about gc time
-> 
-> _________________________________________________________________________________________________________________
-> 
-> 
-> 
-> On Mon, 3 Jul 2017, tang.junhui@zte.com.cn wrote:
-> 
-> > Hello Eric, Coly
-> >
-> > > So usually it takes 1.4s, as much as 7s on our systems.  Average frequency
-> > > is almost an hour.   Can GC just be triggered more frequently?  Say, once
-> > > every 5min?  Is that configurable?
-> >
-> > GC is triggered by writing c->sb.bucket_size * c->nbuckets / 16 cache
-> > data, or triggered by invalidating when there is not enough free
-> > buckets. So GC time is not configurable, and I also do not think it is
-> > usable by triggering GC more frequently, because as debug the code, in
-> > my test bcache version, I find most time used in btree_gc_mark_node()
-> > (in the latest bcache version it maybe btree_gc_mark_node() and
-> > btree_gc_count_keys()), They are all memory operations, can we optimize
-> > it?
-> 
-> Perhaps.  What is the total lock time that prevents IO?  Can you note
-> those below?
-> 
-> 
-> --
-> Eric Wheeler
-> 
-> 
-> 
-> >
-> > test result：
-> >
-> > Jul  3 13:38:27 ceph192-9-9-153 kernel: [10541.541876] gc trigged by sectors_to_gc
-> > Jul  3 13:38:27 ceph192-9-9-153 kernel: [10541.544372] bch_gc_thread works
-> > Jul  3 13:38:27 ceph192-9-9-153 kernel: [10541.569479] gc begin btree_root
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.883089] add cl ffff880458627b18 to wait:ffff8804583237f0
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.884319] journal_write_root with journal_write_unlocked
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.885522] in journal_write_unlocked_root
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.886770] bch_btree_set_root_gc closure_sync wait cl:
-> > ffff880458627b18
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.886852] journal_write_done_root wake up wait: ffff8804583237f0
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.889190] bch_btree_set_root_gc closure_sync wait cl:
-> > ffff880458627b18 end
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.892783] gc btree_root over, begin bch_btree_gc_finish
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.895303] mark_node: 7203 times, 7074 ms; btree_alloc: 0 times, 0
-> > ms; coalse: 7203 times, 0 ms; write1: 7202 times, 80 ms; write2: 1 times, 0 ms; sort_node: 1 times, 1 ms
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.926504] gc bch_btree_gc_finish over, wake_up_allocators
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.928720] bch_moving_gc over, aftre gc, available: 4399506,
-> > nbuckets:6104768
-> > Jul  3 13:38:34 ceph192-9-9-153 kernel: [10548.930144] bch_gc_thread works over
-> > I am very anxious about this question, any comment would be valuable.
-> >
-> > Regards
-> > Tang Junhui
-> >
-> >
-> >
-> >
-> >
-> > 发件人:         Eric Wheeler <bcache@lists.ewheeler.net>
-> > 收件人:         Coly Li <i@coly.li>,
-> > 抄送:        tang.junhui@zte.com.cn, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
-> > 日期:         2017/06/28 08:00
-> > 主题:        Re: Question about gc time
-> >
-> >________________________________________________________________________________________________________________
-> _
-> >
-> >
-> >
-> > On Wed, 28 Jun 2017, Coly Li wrote:
-> >
-> > > On 2017/6/27 下午8:04, tang.junhui@zte.com.cn wrote:
-> > > > Hello Eric, Coly,
-> > > >
-> > > > I use a 1400G SSD device a bcache cache device,
-> > > > and attach with 10 back-end devices,
-> > > > and run random small write IOs,
-> > > > when gc works, It takes about 15 seconds,
-> > > > and the up layer application IOs was suspended at this time,
-> > > > How could we bear such a long time IO stopping?
-> > > > Is there any way we can avoid this problem?
-> > > >
-> > > > I am very anxious about this question, any comment would be valuable.
-> > >
-> > > I encounter same situation too.
-> > > Hmm, I assume there are some locking issue here, to prevent application
-> > > to send request and insert keys in LSM tree, no matter in writeback or
-> > > writethrough mode. This is a lazy and fast response, I need to check the
-> > > code then provide an accurate reply :-)
-> >
-> > What controls the frequency?
-> >
-> > On our system I noticed this:
-> >
-> > ]# tail /sys/block/bcache0/bcache/cache/internal/*gc*
-> >
-> > ==> /sys/block/bcache0/bcache/cache/internal/btree_gc_average_duration_ms <==
-> > 1455
-> >
-> > ==> /sys/block/bcache0/bcache/cache/internal/btree_gc_average_frequency_sec <==
-> > 3521
-> >
-> > ==> /sys/block/bcache0/bcache/cache/internal/btree_gc_max_duration_ms <==
-> > 7036
-> >
-> >
-> > So usually it takes 1.4s, as much as 7s on our systems.  Average frequency
-> > is almost an hour.   Can GC just be triggered more frequently?  Say, once
-> > every 5min?  Is that configurable?
-> >
-> > -Eric
-> >
-> > >
-> > >
-> > > --
-> > > Coly Li
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > >
-> >
-> >
-> 
-> 
---1641074820-1811819324-1499389304=:17052--
+This is bcache issue?
