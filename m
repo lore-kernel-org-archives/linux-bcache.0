@@ -1,36 +1,58 @@
-From: Konstantin Shalygin <k0ste@k0ste.ru>
-Subject: Re: lock, Workqueue: bcache bch_data_insert_keys [bcache]
-Date: Sat, 8 Jul 2017 18:43:55 +0700
-Message-ID: <bb530062-3c6a-5166-c7aa-1bd3fa72c5ab@k0ste.ru>
-References: <4e51563b-bb3d-efcc-0f84-76572c87c352@k0ste.ru>
- <alpine.LRH.2.11.1707071710550.17052@mail.ewheeler.net>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH 19/19] bcache: Update continue_at() documentation
+Date: Sun, 9 Jul 2017 02:12:04 +0800
+Message-ID: <ac46765e-ce55-8c08-bdeb-1c0c577b3fcc@suse.de>
+References: <20170629134510.GA32385@infradead.org>
+ <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
+ <1498855388-16990-19-git-send-email-bcache@lists.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from k0ste.ru ([212.20.43.218]:46624 "EHLO k0ste.ru"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751706AbdGHLoA (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 8 Jul 2017 07:44:00 -0400
-In-Reply-To: <alpine.LRH.2.11.1707071710550.17052@mail.ewheeler.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1498855388-16990-19-git-send-email-bcache@lists.ewheeler.net>
 Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
+To: bcache@lists.ewheeler.net, linux-block@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, Dan Carpenter <dan.carpenter@oracle.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: linux-bcache@vger.kernel.org
 
-Eric, thanks. I was apply this patch on 4.11.9.
+On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
+> From: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> continue_at() doesn't have a return statement anymore.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-I hope that I will not stumble upon this lock again.
+Acked-by: Coly Li <colyli@suse.de>
 
+Thanks.
 
-On 07/08/2017 12:16 AM, Eric Wheeler wrote:
-> Hi Konstantin,
->
-> Try this patch:
->
-> https://www.spinics.net/lists/stable/msg178933.html
+Coly
 
--- 
-Best regards,
-Konstantin Shalygin
+> ---
+>  drivers/md/bcache/closure.h | 4 ----
+>  1 file changed, 4 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/closure.h b/drivers/md/bcache/closure.h
+> index 1ec84ca..295b7e4 100644
+> --- a/drivers/md/bcache/closure.h
+> +++ b/drivers/md/bcache/closure.h
+> @@ -312,8 +312,6 @@ static inline void closure_wake_up(struct closure_waitlist *list)
+>   * been dropped with closure_put()), it will resume execution at @fn running out
+>   * of @wq (or, if @wq is NULL, @fn will be called by closure_put() directly).
+>   *
+> - * NOTE: This macro expands to a return in the calling function!
+> - *
+>   * This is because after calling continue_at() you no longer have a ref on @cl,
+>   * and whatever @cl owns may be freed out from under you - a running closure fn
+>   * has a ref on its own closure which continue_at() drops.
+> @@ -340,8 +338,6 @@ do {									\
+>   * Causes @fn to be executed out of @cl, in @wq context (or called directly if
+>   * @wq is NULL).
+>   *
+> - * NOTE: like continue_at(), this macro expands to a return in the caller!
+> - *
+>   * The ref the caller of continue_at_nobarrier() had on @cl is now owned by @fn,
+>   * thus it's not safe to touch anything protected by @cl after a
+>   * continue_at_nobarrier().
+> 
