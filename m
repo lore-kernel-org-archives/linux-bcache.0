@@ -1,103 +1,86 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 11/19] bcache: Subtract dirty sectors of thin flash from
- cache_sectors in calculating writeback rate
-Date: Tue, 11 Jul 2017 02:11:17 +0800
-Message-ID: <1f1670e4-a442-0534-6826-eefd88dfdcad@coly.li>
-References: <20170629134510.GA32385@infradead.org>
- <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
- <1498855388-16990-11-git-send-email-bcache@lists.ewheeler.net>
+From: Kai Krakow <hurikhan77@gmail.com>
+Subject: Re: [PATCH] bcache: only recovery I/O error for writethrough mode
+Date: Mon, 10 Jul 2017 23:46:19 +0200
+Message-ID: <20170710234619.7388fde2@jupiter.sol.kaishome.de>
+References: <20170710111828.97918-1-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <1498855388-16990-11-git-send-email-bcache@lists.ewheeler.net>
-Content-Language: en-US
-Sender: stable-owner@vger.kernel.org
-To: Tang Junhui <tang.junhui@zte.com.cn>
-Cc: bcache@lists.ewheeler.net, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from [195.159.176.226] ([195.159.176.226]:49621 "EHLO
+        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+        with ESMTP id S1754536AbdGJVqj (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 10 Jul 2017 17:46:39 -0400
+Received: from list by blaine.gmane.org with local (Exim 4.84_2)
+        (envelope-from <glbd-linux-bcache@m.gmane.org>)
+        id 1dUgVf-0006KQ-If
+        for linux-bcache@vger.kernel.org; Mon, 10 Jul 2017 23:46:27 +0200
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org
 
-On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
+Am Mon, 10 Jul 2017 19:18:28 +0800
+schrieb Coly Li <colyli@suse.de>:
+
+> If a read bio to cache device gets failed, bcache will try to
+> recovery it by forward the read bio to backing device. If backing
+> device responses read request successfully then the bio contains data
+> from backing device will be returned to uppper layer.
 > 
-> Since dirty sectors of thin flash cannot be used to cache data for backend
-> device, so we should subtract it in calculating writeback rate.
+> The recovery effort in cached_dev_read_error() is not correct, and
+> there is report that corrupted data may returned when a dirty cache
+> device goes offline during reading I/O.
 > 
+> For writeback cache mode, before dirty data are wrote back to backing
+> device, data blocks on backing device are not updated and consistent.
+> If a dirty cache device dropped and a read bio gets failed, bcache
+> will return its stale version from backing device. This is mistaken
+> behavior that applications don't expected, especially for data base
+> workload.
+> 
+> This patch fixes the issue by only permit recoverable I/O when cached
+> device is in writethough mode, and s->recoverable is set. For other
+> cache mode, recovery I/O failure by reading backing device does not
+> make sense, bache just simply returns -EIO immediately.
 
-I see you want to get ride of the noise of flash only cache device for
-writeback rate calculation. It makes sense, because flash only cache
-device won't have write back happen at all.
+Shouldn't write-around mode be okay for the same reason, i.e. there's
+no stale version on disk?
+
+So the patch should read "mode != CACHE_MODE_WRITEBACK" (not sure about
+the constant), that would also match your textual description.
 
 
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> Cc: stable@vger.kernel.org
+> Reported-by: Arne Wolf <awolf@lenovo.com>
+> Signed-off-by: Coly Li <colyli@suse.de>
 > ---
->  drivers/md/bcache/writeback.c |  2 +-
->  drivers/md/bcache/writeback.h | 19 +++++++++++++++++++
->  2 files changed, 20 insertions(+), 1 deletion(-)
+>  drivers/md/bcache/request.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
 > 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 4ac8b13..25289e4 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -21,7 +21,7 @@
->  static void __update_writeback_rate(struct cached_dev *dc)
->  {
->  	struct cache_set *c = dc->disk.c;
-> -	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size;
-> +	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size - bcache_flash_devs_sectors_dirty(c);
-
-See flash_dev_run(), the flash volume is created per struct
-bcache_device of a cache set. That means, all data allocated for the
-flash volume will be from a flash only bcache device. Regular dirty data
-won't mixed allocating with flash volume dirty data on identical struct
-bcache device.
-
-Based on the above implementation, non-dirty space from flash only
-bcache device will mislead writeback rate calculation too. So I suggest
-to subtract all buckets size from all flash only bcache devices. Then it
-might be something like,
-
-uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
-			bcache_flash_devs_nbuckets(c);
-
-
-
-Just FYI. Thanks.
-
-Coly
-
->  	uint64_t cache_dirty_target =
->  		div_u64(cache_sectors * dc->writeback_percent, 100);
+> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> index 019b3df9f1c6..6edacac9b00d 100644
+> --- a/drivers/md/bcache/request.c
+> +++ b/drivers/md/bcache/request.c
+> @@ -702,8 +702,11 @@ static void cached_dev_read_error(struct closure
+> *cl) {
+>  	struct search *s = container_of(cl, struct search, cl);
+>  	struct bio *bio = &s->bio.bio;
+> +	struct cached_dev *dc = container_of(s->d, struct
+> cached_dev, disk);
+> +	unsigned mode = cache_mode(dc, NULL);
 >  
-> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-> index c2ab4b4..24ff589 100644
-> --- a/drivers/md/bcache/writeback.h
-> +++ b/drivers/md/bcache/writeback.h
-> @@ -14,6 +14,25 @@ static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
->  	return ret;
->  }
+> -	if (s->recoverable) {
+> +	if (s->recoverable &&
+> +	    (mode == CACHE_MODE_WRITETHROUGH)) {
+>  		/* Retry from the backing device: */
+>  		trace_bcache_read_retry(s->orig_bio);
 >  
-> +static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
-> +{
-> +	uint64_t i, ret = 0;
-> +
-> +	mutex_lock(&bch_register_lock);
-> +
-> +	for (i = 0; i < c->nr_uuids; i++) {
-> +		struct bcache_device *d = c->devices[i];
-> +
-> +		if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
-> +			continue;
-> +	   ret += bcache_dev_sectors_dirty(d);
-> +	}
-> +
-> +	mutex_unlock(&bch_register_lock);
-> +
-> +	return ret;
-> +}
-> +
->  static inline unsigned offset_to_stripe(struct bcache_device *d,
->  					uint64_t offset)
->  {
-> 
+
+
+
+-- 
+Regards,
+Kai
+
+Replies to list-only preferred.
