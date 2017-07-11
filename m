@@ -1,166 +1,210 @@
 From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 12/19] bcache: update bucket_in_use periodically
-Date: Tue, 11 Jul 2017 15:20:36 +0800
-Message-ID: <c66bfa8f-bbe0-6c1d-ae4c-c1c8806742b3@coly.li>
+Subject: Re: [PATCH 06/19] bcache: explicitly destory mutex while exiting
+Date: Tue, 11 Jul 2017 15:22:42 +0800
+Message-ID: <3b64b240-3d0b-6160-7a7e-1d0789d48594@coly.li>
 References: <20170629134510.GA32385@infradead.org>
  <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
- <1498855388-16990-12-git-send-email-bcache@lists.ewheeler.net>
- <e312fb7a-912f-6ecf-e8b4-ef93673efb4e@coly.li>
- <OF5C19A8FA.5FF48E0C-ON4825815A.001E6DB1-4825815A.001F14F2@zte.com.cn>
+ <1498855388-16990-6-git-send-email-bcache@lists.ewheeler.net>
+ <841d6190-61a6-7601-2a00-2404cf0c5a69@coly.li>
+ <CAKhg4tLAiRdujjhh+xUmCzaR9+bTpMgbwtht6TD_bs0zE_61rQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:52192 "EHLO server.coly.li"
+Received: from server.coly.li ([162.144.45.48]:52208 "EHLO server.coly.li"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751149AbdGKHUw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 11 Jul 2017 03:20:52 -0400
-In-Reply-To: <OF5C19A8FA.5FF48E0C-ON4825815A.001E6DB1-4825815A.001F14F2@zte.com.cn>
+        id S932191AbdGKHWx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 11 Jul 2017 03:22:53 -0400
+In-Reply-To: <CAKhg4tLAiRdujjhh+xUmCzaR9+bTpMgbwtht6TD_bs0zE_61rQ@mail.gmail.com>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: axboe@kernel.dk, bcache@lists.ewheeler.net, hch@infradead.org, linux-bcache@vger.kernel.org, linux-bcache-owner@vger.kernel.org, linux-block@vger.kernel.org
+To: Liang Chen <liangchen.linux@gmail.com>
+Cc: bcache@lists.ewheeler.net, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
 
-On 2017/7/11 下午1:39, tang.junhui@zte.com.cn wrote:
-> Compared to bucket depletion, resulting in hanging dead,
-> It is worthy to consumes a little time to update the bucket_in_use.
-> If you have any better solution, please show to us,
-> We should solve it as soon as possible, not wait for it forever.
+On 2017/7/5 下午7:58, Liang Chen wrote:
+> Hi Coly,
+> Thanks for reviewing the patch! You raised a good point about the race. I also
+> think it should be addressed. Even though the time window is small, it will
+> still happen sooner or later.
 > 
+> I would like to keep this "destory mutex" patch unchanged, and send another
+> patch to fix the issue based on your approach. Please take a look. Thanks!
 > 
 
-Your response makes sense, but not all people have same opinion with
-yours. The major issue here is, we need to hold bucket_lock here,
-otherwise we may access wild pointer to freed kobj and panic kernel.
-
-And we need to measure how much time will be occupied to iterate dirty
-buckets number with bucket_lock held. If the latency is not that much,
-we can ignore the cost, otherwise we do need to find a better solution.
-
-Thanks.
+Sure, good idea. I'd like to review the next fix, and provide my feed
+back together. Thanks.
 
 Coly
 
+
+
+> Thanks,
+> Liang
 > 
-> 
-> 发件人:         Coly Li <i@coly.li>
-> 收件人:         linux-block@vger.kernel.org, Tang Junhui
-> <tang.junhui@zte.com.cn>,
-> 抄送:        bcache@lists.ewheeler.net, linux-bcache@vger.kernel.org,
-> hch@infradead.org, axboe@kernel.dk
-> 日期:         2017/07/11 13:06
-> 主题:        Re: [PATCH 12/19] bcache: update bucket_in_use periodically
-> 发件人:        linux-bcache-owner@vger.kernel.org
-> ------------------------------------------------------------------------
-> 
-> 
-> 
-> On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
->> From: Tang Junhui <tang.junhui@zte.com.cn>
+> On Sun, Jul 2, 2017 at 2:43 AM, Coly Li <i@coly.li> wrote:
+>> On 2017/7/1 上午4:42, bcache@lists.ewheeler.net wrote:
+>>> From: Liang Chen <liangchen.linux@gmail.com>
+>>>
+>>> mutex_destroy does nothing most of time, but it's better to call
+>>> it to make the code future proof and it also has some meaning
+>>> for like mutex debug.
+>>>
+>>> Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+>>> Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
+>>> Cc: stable@vger.kernel.org
+>>> ---
+>>>  drivers/md/bcache/super.c | 2 ++
+>>>  1 file changed, 2 insertions(+)
+>>>
+>>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>>> index 48b8c20..1f84791 100644
+>>> --- a/drivers/md/bcache/super.c
+>>> +++ b/drivers/md/bcache/super.c
+>>> @@ -2089,6 +2089,7 @@ static void bcache_exit(void)
+>>>       if (bcache_major)
+>>>               unregister_blkdev(bcache_major, "bcache");
+>>>       unregister_reboot_notifier(&reboot);
+>>> +     mutex_destroy(&bch_register_lock>  }
+>>>
+>>>  static int __init bcache_init(void)
+>>> @@ -2106,6 +2107,7 @@ static int __init bcache_init(void)
+>>>
+>>>       bcache_major = register_blkdev(0, "bcache");
+>>>       if (bcache_major < 0) {
+>>> +             mutex_destroy(&bch_register_lock);
+>>>               unregister_reboot_notifier(&reboot);
+>>>               return bcache_major;
+>>>       }
+>>>
 >>
->> bucket_in_use is updated in gc thread which triggered by invalidating or
->> writing sectors_to_gc dirty data, It's been too long, Therefore, when we
->> use it to compare with the threshold, it is often not timely, which leads
->> to inaccurate judgment and often results in bucket depletion.
+>> Hi Liang,
 >>
->> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+>> Current code might have a potential race in a very corner case, see,
+>> 2084 static int __init bcache_init(void)
+>> 2085 {
+>> 2086         static const struct attribute *files[] = {
+>> 2087                 &ksysfs_register.attr,
+>> 2088                 &ksysfs_register_quiet.attr,
+>> 2089                 NULL
+>> 2090         };
+>> 2091
+>> 2092         mutex_init(&bch_register_lock);
+>> 2093         init_waitqueue_head(&unregister_wait);
+>> 2094         register_reboot_notifier(&reboot);
+>> 2095         closure_debug_init();
+>> 2096
+>> 2097         bcache_major = register_blkdev(0, "bcache");
+>> 2098         if (bcache_major < 0) {
+>> 2099                 unregister_reboot_notifier(&reboot);
+>> 2100                 return bcache_major;
+>> 2101         }
+>> 2102
+>> 2103         if (!(bcache_wq = alloc_workqueue("bcache", WQ_MEM_RECLAIM,
+>> 0)) ||
+>> 2104             !(bcache_kobj = kobject_create_and_add("bcache",
+>> fs_kobj)) ||
+>> 2105             sysfs_create_files(bcache_kobj, files) ||
+>> 2106             bch_request_init() ||
+>> 2107             bch_debug_init(bcache_kobj))
+>> 2108                 goto err;
+>> 2109
+>> 2110         return 0;
+>> 2111 err:
+>> 2112         bcache_exit();
+>> 2113         return -ENOMEM;
+>> 2114 }
+>>
+>> At line 2107, most of bache stuffs are ready to work, only a debugfs
+>> entry not created yet. If in the time gap between line 2106 and line
+>> 2017, another user space tool just registers cache and backing devices.
+>> Then bch_debug_init() failed, and bcache_exit() gets called. In this
+>> case, I doubt bcache_exit() can handle all the references correctly.
+>>
+>> The race is very rare, and almost won't happen in real life. So, if you
+>> don't care about it, the patch can be simpler like this,
+>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>> index e57353e39168..fb5453a46a03 100644
+>> --- a/drivers/md/bcache/super.c
+>> +++ b/drivers/md/bcache/super.c
+>> @@ -2070,6 +2070,7 @@ static struct notifier_block reboot = {
+>>
+>>  static void bcache_exit(void)
+>>  {
+>> +       mutex_destroy(&bch_register_lock);
+>>         bch_debug_exit();
+>>         bch_request_exit();
+>>         if (bcache_kobj)
+>> @@ -2089,7 +2090,6 @@ static int __init bcache_init(void)
+>>                 NULL
+>>         };
+>>
+>> -       mutex_init(&bch_register_lock);
+>>         init_waitqueue_head(&unregister_wait);
+>>         register_reboot_notifier(&reboot);
+>>         closure_debug_init();
+>> @@ -2107,6 +2107,7 @@ static int __init bcache_init(void)
+>>             bch_debug_init(bcache_kobj))
+>>                 goto err;
+>>
+>> +       mutex_init(&bch_register_lock);
+>>         return 0;
+>>  err:
+>>         bcache_exit();
 >> ---
->>  drivers/md/bcache/btree.c | 29 +++++++++++++++++++++++++++--
->>  1 file changed, 27 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
->> index 866dcf7..77aa20b 100644
->> --- a/drivers/md/bcache/btree.c
->> +++ b/drivers/md/bcache/btree.c
->> @@ -90,6 +90,8 @@
->>  #define MAX_NEED_GC                                  64
->>  #define MAX_SAVE_PRIO                                  72
->>  
->> +#define GC_THREAD_TIMEOUT_MS                 (30 * 1000)
->> +
->>  #define PTR_DIRTY_BIT                                  (((uint64_t) 1
-> << 36))
->>  
->>  #define PTR_HASH(c, k)                                              
->                                                                         \
->> @@ -1760,6 +1762,23 @@ static void bch_btree_gc(struct cache_set *c)
->>                   bch_moving_gc(c);
+>> And if you do care about the race, maybe you should do something like this,
+>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>> index e57353e39168..ca1d8b7a7815 100644
+>> --- a/drivers/md/bcache/super.c
+>> +++ b/drivers/md/bcache/super.c
+>> @@ -2079,6 +2079,7 @@ static void bcache_exit(void)
+>>         if (bcache_major)
+>>                 unregister_blkdev(bcache_major, "bcache");
+>>         unregister_reboot_notifier(&reboot);
+>> +       mutex_unlock(&bch_register_lock);
 >>  }
->>  
->> +void bch_update_bucket_in_use(struct cache_set *c)
->> +{
->> +                 struct cache *ca;
->> +                 struct bucket *b;
->> +                 unsigned i;
->> +                 size_t available = 0;
->> +
->> +                 for_each_cache(ca, c, i) {
->> +                                  for_each_bucket(b, ca) {
->> +                                                   if (!GC_MARK(b) ||
-> GC_MARK(b) == GC_MARK_RECLAIMABLE)
->> +                                                                  
->  available++;
->> +                                  }
->> +                 }
->> +
-> 
-> bucket_lock of cache set should be held before accessing buckets.
-> 
-> 
->> +                 c->gc_stats.in_use = (c->nbuckets - available) * 100
-> / c->nbuckets;
->> +}
->> +
->>  static bool gc_should_run(struct cache_set *c)
->>  {
->>                   struct cache *ca;
->> @@ -1778,10 +1797,16 @@ static bool gc_should_run(struct cache_set *c)
->>  static int bch_gc_thread(void *arg)
->>  {
->>                   struct cache_set *c = arg;
->> +                 long  ret;
->> +                 unsigned long timeout =
-> msecs_to_jiffies(GC_THREAD_TIMEOUT_MS);
->>  
->>                   while (1) {
->> -                                  wait_event_interruptible(c->gc_wait,
->> -                                                    
->  kthread_should_stop() || gc_should_run(c));
->> +                                  ret =
-> wait_event_interruptible_timeout(c->gc_wait,
->> +                                                    
->  kthread_should_stop() || gc_should_run(c), timeout);
->> +                                  if (!ret) {
->> +                                                  
-> bch_update_bucket_in_use(c);
->> +                                                   continue;
-> 
-> A continue here will ignore status returned from kthread_should_stop(),
-> which might not be expected behavior.
-> 
-> 
->> +                                  }
->>  
->>                                    if (kthread_should_stop())
->>                                                     break;
 >>
-> 
-> Iterating all buckets from the cache set requires bucket_lock to be
-> held. Waiting for bucket_lock may take quite a long time for either
-> bucket allocating code or bch_gc_thread(). What I concern is, this patch
-> may introduce bucket allocation delay in period of GC_THREAD_TIMEOUT_MS.
-> 
-> We need to find out a way to avoid such a performance regression.
-> 
-> -- 
-> Coly Li
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+>>  static int __init bcache_init(void)
+>> @@ -2090,6 +2091,7 @@ static int __init bcache_init(void)
+>>         };
+>>
+>>         mutex_init(&bch_register_lock);
+>> +       mutex_lock(&bch_register_lock);
+>>         init_waitqueue_head(&unregister_wait);
+>>         register_reboot_notifier(&reboot);
+>>         closure_debug_init();
+>> @@ -2097,6 +2099,8 @@ static int __init bcache_init(void)
+>>         bcache_major = register_blkdev(0, "bcache");
+>>         if (bcache_major < 0) {
+>>                 unregister_reboot_notifier(&reboot);
+>> +               mutex_unlock(&bch_register_lock);
+>> +               mutex_destroy(&bch_register_lock);
+>>                 return bcache_major;
+>>         }
+>>
+>> @@ -2104,9 +2108,12 @@ static int __init bcache_init(void)
+>>             !(bcache_kobj = kobject_create_and_add("bcache", fs_kobj)) ||
+>>             sysfs_create_files(bcache_kobj, files) ||
+>>             bch_request_init() ||
+>> -           bch_debug_init(bcache_kobj))
+>> +           bch_debug_init(bcache_kobj)) {
+>> +               mutex_unlock(&bch_register_lock);
+>>                 goto err;
+>> +       }
+>>
+>> +       mutex_unlock(&bch_register_lock);
+>>         return 0;
+>>  err:
+>>         bcache_exit();
+>> ---
+>>
+>> Personally I think the first approach with only one new line code added,
+>> your original version will add two new lines of code.
+>>
+>> Just FYI. Thanks.
+>>
+>> --
+>> Coly Li
 
 
 -- 
