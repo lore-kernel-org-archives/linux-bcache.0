@@ -1,94 +1,111 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: only recovery I/O error for writethrough mode
-Date: Tue, 11 Jul 2017 11:55:49 +0800
-Message-ID: <c343434e-3dc0-ef05-23eb-270266e23c1b@suse.de>
-References: <20170710111828.97918-1-colyli@suse.de>
- <20170710234619.7388fde2@jupiter.sol.kaishome.de>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 12/19] bcache: update bucket_in_use periodically
+Date: Tue, 11 Jul 2017 13:05:43 +0800
+Message-ID: <e312fb7a-912f-6ecf-e8b4-ef93673efb4e@coly.li>
+References: <20170629134510.GA32385@infradead.org>
+ <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
+ <1498855388-16990-12-git-send-email-bcache@lists.ewheeler.net>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:51258 "EHLO mx1.suse.de"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1754832AbdGKDz4 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 10 Jul 2017 23:55:56 -0400
-In-Reply-To: <20170710234619.7388fde2@jupiter.sol.kaishome.de>
+Received: from server.coly.li ([162.144.45.48]:51620 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751149AbdGKFF5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 11 Jul 2017 01:05:57 -0400
+In-Reply-To: <1498855388-16990-12-git-send-email-bcache@lists.ewheeler.net>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kai Krakow <hurikhan77@gmail.com>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org
+To: linux-block@vger.kernel.org, Tang Junhui <tang.junhui@zte.com.cn>
+Cc: bcache@lists.ewheeler.net, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk
 
-On 2017/7/11 上午5:46, Kai Krakow wrote:
-> Am Mon, 10 Jul 2017 19:18:28 +0800
-> schrieb Coly Li <colyli@suse.de>:
+On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
 > 
->> If a read bio to cache device gets failed, bcache will try to
->> recovery it by forward the read bio to backing device. If backing
->> device responses read request successfully then the bio contains data
->> from backing device will be returned to uppper layer.
->>
->> The recovery effort in cached_dev_read_error() is not correct, and
->> there is report that corrupted data may returned when a dirty cache
->> device goes offline during reading I/O.
->>
->> For writeback cache mode, before dirty data are wrote back to backing
->> device, data blocks on backing device are not updated and consistent.
->> If a dirty cache device dropped and a read bio gets failed, bcache
->> will return its stale version from backing device. This is mistaken
->> behavior that applications don't expected, especially for data base
->> workload.
->>
->> This patch fixes the issue by only permit recoverable I/O when cached
->> device is in writethough mode, and s->recoverable is set. For other
->> cache mode, recovery I/O failure by reading backing device does not
->> make sense, bache just simply returns -EIO immediately.
+> bucket_in_use is updated in gc thread which triggered by invalidating or
+> writing sectors_to_gc dirty data, It's been too long, Therefore, when we
+> use it to compare with the threshold, it is often not timely, which leads
+> to inaccurate judgment and often results in bucket depletion.
 > 
-> Shouldn't write-around mode be okay for the same reason, i.e. there's
-> no stale version on disk?
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> ---
+>  drivers/md/bcache/btree.c | 29 +++++++++++++++++++++++++++--
+>  1 file changed, 27 insertions(+), 2 deletions(-)
 > 
-> So the patch should read "mode != CACHE_MODE_WRITEBACK" (not sure about
-> the constant), that would also match your textual description.
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index 866dcf7..77aa20b 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -90,6 +90,8 @@
+>  #define MAX_NEED_GC		64
+>  #define MAX_SAVE_PRIO		72
+>  
+> +#define GC_THREAD_TIMEOUT_MS	(30 * 1000)
+> +
+>  #define PTR_DIRTY_BIT		(((uint64_t) 1 << 36))
+>  
+>  #define PTR_HASH(c, k)							\
+> @@ -1760,6 +1762,23 @@ static void bch_btree_gc(struct cache_set *c)
+>  	bch_moving_gc(c);
+>  }
+>  
+> +void bch_update_bucket_in_use(struct cache_set *c)
+> +{
+> +	struct cache *ca;
+> +	struct bucket *b;
+> +	unsigned i;
+> +	size_t available = 0;
+> +
+> +	for_each_cache(ca, c, i) {
+> +		for_each_bucket(b, ca) {
+> +			if (!GC_MARK(b) || GC_MARK(b) == GC_MARK_RECLAIMABLE)
+> +				available++;
+> +		}
+> +	}
+> +
+
+bucket_lock of cache set should be held before accessing buckets.
+
+
+> +	c->gc_stats.in_use = (c->nbuckets - available) * 100 / c->nbuckets;
+> +}
+> +
+>  static bool gc_should_run(struct cache_set *c)
+>  {
+>  	struct cache *ca;
+> @@ -1778,10 +1797,16 @@ static bool gc_should_run(struct cache_set *c)
+>  static int bch_gc_thread(void *arg)
+>  {
+>  	struct cache_set *c = arg;
+> +	long  ret;
+> +	unsigned long timeout = msecs_to_jiffies(GC_THREAD_TIMEOUT_MS);
+>  
+>  	while (1) {
+> -		wait_event_interruptible(c->gc_wait,
+> -			   kthread_should_stop() || gc_should_run(c));
+> +		ret = wait_event_interruptible_timeout(c->gc_wait,
+> +			   kthread_should_stop() || gc_should_run(c), timeout);
+> +		if (!ret) {
+> +			bch_update_bucket_in_use(c);
+> +			continue;
+
+A continue here will ignore status returned from kthread_should_stop(),
+which might not be expected behavior.
+
+
+> +		}
+>  
+>  		if (kthread_should_stop())
+>  			break;
 > 
 
-For write-around mode, there is only backing device as bdev target, it
-does not have such inconsistent data issue.
+Iterating all buckets from the cache set requires bucket_lock to be
+held. Waiting for bucket_lock may take quite a long time for either
+bucket allocating code or bch_gc_thread(). What I concern is, this patch
+may introduce bucket allocation delay in period of GC_THREAD_TIMEOUT_MS.
 
-And indeed, this is a try-best effort. I mean, if a cached device is
-changed from writeback mode to writethrough mode, then the cache device
-is offline with dirty data, data corruption will still be probably to
-happen. Anyway, this patch fixes most of cases when people do not change
-cache mode in runtime.
+We need to find out a way to avoid such a performance regression.
 
-Thanks.
-
-Coly
-
-> 
->> Reported-by: Arne Wolf <awolf@lenovo.com>
->> Signed-off-by: Coly Li <colyli@suse.de>
->> ---
->>  drivers/md/bcache/request.c | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
->> index 019b3df9f1c6..6edacac9b00d 100644
->> --- a/drivers/md/bcache/request.c
->> +++ b/drivers/md/bcache/request.c
->> @@ -702,8 +702,11 @@ static void cached_dev_read_error(struct closure
->> *cl) {
->>  	struct search *s = container_of(cl, struct search, cl);
->>  	struct bio *bio = &s->bio.bio;
->> +	struct cached_dev *dc = container_of(s->d, struct
->> cached_dev, disk);
->> +	unsigned mode = cache_mode(dc, NULL);
->>  
->> -	if (s->recoverable) {
->> +	if (s->recoverable &&
->> +	    (mode == CACHE_MODE_WRITETHROUGH)) {
->>  		/* Retry from the backing device: */
->>  		trace_bcache_read_retry(s->orig_bio);
->>  
-> 
-> 
-> 
+-- 
+Coly Li
