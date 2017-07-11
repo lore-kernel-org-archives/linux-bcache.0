@@ -1,161 +1,116 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 12/19] bcache: update bucket_in_use periodically
-Date: Tue, 11 Jul 2017 21:06:41 +0800
-Message-ID: <52d57172-777d-5df6-6ee5-51a0d9560f82@coly.li>
-References: <20170629134510.GA32385@infradead.org>
- <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
- <1498855388-16990-12-git-send-email-bcache@lists.ewheeler.net>
- <e312fb7a-912f-6ecf-e8b4-ef93673efb4e@coly.li>
- <OF5C19A8FA.5FF48E0C-ON4825815A.001E6DB1-4825815A.001F14F2@zte.com.cn>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH] bcache: only recovery I/O error for writethrough mode
+Date: Tue, 11 Jul 2017 17:42:10 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1707111740290.17052@mail.ewheeler.net>
+References: <20170710111828.97918-1-colyli@suse.de> <20170710234619.7388fde2@jupiter.sol.kaishome.de> <c343434e-3dc0-ef05-23eb-270266e23c1b@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <OF5C19A8FA.5FF48E0C-ON4825815A.001E6DB1-4825815A.001F14F2@zte.com.cn>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: axboe@kernel.dk, bcache@lists.ewheeler.net, hch@infradead.org, linux-bcache@vger.kernel.org, linux-bcache-owner@vger.kernel.org, linux-block@vger.kernel.org
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-2093933934-1499794931=:17052"
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx.ewheeler.net ([66.155.3.69]:50360 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S932462AbdGKRmN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 11 Jul 2017 13:42:13 -0400
+In-Reply-To: <c343434e-3dc0-ef05-23eb-270266e23c1b@suse.de>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: Kai Krakow <hurikhan77@gmail.com>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On 2017/7/11 下午1:39, tang.junhui@zte.com.cn wrote:
-> Compared to bucket depletion, resulting in hanging dead,
-> It is worthy to consumes a little time to update the bucket_in_use.
-> If you have any better solution, please show to us,
-> We should solve it as soon as possible, not wait for it forever.
-> 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I also test this patch on a cache device with 4x3.8TB size, all buckets
-iteration takes around 40-50ms. If the iteration needs to hold
-bucket_lock of cache set, it is very probably to introduce a huge I/O
-latency in period of every 30 seconds.
+--1641074820-2093933934-1499794931=:17052
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-For database people, this is not good news.
+On Tue, 11 Jul 2017, Coly Li wrote:
+> On 2017/7/11 上午5:46, Kai Krakow wrote:
+> > Am Mon, 10 Jul 2017 19:18:28 +0800
+> > schrieb Coly Li <colyli@suse.de>:
+> > 
+> >> If a read bio to cache device gets failed, bcache will try to
+> >> recovery it by forward the read bio to backing device. If backing
+> >> device responses read request successfully then the bio contains data
+> >> from backing device will be returned to uppper layer.
+> >>
+> >> The recovery effort in cached_dev_read_error() is not correct, and
+> >> there is report that corrupted data may returned when a dirty cache
+> >> device goes offline during reading I/O.
+> >>
+> >> For writeback cache mode, before dirty data are wrote back to backing
+> >> device, data blocks on backing device are not updated and consistent.
+> >> If a dirty cache device dropped and a read bio gets failed, bcache
+> >> will return its stale version from backing device. This is mistaken
+> >> behavior that applications don't expected, especially for data base
+> >> workload.
+> >>
+> >> This patch fixes the issue by only permit recoverable I/O when cached
+> >> device is in writethough mode, and s->recoverable is set. For other
+> >> cache mode, recovery I/O failure by reading backing device does not
+> >> make sense, bache just simply returns -EIO immediately.
 
-Coly
+Since bcache keeps the dirty map in memory, can you allow the passthrough 
+to the backing device if the block is clean, but -EIO otherwise?
 
 
+--
+Eric Wheeler
+
+
+
+> > 
+> > Shouldn't write-around mode be okay for the same reason, i.e. there's
+> > no stale version on disk?
+> > 
+> > So the patch should read "mode != CACHE_MODE_WRITEBACK" (not sure about
+> > the constant), that would also match your textual description.
+> > 
 > 
+> For write-around mode, there is only backing device as bdev target, it
+> does not have such inconsistent data issue.
 > 
+> And indeed, this is a try-best effort. I mean, if a cached device is
+> changed from writeback mode to writethrough mode, then the cache device
+> is offline with dirty data, data corruption will still be probably to
+> happen. Anyway, this patch fixes most of cases when people do not change
+> cache mode in runtime.
 > 
-> 发件人:         Coly Li <i@coly.li>
-> 收件人:         linux-block@vger.kernel.org, Tang Junhui
-> <tang.junhui@zte.com.cn>,
-> 抄送:        bcache@lists.ewheeler.net, linux-bcache@vger.kernel.org,
-> hch@infradead.org, axboe@kernel.dk
-> 日期:         2017/07/11 13:06
-> 主题:        Re: [PATCH 12/19] bcache: update bucket_in_use periodically
-> 发件人:        linux-bcache-owner@vger.kernel.org
-> ------------------------------------------------------------------------
+> Thanks.
 > 
+> Coly
 > 
+> > 
+> >> Reported-by: Arne Wolf <awolf@lenovo.com>
+> >> Signed-off-by: Coly Li <colyli@suse.de>
+> >> ---
+> >>  drivers/md/bcache/request.c | 5 ++++-
+> >>  1 file changed, 4 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> >> index 019b3df9f1c6..6edacac9b00d 100644
+> >> --- a/drivers/md/bcache/request.c
+> >> +++ b/drivers/md/bcache/request.c
+> >> @@ -702,8 +702,11 @@ static void cached_dev_read_error(struct closure
+> >> *cl) {
+> >>  	struct search *s = container_of(cl, struct search, cl);
+> >>  	struct bio *bio = &s->bio.bio;
+> >> +	struct cached_dev *dc = container_of(s->d, struct
+> >> cached_dev, disk);
+> >> +	unsigned mode = cache_mode(dc, NULL);
+> >>  
+> >> -	if (s->recoverable) {
+> >> +	if (s->recoverable &&
+> >> +	    (mode == CACHE_MODE_WRITETHROUGH)) {
+> >>  		/* Retry from the backing device: */
+> >>  		trace_bcache_read_retry(s->orig_bio);
+> >>  
+> > 
+> > 
+> > 
 > 
-> On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
->> From: Tang Junhui <tang.junhui@zte.com.cn>
->>
->> bucket_in_use is updated in gc thread which triggered by invalidating or
->> writing sectors_to_gc dirty data, It's been too long, Therefore, when we
->> use it to compare with the threshold, it is often not timely, which leads
->> to inaccurate judgment and often results in bucket depletion.
->>
->> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
->> ---
->>  drivers/md/bcache/btree.c | 29 +++++++++++++++++++++++++++--
->>  1 file changed, 27 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
->> index 866dcf7..77aa20b 100644
->> --- a/drivers/md/bcache/btree.c
->> +++ b/drivers/md/bcache/btree.c
->> @@ -90,6 +90,8 @@
->>  #define MAX_NEED_GC                                  64
->>  #define MAX_SAVE_PRIO                                  72
->>  
->> +#define GC_THREAD_TIMEOUT_MS                 (30 * 1000)
->> +
->>  #define PTR_DIRTY_BIT                                  (((uint64_t) 1
-> << 36))
->>  
->>  #define PTR_HASH(c, k)                                              
->                                                                         \
->> @@ -1760,6 +1762,23 @@ static void bch_btree_gc(struct cache_set *c)
->>                   bch_moving_gc(c);
->>  }
->>  
->> +void bch_update_bucket_in_use(struct cache_set *c)
->> +{
->> +                 struct cache *ca;
->> +                 struct bucket *b;
->> +                 unsigned i;
->> +                 size_t available = 0;
->> +
->> +                 for_each_cache(ca, c, i) {
->> +                                  for_each_bucket(b, ca) {
->> +                                                   if (!GC_MARK(b) ||
-> GC_MARK(b) == GC_MARK_RECLAIMABLE)
->> +                                                                  
->  available++;
->> +                                  }
->> +                 }
->> +
-> 
-> bucket_lock of cache set should be held before accessing buckets.
-> 
-> 
->> +                 c->gc_stats.in_use = (c->nbuckets - available) * 100
-> / c->nbuckets;
->> +}
->> +
->>  static bool gc_should_run(struct cache_set *c)
->>  {
->>                   struct cache *ca;
->> @@ -1778,10 +1797,16 @@ static bool gc_should_run(struct cache_set *c)
->>  static int bch_gc_thread(void *arg)
->>  {
->>                   struct cache_set *c = arg;
->> +                 long  ret;
->> +                 unsigned long timeout =
-> msecs_to_jiffies(GC_THREAD_TIMEOUT_MS);
->>  
->>                   while (1) {
->> -                                  wait_event_interruptible(c->gc_wait,
->> -                                                    
->  kthread_should_stop() || gc_should_run(c));
->> +                                  ret =
-> wait_event_interruptible_timeout(c->gc_wait,
->> +                                                    
->  kthread_should_stop() || gc_should_run(c), timeout);
->> +                                  if (!ret) {
->> +                                                  
-> bch_update_bucket_in_use(c);
->> +                                                   continue;
-> 
-> A continue here will ignore status returned from kthread_should_stop(),
-> which might not be expected behavior.
-> 
-> 
->> +                                  }
->>  
->>                                    if (kthread_should_stop())
->>                                                     break;
->>
-> 
-> Iterating all buckets from the cache set requires bucket_lock to be
-> held. Waiting for bucket_lock may take quite a long time for either
-> bucket allocating code or bch_gc_thread(). What I concern is, this patch
-> may introduce bucket allocation delay in period of GC_THREAD_TIMEOUT_MS.
-> 
-> We need to find out a way to avoid such a performance regression.
-> 
-> -- 
-> Coly Li
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> 
-
-
--- 
-Coly Li
+--1641074820-2093933934-1499794931=:17052--
