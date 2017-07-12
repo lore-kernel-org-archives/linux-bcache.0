@@ -1,105 +1,124 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH] [RFC] gfs2: add flag REQ_PRIO for metadata read ahead
-Date: Tue, 11 Jul 2017 20:10:35 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1707112009490.10812@mail.ewheeler.net>
-References: <20170711030902.13391-1-colyli@suse.de>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH] bcache: only recovery I/O error for writethrough mode
+Date: Wed, 12 Jul 2017 09:32:13 +0800
+Message-ID: <431c92e9-0019-f4d5-9db6-1cd6784e2b4e@suse.de>
+References: <20170710111828.97918-1-colyli@suse.de>
+ <20170710234619.7388fde2@jupiter.sol.kaishome.de>
+ <c343434e-3dc0-ef05-23eb-270266e23c1b@suse.de>
+ <alpine.LRH.2.11.1707111740290.17052@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:52974 "EHLO mail.ewheeler.net"
+Received: from mx2.suse.de ([195.135.220.15]:52136 "EHLO mx1.suse.de"
         rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1752607AbdGKUKk (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 11 Jul 2017 16:10:40 -0400
-In-Reply-To: <20170711030902.13391-1-colyli@suse.de>
+        id S1756405AbdGLBc3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 11 Jul 2017 21:32:29 -0400
+In-Reply-To: <alpine.LRH.2.11.1707111740290.17052@mail.ewheeler.net>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: cluster-devel@redhat.com, swhiteho@redhat.com, rpeterso@redhat.com, linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Kai Krakow <hurikhan77@gmail.com>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On Tue, 11 Jul 2017, Coly Li wrote:
+On 2017/7/12 上午1:42, Eric Wheeler wrote:
+> On Tue, 11 Jul 2017, Coly Li wrote:
+>> On 2017/7/11 上午5:46, Kai Krakow wrote:
+>>> Am Mon, 10 Jul 2017 19:18:28 +0800
+>>> schrieb Coly Li <colyli@suse.de>:
+>>>
+>>>> If a read bio to cache device gets failed, bcache will try to
+>>>> recovery it by forward the read bio to backing device. If backing
+>>>> device responses read request successfully then the bio contains data
+>>>> from backing device will be returned to uppper layer.
+>>>>
+>>>> The recovery effort in cached_dev_read_error() is not correct, and
+>>>> there is report that corrupted data may returned when a dirty cache
+>>>> device goes offline during reading I/O.
+>>>>
+>>>> For writeback cache mode, before dirty data are wrote back to backing
+>>>> device, data blocks on backing device are not updated and consistent.
+>>>> If a dirty cache device dropped and a read bio gets failed, bcache
+>>>> will return its stale version from backing device. This is mistaken
+>>>> behavior that applications don't expected, especially for data base
+>>>> workload.
+>>>>
+>>>> This patch fixes the issue by only permit recoverable I/O when cached
+>>>> device is in writethough mode, and s->recoverable is set. For other
+>>>> cache mode, recovery I/O failure by reading backing device does not
+>>>> make sense, bache just simply returns -EIO immediately.
+> 
+> Since bcache keeps the dirty map in memory, can you allow the passthrough 
+> to the backing device if the block is clean, but -EIO otherwise?
 
-> When gfs2 does metadata read ahead, currently flags (REQ_RAHEAD | REQ_META)
-> are used to submit bio. Flag REQ_META is just a hint for block trace, not
-> for block layer code to handle a bio as metadata request.
-> 
-> When doing read ahead for metadata, A REQ_PRIO flag on the metadata bio
-> is very informative to block layer code. For example, if bcache is used as
-> a I/O cache for gfs2, it will be possible for bcache code to cache the
-> pre-fetched metadata blocks on cache device as well, which may be
-> probably to improve metadata I/O performance if the following requests
-> hit the cache.
-> 
-> This patch adds REQ_PRIO flag when submitting a metadata readahead bio.
-> A meta data read ahead bio may come from I/O requests for bitmap,
-> directoriesmeta or other general metadata request.
-> 
+Hi Eric,
 
-Are there any places in gfs2 where REQ_PRIO should be placed on 
-latency-sensitive metadata writes?  They would then writeback in bcache 
-after the relevant bcache patch is merged.
+This is a nice idea, I also discussed with other people around me. A
+reason not to choose it is, for data base applications in clustering
+environment, it is not very important for dirty data lost on
+disconnected from one server, because the work load can be switched to
+other server and replay inside the cluster. But it is important to
+detect the disconnected cache device failure as early as possible, so
+the work load can be switched with less dirty data lost.
 
---
-Eric Wheeler
+Finally I choose simply returning an -EIO to I/O requester, to make
+application to know the cache not available earlier and not to introduce
+more inconsistent data on backing device.
 
+Coly
 
-> Signed-off-by: Coly Li <colyli@suse.de>
-> ---
->  fs/gfs2/bmap.c    | 5 +++--
->  fs/gfs2/dir.c     | 4 +++-
->  fs/gfs2/meta_io.c | 4 +++-
->  3 files changed, 9 insertions(+), 4 deletions(-)
 > 
-> diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
-> index 9fa3aef9a5b3..fa3ea29f39cf 100644
-> --- a/fs/gfs2/bmap.c
-> +++ b/fs/gfs2/bmap.c
-> @@ -291,8 +291,9 @@ static void gfs2_metapath_ra(struct gfs2_glock *gl,
->  		if (trylock_buffer(rabh)) {
->  			if (!buffer_uptodate(rabh)) {
->  				rabh->b_end_io = end_buffer_read_sync;
-> -				submit_bh(REQ_OP_READ, REQ_RAHEAD | REQ_META,
-> -						rabh);
-> +				submit_bh(REQ_OP_READ,
-> +					  REQ_RAHEAD | REQ_META | REQ_PRIO,
-> +					  rabh);
->  				continue;
->  			}
->  			unlock_buffer(rabh);
-> diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
-> index db427658ccd9..0741e4018f8c 100644
-> --- a/fs/gfs2/dir.c
-> +++ b/fs/gfs2/dir.c
-> @@ -1514,7 +1514,9 @@ static void gfs2_dir_readahead(struct inode *inode, unsigned hsize, u32 index,
->  				continue;
->  			}
->  			bh->b_end_io = end_buffer_read_sync;
-> -			submit_bh(REQ_OP_READ, REQ_RAHEAD | REQ_META, bh);
-> +			submit_bh(REQ_OP_READ,
-> +				  REQ_RAHEAD | REQ_META | REQ_PRIO,
-> +				  bh);
->  			continue;
->  		}
->  		brelse(bh);
-> diff --git a/fs/gfs2/meta_io.c b/fs/gfs2/meta_io.c
-> index fabe1614f879..6103d1c816ef 100644
-> --- a/fs/gfs2/meta_io.c
-> +++ b/fs/gfs2/meta_io.c
-> @@ -461,7 +461,9 @@ struct buffer_head *gfs2_meta_ra(struct gfs2_glock *gl, u64 dblock, u32 extlen)
->  		bh = gfs2_getbuf(gl, dblock, CREATE);
->  
->  		if (!buffer_uptodate(bh) && !buffer_locked(bh))
-> -			ll_rw_block(REQ_OP_READ, REQ_RAHEAD | REQ_META, 1, &bh);
-> +			ll_rw_block(REQ_OP_READ,
-> +				    REQ_RAHEAD | REQ_META | REQ_PRIO,
-> +				    1, &bh);
->  		brelse(bh);
->  		dblock++;
->  		extlen--;
-> -- 
-> 2.12.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>>>
+>>> Shouldn't write-around mode be okay for the same reason, i.e. there's
+>>> no stale version on disk?
+>>>
+>>> So the patch should read "mode != CACHE_MODE_WRITEBACK" (not sure about
+>>> the constant), that would also match your textual description.
+>>>
+>>
+>> For write-around mode, there is only backing device as bdev target, it
+>> does not have such inconsistent data issue.
+>>
+>> And indeed, this is a try-best effort. I mean, if a cached device is
+>> changed from writeback mode to writethrough mode, then the cache device
+>> is offline with dirty data, data corruption will still be probably to
+>> happen. Anyway, this patch fixes most of cases when people do not change
+>> cache mode in runtime.
+>>
+>> Thanks.
+>>
+>> Coly
+>>
+>>>
+>>>> Reported-by: Arne Wolf <awolf@lenovo.com>
+>>>> Signed-off-by: Coly Li <colyli@suse.de>
+>>>> ---
+>>>>  drivers/md/bcache/request.c | 5 ++++-
+>>>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+>>>> index 019b3df9f1c6..6edacac9b00d 100644
+>>>> --- a/drivers/md/bcache/request.c
+>>>> +++ b/drivers/md/bcache/request.c
+>>>> @@ -702,8 +702,11 @@ static void cached_dev_read_error(struct closure
+>>>> *cl) {
+>>>>  	struct search *s = container_of(cl, struct search, cl);
+>>>>  	struct bio *bio = &s->bio.bio;
+>>>> +	struct cached_dev *dc = container_of(s->d, struct
+>>>> cached_dev, disk);
+>>>> +	unsigned mode = cache_mode(dc, NULL);
+>>>>  
+>>>> -	if (s->recoverable) {
+>>>> +	if (s->recoverable &&
+>>>> +	    (mode == CACHE_MODE_WRITETHROUGH)) {
+>>>>  		/* Retry from the backing device: */
+>>>>  		trace_bcache_read_retry(s->orig_bio);
+>>>>  
+>>>
+>>>
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
