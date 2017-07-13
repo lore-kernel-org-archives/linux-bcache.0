@@ -1,125 +1,156 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH 10/19] bcache: initialize stripe_sectors_dirty correctly
- for thin flash device
-Date: Thu, 13 Jul 2017 04:10:17 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1707130409430.9683@mail.ewheeler.net>
-References: <20170629134510.GA32385@infradead.org> <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net> <1498855388-16990-10-git-send-email-bcache@lists.ewheeler.net> <46e7b8b2-7fac-6404-a6fc-696bfb1e0c61@coly.li>
+Subject: Re: Re: [PATCH 11/19] bcache: Subtract dirty sectors of thin flash
+ from cache_sectors in calculating writeback rate
+Date: Thu, 13 Jul 2017 04:12:00 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1707130410510.9683@mail.ewheeler.net>
+References: <20170629134510.GA32385@infradead.org> <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net> <1498855388-16990-11-git-send-email-bcache@lists.ewheeler.net> <1f1670e4-a442-0534-6826-eefd88dfdcad@coly.li>
+ <OF92BDA950.86AA00FA-ON4825815A.001F33D9-4825815A.001F5C89@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-235833014-1499919017=:9683"
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1772183971-1499919120=:9683"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:49634 "EHLO mail.ewheeler.net"
+Received: from mx.ewheeler.net ([66.155.3.69]:49680 "EHLO mail.ewheeler.net"
         rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751133AbdGMEKS (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 13 Jul 2017 00:10:18 -0400
-In-Reply-To: <46e7b8b2-7fac-6404-a6fc-696bfb1e0c61@coly.li>
+        id S1750807AbdGMEMC (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 13 Jul 2017 00:12:02 -0400
+In-Reply-To: <OF92BDA950.86AA00FA-ON4825815A.001F33D9-4825815A.001F5C89@zte.com.cn>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Tang Junhui <tang.junhui@zte.com.cn>
-Cc: Coly Li <i@coly.li>, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
+To: tang.junhui@zte.com.cn
+Cc: Coly Li <i@coly.li>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, stable@vger.kernel.org
 
   This message is in MIME format.  The first part should be readable text,
   while the remaining parts are likely unreadable without MIME-aware tools.
 
---1641074820-235833014-1499919017=:9683
-Content-Type: TEXT/PLAIN; charset=utf-8
+--1641074820-1772183971-1499919120=:9683
+Content-Type: TEXT/PLAIN; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 
-On Sun, 2 Jul 2017, Coly Li wrote:
+On Tue, 11 Jul 2017, tang.junhui@zte.com.cn wrote:
 
-> On 2017/7/1 上午4:42, bcache@lists.ewheeler.net wrote:
-> > From: Tang Junhui <tang.junhui@zte.com.cn>
-> > 
-> > Thin flash device does not initialize stripe_sectors_dirty correctly, this
-> > patch fixes this issue.
+> > Based on the above implementation, non-dirty space from flash only
+> > bcache device will mislead writeback rate calculation too. So I suggest
+> > to subtract all buckets size from all flash only bcache devices. Then it
+> > might be something like,
 > 
-> Hi Junhui,
-> 
-> Could you please explain why stripe_sectors_ditry is not correctly
-> initialized and how about its negative result ?
+> what is non-dirty space from flash only bcache device?
+> Where is non-dirty space from flash only bcache device?
 
-Hi Tang,
+Hi Tang, Coly:
    
-I'm waiting to queue this patch pending your response to Coly.  Can you   
-update the message send a v2?
+Waas there more discussion on this thread, or is the patch good to go?  
+
+Please send your ack if you're happy with it so I can queue it up.
 
 --
 Eric Wheeler
 
-
-
 > 
-> Thanks.
 > 
-> Coly
 > 
-> > 
+> 发件人:         Coly Li <i@coly.li>
+> 收件人:         Tang Junhui <tang.junhui@zte.com.cn>,
+> 抄送:        bcache@lists.ewheeler.net, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
+> hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
+> 日期:         2017/07/11 02:11
+> 主题:        Re: [PATCH 11/19] bcache: Subtract dirty sectors of thin flash from cache_sectors in calculating
+> writeback rate
+> 发件人:        linux-bcache-owner@vger.kernel.org
+> 
+> _________________________________________________________________________________________________________________
+> 
+> 
+> 
+> On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
+> > From: Tang Junhui <tang.junhui@zte.com.cn>
+> >
+> > Since dirty sectors of thin flash cannot be used to cache data for backend
+> > device, so we should subtract it in calculating writeback rate.
+> >
+> 
+> I see you want to get ride of the noise of flash only cache device for
+> writeback rate calculation. It makes sense, because flash only cache
+> device won't have write back happen at all.
+> 
+> 
 > > Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 > > Cc: stable@vger.kernel.org
 > > ---
-> >  drivers/md/bcache/super.c     | 3 ++-
-> >  drivers/md/bcache/writeback.c | 8 ++++----
-> >  drivers/md/bcache/writeback.h | 2 +-
-> >  3 files changed, 7 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> > index 1f84791..e06641e 100644
-> > --- a/drivers/md/bcache/super.c
-> > +++ b/drivers/md/bcache/super.c
-> > @@ -1030,7 +1030,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
-> >  	}
-> >  
-> >  	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
-> > -		bch_sectors_dirty_init(dc);
-> > +		bch_sectors_dirty_init(&dc->disk);
-> >  		atomic_set(&dc->has_dirty, 1);
-> >  		atomic_inc(&dc->count);
-> >  		bch_writeback_queue(dc);
-> > @@ -1232,6 +1232,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
-> >  		goto err;
-> >  
-> >  	bcache_device_attach(d, c, u - c->uuids);
-> > +	bch_sectors_dirty_init(d);
-> >  	bch_flash_dev_request_init(d);
-> >  	add_disk(d->disk);
-> >  
+> >  drivers/md/bcache/writeback.c |  2 +-
+> >  drivers/md/bcache/writeback.h | 19 +++++++++++++++++++
+> >  2 files changed, 20 insertions(+), 1 deletion(-)
+> >
 > > diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> > index 3d463f0..4ac8b13 100644
+> > index 4ac8b13..25289e4 100644
 > > --- a/drivers/md/bcache/writeback.c
 > > +++ b/drivers/md/bcache/writeback.c
-> > @@ -482,17 +482,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
-> >  	return MAP_CONTINUE;
-> >  }
-> >  
-> > -void bch_sectors_dirty_init(struct cached_dev *dc)
-> > +void bch_sectors_dirty_init(struct bcache_device *d)
-> >  {
-> >  	struct sectors_dirty_init op;
-> >  
-> >  	bch_btree_op_init(&op.op, -1);
-> > -	op.inode = dc->disk.id;
-> > +	op.inode = d->id;
-> >  
-> > -	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
-> > +	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
-> >  			   sectors_dirty_init_fn, 0);
-> >  
-> > -	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
-> > +	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
-> >  }
-> >  
-> >  void bch_cached_dev_writeback_init(struct cached_dev *dc)
+> > @@ -21,7 +21,7 @@
+> >  static void __update_writeback_rate(struct cached_dev *dc)
+> >  {
+> >                   struct cache_set *c = dc->disk.c;
+> > -                 uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size;
+> > +                 uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
+> bcache_flash_devs_sectors_dirty(c);
+> 
+> See flash_dev_run(), the flash volume is created per struct
+> bcache_device of a cache set. That means, all data allocated for the
+> flash volume will be from a flash only bcache device. Regular dirty data
+> won't mixed allocating with flash volume dirty data on identical struct
+> bcache device.
+> 
+> Based on the above implementation, non-dirty space from flash only
+> bcache device will mislead writeback rate calculation too. So I suggest
+> to subtract all buckets size from all flash only bcache devices. Then it
+> might be something like,
+> 
+> uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
+>                                                   bcache_flash_devs_nbuckets(c);
+> 
+> 
+> 
+> Just FYI. Thanks.
+> 
+> Coly
+> 
+> >                   uint64_t cache_dirty_target =
+> >                                    div_u64(cache_sectors * dc->writeback_percent, 100);
+> >  
 > > diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-> > index ea2f92e..c2ab4b4 100644
+> > index c2ab4b4..24ff589 100644
 > > --- a/drivers/md/bcache/writeback.h
 > > +++ b/drivers/md/bcache/writeback.h
-> > @@ -109,7 +109,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
-> >  
-> >  void bcache_dev_sectors_dirty_add(struct cache_set *, unsigned, uint64_t, int);
-> >  
-> > -void bch_sectors_dirty_init(struct cached_dev *dc);
-> > +void bch_sectors_dirty_init(struct bcache_device *);
-> >  void bch_cached_dev_writeback_init(struct cached_dev *);
-> >  int bch_cached_dev_writeback_start(struct cached_dev *);
+> > @@ -14,6 +14,25 @@ static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
+> >                   return ret;
+> >  }
+> >  
+> > +static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
+> > +{
+> > +                 uint64_t i, ret = 0;
+> > +
+> > +                 mutex_lock(&bch_register_lock);
+> > +
+> > +                 for (i = 0; i < c->nr_uuids; i++) {
+> > +                                  struct bcache_device *d = c->devices[i];
+> > +
+> > +                                  if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
+> > +                                                   continue;
+> > +                    ret += bcache_dev_sectors_dirty(d);
+> > +                 }
+> > +
+> > +                 mutex_unlock(&bch_register_lock);
+> > +
+> > +                 return ret;
+> > +}
+> > +
+> >  static inline unsigned offset_to_stripe(struct bcache_device *d,
+> >                                                                                       uint64_t offset)
+> >  {
+> >
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
 > 
---1641074820-235833014-1499919017=:9683--
+> 
+> 
+--1641074820-1772183971-1499919120=:9683--
