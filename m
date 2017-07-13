@@ -1,58 +1,131 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH 13/19] bcache: delete redundant calling
- set_gc_sectors()
-Date: Thu, 13 Jul 2017 03:41:22 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1707130340340.9683@mail.ewheeler.net>
-References: <20170629134510.GA32385@infradead.org> <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net> <1498855388-16990-13-git-send-email-bcache@lists.ewheeler.net>
+Subject: Re: [PATCH] [PATCH v2] bcache: fix calling ida_simple_remove() with
+ incorrect minor
+Date: Thu, 13 Jul 2017 03:55:36 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1707130355040.9683@mail.ewheeler.net>
+References: <OFF5D425D9.E63AA2AA-ON48258155.00224AFB-48258155.002299BE@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-690707034-1499918137=:9683"
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1498855388-16990-13-git-send-email-bcache@lists.ewheeler.net>
+In-Reply-To: <OFF5D425D9.E63AA2AA-ON48258155.00224AFB-48258155.002299BE@zte.com.cn>
 Sender: linux-block-owner@vger.kernel.org
 To: Tang Junhui <tang.junhui@zte.com.cn>
 Cc: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, 30 Jun 2017, bcache@lists.ewheeler.net wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> From: Tang Junhui <tang.junhui@zte.com.cn>
-> 
-> set_gc_sectors() has been called in bch_gc_thread(), and it was called
-> again in bch_btree_gc_finish() . The following call is unnecessary, so
-> delete it.
+--1641074820-690707034-1499918137=:9683
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
+Tang,
 
-I'm trying to follow the call path that proves that this is safe, but I'm 
-not seeing it.  Can you explain this in more detail?
+Please resend.  This patch seems to be malformed.
 
 --
 Eric Wheeler
 
+On Thu, 6 Jul 2017, tang.junhui@zte.com.cn wrote:
 
-
+> From: Tang Junhui <tang.junhui@zte.com.cn>
 > 
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> bcache called ida_simple_remove() with minor which have multiplied by
+> BCACHE_MINORS, it would cause minor wrong release and leakage.
+> 
+> In addition, when adding partition support to bcache, the name assignment
+> was not updated, resulting in numbers jumping (bcache0, bcache16,
+> bcache32...). This has been fixed implicitly by the rework.
+> 
+> Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
+> Reviewed-by: Coly Li <colyli@suse.de>
+> Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
+> Cc: stable@vger.kernel.org # 4.10
+> Cc: Stefan Bader <stefan.bader@canonical.com>
+> Fixes: b8c0d91 (bcache: partition support: add 16 minors per bcacheN device)
+> BugLink: https://bugs.launchpad.net/bugs/1667078
 > ---
->  drivers/md/bcache/btree.c | 1 -
->  1 file changed, 1 deletion(-)
+>  drivers/md/bcache/bcache.h | 12 ++++++++++++
+>  drivers/md/bcache/super.c  | 10 ++++------
+>  2 files changed, 16 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> index 77aa20b..66d8036 100644
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
-> @@ -1662,7 +1662,6 @@ static size_t bch_btree_gc_finish(struct cache_set *c)
->  
->  	mutex_lock(&c->bucket_lock);
->  
-> -	set_gc_sectors(c);
->  	c->gc_mark_valid = 1;
->  	c->need_gc	= 0;
->  
-> -- 
-> 1.8.3.1
-> 
+> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> index c3ea03c..54f9075 100644
+> --- a/drivers/md/bcache/bcache.h
+> +++ b/drivers/md/bcache/bcache.h
+> @@ -212,6 +212,10 @@ BITMASK(GC_MARK,         struct bucket, gc_mark, 0, 2);
+>  #define MAX_GC_SECTORS_USED        (~(~0ULL << GC_SECTORS_USED_SIZE))
+>  BITMASK(GC_SECTORS_USED, struct bucket, gc_mark, 2, GC_SECTORS_USED_SIZE);
+>  BITMASK(GC_MOVE, struct bucket, gc_mark, 15, 1);
+> +#define BCACHE_MINORS_BITS                4 /* bcache partition support */
+> +#define BCACHE_MINORS                     (1 << BCACHE_MINORS_BITS)
+> +#define BCACHE_MINOR_TO_IDA                                0
+> +#define IDA_MINOR_TO_BCACHE                                1
+>  
+>  #include "journal.h"
+>  #include "stats.h"
+> @@ -751,6 +755,14 @@ static inline bool ptr_available(struct cache_set *c, const struct bkey *k,
+>          return (PTR_DEV(k, i) < MAX_CACHES_PER_SET) && PTR_CACHE(c, k, i);
+>  }
+>  
+> +static inline int convert_minor(int minor, int style)
+> +{
+> +        if(style == BCACHE_MINOR_TO_IDA)
+> +                return (minor) >> BCACHE_MINORS_BITS;
+> +        else
+> +                return  (minor) << BCACHE_MINORS_BITS;
+> +}
+> +
+>  /* Btree key macros */
+>  
+>  /*
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 3a19cbc..6485afe 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -57,8 +57,7 @@ static DEFINE_IDA(bcache_minor);
+>  static wait_queue_head_t unregister_wait;
+>  struct workqueue_struct *bcache_wq;
+>  
+> -#define BTREE_MAX_PAGES                (256 * 1024 / PAGE_SIZE)
+> -#define BCACHE_MINORS                16 /* partition support */
+> +#define BTREE_MAX_PAGES                          (256 * 1024 / PAGE_SIZE)
+>  
+>  /* Superblock */
+>  
+> @@ -734,7 +733,7 @@ static void bcache_device_free(struct bcache_device *d)
+>          if (d->disk && d->disk->queue)
+>                  blk_cleanup_queue(d->disk->queue);
+>          if (d->disk) {
+> -                ida_simple_remove(&bcache_minor, d->disk->first_minor);
+> +                ida_simple_remove(&bcache_minor, convert_minor(d->disk->first_minor, BCACHE_MINOR_TO_IDA));
+>                  put_disk(d->disk);
+>          }
+>  
+> @@ -780,11 +779,10 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+>          if (!d->full_dirty_stripes)
+>                  return -ENOMEM;
+>  
+> -        minor = ida_simple_get(&bcache_minor, 0, MINORMASK + 1, GFP_KERNEL);
+> +        minor = ida_simple_get(&bcache_minor, 0, convert_minor(MINORMASK, BCACHE_MINOR_TO_IDA) + 1, GFP_KERNEL);
+>          if (minor < 0)
+>                  return minor;
+>  
+> -        minor *= BCACHE_MINORS;
+>  
+>          if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio))) ||
+>              !(d->disk = alloc_disk(BCACHE_MINORS))) {
+> @@ -796,7 +794,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+>          snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
+>  
+>          d->disk->major                = bcache_major;
+> -        d->disk->first_minor        = minor;
+> +        d->disk->first_minor        = convert_minor(minor, IDA_MINOR_TO_BCACHE);
+>          d->disk->fops                = &bcache_ops;
+>          d->disk->private_data        = d;
+>  
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 2.8.1.windows.1
 > 
+--1641074820-690707034-1499918137=:9683--
