@@ -1,93 +1,198 @@
-From: Eddie Chapman <eddie@ehuk.net>
-Subject: Re: [PULL] bcache updates based on git.kernel.dk/linux-block:for-next
-Date: Fri, 14 Jul 2017 18:33:24 +0100
-Message-ID: <d94db8ff-ff2c-0c3c-5638-97cd3c769c1c@ehuk.net>
-References: <alpine.LRH.2.11.1705251853530.19359@mail.ewheeler.net>
- <23b4ace1-60b7-1ce6-23d7-29433ec8582c@ehuk.net>
- <7040453d-2272-d376-710b-6ed07527a98e@coly.li>
-Reply-To: Eddie Chapman <eddie@ehuk.net>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 15/19] bcache: fix issue of writeback rate at minimum 1
+ key per second
+Date: Sun, 16 Jul 2017 18:04:05 +0800
+Message-ID: <a0e50d65-6e9d-23d0-d73c-8fb2b3dfcc51@coly.li>
+References: <20170629134510.GA32385@infradead.org>
+ <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
+ <1498855388-16990-15-git-send-email-bcache@lists.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <7040453d-2272-d376-710b-6ed07527a98e@coly.li>
-Content-Language: en-GB
-Sender: stable-owner@vger.kernel.org
-To: Coly Li <i@coly.li>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>, linux-bcache@vger.kernel.org, stable@vger.kernel.org, "tang.junhui" <tang.junhui@zte.com.cn>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from server.coly.li ([162.144.45.48]:45630 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751048AbdGPKET (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 16 Jul 2017 06:04:19 -0400
+In-Reply-To: <1498855388-16990-15-git-send-email-bcache@lists.ewheeler.net>
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>
+Cc: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk
 
-On 14/07/17 16:07, Coly Li wrote:
-> On 2017/7/14 下午7:40, Eddie Chapman wrote:
->> On 25/05/17 20:10, Eric Wheeler wrote:
->>> Hi Jens,
->>>
->>> Please pull these updates and bugfixes from the bcache community when you
->>> have a minute.  If you need a rebase against something else then please
->>> let me know and I would be happy to update for you.
->>>
->>> Thank you for your help!
->>
->> <snip>
->>
->> Hi all,
->>
->> (replying to all but as a subscriber to stable only)
->>
->> I'm not a kernel coder but have several 4.4 (kernel.org stable series)
->> servers using bcache, so I'd love to see (possibly some of?) these in
->> 4.4 if they are relevant and apply without any significant work needed.
->>
->> This series was CC'd to stable but I don't see any info of how far back
->> any of them might be applicable, if at all.
->>
->> If any of you guys are able to give a hint with this series just along
->> the lines of "this one is/is not applicable to 4.4" then I'm happy to
->> apply them, resolve any simple context issues, use, and report back with
->> clean patches.
+On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
 > 
-> (remove many unnecessary email receivers)
+> When there is not enough dirty data in writeback cache,
+> writeback rate is at minimum 1 key per second
+> util all dirty data to be cleaned, it is inefficiency,
+> and also causes waste of energy;
 
-I'm re-adding the stable list to CC as we're discussing a stable kernel. 
-Hope that's OK.
+Hi Junhui and Eric,
 
-> Hi Eddie,
+What: /sys/block/<disk>/bcache/writeback_percent
+Description:
+      For backing devices: If nonzero, writeback from cache to
+      backing device only takes place when more than this percentage
+      of the cache is used, allowing more write coalescing to take
+      place and reducing total number of writes sent to the backing
+      device. Integer between 0 and 40.
+
+I see above text from Documentation/ABI/testing/sysfs-block-bcache (I
+know this document is quite old), it seems if "not enough" means dirty
+data percentage is less then writback_percent, bcache should not
+performance writeback I/O. But in __update_writeback_rate(),
+writeback_rate.rate is clamped in [1, NSEC_PER_MSEC]. It seems in PD
+controller code of __update_writeback_rate(), writeback_percent is only
+used to calculate dirty target number, its another functionality as
+writeback threshold is not handled here.
+
 > 
-> I think some patches from Junhui Tang are important stable fixes.
-> After all the patches get reviewed, and accepted in mainline kernel, you
-> may find them in 4.4 stable tree (any way it won't be very soon for
-> these fixes show up in stable tree).
+> in this patch, When there is not enough dirty data,
+> let the writeback rate to be 0, and writeback re-schedule
+> in bch_writeback_thread() periodically with schedule_timeout(),
+> the behaviors are as follows :
 > 
-> Thanks.
+> 1) If no dirty data have been read into dc->writeback_keys,
+> goto step 2), otherwise keep writing these dirty data to
+> back-end device at 1 key per second, until all these dirty data
+> write over, then goto step 2).
+> 
+> 2) Loop in bch_writeback_thread() to check if there is enough
+> dirty data for writeback. if there is not enough diry data for
+> writing, then sleep 10 seconds, otherwise, write dirty data to
+> back-end device.
 
-Thanks for your reply Coly.  You're right, forgot about that. Before 
-they can go in 4.4 or any other stable kernel they must be in Linus' tree.
+Bcache uses a Proportion-Differentiation Controller to control writeback
+rate. When dirty data is far from target, writeback rate is higher; when
+dirty data is close to target, writeback rate is slower. The advantage
+of PD controller here is, when regular I/O and writeback I/O happens in
+same time,
+- When there are a lot of dirty data, writeback I/O can have more chance
+to write them back to cached device, which in turns has positive impact
+to regular I/O.
+- When dirty data is decreased and close to target dirty number, less
+writeback I/O can help regular I/O has better throughput and latency.
 
-Of the 9 patches CC'd to stable, it looks to me that so far these 2 have 
-subsequently received approval by you plus at least 1 other person other 
-than the author (e.g. Christoph Hellwig):
+The root cause of 1 key per second is, the PD controller is designed for
+better I/O performance, not less energy consumption. When the existing
+dirty data gets closed to target dirty number, the PD controller chooses
+to use longer writeback time to make a better regular I/O performance.
+If it is designed for less energy consumption, it should keep the
+writeback rate in a high level and finish writing back all dirty data as
+soon as possible.
 
-- fix sequential large write IO bypass
-- do not subtract sectors_to_gc for bypassed IO
+This patch may introduce an unexpected behavior of dirty data writeback
+throughput, when regular write I/O and writeback I/O happen in same
+time. In this case, dirty data number may shake up and down around
+target dirty number, it is possible that change (the variable in
+__update_writeback_rate()) is a minus value, and the result of
+dc->writeback_rate.rate + change happens to be 0. This patch changes the
+clamp range of writeback_rate.rate to [0, NSEC_PER_MSEC], so
+writeback_rate.rate can be possible to be 0. And in bch_next_delay() if
+d->rate is zero, the write back I/O will be delayed to now +
+NSEC_PER_SEC. When there is no regular I/O it works well, but when there
+is regular I/O, this longer delay may cause more dirty data piled in
+cache device, and PD controller cannot generage a stable writeback rate.
+This is not an expected behavior for the writeback rate PD controller.
 
-The first one looks particularly important to me and Kent himself has 
-also reviewed it.
+Another method to fix might be,
+1) define a sysfs to define writeback_rate with max/dynamic option.
+2) dynamic writeback_rate as default
+3) when max is set, in __update_writeback_rate() assign NSEC_PER_MSEC to
+writeback_rate.rate
+4) in bch_writeback_thread(), if no writeback I/O on fly, and dirty data
+does not reach dc->writeback_percent, schedule out.
+5) if writeback is necessary then do it in max rate and finish it as
+soon as possible, to save laptop energy.
 
-This one also has not received any objections yet and you mentioned you 
-discussed with the author and both concluded it is correct:
+The above method might be helpful to energy save as well (perform dirty
+dat write back in batch), and does not change default PD controller
+behavior.
 
-- Subtract dirty sectors of thin flash from cache_sectors in calculating 
-writeback rate
+Just for your reference. Or if you are too busy to look at it, I can try
+to compose a patch for review.
 
-So for me these 3 by Junhui Tang seem "safe" enough that I will take a 
-little risk and try them already on 4.4 on my own machines (I'm guessing 
-they are likely relevant to 4.4 but of course I'll check if they apply). 
-I'll report back, FWIW.
+Coly
 
-If I'm brave (foolish) enough I might go through mainline bcache commits 
-since 4.4 and see if there are any other goodies to try out with 4.4. Of 
-course if anyone has any in particular to suggest to me to try, please 
-do! If I do, I'll report back anything that seems to have worked.
+> 
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> ---
+>  drivers/md/bcache/util.c      |  9 ++++++++-
+>  drivers/md/bcache/writeback.c | 11 +++++++----
+>  2 files changed, 15 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+> index 8c3a938..49dcf09 100644
+> --- a/drivers/md/bcache/util.c
+> +++ b/drivers/md/bcache/util.c
+> @@ -210,7 +210,14 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
+>  {
+>  	uint64_t now = local_clock();
+>  
+> -	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
+> +	/*
+> +	  if d->rate is zero, write the left dirty data
+> +	  at the speed of one key per second
+> +	*/
+> +	if(!d->rate)
+> +		d->next = now + NSEC_PER_SEC;
+> +	else
+> +		d->next += div_u64(done * NSEC_PER_SEC, d->rate);
+>  
+>  	if (time_before64(now + NSEC_PER_SEC, d->next))
+>  		d->next = now + NSEC_PER_SEC;
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 25289e4..4104eaa 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -16,6 +16,8 @@
+>  #include <linux/sched/clock.h>
+>  #include <trace/events/bcache.h>
+>  
+> +#define WRITE_BACK_WAIT_CYCLE		10 * HZ
+> +
+>  /* Rate limiting */
+>  
+>  static void __update_writeback_rate(struct cached_dev *dc)
+> @@ -55,13 +57,14 @@ static void __update_writeback_rate(struct cached_dev *dc)
+>  
+>  	/* Don't increase writeback rate if the device isn't keeping up */
+>  	if (change > 0 &&
+> +	    dc->writeback_rate.rate >0 &&
+>  	    time_after64(local_clock(),
+>  			 dc->writeback_rate.next + NSEC_PER_MSEC))
+>  		change = 0;
+>  
+>  	dc->writeback_rate.rate =
+>  		clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + change,
+> -			1, NSEC_PER_MSEC);
+> +			0, NSEC_PER_MSEC);
+>  
+>  	dc->writeback_rate_proportional = proportional;
+>  	dc->writeback_rate_derivative = derivative;
+> @@ -420,15 +423,15 @@ static int bch_writeback_thread(void *arg)
+>  	while (!kthread_should_stop()) {
+>  		down_write(&dc->writeback_lock);
+>  		if (!atomic_read(&dc->has_dirty) ||
+> -		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+> -		     !dc->writeback_running)) {
+> +		    ((!dc->writeback_rate.rate || !dc->writeback_running) &&
+> +		      !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))) {
+>  			up_write(&dc->writeback_lock);
+>  			set_current_state(TASK_INTERRUPTIBLE);
+>  
+>  			if (kthread_should_stop())
+>  				return 0;
+>  
+> -			schedule();
+> +			schedule_timeout(WRITE_BACK_WAIT_CYCLE);
+>  			continue;
+>  		}
+>  
+> 
 
-Thanks again!
-Eddie
+
+-- 
+Coly Li
