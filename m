@@ -1,300 +1,79 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 1/2] bcache: do not perform writeback if dirty data is no
- more than writeback_percent
-Date: Wed, 19 Jul 2017 18:32:51 +0800
-Message-ID: <8a2ec66d-332b-d19f-d1ba-933d871db2cb@suse.de>
-References: <20170719053615.99305-1-colyli@suse.de>
- <20170719053615.99305-2-colyli@suse.de>
- <0916c3a1-14e6-8a2f-5320-507e8b4df855@coly.li>
- <OF2AB44ECA.94CE1BF0-ON48258162.00356FFD-48258162.00359404@zte.com.cn>
+From: <rhsinfo@genesishcc.com>
+Subject: (unknown)
+Date: Wed, 19 Jul 2017 11:11:27 -0000
+Message-ID: <150046268747.26435.7791188338835191396@gbonline.com.br>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: application/zip; name="EMAIL_80943888669572_linux-bcache.zip
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:40253 "EHLO mx1.suse.de"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1753904AbdGSKdD (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 19 Jul 2017 06:33:03 -0400
-In-Reply-To: <OF2AB44ECA.94CE1BF0-ON48258162.00356FFD-48258162.00359404@zte.com.cn>
-Content-Language: en-US
+Received: from 253.223.155.177.gbonline.com.br ([177.155.223.253]:36510 "HELO
+        gbonline.com.br" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+        with SMTP id S1753435AbdGSLLe (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 19 Jul 2017 07:11:34 -0400
+Subject: 
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: bcache@lists.ewheeler.net, kubuxu@ipfs.io, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 2017/7/19 下午5:45, tang.junhui@zte.com.cn wrote:
->> Currently bcache_dev_sectors_dirty() iterates all dirty stripes of
->> bcache device, it will take around 15 milliseconds for a 15.2TB cache
->> device on my hardware. The latency is unacceptable,
-> 
-> Why it is unacceptable? It does not block the front-endincoming IOs.
-
-Hi Junhui,
-
-Imagine the following situation,
-
-1) Cached device has dirty data but not exceed its writeback_percent,
-after its writeback thread is woke up, no_writeback_now() will iterates
-all dirty stripes of the bcache device (for 15 ms on my server), and
-return true to bch_writeback_thread(), then the thread schedules out and
-sleep.
-
-2) Before dirty data exceeds writeback_percent of the cached device, it
-is not difficult to have more than 1 writ request onto bcache device for
-every 15 ms (on my hardware). If it happens, then the writeback thread
-will be woke up repeated and every time no_writeback_now() will be
-called and consume CPU cycles to iterate all stripes for 15ms.
-
-3) The result is, there is potential possibility, that the writeback
-thread always consume a full CPU core before dirty data exceeds cached
-device's writeback_percent, even there is only a few write request on
-the bcache device.
-
-This is unacceptable in this patch set.
-
-Thanks.
-
-Coly
-
-
-> 
-> 
-> 发件人:         Coly Li <i@coly.li>
-> 收件人:         Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org,
-> 抄送:        bcache@lists.ewheeler.net, tang.junhui@zte.com.cn,
-> kubuxu@ipfs.io
-> 日期:         2017/07/19 16:20
-> 主题:        Re: [PATCH 1/2] bcache: do not perform writeback if dirty
-> data is no more than writeback_percent
-> 发件人:        linux-bcache-owner@vger.kernel.org
-> ------------------------------------------------------------------------
-> 
-> 
-> 
-> On 2017/7/19 下午1:36, Coly Li wrote:
->> The functionanlity of sysfs entry writeback_percent is explained in file
->> Document/ABI/testing/sysfs-block-bcache:
->> "For backing devices: If nonzero, writeback from cache to
->>  backing device only takes place when more than this percentage
->>  of the cache is used, allowing more write coalescing to take
->>  place and reducing total number of writes sent to the backing
->>  device. Integer between 0 and 40."
->>
->> Indeed currently in writeback mode, even dirty data percent is not exceed
->> writeback_percent of the cached device, writeback still happens at least
->> one key per second. This is not a behavior as designed.
->>
->> This patch does three things to fix the above issue,
->> 1) Move writeback thread related checks from bch_writeback_thread()
->>    to no_writeback_now().
->> 2) Add a duration to count time duration since last I/O request received
->>    to the moment when no_writeback_now() is called. When duration is more
->>    than BCH_IDLE_DURATION_MSECS, perform a proactive writeback no matter
->>    dirty data exceeds writeback_percent or not.
->> 3) If duration is not timeout, and dirty data is not more than cached
->>    device's writeback_percent, writeback thread just schedules out and
->>    waits for another try after BCH_IDLE_DURATION_MSECS.
->>
->> By this patch, if a write request's dirty data does not exceed
->> writeback_percent, writeback will not happen. In this case dirty data may
->> stay in cache device for a very long time if I/O on bcache device is idle.
->> To fix this, bch_writeback_queue() is called in update_writeback_rate()
->> to wake up the writeback thread in period of
-> writeback_rate_update_seconds.
->> Then if no I/O happens on bcache device for BCH_IDLE_DURATION_MSECS
->> milliseconds, at least we have chance to wake up writeback thread to find
->> the duration timeout in a not-that-much delay.
->>
->> Now writeback_percent acts as what it is defined for.
->>
->> Signed-off-by: Coly Li <colyli@suse.de>
->> ---
->>  drivers/md/bcache/bcache.h    |  4 ++++
->>  drivers/md/bcache/request.c   |  6 +++++
->>  drivers/md/bcache/writeback.c | 55
-> +++++++++++++++++++++++++++++++++++++++----
->>  3 files changed, 61 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
->> index dee542fff68e..ab7e60336edb 100644
->> --- a/drivers/md/bcache/bcache.h
->> +++ b/drivers/md/bcache/bcache.h
->> @@ -662,6 +662,8 @@ struct cache_set {
->>  
->>  #define BUCKET_HASH_BITS                 12
->>                   struct hlist_head                 bucket_hash[1 <<
-> BUCKET_HASH_BITS];
->> +
->> +                 uint64_t                                
->  last_request_time;
->>  };
->>  
->>  struct bbio {
->> @@ -680,6 +682,8 @@ struct bbio {
->>  #define BTREE_PRIO                                  USHRT_MAX
->>  #define INITIAL_PRIO                                  32768U
->>  
->> +#define BCH_IDLE_DURATION_MSECS                 10000U
->> +
->>  #define btree_bytes(c)                                
->  ((c)->btree_pages * PAGE_SIZE)
->>  #define btree_blocks(b)                                              
->                                                                         \
->>                   ((unsigned) (KEY_SIZE(&b->key) >> (b)->c->block_bits))
->> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
->> index 019b3df9f1c6..98971486f7f1 100644
->> --- a/drivers/md/bcache/request.c
->> +++ b/drivers/md/bcache/request.c
->> @@ -957,10 +957,13 @@ static blk_qc_t cached_dev_make_request(struct
-> request_queue *q,
->>                   struct search *s;
->>                   struct bcache_device *d =
-> bio->bi_bdev->bd_disk->private_data;
->>                   struct cached_dev *dc = container_of(d, struct
-> cached_dev, disk);
->> +                 struct cache_set *c = d->c;
->>                   int rw = bio_data_dir(bio);
->>  
->>                   generic_start_io_acct(rw, bio_sectors(bio),
-> &d->disk->part0);
->>  
->> +                 if (c)
->> +                                  c->last_request_time = local_clock();
->>                   bio->bi_bdev = dc->bdev;
->>                   bio->bi_iter.bi_sector += dc->sb.data_offset;
->>  
->> @@ -991,6 +994,9 @@ static blk_qc_t cached_dev_make_request(struct
-> request_queue *q,
->>                                    else
->>                                                    
-> generic_make_request(bio);
->>                   }
->> +                 /* update last_request_time again to make it to be
-> more accurate */
->> +                 if (c)
->> +                                  c->last_request_time = local_clock();
->>  
->>                   return BLK_QC_T_NONE;
->>  }
->> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
->> index 42c66e76f05e..13594dd7f564 100644
->> --- a/drivers/md/bcache/writeback.c
->> +++ b/drivers/md/bcache/writeback.c
->> @@ -78,8 +78,15 @@ static void update_writeback_rate(struct
-> work_struct *work)
->>                   down_read(&dc->writeback_lock);
->>  
->>                   if (atomic_read(&dc->has_dirty) &&
->> -                     dc->writeback_percent)
->> +                     dc->writeback_percent) {
->>                                    __update_writeback_rate(dc);
->> +                                  /*
->> +                                   * wake up writeback thread to
-> check whether request
->> +                                   * duration is timeout in
-> no_writeback_now(). If yes,
->> +                                   * existing dirty data should be
-> handled.
->> +                                   */
->> +                                  bch_writeback_queue(dc);
->> +                 }
->>  
->>                   up_read(&dc->writeback_lock);
->>  
->> @@ -412,6 +419,48 @@ static bool refill_dirty(struct cached_dev *dc)
->>                   return bkey_cmp(&buf->last_scanned, &start_pos) >= 0;
->>  }
->>  
->> +static bool no_writeback_now(struct cached_dev *dc)
->> +{
->> +                 uint64_t duration;
->> +                 struct cache_set *c = dc->disk.c;
->> +                 uint64_t cache_set_sectors;
->> +                 uint64_t dirty_sectors;
->> +                 uint64_t percent_sectors;
->> +
->> +                 if (!atomic_read(&dc->has_dirty))
->> +                                  return true;
->> +
->> +                 if (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
->> +                     !dc->writeback_running)
->> +                                  return true;
->> +
->> +                 /*
->> +                  * last_request_time is initialized to 0, it is
-> possible that
->> +                  * duration is larger than BCH_IDLE_DURATION_MSECS
-> when the first
->> +                  * time it is calculated. If there is dirty data of
-> the cached
->> +                  * device, bcache will try to perform a proactive
-> writeback.
->> +                  */
->> +                 duration = local_clock() - c->last_request_time;
->> +                 if ((duration/NSEC_PER_MSEC) > BCH_IDLE_DURATION_MSECS)
->> +                                  return false;
->> +
->> +                 /*
->> +                  * If duration is not timeout, and dirty data does
-> not exceed
->> +                  * writeback_percent, no writeback now.
->> +                  * This is what writeback_percent is designed for, see
->> +                  * /sys/block/<disk>/bcache/writeback_percentkernel in
->> +                  * Documentation/ABI/testing/sysfs-block-bcache
->> +                  */
->> +                 cache_set_sectors = c->nbuckets * c->sb.bucket_size;
->> +                 percent_sectors = div64_u64(
->> +                                  cache_set_sectors *
-> dc->writeback_percent, 100);
->> +                 dirty_sectors = bcache_dev_sectors_dirty(&dc->disk);
-> 
-> Currently bcache_dev_sectors_dirty() iterates all dirty stripes of
-> bcache device, it will take around 15 milliseconds for a 15.2TB cache
-> device on my hardware. The latency is unacceptable, I also mentioned
-> that on Junhui's work (previously posted patch titled "bcache: update
-> bucket_in_use periodically").
-> 
-> I am working on a low latency dirty sectors counter now, after it gets
-> done, I will add them into this patch set and post again.
-> 
-> Just FYI. Thanks.
-> 
-> 
-> Coly
-> 
-> 
-> 
->> +                 if (dirty_sectors <= percent_sectors)
->> +                                  return true;
->> +
->> +                 return false;
->> +}
->> +
->>  static int bch_writeback_thread(void *arg)
->>  {
->>                   struct cached_dev *dc = arg;
->> @@ -419,9 +468,7 @@ static int bch_writeback_thread(void *arg)
->>  
->>                   while (!kthread_should_stop()) {
->>                                    down_write(&dc->writeback_lock);
->> -                                  if (!atomic_read(&dc->has_dirty) ||
->> -                                    
->  (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
->> -                                       !dc->writeback_running)) {
->> +                                  if (no_writeback_now(dc)) {
->>                                                    
-> up_write(&dc->writeback_lock);
->>                                                    
-> set_current_state(TASK_INTERRUPTIBLE);
->>  
->>
-> 
-> 
-> -- 
-> Coly Li
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+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
