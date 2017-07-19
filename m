@@ -1,79 +1,71 @@
-From: <rhsinfo@genesishcc.com>
-Subject: (unknown)
-Date: Wed, 19 Jul 2017 11:11:27 -0000
-Message-ID: <150046268747.26435.7791188338835191396@gbonline.com.br>
+From: Bob Peterson <rpeterso@redhat.com>
+Subject: Re: [PATCH] [RFC] gfs2: add flag REQ_PRIO for metadata read ahead
+Date: Wed, 19 Jul 2017 12:05:33 -0400 (EDT)
+Message-ID: <1261389690.32250995.1500480333920.JavaMail.zimbra@redhat.com>
+References: <20170711030902.13391-1-colyli@suse.de> <alpine.LRH.2.11.1707112009490.10812@mail.ewheeler.net> <6a987624-8bda-874b-0d9b-f604f63e7186@coly.li>
 Mime-Version: 1.0
-Content-Type: application/zip; name="EMAIL_80943888669572_linux-bcache.zip
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from 253.223.155.177.gbonline.com.br ([177.155.223.253]:36510 "HELO
-        gbonline.com.br" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-        with SMTP id S1753435AbdGSLLe (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 19 Jul 2017 07:11:34 -0400
-Subject: 
-Content-Disposition: attachment
+Received: from mx1.redhat.com ([209.132.183.28]:39564 "EHLO mx1.redhat.com"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S932690AbdGSQFg (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 19 Jul 2017 12:05:36 -0400
+In-Reply-To: <6a987624-8bda-874b-0d9b-f604f63e7186@coly.li>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: Eric Wheeler <bcache@lists.ewheeler.net>, Coly Li <colyli@suse.de>, cluster-devel@redhat.com, swhiteho@redhat.com, linux-bcache@vger.kernel.org
 
-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
+----- Original Message -----
+| >> This patch adds REQ_PRIO flag when submitting a metadata readahead bio.
+| >> A meta data read ahead bio may come from I/O requests for bitmap,
+| >> directoriesmeta or other general metadata request.
+| >>
+| > 
+| > Are there any places in gfs2 where REQ_PRIO should be placed on
+| > latency-sensitive metadata writes?  They would then writeback in bcache
+| > after the relevant bcache patch is merged.
+| 
+| Hi Eric,
+| 
+| I just grep REQ_META in fs/gfs2, there are 10 locations use REQ_META.
+| Among the 10 locations, REQ_PRIO shows up at 3 locations, another 3
+| locations are REQ_READAHEAD and I add REQ_PRIO to them, the rested
+| locations are,
+| 
+| 1) log.c:662
+|    In log_write_header(), used to flush gfs2 log header. The author does
+| not add REQ_PRIO on purpose, because I see REQ_FUA is there. And for no
+| barrier condition, REQ_PRIO is added with REQ_FUA removed. So it's well
+| done here.
+| 
+| 2) meta_io.c:455
+|    Here gfs2_meta_ra() tries to read first metadata block, cache the
+| metadata block in bcache should be helpful.
+| 
+| 3) ops_fstype.c:250
+|    This is for gfs2_read_sb(), it is only called once by init_sb(), we
+| don't need to cache this block by bcache.
+| 
+| 4) quota.c:733
+|    This is in gfs2_write_buf_to_page() when gfs2 disk quota is updated,
+| we can have it in cache device.
+| 
+| So it seems REQ_PRIO might be added at meta_io.c:455, and quota.c:733 to
+| provide more hint to bcache.
+| 
+| Thanks for suggestion.
+| 
+| Coly
+
+Hi Coly,
+
+So does this mean you are revising the patch and I should wait for a new one?
+Or is this patch good as it is? BTW, you may want to change
+the comment from "directoriesmeta" to "directory meta".
+
+Regards,
+
+Bob Peterson
+Red Hat File Systems
