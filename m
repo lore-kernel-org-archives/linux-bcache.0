@@ -1,68 +1,232 @@
-From: Pavel Machek <pavel@ucw.cz>
-Subject: Re: bcache with existing ext4 filesystem
-Date: Mon, 24 Jul 2017 21:15:48 +0200
-Message-ID: <20170724191548.GA32425@amd>
-References: <20170724185703.GA31422@amd>
- <64c810cf-a95c-f862-f25a-ebd7419b2632@thelounge.net>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: handling cache device disconnection more properly ( was Re:
+ [PATCH] bcache: only recovery I/O error for writethrough mode)
+Date: Mon, 24 Jul 2017 19:19:39 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1707241852080.9683@mail.ewheeler.net>
+References: <20170710111828.97918-1-colyli@suse.de> <OFCB2AA6A0.E15FCC3D-ON4825815B.0001EEF5-4825815B.00033093@zte.com.cn> <eb85fc2b-91d9-0344-829c-972803572ac1@suse.de> <OFAAA836F5.65C1F846-ON4825815B.00093270-4825815B.0009741B@zte.com.cn>
+ <45926957-5990-6520-7bd7-6de8c2bae7b8@suse.de> <OF7159B9D9.1C66A3AE-ON4825815B.000AD084-4825815B.000B252E@zte.com.cn> <be0287d1-9af2-659c-0d40-5fb774e3b178@suse.de> <alpine.LRH.2.11.1707130012390.9683@mail.ewheeler.net>
+ <8d781ce2-db3c-9d8c-4309-a56ca242f2be@suse.de>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-        protocol="application/pgp-signature"; boundary="lrZ03NoBR/3+SXJZ"
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-595456119-1500923979=:9683"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34063 "EHLO
-        atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753431AbdGXTPw (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 24 Jul 2017 15:15:52 -0400
-Content-Disposition: inline
-In-Reply-To: <64c810cf-a95c-f862-f25a-ebd7419b2632@thelounge.net>
+Received: from mx.ewheeler.net ([66.155.3.69]:60832 "EHLO mail.ewheeler.net"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1751818AbdGXTTk (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 24 Jul 2017 15:19:40 -0400
+In-Reply-To: <8d781ce2-db3c-9d8c-4309-a56ca242f2be@suse.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Reindl Harald <h.reindl@thelounge.net>
-Cc: linux-ext4@vger.kernel.org, kernel list <linux-kernel@vger.kernel.org>, tytso@mit.edu, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: tang.junhui@zte.com.cn, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, linux-bcache@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+--1641074820-595456119-1500923979=:9683
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-On Mon 2017-07-24 21:08:16, Reindl Harald wrote:
->=20
->=20
-> Am 24.07.2017 um 20:57 schrieb Pavel Machek:
-> >Would it be feasible to run bcache (write-through) with existing ext4
-> >filesystem?
+On Thu, 13 Jul 2017, Coly Li wrote:
+
+> What we are discussing is more then the original patch, now the topic
+> changes to how handling cache device disconnection more properly. So I
+> change email thread subject.
+> 
+> On 2017/7/13 上午8:53, Eric Wheeler wrote:
+> > On Wed, 12 Jul 2017, Coly Li wrote:
+> > 
+> >> On 2017/7/12 上午10:01, tang.junhui@zte.com.cn wrote:
+> >>>> I meant "it is very necessary for data base applications which always
+> >>>> use *writeback* mode and not switch to other mode during all their
+> >>>> online time."  ^_^
+> >>>
+> >>> I know, it is necessary, but not enough. who can promise they will not
+> >>> switch during online time? This patch is logical imperfectly.
+> >>
+> >> Yes, I agree with you. Since Eric mentions dirty data map, an improved
+> >> fix shows up in my head,
+> >>
+> >> When cache device disconnected from system,
+> >> 0) If in non mode, do nothing.
+> > 
+> > Does non mode guarantee that nothing is dirty?  I'm not convinced of that.  
+> > I think you can set non mode with dirty blocks. (Correct me if I'm wrong 
+> > here.)
+> > 
+> 
+> I think you are correct. Your question notices me, that it is still
+> possible that user switches cache mode more then once as they want,
+> maybe some sequence like this,
+>  writeback -> writethrough -> none -> writeback -> none ....
+> So we should always check whether dirty map exists or clean, no matter
+> what current cache mode is.
+> 
+> Nice hint :-)
+> 
+> 
+> >> 1) If in writeback/writethough/writearound mode, and dirty map is clean,
+> >>    - switch to non mode
+> >>    - continue to handle I/O without cache device
+> > 
+> > Sure, that makes sense.  
+> > 
+> >> 2) If in writeback mode, and dirty map is not clean,
+> > 
+> > You would want to do a dirty map lookup for each IO.  How about this:
+> > 
+> > 2) If in _any_ mode, and dirty map is dirty for *that specific block*:
+> > 
+> >   If WRITE request completely overlaps the dirty segment then clear 
+> > 	the dirty flag and pass through to the backing dev.
+> >   otherwise:
+> >     - return -EIO immediately for WRITE request
+> >     - return -EIO immediately for READ request (*)
+> > 
+> > If the WRITE request completely overlaps the dirty segment as indicated 
+> > from the in-memory metadata, then clear its dirty flag and write to the 
+> > backing device.  Whatever was dirty isn't important anymore as it was 
+> > overwritten.
+> 
+> What I worried here is, the lost dirty data blocks is probably to have
+> inter-dependency, e.g. file system metadata (maybe database transaction
+> records).
+> 
+> If the cache device disconnected and a single overlapped dirty block is
+> permitted to go into backing device. It may cause a more worse metadata
+> corruption and data lose on backing device.
+
+I think we might be using the term "overlapped" in two different ways: I 
+think you mean overlap as a request which only partially overwrites the 
+data which is dirty.  My meaning for overlap was that it completely 
+overlaps the dirty data, that is, the whole block specified by the WRITE 
+request is already dirty at the time of submission and exactly matches 
+what the dirty map indicates such that clearing the dirty map for the 
+request does not clear the dirty map for any dirty data that is not 
+overwritten by the request.
+
+I agree that WRITE requests which do not fully overwrite the dirty block 
+must -EIO.
+
+We can only write to the backing device if the WRITE request being made is 
+to an offset+length that is completely dirty, in which case the related 
+cache block in-memory dirty flag can be cleared.  It must completely match 
+the dirty block size so the write complete replaces the dirty area.  
+
+Does this seem correct?  If not, please suggest an example to illustrate.
+
+> > 
+> > Unless there is a good reason to diverge, we would want this recovery 
+> > logic would be the same for failed IOs from an existing cachedev (eg, with 
+> > badblocks), and for cachedevs that are altogether missing.
+> > 
+> 
+> For clean data lost, this is totally correct. For dirty data lost, it
+> might not be always correct. At least for writeback mode, this recovery
+> logic is buggy. Return a corrupted/stale data in silence is disaster,
+> this logic should be fixed.
+
+I think we are saying the same thing.  Always return valid data or -EIO.  
+I'm just suggesting that the -EIO path from the cache device should be the 
+same logic whether it is because the driver returned -EIO or because the 
+cache device is missing.
+
+> > 
+> >> 3) If not in writeback mode, and dirty map is not clean. It means the
+> >> cache mode is switched from writeback mode with dirty data lost, then
+> >>    - returns -EIO immediately for WRITE request
+> >>    - returns -EIO immediately for READ request (*)
+> > 
+> > For #2,3, do a dirty map lookup for every IO: if the block is clean, pass 
+> > it to the backing device.  Only -EIO if the request cannot be recovered 
+> > (block is dirty) and invoke pr_crit_once() to notify the user.  We want 
+> > all IO requests to succeed to the extent possible.
+> 
+> For SSD, especially industry level NVMe SSD, there are quite a lot
+> redundant capacity inside. If an internal storage unit failed, SSD
+> controller will recovery the broken unit by map its LBA to another
+> internal storage unit. Which means if we encounter consistent bad block
+> on NVMe SSD, this is an important warning, because this device has no
+> internal space to remap and will die very soon.
+
+Interesting, true!
+
+What does bcache do currently if the cache device still exists (is not 
+missing) but is getting -EIO's from the driver?
+ 
+> 5 years ago, I know some PCIe SSDs had 30%~50% capacity more internally
+> for better write performance (more space to avoid synchronized garbage
+> collection). If a bad block returned from such SSD, the situation is
+> similar to a hard disk reports 25%~30% sectors are bad. Definitely
+> people should replace the SSD as soon as possible.
+
+Indeed!
+
+> > I think #3 is the same case as #2.  The logic is the same whether its is 
+> > now or ever was in writeback mode, regardless of the current mode.
+> > 
+> >> (*) NOTE:
+> >> A sysfs entry "recovery_io_error" can be add here, which is disabled as
+> >> default. If it is enabled, if a READ request does not hit dirty map,
+> >> bcache will provide it from backing device.
+> > 
+> > Resilience first!  This should default on.
+> 
+> For any storage system, data health is always first priority. Providing
+> corrupted data is unacceptable.
+> 
+> If bcache cannot recovery a correct data, returning a stale data by
+> recovery is insane from view of users, we should not make it happen.
+
+Agreed.
+ 
+> But if people use bcache to accelerate applications on laptop with cheap
+> SSD, they care about performance much more then data consistency. And
+> this kind of use case should represent most of bcache development in the
+> world. Hmm, I cannot find a way to refute you... you are right, this
+> should default on.
+> 
+> How about this,
+> we make this configure default on, and explain in code and document why
+> it exists and in which condition it should be disabled. Then people may
+> disable it when they seriously cares about data consistency.
+> 
+> Do you think it is reasonable ?
+
+Definitely!
+
+> [cut pagecache bits]
+
+(Nevermind what I said about the pagecache, it only confuses things.  
+Lets stick to the block layer :) )
+
+> > Since the dirty map is still in memory, that information is 
+> > useful for recovery.  After a reboot the dirty map is lost---and with it 
+> > the data about what is consistent and what is not. 
+> > 
+> > For example, if LVM snapshots sit atop of the bcache volume, then you 
+> > could `dd` them off.  If you hit an error, you know that copy is at least 
+> > partially inconsistent and can try an older snapshot until one is found 
+> > which is old enough to be 100% consistent.  Without the dirty map, you 
+> > would only be guessing at which volume is actually consistent.
 > >
-> >I have 400GB of data I'd rather not move, and SSD I could use for
-> >caching. Ok, SSD is connecte over USB2, but I guess it is still way
-> >faster then seeking harddrive on random access
->=20
-> i doubt that seriously - USB2 has a terrible latency
+> > Let users set recovery_io_error=0 for those who really want to fail early.
+> 
+> Yes, your suggestion is great, let's set recovery_io_error=1 as default.
+> 
+> From the above discussion, if:
+> - recovery_io_error=1 is set as default.
+> - dirty map should still be check in "non" mode (this is any mode that
+> you suggested), and handled properly.
+> do you think there is any thing more to fix on my proposal ?
 
-Well.. if that's too slow, I can get SSD M.2; plus bcache docs says
-that combination works.
+I think you proposal is great, thank you for all of the work on this!
 
-And... if you ever tried to do git diff while git checkout is running
-on spinning rust... spinning rust has awful parameters when idle, and
-it only gets worse when loaded :-(.
-								=09
-									Pavel
+-Eric
 
---=20
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blo=
-g.html
-
---lrZ03NoBR/3+SXJZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iEYEARECAAYFAll2R2QACgkQMOfwapXb+vL9PwCfRMP3k/4KHRZEMQVHNHM0BIjB
-DFIAmwdUjEpgcSn1tAPb61HHBM9IBAuJ
-=7786
------END PGP SIGNATURE-----
-
---lrZ03NoBR/3+SXJZ--
+> 
+> Thanks for all the hints!
+> 
+> Coly
+> 
+> 
+--1641074820-595456119-1500923979=:9683--
