@@ -1,68 +1,130 @@
-From: <richard@oxbridgeprograms.com>
-Subject: (unknown)
-Date: Wed, 02 Aug 2017 00:36:45 -0000
-Message-ID: <150163420572.22644.11735848803426908863@vnpt.vn>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 17/19] bcache: fix for gc and write-back race
+Date: Fri, 4 Aug 2017 00:20:04 +0800
+Message-ID: <48dca7d6-76da-8493-4d1f-a4c810c250c3@coly.li>
+References: <20170629134510.GA32385@infradead.org>
+ <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
+ <1498855388-16990-17-git-send-email-bcache@lists.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: application/zip; name="EMAIL_60776096244_linux-bcache.zip"
-Content-Transfer-Encoding: base64
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from static.vnpt.vn ([14.186.254.246]:47651 "HELO vnpt.vn"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-        id S1751021AbdHBAgv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 1 Aug 2017 20:36:51 -0400
-Content-Disposition: attachment
-Subject: 
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1498855388-16990-17-git-send-email-bcache@lists.ewheeler.net>
+Content-Language: en-US
+Sender: linux-block-owner@vger.kernel.org
+To: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>
+Cc: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-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
-BQYAAAAAAQABAFsAAACMCgAAAAA=
+On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> gc and write-back get raced (see the email "bcache get stucked" I sended
+> before):
+> gc thread						write-back thread
+> |							|bch_writeback_thread()
+> |bch_gc_thread()					|
+> |							|==>read_dirty()
+> |==>bch_btree_gc()					|
+> |==>btree_root() //get btree root			|
+> |			node write locker		|
+> |==>bch_btree_gc_root()					|
+> |							|==>read_dirty_submit()
+> |							|==>write_dirty()
+> |							|==>continue_at(cl, write_dirty_finish, system_wq);
+> |							|==>write_dirty_finish()//excute in system_wq
+> |							|==>bch_btree_insert()
+> |							|==>bch_btree_map_leaf_nodes()
+> |							|==>__bch_btree_map_nodes()
+> |							|==>btree_root //try to get btree root node read lock
+> |							|-----stuck here
+> |==>bch_btree_set_root()				|
+> |==>bch_journal_meta()					|
+> |==>bch_journal()					|
+> |==>journal_try_write()					|
+> |==>journal_write_unlocked() //journal_full(&c->journal) condition satisfied
+> |==>continue_at(cl, journal_write, system_wq); //try to excute journal_write in system_wq
+> |					//but work queue is excuting write_dirty_finish()
+> |==>closure_sync(); //wait journal_write execute over and wake up gc,
+> |			--stuck here
+> |==>release root node write locker
+> 
+> This patch alloc a separate work-queue for write-back thread to avoid such
+> race.
+> 
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> Cc: stable@vger.kernel.org
+
+Add a per-cached device work queue is a good idea, it's OK to me.
+
+Acked-by: Coly Li <colyli@suse.de>
+
+Thansk.
+
+Coly
+
+> ---
+>  drivers/md/bcache/bcache.h    | 1 +
+>  drivers/md/bcache/super.c     | 2 ++
+>  drivers/md/bcache/writeback.c | 8 ++++++--
+>  3 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> index 44123e4..deb0a6c 100644
+> --- a/drivers/md/bcache/bcache.h
+> +++ b/drivers/md/bcache/bcache.h
+> @@ -333,6 +333,7 @@ struct cached_dev {
+>  	/* Limit number of writeback bios in flight */
+>  	struct semaphore	in_flight;
+>  	struct task_struct	*writeback_thread;
+> +	struct workqueue_struct	*writeback_write_wq;
+>  
+>  	struct keybuf		writeback_keys;
+>  
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index e06641e..24cb9b7 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1063,6 +1063,8 @@ static void cached_dev_free(struct closure *cl)
+>  	cancel_delayed_work_sync(&dc->writeback_rate_update);
+>  	if (!IS_ERR_OR_NULL(dc->writeback_thread))
+>  		kthread_stop(dc->writeback_thread);
+> +	if (dc->writeback_write_wq)
+> +		destroy_workqueue(dc->writeback_write_wq);
+>  
+>  	mutex_lock(&bch_register_lock);
+>  
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 4104eaa..4bc5daa 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -189,7 +189,7 @@ static void write_dirty(struct closure *cl)
+>  
+>  	closure_bio_submit(&io->bio, cl);
+>  
+> -	continue_at(cl, write_dirty_finish, system_wq);
+> +	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
+>  }
+>  
+>  static void read_dirty_endio(struct bio *bio)
+> @@ -209,7 +209,7 @@ static void read_dirty_submit(struct closure *cl)
+>  
+>  	closure_bio_submit(&io->bio, cl);
+>  
+> -	continue_at(cl, write_dirty, system_wq);
+> +	continue_at(cl, write_dirty, io->dc->writeback_write_wq);
+>  }
+>  
+>  static void read_dirty(struct cached_dev *dc)
+> @@ -527,6 +527,10 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+>  
+>  int bch_cached_dev_writeback_start(struct cached_dev *dc)
+>  {
+> +	dc->writeback_write_wq = alloc_workqueue("bcache_writeback_wq", WQ_MEM_RECLAIM, 0);
+> +	if (!dc->writeback_write_wq)
+> +		return -ENOMEM;
+> +
+>  	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
+>  					      "bcache_writeback");
+>  	if (IS_ERR(dc->writeback_thread))
+> 
