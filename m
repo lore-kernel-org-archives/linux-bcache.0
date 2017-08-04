@@ -1,130 +1,46 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 17/19] bcache: fix for gc and write-back race
-Date: Fri, 4 Aug 2017 00:20:04 +0800
-Message-ID: <48dca7d6-76da-8493-4d1f-a4c810c250c3@coly.li>
-References: <20170629134510.GA32385@infradead.org>
- <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
- <1498855388-16990-17-git-send-email-bcache@lists.ewheeler.net>
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Subject: xfs on bcache: metadata I/O error: block
+ 0x575b6d70,("xfs_trans_read_buf_map") error 4 numblks 16
+Date: Fri, 4 Aug 2017 08:46:28 +0200
+Message-ID: <b439f476-be06-4749-f4cd-70cfb46d7c29@profihost.ag>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1498855388-16990-17-git-send-email-bcache@lists.ewheeler.net>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>
-Cc: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:42332 "EHLO
+        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1751282AbdHDGv4 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 4 Aug 2017 02:51:56 -0400
+Content-Language: de-DE
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, Eric Wheeler <bcache@lists.ewheeler.net>
 
-On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
-> 
-> gc and write-back get raced (see the email "bcache get stucked" I sended
-> before):
-> gc thread						write-back thread
-> |							|bch_writeback_thread()
-> |bch_gc_thread()					|
-> |							|==>read_dirty()
-> |==>bch_btree_gc()					|
-> |==>btree_root() //get btree root			|
-> |			node write locker		|
-> |==>bch_btree_gc_root()					|
-> |							|==>read_dirty_submit()
-> |							|==>write_dirty()
-> |							|==>continue_at(cl, write_dirty_finish, system_wq);
-> |							|==>write_dirty_finish()//excute in system_wq
-> |							|==>bch_btree_insert()
-> |							|==>bch_btree_map_leaf_nodes()
-> |							|==>__bch_btree_map_nodes()
-> |							|==>btree_root //try to get btree root node read lock
-> |							|-----stuck here
-> |==>bch_btree_set_root()				|
-> |==>bch_journal_meta()					|
-> |==>bch_journal()					|
-> |==>journal_try_write()					|
-> |==>journal_write_unlocked() //journal_full(&c->journal) condition satisfied
-> |==>continue_at(cl, journal_write, system_wq); //try to excute journal_write in system_wq
-> |					//but work queue is excuting write_dirty_finish()
-> |==>closure_sync(); //wait journal_write execute over and wake up gc,
-> |			--stuck here
-> |==>release root node write locker
-> 
-> This patch alloc a separate work-queue for write-back thread to avoid such
-> race.
-> 
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> Cc: stable@vger.kernel.org
+Hello,
 
-Add a per-cached device work queue is a good idea, it's OK to me.
+under very high load i'm getting the following error on bcache devices
+since upgrading from opensuse 42.2 to 42.3.
 
-Acked-by: Coly Li <colyli@suse.de>
+David Chinner and others pointed me that this must be an bcache problem
+not an XFS one.
 
-Thansk.
+Is this an error or problem you know and just a patch is missing in
+opensuse?
 
-Coly
+XFS (bcache1): metadata I/O error: block 0x575b6d70
+("xfs_trans_read_buf_map") error 4 numblks 16
+XFS (bcache1): xfs_imap_to_bp: xfs_trans_read_buf() returned error -4.
+XFS (bcache1): xfs_do_force_shutdown(0x8) called from line 3519 of file
+fs/xfs/xfs_inode.c. Return address = 0xffffffff993441ff
+XFS (bcache1): Corruption of in-memory data detected. Shutting down
+filesystem
+XFS (bcache1): Please umount the filesystem and rectify the problem(s)
+XFS (bcache1): xfs_log_force: error -5 returned.
+XFS (bcache1): xfs_log_force: error -5 returned.
+XFS (bcache1): xfs_log_force: error -5 returned.
 
-> ---
->  drivers/md/bcache/bcache.h    | 1 +
->  drivers/md/bcache/super.c     | 2 ++
->  drivers/md/bcache/writeback.c | 8 ++++++--
->  3 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index 44123e4..deb0a6c 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -333,6 +333,7 @@ struct cached_dev {
->  	/* Limit number of writeback bios in flight */
->  	struct semaphore	in_flight;
->  	struct task_struct	*writeback_thread;
-> +	struct workqueue_struct	*writeback_write_wq;
->  
->  	struct keybuf		writeback_keys;
->  
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index e06641e..24cb9b7 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -1063,6 +1063,8 @@ static void cached_dev_free(struct closure *cl)
->  	cancel_delayed_work_sync(&dc->writeback_rate_update);
->  	if (!IS_ERR_OR_NULL(dc->writeback_thread))
->  		kthread_stop(dc->writeback_thread);
-> +	if (dc->writeback_write_wq)
-> +		destroy_workqueue(dc->writeback_write_wq);
->  
->  	mutex_lock(&bch_register_lock);
->  
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 4104eaa..4bc5daa 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -189,7 +189,7 @@ static void write_dirty(struct closure *cl)
->  
->  	closure_bio_submit(&io->bio, cl);
->  
-> -	continue_at(cl, write_dirty_finish, system_wq);
-> +	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
->  }
->  
->  static void read_dirty_endio(struct bio *bio)
-> @@ -209,7 +209,7 @@ static void read_dirty_submit(struct closure *cl)
->  
->  	closure_bio_submit(&io->bio, cl);
->  
-> -	continue_at(cl, write_dirty, system_wq);
-> +	continue_at(cl, write_dirty, io->dc->writeback_write_wq);
->  }
->  
->  static void read_dirty(struct cached_dev *dc)
-> @@ -527,6 +527,10 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
->  
->  int bch_cached_dev_writeback_start(struct cached_dev *dc)
->  {
-> +	dc->writeback_write_wq = alloc_workqueue("bcache_writeback_wq", WQ_MEM_RECLAIM, 0);
-> +	if (!dc->writeback_write_wq)
-> +		return -ENOMEM;
-> +
->  	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
->  					      "bcache_writeback");
->  	if (IS_ERR(dc->writeback_thread))
-> 
+Thanks!
+
+Greets,
+Stefan
