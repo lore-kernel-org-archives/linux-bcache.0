@@ -1,64 +1,79 @@
-From: Coly Li <i@coly.li>
-Subject: Re: xfs on bcache: metadata I/O error: block
- 0x575b6d70,("xfs_trans_read_buf_map") error 4 numblks 16
-Date: Mon, 7 Aug 2017 18:24:52 +0800
-Message-ID: <b6064182-7363-c2ac-5f5a-120fe04dcd6b@coly.li>
-References: <b439f476-be06-4749-f4cd-70cfb46d7c29@profihost.ag>
+From: Byungchul Park <byungchul.park@lge.com>
+Subject: Re: [RESEND PATCH] bcache: Don't reinvent the wheel but use existing
+ llist API
+Date: Tue, 8 Aug 2017 13:12:33 +0900
+Message-ID: <20170808041233.GR20323@X58A-UD3R>
+References: <1502095121-14337-1-git-send-email-byungchul.park@lge.com>
+ <b37c4038-d95f-ca81-5789-825ebfc6d425@coly.li>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:51756 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752645AbdHGKY7 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 7 Aug 2017 06:24:59 -0400
-In-Reply-To: <b439f476-be06-4749-f4cd-70cfb46d7c29@profihost.ag>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <b37c4038-d95f-ca81-5789-825ebfc6d425@coly.li>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: kent.overstreet@gmail.com, shli@kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-team@lge.com
 List-Id: linux-bcache@vger.kernel.org
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, Eric Wheeler <bcache@lists.ewheeler.net>
 
-On 2017/8/4 下午2:46, Stefan Priebe - Profihost AG wrote:
-> Hello,
+On Mon, Aug 07, 2017 at 06:18:35PM +0800, Coly Li wrote:
+> On 2017/8/7 下午4:38, Byungchul Park wrote:
+> > Although llist provides proper APIs, they are not used. Make them used.
+> > 
+> > Signed-off-by: Byungchul Park <byungchul.park@lge.com
+> Only have a question about why not using llist_for_each_entry(), it's
+
+Hello,
+
+The reason is to keep the original logic unchanged. The logic already
+does as if it's the safe version against removal.
+
+> still OK with llist_for_each_entry_safe(). The rested part is good to me.
 > 
-> under very high load i'm getting the following error on bcache devices
-> since upgrading from opensuse 42.2 to 42.3.
+> Acked-by: Coly Li <colyli@suse.de>
 > 
-> David Chinner and others pointed me that this must be an bcache problem
-> not an XFS one.
+> > ---
+> >  drivers/md/bcache/closure.c | 17 +++--------------
+> >  1 file changed, 3 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+> > index 864e673..1841d03 100644
+> > --- a/drivers/md/bcache/closure.c
+> > +++ b/drivers/md/bcache/closure.c
+> > @@ -64,27 +64,16 @@ void closure_put(struct closure *cl)
+> >  void __closure_wake_up(struct closure_waitlist *wait_list)
+> >  {
+> >  	struct llist_node *list;
+> > -	struct closure *cl;
+> > +	struct closure *cl, *t;
+> >  	struct llist_node *reverse = NULL;
+> >  
+> >  	list = llist_del_all(&wait_list->list);
+> >  
+> >  	/* We first reverse the list to preserve FIFO ordering and fairness */
+> > -
+> > -	while (list) {
+> > -		struct llist_node *t = list;
+> > -		list = llist_next(list);
+> > -
+> > -		t->next = reverse;
+> > -		reverse = t;
+> > -	}
+> > +	reverse = llist_reverse_order(list);
+> >  
+> >  	/* Then do the wakeups */
+> > -
+> > -	while (reverse) {
+> > -		cl = container_of(reverse, struct closure, list);
+> > -		reverse = llist_next(reverse);
+> > -
+> > +	llist_for_each_entry_safe(cl, t, reverse, list) {
 > 
-> Is this an error or problem you know and just a patch is missing in
-> opensuse?
-> 
-> XFS (bcache1): metadata I/O error: block 0x575b6d70
-> ("xfs_trans_read_buf_map") error 4 numblks 16
-> XFS (bcache1): xfs_imap_to_bp: xfs_trans_read_buf() returned error -4.
-> XFS (bcache1): xfs_do_force_shutdown(0x8) called from line 3519 of file
-> fs/xfs/xfs_inode.c. Return address = 0xffffffff993441ff
-> XFS (bcache1): Corruption of in-memory data detected. Shutting down
-> filesystem
-> XFS (bcache1): Please umount the filesystem and rectify the problem(s)
-> XFS (bcache1): xfs_log_force: error -5 returned.
-> XFS (bcache1): xfs_log_force: error -5 returned.
-> XFS (bcache1): xfs_log_force: error -5 returned.
+> Just wondering why not using llist_for_each_entry(), or you use the
+> _safe version on purpose ?
 
-Hi Stefan,
+If I use llist_for_each_entry(), then it would change the original
+behavior. Is it ok?
 
-In Leap 42.3 there is a patch prevents bcache from recovering I/O error
-on cached device for non-writethrough mode. This is to avoid recovering
-staled data from backing device. And this patch is not upstream yet (I
-am working on a more proper version for upstream at mean time).
-
-So it is possible that bcache encounter I/O error on cache device for
-writeback mode, then xfs code receives -EIO (-5) in the above kernel log.
-
-I see on bugzilla.opensuse.org you mentioned after reverting this patch,
-no error reported any more. Let's see what happens inside, and for
-upstream version patch, there is sysfs option to disable/enable the I/O
-recovery behavior.
-
-Thanks.
-
--- 
-Coly Li
+Thank you,
+Byungchul
