@@ -1,45 +1,28 @@
-From: Byungchul Park <byungchul.park@lge.com>
-Subject: Re: [RESEND PATCH] bcache: Don't reinvent the wheel but use existing
- llist API
-Date: Wed, 9 Aug 2017 15:42:42 +0900
-Message-ID: <20170809064242.GT20323@X58A-UD3R>
-References: <1502095121-14337-1-git-send-email-byungchul.park@lge.com>
- <b37c4038-d95f-ca81-5789-825ebfc6d425@coly.li>
- <20170808041233.GR20323@X58A-UD3R>
- <d99cc72b-833d-c8b1-4c44-923cb50d5d1f@coly.li>
- <20170808060056.GS20323@X58A-UD3R>
- <aa85a3ed-d9a0-e9d6-58e2-b6c9e4a63984@suse.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: cgxu <cgxu@mykernel.net>
+Subject: very poor write performance in writeback mode
+Date: Wed, 9 Aug 2017 15:09:39 +0800
+Message-ID: <14A0EA53-A1CF-40DA-AE5C-18D3CC347A40@mykernel.net>
+Mime-Version: 1.0 (Mac OS X Mail 10.3 \(3273\))
+Content-Type: text/plain; charset=gb2312
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from LGEAMRELO11.lge.com ([156.147.23.51]:58561 "EHLO
-        lgeamrelo11.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752499AbdHIGn4 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 9 Aug 2017 02:43:56 -0400
-Content-Disposition: inline
-In-Reply-To: <aa85a3ed-d9a0-e9d6-58e2-b6c9e4a63984@suse.com>
+Received: from smtpbg299.qq.com ([184.105.67.99]:51910 "EHLO smtpbg299.qq.com"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1752008AbdHIHQv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 9 Aug 2017 03:16:51 -0400
+Received: from [172.17.46.165] (unknown [122.224.77.194])
+        by esmtp4.qq.com (ESMTP) with SMTP id 0
+        for <linux-bcache@vger.kernel.org>; Wed, 09 Aug 2017 15:09:39 +0800 (CST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Nikolay Borisov <nborisov@suse.com>
-Cc: Coly Li <i@coly.li>, kent.overstreet@gmail.com, shli@kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-team@lge.com
+To: linux-bcache@vger.kernel.org
 
-On Wed, Aug 09, 2017 at 09:39:09AM +0300, Nikolay Borisov wrote:
-> 
-> 
-> On  8.08.2017 09:00, Byungchul Park wrote:
-> > On Tue, Aug 08, 2017 at 01:28:39PM +0800, Coly Li wrote:
-> >>>>> +	llist_for_each_entry_safe(cl, t, reverse, list) {
-> >>>>
-> >>>> Just wondering why not using llist_for_each_entry(), or you use the
-> >>>> _safe version on purpose ?
-> >>>
-> >>> If I use llist_for_each_entry(), then it would change the original
-> >>> behavior. Is it ok?
-> 
-> Generally, _safe versions of list primitives is used when you are going
-> to perform removal in the iteration. I haven't looked at the code in
-> bcache but if it's removing entries from the list then _safe version is
-> required. If you are only iterating - then non-safe version is fine.
+HI
 
-Thank you~ :)
+I make bcache device using NVMe ssd device as cache and 4T SATA disk as backing device.
+
+I found write performance is extremely poor in writeback cache_mode but raw ssd has very high performance.
+
+I monitored io workload using iostat for a while, so I'm sure it really worked in writeback mode.
+
+can anyone explain this problem£¿ Is there any compatible issue with special hardware?
