@@ -1,69 +1,58 @@
-From: <michele@milburnbrowning.com>
-Subject: (unknown)
-Date: Tue, 08 Aug 2017 21:31:03 -0000
-Message-ID: <150222786374.17375.11427999275194921929@permonline.ru>
+From: Nikolay Borisov <nborisov@suse.com>
+Subject: Re: [RESEND PATCH] bcache: Don't reinvent the wheel but use existing
+ llist API
+Date: Wed, 9 Aug 2017 09:39:09 +0300
+Message-ID: <aa85a3ed-d9a0-e9d6-58e2-b6c9e4a63984@suse.com>
+References: <1502095121-14337-1-git-send-email-byungchul.park@lge.com>
+ <b37c4038-d95f-ca81-5789-825ebfc6d425@coly.li>
+ <20170808041233.GR20323@X58A-UD3R>
+ <d99cc72b-833d-c8b1-4c44-923cb50d5d1f@coly.li>
+ <20170808060056.GS20323@X58A-UD3R>
 Mime-Version: 1.0
-Content-Type: application/zip; name="95599025.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from dsl-178-47-141-144.permonline.ru ([178.47.141.144]:35639 "HELO
-        permonline.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-        with SMTP id S1752030AbdHHVbH (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 8 Aug 2017 17:31:07 -0400
-Subject: 
-Content-Disposition: attachment
+Received: from mx2.suse.de ([195.135.220.15]:47112 "EHLO mx1.suse.de"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1750830AbdHIGjO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 9 Aug 2017 02:39:14 -0400
+In-Reply-To: <20170808060056.GS20323@X58A-UD3R>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Byungchul Park <byungchul.park@lge.com>, Coly Li <i@coly.li>
+Cc: kent.overstreet@gmail.com, shli@kernel.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, kernel-team@lge.com
 
-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
-AVBLBQYAAAAAAQABAFsAAACPCgAAAAA=
+
+
+On  8.08.2017 09:00, Byungchul Park wrote:
+> On Tue, Aug 08, 2017 at 01:28:39PM +0800, Coly Li wrote:
+>>>>> +	llist_for_each_entry_safe(cl, t, reverse, list) {
+>>>>
+>>>> Just wondering why not using llist_for_each_entry(), or you use the
+>>>> _safe version on purpose ?
+>>>
+>>> If I use llist_for_each_entry(), then it would change the original
+>>> behavior. Is it ok?
+
+Generally, _safe versions of list primitives is used when you are going
+to perform removal in the iteration. I haven't looked at the code in
+bcache but if it's removing entries from the list then _safe version is
+required. If you are only iterating - then non-safe version is fine.
+
+>>>
+>>
+>> I feel llist_for_each_entry() keeps the original behavior, and variable
+> 
+> Ah.. I see. Then.. Can I change it into non-safe version? Is it still ok
+> with non-safe one? I will change it at the next spin, if yes.
+> 
+>> 't' can be removed. Anyway, either llist_for_each_entry() or
+>> llist_for_each_entry_safe() works correctly and well here. Any one you
+>> use is OK to me, thanks for your informative reply :-)
+> 
+> I rather appriciate it.
+> 
+> Thank you,
+> Byungchul
+> 
