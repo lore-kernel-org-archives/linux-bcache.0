@@ -1,81 +1,70 @@
 From: Coly Li <i@coly.li>
-Subject: Re: [PATCH] bcache: remove problematic code block from
- register_bcache()
-Date: Tue, 5 Sep 2017 16:03:35 +0800
-Message-ID: <c98d0ae0-9b6a-aada-577e-3f34d43a2eed@coly.li>
-References: <20170905071049.20273-1-colyli@suse.de>
+Subject: Re: [PATCH 01/19] bcache: Fix leak of bdev reference
+Date: Wed, 6 Sep 2017 13:25:10 +0800
+Message-ID: <14051b81-4184-8efa-6e90-74693e2dd18d@coly.li>
+References: <20170629134510.GA32385@infradead.org>
+ <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net>
+ <20170705182447.GA10673@infradead.org>
+ <e9019647-62b5-1c14-8b2f-66528b972b5c@coly.li>
+ <20170905064348.GA23716@infradead.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:57218 "EHLO server.coly.li"
+Received: from server.coly.li ([162.144.45.48]:60682 "EHLO server.coly.li"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750766AbdIEIDv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 5 Sep 2017 04:03:51 -0400
-In-Reply-To: <20170905071049.20273-1-colyli@suse.de>
+        id S1750819AbdIFFZZ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 6 Sep 2017 01:25:25 -0400
+In-Reply-To: <20170905064348.GA23716@infradead.org>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: bcache@lists.ewheeler.net, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, axboe@kernel.dk, Jan Kara <jack@suse.cz>
 
-On 2017/9/5 下午3:10, Coly Li wrote:
-> There is a leak of bdev reference in register_bcache(), and Jan Kara
-> posted a patch to fix it. Discussion happened on bcache mailing list,
-> Christoph Hellwig pointed out that whole chunk of code where the bdev
-> reference leak lied was problematic,
+On 2017/9/5 下午2:43, Christoph Hellwig wrote:
+> On Tue, Sep 05, 2017 at 01:30:04AM +0800, Coly Li wrote:
+>>
+>> When you mentioned "whole chunk of code", do you mean the following
+>> block of code ?
+>>
+>>
+>> 1960         if (IS_ERR(bdev)) {
+>> ========= start of whole chunk of code ============
+>> 1961                 if (bdev == ERR_PTR(-EBUSY)) {
+>> 1962                         bdev = lookup_bdev(strim(path));
+>> 1963                         mutex_lock(&bch_register_lock);
+>> 1964                         if (!IS_ERR(bdev) && bch_is_open(bdev))
+>> 1965                                 err = "device already registered";
+>> 1966                         else
+>> 1967                                 err = "device busy";
+>> 1968                         mutex_unlock(&bch_register_lock);
+>> 1969                         if (!IS_ERR(bdev))
+>> 1970                                 bdput(bdev);
+>> 1971                         if (attr == &ksysfs_register_quiet)
+>> 1972                                 goto out;
+>> 1973                 }
+>> ========= end of whole chunk of code ============
+>> 1974                 goto err;
+>> 1975         }
+>>
+>> I don't mind to remove it, just double check I don't misunderstand what
+>> you meant.
 > 
-> 	"adding a lookup_bdev and resulting mess just for a
-> 	 slightly different error message is just insane"
+> Yes, that's the problematic block.
 > 
-> This patch jsut removes whole chunk of the problematic code, of cause
-> the leak of bdev reference is removed too.
-> 
-> Signed-off-by: Coly Li <colyli@suse.de>
-> Cc: Jan Kara <jack@suse.cz>
-> Cc: Christoph Hellwig <hch@infradead.org>
-> ---
->  drivers/md/bcache/super.c | 14 +-------------
->  1 file changed, 1 insertion(+), 13 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 8352fad765f6..85262f2628fb 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -1955,20 +1955,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
->  	bdev = blkdev_get_by_path(strim(path),
->  				  FMODE_READ|FMODE_WRITE|FMODE_EXCL,
->  				  sb);
-> -	if (IS_ERR(bdev)) {
-> -		if (bdev == ERR_PTR(-EBUSY)) {
-> -			bdev = lookup_bdev(strim(path));
-> -			mutex_lock(&bch_register_lock);
-> -			if (!IS_ERR(bdev) && bch_is_open(bdev))
-> -				err = "device already registered";
-> -			else
-> -				err = "device busy";
-> -			mutex_unlock(&bch_register_lock);
-> -			if (attr == &ksysfs_register_quiet)
-> -				goto out;
-> -		}
-> +	if (IS_ERR(bdev))
->  		goto err;
-> -	}
->  
->  	err = "failed to set blocksize";
->  	if (set_blocksize(bdev, 4096))
-> 
+Hi Christoph,
 
-Hi Jan and Christoph,
+I tested the code, and my patch which removes the above code. The result
+is, I feel the above chunk of code is useful. When I tried to register a
+device and it was already registered. Without the above code, I only saw
+"failed to open device", didn't realize it was because this device is
+registered already. After adding the above code back, I knew where the
+problem was.
 
-There are other three functions only referenced in the above chunk of code,
-- bch_is_open()
-- bch_is_open_cache()
-- bch_is_open_backing()
-they should be removed as well.
-
-So you may ignore this email, an update version of this patch will be
-posted to linux-bache and linux-block mailing lists for review.
+The above chunk of code improves user experience and provides more
+detailed diagnose information, it is useful. Then I suggest to keep the
+code here and pick up Jan's patch.
 
 Thanks.
 
