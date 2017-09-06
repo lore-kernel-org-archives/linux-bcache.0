@@ -1,61 +1,52 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 05/12] bcache: gc does not work when triggering by manual command
-Date: Wed,  6 Sep 2017 14:25:55 +0800
-Message-ID: <20170906062602.50497-6-colyli@suse.de>
+Subject: [PATCH 07/12] bcache: Correct return value for sysfs attach errors
+Date: Wed,  6 Sep 2017 14:25:57 +0800
+Message-ID: <20170906062602.50497-8-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:42309 "EHLO mx1.suse.de"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751737AbdIFG0t (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 6 Sep 2017 02:26:49 -0400
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
-Cc: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>
+Cc: bcache@lists.ewheeler.net, Tony Asleson <tasleson@redhat.com>, stable@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+From: Tony Asleson <tasleson@redhat.com>
 
-I try to execute the following command to trigger gc thread:
-[root@localhost internal]# echo 1 > trigger_gc
-But it does not work, I debug the code in gc_should_run(), It works only
-if in invalidating or sectors_to_gc < 0. So set sectors_to_gc to -1 to
-meet the condition when we trigger gc by manual command.
+If you encounter any errors in bch_cached_dev_attach it will return
+a negative error code.  The variable 'v' which stores the result is
+unsigned, thus user space sees a very large value returned for bytes
+written which can cause incorrect user space behavior.  Utilize 1
+signed variable to use throughout the function to preserve error return
+capability.
 
-(Code comments aded by Coly Li)
-
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-Reviewed-by: Coly Li <colyli@suse.de>
+Signed-off-by: Tony Asleson <tasleson@redhat.com>
+Acked-by: Coly Li <colyli@suse.de>
+Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/sysfs.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ drivers/md/bcache/sysfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index f90f13616980..09295c07ea88 100644
+index 09295c07ea88..104c57cd666c 100644
 --- a/drivers/md/bcache/sysfs.c
 +++ b/drivers/md/bcache/sysfs.c
-@@ -615,8 +615,21 @@ STORE(__bch_cache_set)
- 		bch_cache_accounting_clear(&c->accounting);
- 	}
+@@ -192,7 +192,7 @@ STORE(__cached_dev)
+ {
+ 	struct cached_dev *dc = container_of(kobj, struct cached_dev,
+ 					     disk.kobj);
+-	unsigned v = size;
++	ssize_t v = size;
+ 	struct cache_set *c;
+ 	struct kobj_uevent_env *env;
  
--	if (attr == &sysfs_trigger_gc)
-+	if (attr == &sysfs_trigger_gc) {
-+		/*
-+		 * Garbage collection thread only works when sectors_to_gc < 0,
-+		 * when users write to sysfs entry trigger_gc, most of time
-+		 * they want to forcibly triger gargage collection. Here -1 is
-+		 * set to c->sectors_to_gc, to make gc_should_run() give a
-+		 * chance to permit gc thread to run. "give a chance" means
-+		 * before going into gc_should_run(), there is still chance
-+		 * that c->sectors_to_gc being set to other positive value. So
-+		 * writing sysfs entry trigger_gc won't always make sure gc
-+		 * thread takes effect.
-+		 */
-+		atomic_set(&c->sectors_to_gc, -1);
- 		wake_up_gc(c);
-+	}
+@@ -227,7 +227,7 @@ STORE(__cached_dev)
+ 		bch_cached_dev_run(dc);
  
- 	if (attr == &sysfs_prune_cache) {
- 		struct shrink_control sc;
+ 	if (attr == &sysfs_cache_mode) {
+-		ssize_t v = bch_read_string_list(buf, bch_cache_modes + 1);
++		v = bch_read_string_list(buf, bch_cache_modes + 1);
+ 
+ 		if (v < 0)
+ 			return v;
 -- 
 2.13.5
