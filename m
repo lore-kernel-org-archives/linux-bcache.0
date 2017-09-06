@@ -1,56 +1,56 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing llist API
-Date: Wed,  6 Sep 2017 14:25:54 +0800
-Message-ID: <20170906062602.50497-5-colyli@suse.de>
+Subject: [PATCH 02/12] bcache: fix sequential large write IO bypass
+Date: Wed,  6 Sep 2017 14:25:52 +0800
+Message-ID: <20170906062602.50497-3-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:42288 "EHLO mx1.suse.de"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751698AbdIFG0q (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 6 Sep 2017 02:26:46 -0400
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: stable-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
-Cc: bcache@lists.ewheeler.net, Byungchul Park <byungchul.park@lge.com>
+Cc: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 
-From: Byungchul Park <byungchul.park@lge.com>
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Although llist provides proper APIs, they are not used. Make them used.
+Sequential write IOs were tested with bs=1M by FIO in writeback cache
+mode, these IOs were expected to be bypassed, but actually they did not.
+We debug the code, and find in check_should_bypass():
+    if (!congested &&
+        mode == CACHE_MODE_WRITEBACK &&
+        op_is_write(bio_op(bio)) &&
+        (bio-＞bi_opf & REQ_SYNC))
+        goto rescale
+that means, If in writeback mode, a write IO with REQ_SYNC flag will not
+be bypassed though it is a sequential large IO, It's not a correct thing
+to do actually, so this patch remove these codes.
 
-Signed-off-by: Byungchul Park <byungchul.park@lge.com>
-Acked-by: Coly Li <colyli@suse.de>
+Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
+Reviewed-by: Kent Overstreet <kent.overstreet@gmail.com>
+Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
+Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/closure.c | 15 ++-------------
- 1 file changed, 2 insertions(+), 13 deletions(-)
+ drivers/md/bcache/request.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
-diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
-index 864e673aec39..7d5286b05036 100644
---- a/drivers/md/bcache/closure.c
-+++ b/drivers/md/bcache/closure.c
-@@ -70,21 +70,10 @@ void __closure_wake_up(struct closure_waitlist *wait_list)
- 	list = llist_del_all(&wait_list->list);
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 019b3df9f1c6..958072a11347 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -400,12 +400,6 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
+ 	if (!congested && !dc->sequential_cutoff)
+ 		goto rescale;
  
- 	/* We first reverse the list to preserve FIFO ordering and fairness */
+-	if (!congested &&
+-	    mode == CACHE_MODE_WRITEBACK &&
+-	    op_is_write(bio->bi_opf) &&
+-	    op_is_sync(bio->bi_opf))
+-		goto rescale;
 -
--	while (list) {
--		struct llist_node *t = list;
--		list = llist_next(list);
--
--		t->next = reverse;
--		reverse = t;
--	}
-+	reverse = llist_reverse_order(list);
+ 	spin_lock(&dc->io_lock);
  
- 	/* Then do the wakeups */
--
--	while (reverse) {
--		cl = container_of(reverse, struct closure, list);
--		reverse = llist_next(reverse);
--
-+	llist_for_each_entry(cl, reverse, list) {
- 		closure_set_waiting(cl, 0);
- 		closure_sub(cl, CLOSURE_WAITING + 1);
- 	}
+ 	hlist_for_each_entry(i, iohash(dc, bio->bi_iter.bi_sector), hash)
 -- 
 2.13.5
