@@ -1,74 +1,103 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 00/13] bcache: fixes and update for 4.14
-Date: Thu, 7 Sep 2017 01:38:07 +0800
-Message-ID: <c60bdc9a-cd8b-66c2-33c1-d9587499745d@coly.li>
-References: <20170906062602.50497-1-colyli@suse.de>
- <20170906142002.GA19380@kernel.dk>
- <d2a5b042-a81d-71c4-1f8c-8fc6416ed363@coly.li>
- <ffeb8364-a0ac-009c-5430-f047457d1272@kernel.dk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <ffeb8364-a0ac-009c-5430-f047457d1272@kernel.dk>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, bcache@lists.ewheeler.net
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH 13/13] bcache: initialize dirty stripes in flash_dev_run()
+Date: Thu,  7 Sep 2017 01:28:53 +0800
+Message-ID: <20170906172853.123310-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+Sender: stable-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
+Cc: Tang Junhui <tang.junhui@zte.com.cn>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2017/9/6 下午11:46, Jens Axboe wrote:
-> On 09/06/2017 09:41 AM, Coly Li wrote:
->> On 2017/9/6 下午10:20, Jens Axboe wrote:
->>> On Wed, Sep 06 2017, Coly Li wrote:
->>>> Hi Jens,
->>>>
->>>> Here are 12 patchs for bcache fixes and updates, most of them were posted
->>>> by Eric Wheeler in 4.13 merge window, but delayed due to lack of code
->>>> review.
->>>
->>> Next time, please send this _before_ the merge window opens. Not a huge
->>> problem for this series, since it has been posted numerous times in the
->>> past and already has good review coverage, but it really should have
->>> been in linux-next for a week or two before heading upstream.
->>>
->> Hi Jens,
->>
->> Copied, send patches _before_ merge window opens.
->>
->> But could you please to give me a hint, how can I find when a specific
->> merge window will open ? I search LKML, and see people send pull
->> requests for 4.14 merge window, but I don't see any announcement for
->> 4.14 merge window time slot.
-> 
-> The merge window opens when Linus releases the previous kernel. So you
-> have to try and keep track of when he expects to do that. That really
-> isn't that difficult - Linus always cuts a release on Sundays. We always
-> have 7 or 8 rc releases, so a good time to check is his mail on -rc6 or
-> -rc7 release, that usually gives a good indication of when he expects to
-> release the final.
-> 
-> To keep things simple, if you always have things ready when -rc7 is
-> released, then you are at least one week out from the merge window,
-> possibly two if we end up doing an -rc8. That means you don't have to
-> track anything, you know the exact date of when -rc7 is released since
-> Linus's schedule is usually reliable.
-> 
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Hi Jens,
+bcache uses a Proportion-Differentiation Controller algorithm to control
+writeback rate to cached devices. In the PD controller algorithm, dirty
+stripes of thin flash device should not be counted in, because flash only
+volumes never write back dirty data.
 
-Copied, I will follow the above rule in next cycle.
+Currently dirty stripe counter for thin flash device is not initialized
+when the thin flash device starts. Which means the following calculation
+in PD controller will reference an undefined dirty stripes number, and
+all cached devices attached to the same cache set where the thin flash
+device lies on may have an inaccurate writeback rate.
 
-And I just post the last patch
-(0013-bcache-initialize-stripe_sectors_dirty-correctly-for.patch) to you
-for 4.14 cycle.
+This patch calles bch_sectors_dirty_init() in flash_dev_run(), to
+correctly initialize dirty stripe counter when the thin flash device
+starts to run. This patch also does following parameter data type change,
+ -void bch_sectors_dirty_init(struct cached_dev *dc);
+ +void bch_sectors_dirty_init(struct bcache_device *);
+to call this function conveniently in flash_dev_run().
 
-This patch is an important fix for bcache writeback rate calculation, it
-is depended by another patch I sent to you
-(0006-bcache-correct-cache_dirty_target-in-__update_writeb.patch),
-please have it in 4.14.
+(Commit log is composed by Coly Li)
 
-Thanks in advance.
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+Reviewed-by: Coly Li <colyli@suse.de>
+Cc: stable@vger.kernel.org
+---
+ drivers/md/bcache/super.c     | 3 ++-
+ drivers/md/bcache/writeback.c | 8 ++++----
+ drivers/md/bcache/writeback.h | 2 +-
+ 3 files changed, 7 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 8352fad765f6..60d2c3ce192e 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1026,7 +1026,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	}
+ 
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+-		bch_sectors_dirty_init(dc);
++		bch_sectors_dirty_init(&dc->disk);
+ 		atomic_set(&dc->has_dirty, 1);
+ 		atomic_inc(&dc->count);
+ 		bch_writeback_queue(dc);
+@@ -1228,6 +1228,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+ 		goto err;
+ 
+ 	bcache_device_attach(d, c, u - c->uuids);
++	bch_sectors_dirty_init(d);
+ 	bch_flash_dev_request_init(d);
+ 	add_disk(d->disk);
+ 
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 42c66e76f05e..4fd332a7402e 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -482,17 +482,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
+ 	return MAP_CONTINUE;
+ }
+ 
+-void bch_sectors_dirty_init(struct cached_dev *dc)
++void bch_sectors_dirty_init(struct bcache_device *d)
+ {
+ 	struct sectors_dirty_init op;
+ 
+ 	bch_btree_op_init(&op.op, -1);
+-	op.inode = dc->disk.id;
++	op.inode = d->id;
+ 
+-	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
++	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
+ 			   sectors_dirty_init_fn, 0);
+ 
+-	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
++	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
+ }
+ 
+ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 629bd1a502fd..c992f06c1e9a 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -84,7 +84,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+ 
+ void bcache_dev_sectors_dirty_add(struct cache_set *, unsigned, uint64_t, int);
+ 
+-void bch_sectors_dirty_init(struct cached_dev *dc);
++void bch_sectors_dirty_init(struct bcache_device *);
+ void bch_cached_dev_writeback_init(struct cached_dev *);
+ int bch_cached_dev_writeback_start(struct cached_dev *);
+ 
 -- 
-Coly Li
+2.13.5
