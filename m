@@ -1,52 +1,128 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 07/12] bcache: Correct return value for sysfs attach errors
-Date: Wed,  6 Sep 2017 14:25:57 +0800
-Message-ID: <20170906062602.50497-8-colyli@suse.de>
+Subject: [PATCH 09/12] bcache: fix for gc and write-back race
+Date: Wed,  6 Sep 2017 14:25:59 +0800
+Message-ID: <20170906062602.50497-10-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
+Sender: stable-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
-Cc: bcache@lists.ewheeler.net, Tony Asleson <tasleson@redhat.com>, stable@vger.kernel.org
+Cc: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tony Asleson <tasleson@redhat.com>
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-If you encounter any errors in bch_cached_dev_attach it will return
-a negative error code.  The variable 'v' which stores the result is
-unsigned, thus user space sees a very large value returned for bytes
-written which can cause incorrect user space behavior.  Utilize 1
-signed variable to use throughout the function to preserve error return
-capability.
+gc and write-back get raced (see the email "bcache get stucked" I sended
+before):
+gc thread                               write-back thread
+|                                       |bch_writeback_thread()
+|bch_gc_thread()                        |
+|                                       |==>read_dirty()
+|==>bch_btree_gc()                      |
+|==>btree_root() //get btree root       |
+|                //node write locker    |
+|==>bch_btree_gc_root()                 |
+|                                       |==>read_dirty_submit()
+|                                       |==>write_dirty()
+|                                       |==>continue_at(cl,
+|                                       |               write_dirty_finish,
+|                                       |               system_wq);
+|                                       |==>write_dirty_finish()//excute
+|                                       |               //in system_wq
+|                                       |==>bch_btree_insert()
+|                                       |==>bch_btree_map_leaf_nodes()
+|                                       |==>__bch_btree_map_nodes()
+|                                       |==>btree_root //try to get btree
+|                                       |              //root node read
+|                                       |              //lock
+|                                       |-----stuck here
+|==>bch_btree_set_root()
+|==>bch_journal_meta()
+|==>bch_journal()
+|==>journal_try_write()
+|==>journal_write_unlocked() //journal_full(&c->journal)
+|                            //condition satisfied
+|==>continue_at(cl, journal_write, system_wq); //try to excute
+|                               //journal_write in system_wq
+|                               //but work queue is excuting
+|                               //write_dirty_finish()
+|==>closure_sync(); //wait journal_write execute
+|                   //over and wake up gc,
+|-------------stuck here
+|==>release root node write locker
 
-Signed-off-by: Tony Asleson <tasleson@redhat.com>
+This patch alloc a separate work-queue for write-back thread to avoid such
+race.
+
+(Commit log re-organized by Coly Li to pass checkpatch.pl checking)
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 Acked-by: Coly Li <colyli@suse.de>
 Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/sysfs.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/bcache/bcache.h    | 1 +
+ drivers/md/bcache/super.c     | 2 ++
+ drivers/md/bcache/writeback.c | 9 +++++++--
+ 3 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 09295c07ea88..104c57cd666c 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -192,7 +192,7 @@ STORE(__cached_dev)
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index dee542fff68e..2ed9bd231d84 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -333,6 +333,7 @@ struct cached_dev {
+ 	/* Limit number of writeback bios in flight */
+ 	struct semaphore	in_flight;
+ 	struct task_struct	*writeback_thread;
++	struct workqueue_struct	*writeback_write_wq;
+ 
+ 	struct keybuf		writeback_keys;
+ 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 9a2c190745b6..253918972335 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1059,6 +1059,8 @@ static void cached_dev_free(struct closure *cl)
+ 	cancel_delayed_work_sync(&dc->writeback_rate_update);
+ 	if (!IS_ERR_OR_NULL(dc->writeback_thread))
+ 		kthread_stop(dc->writeback_thread);
++	if (dc->writeback_write_wq)
++		destroy_workqueue(dc->writeback_write_wq);
+ 
+ 	mutex_lock(&bch_register_lock);
+ 
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index b533c2292ba5..323551f7cb28 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -187,7 +187,7 @@ static void write_dirty(struct closure *cl)
+ 
+ 	closure_bio_submit(&io->bio, cl);
+ 
+-	continue_at(cl, write_dirty_finish, system_wq);
++	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
+ }
+ 
+ static void read_dirty_endio(struct bio *bio)
+@@ -207,7 +207,7 @@ static void read_dirty_submit(struct closure *cl)
+ 
+ 	closure_bio_submit(&io->bio, cl);
+ 
+-	continue_at(cl, write_dirty, system_wq);
++	continue_at(cl, write_dirty, io->dc->writeback_write_wq);
+ }
+ 
+ static void read_dirty(struct cached_dev *dc)
+@@ -517,6 +517,11 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+ 
+ int bch_cached_dev_writeback_start(struct cached_dev *dc)
  {
- 	struct cached_dev *dc = container_of(kobj, struct cached_dev,
- 					     disk.kobj);
--	unsigned v = size;
-+	ssize_t v = size;
- 	struct cache_set *c;
- 	struct kobj_uevent_env *env;
- 
-@@ -227,7 +227,7 @@ STORE(__cached_dev)
- 		bch_cached_dev_run(dc);
- 
- 	if (attr == &sysfs_cache_mode) {
--		ssize_t v = bch_read_string_list(buf, bch_cache_modes + 1);
-+		v = bch_read_string_list(buf, bch_cache_modes + 1);
- 
- 		if (v < 0)
- 			return v;
++	dc->writeback_write_wq = alloc_workqueue("bcache_writeback_wq",
++						WQ_MEM_RECLAIM, 0);
++	if (!dc->writeback_write_wq)
++		return -ENOMEM;
++
+ 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
+ 					      "bcache_writeback");
+ 	if (IS_ERR(dc->writeback_thread))
 -- 
 2.13.5
