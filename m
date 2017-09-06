@@ -1,63 +1,106 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 08/12] bcache: increase the number of open buckets
-Date: Wed,  6 Sep 2017 14:25:58 +0800
-Message-ID: <20170906062602.50497-9-colyli@suse.de>
+Subject: [PATCH 12/12] bcache: fix bch_hprint crash and improve output
+Date: Wed,  6 Sep 2017 14:26:02 +0800
+Message-ID: <20170906062602.50497-13-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
-Cc: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>
+Cc: bcache@lists.ewheeler.net, Michael Lyle <mlyle@lyle.org>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+From: Michael Lyle <mlyle@lyle.org>
 
-In currently, we only alloc 6 open buckets for each cache set,
-but in usually, we always attach about 10 or so backend devices for
-each cache set, and the each bcache device are always accessed by
-about 10 or so threads in top application layer. So 6 open buckets
-are too few, It has led to that each of the same thread write data
-to different buckets, which would cause low efficiency write-back,
-and also cause buckets inefficient, and would be Very easy to run
-out of.
+Most importantly, solve a crash where %llu was used to format signed
+numbers.  This would cause a buffer overflow when reading sysfs
+writeback_rate_debug, as only 20 bytes were allocated for this and
+%llu writes 20 characters plus a null.
 
-I add debug message in bch_open_buckets_alloc() to print alloc bucket
-info, and test with ten bcache devices with a cache set, and each
-bcache device is accessed by ten threads.
+Always use the units mechanism rather than having different output
+paths for simplicity.
 
-From the debug message, we can see that, after the modification, One
-bucket is more likely to assign to the same thread, and the data from
-the same thread are more likely to write the same bucket. Usually the
-same thread always write/read the same backend device, so it is good
-for write-back and also promote the usage efficiency of buckets.
+Also, correct problems with display output where 1.10 was a larger
+number than 1.09, by multiplying by 10 and then dividing by 1024 instead
+of dividing by 100.  (Remainders of >= 1000 would print as .10).
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+Minor changes: Always display the decimal point instead of trying to
+omit it based on number of digits shown.  Decide what units to use
+based on 1000 as a threshold, not 1024 (in other words, always print
+at most 3 digits before the decimal point).
+
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
+Reported-by: Dmitry Yu Okunev <dyokunev@ut.mephi.ru>
+Acked-by: Kent Overstreet <kent.overstreet@gmail.com>
 Reviewed-by: Coly Li <colyli@suse.de>
+Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/alloc.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/bcache/util.c | 50 +++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 35 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index ca4abe1ccd8d..cacbe2dbd5c3 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -68,6 +68,8 @@
- #include <linux/random.h>
- #include <trace/events/bcache.h>
+diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+index 8c3a938f4bf0..176d3c2ef5f5 100644
+--- a/drivers/md/bcache/util.c
++++ b/drivers/md/bcache/util.c
+@@ -74,24 +74,44 @@ STRTO_H(strtouint, unsigned int)
+ STRTO_H(strtoll, long long)
+ STRTO_H(strtoull, unsigned long long)
  
-+#define MAX_OPEN_BUCKETS 128
++/**
++ * bch_hprint() - formats @v to human readable string for sysfs.
++ *
++ * @v - signed 64 bit integer
++ * @buf - the (at least 8 byte) buffer to format the result into.
++ *
++ * Returns the number of bytes used by format.
++ */
+ ssize_t bch_hprint(char *buf, int64_t v)
+ {
+ 	static const char units[] = "?kMGTPEZY";
+-	char dec[4] = "";
+-	int u, t = 0;
+-
+-	for (u = 0; v >= 1024 || v <= -1024; u++) {
+-		t = v & ~(~0 << 10);
+-		v >>= 10;
+-	}
+-
+-	if (!u)
+-		return sprintf(buf, "%llu", v);
+-
+-	if (v < 100 && v > -100)
+-		snprintf(dec, sizeof(dec), ".%i", t / 100);
+-
+-	return sprintf(buf, "%lli%s%c", v, dec, units[u]);
++	int u = 0, t;
 +
- /* Bucket heap / gen */
++	uint64_t q;
++
++	if (v < 0)
++		q = -v;
++	else
++		q = v;
++
++	/* For as long as the number is more than 3 digits, but at least
++	 * once, shift right / divide by 1024.  Keep the remainder for
++	 * a digit after the decimal point.
++	 */
++	do {
++		u++;
++
++		t = q & ~(~0 << 10);
++		q >>= 10;
++	} while (q >= 1000);
++
++	if (v < 0)
++		/* '-', up to 3 digits, '.', 1 digit, 1 character, null;
++		 * yields 8 bytes.
++		 */
++		return sprintf(buf, "-%llu.%i%c", q, t * 10 / 1024, units[u]);
++	else
++		return sprintf(buf, "%llu.%i%c", q, t * 10 / 1024, units[u]);
+ }
  
- uint8_t bch_inc_gen(struct cache *ca, struct bucket *b)
-@@ -671,7 +673,7 @@ int bch_open_buckets_alloc(struct cache_set *c)
- 
- 	spin_lock_init(&c->data_bucket_lock);
- 
--	for (i = 0; i < 6; i++) {
-+	for (i = 0; i < MAX_OPEN_BUCKETS; i++) {
- 		struct open_bucket *b = kzalloc(sizeof(*b), GFP_KERNEL);
- 		if (!b)
- 			return -ENOMEM;
+ ssize_t bch_snprint_string_list(char *buf, size_t size, const char * const list[],
 -- 
 2.13.5
