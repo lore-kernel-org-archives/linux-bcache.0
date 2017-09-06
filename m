@@ -1,128 +1,103 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 09/12] bcache: fix for gc and write-back race
-Date: Wed,  6 Sep 2017 14:25:59 +0800
-Message-ID: <20170906062602.50497-10-colyli@suse.de>
+Subject: [PATCH 06/12] bcache: correct cache_dirty_target in __update_writeback_rate()
+Date: Wed,  6 Sep 2017 14:25:56 +0800
+Message-ID: <20170906062602.50497-7-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:42324 "EHLO mx1.suse.de"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1750819AbdIFG0x (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 6 Sep 2017 02:26:53 -0400
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
-Sender: stable-owner@vger.kernel.org
+Sender: linux-bcache-owner@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
 Cc: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>, stable@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
 
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
-gc and write-back get raced (see the email "bcache get stucked" I sended
-before):
-gc thread                               write-back thread
-|                                       |bch_writeback_thread()
-|bch_gc_thread()                        |
-|                                       |==>read_dirty()
-|==>bch_btree_gc()                      |
-|==>btree_root() //get btree root       |
-|                //node write locker    |
-|==>bch_btree_gc_root()                 |
-|                                       |==>read_dirty_submit()
-|                                       |==>write_dirty()
-|                                       |==>continue_at(cl,
-|                                       |               write_dirty_finish,
-|                                       |               system_wq);
-|                                       |==>write_dirty_finish()//excute
-|                                       |               //in system_wq
-|                                       |==>bch_btree_insert()
-|                                       |==>bch_btree_map_leaf_nodes()
-|                                       |==>__bch_btree_map_nodes()
-|                                       |==>btree_root //try to get btree
-|                                       |              //root node read
-|                                       |              //lock
-|                                       |-----stuck here
-|==>bch_btree_set_root()
-|==>bch_journal_meta()
-|==>bch_journal()
-|==>journal_try_write()
-|==>journal_write_unlocked() //journal_full(&c->journal)
-|                            //condition satisfied
-|==>continue_at(cl, journal_write, system_wq); //try to excute
-|                               //journal_write in system_wq
-|                               //but work queue is excuting
-|                               //write_dirty_finish()
-|==>closure_sync(); //wait journal_write execute
-|                   //over and wake up gc,
-|-------------stuck here
-|==>release root node write locker
+__update_write_rate() uses a Proportion-Differentiation Controller
+algorithm to control writeback rate. A dirty target number is used in
+this PD controller to control writeback rate. A larger target number
+will make the writeback rate smaller, on the versus, a smaller target
+number will make the writeback rate larger.
 
-This patch alloc a separate work-queue for write-back thread to avoid such
-race.
+bcache uses the following steps to calculate the target number,
+1) cache_sectors = all-buckets-of-cache-set * buckets-size
+2) cache_dirty_target = cache_sectors * cached-device-writeback_percent
+3) target = cache_dirty_target *
+(sectors-of-cached-device/sectors-of-all-cached-devices-of-this-cache-set)
 
-(Commit log re-organized by Coly Li to pass checkpatch.pl checking)
+The calculation at step 1) for cache_sectors is incorrect, which does
+not consider dirty blocks occupied by flash only volume.
+
+A flash only volume can be took as a bcache device without cached
+device. All data sectors allocated for it are persistent on cache device
+and marked dirty, they are not touched by bcache writeback and garbage
+collection code. So data blocks of flash only volume should be ignore
+when calculating cache_sectors of cache set.
+
+Current code does not subtract dirty sectors of flash only volume, which
+results a larger target number from the above 3 steps. And in sequence
+the cache device's writeback rate is smaller then a correct value,
+writeback speed is slower on all cached devices.
+
+This patch fixes the incorrect slower writeback rate by subtracting
+dirty sectors of flash only volumes in __update_writeback_rate().
+
+(Commit log composed by Coly Li to pass checkpatch.pl checking)
 
 Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-Acked-by: Coly Li <colyli@suse.de>
+Reviewed-by: Coly Li <colyli@suse.de>
 Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/bcache.h    | 1 +
- drivers/md/bcache/super.c     | 2 ++
- drivers/md/bcache/writeback.c | 9 +++++++--
- 3 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/md/bcache/writeback.c |  3 ++-
+ drivers/md/bcache/writeback.h | 19 +++++++++++++++++++
+ 2 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index dee542fff68e..2ed9bd231d84 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -333,6 +333,7 @@ struct cached_dev {
- 	/* Limit number of writeback bios in flight */
- 	struct semaphore	in_flight;
- 	struct task_struct	*writeback_thread;
-+	struct workqueue_struct	*writeback_write_wq;
- 
- 	struct keybuf		writeback_keys;
- 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 9a2c190745b6..253918972335 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1059,6 +1059,8 @@ static void cached_dev_free(struct closure *cl)
- 	cancel_delayed_work_sync(&dc->writeback_rate_update);
- 	if (!IS_ERR_OR_NULL(dc->writeback_thread))
- 		kthread_stop(dc->writeback_thread);
-+	if (dc->writeback_write_wq)
-+		destroy_workqueue(dc->writeback_write_wq);
- 
- 	mutex_lock(&bch_register_lock);
- 
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index b533c2292ba5..323551f7cb28 100644
+index 42c66e76f05e..b533c2292ba5 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -187,7 +187,7 @@ static void write_dirty(struct closure *cl)
- 
- 	closure_bio_submit(&io->bio, cl);
- 
--	continue_at(cl, write_dirty_finish, system_wq);
-+	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
- }
- 
- static void read_dirty_endio(struct bio *bio)
-@@ -207,7 +207,7 @@ static void read_dirty_submit(struct closure *cl)
- 
- 	closure_bio_submit(&io->bio, cl);
- 
--	continue_at(cl, write_dirty, system_wq);
-+	continue_at(cl, write_dirty, io->dc->writeback_write_wq);
- }
- 
- static void read_dirty(struct cached_dev *dc)
-@@ -517,6 +517,11 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 
- int bch_cached_dev_writeback_start(struct cached_dev *dc)
+@@ -21,7 +21,8 @@
+ static void __update_writeback_rate(struct cached_dev *dc)
  {
-+	dc->writeback_write_wq = alloc_workqueue("bcache_writeback_wq",
-+						WQ_MEM_RECLAIM, 0);
-+	if (!dc->writeback_write_wq)
-+		return -ENOMEM;
+ 	struct cache_set *c = dc->disk.c;
+-	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size;
++	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
++				bcache_flash_devs_sectors_dirty(c);
+ 	uint64_t cache_dirty_target =
+ 		div_u64(cache_sectors * dc->writeback_percent, 100);
+ 
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 629bd1a502fd..8789b9c8c484 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -14,6 +14,25 @@ static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
+ 	return ret;
+ }
+ 
++static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
++{
++	uint64_t i, ret = 0;
 +
- 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
- 					      "bcache_writeback");
- 	if (IS_ERR(dc->writeback_thread))
++	mutex_lock(&bch_register_lock);
++
++	for (i = 0; i < c->nr_uuids; i++) {
++		struct bcache_device *d = c->devices[i];
++
++		if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
++			continue;
++	   ret += bcache_dev_sectors_dirty(d);
++	}
++
++	mutex_unlock(&bch_register_lock);
++
++	return ret;
++}
++
+ static inline unsigned offset_to_stripe(struct bcache_device *d,
+ 					uint64_t offset)
+ {
 -- 
 2.13.5
