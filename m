@@ -1,103 +1,47 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH 13/13] bcache: initialize dirty stripes in flash_dev_run()
-Date: Thu,  7 Sep 2017 01:28:53 +0800
-Message-ID: <20170906172853.123310-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-Sender: stable-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
-Cc: Tang Junhui <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+From: Helge Deller <deller@gmx.de>
+Subject: [PATCH 06/14] md/bcache: Use %pS printk format for direct addresses
+Date: Wed,  6 Sep 2017 22:27:53 +0200
+Message-ID: <1504729681-3504-7-git-send-email-deller@gmx.de>
+References: <1504729681-3504-1-git-send-email-deller@gmx.de>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1504729681-3504-1-git-send-email-deller@gmx.de>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, Petr Mladek <pmladek@suse.com>, Andrew Morton <akpm@linux-foundation.org>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+Use the %pS instead of the %pF printk format specifier for printing symbols
+from direct addresses. This is needed for the ia64, ppc64 and parisc64
+architectures.
 
-bcache uses a Proportion-Differentiation Controller algorithm to control
-writeback rate to cached devices. In the PD controller algorithm, dirty
-stripes of thin flash device should not be counted in, because flash only
-volumes never write back dirty data.
-
-Currently dirty stripe counter for thin flash device is not initialized
-when the thin flash device starts. Which means the following calculation
-in PD controller will reference an undefined dirty stripes number, and
-all cached devices attached to the same cache set where the thin flash
-device lies on may have an inaccurate writeback rate.
-
-This patch calles bch_sectors_dirty_init() in flash_dev_run(), to
-correctly initialize dirty stripe counter when the thin flash device
-starts to run. This patch also does following parameter data type change,
- -void bch_sectors_dirty_init(struct cached_dev *dc);
- +void bch_sectors_dirty_init(struct bcache_device *);
-to call this function conveniently in flash_dev_run().
-
-(Commit log is composed by Coly Li)
-
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-Reviewed-by: Coly Li <colyli@suse.de>
-Cc: stable@vger.kernel.org
+Signed-off-by: Helge Deller <deller@gmx.de>
+Cc: linux-bcache@vger.kernel.org
+Cc: linux-raid@vger.kernel.org
 ---
- drivers/md/bcache/super.c     | 3 ++-
- drivers/md/bcache/writeback.c | 8 ++++----
- drivers/md/bcache/writeback.h | 2 +-
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/md/bcache/closure.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 8352fad765f6..60d2c3ce192e 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1026,7 +1026,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
- 	}
+diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+index 864e673..0b0c9bc 100644
+--- a/drivers/md/bcache/closure.c
++++ b/drivers/md/bcache/closure.c
+@@ -175,7 +175,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
+ 	list_for_each_entry(cl, &closure_list, all) {
+ 		int r = atomic_read(&cl->remaining);
  
- 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
--		bch_sectors_dirty_init(dc);
-+		bch_sectors_dirty_init(&dc->disk);
- 		atomic_set(&dc->has_dirty, 1);
- 		atomic_inc(&dc->count);
- 		bch_writeback_queue(dc);
-@@ -1228,6 +1228,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
- 		goto err;
+-		seq_printf(f, "%p: %pF -> %pf p %p r %i ",
++		seq_printf(f, "%p: %pS -> %pf p %p r %i ",
+ 			   cl, (void *) cl->ip, cl->fn, cl->parent,
+ 			   r & CLOSURE_REMAINING_MASK);
  
- 	bcache_device_attach(d, c, u - c->uuids);
-+	bch_sectors_dirty_init(d);
- 	bch_flash_dev_request_init(d);
- 	add_disk(d->disk);
+@@ -187,7 +187,7 @@ static int debug_seq_show(struct seq_file *f, void *data)
+ 			   r & CLOSURE_SLEEPING	? "Sl" : "");
  
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 42c66e76f05e..4fd332a7402e 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -482,17 +482,17 @@ static int sectors_dirty_init_fn(struct btree_op *_op, struct btree *b,
- 	return MAP_CONTINUE;
- }
+ 		if (r & CLOSURE_WAITING)
+-			seq_printf(f, " W %pF\n",
++			seq_printf(f, " W %pS\n",
+ 				   (void *) cl->waiting_on);
  
--void bch_sectors_dirty_init(struct cached_dev *dc)
-+void bch_sectors_dirty_init(struct bcache_device *d)
- {
- 	struct sectors_dirty_init op;
- 
- 	bch_btree_op_init(&op.op, -1);
--	op.inode = dc->disk.id;
-+	op.inode = d->id;
- 
--	bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
-+	bch_btree_map_keys(&op.op, d->c, &KEY(op.inode, 0, 0),
- 			   sectors_dirty_init_fn, 0);
- 
--	dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
-+	d->sectors_dirty_last = bcache_dev_sectors_dirty(d);
- }
- 
- void bch_cached_dev_writeback_init(struct cached_dev *dc)
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 629bd1a502fd..c992f06c1e9a 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -84,7 +84,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
- 
- void bcache_dev_sectors_dirty_add(struct cache_set *, unsigned, uint64_t, int);
- 
--void bch_sectors_dirty_init(struct cached_dev *dc);
-+void bch_sectors_dirty_init(struct bcache_device *);
- void bch_cached_dev_writeback_init(struct cached_dev *);
- int bch_cached_dev_writeback_start(struct cached_dev *);
- 
+ 		seq_printf(f, "\n");
 -- 
-2.13.5
+2.1.0
