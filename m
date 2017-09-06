@@ -1,41 +1,63 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 10/12] bcache: silence static checker warning
-Date: Wed,  6 Sep 2017 14:26:00 +0800
-Message-ID: <20170906062602.50497-11-colyli@suse.de>
+Subject: [PATCH 08/12] bcache: increase the number of open buckets
+Date: Wed,  6 Sep 2017 14:25:58 +0800
+Message-ID: <20170906062602.50497-9-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
-Cc: bcache@lists.ewheeler.net, Dan Carpenter <dan.carpenter@oracle.com>
+Cc: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-In olden times, closure_return() used to have a hidden return built in.
-We removed the hidden return but forgot to add a new return here.  If
-"c" were NULL we would oops on the next line, but fortunately "c" is
-never NULL.  Let's just remove the if statement.
+In currently, we only alloc 6 open buckets for each cache set,
+but in usually, we always attach about 10 or so backend devices for
+each cache set, and the each bcache device are always accessed by
+about 10 or so threads in top application layer. So 6 open buckets
+are too few, It has led to that each of the same thread write data
+to different buckets, which would cause low efficiency write-back,
+and also cause buckets inefficient, and would be Very easy to run
+out of.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+I add debug message in bch_open_buckets_alloc() to print alloc bucket
+info, and test with ten bcache devices with a cache set, and each
+bcache device is accessed by ten threads.
+
+From the debug message, we can see that, after the modification, One
+bucket is more likely to assign to the same thread, and the data from
+the same thread are more likely to write the same bucket. Usually the
+same thread always write/read the same backend device, so it is good
+for write-back and also promote the usage efficiency of buckets.
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 Reviewed-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/super.c | 3 ---
- 1 file changed, 3 deletions(-)
+ drivers/md/bcache/alloc.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 253918972335..c5deec621fdd 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1376,9 +1376,6 @@ static void cache_set_flush(struct closure *cl)
- 	struct btree *b;
- 	unsigned i;
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index ca4abe1ccd8d..cacbe2dbd5c3 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -68,6 +68,8 @@
+ #include <linux/random.h>
+ #include <trace/events/bcache.h>
  
--	if (!c)
--		closure_return(cl);
--
- 	bch_cache_accounting_destroy(&c->accounting);
++#define MAX_OPEN_BUCKETS 128
++
+ /* Bucket heap / gen */
  
- 	kobject_put(&c->internal);
+ uint8_t bch_inc_gen(struct cache *ca, struct bucket *b)
+@@ -671,7 +673,7 @@ int bch_open_buckets_alloc(struct cache_set *c)
+ 
+ 	spin_lock_init(&c->data_bucket_lock);
+ 
+-	for (i = 0; i < 6; i++) {
++	for (i = 0; i < MAX_OPEN_BUCKETS; i++) {
+ 		struct open_bucket *b = kzalloc(sizeof(*b), GFP_KERNEL);
+ 		if (!b)
+ 			return -ENOMEM;
 -- 
 2.13.5
