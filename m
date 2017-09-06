@@ -1,11 +1,8 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 02/12] bcache: fix sequential large write IO bypass
-Date: Wed,  6 Sep 2017 14:25:52 +0800
-Message-ID: <20170906062602.50497-3-colyli@suse.de>
+Subject: [PATCH 03/12] bcache: do not subtract sectors_to_gc for bypassed IO
+Date: Wed,  6 Sep 2017 14:25:53 +0800
+Message-ID: <20170906062602.50497-4-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
 Sender: stable-owner@vger.kernel.org
@@ -15,42 +12,37 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Sequential write IOs were tested with bs=1M by FIO in writeback cache
-mode, these IOs were expected to be bypassed, but actually they did not.
-We debug the code, and find in check_should_bypass():
-    if (!congested &&
-        mode == CACHE_MODE_WRITEBACK &&
-        op_is_write(bio_op(bio)) &&
-        (bio-＞bi_opf & REQ_SYNC))
-        goto rescale
-that means, If in writeback mode, a write IO with REQ_SYNC flag will not
-be bypassed though it is a sequential large IO, It's not a correct thing
-to do actually, so this patch remove these codes.
+Since bypassed IOs use no bucket, so do not subtract sectors_to_gc to
+trigger gc thread.
 
 Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
-Reviewed-by: Kent Overstreet <kent.overstreet@gmail.com>
+Acked-by: Coly Li <colyli@suse.de>
 Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/request.c | 6 ------
- 1 file changed, 6 deletions(-)
+ drivers/md/bcache/request.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 019b3df9f1c6..958072a11347 100644
+index 958072a11347..4b413db99276 100644
 --- a/drivers/md/bcache/request.c
 +++ b/drivers/md/bcache/request.c
-@@ -400,12 +400,6 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
- 	if (!congested && !dc->sequential_cutoff)
- 		goto rescale;
+@@ -196,12 +196,12 @@ static void bch_data_insert_start(struct closure *cl)
+ 	struct data_insert_op *op = container_of(cl, struct data_insert_op, cl);
+ 	struct bio *bio = op->bio, *n;
  
--	if (!congested &&
--	    mode == CACHE_MODE_WRITEBACK &&
--	    op_is_write(bio->bi_opf) &&
--	    op_is_sync(bio->bi_opf))
--		goto rescale;
+-	if (atomic_sub_return(bio_sectors(bio), &op->c->sectors_to_gc) < 0)
+-		wake_up_gc(op->c);
 -
- 	spin_lock(&dc->io_lock);
+ 	if (op->bypass)
+ 		return bch_data_invalidate(cl);
  
- 	hlist_for_each_entry(i, iohash(dc, bio->bi_iter.bi_sector), hash)
++	if (atomic_sub_return(bio_sectors(bio), &op->c->sectors_to_gc) < 0)
++		wake_up_gc(op->c);
++
+ 	/*
+ 	 * Journal writes are marked REQ_PREFLUSH; if the original write was a
+ 	 * flush, it'll wait on the journal write.
 -- 
 2.13.5
