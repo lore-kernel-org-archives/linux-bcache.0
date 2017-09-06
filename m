@@ -1,106 +1,47 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 12/12] bcache: fix bch_hprint crash and improve output
-Date: Wed,  6 Sep 2017 14:26:02 +0800
-Message-ID: <20170906062602.50497-13-colyli@suse.de>
+Subject: [PATCH 11/12] bcache: Update continue_at() documentation
+Date: Wed,  6 Sep 2017 14:26:01 +0800
+Message-ID: <20170906062602.50497-12-colyli@suse.de>
 References: <20170906062602.50497-1-colyli@suse.de>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20170906062602.50497-1-colyli@suse.de>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
-Cc: bcache@lists.ewheeler.net, Michael Lyle <mlyle@lyle.org>, stable@vger.kernel.org
+Cc: bcache@lists.ewheeler.net, Dan Carpenter <dan.carpenter@oracle.com>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Michael Lyle <mlyle@lyle.org>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-Most importantly, solve a crash where %llu was used to format signed
-numbers.  This would cause a buffer overflow when reading sysfs
-writeback_rate_debug, as only 20 bytes were allocated for this and
-%llu writes 20 characters plus a null.
+continue_at() doesn't have a return statement anymore.
 
-Always use the units mechanism rather than having different output
-paths for simplicity.
-
-Also, correct problems with display output where 1.10 was a larger
-number than 1.09, by multiplying by 10 and then dividing by 1024 instead
-of dividing by 100.  (Remainders of >= 1000 would print as .10).
-
-Minor changes: Always display the decimal point instead of trying to
-omit it based on number of digits shown.  Decide what units to use
-based on 1000 as a threshold, not 1024 (in other words, always print
-at most 3 digits before the decimal point).
-
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
-Reported-by: Dmitry Yu Okunev <dyokunev@ut.mephi.ru>
-Acked-by: Kent Overstreet <kent.overstreet@gmail.com>
-Reviewed-by: Coly Li <colyli@suse.de>
-Cc: stable@vger.kernel.org
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Coly Li <colyli@suse.de>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/md/bcache/util.c | 50 +++++++++++++++++++++++++++++++++---------------
- 1 file changed, 35 insertions(+), 15 deletions(-)
+ drivers/md/bcache/closure.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-index 8c3a938f4bf0..176d3c2ef5f5 100644
---- a/drivers/md/bcache/util.c
-+++ b/drivers/md/bcache/util.c
-@@ -74,24 +74,44 @@ STRTO_H(strtouint, unsigned int)
- STRTO_H(strtoll, long long)
- STRTO_H(strtoull, unsigned long long)
- 
-+/**
-+ * bch_hprint() - formats @v to human readable string for sysfs.
-+ *
-+ * @v - signed 64 bit integer
-+ * @buf - the (at least 8 byte) buffer to format the result into.
-+ *
-+ * Returns the number of bytes used by format.
-+ */
- ssize_t bch_hprint(char *buf, int64_t v)
- {
- 	static const char units[] = "?kMGTPEZY";
--	char dec[4] = "";
--	int u, t = 0;
--
--	for (u = 0; v >= 1024 || v <= -1024; u++) {
--		t = v & ~(~0 << 10);
--		v >>= 10;
--	}
--
--	if (!u)
--		return sprintf(buf, "%llu", v);
--
--	if (v < 100 && v > -100)
--		snprintf(dec, sizeof(dec), ".%i", t / 100);
--
--	return sprintf(buf, "%lli%s%c", v, dec, units[u]);
-+	int u = 0, t;
-+
-+	uint64_t q;
-+
-+	if (v < 0)
-+		q = -v;
-+	else
-+		q = v;
-+
-+	/* For as long as the number is more than 3 digits, but at least
-+	 * once, shift right / divide by 1024.  Keep the remainder for
-+	 * a digit after the decimal point.
-+	 */
-+	do {
-+		u++;
-+
-+		t = q & ~(~0 << 10);
-+		q >>= 10;
-+	} while (q >= 1000);
-+
-+	if (v < 0)
-+		/* '-', up to 3 digits, '.', 1 digit, 1 character, null;
-+		 * yields 8 bytes.
-+		 */
-+		return sprintf(buf, "-%llu.%i%c", q, t * 10 / 1024, units[u]);
-+	else
-+		return sprintf(buf, "%llu.%i%c", q, t * 10 / 1024, units[u]);
- }
- 
- ssize_t bch_snprint_string_list(char *buf, size_t size, const char * const list[],
+diff --git a/drivers/md/bcache/closure.h b/drivers/md/bcache/closure.h
+index 1ec84ca81146..295b7e43f92c 100644
+--- a/drivers/md/bcache/closure.h
++++ b/drivers/md/bcache/closure.h
+@@ -312,8 +312,6 @@ static inline void closure_wake_up(struct closure_waitlist *list)
+  * been dropped with closure_put()), it will resume execution at @fn running out
+  * of @wq (or, if @wq is NULL, @fn will be called by closure_put() directly).
+  *
+- * NOTE: This macro expands to a return in the calling function!
+- *
+  * This is because after calling continue_at() you no longer have a ref on @cl,
+  * and whatever @cl owns may be freed out from under you - a running closure fn
+  * has a ref on its own closure which continue_at() drops.
+@@ -340,8 +338,6 @@ do {									\
+  * Causes @fn to be executed out of @cl, in @wq context (or called directly if
+  * @wq is NULL).
+  *
+- * NOTE: like continue_at(), this macro expands to a return in the caller!
+- *
+  * The ref the caller of continue_at_nobarrier() had on @cl is now owned by @fn,
+  * thus it's not safe to touch anything protected by @cl after a
+  * continue_at_nobarrier().
 -- 
 2.13.5
