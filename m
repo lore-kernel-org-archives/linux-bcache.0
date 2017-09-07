@@ -1,408 +1,390 @@
-From: Michael Lyle <mlyle@lyle.org>
+From: Coly Li <i@coly.li>
 Subject: Re: [PATCH] bcache: implement PI controller for writeback rate
-Date: Thu, 7 Sep 2017 08:29:17 -0700
-Message-ID: <CAJ+L6qdXrxSvnAqWkyaN-Kzo6FkDqB-yM0o1KfAwR1x4yx5hgw@mail.gmail.com>
-References: <20170906075642.12888-1-mlyle@lyle.org> <CAJ+L6qc6OHoDvyKAsKRoD0-JCmZsUjpi8AObEjKjkQ-KqGCg_w@mail.gmail.com>
+Date: Fri, 8 Sep 2017 01:19:42 +0800
+Message-ID: <217a4869-1291-3484-359b-f5cd0a1cdae2@coly.li>
+References: <20170906075642.12888-1-mlyle@lyle.org>
+ <CAJ+L6qc6OHoDvyKAsKRoD0-JCmZsUjpi8AObEjKjkQ-KqGCg_w@mail.gmail.com>
  <fbf97a92-14fe-79f0-60fb-6dd595d670ae@coly.li>
+ <CAJ+L6qdXrxSvnAqWkyaN-Kzo6FkDqB-yM0o1KfAwR1x4yx5hgw@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qt0-f178.google.com ([209.85.216.178]:33573 "EHLO
-        mail-qt0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1754482AbdIGP3T (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 7 Sep 2017 11:29:19 -0400
-Received: by mail-qt0-f178.google.com with SMTP id i50so187505qtf.0
-        for <linux-bcache@vger.kernel.org>; Thu, 07 Sep 2017 08:29:19 -0700 (PDT)
-In-Reply-To: <fbf97a92-14fe-79f0-60fb-6dd595d670ae@coly.li>
+Received: from server.coly.li ([162.144.45.48]:38360 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1752176AbdIGRTs (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 7 Sep 2017 13:19:48 -0400
+In-Reply-To: <CAJ+L6qdXrxSvnAqWkyaN-Kzo6FkDqB-yM0o1KfAwR1x4yx5hgw@mail.gmail.com>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <i@coly.li>
-Cc: linux-bcache@vger.kernel.org, Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
 
-Coly--
+On 2017/9/7 下午11:29, Michael Lyle wrote:
+> Coly--
+> 
+> Sure.  I have some plots at http://jar.lyle.org/~mlyle/ctr/ -- they
+> show the response of the controller to a step (increase from 0 to 1000
+> sectors/second of IO), and to an impulse (a single unexpected 100,000
+> sectors of dirty data) showing up.
+> 
+> If anything, this controller is quicker to "turn off writes" and
+> remove workload from the backing disks than the previous one (though
+> how much it flushes when "idle" is configurable, now).  I would often
+> see the old controller continue writing back data long after the
+> workload was removed, or oscillate between writing large amounts and
+> doing very little.
+> 
+> It's important to note that the old controller claims to be a PD
+> controller, but it is actually a PI controller-- the output from the
+> PD controller was accumulated, which has the effect of numerically
+> integrating everything.  It is a very strange PI controller, too-- not
+> formulated in any of the "normal" ways that control systems are built.
+> 
+> Looking at the plots, there's a few different things to consider/look
+> at.  The first is how quickly the controller arrests a positive trend
+> after a step.  With default tuning, this is about 75 seconds.  Next,
+> is how well the value converges to the set point-- this is relatively
+> quick in both the step and impulse analyses.  Finally, the amount of
+> negative-going overshoot-- how much it writes "past" the setpoint is
+> important.  For an impulse, the current tuning overshoots about 10%--
+> if the system is at the target, and you dirty 100MB of the cache, it
+> will write back about 110MB.
+> 
+> The existing system writes **much further** past the setpoint because
+> it is only able to start really reducing the write rate when the
+> target amount of dirty data is reached.
+> 
 
-Sure.  I have some plots at http://jar.lyle.org/~mlyle/ctr/ -- they
-show the response of the controller to a step (increase from 0 to 1000
-sectors/second of IO), and to an impulse (a single unexpected 100,000
-sectors of dirty data) showing up.
+Hi Mike,
 
-If anything, this controller is quicker to "turn off writes" and
-remove workload from the backing disks than the previous one (though
-how much it flushes when "idle" is configurable, now).  I would often
-see the old controller continue writing back data long after the
-workload was removed, or oscillate between writing large amounts and
-doing very little.
+Thank you for the informative reply. I add this patch to my for-test
+patch pool. My submit for 4.14 is done, I hope we can try best to make
+it in 4.15.
 
-It's important to note that the old controller claims to be a PD
-controller, but it is actually a PI controller-- the output from the
-PD controller was accumulated, which has the effect of numerically
-integrating everything.  It is a very strange PI controller, too-- not
-formulated in any of the "normal" ways that control systems are built.
+Coly Li
 
-Looking at the plots, there's a few different things to consider/look
-at.  The first is how quickly the controller arrests a positive trend
-after a step.  With default tuning, this is about 75 seconds.  Next,
-is how well the value converges to the set point-- this is relatively
-quick in both the step and impulse analyses.  Finally, the amount of
-negative-going overshoot-- how much it writes "past" the setpoint is
-important.  For an impulse, the current tuning overshoots about 10%--
-if the system is at the target, and you dirty 100MB of the cache, it
-will write back about 110MB.
-
-The existing system writes **much further** past the setpoint because
-it is only able to start really reducing the write rate when the
-target amount of dirty data is reached.
-
-Mike
-
-On Wed, Sep 6, 2017 at 10:27 PM, Coly Li <i@coly.li> wrote:
-> On 2017/9/7 =E4=B8=8A=E5=8D=889:54, Michael Lyle wrote:
->> Hey everyone---
+> 
+> On Wed, Sep 6, 2017 at 10:27 PM, Coly Li <i@coly.li> wrote:
+>> On 2017/9/7 上午9:54, Michael Lyle wrote:
+>>> Hey everyone---
+>>>
+>>> I'd appreciate any feedback you all can lend on this changeset.  I
+>>> know it's a bit of an awkward time with the opening of the merge
+>>> window to have a new functional change show up.  I also would
+>>> appreciate any comments on process / how to go about submitting work,
+>>> as I have not been active in the Linux kernel community in quite some
+>>> time.
+>>>
+>>> This change makes a pretty substantial difference in the smoothness of
+>>> IO rates on my cached VM environment.  I see a couple of problems with
+>>> further review: I have an incorrect comment about the default p term
+>>> value, and there is a small bit of conflict with the patches that have
+>>> just gone out.  I can fix both of these quickly in a subsequent
+>>> revision.
+>>>
+>>> It's also helpful for intermittent workloads to be able to write at a
+>>> somewhat higher rate out to disk.  Spending a few percent of disk
+>>> bandwidth on flushing dirty data-- to leave room to deal with new
+>>> bursts of workload-- is very helpful.
 >>
->> I'd appreciate any feedback you all can lend on this changeset.  I
->> know it's a bit of an awkward time with the opening of the merge
->> window to have a new functional change show up.  I also would
->> appreciate any comments on process / how to go about submitting work,
->> as I have not been active in the Linux kernel community in quite some
->> time.
+>> Hi Michael,
 >>
->> This change makes a pretty substantial difference in the smoothness of
->> IO rates on my cached VM environment.  I see a couple of problems with
->> further review: I have an incorrect comment about the default p term
->> value, and there is a small bit of conflict with the patches that have
->> just gone out.  I can fix both of these quickly in a subsequent
->> revision.
+>> One thing I care about is I/O latency of regular read/write requests.
+>> For current PD controller, I observe the writeback rate can decrease
+>> very fast to 1 sector/second to give almost all bandwidth to frond end
+>> I/O requests. This behavior is good for data base users.
 >>
->> It's also helpful for intermittent workloads to be able to write at a
->> somewhat higher rate out to disk.  Spending a few percent of disk
->> bandwidth on flushing dirty data-- to leave room to deal with new
->> bursts of workload-- is very helpful.
->
-> Hi Michael,
->
-> One thing I care about is I/O latency of regular read/write requests.
-> For current PD controller, I observe the writeback rate can decrease
-> very fast to 1 sector/second to give almost all bandwidth to frond end
-> I/O requests. This behavior is good for data base users.
->
-> For this PI controller, I need to do more testing, and observe how it
-> works and behaves with different work loads. Before I am confident with
-> it for most of workloads I know, I am not able to response you very
-> fast. It will take time.
->
-> If you may provide more performance data (e.g. requests latency
-> distribution) comparing to current PD controller, that will be very
-> helpful for people to response this patch. For now, I need to understand
-> and test this patch.
->
-> Thanks.
->
-> Coly Li
->
+>> For this PI controller, I need to do more testing, and observe how it
+>> works and behaves with different work loads. Before I am confident with
+>> it for most of workloads I know, I am not able to response you very
+>> fast. It will take time.
 >>
+>> If you may provide more performance data (e.g. requests latency
+>> distribution) comparing to current PD controller, that will be very
+>> helpful for people to response this patch. For now, I need to understand
+>> and test this patch.
 >>
->> On Wed, Sep 6, 2017 at 12:56 AM, Michael Lyle <mlyle@lyle.org> wrote:
->>> bcache uses a control system to attempt to keep the amount of dirty dat=
-a
->>> in cache at a user-configured level, while not responding excessively t=
-o
->>> transients and variations in write rate.  Previously, the system was a
->>> PD controller; but the output from it was integrated, turning the
->>> Proportional term into an Integral term, and turning the Derivative ter=
-m
->>> into a crude Proportional term.  Performance of the controller has been
->>> uneven in production, and it has tended to respond slowly, oscillate,
->>> and overshoot.
+>> Thanks.
+>>
+>> Coly Li
+>>
 >>>
->>> This patch set replaces the current control system with an explicit PI
->>> controller and tuning that should be correct for most hardware.  By
->>> default, it attempts to write at a rate that would retire 1/40th of the
->>> current excess blocks per second.  An integral term in turn works to
->>> remove steady state errors.
 >>>
->>> IMO, this yields benefits in simplicity (removing weighted average
->>> filtering, etc) and system performance.
->>>
->>> Another small change is a tunable parameter is introduced to allow the
->>> user to specify a minimum rate at which dirty blocks are retired.
->>> Ideally one would set this writeback_rate_minimum to a small percentage
->>> of disk bandwidth, allowing the dirty data to be slowly cleaned out whe=
-n
->>> the system is inactive.  The old behavior would try and retire 1
->>> sector/second, and the new default is 5 sectors/second.
->>>
->>> Signed-off-by: Michael Lyle <mlyle@lyle.org>
->>> ---
->>>  drivers/md/bcache/bcache.h    |  9 +++--
->>>  drivers/md/bcache/sysfs.c     | 19 +++++-----
->>>  drivers/md/bcache/writeback.c | 84 +++++++++++++++++++++++------------=
---------
->>>  3 files changed, 60 insertions(+), 52 deletions(-)
->>>
->>> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
->>> index dee542fff68e..f1cdf92e7399 100644
->>> --- a/drivers/md/bcache/bcache.h
->>> +++ b/drivers/md/bcache/bcache.h
->>> @@ -265,9 +265,6 @@ struct bcache_device {
->>>         atomic_t                *stripe_sectors_dirty;
->>>         unsigned long           *full_dirty_stripes;
->>>
->>> -       unsigned long           sectors_dirty_last;
->>> -       long                    sectors_dirty_derivative;
->>> -
->>>         struct bio_set          *bio_split;
->>>
->>>         unsigned                data_csum:1;
->>> @@ -361,12 +358,14 @@ struct cached_dev {
->>>
->>>         uint64_t                writeback_rate_target;
->>>         int64_t                 writeback_rate_proportional;
->>> -       int64_t                 writeback_rate_derivative;
->>> +       int64_t                 writeback_rate_integral;
->>> +       int64_t                 writeback_rate_integral_scaled;
->>>         int64_t                 writeback_rate_change;
->>>
->>>         unsigned                writeback_rate_update_seconds;
->>> -       unsigned                writeback_rate_d_term;
->>> +       unsigned                writeback_rate_i_term_inverse;
->>>         unsigned                writeback_rate_p_term_inverse;
->>> +       unsigned                writeback_rate_minimum;
->>>  };
->>>
->>>  enum alloc_reserve {
->>> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
->>> index f90f13616980..66a716d5f111 100644
->>> --- a/drivers/md/bcache/sysfs.c
->>> +++ b/drivers/md/bcache/sysfs.c
->>> @@ -81,8 +81,9 @@ rw_attribute(writeback_delay);
->>>  rw_attribute(writeback_rate);
->>>
->>>  rw_attribute(writeback_rate_update_seconds);
->>> -rw_attribute(writeback_rate_d_term);
->>> +rw_attribute(writeback_rate_i_term_inverse);
->>>  rw_attribute(writeback_rate_p_term_inverse);
->>> +rw_attribute(writeback_rate_minimum);
->>>  read_attribute(writeback_rate_debug);
->>>
->>>  read_attribute(stripe_size);
->>> @@ -130,15 +131,16 @@ SHOW(__bch_cached_dev)
->>>         sysfs_hprint(writeback_rate,    dc->writeback_rate.rate << 9);
->>>
->>>         var_print(writeback_rate_update_seconds);
->>> -       var_print(writeback_rate_d_term);
->>> +       var_print(writeback_rate_i_term_inverse);
->>>         var_print(writeback_rate_p_term_inverse);
->>> +       var_print(writeback_rate_minimum);
->>>
->>>         if (attr =3D=3D &sysfs_writeback_rate_debug) {
->>>                 char rate[20];
->>>                 char dirty[20];
->>>                 char target[20];
->>>                 char proportional[20];
->>> -               char derivative[20];
->>> +               char integral[20];
->>>                 char change[20];
->>>                 s64 next_io;
->>>
->>> @@ -146,7 +148,7 @@ SHOW(__bch_cached_dev)
->>>                 bch_hprint(dirty,       bcache_dev_sectors_dirty(&dc->d=
-isk) << 9);
->>>                 bch_hprint(target,      dc->writeback_rate_target << 9)=
-;
->>>                 bch_hprint(proportional,dc->writeback_rate_proportional=
- << 9);
->>> -               bch_hprint(derivative,  dc->writeback_rate_derivative <=
-< 9);
->>> +               bch_hprint(integral,    dc->writeback_rate_integral_sca=
-led << 9);
->>>                 bch_hprint(change,      dc->writeback_rate_change << 9)=
-;
->>>
->>>                 next_io =3D div64_s64(dc->writeback_rate.next - local_c=
-lock(),
->>> @@ -157,11 +159,11 @@ SHOW(__bch_cached_dev)
->>>                                "dirty:\t\t%s\n"
->>>                                "target:\t\t%s\n"
->>>                                "proportional:\t%s\n"
->>> -                              "derivative:\t%s\n"
->>> +                              "integral:\t%s\n"
->>>                                "change:\t\t%s/sec\n"
->>>                                "next io:\t%llims\n",
->>>                                rate, dirty, target, proportional,
->>> -                              derivative, change, next_io);
->>> +                              integral, change, next_io);
->>>         }
->>>
->>>         sysfs_hprint(dirty_data,
->>> @@ -213,7 +215,7 @@ STORE(__cached_dev)
->>>                             dc->writeback_rate.rate, 1, INT_MAX);
->>>
->>>         d_strtoul_nonzero(writeback_rate_update_seconds);
->>> -       d_strtoul(writeback_rate_d_term);
->>> +       d_strtoul(writeback_rate_i_term_inverse);
->>>         d_strtoul_nonzero(writeback_rate_p_term_inverse);
->>>
->>>         d_strtoi_h(sequential_cutoff);
->>> @@ -319,8 +321,9 @@ static struct attribute *bch_cached_dev_files[] =3D=
- {
->>>         &sysfs_writeback_percent,
->>>         &sysfs_writeback_rate,
->>>         &sysfs_writeback_rate_update_seconds,
->>> -       &sysfs_writeback_rate_d_term,
->>> +       &sysfs_writeback_rate_i_term_inverse,
->>>         &sysfs_writeback_rate_p_term_inverse,
->>> +       &sysfs_writeback_rate_minimum,
->>>         &sysfs_writeback_rate_debug,
->>>         &sysfs_dirty_data,
->>>         &sysfs_stripe_size,
->>> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writebac=
-k.c
->>> index 42c66e76f05e..76e71e8ef356 100644
->>> --- a/drivers/md/bcache/writeback.c
->>> +++ b/drivers/md/bcache/writeback.c
->>> @@ -24,48 +24,55 @@ static void __update_writeback_rate(struct cached_d=
-ev *dc)
->>>         uint64_t cache_sectors =3D c->nbuckets * c->sb.bucket_size;
->>>         uint64_t cache_dirty_target =3D
->>>                 div_u64(cache_sectors * dc->writeback_percent, 100);
->>> -
->>>         int64_t target =3D div64_u64(cache_dirty_target * bdev_sectors(=
-dc->bdev),
->>>                                    c->cached_dev_sectors);
->>>
->>> -       /* PD controller */
->>> -
->>> +       /* PI controller:
->>> +        * Figures out the amount that should be written per second.
->>> +        *
->>> +        * First, the error (number of sectors that are dirty beyond ou=
-r
->>> +        * target) is calculated.  The error is accumulated (numericall=
-y
->>> +        * integrated).
->>> +        *
->>> +        * Then, the proportional value and integral value are scaled
->>> +        * based on configured values.  These are stored as inverses to
->>> +        * avoid fixed point math and to make configuration easy-- e.g.
->>> +        * the default value of 100 for writeback_rate_p_term_inverse
->>> +        * attempts to write at a rate that would retire all the dirty
->>> +        * blocks in 100 seconds.
->>> +        */
->>>         int64_t dirty =3D bcache_dev_sectors_dirty(&dc->disk);
->>> -       int64_t derivative =3D dirty - dc->disk.sectors_dirty_last;
->>> -       int64_t proportional =3D dirty - target;
->>> -       int64_t change;
->>> -
->>> -       dc->disk.sectors_dirty_last =3D dirty;
->>> -
->>> -       /* Scale to sectors per second */
->>> -
->>> -       proportional *=3D dc->writeback_rate_update_seconds;
->>> -       proportional =3D div_s64(proportional, dc->writeback_rate_p_ter=
-m_inverse);
->>> -
->>> -       derivative =3D div_s64(derivative, dc->writeback_rate_update_se=
-conds);
->>> -
->>> -       derivative =3D ewma_add(dc->disk.sectors_dirty_derivative, deri=
-vative,
->>> -                             (dc->writeback_rate_d_term /
->>> -                              dc->writeback_rate_update_seconds) ?: 1,=
- 0);
->>> -
->>> -       derivative *=3D dc->writeback_rate_d_term;
->>> -       derivative =3D div_s64(derivative, dc->writeback_rate_p_term_in=
-verse);
->>> -
->>> -       change =3D proportional + derivative;
->>> +       int64_t error =3D dirty - target;
->>> +       int64_t proportional_scaled =3D
->>> +               div_s64(error, dc->writeback_rate_p_term_inverse);
->>> +       int64_t integral_scaled, new_rate;
->>> +
->>> +       if ((error < 0 && dc->writeback_rate_integral > 0) ||
->>> +           (error > 0 && time_before64(local_clock(),
->>> +                        dc->writeback_rate.next + NSEC_PER_MSEC))) {
->>> +               /* Only decrease the integral term if it's more than
->>> +                * zero.  Only increase the integral term if the device
->>> +                * is keeping up.  (Don't wind up the integral
->>> +                * ineffectively in either case).
->>> +                *
->>> +                * It's necessary to scale this by
->>> +                * writeback_rate_update_seconds to keep the integral
->>> +                * term dimensioned properly.
->>> +                */
->>> +               dc->writeback_rate_integral +=3D error *
->>> +                       dc->writeback_rate_update_seconds;
->>> +       }
->>>
->>> -       /* Don't increase writeback rate if the device isn't keeping up=
- */
->>> -       if (change > 0 &&
->>> -           time_after64(local_clock(),
->>> -                        dc->writeback_rate.next + NSEC_PER_MSEC))
->>> -               change =3D 0;
->>> +       integral_scaled =3D div_s64(dc->writeback_rate_integral,
->>> +                       dc->writeback_rate_i_term_inverse);
->>>
->>> -       dc->writeback_rate.rate =3D
->>> -               clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + ch=
-ange,
->>> -                       1, NSEC_PER_MSEC);
->>> +       new_rate =3D clamp_t(int64_t, (proportional_scaled + integral_s=
-caled),
->>> +                       dc->writeback_rate_minimum, NSEC_PER_MSEC);
->>>
->>> -       dc->writeback_rate_proportional =3D proportional;
->>> -       dc->writeback_rate_derivative =3D derivative;
->>> -       dc->writeback_rate_change =3D change;
->>> +       dc->writeback_rate_proportional =3D proportional_scaled;
->>> +       dc->writeback_rate_integral_scaled =3D integral_scaled;
->>> +       dc->writeback_rate_change =3D new_rate - dc->writeback_rate.rat=
-e;
->>> +       dc->writeback_rate.rate =3D new_rate;
->>>         dc->writeback_rate_target =3D target;
->>>  }
->>>
->>> @@ -491,8 +498,6 @@ void bch_sectors_dirty_init(struct cached_dev *dc)
->>>
->>>         bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
->>>                            sectors_dirty_init_fn, 0);
->>> -
->>> -       dc->disk.sectors_dirty_last =3D bcache_dev_sectors_dirty(&dc->d=
-isk);
->>>  }
->>>
->>>  void bch_cached_dev_writeback_init(struct cached_dev *dc)
->>> @@ -506,10 +511,11 @@ void bch_cached_dev_writeback_init(struct cached_=
-dev *dc)
->>>         dc->writeback_percent           =3D 10;
->>>         dc->writeback_delay             =3D 30;
->>>         dc->writeback_rate.rate         =3D 1024;
->>> +       dc->writeback_rate_minimum      =3D 5;
->>>
->>>         dc->writeback_rate_update_seconds =3D 5;
->>> -       dc->writeback_rate_d_term       =3D 30;
->>> -       dc->writeback_rate_p_term_inverse =3D 6000;
->>> +       dc->writeback_rate_p_term_inverse =3D 40;
->>> +       dc->writeback_rate_i_term_inverse =3D 10000;
->>>
->>>         INIT_DELAYED_WORK(&dc->writeback_rate_update, update_writeback_=
-rate);
->>>  }
+>>> On Wed, Sep 6, 2017 at 12:56 AM, Michael Lyle <mlyle@lyle.org> wrote:
+>>>> bcache uses a control system to attempt to keep the amount of dirty data
+>>>> in cache at a user-configured level, while not responding excessively to
+>>>> transients and variations in write rate.  Previously, the system was a
+>>>> PD controller; but the output from it was integrated, turning the
+>>>> Proportional term into an Integral term, and turning the Derivative term
+>>>> into a crude Proportional term.  Performance of the controller has been
+>>>> uneven in production, and it has tended to respond slowly, oscillate,
+>>>> and overshoot.
+>>>>
+>>>> This patch set replaces the current control system with an explicit PI
+>>>> controller and tuning that should be correct for most hardware.  By
+>>>> default, it attempts to write at a rate that would retire 1/40th of the
+>>>> current excess blocks per second.  An integral term in turn works to
+>>>> remove steady state errors.
+>>>>
+>>>> IMO, this yields benefits in simplicity (removing weighted average
+>>>> filtering, etc) and system performance.
+>>>>
+>>>> Another small change is a tunable parameter is introduced to allow the
+>>>> user to specify a minimum rate at which dirty blocks are retired.
+>>>> Ideally one would set this writeback_rate_minimum to a small percentage
+>>>> of disk bandwidth, allowing the dirty data to be slowly cleaned out when
+>>>> the system is inactive.  The old behavior would try and retire 1
+>>>> sector/second, and the new default is 5 sectors/second.
+>>>>
+>>>> Signed-off-by: Michael Lyle <mlyle@lyle.org>
+>>>> ---
+>>>>  drivers/md/bcache/bcache.h    |  9 +++--
+>>>>  drivers/md/bcache/sysfs.c     | 19 +++++-----
+>>>>  drivers/md/bcache/writeback.c | 84 +++++++++++++++++++++++--------------------
+>>>>  3 files changed, 60 insertions(+), 52 deletions(-)
+>>>>
+>>>> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+>>>> index dee542fff68e..f1cdf92e7399 100644
+>>>> --- a/drivers/md/bcache/bcache.h
+>>>> +++ b/drivers/md/bcache/bcache.h
+>>>> @@ -265,9 +265,6 @@ struct bcache_device {
+>>>>         atomic_t                *stripe_sectors_dirty;
+>>>>         unsigned long           *full_dirty_stripes;
+>>>>
+>>>> -       unsigned long           sectors_dirty_last;
+>>>> -       long                    sectors_dirty_derivative;
+>>>> -
+>>>>         struct bio_set          *bio_split;
+>>>>
+>>>>         unsigned                data_csum:1;
+>>>> @@ -361,12 +358,14 @@ struct cached_dev {
+>>>>
+>>>>         uint64_t                writeback_rate_target;
+>>>>         int64_t                 writeback_rate_proportional;
+>>>> -       int64_t                 writeback_rate_derivative;
+>>>> +       int64_t                 writeback_rate_integral;
+>>>> +       int64_t                 writeback_rate_integral_scaled;
+>>>>         int64_t                 writeback_rate_change;
+>>>>
+>>>>         unsigned                writeback_rate_update_seconds;
+>>>> -       unsigned                writeback_rate_d_term;
+>>>> +       unsigned                writeback_rate_i_term_inverse;
+>>>>         unsigned                writeback_rate_p_term_inverse;
+>>>> +       unsigned                writeback_rate_minimum;
+>>>>  };
+>>>>
+>>>>  enum alloc_reserve {
+>>>> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+>>>> index f90f13616980..66a716d5f111 100644
+>>>> --- a/drivers/md/bcache/sysfs.c
+>>>> +++ b/drivers/md/bcache/sysfs.c
+>>>> @@ -81,8 +81,9 @@ rw_attribute(writeback_delay);
+>>>>  rw_attribute(writeback_rate);
+>>>>
+>>>>  rw_attribute(writeback_rate_update_seconds);
+>>>> -rw_attribute(writeback_rate_d_term);
+>>>> +rw_attribute(writeback_rate_i_term_inverse);
+>>>>  rw_attribute(writeback_rate_p_term_inverse);
+>>>> +rw_attribute(writeback_rate_minimum);
+>>>>  read_attribute(writeback_rate_debug);
+>>>>
+>>>>  read_attribute(stripe_size);
+>>>> @@ -130,15 +131,16 @@ SHOW(__bch_cached_dev)
+>>>>         sysfs_hprint(writeback_rate,    dc->writeback_rate.rate << 9);
+>>>>
+>>>>         var_print(writeback_rate_update_seconds);
+>>>> -       var_print(writeback_rate_d_term);
+>>>> +       var_print(writeback_rate_i_term_inverse);
+>>>>         var_print(writeback_rate_p_term_inverse);
+>>>> +       var_print(writeback_rate_minimum);
+>>>>
+>>>>         if (attr == &sysfs_writeback_rate_debug) {
+>>>>                 char rate[20];
+>>>>                 char dirty[20];
+>>>>                 char target[20];
+>>>>                 char proportional[20];
+>>>> -               char derivative[20];
+>>>> +               char integral[20];
+>>>>                 char change[20];
+>>>>                 s64 next_io;
+>>>>
+>>>> @@ -146,7 +148,7 @@ SHOW(__bch_cached_dev)
+>>>>                 bch_hprint(dirty,       bcache_dev_sectors_dirty(&dc->disk) << 9);
+>>>>                 bch_hprint(target,      dc->writeback_rate_target << 9);
+>>>>                 bch_hprint(proportional,dc->writeback_rate_proportional << 9);
+>>>> -               bch_hprint(derivative,  dc->writeback_rate_derivative << 9);
+>>>> +               bch_hprint(integral,    dc->writeback_rate_integral_scaled << 9);
+>>>>                 bch_hprint(change,      dc->writeback_rate_change << 9);
+>>>>
+>>>>                 next_io = div64_s64(dc->writeback_rate.next - local_clock(),
+>>>> @@ -157,11 +159,11 @@ SHOW(__bch_cached_dev)
+>>>>                                "dirty:\t\t%s\n"
+>>>>                                "target:\t\t%s\n"
+>>>>                                "proportional:\t%s\n"
+>>>> -                              "derivative:\t%s\n"
+>>>> +                              "integral:\t%s\n"
+>>>>                                "change:\t\t%s/sec\n"
+>>>>                                "next io:\t%llims\n",
+>>>>                                rate, dirty, target, proportional,
+>>>> -                              derivative, change, next_io);
+>>>> +                              integral, change, next_io);
+>>>>         }
+>>>>
+>>>>         sysfs_hprint(dirty_data,
+>>>> @@ -213,7 +215,7 @@ STORE(__cached_dev)
+>>>>                             dc->writeback_rate.rate, 1, INT_MAX);
+>>>>
+>>>>         d_strtoul_nonzero(writeback_rate_update_seconds);
+>>>> -       d_strtoul(writeback_rate_d_term);
+>>>> +       d_strtoul(writeback_rate_i_term_inverse);
+>>>>         d_strtoul_nonzero(writeback_rate_p_term_inverse);
+>>>>
+>>>>         d_strtoi_h(sequential_cutoff);
+>>>> @@ -319,8 +321,9 @@ static struct attribute *bch_cached_dev_files[] = {
+>>>>         &sysfs_writeback_percent,
+>>>>         &sysfs_writeback_rate,
+>>>>         &sysfs_writeback_rate_update_seconds,
+>>>> -       &sysfs_writeback_rate_d_term,
+>>>> +       &sysfs_writeback_rate_i_term_inverse,
+>>>>         &sysfs_writeback_rate_p_term_inverse,
+>>>> +       &sysfs_writeback_rate_minimum,
+>>>>         &sysfs_writeback_rate_debug,
+>>>>         &sysfs_dirty_data,
+>>>>         &sysfs_stripe_size,
+>>>> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+>>>> index 42c66e76f05e..76e71e8ef356 100644
+>>>> --- a/drivers/md/bcache/writeback.c
+>>>> +++ b/drivers/md/bcache/writeback.c
+>>>> @@ -24,48 +24,55 @@ static void __update_writeback_rate(struct cached_dev *dc)
+>>>>         uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size;
+>>>>         uint64_t cache_dirty_target =
+>>>>                 div_u64(cache_sectors * dc->writeback_percent, 100);
+>>>> -
+>>>>         int64_t target = div64_u64(cache_dirty_target * bdev_sectors(dc->bdev),
+>>>>                                    c->cached_dev_sectors);
+>>>>
+>>>> -       /* PD controller */
+>>>> -
+>>>> +       /* PI controller:
+>>>> +        * Figures out the amount that should be written per second.
+>>>> +        *
+>>>> +        * First, the error (number of sectors that are dirty beyond our
+>>>> +        * target) is calculated.  The error is accumulated (numerically
+>>>> +        * integrated).
+>>>> +        *
+>>>> +        * Then, the proportional value and integral value are scaled
+>>>> +        * based on configured values.  These are stored as inverses to
+>>>> +        * avoid fixed point math and to make configuration easy-- e.g.
+>>>> +        * the default value of 100 for writeback_rate_p_term_inverse
+>>>> +        * attempts to write at a rate that would retire all the dirty
+>>>> +        * blocks in 100 seconds.
+>>>> +        */
+>>>>         int64_t dirty = bcache_dev_sectors_dirty(&dc->disk);
+>>>> -       int64_t derivative = dirty - dc->disk.sectors_dirty_last;
+>>>> -       int64_t proportional = dirty - target;
+>>>> -       int64_t change;
+>>>> -
+>>>> -       dc->disk.sectors_dirty_last = dirty;
+>>>> -
+>>>> -       /* Scale to sectors per second */
+>>>> -
+>>>> -       proportional *= dc->writeback_rate_update_seconds;
+>>>> -       proportional = div_s64(proportional, dc->writeback_rate_p_term_inverse);
+>>>> -
+>>>> -       derivative = div_s64(derivative, dc->writeback_rate_update_seconds);
+>>>> -
+>>>> -       derivative = ewma_add(dc->disk.sectors_dirty_derivative, derivative,
+>>>> -                             (dc->writeback_rate_d_term /
+>>>> -                              dc->writeback_rate_update_seconds) ?: 1, 0);
+>>>> -
+>>>> -       derivative *= dc->writeback_rate_d_term;
+>>>> -       derivative = div_s64(derivative, dc->writeback_rate_p_term_inverse);
+>>>> -
+>>>> -       change = proportional + derivative;
+>>>> +       int64_t error = dirty - target;
+>>>> +       int64_t proportional_scaled =
+>>>> +               div_s64(error, dc->writeback_rate_p_term_inverse);
+>>>> +       int64_t integral_scaled, new_rate;
+>>>> +
+>>>> +       if ((error < 0 && dc->writeback_rate_integral > 0) ||
+>>>> +           (error > 0 && time_before64(local_clock(),
+>>>> +                        dc->writeback_rate.next + NSEC_PER_MSEC))) {
+>>>> +               /* Only decrease the integral term if it's more than
+>>>> +                * zero.  Only increase the integral term if the device
+>>>> +                * is keeping up.  (Don't wind up the integral
+>>>> +                * ineffectively in either case).
+>>>> +                *
+>>>> +                * It's necessary to scale this by
+>>>> +                * writeback_rate_update_seconds to keep the integral
+>>>> +                * term dimensioned properly.
+>>>> +                */
+>>>> +               dc->writeback_rate_integral += error *
+>>>> +                       dc->writeback_rate_update_seconds;
+>>>> +       }
+>>>>
+>>>> -       /* Don't increase writeback rate if the device isn't keeping up */
+>>>> -       if (change > 0 &&
+>>>> -           time_after64(local_clock(),
+>>>> -                        dc->writeback_rate.next + NSEC_PER_MSEC))
+>>>> -               change = 0;
+>>>> +       integral_scaled = div_s64(dc->writeback_rate_integral,
+>>>> +                       dc->writeback_rate_i_term_inverse);
+>>>>
+>>>> -       dc->writeback_rate.rate =
+>>>> -               clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + change,
+>>>> -                       1, NSEC_PER_MSEC);
+>>>> +       new_rate = clamp_t(int64_t, (proportional_scaled + integral_scaled),
+>>>> +                       dc->writeback_rate_minimum, NSEC_PER_MSEC);
+>>>>
+>>>> -       dc->writeback_rate_proportional = proportional;
+>>>> -       dc->writeback_rate_derivative = derivative;
+>>>> -       dc->writeback_rate_change = change;
+>>>> +       dc->writeback_rate_proportional = proportional_scaled;
+>>>> +       dc->writeback_rate_integral_scaled = integral_scaled;
+>>>> +       dc->writeback_rate_change = new_rate - dc->writeback_rate.rate;
+>>>> +       dc->writeback_rate.rate = new_rate;
+>>>>         dc->writeback_rate_target = target;
+>>>>  }
+>>>>
+>>>> @@ -491,8 +498,6 @@ void bch_sectors_dirty_init(struct cached_dev *dc)
+>>>>
+>>>>         bch_btree_map_keys(&op.op, dc->disk.c, &KEY(op.inode, 0, 0),
+>>>>                            sectors_dirty_init_fn, 0);
+>>>> -
+>>>> -       dc->disk.sectors_dirty_last = bcache_dev_sectors_dirty(&dc->disk);
+>>>>  }
+>>>>
+>>>>  void bch_cached_dev_writeback_init(struct cached_dev *dc)
+>>>> @@ -506,10 +511,11 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+>>>>         dc->writeback_percent           = 10;
+>>>>         dc->writeback_delay             = 30;
+>>>>         dc->writeback_rate.rate         = 1024;
+>>>> +       dc->writeback_rate_minimum      = 5;
+>>>>
+>>>>         dc->writeback_rate_update_seconds = 5;
+>>>> -       dc->writeback_rate_d_term       = 30;
+>>>> -       dc->writeback_rate_p_term_inverse = 6000;
+>>>> +       dc->writeback_rate_p_term_inverse = 40;
+>>>> +       dc->writeback_rate_i_term_inverse = 10000;
+>>>>
+>>>>         INIT_DELAYED_WORK(&dc->writeback_rate_update, update_writeback_rate);
+>>>>  }
+>>>> --
+>>>> 2.11.0
+>>>>
 >>> --
->>> 2.11.0
+>>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >>>
 >> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" =
-in
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 >> the body of a message to majordomo@vger.kernel.org
 >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" i=
-n
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
