@@ -1,7 +1,7 @@
 From: Eddie Chapman <eddie@ehuk.net>
 Subject: Re: [PATCH 00/13] bcache: fixes and update for 4.14
-Date: Thu, 7 Sep 2017 19:51:17 +0100
-Message-ID: <47ffe60a-7f05-4193-1f98-f3e56e28e0b0@ehuk.net>
+Date: Thu, 7 Sep 2017 20:01:21 +0100
+Message-ID: <40598504-edbb-2efa-5b7f-95043ae66ce7@ehuk.net>
 References: <20170906062602.50497-1-colyli@suse.de>
  <20170906142002.GA19380@kernel.dk>
  <d2a5b042-a81d-71c4-1f8c-8fc6416ed363@coly.li>
@@ -73,16 +73,5 @@ On 06/09/17 18:38, Coly Li wrote:
 > 
 > Thanks in advance.
 
-Hello Jens,
-
-FWIW I'd like to support Coly by reporting that patches 0001, 0002, 0006 
-and 0013 (the last one mentioned above) have been tested by me on 2 
-production servers with a good deal of bcache activity for the last 6 
-weeks without any issues having arisen.
-
-But this may not be much use to you to know, as these are running 
-vanilla kernel.org kernel 4.4.77.  Still, these 4 patches exactly as 
-Coly has sent them to you apply without any changes to the code, so I 
-guess it vouches for the code at least somewhat.
-
-Eddie
+I'm sorry, correction to my last mail, the patches I have tested should 
+read: 0002, 0003, 0006 and 0013.
