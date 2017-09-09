@@ -1,76 +1,130 @@
-From: Coly Li <i@coly.li>
-Subject: Re: BCACHE Can't on CENTOS6.9
-Date: Sat, 9 Sep 2017 20:36:30 +0800
-Message-ID: <eae298fa-c38b-0741-b030-2e6bf425dd4c@coly.li>
-References: <CAGusKs+K5scp8g2WKogF_S3uukBkpuAbr_eC0FFJYryno+pXHA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:45716 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1753519AbdIIMgl (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 9 Sep 2017 08:36:41 -0400
-In-Reply-To: <CAGusKs+K5scp8g2WKogF_S3uukBkpuAbr_eC0FFJYryno+pXHA@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH] bcache: option for recovery from staled data
+Date: Sun, 10 Sep 2017 01:56:21 +0800
+Message-ID: <20170909175621.9705-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+Sender: stable-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, Kai Krakow <hurikhan77@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: do xing Chiang <hermeseagle@gmail.com>, linux-bcache@vger.kernel.org
 
-On 2017/9/9 下午4:39, do xing Chiang wrote:
-> Dear ALL:
-> I have Problem With bcache-tools  compile , I got a problem with a new
-> upgrade kernel from 2.6.x to  4.4.13 on Centos 6.9
-> but my Base is on Centos 6.9 , it means a lot of libs are old for BCACHE .
-> Bcache was introduce in Kernel 3.X
-> When I compiled bcache-tools
-> it happened
-> 
-> 
-> alhost ~]# gcc -v
-> Using built-in specs.
-> COLLECT_GCC=gcc
-> COLLECT_LTO_WRAPPER=/opt/rh/devtoolset-3/root/usr/libexec/gcc/x86_64-redhat-linux/4.9.2/lto-wrapper
-> Target: x86_64-redhat-linux
-> Configured with: ../configure --prefix=/opt/rh/devtoolset-3/root/usr
-> --mandir=/opt/rh/devtoolset-3/root/usr/share/man
-> --infodir=/opt/rh/devtoolset-3/root/usr/share/info
-> --with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap
-> --enable-shared --enable-threads=posix --enable-checking=release
-> --enable-multilib --with-system-zlib --enable-__cxa_atexit
-> --disable-libunwind-exceptions --enable-gnu-unique-object
-> --enable-linker-build-id --enable-languages=c,c++,fortran,lto
-> --enable-plugin --with-linker-hash-style=gnu --enable-initfini-array
-> --disable-libgcj
-> --with-isl=/builddir/build/BUILD/gcc-4.9.2-20150212/obj-x86_64-redhat-linux/isl-install
-> --with-cloog=/builddir/build/BUILD/gcc-4.9.2-20150212/obj-x86_64-redhat-linux/cloog-install
-> --with-mpc=/builddir/build/BUILD/gcc-4.9.2-20150212/obj-x86_64-redhat-linux/mpc-install
-> --with-tune=generic --with-arch_32=i686 --build=x86_64-redhat-linux
-> Thread model: posix
-> gcc version 4.9.2 20150212 (Red Hat 4.9.2-6) (GCC)
-> 
-> 
-> 
-> [root@localhost ~]# cd bcachefs-tools/
-> [root@localhost bcachefs-tools]# make
-> cc -std=gnu89 -O2 -g -MMD -Wall -Wno-pointer-sign -fno-strict-aliasing
-> -I. -Iinclude -Ilibbcachefs -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
-> -D_LGPL_SOURCE -DRCU_MEMBARRIER -DNO_BCACHE_CHARDEV -DNO_BCACHE_FS
-> -DNO_BCACHE_SYSFS  -Wno-unused-but-set-variable -flto `pkg-config
-> --cflags "blkid uuid liburcu libsodium zlib"`   -c -o bcachefs.o
-> bcachefs.c
-> In file included from tools-util.h:15:0,
->                  from cmds.h:10,
->                  from bcachefs.c:24:
-> include/linux/log2.h:188:1: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
-> ‘__attribute__’ before ‘int’
->  int __get_order(unsigned long size)
->  ^
-> make: *** [bcachefs.o] Error 1
-> 
-> 
-It seems you are compiling bcachefs-tool. But you ask for bcache-tool.
-Which one do you exactly want to run ?
+When bcache does read I/Os, for example in writeback or writethrough mode,
+if a read request on cache device is failed, bcache will try to recovery
+the request by reading from cached device. If the data on cached device is
+not synced with cache device, then requester will get a staled data.
 
+For critical storage system like database, recovery from staled data may
+result an application level data corruption, which is unacceptible. But
+for some other situation like multi-media stream cache, continuous service
+may be more important and it is acceptible to fetch a staled chunk of data.
+
+This patch tries to solve the above conflict by adding a sysfs option
+	/sys/block/bcache<idx>/bcache/recovery_from_staled_data
+which is defaultly cleared (to 0) as disabled. Now people can make choices
+for different situations.
+
+With this patch, for a failed read request in writeback or writethrough
+mode, recovery a recoverable read request only happens in one of the
+following conditions,
+ - dc->has_dirty is zero. It means all data on cache device is synced to
+   cached device, the recoveried data is up-to-date. 
+ - dc->has_dirty is non-zero, and dc->recovery_from_staled_data is set
+   to 1. It means there is dirty data not synced to cached device yet, but
+   option recovery_from_staled_data is set, receiving staled data is
+   explicitly acceptible for requester.
+
+For other cache modes in bcache, read request will never hit
+cached_dev_read_error(), they don't need this patch.
+
+Please note, because cache mode can be switched arbitrarily in run time, a
+writethrough mode might be switched from a writeback mode. Therefore
+checking dc->has_data in writethrough mode still makes sense.
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Reported-by: Arne Wolf <awolf@lenovo.com>
+Cc: Kai Krakow <hurikhan77@gmail.com>
+Cc: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
+Cc: stable@vger.kernel.org
+---
+ drivers/md/bcache/bcache.h  |  1 +
+ drivers/md/bcache/request.c | 14 +++++++++++++-
+ drivers/md/bcache/sysfs.c   |  4 ++++
+ 3 files changed, 18 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index dee542fff68e..f26b174f409a 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -356,6 +356,7 @@ struct cached_dev {
+ 	unsigned		partial_stripes_expensive:1;
+ 	unsigned		writeback_metadata:1;
+ 	unsigned		writeback_running:1;
++	unsigned		recovery_from_staled_data:1;
+ 	unsigned char		writeback_percent;
+ 	unsigned		writeback_delay;
+ 
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 019b3df9f1c6..becbc0959ca2 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -702,8 +702,20 @@ static void cached_dev_read_error(struct closure *cl)
+ {
+ 	struct search *s = container_of(cl, struct search, cl);
+ 	struct bio *bio = &s->bio.bio;
++	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
++	int recovery_staled_data = dc ? dc->recovery_from_staled_data : 0;
+ 
+-	if (s->recoverable) {
++	/*
++	 * If dc->has_dirty is non-zero and the recovering data is on cache
++	 * device, then recover from cached device will return a staled data
++	 * to requester. But in some cases people accept staled data to avoid
++	 * an -EIO. So I/O error recovery only happens when,
++	 * - No dirty data on cache device.
++	 * - Cached device is dirty but sysfs recovery_from_staled_data is
++	 *   explicitly set (to 1) to accept recovering from staled data.
++	 */
++	if (s->recoverable &&
++	    (!atomic_read(&dc->has_dirty) || recovery_staled_data)) {
+ 		/* Retry from the backing device: */
+ 		trace_bcache_read_retry(s->orig_bio);
+ 
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index f90f13616980..8603756005a8 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -106,6 +106,7 @@ rw_attribute(cache_replacement_policy);
+ rw_attribute(btree_shrinker_disabled);
+ rw_attribute(copy_gc_enabled);
+ rw_attribute(size);
++rw_attribute(recovery_from_staled_data);
+ 
+ SHOW(__bch_cached_dev)
+ {
+@@ -125,6 +126,7 @@ SHOW(__bch_cached_dev)
+ 	var_printf(bypass_torture_test,	"%i");
+ 	var_printf(writeback_metadata,	"%i");
+ 	var_printf(writeback_running,	"%i");
++	var_printf(recovery_from_staled_data,"%i");
+ 	var_print(writeback_delay);
+ 	var_print(writeback_percent);
+ 	sysfs_hprint(writeback_rate,	dc->writeback_rate.rate << 9);
+@@ -201,6 +203,7 @@ STORE(__cached_dev)
+ #define d_strtoi_h(var)		sysfs_hatoi(var, dc->var)
+ 
+ 	sysfs_strtoul(data_csum,	dc->disk.data_csum);
++	d_strtoul(recovery_from_staled_data);
+ 	d_strtoul(verify);
+ 	d_strtoul(bypass_torture_test);
+ 	d_strtoul(writeback_metadata);
+@@ -335,6 +338,7 @@ static struct attribute *bch_cached_dev_files[] = {
+ 	&sysfs_verify,
+ 	&sysfs_bypass_torture_test,
+ #endif
++	&sysfs_recovery_from_staled_data,
+ 	NULL
+ };
+ KTYPE(bch_cached_dev);
 -- 
-Coly Li
+2.13.5
