@@ -1,130 +1,158 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH] bcache: option for recovery from staled data
-Date: Sun, 10 Sep 2017 01:56:21 +0800
-Message-ID: <20170909175621.9705-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-Sender: stable-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, Kai Krakow <hurikhan77@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+Subject: [PATCH] bcache: rewrite multiple partitions support
+Date: Sun, 10 Sep 2017 02:41:47 +0800
+Message-ID: <20170909184147.10458-1-colyli@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:54860 "EHLO mx1.suse.de"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1751780AbdIISly (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 9 Sep 2017 14:41:54 -0400
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>
 
-When bcache does read I/Os, for example in writeback or writethrough mode,
-if a read request on cache device is failed, bcache will try to recovery
-the request by reading from cached device. If the data on cached device is
-not synced with cache device, then requester will get a staled data.
+Current partition support of bcache is confusing and buggy. It tries to
+trace non-continous device minor numbers by an ida bit string, and
+mistakenly mixed bcache device index with minor numbers. This design
+generates several negative results,
+- Index of bcache device name is not consecutive under /dev/. If there are
+  3 bcache devices, they name will be,
+  /dev/bcache0, /dev/bcache16, /dev/bcache32
+  Only bcache code indexes bcache device name is such an interesting way.
+- First minor number of each bcache device is traced by ida bit string.
+  One bcache device will occupy 16 bits, this is not a good idea. Indeed
+  only one bit is enough.
+- Because minor number and bcache device index are mixed, a device index
+  is allocated by ida_simple_get(), but an first minor number is sent into
+  ida_simple_remove() to release the device. It confused original author
+  too.
 
-For critical storage system like database, recovery from staled data may
-result an application level data corruption, which is unacceptible. But
-for some other situation like multi-media stream cache, continuous service
-may be more important and it is acceptible to fetch a staled chunk of data.
+Root cause of the above errors is, bcache code should not handle device
+minor numbers at all! A standard process to support multiple partitions in
+Linux kernel is,
+- Device driver provides major device number, and indexes multiple device
+  instances.
+- Device driver does not allocat nor trace device minor number, only
+  provides a first minor number of a given device instance, and sets how
+  many minor numbers (paritions) the device instance may have.
+All rested stuffs are handled by block layer code, most of the details can
+be found from block/{genhd, partition-generic}.c files.
 
-This patch tries to solve the above conflict by adding a sysfs option
-	/sys/block/bcache<idx>/bcache/recovery_from_staled_data
-which is defaultly cleared (to 0) as disabled. Now people can make choices
-for different situations.
+This patch re-writes multiple partitions support for bcache. It makes
+whole things to be more clear, and uses ida bit string in a more efficeint
+way.
+- Ida bit string only traces bcache device index, not minor number. For a
+  bcache device with 128 partitions, only one bit in ida bit string is
+  enough.
+- Device minor number and device index are seperated in concept. Device
+  index is used for /dev node naming, and ida bit string trace. Minor
+  number is calculated from device index and only used to initialize
+  first_minor of a bcache device.
+- It does not follow any standard for 16 partitions on a bcache device.
+  This patch sets 128 partitions on single bcache device at max, this is
+  the limitation from GPT (GUID Partition Table) and supported by fdisk.
 
-With this patch, for a failed read request in writeback or writethrough
-mode, recovery a recoverable read request only happens in one of the
-following conditions,
- - dc->has_dirty is zero. It means all data on cache device is synced to
-   cached device, the recoveried data is up-to-date. 
- - dc->has_dirty is non-zero, and dc->recovery_from_staled_data is set
-   to 1. It means there is dirty data not synced to cached device yet, but
-   option recovery_from_staled_data is set, receiving staled data is
-   explicitly acceptible for requester.
-
-For other cache modes in bcache, read request will never hit
-cached_dev_read_error(), they don't need this patch.
-
-Please note, because cache mode can be switched arbitrarily in run time, a
-writethrough mode might be switched from a writeback mode. Therefore
-checking dc->has_data in writethrough mode still makes sense.
+Considering a typical device minor number is 20 bits width, each bcache
+device may have 128 partitions (7 bits), there can be 8192 bcache devices
+existing on system. For most common deployment for a single server in
+now days, it should be enough.
 
 Signed-off-by: Coly Li <colyli@suse.de>
-Reported-by: Arne Wolf <awolf@lenovo.com>
-Cc: Kai Krakow <hurikhan77@gmail.com>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>
-Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/bcache.h  |  1 +
- drivers/md/bcache/request.c | 14 +++++++++++++-
- drivers/md/bcache/sysfs.c   |  4 ++++
- 3 files changed, 18 insertions(+), 1 deletion(-)
+ drivers/md/bcache/super.c | 37 +++++++++++++++++++++++++------------
+ 1 file changed, 25 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index dee542fff68e..f26b174f409a 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -356,6 +356,7 @@ struct cached_dev {
- 	unsigned		partial_stripes_expensive:1;
- 	unsigned		writeback_metadata:1;
- 	unsigned		writeback_running:1;
-+	unsigned		recovery_from_staled_data:1;
- 	unsigned char		writeback_percent;
- 	unsigned		writeback_delay;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 8352fad765f6..1a811932bd3a 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -53,12 +53,15 @@ LIST_HEAD(bch_cache_sets);
+ static LIST_HEAD(uncached_devices);
  
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 019b3df9f1c6..becbc0959ca2 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -702,8 +702,20 @@ static void cached_dev_read_error(struct closure *cl)
+ static int bcache_major;
+-static DEFINE_IDA(bcache_minor);
++static DEFINE_IDA(bcache_device_idx);
+ static wait_queue_head_t unregister_wait;
+ struct workqueue_struct *bcache_wq;
+ 
+ #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
+-#define BCACHE_MINORS		16 /* partition support */
++/* limitation of partitions number on single bcache device */
++#define BCACHE_MINORS		128
++/* limitation of bcache devices number on single system */
++#define BCACHE_DEVICE_IDX_MAX	((1U << MINORBITS)/BCACHE_MINORS)
+ 
+ /* Superblock */
+ 
+@@ -721,6 +724,16 @@ static void bcache_device_attach(struct bcache_device *d, struct cache_set *c,
+ 	closure_get(&c->caching);
+ }
+ 
++static inline int first_minor_to_idx(int first_minor)
++{
++	return (first_minor/BCACHE_MINORS);
++}
++
++static inline int idx_to_first_minor(int idx)
++{
++	return (idx * BCACHE_MINORS);
++}
++
+ static void bcache_device_free(struct bcache_device *d)
  {
- 	struct search *s = container_of(cl, struct search, cl);
- 	struct bio *bio = &s->bio.bio;
-+	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
-+	int recovery_staled_data = dc ? dc->recovery_from_staled_data : 0;
+ 	lockdep_assert_held(&bch_register_lock);
+@@ -734,7 +747,8 @@ static void bcache_device_free(struct bcache_device *d)
+ 	if (d->disk && d->disk->queue)
+ 		blk_cleanup_queue(d->disk->queue);
+ 	if (d->disk) {
+-		ida_simple_remove(&bcache_minor, d->disk->first_minor);
++		ida_simple_remove(&bcache_device_idx,
++				  first_minor_to_idx(d->disk->first_minor));
+ 		put_disk(d->disk);
+ 	}
  
--	if (s->recoverable) {
-+	/*
-+	 * If dc->has_dirty is non-zero and the recovering data is on cache
-+	 * device, then recover from cached device will return a staled data
-+	 * to requester. But in some cases people accept staled data to avoid
-+	 * an -EIO. So I/O error recovery only happens when,
-+	 * - No dirty data on cache device.
-+	 * - Cached device is dirty but sysfs recovery_from_staled_data is
-+	 *   explicitly set (to 1) to accept recovering from staled data.
-+	 */
-+	if (s->recoverable &&
-+	    (!atomic_read(&dc->has_dirty) || recovery_staled_data)) {
- 		/* Retry from the backing device: */
- 		trace_bcache_read_retry(s->orig_bio);
- 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index f90f13616980..8603756005a8 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -106,6 +106,7 @@ rw_attribute(cache_replacement_policy);
- rw_attribute(btree_shrinker_disabled);
- rw_attribute(copy_gc_enabled);
- rw_attribute(size);
-+rw_attribute(recovery_from_staled_data);
- 
- SHOW(__bch_cached_dev)
+@@ -751,7 +765,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
  {
-@@ -125,6 +126,7 @@ SHOW(__bch_cached_dev)
- 	var_printf(bypass_torture_test,	"%i");
- 	var_printf(writeback_metadata,	"%i");
- 	var_printf(writeback_running,	"%i");
-+	var_printf(recovery_from_staled_data,"%i");
- 	var_print(writeback_delay);
- 	var_print(writeback_percent);
- 	sysfs_hprint(writeback_rate,	dc->writeback_rate.rate << 9);
-@@ -201,6 +203,7 @@ STORE(__cached_dev)
- #define d_strtoi_h(var)		sysfs_hatoi(var, dc->var)
+ 	struct request_queue *q;
+ 	size_t n;
+-	int minor;
++	int idx;
  
- 	sysfs_strtoul(data_csum,	dc->disk.data_csum);
-+	d_strtoul(recovery_from_staled_data);
- 	d_strtoul(verify);
- 	d_strtoul(bypass_torture_test);
- 	d_strtoul(writeback_metadata);
-@@ -335,6 +338,7 @@ static struct attribute *bch_cached_dev_files[] = {
- 	&sysfs_verify,
- 	&sysfs_bypass_torture_test,
- #endif
-+	&sysfs_recovery_from_staled_data,
- 	NULL
- };
- KTYPE(bch_cached_dev);
+ 	if (!d->stripe_size)
+ 		d->stripe_size = 1 << 31;
+@@ -776,25 +790,24 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+ 	if (!d->full_dirty_stripes)
+ 		return -ENOMEM;
+ 
+-	minor = ida_simple_get(&bcache_minor, 0, MINORMASK + 1, GFP_KERNEL);
+-	if (minor < 0)
+-		return minor;
+-
+-	minor *= BCACHE_MINORS;
++	idx = ida_simple_get(&bcache_device_idx, 0,
++				BCACHE_DEVICE_IDX_MAX, GFP_KERNEL);
++	if (idx < 0)
++		return idx;
+ 
+ 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio),
+ 					   BIOSET_NEED_BVECS |
+ 					   BIOSET_NEED_RESCUER)) ||
+ 	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
+-		ida_simple_remove(&bcache_minor, minor);
++		ida_simple_remove(&bcache_device_idx, idx);
+ 		return -ENOMEM;
+ 	}
+ 
+ 	set_capacity(d->disk, sectors);
+-	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
++	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", idx);
+ 
+ 	d->disk->major		= bcache_major;
+-	d->disk->first_minor	= minor;
++	d->disk->first_minor	= idx_to_first_minor(idx);
+ 	d->disk->fops		= &bcache_ops;
+ 	d->disk->private_data	= d;
+ 
 -- 
 2.13.5
