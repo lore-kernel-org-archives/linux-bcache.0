@@ -1,158 +1,43 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH] bcache: rewrite multiple partitions support
-Date: Sun, 10 Sep 2017 02:41:47 +0800
-Message-ID: <20170909184147.10458-1-colyli@suse.de>
+From: FERNANDO FREDIANI <fernando.frediani@upx.com>
+Subject: SSD usage for bcache - Read and Writeback
+Date: Mon, 11 Sep 2017 11:04:19 -0300
+Message-ID: <CAD7b65Ly7rEVyShjD=1NBsYBMiyQGXuzKv0h2Ys5KN=ghTJcaA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:54860 "EHLO mx1.suse.de"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751780AbdIISly (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 9 Sep 2017 14:41:54 -0400
+Received: from mail-wm0-f41.google.com ([74.125.82.41]:46451 "EHLO
+        mail-wm0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751672AbdIKOEc (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 11 Sep 2017 10:04:32 -0400
+Received: by mail-wm0-f41.google.com with SMTP id i189so40606576wmf.1
+        for <linux-bcache@vger.kernel.org>; Mon, 11 Sep 2017 07:04:31 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>
+To: linux-bcache@vger.kernel.org
 
-Current partition support of bcache is confusing and buggy. It tries to
-trace non-continous device minor numbers by an ida bit string, and
-mistakenly mixed bcache device index with minor numbers. This design
-generates several negative results,
-- Index of bcache device name is not consecutive under /dev/. If there are
-  3 bcache devices, they name will be,
-  /dev/bcache0, /dev/bcache16, /dev/bcache32
-  Only bcache code indexes bcache device name is such an interesting way.
-- First minor number of each bcache device is traced by ida bit string.
-  One bcache device will occupy 16 bits, this is not a good idea. Indeed
-  only one bit is enough.
-- Because minor number and bcache device index are mixed, a device index
-  is allocated by ida_simple_get(), but an first minor number is sent into
-  ida_simple_remove() to release the device. It confused original author
-  too.
+Hi folks
 
-Root cause of the above errors is, bcache code should not handle device
-minor numbers at all! A standard process to support multiple partitions in
-Linux kernel is,
-- Device driver provides major device number, and indexes multiple device
-  instances.
-- Device driver does not allocat nor trace device minor number, only
-  provides a first minor number of a given device instance, and sets how
-  many minor numbers (paritions) the device instance may have.
-All rested stuffs are handled by block layer code, most of the details can
-be found from block/{genhd, partition-generic}.c files.
+In Bcache people normally use a single SSD for both Read and Write
+cache. This seems to work pretty well, at least for the load we have
+been using here.
 
-This patch re-writes multiple partitions support for bcache. It makes
-whole things to be more clear, and uses ida bit string in a more efficeint
-way.
-- Ida bit string only traces bcache device index, not minor number. For a
-  bcache device with 128 partitions, only one bit in ida bit string is
-  enough.
-- Device minor number and device index are seperated in concept. Device
-  index is used for /dev node naming, and ida bit string trace. Minor
-  number is calculated from device index and only used to initialize
-  first_minor of a bcache device.
-- It does not follow any standard for 16 partitions on a bcache device.
-  This patch sets 128 partitions on single bcache device at max, this is
-  the limitation from GPT (GUID Partition Table) and supported by fdisk.
+However in other environments, specially on ZFS people tend to suggest
+to use dedicated SSDs for Write (ZIL) and for Read (L2ARC). Some say
+that performance will be much better in this way and mainly say they
+have different wearing levels.
+The issue now a days is that SSDs for Write Cache (or Writeback) don't
+need to have much space available (8GB normally is more than enough),
+just enough for the time until data is committed to the pool (or
+slower disks) so it is hard to find a suitable SSD to dedicate to this
+propose only without overprovisioning that part.
+On the top of that newer SSDs have changed a lot in recent times using
+different types of memory technologies which tend to be much durable.
 
-Considering a typical device minor number is 20 bits width, each bcache
-device may have 128 partitions (7 bits), there can be 8192 bcache devices
-existing on system. For most common deployment for a single server in
-now days, it should be enough.
+Given that I personally see that using a single SSD for both Write and
+Read cache, in any scenarios doesn't impose any significant loss to
+the storage, given you use new technology SSDs and that you will
+hardly saturate it most of the time. Does anyone agree or disagree
+with that ?
 
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/super.c | 37 +++++++++++++++++++++++++------------
- 1 file changed, 25 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 8352fad765f6..1a811932bd3a 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -53,12 +53,15 @@ LIST_HEAD(bch_cache_sets);
- static LIST_HEAD(uncached_devices);
- 
- static int bcache_major;
--static DEFINE_IDA(bcache_minor);
-+static DEFINE_IDA(bcache_device_idx);
- static wait_queue_head_t unregister_wait;
- struct workqueue_struct *bcache_wq;
- 
- #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
--#define BCACHE_MINORS		16 /* partition support */
-+/* limitation of partitions number on single bcache device */
-+#define BCACHE_MINORS		128
-+/* limitation of bcache devices number on single system */
-+#define BCACHE_DEVICE_IDX_MAX	((1U << MINORBITS)/BCACHE_MINORS)
- 
- /* Superblock */
- 
-@@ -721,6 +724,16 @@ static void bcache_device_attach(struct bcache_device *d, struct cache_set *c,
- 	closure_get(&c->caching);
- }
- 
-+static inline int first_minor_to_idx(int first_minor)
-+{
-+	return (first_minor/BCACHE_MINORS);
-+}
-+
-+static inline int idx_to_first_minor(int idx)
-+{
-+	return (idx * BCACHE_MINORS);
-+}
-+
- static void bcache_device_free(struct bcache_device *d)
- {
- 	lockdep_assert_held(&bch_register_lock);
-@@ -734,7 +747,8 @@ static void bcache_device_free(struct bcache_device *d)
- 	if (d->disk && d->disk->queue)
- 		blk_cleanup_queue(d->disk->queue);
- 	if (d->disk) {
--		ida_simple_remove(&bcache_minor, d->disk->first_minor);
-+		ida_simple_remove(&bcache_device_idx,
-+				  first_minor_to_idx(d->disk->first_minor));
- 		put_disk(d->disk);
- 	}
- 
-@@ -751,7 +765,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
- {
- 	struct request_queue *q;
- 	size_t n;
--	int minor;
-+	int idx;
- 
- 	if (!d->stripe_size)
- 		d->stripe_size = 1 << 31;
-@@ -776,25 +790,24 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
- 	if (!d->full_dirty_stripes)
- 		return -ENOMEM;
- 
--	minor = ida_simple_get(&bcache_minor, 0, MINORMASK + 1, GFP_KERNEL);
--	if (minor < 0)
--		return minor;
--
--	minor *= BCACHE_MINORS;
-+	idx = ida_simple_get(&bcache_device_idx, 0,
-+				BCACHE_DEVICE_IDX_MAX, GFP_KERNEL);
-+	if (idx < 0)
-+		return idx;
- 
- 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio),
- 					   BIOSET_NEED_BVECS |
- 					   BIOSET_NEED_RESCUER)) ||
- 	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
--		ida_simple_remove(&bcache_minor, minor);
-+		ida_simple_remove(&bcache_device_idx, idx);
- 		return -ENOMEM;
- 	}
- 
- 	set_capacity(d->disk, sectors);
--	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
-+	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", idx);
- 
- 	d->disk->major		= bcache_major;
--	d->disk->first_minor	= minor;
-+	d->disk->first_minor	= idx_to_first_minor(idx);
- 	d->disk->fops		= &bcache_ops;
- 	d->disk->private_data	= d;
- 
--- 
-2.13.5
+Fernando Frediani
