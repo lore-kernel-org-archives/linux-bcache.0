@@ -1,134 +1,86 @@
-From: FERNANDO FREDIANI <fernando.frediani@upx.com>
+From: Kai Krakow <hurikhan77@gmail.com>
 Subject: Re: SSD usage for bcache - Read and Writeback
-Date: Thu, 14 Sep 2017 12:14:37 -0300
-Message-ID: <CAD7b65+2poC-gr6F6Z5EoNG3hvyxE=ugTsuKmUPTtMBbgfGr-A@mail.gmail.com>
+Date: Thu, 14 Sep 2017 17:31:12 +0200
+Message-ID: <20170914173112.376c03ef@jupiter.sol.kaishome.de>
 References: <CAD7b65Ly7rEVyShjD=1NBsYBMiyQGXuzKv0h2Ys5KN=ghTJcaA@mail.gmail.com>
- <51852c79-bee0-19c3-92d8-6044f3e3e2a7@coly.li> <4a5bb8a9-3de9-bae9-abea-cfa014c87084@upx.com>
- <ad61e116-e69b-d62e-b4de-f20198d7a3fe@coly.li> <CAD7b65LwYmNA1=oSrYGcYkG3HtjCm7wK2BT+rc97bnKSW=Etiw@mail.gmail.com>
- <55d3cd06-e239-9374-be38-32514fd9089c@coly.li>
+        <51852c79-bee0-19c3-92d8-6044f3e3e2a7@coly.li>
+        <4a5bb8a9-3de9-bae9-abea-cfa014c87084@upx.com>
+        <ad61e116-e69b-d62e-b4de-f20198d7a3fe@coly.li>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wr0-f180.google.com ([209.85.128.180]:53101 "EHLO
-        mail-wr0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751473AbdINPOj (ORCPT
+Received: from [195.159.176.226] ([195.159.176.226]:33467 "EHLO
+        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+        with ESMTP id S1751131AbdINPbW (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 14 Sep 2017 11:14:39 -0400
-Received: by mail-wr0-f180.google.com with SMTP id c23so609479wrg.9
-        for <linux-bcache@vger.kernel.org>; Thu, 14 Sep 2017 08:14:39 -0700 (PDT)
-In-Reply-To: <55d3cd06-e239-9374-be38-32514fd9089c@coly.li>
+        Thu, 14 Sep 2017 11:31:22 -0400
+Received: from list by blaine.gmane.org with local (Exim 4.84_2)
+        (envelope-from <glbd-linux-bcache@m.gmane.org>)
+        id 1dsW6i-00077X-GV
+        for linux-bcache@vger.kernel.org; Thu, 14 Sep 2017 17:31:12 +0200
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <i@coly.li>, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-Hello Coly
+Am Thu, 14 Sep 2017 16:45:25 +0200
+schrieb Coly Li <i@coly.li>:
 
-I didn't start this thread to provide numbers but to ask people view
-on the concept and compare how flash technology works compared to how
-it used to be a few years ago and I used ZFS case as an example
-because people used to recommend to have separate devices until
-sometime ago. My aim is to understand why this is not the
-recommendation for bcache, if it already took in consideration newer
-technology or if has anything else different on the way it deals with
-write and read cache.
+> On 2017/9/14 下午3:10, FERNANDO FREDIANI wrote:
+> > Hello Coly.
+> > 
+> > If the users reads a piece of data that is just writen to SSD
+> > (unlikely) it should first and in any condition be commited to the
+> > permanent storage and then read from there and cached in another
+> > area of the SSD. Writaback cache is very volatile and lasts only a
+> > few seconds while the data is not yet committed to permanent
+> > storage.
+> > 
+> > In fact multiple device suport is not implemented yet, that's why I
+> > am asking it and comparing with other well technology as ZFS.
+> >   
+> 
+> Hi Fernando,
+> 
+> Do you have some performance number to compare combined and separated
+> configurations on ZFS ? If the performance improvement is not from
+> adding one more SSD device, I don't why dedicate read/write SSDs may
+> help for performance. In my understanding, if any of the SSD has
+> spared throughput capability for read or write, mixed them together
+> on both SSDs may have better performance number.
 
+I could imagine that one way want to use a fast, more expensive disk as
+read cache, while using a smaller SLC SSD as write cache for better
+longevity and reliability. Because: When you write cache SSD breaks,
+things go really bad. If you read cache breaks: No problem, it just
+slows down.
+
+So, in conclusion: The recommendation may not be because of
+performance... Better performance may just be a (small) side effect.
+
+
+> > 
+> > On 14/09/2017 04:58, Coly Li wrote:  
+> >> On 2017/9/11 下午4:04, FERNANDO FREDIANI wrote:  
+>  [...]  
+> >> Hi Fernando,
+> >>
+> >> If there is any real performance number, it will be much easier to
+> >> response this idea. What confuses me is, if user reads a data block
+> >> which is just written to SSD, what is the benefit for the
+> >> separated SSDs.
+> >>
+> >> Yes I agree with you that some times a single SSD as cache device
+> >> is inefficient. Multiple cache device on bcache is a
+> >> not-implemented yet feature as I know.
+> >>
+> >> Thanks.  
+> 
+
+
+
+-- 
 Regards,
-Fernando
+Kai
 
-
-On 14/09/2017 12:04, Coly Li wrote:
-
-On 2017/9/14 =E4=B8=8B=E5=8D=884:54, FERNANDO FREDIANI wrote:
-
-It depends on every scenario. SSDs generally have a max throughput and
-a max IOPS for read and write, but when you mix them it becomes more
-difficult to measure. A typical SSDs caching device used for both
-tasks will have the normal writing for doing the writeback caching,
-have writes coming from the permanent storage to cache content more
-popular (so to populate the cache) and will have reads to serve
-content already cache to the user who requested.
-
-Another point perhaps even more important than that is how the SSD in
-question will stand for wearing. Now a days SSDs are much more
-durable, specially those with higher DWPD. I read recently that newer
-memory technology will do well compared to previous ones.
-
-Hi Fernando,
-
-It will be great if you may provide some performance numbers on ZFS (I
-assume it should be ZFS since you mentioned it). I can understand the
-concept, but real performance number should be more attractive for this
-discussion :-)
-
-Thanks in advance.
-
-Coly Li
-
-On 14/09/2017 11:45, Coly Li wrote:
-
-On 2017/9/14 =E4=B8=8B=E5=8D=883:10, FERNANDO FREDIANI wrote:
-
-Hello Coly.
-
-If the users reads a piece of data that is just writen to SSD (unlikely)
-it should first and in any condition be commited to the permanent
-storage and then read from there and cached in another area of the SSD.
-Writaback cache is very volatile and lasts only a few seconds while the
-data is not yet committed to permanent storage.
-
-In fact multiple device suport is not implemented yet, that's why I am
-asking it and comparing with other well technology as ZFS.
-
-Hi Fernando,
-
-Do you have some performance number to compare combined and separated
-configurations on ZFS ? If the performance improvement is not from
-adding one more SSD device, I don't why dedicate read/write SSDs may
-help for performance. In my understanding, if any of the SSD has spared
-throughput capability for read or write, mixed them together on both
-SSDs may have better performance number.
-
-
-Coly Li
-
-
-On 14/09/2017 04:58, Coly Li wrote:
-
-On 2017/9/11 =E4=B8=8B=E5=8D=884:04, FERNANDO FREDIANI wrote:
-
-Hi folks
-
-In Bcache people normally use a single SSD for both Read and Write
-cache. This seems to work pretty well, at least for the load we have
-been using here.
-
-However in other environments, specially on ZFS people tend to suggest
-to use dedicated SSDs for Write (ZIL) and for Read (L2ARC). Some say
-that performance will be much better in this way and mainly say they
-have different wearing levels.
-The issue now a days is that SSDs for Write Cache (or Writeback) don't
-need to have much space available (8GB normally is more than enough),
-just enough for the time until data is committed to the pool (or
-slower disks) so it is hard to find a suitable SSD to dedicate to this
-propose only without overprovisioning that part.
-On the top of that newer SSDs have changed a lot in recent times using
-different types of memory technologies which tend to be much durable.
-
-Given that I personally see that using a single SSD for both Write and
-Read cache, in any scenarios doesn't impose any significant loss to
-the storage, given you use new technology SSDs and that you will
-hardly saturate it most of the time. Does anyone agree or disagree
-with that ?
-
-Hi Fernando,
-
-If there is any real performance number, it will be much easier to
-response this idea. What confuses me is, if user reads a data block
-which is just written to SSD, what is the benefit for the separated SSDs.
-
-Yes I agree with you that some times a single SSD as cache device is
-inefficient. Multiple cache device on bcache is a not-implemented yet
-feature as I know.
-
-Thanks.
+Replies to list-only preferred.
