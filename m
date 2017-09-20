@@ -1,77 +1,50 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH] bcache: smooth writeback rate control
-Date: Wed, 20 Sep 2017 00:15:17 -0700
-Message-ID: <20170920071517.30505-1-mlyle@lyle.org>
+Subject: Writeback efficiency -- proposal
+Date: Wed, 20 Sep 2017 01:01:47 -0700
+Message-ID: <CAJ+L6qe6=KTXFhss5rfa7g=UCMhp6wwCQ+qL_YZDJq+vWn=PNA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f65.google.com ([74.125.83.65]:32790 "EHLO
-        mail-pg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751000AbdITHPd (ORCPT
+Received: from mail-qt0-f175.google.com ([209.85.216.175]:51715 "EHLO
+        mail-qt0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751554AbdITIBs (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 20 Sep 2017 03:15:33 -0400
-Received: by mail-pg0-f65.google.com with SMTP id i130so1197276pgc.0
-        for <linux-bcache@vger.kernel.org>; Wed, 20 Sep 2017 00:15:33 -0700 (PDT)
+        Wed, 20 Sep 2017 04:01:48 -0400
+Received: by mail-qt0-f175.google.com with SMTP id q4so1979813qtq.8
+        for <linux-bcache@vger.kernel.org>; Wed, 20 Sep 2017 01:01:48 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: kent.overstreet@gmail.com, Michael Lyle <mlyle@lyle.org>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>
 
-This works in conjunction with the new PI controller.  Currently, in
-real-world workloads, the rate controller attempts to write back 1
-sector per second.  In practice, these minimum-rate writebacks are
-between 4k and 60k in test scenarios, since bcache aggregates and
-attempts to do contiguous writes and because filesystems on top of
-bcachefs typically write 4k or more.
+Hey everyone---
 
-Previously, bcache used to guarantee to write at least once per second.
-This means that the actual writeback rate would exceed the configured
-amount by a factor of 8-120 or more.
+Right now writeback is pretty inefficient.  It lowers the seek
+workload some on the disk by doing things in ascending-LBA order, but
+there is no prioritization of writing back larger blocks (that is,
+doing larger sequential IOs).
 
-This patch adjusts to be willing to sleep up to 2.5 seconds, and to
-target writing 4k/second.  On the smallest writes, it will sleep 1
-second like before, but many times it will sleep longer and load the
-backing device less.  This keeps the loading on the cache and backing
-device related to writeback more consistent when writing back at low
-rates.
+At the same time, there is no on-disk index that makes it easy to find
+larger sequential pieces.  However, I think it's possible to take a
+heuristic approach to make this better.
 
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
----
- drivers/md/bcache/util.c      | 10 ++++++++--
- drivers/md/bcache/writeback.c |  2 +-
- 2 files changed, 9 insertions(+), 3 deletions(-)
+Proposal--- When gathering dirty chunks--- I would like to track the
+median size written back in the last batch of writebacks, and then
+skip the first 500 things smaller than the median size.  This still
+has the effect of putting all of our writes in LBA order, and has a
+relatively minimal cost (having to scan through 1000 dirty things
+instead of 500 in the worst case).  Upon reaching the end of the btree
+we can revert to accepting all blocks.
 
-diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-index 176d3c2ef5f5..4dbe37e82877 100644
---- a/drivers/md/bcache/util.c
-+++ b/drivers/md/bcache/util.c
-@@ -232,8 +232,14 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
- 
- 	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
- 
--	if (time_before64(now + NSEC_PER_SEC, d->next))
--		d->next = now + NSEC_PER_SEC;
-+	/* Bound the time.  Don't let us fall further than 2 seconds behind
-+	 * (this prevents unnecessary backlog that would make it impossible
-+	 * to catch up).  If we're ahead of the desired writeback rate,
-+	 * don't let us sleep more than 2.5 seconds (so we can notice/respond
-+	 * if the control system tells us to speed up!).
-+	 */
-+	if (time_before64(now + NSEC_PER_SEC * 5 / 2, d->next))
-+		d->next = now + NSEC_PER_SEC * 5 / 2;
- 
- 	if (time_after64(now - NSEC_PER_SEC * 2, d->next))
- 		d->next = now - NSEC_PER_SEC * 2;
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index e2cfa83dba19..60535515acd3 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -511,7 +511,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 	dc->writeback_percent		= 10;
- 	dc->writeback_delay		= 30;
- 	dc->writeback_rate.rate		= 1024;
--	dc->writeback_rate_minimum	= 5;
-+	dc->writeback_rate_minimum	= 8;
- 
- 	dc->writeback_rate_update_seconds = 5;
- 	dc->writeback_rate_p_term_inverse = 40;
--- 
-2.11.0
+Taking a trivial case-- If half of the things to write back are 4k,
+and half are 8k, this will make us favor / almost entirely do
+writeback of 8k chunks, and will demand 25% fewer seeks to do an
+equivalent amount of writeback, in exchange for a small amount of
+additional CPU.  (To an extent even this will be mitigated, because we
+won't have to scan to find dirty blocks as often).
+
+Does this sound reasonable?
+
+Thanks!
+
+Mike
