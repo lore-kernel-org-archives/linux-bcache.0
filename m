@@ -1,104 +1,57 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCHv2] bcache: option for allow stale data on read failure
-Date: Wed, 20 Sep 2017 12:28:29 +0200
-Message-ID: <db997d70-9d0d-fd27-1c7c-7f602499aea4@suse.de>
-References: <20170919222433.24336-1-colyli@suse.de>
- <CAJ+L6qeLMsCAVsdNkertg2BzwVHcq4ZZ==E8gojo9O2cutWrVQ@mail.gmail.com>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: Writeback efficiency -- proposal
+Date: Wed, 20 Sep 2017 16:06:12 +0200
+Message-ID: <20170920140612.mcdn6roycndrcpml@kmo-pixel>
+References: <CAJ+L6qe6=KTXFhss5rfa7g=UCMhp6wwCQ+qL_YZDJq+vWn=PNA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <CAJ+L6qeLMsCAVsdNkertg2BzwVHcq4ZZ==E8gojo9O2cutWrVQ@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Nix <nix@esperi.org.uk>, Kai Krakow <hurikhan77@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-wm0-f48.google.com ([74.125.82.48]:47735 "EHLO
+        mail-wm0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751408AbdITOGS (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 20 Sep 2017 10:06:18 -0400
+Received: by mail-wm0-f48.google.com with SMTP id 13so7569091wmq.2
+        for <linux-bcache@vger.kernel.org>; Wed, 20 Sep 2017 07:06:18 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <CAJ+L6qe6=KTXFhss5rfa7g=UCMhp6wwCQ+qL_YZDJq+vWn=PNA@mail.gmail.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org
 
-On 2017/9/20 上午8:59, Michael Lyle wrote:
-> Coly--
+On Wed, Sep 20, 2017 at 01:01:47AM -0700, Michael Lyle wrote:
+> Hey everyone---
 > 
-> It's an interesting changeset.
+> Right now writeback is pretty inefficient.  It lowers the seek
+> workload some on the disk by doing things in ascending-LBA order, but
+> there is no prioritization of writing back larger blocks (that is,
+> doing larger sequential IOs).
+> 
+> At the same time, there is no on-disk index that makes it easy to find
+> larger sequential pieces.  However, I think it's possible to take a
+> heuristic approach to make this better.
+> 
+> Proposal--- When gathering dirty chunks--- I would like to track the
+> median size written back in the last batch of writebacks, and then
+> skip the first 500 things smaller than the median size.  This still
+> has the effect of putting all of our writes in LBA order, and has a
+> relatively minimal cost (having to scan through 1000 dirty things
+> instead of 500 in the worst case).  Upon reaching the end of the btree
+> we can revert to accepting all blocks.
+> 
+> Taking a trivial case-- If half of the things to write back are 4k,
+> and half are 8k, this will make us favor / almost entirely do
+> writeback of 8k chunks, and will demand 25% fewer seeks to do an
+> equivalent amount of writeback, in exchange for a small amount of
+> additional CPU.  (To an extent even this will be mitigated, because we
+> won't have to scan to find dirty blocks as often).
+> 
+> Does this sound reasonable?
 
-Hi Mike,
+The main thing to be careful about is anything you do that increases scanning
+for dirty data has the potential to cause problems by starving foreground writes
+via the writeback lock.
 
-Yes it's interesting :-) It fixes a silent database data corruption in
-our product kernel. The most dangerous point is, it happens silent even
-in-data checksum is used, this issue is detected by out-of-data checksum.
-
-> I am not positive if it will work in practice-- the most likely
-> objects to be cached are filesystem metadata.  Won't most filesystems
-> fall apart if some of their data structures revert back to an earlier
-> point of time?
-
-For database workload, most of data cached on SSD is data blocks of
-database file which are replied from binlog (for example mysql). File
-system won't complain for such situation, and an early version means all
-transactions information since last update are all lost, in *silence*.
-
-Even the read request failed on file system meta data, because finally a
-stale data will be provided to kernel file system code, it is probably
-file system won't complain as well. Because,
-- file system reports error when I/O failed, if a stale data from
-recovery provided to file system, file system just uses the stale data
-until a worse failure detected by file system code.
-- if file system use a metadata checksum, and the checksum is inside
-metadata block (it is quite common), because the stale data is also
-checksum consistent, file system won't report error as well.
-
-So the data corruption happens in application level, even file system
-kernel code still thinks everything is consistent on disk ....
-
-Thanks.
-
-Coly Li
-
-
-> On Tue, Sep 19, 2017 at 3:24 PM, Coly Li <colyli@suse.de> wrote:
->> When bcache does read I/Os, for example in writeback or writethrough mode,
->> if a read request on cache device is failed, bcache will try to recovery
->> the request by reading from cached device. If the data on cached device is
->> not synced with cache device, then requester will get a stale data.
->>
->> For critical storage system like database, providing stale data from
->> recovery may result an application level data corruption, which is
->> unacceptible. But for some other situation like multi-media stream cache,
->> continuous service may be more important and it is acceptible to fetch
->> a chunk of stale data.
->>
->> This patch tries to solve the above conflict by adding a sysfs option
->>         /sys/block/bcache<idx>/bcache/allow_stale_data_on_failure
->> which is defaultly cleared (to 0) as disabled. Now people can make choices
->> for different situations.
->>
->> With this patch, for a failed read request in writeback or writethrough
->> mode, recovery a recoverable read request only happens in one of the
->> following conditions,
->>  - dc->has_dirty is zero. It means all data on cache device is synced to
->>    cached device, the recoveried data is up-to-date.
->>  - dc->has_dirty is non-zero, and dc->allow_stale_data_on_failure is set
->>    to 1. It means there is dirty data not synced to cached device yet, but
->>    option allow_stale_data_on_failure is set, receiving stale data is
->>    explicitly acceptible for requester.
->>
->> For other cache modes in bcache, read request will never hit
->> cached_dev_read_error(), they don't need this patch.
->>
->> Please note, because cache mode can be switched arbitrarily in run time, a
->> writethrough mode might be switched from a writeback mode. Therefore
->> checking dc->has_data in writethrough mode still makes sense.
->>
->> Changelog:
->> v2: rename sysfs entry from allow_stale_data_on_failure  to
->>     allow_stale_data_on_failure, and fix the confusing commit log.
->> v1: initial patch posted.
->>
->> Signed-off-by: Coly Li <colyli@suse.de>
->> Reported-by: Arne Wolf <awolf@lenovo.com>
->> Cc: Nix <nix@esperi.org.uk>
->> Cc: Kai Krakow <hurikhan77@gmail.com>
->> Cc: Eric Wheeler <bcache@lists.ewheeler.net>
->> Cc: Junhui Tang <tang.junhui@zte.com.cn>
->> Cc: stable@vger.kernel.org
-
-[snip]
+If you or others are going to be working on this code, trying to improve that
+locking would probably be very worthwhile...
