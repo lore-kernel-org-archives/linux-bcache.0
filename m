@@ -1,70 +1,115 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCHv2] bcache: option for allow stale data on read failure
-Date: Wed, 20 Sep 2017 21:46:54 +0200
-Message-ID: <09a40334-1749-1cbf-63ae-716a25ec96b3@suse.de>
-References: <20170919222433.24336-1-colyli@suse.de>
- <CAJ+L6qeLMsCAVsdNkertg2BzwVHcq4ZZ==E8gojo9O2cutWrVQ@mail.gmail.com>
- <db997d70-9d0d-fd27-1c7c-7f602499aea4@suse.de>
- <CAJ+L6qc_U_37Jn=wzcXoLU6dHWHQyRJGTACDtmctAn1Gg08keA@mail.gmail.com>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH] bcache: smooth writeback rate control
+Date: Wed, 20 Sep 2017 22:24:31 +0200
+Message-ID: <1137d210-2fc8-5c23-1498-036aee0c19f2@coly.li>
+References: <20170920071517.30505-1-mlyle@lyle.org>
+ <8a4425d9-2b86-e7d0-f332-3a7ad6b3f706@coly.li>
+ <20170920145038.aq2ogavqufuackgd@kmo-pixel>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <CAJ+L6qc_U_37Jn=wzcXoLU6dHWHQyRJGTACDtmctAn1Gg08keA@mail.gmail.com>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from server.coly.li ([162.144.45.48]:32828 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751529AbdITUYj (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 20 Sep 2017 16:24:39 -0400
+In-Reply-To: <20170920145038.aq2ogavqufuackgd@kmo-pixel>
 Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Nix <nix@esperi.org.uk>, Kai Krakow <hurikhan77@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org
 
-On 2017/9/20 下午5:40, Michael Lyle wrote:
-> On Wed, Sep 20, 2017 at 3:28 AM, Coly Li <colyli@suse.de> wrote:
->> Even the read request failed on file system meta data, because finally a
->> stale data will be provided to kernel file system code, it is probably
->> file system won't complain as well.
+On 2017/9/20 下午4:50, Kent Overstreet wrote:
+> On Wed, Sep 20, 2017 at 12:13:50PM +0200, Coly Li wrote:
+>> On 2017/9/20 上午9:15, Michael Lyle wrote:
+>>> This works in conjunction with the new PI controller.  Currently, in
+>>> real-world workloads, the rate controller attempts to write back 1
+>>> sector per second.  In practice, these minimum-rate writebacks are
+>>> between 4k and 60k in test scenarios, since bcache aggregates and
+>>> attempts to do contiguous writes and because filesystems on top of
+>>> bcachefs typically write 4k or more.
+>>>
+>>> Previously, bcache used to guarantee to write at least once per second.
+>>> This means that the actual writeback rate would exceed the configured
+>>> amount by a factor of 8-120 or more.
+>>>
+>>
+>> There is no guarantee, bcache just tries to writeback 1 key per second
+>> when it reaches the minimum writeback rate. And it try to calculate a
+>> delay time to make the average writeback throughput is around minimum
+>> writeback rate in a longer time period.
+>>
+>> So my question is, do you observe 8-120 times more real writeback
+>> throughput in period of every 10 seconds ?
+>>
+>>
+>>> This patch adjusts to be willing to sleep up to 2.5 seconds, and to
+>>> target writing 4k/second.  On the smallest writes, it will sleep 1
+>>> second like before, but many times it will sleep longer and load the
+>>> backing device less.  This keeps the loading on the cache and backing
+>>> device related to writeback more consistent when writing back at low
+>>> rates.
+>>>
+>>
+>> Again, I'd like to see exact data here, because this patch is about
+>> performance tuning.
 > 
-> The scary case is when filesystem data that points to other filesystem
-> data is cached.  E.g. the data structures representing what space is
-> free on disk, or a directory, or a database btree.  Some examples:
+> Well, it's not just performance tuning. My PD controller code was always, to be
+> honest, crap; I'd been hoping someone who actually knew what they were doing on
+> this subject would rewrite that code for years, and Michael actually does know
+> what he's doing with PID controllers.
 > 
-> Free space handling-- if a big file /foo is created, and the active
-> free-space datastructures are in cache (and this is likely, because
-> actively written places can have their writeback-writes
-> cancelled/deferred indefinitely)-- and then later the caching disk
-> fails, an old version of this will be read from disk.  Later, an
-> effort to write a file /bar allocates the space used by /foo, and
-> writes over it.
-> 
-> Directory entity handling-- if /var/spool/foo is an active directory
-> (associated data structures in cache), and has the directory
-> /var/spool/foo/bar under it, and then /bar is removed... the backing
-> disk will still have a reference to bar.  If the space for bar is then
-> used for something else, the kernel may end up reading something very
-> different from what it expects for a directory later after a cache
-> device failure.
-> 
-> Btrees, etc-- the same thing.  If a tree shrinks, old tree entitys can
-> end up pointing to other kinds of data.
-> 
-> I think this change is harmful-- it is not a good idea to
-> automatically, at runtime, decide to start returning data that
-> violates the guarantees a block device is supposed to obey about
-> ordering and persistence.
 
-Hi Mike,
+Hi Kent,
 
-I totally agree with you. It is my fault for the misleading commit log,
-if you read it again you may find we stand on same side, this is what I
-feel from your response :-)
+The whole P.I.D controller stuff is about performance tuning, isn't it ?
 
-Current bcache code does provide stale data from read failure recovery.
-In v1 patch discussion people wanted to keep this behavior then in v2
-version I add an option to permit this "harmful" behavior, and disable
-this behavior by default.
+Before we make a change relative to performance, we should know the
+exact benchmark result for real workload, not emulator. This is the
+reason why I did the latency distribution test myself. And good to know
+there is no latency regression and writeback rate decreases to minimum
+rate smoothly when dirty data gets close to dirty target.
 
-And good to know Kent does not like an option, then we can disable this
-"harmful" behavior by default.
+It is not difficult to write a P.I.D controller code, it is difficult to
+implement it in a better way. From my test I feel Mike's P.I controller
+is good, but we need one more people to understand it. This is why I ask
+many questions, and some of the questions are quite basic. If we have
+one more people understand why this P.I controller is better, there will
+be more people come to understand it.
+
+> That said, your point that this is a behavioural change as well is a valid one.
+> It might be worth trying to tune the new controller to mimic the behaviour of
+> the old code as much as possible, and _then_ separately possibly change the
+> default tuning. However, due to the crappyness of the old code and the
+> difficulty in understanding what it's actually going to do in any given
+> situation that might not be practical or worthwhile.
+> 
+
+My point is, we should have exact real data to approve this change makes
+things better. Better means a problem gets solved. For this single
+patch, I see description on how the change is made, I don't see what
+exact problem to be solved.
+
+
+> Anyways, I wouldn't look at this patch so much as performance tuning (and I
+> wouldn't aim for changing behavior any more than is necessary in this patch); I
+> would view it as a path towards getting something more understandable that
+> people can actually tune and understand wtf it's going to do.
+> 
+
+The P.I controller patch makes sense. But for this single patch, change
+minimum writeback rate from 1 to 8, and next delay timeout from 1 to 2.5
+seconds, I don't see this modification is path towards getting things
+more understandable, before we see real data to approve it.
+
+This is why I said: again, I'd like to see exact data here. Let me
+discuss with Micheal for more details.
+
+Anyway, my first rule is, if you add Reviewed-by or Acked-by to a patch,
+I just shut up immediately :-)
 
 Thanks.
 
-Coly
+-- 
+Coly Li
