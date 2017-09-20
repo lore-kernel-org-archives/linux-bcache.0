@@ -1,41 +1,59 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: Writeback efficiency -- proposal
-Date: Wed, 20 Sep 2017 08:42:53 -0700
-Message-ID: <CAJ+L6qfusuW-S7zofY46Ed1Yz9iRBExA-0ZceXBhd39cosudrg@mail.gmail.com>
-References: <CAJ+L6qe6=KTXFhss5rfa7g=UCMhp6wwCQ+qL_YZDJq+vWn=PNA@mail.gmail.com>
- <20170920140612.mcdn6roycndrcpml@kmo-pixel>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: [PATCHv2] bcache: option for allow stale data on read failure
+Date: Wed, 20 Sep 2017 18:07:35 +0200
+Message-ID: <20170920160735.jp4riq7x3qc472px@kmo-pixel>
+References: <20170919222433.24336-1-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qk0-f179.google.com ([209.85.220.179]:49323 "EHLO
-        mail-qk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751551AbdITPmz (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 20 Sep 2017 11:42:55 -0400
-Received: by mail-qk0-f179.google.com with SMTP id u67so3108862qkg.6
-        for <linux-bcache@vger.kernel.org>; Wed, 20 Sep 2017 08:42:54 -0700 (PDT)
-In-Reply-To: <20170920140612.mcdn6roycndrcpml@kmo-pixel>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <stable-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <20170919222433.24336-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Nix <nix@esperi.org.uk>, Kai Krakow <hurikhan77@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org
 
-On Wed, Sep 20, 2017 at 7:06 AM, Kent Overstreet
-<kent.overstreet@gmail.com> wrote:
-> The main thing to be careful about is anything you do that increases scanning
-> for dirty data has the potential to cause problems by starving foreground writes
-> via the writeback lock.
->
-> If you or others are going to be working on this code, trying to improve that
-> locking would probably be very worthwhile...
+On Wed, Sep 20, 2017 at 06:24:33AM +0800, Coly Li wrote:
+> When bcache does read I/Os, for example in writeback or writethrough mode,
+> if a read request on cache device is failed, bcache will try to recovery
+> the request by reading from cached device. If the data on cached device is
+> not synced with cache device, then requester will get a stale data.
+> 
+> For critical storage system like database, providing stale data from
+> recovery may result an application level data corruption, which is
+> unacceptible. But for some other situation like multi-media stream cache,
+> continuous service may be more important and it is acceptible to fetch
+> a chunk of stale data.
+> 
+> This patch tries to solve the above conflict by adding a sysfs option
+> 	/sys/block/bcache<idx>/bcache/allow_stale_data_on_failure
+> which is defaultly cleared (to 0) as disabled. Now people can make choices
+> for different situations.
 
-Kent--
+IMO this is just a bug, I'd rather not have an option to keep the buggy
+behaviour. How about this patch:
 
-This is a very good point.  Hopefully the approach I've got where at
-most the work is doubled (and happens less frequently) isn't too bad
-on this scale.  I will look at making that locking more granular, too,
-though. :D
+commit 2746f9c1f962288d8c5d7dabe698bf7b3fddd405
+Author: Kent Overstreet <kent.overstreet@gmail.com>
+Date:   Wed Sep 20 18:06:37 2017 +0200
 
-Thanks,
+    bcache: Don't recover from IO errors when reading dirty data
+    
+    Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
 
-Mike
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 382397772a..c2d57ef953 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -532,8 +532,10 @@ static int cache_lookup_fn(struct btree_op *op, struct btree *b, struct bkey *k)
+ 
+ 	PTR_BUCKET(b->c, k, ptr)->prio = INITIAL_PRIO;
+ 
+-	if (KEY_DIRTY(k))
++	if (KEY_DIRTY(k)) {
+ 		s->read_dirty_data = true;
++		s->recoverable = false;
++	}
+ 
+ 	n = bio_next_split(bio, min_t(uint64_t, INT_MAX,
+ 				      KEY_OFFSET(k) - bio->bi_iter.bi_sector),
