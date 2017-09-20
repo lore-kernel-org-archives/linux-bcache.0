@@ -1,74 +1,103 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
+From: Michael Lyle <mlyle@lyle.org>
 Subject: Re: [PATCH] bcache: smooth writeback rate control
-Date: Wed, 20 Sep 2017 16:50:38 +0200
-Message-ID: <20170920145038.aq2ogavqufuackgd@kmo-pixel>
-References: <20170920071517.30505-1-mlyle@lyle.org>
- <8a4425d9-2b86-e7d0-f332-3a7ad6b3f706@coly.li>
+Date: Wed, 20 Sep 2017 08:28:04 -0700
+Message-ID: <CAJ+L6qdoZKtnrVZSjC_HC00sHs=vCLa-TrJ6qEqjjaxn8BUjXg@mail.gmail.com>
+References: <20170920071517.30505-1-mlyle@lyle.org> <8a4425d9-2b86-e7d0-f332-3a7ad6b3f706@coly.li>
+ <CAJ+L6qcZVE0hkiN0xe00fFt4ndmha+uOi9x4UpO-7DRD=vh_mQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wm0-f42.google.com ([74.125.82.42]:45609 "EHLO
-        mail-wm0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751570AbdITOup (ORCPT
+Received: from mail-qt0-f180.google.com ([209.85.216.180]:55107 "EHLO
+        mail-qt0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751551AbdITP2G (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 20 Sep 2017 10:50:45 -0400
-Received: by mail-wm0-f42.google.com with SMTP id g206so7988680wme.0
-        for <linux-bcache@vger.kernel.org>; Wed, 20 Sep 2017 07:50:44 -0700 (PDT)
-Content-Disposition: inline
-In-Reply-To: <8a4425d9-2b86-e7d0-f332-3a7ad6b3f706@coly.li>
+        Wed, 20 Sep 2017 11:28:06 -0400
+Received: by mail-qt0-f180.google.com with SMTP id i13so3133038qtc.11
+        for <linux-bcache@vger.kernel.org>; Wed, 20 Sep 2017 08:28:05 -0700 (PDT)
+In-Reply-To: <CAJ+L6qcZVE0hkiN0xe00fFt4ndmha+uOi9x4UpO-7DRD=vh_mQ@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: Coly Li <i@coly.li>
-Cc: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
 
-On Wed, Sep 20, 2017 at 12:13:50PM +0200, Coly Li wrote:
-> On 2017/9/20 上午9:15, Michael Lyle wrote:
-> > This works in conjunction with the new PI controller.  Currently, in
-> > real-world workloads, the rate controller attempts to write back 1
-> > sector per second.  In practice, these minimum-rate writebacks are
-> > between 4k and 60k in test scenarios, since bcache aggregates and
-> > attempts to do contiguous writes and because filesystems on top of
-> > bcachefs typically write 4k or more.
-> > 
-> > Previously, bcache used to guarantee to write at least once per second.
-> > This means that the actual writeback rate would exceed the configured
-> > amount by a factor of 8-120 or more.
-> > 
-> 
-> There is no guarantee, bcache just tries to writeback 1 key per second
-> when it reaches the minimum writeback rate. And it try to calculate a
-> delay time to make the average writeback throughput is around minimum
-> writeback rate in a longer time period.
-> 
+On Wed, Sep 20, 2017 at 3:13 AM Coly Li <i@coly.li> wrote:
+>
 > So my question is, do you observe 8-120 times more real writeback
 > throughput in period of every 10 seconds ?
-> 
-> 
-> > This patch adjusts to be willing to sleep up to 2.5 seconds, and to
-> > target writing 4k/second.  On the smallest writes, it will sleep 1
-> > second like before, but many times it will sleep longer and load the
-> > backing device less.  This keeps the loading on the cache and backing
-> > device related to writeback more consistent when writing back at low
-> > rates.
-> > 
-> 
+
+ In real world workloads I end up with no keys of length less than
+4096.  Do you?
+
+I would like the minimum writeback rate to be a realistic value that
+may actually be attained.  Right now, in practice, bcache writes
+**much faster**.  Previously, you were concerned that setting the
+target for number of writes would result in increased backing disk
+workload--- the new values are based on measurement that in all cases
+this code writes back slower and loads the disk less than the old
+code, so it should mitigate your concern.
+
 > Again, I'd like to see exact data here, because this patch is about
 > performance tuning.
 
-Well, it's not just performance tuning. My PD controller code was always, to be
-honest, crap; I'd been hoping someone who actually knew what they were doing on
-this subject would rewrite that code for years, and Michael actually does know
-what he's doing with PID controllers.
+OK.  Run iostat 1 on any workload.  See if you ever see a write rate
+of less than 4k/sec to the backing disk.  I've run a variety of
+workloads and never have.  I can send you very long iostat 1 logs if
+it would help ;)
 
-That said, your point that this is a behavioural change as well is a valid one.
-It might be worth trying to tune the new controller to mimic the behaviour of
-the old code as much as possible, and _then_ separately possibly change the
-default tuning. However, due to the crappyness of the old code and the
-difficulty in understanding what it's actually going to do in any given
-situation that might not be practical or worthwhile.
+When the system is writing much more than the control system is asking
+for, the control system is effectively disengaged.  This patch
+increases the range of control authority by allowing the minimal
+interval to be 2.5x slower.
 
-Anyways, I wouldn't look at this patch so much as performance tuning (and I
-wouldn't aim for changing behavior any more than is necessary in this patch); I
-would view it as a path towards getting something more understandable that
-people can actually tune and understand wtf it's going to do.
+> I just see the minimum rate increases from 1 to 8 sectors, and minimum
+> delay increase from 1 to 2.5 seconds. I don't see an exact problem this
+> patch wants to solve. Is it to write back dirty data faster, or save
+> more power from cached device ?
+
+So one thing that's really bad that's happening currently is that when
+the disk is idle, is that the disk is repeatedly undergoing
+load/unload cycles (very long seeks).  The disks I have-- Seagate
+ST6000VN0041 Ironwolf NAS 6TB-- seek off the active portion of the
+platter when idle for 750ms.  So the disks are making a very loud
+clunk at one second intervals during idle writeback, which is not good
+for the drives.  When writing back faster, they are quieter.  This
+will at least do it 2.5x less often.
+
+In a subsequent patch, there's additional things I'd like to do-- like
+be willing to do no write after a wakeup if we are very far ahead.
+That is, to allow the effective value to be much larger than 2.5
+seconds.  This would potentially allow spindown on laptops, etc.  But
+this change is still worthwhile on its own.
+
+Another thing that would be helpful would be to issue more than 1
+write at a time, so that queue depth doesn't always equal 1.  Queue
+depth=4 has about 40-50% more throughput--- that is, it completes the
+4 IOPs in about 2.5x the time of one-- when writes are clustered to
+the same region of the disk/short-stroked.  However this has a
+potential cost in latency, so it needs to be carefully traded off.
+
+> [snipped some]
+>
+> I post a proposal patch to linux-bcache@vger.kernel.org, (see
+> https://www.spinics.net/lists/linux-bcache/msg04837.html), which sets
+> the writeback rate to maximum value if there is no front end I/O request
+> for a while (normally it might means more idle time in future). Then the
+> dirty data on cache can be cleaned up ASAP. And if there is frond end
+> request coming, set the writeback rate to minimum value, and let the PD
+> (now it is PI) controller to adjust its value. By this method, if there
+> is no front end I/O, dirty data can be cleaned much faster and hard disk
+> also has much more chance to spin down.
+
+While this could clear out dirty data sooner, I'm not sure this is
+always a good idea.  For intermittent, write-heavy workloads it's
+good, but it substantially increases the chance that occasional random
+reads have to write a long time-- which is usually the opposite from
+what an IO scheduler tries to achieve.
+
+>
+> Thanks.
+>
+> --
+> Coly Li
+
+Mike
