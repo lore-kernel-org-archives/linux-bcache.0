@@ -1,47 +1,101 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing
- llist API
-Date: Tue, 26 Sep 2017 15:46:00 +0800
-Message-ID: <1433ecdd-3394-c65f-9588-4d2a20df25d5@coly.li>
-References: <20170906062602.50497-1-colyli@suse.de>
- <20170906062602.50497-5-colyli@suse.de>
- <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
+From: =?utf-8?B?67CV67OR7LKgL+yEoOyehOyXsOq1rOybkC9TVyBQbGF0Zm9ybSjsl7ApQU9U?=
+         =?utf-8?B?7YyAKGJ5dW5nY2h1bC5wYXJrQGxnZS5jb20p?=
+        <byungchul.park@lge.com>
+Subject: RE: [PATCH] bcache: use llist_for_each_entry_safe() in
+ __closure_wake_up()
+Date: Tue, 26 Sep 2017 17:16:22 +0900
+Message-ID: <F6531D8286A0B34FBC858F176F70796281EEBA@LGEVEXMBHQSVC1.LGE.NET>
+References: <20170926073702.71606-1-colyli@suse.de>
+ <5c1b4842-5e65-373a-6beb-64fecb67468f@coly.li>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:54804 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S965798AbdIZHqK (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 26 Sep 2017 03:46:10 -0400
-In-Reply-To: <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <5c1b4842-5e65-373a-6beb-64fecb67468f@coly.li>
+Content-Language: ko-KR
+Sender: linux-block-owner@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: "kernel-team@lge.com" <kernel-team@lge.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, Coly Li <colyli@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk, Eric Wheeler <bcache@lists.ewheeler.net>, Byungchul Park <byungchul.park@lge.com>, Kent Overstreet <kent.overstreet@gmail.com>
 
-On 2017/9/26 下午12:38, Michael Lyle wrote:
-> I believe this introduces a critical bug.
-> 
-> cl->list is used to link together the llists for both things waiting,
-> and for things that are being woken.
-> 
-> If a closure that is woken decides to wait again, it will corrupt the
-> llist that __closure_wake_up is using.
-> 
-> The previous iteration structure gets the next element of the list
-> before waking and is therefore safe.
-
-
-Hi Michael and Byungchul,
-
-This is my fault to suggest Byungchul to change his correct patch into
-wrong one. But it's good to learn such an implicit race behind bcache
-code. I just post a patch to explain how this race may happen and
-corrupt the reverse list iteration. Could you please to review the fix ?
-
-And thanks to Michael again to catch this bug.
-
--- 
-Coly Li
+PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBDb2x5IExpIFttYWlsdG86aUBj
+b2x5LmxpXQ0KPiBTZW50OiBUdWVzZGF5LCBTZXB0ZW1iZXIgMjYsIDIwMTcgNTowMCBQTQ0KPiBU
+bzogQnl1bmdjaHVsIFBhcmsNCj4gU3ViamVjdDogRndkOiBbUEFUQ0hdIGJjYWNoZTogdXNlIGxs
+aXN0X2Zvcl9lYWNoX2VudHJ5X3NhZmUoKSBpbg0KPiBfX2Nsb3N1cmVfd2FrZV91cCgpDQo+IA0K
+PiBIaSBCeXVuZ2NodWwsDQo+IA0KPiBJIHBvc3RlZCB0aGUgZml4IG9uIGxpbnV4LWJjYWNoZSBt
+YWlsaW5nIGxpc3QsIGNvdWxkIHlvdSBwbGVhc2UgdG8NCj4gcmV2aWV3IG15IGZpeCA/DQo+IA0K
+PiBTb3JyeSBmb3IgdGhlIGNvbmZ1c2lvbiBhbmQgdGhhbmtzIGZvciB5b3VyIHJldmlldyBpbiBh
+ZHZhbmNlLg0KDQpBbGwgcmlnaHQgOikNCg0KUmV2aWV3ZWQtYnk6IEJ5dW5nY2h1bCBQYXJrIDxi
+eXVuZ2NodWwucGFya0BsZ2UuY29tPg0KDQo+IA0KPiBDb2x5IExpDQo+IA0KPiANCj4gLS0tLS0t
+LS0gRm9yd2FyZGVkIE1lc3NhZ2UgLS0tLS0tLS0NCj4gUmV0dXJuLXBhdGg6IDxsaW51eC1iY2Fj
+aGUtb3duZXJAdmdlci5rZXJuZWwub3JnPg0KPiBFbnZlbG9wZS10bzogaUBjb2x5LmxpDQo+IERl
+bGl2ZXJ5LWRhdGU6IFR1ZSwgMjYgU2VwIDIwMTcgMDc6NDU6MjEgKzAwMDANCj4gUmVjZWl2ZWQ6
+IGZyb20gdmdlci5rZXJuZWwub3JnIChbMjA5LjEzMi4xODAuNjddOjU2MTE1KSBieQ0KPiBzZXJ2
+ZXIuY29seS5saSB3aXRoIGVzbXRwIChFeGltIDQuODcpIChlbnZlbG9wZS1mcm9tDQo+IDxsaW51
+eC1iY2FjaGUtb3duZXJAdmdlci5rZXJuZWwub3JnPikgaWQgMWR3a1lULTAwMDJjRS1NaCBmb3Ig
+aUBjb2x5LmxpOw0KPiBUdWUsIDI2IFNlcCAyMDE3IDA3OjQ1OjIxICswMDAwDQo+IFJlY2VpdmVk
+OiAobWFqb3Jkb21vQHZnZXIua2VybmVsLm9yZykgYnkgdmdlci5rZXJuZWwub3JnIHZpYSBsaXN0
+ZXhwYW5kDQo+ICAgICAgIGlkIFM5MzY5NTBBYmRJWkhoTSAoT1JDUFQgPHJmYzgyMjtpQGNvbHku
+bGk+KTsgICAgICAgIFR1ZSwgMjYgU2VwDQo+IDIwMTcgMDM6Mzc6MTIgLTA0MDANCj4gUmVjZWl2
+ZWQ6IGZyb20gbXgyLnN1c2UuZGUgKFsxOTUuMTM1LjIyMC4xNV06MzY3MzIgIkVITE8gbXgxLnN1
+c2UuZGUiDQo+ICAgICByaG9zdC1mbGFncy1PSy1PSy1PSy1GQUlMKSBieSB2Z2VyLmtlcm5lbC5v
+cmcgd2l0aCBFU01UUCAgICAgICAgaWQNCj4gUzkzNjk0OUFiZElaSGhMIChPUkNQVCA8cmZjODIy
+O2xpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5vcmc+KTsNCj4gVHVlLCAyNiBTZXAgMjAxNyAwMzoz
+NzoxMSAtMDQwMA0KPiBYLVZpcnVzLVNjYW5uZWQ6IGJ5IGFtYXZpc2QtbmV3IGF0IHRlc3QtbXgu
+c3VzZS5kZQ0KPiBSZWNlaXZlZDogZnJvbSByZWxheTIuc3VzZS5kZSAoY2hhcnliZGlzLWV4dC5z
+dXNlLmRlIFsxOTUuMTM1LjIyMC4yNTRdKQ0KPiAgICAgICBieSBteDEuc3VzZS5kZSAoUG9zdGZp
+eCkgd2l0aCBFU01UUCBpZCBCQjQ2MEFFNUY7ICAgICAgICBUdWUsIDI2DQo+IFNlcCAyMDE3IDA3
+OjM3OjA5ICswMDAwIChVVEMpDQo+IEZyb206IENvbHkgTGkgPGNvbHlsaUBzdXNlLmRlPg0KPiBU
+bzogbGludXgtYmNhY2hlQHZnZXIua2VybmVsLm9yZywgbGludXgtYmxvY2tAdmdlci5rZXJuZWwu
+b3JnDQo+IENjOiBDb2x5IExpIDxjb2x5bGlAc3VzZS5kZT4NCj4gU3ViamVjdDogW1BBVENIXSBi
+Y2FjaGU6IHVzZSBsbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKCkgaW4NCj4gX19jbG9zdXJlX3dh
+a2VfdXAoKQ0KPiBEYXRlOiBUdWUsIDI2IFNlcCAyMDE3IDE1OjM3OjAyICswODAwDQo+IE1lc3Nh
+Z2UtSWQ6IDwyMDE3MDkyNjA3MzcwMi43MTYwNi0xLWNvbHlsaUBzdXNlLmRlPg0KPiBYLU1haWxl
+cjogZ2l0LXNlbmQtZW1haWwgMi4xMy41DQo+IFNlbmRlcjogbGludXgtYmNhY2hlLW93bmVyQHZn
+ZXIua2VybmVsLm9yZw0KPiBQcmVjZWRlbmNlOiBidWxrDQo+IExpc3QtSUQ6IDxsaW51eC1iY2Fj
+aGUudmdlci5rZXJuZWwub3JnPg0KPiBYLU1haWxpbmctTGlzdDogbGludXgtYmNhY2hlQHZnZXIu
+a2VybmVsLm9yZw0KPiANCj4gQ29tbWl0IDA5YjNlZmVjICgiYmNhY2hlOiBEb24ndCByZWludmVu
+dCB0aGUgd2hlZWwgYnV0IHVzZSBleGlzdGluZyBsbGlzdA0KPiBBUEkiKSByZXBsYWNlcyB0aGUg
+Zm9sbG93aW5nIHdoaWxlIGxvb3AgYnkgbGxpc3RfZm9yX2VhY2hfZW50cnkoKSwNCj4gDQo+IC0N
+Cj4gLQl3aGlsZSAocmV2ZXJzZSkgew0KPiAtCQljbCA9IGNvbnRhaW5lcl9vZihyZXZlcnNlLCBz
+dHJ1Y3QgY2xvc3VyZSwgbGlzdCk7DQo+IC0JCXJldmVyc2UgPSBsbGlzdF9uZXh0KHJldmVyc2Up
+Ow0KPiAtDQo+ICsJbGxpc3RfZm9yX2VhY2hfZW50cnkoY2wsIHJldmVyc2UsIGxpc3QpIHsNCj4g
+IAkJY2xvc3VyZV9zZXRfd2FpdGluZyhjbCwgMCk7DQo+ICAJCWNsb3N1cmVfc3ViKGNsLCBDTE9T
+VVJFX1dBSVRJTkcgKyAxKTsNCj4gIAl9DQo+IA0KPiBUaGlzIG1vZGlmaWNhdGlvbiBpbnRyb2R1
+Y2VzIGEgcG90ZW50aWFsIHJhY2UgYnkgaXRlcmF0aW5nIGEgY29ycnVwdGVkDQo+IGxpc3QuIEhl
+cmUgaXMgaG93IGl0IGhhcHBlbnMuDQo+IA0KPiBJbiB0aGUgYWJvdmUgbW9kaWZpY2F0aW9uLCBj
+bG9zdXJlX3N1YigpIG1heSB3YWtlIHVwIGEgcHJvY2VzcyB3aGljaCBpcw0KPiB3YWl0aW5nIG9u
+IHJldmVyc2UgbGlzdC4gSWYgdGhpcyBwcm9jZXNzIGRlY2lkZXMgdG8gd2FpdCBhZ2FpbiBieSBj
+YWxsaW5nDQo+IGNsb3N1cmVfd2FpdCgpLCBpdHMgY2wtPmxpc3Qgd2lsbCBiZSBhZGRlZCB0byBh
+bm90aGVyIHdhaXQgbGlzdC4gVGhlbg0KPiB3aGVuIGxsaXN0X2Zvcl9lYWNoX2VudHJ5KCkgY29u
+dGludWVzIHRvIGl0ZXJhdGUgbmV4dCBub2RlLCBpdCB3aWxsIHRyYXZlbA0KPiBvbiBhbm90aGVy
+IG5ldyB3YWl0IGxpc3Qgd2hpY2ggaXMgYWRkZWQgaW4gY2xvc3VyZV93YWl0KCksIG5vdCB0aGUN
+Cj4gb3JpZ2luYWwgcmV2ZXJzZSBsaXN0IGluIF9fY2xvc3VyZV93YWtlX3VwKCkuIEl0IGlzIG1v
+cmUgcHJvYmFibHkgdG8NCj4gaGFwcGVuIG9uIFVQIG1hY2hpbmUgYmVjYXVzZSB0aGUgd2FrZWQg
+dXAgcHJvY2VzcyBtYXkgcHJlZW1wdCB0aGUgcHJvY2Vzcw0KPiB3aGljaCB3YWtlcyB1cCBpdC4N
+Cj4gDQo+IFVzZSBsbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKCkgd2lsbCBmaXggdGhlIGlzc3Vl
+LCB0aGUgc2FmZSB2ZXJzaW9uIGZldGNoDQo+IG5leHQgbm9kZSBiZWZvcmUgd2FraW5nIHVwIGEg
+cHJvY2Vzcy4gVGhlbiB0aGUgY29weSBvZiBuZXh0IG5vZGUgd2lsbCBtYWtlDQo+IHN1cmUgbGlz
+dCBpdGVyYXRpb24gc3RheXMgb24gb3JpZ2luYWwgcmV2ZXJzZSBsaXN0Lg0KPiANCj4gU2lnbmVk
+LW9mZi1ieTogQ29seSBMaSA8Y29seWxpQHN1c2UuZGU+DQo+IFJlcG9ydGVkLWJ5OiBNaWNoYWVs
+IEx5bGUgPG1seWxlQGx5bGUub3JnPg0KPiAtLS0NCj4gIGRyaXZlcnMvbWQvYmNhY2hlL2Nsb3N1
+cmUuYyB8IDQgKystLQ0KPiAgMSBmaWxlIGNoYW5nZWQsIDIgaW5zZXJ0aW9ucygrKSwgMiBkZWxl
+dGlvbnMoLSkNCj4gDQo+IGRpZmYgLS1naXQgYS9kcml2ZXJzL21kL2JjYWNoZS9jbG9zdXJlLmMg
+Yi9kcml2ZXJzL21kL2JjYWNoZS9jbG9zdXJlLmMNCj4gaW5kZXggN2Q1Mjg2YjA1MDM2Li4xODQx
+ZDAzNTliYWMgMTAwNjQ0DQo+IC0tLSBhL2RyaXZlcnMvbWQvYmNhY2hlL2Nsb3N1cmUuYw0KPiAr
+KysgYi9kcml2ZXJzL21kL2JjYWNoZS9jbG9zdXJlLmMNCj4gQEAgLTY0LDcgKzY0LDcgQEAgRVhQ
+T1JUX1NZTUJPTChjbG9zdXJlX3B1dCk7DQo+ICB2b2lkIF9fY2xvc3VyZV93YWtlX3VwKHN0cnVj
+dCBjbG9zdXJlX3dhaXRsaXN0ICp3YWl0X2xpc3QpDQo+ICB7DQo+ICAJc3RydWN0IGxsaXN0X25v
+ZGUgKmxpc3Q7DQo+IC0Jc3RydWN0IGNsb3N1cmUgKmNsOw0KPiArCXN0cnVjdCBjbG9zdXJlICpj
+bCwgKnQ7DQo+ICAJc3RydWN0IGxsaXN0X25vZGUgKnJldmVyc2UgPSBOVUxMOw0KPiAgIAlsaXN0
+ID0gbGxpc3RfZGVsX2FsbCgmd2FpdF9saXN0LT5saXN0KTsNCj4gQEAgLTczLDcgKzczLDcgQEAg
+dm9pZCBfX2Nsb3N1cmVfd2FrZV91cChzdHJ1Y3QgY2xvc3VyZV93YWl0bGlzdCAqd2FpdF9saXN0
+KQ0KPiAgCXJldmVyc2UgPSBsbGlzdF9yZXZlcnNlX29yZGVyKGxpc3QpOw0KPiAgIAkvKiBUaGVu
+IGRvIHRoZSB3YWtldXBzICovDQo+IC0JbGxpc3RfZm9yX2VhY2hfZW50cnkoY2wsIHJldmVyc2Us
+IGxpc3QpIHsNCj4gKwlsbGlzdF9mb3JfZWFjaF9lbnRyeV9zYWZlKGNsLCB0LCByZXZlcnNlLCBs
+aXN0KSB7DQo+ICAJCWNsb3N1cmVfc2V0X3dhaXRpbmcoY2wsIDApOw0KPiAgCQljbG9zdXJlX3N1
+YihjbCwgQ0xPU1VSRV9XQUlUSU5HICsgMSk7DQo+ICAJfQ0KPiAtLQ0KPiAyLjEzLjUNCj4gDQo+
+IC0tDQo+IFRvIHVuc3Vic2NyaWJlIGZyb20gdGhpcyBsaXN0OiBzZW5kIHRoZSBsaW5lICJ1bnN1
+YnNjcmliZSBsaW51eC1iY2FjaGUiIGluDQo+IHRoZSBib2R5IG9mIGEgbWVzc2FnZSB0byBtYWpv
+cmRvbW9Admdlci5rZXJuZWwub3JnDQo+IE1vcmUgbWFqb3Jkb21vIGluZm8gYXQgIGh0dHA6Ly92
+Z2VyLmtlcm5lbC5vcmcvbWFqb3Jkb21vLWluZm8uaHRtbA0K
