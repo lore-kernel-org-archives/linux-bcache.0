@@ -1,40 +1,27 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH] bcache: fix a comments typo in bch_alloc_sectors()
-Date: Fri, 22 Sep 2017 04:01:14 +0800
-Message-ID: <20170921200114.54014-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:60868 "EHLO mx1.suse.de"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751636AbdIUUBS (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 21 Sep 2017 16:01:18 -0400
-Sender: linux-bcache-owner@vger.kernel.org
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing
+ llist API
+Date: Mon, 25 Sep 2017 21:38:09 -0700
+Message-ID: <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
+References: <20170906062602.50497-1-colyli@suse.de> <20170906062602.50497-5-colyli@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20170906062602.50497-5-colyli@suse.de>
+Sender: linux-block-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk, Eric Wheeler <bcache@lists.ewheeler.net>, Byungchul Park <byungchul.park@lge.com>, Kent Overstreet <kent.overstreet@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>
 
-Code comments in alloc.c:bch_alloc_sectors() mentions a function
-name find_data_bucket(), the correct function name should be
-pick_data_bucket() indeed. bch_alloc_sectors() is a quite important
-function in bcache allocation code, fixing the typo may help
-other people to have less confusion.
+I believe this introduces a critical bug.
 
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/alloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+cl->list is used to link together the llists for both things waiting,
+and for things that are being woken.
 
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index cacbe2dbd5c3..071ff28be912 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -600,7 +600,7 @@ bool bch_alloc_sectors(struct cache_set *c, struct bkey *k, unsigned sectors,
- 
- 	/*
- 	 * If we had to allocate, we might race and not need to allocate the
--	 * second time we call find_data_bucket(). If we allocated a bucket but
-+	 * second time we call pick_data_bucket(). If we allocated a bucket but
- 	 * didn't use it, drop the refcount bch_bucket_alloc_set() took:
- 	 */
- 	if (KEY_PTRS(&alloc.key))
--- 
-2.13.5
+If a closure that is woken decides to wait again, it will corrupt the
+llist that __closure_wake_up is using.
+
+The previous iteration structure gets the next element of the list
+before waking and is therefore safe.
+
+Mike
