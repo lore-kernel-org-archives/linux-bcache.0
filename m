@@ -1,60 +1,73 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing
- llist API
-Date: Tue, 26 Sep 2017 15:24:15 +0800
-Message-ID: <2997427b-f920-bf70-39d2-81f3d1f99d10@coly.li>
-References: <20170906062602.50497-1-colyli@suse.de>
- <20170906062602.50497-5-colyli@suse.de>
- <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
- <761ebe34-99c3-8865-3fc6-c4f7e6e3b29a@coly.li>
- <F6531D8286A0B34FBC858F176F70796281EEB2@LGEVEXMBHQSVC1.LGE.NET>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <F6531D8286A0B34FBC858F176F70796281EEB2@LGEVEXMBHQSVC1.LGE.NET>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: =?UTF-8?B?67CV67OR7LKgL+yEoOyehOyXsOq1rOybkC9TVyBQbGF0Zm9ybSjsl7ApQU9U?= =?UTF-8?B?7YyAKGJ5dW5nY2h1bC5wYXJrQGxnZS5jb20p?= <byungchul.park@lge.com>, Michael Lyle <mlyle@lyle.org>, Coly Li <colyli@suse.de>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>, Eric Wheeler <bcache@lists.ewheeler.net>, Kent Overstreet <kent.overstreet@gmail.com>, "kernel-team@lge.com" <kernel-team@lge.com>
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH] bcache: use llist_for_each_entry_safe() in __closure_wake_up()
+Date: Tue, 26 Sep 2017 15:37:02 +0800
+Message-ID: <20170926073702.71606-1-colyli@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:36732 "EHLO mx1.suse.de"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S936949AbdIZHhL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 26 Sep 2017 03:37:11 -0400
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>
 
-On 2017/9/26 下午3:16, 박병철/선임연구원/SW
-Platform(연)AOT팀(byungchul.park@lge.com) wrote:
->> -----Original Message-----
->> From: Coly Li [mailto:i@coly.li]
->> Sent: Tuesday, September 26, 2017 4:09 PM
->> To: Michael Lyle; Coly Li
->> Cc: linux-bcache@vger.kernel.org; linux-block@vger.kernel.org;
->> axboe@kernel.dk; Eric Wheeler; Byungchul Park; Kent Overstreet
->> Subject: Re: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing
->> llist API
->>
->> On 2017/9/26 下午12:38, Michael Lyle wrote:
->>> I believe this introduces a critical bug.
->>>
->>> cl->list is used to link together the llists for both things waiting,
->>> and for things that are being woken.
->>>
->>> If a closure that is woken decides to wait again, it will corrupt the
->>> llist that __closure_wake_up is using.
->>>
->>> The previous iteration structure gets the next element of the list
->>> before waking and is therefore safe.
->>>
->>
->> Hi Mike,
->>
->> Good catch! I see llist_del_all() but forget cl->list can be modified in
->> closure_wait(). Yes there is potential chance to mislead
->> llist_for_each_entry() to iterate wrong list.
->> llist_for_each_entry_safe() should be used here. I will send a fix to
->> Jens, hope to catch up 4.14 still.
-> 
-> I see. You have a plan to do it. Please fix it.
+Commit 09b3efec ("bcache: Don't reinvent the wheel but use existing llist
+API") replaces the following while loop by llist_for_each_entry(),
 
-Oh, I just see this email, when I replied your last one.
-Sure, let me fix my fault.
+-
+-	while (reverse) {
+-		cl = container_of(reverse, struct closure, list);
+-		reverse = llist_next(reverse);
+-
++	llist_for_each_entry(cl, reverse, list) {
+ 		closure_set_waiting(cl, 0);
+ 		closure_sub(cl, CLOSURE_WAITING + 1);
+ 	}
 
+This modification introduces a potential race by iterating a corrupted
+list. Here is how it happens.
+
+In the above modification, closure_sub() may wake up a process which is
+waiting on reverse list. If this process decides to wait again by calling
+closure_wait(), its cl->list will be added to another wait list. Then
+when llist_for_each_entry() continues to iterate next node, it will travel
+on another new wait list which is added in closure_wait(), not the
+original reverse list in __closure_wake_up(). It is more probably to
+happen on UP machine because the waked up process may preempt the process
+which wakes up it.
+
+Use llist_for_each_entry_safe() will fix the issue, the safe version fetch
+next node before waking up a process. Then the copy of next node will make
+sure list iteration stays on original reverse list.
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Reported-by: Michael Lyle <mlyle@lyle.org>
+---
+ drivers/md/bcache/closure.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+index 7d5286b05036..1841d0359bac 100644
+--- a/drivers/md/bcache/closure.c
++++ b/drivers/md/bcache/closure.c
+@@ -64,7 +64,7 @@ EXPORT_SYMBOL(closure_put);
+ void __closure_wake_up(struct closure_waitlist *wait_list)
+ {
+ 	struct llist_node *list;
+-	struct closure *cl;
++	struct closure *cl, *t;
+ 	struct llist_node *reverse = NULL;
+ 
+ 	list = llist_del_all(&wait_list->list);
+@@ -73,7 +73,7 @@ void __closure_wake_up(struct closure_waitlist *wait_list)
+ 	reverse = llist_reverse_order(list);
+ 
+ 	/* Then do the wakeups */
+-	llist_for_each_entry(cl, reverse, list) {
++	llist_for_each_entry_safe(cl, t, reverse, list) {
+ 		closure_set_waiting(cl, 0);
+ 		closure_sub(cl, CLOSURE_WAITING + 1);
+ 	}
 -- 
-Coly Li
+2.13.5
