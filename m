@@ -1,73 +1,47 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH] bcache: use llist_for_each_entry_safe() in __closure_wake_up()
-Date: Tue, 26 Sep 2017 15:37:02 +0800
-Message-ID: <20170926073702.71606-1-colyli@suse.de>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing
+ llist API
+Date: Tue, 26 Sep 2017 15:46:00 +0800
+Message-ID: <1433ecdd-3394-c65f-9588-4d2a20df25d5@coly.li>
+References: <20170906062602.50497-1-colyli@suse.de>
+ <20170906062602.50497-5-colyli@suse.de>
+ <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:36732 "EHLO mx1.suse.de"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S936949AbdIZHhL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 26 Sep 2017 03:37:11 -0400
+Received: from server.coly.li ([162.144.45.48]:54804 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S965798AbdIZHqK (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 26 Sep 2017 03:46:10 -0400
+In-Reply-To: <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>
+To: Michael Lyle <mlyle@lyle.org>, Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk, Eric Wheeler <bcache@lists.ewheeler.net>, Byungchul Park <byungchul.park@lge.com>, Kent Overstreet <kent.overstreet@gmail.com>
 
-Commit 09b3efec ("bcache: Don't reinvent the wheel but use existing llist
-API") replaces the following while loop by llist_for_each_entry(),
+On 2017/9/26 下午12:38, Michael Lyle wrote:
+> I believe this introduces a critical bug.
+> 
+> cl->list is used to link together the llists for both things waiting,
+> and for things that are being woken.
+> 
+> If a closure that is woken decides to wait again, it will corrupt the
+> llist that __closure_wake_up is using.
+> 
+> The previous iteration structure gets the next element of the list
+> before waking and is therefore safe.
 
--
--	while (reverse) {
--		cl = container_of(reverse, struct closure, list);
--		reverse = llist_next(reverse);
--
-+	llist_for_each_entry(cl, reverse, list) {
- 		closure_set_waiting(cl, 0);
- 		closure_sub(cl, CLOSURE_WAITING + 1);
- 	}
 
-This modification introduces a potential race by iterating a corrupted
-list. Here is how it happens.
+Hi Michael and Byungchul,
 
-In the above modification, closure_sub() may wake up a process which is
-waiting on reverse list. If this process decides to wait again by calling
-closure_wait(), its cl->list will be added to another wait list. Then
-when llist_for_each_entry() continues to iterate next node, it will travel
-on another new wait list which is added in closure_wait(), not the
-original reverse list in __closure_wake_up(). It is more probably to
-happen on UP machine because the waked up process may preempt the process
-which wakes up it.
+This is my fault to suggest Byungchul to change his correct patch into
+wrong one. But it's good to learn such an implicit race behind bcache
+code. I just post a patch to explain how this race may happen and
+corrupt the reverse list iteration. Could you please to review the fix ?
 
-Use llist_for_each_entry_safe() will fix the issue, the safe version fetch
-next node before waking up a process. Then the copy of next node will make
-sure list iteration stays on original reverse list.
+And thanks to Michael again to catch this bug.
 
-Signed-off-by: Coly Li <colyli@suse.de>
-Reported-by: Michael Lyle <mlyle@lyle.org>
----
- drivers/md/bcache/closure.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
-index 7d5286b05036..1841d0359bac 100644
---- a/drivers/md/bcache/closure.c
-+++ b/drivers/md/bcache/closure.c
-@@ -64,7 +64,7 @@ EXPORT_SYMBOL(closure_put);
- void __closure_wake_up(struct closure_waitlist *wait_list)
- {
- 	struct llist_node *list;
--	struct closure *cl;
-+	struct closure *cl, *t;
- 	struct llist_node *reverse = NULL;
- 
- 	list = llist_del_all(&wait_list->list);
-@@ -73,7 +73,7 @@ void __closure_wake_up(struct closure_waitlist *wait_list)
- 	reverse = llist_reverse_order(list);
- 
- 	/* Then do the wakeups */
--	llist_for_each_entry(cl, reverse, list) {
-+	llist_for_each_entry_safe(cl, t, reverse, list) {
- 		closure_set_waiting(cl, 0);
- 		closure_sub(cl, CLOSURE_WAITING + 1);
- 	}
 -- 
-2.13.5
+Coly Li
