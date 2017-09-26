@@ -1,37 +1,43 @@
-From: =?utf-8?B?67CV67OR7LKgL+yEoOyehOyXsOq1rOybkC9TVyBQbGF0Zm9ybSjsl7ApQU9U?=
-         =?utf-8?B?7YyAKGJ5dW5nY2h1bC5wYXJrQGxnZS5jb20p?=
-        <byungchul.park@lge.com>
-Subject: RE: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 04/12] bcache: Don't reinvent the wheel but use existing
  llist API
-Date: Tue, 26 Sep 2017 15:39:45 +0900
-Message-ID: <F6531D8286A0B34FBC858F176F70796281EEAA@LGEVEXMBHQSVC1.LGE.NET>
+Date: Tue, 26 Sep 2017 15:08:50 +0800
+Message-ID: <761ebe34-99c3-8865-3fc6-c4f7e6e3b29a@coly.li>
 References: <20170906062602.50497-1-colyli@suse.de>
  <20170906062602.50497-5-colyli@suse.de>
  <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <CAJ+L6qfHB7vAAXUrnjXUQqLE6k+v4yukL58DDzRBBKA+aONLmA@mail.gmail.com>
-Content-Language: ko-KR
+Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
 To: Michael Lyle <mlyle@lyle.org>, Coly Li <colyli@suse.de>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>, Eric Wheeler <bcache@lists.ewheeler.net>, Byungchul Park <byungchul.park@lge.com>, Kent Overstreet <kent.overstreet@gmail.com>, "kernel-team@lge.com" <kernel-team@lge.com>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk, Eric Wheeler <bcache@lists.ewheeler.net>, Byungchul Park <byungchul.park@lge.com>, Kent Overstreet <kent.overstreet@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-PiAtLS0tLU9yaWdpbmFsIE1lc3NhZ2UtLS0tLQ0KPiBGcm9tOiBNaWNoYWVsIEx5bGUgW21haWx0
-bzptbHlsZUBseWxlLm9yZ10NCj4gU2VudDogVHVlc2RheSwgU2VwdGVtYmVyIDI2LCAyMDE3IDE6
-MzggUE0NCj4gVG86IENvbHkgTGkNCj4gQ2M6IGxpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5vcmc7
-IGxpbnV4LWJsb2NrQHZnZXIua2VybmVsLm9yZzsNCj4gYXhib2VAa2VybmVsLmRrOyBFcmljIFdo
-ZWVsZXI7IEJ5dW5nY2h1bCBQYXJrOyBLZW50IE92ZXJzdHJlZXQNCj4gU3ViamVjdDogUmU6IFtQ
-QVRDSCAwNC8xMl0gYmNhY2hlOiBEb24ndCByZWludmVudCB0aGUgd2hlZWwgYnV0IHVzZSBleGlz
-dGluZw0KPiBsbGlzdCBBUEkNCj4gDQo+IEkgYmVsaWV2ZSB0aGlzIGludHJvZHVjZXMgYSBjcml0
-aWNhbCBidWcuDQo+IA0KPiBjbC0+bGlzdCBpcyB1c2VkIHRvIGxpbmsgdG9nZXRoZXIgdGhlIGxs
-aXN0cyBmb3IgYm90aCB0aGluZ3Mgd2FpdGluZywNCj4gYW5kIGZvciB0aGluZ3MgdGhhdCBhcmUg
-YmVpbmcgd29rZW4uDQo+IA0KPiBJZiBhIGNsb3N1cmUgdGhhdCBpcyB3b2tlbiBkZWNpZGVzIHRv
-IHdhaXQgYWdhaW4sIGl0IHdpbGwgY29ycnVwdCB0aGUNCj4gbGxpc3QgdGhhdCBfX2Nsb3N1cmVf
-d2FrZV91cCBpcyB1c2luZy4NCj4gDQo+IFRoZSBwcmV2aW91cyBpdGVyYXRpb24gc3RydWN0dXJl
-IGdldHMgdGhlIG5leHQgZWxlbWVudCBvZiB0aGUgbGlzdA0KPiBiZWZvcmUgd2FraW5nIGFuZCBp
-cyB0aGVyZWZvcmUgc2FmZS4NCg0KRG8geW91IG1lYW4gd2UgaGF2ZSB0byB1c2UgbGxpc3RfZm9y
-X2VhY2hfZW50cnlfc2FmZSgpIGluc3RlYWQgb2Ygbm9uLXNhZmUgdmVyc2lvbj8NCklzIGl0IG9r
-IGlmIHdlIHVzZSBpdCBpbnN0ZWFkPw0KDQo+IE1pa2UNCg==
+On 2017/9/26 下午12:38, Michael Lyle wrote:
+> I believe this introduces a critical bug.
+> 
+> cl->list is used to link together the llists for both things waiting,
+> and for things that are being woken.
+> 
+> If a closure that is woken decides to wait again, it will corrupt the
+> llist that __closure_wake_up is using.
+> 
+> The previous iteration structure gets the next element of the list
+> before waking and is therefore safe.
+>
+
+Hi Mike,
+
+Good catch! I see llist_del_all() but forget cl->list can be modified in
+closure_wait(). Yes there is potential chance to mislead
+llist_for_each_entry() to iterate wrong list.
+llist_for_each_entry_safe() should be used here. I will send a fix to
+Jens, hope to catch up 4.14 still.
+
+Thanks!
+-- 
+Coly Li
