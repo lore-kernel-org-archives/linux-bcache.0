@@ -1,62 +1,80 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH v3 1/5] bcache: don't write back data if reading it failed
-Date: Wed, 27 Sep 2017 10:41:18 -0700
-Message-ID: <20170927174122.30341-2-mlyle@lyle.org>
+Subject: [PATCH v3 3/5] bcache: smooth writeback rate control
+Date: Wed, 27 Sep 2017 10:41:20 -0700
+Message-ID: <20170927174122.30341-4-mlyle@lyle.org>
 References: <20170927174122.30341-1-mlyle@lyle.org>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f67.google.com ([74.125.83.67]:34041 "EHLO
-        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751538AbdI0Rli (ORCPT
+Received: from mail-pg0-f65.google.com ([74.125.83.65]:35685 "EHLO
+        mail-pg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750752AbdI0Rls (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 Sep 2017 13:41:38 -0400
-Received: by mail-pg0-f67.google.com with SMTP id u18so9907619pgo.1
-        for <linux-bcache@vger.kernel.org>; Wed, 27 Sep 2017 10:41:38 -0700 (PDT)
+        Wed, 27 Sep 2017 13:41:48 -0400
+Received: by mail-pg0-f65.google.com with SMTP id j16so9893631pga.2
+        for <linux-bcache@vger.kernel.org>; Wed, 27 Sep 2017 10:41:48 -0700 (PDT)
 In-Reply-To: <20170927174122.30341-1-mlyle@lyle.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 Cc: Michael Lyle <mlyle@lyle.org>
 
-If an IO operation fails, and we didn't successfully read data from the
-cache, don't writeback invalid/partial data to the backing disk.
+This works in conjunction with the new PI controller.  Currently, in
+real-world workloads, the rate controller attempts to write back 1
+sector per second.  In practice, these minimum-rate writebacks are
+between 4k and 60k in test scenarios, since bcache aggregates and
+attempts to do contiguous writes and because filesystems on top of
+bcachefs typically write 4k or more.
+
+Previously, bcache used to guarantee to write at least once per second.
+This means that the actual writeback rate would exceed the configured
+amount by a factor of 8-120 or more.
+
+This patch adjusts to be willing to sleep up to 2.5 seconds, and to
+target writing 4k/second.  On the smallest writes, it will sleep 1
+second like before, but many times it will sleep longer and load the
+backing device less.  This keeps the loading on the cache and backing
+device related to writeback more consistent when writing back at low
+rates.
 
 Signed-off-by: Michael Lyle <mlyle@lyle.org>
 Reviewed-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/writeback.c | 20 ++++++++++++++------
- 1 file changed, 14 insertions(+), 6 deletions(-)
+ drivers/md/bcache/util.c      | 10 ++++++++--
+ drivers/md/bcache/writeback.c |  2 +-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+index 176d3c2ef5f5..4dbe37e82877 100644
+--- a/drivers/md/bcache/util.c
++++ b/drivers/md/bcache/util.c
+@@ -232,8 +232,14 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
+ 
+ 	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
+ 
+-	if (time_before64(now + NSEC_PER_SEC, d->next))
+-		d->next = now + NSEC_PER_SEC;
++	/* Bound the time.  Don't let us fall further than 2 seconds behind
++	 * (this prevents unnecessary backlog that would make it impossible
++	 * to catch up).  If we're ahead of the desired writeback rate,
++	 * don't let us sleep more than 2.5 seconds (so we can notice/respond
++	 * if the control system tells us to speed up!).
++	 */
++	if (time_before64(now + NSEC_PER_SEC * 5 / 2, d->next))
++		d->next = now + NSEC_PER_SEC * 5 / 2;
+ 
+ 	if (time_after64(now - NSEC_PER_SEC * 2, d->next))
+ 		d->next = now - NSEC_PER_SEC * 2;
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index e663ca082183..5e65a392287d 100644
+index cac8678da5d0..8deb721c355e 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -179,13 +179,21 @@ static void write_dirty(struct closure *cl)
- 	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
- 	struct keybuf_key *w = io->bio.bi_private;
+@@ -526,7 +526,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+ 	dc->writeback_percent		= 10;
+ 	dc->writeback_delay		= 30;
+ 	dc->writeback_rate.rate		= 1024;
+-	dc->writeback_rate_minimum	= 1;
++	dc->writeback_rate_minimum	= 8;
  
--	dirty_init(w);
--	bio_set_op_attrs(&io->bio, REQ_OP_WRITE, 0);
--	io->bio.bi_iter.bi_sector = KEY_START(&w->key);
--	bio_set_dev(&io->bio, io->dc->bdev);
--	io->bio.bi_end_io	= dirty_endio;
-+	/*
-+	 * IO errors are signalled using the dirty bit on the key.
-+	 * If we failed to read, we should not attempt to write to the
-+	 * backing device.  Instead, immediately go to write_dirty_finish
-+	 * to clean up.
-+	 */
-+	if (KEY_DIRTY(&w->key)) {
-+		dirty_init(w);
-+		bio_set_op_attrs(&io->bio, REQ_OP_WRITE, 0);
-+		io->bio.bi_iter.bi_sector = KEY_START(&w->key);
-+		bio_set_dev(&io->bio, io->dc->bdev);
-+		io->bio.bi_end_io	= dirty_endio;
- 
--	closure_bio_submit(&io->bio, cl);
-+		closure_bio_submit(&io->bio, cl);
-+	}
- 
- 	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
- }
+ 	dc->writeback_rate_update_seconds = 5;
+ 	dc->writeback_rate_p_term_inverse = 40;
 -- 
 2.11.0
