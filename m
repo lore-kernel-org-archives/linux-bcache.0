@@ -1,131 +1,98 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH v3 5/5] bcache: writeback: properly order backing device IO
-Date: Wed, 27 Sep 2017 10:41:22 -0700
-Message-ID: <20170927174122.30341-6-mlyle@lyle.org>
-References: <20170927174122.30341-1-mlyle@lyle.org>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 1/1] bcache: use llist_for_each_entry_safe() in
+ __closure_wake_up()
+Date: Thu, 28 Sep 2017 03:16:43 +0800
+Message-ID: <4c14e77e-577f-b7b7-d63a-b4b3a4d9e757@coly.li>
+References: <20170926095412.74028-1-colyli@suse.de>
+ <20170926095412.74028-2-colyli@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f196.google.com ([209.85.192.196]:34393 "EHLO
-        mail-pf0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751579AbdI0Rlv (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 Sep 2017 13:41:51 -0400
-Received: by mail-pf0-f196.google.com with SMTP id g65so7354042pfe.1
-        for <linux-bcache@vger.kernel.org>; Wed, 27 Sep 2017 10:41:51 -0700 (PDT)
-In-Reply-To: <20170927174122.30341-1-mlyle@lyle.org>
+Received: from server.coly.li ([162.144.45.48]:32926 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751495AbdI0TQ4 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 27 Sep 2017 15:16:56 -0400
+In-Reply-To: <20170926095412.74028-2-colyli@suse.de>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: Michael Lyle <mlyle@lyle.org>
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-Writeback keys are presently iterated and dispatched for writeback in
-order of the logical block address on the backing device.  Multiple may
-be, in parallel, read from the cache device and then written back
-(especially when there are contiguous I/O).
+Hi Jens,
 
-However-- there was no guarantee with the existing code that the writes
-would be issued in LBA order, as the reads from the cache device are
-often re-ordered.  In turn, when writing back quickly, the backing disk
-often has to seek backwards-- this slows writeback and increases
-utilization.
+Could you please take a look on this patch? It will be helpful if we can
+have it in 4.14, then we can fix a bug introduced in 4.14-rc1.
 
-This patch introduces an ordering mechanism that guarantees that the
-original order of issue is maintained for the write portion of the I/O.
-Performance for writeback is significantly improved when there are
-multiple contiguous keys or high writeback rates.
+This patch is reported by Michael Lyle, reviewed by Byungchul Park, and
+finally verified by Michael Lyle after I posted the patch.
 
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
----
- drivers/md/bcache/bcache.h    |  8 ++++++++
- drivers/md/bcache/writeback.c | 29 +++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
+Many thanks in advance.
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index da803a3b1981..df0b2ccfca8d 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -328,6 +328,14 @@ struct cached_dev {
- 
- 	struct keybuf		writeback_keys;
- 
-+	/*
-+	 * Order the write-half of writeback operations strongly in dispatch
-+	 * order.  (Maintain LBA order; don't allow reads completing out of
-+	 * order to re-order the writes...)
-+	 */
-+	struct closure_waitlist writeback_ordering_wait;
-+	atomic_t		writeback_sequence_next;
-+
- 	/* For tracking sequential IO */
- #define RECENT_IO_BITS	7
- #define RECENT_IO	(1 << RECENT_IO_BITS)
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 13c2142ea82f..d63356a60001 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -114,6 +114,7 @@ static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
- struct dirty_io {
- 	struct closure		cl;
- 	struct cached_dev	*dc;
-+	uint16_t		sequence;
- 	struct bio		bio;
- };
- 
-@@ -192,6 +193,27 @@ static void write_dirty(struct closure *cl)
- {
- 	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
- 	struct keybuf_key *w = io->bio.bi_private;
-+	struct cached_dev *dc = io->dc;
-+
-+	uint16_t next_sequence;
-+
-+	if (atomic_read(&dc->writeback_sequence_next) != io->sequence) {
-+		/* Not our turn to write; wait for a write to complete */
-+		closure_wait(&dc->writeback_ordering_wait, cl);
-+
-+		if (atomic_read(&dc->writeback_sequence_next) == io->sequence) {
-+			/*
-+			 * Edge case-- it happened in indeterminate order
-+			 * relative to when we were added to wait list..
-+			 */
-+			closure_wake_up(&dc->writeback_ordering_wait);
-+		}
-+
-+		continue_at(cl, write_dirty, io->dc->writeback_write_wq);
-+		return;
-+	}
-+
-+	next_sequence = io->sequence + 1;
- 
- 	/*
- 	 * IO errors are signalled using the dirty bit on the key.
-@@ -209,6 +231,9 @@ static void write_dirty(struct closure *cl)
- 		closure_bio_submit(&io->bio, cl);
- 	}
- 
-+	atomic_set(&dc->writeback_sequence_next, next_sequence);
-+	closure_wake_up(&dc->writeback_ordering_wait);
-+
- 	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
- }
- 
-@@ -253,7 +278,10 @@ static void read_dirty(struct cached_dev *dc)
- 	int nk, i;
- 	struct dirty_io *io;
- 	struct closure cl;
-+	uint16_t sequence = 0;
- 
-+	BUG_ON(!llist_empty(&dc->writeback_ordering_wait.list));
-+	atomic_set(&dc->writeback_sequence_next, sequence);
- 	closure_init_stack(&cl);
- 
- 	/*
-@@ -314,6 +342,7 @@ static void read_dirty(struct cached_dev *dc)
- 
- 			w->private	= io;
- 			io->dc		= dc;
-+			io->sequence    = sequence++;
- 
- 			dirty_init(w);
- 			bio_set_op_attrs(&io->bio, REQ_OP_READ, 0);
+Coly Li
+
+On 2017/9/26 下午5:54, Coly Li wrote:
+> Commit 09b3efec ("bcache: Don't reinvent the wheel but use existing llist
+> API") replaces the following while loop by llist_for_each_entry(),
+> 
+> -
+> -	while (reverse) {
+> -		cl = container_of(reverse, struct closure, list);
+> -		reverse = llist_next(reverse);
+> -
+> +	llist_for_each_entry(cl, reverse, list) {
+>  		closure_set_waiting(cl, 0);
+>  		closure_sub(cl, CLOSURE_WAITING + 1);
+>  	}
+> 
+> This modification introduces a potential race by iterating a corrupted
+> list. Here is how it happens.
+> 
+> In the above modification, closure_sub() may wake up a process which is
+> waiting on reverse list. If this process decides to wait again by calling
+> closure_wait(), its cl->list will be added to another wait list. Then
+> when llist_for_each_entry() continues to iterate next node, it will travel
+> on another new wait list which is added in closure_wait(), not the
+> original reverse list in __closure_wake_up(). It is more probably to
+> happen on UP machine because the waked up process may preempt the process
+> which wakes up it.
+> 
+> Use llist_for_each_entry_safe() will fix the issue, the safe version fetch
+> next node before waking up a process. Then the copy of next node will make
+> sure list iteration stays on original reverse list.
+> 
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Reported-by: Michael Lyle <mlyle@lyle.org>
+> Reviewed-by: Byungchul Park <byungchul.park@lge.com>
+> ---
+>  drivers/md/bcache/closure.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+> index 7d5286b05036..1841d0359bac 100644
+> --- a/drivers/md/bcache/closure.c
+> +++ b/drivers/md/bcache/closure.c
+> @@ -64,7 +64,7 @@ EXPORT_SYMBOL(closure_put);
+>  void __closure_wake_up(struct closure_waitlist *wait_list)
+>  {
+>  	struct llist_node *list;
+> -	struct closure *cl;
+> +	struct closure *cl, *t;
+>  	struct llist_node *reverse = NULL;
+>  
+>  	list = llist_del_all(&wait_list->list);
+> @@ -73,7 +73,7 @@ void __closure_wake_up(struct closure_waitlist *wait_list)
+>  	reverse = llist_reverse_order(list);
+>  
+>  	/* Then do the wakeups */
+> -	llist_for_each_entry(cl, reverse, list) {
+> +	llist_for_each_entry_safe(cl, t, reverse, list) {
+>  		closure_set_waiting(cl, 0);
+>  		closure_sub(cl, CLOSURE_WAITING + 1);
+>  	}
+> 
+
+
 -- 
-2.11.0
+Coly Li
