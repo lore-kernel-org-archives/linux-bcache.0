@@ -1,144 +1,116 @@
-From: <clasico082@gmail.com>
-Subject: (unknown)
-Date: Fri, 29 Sep 2017 18:01:07 -0000
-Message-ID: <150670806740.32758.1028868622609683301@alandick.ro>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH 4/5] bcache: writeback: collapse contiguous IO better
+Date: Sat, 30 Sep 2017 10:25:29 +0800
+Message-ID: <477dc501-bbb3-f864-c637-1f19f787448a@coly.li>
+References: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: application/zip; name="587629173792972.zip"
-Content-Transfer-Encoding: base64
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.alandick.ro ([46.97.229.107]:49278 "HELO alandick.ro"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-        id S1752172AbdI2SBK (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 29 Sep 2017 14:01:10 -0400
-Subject: 
-Content-Disposition: attachment
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
+Content-Language: en-US
+Sender: linux-block-owner@vger.kernel.org
+To: tang.junhui@zte.com.cn, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-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
+On 2017/9/27 下午3:32, tang.junhui@zte.com.cn wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> Hello Mike:
+> 
+> For the second question, I thinks this modification is somewhat complex, 
+> cannot we do something simple to resolve it? I remember there were some
+> patches trying to avoid too small writeback rate, Coly, is there any 
+> progress now?
+> 
+Junhui,
+
+That patch works well, but before I solve the latency of calculating
+dirty stripe numbers, I won't push it upstream so far.
+
+This patch does not conflict with my max-writeback-rate-when-idle, this
+patch tries to fetch more dirty keys from cache device which are
+continuous on cached device, and assume they can be continuously written
+back to cached device.
+
+For the above purpose, if writeback_rate is high, dc->last_read just
+works well. But when dc->writeback_rate is low, e.g. 8, event
+KEY_START(&w->key) == dc->last_read, the continuous key will only be
+submit in next delay cycle. I feel Micheal wants to make larger
+writeback I/O and delay more, then backing cached device may be woke up
+less chance.
+
+This policy only works better then current dc->last_read when
+writeback_rate is low, that's say, when front write I/O is low or no
+front write. I hesitate whether it is worthy to modify general writeback
+logic for it.
+
+
+> -------
+> Tang Junhui
+>                        
+>> Ah-- re #1 -- I was investigating earlier why not as much was combined
+>> as I thought should be when idle.  This is surely a factor.  Thanks
+>> for the catch-- KEY_OFFSET is correct.  I will fix and retest.
+>>
+>> (Under heavy load, the correct thing still happens, but not under
+>> light or intermediate load0.
+>>
+>> About #2-- I wanted to attain a bounded amount of "combining" of
+>> operations.  If we have 5 4k extents in a row to dispatch, it seems
+>> really wasteful to issue them as 5 IOs 60ms apart, which the existing
+>> code would be willing to do-- I'd rather do a 20k write IO (basically
+>> the same cost as a 4k write IO) and then sleep 300ms.  It is dependent
+>> on the elevator/IO scheduler merging the requests.  At the same time,
+>> I'd rather not combine a really large request.
+>>
+>> It would be really neat to blk_plug the backing device during the
+>> write issuance, but that requires further work.
+>>
+>> Thanks
+>>
+>> Mike
+>>
+>> On Tue, Sep 26, 2017 at 11:51 PM,  <tang.junhui@zte.com.cn> wrote:
+>>> From: Tang Junhui <tang.junhui@zte.com.cn>
+>>>
+>>> Hello Lyle:
+>>>
+>>> Two questions:
+>>> 1) In keys_contiguous(), you judge I/O contiguous in cache device, but not
+>>> in backing device. I think you should judge it by backing device (remove
+>>> PTR_CACHE() and use KEY_OFFSET() instead of PTR_OFFSET()?).
+>>>
+>>> 2) I did not see you combine samll contiguous I/Os to big I/O, so I think
+>>> it is useful when writeback rate was low by avoiding single I/O write, but
+>>> have no sense in high writeback rate, since previously it is also write
+>>> I/Os asynchronously.
+>>>
+>>> -----------
+>>> Tang Junhui
+>>>
+>>>> Previously, there was some logic that attempted to immediately issue
+>>>> writeback of backing-contiguous blocks when the writeback rate was
+>>>> fast.
+>>>>
+>>>> The previous logic did not have any limits on the aggregate size it
+>>>> would issue, nor the number of keys it would combine at once.  It
+>>>> would also discard the chance to do a contiguous write when the
+>>>> writeback rate was low-- e.g. at "background" writeback of target
+>>>> rate = 8, it would not combine two adjacent 4k writes and would
+>>>> instead seek the disk twice.
+>>>>
+>>>> This patch imposes limits and explicitly understands the size of
+>>>> contiguous I/O during issue.  It also will combine contiguous I/O
+>>>> in all circumstances, not just when writeback is requested to be
+>>>> relatively fast.
+>>>>
+>>>> It is a win on its own, but also lays the groundwork for skip writes to
+>>>> short keys to make the I/O more sequential/contiguous.
+>>>>
+>>>> Signed-off-by: Michael Lyle <mlyle@lyle.org>
+[snip code]
+
+-- 
+Coly Li
