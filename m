@@ -1,71 +1,93 @@
-From: John Hendrikx <hjohn@xs4all.nl>
-Subject: bcache: readahead option seems to prevent cache being filled
-Date: Sat, 30 Sep 2017 17:35:30 +0200
-Message-ID: <7cd019e6-e98f-9cca-99d8-367f825c6eae@xs4all.nl>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH 4/5] bcache: writeback: collapse contiguous IO better
+Date: Sat, 30 Sep 2017 15:49:32 -0700
+Message-ID: <CAJ+L6qdc8YqO5B3Cv0h4QQ+4P06FbtsT10Jqt5=Fx8iRh1UGwQ@mail.gmail.com>
+References: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
+ <477dc501-bbb3-f864-c637-1f19f787448a@coly.li> <CAJ+L6qczpYkLGzCZ+uxLDHXJdNi-jRCdGFvVuDHVdnXtjgo-Vg@mail.gmail.com>
+ <96ab2f99-ab5a-6a86-1d14-1954622574f2@coly.li> <CAJ+L6qcXfNwqWX+mkqcPVNyqd+eRWG4_LrLJyAyTnop75wp3+w@mail.gmail.com>
+ <3dfc3f12-b616-debd-8913-6049f215f2f3@coly.li> <CAJ+L6qf_zG37s4nGhxTbNvsdvDr5fwbmYocwP5m4rkjMLQKjtg@mail.gmail.com>
+ <CAJ+L6qe9XjPOw=6NpWzZhw-PLC5EXhstOrPaapbqvDcD0+_7QA@mail.gmail.com>
+ <CAJ+L6qcU+Db5TP1Q2J-V8angdzeW9DFGwc7KQqc4di9CSxusLg@mail.gmail.com>
+ <CAJ+L6qdu4OSRh7Qdkk-5XBgd4W_N29Y6-wVLf-jFAMKEhQrTbQ@mail.gmail.com> <CAJ+L6qcyq-E4MrWNfB9kGA8DMD_U1HMxJii-=-qPfv0LeRL45w@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from lb3-smtp-cloud9.xs4all.net ([194.109.24.30]:36270 "EHLO
-        lb3-smtp-cloud9.xs4all.net" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1751099AbdI3Pfe (ORCPT
+Received: from mail-qt0-f182.google.com ([209.85.216.182]:56800 "EHLO
+        mail-qt0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751659AbdI3Wte (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 30 Sep 2017 11:35:34 -0400
+        Sat, 30 Sep 2017 18:49:34 -0400
+Received: by mail-qt0-f182.google.com with SMTP id l25so3482737qtf.13
+        for <linux-bcache@vger.kernel.org>; Sat, 30 Sep 2017 15:49:34 -0700 (PDT)
+In-Reply-To: <CAJ+L6qcyq-E4MrWNfB9kGA8DMD_U1HMxJii-=-qPfv0LeRL45w@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
 
-I'm trying out bcache with a new use case.
+One final attempt to resend, because gmail has been giving me trouble
+sending plain text mail.
 
-I have a cache volume of 1350G and a backing raid array of 15TB.  The 
-cache volume is a normal hard disk, not an SSD.  The goal is to prevent 
-accesses to the raid array, allowing it to be kept in a spun down state. 
-  My tests show that this indeed works.
+Two instances of this.  Tested as above, with a big set of random I/Os
+that ultimately cover every block in a file (e.g. allowing sequential
+writeback).
 
-I've set up the cache as write-through, disabled sequential cutoff and 
-disabled read/write congestion by setting all of those to 0.
+With the 5 patches, samsung 940 SSD cache + crummy 5400 RPM USB hard drive:
 
-Here are some statistics:
+Typical seconds look like:
 
---- bcache ---
-Device                      /dev/bcache0 (251:0)
-UUID                        4cc40843-962c-43b3-9fa2-a3b88f56c3d1
-Block Size                  0.50KiB
-Bucket Size                 512.00KiB
-Congested?                  False
-Read Congestion             0.0ms
-Write Congestion            0.0ms
-Total Cache Size            1.32TiB
-Total Cache Used            256.50GiB   (19%)
-Total Cache Unused          1.07TiB     (81%)
-Dirty Data                  0B  (0%)
-Evictable Cache             1.32TiB     (100%)
-Replacement Policy          [lru] fifo random
-Cache Mode                  [writethrough] writeback writearound none
-Total Hits                  123136      (31%)
-Total Misses                264135
-Total Bypass Hits           2929        (100%)
-Total Bypass Misses         0
-Total Bypassed              11.40MiB (<-- before cutoff was set 0)
+Reading 38232K from cache in 4809 IO.  38232/4809=7.95k per cache device IO.
 
-In the process of loading the cache with data, I've been accessing a few 
-files (>20G+) to get them cached by hashing them with md5sum.  This 
-works well when readahead=0.  The cache misses go up, total cache used 
-goes up, etc. exactly what you would expect.  Resumming them again later 
-results in all cache hits --> excellent.
+Writing 38112k to cache in 400 I/O = 95.28k -- or we are combining
+about 11.9 extents to a contiguous writeback.  Tracing, there are
+still contiguous things that are not getting merged well, but it's OK.
+(I'm hoping plugging makes this better).
 
-However, when I set readahead to 1.0M, suddenly bcache is claiming that 
-all reads I'm doing (of files I'm 100% sure are not in the cache yet) 
-are cache *hits*, and total cache used stays the same.  However, even 
-though bcache claims all reads are hits, I can see the backing device 
-getting accessed... hardly hits then?  What's worse, it is not adding 
-the data to the cache anymore.
+sda            4809.00     38232.00       446.00      38232        446
+sdb             400.00         0.00     38112.00          0      38112
 
-As soon as I disable the readahead again by setting it to 0 (without 
-even stopping the md5sum process), cache misses go up again and the 
-total cache used value goes up as well.
+Without the 5 patches, a typical second--
 
-Perhaps I'm misunderstanding what readahead does?  Or perhaps it is 
-acting differently when the cache device is not an SSD?
+sda            2509.00     19968.00       316.00      19968        316
+sdb             502.00         0.00     19648.00          0      38112
 
---John
+or we are combining about 4.9 extents to a contiguous writeback, and
+writing back at about half the rate.  All of these numbers are +/- 10%
+and obtained by eyeballing and grabbing representative seconds.
+
+Mike
+
+On Sat, Sep 30, 2017 at 2:02 AM, Michael Lyle <mlyle@lyle.org> wrote:
+>
+> Resent because I can't seem to get gmail to not send HTML mail.  And off to sleep.
+>
+>
+> On Sat, Sep 30, 2017 at 1:57 AM, Michael Lyle <mlyle@lyle.org> wrote:
+> > Two instances of this.
+> >
+> > With the 5 patches, samsung 940 SSD cache + crummy 5400 RPM USB hard drive:
+> >
+> > Typical seconds look like:
+> >
+> > Reading 38232K from cache in 4809 IO.  38232/4809=7.95k per cache device IO.
+> >
+> > Writing 38112k to cache in 400 I/O = 95.28k -- or we are combining about
+> > 11.9 extents to a contiguous writeback.  Tracing, there are still contiguous
+> > things that are not getting merged well, but it's OK.  (I'm hoping plugging
+> > makes this better).
+> >
+> > sda            4809.00     38232.00       446.00      38232        446
+> > sdb             400.00         0.00     38112.00          0      38112
+> >
+> > Without the 5 patches, a typical second--
+> >
+> > sda            2509.00     19968.00       316.00      19968        316
+> > sdb             502.00         0.00     19648.00          0      38112
+> >
+> > or we are combining about 4.9 extents to a contiguous writeback, and writing
+> > back at about half the rate.
+> >
+> > Anyways, cya, I'm unsubscribed.
+> >
+> > Mike
+>
