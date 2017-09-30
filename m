@@ -1,69 +1,96 @@
-From: "=?utf-8?B?cWl1bGc=?=" <qiulg@ecloudtech.com.cn>
-Subject: zhujing@ecloutech.com.cn; qinxq@ecloutech.com.cn; qiulg@ecloutech.com.cn
-Date: Sat, 30 Sep 2017 18:50:28 +0800
-Message-ID: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
+From: Coly Li <i@coly.li>
+Subject: Re: zhujing@ecloutech.com.cn; qinxq@ecloutech.com.cn;
+ qiulg@ecloutech.com.cn
+Date: Sat, 30 Sep 2017 20:18:37 +0800
+Message-ID: <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
+References: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
 Mime-Version: 1.0
-Content-Type: text/plain;
-        charset="utf-8"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtpbgbr2.qq.com ([54.207.22.56]:39791 "EHLO smtpbgbr2.qq.com"
+Received: from server.coly.li ([162.144.45.48]:44980 "EHLO server.coly.li"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750933AbdI3Kuf (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 30 Sep 2017 06:50:35 -0400
+        id S1752706AbdI3MSm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 30 Sep 2017 08:18:42 -0400
+In-Reply-To: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?utf-8?B?bGludXgtYmNhY2hl?= <linux-bcache@vger.kernel.org>
+To: qiulg <qiulg@ecloudtech.com.cn>
+Cc: linux-bcache <linux-bcache@vger.kernel.org>
 
-SGksDQogDQpPdXIgZW52aXJvbm1lbnQgaXMgUmVkaGF0IEVudGVycHJpc2UgNi44LCB1cGdy
-YWRlIHRvIGtlcm5hbCA0LjQuODkuIFdlIHVzZSBzZGooNDgwRykgYXMgYXMgYmFja2luZyBk
-ZXZpY2VzIGFuZCBzZGsxKDIwRykgYXMgY2FjaGUgZGV2aWNlLiBUbyB0ZXN0IG1haW50ZW5h
-bmNlIHN0ZXAgd2hlbiBoYXJkIGRpc2sgZmFpbCwgd2UgcGx1ZyBvdXQgdGhlIGJhY2tpbmcg
-ZGV2aWNlIHNkai4NCkhlcmUgYXJlIHRoZSByZXN1bHRzIGR1cmluZyB0ZXN0Og0KIA0KIyBs
-c3Njc2kNCi0tIHRoZSBzZGogZGV2aWNlIGlzIGdvbmUuDQogDQojIGxzIC1sIC9kZXYvYmNh
-Y2hlNA0KYnJ3LXJ3LS0tLSAxIHJvb3Qgcm9vdCAyNTEsIDQgU2VwIDMwIDE4OjAwIC9kZXYv
-YmNhY2hlNA0KLS0gdGhlIGJjYWNoZTQgZGV2aWNlIGlzIHN0aWxsIHRoZXJlDQogDQojIGRk
-IGlmPS9kZXYvYmNhY2hlNCBvZj0vZGV2L251bGwgYnM9MU0gY291bnQ9MTAwDQpkZDogcmVh
-ZGluZyBgL2Rldi9iY2FjaGU0JzogSW5wdXQvb3V0cHV0IGVycm9yDQowKzAgcmVjb3JkcyBp
-bg0KMCswIHJlY29yZHMgb3V0DQowIGJ5dGVzICgwIEIpIGNvcGllZCwgMC4wMDIwMTcyOCBz
-LCAwLjAga0Ivcw0KLS0gdGhpcyBpcyByZXNvbmFibGUNCiANCiMgZmRpc2sgLWwgL2Rldi9i
-Y2FjaGU0DQotLSBmZGlzayBoYXMgbm8gcmVzdWx0LiBUaGlzIGlzIHJlc29uYWJsZQ0KIA0K
-IyBkZCBpZj0vZGV2L3plcm8gb2Y9L2Rldi9iY2FjaGU0IGJzPTFNIGNvdW50PTEwMA0KMTAw
-KzAgcmVjb3JkcyBpbg0KMTAwKzAgcmVjb3JkcyBvdXQNCjEwNDg1NzYwMCBieXRlcyAoMTA1
-IE1CKSBjb3BpZWQsIDAuMjMwNDA4IHMsIDQ1NSBNQi9zDQotLSBiY2FjaGU0IGNhbiBzdGls
-bCBiZSB3cml0dGVuLiBJZiB0aGUgYmFja2luZyBkZXZpY2UgaXMgcmVhbGx5IGRlc3Ryb3ll
-ZCwgdGhlbiBhcHBsaWNhdGlvbiBkb24ndCBrbm93IHRoYXQsIGFuZCB0aG91Z2h0IGRhdGEg
-aXMgc2F2ZWQuIEl0J3Mgbm90IGFjY2VwdGFibGUuIFRoZSBhcHBsaWNhdGlvbiBzaG91bGQg
-Z2V0IEkvTyBlcnJvci4NCiANCiMgZGQgaWY9L2Rldi9iY2FjaGU0IG9mPS9kZXYvbnVsbCBi
-cz0xTSBjb3VudD0xMDANCmRkOiByZWFkaW5nIGAvZGV2L2JjYWNoZTQnOiBJbnB1dC9vdXRw
-dXQgZXJyb3INCjQ2KzEgcmVjb3JkcyBpbg0KNDYrMSByZWNvcmRzIG91dA0KNDgyMzg1OTIg
-Ynl0ZXMgKDQ4IE1CKSBjb3BpZWQsIDAuMTIwNTE3IHMsIDQwMCBNQi9zDQotLSBub3cgcmVh
-ZCBzdGlsbCBzaG93cyBlcnJvciBidXQgNDhNQiBkYXRhIHJlYWQgb3V0Lg0KIA0KIyBmZGlz
-ayAtbCAvZGV2L2JjYWNoZTQNCk5vdGU6IHNlY3RvciBzaXplIGlzIDQwOTYgKG5vdCA1MTIp
-DQpEaXNrIC9kZXYvYmNhY2hlNDogNDgwLjEgR0IsIDQ4MDEwMzk3Mjg2NCBieXRlcw0KMjU1
-IGhlYWRzLCA2MyBzZWN0b3JzL3RyYWNrLCA3Mjk2IGN5bGluZGVycw0KVW5pdHMgPSBjeWxp
-bmRlcnMgb2YgMTYwNjUgKiA0MDk2ID0gNjU4MDIyNDAgYnl0ZXMNClNlY3RvciBzaXplIChs
-b2dpY2FsL3BoeXNpY2FsKTogNDA5NiBieXRlcyAvIDQwOTYgYnl0ZXMNCkkvTyBzaXplICht
-aW5pbXVtL29wdGltYWwpOiA0MDk2IGJ5dGVzIC8gNDA5NiBieXRlcw0KRGlzayBpZGVudGlm
-aWVyOiAweDAwMDAwMDAwDQotLSBmZGlzayBnb3QgYW5zd2VyLiBTdHJhbmdlLiA0ODBHQiBp
-cyB0aGUgYmFja2luZyBkZXZpY2Ugc2l6ZS4NCiANCiMgZGQgaWY9L2Rldi96ZXJvIG9mPS9k
-ZXYvYmNhY2hlNCBicz0xTQ0KZGQ6IHdyaXRpbmcgYC9kZXYvYmNhY2hlNCc6IE5vIHNwYWNl
-IGxlZnQgb24gZGV2aWNlDQo0NTc4NjMrMCByZWNvcmRzIGluDQo0NTc4NjIrMCByZWNvcmRz
-IG91dA0KNDgwMTAzOTcyODY0IGJ5dGVzICg0ODAgR0IpIGNvcGllZCwgNjIwLjk5MyBzLCA3
-NzMgTUIvcw0KLS0ga2VlcCB3cml0aW5nIHRvIGJjYWNoZTQsIGFmdGVyIDQ4MEdCLCBpdCBz
-YXlzICJubyBzcGFjZSBsZWZ0Ii4gQnV0IHRoZSBiYWNraW5nIGRldmljZSBpcyA0ODBHLCBj
-YWNoZSBkZXZpY2UgaXMgb25seSAyMEcsIHdoZXJlIGRpZCB0aGUgZGF0YSBnbz8NCi0tIGR1
-cmluZyBkZCwgdGhlIC92YXIvbG9nL21lc3NhZ2Ugc2hvd3MgZXJyb3INCi4uLg0KU2VwIDMw
-IDE3OjUyOjM1IHMxMDMga2VybmVsOiBCdWZmZXIgSS9PIGVycm9yIG9uIGRldiBiY2FjaGU0
-LCBsb2dpY2FsIGJsb2NrIDIyMjQyNTksIGxvc3QgYXN5bmMgcGFnZSB3cml0ZQ0KU2VwIDMw
-IDE3OjUyOjM1IHMxMDMga2VybmVsOiBCdWZmZXIgSS9PIGVycm9yIG9uIGRldiBiY2FjaGU0
-LCBsb2dpY2FsIGJsb2NrIDIyMjQyNjAsIGxvc3QgYXN5bmMgcGFnZSB3cml0ZQ0KU2VwIDMw
-IDE3OjUyOjM1IHMxMDMga2VybmVsOiBCdWZmZXIgSS9PIGVycm9yIG9uIGRldiBiY2FjaGU0
-LCBsb2dpY2FsIGJsb2NrIDIyMjQyNjEsIGxvc3QgYXN5bmMgcGFnZSB3cml0ZQ0KU2VwIDMw
-IDE3OjUyOjQwIHMxMDMga2VybmVsOiBidWZmZXJfaW9fZXJyb3I6IDEwOTMxNjkgY2FsbGJh
-Y2tzIHN1cHByZXNzZWQNClNlcCAzMCAxNzo1Mjo0MCBzMTAzIGtlcm5lbDogQnVmZmVyIEkv
-TyBlcnJvciBvbiBkZXYgYmNhY2hlNCwgbG9naWNhbCBibG9jayAzMzE3NTQ4LCBsb3N0IGFz
-eW5jIHBhZ2Ugd3JpdGUNCi4uLg0KIA0KSSB0aGluayBjb3JyZWN0IGJlaGF2aW91ciBzaG91
-bGQgYmUsIGlmIGJhY2tpbmcgZGV2aWNlIGxvc3QsICJkZCIgKHRoZSBhcHBsaWNhdGlvbikg
-c2hvdWxkIGtub3cgcmlnaHRhd2F5LCBnb3QgSS9PIGVycm9yLg0KIA0KQXBwcmVjaWF0ZWQg
-Zm9yIGFueSBoZWxwLg0KIA0KUmljaGFyZCBRaXU=
+On 2017/9/30 下午6:50, qiulg wrote:
+> Hi,
+>  
+> Our environment is Redhat Enterprise 6.8, upgrade to kernal 4.4.89. We use sdj(480G) as as backing devices and sdk1(20G) as cache device. To test maintenance step when hard disk fail, we plug out the backing device sdj.
+> Here are the results during test:
+>  
+> # lsscsi
+> -- the sdj device is gone.
+>  
+> # ls -l /dev/bcache4
+> brw-rw---- 1 root root 251, 4 Sep 30 18:00 /dev/bcache4
+> -- the bcache4 device is still there
+>  
+> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
+> dd: reading `/dev/bcache4': Input/output error
+> 0+0 records in
+> 0+0 records out
+> 0 bytes (0 B) copied, 0.00201728 s, 0.0 kB/s
+> -- this is resonable
+>  
+> # fdisk -l /dev/bcache4
+> -- fdisk has no result. This is resonable
+>  
+> # dd if=/dev/zero of=/dev/bcache4 bs=1M count=100
+> 100+0 records in
+> 100+0 records out
+> 104857600 bytes (105 MB) copied, 0.230408 s, 455 MB/s
+> -- bcache4 can still be written. If the backing device is really destroyed, then application don't know that, and thought data is saved. It's not acceptable. The application should get I/O error.
+>  
+> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
+> dd: reading `/dev/bcache4': Input/output error
+> 46+1 records in
+> 46+1 records out
+> 48238592 bytes (48 MB) copied, 0.120517 s, 400 MB/s
+> -- now read still shows error but 48MB data read out.
+>  
+> # fdisk -l /dev/bcache4
+> Note: sector size is 4096 (not 512)
+> Disk /dev/bcache4: 480.1 GB, 480103972864 bytes
+> 255 heads, 63 sectors/track, 7296 cylinders
+> Units = cylinders of 16065 * 4096 = 65802240 bytes
+> Sector size (logical/physical): 4096 bytes / 4096 bytes
+> I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+> Disk identifier: 0x00000000
+> -- fdisk got answer. Strange. 480GB is the backing device size.
+>  
+> # dd if=/dev/zero of=/dev/bcache4 bs=1M
+> dd: writing `/dev/bcache4': No space left on device
+> 457863+0 records in
+> 457862+0 records out
+> 480103972864 bytes (480 GB) copied, 620.993 s, 773 MB/s
+> -- keep writing to bcache4, after 480GB, it says "no space left". But the backing device is 480G, cache device is only 20G, where did the data go?
+> -- during dd, the /var/log/message shows error
+> ...
+> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224259, lost async page write
+> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224260, lost async page write
+> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224261, lost async page write
+> Sep 30 17:52:40 s103 kernel: buffer_io_error: 1093169 callbacks suppressed
+> Sep 30 17:52:40 s103 kernel: Buffer I/O error on dev bcache4, logical block 3317548, lost async page write
+> ...
+>  
+> I think correct behaviour should be, if backing device lost, "dd" (the application) should know rightaway, got I/O error.
+>  
+> Appreciated for any help.
+>  
+Hi,
+
+Could you please try oflag=direct and observe what is the difference ?
+
+Buffered I/O is asynchronized, application is not able to get an
+immediate -EIO.
+
+
+-- 
+Coly Li
