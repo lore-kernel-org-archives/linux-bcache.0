@@ -1,96 +1,71 @@
-From: Coly Li <i@coly.li>
-Subject: Re: zhujing@ecloutech.com.cn; qinxq@ecloutech.com.cn;
- qiulg@ecloutech.com.cn
-Date: Sat, 30 Sep 2017 20:18:37 +0800
-Message-ID: <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
-References: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
+From: John Hendrikx <hjohn@xs4all.nl>
+Subject: bcache: readahead option seems to prevent cache being filled
+Date: Sat, 30 Sep 2017 17:35:30 +0200
+Message-ID: <7cd019e6-e98f-9cca-99d8-367f825c6eae@xs4all.nl>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:44980 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752706AbdI3MSm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 30 Sep 2017 08:18:42 -0400
-In-Reply-To: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
-Content-Language: en-US
+Received: from lb3-smtp-cloud9.xs4all.net ([194.109.24.30]:36270 "EHLO
+        lb3-smtp-cloud9.xs4all.net" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1751099AbdI3Pfe (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 30 Sep 2017 11:35:34 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: qiulg <qiulg@ecloudtech.com.cn>
-Cc: linux-bcache <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
 
-On 2017/9/30 下午6:50, qiulg wrote:
-> Hi,
->  
-> Our environment is Redhat Enterprise 6.8, upgrade to kernal 4.4.89. We use sdj(480G) as as backing devices and sdk1(20G) as cache device. To test maintenance step when hard disk fail, we plug out the backing device sdj.
-> Here are the results during test:
->  
-> # lsscsi
-> -- the sdj device is gone.
->  
-> # ls -l /dev/bcache4
-> brw-rw---- 1 root root 251, 4 Sep 30 18:00 /dev/bcache4
-> -- the bcache4 device is still there
->  
-> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
-> dd: reading `/dev/bcache4': Input/output error
-> 0+0 records in
-> 0+0 records out
-> 0 bytes (0 B) copied, 0.00201728 s, 0.0 kB/s
-> -- this is resonable
->  
-> # fdisk -l /dev/bcache4
-> -- fdisk has no result. This is resonable
->  
-> # dd if=/dev/zero of=/dev/bcache4 bs=1M count=100
-> 100+0 records in
-> 100+0 records out
-> 104857600 bytes (105 MB) copied, 0.230408 s, 455 MB/s
-> -- bcache4 can still be written. If the backing device is really destroyed, then application don't know that, and thought data is saved. It's not acceptable. The application should get I/O error.
->  
-> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
-> dd: reading `/dev/bcache4': Input/output error
-> 46+1 records in
-> 46+1 records out
-> 48238592 bytes (48 MB) copied, 0.120517 s, 400 MB/s
-> -- now read still shows error but 48MB data read out.
->  
-> # fdisk -l /dev/bcache4
-> Note: sector size is 4096 (not 512)
-> Disk /dev/bcache4: 480.1 GB, 480103972864 bytes
-> 255 heads, 63 sectors/track, 7296 cylinders
-> Units = cylinders of 16065 * 4096 = 65802240 bytes
-> Sector size (logical/physical): 4096 bytes / 4096 bytes
-> I/O size (minimum/optimal): 4096 bytes / 4096 bytes
-> Disk identifier: 0x00000000
-> -- fdisk got answer. Strange. 480GB is the backing device size.
->  
-> # dd if=/dev/zero of=/dev/bcache4 bs=1M
-> dd: writing `/dev/bcache4': No space left on device
-> 457863+0 records in
-> 457862+0 records out
-> 480103972864 bytes (480 GB) copied, 620.993 s, 773 MB/s
-> -- keep writing to bcache4, after 480GB, it says "no space left". But the backing device is 480G, cache device is only 20G, where did the data go?
-> -- during dd, the /var/log/message shows error
-> ...
-> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224259, lost async page write
-> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224260, lost async page write
-> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224261, lost async page write
-> Sep 30 17:52:40 s103 kernel: buffer_io_error: 1093169 callbacks suppressed
-> Sep 30 17:52:40 s103 kernel: Buffer I/O error on dev bcache4, logical block 3317548, lost async page write
-> ...
->  
-> I think correct behaviour should be, if backing device lost, "dd" (the application) should know rightaway, got I/O error.
->  
-> Appreciated for any help.
->  
-Hi,
+I'm trying out bcache with a new use case.
 
-Could you please try oflag=direct and observe what is the difference ?
+I have a cache volume of 1350G and a backing raid array of 15TB.  The 
+cache volume is a normal hard disk, not an SSD.  The goal is to prevent 
+accesses to the raid array, allowing it to be kept in a spun down state. 
+  My tests show that this indeed works.
 
-Buffered I/O is asynchronized, application is not able to get an
-immediate -EIO.
+I've set up the cache as write-through, disabled sequential cutoff and 
+disabled read/write congestion by setting all of those to 0.
 
+Here are some statistics:
 
--- 
-Coly Li
+--- bcache ---
+Device                      /dev/bcache0 (251:0)
+UUID                        4cc40843-962c-43b3-9fa2-a3b88f56c3d1
+Block Size                  0.50KiB
+Bucket Size                 512.00KiB
+Congested?                  False
+Read Congestion             0.0ms
+Write Congestion            0.0ms
+Total Cache Size            1.32TiB
+Total Cache Used            256.50GiB   (19%)
+Total Cache Unused          1.07TiB     (81%)
+Dirty Data                  0B  (0%)
+Evictable Cache             1.32TiB     (100%)
+Replacement Policy          [lru] fifo random
+Cache Mode                  [writethrough] writeback writearound none
+Total Hits                  123136      (31%)
+Total Misses                264135
+Total Bypass Hits           2929        (100%)
+Total Bypass Misses         0
+Total Bypassed              11.40MiB (<-- before cutoff was set 0)
+
+In the process of loading the cache with data, I've been accessing a few 
+files (>20G+) to get them cached by hashing them with md5sum.  This 
+works well when readahead=0.  The cache misses go up, total cache used 
+goes up, etc. exactly what you would expect.  Resumming them again later 
+results in all cache hits --> excellent.
+
+However, when I set readahead to 1.0M, suddenly bcache is claiming that 
+all reads I'm doing (of files I'm 100% sure are not in the cache yet) 
+are cache *hits*, and total cache used stays the same.  However, even 
+though bcache claims all reads are hits, I can see the backing device 
+getting accessed... hardly hits then?  What's worse, it is not adding 
+the data to the cache anymore.
+
+As soon as I disable the readahead again by setting it to 0 (without 
+even stopping the md5sum process), cache misses go up again and the 
+total cache used value goes up as well.
+
+Perhaps I'm misunderstanding what readahead does?  Or perhaps it is 
+acting differently when the cache device is not an SSD?
+
+--John
