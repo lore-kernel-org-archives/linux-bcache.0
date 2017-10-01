@@ -1,116 +1,158 @@
-From: "=?utf-8?B?cWl1bGc=?=" <qiulg@ecloudtech.com.cn>
+From: Coly Li <i@coly.li>
 Subject: Re: /dev/bcacheX can still be written when plug out backing device
-Date: Sun, 1 Oct 2017 23:51:23 +0800
-Message-ID: <tencent_28DFC2634AD6B0B33A888057@qq.com>
+Date: Sun, 1 Oct 2017 23:57:22 +0800
+Message-ID: <a0d64511-9566-04e0-3faa-fc03c725ba7d@coly.li>
 References: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
-        <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
-        <tencent_737734B231F68D6314102FB0@qq.com>
-        <b486c2c4-7cb4-4ece-d91d-6e453e0480d0@coly.li>
+ <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
+ <tencent_737734B231F68D6314102FB0@qq.com>
+ <b486c2c4-7cb4-4ece-d91d-6e453e0480d0@coly.li>
+ <tencent_28DFC2634AD6B0B33A888057@qq.com>
 Mime-Version: 1.0
-Content-Type: text/plain;
-        charset="utf-8"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtpbguseast2.qq.com ([54.204.34.130]:56387 "EHLO
-        smtpbguseast2.qq.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750965AbdJAPv1 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 1 Oct 2017 11:51:27 -0400
-In-Reply-To: <b486c2c4-7cb4-4ece-d91d-6e453e0480d0@coly.li>
+Received: from server.coly.li ([162.144.45.48]:49612 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751093AbdJAP53 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 1 Oct 2017 11:57:29 -0400
+In-Reply-To: <tencent_28DFC2634AD6B0B33A888057@qq.com>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?utf-8?B?Q29seSBMaQ==?= <i@coly.li>
-Cc: =?utf-8?B?bGludXgtYmNhY2hl?= <linux-bcache@vger.kernel.org>, =?utf-8?B?5pyx6I+B?= <zhujing@ecloudtech.com.cn>, =?utf-8?B?56em5pmT5by6?= <qinxq@ecloudtech.com.cn>
+To: qiulg <qiulg@ecloudtech.com.cn>
+Cc: linux-bcache <linux-bcache@vger.kernel.org>, =?UTF-8?B?5pyx6I+B?= <zhujing@ecloudtech.com.cn>, =?UTF-8?B?56em5pmT5by6?= <qinxq@ecloudtech.com.cn>
 
-VGhhdCdzIGJhZCBuZXdzLiA6KCANCldoYXQgaXMgZXhwZWN0ZWQgaXMgZnJlZXppbmcgd3Jp
-dGUgSS9PIGFuZCByZXR1cm4gZXJyb3IgdG8gYXBwbGljYXRpb24gd2hlbiBjYWNoZSBkZXZp
-Y2Ugb3IgYmFja2luZyBkZXZpY2UgZmFpbGVkLiBIb3BlIHRoZSBwYXRjaCBjYW4gYmUgcmVs
-ZWFzZWQgc29vbi4gIA0KDQpUaGFua3MuIA0KUWl1DQogDQotLS0tLS0tLS0tLS0tLS0tLS0g
-T3JpZ2luYWwgLS0tLS0tLS0tLS0tLS0tLS0tDQpGcm9tOiAgIkNvbHkgTGkiPGlAY29seS5s
-aT47DQpEYXRlOiAgU3VuLCBPY3QgMSwgMjAxNyAxMDo1MCBQTQ0KVG86ICAicWl1bGciPHFp
-dWxnQGVjbG91ZHRlY2guY29tLmNuPjsNCkNjOiAgImxpbnV4LWJjYWNoZSI8bGludXgtYmNh
-Y2hlQHZnZXIua2VybmVsLm9yZz47ICLmnLHoj4EiPHpodWppbmdAZWNsb3VkdGVjaC5jb20u
-Y24+OyAi56em5pmT5by6IjxxaW54cUBlY2xvdWR0ZWNoLmNvbS5jbj47DQpTdWJqZWN0OiAg
-UmU6IC9kZXYvYmNhY2hlWCBjYW4gc3RpbGwgYmUgd3JpdHRlbiB3aGVuIHBsdWcgb3V0IGJh
-Y2tpbmcgZGV2aWNlDQogDQpPbiAyMDE3LzEwLzEg5LiL5Y2IMTA6MjksIHFpdWxnIHdyb3Rl
-Og0KPiBUaGFua3MgQ29seS4gU29ycnkgZm9yIHRoZSB3cm9uZyBzdWJqZWN0LCBjaGFuZ2Vk
-LiANCj4gDQo+IFRyaWRkIGRkIHdpdGggb2ZsYWc9ZGlyZWN0LCB0aGUgYmNhY2hlIGRldmlj
-ZSBjYW4gc3RpbGwgYmUgd3JpdHRlbiB3aXRob3V0IGJhY2tpbmcgZGV2aWNlLCBidXQgdGhp
-cyB0aW1lIGl0IGZpbmlzaGVkIGF0IGFib3V0IDcuN0dCLg0KPiANCj4gIyBkZCBpZj0vZGV2
-L3plcm8gb2Y9L2Rldi9iY2FjaGU0IG9mbGFnPWRpcmVjdCANCj4gIGRkOiB3cml0aW5nIHRv
-IGAvZGV2L2JjYWNoZTQnOiBJbnB1dC9vdXRwdXQgZXJyb3INCj4gMTUwNTI4MjQrMCByZWNv
-cmRzIGluDQo+IDE1MDUyODIzKzAgcmVjb3JkcyBvdXQNCj4gNzcwNzA0NTM3NiBieXRlcyAo
-Ny43IEdCKSBjb3BpZWQsIDEwMjIuNjMgcywgNy41IE1CL3MgDQo+IA0KDQpBaGEsIGl0IGlz
-IGJhY2tpbmcgZGV2aWNlLi4uSSB3YXMgYmxpbmQuLi4NClRoZSBzaXR1YXRpb24geW91IGhp
-dCBpcyB0aGUgYmFja2luZyBkZXZpY2UgZmFpbHVyZSwgd2hpY2ggaXMgbm90DQpwcm9wZXJs
-eSBoYW5kbGVkIGJ5IGJjYWNoZSB5ZXQuIChpbmRlZWQgY2FjaGUgZGV2aWNlIGZhaWx1cmUg
-aXMgbm90DQpwcm9wZXJseSBoYW5kbGVkIG5laXRoZXIpDQoNCllvdSBhcmUgbm90IHRoZSBm
-aXJzdCBvbmUgY29tcGxhaW5zIG9uIHRoaXMuIEkgYWxzbyByZWNlaXZlIHN1Y2ggYQ0Kc2lt
-aWxhciBmZWF0dXJlIHJlcXVlc3QsIGJ1dCBpdCBpcyBvbiB0aGUgdGFpbCBvZiBteSB0YXNr
-IGxpc3QuIElmDQpzb21lb25lIG1heSBjb250cmlidXRlIHBhdGNoZXMsIEkgYW0gZ2xhZCB0
-byB0ZXN0Lg0KDQpUaGFua3MuDQoNCkNvbHkNCg0KPiAtLS0tLS0tLS0tLS0tLS0tLS0gT3Jp
-Z2luYWwgLS0tLS0tLS0tLS0tLS0tLS0tDQo+IEZyb206ICAiQ29seSBMaSI8aUBjb2x5Lmxp
-PjsNCj4gRGF0ZTogIFNhdCwgU2VwIDMwLCAyMDE3IDA4OjE4IFBNDQo+IFRvOiAgInFpdWxn
-IjxxaXVsZ0BlY2xvdWR0ZWNoLmNvbS5jbj47DQo+IENjOiAgImxpbnV4LWJjYWNoZSI8bGlu
-dXgtYmNhY2hlQHZnZXIua2VybmVsLm9yZz47DQo+IFN1YmplY3Q6ICBSZTogemh1amluZ0Bl
-Y2xvdXRlY2guY29tLmNuOyBxaW54cUBlY2xvdXRlY2guY29tLmNuO3FpdWxnQGVjbG91dGVj
-aC5jb20uY24NCj4gIA0KPiBPbiAyMDE3LzkvMzAg5LiL5Y2INjo1MCwgcWl1bGcgd3JvdGU6
-DQo+PiBIaSwNCj4+ICANCj4+IE91ciBlbnZpcm9ubWVudCBpcyBSZWRoYXQgRW50ZXJwcmlz
-ZSA2LjgsIHVwZ3JhZGUgdG8ga2VybmFsIDQuNC44OS4gV2UgdXNlIHNkaig0ODBHKSBhcyBh
-cyBiYWNraW5nIGRldmljZXMgYW5kIHNkazEoMjBHKSBhcyBjYWNoZSBkZXZpY2UuIFRvIHRl
-c3QgbWFpbnRlbmFuY2Ugc3RlcCB3aGVuIGhhcmQgZGlzayBmYWlsLCB3ZSBwbHVnIG91dCB0
-aGUgYmFja2luZyBkZXZpY2Ugc2RqLg0KPj4gSGVyZSBhcmUgdGhlIHJlc3VsdHMgZHVyaW5n
-IHRlc3Q6DQo+PiAgDQo+PiAjIGxzc2NzaQ0KPj4gLS0gdGhlIHNkaiBkZXZpY2UgaXMgZ29u
-ZS4NCj4+ICANCj4+ICMgbHMgLWwgL2Rldi9iY2FjaGU0DQo+PiBicnctcnctLS0tIDEgcm9v
-dCByb290IDI1MSwgNCBTZXAgMzAgMTg6MDAgL2Rldi9iY2FjaGU0DQo+PiAtLSB0aGUgYmNh
-Y2hlNCBkZXZpY2UgaXMgc3RpbGwgdGhlcmUNCj4+ICANCj4+ICMgZGQgaWY9L2Rldi9iY2Fj
-aGU0IG9mPS9kZXYvbnVsbCBicz0xTSBjb3VudD0xMDANCj4+IGRkOiByZWFkaW5nIGAvZGV2
-L2JjYWNoZTQnOiBJbnB1dC9vdXRwdXQgZXJyb3INCj4+IDArMCByZWNvcmRzIGluDQo+PiAw
-KzAgcmVjb3JkcyBvdXQNCj4+IDAgYnl0ZXMgKDAgQikgY29waWVkLCAwLjAwMjAxNzI4IHMs
-IDAuMCBrQi9zDQo+PiAtLSB0aGlzIGlzIHJlc29uYWJsZQ0KPj4gIA0KPj4gIyBmZGlzayAt
-bCAvZGV2L2JjYWNoZTQNCj4+IC0tIGZkaXNrIGhhcyBubyByZXN1bHQuIFRoaXMgaXMgcmVz
-b25hYmxlDQo+PiAgDQo+PiAjIGRkIGlmPS9kZXYvemVybyBvZj0vZGV2L2JjYWNoZTQgYnM9
-MU0gY291bnQ9MTAwDQo+PiAxMDArMCByZWNvcmRzIGluDQo+PiAxMDArMCByZWNvcmRzIG91
-dA0KPj4gMTA0ODU3NjAwIGJ5dGVzICgxMDUgTUIpIGNvcGllZCwgMC4yMzA0MDggcywgNDU1
-IE1CL3MNCj4+IC0tIGJjYWNoZTQgY2FuIHN0aWxsIGJlIHdyaXR0ZW4uIElmIHRoZSBiYWNr
-aW5nIGRldmljZSBpcyByZWFsbHkgZGVzdHJveWVkLCB0aGVuIGFwcGxpY2F0aW9uIGRvbid0
-IGtub3cgdGhhdCwgYW5kIHRob3VnaHQgZGF0YSBpcyBzYXZlZC4gSXQncyBub3QgYWNjZXB0
-YWJsZS4gVGhlIGFwcGxpY2F0aW9uIHNob3VsZCBnZXQgSS9PIGVycm9yLg0KPj4gIA0KPj4g
-IyBkZCBpZj0vZGV2L2JjYWNoZTQgb2Y9L2Rldi9udWxsIGJzPTFNIGNvdW50PTEwMA0KPj4g
-ZGQ6IHJlYWRpbmcgYC9kZXYvYmNhY2hlNCc6IElucHV0L291dHB1dCBlcnJvcg0KPj4gNDYr
-MSByZWNvcmRzIGluDQo+PiA0NisxIHJlY29yZHMgb3V0DQo+PiA0ODIzODU5MiBieXRlcyAo
-NDggTUIpIGNvcGllZCwgMC4xMjA1MTcgcywgNDAwIE1CL3MNCj4+IC0tIG5vdyByZWFkIHN0
-aWxsIHNob3dzIGVycm9yIGJ1dCA0OE1CIGRhdGEgcmVhZCBvdXQuDQo+PiAgDQo+PiAjIGZk
-aXNrIC1sIC9kZXYvYmNhY2hlNA0KPj4gTm90ZTogc2VjdG9yIHNpemUgaXMgNDA5NiAobm90
-IDUxMikNCj4+IERpc2sgL2Rldi9iY2FjaGU0OiA0ODAuMSBHQiwgNDgwMTAzOTcyODY0IGJ5
-dGVzDQo+PiAyNTUgaGVhZHMsIDYzIHNlY3RvcnMvdHJhY2ssIDcyOTYgY3lsaW5kZXJzDQo+
-PiBVbml0cyA9IGN5bGluZGVycyBvZiAxNjA2NSAqIDQwOTYgPSA2NTgwMjI0MCBieXRlcw0K
-Pj4gU2VjdG9yIHNpemUgKGxvZ2ljYWwvcGh5c2ljYWwpOiA0MDk2IGJ5dGVzIC8gNDA5NiBi
-eXRlcw0KPj4gSS9PIHNpemUgKG1pbmltdW0vb3B0aW1hbCk6IDQwOTYgYnl0ZXMgLyA0MDk2
-IGJ5dGVzDQo+PiBEaXNrIGlkZW50aWZpZXI6IDB4MDAwMDAwMDANCj4+IC0tIGZkaXNrIGdv
-dCBhbnN3ZXIuIFN0cmFuZ2UuIDQ4MEdCIGlzIHRoZSBiYWNraW5nIGRldmljZSBzaXplLg0K
-Pj4gIA0KPj4gIyBkZCBpZj0vZGV2L3plcm8gb2Y9L2Rldi9iY2FjaGU0IGJzPTFNDQo+PiBk
-ZDogd3JpdGluZyBgL2Rldi9iY2FjaGU0JzogTm8gc3BhY2UgbGVmdCBvbiBkZXZpY2UNCj4+
-IDQ1Nzg2MyswIHJlY29yZHMgaW4NCj4+IDQ1Nzg2MiswIHJlY29yZHMgb3V0DQo+PiA0ODAx
-MDM5NzI4NjQgYnl0ZXMgKDQ4MCBHQikgY29waWVkLCA2MjAuOTkzIHMsIDc3MyBNQi9zDQo+
-PiAtLSBrZWVwIHdyaXRpbmcgdG8gYmNhY2hlNCwgYWZ0ZXIgNDgwR0IsIGl0IHNheXMgIm5v
-IHNwYWNlIGxlZnQiLiBCdXQgdGhlIGJhY2tpbmcgZGV2aWNlIGlzIDQ4MEcsIGNhY2hlIGRl
-dmljZSBpcyBvbmx5IDIwRywgd2hlcmUgZGlkIHRoZSBkYXRhIGdvPw0KPj4gLS0gZHVyaW5n
-IGRkLCB0aGUgL3Zhci9sb2cvbWVzc2FnZSBzaG93cyBlcnJvcg0KPj4gLi4uDQo+PiBTZXAg
-MzAgMTc6NTI6MzUgczEwMyBrZXJuZWw6IEJ1ZmZlciBJL08gZXJyb3Igb24gZGV2IGJjYWNo
-ZTQsIGxvZ2ljYWwgYmxvY2sgMjIyNDI1OSwgbG9zdCBhc3luYyBwYWdlIHdyaXRlDQo+PiBT
-ZXAgMzAgMTc6NTI6MzUgczEwMyBrZXJuZWw6IEJ1ZmZlciBJL08gZXJyb3Igb24gZGV2IGJj
-YWNoZTQsIGxvZ2ljYWwgYmxvY2sgMjIyNDI2MCwgbG9zdCBhc3luYyBwYWdlIHdyaXRlDQo+
-PiBTZXAgMzAgMTc6NTI6MzUgczEwMyBrZXJuZWw6IEJ1ZmZlciBJL08gZXJyb3Igb24gZGV2
-IGJjYWNoZTQsIGxvZ2ljYWwgYmxvY2sgMjIyNDI2MSwgbG9zdCBhc3luYyBwYWdlIHdyaXRl
-DQo+PiBTZXAgMzAgMTc6NTI6NDAgczEwMyBrZXJuZWw6IGJ1ZmZlcl9pb19lcnJvcjogMTA5
-MzE2OSBjYWxsYmFja3Mgc3VwcHJlc3NlZA0KPj4gU2VwIDMwIDE3OjUyOjQwIHMxMDMga2Vy
-bmVsOiBCdWZmZXIgSS9PIGVycm9yIG9uIGRldiBiY2FjaGU0LCBsb2dpY2FsIGJsb2NrIDMz
-MTc1NDgsIGxvc3QgYXN5bmMgcGFnZSB3cml0ZQ0KPj4gLi4uDQo+PiAgDQo+PiBJIHRoaW5r
-IGNvcnJlY3QgYmVoYXZpb3VyIHNob3VsZCBiZSwgaWYgYmFja2luZyBkZXZpY2UgbG9zdCwg
-ImRkIiAodGhlIGFwcGxpY2F0aW9uKSBzaG91bGQga25vdyByaWdodGF3YXksIGdvdCBJL08g
-ZXJyb3IuDQo+PiAgDQo+PiBBcHByZWNpYXRlZCBmb3IgYW55IGhlbHAuDQo+PiAgDQo+IEhp
-LA0KPiANCj4gQ291bGQgeW91IHBsZWFzZSB0cnkgb2ZsYWc9ZGlyZWN0IGFuZCBvYnNlcnZl
-IHdoYXQgaXMgdGhlIGRpZmZlcmVuY2UgPw0KPiANCj4gQnVmZmVyZWQgSS9PIGlzIGFzeW5j
-aHJvbml6ZWQsIGFwcGxpY2F0aW9uIGlzIG5vdCBhYmxlIHRvIGdldCBhbg0KPiBpbW1lZGlh
-dGUgLUVJTy4NCj4=
+On 2017/10/1 下午11:51, qiulg wrote:
+> That's bad news. :( 
+> What is expected is freezing write I/O and return error to application when cache device or backing device failed. Hope the patch can be released soon.  
+> 
+
+Yes this is one of the expected behavior.
+Another expectation is after backing device is failed, bcache complains,
+but still permits cache device to cache a pre-defined amount of data,
+then freeing write I/O.
+
+Once the patch is available, I will let you know :-)
+
+Coly
+
+
+> Thanks. 
+> Qiu
+>  
+> ------------------ Original ------------------
+> From:  "Coly Li"<i@coly.li>;
+> Date:  Sun, Oct 1, 2017 10:50 PM
+> To:  "qiulg"<qiulg@ecloudtech.com.cn>;
+> Cc:  "linux-bcache"<linux-bcache@vger.kernel.org>; "朱菁"<zhujing@ecloudtech.com.cn>; "秦晓强"<qinxq@ecloudtech.com.cn>;
+> Subject:  Re: /dev/bcacheX can still be written when plug out backing device
+>  
+> On 2017/10/1 下午10:29, qiulg wrote:
+>> Thanks Coly. Sorry for the wrong subject, changed. 
+>>
+>> Tridd dd with oflag=direct, the bcache device can still be written without backing device, but this time it finished at about 7.7GB.
+>>
+>> # dd if=/dev/zero of=/dev/bcache4 oflag=direct 
+>>  dd: writing to `/dev/bcache4': Input/output error
+>> 15052824+0 records in
+>> 15052823+0 records out
+>> 7707045376 bytes (7.7 GB) copied, 1022.63 s, 7.5 MB/s 
+>>
+> 
+> Aha, it is backing device...I was blind...
+> The situation you hit is the backing device failure, which is not
+> properly handled by bcache yet. (indeed cache device failure is not
+> properly handled neither)
+> 
+> You are not the first one complains on this. I also receive such a
+> similar feature request, but it is on the tail of my task list. If
+> someone may contribute patches, I am glad to test.
+> 
+> Thanks.
+> 
+> Coly
+> 
+>> ------------------ Original ------------------
+>> From:  "Coly Li"<i@coly.li>;
+>> Date:  Sat, Sep 30, 2017 08:18 PM
+>> To:  "qiulg"<qiulg@ecloudtech.com.cn>;
+>> Cc:  "linux-bcache"<linux-bcache@vger.kernel.org>;
+>> Subject:  Re: zhujing@ecloutech.com.cn; qinxq@ecloutech.com.cn;qiulg@ecloutech.com.cn
+>>  
+>> On 2017/9/30 下午6:50, qiulg wrote:
+>>> Hi,
+>>>  
+>>> Our environment is Redhat Enterprise 6.8, upgrade to kernal 4.4.89. We use sdj(480G) as as backing devices and sdk1(20G) as cache device. To test maintenance step when hard disk fail, we plug out the backing device sdj.
+>>> Here are the results during test:
+>>>  
+>>> # lsscsi
+>>> -- the sdj device is gone.
+>>>  
+>>> # ls -l /dev/bcache4
+>>> brw-rw---- 1 root root 251, 4 Sep 30 18:00 /dev/bcache4
+>>> -- the bcache4 device is still there
+>>>  
+>>> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
+>>> dd: reading `/dev/bcache4': Input/output error
+>>> 0+0 records in
+>>> 0+0 records out
+>>> 0 bytes (0 B) copied, 0.00201728 s, 0.0 kB/s
+>>> -- this is resonable
+>>>  
+>>> # fdisk -l /dev/bcache4
+>>> -- fdisk has no result. This is resonable
+>>>  
+>>> # dd if=/dev/zero of=/dev/bcache4 bs=1M count=100
+>>> 100+0 records in
+>>> 100+0 records out
+>>> 104857600 bytes (105 MB) copied, 0.230408 s, 455 MB/s
+>>> -- bcache4 can still be written. If the backing device is really destroyed, then application don't know that, and thought data is saved. It's not acceptable. The application should get I/O error.
+>>>  
+>>> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
+>>> dd: reading `/dev/bcache4': Input/output error
+>>> 46+1 records in
+>>> 46+1 records out
+>>> 48238592 bytes (48 MB) copied, 0.120517 s, 400 MB/s
+>>> -- now read still shows error but 48MB data read out.
+>>>  
+>>> # fdisk -l /dev/bcache4
+>>> Note: sector size is 4096 (not 512)
+>>> Disk /dev/bcache4: 480.1 GB, 480103972864 bytes
+>>> 255 heads, 63 sectors/track, 7296 cylinders
+>>> Units = cylinders of 16065 * 4096 = 65802240 bytes
+>>> Sector size (logical/physical): 4096 bytes / 4096 bytes
+>>> I/O size (minimum/optimal): 4096 bytes / 4096 bytes
+>>> Disk identifier: 0x00000000
+>>> -- fdisk got answer. Strange. 480GB is the backing device size.
+>>>  
+>>> # dd if=/dev/zero of=/dev/bcache4 bs=1M
+>>> dd: writing `/dev/bcache4': No space left on device
+>>> 457863+0 records in
+>>> 457862+0 records out
+>>> 480103972864 bytes (480 GB) copied, 620.993 s, 773 MB/s
+>>> -- keep writing to bcache4, after 480GB, it says "no space left". But the backing device is 480G, cache device is only 20G, where did the data go?
+>>> -- during dd, the /var/log/message shows error
+>>> ...
+>>> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224259, lost async page write
+>>> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224260, lost async page write
+>>> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224261, lost async page write
+>>> Sep 30 17:52:40 s103 kernel: buffer_io_error: 1093169 callbacks suppressed
+>>> Sep 30 17:52:40 s103 kernel: Buffer I/O error on dev bcache4, logical block 3317548, lost async page write
+>>> ...
+>>>  
+>>> I think correct behaviour should be, if backing device lost, "dd" (the application) should know rightaway, got I/O error.
+>>>  
+>>> Appreciated for any help.
+>>>  
+>> Hi,
+>>
+>> Could you please try oflag=direct and observe what is the difference ?
+>>
+>> Buffered I/O is asynchronized, application is not able to get an
+>> immediate -EIO.
+>>
+> 
+
+
+-- 
+Coly Li
