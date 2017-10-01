@@ -1,101 +1,93 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH 4/5] bcache: writeback: collapse contiguous IO better
-Date: Sun, 1 Oct 2017 12:51:44 +0800
-Message-ID: <96f34768-2b02-7849-c034-e1bb83b0fa0d@coly.li>
-References: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
- <477dc501-bbb3-f864-c637-1f19f787448a@coly.li>
- <CAJ+L6qczpYkLGzCZ+uxLDHXJdNi-jRCdGFvVuDHVdnXtjgo-Vg@mail.gmail.com>
- <96ab2f99-ab5a-6a86-1d14-1954622574f2@coly.li>
- <CAJ+L6qcXfNwqWX+mkqcPVNyqd+eRWG4_LrLJyAyTnop75wp3+w@mail.gmail.com>
- <3dfc3f12-b616-debd-8913-6049f215f2f3@coly.li>
- <CAJ+L6qf_zG37s4nGhxTbNvsdvDr5fwbmYocwP5m4rkjMLQKjtg@mail.gmail.com>
- <CAJ+L6qe9XjPOw=6NpWzZhw-PLC5EXhstOrPaapbqvDcD0+_7QA@mail.gmail.com>
- <CAJ+L6qcU+Db5TP1Q2J-V8angdzeW9DFGwc7KQqc4di9CSxusLg@mail.gmail.com>
- <CAJ+L6qdu4OSRh7Qdkk-5XBgd4W_N29Y6-wVLf-jFAMKEhQrTbQ@mail.gmail.com>
- <CAJ+L6qcyq-E4MrWNfB9kGA8DMD_U1HMxJii-=-qPfv0LeRL45w@mail.gmail.com>
- <CAJ+L6qdc8YqO5B3Cv0h4QQ+4P06FbtsT10Jqt5=Fx8iRh1UGwQ@mail.gmail.com>
+From: "=?utf-8?B?cWl1bGc=?=" <qiulg@ecloudtech.com.cn>
+Subject: Re: /dev/bcacheX can still be written when plug out backing device
+Date: Sun, 1 Oct 2017 22:29:52 +0800
+Message-ID: <tencent_737734B231F68D6314102FB0@qq.com>
+References: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
+        <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <CAJ+L6qdc8YqO5B3Cv0h4QQ+4P06FbtsT10Jqt5=Fx8iRh1UGwQ@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
+Content-Type: text/plain;
+        charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from smtpbguseast2.qq.com ([54.204.34.130]:53799 "EHLO
+        smtpbguseast2.qq.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751043AbdJAOaA (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 1 Oct 2017 10:30:00 -0400
+In-Reply-To: <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: =?utf-8?B?Q29seSBMaQ==?= <i@coly.li>
+Cc: =?utf-8?B?bGludXgtYmNhY2hl?= <linux-bcache@vger.kernel.org>, =?utf-8?B?5pyx6I+B?= <zhujing@ecloudtech.com.cn>, =?utf-8?B?56em5pmT5by6?= <qinxq@ecloudtech.com.cn>, =?utf-8?B?6YKx5Yip5YWs?= <qiulg@ecloudtech.com.cn>
 
-On 2017/10/1 上午6:49, Michael Lyle wrote:
-> One final attempt to resend, because gmail has been giving me trouble
-> sending plain text mail.
-> 
-> Two instances of this.  Tested as above, with a big set of random I/Os
-> that ultimately cover every block in a file (e.g. allowing sequential
-> writeback).
-> 
-> With the 5 patches, samsung 940 SSD cache + crummy 5400 RPM USB hard drive:
-> 
-> Typical seconds look like:
-> 
-> Reading 38232K from cache in 4809 IO.  38232/4809=7.95k per cache device IO.
-> 
-> Writing 38112k to cache in 400 I/O = 95.28k -- or we are combining
-> about 11.9 extents to a contiguous writeback.  Tracing, there are
-> still contiguous things that are not getting merged well, but it's OK.
-> (I'm hoping plugging makes this better).
-> 
-> sda            4809.00     38232.00       446.00      38232        446
-> sdb             400.00         0.00     38112.00          0      38112
-> 
-> Without the 5 patches, a typical second--
-> 
-> sda            2509.00     19968.00       316.00      19968        316
-> sdb             502.00         0.00     19648.00          0      38112
-> 
-> or we are combining about 4.9 extents to a contiguous writeback, and
-> writing back at about half the rate.  All of these numbers are +/- 10%
-> and obtained by eyeballing and grabbing representative seconds.
-> 
-> Mike
-> 
-> On Sat, Sep 30, 2017 at 2:02 AM, Michael Lyle <mlyle@lyle.org> wrote:
->>
->> Resent because I can't seem to get gmail to not send HTML mail.  And off to sleep.
->>
->>
->> On Sat, Sep 30, 2017 at 1:57 AM, Michael Lyle <mlyle@lyle.org> wrote:
->>> Two instances of this.
->>>
->>> With the 5 patches, samsung 940 SSD cache + crummy 5400 RPM USB hard drive:
->>>
->>> Typical seconds look like:
->>>
->>> Reading 38232K from cache in 4809 IO.  38232/4809=7.95k per cache device IO.
->>>
->>> Writing 38112k to cache in 400 I/O = 95.28k -- or we are combining about
->>> 11.9 extents to a contiguous writeback.  Tracing, there are still contiguous
->>> things that are not getting merged well, but it's OK.  (I'm hoping plugging
->>> makes this better).
->>>
->>> sda            4809.00     38232.00       446.00      38232        446
->>> sdb             400.00         0.00     38112.00          0      38112
->>>
->>> Without the 5 patches, a typical second--
->>>
->>> sda            2509.00     19968.00       316.00      19968        316
->>> sdb             502.00         0.00     19648.00          0      38112
->>>
->>> or we are combining about 4.9 extents to a contiguous writeback, and writing
->>> back at about half the rate.
-
-Hi Mike,
-
-Get it. Now I am testing your patches (all 5 patches). It has been 12+
-hours, should be 12+ hours more. The backing device is a raid0 composed
-by 4x1.8T 2.5inch harddisk, cache device is a 3.8T NVMe SSD. Block size
-is 512K.
-
-Hope it works as you expected on my server.
-
--- 
-Coly Li
+VGhhbmtzIENvbHkuIFNvcnJ5IGZvciB0aGUgd3Jvbmcgc3ViamVjdCwgY2hhbmdlZC4gDQoN
+ClRyaWRkIGRkIHdpdGggb2ZsYWc9ZGlyZWN0LCB0aGUgYmNhY2hlIGRldmljZSBjYW4gc3Rp
+bGwgYmUgd3JpdHRlbiB3aXRob3V0IGJhY2tpbmcgZGV2aWNlLCBidXQgdGhpcyB0aW1lIGl0
+IGZpbmlzaGVkIGF0IGFib3V0IDcuN0dCLg0KDQojIGRkIGlmPS9kZXYvemVybyBvZj0vZGV2
+L2JjYWNoZTQgb2ZsYWc9ZGlyZWN0IA0KIGRkOiB3cml0aW5nIHRvIGAvZGV2L2JjYWNoZTQn
+OiBJbnB1dC9vdXRwdXQgZXJyb3INCjE1MDUyODI0KzAgcmVjb3JkcyBpbg0KMTUwNTI4MjMr
+MCByZWNvcmRzIG91dA0KNzcwNzA0NTM3NiBieXRlcyAoNy43IEdCKSBjb3BpZWQsIDEwMjIu
+NjMgcywgNy41IE1CL3MgDQoNClJpY2hhcmQgDQoNCi0tLS0tLS0tLS0tLS0tLS0tLSBPcmln
+aW5hbCAtLS0tLS0tLS0tLS0tLS0tLS0NCkZyb206ICAiQ29seSBMaSI8aUBjb2x5LmxpPjsN
+CkRhdGU6ICBTYXQsIFNlcCAzMCwgMjAxNyAwODoxOCBQTQ0KVG86ICAicWl1bGciPHFpdWxn
+QGVjbG91ZHRlY2guY29tLmNuPjsNCkNjOiAgImxpbnV4LWJjYWNoZSI8bGludXgtYmNhY2hl
+QHZnZXIua2VybmVsLm9yZz47DQpTdWJqZWN0OiAgUmU6IHpodWppbmdAZWNsb3V0ZWNoLmNv
+bS5jbjsgcWlueHFAZWNsb3V0ZWNoLmNvbS5jbjtxaXVsZ0BlY2xvdXRlY2guY29tLmNuDQog
+DQpPbiAyMDE3LzkvMzAg5LiL5Y2INjo1MCwgcWl1bGcgd3JvdGU6DQo+IEhpLA0KPiAgDQo+
+IE91ciBlbnZpcm9ubWVudCBpcyBSZWRoYXQgRW50ZXJwcmlzZSA2LjgsIHVwZ3JhZGUgdG8g
+a2VybmFsIDQuNC44OS4gV2UgdXNlIHNkaig0ODBHKSBhcyBhcyBiYWNraW5nIGRldmljZXMg
+YW5kIHNkazEoMjBHKSBhcyBjYWNoZSBkZXZpY2UuIFRvIHRlc3QgbWFpbnRlbmFuY2Ugc3Rl
+cCB3aGVuIGhhcmQgZGlzayBmYWlsLCB3ZSBwbHVnIG91dCB0aGUgYmFja2luZyBkZXZpY2Ug
+c2RqLg0KPiBIZXJlIGFyZSB0aGUgcmVzdWx0cyBkdXJpbmcgdGVzdDoNCj4gIA0KPiAjIGxz
+c2NzaQ0KPiAtLSB0aGUgc2RqIGRldmljZSBpcyBnb25lLg0KPiAgDQo+ICMgbHMgLWwgL2Rl
+di9iY2FjaGU0DQo+IGJydy1ydy0tLS0gMSByb290IHJvb3QgMjUxLCA0IFNlcCAzMCAxODow
+MCAvZGV2L2JjYWNoZTQNCj4gLS0gdGhlIGJjYWNoZTQgZGV2aWNlIGlzIHN0aWxsIHRoZXJl
+DQo+ICANCj4gIyBkZCBpZj0vZGV2L2JjYWNoZTQgb2Y9L2Rldi9udWxsIGJzPTFNIGNvdW50
+PTEwMA0KPiBkZDogcmVhZGluZyBgL2Rldi9iY2FjaGU0JzogSW5wdXQvb3V0cHV0IGVycm9y
+DQo+IDArMCByZWNvcmRzIGluDQo+IDArMCByZWNvcmRzIG91dA0KPiAwIGJ5dGVzICgwIEIp
+IGNvcGllZCwgMC4wMDIwMTcyOCBzLCAwLjAga0Ivcw0KPiAtLSB0aGlzIGlzIHJlc29uYWJs
+ZQ0KPiAgDQo+ICMgZmRpc2sgLWwgL2Rldi9iY2FjaGU0DQo+IC0tIGZkaXNrIGhhcyBubyBy
+ZXN1bHQuIFRoaXMgaXMgcmVzb25hYmxlDQo+ICANCj4gIyBkZCBpZj0vZGV2L3plcm8gb2Y9
+L2Rldi9iY2FjaGU0IGJzPTFNIGNvdW50PTEwMA0KPiAxMDArMCByZWNvcmRzIGluDQo+IDEw
+MCswIHJlY29yZHMgb3V0DQo+IDEwNDg1NzYwMCBieXRlcyAoMTA1IE1CKSBjb3BpZWQsIDAu
+MjMwNDA4IHMsIDQ1NSBNQi9zDQo+IC0tIGJjYWNoZTQgY2FuIHN0aWxsIGJlIHdyaXR0ZW4u
+IElmIHRoZSBiYWNraW5nIGRldmljZSBpcyByZWFsbHkgZGVzdHJveWVkLCB0aGVuIGFwcGxp
+Y2F0aW9uIGRvbid0IGtub3cgdGhhdCwgYW5kIHRob3VnaHQgZGF0YSBpcyBzYXZlZC4gSXQn
+cyBub3QgYWNjZXB0YWJsZS4gVGhlIGFwcGxpY2F0aW9uIHNob3VsZCBnZXQgSS9PIGVycm9y
+Lg0KPiAgDQo+ICMgZGQgaWY9L2Rldi9iY2FjaGU0IG9mPS9kZXYvbnVsbCBicz0xTSBjb3Vu
+dD0xMDANCj4gZGQ6IHJlYWRpbmcgYC9kZXYvYmNhY2hlNCc6IElucHV0L291dHB1dCBlcnJv
+cg0KPiA0NisxIHJlY29yZHMgaW4NCj4gNDYrMSByZWNvcmRzIG91dA0KPiA0ODIzODU5MiBi
+eXRlcyAoNDggTUIpIGNvcGllZCwgMC4xMjA1MTcgcywgNDAwIE1CL3MNCj4gLS0gbm93IHJl
+YWQgc3RpbGwgc2hvd3MgZXJyb3IgYnV0IDQ4TUIgZGF0YSByZWFkIG91dC4NCj4gIA0KPiAj
+IGZkaXNrIC1sIC9kZXYvYmNhY2hlNA0KPiBOb3RlOiBzZWN0b3Igc2l6ZSBpcyA0MDk2IChu
+b3QgNTEyKQ0KPiBEaXNrIC9kZXYvYmNhY2hlNDogNDgwLjEgR0IsIDQ4MDEwMzk3Mjg2NCBi
+eXRlcw0KPiAyNTUgaGVhZHMsIDYzIHNlY3RvcnMvdHJhY2ssIDcyOTYgY3lsaW5kZXJzDQo+
+IFVuaXRzID0gY3lsaW5kZXJzIG9mIDE2MDY1ICogNDA5NiA9IDY1ODAyMjQwIGJ5dGVzDQo+
+IFNlY3RvciBzaXplIChsb2dpY2FsL3BoeXNpY2FsKTogNDA5NiBieXRlcyAvIDQwOTYgYnl0
+ZXMNCj4gSS9PIHNpemUgKG1pbmltdW0vb3B0aW1hbCk6IDQwOTYgYnl0ZXMgLyA0MDk2IGJ5
+dGVzDQo+IERpc2sgaWRlbnRpZmllcjogMHgwMDAwMDAwMA0KPiAtLSBmZGlzayBnb3QgYW5z
+d2VyLiBTdHJhbmdlLiA0ODBHQiBpcyB0aGUgYmFja2luZyBkZXZpY2Ugc2l6ZS4NCj4gIA0K
+PiAjIGRkIGlmPS9kZXYvemVybyBvZj0vZGV2L2JjYWNoZTQgYnM9MU0NCj4gZGQ6IHdyaXRp
+bmcgYC9kZXYvYmNhY2hlNCc6IE5vIHNwYWNlIGxlZnQgb24gZGV2aWNlDQo+IDQ1Nzg2Mysw
+IHJlY29yZHMgaW4NCj4gNDU3ODYyKzAgcmVjb3JkcyBvdXQNCj4gNDgwMTAzOTcyODY0IGJ5
+dGVzICg0ODAgR0IpIGNvcGllZCwgNjIwLjk5MyBzLCA3NzMgTUIvcw0KPiAtLSBrZWVwIHdy
+aXRpbmcgdG8gYmNhY2hlNCwgYWZ0ZXIgNDgwR0IsIGl0IHNheXMgIm5vIHNwYWNlIGxlZnQi
+LiBCdXQgdGhlIGJhY2tpbmcgZGV2aWNlIGlzIDQ4MEcsIGNhY2hlIGRldmljZSBpcyBvbmx5
+IDIwRywgd2hlcmUgZGlkIHRoZSBkYXRhIGdvPw0KPiAtLSBkdXJpbmcgZGQsIHRoZSAvdmFy
+L2xvZy9tZXNzYWdlIHNob3dzIGVycm9yDQo+IC4uLg0KPiBTZXAgMzAgMTc6NTI6MzUgczEw
+MyBrZXJuZWw6IEJ1ZmZlciBJL08gZXJyb3Igb24gZGV2IGJjYWNoZTQsIGxvZ2ljYWwgYmxv
+Y2sgMjIyNDI1OSwgbG9zdCBhc3luYyBwYWdlIHdyaXRlDQo+IFNlcCAzMCAxNzo1MjozNSBz
+MTAzIGtlcm5lbDogQnVmZmVyIEkvTyBlcnJvciBvbiBkZXYgYmNhY2hlNCwgbG9naWNhbCBi
+bG9jayAyMjI0MjYwLCBsb3N0IGFzeW5jIHBhZ2Ugd3JpdGUNCj4gU2VwIDMwIDE3OjUyOjM1
+IHMxMDMga2VybmVsOiBCdWZmZXIgSS9PIGVycm9yIG9uIGRldiBiY2FjaGU0LCBsb2dpY2Fs
+IGJsb2NrIDIyMjQyNjEsIGxvc3QgYXN5bmMgcGFnZSB3cml0ZQ0KPiBTZXAgMzAgMTc6NTI6
+NDAgczEwMyBrZXJuZWw6IGJ1ZmZlcl9pb19lcnJvcjogMTA5MzE2OSBjYWxsYmFja3Mgc3Vw
+cHJlc3NlZA0KPiBTZXAgMzAgMTc6NTI6NDAgczEwMyBrZXJuZWw6IEJ1ZmZlciBJL08gZXJy
+b3Igb24gZGV2IGJjYWNoZTQsIGxvZ2ljYWwgYmxvY2sgMzMxNzU0OCwgbG9zdCBhc3luYyBw
+YWdlIHdyaXRlDQo+IC4uLg0KPiAgDQo+IEkgdGhpbmsgY29ycmVjdCBiZWhhdmlvdXIgc2hv
+dWxkIGJlLCBpZiBiYWNraW5nIGRldmljZSBsb3N0LCAiZGQiICh0aGUgYXBwbGljYXRpb24p
+IHNob3VsZCBrbm93IHJpZ2h0YXdheSwgZ290IEkvTyBlcnJvci4NCj4gIA0KPiBBcHByZWNp
+YXRlZCBmb3IgYW55IGhlbHAuDQo+ICANCkhpLA0KDQpDb3VsZCB5b3UgcGxlYXNlIHRyeSBv
+ZmxhZz1kaXJlY3QgYW5kIG9ic2VydmUgd2hhdCBpcyB0aGUgZGlmZmVyZW5jZSA/DQoNCkJ1
+ZmZlcmVkIEkvTyBpcyBhc3luY2hyb25pemVkLCBhcHBsaWNhdGlvbiBpcyBub3QgYWJsZSB0
+byBnZXQgYW4NCmltbWVkaWF0ZSAtRUlPLg0KDQoNCi0tIA0KQ29seSBMaQ==
