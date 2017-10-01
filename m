@@ -1,133 +1,130 @@
-From: "=?utf-8?B?cWl1bGc=?=" <qiulg@ecloudtech.com.cn>
-Subject: Re: /dev/bcacheX can still be written when plug out backing device
-Date: Mon, 2 Oct 2017 00:00:04 +0800
-Message-ID: <tencent_3BDD19C90887EDC14847B38E@qq.com>
-References: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
-        <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
-        <tencent_737734B231F68D6314102FB0@qq.com>
-        <b486c2c4-7cb4-4ece-d91d-6e453e0480d0@coly.li>
-        <tencent_28DFC2634AD6B0B33A888057@qq.com>
-        <a0d64511-9566-04e0-3faa-fc03c725ba7d@coly.li>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH 4/5] bcache: writeback: collapse contiguous IO better
+Date: Sun, 1 Oct 2017 09:56:53 -0700
+Message-ID: <CAJ+L6qdTB6DyhD8UwHaVtN-THXwanBXrQK3EvmvLhuoXgYyzrA@mail.gmail.com>
+References: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
+ <477dc501-bbb3-f864-c637-1f19f787448a@coly.li> <CAJ+L6qczpYkLGzCZ+uxLDHXJdNi-jRCdGFvVuDHVdnXtjgo-Vg@mail.gmail.com>
+ <96ab2f99-ab5a-6a86-1d14-1954622574f2@coly.li> <CAJ+L6qcXfNwqWX+mkqcPVNyqd+eRWG4_LrLJyAyTnop75wp3+w@mail.gmail.com>
+ <3dfc3f12-b616-debd-8913-6049f215f2f3@coly.li> <CAJ+L6qf_zG37s4nGhxTbNvsdvDr5fwbmYocwP5m4rkjMLQKjtg@mail.gmail.com>
+ <CAJ+L6qe9XjPOw=6NpWzZhw-PLC5EXhstOrPaapbqvDcD0+_7QA@mail.gmail.com>
+ <CAJ+L6qcU+Db5TP1Q2J-V8angdzeW9DFGwc7KQqc4di9CSxusLg@mail.gmail.com>
+ <CAJ+L6qdu4OSRh7Qdkk-5XBgd4W_N29Y6-wVLf-jFAMKEhQrTbQ@mail.gmail.com>
+ <CAJ+L6qcyq-E4MrWNfB9kGA8DMD_U1HMxJii-=-qPfv0LeRL45w@mail.gmail.com>
+ <CAJ+L6qdc8YqO5B3Cv0h4QQ+4P06FbtsT10Jqt5=Fx8iRh1UGwQ@mail.gmail.com> <96f34768-2b02-7849-c034-e1bb83b0fa0d@coly.li>
 Mime-Version: 1.0
-Content-Type: text/plain;
-        charset="utf-8"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from smtpbgbr2.qq.com ([54.207.22.56]:51838 "EHLO smtpbgbr2.qq.com"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751093AbdJAQAN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 1 Oct 2017 12:00:13 -0400
-In-Reply-To: <a0d64511-9566-04e0-3faa-fc03c725ba7d@coly.li>
+Received: from mail-qk0-f172.google.com ([209.85.220.172]:46820 "EHLO
+        mail-qk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751286AbdJAQ4z (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 1 Oct 2017 12:56:55 -0400
+Received: by mail-qk0-f172.google.com with SMTP id z143so3416892qkb.3
+        for <linux-bcache@vger.kernel.org>; Sun, 01 Oct 2017 09:56:55 -0700 (PDT)
+In-Reply-To: <96f34768-2b02-7849-c034-e1bb83b0fa0d@coly.li>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?utf-8?B?Q29seSBMaQ==?= <i@coly.li>
-Cc: =?utf-8?B?bGludXgtYmNhY2hl?= <linux-bcache@vger.kernel.org>, =?utf-8?B?5pyx6I+B?= <zhujing@ecloudtech.com.cn>, =?utf-8?B?56em5pmT5by6?= <qinxq@ecloudtech.com.cn>
+To: Coly Li <i@coly.li>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
 
-VGhhbmtzIGEgbG90IENvbHkhDQoNClFpdQ0KICANCi0tLS0tLS0tLS0tLS0tLS0tLSBPcmln
-aW5hbCAtLS0tLS0tLS0tLS0tLS0tLS0NCkZyb206ICAiQ29seSBMaSI8aUBjb2x5LmxpPjsN
-CkRhdGU6ICBTdW4sIE9jdCAxLCAyMDE3IDExOjU3IFBNDQpUbzogICJxaXVsZyI8cWl1bGdA
-ZWNsb3VkdGVjaC5jb20uY24+Ow0KQ2M6ICAibGludXgtYmNhY2hlIjxsaW51eC1iY2FjaGVA
-dmdlci5rZXJuZWwub3JnPjsgIuacseiPgSI8emh1amluZ0BlY2xvdWR0ZWNoLmNvbS5jbj47
-ICLnp6bmmZPlvLoiPHFpbnhxQGVjbG91ZHRlY2guY29tLmNuPjsNClN1YmplY3Q6ICBSZTog
-L2Rldi9iY2FjaGVYIGNhbiBzdGlsbCBiZSB3cml0dGVuIHdoZW4gcGx1ZyBvdXQgYmFja2lu
-ZyBkZXZpY2UNCiANCk9uIDIwMTcvMTAvMSDkuIvljYgxMTo1MSwgcWl1bGcgd3JvdGU6DQo+
-IFRoYXQncyBiYWQgbmV3cy4gOiggDQo+IFdoYXQgaXMgZXhwZWN0ZWQgaXMgZnJlZXppbmcg
-d3JpdGUgSS9PIGFuZCByZXR1cm4gZXJyb3IgdG8gYXBwbGljYXRpb24gd2hlbiBjYWNoZSBk
-ZXZpY2Ugb3IgYmFja2luZyBkZXZpY2UgZmFpbGVkLiBIb3BlIHRoZSBwYXRjaCBjYW4gYmUg
-cmVsZWFzZWQgc29vbi4gIA0KPiANCg0KWWVzIHRoaXMgaXMgb25lIG9mIHRoZSBleHBlY3Rl
-ZCBiZWhhdmlvci4NCkFub3RoZXIgZXhwZWN0YXRpb24gaXMgYWZ0ZXIgYmFja2luZyBkZXZp
-Y2UgaXMgZmFpbGVkLCBiY2FjaGUgY29tcGxhaW5zLA0KYnV0IHN0aWxsIHBlcm1pdHMgY2Fj
-aGUgZGV2aWNlIHRvIGNhY2hlIGEgcHJlLWRlZmluZWQgYW1vdW50IG9mIGRhdGEsDQp0aGVu
-IGZyZWVpbmcgd3JpdGUgSS9PLg0KDQpPbmNlIHRoZSBwYXRjaCBpcyBhdmFpbGFibGUsIEkg
-d2lsbCBsZXQgeW91IGtub3cgOi0pDQoNCkNvbHkNCg0KDQo+IFRoYW5rcy4gDQo+IFFpdQ0K
-PiAgDQo+IC0tLS0tLS0tLS0tLS0tLS0tLSBPcmlnaW5hbCAtLS0tLS0tLS0tLS0tLS0tLS0N
-Cj4gRnJvbTogICJDb2x5IExpIjxpQGNvbHkubGk+Ow0KPiBEYXRlOiAgU3VuLCBPY3QgMSwg
-MjAxNyAxMDo1MCBQTQ0KPiBUbzogICJxaXVsZyI8cWl1bGdAZWNsb3VkdGVjaC5jb20uY24+
-Ow0KPiBDYzogICJsaW51eC1iY2FjaGUiPGxpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5vcmc+
-OyAi5pyx6I+BIjx6aHVqaW5nQGVjbG91ZHRlY2guY29tLmNuPjsgIuenpuaZk+W8uiI8cWlu
-eHFAZWNsb3VkdGVjaC5jb20uY24+Ow0KPiBTdWJqZWN0OiAgUmU6IC9kZXYvYmNhY2hlWCBj
-YW4gc3RpbGwgYmUgd3JpdHRlbiB3aGVuIHBsdWcgb3V0IGJhY2tpbmcgZGV2aWNlDQo+ICAN
-Cj4gT24gMjAxNy8xMC8xIOS4i+WNiDEwOjI5LCBxaXVsZyB3cm90ZToNCj4+IFRoYW5rcyBD
-b2x5LiBTb3JyeSBmb3IgdGhlIHdyb25nIHN1YmplY3QsIGNoYW5nZWQuIA0KPj4NCj4+IFRy
-aWRkIGRkIHdpdGggb2ZsYWc9ZGlyZWN0LCB0aGUgYmNhY2hlIGRldmljZSBjYW4gc3RpbGwg
-YmUgd3JpdHRlbiB3aXRob3V0IGJhY2tpbmcgZGV2aWNlLCBidXQgdGhpcyB0aW1lIGl0IGZp
-bmlzaGVkIGF0IGFib3V0IDcuN0dCLg0KPj4NCj4+ICMgZGQgaWY9L2Rldi96ZXJvIG9mPS9k
-ZXYvYmNhY2hlNCBvZmxhZz1kaXJlY3QgDQo+PiAgZGQ6IHdyaXRpbmcgdG8gYC9kZXYvYmNh
-Y2hlNCc6IElucHV0L291dHB1dCBlcnJvcg0KPj4gMTUwNTI4MjQrMCByZWNvcmRzIGluDQo+
-PiAxNTA1MjgyMyswIHJlY29yZHMgb3V0DQo+PiA3NzA3MDQ1Mzc2IGJ5dGVzICg3LjcgR0Ip
-IGNvcGllZCwgMTAyMi42MyBzLCA3LjUgTUIvcyANCj4+DQo+IA0KPiBBaGEsIGl0IGlzIGJh
-Y2tpbmcgZGV2aWNlLi4uSSB3YXMgYmxpbmQuLi4NCj4gVGhlIHNpdHVhdGlvbiB5b3UgaGl0
-IGlzIHRoZSBiYWNraW5nIGRldmljZSBmYWlsdXJlLCB3aGljaCBpcyBub3QNCj4gcHJvcGVy
-bHkgaGFuZGxlZCBieSBiY2FjaGUgeWV0LiAoaW5kZWVkIGNhY2hlIGRldmljZSBmYWlsdXJl
-IGlzIG5vdA0KPiBwcm9wZXJseSBoYW5kbGVkIG5laXRoZXIpDQo+IA0KPiBZb3UgYXJlIG5v
-dCB0aGUgZmlyc3Qgb25lIGNvbXBsYWlucyBvbiB0aGlzLiBJIGFsc28gcmVjZWl2ZSBzdWNo
-IGENCj4gc2ltaWxhciBmZWF0dXJlIHJlcXVlc3QsIGJ1dCBpdCBpcyBvbiB0aGUgdGFpbCBv
-ZiBteSB0YXNrIGxpc3QuIElmDQo+IHNvbWVvbmUgbWF5IGNvbnRyaWJ1dGUgcGF0Y2hlcywg
-SSBhbSBnbGFkIHRvIHRlc3QuDQo+IA0KPiBUaGFua3MuDQo+IA0KPiBDb2x5DQo+IA0KPj4g
-LS0tLS0tLS0tLS0tLS0tLS0tIE9yaWdpbmFsIC0tLS0tLS0tLS0tLS0tLS0tLQ0KPj4gRnJv
-bTogICJDb2x5IExpIjxpQGNvbHkubGk+Ow0KPj4gRGF0ZTogIFNhdCwgU2VwIDMwLCAyMDE3
-IDA4OjE4IFBNDQo+PiBUbzogICJxaXVsZyI8cWl1bGdAZWNsb3VkdGVjaC5jb20uY24+Ow0K
-Pj4gQ2M6ICAibGludXgtYmNhY2hlIjxsaW51eC1iY2FjaGVAdmdlci5rZXJuZWwub3JnPjsN
-Cj4+IFN1YmplY3Q6ICBSZTogemh1amluZ0BlY2xvdXRlY2guY29tLmNuOyBxaW54cUBlY2xv
-dXRlY2guY29tLmNuO3FpdWxnQGVjbG91dGVjaC5jb20uY24NCj4+ICANCj4+IE9uIDIwMTcv
-OS8zMCDkuIvljYg2OjUwLCBxaXVsZyB3cm90ZToNCj4+PiBIaSwNCj4+PiAgDQo+Pj4gT3Vy
-IGVudmlyb25tZW50IGlzIFJlZGhhdCBFbnRlcnByaXNlIDYuOCwgdXBncmFkZSB0byBrZXJu
-YWwgNC40Ljg5LiBXZSB1c2Ugc2RqKDQ4MEcpIGFzIGFzIGJhY2tpbmcgZGV2aWNlcyBhbmQg
-c2RrMSgyMEcpIGFzIGNhY2hlIGRldmljZS4gVG8gdGVzdCBtYWludGVuYW5jZSBzdGVwIHdo
-ZW4gaGFyZCBkaXNrIGZhaWwsIHdlIHBsdWcgb3V0IHRoZSBiYWNraW5nIGRldmljZSBzZGou
-DQo+Pj4gSGVyZSBhcmUgdGhlIHJlc3VsdHMgZHVyaW5nIHRlc3Q6DQo+Pj4gIA0KPj4+ICMg
-bHNzY3NpDQo+Pj4gLS0gdGhlIHNkaiBkZXZpY2UgaXMgZ29uZS4NCj4+PiAgDQo+Pj4gIyBs
-cyAtbCAvZGV2L2JjYWNoZTQNCj4+PiBicnctcnctLS0tIDEgcm9vdCByb290IDI1MSwgNCBT
-ZXAgMzAgMTg6MDAgL2Rldi9iY2FjaGU0DQo+Pj4gLS0gdGhlIGJjYWNoZTQgZGV2aWNlIGlz
-IHN0aWxsIHRoZXJlDQo+Pj4gIA0KPj4+ICMgZGQgaWY9L2Rldi9iY2FjaGU0IG9mPS9kZXYv
-bnVsbCBicz0xTSBjb3VudD0xMDANCj4+PiBkZDogcmVhZGluZyBgL2Rldi9iY2FjaGU0Jzog
-SW5wdXQvb3V0cHV0IGVycm9yDQo+Pj4gMCswIHJlY29yZHMgaW4NCj4+PiAwKzAgcmVjb3Jk
-cyBvdXQNCj4+PiAwIGJ5dGVzICgwIEIpIGNvcGllZCwgMC4wMDIwMTcyOCBzLCAwLjAga0Iv
-cw0KPj4+IC0tIHRoaXMgaXMgcmVzb25hYmxlDQo+Pj4gIA0KPj4+ICMgZmRpc2sgLWwgL2Rl
-di9iY2FjaGU0DQo+Pj4gLS0gZmRpc2sgaGFzIG5vIHJlc3VsdC4gVGhpcyBpcyByZXNvbmFi
-bGUNCj4+PiAgDQo+Pj4gIyBkZCBpZj0vZGV2L3plcm8gb2Y9L2Rldi9iY2FjaGU0IGJzPTFN
-IGNvdW50PTEwMA0KPj4+IDEwMCswIHJlY29yZHMgaW4NCj4+PiAxMDArMCByZWNvcmRzIG91
-dA0KPj4+IDEwNDg1NzYwMCBieXRlcyAoMTA1IE1CKSBjb3BpZWQsIDAuMjMwNDA4IHMsIDQ1
-NSBNQi9zDQo+Pj4gLS0gYmNhY2hlNCBjYW4gc3RpbGwgYmUgd3JpdHRlbi4gSWYgdGhlIGJh
-Y2tpbmcgZGV2aWNlIGlzIHJlYWxseSBkZXN0cm95ZWQsIHRoZW4gYXBwbGljYXRpb24gZG9u
-J3Qga25vdyB0aGF0LCBhbmQgdGhvdWdodCBkYXRhIGlzIHNhdmVkLiBJdCdzIG5vdCBhY2Nl
-cHRhYmxlLiBUaGUgYXBwbGljYXRpb24gc2hvdWxkIGdldCBJL08gZXJyb3IuDQo+Pj4gIA0K
-Pj4+ICMgZGQgaWY9L2Rldi9iY2FjaGU0IG9mPS9kZXYvbnVsbCBicz0xTSBjb3VudD0xMDAN
-Cj4+PiBkZDogcmVhZGluZyBgL2Rldi9iY2FjaGU0JzogSW5wdXQvb3V0cHV0IGVycm9yDQo+
-Pj4gNDYrMSByZWNvcmRzIGluDQo+Pj4gNDYrMSByZWNvcmRzIG91dA0KPj4+IDQ4MjM4NTky
-IGJ5dGVzICg0OCBNQikgY29waWVkLCAwLjEyMDUxNyBzLCA0MDAgTUIvcw0KPj4+IC0tIG5v
-dyByZWFkIHN0aWxsIHNob3dzIGVycm9yIGJ1dCA0OE1CIGRhdGEgcmVhZCBvdXQuDQo+Pj4g
-IA0KPj4+ICMgZmRpc2sgLWwgL2Rldi9iY2FjaGU0DQo+Pj4gTm90ZTogc2VjdG9yIHNpemUg
-aXMgNDA5NiAobm90IDUxMikNCj4+PiBEaXNrIC9kZXYvYmNhY2hlNDogNDgwLjEgR0IsIDQ4
-MDEwMzk3Mjg2NCBieXRlcw0KPj4+IDI1NSBoZWFkcywgNjMgc2VjdG9ycy90cmFjaywgNzI5
-NiBjeWxpbmRlcnMNCj4+PiBVbml0cyA9IGN5bGluZGVycyBvZiAxNjA2NSAqIDQwOTYgPSA2
-NTgwMjI0MCBieXRlcw0KPj4+IFNlY3RvciBzaXplIChsb2dpY2FsL3BoeXNpY2FsKTogNDA5
-NiBieXRlcyAvIDQwOTYgYnl0ZXMNCj4+PiBJL08gc2l6ZSAobWluaW11bS9vcHRpbWFsKTog
-NDA5NiBieXRlcyAvIDQwOTYgYnl0ZXMNCj4+PiBEaXNrIGlkZW50aWZpZXI6IDB4MDAwMDAw
-MDANCj4+PiAtLSBmZGlzayBnb3QgYW5zd2VyLiBTdHJhbmdlLiA0ODBHQiBpcyB0aGUgYmFj
-a2luZyBkZXZpY2Ugc2l6ZS4NCj4+PiAgDQo+Pj4gIyBkZCBpZj0vZGV2L3plcm8gb2Y9L2Rl
-di9iY2FjaGU0IGJzPTFNDQo+Pj4gZGQ6IHdyaXRpbmcgYC9kZXYvYmNhY2hlNCc6IE5vIHNw
-YWNlIGxlZnQgb24gZGV2aWNlDQo+Pj4gNDU3ODYzKzAgcmVjb3JkcyBpbg0KPj4+IDQ1Nzg2
-MiswIHJlY29yZHMgb3V0DQo+Pj4gNDgwMTAzOTcyODY0IGJ5dGVzICg0ODAgR0IpIGNvcGll
-ZCwgNjIwLjk5MyBzLCA3NzMgTUIvcw0KPj4+IC0tIGtlZXAgd3JpdGluZyB0byBiY2FjaGU0
-LCBhZnRlciA0ODBHQiwgaXQgc2F5cyAibm8gc3BhY2UgbGVmdCIuIEJ1dCB0aGUgYmFja2lu
-ZyBkZXZpY2UgaXMgNDgwRywgY2FjaGUgZGV2aWNlIGlzIG9ubHkgMjBHLCB3aGVyZSBkaWQg
-dGhlIGRhdGEgZ28/DQo+Pj4gLS0gZHVyaW5nIGRkLCB0aGUgL3Zhci9sb2cvbWVzc2FnZSBz
-aG93cyBlcnJvcg0KPj4+IC4uLg0KPj4+IFNlcCAzMCAxNzo1MjozNSBzMTAzIGtlcm5lbDog
-QnVmZmVyIEkvTyBlcnJvciBvbiBkZXYgYmNhY2hlNCwgbG9naWNhbCBibG9jayAyMjI0MjU5
-LCBsb3N0IGFzeW5jIHBhZ2Ugd3JpdGUNCj4+PiBTZXAgMzAgMTc6NTI6MzUgczEwMyBrZXJu
-ZWw6IEJ1ZmZlciBJL08gZXJyb3Igb24gZGV2IGJjYWNoZTQsIGxvZ2ljYWwgYmxvY2sgMjIy
-NDI2MCwgbG9zdCBhc3luYyBwYWdlIHdyaXRlDQo+Pj4gU2VwIDMwIDE3OjUyOjM1IHMxMDMg
-a2VybmVsOiBCdWZmZXIgSS9PIGVycm9yIG9uIGRldiBiY2FjaGU0LCBsb2dpY2FsIGJsb2Nr
-IDIyMjQyNjEsIGxvc3QgYXN5bmMgcGFnZSB3cml0ZQ0KPj4+IFNlcCAzMCAxNzo1Mjo0MCBz
-MTAzIGtlcm5lbDogYnVmZmVyX2lvX2Vycm9yOiAxMDkzMTY5IGNhbGxiYWNrcyBzdXBwcmVz
-c2VkDQo+Pj4gU2VwIDMwIDE3OjUyOjQwIHMxMDMga2VybmVsOiBCdWZmZXIgSS9PIGVycm9y
-IG9uIGRldiBiY2FjaGU0LCBsb2dpY2FsIGJsb2NrIDMzMTc1NDgsIGxvc3QgYXN5bmMgcGFn
-ZSB3cml0ZQ0KPj4+IC4uLg0KPj4+ICANCj4+PiBJIHRoaW5rIGNvcnJlY3QgYmVoYXZpb3Vy
-IHNob3VsZCBiZSwgaWYgYmFja2luZyBkZXZpY2UgbG9zdCwgImRkIiAodGhlIGFwcGxpY2F0
-aW9uKSBzaG91bGQga25vdyByaWdodGF3YXksIGdvdCBJL08gZXJyb3IuDQo+Pj4gIA0KPj4+
-IEFwcHJlY2lhdGVkIGZvciBhbnkgaGVscC4NCj4+PiAgDQo+PiBIaSwNCj4+DQo+PiBDb3Vs
-ZCB5b3UgcGxlYXNlIHRyeSBvZmxhZz1kaXJlY3QgYW5kIG9ic2VydmUgd2hhdCBpcyB0aGUg
-ZGlmZmVyZW5jZSA/DQo+Pg0KPj4gQnVmZmVyZWQgSS9PIGlzIGFzeW5jaHJvbml6ZWQsIGFw
-cGxpY2F0aW9uIGlzIG5vdCBhYmxlIHRvIGdldCBhbg0KPj4gaW1tZWRpYXRlIC1FSU8uDQo+
-Pg0KPiANCg0KDQotLSANCkNvbHkgTGk=
+That's strange-- are you doing the same test scenario?  How much
+random I/O did you ask for?
+
+My tests took 6-7 minutes to do the 30G of 8k not-repeating I/Os in a
+30G file (about 9k IOPs for me-- it's actually significantly faster
+but then starves every few seconds-- not new with these patches)..
+your cache device if 3.8T, so to have a similar 12-13% of the cache
+you'd need to do 15x as much (90 mins if you're the same speed--- but
+your I/O subsystem is also much faster...)
+
+If you're doing more like 3.8T of writes--  note that's not the same
+test.  (It will result in less contiguous stuff in the cache and it
+will be less repeatable / more volatile).
+
+Mike
+
+On Sat, Sep 30, 2017 at 9:51 PM, Coly Li <i@coly.li> wrote:
+> On 2017/10/1 =E4=B8=8A=E5=8D=886:49, Michael Lyle wrote:
+>> One final attempt to resend, because gmail has been giving me trouble
+>> sending plain text mail.
+>>
+>> Two instances of this.  Tested as above, with a big set of random I/Os
+>> that ultimately cover every block in a file (e.g. allowing sequential
+>> writeback).
+>>
+>> With the 5 patches, samsung 940 SSD cache + crummy 5400 RPM USB hard dri=
+ve:
+>>
+>> Typical seconds look like:
+>>
+>> Reading 38232K from cache in 4809 IO.  38232/4809=3D7.95k per cache devi=
+ce IO.
+>>
+>> Writing 38112k to cache in 400 I/O =3D 95.28k -- or we are combining
+>> about 11.9 extents to a contiguous writeback.  Tracing, there are
+>> still contiguous things that are not getting merged well, but it's OK.
+>> (I'm hoping plugging makes this better).
+>>
+>> sda            4809.00     38232.00       446.00      38232        446
+>> sdb             400.00         0.00     38112.00          0      38112
+>>
+>> Without the 5 patches, a typical second--
+>>
+>> sda            2509.00     19968.00       316.00      19968        316
+>> sdb             502.00         0.00     19648.00          0      38112
+>>
+>> or we are combining about 4.9 extents to a contiguous writeback, and
+>> writing back at about half the rate.  All of these numbers are +/- 10%
+>> and obtained by eyeballing and grabbing representative seconds.
+>>
+>> Mike
+>>
+>> On Sat, Sep 30, 2017 at 2:02 AM, Michael Lyle <mlyle@lyle.org> wrote:
+>>>
+>>> Resent because I can't seem to get gmail to not send HTML mail.  And of=
+f to sleep.
+>>>
+>>>
+>>> On Sat, Sep 30, 2017 at 1:57 AM, Michael Lyle <mlyle@lyle.org> wrote:
+>>>> Two instances of this.
+>>>>
+>>>> With the 5 patches, samsung 940 SSD cache + crummy 5400 RPM USB hard d=
+rive:
+>>>>
+>>>> Typical seconds look like:
+>>>>
+>>>> Reading 38232K from cache in 4809 IO.  38232/4809=3D7.95k per cache de=
+vice IO.
+>>>>
+>>>> Writing 38112k to cache in 400 I/O =3D 95.28k -- or we are combining a=
+bout
+>>>> 11.9 extents to a contiguous writeback.  Tracing, there are still cont=
+iguous
+>>>> things that are not getting merged well, but it's OK.  (I'm hoping plu=
+gging
+>>>> makes this better).
+>>>>
+>>>> sda            4809.00     38232.00       446.00      38232        446
+>>>> sdb             400.00         0.00     38112.00          0      38112
+>>>>
+>>>> Without the 5 patches, a typical second--
+>>>>
+>>>> sda            2509.00     19968.00       316.00      19968        316
+>>>> sdb             502.00         0.00     19648.00          0      38112
+>>>>
+>>>> or we are combining about 4.9 extents to a contiguous writeback, and w=
+riting
+>>>> back at about half the rate.
+>
+> Hi Mike,
+>
+> Get it. Now I am testing your patches (all 5 patches). It has been 12+
+> hours, should be 12+ hours more. The backing device is a raid0 composed
+> by 4x1.8T 2.5inch harddisk, cache device is a 3.8T NVMe SSD. Block size
+> is 512K.
+>
+> Hope it works as you expected on my server.
+>
+> --
+> Coly Li
