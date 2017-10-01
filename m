@@ -1,158 +1,133 @@
-From: Coly Li <i@coly.li>
+From: "=?utf-8?B?cWl1bGc=?=" <qiulg@ecloudtech.com.cn>
 Subject: Re: /dev/bcacheX can still be written when plug out backing device
-Date: Sun, 1 Oct 2017 23:57:22 +0800
-Message-ID: <a0d64511-9566-04e0-3faa-fc03c725ba7d@coly.li>
+Date: Mon, 2 Oct 2017 00:00:04 +0800
+Message-ID: <tencent_3BDD19C90887EDC14847B38E@qq.com>
 References: <tencent_6B3B92236BCF98600CB74BF7@qq.com>
- <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
- <tencent_737734B231F68D6314102FB0@qq.com>
- <b486c2c4-7cb4-4ece-d91d-6e453e0480d0@coly.li>
- <tencent_28DFC2634AD6B0B33A888057@qq.com>
+        <8f618e23-47b1-5242-1337-85d677bbf466@coly.li>
+        <tencent_737734B231F68D6314102FB0@qq.com>
+        <b486c2c4-7cb4-4ece-d91d-6e453e0480d0@coly.li>
+        <tencent_28DFC2634AD6B0B33A888057@qq.com>
+        <a0d64511-9566-04e0-3faa-fc03c725ba7d@coly.li>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+        charset="utf-8"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:49612 "EHLO server.coly.li"
+Received: from smtpbgbr2.qq.com ([54.207.22.56]:51838 "EHLO smtpbgbr2.qq.com"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751093AbdJAP53 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 1 Oct 2017 11:57:29 -0400
-In-Reply-To: <tencent_28DFC2634AD6B0B33A888057@qq.com>
-Content-Language: en-US
+        id S1751093AbdJAQAN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 1 Oct 2017 12:00:13 -0400
+In-Reply-To: <a0d64511-9566-04e0-3faa-fc03c725ba7d@coly.li>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: qiulg <qiulg@ecloudtech.com.cn>
-Cc: linux-bcache <linux-bcache@vger.kernel.org>, =?UTF-8?B?5pyx6I+B?= <zhujing@ecloudtech.com.cn>, =?UTF-8?B?56em5pmT5by6?= <qinxq@ecloudtech.com.cn>
+To: =?utf-8?B?Q29seSBMaQ==?= <i@coly.li>
+Cc: =?utf-8?B?bGludXgtYmNhY2hl?= <linux-bcache@vger.kernel.org>, =?utf-8?B?5pyx6I+B?= <zhujing@ecloudtech.com.cn>, =?utf-8?B?56em5pmT5by6?= <qinxq@ecloudtech.com.cn>
 
-On 2017/10/1 下午11:51, qiulg wrote:
-> That's bad news. :( 
-> What is expected is freezing write I/O and return error to application when cache device or backing device failed. Hope the patch can be released soon.  
-> 
-
-Yes this is one of the expected behavior.
-Another expectation is after backing device is failed, bcache complains,
-but still permits cache device to cache a pre-defined amount of data,
-then freeing write I/O.
-
-Once the patch is available, I will let you know :-)
-
-Coly
-
-
-> Thanks. 
-> Qiu
->  
-> ------------------ Original ------------------
-> From:  "Coly Li"<i@coly.li>;
-> Date:  Sun, Oct 1, 2017 10:50 PM
-> To:  "qiulg"<qiulg@ecloudtech.com.cn>;
-> Cc:  "linux-bcache"<linux-bcache@vger.kernel.org>; "朱菁"<zhujing@ecloudtech.com.cn>; "秦晓强"<qinxq@ecloudtech.com.cn>;
-> Subject:  Re: /dev/bcacheX can still be written when plug out backing device
->  
-> On 2017/10/1 下午10:29, qiulg wrote:
->> Thanks Coly. Sorry for the wrong subject, changed. 
->>
->> Tridd dd with oflag=direct, the bcache device can still be written without backing device, but this time it finished at about 7.7GB.
->>
->> # dd if=/dev/zero of=/dev/bcache4 oflag=direct 
->>  dd: writing to `/dev/bcache4': Input/output error
->> 15052824+0 records in
->> 15052823+0 records out
->> 7707045376 bytes (7.7 GB) copied, 1022.63 s, 7.5 MB/s 
->>
-> 
-> Aha, it is backing device...I was blind...
-> The situation you hit is the backing device failure, which is not
-> properly handled by bcache yet. (indeed cache device failure is not
-> properly handled neither)
-> 
-> You are not the first one complains on this. I also receive such a
-> similar feature request, but it is on the tail of my task list. If
-> someone may contribute patches, I am glad to test.
-> 
-> Thanks.
-> 
-> Coly
-> 
->> ------------------ Original ------------------
->> From:  "Coly Li"<i@coly.li>;
->> Date:  Sat, Sep 30, 2017 08:18 PM
->> To:  "qiulg"<qiulg@ecloudtech.com.cn>;
->> Cc:  "linux-bcache"<linux-bcache@vger.kernel.org>;
->> Subject:  Re: zhujing@ecloutech.com.cn; qinxq@ecloutech.com.cn;qiulg@ecloutech.com.cn
->>  
->> On 2017/9/30 下午6:50, qiulg wrote:
->>> Hi,
->>>  
->>> Our environment is Redhat Enterprise 6.8, upgrade to kernal 4.4.89. We use sdj(480G) as as backing devices and sdk1(20G) as cache device. To test maintenance step when hard disk fail, we plug out the backing device sdj.
->>> Here are the results during test:
->>>  
->>> # lsscsi
->>> -- the sdj device is gone.
->>>  
->>> # ls -l /dev/bcache4
->>> brw-rw---- 1 root root 251, 4 Sep 30 18:00 /dev/bcache4
->>> -- the bcache4 device is still there
->>>  
->>> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
->>> dd: reading `/dev/bcache4': Input/output error
->>> 0+0 records in
->>> 0+0 records out
->>> 0 bytes (0 B) copied, 0.00201728 s, 0.0 kB/s
->>> -- this is resonable
->>>  
->>> # fdisk -l /dev/bcache4
->>> -- fdisk has no result. This is resonable
->>>  
->>> # dd if=/dev/zero of=/dev/bcache4 bs=1M count=100
->>> 100+0 records in
->>> 100+0 records out
->>> 104857600 bytes (105 MB) copied, 0.230408 s, 455 MB/s
->>> -- bcache4 can still be written. If the backing device is really destroyed, then application don't know that, and thought data is saved. It's not acceptable. The application should get I/O error.
->>>  
->>> # dd if=/dev/bcache4 of=/dev/null bs=1M count=100
->>> dd: reading `/dev/bcache4': Input/output error
->>> 46+1 records in
->>> 46+1 records out
->>> 48238592 bytes (48 MB) copied, 0.120517 s, 400 MB/s
->>> -- now read still shows error but 48MB data read out.
->>>  
->>> # fdisk -l /dev/bcache4
->>> Note: sector size is 4096 (not 512)
->>> Disk /dev/bcache4: 480.1 GB, 480103972864 bytes
->>> 255 heads, 63 sectors/track, 7296 cylinders
->>> Units = cylinders of 16065 * 4096 = 65802240 bytes
->>> Sector size (logical/physical): 4096 bytes / 4096 bytes
->>> I/O size (minimum/optimal): 4096 bytes / 4096 bytes
->>> Disk identifier: 0x00000000
->>> -- fdisk got answer. Strange. 480GB is the backing device size.
->>>  
->>> # dd if=/dev/zero of=/dev/bcache4 bs=1M
->>> dd: writing `/dev/bcache4': No space left on device
->>> 457863+0 records in
->>> 457862+0 records out
->>> 480103972864 bytes (480 GB) copied, 620.993 s, 773 MB/s
->>> -- keep writing to bcache4, after 480GB, it says "no space left". But the backing device is 480G, cache device is only 20G, where did the data go?
->>> -- during dd, the /var/log/message shows error
->>> ...
->>> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224259, lost async page write
->>> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224260, lost async page write
->>> Sep 30 17:52:35 s103 kernel: Buffer I/O error on dev bcache4, logical block 2224261, lost async page write
->>> Sep 30 17:52:40 s103 kernel: buffer_io_error: 1093169 callbacks suppressed
->>> Sep 30 17:52:40 s103 kernel: Buffer I/O error on dev bcache4, logical block 3317548, lost async page write
->>> ...
->>>  
->>> I think correct behaviour should be, if backing device lost, "dd" (the application) should know rightaway, got I/O error.
->>>  
->>> Appreciated for any help.
->>>  
->> Hi,
->>
->> Could you please try oflag=direct and observe what is the difference ?
->>
->> Buffered I/O is asynchronized, application is not able to get an
->> immediate -EIO.
->>
-> 
-
-
--- 
-Coly Li
+VGhhbmtzIGEgbG90IENvbHkhDQoNClFpdQ0KICANCi0tLS0tLS0tLS0tLS0tLS0tLSBPcmln
+aW5hbCAtLS0tLS0tLS0tLS0tLS0tLS0NCkZyb206ICAiQ29seSBMaSI8aUBjb2x5LmxpPjsN
+CkRhdGU6ICBTdW4sIE9jdCAxLCAyMDE3IDExOjU3IFBNDQpUbzogICJxaXVsZyI8cWl1bGdA
+ZWNsb3VkdGVjaC5jb20uY24+Ow0KQ2M6ICAibGludXgtYmNhY2hlIjxsaW51eC1iY2FjaGVA
+dmdlci5rZXJuZWwub3JnPjsgIuacseiPgSI8emh1amluZ0BlY2xvdWR0ZWNoLmNvbS5jbj47
+ICLnp6bmmZPlvLoiPHFpbnhxQGVjbG91ZHRlY2guY29tLmNuPjsNClN1YmplY3Q6ICBSZTog
+L2Rldi9iY2FjaGVYIGNhbiBzdGlsbCBiZSB3cml0dGVuIHdoZW4gcGx1ZyBvdXQgYmFja2lu
+ZyBkZXZpY2UNCiANCk9uIDIwMTcvMTAvMSDkuIvljYgxMTo1MSwgcWl1bGcgd3JvdGU6DQo+
+IFRoYXQncyBiYWQgbmV3cy4gOiggDQo+IFdoYXQgaXMgZXhwZWN0ZWQgaXMgZnJlZXppbmcg
+d3JpdGUgSS9PIGFuZCByZXR1cm4gZXJyb3IgdG8gYXBwbGljYXRpb24gd2hlbiBjYWNoZSBk
+ZXZpY2Ugb3IgYmFja2luZyBkZXZpY2UgZmFpbGVkLiBIb3BlIHRoZSBwYXRjaCBjYW4gYmUg
+cmVsZWFzZWQgc29vbi4gIA0KPiANCg0KWWVzIHRoaXMgaXMgb25lIG9mIHRoZSBleHBlY3Rl
+ZCBiZWhhdmlvci4NCkFub3RoZXIgZXhwZWN0YXRpb24gaXMgYWZ0ZXIgYmFja2luZyBkZXZp
+Y2UgaXMgZmFpbGVkLCBiY2FjaGUgY29tcGxhaW5zLA0KYnV0IHN0aWxsIHBlcm1pdHMgY2Fj
+aGUgZGV2aWNlIHRvIGNhY2hlIGEgcHJlLWRlZmluZWQgYW1vdW50IG9mIGRhdGEsDQp0aGVu
+IGZyZWVpbmcgd3JpdGUgSS9PLg0KDQpPbmNlIHRoZSBwYXRjaCBpcyBhdmFpbGFibGUsIEkg
+d2lsbCBsZXQgeW91IGtub3cgOi0pDQoNCkNvbHkNCg0KDQo+IFRoYW5rcy4gDQo+IFFpdQ0K
+PiAgDQo+IC0tLS0tLS0tLS0tLS0tLS0tLSBPcmlnaW5hbCAtLS0tLS0tLS0tLS0tLS0tLS0N
+Cj4gRnJvbTogICJDb2x5IExpIjxpQGNvbHkubGk+Ow0KPiBEYXRlOiAgU3VuLCBPY3QgMSwg
+MjAxNyAxMDo1MCBQTQ0KPiBUbzogICJxaXVsZyI8cWl1bGdAZWNsb3VkdGVjaC5jb20uY24+
+Ow0KPiBDYzogICJsaW51eC1iY2FjaGUiPGxpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5vcmc+
+OyAi5pyx6I+BIjx6aHVqaW5nQGVjbG91ZHRlY2guY29tLmNuPjsgIuenpuaZk+W8uiI8cWlu
+eHFAZWNsb3VkdGVjaC5jb20uY24+Ow0KPiBTdWJqZWN0OiAgUmU6IC9kZXYvYmNhY2hlWCBj
+YW4gc3RpbGwgYmUgd3JpdHRlbiB3aGVuIHBsdWcgb3V0IGJhY2tpbmcgZGV2aWNlDQo+ICAN
+Cj4gT24gMjAxNy8xMC8xIOS4i+WNiDEwOjI5LCBxaXVsZyB3cm90ZToNCj4+IFRoYW5rcyBD
+b2x5LiBTb3JyeSBmb3IgdGhlIHdyb25nIHN1YmplY3QsIGNoYW5nZWQuIA0KPj4NCj4+IFRy
+aWRkIGRkIHdpdGggb2ZsYWc9ZGlyZWN0LCB0aGUgYmNhY2hlIGRldmljZSBjYW4gc3RpbGwg
+YmUgd3JpdHRlbiB3aXRob3V0IGJhY2tpbmcgZGV2aWNlLCBidXQgdGhpcyB0aW1lIGl0IGZp
+bmlzaGVkIGF0IGFib3V0IDcuN0dCLg0KPj4NCj4+ICMgZGQgaWY9L2Rldi96ZXJvIG9mPS9k
+ZXYvYmNhY2hlNCBvZmxhZz1kaXJlY3QgDQo+PiAgZGQ6IHdyaXRpbmcgdG8gYC9kZXYvYmNh
+Y2hlNCc6IElucHV0L291dHB1dCBlcnJvcg0KPj4gMTUwNTI4MjQrMCByZWNvcmRzIGluDQo+
+PiAxNTA1MjgyMyswIHJlY29yZHMgb3V0DQo+PiA3NzA3MDQ1Mzc2IGJ5dGVzICg3LjcgR0Ip
+IGNvcGllZCwgMTAyMi42MyBzLCA3LjUgTUIvcyANCj4+DQo+IA0KPiBBaGEsIGl0IGlzIGJh
+Y2tpbmcgZGV2aWNlLi4uSSB3YXMgYmxpbmQuLi4NCj4gVGhlIHNpdHVhdGlvbiB5b3UgaGl0
+IGlzIHRoZSBiYWNraW5nIGRldmljZSBmYWlsdXJlLCB3aGljaCBpcyBub3QNCj4gcHJvcGVy
+bHkgaGFuZGxlZCBieSBiY2FjaGUgeWV0LiAoaW5kZWVkIGNhY2hlIGRldmljZSBmYWlsdXJl
+IGlzIG5vdA0KPiBwcm9wZXJseSBoYW5kbGVkIG5laXRoZXIpDQo+IA0KPiBZb3UgYXJlIG5v
+dCB0aGUgZmlyc3Qgb25lIGNvbXBsYWlucyBvbiB0aGlzLiBJIGFsc28gcmVjZWl2ZSBzdWNo
+IGENCj4gc2ltaWxhciBmZWF0dXJlIHJlcXVlc3QsIGJ1dCBpdCBpcyBvbiB0aGUgdGFpbCBv
+ZiBteSB0YXNrIGxpc3QuIElmDQo+IHNvbWVvbmUgbWF5IGNvbnRyaWJ1dGUgcGF0Y2hlcywg
+SSBhbSBnbGFkIHRvIHRlc3QuDQo+IA0KPiBUaGFua3MuDQo+IA0KPiBDb2x5DQo+IA0KPj4g
+LS0tLS0tLS0tLS0tLS0tLS0tIE9yaWdpbmFsIC0tLS0tLS0tLS0tLS0tLS0tLQ0KPj4gRnJv
+bTogICJDb2x5IExpIjxpQGNvbHkubGk+Ow0KPj4gRGF0ZTogIFNhdCwgU2VwIDMwLCAyMDE3
+IDA4OjE4IFBNDQo+PiBUbzogICJxaXVsZyI8cWl1bGdAZWNsb3VkdGVjaC5jb20uY24+Ow0K
+Pj4gQ2M6ICAibGludXgtYmNhY2hlIjxsaW51eC1iY2FjaGVAdmdlci5rZXJuZWwub3JnPjsN
+Cj4+IFN1YmplY3Q6ICBSZTogemh1amluZ0BlY2xvdXRlY2guY29tLmNuOyBxaW54cUBlY2xv
+dXRlY2guY29tLmNuO3FpdWxnQGVjbG91dGVjaC5jb20uY24NCj4+ICANCj4+IE9uIDIwMTcv
+OS8zMCDkuIvljYg2OjUwLCBxaXVsZyB3cm90ZToNCj4+PiBIaSwNCj4+PiAgDQo+Pj4gT3Vy
+IGVudmlyb25tZW50IGlzIFJlZGhhdCBFbnRlcnByaXNlIDYuOCwgdXBncmFkZSB0byBrZXJu
+YWwgNC40Ljg5LiBXZSB1c2Ugc2RqKDQ4MEcpIGFzIGFzIGJhY2tpbmcgZGV2aWNlcyBhbmQg
+c2RrMSgyMEcpIGFzIGNhY2hlIGRldmljZS4gVG8gdGVzdCBtYWludGVuYW5jZSBzdGVwIHdo
+ZW4gaGFyZCBkaXNrIGZhaWwsIHdlIHBsdWcgb3V0IHRoZSBiYWNraW5nIGRldmljZSBzZGou
+DQo+Pj4gSGVyZSBhcmUgdGhlIHJlc3VsdHMgZHVyaW5nIHRlc3Q6DQo+Pj4gIA0KPj4+ICMg
+bHNzY3NpDQo+Pj4gLS0gdGhlIHNkaiBkZXZpY2UgaXMgZ29uZS4NCj4+PiAgDQo+Pj4gIyBs
+cyAtbCAvZGV2L2JjYWNoZTQNCj4+PiBicnctcnctLS0tIDEgcm9vdCByb290IDI1MSwgNCBT
+ZXAgMzAgMTg6MDAgL2Rldi9iY2FjaGU0DQo+Pj4gLS0gdGhlIGJjYWNoZTQgZGV2aWNlIGlz
+IHN0aWxsIHRoZXJlDQo+Pj4gIA0KPj4+ICMgZGQgaWY9L2Rldi9iY2FjaGU0IG9mPS9kZXYv
+bnVsbCBicz0xTSBjb3VudD0xMDANCj4+PiBkZDogcmVhZGluZyBgL2Rldi9iY2FjaGU0Jzog
+SW5wdXQvb3V0cHV0IGVycm9yDQo+Pj4gMCswIHJlY29yZHMgaW4NCj4+PiAwKzAgcmVjb3Jk
+cyBvdXQNCj4+PiAwIGJ5dGVzICgwIEIpIGNvcGllZCwgMC4wMDIwMTcyOCBzLCAwLjAga0Iv
+cw0KPj4+IC0tIHRoaXMgaXMgcmVzb25hYmxlDQo+Pj4gIA0KPj4+ICMgZmRpc2sgLWwgL2Rl
+di9iY2FjaGU0DQo+Pj4gLS0gZmRpc2sgaGFzIG5vIHJlc3VsdC4gVGhpcyBpcyByZXNvbmFi
+bGUNCj4+PiAgDQo+Pj4gIyBkZCBpZj0vZGV2L3plcm8gb2Y9L2Rldi9iY2FjaGU0IGJzPTFN
+IGNvdW50PTEwMA0KPj4+IDEwMCswIHJlY29yZHMgaW4NCj4+PiAxMDArMCByZWNvcmRzIG91
+dA0KPj4+IDEwNDg1NzYwMCBieXRlcyAoMTA1IE1CKSBjb3BpZWQsIDAuMjMwNDA4IHMsIDQ1
+NSBNQi9zDQo+Pj4gLS0gYmNhY2hlNCBjYW4gc3RpbGwgYmUgd3JpdHRlbi4gSWYgdGhlIGJh
+Y2tpbmcgZGV2aWNlIGlzIHJlYWxseSBkZXN0cm95ZWQsIHRoZW4gYXBwbGljYXRpb24gZG9u
+J3Qga25vdyB0aGF0LCBhbmQgdGhvdWdodCBkYXRhIGlzIHNhdmVkLiBJdCdzIG5vdCBhY2Nl
+cHRhYmxlLiBUaGUgYXBwbGljYXRpb24gc2hvdWxkIGdldCBJL08gZXJyb3IuDQo+Pj4gIA0K
+Pj4+ICMgZGQgaWY9L2Rldi9iY2FjaGU0IG9mPS9kZXYvbnVsbCBicz0xTSBjb3VudD0xMDAN
+Cj4+PiBkZDogcmVhZGluZyBgL2Rldi9iY2FjaGU0JzogSW5wdXQvb3V0cHV0IGVycm9yDQo+
+Pj4gNDYrMSByZWNvcmRzIGluDQo+Pj4gNDYrMSByZWNvcmRzIG91dA0KPj4+IDQ4MjM4NTky
+IGJ5dGVzICg0OCBNQikgY29waWVkLCAwLjEyMDUxNyBzLCA0MDAgTUIvcw0KPj4+IC0tIG5v
+dyByZWFkIHN0aWxsIHNob3dzIGVycm9yIGJ1dCA0OE1CIGRhdGEgcmVhZCBvdXQuDQo+Pj4g
+IA0KPj4+ICMgZmRpc2sgLWwgL2Rldi9iY2FjaGU0DQo+Pj4gTm90ZTogc2VjdG9yIHNpemUg
+aXMgNDA5NiAobm90IDUxMikNCj4+PiBEaXNrIC9kZXYvYmNhY2hlNDogNDgwLjEgR0IsIDQ4
+MDEwMzk3Mjg2NCBieXRlcw0KPj4+IDI1NSBoZWFkcywgNjMgc2VjdG9ycy90cmFjaywgNzI5
+NiBjeWxpbmRlcnMNCj4+PiBVbml0cyA9IGN5bGluZGVycyBvZiAxNjA2NSAqIDQwOTYgPSA2
+NTgwMjI0MCBieXRlcw0KPj4+IFNlY3RvciBzaXplIChsb2dpY2FsL3BoeXNpY2FsKTogNDA5
+NiBieXRlcyAvIDQwOTYgYnl0ZXMNCj4+PiBJL08gc2l6ZSAobWluaW11bS9vcHRpbWFsKTog
+NDA5NiBieXRlcyAvIDQwOTYgYnl0ZXMNCj4+PiBEaXNrIGlkZW50aWZpZXI6IDB4MDAwMDAw
+MDANCj4+PiAtLSBmZGlzayBnb3QgYW5zd2VyLiBTdHJhbmdlLiA0ODBHQiBpcyB0aGUgYmFj
+a2luZyBkZXZpY2Ugc2l6ZS4NCj4+PiAgDQo+Pj4gIyBkZCBpZj0vZGV2L3plcm8gb2Y9L2Rl
+di9iY2FjaGU0IGJzPTFNDQo+Pj4gZGQ6IHdyaXRpbmcgYC9kZXYvYmNhY2hlNCc6IE5vIHNw
+YWNlIGxlZnQgb24gZGV2aWNlDQo+Pj4gNDU3ODYzKzAgcmVjb3JkcyBpbg0KPj4+IDQ1Nzg2
+MiswIHJlY29yZHMgb3V0DQo+Pj4gNDgwMTAzOTcyODY0IGJ5dGVzICg0ODAgR0IpIGNvcGll
+ZCwgNjIwLjk5MyBzLCA3NzMgTUIvcw0KPj4+IC0tIGtlZXAgd3JpdGluZyB0byBiY2FjaGU0
+LCBhZnRlciA0ODBHQiwgaXQgc2F5cyAibm8gc3BhY2UgbGVmdCIuIEJ1dCB0aGUgYmFja2lu
+ZyBkZXZpY2UgaXMgNDgwRywgY2FjaGUgZGV2aWNlIGlzIG9ubHkgMjBHLCB3aGVyZSBkaWQg
+dGhlIGRhdGEgZ28/DQo+Pj4gLS0gZHVyaW5nIGRkLCB0aGUgL3Zhci9sb2cvbWVzc2FnZSBz
+aG93cyBlcnJvcg0KPj4+IC4uLg0KPj4+IFNlcCAzMCAxNzo1MjozNSBzMTAzIGtlcm5lbDog
+QnVmZmVyIEkvTyBlcnJvciBvbiBkZXYgYmNhY2hlNCwgbG9naWNhbCBibG9jayAyMjI0MjU5
+LCBsb3N0IGFzeW5jIHBhZ2Ugd3JpdGUNCj4+PiBTZXAgMzAgMTc6NTI6MzUgczEwMyBrZXJu
+ZWw6IEJ1ZmZlciBJL08gZXJyb3Igb24gZGV2IGJjYWNoZTQsIGxvZ2ljYWwgYmxvY2sgMjIy
+NDI2MCwgbG9zdCBhc3luYyBwYWdlIHdyaXRlDQo+Pj4gU2VwIDMwIDE3OjUyOjM1IHMxMDMg
+a2VybmVsOiBCdWZmZXIgSS9PIGVycm9yIG9uIGRldiBiY2FjaGU0LCBsb2dpY2FsIGJsb2Nr
+IDIyMjQyNjEsIGxvc3QgYXN5bmMgcGFnZSB3cml0ZQ0KPj4+IFNlcCAzMCAxNzo1Mjo0MCBz
+MTAzIGtlcm5lbDogYnVmZmVyX2lvX2Vycm9yOiAxMDkzMTY5IGNhbGxiYWNrcyBzdXBwcmVz
+c2VkDQo+Pj4gU2VwIDMwIDE3OjUyOjQwIHMxMDMga2VybmVsOiBCdWZmZXIgSS9PIGVycm9y
+IG9uIGRldiBiY2FjaGU0LCBsb2dpY2FsIGJsb2NrIDMzMTc1NDgsIGxvc3QgYXN5bmMgcGFn
+ZSB3cml0ZQ0KPj4+IC4uLg0KPj4+ICANCj4+PiBJIHRoaW5rIGNvcnJlY3QgYmVoYXZpb3Vy
+IHNob3VsZCBiZSwgaWYgYmFja2luZyBkZXZpY2UgbG9zdCwgImRkIiAodGhlIGFwcGxpY2F0
+aW9uKSBzaG91bGQga25vdyByaWdodGF3YXksIGdvdCBJL08gZXJyb3IuDQo+Pj4gIA0KPj4+
+IEFwcHJlY2lhdGVkIGZvciBhbnkgaGVscC4NCj4+PiAgDQo+PiBIaSwNCj4+DQo+PiBDb3Vs
+ZCB5b3UgcGxlYXNlIHRyeSBvZmxhZz1kaXJlY3QgYW5kIG9ic2VydmUgd2hhdCBpcyB0aGUg
+ZGlmZmVyZW5jZSA/DQo+Pg0KPj4gQnVmZmVyZWQgSS9PIGlzIGFzeW5jaHJvbml6ZWQsIGFw
+cGxpY2F0aW9uIGlzIG5vdCBhYmxlIHRvIGdldCBhbg0KPj4gaW1tZWRpYXRlIC1FSU8uDQo+
+Pg0KPiANCg0KDQotLSANCkNvbHkgTGk=
