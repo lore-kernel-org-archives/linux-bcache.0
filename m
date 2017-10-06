@@ -1,7 +1,7 @@
 From: Michael Lyle <mlyle@lyle.org>
 Subject: Re: [PATCH 4/5] bcache: writeback: collapse contiguous IO better
-Date: Fri, 6 Oct 2017 04:09:20 -0700
-Message-ID: <CAJ+L6qf7NtkqKFbKsEjr8noqG94nPQnj1z3doMh10DYH-vMniw@mail.gmail.com>
+Date: Fri, 6 Oct 2017 04:57:07 -0700
+Message-ID: <CAJ+L6qdQG27JpDTPxPrgYgeVC8qq-hYHq85U1zHQJDUneT8trA@mail.gmail.com>
 References: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
  <CAJ+L6qcyq-E4MrWNfB9kGA8DMD_U1HMxJii-=-qPfv0LeRL45w@mail.gmail.com>
  <CAJ+L6qdc8YqO5B3Cv0h4QQ+4P06FbtsT10Jqt5=Fx8iRh1UGwQ@mail.gmail.com>
@@ -12,135 +12,208 @@ References: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
  <CAJ+L6qe8rwbtO6tR-QNQBUApbeGQ9NGD=P9t5gtN9j0kzacJEQ@mail.gmail.com>
  <cb6db7c0-eaf7-f4a8-5584-8ce512575d74@coly.li> <CAJ+L6qdG70ExM7cnwYFLmCDBXY8SBErLhnMNeFVscXYemb_1SQ@mail.gmail.com>
  <18f2271b-87c2-530d-12da-dc2b4a5af1fd@coly.li> <CAJ+L6qcLc-=bbDJuaToDFPUWG=c4JKhKBQkivaw3tYWdjERmZw@mail.gmail.com>
- <b654ae09-b9f1-295f-b45a-6688c7fa4e0d@suse.de>
+ <b654ae09-b9f1-295f-b45a-6688c7fa4e0d@suse.de> <CAJ+L6qf7NtkqKFbKsEjr8noqG94nPQnj1z3doMh10DYH-vMniw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <b654ae09-b9f1-295f-b45a-6688c7fa4e0d@suse.de>
-Sender: linux-block-owner@vger.kernel.org
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-qk0-f179.google.com ([209.85.220.179]:47996 "EHLO
+        mail-qk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751883AbdJFL5I (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 6 Oct 2017 07:57:08 -0400
+Received: by mail-qk0-f179.google.com with SMTP id m189so13532785qke.4
+        for <linux-bcache@vger.kernel.org>; Fri, 06 Oct 2017 04:57:08 -0700 (PDT)
+In-Reply-To: <CAJ+L6qf7NtkqKFbKsEjr8noqG94nPQnj1z3doMh10DYH-vMniw@mail.gmail.com>
+Sender: linux-bcache-owner@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 To: Hannes Reinecke <hare@suse.de>
 Cc: Coly Li <i@coly.li>, Junhui Tang <tang.junhui@zte.com.cn>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
-List-Id: linux-bcache@vger.kernel.org
 
-Hannes--
+OK, here's some data:  http://jar.lyle.org/~mlyle/writeback/
 
-Thanks for your input.
+The complete test script is there to automate running writeback
+scenarios--- NOTE DONT RUN WITHOUT EDITING THE DEVICES FOR YOUR
+HARDWARE.
 
-Assuming there's contiguous data to writeback, the dataset size is
-immaterial; writeback gathers 500 extents from a btree, and writes
-back up to 64 of them at a time.  With 8k extents, the amount of data
-the writeback code is juggling at a time is about 4 megabytes at
-maximum.
+Only one run each way, but they take 8-9 minutes to run, we can easily
+get more ;)  I compared patches 1-3 (which are uncontroversial) to
+1-5.
 
-Optimizing writeback only does something significant when the chunks
-to write back are relatively small, and when there's actual extents
-next to each other to write back.
+Concerns I've heard:
 
-If there's big chunks, the spinning disk takes a long time to write
-each one; and that time allows both the drive itself with native
-command queueing and the IO scheduler lots of time to combine the
-write.  Not to mention that even if there is a small delay due to
-non-sequential / short-seek the difference in performance is minimal,
-because 512k extents tie up the disk for a long time.
+- The new patches will contend for I/O bandwidth with front-end writes:
 
-Also, I think the test scenario doesn't really have any adjacent
-extents to writeback, which doesn't help.
+No:
+ 3 PATCHES: write: io=3D29703MB, bw=3D83191KB/s, iops=3D10398, runt=3D36561=
+8msec
+vs
+ 5 PATCHES: write: io=3D29746MB, bw=3D86177KB/s, iops=3D10771, runt=3D35346=
+1msec
 
-I will forward performance data and complete scripts to run a
-reasonable scenario.
+It may actually be slightly better-- 3% or so.
+
+- The new patches will not improve writeback rate.
+
+No:
+
+3 PATCHES: the active period of the test was 366+100=3D466 seconds, and
+at the end there was 33.4G dirty.
+5 PATCHES: the active period of the test was 353+100=3D453 seconds, and
+at the end there was 32.7G dirty.
+
+This is a moderate improvement.
+
+- The IO scheduler can combine the writes anyways so this type of
+patch will not increase write queue merge.
+
+No:
+
+Average wrqm/s is 1525.4 in the 3 PATCHES dataset; average wrqm/s is
+1643.7 in the 5 PATCHES dataset.
+
+During the last 100 seconds, when ONLY WRITEBACK is occurring, wrqm is
+1398.0 in 3 PATCHES, and 1811.6 with 5 PATCHES.
+
+- Front-end latency will suffer:
+
+No:
+
+The datasets look the same to my eye.  By far the worst thing is the
+occasional 1000ms+ times the bcache goes to sleep in both scenarios,
+contending for the writeback lock (not affected by these patches, but
+an item for future work if I ever get to move on to a new topic).
+
+Conclusion:
+
+These patches provide a small but significant improvement in writeback
+rates, that can be seen with careful testing that produces actual
+sequential writeback.  They lay the groundwork for further
+improvements, through the use of plugging the block layer and to allow
+accelerated writeback when the device is idle.
 
 Mike
 
-On Fri, Oct 6, 2017 at 4:00 AM, Hannes Reinecke <hare@suse.de> wrote:
-> On 10/06/2017 12:42 PM, Michael Lyle wrote:
->> Coly--
->>
->> Holy crap, I'm not surprised you don't see a difference if you're
->> writing with 512K size!  The potential benefit from merging is much
->> less, and the odds of missing a merge is much smaller.  512KB is 5ms
->> sequential by itself on a 100MB/sec disk--- lots more time to wait to
->> get the next chunks in order, and even if you fail to merge the
->> potential benefit is much less-- if the difference is mostly
->> rotational latency from failing to merge then we're talking 5ms vs
->> 5+2ms.
->>
->> Do you even understand what you are trying to test?
->>
->> Mike
->>
->> On Fri, Oct 6, 2017 at 3:36 AM, Coly Li <i@coly.li> wrote:
->>> On 2017/10/6 =E4=B8=8B=E5=8D=885:20, Michael Lyle wrote:
->>>> Coly--
->>>>
->>>> I did not say the result from the changes will be random.
->>>>
->>>> I said the result from your test will be random, because where the
->>>> writeback position is making non-contiguous holes in the data is
->>>> nondeterministic-- it depends where it is on the disk at the instant
->>>> that writeback begins.  There is a high degree of dispersion in the
->>>> test scenario you are running that is likely to exceed the differences
->>>> from my patch.
+On Fri, Oct 6, 2017 at 4:09 AM, Michael Lyle <mlyle@lyle.org> wrote:
+> Hannes--
+>
+> Thanks for your input.
+>
+> Assuming there's contiguous data to writeback, the dataset size is
+> immaterial; writeback gathers 500 extents from a btree, and writes
+> back up to 64 of them at a time.  With 8k extents, the amount of data
+> the writeback code is juggling at a time is about 4 megabytes at
+> maximum.
+>
+> Optimizing writeback only does something significant when the chunks
+> to write back are relatively small, and when there's actual extents
+> next to each other to write back.
+>
+> If there's big chunks, the spinning disk takes a long time to write
+> each one; and that time allows both the drive itself with native
+> command queueing and the IO scheduler lots of time to combine the
+> write.  Not to mention that even if there is a small delay due to
+> non-sequential / short-seek the difference in performance is minimal,
+> because 512k extents tie up the disk for a long time.
+>
+> Also, I think the test scenario doesn't really have any adjacent
+> extents to writeback, which doesn't help.
+>
+> I will forward performance data and complete scripts to run a
+> reasonable scenario.
+>
+> Mike
+>
+> On Fri, Oct 6, 2017 at 4:00 AM, Hannes Reinecke <hare@suse.de> wrote:
+>> On 10/06/2017 12:42 PM, Michael Lyle wrote:
+>>> Coly--
 >>>
->>> Hi Mike,
+>>> Holy crap, I'm not surprised you don't see a difference if you're
+>>> writing with 512K size!  The potential benefit from merging is much
+>>> less, and the odds of missing a merge is much smaller.  512KB is 5ms
+>>> sequential by itself on a 100MB/sec disk--- lots more time to wait to
+>>> get the next chunks in order, and even if you fail to merge the
+>>> potential benefit is much less-- if the difference is mostly
+>>> rotational latency from failing to merge then we're talking 5ms vs
+>>> 5+2ms.
 >>>
->>> I did the test quite carefully. Here is how I ran the test,
->>> - disable writeback by echo 0 to writeback_runing.
->>> - write random data into cache to full or half size, then stop the I/O
->>> immediately.
->>> - echo 1 to writeback_runing to start writeback
->>> - and record performance data at once
+>>> Do you even understand what you are trying to test?
 >>>
->>> It might be random position where the writeback starts, but there shoul=
-d
->>> not be too much difference of statistical number of the continuous
->>> blocks (on cached device). Because fio just send random 512KB blocks
->>> onto cache device, the statistical number of contiguous blocks depends
->>> on cache device vs. cached device size, and how full the cache device i=
+>>> Mike
+>>>
+>>> On Fri, Oct 6, 2017 at 3:36 AM, Coly Li <i@coly.li> wrote:
+>>>> On 2017/10/6 =E4=B8=8B=E5=8D=885:20, Michael Lyle wrote:
+>>>>> Coly--
+>>>>>
+>>>>> I did not say the result from the changes will be random.
+>>>>>
+>>>>> I said the result from your test will be random, because where the
+>>>>> writeback position is making non-contiguous holes in the data is
+>>>>> nondeterministic-- it depends where it is on the disk at the instant
+>>>>> that writeback begins.  There is a high degree of dispersion in the
+>>>>> test scenario you are running that is likely to exceed the difference=
 s
->>> occupied.
->>>
->>> Indeed, I repeated some tests more than once (except the md raid5 and m=
-d
->>> raid0 configurations), the results are quite sable when I see the data
->>> charts, no big difference.
->>>
->>> If you feel the performance result I provided is problematic, it would
->>> be better to let the data talk. You need to show your performance test
->>> number to prove that the bio reorder patches are helpful for general
->>> workloads, or at least helpful to many typical workloads.
->>>
->>> Let the data talk.
->>>
->
-> I think it would be easier for everyone concerned if Coly could attach
-> the fio script / cmdline and the bcache setup here.
-> There still is a chance that both are correct, as different hardware
-> setups are being used.
-> We've seen this many times trying to establish workable performance
-> regression metrics for I/O; depending on the hardware one set of
-> optimisations fail to deliver the expected benefit on other platforms.
-> Just look at the discussion we're having currently with Ming Lei on the
-> SCSI mailing list trying to improve sequential I/O performance.
->
-> But please try to calm down everyone. It's not that Coly is deliberately
-> blocking your patches, it's just that he doesn't see the performance
-> benefit on his side.
-> Might be that he's using the wrong parameters, but than that should be
-> clarified once the fio script is posted.
->
-> At the same time I don't think that the size of the dataset is
-> immaterial. Larger datasets take up more space, and inevitably add more
-> overhead just for looking up the data in memory. Plus Coly has some
-> quite high-powered NVMe for the caching device, which will affect
-> writeback patterns, too.
->
-> Cheers,
->
-> Hannes
-> --
-> Dr. Hannes Reinecke                Teamlead Storage & Networking
-> hare@suse.de                                   +49 911 74053 688
-> SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=C3=BCrnberg
-> GF: F. Imend=C3=B6rffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
-> HRB 21284 (AG N=C3=BCrnberg)
+>>>>> from my patch.
+>>>>
+>>>> Hi Mike,
+>>>>
+>>>> I did the test quite carefully. Here is how I ran the test,
+>>>> - disable writeback by echo 0 to writeback_runing.
+>>>> - write random data into cache to full or half size, then stop the I/O
+>>>> immediately.
+>>>> - echo 1 to writeback_runing to start writeback
+>>>> - and record performance data at once
+>>>>
+>>>> It might be random position where the writeback starts, but there shou=
+ld
+>>>> not be too much difference of statistical number of the continuous
+>>>> blocks (on cached device). Because fio just send random 512KB blocks
+>>>> onto cache device, the statistical number of contiguous blocks depends
+>>>> on cache device vs. cached device size, and how full the cache device =
+is
+>>>> occupied.
+>>>>
+>>>> Indeed, I repeated some tests more than once (except the md raid5 and =
+md
+>>>> raid0 configurations), the results are quite sable when I see the data
+>>>> charts, no big difference.
+>>>>
+>>>> If you feel the performance result I provided is problematic, it would
+>>>> be better to let the data talk. You need to show your performance test
+>>>> number to prove that the bio reorder patches are helpful for general
+>>>> workloads, or at least helpful to many typical workloads.
+>>>>
+>>>> Let the data talk.
+>>>>
+>>
+>> I think it would be easier for everyone concerned if Coly could attach
+>> the fio script / cmdline and the bcache setup here.
+>> There still is a chance that both are correct, as different hardware
+>> setups are being used.
+>> We've seen this many times trying to establish workable performance
+>> regression metrics for I/O; depending on the hardware one set of
+>> optimisations fail to deliver the expected benefit on other platforms.
+>> Just look at the discussion we're having currently with Ming Lei on the
+>> SCSI mailing list trying to improve sequential I/O performance.
+>>
+>> But please try to calm down everyone. It's not that Coly is deliberately
+>> blocking your patches, it's just that he doesn't see the performance
+>> benefit on his side.
+>> Might be that he's using the wrong parameters, but than that should be
+>> clarified once the fio script is posted.
+>>
+>> At the same time I don't think that the size of the dataset is
+>> immaterial. Larger datasets take up more space, and inevitably add more
+>> overhead just for looking up the data in memory. Plus Coly has some
+>> quite high-powered NVMe for the caching device, which will affect
+>> writeback patterns, too.
+>>
+>> Cheers,
+>>
+>> Hannes
+>> --
+>> Dr. Hannes Reinecke                Teamlead Storage & Networking
+>> hare@suse.de                                   +49 911 74053 688
+>> SUSE LINUX GmbH, Maxfeldstr. 5, 90409 N=C3=BCrnberg
+>> GF: F. Imend=C3=B6rffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
+>> HRB 21284 (AG N=C3=BCrnberg)
