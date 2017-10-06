@@ -1,71 +1,100 @@
-From: Michael Lyle <mlyle@lyle.org>
+From: Coly Li <i@coly.li>
 Subject: Re: [PATCH 4/5] bcache: writeback: collapse contiguous IO better
-Date: Fri, 6 Oct 2017 10:53:39 -0700
-Message-ID: <CAJ+L6qc=Ndi-6JD2Jt5QgDEm5NLmxRBbGnzxLrqDHzJzG7LbHA@mail.gmail.com>
+Date: Sat, 7 Oct 2017 02:09:05 +0800
+Message-ID: <33e52793-251d-ed58-fb59-5432946efb56@coly.li>
 References: <1506497553-12552-1-git-send-email-tang.junhui@zte.com.cn>
- <CAJ+L6qcyq-E4MrWNfB9kGA8DMD_U1HMxJii-=-qPfv0LeRL45w@mail.gmail.com>
- <CAJ+L6qdc8YqO5B3Cv0h4QQ+4P06FbtsT10Jqt5=Fx8iRh1UGwQ@mail.gmail.com>
- <96f34768-2b02-7849-c034-e1bb83b0fa0d@coly.li> <CAJ+L6qdTB6DyhD8UwHaVtN-THXwanBXrQK3EvmvLhuoXgYyzrA@mail.gmail.com>
- <05c1aa86-5fc8-f330-5cd1-46f9ba7cd3e0@coly.li> <CAJ+L6qfTDkgrLEUSRX2Pv2qvB7Ns=Hb3nBVz0SDoDn_m9RC8hg@mail.gmail.com>
- <2c39cd9c-34bd-5982-9fd7-ceb61305c13d@coly.li> <CAJ+L6qe7C=FyPFya8y0HV8SCc7VSEEuUApcqEUnouVDUByfZ5w@mail.gmail.com>
- <6a2052da-6b52-9c06-b85e-e3ea29e3f8e8@coly.li> <CAJ+L6qdqQn4tpFdkPZ-zhxss9O8axBEarMBJA5X6f9i+K8SLGg@mail.gmail.com>
+ <CAJ+L6qfTDkgrLEUSRX2Pv2qvB7Ns=Hb3nBVz0SDoDn_m9RC8hg@mail.gmail.com>
+ <2c39cd9c-34bd-5982-9fd7-ceb61305c13d@coly.li>
+ <CAJ+L6qe7C=FyPFya8y0HV8SCc7VSEEuUApcqEUnouVDUByfZ5w@mail.gmail.com>
+ <6a2052da-6b52-9c06-b85e-e3ea29e3f8e8@coly.li>
+ <CAJ+L6qdqQn4tpFdkPZ-zhxss9O8axBEarMBJA5X6f9i+K8SLGg@mail.gmail.com>
  <CAJ+L6qe8rwbtO6tR-QNQBUApbeGQ9NGD=P9t5gtN9j0kzacJEQ@mail.gmail.com>
- <cb6db7c0-eaf7-f4a8-5584-8ce512575d74@coly.li> <CAJ+L6qdG70ExM7cnwYFLmCDBXY8SBErLhnMNeFVscXYemb_1SQ@mail.gmail.com>
- <18f2271b-87c2-530d-12da-dc2b4a5af1fd@coly.li> <CAJ+L6qcLc-=bbDJuaToDFPUWG=c4JKhKBQkivaw3tYWdjERmZw@mail.gmail.com>
- <8c7574ae-f520-bb7b-a974-ad747f9555cf@coly.li>
+ <cb6db7c0-eaf7-f4a8-5584-8ce512575d74@coly.li>
+ <CAJ+L6qdG70ExM7cnwYFLmCDBXY8SBErLhnMNeFVscXYemb_1SQ@mail.gmail.com>
+ <18f2271b-87c2-530d-12da-dc2b4a5af1fd@coly.li>
+ <CAJ+L6qcLc-=bbDJuaToDFPUWG=c4JKhKBQkivaw3tYWdjERmZw@mail.gmail.com>
+ <b654ae09-b9f1-295f-b45a-6688c7fa4e0d@suse.de>
+ <CAJ+L6qf7NtkqKFbKsEjr8noqG94nPQnj1z3doMh10DYH-vMniw@mail.gmail.com>
+ <CAJ+L6qdQG27JpDTPxPrgYgeVC8qq-hYHq85U1zHQJDUneT8trA@mail.gmail.com>
+ <dca3c016-bb3f-7d8c-1509-f042628d7fd6@coly.li>
+ <CAJ+L6qcY=_vTaqZDLvif_3pqwujo24NUZhGG9ebp6z5+uWqwQQ@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <8c7574ae-f520-bb7b-a974-ad747f9555cf@coly.li>
+In-Reply-To: <CAJ+L6qcY=_vTaqZDLvif_3pqwujo24NUZhGG9ebp6z5+uWqwQQ@mail.gmail.com>
+Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <i@coly.li>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
+To: Michael Lyle <mlyle@lyle.org>
+Cc: Hannes Reinecke <hare@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-Just one more note:
+Hi Mike,
 
-On Fri, Oct 6, 2017 at 5:20 AM, Coly Li <i@coly.li> wrote:
-> [snip]
-> And when we talked about patch 5/5, you mentioned 1MB writes:
-> "- When writeback rate is medium, it does I/O more efficiently.  e.g.
-> if the current writeback rate is 10MB/sec, and there are two
-> contiguous 1MB segments, they would not presently be combined.  A 1MB
-> write would occur, then we would increase the delay counter by 100ms,
-> and then the next write would wait; this new code would issue 2 1MB
-> writes one after the other, and then sleep 200ms.  On a disk that does
-> 150MB/sec sequential, and has a 7ms seek time, this uses the disk for
-> 13ms + 7ms, compared to the old code that does 13ms + 7ms * 2.  This
-> is the difference between using 10% of the disk's I/O throughput and
-> 13% of the disk's throughput to do the same work."
+On 2017/10/7 上午1:36, Michael Lyle wrote:
+> It's 240GB (half of a Samsung 850) in front of a 1TB 5400RPM disk.
+> 
+
+Copied.
+
+> The size isn't critical.  1/8 is chosen to exceed 10% (default
+> writeback dirty data thresh), it might need to be 1/6 on really big
+> environments.  It needs to be big enough that it takes more than 100
+> seconds to write back, but less than 40% of the cache[1].
 >
-> Then I assume the bio reorder patches should work well for write size
-> from 4KB to 1MB. Also I think "hmm, if the write size is smaller, there
-> will be less chance for dirty blocks to be contiguous on cached device",
-> then I choose 512KB.
 
-Please note those two conversations were talking about different
-controversial stuff in response to different questions from you.
-There's the ordering change, which is expected to improve peak
-writeback rate for small blocks.  The test scenarios we're running
-right now are mostly trying to measure that.  There needs to be
-relatively small I/O to see a difference-- that is, backing disk
-access time needs to dominate to make a difference.
+OK, I will do similar thing.
 
-The other is the change in I/O aggregation behavior when writeback
-rate is not maximum.  That's what I was discussing with the 1MB I/O
-example.    Unfortunately it is difficult to craft a test scenario to
-test this one, but the argument of why it is better is pretty simple:
+> I am also running this on "mountain", which is my virtualization
+> server.  It has 2x Samsung 950 PRO 512GB NVMe disks (MD raid1) in
+> front of 2x Seagate Ironwolf 6TB (MD raid1) drivers.  I can't run
+> benchmarks on it, but it runs nightly builds and is otherwise lightly
+> loaded in the middle of night.  It does writeback for about 75 minutes
+> on average after a set of nightly builds of my repositories (last 5
+> days 75, 79, 77, 72, 76); without this patch set it was more like 80
+> (77, 80, 74, 85, 84, 76, 82, 84).  It has 128GB of RAM and doesn't do
 
--  It's much better to aggregate a few contiguous I/Os and issue them
-together than to issue them some time apart because of rate limiting.
-The new code will aggregate a limited number of contiguous writes even
-if it doesn't have to, to meet rate.  That is, it's much better for
-disk utilization to issue 5 256k writes that are sequential to each
-other at the same time, and then delay 250ms instead of one at a time,
-50ms apart.  In the first case, it might be a 7ms access + 13ms of
-writing and then 230ms of sleeping (8% disk time used); in the second
-case, if user I/O is seeking the disk away from where we're writing,
-it'll be 5 groups of: 7ms access + 2.5ms writing and then 40.5ms of
-sleeping (24% disk time used).
+Is it the time from writeback starts to dirty reaches dirty target, or
+the time from writeback starts to dirty reaches 0 ?
 
-Mike
+> many reads-- most of its hottest working set hits the page cache--
+> bcache serves to accelerate the random writes its workloads generate.
+> This is the workload that I sought to improve with the writeback
+> changes.
+> 
+> When you ran the tests, did you compare 1-5 to 1-3?  Because
+
+Yes, we did same thing. I only add/remove the last 2 patches about bio
+reorder, the first 3 patches are always applied in my testing kernels.
+
+> otherwise, another uncontrolled factor is the writeback tuning is
+> drastically different with patch 2.  (On most systems patch 2 makes
+> writeback less aggressive overall by default).
+
+I observe this behavior :-) I always use the new PI controller in my
+testings, it works fine.
+
+> [1]: If you don't think this is fair--- this would match how I've been
+> suggesting enterprise users set up bcache for various workloads-- a
+> writeback cache isn't going to be very effective at lowering write
+> workload if the size of the most active write working set doesn't fit
+> nicely in the cache.  so e.g. if you deploy under a SQL database the
+> cache should be double the size of the indices to get a real write
+> aggregation benefit; if you deploy under an environment doing builds
+> the cache should be double the size of the amount written during
+> builds; if you deploy under an environment doing rapid VM provisioning
+> the cache should be double the size of the images blitted per
+> provisioning cycle, etc.
+> 
+
+If I use a 1.8T hard disk as cached device, and 1TB SSD as cache device,
+and set fio to write 500G dirty data in total. Is this configuration
+close to the working set and cache size you suggested ?
+
+[snip]
+
+Thanks.
+
+
+-- 
+Coly Li
