@@ -1,73 +1,45 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH] bcache: writeback rate shouldn't artifically clamp
-Date: Sat,  7 Oct 2017 22:25:20 -0700
-Message-ID: <20171008052520.17068-1-mlyle@lyle.org>
-Return-path: <linux-block-owner@vger.kernel.org>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: colyli@suse.de, Michael Lyle <mlyle@lyle.org>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH] bcache: writeback rate shouldn't artifically clamp
+Date: Sun, 8 Oct 2017 14:09:20 +0800
+Message-ID: <fe817f47-89d6-8543-ded6-7ffa46fd52d0@coly.li>
+References: <20171008052520.17068-1-mlyle@lyle.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from server.coly.li ([162.144.45.48]:47676 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750771AbdJHGJY (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 8 Oct 2017 02:09:24 -0400
+In-Reply-To: <20171008052520.17068-1-mlyle@lyle.org>
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: colyli@suse.de
 
-The previous code artificially limited writeback rate to 1000000
-blocks/second (NSEC_PER_MSEC), which is a rate that can be met on fast
-hardware.  The rate limiting code works fine (though with decreased
-precision) up to 3 orders of magnitude faster, so use NSEC_PER_SEC.
+On 2017/10/8 下午1:25, Michael Lyle wrote:
+> The previous code artificially limited writeback rate to 1000000
+> blocks/second (NSEC_PER_MSEC), which is a rate that can be met on fast
+> hardware.  The rate limiting code works fine (though with decreased
+> precision) up to 3 orders of magnitude faster, so use NSEC_PER_SEC.
+> 
+> Additionally, ensure that uint32_t is used as a type for rate throughout
+> the rate management so that type checking/clamp_t can work properly.
+> 
+> bch_next_delay should be rewritten for increased precision and better
+> handling of high rates and long sleep periods, but this is adequate for
+> now.
+> 
+> Signed-off-by: Michael Lyle <mlyle@lyle.org>
+> Reported-by: Coly Li <colyli@suse.de>
 
-Additionally, ensure that uint32_t is used as a type for rate throughout
-the rate management so that type checking/clamp_t can work properly.
+Added to for-test, I will update test result after the writeback
+performance test done (hopefully in 2 days).
 
-bch_next_delay should be rewritten for increased precision and better
-handling of high rates and long sleep periods, but this is adequate for
-now.
+Thanks for fast fix.
 
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
-Reported-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/util.h      | 4 ++--
- drivers/md/bcache/writeback.c | 7 ++++---
- 2 files changed, 6 insertions(+), 5 deletions(-)
+Coly Li
 
-diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
-index cb8d2ccbb6c6..8f509290bb02 100644
---- a/drivers/md/bcache/util.h
-+++ b/drivers/md/bcache/util.h
-@@ -441,10 +441,10 @@ struct bch_ratelimit {
- 	uint64_t		next;
- 
- 	/*
--	 * Rate at which we want to do work, in units per nanosecond
-+	 * Rate at which we want to do work, in units per second
- 	 * The units here correspond to the units passed to bch_next_delay()
- 	 */
--	unsigned		rate;
-+	uint32_t		rate;
- };
- 
- static inline void bch_ratelimit_reset(struct bch_ratelimit *d)
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 3f8c4c6bee03..a1608c45bb12 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -46,7 +46,8 @@ static void __update_writeback_rate(struct cached_dev *dc)
- 	int64_t error = dirty - target;
- 	int64_t proportional_scaled =
- 		div_s64(error, dc->writeback_rate_p_term_inverse);
--	int64_t integral_scaled, new_rate;
-+	int64_t integral_scaled;
-+	uint32_t new_rate;
- 
- 	if ((error < 0 && dc->writeback_rate_integral > 0) ||
- 	    time_before64(local_clock(),
-@@ -67,8 +68,8 @@ static void __update_writeback_rate(struct cached_dev *dc)
- 	integral_scaled = div_s64(dc->writeback_rate_integral,
- 			dc->writeback_rate_i_term_inverse);
- 
--	new_rate = clamp_t(int64_t, (proportional_scaled + integral_scaled),
--			dc->writeback_rate_minimum, NSEC_PER_MSEC);
-+	new_rate = clamp_t(uint32_t, (proportional_scaled + integral_scaled),
-+			dc->writeback_rate_minimum, NSEC_PER_SEC);
- 
- 	dc->writeback_rate_proportional = proportional_scaled;
- 	dc->writeback_rate_integral_scaled = integral_scaled;
--- 
-2.11.0
+
+[snip]
