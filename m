@@ -1,73 +1,73 @@
-From: Coly Li <i@coly.li>
-Subject: Re: [PATCH v3 2/5] bcache: implement PI controller for writeback rate
-Date: Sun, 8 Oct 2017 13:08:50 +0800
-Message-ID: <488db429-50f1-2854-73bf-fcca49d1f5b2@coly.li>
-References: <20170927174122.30341-1-mlyle@lyle.org>
- <20170927174122.30341-3-mlyle@lyle.org>
- <6d3709a2-96a7-100e-a966-eeefc11dfd39@coly.li>
- <b8d88e54-a6cd-337f-f46b-19109a6d48fb@lyle.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:47284 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750997AbdJHFI5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 8 Oct 2017 01:08:57 -0400
-In-Reply-To: <b8d88e54-a6cd-337f-f46b-19109a6d48fb@lyle.org>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+From: Michael Lyle <mlyle@lyle.org>
+Subject: [PATCH] bcache: writeback rate shouldn't artifically clamp
+Date: Sat,  7 Oct 2017 22:25:20 -0700
+Message-ID: <20171008052520.17068-1-mlyle@lyle.org>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: colyli@suse.de, Michael Lyle <mlyle@lyle.org>
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
 
-On 2017/10/8 下午12:57, Michael Lyle wrote:
-> Coly--
-> 
-> 
-> On 10/07/2017 09:22 PM, Coly Li wrote:
-> [snip]
->> rate:        488.2M/sec
->> dirty:        91.7G
->> target:        152.3G
->> proportional:    -1.5G
->> integral:    10.9G
->> change:        0.0k/sec
->> next io:    0ms
-> [snip]
-> 
->> The backing cached device size is 7.2TB, cache device is 1.4TB, block
->> size is 8kB only. I write 700G (50% of cache device size) dirty data
->> onto the cache device, and start writeback by echo 1 to
->> writeback_running file.
->>
->> In my test, writeback spent 89 minutes to decrease dirty number from
->> 700G to 147G (dirty target number is 152G). At this moment writeback
->> rate was still displayed as 488.2M/sec. And after 22 minutes writeback
->> rate jumped to 4.0k/sec. During the 22 minutes, (147-15.8=) 131.2G dirty
->> data written out.
-> 
-> I see it-- if we can write faster than 488MB/sec, we inappropriately
-> clamp the write rate to 488MB/sec-- this is from the old code.  In turn,
-> if we're keeping up at that speed, the integral term can wind up.  I
-> will fix this and clean up a couple related things.
-> 
->> Is it as expected ?
-> 
-> It is supposed to overshoot the target, but not by this much.
-> 
-> I think the implementation must have changed at some point in the past
-> for bch_ratelimit, because the clamping doesn't match. bch_ratelimit
-> really needs a rewrite for other reasons, but I'll send the minimal fix
-> now.
+The previous code artificially limited writeback rate to 1000000
+blocks/second (NSEC_PER_MSEC), which is a rate that can be met on fast
+hardware.  The rate limiting code works fine (though with decreased
+precision) up to 3 orders of magnitude faster, so use NSEC_PER_SEC.
 
-Hi Mike,
+Additionally, ensure that uint32_t is used as a type for rate throughout
+the rate management so that type checking/clamp_t can work properly.
 
-Copied, I will continue my test. And when the new version comes, I will
-run same workload again to confirm.
+bch_next_delay should be rewritten for increased precision and better
+handling of high rates and long sleep periods, but this is adequate for
+now.
 
-Thanks.
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
+Reported-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/util.h      | 4 ++--
+ drivers/md/bcache/writeback.c | 7 ++++---
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-
+diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+index cb8d2ccbb6c6..8f509290bb02 100644
+--- a/drivers/md/bcache/util.h
++++ b/drivers/md/bcache/util.h
+@@ -441,10 +441,10 @@ struct bch_ratelimit {
+ 	uint64_t		next;
+ 
+ 	/*
+-	 * Rate at which we want to do work, in units per nanosecond
++	 * Rate at which we want to do work, in units per second
+ 	 * The units here correspond to the units passed to bch_next_delay()
+ 	 */
+-	unsigned		rate;
++	uint32_t		rate;
+ };
+ 
+ static inline void bch_ratelimit_reset(struct bch_ratelimit *d)
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 3f8c4c6bee03..a1608c45bb12 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -46,7 +46,8 @@ static void __update_writeback_rate(struct cached_dev *dc)
+ 	int64_t error = dirty - target;
+ 	int64_t proportional_scaled =
+ 		div_s64(error, dc->writeback_rate_p_term_inverse);
+-	int64_t integral_scaled, new_rate;
++	int64_t integral_scaled;
++	uint32_t new_rate;
+ 
+ 	if ((error < 0 && dc->writeback_rate_integral > 0) ||
+ 	    time_before64(local_clock(),
+@@ -67,8 +68,8 @@ static void __update_writeback_rate(struct cached_dev *dc)
+ 	integral_scaled = div_s64(dc->writeback_rate_integral,
+ 			dc->writeback_rate_i_term_inverse);
+ 
+-	new_rate = clamp_t(int64_t, (proportional_scaled + integral_scaled),
+-			dc->writeback_rate_minimum, NSEC_PER_MSEC);
++	new_rate = clamp_t(uint32_t, (proportional_scaled + integral_scaled),
++			dc->writeback_rate_minimum, NSEC_PER_SEC);
+ 
+ 	dc->writeback_rate_proportional = proportional_scaled;
+ 	dc->writeback_rate_integral_scaled = integral_scaled;
 -- 
-Coly Li
+2.11.0
