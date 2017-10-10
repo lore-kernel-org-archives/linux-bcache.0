@@ -1,7 +1,7 @@
 From: tang.junhui@zte.com.cn
-Subject: [PATCH] [PATCH v3] bcache: gc does not work when triggering by manual
-Date: Tue, 10 Oct 2017 10:44:49 +0800
-Message-ID: <1507603489-30999-1-git-send-email-tang.junhui@zte.com.cn>
+Subject: [PATCH] bcache: fix race in setting bdev state
+Date: Tue, 10 Oct 2017 11:07:53 +0800
+Message-ID: <1507604873-31352-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-block-owner@vger.kernel.org>
 Sender: linux-block-owner@vger.kernel.org
 To: colyli@suse.de, mlyle@lyle.org
@@ -10,38 +10,31 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
-I try to execute the following command to trigger gc thread:
-[root@localhost internal]# echo 1 > trigger_gc
-But it does not work, I debug the code in gc_should_run(), It works only
-if in invalidating or sectors_to_gc < 0. So set sectors_to_gc to -1 to
-meet the condition when we trigger gc by manual command.
+cached_dev_put() is called before setting and writing bdev to
+BDEV_STATE_CLEAN state, but after calling cached_dev_put(),
+detach work queue works, and bdev is also set to
+BDEV_STATE_NONE state in cached_dev_detach_finish(),
+it may cause race condition, and the state of bdev is uncertain.
 
 Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/sysfs.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/md/bcache/writeback.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index b3ff57d..bef776d 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -614,8 +614,16 @@ STORE(__bch_cache_set)
- 		bch_cache_accounting_clear(&c->accounting);
- 	}
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 69e1ae5..3d134cb 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -436,9 +436,9 @@ static int bch_writeback_thread(void *arg)
+ 		if (searched_full_index &&
+ 		    RB_EMPTY_ROOT(&dc->writeback_keys.keys)) {
+ 			atomic_set(&dc->has_dirty, 0);
+-			cached_dev_put(dc);
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
+ 			bch_write_bdev_super(dc, NULL);
++			cached_dev_put(dc);
+ 		}
  
--	if (attr == &sysfs_trigger_gc)
-+	if (attr == &sysfs_trigger_gc) {
-+		/* 
-+		  * Satisfy the gc condition by setting sectors_to_gc under 0,
-+		  * sectors_to_gc may also be decreased under 0 in 
-+		  * bch_data_insert_start() and gc would be triggered again,
-+		  * but the race is rare, and harmless, so we can ignore it
-+		  */
-+		atomic_set(&c->sectors_to_gc, -1);
- 		wake_up_gc(c);
-+	}
- 
- 	if (attr == &sysfs_prune_cache) {
- 		struct shrink_control sc;
+ 		up_write(&dc->writeback_lock);
 -- 
 2.8.1.windows.1
