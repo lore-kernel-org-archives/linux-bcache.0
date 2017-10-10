@@ -1,40 +1,31 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH] bcache: fix race in setting bdev state
-Date: Tue, 10 Oct 2017 11:07:53 +0800
-Message-ID: <1507604873-31352-1-git-send-email-tang.junhui@zte.com.cn>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH] [PATCH v3] bcache: gc does not work when triggering by
+ manual
+Date: Mon, 9 Oct 2017 20:32:38 -0700
+Message-ID: <88e9ac51-bae7-55c7-8c89-56107c8a01e9@lyle.org>
+References: <1507603489-30999-1-git-send-email-tang.junhui@zte.com.cn>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1507603489-30999-1-git-send-email-tang.junhui@zte.com.cn>
+Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: colyli@suse.de, mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: tang.junhui@zte.com.cn, colyli@suse.de
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 10/09/2017 07:44 PM, tang.junhui@zte.com.cn wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> I try to execute the following command to trigger gc thread:
+> [root@localhost internal]# echo 1 > trigger_gc
+> But it does not work, I debug the code in gc_should_run(), It works only
+> if in invalidating or sectors_to_gc < 0. So set sectors_to_gc to -1 to
+> meet the condition when we trigger gc by manual command.
+> 
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 
-cached_dev_put() is called before setting and writing bdev to
-BDEV_STATE_CLEAN state, but after calling cached_dev_put(),
-detach work queue works, and bdev is also set to
-BDEV_STATE_NONE state in cached_dev_detach_finish(),
-it may cause race condition, and the state of bdev is uncertain.
+Reviewed-by: Michael Lyle <mlyle@lyle.org>
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/writeback.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 69e1ae5..3d134cb 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -436,9 +436,9 @@ static int bch_writeback_thread(void *arg)
- 		if (searched_full_index &&
- 		    RB_EMPTY_ROOT(&dc->writeback_keys.keys)) {
- 			atomic_set(&dc->has_dirty, 0);
--			cached_dev_put(dc);
- 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
- 			bch_write_bdev_super(dc, NULL);
-+			cached_dev_put(dc);
- 		}
- 
- 		up_write(&dc->writeback_lock);
--- 
-2.8.1.windows.1
+Thanks!   -mpl
