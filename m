@@ -1,45 +1,61 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH] bcache: safeguard a dangerous addressing in closure_queue
-Date: Thu, 12 Oct 2017 10:44:47 -0700
-Message-ID: <0b4be514-0ce8-efd9-4e17-8772729ac336@lyle.org>
-References: <20171012143737.24577-1-liangchen.linux@gmail.com>
+Subject: Re: bcache failure hangs something in kernel
+Date: Thu, 12 Oct 2017 11:12:20 -0700
+Message-ID: <b574aee6-1f6f-8eb3-d78a-ee3fd8f9bfb3@lyle.org>
+References: <efb67a88-3f4c-d268-3d2a-59c00824b5e7@xenlab.one>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f194.google.com ([209.85.192.194]:55514 "EHLO
-        mail-pf0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750729AbdJLRoz (ORCPT
+Received: from mail-pf0-f175.google.com ([209.85.192.175]:51566 "EHLO
+        mail-pf0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751451AbdJLSMW (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 12 Oct 2017 13:44:55 -0400
-Received: by mail-pf0-f194.google.com with SMTP id 17so5863963pfn.12
-        for <linux-bcache@vger.kernel.org>; Thu, 12 Oct 2017 10:44:55 -0700 (PDT)
-In-Reply-To: <20171012143737.24577-1-liangchen.linux@gmail.com>
+        Thu, 12 Oct 2017 14:12:22 -0400
+Received: by mail-pf0-f175.google.com with SMTP id n14so5988398pfh.8
+        for <linux-bcache@vger.kernel.org>; Thu, 12 Oct 2017 11:12:22 -0700 (PDT)
+In-Reply-To: <efb67a88-3f4c-d268-3d2a-59c00824b5e7@xenlab.one>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Liang Chen <liangchen.linux@gmail.com>, linux-bcache@vger.kernel.org
-Cc: i@coly.li, kent.overstreet@gmail.com, linux-kernel@vger.kernel.org
+To: Alexandr Kuznetsov <progmachine@xenlab.one>, linux-bcache@vger.kernel.org
 
-On 10/12/2017 07:37 AM, Liang Chen wrote:
-> The use of the union reduces the size of closure struct by taking advantage
-> of the current size of its members. The offset of func in work_struct equals
-> the size of the first three members, so that work.work_func will just
-> reference the forth member - fn.
+Hi-- sorry you are having trouble..
+
+On 10/12/2017 05:49 AM, Alexandr Kuznetsov wrote:
+> Hellow.
 > 
-> This is smart but dangerous. It can be broken if work_struct or the other
-> structs get changed, and can be a bit difficult to debug.
-> 
-> Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+> Can any one help me? Two days ago i encountered bcache failure and since
+> then i can't boot my system Ubuntu 16.04 amd64.
+> Now when cache and backend devices meets each other during register
+> process, something hangs inside the kernel and such messages appear in
+> dmesg:
 
-So the objective here is to make sure that struct work_struct and the
-anonymous struct remain identical?  I agree that's a potential problem
-for future maintenance.
+[snip]
 
-Could we use BUILD_BUG_ON with offsets and sizes to do the same, to get
-compile-time checking and avoid doing anything at runtime (I know the
-compiler can usually omit the BUG but better to be safe)?  Otherwise a
-kernel that triggered this problem would compile, and it'd only be if
-someone actually used bcache that it would trigger.
+> 54 backing devices show:
+>     dev.data.cache_mode    1 [writeback]
+>     dev.data.cache_state    1 [clean]
+>     cset.uuid        d93ae507-b4bb-48ef-8d64-fa9329a08a39
+> One backing device (md0p3) show:
+>     dev.data.cache_mode    1 [writeback]
+>     dev.data.cache_state    1 [dirty]
+>     cset.uuid        d93ae507-b4bb-48ef-8d64-fa9329a08a39
+> And one strange device (md0p2) show:
+>     dev.data.cache_mode    1 [writeback]
+>     dev.data.cache_state    0 [detached]
+>     cset.uuid        9a6aeb43-5f33-45ca-a1b0-a1277e3e5c44
+
+It looks like probably the superblock of md0p2 and other data structures
+were corrupted during the lvm commands, and in turn this is triggering
+bugs with bcache (bcache should detect the situation and abort
+everything, but instead is left with the bucket_lock held and freezes).
+
+One thing you could do possibly do is blacklist bcache in your
+/etc/modules, and then attach all the devices one by one, (not including
+md0p2), to get at the data on all the other volumes.
+
+Also, 54 of the backing devices are clean-- they have no dirty data in
+the cache-- so they can be mounted directly if you want.
 
 Mike
