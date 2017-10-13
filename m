@@ -1,35 +1,40 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 15/15] bcache: MAINTAINERS: set bcache to MAINTAINED
-Date: Fri, 13 Oct 2017 16:35:42 -0700
-Message-ID: <20171013233542.20938-16-mlyle@lyle.org>
+Subject: [PATCH 05/15] bcache: Remove redundant set_capacity
+Date: Fri, 13 Oct 2017 16:35:32 -0700
+Message-ID: <20171013233542.20938-6-mlyle@lyle.org>
 References: <20171013233542.20938-1-mlyle@lyle.org>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171013233542.20938-1-mlyle@lyle.org>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Michael Lyle <mlyle@lyle.org>
+Cc: axboe@fb.com, Yijing Wang <wangyijing@huawei.com>
 List-Id: linux-bcache@vger.kernel.org
 
-Also add URL for IRC channel.
+From: Yijing Wang <wangyijing@huawei.com>
 
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
+set_capacity() has been called in bcache_device_init(),
+remove the redundant one.
+
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
+Acked-by: Coly Li <colyli@suse.de>
 ---
- MAINTAINERS | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/bcache/super.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 73213039bdb7..b3203e082a1e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2568,7 +2568,8 @@ M:	Michael Lyle <mlyle@lyle.org>
- M:	Kent Overstreet <kent.overstreet@gmail.com>
- L:	linux-bcache@vger.kernel.org
- W:	http://bcache.evilpiepirate.org
--S:	Orphan
-+C:	irc://irc.oftc.net/bcache
-+S:	Maintained
- F:	drivers/md/bcache/
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index a478d1ac0480..72c3b2929ef0 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1142,9 +1142,6 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+ 	if (ret)
+ 		return ret;
  
- BDISP ST MEDIA DRIVER
+-	set_capacity(dc->disk.disk,
+-		     dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
+-
+ 	dc->disk.disk->queue->backing_dev_info->ra_pages =
+ 		max(dc->disk.disk->queue->backing_dev_info->ra_pages,
+ 		    q->backing_dev_info->ra_pages);
 -- 
 2.11.0
