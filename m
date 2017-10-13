@@ -1,79 +1,35 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 07/15] bcache: remove unused parameter
-Date: Fri, 13 Oct 2017 16:35:34 -0700
-Message-ID: <20171013233542.20938-8-mlyle@lyle.org>
+Subject: [PATCH 15/15] bcache: MAINTAINERS: set bcache to MAINTAINED
+Date: Fri, 13 Oct 2017 16:35:42 -0700
+Message-ID: <20171013233542.20938-16-mlyle@lyle.org>
 References: <20171013233542.20938-1-mlyle@lyle.org>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171013233542.20938-1-mlyle@lyle.org>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Yijing Wang <wangyijing@huawei.com>
+Cc: axboe@fb.com, Michael Lyle <mlyle@lyle.org>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Yijing Wang <wangyijing@huawei.com>
+Also add URL for IRC channel.
 
-Parameter bio is no longer used, clean it.
-
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Reviewed-by: Coly Li <colyli@suse.de>
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
 ---
- drivers/md/bcache/request.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ MAINTAINERS | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 9ee137e8d387..163a17a80874 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -26,12 +26,12 @@ struct kmem_cache *bch_search_cache;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 73213039bdb7..b3203e082a1e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2568,7 +2568,8 @@ M:	Michael Lyle <mlyle@lyle.org>
+ M:	Kent Overstreet <kent.overstreet@gmail.com>
+ L:	linux-bcache@vger.kernel.org
+ W:	http://bcache.evilpiepirate.org
+-S:	Orphan
++C:	irc://irc.oftc.net/bcache
++S:	Maintained
+ F:	drivers/md/bcache/
  
- static void bch_data_insert_start(struct closure *);
- 
--static unsigned cache_mode(struct cached_dev *dc, struct bio *bio)
-+static unsigned cache_mode(struct cached_dev *dc)
- {
- 	return BDEV_CACHE_MODE(&dc->sb);
- }
- 
--static bool verify(struct cached_dev *dc, struct bio *bio)
-+static bool verify(struct cached_dev *dc)
- {
- 	return dc->verify;
- }
-@@ -369,7 +369,7 @@ static struct hlist_head *iohash(struct cached_dev *dc, uint64_t k)
- static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
- {
- 	struct cache_set *c = dc->disk.c;
--	unsigned mode = cache_mode(dc, bio);
-+	unsigned mode = cache_mode(dc);
- 	unsigned sectors, congested = bch_get_congested(c);
- 	struct task_struct *task = current;
- 	struct io *i;
-@@ -747,7 +747,7 @@ static void cached_dev_read_done(struct closure *cl)
- 		s->cache_miss = NULL;
- 	}
- 
--	if (verify(dc, &s->bio.bio) && s->recoverable && !s->read_dirty_data)
-+	if (verify(dc) && s->recoverable && !s->read_dirty_data)
- 		bch_data_verify(dc, s->orig_bio);
- 
- 	bio_complete(s);
-@@ -772,7 +772,7 @@ static void cached_dev_read_done_bh(struct closure *cl)
- 
- 	if (s->iop.status)
- 		continue_at_nobarrier(cl, cached_dev_read_error, bcache_wq);
--	else if (s->iop.bio || verify(dc, &s->bio.bio))
-+	else if (s->iop.bio || verify(dc))
- 		continue_at_nobarrier(cl, cached_dev_read_done, bcache_wq);
- 	else
- 		continue_at_nobarrier(cl, cached_dev_bio_complete, NULL);
-@@ -899,7 +899,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 		s->iop.bypass = true;
- 
- 	if (should_writeback(dc, s->orig_bio,
--			     cache_mode(dc, bio),
-+			     cache_mode(dc),
- 			     s->iop.bypass)) {
- 		s->iop.bypass = false;
- 		s->iop.writeback = true;
+ BDISP ST MEDIA DRIVER
 -- 
 2.11.0
