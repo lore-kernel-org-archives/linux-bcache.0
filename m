@@ -1,53 +1,41 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 02/15] bcache: check ca->alloc_thread initialized before wake up it
-Date: Fri, 13 Oct 2017 16:35:29 -0700
-Message-ID: <20171013233542.20938-3-mlyle@lyle.org>
+Subject: [PATCH 03/15] bcache: fix a comments typo in bch_alloc_sectors()
+Date: Fri, 13 Oct 2017 16:35:30 -0700
+Message-ID: <20171013233542.20938-4-mlyle@lyle.org>
 References: <20171013233542.20938-1-mlyle@lyle.org>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171013233542.20938-1-mlyle@lyle.org>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, stable@vger.kernel.org
+Cc: axboe@fb.com, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-In bcache code, sysfs entries are created before all resources get
-allocated, e.g. allocation thread of a cache set.
-
-There is posibility for NULL pointer deference if a resource is accessed
-but which is not initialized yet. Indeed Jorg Bornschein catches one on
-cache set allocation thread and gets a kernel oops.
-
-The reason for this bug is, when bch_bucket_alloc() is called during
-cache set registration and attaching, ca->alloc_thread is not properly
-allocated and initialized yet, call wake_up_process() on ca->alloc_thread
-triggers NULL pointer deference failure. A simple and fast fix is, before
-waking up ca->alloc_thread, checking whether it is allocated, and only
-wake up ca->alloc_thread when it is not NULL.
+Code comments in alloc.c:bch_alloc_sectors() mentions a function
+name find_data_bucket(), the correct function name should be
+pick_data_bucket() indeed. bch_alloc_sectors() is a quite important
+function in bcache allocation code, fixing the typo may help
+other people to have less confusion.
 
 Signed-off-by: Coly Li <colyli@suse.de>
-Reported-by: Jorg Bornschein <jb@capsec.org>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: stable@vger.kernel.org
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
+Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/alloc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/bcache/alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index cacbe2dbd5c3..e1a4205caa2e 100644
+index e1a4205caa2e..4c40870e99f5 100644
 --- a/drivers/md/bcache/alloc.c
 +++ b/drivers/md/bcache/alloc.c
-@@ -406,7 +406,8 @@ long bch_bucket_alloc(struct cache *ca, unsigned reserve, bool wait)
+@@ -601,7 +601,7 @@ bool bch_alloc_sectors(struct cache_set *c, struct bkey *k, unsigned sectors,
  
- 	finish_wait(&ca->set->bucket_wait, &w);
- out:
--	wake_up_process(ca->alloc_thread);
-+	if (ca->alloc_thread)
-+		wake_up_process(ca->alloc_thread);
- 
- 	trace_bcache_alloc(ca, reserve);
- 
+ 	/*
+ 	 * If we had to allocate, we might race and not need to allocate the
+-	 * second time we call find_data_bucket(). If we allocated a bucket but
++	 * second time we call pick_data_bucket(). If we allocated a bucket but
+ 	 * didn't use it, drop the refcount bch_bucket_alloc_set() took:
+ 	 */
+ 	if (KEY_PTRS(&alloc.key))
 -- 
 2.11.0
