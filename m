@@ -1,67 +1,171 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 06/15] bcache: update bio->bi_opf bypass/writeback REQ_ flag hints
-Date: Fri, 13 Oct 2017 16:35:33 -0700
-Message-ID: <20171013233542.20938-7-mlyle@lyle.org>
+Subject: [PATCH 04/15] bcache: rewrite multiple partitions support
+Date: Fri, 13 Oct 2017 16:35:31 -0700
+Message-ID: <20171013233542.20938-5-mlyle@lyle.org>
 References: <20171013233542.20938-1-mlyle@lyle.org>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pf0-f193.google.com ([209.85.192.193]:55815 "EHLO
+        mail-pf0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752468AbdJMXgD (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 13 Oct 2017 19:36:03 -0400
+Received: by mail-pf0-f193.google.com with SMTP id 17so11493294pfn.12
+        for <linux-bcache@vger.kernel.org>; Fri, 13 Oct 2017 16:36:02 -0700 (PDT)
 In-Reply-To: <20171013233542.20938-1-mlyle@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Eric Wheeler <bcache@linux.ewheeler.net>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: axboe@fb.com, Coly Li <colyli@suse.de>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>
 
-From: Eric Wheeler <bcache@linux.ewheeler.net>
+From: Coly Li <colyli@suse.de>
 
-Flag for bypass if the IO is for read-ahead or background, unless the
-read-ahead request is for metadata (eg, from gfs2).
-        Bypass if:
-                bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND) &&
-			!(bio->bi_opf & REQ_META))
+Current partition support of bcache is confusing and buggy. It tries to
+trace non-continuous device minor numbers by an ida bit string, and
+mistakenly mixed bcache device index with minor numbers. This design
+generates several negative results,
+- Index of bcache device name is not consecutive under /dev/. If there are
+  3 bcache devices, they name will be,
+  /dev/bcache0, /dev/bcache16, /dev/bcache32
+  Only bcache code indexes bcache device name is such an interesting way.
+- First minor number of each bcache device is traced by ida bit string.
+  One bcache device will occupy 16 bits, this is not a good idea. Indeed
+  only one bit is enough.
+- Because minor number and bcache device index are mixed, a device index
+  is allocated by ida_simple_get(), but an first minor number is sent into
+  ida_simple_remove() to release the device. It confused original author
+  too.
 
-        Writeback if:
-                op_is_sync(bio->bi_opf) ||
-			bio->bi_opf & (REQ_META|REQ_PRIO)
+Root cause of the above errors is, bcache code should not handle device
+minor numbers at all! A standard process to support multiple partitions in
+Linux kernel is,
+- Device driver provides major device number, and indexes multiple device
+  instances.
+- Device driver does not allocat nor trace device minor number, only
+  provides a first minor number of a given device instance, and sets how
+  many minor numbers (paritions) the device instance may have.
+All rested stuffs are handled by block layer code, most of the details can
+be found from block/{genhd, partition-generic}.c files.
 
-Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
-Reviewed-by: Coly Li <colyli@suse.de>
+This patch re-writes multiple partitions support for bcache. It makes
+whole things to be more clear, and uses ida bit string in a more efficeint
+way.
+- Ida bit string only traces bcache device index, not minor number. For a
+  bcache device with 128 partitions, only one bit in ida bit string is
+  enough.
+- Device minor number and device index are separated in concept. Device
+  index is used for /dev node naming, and ida bit string trace. Minor
+  number is calculated from device index and only used to initialize
+  first_minor of a bcache device.
+- It does not follow any standard for 16 partitions on a bcache device.
+  This patch sets 128 partitions on single bcache device at max, this is
+  the limitation from GPT (GUID Partition Table) and supported by fdisk.
+
+Considering a typical device minor number is 20 bits width, each bcache
+device may have 128 partitions (7 bits), there can be 8192 bcache devices
+existing on system. For most common deployment for a single server in
+now days, it should be enough.
+
+[minor spelling fixes in commit message by Michael Lyle]
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
+Reviewed-by: Michael Lyle <mlyle@lyle.org>
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
 ---
- drivers/md/bcache/request.c   | 8 ++++++++
- drivers/md/bcache/writeback.h | 4 +++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/md/bcache/super.c | 37 +++++++++++++++++++++++++------------
+ 1 file changed, 25 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 681b4f12b05a..9ee137e8d387 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -384,6 +384,14 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
- 	     op_is_write(bio_op(bio))))
- 		goto skip;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index fc0a31b13ac4..a478d1ac0480 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -53,12 +53,15 @@ LIST_HEAD(bch_cache_sets);
+ static LIST_HEAD(uncached_devices);
  
-+	/*
-+	 * Flag for bypass if the IO is for read-ahead or background,
-+	 * unless the read-ahead request is for metadata (eg, for gfs2).
-+	 */
-+	if (bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND) &&
-+	    !(bio->bi_opf & REQ_META))
-+		goto skip;
-+
- 	if (bio->bi_iter.bi_sector & (c->sb.block_size - 1) ||
- 	    bio_sectors(bio) & (c->sb.block_size - 1)) {
- 		pr_debug("skipping unaligned io");
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index e35421d20d2e..34bcf49d737b 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -76,7 +76,9 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
- 	if (would_skip)
- 		return false;
+ static int bcache_major;
+-static DEFINE_IDA(bcache_minor);
++static DEFINE_IDA(bcache_device_idx);
+ static wait_queue_head_t unregister_wait;
+ struct workqueue_struct *bcache_wq;
  
--	return op_is_sync(bio->bi_opf) || in_use <= CUTOFF_WRITEBACK;
-+	return (op_is_sync(bio->bi_opf) ||
-+		bio->bi_opf & (REQ_META|REQ_PRIO) ||
-+		in_use <= CUTOFF_WRITEBACK);
+ #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
+-#define BCACHE_MINORS		16 /* partition support */
++/* limitation of partitions number on single bcache device */
++#define BCACHE_MINORS		128
++/* limitation of bcache devices number on single system */
++#define BCACHE_DEVICE_IDX_MAX	((1U << MINORBITS)/BCACHE_MINORS)
+ 
+ /* Superblock */
+ 
+@@ -721,6 +724,16 @@ static void bcache_device_attach(struct bcache_device *d, struct cache_set *c,
+ 	closure_get(&c->caching);
  }
  
- static inline void bch_writeback_queue(struct cached_dev *dc)
++static inline int first_minor_to_idx(int first_minor)
++{
++	return (first_minor/BCACHE_MINORS);
++}
++
++static inline int idx_to_first_minor(int idx)
++{
++	return (idx * BCACHE_MINORS);
++}
++
+ static void bcache_device_free(struct bcache_device *d)
+ {
+ 	lockdep_assert_held(&bch_register_lock);
+@@ -734,7 +747,8 @@ static void bcache_device_free(struct bcache_device *d)
+ 	if (d->disk && d->disk->queue)
+ 		blk_cleanup_queue(d->disk->queue);
+ 	if (d->disk) {
+-		ida_simple_remove(&bcache_minor, d->disk->first_minor);
++		ida_simple_remove(&bcache_device_idx,
++				  first_minor_to_idx(d->disk->first_minor));
+ 		put_disk(d->disk);
+ 	}
+ 
+@@ -751,7 +765,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+ {
+ 	struct request_queue *q;
+ 	size_t n;
+-	int minor;
++	int idx;
+ 
+ 	if (!d->stripe_size)
+ 		d->stripe_size = 1 << 31;
+@@ -776,25 +790,24 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+ 	if (!d->full_dirty_stripes)
+ 		return -ENOMEM;
+ 
+-	minor = ida_simple_get(&bcache_minor, 0, MINORMASK + 1, GFP_KERNEL);
+-	if (minor < 0)
+-		return minor;
+-
+-	minor *= BCACHE_MINORS;
++	idx = ida_simple_get(&bcache_device_idx, 0,
++				BCACHE_DEVICE_IDX_MAX, GFP_KERNEL);
++	if (idx < 0)
++		return idx;
+ 
+ 	if (!(d->bio_split = bioset_create(4, offsetof(struct bbio, bio),
+ 					   BIOSET_NEED_BVECS |
+ 					   BIOSET_NEED_RESCUER)) ||
+ 	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
+-		ida_simple_remove(&bcache_minor, minor);
++		ida_simple_remove(&bcache_device_idx, idx);
+ 		return -ENOMEM;
+ 	}
+ 
+ 	set_capacity(d->disk, sectors);
+-	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", minor);
++	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", idx);
+ 
+ 	d->disk->major		= bcache_major;
+-	d->disk->first_minor	= minor;
++	d->disk->first_minor	= idx_to_first_minor(idx);
+ 	d->disk->fops		= &bcache_ops;
+ 	d->disk->private_data	= d;
+ 
 -- 
 2.11.0
