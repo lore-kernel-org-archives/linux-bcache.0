@@ -1,61 +1,33 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: bcache failure hangs something in kernel
-Date: Thu, 12 Oct 2017 11:12:20 -0700
-Message-ID: <b574aee6-1f6f-8eb3-d78a-ee3fd8f9bfb3@lyle.org>
-References: <efb67a88-3f4c-d268-3d2a-59c00824b5e7@xenlab.one>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: New bcache maintainer
+Date: Thu, 12 Oct 2017 19:49:22 -0800
+Message-ID: <20171013034922.3yuodviniahhwstx@moria.home.lan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f175.google.com ([209.85.192.175]:51566 "EHLO
-        mail-pf0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751451AbdJLSMW (ORCPT
+Received: from mail-qk0-f170.google.com ([209.85.220.170]:51130 "EHLO
+        mail-qk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1753473AbdJMDt1 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 12 Oct 2017 14:12:22 -0400
-Received: by mail-pf0-f175.google.com with SMTP id n14so5988398pfh.8
-        for <linux-bcache@vger.kernel.org>; Thu, 12 Oct 2017 11:12:22 -0700 (PDT)
-In-Reply-To: <efb67a88-3f4c-d268-3d2a-59c00824b5e7@xenlab.one>
-Content-Language: en-US
+        Thu, 12 Oct 2017 23:49:27 -0400
+Received: by mail-qk0-f170.google.com with SMTP id o187so3589939qke.7
+        for <linux-bcache@vger.kernel.org>; Thu, 12 Oct 2017 20:49:27 -0700 (PDT)
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Alexandr Kuznetsov <progmachine@xenlab.one>, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, mlyle@lyle.org
 
-Hi-- sorry you are having trouble..
+Michael Lyle will be taking over the role of bcache maintainer. He has my
+complete confidence as well as excellent technical judgement and prior
+experinence, so please work with him and help him out :)
 
-On 10/12/2017 05:49 AM, Alexandr Kuznetsov wrote:
-> Hellow.
-> 
-> Can any one help me? Two days ago i encountered bcache failure and since
-> then i can't boot my system Ubuntu 16.04 amd64.
-> Now when cache and backend devices meets each other during register
-> process, something hangs inside the kernel and such messages appear in
-> dmesg:
+I'll still be available for questions/advice at the code; I've been discussing
+with Michael his work on the writeback code, and anyone else who's doing work on
+the bcache code should feel free to contact me as well - best way is as always
+via the bcache irc channel, on irc.oftc.net. But I'll still be focusing on
+bcachefs, and I expect that Michael and Coly and others will be able to handle
+most anything that comes up.
 
-[snip]
-
-> 54 backing devices show:
->     dev.data.cache_mode    1 [writeback]
->     dev.data.cache_state    1 [clean]
->     cset.uuid        d93ae507-b4bb-48ef-8d64-fa9329a08a39
-> One backing device (md0p3) show:
->     dev.data.cache_mode    1 [writeback]
->     dev.data.cache_state    1 [dirty]
->     cset.uuid        d93ae507-b4bb-48ef-8d64-fa9329a08a39
-> And one strange device (md0p2) show:
->     dev.data.cache_mode    1 [writeback]
->     dev.data.cache_state    0 [detached]
->     cset.uuid        9a6aeb43-5f33-45ca-a1b0-a1277e3e5c44
-
-It looks like probably the superblock of md0p2 and other data structures
-were corrupted during the lvm commands, and in turn this is triggering
-bugs with bcache (bcache should detect the situation and abort
-everything, but instead is left with the bucket_lock held and freezes).
-
-One thing you could do possibly do is blacklist bcache in your
-/etc/modules, and then attach all the devices one by one, (not including
-md0p2), to get at the data on all the other volumes.
-
-Also, 54 of the backing devices are clean-- they have no dirty data in
-the cache-- so they can be mounted directly if you want.
-
-Mike
+And now, I would like to ask everyone to thank Michael for taking this on,
+playing the maintainer role isn't exactly fun and I know he'll make a better
+maintainer than I ever was :)
