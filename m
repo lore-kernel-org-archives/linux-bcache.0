@@ -1,90 +1,79 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 11/15] bcache: writeback rate shouldn't artifically clamp
-Date: Fri, 13 Oct 2017 16:35:38 -0700
-Message-ID: <20171013233542.20938-12-mlyle@lyle.org>
+Subject: [PATCH 07/15] bcache: remove unused parameter
+Date: Fri, 13 Oct 2017 16:35:34 -0700
+Message-ID: <20171013233542.20938-8-mlyle@lyle.org>
 References: <20171013233542.20938-1-mlyle@lyle.org>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171013233542.20938-1-mlyle@lyle.org>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Michael Lyle <mlyle@lyle.org>
+Cc: axboe@fb.com, Yijing Wang <wangyijing@huawei.com>
 List-Id: linux-bcache@vger.kernel.org
 
-The previous code artificially limited writeback rate to 1000000
-blocks/second (NSEC_PER_MSEC), which is a rate that can be met on fast
-hardware.  The rate limiting code works fine (though with decreased
-precision) up to 3 orders of magnitude faster, so use NSEC_PER_SEC.
+From: Yijing Wang <wangyijing@huawei.com>
 
-Additionally, ensure that uint32_t is used as a type for rate throughout
-the rate management so that type checking/clamp_t can work properly.
+Parameter bio is no longer used, clean it.
 
-bch_next_delay should be rewritten for increased precision and better
-handling of high rates and long sleep periods, but this is adequate for
-now.
-
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
-Reported-by: Coly Li <colyli@suse.de>
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 Reviewed-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/bcache.h    | 2 +-
- drivers/md/bcache/util.h      | 4 ++--
- drivers/md/bcache/writeback.c | 7 ++++---
- 3 files changed, 7 insertions(+), 6 deletions(-)
+ drivers/md/bcache/request.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index eb83be693d60..d77c4829c497 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -361,7 +361,7 @@ struct cached_dev {
- 	int64_t			writeback_rate_proportional;
- 	int64_t			writeback_rate_integral;
- 	int64_t			writeback_rate_integral_scaled;
--	int64_t			writeback_rate_change;
-+	int32_t			writeback_rate_change;
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 9ee137e8d387..163a17a80874 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -26,12 +26,12 @@ struct kmem_cache *bch_search_cache;
  
- 	unsigned		writeback_rate_update_seconds;
- 	unsigned		writeback_rate_i_term_inverse;
-diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
-index cb8d2ccbb6c6..8f509290bb02 100644
---- a/drivers/md/bcache/util.h
-+++ b/drivers/md/bcache/util.h
-@@ -441,10 +441,10 @@ struct bch_ratelimit {
- 	uint64_t		next;
+ static void bch_data_insert_start(struct closure *);
  
- 	/*
--	 * Rate at which we want to do work, in units per nanosecond
-+	 * Rate at which we want to do work, in units per second
- 	 * The units here correspond to the units passed to bch_next_delay()
- 	 */
--	unsigned		rate;
-+	uint32_t		rate;
- };
+-static unsigned cache_mode(struct cached_dev *dc, struct bio *bio)
++static unsigned cache_mode(struct cached_dev *dc)
+ {
+ 	return BDEV_CACHE_MODE(&dc->sb);
+ }
  
- static inline void bch_ratelimit_reset(struct bch_ratelimit *d)
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 8deb721c355e..897d28050656 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -52,7 +52,8 @@ static void __update_writeback_rate(struct cached_dev *dc)
- 	int64_t error = dirty - target;
- 	int64_t proportional_scaled =
- 		div_s64(error, dc->writeback_rate_p_term_inverse);
--	int64_t integral_scaled, new_rate;
-+	int64_t integral_scaled;
-+	uint32_t new_rate;
+-static bool verify(struct cached_dev *dc, struct bio *bio)
++static bool verify(struct cached_dev *dc)
+ {
+ 	return dc->verify;
+ }
+@@ -369,7 +369,7 @@ static struct hlist_head *iohash(struct cached_dev *dc, uint64_t k)
+ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
+ {
+ 	struct cache_set *c = dc->disk.c;
+-	unsigned mode = cache_mode(dc, bio);
++	unsigned mode = cache_mode(dc);
+ 	unsigned sectors, congested = bch_get_congested(c);
+ 	struct task_struct *task = current;
+ 	struct io *i;
+@@ -747,7 +747,7 @@ static void cached_dev_read_done(struct closure *cl)
+ 		s->cache_miss = NULL;
+ 	}
  
- 	if ((error < 0 && dc->writeback_rate_integral > 0) ||
- 	    (error > 0 && time_before64(local_clock(),
-@@ -74,8 +75,8 @@ static void __update_writeback_rate(struct cached_dev *dc)
- 	integral_scaled = div_s64(dc->writeback_rate_integral,
- 			dc->writeback_rate_i_term_inverse);
+-	if (verify(dc, &s->bio.bio) && s->recoverable && !s->read_dirty_data)
++	if (verify(dc) && s->recoverable && !s->read_dirty_data)
+ 		bch_data_verify(dc, s->orig_bio);
  
--	new_rate = clamp_t(int64_t, (proportional_scaled + integral_scaled),
--			dc->writeback_rate_minimum, NSEC_PER_MSEC);
-+	new_rate = clamp_t(int32_t, (proportional_scaled + integral_scaled),
-+			dc->writeback_rate_minimum, NSEC_PER_SEC);
+ 	bio_complete(s);
+@@ -772,7 +772,7 @@ static void cached_dev_read_done_bh(struct closure *cl)
  
- 	dc->writeback_rate_proportional = proportional_scaled;
- 	dc->writeback_rate_integral_scaled = integral_scaled;
+ 	if (s->iop.status)
+ 		continue_at_nobarrier(cl, cached_dev_read_error, bcache_wq);
+-	else if (s->iop.bio || verify(dc, &s->bio.bio))
++	else if (s->iop.bio || verify(dc))
+ 		continue_at_nobarrier(cl, cached_dev_read_done, bcache_wq);
+ 	else
+ 		continue_at_nobarrier(cl, cached_dev_bio_complete, NULL);
+@@ -899,7 +899,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+ 		s->iop.bypass = true;
+ 
+ 	if (should_writeback(dc, s->orig_bio,
+-			     cache_mode(dc, bio),
++			     cache_mode(dc),
+ 			     s->iop.bypass)) {
+ 		s->iop.bypass = false;
+ 		s->iop.writeback = true;
 -- 
 2.11.0
