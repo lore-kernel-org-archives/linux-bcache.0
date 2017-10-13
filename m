@@ -1,39 +1,75 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: bcache request for pull
-Date: Fri, 13 Oct 2017 14:56:13 -0600
-Message-ID: <c5dbbc89-6190-302d-d302-a1fb40e11592@kernel.dk>
-References: <5ddf80d7-d887-4a64-53bb-de9074757333@lyle.org>
+From: Kent Overstreet <kent.overstreet@gmail.com>
+Subject: Re: [PATCH v2 2/2] bcache: rearrange writeback main thread ratelimit
+Date: Fri, 13 Oct 2017 19:20:13 -0400
+Message-ID: <20171013232013.5bm4h5seuxhj7k25@kmo-pixel>
+References: <20171009073730.8939-1-mlyle@lyle.org>
+ <20171009073730.8939-3-mlyle@lyle.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f42.google.com ([74.125.83.42]:43424 "EHLO
-        mail-pg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751632AbdJMU4S (ORCPT
+Received: from mail-qk0-f193.google.com ([209.85.220.193]:45099 "EHLO
+        mail-qk0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751081AbdJMXUR (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 13 Oct 2017 16:56:18 -0400
-Received: by mail-pg0-f42.google.com with SMTP id s75so1254621pgs.0
-        for <linux-bcache@vger.kernel.org>; Fri, 13 Oct 2017 13:56:18 -0700 (PDT)
-In-Reply-To: <5ddf80d7-d887-4a64-53bb-de9074757333@lyle.org>
-Content-Language: en-US
+        Fri, 13 Oct 2017 19:20:17 -0400
+Content-Disposition: inline
+In-Reply-To: <20171009073730.8939-3-mlyle@lyle.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, linux-next@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, colyli@suse.de
 
-On 10/13/2017 02:54 PM, Michael Lyle wrote:
-> Hi--
+On Mon, Oct 09, 2017 at 12:37:30AM -0700, Michael Lyle wrote:
+> The time spent searching for things to write back "counts" for the
+> actual rate achieved, so don't flush the accumulated rate with each
+> chunk.
 > 
-> I'm stepping up as new maintainer of bcache and have put together a git
-> repository of patches targeting the next merge window.  Can it please be
-> added to the set of repositories that linux-next pulls from?
+> This will maintain better fidelity to user-commanded rates, but it
+> may slightly increase the burstiness of writeback.  The writeback
+> lock needs improvement to help mitigate this.
 > 
-> it's https://github.com/mlyle/linux.git bcache-for-next
+> Signed-off-by: Michael Lyle <mlyle@lyle.org>
 
-First of all, you need to send the patches out for review. When they are
-properly reviewed, they can be added to the block tree for inclusion
-in the next merge window. Once they are added there, they will show
-up in linux-next automatically.
+Reviewed-by: Kent Overstreet <kent.overstreet@gmail.com>
 
--- 
-Jens Axboe
+> ---
+>  drivers/md/bcache/writeback.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 42d087b9fb56..719b104db0cc 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -526,6 +526,8 @@ static int bch_writeback_thread(void *arg)
+>  	struct cached_dev *dc = arg;
+>  	bool searched_full_index;
+>  
+> +	bch_ratelimit_reset(&dc->writeback_rate);
+> +
+>  	while (!kthread_should_stop()) {
+>  		down_write(&dc->writeback_lock);
+>  		if (!atomic_read(&dc->has_dirty) ||
+> @@ -553,7 +555,6 @@ static int bch_writeback_thread(void *arg)
+>  
+>  		up_write(&dc->writeback_lock);
+>  
+> -		bch_ratelimit_reset(&dc->writeback_rate);
+>  		read_dirty(dc);
+>  
+>  		if (searched_full_index) {
+> @@ -563,6 +564,8 @@ static int bch_writeback_thread(void *arg)
+>  			       !kthread_should_stop() &&
+>  			       !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))
+>  				delay = schedule_timeout_interruptible(delay);
+> +
+> +			bch_ratelimit_reset(&dc->writeback_rate);
+>  		}
+>  	}
+>  
+> -- 
+> 2.11.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
