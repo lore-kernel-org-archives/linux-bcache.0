@@ -1,75 +1,63 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: [PATCH v2 2/2] bcache: rearrange writeback main thread ratelimit
-Date: Fri, 13 Oct 2017 19:20:13 -0400
-Message-ID: <20171013232013.5bm4h5seuxhj7k25@kmo-pixel>
-References: <20171009073730.8939-1-mlyle@lyle.org>
- <20171009073730.8939-3-mlyle@lyle.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+From: Michael Lyle <mlyle@lyle.org>
+Subject: [PATCH 00/15] bcache: series of patches for 4.15
+Date: Fri, 13 Oct 2017 16:35:27 -0700
+Message-ID: <20171013233542.20938-1-mlyle@lyle.org>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qk0-f193.google.com ([209.85.220.193]:45099 "EHLO
-        mail-qk0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751081AbdJMXUR (ORCPT
+Received: from mail-pg0-f68.google.com ([74.125.83.68]:56474 "EHLO
+        mail-pg0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751391AbdJMXfy (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 13 Oct 2017 19:20:17 -0400
-Content-Disposition: inline
-In-Reply-To: <20171009073730.8939-3-mlyle@lyle.org>
+        Fri, 13 Oct 2017 19:35:54 -0400
+Received: by mail-pg0-f68.google.com with SMTP id m18so2337111pgd.13
+        for <linux-bcache@vger.kernel.org>; Fri, 13 Oct 2017 16:35:53 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, colyli@suse.de
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: axboe@fb.com
 
-On Mon, Oct 09, 2017 at 12:37:30AM -0700, Michael Lyle wrote:
-> The time spent searching for things to write back "counts" for the
-> actual rate achieved, so don't flush the accumulated rate with each
-> chunk.
-> 
-> This will maintain better fidelity to user-commanded rates, but it
-> may slightly increase the burstiness of writeback.  The writeback
-> lock needs improvement to help mitigate this.
-> 
-> Signed-off-by: Michael Lyle <mlyle@lyle.org>
+Jens, and everyone:
 
-Reviewed-by: Kent Overstreet <kent.overstreet@gmail.com>
+Here is the current series of work for inclusion in next and for 4.15's
+merge window.  We may get some additional fixes, but this is most of the
+work we expect.  All have been previously sent to these lists except the
+very last one.
 
-> ---
->  drivers/md/bcache/writeback.c | 5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 42d087b9fb56..719b104db0cc 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -526,6 +526,8 @@ static int bch_writeback_thread(void *arg)
->  	struct cached_dev *dc = arg;
->  	bool searched_full_index;
->  
-> +	bch_ratelimit_reset(&dc->writeback_rate);
-> +
->  	while (!kthread_should_stop()) {
->  		down_write(&dc->writeback_lock);
->  		if (!atomic_read(&dc->has_dirty) ||
-> @@ -553,7 +555,6 @@ static int bch_writeback_thread(void *arg)
->  
->  		up_write(&dc->writeback_lock);
->  
-> -		bch_ratelimit_reset(&dc->writeback_rate);
->  		read_dirty(dc);
->  
->  		if (searched_full_index) {
-> @@ -563,6 +564,8 @@ static int bch_writeback_thread(void *arg)
->  			       !kthread_should_stop() &&
->  			       !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))
->  				delay = schedule_timeout_interruptible(delay);
-> +
-> +			bch_ratelimit_reset(&dc->writeback_rate);
->  		}
->  	}
->  
-> -- 
-> 2.11.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+There's a lot of small cleanup patches and fixes for race conditions.
+
+Also included is my new rate controller which we've been measuring for
+some time, and other related changes to writeback rate management.
+
+Thanks,
+
+Mike
+
+Summaries below:
+
+ MAINTAINERS                   |   4 +-
+ drivers/md/bcache/alloc.c     |   5 ++-
+ drivers/md/bcache/bcache.h    |  11 +++--
+ drivers/md/bcache/closure.h   |   6 +++
+ drivers/md/bcache/request.c   |  20 ++++++---
+ drivers/md/bcache/super.c     |  40 ++++++++++-------
+ drivers/md/bcache/sysfs.c     |  28 +++++++-----
+ drivers/md/bcache/util.c      |  10 ++++-
+ drivers/md/bcache/util.h      |   4 +-
+ drivers/md/bcache/writeback.c | 117 +++++++++++++++++++++++++++++-------------------
+ drivers/md/bcache/writeback.h |   4 +-
+ 11 files changed, 156 insertions(+), 93 deletions(-)
+
+[PATCH 01/15] bcache: Avoid nested function definition
+[PATCH 02/15] bcache: check ca->alloc_thread initialized before wake
+[PATCH 03/15] bcache: fix a comments typo in bch_alloc_sectors()
+[PATCH 04/15] bcache: rewrite multiple partitions support
+[PATCH 05/15] bcache: Remove redundant set_capacity
+[PATCH 06/15] bcache: update bio->bi_opf bypass/writeback REQ_ flag
+[PATCH 07/15] bcache: remove unused parameter
+[PATCH 08/15] bcache: don't write back data if reading it failed
+[PATCH 09/15] bcache: implement PI controller for writeback rate
+[PATCH 10/15] bcache: smooth writeback rate control
+[PATCH 11/15] bcache: writeback rate shouldn't artifically clamp
+[PATCH 12/15] bcache: rearrange writeback main thread ratelimit
+[PATCH 13/15] bcache: safeguard a dangerous addressing in
+[PATCH 14/15] bcache: Add Michael Lyle to MAINTAINERS
+[PATCH 15/15] bcache: MAINTAINERS: set bcache to MAINTAINED
