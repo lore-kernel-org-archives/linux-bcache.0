@@ -1,68 +1,39 @@
-From: <clasico082@gmail.com>
-Subject: (unknown)
-Date: Sun, 15 Oct 2017 18:29:15 -0000
-Message-ID: <150809215506.32756.9740020110677830430@iplannetworks.net>
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH 00/15] bcache: series of patches for 4.15
+Date: Mon, 16 Oct 2017 09:08:03 -0600
+Message-ID: <20171016150802.GA27385@kernel.dk>
+References: <20171013233542.20938-1-mlyle@lyle.org>
 Mime-Version: 1.0
-Content-Type: application/zip; name="951043539.zip"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from customer-static-190-65.iplannetworks.net ([200.61.190.65]:4421
-        "HELO iplannetworks.net" rhost-flags-OK-FAIL-OK-FAIL)
-        by vger.kernel.org with SMTP id S1750971AbdJOS3U (ORCPT
+Received: from mail-it0-f52.google.com ([209.85.214.52]:53439 "EHLO
+        mail-it0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752678AbdJPPIF (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 15 Oct 2017 14:29:20 -0400
-Content-Disposition: attachment
-Subject: 
+        Mon, 16 Oct 2017 11:08:05 -0400
+Received: by mail-it0-f52.google.com with SMTP id n195so1519424itg.2
+        for <linux-bcache@vger.kernel.org>; Mon, 16 Oct 2017 08:08:05 -0700 (PDT)
+Content-Disposition: inline
+In-Reply-To: <20171013233542.20938-1-mlyle@lyle.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-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
+On Fri, Oct 13 2017, Michael Lyle wrote:
+> Jens, and everyone:
+> 
+> Here is the current series of work for inclusion in next and for 4.15's
+> merge window.  We may get some additional fixes, but this is most of the
+> work we expect.  All have been previously sent to these lists except the
+> very last one.
+> 
+> There's a lot of small cleanup patches and fixes for race conditions.
+> 
+> Also included is my new rate controller which we've been measuring for
+> some time, and other related changes to writeback rate management.
+
+Applied for 4.15, thanks.
+
+-- 
+Jens Axboe
