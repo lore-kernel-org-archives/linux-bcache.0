@@ -1,31 +1,54 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCHv3] bcache: only permit to recovery read error when cache
- device is clean
-Date: Mon, 16 Oct 2017 10:39:25 -0700
-Message-ID: <CAJ+L6qdqn1i=UFJcaO+xQzgZj_o5RNm71XhnSznrtMqt0P5Tew@mail.gmail.com>
-References: <20170921195458.53890-1-colyli@suse.de>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH] bcache: writeback rate clamping: make 32 bit safe
+Date: Tue, 17 Oct 2017 01:52:33 +0800
+Message-ID: <4c2ec14d-112c-5f32-5860-b5ea1836785a@coly.li>
+References: <20171016173447.27253-1-mlyle@lyle.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20170921195458.53890-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, Nix <nix@esperi.org.uk>, Kai Krakow <hurikhan77@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from server.coly.li ([162.144.45.48]:53534 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1753012AbdJPRwi (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 16 Oct 2017 13:52:38 -0400
+In-Reply-To: <20171016173447.27253-1-mlyle@lyle.org>
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk
 
-Hey Coly--
+On 2017/10/17 上午1:34, Michael Lyle wrote:
+> Sorry this got through to linux-block, was detected by the kbuilds test
+> robot.  NSEC_PER_SEC is a long constant; 2.5 * 10^9 doesn't fit in a
+> signed long constant.
+> 
+> Signed-off-by: Michael Lyle <mlyle@lyle.org>
 
-On Thu, Sep 21, 2017 at 12:54 PM, Coly Li <colyli@suse.de> wrote:
-> When bcache does read I/Os, for example in writeback or writethrough mode,
-> if a read request on cache device is failed, bcache will try to recovery
-> the request by reading from cached device. If the data on cached device is
-> not synced with cache device, then requester will get a stale data.
-[...]
-> +       if (s->recoverable &&
-> +           (dc && !atomic_read(&dc->has_dirty)) {
+I forgot i386 config... sorry too...
 
-Looks like this is missing a parens.
+Reviewed-by: Coly Li <colyli@suse.de>
 
-Thx,
+Thanks to Michael for the fix.
 
-Mike
+Coly Li
+
+> ---
+>  drivers/md/bcache/util.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+> index 4dbe37e82877..e548b8b51322 100644
+> --- a/drivers/md/bcache/util.c
+> +++ b/drivers/md/bcache/util.c
+> @@ -238,8 +238,8 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
+>  	 * don't let us sleep more than 2.5 seconds (so we can notice/respond
+>  	 * if the control system tells us to speed up!).
+>  	 */
+> -	if (time_before64(now + NSEC_PER_SEC * 5 / 2, d->next))
+> -		d->next = now + NSEC_PER_SEC * 5 / 2;
+> +	if (time_before64(now + NSEC_PER_SEC * 5LLU / 2LLU, d->next))
+> +		d->next = now + NSEC_PER_SEC * 5LLU / 2LLU;
+>  
+>  	if (time_after64(now - NSEC_PER_SEC * 2, d->next))
+>  		d->next = now - NSEC_PER_SEC * 2;
