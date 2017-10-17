@@ -1,44 +1,186 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] bcache: writeback rate clamping: make 32 bit safe
-Date: Mon, 16 Oct 2017 13:08:45 -0600
-Message-ID: <f0762144-33a7-abd5-8bf0-b5347c0aa799@kernel.dk>
-References: <20171016173447.27253-1-mlyle@lyle.org>
- <20f5b753-1d5f-eb7d-cbb9-6ecaf43294f8@kernel.dk>
- <CAJ+L6qcdCDP=G4FUQphESad6zcSTExYp_6KP8jQSmb9Y9CB-3g@mail.gmail.com>
+From: Kees Cook <keescook@chromium.org>
+Subject: [PATCH] md: Convert timers to use timer_setup()
+Date: Mon, 16 Oct 2017 17:01:48 -0700
+Message-ID: <20171017000148.GA102867@beast>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <CAJ+L6qcdCDP=G4FUQphESad6zcSTExYp_6KP8jQSmb9Y9CB-3g@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+Sender: linux-kernel-owner@vger.kernel.org
+To: Shaohua Li <shli@fb.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 10/16/2017 01:07 PM, Michael Lyle wrote:
-> Jens--
-> 
-> Thanks for your patience.
-> 
-> On Mon, Oct 16, 2017 at 12:01 PM, Jens Axboe <axboe@kernel.dk> wrote:
->> On 10/16/2017 11:34 AM, Michael Lyle wrote:
->>> Sorry this got through to linux-block, was detected by the kbuilds test
->>> robot.  NSEC_PER_SEC is a long constant; 2.5 * 10^9 doesn't fit in a
->>> signed long constant.
->>
->> Applied, but you should remember to add Fixes lines when a patch
->> explicitly fixes a problem introduced by a previous patch. Ala:
->>
->> Fixes: e41166c5c44e ("bcache: writeback rate shouldn't artifically clamp")
->>
->> so that backports have an easier time finding dependent fixes.
-> 
-> Sorry about that too. I considered the Fixes: tag but didn't know if
-> the hashes would "hold true" into mainline.  Now I see Linus merges
-> your tree so the hash should be durable.
+In preparation for unconditionally passing the struct timer_list pointer to
+all timer callbacks, switch to using the new timer_setup() and from_timer()
+to pass the timer pointer explicitly.
 
-They are durable once applied, so yeah.
+Cc: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: Mike Snitzer <snitzer@redhat.com>
+Cc: dm-devel@redhat.com
+Cc: linux-bcache@vger.kernel.org
+Cc: linux-raid@vger.kernel.org
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/md/bcache/stats.c | 8 +++-----
+ drivers/md/dm-delay.c     | 6 +++---
+ drivers/md/dm-integrity.c | 6 +++---
+ drivers/md/dm-raid1.c     | 8 +++-----
+ drivers/md/md.c           | 9 ++++-----
+ 5 files changed, 16 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/md/bcache/stats.c b/drivers/md/bcache/stats.c
+index 0ca072c20d0d..93a89c528760 100644
+--- a/drivers/md/bcache/stats.c
++++ b/drivers/md/bcache/stats.c
+@@ -146,9 +146,9 @@ static void scale_stats(struct cache_stats *stats, unsigned long rescale_at)
+ 	}
+ }
+ 
+-static void scale_accounting(unsigned long data)
++static void scale_accounting(struct timer_list *t)
+ {
+-	struct cache_accounting *acc = (struct cache_accounting *) data;
++	struct cache_accounting *acc = from_timer(acc, t, timer);
+ 
+ #define move_stat(name) do {						\
+ 	unsigned t = atomic_xchg(&acc->collector.name, 0);		\
+@@ -233,9 +233,7 @@ void bch_cache_accounting_init(struct cache_accounting *acc,
+ 	kobject_init(&acc->day.kobj,		&bch_stats_ktype);
+ 
+ 	closure_init(&acc->cl, parent);
+-	init_timer(&acc->timer);
++	timer_setup(&acc->timer, scale_accounting, 0);
+ 	acc->timer.expires	= jiffies + accounting_delay;
+-	acc->timer.data		= (unsigned long) acc;
+-	acc->timer.function	= scale_accounting;
+ 	add_timer(&acc->timer);
+ }
+diff --git a/drivers/md/dm-delay.c b/drivers/md/dm-delay.c
+index 2209a9700acd..288386bfbfb5 100644
+--- a/drivers/md/dm-delay.c
++++ b/drivers/md/dm-delay.c
+@@ -44,9 +44,9 @@ struct dm_delay_info {
+ 
+ static DEFINE_MUTEX(delayed_bios_lock);
+ 
+-static void handle_delayed_timer(unsigned long data)
++static void handle_delayed_timer(struct timer_list *t)
+ {
+-	struct delay_c *dc = (struct delay_c *)data;
++	struct delay_c *dc = from_timer(dc, t, delay_timer);
+ 
+ 	queue_work(dc->kdelayd_wq, &dc->flush_expired_bios);
+ }
+@@ -195,7 +195,7 @@ static int delay_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 		goto bad_queue;
+ 	}
+ 
+-	setup_timer(&dc->delay_timer, handle_delayed_timer, (unsigned long)dc);
++	timer_setup(&dc->delay_timer, handle_delayed_timer, 0);
+ 
+ 	INIT_WORK(&dc->flush_expired_bios, flush_expired_bios);
+ 	INIT_LIST_HEAD(&dc->delayed_bios);
+diff --git a/drivers/md/dm-integrity.c b/drivers/md/dm-integrity.c
+index 096fe9b66c50..98f0b645b839 100644
+--- a/drivers/md/dm-integrity.c
++++ b/drivers/md/dm-integrity.c
+@@ -1093,9 +1093,9 @@ static void sleep_on_endio_wait(struct dm_integrity_c *ic)
+ 	__remove_wait_queue(&ic->endio_wait, &wait);
+ }
+ 
+-static void autocommit_fn(unsigned long data)
++static void autocommit_fn(struct timer_list *t)
+ {
+-	struct dm_integrity_c *ic = (struct dm_integrity_c *)data;
++	struct dm_integrity_c *ic = from_timer(ic, t, autocommit_timer);
+ 
+ 	if (likely(!dm_integrity_failed(ic)))
+ 		queue_work(ic->commit_wq, &ic->commit_work);
+@@ -2941,7 +2941,7 @@ static int dm_integrity_ctr(struct dm_target *ti, unsigned argc, char **argv)
+ 
+ 	ic->autocommit_jiffies = msecs_to_jiffies(sync_msec);
+ 	ic->autocommit_msec = sync_msec;
+-	setup_timer(&ic->autocommit_timer, autocommit_fn, (unsigned long)ic);
++	timer_setup(&ic->autocommit_timer, autocommit_fn, 0);
+ 
+ 	ic->io = dm_io_client_create();
+ 	if (IS_ERR(ic->io)) {
+diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
+index c0b82136b2d1..580c49cc8079 100644
+--- a/drivers/md/dm-raid1.c
++++ b/drivers/md/dm-raid1.c
+@@ -94,9 +94,9 @@ static void wakeup_mirrord(void *context)
+ 	queue_work(ms->kmirrord_wq, &ms->kmirrord_work);
+ }
+ 
+-static void delayed_wake_fn(unsigned long data)
++static void delayed_wake_fn(struct timer_list *t)
+ {
+-	struct mirror_set *ms = (struct mirror_set *) data;
++	struct mirror_set *ms = from_timer(ms, t, timer);
+ 
+ 	clear_bit(0, &ms->timer_pending);
+ 	wakeup_mirrord(ms);
+@@ -108,8 +108,6 @@ static void delayed_wake(struct mirror_set *ms)
+ 		return;
+ 
+ 	ms->timer.expires = jiffies + HZ / 5;
+-	ms->timer.data = (unsigned long) ms;
+-	ms->timer.function = delayed_wake_fn;
+ 	add_timer(&ms->timer);
+ }
+ 
+@@ -1133,7 +1131,7 @@ static int mirror_ctr(struct dm_target *ti, unsigned int argc, char **argv)
+ 		goto err_free_context;
+ 	}
+ 	INIT_WORK(&ms->kmirrord_work, do_mirror);
+-	init_timer(&ms->timer);
++	timer_setup(&ms->timer, delayed_wake_fn, 0);
+ 	ms->timer_pending = 0;
+ 	INIT_WORK(&ms->trigger_event, trigger_event);
+ 
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 97afb28c6f51..873a20f44197 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -520,7 +520,7 @@ static void mddev_put(struct mddev *mddev)
+ 		bioset_free(sync_bs);
+ }
+ 
+-static void md_safemode_timeout(unsigned long data);
++static void md_safemode_timeout(struct timer_list *t);
+ 
+ void mddev_init(struct mddev *mddev)
+ {
+@@ -529,8 +529,7 @@ void mddev_init(struct mddev *mddev)
+ 	mutex_init(&mddev->bitmap_info.mutex);
+ 	INIT_LIST_HEAD(&mddev->disks);
+ 	INIT_LIST_HEAD(&mddev->all_mddevs);
+-	setup_timer(&mddev->safemode_timer, md_safemode_timeout,
+-		    (unsigned long) mddev);
++	timer_setup(&mddev->safemode_timer, md_safemode_timeout, 0);
+ 	atomic_set(&mddev->active, 1);
+ 	atomic_set(&mddev->openers, 0);
+ 	atomic_set(&mddev->active_io, 0);
+@@ -5386,9 +5385,9 @@ static int add_named_array(const char *val, struct kernel_param *kp)
+ 	return -EINVAL;
+ }
+ 
+-static void md_safemode_timeout(unsigned long data)
++static void md_safemode_timeout(struct timer_list *t)
+ {
+-	struct mddev *mddev = (struct mddev *) data;
++	struct mddev *mddev = from_timer(mddev, t, safemode_timer);
+ 
+ 	mddev->safemode = 1;
+ 	if (mddev->external)
+-- 
+2.7.4
+
 
 -- 
-Jens Axboe
+Kees Cook
+Pixel Security
