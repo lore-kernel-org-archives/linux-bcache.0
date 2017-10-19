@@ -1,45 +1,83 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] md: Convert timers to use timer_setup()
-Date: Wed, 18 Oct 2017 21:12:00 -0600
-Message-ID: <D294B3CB-45BC-49B2-A9DD-AB0A01CCB444@kernel.dk>
-References: <20171017000148.GA102867@beast> <390e7ce2-fda1-ad11-6c96-0ea44615c845@lyle.org> <CAGXu5jLQVmS_7wA3z3W8590d-adNHMNY5yp5WsiSx3EiwTsfRQ@mail.gmail.com>
-Mime-Version: 1.0 (1.0)
-Content-Type: text/plain;
-        charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <CAGXu5jLQVmS_7wA3z3W8590d-adNHMNY5yp5WsiSx3EiwTsfRQ@mail.gmail.com>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kees Cook <keescook@chromium.org>
-Cc: Michael Lyle <mlyle@lyle.org>, Shaohua Li <shli@fb.com>, Kent Overstreet <kent.overstreet@gmail.com>, Alasdair Kergon <agk@redhat.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+From: Ming Lei <ming.lei@redhat.com>
+Subject: Re: [PATCH v3 07/49] bcache: comment on direct access to bvec table
+Date: Fri, 20 Oct 2017 06:51:10 +0800
+Message-ID: <20171019225109.GA27130@ming.t460p>
+References: <20170808084548.18963-1-ming.lei@redhat.com>
+ <20170808084548.18963-8-ming.lei@redhat.com>
+ <20170810112603.GD20308@infradead.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Return-path: <owner-linux-mm@kvack.org>
+Content-Disposition: inline
+In-Reply-To: <20170810112603.GD20308@infradead.org>
+Sender: owner-linux-mm@kvack.org
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@fb.com>, Huang Ying <ying.huang@intel.com>, Andrew Morton <akpm@linux-foundation.org>, Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org, linux-block@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
+On Thu, Aug 10, 2017 at 04:26:03AM -0700, Christoph Hellwig wrote:
+> I think all this bcache code needs bigger attention.  For one
+> bio_alloc_pages is only used in bcache, so we should move it in there.
 
-> On Oct 18, 2017, at 9:06 PM, Kees Cook <keescook@chromium.org> wrote:
->=20
->> On Mon, Oct 16, 2017 at 8:06 PM, Michael Lyle <mlyle@lyle.org> wrote:
->>> On 10/16/2017 05:01 PM, Kees Cook wrote:
->>> In preparation for unconditionally passing the struct timer_list pointer=
- to
->>> all timer callbacks, switch to using the new timer_setup() and from_time=
-r()
->>> to pass the timer pointer explicitly.
->>>=20
->>> Cc: Kent Overstreet <kent.overstreet@gmail.com>
->>> Cc: Shaohua Li <shli@kernel.org>
->>> Cc: Alasdair Kergon <agk@redhat.com>
->>> Cc: Mike Snitzer <snitzer@redhat.com>
->>> Cc: dm-devel@redhat.com
->>> Cc: linux-bcache@vger.kernel.org
->>> Cc: linux-raid@vger.kernel.org
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>=20
->> This looks good to me-- I'm fine with Jens or someone else picking this
->> up directly, or would take a bcache-specific one to apply to my tree.
->>=20
->> Reviewed-by: Michael Lyle <mlyle@lyle.org>
->=20
-> Jens, can you pick this up, or would you prefer I split it up?
+Looks a good idea.
 
-I can pick it up, but I don=E2=80=99t think I was ever cc=E2=80=99ed on
-the original.
+> 
+> Second the way  bio_alloc_pages is currently written looks potentially
+> dangerous for multi-page biovecs, so we should think about a better
+> calling convention.  The way bcache seems to generally use it is by
+> allocating a bio, then calling bch_bio_map on it and then calling
+> bio_alloc_pages.  I think it just needs a new bio_alloc_pages calling
+> convention that passes the size to be allocated and stop looking into
+> the segment count.
+
+Looks a good idea, will try to do in this way.
+
+> 
+> Second bch_bio_map isn't something we should be doing in a driver,
+> it should be rewritten using bio_add_page.
+
+Yes, the idea way is to use bio_add_page always, but given
+bch_bio_map() is used on a fresh bio, it is safe, and this
+work can be done in another bcache cleanup patch.
+
+> 
+> > diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> > index 866dcf78ff8e..3da595ae565b 100644
+> > --- a/drivers/md/bcache/btree.c
+> > +++ b/drivers/md/bcache/btree.c
+> > @@ -431,6 +431,7 @@ static void do_btree_node_write(struct btree *b)
+> >  
+> >  		continue_at(cl, btree_node_write_done, NULL);
+> >  	} else {
+> > +		/* No harm for multipage bvec since the new is just allocated */
+> >  		b->bio->bi_vcnt = 0;
+> 
+> This should go away - bio_alloc_pages or it's replacement should not
+> modify bi_vcnt on failure.
+
+OK.
+
+> 
+> > +	/* single page bio, safe for multipage bvec */
+> >  	dc->sb_bio.bi_io_vec[0].bv_page = sb_page;
+> 
+> needs to use bio_add_page.
+
+OK.
+
+> 
+> > +	/* single page bio, safe for multipage bvec */
+> >  	ca->sb_bio.bi_io_vec[0].bv_page = sb_page;
+> 
+> needs to use bio_add_page.
+
+OK.
+
+-- 
+Ming
+
+--
+To unsubscribe, send a message with 'unsubscribe linux-mm' in
+the body to majordomo@kvack.org.  For more info on Linux MM,
+see: http://www.linux-mm.org/ .
+Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
