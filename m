@@ -1,48 +1,94 @@
-From: "Reshetova, Elena" <elena.reshetova@intel.com>
-Subject: RE: [PATCH 1/4] bcache: convert cached_dev.count from atomic_t to
- refcount_t
-Date: Mon, 23 Oct 2017 06:45:09 +0000
-Message-ID: <2236FBA76BA1254E88B949DDB74E612B802B41FC@IRSMSX102.ger.corp.intel.com>
-References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
- <1508485059-21881-2-git-send-email-elena.reshetova@intel.com>
- <8bd05fae-d41f-24e7-4e58-bf07d9a09a99@lyle.org>
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Subject: bcache: for-next unable to handle kernel NULL pointer dereference at
+ 0000000000000019
+Date: Mon, 23 Oct 2017 13:42:55 +0200
+Message-ID: <5cd9d4e9-88b2-c24b-f6ed-dad3f8b21283@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mga05.intel.com ([192.55.52.43]:39757 "EHLO mga05.intel.com"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751152AbdJWGpQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 23 Oct 2017 02:45:16 -0400
-In-Reply-To: <8bd05fae-d41f-24e7-4e58-bf07d9a09a99@lyle.org>
-Content-Language: en-US
+Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:53045 "EHLO
+        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S932191AbdJWLm5 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 23 Oct 2017 07:42:57 -0400
+Content-Language: de-DE
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, "dm-devel@redhat.com" <dm-devel@redhat.com>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, "koverstreet@google.com" <koverstreet@google.com>, "ejt@redhat.comg" <ejt@redhat.comg>, "snitzer@redhat.com" <snitzer@redhat.com>, "shli@kernel.org" <shli@kernel.org>, "agk@redhat.com" <agk@redhat.com>, "peterz@infradead.org" <peterz@infradead.org>, "keescook@chromium.org" <keescook@chromium.org>
+To: linux-bcache@vger.kernel.org
+Cc: Michael Lyle <mlyle@lyle.org>, Coly Li <i@coly.li>
 
-PiBPbiAxMC8yMC8yMDE3IDEyOjM3IEFNLCBFbGVuYSBSZXNoZXRvdmEgd3JvdGU6DQo+ID4gYXRv
-bWljX3QgdmFyaWFibGVzIGFyZSBjdXJyZW50bHkgdXNlZCB0byBpbXBsZW1lbnQgcmVmZXJlbmNl
-DQo+ID4gY291bnRlcnMgd2l0aCB0aGUgZm9sbG93aW5nIHByb3BlcnRpZXM6DQo+ID4gIC0gY291
-bnRlciBpcyBpbml0aWFsaXplZCB0byAxIHVzaW5nIGF0b21pY19zZXQoKQ0KPiA+ICAtIGEgcmVz
-b3VyY2UgaXMgZnJlZWQgdXBvbiBjb3VudGVyIHJlYWNoaW5nIHplcm8NCj4gPiAgLSBvbmNlIGNv
-dW50ZXIgcmVhY2hlcyB6ZXJvLCBpdHMgZnVydGhlcg0KPiA+ICAgIGluY3JlbWVudHMgYXJlbid0
-IGFsbG93ZWQNCj4gPiAgLSBjb3VudGVyIHNjaGVtYSB1c2VzIGJhc2ljIGF0b21pYyBvcGVyYXRp
-b25zDQo+ID4gICAgKHNldCwgaW5jLCBpbmNfbm90X3plcm8sIGRlY19hbmRfdGVzdCwgZXRjLikN
-Cj4gPg0KPiA+IFN1Y2ggYXRvbWljIHZhcmlhYmxlcyBzaG91bGQgYmUgY29udmVydGVkIHRvIGEg
-bmV3bHkgcHJvdmlkZWQNCj4gPiByZWZjb3VudF90IHR5cGUgYW5kIEFQSSB0aGF0IHByZXZlbnRz
-IGFjY2lkZW50YWwgY291bnRlciBvdmVyZmxvd3MNCj4gPiBhbmQgdW5kZXJmbG93cy4gVGhpcyBp
-cyBpbXBvcnRhbnQgc2luY2Ugb3ZlcmZsb3dzIGFuZCB1bmRlcmZsb3dzDQo+ID4gY2FuIGxlYWQg
-dG8gdXNlLWFmdGVyLWZyZWUgc2l0dWF0aW9uIGFuZCBiZSBleHBsb2l0YWJsZS4NCj4gPg0KPiA+
-IFRoZSB2YXJpYWJsZSBjYWNoZWRfZGV2LmNvdW50IGlzIHVzZWQgYXMgcHVyZSByZWZlcmVuY2Ug
-Y291bnRlci4NCj4gPiBDb252ZXJ0IGl0IHRvIHJlZmNvdW50X3QgYW5kIGZpeCB1cCB0aGUgb3Bl
-cmF0aW9ucy4NCj4gPg0KPiA+IFN1Z2dlc3RlZC1ieTogS2VlcyBDb29rIDxrZWVzY29va0BjaHJv
-bWl1bS5vcmc+DQo+ID4gUmV2aWV3ZWQtYnk6IERhdmlkIFdpbmRzb3IgPGR3aW5kc29yQGdtYWls
-LmNvbT4NCj4gPiBSZXZpZXdlZC1ieTogSGFucyBMaWxqZXN0cmFuZCA8aXNoa2FtaWVsQGdtYWls
-LmNvbT4NCj4gPiBTaWduZWQtb2ZmLWJ5OiBFbGVuYSBSZXNoZXRvdmEgPGVsZW5hLnJlc2hldG92
-YUBpbnRlbC5jb20+DQo+IA0KPiBSZXZpZXdlZC1ieTogTWljaGFlbCBMeWxlIDxtbHlsZUBseWxl
-Lm9yZz4NCj4gDQo+IFRoYW5rcyBmb3IgdGhpcy0tIEknbSBpbmNsdWRpbmcgaXQgaW4gbXkgdHJl
-ZSBmb3IgcG9zc2libGUgaW5jbHVzaW9uIGluDQo+IDQuMTUgKEkndmUgYWxyZWFkeSBzZW50IG15
-IG1haW4gY2h1bmsgb2YgY2hhbmdlcyB1cHdhcmRzKS4NCg0KVGhhbmsgeW91IE1pa2UhIEkgYW0g
-ZHJvcHBpbmcgdGhlbiB0aGlzIHBhdGNoIGZyb20gbXkgbGlzdCBvZiBtYWludGFpbmVkDQpjb252
-ZXJzaW9ucy4gDQoNCkJlc3QgUmVnYXJkcywNCkVsZW5hLg0KPiANCj4gTWlrZQ0K
+Hello,
+
+i picked all bcache patches from for-next to my 4.4 kernel to test the
+new controller.
+
+After doing so i see random kernel panics with the following trace:
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000019
+IP: [<ffffffffc04ef62e>] closure_sub+0xe/0xc0 [bcache]
+PGD 0
+Oops: 0002 [#1] SMP
+Modules linked in: netconsole xt_multiport ipt_REJECT nf_reject_ipv4
+xt_set iptable_filter ip_tables x_tables ip_set_hash_net ip_set
+nfnetlink bonding ipmi_devintf sb_edac edac_core x86_pkg_temp_thermal
+mgag200 kvm_intel ttm drm_kms_helper kvm irqbypass drm fb_sys_fops
+syscopyarea crc32_pclmul sysfillrect sysimgblt ghash_clmulni_intel wmi
+ipmi_si ipmi_msghandler shpchp button coretemp 8021q garp fuse btrfs xor
+raid6_pq dm_mod usb_storage ohci_hcd usbhid bcache sg sd_mod ahci
+ehci_pci i2c_i801 libahci ehci_hcd isci igb i2c_algo_bit ixgbe usbcore
+libsas i2c_core mdio usb_common scsi_transport_sas ptp pps_core
+CPU: 6 PID: 50 Comm: ksoftirqd/6 Not tainted 4.4.92+534-ph #1
+Hardware name: Supermicro
+X9SRE/X9SRE-3F/X9SRi/X9SRi-3F/X9SRE/X9SRE-3F/X9SRi/X9SRi-3F, BIOS 3.0
+07/05/2013
+task: ffff8802196ccb00 ti: ffff8802196d4000 task.ti: ffff8802196d4000
+RIP: 0010:[<ffffffffc04ef62e>] [<ffffffffc04ef62e>] closure_sub+0xe/0xc0
+[bcache]
+RSP: 0018:ffff8802196d7c20 EFLAGS: 00010297
+RAX: 00000000fdffffff RBX: fffffffffffffff1 RCX: 00000000000f4240
+RDX: 0000000000070651 RSI: 0000000002000001 RDI: fffffffffffffff1
+RBP: ffff8802196d7c28 R08: 0000000000000007 R09: ffff880219568000
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000e00
+R13: 0000000000000000 R14: 0000000000000e00 R15: ffff8805eb2dbd60
+FS: 0000000000000000(0000) GS:ffff880c7f580000(0000) knlGS:0000000000000000
+CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000019 CR3: 0000000c7ee0b000 CR4: 00000000001406e0Stack:
+fffffffffffffff1 ffff8802196d7c40 ffffffffc04ef70d ffff880c459ecbc0
+ffff8802196d7c58 ffffffffc04f20df ffff880c459eccf0 ffff8802196d7c70
+ffffffffc04ef616 ffff880c459eccf0 ffff8802196d7c88 ffffffffc04f16a7
+Call Trace:
+[<ffffffffc04ef70d>] __closure_wake_up+0x2d/0x40 [bcache]
+[<ffffffffc04f20df>] journal_write_done+0x2f/0xa0 [bcache]
+[<ffffffffc04ef616>] closure_put+0xb6/0xc0 [bcache]
+[<ffffffffc04f16a7>] journal_write_endio+0x37/0x40 [bcache]
+[<ffffffff81397b16>] bio_endio+0x56/0x60
+[<ffffffff813a00cb>] blk_update_request+0x8b/0x370
+[<ffffffff8150b663>] scsi_end_request+0x33/0x1c0
+[<ffffffff8150dddd>] scsi_io_completion+0x18d/0x660
+[<ffffffff815046df>] scsi_finish_command+0xcf/0x120
+[<ffffffff8150d566>] scsi_softirq_done+0x126/0x150
+[<ffffffff813a7f88>] blk_done_softirq+0x78/0x90
+[<ffffffff8108a48c>] __do_softirq+0x11c/0x2e0
+[<ffffffff8108a678>] run_ksoftirqd+0x28/0x50
+[<ffffffff810a6fb9>] smpboot_thread_fn+0x139/0x1a0
+[<ffffffff810a3aeb>] kthread+0xeb/0x110
+[<ffffffff816dbd0f>] ret_from_fork+0x3f/0x70
+DWARF2 unwinder stuck at ret_from_fork+0x3f/0x70
+Leftover inexact backtrace:
+2017-10-23 13:35:09
+[<ffffffff810a3a00>] ? kthread_park+0x60/0x60
+Code: e8 a8 d6 ba c0 84 c0 75 83 0f 0b 48 8b 5f 20 eb af ff d1 e9 74 ff
+ff ff 0f 0b 0f 1f 00 0f 1f 44 00 00 55 89 f0 f7 d8 48 89 e5 53 <f0> 0f
+c1 47 28 29 f0 89 c1 81 e1 ff ff 7f 00 a9 00 00 00 55 75
+RIP [<ffffffffc04ef62e>] closure_sub+0xe/0xc0 [bcache]
+RSP <ffff8802196d7c20>
+CR2: 0000000000000019
+---[ end trace a4cc6c37159f8e49 ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range:
+0xffffffff80000000-0xffffffffbfffffff)
+
+
+Greets,
+Stefan
