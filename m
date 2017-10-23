@@ -1,8 +1,8 @@
-From: Coly Li <i@coly.li>
+From: Michael Lyle <mlyle@lyle.org>
 Subject: Re: bcache: for-next unable to handle kernel NULL pointer dereference
  at 0000000000000019
-Date: Mon, 23 Oct 2017 22:39:54 +0800
-Message-ID: <8416a91c-d340-85ed-fef9-41d732e0e2be@coly.li>
+Date: Mon, 23 Oct 2017 09:48:10 -0700
+Message-ID: <52830ea6-a17c-e3a6-f4fb-bc463615aac4@lyle.org>
 References: <5cd9d4e9-88b2-c24b-f6ed-dad3f8b21283@profihost.ag>
  <4f1c616f-2e86-2cd3-162c-4ee7a3a02bf4@coly.li>
  <b3fe481a-67d7-1e70-1f52-0aa285dc48e7@profihost.ag>
@@ -12,84 +12,22 @@ References: <5cd9d4e9-88b2-c24b-f6ed-dad3f8b21283@profihost.ag>
  <ee16f106-9bce-d33b-e8cc-acd6eeb94d10@profihost.ag>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from server.coly.li ([162.144.45.48]:44462 "EHLO server.coly.li"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S932225AbdJWOj6 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 23 Oct 2017 10:39:58 -0400
+Received: from mail-pg0-f44.google.com ([74.125.83.44]:44496 "EHLO
+        mail-pg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751277AbdJWQsS (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 23 Oct 2017 12:48:18 -0400
+Received: by mail-pg0-f44.google.com with SMTP id j3so12220841pga.1
+        for <linux-bcache@vger.kernel.org>; Mon, 23 Oct 2017 09:48:18 -0700 (PDT)
 In-Reply-To: <ee16f106-9bce-d33b-e8cc-acd6eeb94d10@profihost.ag>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, linux-bcache@vger.kernel.org
-Cc: Michael Lyle <mlyle@lyle.org>
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, Coly Li <i@coly.li>, linux-bcache@vger.kernel.org
 
-On 2017/10/23 下午10:26, Stefan Priebe - Profihost AG wrote:
-> Hi,
-> Am 23.10.2017 um 16:00 schrieb Coly Li:
->> On 2017/10/23 下午9:16, Stefan Priebe - Profihost AG wrote:
->>> Hi,
->>>
->>> Am 23.10.2017 um 15:05 schrieb Coly Li:
->>>> On 2017/10/23 下午8:59, Stefan Priebe - Profihost AG wrote:
->>>>> Hi Coly,
->>>>>
->>>>>
->>>>> Am 23.10.2017 um 14:56 schrieb Coly Li:
->>>>>> On 2017/10/23 下午7:42, Stefan Priebe - Profihost AG wrote:
->>>>>>> Hello,
->>>>>>>
->>>>>>> i picked all bcache patches from for-next to my 4.4 kernel to test the
->>>>>>> new controller.
->>>>>>>
->>>>>>> After doing so i see random kernel panics with the following trace:
->>>>>>
->>>>>> Hi Stefan,
->>>>>>
->>>>>> Thanks for the report. This is the 3rd report I see recently for NULL
->>>>>> pointer dereference, maybe they are related (or maybe not). Is it a
->>>>>> panic when bcache starts to run, or during heavy workload ?
->>>>>
->>>>> It's during heavy / normal workload.
->>>>>
->>>>>> If I may have chance to trigger similar oops on my server, that will be
->>>>>> much easier. So far I cannot reproduce any oops, neither by rebooting
->>>>>> and assemble bcache device by udev rules, nor compose bcache device and
->>>>>> run it by bash scripts...
->>>>>
->>>>> Do you need the line where this happens? It should be possible to get
->>>>> the line from the IP: [<ffffffffc04ef62e>] output?
->>>>>
->>>> This is very helpful.
->>>
->>> May be i'm too stupid but it does not print anything useful:
->>>
->>> # addr2line -f -e
->>> /usr/lib/debug/lib/modules/4.4.92+534-ph/kernel/drivers/md/bcache/bcache.ko
->>> ffffffffc04ef62e closure_sub
->>> ??
->>> ??:0
->>> bch_inc_gen
->>> ??:?
->>>
->>>> Is it possible to get a kdump crash for the kernel
->>>> oops, that will be much more informative :-)
->>>
->>> no idea how to archieve this for a remote Server.
->>
->> Hi Stefan,
->>
->> In code path of closure_wake_up(), I remember there are two patches in
->> last run,
->> - commit a5f3d8a5eaaf ("bcache: use llist_for_each_entry_safe() in
->> __closure_wake_up()")
->> - commit 09b3efec81de ("bcache: Don't reinvent the wheel but use
->> existing llist API")
->>
->> Can you check whether you have all of these patches ? Or can we try to
->> revoke these two patches and see whether oops still happens.
-> 
+On 10/23/2017 07:26 AM, Stefan Priebe - Profihost AG wrote:
 > It seems i'm missing a5f3d8a5eaaf but i have 09b3efec81de.
 > 
 > I missed it because
@@ -97,22 +35,15 @@ On 2017/10/23 下午10:26, Stefan Priebe - Profihost AG wrote:
 > 
 > does not show it. It seems linux-block/for-next does not contain it?
 > Which branch should i use?
-> 
-> Only those contain the mentioned commit:
->   remotes/linux-block/for-linus
->   remotes/linux-block/master
->   remotes/linux-block/wbt-odirect
-> 
 
-Hi Stefan,
+This is one of the pitfalls of selectively taking a bunch of changes
+back into an older kernel series, especially from development trees.
+linux-block/for-next is guaranteed to contain all the changes needed to
+take the linux-next tree into complete state, but not necessarily to be
+based on a point in time on linux-next that captures all past changes.
+Similarly, there's no guarantee that current bcache code will work well
+on the 4.4 kernel without changes-- i.e. I am accepting changes that
+rely on recent changes in kernel facilities to compile, and I would
+accept changes that rely on recent changes in semantics to be correct.
 
-These 2 patches are in 4.14 mainline kernel already. This is my fault to
-make commit 09b3efec81de buggy, and fix it in commit a5f3d8a5eaaf.
-
-Could you please try again with the fixing patch ?
-
-(And I guess maybe other 2 reports may also miss this fix).
-
-Thanks.
-
-Coly Li
+Mike
