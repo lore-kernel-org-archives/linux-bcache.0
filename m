@@ -1,37 +1,37 @@
-From: tang.junhui@zte.com.cn
+From: Michael Lyle <mlyle@lyle.org>
 Subject: Re: Re: [PATCH] update bucket_in_use in real time
-Date: Wed, 25 Oct 2017 09:21:28 +0800
-Message-ID: <1508894488-3624-1-git-send-email-tang.junhui@zte.com.cn>
+Date: Tue, 24 Oct 2017 18:47:12 -0700
+Message-ID: <CAJ+L6qdZx0g__+Jdey6AC9P2mQVvczXfVWP8pFVWYHL_0N_qhw@mail.gmail.com>
+References: <1508894488-3624-1-git-send-email-tang.junhui@zte.com.cn>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1508894488-3624-1-git-send-email-tang.junhui@zte.com.cn>
 Sender: linux-block-owner@vger.kernel.org
-To: colyli@suse.de, mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: Junhui Tang <tang.junhui@zte.com.cn>
+Cc: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On Tue, Oct 24, 2017 at 6:21 PM,  <tang.junhui@zte.com.cn> wrote:
+>>> static void bch_btree_gc_finish(struct cache_set *c)
+>> available should be removed and this function should return 0.
+> I have changed this function to a void type, so nothing need return.
 
-Thanks to Mike and Coly's comments.
+Sorry, I misread that. :)
 
->> +		 if(ca->set->avail_nbuckets > 0) {
->> +		 		 ca->set->avail_nbuckets--;
->> +		 		 bch_update_bucket_in_use(ca->set);
->> +		 }
->> +
-> 
-> I am not sure this needs an atomic.  All accesses to this variable are
->> done with the bucket_lock held, so that seems correct.  Is this right?
-Yes, you are right.
+>>> +             stats.in_use            = (c->nbuckets - c->avail_nbuckets) * 100 / c->nbuckets;
+>>
+>> This should instead call bch_update_bucket_in_use to avoid code duplication.
+> OK, I will modify it and resend a v2 patch later.
 
->> static void bch_btree_gc_finish(struct cache_set *c)
-> available should be removed and this function should return 0.
-I have changed this function to a void type, so nothing need return.
+OK, that's my only complaint.  Will be glad to add v2 to my staging tree.
 
->> +		 stats.in_use		 = (c->nbuckets - c->avail_nbuckets) * 100 / c->nbuckets;
-> 
-> This should instead call bch_update_bucket_in_use to avoid code duplication.
-OK, I will modify it and resend a v2 patch later. 
-                  
-> Overall I think this is a good piece of progress.
-Thanks for your review and comments again.
+>
+>> Overall I think this is a good piece of progress.
+> Thanks for your review and comments again.
+>
+> Tang Junhui
 
-Tang Junhui
+Thanks!
+
+Mike
