@@ -1,185 +1,128 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH] [PATCH V2] bcache: update bucket_in_use in real time
-Date: Tue, 24 Oct 2017 21:35:29 -0700
-Message-ID: <e3aaa6b9-3de3-7203-c893-7559d3305abe@lyle.org>
-References: <1508898414-6924-1-git-send-email-tang.junhui@zte.com.cn>
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Subject: Re: bcache: for-next unable to handle kernel NULL pointer dereference
+ at 0000000000000019
+Date: Wed, 25 Oct 2017 15:26:06 +0200
+Message-ID: <c6681708-cddf-933b-8532-bcb24d43caab@profihost.ag>
+References: <5cd9d4e9-88b2-c24b-f6ed-dad3f8b21283@profihost.ag>
+ <4f1c616f-2e86-2cd3-162c-4ee7a3a02bf4@coly.li>
+ <b3fe481a-67d7-1e70-1f52-0aa285dc48e7@profihost.ag>
+ <08c770ef-eb09-ed55-a7bb-31b1b97a88d9@coly.li>
+ <26bed6fb-d433-bcb7-4428-ed7b771f2def@profihost.ag>
+ <ebfea14d-0fbd-00e0-d31b-54e1adfb2b80@coly.li>
+ <ee16f106-9bce-d33b-e8cc-acd6eeb94d10@profihost.ag>
+ <8416a91c-d340-85ed-fef9-41d732e0e2be@coly.li>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1508898414-6924-1-git-send-email-tang.junhui@zte.com.cn>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: tang.junhui@zte.com.cn, colyli@suse.de
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:60219 "EHLO
+        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1750952AbdJYN0I (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 25 Oct 2017 09:26:08 -0400
+In-Reply-To: <8416a91c-d340-85ed-fef9-41d732e0e2be@coly.li>
+Content-Language: de-DE
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Coly Li <i@coly.li>, linux-bcache@vger.kernel.org
+Cc: Michael Lyle <mlyle@lyle.org>
 
-Hi Junhui---
 
-I have applied the patch [with a small whitespace edit] to my tree.  I
-will try to get some test mileage on it.
-
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
-
-Thanks--
-
-Mike
-
-On 10/24/2017 07:26 PM, tang.junhui@zte.com.cn wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
+Am 23.10.2017 um 16:39 schrieb Coly Li:
+> On 2017/10/23 下午10:26, Stefan Priebe - Profihost AG wrote:
+>> Hi,
+>> Am 23.10.2017 um 16:00 schrieb Coly Li:
+>>> On 2017/10/23 下午9:16, Stefan Priebe - Profihost AG wrote:
+>>>> Hi,
+>>>>
+>>>> Am 23.10.2017 um 15:05 schrieb Coly Li:
+>>>>> On 2017/10/23 下午8:59, Stefan Priebe - Profihost AG wrote:
+>>>>>> Hi Coly,
+>>>>>>
+>>>>>>
+>>>>>> Am 23.10.2017 um 14:56 schrieb Coly Li:
+>>>>>>> On 2017/10/23 下午7:42, Stefan Priebe - Profihost AG wrote:
+>>>>>>>> Hello,
+>>>>>>>>
+>>>>>>>> i picked all bcache patches from for-next to my 4.4 kernel to test the
+>>>>>>>> new controller.
+>>>>>>>>
+>>>>>>>> After doing so i see random kernel panics with the following trace:
+>>>>>>>
+>>>>>>> Hi Stefan,
+>>>>>>>
+>>>>>>> Thanks for the report. This is the 3rd report I see recently for NULL
+>>>>>>> pointer dereference, maybe they are related (or maybe not). Is it a
+>>>>>>> panic when bcache starts to run, or during heavy workload ?
+>>>>>>
+>>>>>> It's during heavy / normal workload.
+>>>>>>
+>>>>>>> If I may have chance to trigger similar oops on my server, that will be
+>>>>>>> much easier. So far I cannot reproduce any oops, neither by rebooting
+>>>>>>> and assemble bcache device by udev rules, nor compose bcache device and
+>>>>>>> run it by bash scripts...
+>>>>>>
+>>>>>> Do you need the line where this happens? It should be possible to get
+>>>>>> the line from the IP: [<ffffffffc04ef62e>] output?
+>>>>>>
+>>>>> This is very helpful.
+>>>>
+>>>> May be i'm too stupid but it does not print anything useful:
+>>>>
+>>>> # addr2line -f -e
+>>>> /usr/lib/debug/lib/modules/4.4.92+534-ph/kernel/drivers/md/bcache/bcache.ko
+>>>> ffffffffc04ef62e closure_sub
+>>>> ??
+>>>> ??:0
+>>>> bch_inc_gen
+>>>> ??:?
+>>>>
+>>>>> Is it possible to get a kdump crash for the kernel
+>>>>> oops, that will be much more informative :-)
+>>>>
+>>>> no idea how to archieve this for a remote Server.
+>>>
+>>> Hi Stefan,
+>>>
+>>> In code path of closure_wake_up(), I remember there are two patches in
+>>> last run,
+>>> - commit a5f3d8a5eaaf ("bcache: use llist_for_each_entry_safe() in
+>>> __closure_wake_up()")
+>>> - commit 09b3efec81de ("bcache: Don't reinvent the wheel but use
+>>> existing llist API")
+>>>
+>>> Can you check whether you have all of these patches ? Or can we try to
+>>> revoke these two patches and see whether oops still happens.
+>>
+>> It seems i'm missing a5f3d8a5eaaf but i have 09b3efec81de.
+>>
+>> I missed it because
+>> git log ..linux-block/for-next -- drivers/md/bcache/
+>>
+>> does not show it. It seems linux-block/for-next does not contain it?
+>> Which branch should i use?
+>>
+>> Only those contain the mentioned commit:
+>>   remotes/linux-block/for-linus
+>>   remotes/linux-block/master
+>>   remotes/linux-block/wbt-odirect
+>>
 > 
-> bucket_in_use is updated in gc thread which triggered by invalidating or
-> writing sectors_to_gc dirty data, It's a long interval. Therefore, when we
-> use it to compare with the threshold, it is often not timely, which leads
-> to inaccurate judgment and often results in bucket depletion.
+> Hi Stefan,
 > 
-> We have send a patch before, by the means of updating bucket_in_use
-> periodically In gc thread, which Coly thought that would lead high
-> latency, In this patch, we add avail_nbuckets to record the count of
-> available buckets, and we calculate bucket_in_use when alloc or free
-> bucket in real time.
+> These 2 patches are in 4.14 mainline kernel already. This is my fault to
+> make commit 09b3efec81de buggy, and fix it in commit a5f3d8a5eaaf.
 > 
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> ---
->  drivers/md/bcache/alloc.c  | 10 ++++++++++
->  drivers/md/bcache/bcache.h |  1 +
->  drivers/md/bcache/btree.c  | 17 ++++++++++-------
->  drivers/md/bcache/btree.h  |  2 +-
->  4 files changed, 22 insertions(+), 8 deletions(-)
->  mode change 100644 => 100755 drivers/md/bcache/alloc.c
->  mode change 100644 => 100755 drivers/md/bcache/bcache.h
->  mode change 100644 => 100755 drivers/md/bcache/btree.c
->  mode change 100644 => 100755 drivers/md/bcache/btree.h
+> Could you please try again with the fixing patch ?
 > 
-> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> old mode 100644
-> new mode 100755
-> index ca4abe1..6e036ff
-> --- a/drivers/md/bcache/alloc.c
-> +++ b/drivers/md/bcache/alloc.c
-> @@ -439,6 +439,11 @@ long bch_bucket_alloc(struct cache *ca, unsigned reserve, bool wait)
->  		b->prio = INITIAL_PRIO;
->  	}
->  
-> +	if(ca->set->avail_nbuckets > 0) {
-> +		ca->set->avail_nbuckets--;
-> +		bch_update_bucket_in_use(ca->set, &ca->set->gc_stats);
-> +	}
-> +
->  	return r;
->  }
->  
-> @@ -446,6 +451,11 @@ void __bch_bucket_free(struct cache *ca, struct bucket *b)
->  {
->  	SET_GC_MARK(b, 0);
->  	SET_GC_SECTORS_USED(b, 0);
-> +	
-> +	if(ca->set->avail_nbuckets < ca->set->nbuckets) {
-> +		ca->set->avail_nbuckets++;
-> +		bch_update_bucket_in_use(ca->set, &ca->set->gc_stats);
-> +	}
->  }
->  
->  void bch_bucket_free(struct cache_set *c, struct bkey *k)
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> old mode 100644
-> new mode 100755
-> index dee542f..275b29c
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -580,6 +580,7 @@ struct cache_set {
->  	uint8_t			need_gc;
->  	struct gc_stat		gc_stats;
->  	size_t			nbuckets;
-> +	size_t			avail_nbuckets;
->  
->  	struct task_struct	*gc_thread;
->  	/* Where in the btree gc currently is */
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> old mode 100644
-> new mode 100755
-> index 866dcf7..d8865e6
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
-> @@ -1240,6 +1240,11 @@ void bch_initial_mark_key(struct cache_set *c, int level, struct bkey *k)
->  	__bch_btree_mark_key(c, level, k);
->  }
->  
-> +void bch_update_bucket_in_use(struct cache_set *c, struct gc_stat *stats)
-> +{
-> +	stats->in_use = (c->nbuckets - c->avail_nbuckets) * 100 / c->nbuckets;
-> +}
-> +
->  static bool btree_gc_mark_node(struct btree *b, struct gc_stat *gc)
->  {
->  	uint8_t stale = 0;
-> @@ -1651,9 +1656,8 @@ static void btree_gc_start(struct cache_set *c)
->  	mutex_unlock(&c->bucket_lock);
->  }
->  
-> -static size_t bch_btree_gc_finish(struct cache_set *c)
-> +static void bch_btree_gc_finish(struct cache_set *c)
->  {
-> -	size_t available = 0;
->  	struct bucket *b;
->  	struct cache *ca;
->  	unsigned i;
-> @@ -1690,6 +1694,7 @@ static size_t bch_btree_gc_finish(struct cache_set *c)
->  	}
->  	rcu_read_unlock();
->  
-> +	c->avail_nbuckets = 0;
->  	for_each_cache(ca, c, i) {
->  		uint64_t *i;
->  
-> @@ -1711,18 +1716,16 @@ static size_t bch_btree_gc_finish(struct cache_set *c)
->  			BUG_ON(!GC_MARK(b) && GC_SECTORS_USED(b));
->  
->  			if (!GC_MARK(b) || GC_MARK(b) == GC_MARK_RECLAIMABLE)
-> -				available++;
-> +				c->avail_nbuckets++;
->  		}
->  	}
->  
->  	mutex_unlock(&c->bucket_lock);
-> -	return available;
->  }
->  
->  static void bch_btree_gc(struct cache_set *c)
->  {
->  	int ret;
-> -	unsigned long available;
->  	struct gc_stat stats;
->  	struct closure writes;
->  	struct btree_op op;
-> @@ -1745,14 +1748,14 @@ static void bch_btree_gc(struct cache_set *c)
->  			pr_warn("gc failed!");
->  	} while (ret);
->  
-> -	available = bch_btree_gc_finish(c);
-> +	bch_btree_gc_finish(c);
->  	wake_up_allocators(c);
->  
->  	bch_time_stats_update(&c->btree_gc_time, start_time);
->  
->  	stats.key_bytes *= sizeof(uint64_t);
->  	stats.data	<<= 9;
-> -	stats.in_use	= (c->nbuckets - available) * 100 / c->nbuckets;
-> +	bch_update_bucket_in_use(c, &stats);
->  	memcpy(&c->gc_stats, &stats, sizeof(struct gc_stat));
->  
->  	trace_bcache_gc_end(c);
-> diff --git a/drivers/md/bcache/btree.h b/drivers/md/bcache/btree.h
-> old mode 100644
-> new mode 100755
-> index 73da1f5..4073aca
-> --- a/drivers/md/bcache/btree.h
-> +++ b/drivers/md/bcache/btree.h
-> @@ -305,5 +305,5 @@ bool bch_keybuf_check_overlapping(struct keybuf *, struct bkey *,
->  struct keybuf_key *bch_keybuf_next(struct keybuf *);
->  struct keybuf_key *bch_keybuf_next_rescan(struct cache_set *, struct keybuf *,
->  					  struct bkey *, keybuf_pred_fn *);
-> -
-> +void bch_update_bucket_in_use(struct cache_set *c, struct gc_stat *stats);
->  #endif
+> (And I guess maybe other 2 reports may also miss this fix).
+
+OK indeed it seems it fixed it. Sorry about that.
+
+Greets,
+Stefan
+
+> Thanks.
+> 
+> Coly Li
 > 
