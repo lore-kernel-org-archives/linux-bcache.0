@@ -1,214 +1,171 @@
 From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH 15/19] bcache: fix issue of writeback rate at minimum 1
- key per second
-Date: Fri, 27 Oct 2017 19:07:54 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1710271906110.24585@mail.ewheeler.net>
-References: <20170629134510.GA32385@infradead.org> <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net> <1498855388-16990-15-git-send-email-bcache@lists.ewheeler.net> <a0e50d65-6e9d-23d0-d73c-8fb2b3dfcc51@coly.li>
+Subject: Re: [PATCH 11/19] bcache: Subtract dirty sectors of thin flash from
+ cache_sectors in calculating writeback rate
+Date: Fri, 27 Oct 2017 19:12:15 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1710271911190.24585@mail.ewheeler.net>
+References: <20170629134510.GA32385@infradead.org> <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net> <1498855388-16990-11-git-send-email-bcache@lists.ewheeler.net> <1f1670e4-a442-0534-6826-eefd88dfdcad@coly.li>
+ <OF92BDA950.86AA00FA-ON4825815A.001F33D9-4825815A.001F5C89@zte.com.cn> <alpine.LRH.2.11.1707130410510.9683@mail.ewheeler.net> <4feaf82f-a9c1-f9fc-63de-64ec4053e267@coly.li>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-7464857-1509131274=:24585"
+Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-544916445-1509131535=:24585"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:53326 "EHLO mail.ewheeler.net"
+Received: from mx.ewheeler.net ([66.155.3.69]:53350 "EHLO mail.ewheeler.net"
         rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751937AbdJ0TLy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 27 Oct 2017 15:11:54 -0400
-In-Reply-To: <a0e50d65-6e9d-23d0-d73c-8fb2b3dfcc51@coly.li>
+        id S1750998AbdJ0TMR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Oct 2017 15:12:17 -0400
+In-Reply-To: <4feaf82f-a9c1-f9fc-63de-64ec4053e267@coly.li>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: Coly Li <i@coly.li>
-Cc: bcache@lists.ewheeler.net, Tang Junhui <tang.junhui@zte.com.cn>, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, hch@infradead.org, axboe@kernel.dk
+Cc: Michael Lyle <mlyle@lyle.org>, tang.junhui@zte.com.cn, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, stable@vger.kernel.org
 
   This message is in MIME format.  The first part should be readable text,
   while the remaining parts are likely unreadable without MIME-aware tools.
 
---1641074820-7464857-1509131274=:24585
+--1641074820-544916445-1509131535=:24585
 Content-Type: TEXT/PLAIN; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 
-On Sun, 16 Jul 2017, Coly Li wrote:
+On Thu, 13 Jul 2017, Coly Li wrote:
 
-> On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
-> > From: Tang Junhui <tang.junhui@zte.com.cn>
+> On 2017/7/13 下午12:12, Eric Wheeler wrote:
+> > On Tue, 11 Jul 2017, tang.junhui@zte.com.cn wrote:
 > > 
-> > When there is not enough dirty data in writeback cache,
-> > writeback rate is at minimum 1 key per second
-> > util all dirty data to be cleaned, it is inefficiency,
-> > and also causes waste of energy;
-> 
-> Hi Junhui and Eric,
-> 
-> What: /sys/block/<disk>/bcache/writeback_percent
-> Description:
->       For backing devices: If nonzero, writeback from cache to
->       backing device only takes place when more than this percentage
->       of the cache is used, allowing more write coalescing to take
->       place and reducing total number of writes sent to the backing
->       device. Integer between 0 and 40.
-> 
-> I see above text from Documentation/ABI/testing/sysfs-block-bcache (I
-> know this document is quite old), it seems if "not enough" means dirty
-> data percentage is less then writback_percent, bcache should not
-> performance writeback I/O. But in __update_writeback_rate(),
-> writeback_rate.rate is clamped in [1, NSEC_PER_MSEC]. It seems in PD
-> controller code of __update_writeback_rate(), writeback_percent is only
-> used to calculate dirty target number, its another functionality as
-> writeback threshold is not handled here.
-> 
+> >>> Based on the above implementation, non-dirty space from flash only
+> >>> bcache device will mislead writeback rate calculation too. So I suggest
+> >>> to subtract all buckets size from all flash only bcache devices. Then it
+> >>> might be something like,
+> >>
+> >> what is non-dirty space from flash only bcache device?
+> >> Where is non-dirty space from flash only bcache device?
 > > 
-> > in this patch, When there is not enough dirty data,
-> > let the writeback rate to be 0, and writeback re-schedule
-> > in bch_writeback_thread() periodically with schedule_timeout(),
-> > the behaviors are as follows :
+> > Hi Tang, Coly:
+> >    
+> > Waas there more discussion on this thread, or is the patch good to go?  
 > > 
-> > 1) If no dirty data have been read into dc->writeback_keys,
-> > goto step 2), otherwise keep writing these dirty data to
-> > back-end device at 1 key per second, until all these dirty data
-> > write over, then goto step 2).
-> > 
-> > 2) Loop in bch_writeback_thread() to check if there is enough
-> > dirty data for writeback. if there is not enough diry data for
-> > writing, then sleep 10 seconds, otherwise, write dirty data to
-> > back-end device.
+> > Please send your ack if you're happy with it so I can queue it up.
 > 
-> Bcache uses a Proportion-Differentiation Controller to control writeback
-> rate. When dirty data is far from target, writeback rate is higher; when
-> dirty data is close to target, writeback rate is slower. The advantage
-> of PD controller here is, when regular I/O and writeback I/O happens in
-> same time,
-> - When there are a lot of dirty data, writeback I/O can have more chance
-> to write them back to cached device, which in turns has positive impact
-> to regular I/O.
-> - When dirty data is decreased and close to target dirty number, less
-> writeback I/O can help regular I/O has better throughput and latency.
-> 
-> The root cause of 1 key per second is, the PD controller is designed for
-> better I/O performance, not less energy consumption. When the existing
-> dirty data gets closed to target dirty number, the PD controller chooses
-> to use longer writeback time to make a better regular I/O performance.
-> If it is designed for less energy consumption, it should keep the
-> writeback rate in a high level and finish writing back all dirty data as
-> soon as possible.
-> 
-> This patch may introduce an unexpected behavior of dirty data writeback
-> throughput, when regular write I/O and writeback I/O happen in same
-> time. In this case, dirty data number may shake up and down around
-> target dirty number, it is possible that change (the variable in
-> __update_writeback_rate()) is a minus value, and the result of
-> dc->writeback_rate.rate + change happens to be 0. This patch changes the
-> clamp range of writeback_rate.rate to [0, NSEC_PER_MSEC], so
-> writeback_rate.rate can be possible to be 0. And in bch_next_delay() if
-> d->rate is zero, the write back I/O will be delayed to now +
-> NSEC_PER_SEC. When there is no regular I/O it works well, but when there
-> is regular I/O, this longer delay may cause more dirty data piled in
-> cache device, and PD controller cannot generage a stable writeback rate.
-> This is not an expected behavior for the writeback rate PD controller.
-> 
-> Another method to fix might be,
-> 1) define a sysfs to define writeback_rate with max/dynamic option.
-> 2) dynamic writeback_rate as default
-> 3) when max is set, in __update_writeback_rate() assign NSEC_PER_MSEC to
-> writeback_rate.rate
-> 4) in bch_writeback_thread(), if no writeback I/O on fly, and dirty data
-> does not reach dc->writeback_percent, schedule out.
-> 5) if writeback is necessary then do it in max rate and finish it as
-> soon as possible, to save laptop energy.
-> 
-> The above method might be helpful to energy save as well (perform dirty
-> dat write back in batch), and does not change default PD controller
-> behavior.
-> 
-> Just for your reference. Or if you are too busy to look at it, I can try
-> to compose a patch for review.
+> I discussed with Tang offline, this patch is correct. But the patch
+> commit log should be improved. Now I help to work on it, should be done
+> quite soon.
 
-Hi Coli,
-
-Did this go anywere?  I think the 1-key/sec fix is a good idea and your 
-suggestion will help out mobile users.
-
-
+Has an updated commit log been made?  I've not seen this in the commit 
+stream yet.
 
 --
 Eric Wheeler
 
 
+
 > 
 > Coly
 > 
-> > 
-> > Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> > ---
-> >  drivers/md/bcache/util.c      |  9 ++++++++-
-> >  drivers/md/bcache/writeback.c | 11 +++++++----
-> >  2 files changed, 15 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-> > index 8c3a938..49dcf09 100644
-> > --- a/drivers/md/bcache/util.c
-> > +++ b/drivers/md/bcache/util.c
-> > @@ -210,7 +210,14 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
-> >  {
-> >  	uint64_t now = local_clock();
-> >  
-> > -	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
-> > +	/*
-> > +	  if d->rate is zero, write the left dirty data
-> > +	  at the speed of one key per second
-> > +	*/
-> > +	if(!d->rate)
-> > +		d->next = now + NSEC_PER_SEC;
-> > +	else
-> > +		d->next += div_u64(done * NSEC_PER_SEC, d->rate);
-> >  
-> >  	if (time_before64(now + NSEC_PER_SEC, d->next))
-> >  		d->next = now + NSEC_PER_SEC;
-> > diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> > index 25289e4..4104eaa 100644
-> > --- a/drivers/md/bcache/writeback.c
-> > +++ b/drivers/md/bcache/writeback.c
-> > @@ -16,6 +16,8 @@
-> >  #include <linux/sched/clock.h>
-> >  #include <trace/events/bcache.h>
-> >  
-> > +#define WRITE_BACK_WAIT_CYCLE		10 * HZ
-> > +
-> >  /* Rate limiting */
-> >  
-> >  static void __update_writeback_rate(struct cached_dev *dc)
-> > @@ -55,13 +57,14 @@ static void __update_writeback_rate(struct cached_dev *dc)
-> >  
-> >  	/* Don't increase writeback rate if the device isn't keeping up */
-> >  	if (change > 0 &&
-> > +	    dc->writeback_rate.rate >0 &&
-> >  	    time_after64(local_clock(),
-> >  			 dc->writeback_rate.next + NSEC_PER_MSEC))
-> >  		change = 0;
-> >  
-> >  	dc->writeback_rate.rate =
-> >  		clamp_t(int64_t, (int64_t) dc->writeback_rate.rate + change,
-> > -			1, NSEC_PER_MSEC);
-> > +			0, NSEC_PER_MSEC);
-> >  
-> >  	dc->writeback_rate_proportional = proportional;
-> >  	dc->writeback_rate_derivative = derivative;
-> > @@ -420,15 +423,15 @@ static int bch_writeback_thread(void *arg)
-> >  	while (!kthread_should_stop()) {
-> >  		down_write(&dc->writeback_lock);
-> >  		if (!atomic_read(&dc->has_dirty) ||
-> > -		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-> > -		     !dc->writeback_running)) {
-> > +		    ((!dc->writeback_rate.rate || !dc->writeback_running) &&
-> > +		      !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))) {
-> >  			up_write(&dc->writeback_lock);
-> >  			set_current_state(TASK_INTERRUPTIBLE);
-> >  
-> >  			if (kthread_should_stop())
-> >  				return 0;
-> >  
-> > -			schedule();
-> > +			schedule_timeout(WRITE_BACK_WAIT_CYCLE);
-> >  			continue;
-> >  		}
-> >  
-> > 
+> >>
+> >>
+> >> 发件人:         Coly Li <i@coly.li>
+> >> 收件人:         Tang Junhui <tang.junhui@zte.com.cn>,
+> >> 抄送:        bcache@lists.ewheeler.net, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
+> >> hch@infradead.org, axboe@kernel.dk, stable@vger.kernel.org
+> >> 日期:         2017/07/11 02:11
+> >> 主题:        Re: [PATCH 11/19] bcache: Subtract dirty sectors of thin flash from cache_sectors in calculating
+> >> writeback rate
+> >> 发件人:        linux-bcache-owner@vger.kernel.org
+> >>
+> >> _________________________________________________________________________________________________________________
+> >>
+> >>
+> >>
+> >> On 2017/7/1 上午4:43, bcache@lists.ewheeler.net wrote:
+> >>> From: Tang Junhui <tang.junhui@zte.com.cn>
+> >>>
+> >>> Since dirty sectors of thin flash cannot be used to cache data for backend
+> >>> device, so we should subtract it in calculating writeback rate.
+> >>>
+> >>
+> >> I see you want to get ride of the noise of flash only cache device for
+> >> writeback rate calculation. It makes sense, because flash only cache
+> >> device won't have write back happen at all.
+> >>
+> >>
+> >>> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> >>> Cc: stable@vger.kernel.org
+> >>> ---
+> >>>  drivers/md/bcache/writeback.c |  2 +-
+> >>>  drivers/md/bcache/writeback.h | 19 +++++++++++++++++++
+> >>>  2 files changed, 20 insertions(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> >>> index 4ac8b13..25289e4 100644
+> >>> --- a/drivers/md/bcache/writeback.c
+> >>> +++ b/drivers/md/bcache/writeback.c
+> >>> @@ -21,7 +21,7 @@
+> >>>  static void __update_writeback_rate(struct cached_dev *dc)
+> >>>  {
+> >>>                   struct cache_set *c = dc->disk.c;
+> >>> -                 uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size;
+> >>> +                 uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
+> >> bcache_flash_devs_sectors_dirty(c);
+> >>
+> >> See flash_dev_run(), the flash volume is created per struct
+> >> bcache_device of a cache set. That means, all data allocated for the
+> >> flash volume will be from a flash only bcache device. Regular dirty data
+> >> won't mixed allocating with flash volume dirty data on identical struct
+> >> bcache device.
+> >>
+> >> Based on the above implementation, non-dirty space from flash only
+> >> bcache device will mislead writeback rate calculation too. So I suggest
+> >> to subtract all buckets size from all flash only bcache devices. Then it
+> >> might be something like,
+> >>
+> >> uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
+> >>                                                   bcache_flash_devs_nbuckets(c);
+> >>
+> >>
+> >>
+> >> Just FYI. Thanks.
+> >>
+> >> Coly
+> >>
+> >>>                   uint64_t cache_dirty_target =
+> >>>                                    div_u64(cache_sectors * dc->writeback_percent, 100);
+> >>>  
+> >>> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+> >>> index c2ab4b4..24ff589 100644
+> >>> --- a/drivers/md/bcache/writeback.h
+> >>> +++ b/drivers/md/bcache/writeback.h
+> >>> @@ -14,6 +14,25 @@ static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
+> >>>                   return ret;
+> >>>  }
+> >>>  
+> >>> +static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
+> >>> +{
+> >>> +                 uint64_t i, ret = 0;
+> >>> +
+> >>> +                 mutex_lock(&bch_register_lock);
+> >>> +
+> >>> +                 for (i = 0; i < c->nr_uuids; i++) {
+> >>> +                                  struct bcache_device *d = c->devices[i];
+> >>> +
+> >>> +                                  if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
+> >>> +                                                   continue;
+> >>> +                    ret += bcache_dev_sectors_dirty(d);
+> >>> +                 }
+> >>> +
+> >>> +                 mutex_unlock(&bch_register_lock);
+> >>> +
+> >>> +                 return ret;
+> >>> +}
+> >>> +
+> >>>  static inline unsigned offset_to_stripe(struct bcache_device *d,
+> >>>                                                                                       uint64_t offset)
+> >>>  {
+> >>>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> >>
+> >>
 > 
 > 
 > -- 
@@ -218,4 +175,4 @@ Eric Wheeler
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
---1641074820-7464857-1509131274=:24585--
+--1641074820-544916445-1509131535=:24585--
