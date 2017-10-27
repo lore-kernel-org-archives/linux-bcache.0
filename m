@@ -1,46 +1,46 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH] [PATCH v2] bcache: fix calling ida_simple_remove() with
- incorrect minor
-Date: Fri, 27 Oct 2017 21:23:52 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1710272123180.24585@mail.ewheeler.net>
-References: <OFF5D425D9.E63AA2AA-ON48258155.00224AFB-48258155.002299BE@zte.com.cn> <alpine.LRH.2.11.1707130355040.9683@mail.ewheeler.net> <alpine.LRH.2.11.1710271914140.24585@mail.ewheeler.net>
- <CAJ+L6qc2ask5y-VeYJAtN_H+9WR2ChxWcQ9z++KEUM4WesGU6w@mail.gmail.com>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCHv4] bcache: only permit to recovery read error when cache
+ device is clean
+Date: Fri, 27 Oct 2017 14:24:53 -0700
+Message-ID: <CAJ+L6qdZekS4hTFwXG6oSHuXEuVODW1PRWh3j62RJDMWj9EXgw@mail.gmail.com>
+References: <20171016180428.123657-1-colyli@suse.de> <alpine.LRH.2.11.1710271955340.24585@mail.ewheeler.net>
+ <CAJ+L6qeSP6OLkaNBs1N0=D5=4hz3wDa2UcZfRSKHUM_rxZFpTQ@mail.gmail.com> <alpine.LRH.2.11.1710272111120.24585@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <CAJ+L6qc2ask5y-VeYJAtN_H+9WR2ChxWcQ9z++KEUM4WesGU6w@mail.gmail.com>
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: Tang Junhui <tang.junhui@zte.com.cn>, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-qt0-f171.google.com ([209.85.216.171]:53378 "EHLO
+        mail-qt0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750781AbdJ0VYz (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Oct 2017 17:24:55 -0400
+Received: by mail-qt0-f171.google.com with SMTP id n61so10067059qte.10
+        for <linux-bcache@vger.kernel.org>; Fri, 27 Oct 2017 14:24:55 -0700 (PDT)
+In-Reply-To: <alpine.LRH.2.11.1710272111120.24585@mail.ewheeler.net>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, Nix <nix@esperi.org.uk>, Kai Krakow <hurikhan77@gmail.com>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
 
-On Fri, 27 Oct 2017, Michael Lyle wrote:
+On Fri, Oct 27, 2017 at 2:13 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
+[snip]
+>> > Can KEY_DIRTY facilitate this?
+>>
+>> Don't we only have the metadata to know if the key is dirty on the
+>> cache if we have the cache device? ;)
+>
+> Certainly if this is for removal or a missing cache (perhaps I missed
+> that).
+>
+> However, I thought this was just a recovery on an IO error where the disk
+> might be mostly dead--but partly alive!
+>
+> Of course if the metadata lookup fails subsequently, then you would need
+> to fall back to the dc->has_dirty flag.
 
-> Eric--
-> 
-> On Fri, Oct 27, 2017 at 12:17 PM, Eric Wheeler
-> <bcache@lists.ewheeler.net> wrote:
-> > Hi Tang,
-> >
-> > This is an important bugfix since v4.10, can you get a clean patch sent to
-> > the list?
-> >
-> > Michael, if Tang can get this in on time, can this squeeze this into v4.14
-> > before the rc's run out?
-> 
-> Isn't this handled by Coly's 1dbe32ad0a82f39c6dfb7 ?
+Seems like something that's a lot of effort for little gain.  It'll
+only help when A) everything you need isn't dirty, and B) all the
+associated btree nodes are in memory.  Since bcache tries to keep 10%
+dirty by default, and it's likely to be heavy on filesystem metadata--
+I don't know how often this would help anyone in the real world.
 
-It does!  Thank you for pointing that out.
-
---
-Eric Wheeler
-
-
-
-> 
-> Mike
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Mike
