@@ -1,87 +1,37 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH 04/19] bcache: fix wrong cache_misses statistics
-Date: Fri, 27 Oct 2017 19:14:04 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1710271912360.24585@mail.ewheeler.net>
-References: <20170629134510.GA32385@infradead.org> <1498855388-16990-1-git-send-email-bcache@lists.ewheeler.net> <1498855388-16990-4-git-send-email-bcache@lists.ewheeler.net> <20989a81-8448-96c8-f8b6-f3e3fec7c3cc@coly.li>
- <alpine.LRH.2.11.1707130408230.9683@mail.ewheeler.net>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH v2] bcache: explicitly destroy mutex while exiting
+Date: Fri, 27 Oct 2017 12:15:12 -0700
+Message-ID: <CAJ+L6qek7Rt5HvCU_Y0anpoa731Jzu+QeC9P=FVCxj9ksPFpVg@mail.gmail.com>
+References: <20171010090049.6596-1-liangchen.linux@gmail.com>
+ <01f432e8-950a-fc9f-150d-0b51fa9e7559@coly.li> <c06f2a04-3654-0bb9-f07d-ee6d2b27868d@lyle.org>
+ <alpine.LRH.2.11.1710271903590.24585@mail.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1641074820-1307740704-1509131562=:24585"
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx.ewheeler.net ([66.155.3.69]:53414 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S932220AbdJ0TOF (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 27 Oct 2017 15:14:05 -0400
-In-Reply-To: <alpine.LRH.2.11.1707130408230.9683@mail.ewheeler.net>
+Received: from mail-qk0-f181.google.com ([209.85.220.181]:54831 "EHLO
+        mail-qk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752595AbdJ0TPO (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Oct 2017 15:15:14 -0400
+Received: by mail-qk0-f181.google.com with SMTP id n5so9573173qke.11
+        for <linux-bcache@vger.kernel.org>; Fri, 27 Oct 2017 12:15:14 -0700 (PDT)
+In-Reply-To: <alpine.LRH.2.11.1710271903590.24585@mail.ewheeler.net>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Tang Junhui <tang.junhui@zte.com.cn>
-Cc: Michael Lyle <mlyle@lyle.org>, Coly Li <i@coly.li>, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: Coly Li <i@coly.li>, Liang Chen <liangchen.linux@gmail.com>, linux-bcache@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, Oct 27, 2017 at 12:05 PM, Eric Wheeler
+<bcache@lists.ewheeler.net> wrote:
+> Should this Cc: stable to avoid the register race (possible
+> crash?) described by Liang in other stable kernels?
+>
+> Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
 
---1641074820-1307740704-1509131562=:24585
-Content-Type: TEXT/PLAIN; CHARSET=ISO-2022-JP
+This seems like an unlikely failure; basically you must have built
+bcache for debug (which not many of us are doing on previous stable
+series), and then be critically out of resources at the time that
+bcache is registering.  Seems like more trouble than it's worth to
+send it to -stable.
 
-On Thu, 13 Jul 2017, Eric Wheeler wrote:
-
-> On Sun, 2 Jul 2017, Coly Li wrote:
-> 
-> > On 2017/7/1 上午4:42, bcache@lists.ewheeler.net wrote:
-> > > From: Tang Junhui <tang.junhui@zte.com.cn>
-> > > 
-> > > Some missed IOs are not counted into cache_misses, this patch fix this
-> > > issue.
-> > 
-> > Could you please explain more about,
-> > - which kind of missed I/O are mot counted
-> > - where cache_missed is located
-> > 
-> > This will help the patch to be more understandable.
-> 
-> Hi Tang,
-> 
-> I'm waiting to queue this patch pending your response to Coly.  Can you 
-> update the message send a v2?
-
-Hi Tang,
-
-Can you to an update message and send this in so we can get the cache miss 
-metrics corrected?
- 
---
-Eric Wheeler
-
-> 
-> 
-> 
-> > 
-> > > 
-> > > Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
-> > > Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
-> > > Cc: stable@vger.kernel.org
-> > 
-> > [snip]
-> > 
-> > > @@ -758,7 +760,7 @@ static void cached_dev_read_done_bh(struct closure *cl)
-> > >  	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
-> > >  
-> > >  	bch_mark_cache_accounting(s->iop.c, s->d,
-> > > -				  !s->cache_miss, s->iop.bypass);
-> > > +				  !s->cache_missed, s->iop.bypass);
-> > >  	trace_bcache_read(s->orig_bio, !s->cache_miss, s->iop.bypass);
-> > 
-> > 
-> > Should the above line be changed to,
-> > 	trace_bcache_read(s->orig_bio, !s->cache_missed, s->iop.bypass);
-> > as well ?
-> > 
-> > 
-> > [snip]
-> > 
-> > Thanks.
-> > 
-> > -- 
-> > Coly Li
-> > 
---1641074820-1307740704-1509131562=:24585--
+Mike
