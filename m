@@ -1,35 +1,42 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCHv4] bcache: only permit to recovery read error when cache
- device is clean
-Date: Fri, 27 Oct 2017 16:36:13 -0700
-Message-ID: <CAJ+L6qdA8zE+Za2xgV7J7hSY8B9Qt4f_=6-vbP+6MHns+H9vpg@mail.gmail.com>
-References: <20171016180428.123657-1-colyli@suse.de> <alpine.LRH.2.11.1710271955340.24585@mail.ewheeler.net>
- <CAJ+L6qeSP6OLkaNBs1N0=D5=4hz3wDa2UcZfRSKHUM_rxZFpTQ@mail.gmail.com>
- <alpine.LRH.2.11.1710272111120.24585@mail.ewheeler.net> <CAJ+L6qdZekS4hTFwXG6oSHuXEuVODW1PRWh3j62RJDMWj9EXgw@mail.gmail.com>
- <alpine.LRH.2.11.1710272310510.24585@mail.ewheeler.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <alpine.LRH.2.11.1710272310510.24585@mail.ewheeler.net>
-Sender: stable-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, Nix <nix@esperi.org.uk>, Kai Krakow <hurikhan77@gmail.com>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: Re: Re: [PATCH 12/19] bcache: update bucket_in_use periodically
+Date: Sat, 28 Oct 2017 09:37:38 +0800
+Message-ID: <1509154658-31042-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mxhk.zte.com.cn ([63.217.80.70]:53532 "EHLO mxhk.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750962AbdJ1BiD (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Oct 2017 21:38:03 -0400
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: bcache@lists.ewheeler.net, colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-On Fri, Oct 27, 2017 at 4:31 PM, Eric Wheeler <bcache@lists.ewheeler.net> wrote:
->> Seems like something that's a lot of effort for little gain.  It'll
->> only help when A) everything you need isn't dirty, and
->
-> Indeed!
->
->> B) all the associated btree nodes are in memory.
->
-> Is the dirty key map not memory resident?
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-The overall bcache btree says where stuff is resident and whether it's
-dirty.  It is stored on disk and portions of it are cached in memory.
+Hello Eric
 
-If data is hot, the relevant tree nodes are likely to be in memory,
-but the data is also more likely to be dirty.
+> > 
+> > From my personal opinion, updating bucket_in_use is for acting garbage
+> > collection. If number of bucket in use is not updated in time, garbage
+> > collection won't start due to old bucket_in_use still beyond
+> > CUTOFF_WRITEBACK_SYNC.
+> > 
+> > We may maintain an atomic counter per-cache set for dirty buckets, and
+> > update it at some locations when allocating or reclaiming bucket. This
+> > counter is unnecessary to be very accurate, just accurate enough for
+> > should_writeback() working correctly.
+> > 
+> > I am also looking at it for a better solution as well.
+> 
+> Hi Coli & Tang,
+> 
+> Have either of you had a chance to come up with a solution to this?
 
-Mike
+This patch is updated by 
+[PATCH] [PATCH V2] bcache: update bucket_in_use in real time
+and it has been applied to Mike's tree. 
+
+Regards,
+
+Tang
