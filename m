@@ -1,71 +1,70 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 5/5] bcache: explicitly destroy mutex while exiting
-Date: Mon, 30 Oct 2017 14:46:35 -0700
-Message-ID: <20171030214635.29888-6-mlyle@lyle.org>
+Subject: [PATCH 4/5] bcache: fix wrong cache_misses statistics
+Date: Mon, 30 Oct 2017 14:46:34 -0700
+Message-ID: <20171030214635.29888-5-mlyle@lyle.org>
 References: <20171030214635.29888-1-mlyle@lyle.org>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f195.google.com ([209.85.192.195]:46821 "EHLO
-        mail-pf0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S933128AbdJ3VrC (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 30 Oct 2017 17:47:02 -0400
-Received: by mail-pf0-f195.google.com with SMTP id p87so12072926pfj.3
-        for <linux-bcache@vger.kernel.org>; Mon, 30 Oct 2017 14:47:02 -0700 (PDT)
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171030214635.29888-1-mlyle@lyle.org>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Liang Chen <liangchen.linux@gmail.com>
+Cc: axboe@fb.com, "tang.junhui" <tang.junhui@zte.com.cn>
+List-Id: linux-bcache@vger.kernel.org
 
-From: Liang Chen <liangchen.linux@gmail.com>
+From: "tang.junhui" <tang.junhui@zte.com.cn>
 
-mutex_destroy does nothing most of time, but it's better to call
-it to make the code future proof and it also has some meaning
-for like mutex debug.
+Currently, Cache missed IOs are identified by s->cache_miss, but actually,
+there are many situations that missed IOs are not assigned a value for
+s->cache_miss in cached_dev_cache_miss(), for example, a bypassed IO
+(s->iop.bypass = 1), or the cache_bio allocate failed. In these situations,
+it will go to out_put or out_submit, and s->cache_miss is null, which leads
+bch_mark_cache_accounting() to treat this IO as a hit IO.
 
-As Coly pointed out in a previous review, bcache_exit() may not be
-able to handle all the references properly if userspace registers
-cache and backing devices right before bch_debug_init runs and
-bch_debug_init failes later. So not exposing userspace interface
-until everything is ready to avoid that issue.
+[ML: applied by 3-way merge]
 
-Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
 Reviewed-by: Michael Lyle <mlyle@lyle.org>
 Reviewed-by: Coly Li <colyli@suse.de>
-Reviewed-by: Eric Wheeler <bcache@linux.ewheeler.net>
 ---
- drivers/md/bcache/super.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/md/bcache/request.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 46134c45c6f6..b4d28928dec5 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2095,6 +2095,7 @@ static void bcache_exit(void)
- 	if (bcache_major)
- 		unregister_blkdev(bcache_major, "bcache");
- 	unregister_reboot_notifier(&reboot);
-+	mutex_destroy(&bch_register_lock);
- }
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 886e4b6643f1..597dd1e87bea 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -470,6 +470,7 @@ struct search {
+ 	unsigned		recoverable:1;
+ 	unsigned		write:1;
+ 	unsigned		read_dirty_data:1;
++	unsigned		cache_missed:1;
  
- static int __init bcache_init(void)
-@@ -2113,14 +2114,15 @@ static int __init bcache_init(void)
- 	bcache_major = register_blkdev(0, "bcache");
- 	if (bcache_major < 0) {
- 		unregister_reboot_notifier(&reboot);
-+		mutex_destroy(&bch_register_lock);
- 		return bcache_major;
- 	}
+ 	unsigned long		start_time;
  
- 	if (!(bcache_wq = alloc_workqueue("bcache", WQ_MEM_RECLAIM, 0)) ||
- 	    !(bcache_kobj = kobject_create_and_add("bcache", fs_kobj)) ||
--	    sysfs_create_files(bcache_kobj, files) ||
- 	    bch_request_init() ||
--	    bch_debug_init(bcache_kobj))
-+	    bch_debug_init(bcache_kobj) ||
-+	    sysfs_create_files(bcache_kobj, files))
- 		goto err;
+@@ -656,6 +657,7 @@ static inline struct search *search_alloc(struct bio *bio,
  
- 	return 0;
+ 	s->orig_bio		= bio;
+ 	s->cache_miss		= NULL;
++	s->cache_missed		= 0;
+ 	s->d			= d;
+ 	s->recoverable		= 1;
+ 	s->write		= op_is_write(bio_op(bio));
+@@ -775,7 +777,7 @@ static void cached_dev_read_done_bh(struct closure *cl)
+ 	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
+ 
+ 	bch_mark_cache_accounting(s->iop.c, s->d,
+-				  !s->cache_miss, s->iop.bypass);
++				  !s->cache_missed, s->iop.bypass);
+ 	trace_bcache_read(s->orig_bio, !s->cache_miss, s->iop.bypass);
+ 
+ 	if (s->iop.status)
+@@ -794,6 +796,8 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
+ 	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
+ 	struct bio *miss, *cache_bio;
+ 
++	s->cache_missed = 1;
++
+ 	if (s->cache_miss || s->iop.bypass) {
+ 		miss = bio_next_split(bio, sectors, GFP_NOIO, s->d->bio_split);
+ 		ret = miss == bio ? MAP_DONE : MAP_CONTINUE;
 -- 
 2.11.0
