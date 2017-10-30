@@ -1,70 +1,46 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 4/5] bcache: fix wrong cache_misses statistics
-Date: Mon, 30 Oct 2017 14:46:34 -0700
-Message-ID: <20171030214635.29888-5-mlyle@lyle.org>
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: Series of patches for bcache targeting 4.15
+Date: Mon, 30 Oct 2017 15:58:23 -0600
+Message-ID: <20171030215821.GA17465@kernel.dk>
 References: <20171030214635.29888-1-mlyle@lyle.org>
-Return-path: <linux-block-owner@vger.kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pg0-f51.google.com ([74.125.83.51]:53713 "EHLO
+        mail-pg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751936AbdJ3V60 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 30 Oct 2017 17:58:26 -0400
+Received: by mail-pg0-f51.google.com with SMTP id s2so12812686pge.10
+        for <linux-bcache@vger.kernel.org>; Mon, 30 Oct 2017 14:58:26 -0700 (PDT)
+Content-Disposition: inline
 In-Reply-To: <20171030214635.29888-1-mlyle@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, "tang.junhui" <tang.junhui@zte.com.cn>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-From: "tang.junhui" <tang.junhui@zte.com.cn>
+On Mon, Oct 30 2017, Michael Lyle wrote:
+> Hi Jens--
+> 
+> I have a few last patches for bcache targeting 4.15 if it's
+> possible to get them in.  I'm sorry this is a bit late.
+> 
+> All are reviewed and have received a moderate amount of test
+> in my environment (and I'm continuing testing).
+> 
+> [PATCH 1/5] bcache: only permit to recovery read error when cache
+> [PATCH 2/5] bcache: convert cached_dev.count from atomic_t to
+> [PATCH 3/5] bcache: update bucket_in_use in real time
+> [PATCH 4/5] bcache: fix wrong cache_misses statistics
+> [PATCH 5/5] bcache: explicitly destroy mutex while exiting
+> 
+> Patches 1 and 3 are critical.  The first fixes correctness problems
+> if a cache volume fails and is being carried in distro trees.  #3
+> prevents a rare issue that can cause extended hanging of end-user
+> I/O.  The other three patches are relatively safe cleanup.
 
-Currently, Cache missed IOs are identified by s->cache_miss, but actually,
-there are many situations that missed IOs are not assigned a value for
-s->cache_miss in cached_dev_cache_miss(), for example, a bypassed IO
-(s->iop.bypass = 1), or the cache_bio allocate failed. In these situations,
-it will go to out_put or out_submit, and s->cache_miss is null, which leads
-bch_mark_cache_accounting() to treat this IO as a hit IO.
+Thanks, applied for 4.15.
 
-[ML: applied by 3-way merge]
-
-Signed-off-by: tang.junhui <tang.junhui@zte.com.cn>
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
-Reviewed-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/request.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 886e4b6643f1..597dd1e87bea 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -470,6 +470,7 @@ struct search {
- 	unsigned		recoverable:1;
- 	unsigned		write:1;
- 	unsigned		read_dirty_data:1;
-+	unsigned		cache_missed:1;
- 
- 	unsigned long		start_time;
- 
-@@ -656,6 +657,7 @@ static inline struct search *search_alloc(struct bio *bio,
- 
- 	s->orig_bio		= bio;
- 	s->cache_miss		= NULL;
-+	s->cache_missed		= 0;
- 	s->d			= d;
- 	s->recoverable		= 1;
- 	s->write		= op_is_write(bio_op(bio));
-@@ -775,7 +777,7 @@ static void cached_dev_read_done_bh(struct closure *cl)
- 	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
- 
- 	bch_mark_cache_accounting(s->iop.c, s->d,
--				  !s->cache_miss, s->iop.bypass);
-+				  !s->cache_missed, s->iop.bypass);
- 	trace_bcache_read(s->orig_bio, !s->cache_miss, s->iop.bypass);
- 
- 	if (s->iop.status)
-@@ -794,6 +796,8 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
- 	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
- 	struct bio *miss, *cache_bio;
- 
-+	s->cache_missed = 1;
-+
- 	if (s->cache_miss || s->iop.bypass) {
- 		miss = bio_next_split(bio, sectors, GFP_NOIO, s->d->bio_split);
- 		ret = miss == bio ? MAP_DONE : MAP_CONTINUE;
 -- 
-2.11.0
+Jens Axboe
