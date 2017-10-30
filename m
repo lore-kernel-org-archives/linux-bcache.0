@@ -1,125 +1,170 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 2/5] bcache: convert cached_dev.count from atomic_t to refcount_t
-Date: Mon, 30 Oct 2017 14:46:32 -0700
-Message-ID: <20171030214635.29888-3-mlyle@lyle.org>
+Subject: [PATCH 3/5] bcache: update bucket_in_use in real time
+Date: Mon, 30 Oct 2017 14:46:33 -0700
+Message-ID: <20171030214635.29888-4-mlyle@lyle.org>
 References: <20171030214635.29888-1-mlyle@lyle.org>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pf0-f195.google.com ([209.85.192.195]:48038 "EHLO
+        mail-pf0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S932490AbdJ3Vq7 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 30 Oct 2017 17:46:59 -0400
+Received: by mail-pf0-f195.google.com with SMTP id z11so12075624pfk.4
+        for <linux-bcache@vger.kernel.org>; Mon, 30 Oct 2017 14:46:59 -0700 (PDT)
 In-Reply-To: <20171030214635.29888-1-mlyle@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Elena Reshetova <elena.reshetova@intel.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: axboe@fb.com, Tang Junhui <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>
 
-From: Elena Reshetova <elena.reshetova@intel.com>
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-atomic_t variables are currently used to implement reference
-counters with the following properties:
- - counter is initialized to 1 using atomic_set()
- - a resource is freed upon counter reaching zero
- - once counter reaches zero, its further
-   increments aren't allowed
- - counter schema uses basic atomic operations
-   (set, inc, inc_not_zero, dec_and_test, etc.)
+bucket_in_use is updated in gc thread which triggered by invalidating or
+writing sectors_to_gc dirty data, It's a long interval. Therefore, when we
+use it to compare with the threshold, it is often not timely, which leads
+to inaccurate judgment and often results in bucket depletion.
 
-Such atomic variables should be converted to a newly provided
-refcount_t type and API that prevents accidental counter overflows
-and underflows. This is important since overflows and underflows
-can lead to use-after-free situation and be exploitable.
+We have send a patch before, by the means of updating bucket_in_use
+periodically In gc thread, which Coly thought that would lead high
+latency, In this patch, we add avail_nbuckets to record the count of
+available buckets, and we calculate bucket_in_use when alloc or free
+bucket in real time.
 
-The variable cached_dev.count is used as pure reference counter.
-Convert it to refcount_t and fix up the operations.
+[edited by ML: eliminated some whitespace errors]
 
-Suggested-by: Kees Cook <keescook@chromium.org>
-Reviewed-by: David Windsor <dwindsor@gmail.com>
-Reviewed-by: Hans Liljestrand <ishkamiel@gmail.com>
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
 Reviewed-by: Michael Lyle <mlyle@lyle.org>
-Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
+Reviewed-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/bcache.h    | 7 ++++---
- drivers/md/bcache/super.c     | 6 +++---
- drivers/md/bcache/writeback.h | 2 +-
- 3 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/md/bcache/alloc.c  | 10 ++++++++++
+ drivers/md/bcache/bcache.h |  1 +
+ drivers/md/bcache/btree.c  | 17 ++++++++++-------
+ drivers/md/bcache/btree.h  |  2 +-
+ 4 files changed, 22 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index d77c4829c497..363ea6256b39 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -184,6 +184,7 @@
- #include <linux/mutex.h>
- #include <linux/rbtree.h>
- #include <linux/rwsem.h>
-+#include <linux/refcount.h>
- #include <linux/types.h>
- #include <linux/workqueue.h>
- 
-@@ -296,7 +297,7 @@ struct cached_dev {
- 	struct semaphore	sb_write_mutex;
- 
- 	/* Refcount on the cache set. Always nonzero when we're caching. */
--	atomic_t		count;
-+	refcount_t		count;
- 	struct work_struct	detach;
- 
- 	/*
-@@ -805,13 +806,13 @@ do {									\
- 
- static inline void cached_dev_put(struct cached_dev *dc)
- {
--	if (atomic_dec_and_test(&dc->count))
-+	if (refcount_dec_and_test(&dc->count))
- 		schedule_work(&dc->detach);
- }
- 
- static inline bool cached_dev_get(struct cached_dev *dc)
- {
--	if (!atomic_inc_not_zero(&dc->count))
-+	if (!refcount_inc_not_zero(&dc->count))
- 		return false;
- 
- 	/* Paired with the mb in cached_dev_attach */
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 72c3b2929ef0..46134c45c6f6 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -902,7 +902,7 @@ static void cached_dev_detach_finish(struct work_struct *w)
- 	closure_init_stack(&cl);
- 
- 	BUG_ON(!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags));
--	BUG_ON(atomic_read(&dc->count));
-+	BUG_ON(refcount_read(&dc->count));
- 
- 	mutex_lock(&bch_register_lock);
- 
-@@ -1029,7 +1029,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
- 	 * dc->c must be set before dc->count != 0 - paired with the mb in
- 	 * cached_dev_get()
- 	 */
--	atomic_set(&dc->count, 1);
-+	refcount_set(&dc->count, 1);
- 
- 	/* Block writeback thread, but spawn it */
- 	down_write(&dc->writeback_lock);
-@@ -1041,7 +1041,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
- 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
- 		bch_sectors_dirty_init(&dc->disk);
- 		atomic_set(&dc->has_dirty, 1);
--		atomic_inc(&dc->count);
-+		refcount_inc(&dc->count);
- 		bch_writeback_queue(dc);
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index 4c40870e99f5..8c5a626343d4 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -442,6 +442,11 @@ long bch_bucket_alloc(struct cache *ca, unsigned reserve, bool wait)
+ 		b->prio = INITIAL_PRIO;
  	}
  
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 34bcf49d737b..7d25bff37a9b 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -91,7 +91,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
- {
- 	if (!atomic_read(&dc->has_dirty) &&
- 	    !atomic_xchg(&dc->has_dirty, 1)) {
--		atomic_inc(&dc->count);
-+		refcount_inc(&dc->count);
++	if (ca->set->avail_nbuckets > 0) {
++		ca->set->avail_nbuckets--;
++		bch_update_bucket_in_use(ca->set, &ca->set->gc_stats);
++	}
++
+ 	return r;
+ }
  
- 		if (BDEV_STATE(&dc->sb) != BDEV_STATE_DIRTY) {
- 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_DIRTY);
+@@ -449,6 +454,11 @@ void __bch_bucket_free(struct cache *ca, struct bucket *b)
+ {
+ 	SET_GC_MARK(b, 0);
+ 	SET_GC_SECTORS_USED(b, 0);
++
++	if (ca->set->avail_nbuckets < ca->set->nbuckets) {
++		ca->set->avail_nbuckets++;
++		bch_update_bucket_in_use(ca->set, &ca->set->gc_stats);
++	}
+ }
+ 
+ void bch_bucket_free(struct cache_set *c, struct bkey *k)
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 363ea6256b39..e274082330dc 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -581,6 +581,7 @@ struct cache_set {
+ 	uint8_t			need_gc;
+ 	struct gc_stat		gc_stats;
+ 	size_t			nbuckets;
++	size_t			avail_nbuckets;
+ 
+ 	struct task_struct	*gc_thread;
+ 	/* Where in the btree gc currently is */
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 866dcf78ff8e..d8865e6ead37 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1240,6 +1240,11 @@ void bch_initial_mark_key(struct cache_set *c, int level, struct bkey *k)
+ 	__bch_btree_mark_key(c, level, k);
+ }
+ 
++void bch_update_bucket_in_use(struct cache_set *c, struct gc_stat *stats)
++{
++	stats->in_use = (c->nbuckets - c->avail_nbuckets) * 100 / c->nbuckets;
++}
++
+ static bool btree_gc_mark_node(struct btree *b, struct gc_stat *gc)
+ {
+ 	uint8_t stale = 0;
+@@ -1651,9 +1656,8 @@ static void btree_gc_start(struct cache_set *c)
+ 	mutex_unlock(&c->bucket_lock);
+ }
+ 
+-static size_t bch_btree_gc_finish(struct cache_set *c)
++static void bch_btree_gc_finish(struct cache_set *c)
+ {
+-	size_t available = 0;
+ 	struct bucket *b;
+ 	struct cache *ca;
+ 	unsigned i;
+@@ -1690,6 +1694,7 @@ static size_t bch_btree_gc_finish(struct cache_set *c)
+ 	}
+ 	rcu_read_unlock();
+ 
++	c->avail_nbuckets = 0;
+ 	for_each_cache(ca, c, i) {
+ 		uint64_t *i;
+ 
+@@ -1711,18 +1716,16 @@ static size_t bch_btree_gc_finish(struct cache_set *c)
+ 			BUG_ON(!GC_MARK(b) && GC_SECTORS_USED(b));
+ 
+ 			if (!GC_MARK(b) || GC_MARK(b) == GC_MARK_RECLAIMABLE)
+-				available++;
++				c->avail_nbuckets++;
+ 		}
+ 	}
+ 
+ 	mutex_unlock(&c->bucket_lock);
+-	return available;
+ }
+ 
+ static void bch_btree_gc(struct cache_set *c)
+ {
+ 	int ret;
+-	unsigned long available;
+ 	struct gc_stat stats;
+ 	struct closure writes;
+ 	struct btree_op op;
+@@ -1745,14 +1748,14 @@ static void bch_btree_gc(struct cache_set *c)
+ 			pr_warn("gc failed!");
+ 	} while (ret);
+ 
+-	available = bch_btree_gc_finish(c);
++	bch_btree_gc_finish(c);
+ 	wake_up_allocators(c);
+ 
+ 	bch_time_stats_update(&c->btree_gc_time, start_time);
+ 
+ 	stats.key_bytes *= sizeof(uint64_t);
+ 	stats.data	<<= 9;
+-	stats.in_use	= (c->nbuckets - available) * 100 / c->nbuckets;
++	bch_update_bucket_in_use(c, &stats);
+ 	memcpy(&c->gc_stats, &stats, sizeof(struct gc_stat));
+ 
+ 	trace_bcache_gc_end(c);
+diff --git a/drivers/md/bcache/btree.h b/drivers/md/bcache/btree.h
+index 73da1f5626cb..4073aca09a49 100644
+--- a/drivers/md/bcache/btree.h
++++ b/drivers/md/bcache/btree.h
+@@ -305,5 +305,5 @@ void bch_keybuf_del(struct keybuf *, struct keybuf_key *);
+ struct keybuf_key *bch_keybuf_next(struct keybuf *);
+ struct keybuf_key *bch_keybuf_next_rescan(struct cache_set *, struct keybuf *,
+ 					  struct bkey *, keybuf_pred_fn *);
+-
++void bch_update_bucket_in_use(struct cache_set *c, struct gc_stat *stats);
+ #endif
 -- 
 2.11.0
