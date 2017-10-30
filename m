@@ -1,90 +1,125 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 1/5] bcache: only permit to recovery read error when cache device is clean
-Date: Mon, 30 Oct 2017 14:46:31 -0700
-Message-ID: <20171030214635.29888-2-mlyle@lyle.org>
+Subject: [PATCH 2/5] bcache: convert cached_dev.count from atomic_t to refcount_t
+Date: Mon, 30 Oct 2017 14:46:32 -0700
+Message-ID: <20171030214635.29888-3-mlyle@lyle.org>
 References: <20171030214635.29888-1-mlyle@lyle.org>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f66.google.com ([74.125.83.66]:53090 "EHLO
-        mail-pg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S932586AbdJ3Vq4 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 30 Oct 2017 17:46:56 -0400
-Received: by mail-pg0-f66.google.com with SMTP id a192so12790476pge.9
-        for <linux-bcache@vger.kernel.org>; Mon, 30 Oct 2017 14:46:56 -0700 (PDT)
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171030214635.29888-1-mlyle@lyle.org>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Nix <nix@esperi.org.uk>, Kai Krakow <hurikhan77@gmail.com>, Eric Wheeler <bcache@lists.ewheeler.net>, Junhui Tang <tang.junhui@zte.com.cn>, stable@vger.kernel.org
+Cc: axboe@fb.com, Elena Reshetova <elena.reshetova@intel.com>
+List-Id: linux-bcache@vger.kernel.org
 
-From: Coly Li <colyli@suse.de>
+From: Elena Reshetova <elena.reshetova@intel.com>
 
-When bcache does read I/Os, for example in writeback or writethrough mode,
-if a read request on cache device is failed, bcache will try to recovery
-the request by reading from cached device. If the data on cached device is
-not synced with cache device, then requester will get a stale data.
+atomic_t variables are currently used to implement reference
+counters with the following properties:
+ - counter is initialized to 1 using atomic_set()
+ - a resource is freed upon counter reaching zero
+ - once counter reaches zero, its further
+   increments aren't allowed
+ - counter schema uses basic atomic operations
+   (set, inc, inc_not_zero, dec_and_test, etc.)
 
-For critical storage system like database, providing stale data from
-recovery may result an application level data corruption, which is
-unacceptible.
+Such atomic variables should be converted to a newly provided
+refcount_t type and API that prevents accidental counter overflows
+and underflows. This is important since overflows and underflows
+can lead to use-after-free situation and be exploitable.
 
-With this patch, for a failed read request in writeback or writethrough
-mode, recovery a recoverable read request only happens when cache device
-is clean. That is to say, all data on cached device is up to update.
+The variable cached_dev.count is used as pure reference counter.
+Convert it to refcount_t and fix up the operations.
 
-For other cache modes in bcache, read request will never hit
-cached_dev_read_error(), they don't need this patch.
-
-Please note, because cache mode can be switched arbitrarily in run time, a
-writethrough mode might be switched from a writeback mode. Therefore
-checking dc->has_data in writethrough mode still makes sense.
-
-Changelog:
-V4: Fix parens error pointed by Michael Lyle.
-v3: By response from Kent Oversteet, he thinks recovering stale data is a
-    bug to fix, and option to permit it is unnecessary. So this version
-    the sysfs file is removed.
-v2: rename sysfs entry from allow_stale_data_on_failure  to
-    allow_stale_data_on_failure, and fix the confusing commit log.
-v1: initial patch posted.
-
-[small change to patch comment spelling by mlyle]
-
-Signed-off-by: Coly Li <colyli@suse.de>
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
-Reported-by: Arne Wolf <awolf@lenovo.com>
+Suggested-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: David Windsor <dwindsor@gmail.com>
+Reviewed-by: Hans Liljestrand <ishkamiel@gmail.com>
 Reviewed-by: Michael Lyle <mlyle@lyle.org>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: Nix <nix@esperi.org.uk>
-Cc: Kai Krakow <hurikhan77@gmail.com>
-Cc: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>
-Cc: stable@vger.kernel.org
+Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
 ---
- drivers/md/bcache/request.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/md/bcache/bcache.h    | 7 ++++---
+ drivers/md/bcache/super.c     | 6 +++---
+ drivers/md/bcache/writeback.h | 2 +-
+ 3 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 163a17a80874..886e4b6643f1 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -705,8 +705,16 @@ static void cached_dev_read_error(struct closure *cl)
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index d77c4829c497..363ea6256b39 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -184,6 +184,7 @@
+ #include <linux/mutex.h>
+ #include <linux/rbtree.h>
+ #include <linux/rwsem.h>
++#include <linux/refcount.h>
+ #include <linux/types.h>
+ #include <linux/workqueue.h>
+ 
+@@ -296,7 +297,7 @@ struct cached_dev {
+ 	struct semaphore	sb_write_mutex;
+ 
+ 	/* Refcount on the cache set. Always nonzero when we're caching. */
+-	atomic_t		count;
++	refcount_t		count;
+ 	struct work_struct	detach;
+ 
+ 	/*
+@@ -805,13 +806,13 @@ do {									\
+ 
+ static inline void cached_dev_put(struct cached_dev *dc)
  {
- 	struct search *s = container_of(cl, struct search, cl);
- 	struct bio *bio = &s->bio.bio;
-+	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
+-	if (atomic_dec_and_test(&dc->count))
++	if (refcount_dec_and_test(&dc->count))
+ 		schedule_work(&dc->detach);
+ }
  
--	if (s->recoverable) {
-+	/*
-+	 * If cache device is dirty (dc->has_dirty is non-zero), then
-+	 * recovery a failed read request from cached device may get a
-+	 * stale data back. So read failure recovery is only permitted
-+	 * when cache device is clean.
-+	 */
-+	if (s->recoverable &&
-+	    (dc && !atomic_read(&dc->has_dirty))) {
- 		/* Retry from the backing device: */
- 		trace_bcache_read_retry(s->orig_bio);
+ static inline bool cached_dev_get(struct cached_dev *dc)
+ {
+-	if (!atomic_inc_not_zero(&dc->count))
++	if (!refcount_inc_not_zero(&dc->count))
+ 		return false;
  
+ 	/* Paired with the mb in cached_dev_attach */
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 72c3b2929ef0..46134c45c6f6 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -902,7 +902,7 @@ static void cached_dev_detach_finish(struct work_struct *w)
+ 	closure_init_stack(&cl);
+ 
+ 	BUG_ON(!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags));
+-	BUG_ON(atomic_read(&dc->count));
++	BUG_ON(refcount_read(&dc->count));
+ 
+ 	mutex_lock(&bch_register_lock);
+ 
+@@ -1029,7 +1029,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	 * dc->c must be set before dc->count != 0 - paired with the mb in
+ 	 * cached_dev_get()
+ 	 */
+-	atomic_set(&dc->count, 1);
++	refcount_set(&dc->count, 1);
+ 
+ 	/* Block writeback thread, but spawn it */
+ 	down_write(&dc->writeback_lock);
+@@ -1041,7 +1041,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+ 		bch_sectors_dirty_init(&dc->disk);
+ 		atomic_set(&dc->has_dirty, 1);
+-		atomic_inc(&dc->count);
++		refcount_inc(&dc->count);
+ 		bch_writeback_queue(dc);
+ 	}
+ 
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 34bcf49d737b..7d25bff37a9b 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -91,7 +91,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+ {
+ 	if (!atomic_read(&dc->has_dirty) &&
+ 	    !atomic_xchg(&dc->has_dirty, 1)) {
+-		atomic_inc(&dc->count);
++		refcount_inc(&dc->count);
+ 
+ 		if (BDEV_STATE(&dc->sb) != BDEV_STATE_DIRTY) {
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_DIRTY);
 -- 
 2.11.0
