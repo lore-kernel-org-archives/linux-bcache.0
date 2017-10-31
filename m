@@ -1,46 +1,49 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: Series of patches for bcache targeting 4.15
-Date: Mon, 30 Oct 2017 15:58:23 -0600
-Message-ID: <20171030215821.GA17465@kernel.dk>
-References: <20171030214635.29888-1-mlyle@lyle.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f51.google.com ([74.125.83.51]:53713 "EHLO
-        mail-pg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751936AbdJ3V60 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 30 Oct 2017 17:58:26 -0400
-Received: by mail-pg0-f51.google.com with SMTP id s2so12812686pge.10
-        for <linux-bcache@vger.kernel.org>; Mon, 30 Oct 2017 14:58:26 -0700 (PDT)
-Content-Disposition: inline
-In-Reply-To: <20171030214635.29888-1-mlyle@lyle.org>
-Sender: linux-bcache-owner@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] bcache: stop writeback thread after detaching
+Date: Tue, 31 Oct 2017 16:14:11 +0800
+Message-ID: <1509437651-24052-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On Mon, Oct 30 2017, Michael Lyle wrote:
-> Hi Jens--
-> 
-> I have a few last patches for bcache targeting 4.15 if it's
-> possible to get them in.  I'm sorry this is a bit late.
-> 
-> All are reviewed and have received a moderate amount of test
-> in my environment (and I'm continuing testing).
-> 
-> [PATCH 1/5] bcache: only permit to recovery read error when cache
-> [PATCH 2/5] bcache: convert cached_dev.count from atomic_t to
-> [PATCH 3/5] bcache: update bucket_in_use in real time
-> [PATCH 4/5] bcache: fix wrong cache_misses statistics
-> [PATCH 5/5] bcache: explicitly destroy mutex while exiting
-> 
-> Patches 1 and 3 are critical.  The first fixes correctness problems
-> if a cache volume fails and is being carried in distro trees.  #3
-> prevents a rare issue that can cause extended hanging of end-user
-> I/O.  The other three patches are relatively safe cleanup.
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Thanks, applied for 4.15.
+Currently, when a cached device detaching from cache, writeback thread is not stopped,
+and writeback_rate_update work is not canceled. For example, after bellow command:
+echo 1 >/sys/block/sdb/bcache/detach
+you can still see the writeback thread. Then you attach the device to the cache again,
+bcache will create another writeback thread, for example, after bellow command:
+echo  ba0fb5cd-658a-4533-9806-6ce166d883b9 > /sys/block/sdb/bcache/attach
+then you will see 2 writeback threads.
+This patch stops writeback thread and cancels writeback_rate_update work when cached
+device detaching from cache.
 
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/super.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+ mode change 100644 => 100755 drivers/md/bcache/super.c
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+old mode 100644
+new mode 100755
+index 8352fad..bf79892
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -891,6 +891,12 @@ static void cached_dev_detach_finish(struct work_struct *w)
+ 	BUG_ON(!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags));
+ 	BUG_ON(atomic_read(&dc->count));
+ 
++	cancel_delayed_work_sync(&dc->writeback_rate_update);
++	if (!IS_ERR_OR_NULL(dc->writeback_thread)) {
++		kthread_stop(dc->writeback_thread);
++		dc->writeback_thread = NULL;
++	}
++
+ 	mutex_lock(&bch_register_lock);
+ 
+ 	memset(&dc->sb.set_uuid, 0, 16);
 -- 
-Jens Axboe
+1.8.3.1
