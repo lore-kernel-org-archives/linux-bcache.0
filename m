@@ -1,53 +1,52 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: Testing 4.14 rc8 kernel with bcache - cache device numbering
-Date: Tue, 7 Nov 2017 10:15:07 -0800
-Message-ID: <CAJ+L6qdMyeUHvfXx_OD=AE_DPAG7+sbXiinoeoCv1WqhktPEBA@mail.gmail.com>
-References: <CAPerZE8dmu60sksC+hkk4E+GOht1F5nExPTvv4WRS=kRGO+GZA@mail.gmail.com>
+Subject: Re: Enabling discard rendered caching device unuseable
+Date: Tue, 7 Nov 2017 10:17:53 -0800
+Message-ID: <CAJ+L6qeOVY_KofXsZKihHrbHaYzQTKYAh0Shm7Givj+f8=PiBg@mail.gmail.com>
+References: <CAFvQSYTrzA=i6Xww3vGRs+Wu3sHg_hjXMY1JmEdfNb8hD2Phxw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qt0-f182.google.com ([209.85.216.182]:48508 "EHLO
-        mail-qt0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1755258AbdKGSPI (ORCPT
+Received: from mail-qk0-f179.google.com ([209.85.220.179]:47371 "EHLO
+        mail-qk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1758609AbdKGSRy (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 7 Nov 2017 13:15:08 -0500
-Received: by mail-qt0-f182.google.com with SMTP id f8so149468qta.5
-        for <linux-bcache@vger.kernel.org>; Tue, 07 Nov 2017 10:15:08 -0800 (PST)
-In-Reply-To: <CAPerZE8dmu60sksC+hkk4E+GOht1F5nExPTvv4WRS=kRGO+GZA@mail.gmail.com>
+        Tue, 7 Nov 2017 13:17:54 -0500
+Received: by mail-qk0-f179.google.com with SMTP id m189so154274qke.4
+        for <linux-bcache@vger.kernel.org>; Tue, 07 Nov 2017 10:17:54 -0800 (PST)
+In-Reply-To: <CAFvQSYTrzA=i6Xww3vGRs+Wu3sHg_hjXMY1JmEdfNb8hD2Phxw@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Campbell Steven <casteven@gmail.com>
+To: Clemens Eisserer <linuxhippy@gmail.com>
 Cc: linux-bcache@vger.kernel.org
 
-Hi Campbell--
+Clemens--
 
-Previously the device numbering was strange to allow for partitioning
-bcache devices before.    Coly has addressed this with his changeset
-"bcache: Rewrite multiple partition support".  Unfortunately, it did
-not make the 4.14 merge window and is in next, slated for inclusion
-with 4.15.
+I'm sorry for this experience; I've added discard to my list of things
+to review.
+
+I suggest avoiding discard for bcache; since the cache device grows
+until it is nearly full and is kept in that state, there is little
+benefit from it.
 
 Mike
 
-On Mon, Nov 6, 2017 at 6:37 PM, Campbell Steven <casteven@gmail.com> wrote:
+On Mon, Nov 6, 2017 at 2:04 AM, Clemens Eisserer <linuxhippy@gmail.com> wrote:
 > Hi,
 >
-> I've been doing some testing so that we can move from a 4.7 kernel up
-> to 4.14 at some point in the future.
+> After using bcache for 9 months without any issues, I discovered the
+> "discard" flag for the caching device.
+> Running 4.13.5 I gave it a try, however after reboot the caching
+> device failed to register with:
 >
-> One thing I've noticed is that the numbering of the bcache devices is
-> quite different, is there a reason it's going 0,16,32 etc.?
+> At reboot bcache failed with:
+> prio_read() bad csum reading priorities
+> prio_read() bad magic reading priorities
 >
-> [Tue Nov  7 13:41:54 2017] bcache: bch_cached_dev_attach() Caching
-> sdb1 as bcache0 on set 030a5f1b-b314-482f-ba91-be1d712a4a33
-> [Tue Nov  7 14:32:45 2017] bcache: bch_cached_dev_attach() Caching
-> sda1 as bcache16 on set 07cd8359-1427-4446-9688-d67ceb4f4b4c
-> [Tue Nov  7 14:36:36 2017] bcache: bch_cached_dev_attach() Caching
-> sdc1 as bcache32 on set 030a5f1b-b314-482f-ba91-be1d712a4a33
+> The SSD used as caching device was a OCZ-OCTANE with the latest
+> firmware, which worked (and works) flawlessly for years and has no
+> SMART issues.
 >
-> Thanks
->
-> Campbell
+> Best regards, Clemens
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
 > the body of a message to majordomo@vger.kernel.org
