@@ -1,34 +1,36 @@
-From: Clemens Eisserer <linuxhippy@gmail.com>
-Subject: Enabling discard rendered caching device unuseable
-Date: Mon, 6 Nov 2017 11:04:35 +0100
-Message-ID: <CAFvQSYTrzA=i6Xww3vGRs+Wu3sHg_hjXMY1JmEdfNb8hD2Phxw@mail.gmail.com>
+From: Campbell Steven <casteven@gmail.com>
+Subject: Testing 4.14 rc8 kernel with bcache - cache device numbering
+Date: Tue, 7 Nov 2017 15:37:57 +1300
+Message-ID: <CAPerZE8dmu60sksC+hkk4E+GOht1F5nExPTvv4WRS=kRGO+GZA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-it0-f41.google.com ([209.85.214.41]:55876 "EHLO
-        mail-it0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752317AbdKFKEg (ORCPT
+Received: from mail-yw0-f175.google.com ([209.85.161.175]:44017 "EHLO
+        mail-yw0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752526AbdKGCh6 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 6 Nov 2017 05:04:36 -0500
-Received: by mail-it0-f41.google.com with SMTP id l196so4430298itl.4
-        for <linux-bcache@vger.kernel.org>; Mon, 06 Nov 2017 02:04:36 -0800 (PST)
+        Mon, 6 Nov 2017 21:37:58 -0500
+Received: by mail-yw0-f175.google.com with SMTP id y75so9695892ywg.0
+        for <linux-bcache@vger.kernel.org>; Mon, 06 Nov 2017 18:37:58 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 
 Hi,
 
-After using bcache for 9 months without any issues, I discovered the
-"discard" flag for the caching device.
-Running 4.13.5 I gave it a try, however after reboot the caching
-device failed to register with:
+I've been doing some testing so that we can move from a 4.7 kernel up
+to 4.14 at some point in the future.
 
-At reboot bcache failed with:
-prio_read() bad csum reading priorities
-prio_read() bad magic reading priorities
+One thing I've noticed is that the numbering of the bcache devices is
+quite different, is there a reason it's going 0,16,32 etc.?
 
-The SSD used as caching device was a OCZ-OCTANE with the latest
-firmware, which worked (and works) flawlessly for years and has no
-SMART issues.
+[Tue Nov  7 13:41:54 2017] bcache: bch_cached_dev_attach() Caching
+sdb1 as bcache0 on set 030a5f1b-b314-482f-ba91-be1d712a4a33
+[Tue Nov  7 14:32:45 2017] bcache: bch_cached_dev_attach() Caching
+sda1 as bcache16 on set 07cd8359-1427-4446-9688-d67ceb4f4b4c
+[Tue Nov  7 14:36:36 2017] bcache: bch_cached_dev_attach() Caching
+sdc1 as bcache32 on set 030a5f1b-b314-482f-ba91-be1d712a4a33
 
-Best regards, Clemens
+Thanks
+
+Campbell
