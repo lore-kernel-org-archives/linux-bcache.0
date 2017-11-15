@@ -1,39 +1,56 @@
-From: Alexandr Kuznetsov <progmachine@xenlab.one>
-Subject: Re: bcache failure hangs something in kernel
-Date: Wed, 15 Nov 2017 11:44:01 +0300
-Message-ID: <eb504de7-d457-0404-585c-6b51aaeaf185@xenlab.one>
-References: <efb67a88-3f4c-d268-3d2a-59c00824b5e7@xenlab.one>
- <b574aee6-1f6f-8eb3-d78a-ee3fd8f9bfb3@lyle.org>
- <b4cf93d3-7e15-9f20-941b-7f11269c510b@xenlab.one>
- <024c8d28-9ddb-09fe-c2b0-8a7d0aed493d@lyle.org>
- <87r2t1xa6w.fsf@esperi.org.uk>
- <CAJ+L6qc+DKZ4tkfk3whUBZOjdTByMqxUrvOOQ0yhR_fSYq+oSw@mail.gmail.com>
+From: " M,Shakour Rosarita" <hassanamira04@gmail.com>
+Subject: Hello Dear...
+Date: Wed, 15 Nov 2017 11:33:20 +0000
+Message-ID: <CADmkupha_3r2Y8xr4fgvwjRQCs5Nhk1joSVedw0g_m_15Usnxg__44267.4859812998$1510745615$gmane$org@mail.gmail.com>
+Reply-To: mshakourrosarita22@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from forward105j.mail.yandex.net ([5.45.198.248]:38702 "EHLO
-        forward105j.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1755010AbdKOIoM (ORCPT
+Received: from mail-qt0-f196.google.com ([209.85.216.196]:56739 "EHLO
+        mail-qt0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S932317AbdKOLdV (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 15 Nov 2017 03:44:12 -0500
-In-Reply-To: <CAJ+L6qc+DKZ4tkfk3whUBZOjdTByMqxUrvOOQ0yhR_fSYq+oSw@mail.gmail.com>
-Content-Language: en-US
+        Wed, 15 Nov 2017 06:33:21 -0500
+Received: by mail-qt0-f196.google.com with SMTP id r39so17233642qtr.13
+        for <linux-bcache@vger.kernel.org>; Wed, 15 Nov 2017 03:33:21 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, Nix <nix@esperi.org.uk>
-Cc: linux-bcache@vger.kernel.org
 
-> I have not experienced bcache corruption yet, though that doesn't say
-> there's not an issue.  This doesn't sound at all like what Alexandr
-> experienced, either.
-By the way, i discovered cause of lvm hangups - it's not a bugs in lvm. 
-I use lvcreate command in fully automated mode in shell script with 
-suppression of any output (> /dev/null 2>&1), but when lvcreate detects 
-filesystem superblock in a new volume, it ask user wether to wipe it out 
-or not. User interaction is impossible in that scenario, so lvm hangs 
-infinitely, leaving global lvm lock as acquired. This lock causes any 
-lvm operation to hangup (sigterm or even sigkill do not help), and even 
-entire system can not reboot gracefully. When i met this situation, only 
-reset button, was the last thing i was able to do, and i think exactly 
-this hard reset caused corruption on bcache caching device.
+Hello Dear...
+
+I know that this message will come to you as a surprise. I hoped that
+you will not expose or betray this trust and confident that I am about
+to repose on you, my name is M, Shakour Rosarita. I am 19 years old
+Girl, female, from Tartu Syria, (never married) 61 kg, white in
+complexion, and I am currently living in the refugee camp here in
+Abidjan Ivory Coast, My late beloved father M,Shakour Hassin was a
+renowned businessman and owner of Natour Petrol Station in Syria, he
+was killed in a stampede riot in Tartu, Syria.
+When I got the news about my parents. I fled to a nearby country
+Jordan before I joined a ferry to Africa and came to Abidjan capital
+city Ivory Coast West Africa find safety here.
+I came in 2015 to Abidjan and I now live in refugee camps here as
+refugees are allowed freely to enter here without, My late father
+deposited (US$6.200.000.00m) My late father kept the money at the bank
+of Africa, I want you to help me transfer the money to your hand so
+that you will help me bring me into your country for my continue
+education.
+
+I sent my pictures here for you to see. Who I am seriously looking for
+a good-person in my life, so I want to hear from you soon and learn
+more about you.
+
+I am an open-minded and friendly girl to share a good time with you
+and have fun and enjoy on the go, bird watching, the rest of our
+lives. My Hobbies, tourism books, dance, music, soccer, tennis,
+swimming and cinema.
+I would just think about you, including your dose and doesn=E2=80=99t .I
+believe we will do well together, and live like one family.
+Thank you and God bless you, for you in your promise to help me here,
+looking forward to your reply by the grace of God and have a good day.
+I hope you send me your photos as well? I await your next reply in
+faith please reply through my private email at
+(mshakourrosarita22@gmail.com):
+Thanks.
+Ms Rosarita
