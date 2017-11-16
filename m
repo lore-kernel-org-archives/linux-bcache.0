@@ -1,56 +1,77 @@
-From: " M,Shakour Rosarita" <hassanamira04@gmail.com>
-Subject: Hello Dear...
-Date: Wed, 15 Nov 2017 11:33:20 +0000
-Message-ID: <CADmkupha_3r2Y8xr4fgvwjRQCs5Nhk1joSVedw0g_m_15Usnxg__44267.4859812998$1510745615$gmane$org@mail.gmail.com>
-Reply-To: mshakourrosarita22@gmail.com
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qt0-f196.google.com ([209.85.216.196]:56739 "EHLO
-        mail-qt0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S932317AbdKOLdV (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 15 Nov 2017 06:33:21 -0500
-Received: by mail-qt0-f196.google.com with SMTP id r39so17233642qtr.13
-        for <linux-bcache@vger.kernel.org>; Wed, 15 Nov 2017 03:33:21 -0800 (PST)
-Sender: linux-bcache-owner@vger.kernel.org
+From: Huacai Chen <chenhc@lemote.com>
+Subject: [PATCH] bcache: Fix building error on MIPS
+Date: Thu, 16 Nov 2017 11:06:13 +0800
+Message-ID: <1510801573-17878-1-git-send-email-chenhc@lemote.com>
+Return-path: <stable-owner@vger.kernel.org>
+Sender: stable-owner@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, Huacai Chen <chenhc@lemote.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-Hello Dear...
+This patch try to fix the building error on MIPS. The reason is MIPS
+has already defined the PTR macro, which conflicts with the PTR macro
+in include/uapi/linux/bcache.h.
 
-I know that this message will come to you as a surprise. I hoped that
-you will not expose or betray this trust and confident that I am about
-to repose on you, my name is M, Shakour Rosarita. I am 19 years old
-Girl, female, from Tartu Syria, (never married) 61 kg, white in
-complexion, and I am currently living in the refugee camp here in
-Abidjan Ivory Coast, My late beloved father M,Shakour Hassin was a
-renowned businessman and owner of Natour Petrol Station in Syria, he
-was killed in a stampede riot in Tartu, Syria.
-When I got the news about my parents. I fled to a nearby country
-Jordan before I joined a ferry to Africa and came to Abidjan capital
-city Ivory Coast West Africa find safety here.
-I came in 2015 to Abidjan and I now live in refugee camps here as
-refugees are allowed freely to enter here without, My late father
-deposited (US$6.200.000.00m) My late father kept the money at the bank
-of Africa, I want you to help me transfer the money to your hand so
-that you will help me bring me into your country for my continue
-education.
+Cc: stable@vger.kernel.org
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+---
+ drivers/md/bcache/alloc.c   | 2 +-
+ drivers/md/bcache/extents.c | 2 +-
+ drivers/md/bcache/journal.c | 2 +-
+ include/uapi/linux/bcache.h | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-I sent my pictures here for you to see. Who I am seriously looking for
-a good-person in my life, so I want to hear from you soon and learn
-more about you.
-
-I am an open-minded and friendly girl to share a good time with you
-and have fun and enjoy on the go, bird watching, the rest of our
-lives. My Hobbies, tourism books, dance, music, soccer, tennis,
-swimming and cinema.
-I would just think about you, including your dose and doesn=E2=80=99t .I
-believe we will do well together, and live like one family.
-Thank you and God bless you, for you in your promise to help me here,
-looking forward to your reply by the grace of God and have a good day.
-I hope you send me your photos as well? I await your next reply in
-faith please reply through my private email at
-(mshakourrosarita22@gmail.com):
-Thanks.
-Ms Rosarita
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index a27d852..a0cc1bc 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -490,7 +490,7 @@ int __bch_bucket_alloc_set(struct cache_set *c, unsigned reserve,
+ 		if (b == -1)
+ 			goto err;
+ 
+-		k->ptr[i] = PTR(ca->buckets[b].gen,
++		k->ptr[i] = MAKE_PTR(ca->buckets[b].gen,
+ 				bucket_to_sector(c, b),
+ 				ca->sb.nr_this_dev);
+ 
+diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
+index 41c238f..f9d3917 100644
+--- a/drivers/md/bcache/extents.c
++++ b/drivers/md/bcache/extents.c
+@@ -585,7 +585,7 @@ static bool bch_extent_merge(struct btree_keys *bk, struct bkey *l, struct bkey
+ 		return false;
+ 
+ 	for (i = 0; i < KEY_PTRS(l); i++)
+-		if (l->ptr[i] + PTR(0, KEY_SIZE(l), 0) != r->ptr[i] ||
++		if (l->ptr[i] + MAKE_PTR(0, KEY_SIZE(l), 0) != r->ptr[i] ||
+ 		    PTR_BUCKET_NR(b->c, l, i) != PTR_BUCKET_NR(b->c, r, i))
+ 			return false;
+ 
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 02a98dd..03cc072 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -507,7 +507,7 @@ static void journal_reclaim(struct cache_set *c)
+ 			continue;
+ 
+ 		ja->cur_idx = next;
+-		k->ptr[n++] = PTR(0,
++		k->ptr[n++] = MAKE_PTR(0,
+ 				  bucket_to_sector(c, ca->sb.d[ja->cur_idx]),
+ 				  ca->sb.nr_this_dev);
+ 	}
+diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
+index 90fc490..5cc599c 100644
+--- a/include/uapi/linux/bcache.h
++++ b/include/uapi/linux/bcache.h
+@@ -91,7 +91,7 @@ PTR_FIELD(PTR_GEN,			0,  8)
+ 
+ #define PTR_CHECK_DEV			((1 << PTR_DEV_BITS) - 1)
+ 
+-#define PTR(gen, offset, dev)						\
++#define MAKE_PTR(gen, offset, dev)						\
+ 	((((__u64) dev) << 51) | ((__u64) offset) << 8 | gen)
+ 
+ /* Bkey utility code */
+-- 
+2.7.0
