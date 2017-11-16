@@ -1,72 +1,60 @@
-From: Coly Li <colyli@suse.de>
+From: "=?utf-8?B?6ZmI5Y2O5omN?=" <chenhc@lemote.com>
 Subject: Re: [PATCH] bcache: Fix building error on MIPS
-Date: Thu, 16 Nov 2017 12:25:37 +0800
-Message-ID: <b28f4962-f418-d6bf-ad7b-7c1a8089bbe8@suse.de>
+Date: Thu, 16 Nov 2017 12:29:10 +0800
+Message-ID: <tencent_18C70D36191568EA3FDA967B@qq.com>
 References: <1510801573-17878-1-git-send-email-chenhc@lemote.com>
+        <b28f4962-f418-d6bf-ad7b-7c1a8089bbe8@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+        charset="utf-8"
+Content-Transfer-Encoding: base64
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:53221 "EHLO mx2.suse.de"
+Received: from smtpbg342.qq.com ([14.17.44.37]:44871 "EHLO smtpbg342.qq.com"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1758264AbdKPEZo (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 15 Nov 2017 23:25:44 -0500
-In-Reply-To: <1510801573-17878-1-git-send-email-chenhc@lemote.com>
-Content-Language: en-US
+        id S1759385AbdKPEg1 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 15 Nov 2017 23:36:27 -0500
+In-Reply-To: <b28f4962-f418-d6bf-ad7b-7c1a8089bbe8@suse.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Huacai Chen <chenhc@lemote.com>
-Cc: Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, stable@vger.kernel.org
+To: =?utf-8?B?Q29seSBMaQ==?= <colyli@suse.de>
+Cc: =?utf-8?B?TWljaGFlbCBMeWxl?= <mlyle@lyle.org>, =?utf-8?B?S2VudCBPdmVyc3RyZWV0?= <kent.overstreet@gmail.com>, =?utf-8?B?bGludXgtYmNhY2hl?= <linux-bcache@vger.kernel.org>, =?utf-8?B?c3RhYmxl?= <stable@vger.kernel.org>
 
-On 2017/11/16 上午11:06, Huacai Chen wrote:
-> This patch try to fix the building error on MIPS. The reason is MIPS
-> has already defined the PTR macro, which conflicts with the PTR macro
-> in include/uapi/linux/bcache.h.
-> 
-
-Hi Huacai,
-
-Did you try to add a #undef PTR in user/include/linux/bcache.h ?
-
-Thanks.
-
-Coly
-
-
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Huacai Chen <chenhc@lemote.com>
-> ---
->  drivers/md/bcache/alloc.c   | 2 +-
->  drivers/md/bcache/extents.c | 2 +-
->  drivers/md/bcache/journal.c | 2 +-
->  include/uapi/linux/bcache.h | 2 +-
->  4 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> index a27d852..a0cc1bc 100644
-> --- a/drivers/md/bcache/alloc.c
-> +++ b/drivers/md/bcache/alloc.c
-> @@ -490,7 +490,7 @@ int __bch_bucket_alloc_set(struct cache_set *c, unsigned reserve,
->  		if (b == -1)
->  			goto err;
->  
-> -		k->ptr[i] = PTR(ca->buckets[b].gen,
-> +		k->ptr[i] = MAKE_PTR(ca->buckets[b].gen,
->  				bucket_to_sector(c, b),
->  				ca->sb.nr_this_dev);
-[snip]
-
-> diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-> index 90fc490..5cc599c 100644
-> --- a/include/uapi/linux/bcache.h
-> +++ b/include/uapi/linux/bcache.h
-> @@ -91,7 +91,7 @@ PTR_FIELD(PTR_GEN,			0,  8)
->  
->  #define PTR_CHECK_DEV			((1 << PTR_DEV_BITS) - 1)
->  
-> -#define PTR(gen, offset, dev)						\
-> +#define MAKE_PTR(gen, offset, dev)						\
->  	((((__u64) dev) << 51) | ((__u64) offset) << 8 | gen)
->  
->  /* Bkey utility code */
-> 
+SSB0aGluayAjdW5kZWYgaXMgbm90IHZlcnkgZ29vZCwgYmVjYXVzZSBpdCBkZXBlbmRzIG9u
+IHRoZSBzZXF1ZW5jZSBvZiAjaW5jbHVkZS4NCg0KSHVhY2FpDQogDQotLS0tLS0tLS0tLS0t
+LS0tLS0gT3JpZ2luYWwgLS0tLS0tLS0tLS0tLS0tLS0tDQpGcm9tOiAgIkNvbHkgTGkiPGNv
+bHlsaUBzdXNlLmRlPjsNCkRhdGU6ICBUaHUsIE5vdiAxNiwgMjAxNyAxMjoyNSBQTQ0KVG86
+ICAiSHVhY2FpIENoZW4iPGNoZW5oY0BsZW1vdGUuY29tPjsgDQpDYzogICJNaWNoYWVsIEx5
+bGUiPG1seWxlQGx5bGUub3JnPjsgIktlbnQgT3ZlcnN0cmVldCI8a2VudC5vdmVyc3RyZWV0
+QGdtYWlsLmNvbT47ICJsaW51eC1iY2FjaGUiPGxpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5v
+cmc+OyAic3RhYmxlIjxzdGFibGVAdmdlci5rZXJuZWwub3JnPjsgDQpTdWJqZWN0OiAgUmU6
+IFtQQVRDSF0gYmNhY2hlOiBGaXggYnVpbGRpbmcgZXJyb3Igb24gTUlQUw0KDQogDQpPbiAy
+MDE3LzExLzE2IOS4iuWNiDExOjA2LCBIdWFjYWkgQ2hlbiB3cm90ZToNCj4gVGhpcyBwYXRj
+aCB0cnkgdG8gZml4IHRoZSBidWlsZGluZyBlcnJvciBvbiBNSVBTLiBUaGUgcmVhc29uIGlz
+IE1JUFMNCj4gaGFzIGFscmVhZHkgZGVmaW5lZCB0aGUgUFRSIG1hY3JvLCB3aGljaCBjb25m
+bGljdHMgd2l0aCB0aGUgUFRSIG1hY3JvDQo+IGluIGluY2x1ZGUvdWFwaS9saW51eC9iY2Fj
+aGUuaC4NCj4gDQoNCkhpIEh1YWNhaSwNCg0KRGlkIHlvdSB0cnkgdG8gYWRkIGEgI3VuZGVm
+IFBUUiBpbiB1c2VyL2luY2x1ZGUvbGludXgvYmNhY2hlLmggPw0KDQpUaGFua3MuDQoNCkNv
+bHkNCg0KDQo+IENjOiBzdGFibGVAdmdlci5rZXJuZWwub3JnDQo+IFNpZ25lZC1vZmYtYnk6
+IEh1YWNhaSBDaGVuIDxjaGVuaGNAbGVtb3RlLmNvbT4NCj4gLS0tDQo+ICBkcml2ZXJzL21k
+L2JjYWNoZS9hbGxvYy5jICAgfCAyICstDQo+ICBkcml2ZXJzL21kL2JjYWNoZS9leHRlbnRz
+LmMgfCAyICstDQo+ICBkcml2ZXJzL21kL2JjYWNoZS9qb3VybmFsLmMgfCAyICstDQo+ICBp
+bmNsdWRlL3VhcGkvbGludXgvYmNhY2hlLmggfCAyICstDQo+ICA0IGZpbGVzIGNoYW5nZWQs
+IDQgaW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkNCj4gDQo+IGRpZmYgLS1naXQgYS9k
+cml2ZXJzL21kL2JjYWNoZS9hbGxvYy5jIGIvZHJpdmVycy9tZC9iY2FjaGUvYWxsb2MuYw0K
+PiBpbmRleCBhMjdkODUyLi5hMGNjMWJjIDEwMDY0NA0KPiAtLS0gYS9kcml2ZXJzL21kL2Jj
+YWNoZS9hbGxvYy5jDQo+ICsrKyBiL2RyaXZlcnMvbWQvYmNhY2hlL2FsbG9jLmMNCj4gQEAg
+LTQ5MCw3ICs0OTAsNyBAQCBpbnQgX19iY2hfYnVja2V0X2FsbG9jX3NldChzdHJ1Y3QgY2Fj
+aGVfc2V0ICpjLCB1bnNpZ25lZCByZXNlcnZlLA0KPiAgCQlpZiAoYiA9PSAtMSkNCj4gIAkJ
+CWdvdG8gZXJyOw0KPiAgDQo+IC0JCWstPnB0cltpXSA9IFBUUihjYS0+YnVja2V0c1tiXS5n
+ZW4sDQo+ICsJCWstPnB0cltpXSA9IE1BS0VfUFRSKGNhLT5idWNrZXRzW2JdLmdlbiwNCj4g
+IAkJCQlidWNrZXRfdG9fc2VjdG9yKGMsIGIpLA0KPiAgCQkJCWNhLT5zYi5ucl90aGlzX2Rl
+dik7DQpbc25pcF0NCg0KPiBkaWZmIC0tZ2l0IGEvaW5jbHVkZS91YXBpL2xpbnV4L2JjYWNo
+ZS5oIGIvaW5jbHVkZS91YXBpL2xpbnV4L2JjYWNoZS5oDQo+IGluZGV4IDkwZmM0OTAuLjVj
+YzU5OWMgMTAwNjQ0DQo+IC0tLSBhL2luY2x1ZGUvdWFwaS9saW51eC9iY2FjaGUuaA0KPiAr
+KysgYi9pbmNsdWRlL3VhcGkvbGludXgvYmNhY2hlLmgNCj4gQEAgLTkxLDcgKzkxLDcgQEAg
+UFRSX0ZJRUxEKFBUUl9HRU4sCQkJMCwgIDgpDQo+ICANCj4gICNkZWZpbmUgUFRSX0NIRUNL
+X0RFVgkJCSgoMSA8PCBQVFJfREVWX0JJVFMpIC0gMSkNCj4gIA0KPiAtI2RlZmluZSBQVFIo
+Z2VuLCBvZmZzZXQsIGRldikJCQkJCQlcDQo+ICsjZGVmaW5lIE1BS0VfUFRSKGdlbiwgb2Zm
+c2V0LCBkZXYpCQkJCQkJXA0KPiAgCSgoKChfX3U2NCkgZGV2KSA8PCA1MSkgfCAoKF9fdTY0
+KSBvZmZzZXQpIDw8IDggfCBnZW4pDQo+ICANCj4gIC8qIEJrZXkgdXRpbGl0eSBjb2RlICov
+DQo+
