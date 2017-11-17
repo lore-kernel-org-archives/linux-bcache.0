@@ -1,44 +1,33 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH] bio: ensure __bio_clone_fast copies bi_partno
-Date: Fri, 17 Nov 2017 09:02:17 -0800
-Message-ID: <ecaa268f-c98d-3476-da8b-7943546b06f1@lyle.org>
-References: <20171117074725.22536-1-mlyle@lyle.org>
- <1510937438.2846.16.camel@wdc.com>
+Subject: Re: Regression in 4.14: wrong data being read from bcache device
+Date: Fri, 17 Nov 2017 09:04:47 -0800
+Message-ID: <CAJ+L6qeLBZ7447PeLF8AW1FJyDeQFL38ufXGtwQV_NwfbE_Pxg@mail.gmail.com>
+References: <1321800569.20171116152838@pvgoran.name> <CAPerZE-KiYVWXtBsu+SR0wCgbSJgzZAufm+3NYdoybjq+6ySbQ@mail.gmail.com>
+ <aa11e8f1-5120-9089-c1ad-43ac5057c029@lyle.org> <8a3d34b9-c49f-3870-fc7f-d337f7077c32@kernel.dk>
+ <3474003b-b49f-d811-4116-e2d5fac730ce@lyle.org> <CAJ+L6qf=6-dBxNf+LdeXNNu0qkXNE_xEUqU_rb6ZASonV6=1sw@mail.gmail.com>
+ <20171117150828.GA24694@lst.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <1510937438.2846.16.camel@wdc.com>
-Content-Language: en-US
-Sender: stable-owner@vger.kernel.org
-To: Bart Van Assche <Bart.VanAssche@wdc.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
-Cc: "hch@lst.de" <hch@lst.de>, "stable@vger.kernel.org" <stable@vger.kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>
+Content-Type: text/plain; charset="UTF-8"
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20171117150828.GA24694@lst.de>
+Sender: linux-block-owner@vger.kernel.org
+To: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>, Campbell Steven <casteven@gmail.com>, Pavel Goran <via-bcache@pvgoran.name>, linux-bcache <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, Kent Overstreet <kent.overstreet@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-Jens & everyone-- thanks for the speedy review and handling.  I've
-updated my test cases to ensure that volumes from old releases work,
-even when I "don't think" there's been a disk format change.
+On Fri, Nov 17, 2017 at 7:08 AM, Christoph Hellwig <hch@lst.de> wrote:
+> On Thu, Nov 16, 2017 at 07:07:40PM -0800, Michael Lyle wrote:
+>> I think the probable cause is this: we construct bios based on
+>> previously completed bios in a few places,
+>
+> That is an extremely bad idea in many ways, so I think we'll need
+> to fix this as the priority.
 
-Bart--
+Yah, sorry, this wasn't actually the case.  I was sleep deprived and
+hadn't been able to follow it all yet.
 
-On 11/17/2017 08:50 AM, Bart Van Assche wrote:
-> Have you considered to use bio_copy_dev() instead of open-coding it?
-
-One could... Right now almost all the uses of bio_copy_dev are in bcache
-and they need to change for other reasons.  (e.g. macro uses parameter
-more than once, function is passed in as parameter).  There's a whole
-lot of places to change if it's desired to make bio_copy_dev universally
-used to copy device information.
-
-> Additionally, there is more code that copies these fields, e.g. the code in
-> bio_clone_bioset(). Shouldn't that code be modified such that it also copies
-> bi_partno?
-
-Yes, when I was grepping around there were other things that looked
-possibly unsafe.  I don't have test environments for all of these other
-subsystems.
-
-I wanted to get the minimal fix for this in, though, because people are
-actively losing data to the problem it triggers with bcache.
+Bart points out that there's many remaining cases of assignment of
+disk where partno isn't assigned as well-- so I wonder if there are
+other potential problems from this.
 
 Mike
