@@ -1,39 +1,44 @@
-From: Bart Van Assche <Bart.VanAssche@wdc.com>
+From: Michael Lyle <mlyle@lyle.org>
 Subject: Re: [PATCH] bio: ensure __bio_clone_fast copies bi_partno
-Date: Fri, 17 Nov 2017 16:50:39 +0000
-Message-ID: <1510937438.2846.16.camel@wdc.com>
+Date: Fri, 17 Nov 2017 09:02:17 -0800
+Message-ID: <ecaa268f-c98d-3476-da8b-7943546b06f1@lyle.org>
 References: <20171117074725.22536-1-mlyle@lyle.org>
+ <1510937438.2846.16.camel@wdc.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20171117074725.22536-1-mlyle@lyle.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <1510937438.2846.16.camel@wdc.com>
 Content-Language: en-US
-Content-ID: <C7BA21687B72F149B7494C1D2330DA43@namprd04.prod.outlook.com>
-Sender: linux-block-owner@vger.kernel.org
-To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "mlyle@lyle.org" <mlyle@lyle.org>
+Sender: stable-owner@vger.kernel.org
+To: Bart Van Assche <Bart.VanAssche@wdc.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
 Cc: "hch@lst.de" <hch@lst.de>, "stable@vger.kernel.org" <stable@vger.kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>
 List-Id: linux-bcache@vger.kernel.org
 
-T24gVGh1LCAyMDE3LTExLTE2IGF0IDIzOjQ3IC0wODAwLCBNaWNoYWVsIEx5bGUgd3JvdGU6DQo+
-IGRpZmYgLS1naXQgYS9ibG9jay9iaW8uYyBiL2Jsb2NrL2Jpby5jDQo+IGluZGV4IDEwMWMyYTli
-NTQ4MS4uMzNmYTZiNGFmMzEyIDEwMDY0NA0KPiAtLS0gYS9ibG9jay9iaW8uYw0KPiArKysgYi9i
-bG9jay9iaW8uYw0KPiBAQCAtNTk3LDYgKzU5Nyw3IEBAIHZvaWQgX19iaW9fY2xvbmVfZmFzdChz
-dHJ1Y3QgYmlvICpiaW8sIHN0cnVjdCBiaW8gKmJpb19zcmMpDQo+ICAJICogc28gd2UgZG9uJ3Qg
-c2V0IG5vciBjYWxjdWxhdGUgbmV3IHBoeXNpY2FsL2h3IHNlZ21lbnQgY291bnRzIGhlcmUNCj4g
-IAkgKi8NCj4gIAliaW8tPmJpX2Rpc2sgPSBiaW9fc3JjLT5iaV9kaXNrOw0KPiArCWJpby0+Ymlf
-cGFydG5vID0gYmlvX3NyYy0+YmlfcGFydG5vOw0KPiAgCWJpb19zZXRfZmxhZyhiaW8sIEJJT19D
-TE9ORUQpOw0KPiAgCWJpby0+Ymlfb3BmID0gYmlvX3NyYy0+Ymlfb3BmOw0KPiAgCWJpby0+Ymlf
-d3JpdGVfaGludCA9IGJpb19zcmMtPmJpX3dyaXRlX2hpbnQ7DQoNCkhhdmUgeW91IGNvbnNpZGVy
-ZWQgdG8gdXNlIGJpb19jb3B5X2RldigpIGluc3RlYWQgb2Ygb3Blbi1jb2RpbmcgaXQ/DQoNCkFk
-ZGl0aW9uYWxseSwgdGhlcmUgaXMgbW9yZSBjb2RlIHRoYXQgY29waWVzIHRoZXNlIGZpZWxkcywg
-ZS5nLiB0aGUgY29kZSBpbg0KYmlvX2Nsb25lX2Jpb3NldCgpLiBTaG91bGRuJ3QgdGhhdCBjb2Rl
-IGJlIG1vZGlmaWVkIHN1Y2ggdGhhdCBpdCBhbHNvIGNvcGllcw0KYmlfcGFydG5vPw0KDQpIb3cg
-YWJvdXQgdGhlIGZvbGxvd2luZyBjbGFzcyBvZiBhc3NpZ25tZW50cyBpbiBkcml2ZXJzL21kL3Jh
-aWQxLmM6DQoNCgkJbWJpby0+YmlfZGlzayA9ICh2b2lkICopY29uZi0+bWlycm9yc1tpXS5yZGV2
-Ow0KDQpTaG91bGQgdGhlc2UgYXNzaWdubWVudHMgcGVyaGFwcyBiZSBmb2xsb3dlZCBieSBhIG1i
-aW8tPmJpX3BhcnRubyBhc3NpZ25tZW50Pw0KDQpIb3cgYWJvdXQgdGhlIGZvbGxvd2luZyBjbGFz
-cyBvZiBhc3NpZ25tZW50cyBpbiB0aGUgTlZNZSBjb2RlOg0KDQogICAgICAgICAgICAgICBiaW8t
-PmJpX2Rpc2sgPSBkaXNrOw0KDQpTaG91bGQgdGhlc2UgYXNzaWdubWVudHMgcGVyaGFwcyBiZSBm
-b2xsb3dlZCBieSBhIGJpby0+YmlfcGFydG5vIGFzc2lnbm1lbnQ/DQoNClRoYW5rcywNCg0KQmFy
-dC4=
+Jens & everyone-- thanks for the speedy review and handling.  I've
+updated my test cases to ensure that volumes from old releases work,
+even when I "don't think" there's been a disk format change.
+
+Bart--
+
+On 11/17/2017 08:50 AM, Bart Van Assche wrote:
+> Have you considered to use bio_copy_dev() instead of open-coding it?
+
+One could... Right now almost all the uses of bio_copy_dev are in bcache
+and they need to change for other reasons.  (e.g. macro uses parameter
+more than once, function is passed in as parameter).  There's a whole
+lot of places to change if it's desired to make bio_copy_dev universally
+used to copy device information.
+
+> Additionally, there is more code that copies these fields, e.g. the code in
+> bio_clone_bioset(). Shouldn't that code be modified such that it also copies
+> bi_partno?
+
+Yes, when I was grepping around there were other things that looked
+possibly unsafe.  I don't have test environments for all of these other
+subsystems.
+
+I wanted to get the minimal fix for this in, though, because people are
+actively losing data to the problem it triggers with bcache.
+
+Mike
