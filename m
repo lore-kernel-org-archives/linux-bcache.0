@@ -1,48 +1,36 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH] bio: ensure __bio_clone_fast copies bi_partno
-Date: Thu, 16 Nov 2017 23:47:25 -0800
-Message-ID: <20171117074725.22536-1-mlyle@lyle.org>
+From: Rui Hua <huarui.dev@gmail.com>
+Subject: Re: [PATCH] bcache: recover data from backing device when read
+ request hit clean
+Date: Fri, 17 Nov 2017 18:20:03 +0800
+Message-ID: <CAPGwLLNTwZ1WrRVqwaLK5h8Ovj5SN5-Y-2qja843hwx2kJCAUQ@mail.gmail.com>
+References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
+ <dc6f513b-cca3-a37d-3379-2e12df21e825@suse.de> <CAPGwLLPmUiz-6xjur5jPAn1QLvkJY23QcsPCNvK+4+BVubWYnw@mail.gmail.com>
+ <D393CD04-8C7A-4A8C-B23A-6C68D5544E34@profihost.ag>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f193.google.com ([209.85.192.193]:34517 "EHLO
-        mail-pf0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S964895AbdKQHsn (ORCPT
+Received: from mail-vk0-f67.google.com ([209.85.213.67]:33112 "EHLO
+        mail-vk0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752849AbdKQKUY (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 17 Nov 2017 02:48:43 -0500
-Received: by mail-pf0-f193.google.com with SMTP id x7so1380506pfa.1
-        for <linux-bcache@vger.kernel.org>; Thu, 16 Nov 2017 23:48:43 -0800 (PST)
+        Fri, 17 Nov 2017 05:20:24 -0500
+In-Reply-To: <D393CD04-8C7A-4A8C-B23A-6C68D5544E34@profihost.ag>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc: Michael Lyle <mlyle@lyle.org>, Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, stable@vger.kernel.org
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Coly Li <colyli@suse.de>, Coly Li <i@coly.li>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-A new field was introduced in 74d46992e0d9dee7f1f376de0d56d31614c8a17a,
-bi_partno, instead of using bdev->bd_contains and encoding the partition
-information in the bi_bdev field.  __bio_clone_fast was changed to copy
-the disk information, but not the partition information.  At minimum,
-this regressed bcache and caused data corruption.
+Hi, Stefan
 
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
-Fixes: 74d46992e0d9dee7f1f376de0d56d31614c8a17a
-Reported-by: Pavel Goran <via-bcache@pvgoran.name>
-Reported-by: Campbell Steven <casteven@gmail.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: <stable@vger.kernel.org>
----
- block/bio.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/block/bio.c b/block/bio.c
-index 101c2a9b5481..33fa6b4af312 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -597,6 +597,7 @@ void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
- 	 * so we don't set nor calculate new physical/hw segment counts here
- 	 */
- 	bio->bi_disk = bio_src->bi_disk;
-+	bio->bi_partno = bio_src->bi_partno;
- 	bio_set_flag(bio, BIO_CLONED);
- 	bio->bi_opf = bio_src->bi_opf;
- 	bio->bi_write_hint = bio_src->bi_write_hint;
--- 
-2.14.1
+2017-11-17 16:28 GMT+08:00 Stefan Priebe - Profihost AG <s.priebe@profihost=
+.ag>:
+> I=E2=80=98m getting the same xfs error message under high load. Does this=
+ patch fix
+> it?
+>
+Did you applied the patch "bcache: only permit to recovery read error
+when cache device is clean" ?
+If you did, maybe this patch can fix it. And you'd better check
+/sys/fs/bcache/XXX/internal/cache_read_races in your environment,
+meanwhile, it should not be zero when you get that err message.
