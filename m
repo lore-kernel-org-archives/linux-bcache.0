@@ -1,55 +1,48 @@
-From: Rui Hua <huarui.dev@gmail.com>
-Subject: Re: [PATCH] bcache: recover data from backing device when read
- request hit clean
-Date: Fri, 17 Nov 2017 15:26:03 +0800
-Message-ID: <CAPGwLLPmUiz-6xjur5jPAn1QLvkJY23QcsPCNvK+4+BVubWYnw@mail.gmail.com>
-References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
- <dc6f513b-cca3-a37d-3379-2e12df21e825@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <dc6f513b-cca3-a37d-3379-2e12df21e825@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: Coly Li <i@coly.li>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+From: Michael Lyle <mlyle@lyle.org>
+Subject: [PATCH] bio: ensure __bio_clone_fast copies bi_partno
+Date: Thu, 16 Nov 2017 23:47:25 -0800
+Message-ID: <20171117074725.22536-1-mlyle@lyle.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pf0-f193.google.com ([209.85.192.193]:34517 "EHLO
+        mail-pf0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S964895AbdKQHsn (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 17 Nov 2017 02:48:43 -0500
+Received: by mail-pf0-f193.google.com with SMTP id x7so1380506pfa.1
+        for <linux-bcache@vger.kernel.org>; Thu, 16 Nov 2017 23:48:43 -0800 (PST)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
+Cc: Michael Lyle <mlyle@lyle.org>, Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, stable@vger.kernel.org
 
-Hi, Coly--
-Thanks for your detailed review notes.
+A new field was introduced in 74d46992e0d9dee7f1f376de0d56d31614c8a17a,
+bi_partno, instead of using bdev->bd_contains and encoding the partition
+information in the bi_bdev field.  __bio_clone_fast was changed to copy
+the disk information, but not the partition information.  At minimum,
+this regressed bcache and caused data corruption.
 
-2017-11-17 14:01 GMT+08:00 Coly Li <colyli@suse.de>:
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
+Fixes: 74d46992e0d9dee7f1f376de0d56d31614c8a17a
+Reported-by: Pavel Goran <via-bcache@pvgoran.name>
+Reported-by: Campbell Steven <casteven@gmail.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: <stable@vger.kernel.org>
+---
+ block/bio.c | 1 +
+ 1 file changed, 1 insertion(+)
 
->> Without this patch, when we use writeback mode, we will never reread from
->> the backing device when cache read race happend, until the whole cache
->> device is clean, because the condition
->
-> I assume this is a race condition, that means after the race window, the
-> KEY associated to the reused bucket will be invalided too. So a second
-> read will trigger a cache miss, and re-read the data back into cache
-> device. So it won't be "never". The problem is, if upper layer code
-> treats it as a failed I/O, and it happens to be metadata of upper layer
-> code, then some negative result may happens. For example file system
-> turns into read-only mode.
-
-Yes, your example about metadata of upper layer code provides a good reference ,
-Indeed, I met the xfs metadata error a few days ago when I use xfs on bcache,
-under heavy load, I got the following xfs error:
-localhost kernel: XFS (bcache0): metadata I/O error: block 0x3e3e2af0
-("xfs_trans_read_buf_map") error 4 numblks 16
-And I can confirm it was caused by the read race.
-
-The word "never" I used in above is not suitable:-/, thanks for your point,
- what I want to say is we will not recover clean data UNTIL the whole cache
-device become clean, or in writethrough mode.
-
->
-> P.S could you please also take a look on btree internal node I/O failure
-> ? Thanks in advance.
->
-At least, for now, I find that when cache_lookup() traverse btree,
-if bch_btree_node_get() return ERR_PTR(-EIO), it will not pass to upper layer,
-cached_dev_bio_complete() will be called, just like there is no any IO error,
-I think this is another bug. I'll deep into code and find more detail
-when I have time.
-
-Thanks,
+diff --git a/block/bio.c b/block/bio.c
+index 101c2a9b5481..33fa6b4af312 100644
+--- a/block/bio.c
++++ b/block/bio.c
+@@ -597,6 +597,7 @@ void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
+ 	 * so we don't set nor calculate new physical/hw segment counts here
+ 	 */
+ 	bio->bi_disk = bio_src->bi_disk;
++	bio->bi_partno = bio_src->bi_partno;
+ 	bio_set_flag(bio, BIO_CLONED);
+ 	bio->bi_opf = bio_src->bi_opf;
+ 	bio->bi_write_hint = bio_src->bi_write_hint;
+-- 
+2.14.1
