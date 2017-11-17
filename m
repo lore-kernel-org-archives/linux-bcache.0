@@ -1,28 +1,39 @@
-From: Jens Axboe <axboe@kernel.dk>
+From: Bart Van Assche <Bart.VanAssche@wdc.com>
 Subject: Re: [PATCH] bio: ensure __bio_clone_fast copies bi_partno
-Date: Fri, 17 Nov 2017 08:27:40 -0700
-Message-ID: <8f93b1dd-9909-a9be-28d1-a10e4f06bdd7@kernel.dk>
+Date: Fri, 17 Nov 2017 16:50:39 +0000
+Message-ID: <1510937438.2846.16.camel@wdc.com>
 References: <20171117074725.22536-1-mlyle@lyle.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <stable-owner@vger.kernel.org>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171117074725.22536-1-mlyle@lyle.org>
 Content-Language: en-US
-Sender: stable-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc: Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org
+Content-ID: <C7BA21687B72F149B7494C1D2330DA43@namprd04.prod.outlook.com>
+Sender: linux-block-owner@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "mlyle@lyle.org" <mlyle@lyle.org>
+Cc: "hch@lst.de" <hch@lst.de>, "stable@vger.kernel.org" <stable@vger.kernel.org>, "axboe@kernel.dk" <axboe@kernel.dk>
 List-Id: linux-bcache@vger.kernel.org
 
-On 11/17/2017 12:47 AM, Michael Lyle wrote:
-> A new field was introduced in 74d46992e0d9dee7f1f376de0d56d31614c8a17a,
-> bi_partno, instead of using bdev->bd_contains and encoding the partition
-> information in the bi_bdev field.  __bio_clone_fast was changed to copy
-> the disk information, but not the partition information.  At minimum,
-> this regressed bcache and caused data corruption.
-
-That's not good... Fix looks good to me, I'll queue this up for a pull
-today. Thanks for bisecting this, Michael.
-
--- 
-Jens Axboe
+T24gVGh1LCAyMDE3LTExLTE2IGF0IDIzOjQ3IC0wODAwLCBNaWNoYWVsIEx5bGUgd3JvdGU6DQo+
+IGRpZmYgLS1naXQgYS9ibG9jay9iaW8uYyBiL2Jsb2NrL2Jpby5jDQo+IGluZGV4IDEwMWMyYTli
+NTQ4MS4uMzNmYTZiNGFmMzEyIDEwMDY0NA0KPiAtLS0gYS9ibG9jay9iaW8uYw0KPiArKysgYi9i
+bG9jay9iaW8uYw0KPiBAQCAtNTk3LDYgKzU5Nyw3IEBAIHZvaWQgX19iaW9fY2xvbmVfZmFzdChz
+dHJ1Y3QgYmlvICpiaW8sIHN0cnVjdCBiaW8gKmJpb19zcmMpDQo+ICAJICogc28gd2UgZG9uJ3Qg
+c2V0IG5vciBjYWxjdWxhdGUgbmV3IHBoeXNpY2FsL2h3IHNlZ21lbnQgY291bnRzIGhlcmUNCj4g
+IAkgKi8NCj4gIAliaW8tPmJpX2Rpc2sgPSBiaW9fc3JjLT5iaV9kaXNrOw0KPiArCWJpby0+Ymlf
+cGFydG5vID0gYmlvX3NyYy0+YmlfcGFydG5vOw0KPiAgCWJpb19zZXRfZmxhZyhiaW8sIEJJT19D
+TE9ORUQpOw0KPiAgCWJpby0+Ymlfb3BmID0gYmlvX3NyYy0+Ymlfb3BmOw0KPiAgCWJpby0+Ymlf
+d3JpdGVfaGludCA9IGJpb19zcmMtPmJpX3dyaXRlX2hpbnQ7DQoNCkhhdmUgeW91IGNvbnNpZGVy
+ZWQgdG8gdXNlIGJpb19jb3B5X2RldigpIGluc3RlYWQgb2Ygb3Blbi1jb2RpbmcgaXQ/DQoNCkFk
+ZGl0aW9uYWxseSwgdGhlcmUgaXMgbW9yZSBjb2RlIHRoYXQgY29waWVzIHRoZXNlIGZpZWxkcywg
+ZS5nLiB0aGUgY29kZSBpbg0KYmlvX2Nsb25lX2Jpb3NldCgpLiBTaG91bGRuJ3QgdGhhdCBjb2Rl
+IGJlIG1vZGlmaWVkIHN1Y2ggdGhhdCBpdCBhbHNvIGNvcGllcw0KYmlfcGFydG5vPw0KDQpIb3cg
+YWJvdXQgdGhlIGZvbGxvd2luZyBjbGFzcyBvZiBhc3NpZ25tZW50cyBpbiBkcml2ZXJzL21kL3Jh
+aWQxLmM6DQoNCgkJbWJpby0+YmlfZGlzayA9ICh2b2lkICopY29uZi0+bWlycm9yc1tpXS5yZGV2
+Ow0KDQpTaG91bGQgdGhlc2UgYXNzaWdubWVudHMgcGVyaGFwcyBiZSBmb2xsb3dlZCBieSBhIG1i
+aW8tPmJpX3BhcnRubyBhc3NpZ25tZW50Pw0KDQpIb3cgYWJvdXQgdGhlIGZvbGxvd2luZyBjbGFz
+cyBvZiBhc3NpZ25tZW50cyBpbiB0aGUgTlZNZSBjb2RlOg0KDQogICAgICAgICAgICAgICBiaW8t
+PmJpX2Rpc2sgPSBkaXNrOw0KDQpTaG91bGQgdGhlc2UgYXNzaWdubWVudHMgcGVyaGFwcyBiZSBm
+b2xsb3dlZCBieSBhIGJpby0+YmlfcGFydG5vIGFzc2lnbm1lbnQ/DQoNClRoYW5rcywNCg0KQmFy
+dC4=
