@@ -1,24 +1,62 @@
-From: Campbell Steven <casteven@gmail.com>
-Subject: Re: [PATCH] bio: ensure __bio_clone_fast copies bi_partno
-Date: Sat, 18 Nov 2017 09:25:12 +1300
-Message-ID: <CAPerZE-AzNo9ZuusJYv5Ox7cJ1N5eCc2ce3tOar_pqtfNomJQA@mail.gmail.com>
-References: <20171117074725.22536-1-mlyle@lyle.org>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH] bcache: recover data from backing device when read
+ request hit clean
+Date: Fri, 17 Nov 2017 16:57:40 -0800
+Message-ID: <CAJ+L6qen=5AVFr_q_r_F6jU8BTQ=t+7p94ucFW9HXEDD6AGEKg@mail.gmail.com>
+References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
+ <1c715cc2-b656-36a8-4017-55052937df82@lyle.org> <CAPGwLLNyjjxKOXA3RCFGSi4p-ZWZ5T9ADWP6EAqrfL3oUvMbFQ@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20171117074725.22536-1-mlyle@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, stable@vger.kernel.org
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-qk0-f179.google.com ([209.85.220.179]:41002 "EHLO
+        mail-qk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1753048AbdKRA5l (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 17 Nov 2017 19:57:41 -0500
+Received: by mail-qk0-f179.google.com with SMTP id f63so1506111qke.8
+        for <linux-bcache@vger.kernel.org>; Fri, 17 Nov 2017 16:57:41 -0800 (PST)
+In-Reply-To: <CAPGwLLNyjjxKOXA3RCFGSi4p-ZWZ5T9ADWP6EAqrfL3oUvMbFQ@mail.gmail.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Rui Hua <huarui.dev@gmail.com>
+Cc: Coly Li <i@coly.li>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
 
-On 17 November 2017 at 20:47, Michael Lyle <mlyle@lyle.org> wrote:
-> A new field was introduced in 74d46992e0d9dee7f1f376de0d56d31614c8a17a,
-> bi_partno, instead of using bdev->bd_contains and encoding the partition
-> information in the bi_bdev field.  __bio_clone_fast was changed to copy
-> the disk information, but not the partition information.  At minimum,
-> this regressed bcache and caused data corruption.
+Rui Hua--
 
-Thanks alot for this Michael, I will run it up on our test servers today.
+Thanks for the clarification.  You're correct, it doesn't get called,
+and it goes to read_complete.  However, read_error should probably get
+called.  How would you suggest handling this-- should we initially set
+read_dirty_data true and clear it if it is all clean?  (and change the
+condition to properly go into the error path).  As it is, the patch
+makes things no worse but the error path is very unsafe.
 
-Campbell
+Mike
+
+On Thu, Nov 16, 2017 at 8:25 PM, Rui Hua <huarui.dev@gmail.com> wrote:
+> Hi, Michael--
+>
+> Thanks for the quickly reply.
+>
+> If the metadata on the cache device was NOT correctly read,
+> cached_dev_read_error() will not be called, so the recovery check will
+> not be executed. so this patch is safe.
+> s->iop.error was not set when faild to read metadata on the cache
+> device, so the  cached_dev_bio_complete() will be called instead of
+> cached_dev_read_error()
+>
+> 2017-11-17 12:02 GMT+08:00 Michael Lyle <mlyle@lyle.org>:
+>> Hi, Rui Hua--
+>>
+>> On 11/16/2017 07:51 PM, Rui Hua wrote:
+>>> In this patch, we use s->read_dirty_data to judge whether the read
+>>> request hit dirty data in cache device, it is safe to reread data from
+>>> the backing device when the read request hit clean data. This can not
+>>> only handle cache read race, but also recover data when failed read
+>>> request from cache device.
+>>
+>> I haven't read over all of this yet, to understand the read race.  But
+>> this change can't be safe-- read_dirty_data only is set to true if the
+>> metadata on the cache device is correctly read.  If that fails, the flag
+>> may not be set and we could read stale data on the backing device.
+>>
+>> Mike
