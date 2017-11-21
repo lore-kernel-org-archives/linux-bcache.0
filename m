@@ -1,49 +1,187 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: Urgent fix for 4.14: 62530ed8b1d (bio: ensure __bio_clone_fast
- copies bi_partno)
-Date: Tue, 21 Nov 2017 00:53:17 -0800
-Message-ID: <40fca5c8-e751-35d6-0a77-9a3cfba212bb@lyle.org>
-References: <CAJ+L6qdy2TQ0K=syErR_OEvAGJF7Cacc_79mnD=SEC=uQTYVpA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f67.google.com ([74.125.83.67]:36134 "EHLO
-        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751537AbdKUIxU (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 21 Nov 2017 03:53:20 -0500
-Received: by mail-pg0-f67.google.com with SMTP id k190so4984542pga.3
-        for <linux-bcache@vger.kernel.org>; Tue, 21 Nov 2017 00:53:20 -0800 (PST)
-In-Reply-To: <CAJ+L6qdy2TQ0K=syErR_OEvAGJF7Cacc_79mnD=SEC=uQTYVpA@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] bcache: add a separate open bucket list for flash devices
+Date: Tue, 21 Nov 2017 18:50:32 +0800
+Message-ID: <1511261432-8578-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
-To: stable <stable@vger.kernel.org>, gregkh@linuxfoundation.org, linux-bcache <linux-bcache@vger.kernel.org>
 
-I don't know what I was thinking here, but I meant 4.14/4.15 and not
-4.15/4.16.  :P
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Mike
+Currently in pick_data_bucket(), though we keep multiple buckets open
+for writes, and try to segregate different write streams for better
+cache utilization: first we look for a bucket where the last write to
+it was sequential with the current write, and failing that we look
+for a bucket that was last usedby the same task.
 
-On 11/20/2017 03:47 PM, Michael Lyle wrote:
-> Hi---
-> 
-> Previously sent to stable was this patch, and it's made it into
-> Linus's tree for 4.16.  It's a rather urgent data corruption issue
-> that affects at minimum bcache but possibly other block subsystems.
-> Several users have lost data.  The issue was introduced in the 4.15
-> branch by 74d46992e0d9 ("block: replace bi_bdev with a gendisk pointer
-> and partitions index").
-> 
-> I'd really appreciate anything that can be done to get this into a
-> stable 4.15 release soon.
-> 
-> Thanks--
-> 
-> Mike
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+But actually, in such scenario that there are some flash devices
+, and some backend bcache devices, when many tasks request these
+flash devices and backend bcache devices, the write IOs may still
+fall to the same bucket as bellow bucket:
+| bcache data | flash data | bcache data | bcache data| flash data|
+then after writeback of these backend bcache devices, the bucket would
+be like bellow bucket:
+| free | flash data | free | free | flash data |
+
+So, there are many free space in this bucket, but since flash data
+still exists, so this bucket cannot reused, which would cause waste of
+bucket space.
+
+In this patch, we add a separate open bucket list for flash devices,
+and write all flash data to these buckets, so data from flash devices
+and backend bcache devices can store in different buckets.
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/alloc.c  | 40 +++++++++++++++++++++++++++++++---------
+ drivers/md/bcache/bcache.h |  1 +
+ drivers/md/bcache/super.c  |  1 +
+ 3 files changed, 33 insertions(+), 9 deletions(-)
+ mode change 100644 => 100755 drivers/md/bcache/alloc.c
+ mode change 100644 => 100755 drivers/md/bcache/bcache.h
+ mode change 100644 => 100755 drivers/md/bcache/super.c
+
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+old mode 100644
+new mode 100755
+index 0803563..add00a3
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -69,7 +69,8 @@
+ #include <linux/random.h>
+ #include <trace/events/bcache.h>
+ 
+-#define MAX_OPEN_BUCKETS 128
++#define MAX_OPEN_DATA_BUCKETS 	96
++#define MAX_OPEN_FLASH_BUCKETS 	32
+ 
+ /* Bucket heap / gen */
+ 
+@@ -532,19 +533,19 @@ struct open_bucket {
+  * should be a sane heuristic.
+  */
+ static struct open_bucket *pick_data_bucket(struct cache_set *c,
++					    struct list_head *open_buckets,
+ 					    const struct bkey *search,
+ 					    unsigned write_point,
+ 					    struct bkey *alloc)
+ {
+ 	struct open_bucket *ret, *ret_task = NULL;
+ 
+-	list_for_each_entry_reverse(ret, &c->data_buckets, list)
++	list_for_each_entry_reverse(ret, open_buckets, list)
+ 		if (!bkey_cmp(&ret->key, search))
+ 			goto found;
+ 		else if (ret->last_write_point == write_point)
+ 			ret_task = ret;
+-
+-	ret = ret_task ?: list_first_entry(&c->data_buckets,
++	ret = ret_task ?: list_first_entry(open_buckets,
+ 					   struct open_bucket, list);
+ found:
+ 	if (!ret->sectors_free && KEY_PTRS(alloc)) {
+@@ -575,7 +576,7 @@ bool bch_alloc_sectors(struct cache_set *c, struct bkey *k, unsigned sectors,
+ 	struct open_bucket *b;
+ 	BKEY_PADDED(key) alloc;
+ 	unsigned i;
+-
++	struct list_head *open_buckets;
+ 	/*
+ 	 * We might have to allocate a new bucket, which we can't do with a
+ 	 * spinlock held. So if we have to allocate, we drop the lock, allocate
+@@ -586,7 +587,9 @@ bool bch_alloc_sectors(struct cache_set *c, struct bkey *k, unsigned sectors,
+ 	bkey_init(&alloc.key);
+ 	spin_lock(&c->data_bucket_lock);
+ 
+-	while (!(b = pick_data_bucket(c, k, write_point, &alloc.key))) {
++	open_buckets = UUID_FLASH_ONLY(&c->uuids[KEY_INODE(k)]) ? &c->flash_buckets : &c->data_buckets;
++
++	while (!(b = pick_data_bucket(c, open_buckets, k, write_point, &alloc.key))) {
+ 		unsigned watermark = write_prio
+ 			? RESERVE_MOVINGGC
+ 			: RESERVE_NONE;
+@@ -625,7 +628,8 @@ bool bch_alloc_sectors(struct cache_set *c, struct bkey *k, unsigned sectors,
+ 	 * Move b to the end of the lru, and keep track of what this bucket was
+ 	 * last used for:
+ 	 */
+-	list_move_tail(&b->list, &c->data_buckets);
++	list_move_tail(&b->list, open_buckets);
++
+ 	bkey_copy_key(&b->key, k);
+ 	b->last_write_point = write_point;
+ 
+@@ -666,22 +670,40 @@ void bch_open_buckets_free(struct cache_set *c)
+ 		list_del(&b->list);
+ 		kfree(b);
+ 	}
++
++	while (!list_empty(&c->flash_buckets)) {
++		b = list_first_entry(&c->flash_buckets,
++				     struct open_bucket, list);
++		list_del(&b->list);
++		kfree(b);
++	}
++
+ }
+ 
+ int bch_open_buckets_alloc(struct cache_set *c)
+ {
+ 	int i;
++	struct open_bucket *b;
+ 
+ 	spin_lock_init(&c->data_bucket_lock);
+ 
+-	for (i = 0; i < MAX_OPEN_BUCKETS; i++) {
+-		struct open_bucket *b = kzalloc(sizeof(*b), GFP_KERNEL);
++	for (i = 0; i < MAX_OPEN_DATA_BUCKETS; i++) {
++		b = kzalloc(sizeof(*b), GFP_KERNEL);
+ 		if (!b)
+ 			return -ENOMEM;
+ 
+ 		list_add(&b->list, &c->data_buckets);
+ 	}
+ 
++	for (i = 0; i < MAX_OPEN_FLASH_BUCKETS; i++) {
++		b = kzalloc(sizeof(*b), GFP_KERNEL);
++		if (!b)
++			return -ENOMEM;
++
++		list_add(&b->list, &c->flash_buckets);
++	}
++
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+old mode 100644
+new mode 100755
+index abd31e8..0233548
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -627,6 +627,7 @@ struct cache_set {
+ 
+ 	/* List of buckets we're currently writing data to */
+ 	struct list_head	data_buckets;
++	struct list_head	flash_buckets;
+ 	spinlock_t		data_bucket_lock;
+ 
+ 	struct journal		journal;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+old mode 100644
+new mode 100755
+index fc0a31b..af64b8c
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1505,6 +1505,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 	INIT_LIST_HEAD(&c->btree_cache_freeable);
+ 	INIT_LIST_HEAD(&c->btree_cache_freed);
+ 	INIT_LIST_HEAD(&c->data_buckets);
++	INIT_LIST_HEAD(&c->flash_buckets);
+ 
+ 	c->search = mempool_create_slab_pool(32, bch_search_cache);
+ 	if (!c->search)
+-- 
+1.8.3.1
