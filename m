@@ -1,60 +1,43 @@
-From: Pavel Goran <via-bcache@pvgoran.name>
-Subject: Re: [PATCH] bio: ensure __bio_clone_fast copies bi_partno
-Date: Tue, 21 Nov 2017 22:38:15 +0700
-Message-ID: <868491970.20171121223815@pvgoran.name>
-References: <20171117074725.22536-1-mlyle@lyle.org>
-Reply-To: Pavel Goran <via-bcache@pvgoran.name>
+From: Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: Urgent fix for 4.15: 62530ed8b1d (bio: ensure __bio_clone_fast
+ copies bi_partno)
+Date: Tue, 21 Nov 2017 17:45:05 +0100
+Message-ID: <20171121164505.GB20401@kroah.com>
+References: <CAJ+L6qdy2TQ0K=syErR_OEvAGJF7Cacc_79mnD=SEC=uQTYVpA@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from vostok.pvgoran.name ([71.19.149.48]:42233 "EHLO
-        vostok.pvgoran.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751228AbdKUPiU (ORCPT
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52590 "EHLO
+        mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751154AbdKUQpE (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 21 Nov 2017 10:38:20 -0500
-In-Reply-To: <20171117074725.22536-1-mlyle@lyle.org>
+        Tue, 21 Nov 2017 11:45:04 -0500
+Content-Disposition: inline
+In-Reply-To: <CAJ+L6qdy2TQ0K=syErR_OEvAGJF7Cacc_79mnD=SEC=uQTYVpA@mail.gmail.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org
+Cc: stable <stable@vger.kernel.org>, linux-bcache <linux-bcache@vger.kernel.org>
 
-Hello Michael,
+On Mon, Nov 20, 2017 at 03:47:40PM -0800, Michael Lyle wrote:
+> Hi---
+> 
+> Previously sent to stable was this patch, and it's made it into
+> Linus's tree for 4.16.  It's a rather urgent data corruption issue
+> that affects at minimum bcache but possibly other block subsystems.
+> Several users have lost data.  The issue was introduced in the 4.15
+> branch by 74d46992e0d9 ("block: replace bi_bdev with a gendisk pointer
+> and partitions index").
+> 
+> I'd really appreciate anything that can be done to get this into a
+> stable 4.15 release soon.
 
-Friday, November 17, 2017, 2:47:25 PM, you wrote:
+Now queued up, thanks for letting me know.  Normally I wait until a
+patch hits a public -rc release before adding it to a stable kernel
+release, but if you ever want it ot get there sooner, always feel free
+to just email stable@vger with this info and I will try to queue it up
+sooner.
 
-> A new field was introduced in 74d46992e0d9dee7f1f376de0d56d31614c8a17a,
-> bi_partno, instead of using bdev->bd_contains and encoding the partition
-> information in the bi_bdev field.  __bio_clone_fast was changed to copy
-> the disk information, but not the partition information.  At minimum,
-> this regressed bcache and caused data corruption.
+thanks,
 
-Thanks for the patch. It resolved the issue for me, I'm now running 4.14
-without apparent problems.
-
-> Signed-off-by: Michael Lyle <mlyle@lyle.org>
-> Fixes: 74d46992e0d9dee7f1f376de0d56d31614c8a17a
-> Reported-by: Pavel Goran <via-bcache@pvgoran.name>
-> Reported-by: Campbell Steven <casteven@gmail.com>
-> Cc: Christoph Hellwig <hch@lst.de>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: <stable@vger.kernel.org>
-> ---
->  block/bio.c | 1 +
->  1 file changed, 1 insertion(+)
-
-> diff --git a/block/bio.c b/block/bio.c
-> index 101c2a9b5481..33fa6b4af312 100644
-> --- a/block/bio.c
-> +++ b/block/bio.c
-> @@ -597,6 +597,7 @@ void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
->          * so we don't set nor calculate new physical/hw segment counts here
->          */
->         bio->bi_disk = bio_src->bi_disk;
-+       bio->>bi_partno = bio_src->bi_partno;
->         bio_set_flag(bio, BIO_CLONED);
->         bio->bi_opf = bio_src->bi_opf;
->         bio->bi_write_hint = bio_src->bi_write_hint;
-
-Pavel Goran
-  
+greg k-h
