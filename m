@@ -1,50 +1,33 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: [PATCH] bcache: add a separate open bucket list for flash devices
-Date: Tue, 21 Nov 2017 17:16:04 -0500
-Message-ID: <20171121221604.ozk4va5tfqlsyu7u@moria.home.lan>
-References: <1511261432-8578-1-git-send-email-tang.junhui@zte.com.cn>
- <20171121105752.yy7krolo4dx75bte@moria.home.lan>
- <3179102c-26c9-0519-854c-b0bec6cb9241@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-block-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <3179102c-26c9-0519-854c-b0bec6cb9241@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: tang.junhui@zte.com.cn, mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: Re: Re: [PATCH] bcache: add a separate open bucket list for flash devices
+Date: Wed, 22 Nov 2017 09:29:02 +0800
+Message-ID: <1511314142-19225-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from out1.zte.com.cn ([202.103.147.172]:35598 "EHLO mxct.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751344AbdKVB3S (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 21 Nov 2017 20:29:18 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: kent.overstreet@gmail.com, colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-On Tue, Nov 21, 2017 at 10:48:27PM +0800, Coly Li wrote:
-> On 21/11/2017 6:57 PM, Kent Overstreet wrote:
-> > On Tue, Nov 21, 2017 at 06:50:32PM +0800, tang.junhui@zte.com.cn wrote:
-> >> From: Tang Junhui <tang.junhui@zte.com.cn>
-> >>
-> >> Currently in pick_data_bucket(), though we keep multiple buckets open
-> >> for writes, and try to segregate different write streams for better
-> >> cache utilization: first we look for a bucket where the last write to
-> >> it was sequential with the current write, and failing that we look
-> >> for a bucket that was last usedby the same task.
-> >>
-> >> But actually, in such scenario that there are some flash devices
-> >> , and some backend bcache devices, when many tasks request these
-> >> flash devices and backend bcache devices, the write IOs may still
-> >> fall to the same bucket as bellow bucket:
-> >> | bcache data | flash data | bcache data | bcache data| flash data|
-> >> then after writeback of these backend bcache devices, the bucket would
-> >> be like bellow bucket:
-> >> | free | flash data | free | free | flash data |
-> > 
-> > This patch doesn't make any sense - open_buckets are only for allocations and
-> > writes to the SSD.
-> > 
-> 
-> Hi Kent,
-> 
-> I feel the purpose for this patch is to make flash only volume occupy as
-> less buckets as possible. Because dirty sectors of flash only volume is
-> not reclaimable, if their dirty sectors mixed with dirty sectors of
-> cached device, such buckets will be marked as dirty and won't be reclaimed.
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-If that's the goal the way to do it would be to segregate the write points, not
-the open buckets.
+Hello Coly, Kent
+
+> Correct me if I am wrong. I guess the reason why you care about flash
+> only volume is because ceph users use flash only volume to store some
+> metadata only on SSD ?
+
+Yes, we store ceph metadata in flash only volume and object data in 
+cached device. The buckets reclaimer performs badly, buckets often 
+be exhaustion.
+
+> If that's the goal the way to do it would be to segregate the write points, not
+> the open buckets.
+This patch is simple and effective, but I will try the method of segregating
+the write points, and send a patch V2 later.        
+
+Thanks,
+Tang
