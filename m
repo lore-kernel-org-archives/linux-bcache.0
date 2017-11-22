@@ -1,78 +1,124 @@
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [PATCH] bcache: set task state correctly in allocator_wait()
-Date: Wed, 22 Nov 2017 15:55:22 +0100
-Message-ID: <20171122145522.GB2788@linutronix.de>
-References: <20171122123349.74347-1-colyli@suse.de>
- <0c8e78ab-e369-a40c-ee02-6a6c8f3a5cdd@suse.de>
+From: Coly Li <i@coly.li>
+Subject: Re: ont out of 6 bcache devices does not register automatically
+Date: Wed, 22 Nov 2017 23:51:20 +0800
+Message-ID: <2d9e669a-cf9f-6640-5fa0-6db49c9d4022@coly.li>
+References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
+ <22a61b57-1fbf-5ec4-383c-13b2cb8eaaf2@coly.li>
+ <5c8958c1-acfd-14c9-d29f-0726ca92bc1c@profihost.ag>
+ <58151524-1294-2c8a-42a0-a5f21886625d@coly.li>
+ <6c624629-c528-fd92-420f-ea50c4e6e4c5@profihost.ag>
+ <11ecba69-d19e-fe34-eef4-ba9f4de28d0e@coly.li>
+ <a807e356-cc22-fe65-8026-fe23b9477b2e@profihost.ag>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Return-path: <linux-block-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <0c8e78ab-e369-a40c-ee02-6a6c8f3a5cdd@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: Hannes Reinecke <hare@suse.de>
-Cc: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from server.coly.li ([162.144.45.48]:57054 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751554AbdKVPvp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 22 Nov 2017 10:51:45 -0500
+In-Reply-To: <a807e356-cc22-fe65-8026-fe23b9477b2e@profihost.ag>
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On 2017-11-22 15:10:51 [+0100], Hannes Reinecke wrote:
-> On 11/22/2017 01:33 PM, Coly Li wrote:
-> > Kthread function bch_allocator_thread() references allocator_wait(ca, cond)
-> > and when kthread_should_stop() is true, this kthread exits.
-> > 
-> > The problem is, if kthread_should_stop() is true, macro allocator_wait()
-> > calls "return 0" with current task state TASK_INTERRUPTIBLE. After function
-> > bch_allocator_thread() returns to do_exit(), there are some blocking
-> > operations are called, then a kenrel warning is popped up by __might_sleep
-> > from kernel/sched/core.c,
-> >   "WARNING: do not call blocking ops when !TASK_RUNNING; state=1 set at [xxxx]"
-> > 
-> > If the task is interrupted and preempted out, since its status is
-> > TASK_INTERRUPTIBLE, it means scheduler won't pick it back to run forever,
-> > and the allocator thread may hang in do_exit().
-> > 
-> > This patch sets allocator kthread state back to TASK_RUNNING before it
-> > returns to do_exit(), which avoids a potential deadlock.
-> > 
-> > Signed-off-by: Coly Li <colyli@suse.de>
-> > Cc: stable@vger.kernel.org
-> > ---
-> >  drivers/md/bcache/alloc.c | 5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> > index a27d85232ce1..996ebbabd819 100644
-> > --- a/drivers/md/bcache/alloc.c
-> > +++ b/drivers/md/bcache/alloc.c
-> > @@ -286,9 +286,12 @@ do {									\
-> >  		if (cond)						\
-> >  			break;						\
-> >  									\
-> > +									\
-> >  		mutex_unlock(&(ca)->set->bucket_lock);			\
-> > -		if (kthread_should_stop())				\
-> > +		if (kthread_should_stop()) {				\
-> > +			__set_current_state(TASK_RUNNING);		\
-> >  			return 0;					\
-> > +		}							\
-> >  									\
-> >  		schedule();						\
-> >  		mutex_lock(&(ca)->set->bucket_lock);			\
-> > 
-> _Actually_ there is a push to remove all kthreads in the kernel, as they
-> don't play nice together with RT.
-
-with RT? If RT as in PREEMPT-RT then this is news to me. The reason why
-I removed the per-CPU kthreads in the scsi driver(s) was because it was
-nonsense in regards to CPU-hotplug and workqueue infrastructure is way
-nicer for that. Not to mention that it made the code simpler.
-
-> So while you're at it, do you think it'd be possible to convert it to a
-> workqueue? Sebastian will be happy to help you here, right, Sebastian?
-If commit 4b9bc86d5a99 ("fcoe: convert to kworker") does not explain I
-can try to assist.
-
-> Cheers,
+On 22/11/2017 10:16 PM, Stefan Priebe - Profihost AG wrote:
+> Hi Coly,
+> Am 22.11.2017 um 14:29 schrieb Coly Li:
+>> On 22/11/2017 9:14 PM, Stefan Priebe - Profihost AG wrote:
+>>> Am 22.11.2017 um 13:57 schrieb Coly Li:
+>>>> On 22/11/2017 8:26 PM, Stefan Priebe - Profihost AG wrote:
+>>>>>
+>>>>> Am 22.11.2017 um 13:16 schrieb Coly Li:
+>>>>>> On 22/11/2017 7:23 PM, Stefan Priebe - Profihost AG wrote:
+>>>>>>> Hello,
+>>>>>>>
+>>>>>>> i've 6 bcache blk devices attached to 3 caching ssds (2 each). One fails
+>>>>>>> to register automatically at boot time.
+>>>>>>>
+>>>>>>> After reboot i always need to execute:
+>>>>>>> echo /dev/sdf1 >/sys/fs/bcache/register
+>>>>>>>
+>>>>>>> to bring up the bcache device.
+>>>>>>>
+>>>>>>> Any idea?
+>>>>>>
+>>>>>> Hi Stefan,
+>>>>>>
+>>>>>> Is there any clue from kernel message ?
+>>>>>
+>>>>> Sadly not.
+>>>>>
+>>>>> Working one:
+>>>>> ]# dmesg | grep sdi
+>>>>> [    1.060377] sd 5:0:0:0: [sdi] 1953525168 512-byte logical blocks:
+>>>>> (1.00 TB/932 GiB)
+>>>>> [    1.060393] sd 5:0:0:0: [sdi] Write Protect is off
+>>>>> [    1.060396] sd 5:0:0:0: [sdi] Mode Sense: 00 3a 00 00
+>>>>> [    1.060425] sd 5:0:0:0: [sdi] Write cache: enabled, read cache:
+>>>>> enabled, doesn't support DPO or FUA
+>>>>> [    1.104341]  sdi: sdi1
+>>>>> [    1.104644] sd 5:0:0:0: [sdi] Attached SCSI disk
+>>>>> [    2.005452] bcache: register_bdev() registered backing device sdi1
+>>>>> [    2.045211] bcache: bch_cached_dev_attach() Caching sdi1 as bcache0
+>>>>> on set 76b95bf8-9cc7-407f-9f9e-a42b6d1bcb27
+>>>>>
+>>>>>
+>>>>> not working one:
+>>>>> # dmesg | grep sdf
+>>>>> [    0.946107] sd 0:0:5:0: [sdf] 1953525168 512-byte logical blocks:
+>>>>> (1.00 TB/932 GiB)
+>>>>> [    1.400267] sd 0:0:5:0: [sdf] Write Protect is off
+>>>>> [    1.400267] sd 0:0:5:0: [sdf] Mode Sense: 00 00 00 00
+>>>>> [    1.401347] sd 0:0:5:0: [sdf] Write cache: enabled, read cache:
+>>>>> enabled, supports DPO and FUA
+>>>>> [    1.902910]  sdf: sdf1
+>>>>> [    2.341289] sd 0:0:5:0: [sdf] Attached SCSI disk
+>>>>> [  295.458804] bcache: register_bdev() registered backing device sdf1
+>>>>> [  295.506656] bcache: bch_cached_dev_attach() Caching sdf1 as bcache5
+>>>>> on set 76b95bf8-9cc7-407f-9f9e-a42b6d1bcb27
+>>>>>
+>>>>> At 295s i registeeed it manually.
+>>>>
+>>>> Hi Stefan,
+>>>>
+>>>> Hmm, I don't have idea here. Anyway, is the cache mode set as writeback?
+>>>> Recently I post a patch to fix a potential deadlock between writeback
+>>>> rate update kworker and register code, I am not sure whether it is
+>>>> relative to your issue, but at least we can have a try. the patch title is:
+>>>>  [RFC] bcache: fix a circular dead locking with dc->writeback_lock and
+>>>> bch_register_lock
+>>>>
+>>>> Just for your information.
+>>>
+>>> i can try that one - can you please resend? I can't find that mail and
+>>> don't know how to grab that one our of the web html archives to apply
+>>> correctly.
+>>
+>> Hi Stefan,
+>>
+>> Can you download the patch from following URL:
+>> https://git.kernel.org/pub/scm/linux/kernel/git/colyli/bcache-patches.git/plain/for-test/0001-bcache-fix-a-circular-dead-locking-with-dc-writeback.patch
 > 
-> Hannes
+> thanks, sadly it does not help. More ideas? Is there an easy way to
+> debug the calls to probe-bcache and bcache-register from udev?
 
-Sebastian
+Hmm, udev is a miracle to me yet...
+
+I guess maybe I happen to have 6 hard drives (from 120G to 2TB) as
+backing device, and 3 PCIe SSDs as cache device. Can you give me a
+detail configuration that how the bcache devices are configured and how
+the udev rules are deployed. I can also try to reproduce on my server.
+
+Currently the hardware is occupied by other task, I can take a try for
+the registration issue if the hardware can be free next Monday.
+
+Thanks.
+
+Coly Li
+
+
+-- 
+Coly Li
