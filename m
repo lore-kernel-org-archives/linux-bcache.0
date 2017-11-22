@@ -1,97 +1,55 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: set task state correctly in allocator_wait()
-Date: Thu, 23 Nov 2017 00:44:22 +0800
-Message-ID: <04592484-da30-8708-080c-3f2f896fb7d3@suse.de>
-References: <20171122123349.74347-1-colyli@suse.de>
- <0c8e78ab-e369-a40c-ee02-6a6c8f3a5cdd@suse.de>
- <20171122145522.GB2788@linutronix.de>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: ont out of 6 bcache devices does not register automatically
+Date: Wed, 22 Nov 2017 09:51:32 -0800
+Message-ID: <f6c02ce5-eeff-955f-53a6-0db07aaecd08@lyle.org>
+References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
+ <22a61b57-1fbf-5ec4-383c-13b2cb8eaaf2@coly.li>
+ <5c8958c1-acfd-14c9-d29f-0726ca92bc1c@profihost.ag>
+ <58151524-1294-2c8a-42a0-a5f21886625d@coly.li>
+ <6c624629-c528-fd92-420f-ea50c4e6e4c5@profihost.ag>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:59073 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751546AbdKVQoa (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 22 Nov 2017 11:44:30 -0500
-In-Reply-To: <20171122145522.GB2788@linutronix.de>
+Received: from mail-pg0-f47.google.com ([74.125.83.47]:38310 "EHLO
+        mail-pg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751634AbdKVRvf (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 22 Nov 2017 12:51:35 -0500
+Received: by mail-pg0-f47.google.com with SMTP id s11so12883309pgc.5
+        for <linux-bcache@vger.kernel.org>; Wed, 22 Nov 2017 09:51:35 -0800 (PST)
+In-Reply-To: <6c624629-c528-fd92-420f-ea50c4e6e4c5@profihost.ag>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>, Hannes Reinecke <hare@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, Coly Li <i@coly.li>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On 22/11/2017 10:55 PM, Sebastian Andrzej Siewior wrote:
-> On 2017-11-22 15:10:51 [+0100], Hannes Reinecke wrote:
->> On 11/22/2017 01:33 PM, Coly Li wrote:
->>> Kthread function bch_allocator_thread() references allocator_wait(ca, cond)
->>> and when kthread_should_stop() is true, this kthread exits.
->>>
->>> The problem is, if kthread_should_stop() is true, macro allocator_wait()
->>> calls "return 0" with current task state TASK_INTERRUPTIBLE. After function
->>> bch_allocator_thread() returns to do_exit(), there are some blocking
->>> operations are called, then a kenrel warning is popped up by __might_sleep
->>> from kernel/sched/core.c,
->>>   "WARNING: do not call blocking ops when !TASK_RUNNING; state=1 set at [xxxx]"
->>>
->>> If the task is interrupted and preempted out, since its status is
->>> TASK_INTERRUPTIBLE, it means scheduler won't pick it back to run forever,
->>> and the allocator thread may hang in do_exit().
->>>
->>> This patch sets allocator kthread state back to TASK_RUNNING before it
->>> returns to do_exit(), which avoids a potential deadlock.
->>>
->>> Signed-off-by: Coly Li <colyli@suse.de>
->>> Cc: stable@vger.kernel.org
->>> ---
->>>  drivers/md/bcache/alloc.c | 5 ++++-
->>>  1 file changed, 4 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
->>> index a27d85232ce1..996ebbabd819 100644
->>> --- a/drivers/md/bcache/alloc.c
->>> +++ b/drivers/md/bcache/alloc.c
->>> @@ -286,9 +286,12 @@ do {									\
->>>  		if (cond)						\
->>>  			break;						\
->>>  									\
->>> +									\
->>>  		mutex_unlock(&(ca)->set->bucket_lock);			\
->>> -		if (kthread_should_stop())				\
->>> +		if (kthread_should_stop()) {				\
->>> +			__set_current_state(TASK_RUNNING);		\
->>>  			return 0;					\
->>> +		}							\
->>>  									\
->>>  		schedule();						\
->>>  		mutex_lock(&(ca)->set->bucket_lock);			\
->>>
->> _Actually_ there is a push to remove all kthreads in the kernel, as they
->> don't play nice together with RT.
+Hi Coly, Stefan--
+
+On 11/22/2017 05:14 AM, Stefan Priebe - Profihost AG wrote:
+>> Hi Stefan,
+>>
+>> Hmm, I don't have idea here. Anyway, is the cache mode set as writeback?
+>> Recently I post a patch to fix a potential deadlock between writeback
+>> rate update kworker and register code, I am not sure whether it is
+>> relative to your issue, but at least we can have a try. the patch title is:
+>>  [RFC] bcache: fix a circular dead locking with dc->writeback_lock and
+>> bch_register_lock
+>>
+>> Just for your information.
 > 
-> with RT? If RT as in PREEMPT-RT then this is news to me. The reason why
-> I removed the per-CPU kthreads in the scsi driver(s) was because it was
-> nonsense in regards to CPU-hotplug and workqueue infrastructure is way
-> nicer for that. Not to mention that it made the code simpler.
+> i can try that one - can you please resend? I can't find that mail and
+> don't know how to grab that one our of the web html archives to apply
+> correctly.
 > 
->> So while you're at it, do you think it'd be possible to convert it to a
->> workqueue? Sebastian will be happy to help you here, right, Sebastian?
-> If commit 4b9bc86d5a99 ("fcoe: convert to kworker") does not explain I
-> can try to assist.
+> Stefan
 
-Hi Hannes and Sebastian,
+I don't think there's any chance this patch will do anything.  If
+there's a deadlock, the whole thing will become stuck forever and never
+allow registration or progress on the device again-- which doesn't match
+the symptoms here.
 
-Thanks for the informative input. I see the point why convert from
-kthread to per-cpu kworker. Bucket allocation is not a very hot code
-path to deserve per-cpu work queue, a per-cached device work queue is
-enough, as other places where kworker is used in bcache code. Bcache
-used to have circular dependency issue on kworker queue, unless I attach
-the kworker to a new and separate workqueue, there might be potential
-possibility to introduce a new circular locking on global workqueues.
+This probably relates to udev configuration in your environment somehow.
 
-It is better to make less modification for now, and later after Michael
-finishes all locking clean up, we can come to see the kthread to kworker
-conversion.
-
-Thanks.
-
-Coly Li
+Mike
