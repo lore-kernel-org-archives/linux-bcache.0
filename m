@@ -1,80 +1,58 @@
-From: Rui Hua <huarui.dev@gmail.com>
-Subject: Re: [PATCH] bcache: recover data from backing device when read
- request hit clean
-Date: Wed, 22 Nov 2017 14:04:31 +0800
-Message-ID: <CAPGwLLMiut=sQ5XZKHe6t-wBEGCtDkFF+8KS3yuhN34BOfeHmw@mail.gmail.com>
-References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
- <1c715cc2-b656-36a8-4017-55052937df82@lyle.org> <CAPGwLLNyjjxKOXA3RCFGSi4p-ZWZ5T9ADWP6EAqrfL3oUvMbFQ@mail.gmail.com>
- <CAJ+L6qen=5AVFr_q_r_F6jU8BTQ=t+7p94ucFW9HXEDD6AGEKg@mail.gmail.com> <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: Coly Li <i@coly.li>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: [PATCH v2] bcache: stop writeback thread after detaching
+Date: Wed, 22 Nov 2017 14:20:13 +0800
+Message-ID: <1511331613-23140-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from out1.zte.com.cn ([202.103.147.172]:40250 "EHLO mxct.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751368AbdKVGUj (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 22 Nov 2017 01:20:39 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-Hi, Michael
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Thanks for your reminder. I'll checkpatch carefully next time.
+Currently, when a cached device detaching from cache, writeback thread is
+not stopped, and writeback_rate_update work is not canceled. For example,
+after bellow command:
+echo 1 >/sys/block/sdb/bcache/detach
+you can still see the writeback thread. Then you attach the device to the
+cache again, bcache will create another writeback thread, for example,
+after bellow command:
+echo  ba0fb5cd-658a-4533-9806-6ce166d883b9 > /sys/block/sdb/bcache/attach
+then you will see 2 writeback threads.
+This patch stops writeback thread and cancels writeback_rate_update work
+when cached device detaching from cache.
 
-Thanks
+Compare with patch v1, this v2 patch moves code down into the register
+lock for safety in case of any future changes as Coly and mike suggested.
 
-2017-11-22 13:13 GMT+08:00 Michael Lyle <mlyle@lyle.org>:
-> Reviewed-by: Michael Lyle <mlyle@lyle.org>
->
-> Please note though, that your patches have all tabs expanded to spaces,
-> which makes them difficult to apply.  I have fixed things these times
-> but please try to submit them in correct form in the future.
->
-> Thanks,
->
-> Mike
->
-> On 11/17/2017 04:57 PM, Michael Lyle wrote:
->> Rui Hua--
->>
->> Thanks for the clarification.  You're correct, it doesn't get called,
->> and it goes to read_complete.  However, read_error should probably get
->> called.  How would you suggest handling this-- should we initially set
->> read_dirty_data true and clear it if it is all clean?  (and change the
->> condition to properly go into the error path).  As it is, the patch
->> makes things no worse but the error path is very unsafe.
->>
->> Mike
->>
->> On Thu, Nov 16, 2017 at 8:25 PM, Rui Hua <huarui.dev@gmail.com> wrote:
->>> Hi, Michael--
->>>
->>> Thanks for the quickly reply.
->>>
->>> If the metadata on the cache device was NOT correctly read,
->>> cached_dev_read_error() will not be called, so the recovery check will
->>> not be executed. so this patch is safe.
->>> s->iop.error was not set when faild to read metadata on the cache
->>> device, so the  cached_dev_bio_complete() will be called instead of
->>> cached_dev_read_error()
->>>
->>> 2017-11-17 12:02 GMT+08:00 Michael Lyle <mlyle@lyle.org>:
->>>> Hi, Rui Hua--
->>>>
->>>> On 11/16/2017 07:51 PM, Rui Hua wrote:
->>>>> In this patch, we use s->read_dirty_data to judge whether the read
->>>>> request hit dirty data in cache device, it is safe to reread data from
->>>>> the backing device when the read request hit clean data. This can not
->>>>> only handle cache read race, but also recover data when failed read
->>>>> request from cache device.
->>>>
->>>> I haven't read over all of this yet, to understand the read race.  But
->>>> this change can't be safe-- read_dirty_data only is set to true if the
->>>> metadata on the cache device is correctly read.  If that fails, the flag
->>>> may not be set and we could read stale data on the backing device.
->>>>
->>>> Mike
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/super.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+ mode change 100644 => 100755 drivers/md/bcache/super.c
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+old mode 100644
+new mode 100755
+index 8352fad..1c5136e
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -893,6 +893,12 @@ static void cached_dev_detach_finish(struct work_struct *w)
+ 
+ 	mutex_lock(&bch_register_lock);
+ 
++	cancel_delayed_work_sync(&dc->writeback_rate_update);
++	if (!IS_ERR_OR_NULL(dc->writeback_thread)) {
++		kthread_stop(dc->writeback_thread);
++		dc->writeback_thread = NULL;
++	}
++
+ 	memset(&dc->sb.set_uuid, 0, 16);
+ 	SET_BDEV_STATE(&dc->sb, BDEV_STATE_NONE);
+ 
+-- 
+1.8.3.1
