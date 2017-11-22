@@ -1,82 +1,63 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH] bcache: recover data from backing device when read
- request hit clean
-Date: Tue, 21 Nov 2017 21:13:52 -0800
-Message-ID: <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
-References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
- <1c715cc2-b656-36a8-4017-55052937df82@lyle.org>
- <CAPGwLLNyjjxKOXA3RCFGSi4p-ZWZ5T9ADWP6EAqrfL3oUvMbFQ@mail.gmail.com>
- <CAJ+L6qen=5AVFr_q_r_F6jU8BTQ=t+7p94ucFW9HXEDD6AGEKg@mail.gmail.com>
+Subject: Re: [PATCH] bcache: stop writeback thread after detaching
+Date: Tue, 21 Nov 2017 21:18:36 -0800
+Message-ID: <CAJ+L6qd3gVypK29V4xYs100zj0VmmTqNeGFs7BLzU8NDCJ=k0g@mail.gmail.com>
+References: <1509437651-24052-1-git-send-email-tang.junhui@zte.com.cn> <32ba916e-a7d4-b4c0-ea75-844bb34a3d86@coly.li>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f66.google.com ([74.125.83.66]:40432 "EHLO
-        mail-pg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751079AbdKVFNz (ORCPT
+Received: from mail-qk0-f177.google.com ([209.85.220.177]:43116 "EHLO
+        mail-qk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751079AbdKVFSh (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 22 Nov 2017 00:13:55 -0500
-Received: by mail-pg0-f66.google.com with SMTP id u3so12017111pgn.7
-        for <linux-bcache@vger.kernel.org>; Tue, 21 Nov 2017 21:13:55 -0800 (PST)
-In-Reply-To: <CAJ+L6qen=5AVFr_q_r_F6jU8BTQ=t+7p94ucFW9HXEDD6AGEKg@mail.gmail.com>
-Content-Language: en-US
+        Wed, 22 Nov 2017 00:18:37 -0500
+Received: by mail-qk0-f177.google.com with SMTP id j202so15245520qke.10
+        for <linux-bcache@vger.kernel.org>; Tue, 21 Nov 2017 21:18:37 -0800 (PST)
+In-Reply-To: <32ba916e-a7d4-b4c0-ea75-844bb34a3d86@coly.li>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Rui Hua <huarui.dev@gmail.com>
-Cc: Coly Li <i@coly.li>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
+To: Coly Li <i@coly.li>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>, Coly Li <colyli@suse.de>, linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
 
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
+Tang Junhui--
 
-Please note though, that your patches have all tabs expanded to spaces,
-which makes them difficult to apply.  I have fixed things these times
-but please try to submit them in correct form in the future.
+Thanks for noticing this issue.
+
+On Wed, Nov 1, 2017 at 4:55 AM, Coly Li <i@coly.li> wrote:
+> On 2017/10/31 =E4=B8=8B=E5=8D=884:14, tang.junhui@zte.com.cn wrote:
+>> From: Tang Junhui <tang.junhui@zte.com.cn>
+>>
+>> Currently, when a cached device detaching from cache, writeback thread i=
+s not stopped,
+>> and writeback_rate_update work is not canceled. For example, after bello=
+w command:
+>> echo 1 >/sys/block/sdb/bcache/detach
+>> you can still see the writeback thread. Then you attach the device to th=
+e cache again,
+>> bcache will create another writeback thread, for example, after bellow c=
+ommand:
+>> echo  ba0fb5cd-658a-4533-9806-6ce166d883b9 > /sys/block/sdb/bcache/attac=
+h
+>> then you will see 2 writeback threads.
+>> This patch stops writeback thread and cancels writeback_rate_update work=
+ when cached
+>> device detaching from cache.
+>>
+>> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+>
+> If the change can be inside bch_register_lock, it would (just) be more
+> comfortable. The code is correct, because attach/detach sysfs is created
+> after writeback_thread created and writeback_rate_update worker
+> initialized, even these resources are initialized within
+> bch_register_lock and released out of bch)register_lock in your patch,
+> there won't be any race. It's OK to me.
+>
+
+I think I agree with Coly that I'd prefer it to be moved down into the
+register lock, as I think that will be safer with any future changes.
+Are you willing to adjust it this way?
 
 Thanks,
 
 Mike
-
-On 11/17/2017 04:57 PM, Michael Lyle wrote:
-> Rui Hua--
-> 
-> Thanks for the clarification.  You're correct, it doesn't get called,
-> and it goes to read_complete.  However, read_error should probably get
-> called.  How would you suggest handling this-- should we initially set
-> read_dirty_data true and clear it if it is all clean?  (and change the
-> condition to properly go into the error path).  As it is, the patch
-> makes things no worse but the error path is very unsafe.
-> 
-> Mike
-> 
-> On Thu, Nov 16, 2017 at 8:25 PM, Rui Hua <huarui.dev@gmail.com> wrote:
->> Hi, Michael--
->>
->> Thanks for the quickly reply.
->>
->> If the metadata on the cache device was NOT correctly read,
->> cached_dev_read_error() will not be called, so the recovery check will
->> not be executed. so this patch is safe.
->> s->iop.error was not set when faild to read metadata on the cache
->> device, so the  cached_dev_bio_complete() will be called instead of
->> cached_dev_read_error()
->>
->> 2017-11-17 12:02 GMT+08:00 Michael Lyle <mlyle@lyle.org>:
->>> Hi, Rui Hua--
->>>
->>> On 11/16/2017 07:51 PM, Rui Hua wrote:
->>>> In this patch, we use s->read_dirty_data to judge whether the read
->>>> request hit dirty data in cache device, it is safe to reread data from
->>>> the backing device when the read request hit clean data. This can not
->>>> only handle cache read race, but also recover data when failed read
->>>> request from cache device.
->>>
->>> I haven't read over all of this yet, to understand the read race.  But
->>> this change can't be safe-- read_dirty_data only is set to true if the
->>> metadata on the cache device is correctly read.  If that fails, the flag
->>> may not be set and we could read stale data on the backing device.
->>>
->>> Mike
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
