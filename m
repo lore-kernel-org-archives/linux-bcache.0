@@ -1,45 +1,68 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH] bcache: set task state correctly in allocator_wait()
-Date: Wed, 22 Nov 2017 09:57:40 -0800
-Message-ID: <6ae16d24-d7da-ba48-ddc8-7d715930eb2b@lyle.org>
-References: <20171122123349.74347-1-colyli@suse.de>
- <0c8e78ab-e369-a40c-ee02-6a6c8f3a5cdd@suse.de>
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Subject: Re: ont out of 6 bcache devices does not register automatically
+Date: Wed, 22 Nov 2017 20:06:13 +0100
+Message-ID: <eee65109-aa05-d639-e0fe-12259e726803@profihost.ag>
+References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
+ <22a61b57-1fbf-5ec4-383c-13b2cb8eaaf2@coly.li>
+ <5c8958c1-acfd-14c9-d29f-0726ca92bc1c@profihost.ag>
+ <58151524-1294-2c8a-42a0-a5f21886625d@coly.li>
+ <6c624629-c528-fd92-420f-ea50c4e6e4c5@profihost.ag>
+ <f6c02ce5-eeff-955f-53a6-0db07aaecd08@lyle.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f49.google.com ([74.125.83.49]:44056 "EHLO
-        mail-pg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751797AbdKVR5m (ORCPT
+Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:60168 "EHLO
+        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1751624AbdKVTGQ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 22 Nov 2017 12:57:42 -0500
-Received: by mail-pg0-f49.google.com with SMTP id c123so12883323pga.11
-        for <linux-bcache@vger.kernel.org>; Wed, 22 Nov 2017 09:57:42 -0800 (PST)
-In-Reply-To: <0c8e78ab-e369-a40c-ee02-6a6c8f3a5cdd@suse.de>
-Content-Language: en-US
+        Wed, 22 Nov 2017 14:06:16 -0500
+In-Reply-To: <f6c02ce5-eeff-955f-53a6-0db07aaecd08@lyle.org>
+Content-Language: de-DE
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Hannes Reinecke <hare@suse.de>, Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, stable@vger.kernel.org, Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Michael Lyle <mlyle@lyle.org>, Coly Li <i@coly.li>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Hey everyone--
+Am 22.11.2017 um 18:51 schrieb Michael Lyle:
+> Hi Coly, Stefan--
+> 
+> On 11/22/2017 05:14 AM, Stefan Priebe - Profihost AG wrote:
+>>> Hi Stefan,
+>>>
+>>> Hmm, I don't have idea here. Anyway, is the cache mode set as writeback?
+>>> Recently I post a patch to fix a potential deadlock between writeback
+>>> rate update kworker and register code, I am not sure whether it is
+>>> relative to your issue, but at least we can have a try. the patch title is:
+>>>  [RFC] bcache: fix a circular dead locking with dc->writeback_lock and
+>>> bch_register_lock
+>>>
+>>> Just for your information.
+>>
+>> i can try that one - can you please resend? I can't find that mail and
+>> don't know how to grab that one our of the web html archives to apply
+>> correctly.
+>>
+>> Stefan
+> 
+> I don't think there's any chance this patch will do anything.  If
+> there's a deadlock, the whole thing will become stuck forever and never
+> allow registration or progress on the device again-- which doesn't match
+> the symptoms here.
 
-On 11/22/2017 06:10 AM, Hannes Reinecke wrote:
-> _Actually_ there is a push to remove all kthreads in the kernel, as they
-> don't play nice together with RT.
-> So while you're at it, do you think it'd be possible to convert it to a
-> workqueue? Sebastian will be happy to help you here, right, Sebastian?
+No it does not ;-)
 
-I don't see a reason why moving this away from a thread would be
-advantageous.  There's neither devastating complexity in the current
-form nor a need for additional concurrency (at least right now).
+> This probably relates to udev configuration in your environment somehow.
 
-As it turns out, we're broken for RT for other reasons, but that has to
-do with our use of closures and releasing locks in different threads
-from where they're allocated.  The natural answer is completions, but
-that's not easily done with the current structure of the code.
+Default debian udev - nothing special. Works on 50 other systems
+perfectly only one where it does not... but udev debugging just sucks.
 
-This current code is neither a problem for RT nor for
-performance/legibility on mainline.
+Stefan
 
-Mike
+
+> Mike
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
