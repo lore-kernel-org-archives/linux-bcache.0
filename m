@@ -1,89 +1,80 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH] [PATCH v2] bcache: segregate flash only volume write streams from cached devices
-Date: Wed, 22 Nov 2017 13:52:12 +0800
-Message-ID: <1511329932-22581-1-git-send-email-tang.junhui@zte.com.cn>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mxhk.zte.com.cn ([63.217.80.70]:61820 "EHLO mxhk.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751209AbdKVFw3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 22 Nov 2017 00:52:29 -0500
-Sender: linux-bcache-owner@vger.kernel.org
+From: Rui Hua <huarui.dev@gmail.com>
+Subject: Re: [PATCH] bcache: recover data from backing device when read
+ request hit clean
+Date: Wed, 22 Nov 2017 14:04:31 +0800
+Message-ID: <CAPGwLLMiut=sQ5XZKHe6t-wBEGCtDkFF+8KS3yuhN34BOfeHmw@mail.gmail.com>
+References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
+ <1c715cc2-b656-36a8-4017-55052937df82@lyle.org> <CAPGwLLNyjjxKOXA3RCFGSi4p-ZWZ5T9ADWP6EAqrfL3oUvMbFQ@mail.gmail.com>
+ <CAJ+L6qen=5AVFr_q_r_F6jU8BTQ=t+7p94ucFW9HXEDD6AGEKg@mail.gmail.com> <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
+Sender: linux-block-owner@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: Coly Li <i@coly.li>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kent.overstreet@gmail.com, colyli@suse.de, mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+Hi, Michael
 
-In such scenario that there are some flash only volumes
-, and some cached devices, when many tasks request these devices in
-writeback mode, the write IOs may fall to the same bucket as bellow:
-| cached data | flash data | cached data | cached data| flash data|
-then after writeback of these cached devices, the bucket would
-be like bellow bucket:
-| free | flash data | free | free | flash data |
+Thanks for your reminder. I'll checkpatch carefully next time.
 
-So, there are many free space in this bucket, but since data of flash
-only volumes still exists, so this bucket cannot be reclaimable,
-which would cause waste of bucket space.
+Thanks
 
-In this patch, we segregate flash only volume write streams from
-cached devices, so data from flash only volumes and cached devices
-can store in different buckets.
-
-Compare to v1 patch, this patch do not add a additionally open bucket
-list, and it is try best to segregate flash only volume write streams
-from cached devices, sectors of flash only volumes may still be mixed
-with dirty sectors of cached device, but the number is very small.
-
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/alloc.c | 19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
- mode change 100644 => 100755 drivers/md/bcache/alloc.c
-
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-old mode 100644
-new mode 100755
-index 0803563..d0ed574
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -514,15 +514,21 @@ struct open_bucket {
- 
- /*
-  * We keep multiple buckets open for writes, and try to segregate different
-- * write streams for better cache utilization: first we look for a bucket where
-- * the last write to it was sequential with the current write, and failing that
-- * we look for a bucket that was last used by the same task.
-+ * write streams for better cache utilization: first we try to segregate flash
-+ * only volume write streams from cached devices, secondly we look for a bucket
-+ * where the last write to it was sequential with the current write, and
-+ * failing that we look for a bucket that was last used by the same task.
-  *
-  * The ideas is if you've got multiple tasks pulling data into the cache at the
-  * same time, you'll get better cache utilization if you try to segregate their
-  * data and preserve locality.
-  *
-- * For example, say you've starting Firefox at the same time you're copying a
-+ * For example, dirty sectors of flash only volume is not reclaimable, if their
-+ * dirty sectors mixed with dirty sectors of cached device, such buckets will
-+ * be marked as dirty and won't be reclaimed, though the dirty data of cached
-+ * device have been written back to backend device.
-+ *
-+ * And say you've starting Firefox at the same time you're copying a
-  * bunch of files. Firefox will likely end up being fairly hot and stay in the
-  * cache awhile, but the data you copied might not be; if you wrote all that
-  * data to the same buckets it'd get invalidated at the same time.
-@@ -539,7 +545,10 @@ static struct open_bucket *pick_data_bucket(struct cache_set *c,
- 	struct open_bucket *ret, *ret_task = NULL;
- 
- 	list_for_each_entry_reverse(ret, &c->data_buckets, list)
--		if (!bkey_cmp(&ret->key, search))
-+		if (UUID_FLASH_ONLY(&c->uuids[KEY_INODE(&ret->key)]) !=
-+		    UUID_FLASH_ONLY(&c->uuids[KEY_INODE(search)]))
-+			continue;
-+		else if (!bkey_cmp(&ret->key, search))
- 			goto found;
- 		else if (ret->last_write_point == write_point)
- 			ret_task = ret;
--- 
-1.8.3.1
+2017-11-22 13:13 GMT+08:00 Michael Lyle <mlyle@lyle.org>:
+> Reviewed-by: Michael Lyle <mlyle@lyle.org>
+>
+> Please note though, that your patches have all tabs expanded to spaces,
+> which makes them difficult to apply.  I have fixed things these times
+> but please try to submit them in correct form in the future.
+>
+> Thanks,
+>
+> Mike
+>
+> On 11/17/2017 04:57 PM, Michael Lyle wrote:
+>> Rui Hua--
+>>
+>> Thanks for the clarification.  You're correct, it doesn't get called,
+>> and it goes to read_complete.  However, read_error should probably get
+>> called.  How would you suggest handling this-- should we initially set
+>> read_dirty_data true and clear it if it is all clean?  (and change the
+>> condition to properly go into the error path).  As it is, the patch
+>> makes things no worse but the error path is very unsafe.
+>>
+>> Mike
+>>
+>> On Thu, Nov 16, 2017 at 8:25 PM, Rui Hua <huarui.dev@gmail.com> wrote:
+>>> Hi, Michael--
+>>>
+>>> Thanks for the quickly reply.
+>>>
+>>> If the metadata on the cache device was NOT correctly read,
+>>> cached_dev_read_error() will not be called, so the recovery check will
+>>> not be executed. so this patch is safe.
+>>> s->iop.error was not set when faild to read metadata on the cache
+>>> device, so the  cached_dev_bio_complete() will be called instead of
+>>> cached_dev_read_error()
+>>>
+>>> 2017-11-17 12:02 GMT+08:00 Michael Lyle <mlyle@lyle.org>:
+>>>> Hi, Rui Hua--
+>>>>
+>>>> On 11/16/2017 07:51 PM, Rui Hua wrote:
+>>>>> In this patch, we use s->read_dirty_data to judge whether the read
+>>>>> request hit dirty data in cache device, it is safe to reread data from
+>>>>> the backing device when the read request hit clean data. This can not
+>>>>> only handle cache read race, but also recover data when failed read
+>>>>> request from cache device.
+>>>>
+>>>> I haven't read over all of this yet, to understand the read race.  But
+>>>> this change can't be safe-- read_dirty_data only is set to true if the
+>>>> metadata on the cache device is correctly read.  If that fails, the flag
+>>>> may not be set and we could read stale data on the backing device.
+>>>>
+>>>> Mike
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
