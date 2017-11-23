@@ -1,75 +1,117 @@
-From: Eddie Chapman <eddie@ehuk.net>
-Subject: Re: [PATCH] bcache: recover data from backing device when read
- request hit clean
-Date: Thu, 23 Nov 2017 15:09:05 +0000
-Message-ID: <5ab429e6-a376-6995-172b-9370de89fe4c@ehuk.net>
-References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
- <1c715cc2-b656-36a8-4017-55052937df82@lyle.org>
- <CAPGwLLNyjjxKOXA3RCFGSi4p-ZWZ5T9ADWP6EAqrfL3oUvMbFQ@mail.gmail.com>
- <CAJ+L6qen=5AVFr_q_r_F6jU8BTQ=t+7p94ucFW9HXEDD6AGEKg@mail.gmail.com>
- <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
-Reply-To: Eddie Chapman <eddie@ehuk.net>
+From: Zdenek Kabelac <zkabelac@redhat.com>
+Subject: Re: [PATCH 4/4] dm: convert table_device.count from atomic_t to
+ refcount_t
+Date: Thu, 23 Nov 2017 16:19:21 +0100
+Message-ID: <92f8c04f-ef1a-c41b-e82f-8d68a3ec84b5@redhat.com>
+References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
+ <1508485059-21881-5-git-send-email-elena.reshetova@intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=iso-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from schatzi.steelbluetech.co.uk ([92.63.139.240]:40465 "EHLO
-        schatzi.steelbluetech.co.uk" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1752833AbdKWPJH (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 23 Nov 2017 10:09:07 -0500
-In-Reply-To: <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
-Content-Language: en-GB
+Received: from mx1.redhat.com ([209.132.183.28]:44952 "EHLO mx1.redhat.com"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1752204AbdKWPTd (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 23 Nov 2017 10:19:33 -0500
+In-Reply-To: <1508485059-21881-5-git-send-email-elena.reshetova@intel.com>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, Rui Hua <huarui.dev@gmail.com>, Coly Li <i@coly.li>
-Cc: linux-bcache <linux-bcache@vger.kernel.org>, Kent Overstreet <kent.overstreet@gmail.com>
+To: Elena Reshetova <elena.reshetova@intel.com>, dm-devel@redhat.com
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, kent.overstreet@gmail.com, koverstreet@google.com, ejt@redhat.com, snitzer@redhat.com, shli@kernel.org, agk@redhat.com, peterz@infradead.org, keescook@chromium.org
 
-On 22/11/17 05:13, Michael Lyle wrote:
-> Reviewed-by: Michael Lyle <mlyle@lyle.org>
+Dne 20.10.2017 v 09:37 Elena Reshetova napsal(a):
+> atomic_t variables are currently used to implement reference
+> counters with the following properties:
+>   - counter is initialized to 1 using atomic_set()
+>   - a resource is freed upon counter reaching zero
+>   - once counter reaches zero, its further
+>     increments aren't allowed
+>   - counter schema uses basic atomic operations
+>     (set, inc, inc_not_zero, dec_and_test, etc.)
+> 
+> Such atomic variables should be converted to a newly provided
+> refcount_t type and API that prevents accidental counter overflows
+> and underflows. This is important since overflows and underflows
+> can lead to use-after-free situation and be exploitable.
+> 
+> The variable table_device.count is used as pure reference counter.
+> Convert it to refcount_t and fix up the operations.
+> 
+> Suggested-by: Kees Cook <keescook@chromium.org>
+> Reviewed-by: David Windsor <dwindsor@gmail.com>
+> Reviewed-by: Hans Liljestrand <ishkamiel@gmail.com>
+> Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
+> ---
+>   drivers/md/dm.c | 12 +++++++-----
+>   1 file changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+> index 4be8532..be12f3f 100644
+> --- a/drivers/md/dm.c
+> +++ b/drivers/md/dm.c
+> @@ -24,6 +24,7 @@
+>   #include <linux/delay.h>
+>   #include <linux/wait.h>
+>   #include <linux/pr.h>
+> +#include <linux/refcount.h>
+>   
+>   #define DM_MSG_PREFIX "core"
+>   
+> @@ -98,7 +99,7 @@ struct dm_md_mempools {
+>   
+>   struct table_device {
+>   	struct list_head list;
+> -	atomic_t count;
+> +	refcount_t count;
+>   	struct dm_dev dm_dev;
+>   };
+>   
+> @@ -685,10 +686,11 @@ int dm_get_table_device(struct mapped_device *md, dev_t dev, fmode_t mode,
+>   
+>   		format_dev_t(td->dm_dev.name, dev);
+>   
+> -		atomic_set(&td->count, 0);
+> +		refcount_set(&td->count, 1);
+>   		list_add(&td->list, &md->table_devices);
+> +	} else {
+> +		refcount_inc(&td->count);
+>   	}
+> -	atomic_inc(&td->count);
+>   	mutex_unlock(&md->table_devices_lock);
+>   
 
-<snip>
 
-I have a little dilemma now related to this patch and I wonder if I 
-could ask you guys for your opinion?
+NACK
 
-I have been hit and am being hit by the bug this patch fixes every few 
-days at the moment, on writeback bcache resources. When it hits it 
-causes a failure in the layer above, and this leads to other problems 
-that can and has led to loss of data (not in bcache, just that the read 
-failure causes a chain of events in upper layer, separate issue, won't 
-clutter this mail with that). So, I am very keen to resolve this 
-urgently in my environment.
+This patch (2a0b4682e09d76466f7b8f5e347ae2ff02f033af) currently breaks 
+accounting of opened devices.
 
-I am running stable 4.9, and I have cherry picked several recent bcache 
-patches, including "bcache: only permit to recovery read error
-when cache device is clean", which I understand causes this issue.
+I.e.   multisegment device  (target with 3 segments is not properly accounted)
 
-I have a dilemma now whether I should apply the new patch in this 
-thread, which should fix the issue, or revert "only permit to recovery 
-read error" patch.
 
-The dilemma is because I don't like the idea of reverting the "only 
-permit to recovery read error" patch since it appears to fix an 
-important problem.  Or am I overestimating the problem (maybe that's why 
-the original patch has not been backported to stable kernels, maybe the 
-original issue quite rare)?
+Patch needs reworking and users of 'dm' and 4.15-rc0 kernel should rather 
+switch back to 4.14 ATM as it's unclear which other parts can be affected.
 
-But I am also wary of applying the new patch as Michael only just added 
-to his tree so hasn't had much baking time.
+Zdenek
 
-I wondered what is the opinion of you guys which of these two I should 
-choose?
-
-(BTW, please don't say "just don't cherry pick onto 4.9". I am aware of 
-the risks of cherry picking, as discussed recently on this list. I am 
-happy with the level of risk and I am being very careful in what I pick. 
-In this case I have not been "burnt" by cherry picking since I would 
-have hit the same issue if I would have just upgraded to 4.14 which 
-contains the original "only permit to recovery read error" patch.)
-
-( N.B. I understand that any opinion/advice I receive is just that. I 
-take complete responsibility for what I decide :-) )
-
-Thanks!
-Eddie
+>   	*result = &td->dm_dev;
+> @@ -701,7 +703,7 @@ void dm_put_table_device(struct mapped_device *md, struct dm_dev *d)
+>   	struct table_device *td = container_of(d, struct table_device, dm_dev);
+>   
+>   	mutex_lock(&md->table_devices_lock);
+> -	if (atomic_dec_and_test(&td->count)) {
+> +	if (refcount_dec_and_test(&td->count)) {
+>   		close_table_device(td, md);
+>   		list_del(&td->list);
+>   		kfree(td);
+> @@ -718,7 +720,7 @@ static void free_table_devices(struct list_head *devices)
+>   		struct table_device *td = list_entry(tmp, struct table_device, list);
+>   
+>   		DMWARN("dm_destroy: %s still exists with %d references",
+> -		       td->dm_dev.name, atomic_read(&td->count));
+> +		       td->dm_dev.name, refcount_read(&td->count));
+>   		kfree(td);
+>   	}
+>   }
+> 
