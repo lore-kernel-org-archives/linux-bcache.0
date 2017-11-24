@@ -1,57 +1,83 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 1/4] bcache: add a comment in journal bucket reading
-Date: Fri, 24 Nov 2017 15:14:24 -0800
-Message-ID: <20171124231427.9563-2-mlyle@lyle.org>
+Subject: [PATCH 3/4] bcache: recover data from backing when data is clean
+Date: Fri, 24 Nov 2017 15:14:26 -0800
+Message-ID: <20171124231427.9563-4-mlyle@lyle.org>
 References: <20171124231427.9563-1-mlyle@lyle.org>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20171124231427.9563-1-mlyle@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
+Sender: stable-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@kernel.dk, Tang Junhui <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>
+Cc: axboe@kernel.dk, Rui Hua <huarui.dev@gmail.com>, stable@vger.kernel.org, Michael Lyle <mlyle@lyle.org>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+From: Rui Hua <huarui.dev@gmail.com>
 
-Journal bucket is a circular buffer, the bucket
-can be like YYYNNNYY, which means the first valid journal in
-the 7th bucket, and the latest valid journal in third bucket, in
-this case, if we do not try we the zero index first, We
-may get a valid journal in the 7th bucket, then we call
-find_next_bit(bitmap,ca->sb.njournal_buckets, l + 1) to get the
-first invalid bucket after the 7th bucket, because all these
-buckets is valid, so no bit 1 in bitmap, thus find_next_bit()
-function would return with ca->sb.njournal_buckets (8). So, after
-that, bcache only read journal in 7th and 8the bucket,
-the first to the third buckets are lost.
+When we send a read request and hit the clean data in cache device, there
+is a situation called cache read race in bcache(see the commit in the tail
+of cache_look_up(), the following explaination just copy from there):
+The bucket we're reading from might be reused while our bio is in flight,
+and we could then end up reading the wrong data. We guard against this
+by checking (in bch_cache_read_endio()) if the pointer is stale again;
+if so, we treat it as an error (s->iop.error = -EINTR) and reread from
+the backing device (but we don't pass that error up anywhere)
 
-So, it is important to let developer know that, we need to try
-the zero index at first in the hash-search, and avoid any breaks
-in future's code modification.
+It should be noted that cache read race happened under normal
+circumstances, not the circumstance when SSD failed, it was counted
+and shown in  /sys/fs/bcache/XXX/internal/cache_read_races.
 
-[ML: Fixed whitespace & formatting & file permissions]
+Without this patch, when we use writeback mode, we will never reread from
+the backing device when cache read race happened, until the whole cache
+device is clean, because the condition
+(s->recoverable && (dc && !atomic_read(&dc->has_dirty))) is false in
+cached_dev_read_error(). In this situation, the s->iop.error(= -EINTR)
+will be passed up, at last, user will receive -EINTR when it's bio end,
+this is not suitable, and wield to up-application.
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
+In this patch, we use s->read_dirty_data to judge whether the read
+request hit dirty data in cache device, it is safe to reread data from
+the backing device when the read request hit clean data. This can not
+only handle cache read race, but also recover data when failed read
+request from cache device.
+
+[edited by mlyle to fix up whitespace, commit log title, comment
+spelling]
+
+Fixes: d59b23795933 ("bcache: only permit to recovery read error when cache device is clean")
+Cc: <stable@vger.kernel.org> # 4.14
+Signed-off-by: Hua Rui <huarui.dev@gmail.com>
 Reviewed-by: Michael Lyle <mlyle@lyle.org>
+Reviewed-by: Coly Li <colyli@suse.de>
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
 ---
- drivers/md/bcache/journal.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/md/bcache/request.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index 02a98ddb592d..5018c56ebb67 100644
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -170,6 +170,11 @@ int bch_journal_read(struct cache_set *c, struct list_head *list)
- 		 * find a sequence of buckets with valid journal entries
- 		 */
- 		for (i = 0; i < ca->sb.njournal_buckets; i++) {
-+			/*
-+			 * We must try the index l with ZERO first for
-+			 * correctness due to the scenario that the journal
-+			 * bucket is circular buffer which might have wrapped
-+			 */
- 			l = (i * 2654435769U) % ca->sb.njournal_buckets;
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 3a7aed7282b2..643c3021624f 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -708,16 +708,15 @@ static void cached_dev_read_error(struct closure *cl)
+ {
+ 	struct search *s = container_of(cl, struct search, cl);
+ 	struct bio *bio = &s->bio.bio;
+-	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
  
- 			if (test_bit(l, bitmap))
+ 	/*
+-	 * If cache device is dirty (dc->has_dirty is non-zero), then
+-	 * recovery a failed read request from cached device may get a
+-	 * stale data back. So read failure recovery is only permitted
+-	 * when cache device is clean.
++	 * If read request hit dirty data (s->read_dirty_data is true),
++	 * then recovery a failed read request from cached device may
++	 * get a stale data back. So read failure recovery is only
++	 * permitted when read request hit clean data in cache device,
++	 * or when cache read race happened.
+ 	 */
+-	if (s->recoverable &&
+-	    (dc && !atomic_read(&dc->has_dirty))) {
++	if (s->recoverable && !s->read_dirty_data) {
+ 		/* Retry from the backing device: */
+ 		trace_bcache_read_retry(s->orig_bio);
+ 
 -- 
 2.14.1
