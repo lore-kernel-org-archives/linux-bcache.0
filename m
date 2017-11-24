@@ -1,166 +1,41 @@
-From: Eddie Chapman <eddie@ehuk.net>
-Subject: Re: [PATCH] bcache: recover data from backing device when read
- request hit clean
-Date: Thu, 23 Nov 2017 18:08:44 +0000
-Message-ID: <17f5176f-560a-b1dd-d3fc-16623d616c5e@ehuk.net>
-References: <CAPGwLLNwG+kLT9_QaCL5PBLS0a6K-x-iog+ON2pArUQWr1rWTg@mail.gmail.com>
- <1c715cc2-b656-36a8-4017-55052937df82@lyle.org>
- <CAPGwLLNyjjxKOXA3RCFGSi4p-ZWZ5T9ADWP6EAqrfL3oUvMbFQ@mail.gmail.com>
- <CAJ+L6qen=5AVFr_q_r_F6jU8BTQ=t+7p94ucFW9HXEDD6AGEKg@mail.gmail.com>
- <8cb4231f-9b0d-3cb3-d733-b868f37daa6d@lyle.org>
- <5ab429e6-a376-6995-172b-9370de89fe4c@ehuk.net>
- <1c5502d2-cc45-5226-cf2d-ad9833e87728@coly.li>
-Reply-To: Eddie Chapman <eddie@ehuk.net>
+From: "Reshetova, Elena" <elena.reshetova@intel.com>
+Subject: RE: [dm-devel] [PATCH 3/4] dm: convert dm_dev_internal.count from
+        atomic_t to refcount_t
+Date: Fri, 24 Nov 2017 07:36:26 +0000
+Message-ID: <2236FBA76BA1254E88B949DDB74E612B802C1F07@IRSMSX102.ger.corp.intel.com>
+References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
+ <1508485059-21881-4-git-send-email-elena.reshetova@intel.com>
+ <20171123154941.GA15790@agk-dp.fab.redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from schatzi.steelbluetech.co.uk ([92.63.139.240]:63923 "EHLO
-        schatzi.steelbluetech.co.uk" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1753074AbdKWSIq (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 23 Nov 2017 13:08:46 -0500
-In-Reply-To: <1c5502d2-cc45-5226-cf2d-ad9833e87728@coly.li>
-Content-Language: en-GB
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20171123154941.GA15790@agk-dp.fab.redhat.com>
+Content-Language: en-US
+Sender: linux-kernel-owner@vger.kernel.org
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: "dm-devel@redhat.com" <dm-devel@redhat.com>, "keescook@chromium.org" <keescook@chromium.org>, "snitzer@redhat.com" <snitzer@redhat.com>, "peterz@infradead.org" <peterz@infradead.org>, "shli@kernel.org" <shli@kernel.org>, "koverstreet@google.com" <koverstreet@google.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "ejt@redhat.comg" <ejt@redhat.comg>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, Zdenek Kabelac <zkabelac@redhat.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <i@coly.li>
-Cc: Michael Lyle <mlyle@lyle.org>, Rui Hua <huarui.dev@gmail.com>, linux-bcache <linux-bcache@vger.kernel.org>, Kent Overstreet <kent.overstreet@gmail.com>
 
-Hi Coly,
-
-On 23/11/17 16:31, Coly Li wrote:
-> On 23/11/2017 11:09 PM, Eddie Chapman wrote:
->> On 22/11/17 05:13, Michael Lyle wrote:
->>> Reviewed-by: Michael Lyle <mlyle@lyle.org>
->>
->> <snip>
->>
->> I have a little dilemma now related to this patch and I wonder if I
->> could ask you guys for your opinion?
->>
+> On Fri, Oct 20, 2017 at 10:37:38AM +0300, Elena Reshetova wrote:
+> >  	} else if (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) {
+> >  		r = upgrade_mode(dd, mode, t->md);
+> >  		if (r)
+> >  			return r;
+> > +		refcount_inc(&dd->count);
+> >  	}
 > 
-> Hi Eddie,
+> Missing here:
 > 
-> As author of  "only permit to recovery read error" patch, let me try to
-> response your question.
+>         else
+> 		refcount_inc(&dd->count);
 > 
->> I have been hit and am being hit by the bug this patch fixes every few
->> days at the moment, on writeback bcache resources. When it hits it
->> causes a failure in the layer above, and this leads to other problems
->> that can and has led to loss of data (not in bcache, just that the read
->> failure causes a chain of events in upper layer, separate issue, won't
->> clutter this mail with that). So, I am very keen to resolve this
->> urgently in my environment.
->>
->> I am running stable 4.9, and I have cherry picked several recent bcache
->> patches, including "bcache: only permit to recovery read error
->> when cache device is clean", which I understand causes this issue.
->>
->> I have a dilemma now whether I should apply the new patch in this
->> thread, which should fix the issue, or revert "only permit to recovery
->> read error" patch.
->>
-> 
-> I suggest you to take one of the 2 actions,
-> - apply "bcache: recover data from backing device when read request hit
-> clean" patch, or
-> - revert "only permit to recovery read error" patch, and add the
-> modification as "bcache: recover data from backing device when read
-> request hit clean" does.
+> ?
 
-Thanks for clarifying what the 2 best options are.
+Oh, yes, thanks for catching this! I think this got unnoticed so far and patch was merged, so I am going to send a followup patch now. 
 
->> The dilemma is because I don't like the idea of reverting the "only
->> permit to recovery read error" patch since it appears to fix an
->> important problem.  Or am I overestimating the problem (maybe that's why
->> the original patch has not been backported to stable kernels, maybe the
->> original issue quite rare)?
->>
-> 
-> "only permit to recovery read error" patch fixes a real data corruption
-> issue with broken cache device (SSD), which was reported from production
-> environment. If you don't have all these 2 patches, your data may be
-> corrupted in silence when SSD is broken.
-
-OK, I think that confirms to me then that I'm definitely keeping the 
-"only permit to recovery read error" patch :-)
-
-That sounds like a very significant bug fix. I'm wondering, shouldn't 
-"only permit to recovery read error" patch be backported to the stable 
-kernels like 4.9, 4.4? Or maybe it doesn't fully meet the stable 
-inclusion criteria. I know the patch was CC'd to stable but it has not 
-been picked up. Maybe because it was not in Linus' tree yet when it was 
-originally CC'd.
-
->> But I am also wary of applying the new patch as Michael only just added
->> to his tree so hasn't had much baking time.
->>
-> 
-> The new one "bcache: recover data from backing device when read request
-> hit clean" can be treated as an improvement of my patch. Because when I
-> wrote that patch, I didn't notice metadata and data failure on cache
-> device were in different code path, I have to only check ds->has_dirty.
-
-OK, thanks, that makes me feel a little better about applying it.
-
-> Rui points out the metadata failure is in another code pathm and buggy
-> too. He posts another patch to fix it, and you may find it in
-> linux-bcache mailing list.
-
-Yes, I noticed that patch and was thinking whether to apply that one too.
-
-> When I wrote the "only permit to recovery read error" patch, I didn't
-> notice the read race existed neither, until Junhui and Rui noticed me.
-> The read race only happens on clean data (because its bucket is clean
-> and re-allocated to different write request), so the new patch permits
-> data recovery from backing device if a read failed on clean data.
-> 
-> The result for this new fix is, less I/O error may returns to upper
-> layer code, especially the bogus I/O error generated by btree read race.
-
-Thanks for explaining and the detail, it is much appreciated :-) And I 
-hope I don't come across as complaining about this patch in any way :-) 
-I know this is difficult work, and, hey, even with the new bug 
-introduced, the new bug is a *lot* less painful than the original bug 
-you fixed :-)
-
->> I wondered what is the opinion of you guys which of these two I should
->> choose?
-> 
-> If you only do patching, you need to have both of them. If you only want
-> one patch, you may rebase this patch to 4.9 kernel and ignore the first one.
-> 
->>
->> (BTW, please don't say "just don't cherry pick onto 4.9". I am aware of
->> the risks of cherry picking, as discussed recently on this list. I am
->> happy with the level of risk and I am being very careful in what I pick.
->> In this case I have not been "burnt" by cherry picking since I would
->> have hit the same issue if I would have just upgraded to 4.14 which
->> contains the original "only permit to recovery read error" patch.)
->>
->> ( N.B. I understand that any opinion/advice I receive is just that. I
->> take complete responsibility for what I decide :-) )
-> 
-> One more comment, when you apply both patches, I/O failure on broken
-> cache device (SSD) is still risky. As Rui points out in his patch,
-> "The read request might meet error when searching the btree, but the
-> error was not handled in cache_lookup(), and this kind of metadata
-> failure will not go into cached_dev_read_error(), finally, the upper
-> layer will receive bi_status=0."
-> 
-> Rui's patch "bcache: return IOERR to upper layer when read request meet
-> metadata error" is also added inti Mike's tree, if you may consider
-> testing it, that will be very helpful to us.
-
-You have convinced me that the best way forward is to keep "only permit 
-to recovery read error", and also apply both of the new patches.   I 
-think I will wait a few more days to give a little more "baking" time 
-for the new patches, then will try them and report back.
+Best Regards,
+Elena.
 
 > 
-> Thank you for asking great question :-)
-> 
-
-Thanks!
-Eddie
+> Alasdair
