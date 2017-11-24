@@ -1,41 +1,44 @@
-From: "Reshetova, Elena" <elena.reshetova@intel.com>
-Subject: RE: [dm-devel] [PATCH 3/4] dm: convert dm_dev_internal.count from
-        atomic_t to refcount_t
-Date: Fri, 24 Nov 2017 07:36:26 +0000
-Message-ID: <2236FBA76BA1254E88B949DDB74E612B802C1F07@IRSMSX102.ger.corp.intel.com>
-References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
- <1508485059-21881-4-git-send-email-elena.reshetova@intel.com>
- <20171123154941.GA15790@agk-dp.fab.redhat.com>
+From: Marc MERLIN <marc@merlins.org>
+Subject: Bcache confirmed unsafe with 4.14.0? 4.14.1?
+Date: Thu, 23 Nov 2017 23:41:12 -0800
+Message-ID: <20171124074112.7x7nnnqabrc3werm@merlins.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20171123154941.GA15790@agk-dp.fab.redhat.com>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Alasdair G Kergon <agk@redhat.com>
-Cc: "dm-devel@redhat.com" <dm-devel@redhat.com>, "keescook@chromium.org" <keescook@chromium.org>, "snitzer@redhat.com" <snitzer@redhat.com>, "peterz@infradead.org" <peterz@infradead.org>, "shli@kernel.org" <shli@kernel.org>, "koverstreet@google.com" <koverstreet@google.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "ejt@redhat.comg" <ejt@redhat.comg>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, Zdenek Kabelac <zkabelac@redhat.com>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from magic.merlins.org ([209.81.13.136]:43107 "EHLO
+        mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752162AbdKXHlQ (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 24 Nov 2017 02:41:16 -0500
+Received: from svh-gw.merlins.org ([173.11.111.145]:51294 helo=legolas.merlins.org)
+        by mail1.merlins.org with esmtps
+        (Cipher TLS1.2:DHE_RSA_AES_128_CBC_SHA1:128) (Exim 4.87 #1)
+        id 1eI8bp-00014z-Hy
+        for <linux-bcache@vger.kernel.org>; Thu, 23 Nov 2017 23:41:16 -0800
+Received: from merlin by legolas.merlins.org with local (Exim 4.80)
+        (envelope-from <marc@merlins.org>)
+        id 1eI8bo-0008Nq-Mr
+        for linux-bcache@vger.kernel.org; Thu, 23 Nov 2017 23:41:12 -0800
+Content-Disposition: inline
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-> On Fri, Oct 20, 2017 at 10:37:38AM +0300, Elena Reshetova wrote:
-> >  	} else if (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) {
-> >  		r = upgrade_mode(dd, mode, t->md);
-> >  		if (r)
-> >  			return r;
-> > +		refcount_inc(&dd->count);
-> >  	}
-> 
-> Missing here:
-> 
->         else
-> 		refcount_inc(&dd->count);
-> 
-> ?
+I have bcache | dmcrypt | btrfs, and I was upgrading to 4.14.0 when
+someone told me about the corruption problems people noticed in 4.14.0
 
-Oh, yes, thanks for catching this! I think this got unnoticed so far and patch was merged, so I am going to send a followup patch now. 
+Is there an understood root cause and something to avoid to not trigger
+the bug, or not so much?
 
-Best Regards,
-Elena.
+I saw a bunch of patches go by and I'm not too clear if 4.14.1 is safe,
+or not.
 
-> 
-> Alasdair
+Can someone advise?
+
+Thanks,
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
