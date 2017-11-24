@@ -1,44 +1,129 @@
-From: Marc MERLIN <marc@merlins.org>
-Subject: Bcache confirmed unsafe with 4.14.0? 4.14.1?
-Date: Thu, 23 Nov 2017 23:41:12 -0800
-Message-ID: <20171124074112.7x7nnnqabrc3werm@merlins.org>
+From: "Reshetova, Elena" <elena.reshetova@intel.com>
+Subject: RE: [PATCH 4/4] dm: convert table_device.count from atomic_t to
+ refcount_t
+Date: Fri, 24 Nov 2017 08:29:42 +0000
+Message-ID: <2236FBA76BA1254E88B949DDB74E612B802C1F4D@IRSMSX102.ger.corp.intel.com>
+References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
+ <1508485059-21881-5-git-send-email-elena.reshetova@intel.com>
+ <92f8c04f-ef1a-c41b-e82f-8d68a3ec84b5@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from magic.merlins.org ([209.81.13.136]:43107 "EHLO
-        mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752162AbdKXHlQ (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 24 Nov 2017 02:41:16 -0500
-Received: from svh-gw.merlins.org ([173.11.111.145]:51294 helo=legolas.merlins.org)
-        by mail1.merlins.org with esmtps
-        (Cipher TLS1.2:DHE_RSA_AES_128_CBC_SHA1:128) (Exim 4.87 #1)
-        id 1eI8bp-00014z-Hy
-        for <linux-bcache@vger.kernel.org>; Thu, 23 Nov 2017 23:41:16 -0800
-Received: from merlin by legolas.merlins.org with local (Exim 4.80)
-        (envelope-from <marc@merlins.org>)
-        id 1eI8bo-0008Nq-Mr
-        for linux-bcache@vger.kernel.org; Thu, 23 Nov 2017 23:41:12 -0800
-Content-Disposition: inline
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <92f8c04f-ef1a-c41b-e82f-8d68a3ec84b5@redhat.com>
+Content-Language: en-US
+Sender: linux-kernel-owner@vger.kernel.org
+To: Zdenek Kabelac <zkabelac@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, "koverstreet@google.com" <koverstreet@google.com>, "ejt@redhat.com" <ejt@redhat.com>, "snitzer@redhat.com" <snitzer@redhat.com>, "shli@kernel.org" <shli@kernel.org>, "agk@redhat.com" <agk@redhat.com>, "peterz@infradead.org" <peterz@infradead.org>, "keescook@chromium.org" <keescook@chromium.org>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-I have bcache | dmcrypt | btrfs, and I was upgrading to 4.14.0 when
-someone told me about the corruption problems people noticed in 4.14.0
 
-Is there an understood root cause and something to avoid to not trigger
-the bug, or not so much?
+> Dne 20.10.2017 v 09:37 Elena Reshetova napsal(a):
+> > atomic_t variables are currently used to implement reference
+> > counters with the following properties:
+> >   - counter is initialized to 1 using atomic_set()
+> >   - a resource is freed upon counter reaching zero
+> >   - once counter reaches zero, its further
+> >     increments aren't allowed
+> >   - counter schema uses basic atomic operations
+> >     (set, inc, inc_not_zero, dec_and_test, etc.)
+> >
+> > Such atomic variables should be converted to a newly provided
+> > refcount_t type and API that prevents accidental counter overflows
+> > and underflows. This is important since overflows and underflows
+> > can lead to use-after-free situation and be exploitable.
+> >
+> > The variable table_device.count is used as pure reference counter.
+> > Convert it to refcount_t and fix up the operations.
+> >
+> > Suggested-by: Kees Cook <keescook@chromium.org>
+> > Reviewed-by: David Windsor <dwindsor@gmail.com>
+> > Reviewed-by: Hans Liljestrand <ishkamiel@gmail.com>
+> > Signed-off-by: Elena Reshetova <elena.reshetova@intel.com>
+> > ---
+> >   drivers/md/dm.c | 12 +++++++-----
+> >   1 file changed, 7 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+> > index 4be8532..be12f3f 100644
+> > --- a/drivers/md/dm.c
+> > +++ b/drivers/md/dm.c
+> > @@ -24,6 +24,7 @@
+> >   #include <linux/delay.h>
+> >   #include <linux/wait.h>
+> >   #include <linux/pr.h>
+> > +#include <linux/refcount.h>
+> >
+> >   #define DM_MSG_PREFIX "core"
+> >
+> > @@ -98,7 +99,7 @@ struct dm_md_mempools {
+> >
+> >   struct table_device {
+> >   	struct list_head list;
+> > -	atomic_t count;
+> > +	refcount_t count;
+> >   	struct dm_dev dm_dev;
+> >   };
+> >
+> > @@ -685,10 +686,11 @@ int dm_get_table_device(struct mapped_device *md,
+> dev_t dev, fmode_t mode,
+> >
+> >   		format_dev_t(td->dm_dev.name, dev);
+> >
+> > -		atomic_set(&td->count, 0);
+> > +		refcount_set(&td->count, 1);
+> >   		list_add(&td->list, &md->table_devices);
+> > +	} else {
+> > +		refcount_inc(&td->count);
+> >   	}
+> > -	atomic_inc(&td->count);
+> >   	mutex_unlock(&md->table_devices_lock);
+> >
+> 
+> 
+> NACK
+> 
+> This patch (2a0b4682e09d76466f7b8f5e347ae2ff02f033af) currently breaks
+> accounting of opened devices.
+> 
+> I.e.   multisegment device  (target with 3 segments is not properly accounted)
 
-I saw a bunch of patches go by and I'm not too clear if 4.14.1 is safe,
-or not.
+Could you please explain what exactly happens (i.e. missing/wrong increment?)
+or provide a error dump?
+By looking at the code, I don't see where the change in the reference counting
+could have caused this. 
 
-Can someone advise?
+Best Regards,
+Elena.
 
-Thanks,
-Marc
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
+> 
+> 
+> Patch needs reworking and users of 'dm' and 4.15-rc0 kernel should rather
+> switch back to 4.14 ATM as it's unclear which other parts can be affected.
+> 
+> Zdenek
+> 
+> >   	*result = &td->dm_dev;
+> > @@ -701,7 +703,7 @@ void dm_put_table_device(struct mapped_device *md,
+> struct dm_dev *d)
+> >   	struct table_device *td = container_of(d, struct table_device,
+> dm_dev);
+> >
+> >   	mutex_lock(&md->table_devices_lock);
+> > -	if (atomic_dec_and_test(&td->count)) {
+> > +	if (refcount_dec_and_test(&td->count)) {
+> >   		close_table_device(td, md);
+> >   		list_del(&td->list);
+> >   		kfree(td);
+> > @@ -718,7 +720,7 @@ static void free_table_devices(struct list_head *devices)
+> >   		struct table_device *td = list_entry(tmp, struct
+> table_device, list);
+> >
+> >   		DMWARN("dm_destroy: %s still exists with %d
+> references",
+> > -		       td->dm_dev.name, atomic_read(&td->count));
+> > +		       td->dm_dev.name, refcount_read(&td->count));
+> >   		kfree(td);
+> >   	}
+> >   }
+> >
