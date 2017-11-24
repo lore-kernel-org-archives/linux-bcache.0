@@ -1,40 +1,92 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Commits for 4.15-- bcache
-Date: Fri, 24 Nov 2017 15:14:23 -0800
-Message-ID: <20171124231427.9563-1-mlyle@lyle.org>
+Subject: [PATCH 2/4] bcache: Fix building error on MIPS
+Date: Fri, 24 Nov 2017 15:14:25 -0800
+Message-ID: <20171124231427.9563-3-mlyle@lyle.org>
+References: <20171124231427.9563-1-mlyle@lyle.org>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pl0-f52.google.com ([209.85.160.52]:37482 "EHLO
-        mail-pl0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753772AbdKXXOj (ORCPT
+Received: from mail-pl0-f68.google.com ([209.85.160.68]:41116 "EHLO
+        mail-pl0-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1753841AbdKXXOp (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 24 Nov 2017 18:14:39 -0500
-Received: by mail-pl0-f52.google.com with SMTP id 61so5114819plf.4
-        for <linux-bcache@vger.kernel.org>; Fri, 24 Nov 2017 15:14:39 -0800 (PST)
+        Fri, 24 Nov 2017 18:14:45 -0500
+Received: by mail-pl0-f68.google.com with SMTP id u14so5103239plm.8
+        for <linux-bcache@vger.kernel.org>; Fri, 24 Nov 2017 15:14:45 -0800 (PST)
+In-Reply-To: <20171124231427.9563-1-mlyle@lyle.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@kernel.dk
+Cc: axboe@kernel.dk, Huacai Chen <chenhc@lemote.com>, stable@vger.kernel.org, Michael Lyle <mlyle@lyle.org>
 
-Hi Jens,
+From: Huacai Chen <chenhc@lemote.com>
 
-We have a few more small things:
+This patch try to fix the building error on MIPS. The reason is MIPS
+has already defined the PTR macro, which conflicts with the PTR macro
+in include/uapi/linux/bcache.h.
 
-Huacai Chen (1):
-      bcache: Fix building error on MIPS
+[fixed by mlyle: corrected a line-length issue]
 
-Michael Lyle (1):
-      bcache: check return value of register_shrinker
+Cc: stable@vger.kernel.org
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Reviewed-by: Michael Lyle <mlyle@lyle.org>
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
+---
+ drivers/md/bcache/alloc.c   | 2 +-
+ drivers/md/bcache/extents.c | 2 +-
+ drivers/md/bcache/journal.c | 2 +-
+ include/uapi/linux/bcache.h | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-Rui Hua (1):
-      bcache: recover data from backing when data is clean
-
-Tang Junhui (1):
-      bcache: add a comment in journal bucket reading
-
-Most important is Rui Hua's change, which prevents EINTR from being
-returned to users unexpectedly (and is cc'd stable).  All changes are
-reviewed and have had a moderate degree of test.
-
-Thanks,
-
-Mike
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index a27d85232ce1..a0cc1bc6d884 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -490,7 +490,7 @@ int __bch_bucket_alloc_set(struct cache_set *c, unsigned reserve,
+ 		if (b == -1)
+ 			goto err;
+ 
+-		k->ptr[i] = PTR(ca->buckets[b].gen,
++		k->ptr[i] = MAKE_PTR(ca->buckets[b].gen,
+ 				bucket_to_sector(c, b),
+ 				ca->sb.nr_this_dev);
+ 
+diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
+index 41c238fc3733..f9d391711595 100644
+--- a/drivers/md/bcache/extents.c
++++ b/drivers/md/bcache/extents.c
+@@ -585,7 +585,7 @@ static bool bch_extent_merge(struct btree_keys *bk, struct bkey *l, struct bkey
+ 		return false;
+ 
+ 	for (i = 0; i < KEY_PTRS(l); i++)
+-		if (l->ptr[i] + PTR(0, KEY_SIZE(l), 0) != r->ptr[i] ||
++		if (l->ptr[i] + MAKE_PTR(0, KEY_SIZE(l), 0) != r->ptr[i] ||
+ 		    PTR_BUCKET_NR(b->c, l, i) != PTR_BUCKET_NR(b->c, r, i))
+ 			return false;
+ 
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 5018c56ebb67..a87165c1d8e5 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -512,7 +512,7 @@ static void journal_reclaim(struct cache_set *c)
+ 			continue;
+ 
+ 		ja->cur_idx = next;
+-		k->ptr[n++] = PTR(0,
++		k->ptr[n++] = MAKE_PTR(0,
+ 				  bucket_to_sector(c, ca->sb.d[ja->cur_idx]),
+ 				  ca->sb.nr_this_dev);
+ 	}
+diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
+index 90fc490f973f..821f71a2e48f 100644
+--- a/include/uapi/linux/bcache.h
++++ b/include/uapi/linux/bcache.h
+@@ -91,7 +91,7 @@ PTR_FIELD(PTR_GEN,			0,  8)
+ 
+ #define PTR_CHECK_DEV			((1 << PTR_DEV_BITS) - 1)
+ 
+-#define PTR(gen, offset, dev)						\
++#define MAKE_PTR(gen, offset, dev)					\
+ 	((((__u64) dev) << 51) | ((__u64) offset) << 8 | gen)
+ 
+ /* Bkey utility code */
+-- 
+2.14.1
