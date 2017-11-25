@@ -1,40 +1,38 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: Commits for 4.15-- bcache
-Date: Fri, 24 Nov 2017 16:23:56 -0700
-Message-ID: <ba0a4e01-e130-08ca-ea9b-28a15c79f94a@kernel.dk>
-References: <20171124231427.9563-1-mlyle@lyle.org>
+From: Mike Snitzer <snitzer@redhat.com>
+Subject: Re: [dm-devel] [PATCH 3/4] dm: convert dm_dev_internal.count from
+ atomic_t to refcount_t
+Date: Sat, 25 Nov 2017 00:56:32 -0500
+Message-ID: <CAMM=eLfrnQqBH06pPnNKfmeF=AjScAxjR1WD7Ur9NAEY=4Sxog@mail.gmail.com>
+References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
+ <1508485059-21881-4-git-send-email-elena.reshetova@intel.com>
+ <20171123154941.GA15790@agk-dp.fab.redhat.com> <2236FBA76BA1254E88B949DDB74E612B802C1F07@IRSMSX102.ger.corp.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20171124231427.9563-1-mlyle@lyle.org>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <2236FBA76BA1254E88B949DDB74E612B802C1F07@IRSMSX102.ger.corp.intel.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: "Reshetova, Elena" <elena.reshetova@intel.com>
+Cc: Alasdair G Kergon <agk@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "keescook@chromium.org" <keescook@chromium.org>, "peterz@infradead.org" <peterz@infradead.org>, "shli@kernel.org" <shli@kernel.org>, "koverstreet@google.com" <koverstreet@google.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "ejt@redhat.comg" <ejt@redhat.comg>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, Zdenek Kabelac <zkabelac@redhat.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 11/24/2017 04:14 PM, Michael Lyle wrote:
-> Hi Jens,
-> 
-> We have a few more small things:
-> 
-> Huacai Chen (1):
->       bcache: Fix building error on MIPS
-> 
-> Michael Lyle (1):
->       bcache: check return value of register_shrinker
-> 
-> Rui Hua (1):
->       bcache: recover data from backing when data is clean
-> 
-> Tang Junhui (1):
->       bcache: add a comment in journal bucket reading
-> 
-> Most important is Rui Hua's change, which prevents EINTR from being
-> returned to users unexpectedly (and is cc'd stable).  All changes are
-> reviewed and have had a moderate degree of test.
+On Fri, Nov 24, 2017 at 2:36 AM, Reshetova, Elena
+<elena.reshetova@intel.com> wrote:
+>> On Fri, Oct 20, 2017 at 10:37:38AM +0300, Elena Reshetova wrote:
+>> >     } else if (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) {
+>> >             r = upgrade_mode(dd, mode, t->md);
+>> >             if (r)
+>> >                     return r;
+>> > +           refcount_inc(&dd->count);
+>> >     }
+>>
+>> Missing here:
+>>
+>>         else
+>>               refcount_inc(&dd->count);
+>>
+>> ?
+>
+> Oh, yes, thanks for catching this! I think this got unnoticed so far and patch was merged, so I am going to send a followup patch now.
 
-Thanks, all look fine for this series, applied.
-
--- 
-Jens Axboe
+I pushed this fix and will send to Linus next week:
+https://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm.git/commit/?h=dm-4.15&id=d908af82d06cc420f9581c97c6db941cb87e4434
