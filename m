@@ -1,41 +1,52 @@
-From: Marc MERLIN <marc@merlins.org>
-Subject: Re: bcache removal: ida_remove called for id=64 which is not
- allocated.
-Date: Sat, 25 Nov 2017 16:06:09 -0800
-Message-ID: <20171126000609.fnhh2guxhtqptanv@merlins.org>
-References: <20171125231127.7kv7uypcj3pbddqo@merlins.org>
- <86f09bf6-0953-4345-43e6-1f61bd7cef14@lyle.org>
+From: Justin Cinkelj <justin.cinkelj@xlab.si>
+Subject: Re: Bcache confirmed unsafe with 4.14.0? 4.14.1?
+Date: Sun, 26 Nov 2017 14:55:35 +0100
+Message-ID: <2fd17648-d299-c100-d71d-3d39e3b421c8@xlab.si>
+References: <20171124074112.7x7nnnqabrc3werm@merlins.org>
+ <788678673.20171124162253@pvgoran.name>
+ <20171124162956.slic7hvffpivhohp@merlins.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from magic.merlins.org ([209.81.13.136]:53488 "EHLO
-        mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751415AbdKZAGK (ORCPT
+Received: from spamtitan.xlab.si ([91.217.255.70]:50036 "EHLO
+        spamtitan.xlab.si" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752070AbdKZOAy (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Nov 2017 19:06:10 -0500
-Content-Disposition: inline
-In-Reply-To: <86f09bf6-0953-4345-43e6-1f61bd7cef14@lyle.org>
+        Sun, 26 Nov 2017 09:00:54 -0500
+In-Reply-To: <20171124162956.slic7hvffpivhohp@merlins.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: linux-bcache@vger.kernel.org
+To: Marc MERLIN <marc@merlins.org>
+Cc: linux-bcache@vger.kernel.org, Pavel Goran <via-bcache@pvgoran.name>
 
-On Sat, Nov 25, 2017 at 03:40:44PM -0800, Michael Lyle wrote:
-> I believe this is fixed by 1dbe32ad0a82f39c6 which is in Linus's tree
-> for 4.15.  Unfortunately it's not a candidate for -stable because it
-> changes device numbering.
-> 
-> Can you easily try a 4.15 RC to see if this is fixed for you?
+OK. In nekaj besed o teh openmpi/foam testih?
+Justin
 
-Thanks.
-I'll try when I can later, but basically it's not urgent for me, I'm
-rarely in a situation where I can even trigger this, so I mostly wanted
-to make sure it was a known thing, which it seems to be :)
-
-Thanks for the quick reply
-Marc
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
+On 11/24/2017 05:29 PM, Marc MERLIN wrote:
+> On Fri, Nov 24, 2017 at 04:22:53PM +0700, Pavel Goran wrote:
+>> Hello Marc,
+>>
+>> Friday, November 24, 2017, 2:41:12 PM, you wrote:
+>>
+>>> I have bcache | dmcrypt | btrfs, and I was upgrading to 4.14.0 when
+>>> someone told me about the corruption problems people noticed in 4.14.0
+>>> Is there an understood root cause and something to avoid to not trigger
+>>> the bug, or not so much?
+>> The bug was caused by a change in the block layer code (outside of bcache),
+>> commit 74d46992e0d9dee7f1f376de0d56d31614c8a17a, "block: replace bi_bdev with
+>> a gendisk pointer and partitions index". I don't know if there are any
+>> specific usage patterns that trigger the problem. I strongly suggest not to
+>> run the affected kernel versions on any machine that uses bcache (or, even
+>> better, on any machine at all).
+>>
+>>> I saw a bunch of patches go by and I'm not too clear if 4.14.1 is safe,
+>>> or not.
+>> In 4.14.1 (as published here
+>> https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git/tag/?h=v4.14.1),
+>> this bug was not fixed yet. However, the very recent 4.14.2 does contain the
+>> fix (commit 62530ed8b1d07a45dec94d46e521c0c6c2d476e6, "bio: ensure
+>> __bio_clone_fast copies bi_partno").
+> Thanks for clearing that up, I duly appreciate it.
+>
+> Marc
