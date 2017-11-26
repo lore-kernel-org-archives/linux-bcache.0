@@ -1,51 +1,41 @@
-From: Michael Lyle <mlyle@lyle.org>
+From: Marc MERLIN <marc@merlins.org>
 Subject: Re: bcache removal: ida_remove called for id=64 which is not
  allocated.
-Date: Sat, 25 Nov 2017 15:40:44 -0800
-Message-ID: <86f09bf6-0953-4345-43e6-1f61bd7cef14@lyle.org>
+Date: Sat, 25 Nov 2017 16:06:09 -0800
+Message-ID: <20171126000609.fnhh2guxhtqptanv@merlins.org>
 References: <20171125231127.7kv7uypcj3pbddqo@merlins.org>
+ <86f09bf6-0953-4345-43e6-1f61bd7cef14@lyle.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f173.google.com ([209.85.192.173]:41670 "EHLO
-        mail-pf0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751355AbdKYXkr (ORCPT
+Received: from magic.merlins.org ([209.81.13.136]:53488 "EHLO
+        mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751415AbdKZAGK (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Nov 2017 18:40:47 -0500
-Received: by mail-pf0-f173.google.com with SMTP id j28so15789354pfk.8
-        for <linux-bcache@vger.kernel.org>; Sat, 25 Nov 2017 15:40:47 -0800 (PST)
-In-Reply-To: <20171125231127.7kv7uypcj3pbddqo@merlins.org>
-Content-Language: en-US
+        Sat, 25 Nov 2017 19:06:10 -0500
+Content-Disposition: inline
+In-Reply-To: <86f09bf6-0953-4345-43e6-1f61bd7cef14@lyle.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Marc MERLIN <marc@merlins.org>, linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org
 
-Marc--
-
-Thanks for the report.
-
-On 11/25/2017 03:11 PM, Marc MERLIN wrote:
-> Howdy,
+On Sat, Nov 25, 2017 at 03:40:44PM -0800, Michael Lyle wrote:
+> I believe this is fixed by 1dbe32ad0a82f39c6 which is in Linus's tree
+> for 4.15.  Unfortunately it's not a candidate for -stable because it
+> changes device numbering.
 > 
-> This has been an issue for a while, but it's not fatal.
-> Nonetheless, I guess I should report it.
-> 
-> I trigger it like this:
-> echo 1 > /sys/block/md5/bcache/stop
-> sleep 5
-> mdadm --stop /dev/md5
-> (this was backed by bcache64)
-> 
-> bcache: bcache_device_free() bcache64 stopped
-> ida_remove called for id=64 which is not allocated.
+> Can you easily try a 4.15 RC to see if this is fixed for you?
 
-I believe this is fixed by 1dbe32ad0a82f39c6 which is in Linus's tree
-for 4.15.  Unfortunately it's not a candidate for -stable because it
-changes device numbering.
+Thanks.
+I'll try when I can later, but basically it's not urgent for me, I'm
+rarely in a situation where I can even trigger this, so I mostly wanted
+to make sure it was a known thing, which it seems to be :)
 
-Can you easily try a 4.15 RC to see if this is fixed for you?
-
-Thanks,
-
-Mike
+Thanks for the quick reply
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/                         | PGP 1024R/763BE901
