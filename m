@@ -1,103 +1,32 @@
-From: "Reshetova, Elena" <elena.reshetova@intel.com>
-Subject: RE: [dm-devel] [PATCH 3/4] dm: convert dm_dev_internal.count from
- atomic_t to refcount_t
-Date: Tue, 28 Nov 2017 10:07:08 +0000
-Message-ID: <2236FBA76BA1254E88B949DDB74E612B802C3EDA@IRSMSX102.ger.corp.intel.com>
-References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
- <1508485059-21881-4-git-send-email-elena.reshetova@intel.com>
- <20171123154941.GA15790@agk-dp.fab.redhat.com>
- <2236FBA76BA1254E88B949DDB74E612B802C1F07@IRSMSX102.ger.corp.intel.com>
- <CAMM=eLfrnQqBH06pPnNKfmeF=AjScAxjR1WD7Ur9NAEY=4Sxog@mail.gmail.com>
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 2/4] bcache: Fix building error on MIPS
+Date: Tue, 28 Nov 2017 05:42:21 -0800
+Message-ID: <20171128134221.GA16064@infradead.org>
+References: <20171124231427.9563-1-mlyle@lyle.org>
+ <20171124231427.9563-3-mlyle@lyle.org>
 Mime-Version: 1.0
-Content-Type: multipart/mixed;
-        boundary="_002_2236FBA76BA1254E88B949DDB74E612B802C3EDAIRSMSX102gercor_"
-Return-path: <linux-raid-owner@vger.kernel.org>
-In-Reply-To: <CAMM=eLfrnQqBH06pPnNKfmeF=AjScAxjR1WD7Ur9NAEY=4Sxog@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-raid-owner@vger.kernel.org
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Alasdair G Kergon <agk@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "keescook@chromium.org" <keescook@chromium.org>, "peterz@infradead.org" <peterz@infradead.org>, "shli@kernel.org" <shli@kernel.org>, "koverstreet@google.com" <koverstreet@google.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "ejt@redhat.comg" <ejt@redhat.comg>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, Zdenek Kabelac <zkabelac@redhat.com>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <stable-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <20171124231427.9563-3-mlyle@lyle.org>
+Sender: stable-owner@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, axboe@kernel.dk, Huacai Chen <chenhc@lemote.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
---_002_2236FBA76BA1254E88B949DDB74E612B802C3EDAIRSMSX102gercor_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+> diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
+> index 90fc490f973f..821f71a2e48f 100644
+> --- a/include/uapi/linux/bcache.h
+> +++ b/include/uapi/linux/bcache.h
+> @@ -91,7 +91,7 @@ PTR_FIELD(PTR_GEN,			0,  8)
+>  
+>  #define PTR_CHECK_DEV			((1 << PTR_DEV_BITS) - 1)
+>  
+> -#define PTR(gen, offset, dev)						\
+> +#define MAKE_PTR(gen, offset, dev)					\
+>  	((((__u64) dev) << 51) | ((__u64) offset) << 8 | gen)
 
-DQo+IE9uIEZyaSwgTm92IDI0LCAyMDE3IGF0IDI6MzYgQU0sIFJlc2hldG92YSwgRWxlbmENCj4g
-PGVsZW5hLnJlc2hldG92YUBpbnRlbC5jb20+IHdyb3RlOg0KPiA+PiBPbiBGcmksIE9jdCAyMCwg
-MjAxNyBhdCAxMDozNzozOEFNICswMzAwLCBFbGVuYSBSZXNoZXRvdmEgd3JvdGU6DQo+ID4+ID4g
-ICAgIH0gZWxzZSBpZiAoZGQtPmRtX2Rldi0+bW9kZSAhPSAobW9kZSB8IGRkLT5kbV9kZXYtPm1v
-ZGUpKSB7DQo+ID4+ID4gICAgICAgICAgICAgciA9IHVwZ3JhZGVfbW9kZShkZCwgbW9kZSwgdC0+
-bWQpOw0KPiA+PiA+ICAgICAgICAgICAgIGlmIChyKQ0KPiA+PiA+ICAgICAgICAgICAgICAgICAg
-ICAgcmV0dXJuIHI7DQo+ID4+ID4gKyAgICAgICAgICAgcmVmY291bnRfaW5jKCZkZC0+Y291bnQp
-Ow0KPiA+PiA+ICAgICB9DQo+ID4+DQo+ID4+IE1pc3NpbmcgaGVyZToNCj4gPj4NCj4gPj4gICAg
-ICAgICBlbHNlDQo+ID4+ICAgICAgICAgICAgICAgcmVmY291bnRfaW5jKCZkZC0+Y291bnQpOw0K
-PiA+Pg0KPiA+PiA/DQo+ID4NCj4gPiBPaCwgeWVzLCB0aGFua3MgZm9yIGNhdGNoaW5nIHRoaXMh
-IEkgdGhpbmsgdGhpcyBnb3QgdW5ub3RpY2VkIHNvIGZhciBhbmQgcGF0Y2ggd2FzDQo+IG1lcmdl
-ZCwgc28gSSBhbSBnb2luZyB0byBzZW5kIGEgZm9sbG93dXAgcGF0Y2ggbm93Lg0KPiANCj4gSSBw
-dXNoZWQgdGhpcyBmaXggYW5kIHdpbGwgc2VuZCB0byBMaW51cyBuZXh0IHdlZWs6DQo+IGh0dHBz
-Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L2RldmljZS1tYXBwZXIv
-bGludXgtDQo+IGRtLmdpdC9jb21taXQvP2g9ZG0tNC4xNSZpZD1kOTA4YWY4MmQwNmNjNDIwZjk1
-ODFjOTdjNmRiOTQxY2I4N2U0NDM0DQoNCg0KSSBndWVzcyB5b3UgbWVhbiB0aGlzIGNvbW1pdDoN
-Cmh0dHBzOi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9saW51eC9rZXJuZWwvZ2l0L2RldmljZS1t
-YXBwZXIvbGludXgtZG0uZ2l0L2NvbW1pdC8/aD1mb3ItbmV4dCZpZD1jMjMxOGQwN2VhZDg3MWYw
-NThkZGE2MmU5NDJlZDdiNmIxYzFjZmNmDQoNClVuZm9ydHVuYXRlbHkgaXQgaXMgbm90IGNvcnJl
-Y3Q6DQoNCmRpZmYgLS1naXQgYS9kcml2ZXJzL21kL2RtLXRhYmxlLmMgYi9kcml2ZXJzL21kL2Rt
-LXRhYmxlLmMNCmluZGV4IDg4MTMwYjUuLmY2ZDMyZWUgMTAwNjQ0DQotLS0gYS9kcml2ZXJzL21k
-L2RtLXRhYmxlLmMNCisrKyBiL2RyaXZlcnMvbWQvZG0tdGFibGUuYw0KQEAgLTQ1MSwxNSArNDUx
-LDE1IEBAIGludCBkbV9nZXRfZGV2aWNlKHN0cnVjdCBkbV90YXJnZXQgKnRpLCBjb25zdCBjaGFy
-ICpwYXRoLCBmbW9kZV90IG1vZGUsDQogCQkJcmV0dXJuIHI7DQogCQl9DQogDQotCQlyZWZjb3Vu
-dF9zZXQoJmRkLT5jb3VudCwgMSk7DQorCQlyZWZjb3VudF9zZXQoJmRkLT5jb3VudCwgMCk7DQog
-CQlsaXN0X2FkZCgmZGQtPmxpc3QsICZ0LT5kZXZpY2VzKTsNCiANCiAJfSBlbHNlIGlmIChkZC0+
-ZG1fZGV2LT5tb2RlICE9IChtb2RlIHwgZGQtPmRtX2Rldi0+bW9kZSkpIHsNCiAJCXIgPSB1cGdy
-YWRlX21vZGUoZGQsIG1vZGUsIHQtPm1kKTsNCiAJCWlmIChyKQ0KIAkJCXJldHVybiByOw0KLQkJ
-cmVmY291bnRfaW5jKCZkZC0+Y291bnQpOw0KIAl9DQorCXJlZmNvdW50X2luYygmZGQtPmNvdW50
-KTsNCiANClByb2JsZW0gd2lsbCBiZSBoZXJlIGlmIHlvdSBoaXQgdGhpcyByZWZjb3VudF9pbmMo
-KSBhZnRlciB0aGUgcmVmY291bnRfc2V0KCZkZC0+Y291bnQsIDApIGVhcmxpZXIuIA0KcmVmY291
-bnRfaW5jKCkgZG9lcyBub3QgaW5jcmVtZW50IG9uIHplcm8gdmFsdWUgKmV2ZXIqIGZvciBzZWN1
-cml0eSByZWFzb25zIGFuZCBpbnN0ZWFkIHBlb3BsZQ0Kc2hvdWxkIGluaXRpYWxpemUgcmVmY291
-bnRlcnMgdG8gMSBhbHdheXMgYW5kIGRvIGluY3JlbWVudHMgZnJvbSB0aGVyZSBpZiBuZWVkZWQu
-IA0KVGhpcyB3YXMgdGhlIHJlYXNvbiBmb3IgdGhlIGluaXRpYWwgY2hhbmdlIEkgZGlkLCBteSBt
-aXN0YWtlIHdhcyBqdXN0IHRvIGZvcmdldCB0byBpbmNyZW1lbnQgaXQgYWxzbw0KaW4gY2FzZSBj
-b25kaXRpb24gKGRkLT5kbV9kZXYtPm1vZGUgIT0gKG1vZGUgfCBkZC0+ZG1fZGV2LT5tb2RlKSkg
-ZmFpbHMuIA0KDQpJIGhhdmUgaXNzdWVzIHdpdGggbXkgaW50ZWwgc21wdCBzZXJ2ZXIgZm9yIHNl
-bmRpbmcgcGF0Y2hlcyAoSSB3aWxsIGdldCBpdCBmaXhlZCB0b21vcnJvdyBmcm9tIGludGVybmFs
-IG5ldHdvcmspLA0Kc28gSSBhbSBhdHRhY2hpbmcgdGhlIHBhdGNoIEkgZGlkIGVuZCBvZiBsYXN0
-IHdlZWsgdG8gdGhpcyB0aHJlYWQgaW5zdGVhZCAob3IgYWx0ZXJuYXRpdmVseSBjYW4gcHJvcGVy
-bHkgc2VuZCBpdCB0b21vcnJvdyBhZnRlciBmaXgpLiANClNvcnJ5IGZvciB0aGUgZGVsYXkhDQoN
-CkJlc3QgUmVnYXJkcywNCkVsZW5hLg0KDQo=
+This really should have a BCACHE_ prefix, and probably a lower case
+name.  And last but not least it really shouldn't be in a uapi header.
 
---_002_2236FBA76BA1254E88B949DDB74E612B802C3EDAIRSMSX102gercor_
-Content-Type: application/octet-stream;
-	name="0001-dm-fix-the-missing-increment-for-dm_dev_internal.cou.patch"
-Content-Description: 0001-dm-fix-the-missing-increment-for-dm_dev_internal.cou.patch
-Content-Disposition: attachment;
-	filename="0001-dm-fix-the-missing-increment-for-dm_dev_internal.cou.patch";
-	size=1210; creation-date="Tue, 28 Nov 2017 10:05:02 GMT";
-	modification-date="Tue, 28 Nov 2017 10:05:02 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbSA3MTU5NzdhYzAwOTBjZjNlZThkZGMzMzljMjkyNDM0ZTIwYTljOTNkIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBFbGVuYSBSZXNoZXRvdmEgPGVsZW5hLnJlc2hldG92YUBpbnRl
-bC5jb20+CkRhdGU6IEZyaSwgMjQgTm92IDIwMTcgMTA6MDI6NDggKzAyMDAKU3ViamVjdDogW1BB
-VENIXSBkbTogZml4IHRoZSBtaXNzaW5nIGluY3JlbWVudCBmb3IgZG1fZGV2X2ludGVybmFsLmNv
-dW50CgpUaGUgY29tbWl0IDJhMGI0NjgyZTA5ZDc2NDY2ZjdiOGY1ZTM0N2FlMmZmMDJmMDMzYWYK
-bWlzdGFrZW5seSBmb3Jnb3R0ZW4gb25lIGNhc2Ugd2hlcmUgcmVmY291bnQgbXVzdCBiZQppbmNy
-ZW1lbnRlZC4gRml4IHRoaXMuCgpSZXBvcnRlZC1ieTogQWxhc2RhaXIgRyBLZXJnb24gPGFna0By
-ZWRoYXQuY29tPgpTaWduZWQtb2ZmLWJ5OiBFbGVuYSBSZXNoZXRvdmEgPGVsZW5hLnJlc2hldG92
-YUBpbnRlbC5jb20+Ci0tLQogZHJpdmVycy9tZC9kbS10YWJsZS5jIHwgOSArKysrKysrLS0KIDEg
-ZmlsZSBjaGFuZ2VkLCA3IGluc2VydGlvbnMoKyksIDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
-IGEvZHJpdmVycy9tZC9kbS10YWJsZS5jIGIvZHJpdmVycy9tZC9kbS10YWJsZS5jCmluZGV4IDg4
-MTMwYjUuLmViMGJhMmEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbWQvZG0tdGFibGUuYworKysgYi9k
-cml2ZXJzL21kL2RtLXRhYmxlLmMKQEAgLTQ1MywxNCArNDUzLDE5IEBAIGludCBkbV9nZXRfZGV2
-aWNlKHN0cnVjdCBkbV90YXJnZXQgKnRpLCBjb25zdCBjaGFyICpwYXRoLCBmbW9kZV90IG1vZGUs
-CiAKIAkJcmVmY291bnRfc2V0KCZkZC0+Y291bnQsIDEpOwogCQlsaXN0X2FkZCgmZGQtPmxpc3Qs
-ICZ0LT5kZXZpY2VzKTsKKwkJKnJlc3VsdCA9IGRkLT5kbV9kZXY7CisJCXJldHVybiAwOworCisJ
-fQogCi0JfSBlbHNlIGlmIChkZC0+ZG1fZGV2LT5tb2RlICE9IChtb2RlIHwgZGQtPmRtX2Rldi0+
-bW9kZSkpIHsKKwlpZiAoZGQtPmRtX2Rldi0+bW9kZSAhPSAobW9kZSB8IGRkLT5kbV9kZXYtPm1v
-ZGUpKSB7CiAJCXIgPSB1cGdyYWRlX21vZGUoZGQsIG1vZGUsIHQtPm1kKTsKIAkJaWYgKHIpCiAJ
-CQlyZXR1cm4gcjsKLQkJcmVmY291bnRfaW5jKCZkZC0+Y291bnQpOwogCX0KIAorCXJlZmNvdW50
-X2luYygmZGQtPmNvdW50KTsKKwogCSpyZXN1bHQgPSBkZC0+ZG1fZGV2OwogCXJldHVybiAwOwog
-fQotLSAKMi43LjQKCg==
-
---_002_2236FBA76BA1254E88B949DDB74E612B802C3EDAIRSMSX102gercor_--
+Similar things apply to various other things around it.
