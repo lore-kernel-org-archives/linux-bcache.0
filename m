@@ -1,84 +1,148 @@
-From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Subject: Re: ont out of 6 bcache devices does not register automatically
-Date: Tue, 28 Nov 2017 21:31:26 +0100
-Message-ID: <c2c82969-5fba-cea8-756a-d7489b506e7a@profihost.ag>
-References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
- <eee65109-aa05-d639-e0fe-12259e726803@profihost.ag>
- <93a1e381-ea82-b5c0-444b-6bdd3062e7f0@profihost.ag>
- <73e9184b-c74b-fe92-bb87-a0b945931187@lyle.org>
- <91e9b95d-861e-13bb-2b61-5c010657c2af@profihost.ag>
- <864cbf6d-7e8d-7dd4-7417-3150fe019fd8@lyle.org>
- <3fde77da-e12f-7862-f3c5-2a3dad316b86@profihost.ag>
- <0387447a-cce1-4162-3458-03193e146732@lyle.org>
- <0ab9bd3f-f2ea-04d7-1416-941b3d93d410@profihost.ag>
- <e2acf9c9-9097-e24c-69dd-a56ec672f9ef@lyle.org>
- <e016c187-fb69-463b-8a1f-3c41fdec369a@profihost.ag>
- <03029ee8-2856-19a3-a44d-8fbdc3f27da4@profihost.ag>
- <cb1cbbc1-194c-d583-07ed-9ff81777dace@profihost.ag>
- <CAJ+L6qc79S1t10WfeycRFLesuqbZNfUXrN7qo6fVuwbHk=n8xw@mail.gmail.com>
- <ce696f9d-07e5-88b4-dca8-dbef47594fca@profihost.ag>
- <CAJ+L6qcJ+heW+B2tyimxmJwjW6jQ0tsAz+bYx_3uYSc0YR53nA@mail.gmail.com>
- <1855331d-a606-58fd-2649-67203ddee8b5@profihost.ag>
- <e19204b9-bca0-052b-99c2-102b983547f8@lyle.org>
+From: "Reshetova, Elena" <elena.reshetova@intel.com>
+Subject: RE: [PATCH 3/4] dm: convert dm_dev_internal.count from atomic_t to
+ refcount_t
+Date: Wed, 29 Nov 2017 08:05:17 +0000
+Message-ID: <2236FBA76BA1254E88B949DDB74E612B802C4743@IRSMSX102.ger.corp.intel.com>
+References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
+ <1508485059-21881-4-git-send-email-elena.reshetova@intel.com>
+ <20171123154941.GA15790@agk-dp.fab.redhat.com>
+ <2236FBA76BA1254E88B949DDB74E612B802C1F07@IRSMSX102.ger.corp.intel.com>
+ <CAMM=eLfrnQqBH06pPnNKfmeF=AjScAxjR1WD7Ur9NAEY=4Sxog@mail.gmail.com>
+ <2236FBA76BA1254E88B949DDB74E612B802C3EDA@IRSMSX102.ger.corp.intel.com>
+ <20171128190225.GA32559@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:38083 "EHLO
-        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1751449AbdK1Ub3 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 28 Nov 2017 15:31:29 -0500
-In-Reply-To: <e19204b9-bca0-052b-99c2-102b983547f8@lyle.org>
-Content-Language: de-DE
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20171128190225.GA32559@redhat.com>
+Content-Language: en-US
+Sender: linux-kernel-owner@vger.kernel.org
+To: Mike Snitzer <snitzer@redhat.com>
+Cc: Alasdair G Kergon <agk@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "keescook@chromium.org" <keescook@chromium.org>, "peterz@infradead.org" <peterz@infradead.org>, "shli@kernel.org" <shli@kernel.org>, "koverstreet@google.com" <koverstreet@google.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "ejt@redhat.com" <ejt@redhat.com>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, Zdenek Kabelac <zkabelac@redhat.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>
-Cc: Coly Li <i@coly.li>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, n.fahldieck@profihost.ag
 
-
-Am 28.11.2017 um 21:05 schrieb Michael Lyle:
-> On 11/28/2017 11:59 AM, Stefan Priebe - Profihost AG wrote:
->> )
->>
->> Am 28.11.2017 um 20:51 schrieb Michael Lyle:
->>> On Tue, Nov 28, 2017 at 11:32 AM, Stefan Priebe - Profihost AG
->>> <s.priebe@profihost.ag> wrote:
->>>> nobody asked for this - but bcache provides bcache-tools and upstream
->>>> udev rules and those don't work in this case. To i consider this an
->>>> upstream bug. Not a bug in my envorinment or in my distribution.
->>>
->>> I do not maintain bcache-tools.  It looks like g2p wrote a set of
->>> rules in 2014 that Debian uses.  Gentoo uses a different set of rules.
->>> Arch uses a slightly different set of rules.
->>>
->>> Nor is what you're trying to do completely safe, because depending on
->>> rule ordering it can mean if you stack md & bcache, for instance, very
->>> bad things could happen with your change.
->>
->> Thanks - that helped. - didn't know that the original bcache-tools which
->> came from kent were handed over to somebody else / or that each
->> distribution uses it's own.
+> On Tue, Nov 28 2017 at  5:07am -0500,
+> Reshetova, Elena <elena.reshetova@intel.com> wrote:
 > 
-> No problem.  Just to put a finer point on it:
+> >
+> > > On Fri, Nov 24, 2017 at 2:36 AM, Reshetova, Elena
+> > > <elena.reshetova@intel.com> wrote:
+> > > >> On Fri, Oct 20, 2017 at 10:37:38AM +0300, Elena Reshetova wrote:
+> > > >> >     } else if (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) {
+> > > >> >             r = upgrade_mode(dd, mode, t->md);
+> > > >> >             if (r)
+> > > >> >                     return r;
+> > > >> > +           refcount_inc(&dd->count);
+> > > >> >     }
+> > > >>
+> > > >> Missing here:
+> > > >>
+> > > >>         else
+> > > >>               refcount_inc(&dd->count);
+> > > >>
+> > > >> ?
+> > > >
+> > > > Oh, yes, thanks for catching this! I think this got unnoticed so far and patch
+> was
+> > > merged, so I am going to send a followup patch now.
+> > >
+> > > I pushed this fix and will send to Linus next week:
+> > > https://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-
+> > > dm.git/commit/?h=dm-
+> 4.15&id=d908af82d06cc420f9581c97c6db941cb87e4434
+> >
+> >
+> > I guess you mean this commit:
+> > https://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-
+> dm.git/commit/?h=for-next&id=c2318d07ead871f058dda62e942ed7b6b1c1cfcf
+> >
+> > Unfortunately it is not correct:
+> >
+> > diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+> > index 88130b5..f6d32ee 100644
+> > --- a/drivers/md/dm-table.c
+> > +++ b/drivers/md/dm-table.c
+> > @@ -451,15 +451,15 @@ int dm_get_device(struct dm_target *ti, const char
+> *path, fmode_t mode,
+> >  			return r;
+> >  		}
+> >
+> > -		refcount_set(&dd->count, 1);
+> > +		refcount_set(&dd->count, 0);
+> >  		list_add(&dd->list, &t->devices);
+> >
+> >  	} else if (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) {
+> >  		r = upgrade_mode(dd, mode, t->md);
+> >  		if (r)
+> >  			return r;
+> > -		refcount_inc(&dd->count);
+> >  	}
+> > +	refcount_inc(&dd->count);
+> >
+> > Problem will be here if you hit this refcount_inc() after the refcount_set(&dd-
+> >count, 0) earlier.
+> > refcount_inc() does not increment on zero value *ever* for security reasons
+> and instead people
+> > should initialize refcounters to 1 always and do increments from there if
+> needed.
 > 
-> Right now the current script does the safe thing when there's ambiguity
-> and refuses to do anything.
+> include/linux/refcount.h:refcount_inc() definitely doesn't avoid
+> incrementing zero value.
+
+Ok, to be fully precise there are 3 different cases (depending on config options):
+
+1) refcount_t = atomic_t and in this case yes, nothing prevents increment, but no
+ protection is given, so we hope such cases are disabled for any distros that care about
+security
+
+2) CONFIG_FULL_REFCOUNT is on and refcount_t uses arch. independent implementation
+In lib/refcount.c. In this case refcount_inc() won't increment from zero. It is really more
+than just a WARN(), increment fails inside refcount_inc_not_zero() used underneath. 
+
+3) arch. dependent implementation is used for refcount_t. Here different options are
+possible based on how arch. decides to implement this. Currently we only have x86
+one (arch/x86/include/asm/refcount.h) and it is indeed allows increments from zero to happen. 
+
+So, what I described above was the worst case, but since we need the code to work reliably
+in each case, we have to take it into account. 
+
+
 > 
-> Even if I maintained bcache-tools, I couldn't really fix this.  If there
-> is a desire to proceed through ambiguity, the ordering that actions are
-> attempted in-- RAID, filesystems, bcache, DM, etc, becomes important,
-> and can't be solved in any one package.
+> Neither does lib/refcount.c:refcount_inc() but it does spew a WARN_ON by
+> assuming a zero value means use-after-free.
 
-I dont want to allow to register for ambiguity in general - but in case
-there is ambiguity with an FS (xfs,btrfs, ...). I can't see a way where
-this could be a problem. Even considering other block drivers like md or dm.
+No, it does not increment really, it is not just a WARN(). 
+https://elixir.free-electrons.com/linux/latest/source/lib/refcount.c#L151
+It uses refcount_inc_not_zero() underneath. 
 
-Stefan
 
-> It's unfortunate that data can prevent the cache from registering, but
-> it'd be much worse to register the cache in the wrong order compared to
-> another block layer.
+> 
+> > This was the reason for the initial change I did, my mistake was just to forget to
+> increment it also
+> > in case condition (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) fails.
+> >
+> > I have issues with my intel smpt server for sending patches (I will get it fixed
+> tomorrow from internal network),
+> > so I am attaching the patch I did end of last week to this thread instead (or
+> alternatively can properly send it tomorrow after fix).
+> > Sorry for the delay!
+> 
+> I was tempted to revert your original commits that switch DM code to
+> using refcount_t.  Already proved more trouble than it is worth.
+> 
+> But I'll drop my commit and take your fix.
+
+Thank you very much and sorry for the troubles!
+Unfortunately none of us is free of mistakes, good that this one was caught so fast!
+
+When it comes to value, it does provide security value for your code and makes
+sure that your reference counters would not be a new target of many similar CVEs
+we had in past around this. Overall each conversion matters since there is less and less
+potential holes attackers can try to squeeze themselves!
+
+Best Regards,
+Elena.
+
+
 > 
 > Mike
-> 
