@@ -1,47 +1,89 @@
-From: "=?UTF-8?B?5b2t6Imv5b2m?=" <liangyan.ply@alibaba-inc.com>
-Subject: =?UTF-8?B?5Zue5aSN77yaW1BBVENIXSBiY2FjaGU6IEZpeCBiZGV2IGxlYWsgZHVyaW5nIGJhY2tpbmcg?=
-  =?UTF-8?B?ZGV2aWNlIHJlZ2lzdGVyaW5n?=
-Date: Thu, 30 Nov 2017 20:00:10 +0800
-Message-ID: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>
-Reply-To: "=?UTF-8?B?5b2t6Imv5b2m?=" <liangyan.ply@alibaba-inc.com>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: =?UTF-8?B?UmU6IOWbnuWkje+8mltQQVRDSF0gYmNhY2hlOiBGaXggYmRldiBsZWFr?=
+ =?UTF-8?Q?_during_backing_device_registering?=
+Date: Thu, 30 Nov 2017 10:48:54 -0800
+Message-ID: <eb5e502c-bf2a-ca47-4b18-ce2ddf00c45d@lyle.org>
+References: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: base64
-Return-path: <linux-raid-owner@vger.kernel.org>
-References: 20171123004238.79132-1-liangyan.ply@alibaba-inc.com
-In-Reply-To: 20171123004238.79132-1-liangyan.ply@alibaba-inc.com
-Sender: linux-raid-owner@vger.kernel.org
-To: linux-bcache <linux-bcache@vger.kernel.org>, linux-raid <linux-raid@vger.kernel.org>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Coly Li <colyli@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, =?UTF-8?B?5Y2V5Zu95paHKOa4oeazoik=?= <dubo.sgw@alibaba-inc.com>, =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@alibaba-inc.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pg0-f67.google.com ([74.125.83.67]:39901 "EHLO
+        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751680AbdK3Ss5 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 30 Nov 2017 13:48:57 -0500
+Received: by mail-pg0-f67.google.com with SMTP id w7so3355271pgv.6
+        for <linux-bcache@vger.kernel.org>; Thu, 30 Nov 2017 10:48:57 -0800 (PST)
+In-Reply-To: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: =?UTF-8?B?5b2t6Imv5b2m?= <liangyan.ply@alibaba-inc.com>, linux-bcache <linux-bcache@vger.kernel.org>, linux-raid <linux-raid@vger.kernel.org>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Coly Li <colyli@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, =?UTF-8?B?5Y2V5Zu95paHKOa4oeazoik=?= <dubo.sgw@alibaba-inc.com>, =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@alibaba-inc.com>
 
-T24gMTcvMTEvMjMg5LiK5Y2IODo0Miwg5b2t6Imv5b2mIHdyb3RlOgo+IElmIHRoZSBiYWNraW5n
-IGRldmljZSBoYXNuJ3QgYmVlbiBkZXRhY2hlZCBkdWUgdG8gZXhjZXB0aW9uYWwgc3RvcAo+IGxp
-a2UgcG93ZXIgb3V0YWdlLCB0aGUgQkRFVl9TVEFURSBpbiBzdXBlciBibG9jayBjYW4ndCBiZSBy
-ZXNldCwKPiBpdCB3aWxsIGZhaWwgdG8gcmVnaXN0ZXIgdGhpcyBiYWNraW5nIGRldmljZSBpbiBu
-ZXh0IHRpbWUsIGJ1dCB0aGUKPiBvcGVuZWQgYmRldiB3aWxsIGJlIGhvbGQsIHRoaXMgbWFrZXMg
-dGhlIGJhY2tpbmcgZGV2aWNlIHVuYWNjZXNzYWJsZQo+IGJlY2F1c2Ugb2YgRk1PREVfRVhDTCB1
-bnRpbCByZWJvb3QuCj4KPiBTaWduZWQtb2ZmLWJ5OiBMaWFuZ3lhbiBQZW5nIDxsaWFuZ3lhbi5w
-bHlAYWxpYmFiYS1pbmMuY29tPgo+IC0tLQo+ICBkcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jIHwg
-MTUgKysrKysrKysrKystLS0tCj4gIDEgZmlsZSBjaGFuZ2VkLCAxMSBpbnNlcnRpb25zKCspLCA0
-IGRlbGV0aW9ucygtKQo+Cj4gZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMg
-Yi9kcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jCj4gaW5kZXggNjY2NjljOGY0MTYxLi4wYjk1YTU5
-NGMxMmUgMTAwNjQ0Cj4gLS0tIGEvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYwo+ICsrKyBiL2Ry
-aXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMKPiBAQCAtMTE3NCw5ICsxMTc0LDcgQEAgc3RhdGljIHZv
-aWQgcmVnaXN0ZXJfYmRldihzdHJ1Y3QgY2FjaGVfc2IgKnNiLCBzdHJ1Y3QgcGFnZSAqc2JfcGFn
-ZSwKPiAgCWxpc3RfZm9yX2VhY2hfZW50cnkoYywgJmJjaF9jYWNoZV9zZXRzLCBsaXN0KQo+ICAJ
-CWJjaF9jYWNoZWRfZGV2X2F0dGFjaChkYywgYyk7Cj4gIAo+IC0JaWYgKEJERVZfU1RBVEUoJmRj
-LT5zYikgPT0gQkRFVl9TVEFURV9OT05FIHx8Cj4gLQkgICAgQkRFVl9TVEFURSgmZGMtPnNiKSA9
-PSBCREVWX1NUQVRFX1NUQUxFKQo+IC0JCWJjaF9jYWNoZWRfZGV2X3J1bihkYyk7Cj4gKwliY2hf
-Y2FjaGVkX2Rldl9ydW4oZGMpOwo+ICAKPiAgCXJldHVybjsKPiAgZXJyOgo+IEBAIC0xOTgyLDcg
-KzE5ODAsMTYgQEAgc3RhdGljIHNzaXplX3QgcmVnaXN0ZXJfYmNhY2hlKHN0cnVjdCBrb2JqZWN0
-ICprLCBzdHJ1Y3Qga29ial9hdHRyaWJ1dGUgKmF0dHIsCj4gIAkJZ290byBlcnJfY2xvc2U7Cj4g
-IAo+ICAJaWYgKFNCX0lTX0JERVYoc2IpKSB7Cj4gLQkJc3RydWN0IGNhY2hlZF9kZXYgKmRjID0g
-a3phbGxvYyhzaXplb2YoKmRjKSwgR0ZQX0tFUk5FTCk7Cj4gKwkJc3RydWN0IGNhY2hlZF9kZXYg
-KmRjID0gTlVMTDsKPiArCj4gKwkJaWYgKEJERVZfU1RBVEUoc2IpICE9IEJERVZfU1RBVEVfTk9O
-RSAmJgo+ICsJCQlCREVWX1NUQVRFKHNiKSAhPSBCREVWX1NUQVRFX1NUQUxFKSB7Cj4gKwkJCWJs
-a2Rldl9wdXQoYmRldiwgRk1PREVfUkVBRHxGTU9ERV9XUklURXxGTU9ERV9FWENMKTsKPiArCQkJ
-ZXJyID0gImludmFsaWQgc3VwZXIgYmxvY2siOwo+ICsJCQlwcl9pbmZvKCJGYWlsZWQgdG8gcmVn
-aXN0ZXIgJXM6ICVzIiwgcGF0aCwgZXJyKTsKPiArCQkJZ290byBvdXQ7Cj4gKwkJfQo+ICsJCWRj
-ID0ga3phbGxvYyhzaXplb2YoKmRjKSwgR0ZQX0tFUk5FTCk7Cj4gIAkJaWYgKCFkYykKPiAgCQkJ
-Z290byBlcnJfY2xvc2U7Cj4gIApwaW5nPw==
+Hi--
+
+On 11/30/2017 04:00 AM, 彭良彦 wrote:
+> On 17/11/23 上午8:42, 彭良彦 wrote:
+>> If the backing device hasn't been detached due to exceptional stop
+>> like power outage, the BDEV_STATE in super block can't be reset,
+>> it will fail to register this backing device in next time, but the
+>> opened bdev will be hold, this makes the backing device unaccessable
+>> because of FMODE_EXCL until reboot.
+>>
+>> Signed-off-by: Liangyan Peng <liangyan.ply@alibaba-inc.com>
+
+This doesn't seem correct.
+
+What is the exact problem you're seeing?  Is it, if the cache device is
+missing, the backing device "leaks"?  I think this is intentional-- it
+is waiting there for an appropriate cache device to be attached that
+lets it leave the STATE_DIRTY and run.  That is, either the backing
+device or cache device can be registered first, and if the backing
+device is registered first it is supposed to "wait" and not run until
+the cache shows up.
+
+>> ---
+>>  drivers/md/bcache/super.c | 15 +++++++++++----
+>>  1 file changed, 11 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>> index 66669c8f4161..0b95a594c12e 100644
+>> --- a/drivers/md/bcache/super.c
+>> +++ b/drivers/md/bcache/super.c
+>> @@ -1174,9 +1174,7 @@ static void register_bdev(struct cache_sb *sb, struct page *sb_page,
+>>  	list_for_each_entry(c, &bch_cache_sets, list)
+>>  		bch_cached_dev_attach(dc, c);
+>>  
+>> -	if (BDEV_STATE(&dc->sb) == BDEV_STATE_NONE ||
+>> -	    BDEV_STATE(&dc->sb) == BDEV_STATE_STALE)
+>> -		bch_cached_dev_run(dc);
+>> +	bch_cached_dev_run(dc);
+
+You've moved the check out of here into the enclosing...
+
+>>  
+>>  	return;
+>>  err:
+>> @@ -1982,7 +1980,16 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+>>  		goto err_close;
+>>  
+>>  	if (SB_IS_BDEV(sb)) {
+>> -		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
+>> +		struct cached_dev *dc = NULL;
+>> +
+>> +		if (BDEV_STATE(sb) != BDEV_STATE_NONE &&
+>> +			BDEV_STATE(sb) != BDEV_STATE_STALE) {
+>> +			blkdev_put(bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
+>> +			err = "invalid super block";
+>> +			pr_info("Failed to register %s: %s", path, err);
+>> +			goto out;
+>> +		}
+
+Here we check the state-- before bch_cached_dev_attach is called.  So if
+the state is BDEV_STATE_DIRTY or BDEV_STATE_CLEAN there is no chance to
+ever transition to _NONE/_STALE and run the cache.  This will make it
+impossible to ever start up the cache after power failure.
+
+Mike
