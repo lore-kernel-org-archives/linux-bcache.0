@@ -1,148 +1,47 @@
-From: "Reshetova, Elena" <elena.reshetova@intel.com>
-Subject: RE: [PATCH 3/4] dm: convert dm_dev_internal.count from atomic_t to
- refcount_t
-Date: Wed, 29 Nov 2017 08:05:17 +0000
-Message-ID: <2236FBA76BA1254E88B949DDB74E612B802C4743@IRSMSX102.ger.corp.intel.com>
-References: <1508485059-21881-1-git-send-email-elena.reshetova@intel.com>
- <1508485059-21881-4-git-send-email-elena.reshetova@intel.com>
- <20171123154941.GA15790@agk-dp.fab.redhat.com>
- <2236FBA76BA1254E88B949DDB74E612B802C1F07@IRSMSX102.ger.corp.intel.com>
- <CAMM=eLfrnQqBH06pPnNKfmeF=AjScAxjR1WD7Ur9NAEY=4Sxog@mail.gmail.com>
- <2236FBA76BA1254E88B949DDB74E612B802C3EDA@IRSMSX102.ger.corp.intel.com>
- <20171128190225.GA32559@redhat.com>
+From: "=?UTF-8?B?5b2t6Imv5b2m?=" <liangyan.ply@alibaba-inc.com>
+Subject: =?UTF-8?B?5Zue5aSN77yaW1BBVENIXSBiY2FjaGU6IEZpeCBiZGV2IGxlYWsgZHVyaW5nIGJhY2tpbmcg?=
+  =?UTF-8?B?ZGV2aWNlIHJlZ2lzdGVyaW5n?=
+Date: Thu, 30 Nov 2017 20:00:10 +0800
+Message-ID: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>
+Reply-To: "=?UTF-8?B?5b2t6Imv5b2m?=" <liangyan.ply@alibaba-inc.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20171128190225.GA32559@redhat.com>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Mike Snitzer <snitzer@redhat.com>
-Cc: Alasdair G Kergon <agk@redhat.com>, "dm-devel@redhat.com" <dm-devel@redhat.com>, "keescook@chromium.org" <keescook@chromium.org>, "peterz@infradead.org" <peterz@infradead.org>, "shli@kernel.org" <shli@kernel.org>, "koverstreet@google.com" <koverstreet@google.com>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "ejt@redhat.com" <ejt@redhat.com>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, Zdenek Kabelac <zkabelac@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: base64
+Return-path: <linux-raid-owner@vger.kernel.org>
+References: 20171123004238.79132-1-liangyan.ply@alibaba-inc.com
+In-Reply-To: 20171123004238.79132-1-liangyan.ply@alibaba-inc.com
+Sender: linux-raid-owner@vger.kernel.org
+To: linux-bcache <linux-bcache@vger.kernel.org>, linux-raid <linux-raid@vger.kernel.org>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Coly Li <colyli@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, =?UTF-8?B?5Y2V5Zu95paHKOa4oeazoik=?= <dubo.sgw@alibaba-inc.com>, =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@alibaba-inc.com>
 List-Id: linux-bcache@vger.kernel.org
 
-> On Tue, Nov 28 2017 at  5:07am -0500,
-> Reshetova, Elena <elena.reshetova@intel.com> wrote:
-> 
-> >
-> > > On Fri, Nov 24, 2017 at 2:36 AM, Reshetova, Elena
-> > > <elena.reshetova@intel.com> wrote:
-> > > >> On Fri, Oct 20, 2017 at 10:37:38AM +0300, Elena Reshetova wrote:
-> > > >> >     } else if (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) {
-> > > >> >             r = upgrade_mode(dd, mode, t->md);
-> > > >> >             if (r)
-> > > >> >                     return r;
-> > > >> > +           refcount_inc(&dd->count);
-> > > >> >     }
-> > > >>
-> > > >> Missing here:
-> > > >>
-> > > >>         else
-> > > >>               refcount_inc(&dd->count);
-> > > >>
-> > > >> ?
-> > > >
-> > > > Oh, yes, thanks for catching this! I think this got unnoticed so far and patch
-> was
-> > > merged, so I am going to send a followup patch now.
-> > >
-> > > I pushed this fix and will send to Linus next week:
-> > > https://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-
-> > > dm.git/commit/?h=dm-
-> 4.15&id=d908af82d06cc420f9581c97c6db941cb87e4434
-> >
-> >
-> > I guess you mean this commit:
-> > https://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-
-> dm.git/commit/?h=for-next&id=c2318d07ead871f058dda62e942ed7b6b1c1cfcf
-> >
-> > Unfortunately it is not correct:
-> >
-> > diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-> > index 88130b5..f6d32ee 100644
-> > --- a/drivers/md/dm-table.c
-> > +++ b/drivers/md/dm-table.c
-> > @@ -451,15 +451,15 @@ int dm_get_device(struct dm_target *ti, const char
-> *path, fmode_t mode,
-> >  			return r;
-> >  		}
-> >
-> > -		refcount_set(&dd->count, 1);
-> > +		refcount_set(&dd->count, 0);
-> >  		list_add(&dd->list, &t->devices);
-> >
-> >  	} else if (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) {
-> >  		r = upgrade_mode(dd, mode, t->md);
-> >  		if (r)
-> >  			return r;
-> > -		refcount_inc(&dd->count);
-> >  	}
-> > +	refcount_inc(&dd->count);
-> >
-> > Problem will be here if you hit this refcount_inc() after the refcount_set(&dd-
-> >count, 0) earlier.
-> > refcount_inc() does not increment on zero value *ever* for security reasons
-> and instead people
-> > should initialize refcounters to 1 always and do increments from there if
-> needed.
-> 
-> include/linux/refcount.h:refcount_inc() definitely doesn't avoid
-> incrementing zero value.
-
-Ok, to be fully precise there are 3 different cases (depending on config options):
-
-1) refcount_t = atomic_t and in this case yes, nothing prevents increment, but no
- protection is given, so we hope such cases are disabled for any distros that care about
-security
-
-2) CONFIG_FULL_REFCOUNT is on and refcount_t uses arch. independent implementation
-In lib/refcount.c. In this case refcount_inc() won't increment from zero. It is really more
-than just a WARN(), increment fails inside refcount_inc_not_zero() used underneath. 
-
-3) arch. dependent implementation is used for refcount_t. Here different options are
-possible based on how arch. decides to implement this. Currently we only have x86
-one (arch/x86/include/asm/refcount.h) and it is indeed allows increments from zero to happen. 
-
-So, what I described above was the worst case, but since we need the code to work reliably
-in each case, we have to take it into account. 
-
-
-> 
-> Neither does lib/refcount.c:refcount_inc() but it does spew a WARN_ON by
-> assuming a zero value means use-after-free.
-
-No, it does not increment really, it is not just a WARN(). 
-https://elixir.free-electrons.com/linux/latest/source/lib/refcount.c#L151
-It uses refcount_inc_not_zero() underneath. 
-
-
-> 
-> > This was the reason for the initial change I did, my mistake was just to forget to
-> increment it also
-> > in case condition (dd->dm_dev->mode != (mode | dd->dm_dev->mode)) fails.
-> >
-> > I have issues with my intel smpt server for sending patches (I will get it fixed
-> tomorrow from internal network),
-> > so I am attaching the patch I did end of last week to this thread instead (or
-> alternatively can properly send it tomorrow after fix).
-> > Sorry for the delay!
-> 
-> I was tempted to revert your original commits that switch DM code to
-> using refcount_t.  Already proved more trouble than it is worth.
-> 
-> But I'll drop my commit and take your fix.
-
-Thank you very much and sorry for the troubles!
-Unfortunately none of us is free of mistakes, good that this one was caught so fast!
-
-When it comes to value, it does provide security value for your code and makes
-sure that your reference counters would not be a new target of many similar CVEs
-we had in past around this. Overall each conversion matters since there is less and less
-potential holes attackers can try to squeeze themselves!
-
-Best Regards,
-Elena.
-
-
-> 
-> Mike
+T24gMTcvMTEvMjMg5LiK5Y2IODo0Miwg5b2t6Imv5b2mIHdyb3RlOgo+IElmIHRoZSBiYWNraW5n
+IGRldmljZSBoYXNuJ3QgYmVlbiBkZXRhY2hlZCBkdWUgdG8gZXhjZXB0aW9uYWwgc3RvcAo+IGxp
+a2UgcG93ZXIgb3V0YWdlLCB0aGUgQkRFVl9TVEFURSBpbiBzdXBlciBibG9jayBjYW4ndCBiZSBy
+ZXNldCwKPiBpdCB3aWxsIGZhaWwgdG8gcmVnaXN0ZXIgdGhpcyBiYWNraW5nIGRldmljZSBpbiBu
+ZXh0IHRpbWUsIGJ1dCB0aGUKPiBvcGVuZWQgYmRldiB3aWxsIGJlIGhvbGQsIHRoaXMgbWFrZXMg
+dGhlIGJhY2tpbmcgZGV2aWNlIHVuYWNjZXNzYWJsZQo+IGJlY2F1c2Ugb2YgRk1PREVfRVhDTCB1
+bnRpbCByZWJvb3QuCj4KPiBTaWduZWQtb2ZmLWJ5OiBMaWFuZ3lhbiBQZW5nIDxsaWFuZ3lhbi5w
+bHlAYWxpYmFiYS1pbmMuY29tPgo+IC0tLQo+ICBkcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jIHwg
+MTUgKysrKysrKysrKystLS0tCj4gIDEgZmlsZSBjaGFuZ2VkLCAxMSBpbnNlcnRpb25zKCspLCA0
+IGRlbGV0aW9ucygtKQo+Cj4gZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMg
+Yi9kcml2ZXJzL21kL2JjYWNoZS9zdXBlci5jCj4gaW5kZXggNjY2NjljOGY0MTYxLi4wYjk1YTU5
+NGMxMmUgMTAwNjQ0Cj4gLS0tIGEvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYwo+ICsrKyBiL2Ry
+aXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMKPiBAQCAtMTE3NCw5ICsxMTc0LDcgQEAgc3RhdGljIHZv
+aWQgcmVnaXN0ZXJfYmRldihzdHJ1Y3QgY2FjaGVfc2IgKnNiLCBzdHJ1Y3QgcGFnZSAqc2JfcGFn
+ZSwKPiAgCWxpc3RfZm9yX2VhY2hfZW50cnkoYywgJmJjaF9jYWNoZV9zZXRzLCBsaXN0KQo+ICAJ
+CWJjaF9jYWNoZWRfZGV2X2F0dGFjaChkYywgYyk7Cj4gIAo+IC0JaWYgKEJERVZfU1RBVEUoJmRj
+LT5zYikgPT0gQkRFVl9TVEFURV9OT05FIHx8Cj4gLQkgICAgQkRFVl9TVEFURSgmZGMtPnNiKSA9
+PSBCREVWX1NUQVRFX1NUQUxFKQo+IC0JCWJjaF9jYWNoZWRfZGV2X3J1bihkYyk7Cj4gKwliY2hf
+Y2FjaGVkX2Rldl9ydW4oZGMpOwo+ICAKPiAgCXJldHVybjsKPiAgZXJyOgo+IEBAIC0xOTgyLDcg
+KzE5ODAsMTYgQEAgc3RhdGljIHNzaXplX3QgcmVnaXN0ZXJfYmNhY2hlKHN0cnVjdCBrb2JqZWN0
+ICprLCBzdHJ1Y3Qga29ial9hdHRyaWJ1dGUgKmF0dHIsCj4gIAkJZ290byBlcnJfY2xvc2U7Cj4g
+IAo+ICAJaWYgKFNCX0lTX0JERVYoc2IpKSB7Cj4gLQkJc3RydWN0IGNhY2hlZF9kZXYgKmRjID0g
+a3phbGxvYyhzaXplb2YoKmRjKSwgR0ZQX0tFUk5FTCk7Cj4gKwkJc3RydWN0IGNhY2hlZF9kZXYg
+KmRjID0gTlVMTDsKPiArCj4gKwkJaWYgKEJERVZfU1RBVEUoc2IpICE9IEJERVZfU1RBVEVfTk9O
+RSAmJgo+ICsJCQlCREVWX1NUQVRFKHNiKSAhPSBCREVWX1NUQVRFX1NUQUxFKSB7Cj4gKwkJCWJs
+a2Rldl9wdXQoYmRldiwgRk1PREVfUkVBRHxGTU9ERV9XUklURXxGTU9ERV9FWENMKTsKPiArCQkJ
+ZXJyID0gImludmFsaWQgc3VwZXIgYmxvY2siOwo+ICsJCQlwcl9pbmZvKCJGYWlsZWQgdG8gcmVn
+aXN0ZXIgJXM6ICVzIiwgcGF0aCwgZXJyKTsKPiArCQkJZ290byBvdXQ7Cj4gKwkJfQo+ICsJCWRj
+ID0ga3phbGxvYyhzaXplb2YoKmRjKSwgR0ZQX0tFUk5FTCk7Cj4gIAkJaWYgKCFkYykKPiAgCQkJ
+Z290byBlcnJfY2xvc2U7Cj4gIApwaW5nPw==
