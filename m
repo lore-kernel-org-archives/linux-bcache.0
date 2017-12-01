@@ -1,89 +1,75 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: =?UTF-8?B?UmU6IOWbnuWkje+8mltQQVRDSF0gYmNhY2hlOiBGaXggYmRldiBsZWFr?=
- =?UTF-8?Q?_during_backing_device_registering?=
-Date: Thu, 30 Nov 2017 10:48:54 -0800
-Message-ID: <eb5e502c-bf2a-ca47-4b18-ce2ddf00c45d@lyle.org>
-References: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>
+From: "=?UTF-8?B?5b2t6Imv5b2m?=" <liangyan.ply@alibaba-inc.com>
+Subject: =?UTF-8?B?5Zue5aSN77ya5Zue5aSN77yaW1BBVENIXSBiY2FjaGU6IEZpeCBiZGV2IGxlYWsgZHVyaW5n?=
+  =?UTF-8?B?IGJhY2tpbmcgZGV2aWNlIHJlZ2lzdGVyaW5n?=
+Date: Fri, 01 Dec 2017 09:54:10 +0800
+Message-ID: <77a964ce-696e-4736-8dd9-c23969c7b567.liangyan.ply@alibaba-inc.com>
+References: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>,eb5e502c-bf2a-ca47-4b18-ce2ddf00c45d@lyle.org
+Reply-To: "=?UTF-8?B?5b2t6Imv5b2m?=" <liangyan.ply@alibaba-inc.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f67.google.com ([74.125.83.67]:39901 "EHLO
-        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751680AbdK3Ss5 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 30 Nov 2017 13:48:57 -0500
-Received: by mail-pg0-f67.google.com with SMTP id w7so3355271pgv.6
-        for <linux-bcache@vger.kernel.org>; Thu, 30 Nov 2017 10:48:57 -0800 (PST)
-In-Reply-To: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
-To: =?UTF-8?B?5b2t6Imv5b2m?= <liangyan.ply@alibaba-inc.com>, linux-bcache <linux-bcache@vger.kernel.org>, linux-raid <linux-raid@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: base64
+Return-path: <linux-raid-owner@vger.kernel.org>
+In-Reply-To: eb5e502c-bf2a-ca47-4b18-ce2ddf00c45d@lyle.org
+Sender: linux-raid-owner@vger.kernel.org
+To: linux-bcache <linux-bcache@vger.kernel.org>, linux-raid <linux-raid@vger.kernel.org>, Michael Lyle <mlyle@lyle.org>
 Cc: Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Coly Li <colyli@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, =?UTF-8?B?5Y2V5Zu95paHKOa4oeazoik=?= <dubo.sgw@alibaba-inc.com>, =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@alibaba-inc.com>
+List-Id: linux-bcache@vger.kernel.org
 
-Hi--
-
-On 11/30/2017 04:00 AM, 彭良彦 wrote:
-> On 17/11/23 上午8:42, 彭良彦 wrote:
->> If the backing device hasn't been detached due to exceptional stop
->> like power outage, the BDEV_STATE in super block can't be reset,
->> it will fail to register this backing device in next time, but the
->> opened bdev will be hold, this makes the backing device unaccessable
->> because of FMODE_EXCL until reboot.
->>
->> Signed-off-by: Liangyan Peng <liangyan.ply@alibaba-inc.com>
-
-This doesn't seem correct.
-
-What is the exact problem you're seeing?  Is it, if the cache device is
-missing, the backing device "leaks"?  I think this is intentional-- it
-is waiting there for an appropriate cache device to be attached that
-lets it leave the STATE_DIRTY and run.  That is, either the backing
-device or cache device can be registered first, and if the backing
-device is registered first it is supposed to "wait" and not run until
-the cache shows up.
-
->> ---
->>  drivers/md/bcache/super.c | 15 +++++++++++----
->>  1 file changed, 11 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
->> index 66669c8f4161..0b95a594c12e 100644
->> --- a/drivers/md/bcache/super.c
->> +++ b/drivers/md/bcache/super.c
->> @@ -1174,9 +1174,7 @@ static void register_bdev(struct cache_sb *sb, struct page *sb_page,
->>  	list_for_each_entry(c, &bch_cache_sets, list)
->>  		bch_cached_dev_attach(dc, c);
->>  
->> -	if (BDEV_STATE(&dc->sb) == BDEV_STATE_NONE ||
->> -	    BDEV_STATE(&dc->sb) == BDEV_STATE_STALE)
->> -		bch_cached_dev_run(dc);
->> +	bch_cached_dev_run(dc);
-
-You've moved the check out of here into the enclosing...
-
->>  
->>  	return;
->>  err:
->> @@ -1982,7 +1980,16 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
->>  		goto err_close;
->>  
->>  	if (SB_IS_BDEV(sb)) {
->> -		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
->> +		struct cached_dev *dc = NULL;
->> +
->> +		if (BDEV_STATE(sb) != BDEV_STATE_NONE &&
->> +			BDEV_STATE(sb) != BDEV_STATE_STALE) {
->> +			blkdev_put(bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
->> +			err = "invalid super block";
->> +			pr_info("Failed to register %s: %s", path, err);
->> +			goto out;
->> +		}
-
-Here we check the state-- before bch_cached_dev_attach is called.  So if
-the state is BDEV_STATE_DIRTY or BDEV_STATE_CLEAN there is no chance to
-ever transition to _NONE/_STALE and run the cache.  This will make it
-impossible to ever start up the cache after power failure.
-
-Mike
+T24gMTcvMTIvMSDkuIrljYgyOjQ4LCBNaWNoYWVsIEx5bGUgd3JvdGU6Cj4gSGktLQo+Cj4gT24g
+MTEvMzAvMjAxNyAwNDowMCBBTSwg5b2t6Imv5b2mIHdyb3RlOgo+PiBPbiAxNy8xMS8yMyDkuIrl
+jYg4OjQyLCDlva3oia/lvaYgd3JvdGU6Cj4+PiBJZiB0aGUgYmFja2luZyBkZXZpY2UgaGFzbid0
+IGJlZW4gZGV0YWNoZWQgZHVlIHRvIGV4Y2VwdGlvbmFsIHN0b3AKPj4+IGxpa2UgcG93ZXIgb3V0
+YWdlLCB0aGUgQkRFVl9TVEFURSBpbiBzdXBlciBibG9jayBjYW4ndCBiZSByZXNldCwKPj4+IGl0
+IHdpbGwgZmFpbCB0byByZWdpc3RlciB0aGlzIGJhY2tpbmcgZGV2aWNlIGluIG5leHQgdGltZSwg
+YnV0IHRoZQo+Pj4gb3BlbmVkIGJkZXYgd2lsbCBiZSBob2xkLCB0aGlzIG1ha2VzIHRoZSBiYWNr
+aW5nIGRldmljZSB1bmFjY2Vzc2FibGUKPj4+IGJlY2F1c2Ugb2YgRk1PREVfRVhDTCB1bnRpbCBy
+ZWJvb3QuCj4+Pgo+Pj4gU2lnbmVkLW9mZi1ieTogTGlhbmd5YW4gUGVuZyA8bGlhbmd5YW4ucGx5
+QGFsaWJhYmEtaW5jLmNvbT4KPgo+IFRoaXMgZG9lc24ndCBzZWVtIGNvcnJlY3QuCj4KPiBXaGF0
+IGlzIHRoZSBleGFjdCBwcm9ibGVtIHlvdSdyZSBzZWVpbmc/ICBJcyBpdCwgaWYgdGhlIGNhY2hl
+IGRldmljZSBpcwo+IG1pc3NpbmcsIHRoZSBiYWNraW5nIGRldmljZSAibGVha3MiPyAgSSB0aGlu
+ayB0aGlzIGlzIGludGVudGlvbmFsLS0gaXQKPiBpcyB3YWl0aW5nIHRoZXJlIGZvciBhbiBhcHBy
+b3ByaWF0ZSBjYWNoZSBkZXZpY2UgdG8gYmUgYXR0YWNoZWQgdGhhdAo+IGxldHMgaXQgbGVhdmUg
+dGhlIFNUQVRFX0RJUlRZIGFuZCBydW4uICBUaGF0IGlzLCBlaXRoZXIgdGhlIGJhY2tpbmcKPiBk
+ZXZpY2Ugb3IgY2FjaGUgZGV2aWNlIGNhbiBiZSByZWdpc3RlcmVkIGZpcnN0LCBhbmQgaWYgdGhl
+IGJhY2tpbmcKPiBkZXZpY2UgaXMgcmVnaXN0ZXJlZCBmaXJzdCBpdCBpcyBzdXBwb3NlZCB0byAi
+d2FpdCIgYW5kIG5vdCBydW4gdW50aWwKPiB0aGUgY2FjaGUgc2hvd3MgdXAuCj4KVGhhbmtzIE1p
+a2UuCgpIZXJlIGlzIHRoZSBpc3N1ZSByZXByb2R1Y2Ugc3RlcC4KMS4gY3JlYXRlIGEgYmxvY2sg
+ZGV2aWNlIHNkYiBieSBpU0NTSQoyLiBlY2hvIC9kZXYvc2RiID4gL3N5cy9mcy9iY2FjaGUvcmVn
+aXN0ZXIgYW5kIHN1Y2NlZWQgdG8gcmVnaXN0ZXIgLy9zZGIgaXMgdGhlIGJsb2NrIGRldiBjcmVh
+dGUgYnkgaVNDU0kKMy4gZGlzY29ubmVjdCBuZXR3b3JrIGFuZCByZWJvb3QgIC8vIHdpdGhvdXQg
+bmV0d29yaywgU0VUX0JERVZfU1RBVEUoJmRjLT5zYiwgQkRFVl9TVEFURV9OT05FKSB3aWxsIGZh
+aWwKNC4gY3JlYXRlIGEgYmxvY2sgZGV2aWNlIHNkYiBieSBpU0NTSQo1LiBlY2hvIC9kZXYvc2Ri
+ID4gL3N5cy9mcy9iY2FjaGUvcmVnaXN0ZXIgYW5kIGZhaWwgdG8gcmVnaXN0ZXIgc2luY2UgYmRl
+diBzdGF0ZSBpcyBub3QgcmVzZXQgdG8gQkRFVl9TVEFURV9OT05FCjYuIG1ha2UtYmNhY2hlIC1C
+IC9kZXYvc2RiIC0td3JpdGViYWNrIC0td2lwZS1iY2FjaGUKdGhlIGxhc3Qgc3RlcCB3aWxsIGZh
+aWwgaW4gb3JpZ2luYWwgdmVyc2lvbiBzaW5jZSBiZGV2IGhhbmRsZSBpcyBub3QgcmVsZWFzZWQg
+ZHVyaW5nIHJlZ2lzdGVyIGFuZCBvcGVuKCkgaXMgZmFpbGVkIGluIG1ha2UtYmNhY2hlLCB3aXRo
+IHRoaXMgcGF0Y2gsIGl0IHdpbGwgc3VjY2VlZAoKPj4+IC0tLQo+Pj4gIGRyaXZlcnMvbWQvYmNh
+Y2hlL3N1cGVyLmMgfCAxNSArKysrKysrKysrKy0tLS0KPj4+ICAxIGZpbGUgY2hhbmdlZCwgMTEg
+aW5zZXJ0aW9ucygrKSwgNCBkZWxldGlvbnMoLSkKPj4+Cj4+PiBkaWZmIC0tZ2l0IGEvZHJpdmVy
+cy9tZC9iY2FjaGUvc3VwZXIuYyBiL2RyaXZlcnMvbWQvYmNhY2hlL3N1cGVyLmMKPj4+IGluZGV4
+IDY2NjY5YzhmNDE2MS4uMGI5NWE1OTRjMTJlIDEwMDY0NAo+Pj4gLS0tIGEvZHJpdmVycy9tZC9i
+Y2FjaGUvc3VwZXIuYwo+Pj4gKysrIGIvZHJpdmVycy9tZC9iY2FjaGUvc3VwZXIuYwo+Pj4gQEAg
+LTExNzQsOSArMTE3NCw3IEBAIHN0YXRpYyB2b2lkIHJlZ2lzdGVyX2JkZXYoc3RydWN0IGNhY2hl
+X3NiICpzYiwgc3RydWN0IHBhZ2UgKnNiX3BhZ2UsCj4+PiAgCWxpc3RfZm9yX2VhY2hfZW50cnko
+YywgJmJjaF9jYWNoZV9zZXRzLCBsaXN0KQo+Pj4gIAkJYmNoX2NhY2hlZF9kZXZfYXR0YWNoKGRj
+LCBjKTsKPj4+ICAKPj4+IC0JaWYgKEJERVZfU1RBVEUoJmRjLT5zYikgPT0gQkRFVl9TVEFURV9O
+T05FIHx8Cj4+PiAtCSAgICBCREVWX1NUQVRFKCZkYy0+c2IpID09IEJERVZfU1RBVEVfU1RBTEUp
+Cj4+PiAtCQliY2hfY2FjaGVkX2Rldl9ydW4oZGMpOwo+Pj4gKwliY2hfY2FjaGVkX2Rldl9ydW4o
+ZGMpOwo+Cj4gWW91J3ZlIG1vdmVkIHRoZSBjaGVjayBvdXQgb2YgaGVyZSBpbnRvIHRoZSBlbmNs
+b3NpbmcuLi4KPgo+Pj4gIAo+Pj4gIAlyZXR1cm47Cj4+PiAgZXJyOgo+Pj4gQEAgLTE5ODIsNyAr
+MTk4MCwxNiBAQCBzdGF0aWMgc3NpemVfdCByZWdpc3Rlcl9iY2FjaGUoc3RydWN0IGtvYmplY3Qg
+KmssIHN0cnVjdCBrb2JqX2F0dHJpYnV0ZSAqYXR0ciwKPj4+ICAJCWdvdG8gZXJyX2Nsb3NlOwo+
+Pj4gIAo+Pj4gIAlpZiAoU0JfSVNfQkRFVihzYikpIHsKPj4+IC0JCXN0cnVjdCBjYWNoZWRfZGV2
+ICpkYyA9IGt6YWxsb2Moc2l6ZW9mKCpkYyksIEdGUF9LRVJORUwpOwo+Pj4gKwkJc3RydWN0IGNh
+Y2hlZF9kZXYgKmRjID0gTlVMTDsKPj4+ICsKPj4+ICsJCWlmIChCREVWX1NUQVRFKHNiKSAhPSBC
+REVWX1NUQVRFX05PTkUgJiYKPj4+ICsJCQlCREVWX1NUQVRFKHNiKSAhPSBCREVWX1NUQVRFX1NU
+QUxFKSB7Cj4+PiArCQkJYmxrZGV2X3B1dChiZGV2LCBGTU9ERV9SRUFEfEZNT0RFX1dSSVRFfEZN
+T0RFX0VYQ0wpOwo+Pj4gKwkJCWVyciA9ICJpbnZhbGlkIHN1cGVyIGJsb2NrIjsKPj4+ICsJCQlw
+cl9pbmZvKCJGYWlsZWQgdG8gcmVnaXN0ZXIgJXM6ICVzIiwgcGF0aCwgZXJyKTsKPj4+ICsJCQln
+b3RvIG91dDsKPj4+ICsJCX0KPgo+IEhlcmUgd2UgY2hlY2sgdGhlIHN0YXRlLS0gYmVmb3JlIGJj
+aF9jYWNoZWRfZGV2X2F0dGFjaCBpcyBjYWxsZWQuICBTbyBpZgo+IHRoZSBzdGF0ZSBpcyBCREVW
+X1NUQVRFX0RJUlRZIG9yIEJERVZfU1RBVEVfQ0xFQU4gdGhlcmUgaXMgbm8gY2hhbmNlIHRvCj4g
+ZXZlciB0cmFuc2l0aW9uIHRvIF9OT05FL19TVEFMRSBhbmQgcnVuIHRoZSBjYWNoZS4gIFRoaXMg
+d2lsbCBtYWtlIGl0Cj4gaW1wb3NzaWJsZSB0byBldmVyIHN0YXJ0IHVwIHRoZSBjYWNoZSBhZnRl
+ciBwb3dlciBmYWlsdXJlLgo+Cj4gTWlrZQ==
