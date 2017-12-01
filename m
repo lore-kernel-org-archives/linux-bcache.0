@@ -1,48 +1,58 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: =?UTF-8?B?UmU6IOWbnuWkje+8muWbnuWkje+8muWbnuWkje+8muWbnuWkje+8mltQ?=
- =?UTF-8?Q?ATCH]_bcache:_Fix_bdev_leak_during_backing_device_registering?=
-Date: Thu, 30 Nov 2017 20:25:02 -0800
-Message-ID: <963775f5-a0e1-e727-defe-c123ae299028@lyle.org>
-References: <fd806bd1-6537-42a7-8af3-d8dee9cb8fb9.liangyan.ply@alibaba-inc.com>
- <77a964ce-696e-4736-8dd9-c23969c7b567.liangyan.ply@alibaba-inc.com>
- <22f7350f-4251-443f-b346-9cd98d98d1ed.liangyan.ply@alibaba-inc.com>
- <86da49cd-a506-4fd7-8b8e-5d142106a007.liangyan.ply@alibaba-inc.com>
+From: Nix <nix@esperi.org.uk>
+Subject: Re: ont out of 6 bcache devices does not register automatically
+Date: Fri, 01 Dec 2017 15:10:32 +0000
+Message-ID: <87a7z21o2f.fsf@esperi.org.uk>
+References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
+        <eee65109-aa05-d639-e0fe-12259e726803@profihost.ag>
+        <93a1e381-ea82-b5c0-444b-6bdd3062e7f0@profihost.ag>
+        <73e9184b-c74b-fe92-bb87-a0b945931187@lyle.org>
+        <91e9b95d-861e-13bb-2b61-5c010657c2af@profihost.ag>
+        <864cbf6d-7e8d-7dd4-7417-3150fe019fd8@lyle.org>
+        <3fde77da-e12f-7862-f3c5-2a3dad316b86@profihost.ag>
+        <0387447a-cce1-4162-3458-03193e146732@lyle.org>
+        <0ab9bd3f-f2ea-04d7-1416-941b3d93d410@profihost.ag>
+        <e2acf9c9-9097-e24c-69dd-a56ec672f9ef@lyle.org>
+        <e016c187-fb69-463b-8a1f-3c41fdec369a@profihost.ag>
+        <03029ee8-2856-19a3-a44d-8fbdc3f27da4@profihost.ag>
+        <cb1cbbc1-194c-d583-07ed-9ff81777dace@profihost.ag>
+        <CAJ+L6qc79S1t10WfeycRFLesuqbZNfUXrN7qo6fVuwbHk=n8xw@mail.gmail.com>
+        <ce696f9d-07e5-88b4-dca8-dbef47594fca@profihost.ag>
+        <CAJ+L6qcJ+heW+B2tyimxmJwjW6jQ0tsAz+bYx_3uYSc0YR53nA@mail.gmail.com>
+        <1855331d-a606-58fd-2649-67203ddee8b5@profihost.ag>
+        <e19204b9-bca0-052b-99c2-102b983547f8@lyle.org>
+        <c2c82969-5fba-cea8-756a-d7489b506e7a@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f179.google.com ([209.85.192.179]:36074 "EHLO
-        mail-pf0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752221AbdLAEZF (ORCPT
+Received: from icebox.esperi.org.uk ([81.187.191.129]:54604 "EHLO
+        mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750957AbdLAPLZ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 30 Nov 2017 23:25:05 -0500
-Received: by mail-pf0-f179.google.com with SMTP id p84so4118749pfd.3
-        for <linux-bcache@vger.kernel.org>; Thu, 30 Nov 2017 20:25:05 -0800 (PST)
-In-Reply-To: <86da49cd-a506-4fd7-8b8e-5d142106a007.liangyan.ply@alibaba-inc.com>
-Content-Language: en-US
+        Fri, 1 Dec 2017 10:11:25 -0500
+In-Reply-To: <c2c82969-5fba-cea8-756a-d7489b506e7a@profihost.ag> (Stefan
+        Priebe's message of "Tue, 28 Nov 2017 21:31:26 +0100")
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?UTF-8?B?5b2t6Imv5b2m?= <liangyan.ply@alibaba-inc.com>, linux-bcache <linux-bcache@vger.kernel.org>, linux-raid <linux-raid@vger.kernel.org>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Shaohua Li <shli@kernel.org>, Coly Li <colyli@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, =?UTF-8?B?5Y2V5Zu95paHKOa4oeazoik=?= <dubo.sgw@alibaba-inc.com>, =?UTF-8?B?56em5om/5YiaKOaJv+WImik=?= <chenggang.qcg@alibaba-inc.com>
+To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Cc: Michael Lyle <mlyle@lyle.org>, Coly Li <i@coly.li>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, n.fahldieck@profihost.ag
 
-On 11/30/2017 07:38 PM, 彭良彦 wrote:
-> On 17/12/1 上午10:38, Michael Lyle wrote:
->> On 11/30/2017 06:30 PM, 彭良彦 wrote:
->>> If the cache device is not persistent like ramdisk,  all data will be lost after reboot. We have to use make-bcache to fix the inconsistent super block of backing device.
->>
->> Using a non-persistent writeback cache is guaranteed to lose data.
->> (Writes will only go to the cache device and not make it to the
->> persistent volume).
->>
->> Mike
-> 
-> If we use ramdisk as a writethrough cache to improve the read performance, the backing device is a network disk, the super block state of backing device still has chance to be inconsistent due to disconnected network. Like in above reproduce steps, i didn't use a cache device. :-)N�����r��y���b�X��ǧv�^�)޺{.n�+����{�mƜ�觶��ܨ}���Ơz�&j:+v�������zZ+��+zf���h���~����i���z��w���?����&�)ߢfl===
-> 
+On 28 Nov 2017, Stefan Priebe spake thusly:
 
-I cannot accept this patch.  It is guaranteed to corrupt data, by
-starting the client device when the cache is in a bad state.
+> Am 28.11.2017 um 21:05 schrieb Michael Lyle:
+[...]
+>> Even if I maintained bcache-tools, I couldn't really fix this.  If there
+>> is a desire to proceed through ambiguity, the ordering that actions are
+>> attempted in-- RAID, filesystems, bcache, DM, etc, becomes important,
+>> and can't be solved in any one package.
+>
+> I dont want to allow to register for ambiguity in general - but in case
+> there is ambiguity with an FS (xfs,btrfs, ...). I can't see a way where
+> this could be a problem. Even considering other block drivers like md or dm.
 
-If you use 'writeback', you must have a cache device and the cache
-device must be present to start the bcache client device.
+bcache can be stacked underneath filesystems via loopback mounts. Heck
+you can have a RAID->bcache->LVM->cryptfs->loopback->RAID->bcache stack
+if you like (I've done that, though the loopback layers and below were
+only for testing.)
 
-Mike
+-- 
+NULL && (void)
