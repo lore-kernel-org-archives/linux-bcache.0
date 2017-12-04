@@ -1,58 +1,98 @@
-From: Nix <nix@esperi.org.uk>
-Subject: Re: ont out of 6 bcache devices does not register automatically
-Date: Fri, 01 Dec 2017 15:10:32 +0000
-Message-ID: <87a7z21o2f.fsf@esperi.org.uk>
-References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
-        <eee65109-aa05-d639-e0fe-12259e726803@profihost.ag>
-        <93a1e381-ea82-b5c0-444b-6bdd3062e7f0@profihost.ag>
-        <73e9184b-c74b-fe92-bb87-a0b945931187@lyle.org>
-        <91e9b95d-861e-13bb-2b61-5c010657c2af@profihost.ag>
-        <864cbf6d-7e8d-7dd4-7417-3150fe019fd8@lyle.org>
-        <3fde77da-e12f-7862-f3c5-2a3dad316b86@profihost.ag>
-        <0387447a-cce1-4162-3458-03193e146732@lyle.org>
-        <0ab9bd3f-f2ea-04d7-1416-941b3d93d410@profihost.ag>
-        <e2acf9c9-9097-e24c-69dd-a56ec672f9ef@lyle.org>
-        <e016c187-fb69-463b-8a1f-3c41fdec369a@profihost.ag>
-        <03029ee8-2856-19a3-a44d-8fbdc3f27da4@profihost.ag>
-        <cb1cbbc1-194c-d583-07ed-9ff81777dace@profihost.ag>
-        <CAJ+L6qc79S1t10WfeycRFLesuqbZNfUXrN7qo6fVuwbHk=n8xw@mail.gmail.com>
-        <ce696f9d-07e5-88b4-dca8-dbef47594fca@profihost.ag>
-        <CAJ+L6qcJ+heW+B2tyimxmJwjW6jQ0tsAz+bYx_3uYSc0YR53nA@mail.gmail.com>
-        <1855331d-a606-58fd-2649-67203ddee8b5@profihost.ag>
-        <e19204b9-bca0-052b-99c2-102b983547f8@lyle.org>
-        <c2c82969-5fba-cea8-756a-d7489b506e7a@profihost.ag>
-Mime-Version: 1.0
-Content-Type: text/plain
+From: tang.junhui@zte.com.cn
+Subject: Re: [PATCH] [PATCH v2] bcache: segregate flash only volume write streams from cached devices
+Date: Mon, 4 Dec 2017 14:11:54 +0800
+Message-ID: <1512367914-9257-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from icebox.esperi.org.uk ([81.187.191.129]:54604 "EHLO
-        mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1750957AbdLAPLZ (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 1 Dec 2017 10:11:25 -0500
-In-Reply-To: <c2c82969-5fba-cea8-756a-d7489b506e7a@profihost.ag> (Stefan
-        Priebe's message of "Tue, 28 Nov 2017 21:31:26 +0100")
+Received: from out1.zte.com.cn ([202.103.147.172]:36298 "EHLO mxct.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751205AbdLDGME (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 4 Dec 2017 01:12:04 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
-Cc: Michael Lyle <mlyle@lyle.org>, Coly Li <i@coly.li>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, n.fahldieck@profihost.ag
+To: colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-On 28 Nov 2017, Stefan Priebe spake thusly:
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-> Am 28.11.2017 um 21:05 schrieb Michael Lyle:
-[...]
->> Even if I maintained bcache-tools, I couldn't really fix this.  If there
->> is a desire to proceed through ambiguity, the ordering that actions are
->> attempted in-- RAID, filesystems, bcache, DM, etc, becomes important,
->> and can't be solved in any one package.
->
-> I dont want to allow to register for ambiguity in general - but in case
-> there is ambiguity with an FS (xfs,btrfs, ...). I can't see a way where
-> this could be a problem. Even considering other block drivers like md or dm.
+Hello Mike & Coly
 
-bcache can be stacked underneath filesystems via loopback mounts. Heck
-you can have a RAID->bcache->LVM->cryptfs->loopback->RAID->bcache stack
-if you like (I've done that, though the loopback layers and below were
-only for testing.)
+Could you please have a reveiw for this patch?
 
--- 
-NULL && (void)
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> In such scenario that there are some flash only volumes
+> , and some cached devices, when many tasks request these devices in
+> writeback mode, the write IOs may fall to the same bucket as bellow:
+> | cached data | flash data | cached data | cached data| flash data|
+> then after writeback of these cached devices, the bucket would
+> be like bellow bucket:
+> | free | flash data | free | free | flash data |
+> 
+> So, there are many free space in this bucket, but since data of flash
+> only volumes still exists, so this bucket cannot be reclaimable,
+> which would cause waste of bucket space.
+> 
+> In this patch, we segregate flash only volume write streams from
+> cached devices, so data from flash only volumes and cached devices
+> can store in different buckets.
+> 
+> Compare to v1 patch, this patch do not add a additionally open bucket
+> list, and it is try best to segregate flash only volume write streams
+> from cached devices, sectors of flash only volumes may still be mixed
+> with dirty sectors of cached device, but the number is very small.
+> 
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> ---
+>  drivers/md/bcache/alloc.c | 19 ++++++++++++++-----
+>  1 file changed, 14 insertions(+), 5 deletions(-)
+>  mode change 100644 => 100755 drivers/md/bcache/alloc.c
+> 
+> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+> old mode 100644
+> new mode 100755
+> index 0803563..4302922
+> --- a/drivers/md/bcache/alloc.c
+> +++ b/drivers/md/bcache/alloc.c
+> @@ -514,15 +514,21 @@ struct open_bucket {
+>  
+>  /*
+>   * We keep multiple buckets open for writes, and try to segregate different
+> - * write streams for better cache utilization: first we look for a bucket where
+> - * the last write to it was sequential with the current write, and failing that
+> - * we look for a bucket that was last used by the same task.
+> + * write streams for better cache utilization: first we try to segregate flash
+> + * only volume write streams from cached devices, secondly we look for a bucket
+> + * where the last write to it was sequential with the current write, and
+> + * failing that we look for a bucket that was last used by the same task.
+>   *
+>   * The ideas is if you've got multiple tasks pulling data into the cache at the
+>   * same time, you'll get better cache utilization if you try to segregate their
+>   * data and preserve locality.
+>   *
+> - * For example, say you've starting Firefox at the same time you're copying a
+> + * For example, dirty sectors of flash only volume is not reclaimable, if their
+> + * dirty sectors mixed with dirty sectors of cached device, such buckets will 
+> + * be marked as dirty and won't be reclaimed, though the dirty data of cached 
+> + * device have been written back to backend device.
+> + *
+> + * And say you've starting Firefox at the same time you're copying a
+>   * bunch of files. Firefox will likely end up being fairly hot and stay in the
+>   * cache awhile, but the data you copied might not be; if you wrote all that
+>   * data to the same buckets it'd get invalidated at the same time.
+> @@ -539,7 +545,10 @@ static struct open_bucket *pick_data_bucket(struct cache_set *c,
+>      struct open_bucket *ret, *ret_task = NULL;
+>  
+>      list_for_each_entry_reverse(ret, &c->data_buckets, list)
+> -        if (!bkey_cmp(&ret->key, search))
+> +        if (UUID_FLASH_ONLY(&c->uuids[KEY_INODE(&ret->key)]) != 
+> +            UUID_FLASH_ONLY(&c->uuids[KEY_INODE(search)]))
+> +            continue;
+> +        else if (!bkey_cmp(&ret->key, search))
+>              goto found;
+>          else if (ret->last_write_point == write_point)
+>              ret_task = ret;
+> -- 
+> 1.8.3.1
+
+Thanks,
+Tang
