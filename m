@@ -1,9 +1,8 @@
-From: Michael Lyle <mlyle@lyle.org>
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
 Subject: Re: ont out of 6 bcache devices does not register automatically
-Date: Sun, 10 Dec 2017 11:36:17 -0800
-Message-ID: <f4ab9fc2-3842-948c-91a0-bc980d675481@lyle.org>
+Date: Sun, 10 Dec 2017 20:39:04 +0100
+Message-ID: <ab4abd2f-e90c-0dbe-f638-02b0bcac99f6@profihost.ag>
 References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
- <73e9184b-c74b-fe92-bb87-a0b945931187@lyle.org>
  <91e9b95d-861e-13bb-2b61-5c010657c2af@profihost.ag>
  <864cbf6d-7e8d-7dd4-7417-3150fe019fd8@lyle.org>
  <3fde77da-e12f-7862-f3c5-2a3dad316b86@profihost.ag>
@@ -21,33 +20,38 @@ References: <3ebfa7f8-cef6-ca8f-a56f-14a6bafd5bc6@profihost.ag>
  <c2c82969-5fba-cea8-756a-d7489b506e7a@profihost.ag>
  <87a7z21o2f.fsf@esperi.org.uk>
  <b32aa385-ef0e-3a6c-2150-6a65048ba02e@profihost.ag>
+ <f4ab9fc2-3842-948c-91a0-bc980d675481@lyle.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f173.google.com ([209.85.192.173]:36103 "EHLO
-        mail-pf0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751994AbdLJTgU (ORCPT
+Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:20178 "EHLO
+        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1751743AbdLJTjG (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 10 Dec 2017 14:36:20 -0500
-Received: by mail-pf0-f173.google.com with SMTP id p84so9967616pfd.3
-        for <linux-bcache@vger.kernel.org>; Sun, 10 Dec 2017 11:36:20 -0800 (PST)
-In-Reply-To: <b32aa385-ef0e-3a6c-2150-6a65048ba02e@profihost.ag>
-Content-Language: en-US
+        Sun, 10 Dec 2017 14:39:06 -0500
+In-Reply-To: <f4ab9fc2-3842-948c-91a0-bc980d675481@lyle.org>
+Content-Language: de-DE
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>, Nix <nix@esperi.org.uk>
+To: Michael Lyle <mlyle@lyle.org>, Nix <nix@esperi.org.uk>
 Cc: Coly Li <i@coly.li>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, n.fahldieck@profihost.ag
 
-On 12/10/2017 11:34 AM, Stefan Priebe - Profihost AG wrote:
-> 
-> Am 01.12.2017 um 16:10 schrieb Nix:
->> bcache can be stacked underneath filesystems via loopback mounts. Heck
->> you can have a RAID->bcache->LVM->cryptfs->loopback->RAID->bcache stack
->> if you like (I've done that, though the loopback layers and below were
->> only for testing.)
-> 
-> mhm but that means bcache can't be autoregistered in a solid way. Sad to
-> here that.
 
-These problems aren't anything specific to bcache.
+Am 10.12.2017 um 20:36 schrieb Michael Lyle:
+> On 12/10/2017 11:34 AM, Stefan Priebe - Profihost AG wrote:
+>>
+>> Am 01.12.2017 um 16:10 schrieb Nix:
+>>> bcache can be stacked underneath filesystems via loopback mounts. Heck
+>>> you can have a RAID->bcache->LVM->cryptfs->loopback->RAID->bcache stack
+>>> if you like (I've done that, though the loopback layers and below were
+>>> only for testing.)
+>>
+>> mhm but that means bcache can't be autoregistered in a solid way. Sad to
+>> here that.
+> 
+> These problems aren't anything specific to bcache.
+
+sure i didn't meant that - but still bad.
+
+Stefan
