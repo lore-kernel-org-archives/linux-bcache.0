@@ -1,59 +1,27 @@
-From: 60022337@mylife.unisa.ac.za
-Subject: Hallo mein lieber Freund,
-Date: Sat, 16 Dec 2017 16:33:45 +0530
-Message-ID: <AM5PR0102MB277180B89AAE816FA34E7B09BE080@AM5PR0102MB2771.eurprd01.prod.exchangelabs.com>
-Reply-To: verahollin88@gmail.com
+From: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
+Subject: deadlock in bcache, kernel or xfs?
+Date: Mon, 18 Dec 2017 08:52:01 +0100
+Message-ID: <7be57cd8-f82b-3304-b26b-ec178982465c@profihost.ag>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-db5eur01hn0202.outbound.protection.outlook.com ([104.47.2.202]:48048
-        "EHLO EUR01-DB5-obe.outbound.protection.outlook.com"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1751036AbdLPLDB (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 16 Dec 2017 06:03:01 -0500
-Content-Description: Mail message body
+Received: from cloud1-vm154.de-nserver.de ([178.250.10.56]:39841 "EHLO
+        cloud1-vm154.de-nserver.de" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1750792AbdLRHwD (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 18 Dec 2017 02:52:03 -0500
+Content-Language: de-DE
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Recipients <60022337@mylife.unisa.ac.za>
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-Hallo mein lieber Freund,
+Hello,
 
-Ich schreibe Ihnen diese Post mit schweren Tr=E4nen In meinen Augen und gro=
-=DFem Kummer in meinem Herzen, Mein Name ist Vera Hollin Kvan, und ich kont=
-aktiere Sie aus meinem Land Indien Ich m=F6chte Ihnen dies sagen, weil ich =
-keine habe andere Option, als Ihnen zu sagen, wie ich ber=FChrt wurde, um S=
-ie zu =F6ffnen, ich heiratete mit Herrn Hollin Kvan, der mit der tunesische=
-n Botschaft in Madrid Spanien f=FCr neun Jahre arbeitete, bevor er im Jahr =
-2005 starb.Wir waren seit elf Jahren ohne eine Kind.
+today crashed a server with the following traces. Can somebody tell me
+whether it's a bug in bcache or some other code?
 
-Er starb nach einer kurzen Krankheit, die nur f=FCnf Tage dauerte. Seit sei=
-nem Tod habe ich beschlossen, nicht wieder zu heiraten. Als mein verstorben=
-er Ehemann lebte, deponierte er die Summe von $ 4,850,000.00USD (vier Milli=
-onen achthundertundf=FCnfzigtausend Dollar) in einer Bank hier in Indien. N=
-ew Delhi die Hauptstadt von Indien, derzeit dieses Geld ist immer noch in d=
-er Bank.
+https://pastebin.com/raw/HepE1z3v
 
-Er machte dieses Geld f=FCr den Export von Gold aus Madrid Spanien Bergbau-=
-Factary.K=FCrzlich mein Arzt sagte mir, dass ich nicht f=FCr die Dauer von =
-sieben Monaten wegen Krebs Problem dauern w=FCrde. Derjenige, der mich am m=
-eisten st=F6rt, ist meine Schlaganfallkrankheit. Nachdem ich meinen Zustand=
- gekannt habe, habe ich mich entschlossen, Ihnen dieses Geld zu geben, um a=
-uf die weniger privilegierten Leute aufzupassen, Sie werden dieses Geld ver=
-wenden, wie ich hier unterweisen werde.
-
-Ich m=F6chte, dass Sie 30 Prozent des gesamten Geldes f=FCr Ihren pers=F6nl=
-ichen Gebrauch verwenden, w=E4hrend 70% des Geldes f=FCr wohlt=E4tige Zweck=
-e, Menschen auf der Stra=DFe und Hilfe f=FCr das Waisenhaus verwendet werde=
-n. Ich bin als Waise aufgewachsen und habe keinen K=F6rper als Familienmitg=
-lied, nur um zu enden, dass das Haus Gottes auch erhalten bleibt. Tue dies,=
- damit Gott meine S=FCnden vergibt und meine Seele annimmt, weil diese Kran=
-kheiten mich so sehr gelitten haben. Sobald ich Ihre Antwort erhalten habe,=
- werde ich Ihnen den Kontakt der Bank hier in Delhi Indien geben und ich we=
-rde auch den Bankmanager anweisen, Ihnen ein Autorit=E4tsschreiben auszuste=
-llen, das Sie als den gegenw=E4rtigen Beg=FCnstigten des Geldes in der Bank=
- beweisen wird, wenn Sie versichern mir, dass Sie entsprechend handeln, wie=
- ich es hier dargelegt habe.
-
-In der Hoffnung, Ihre Antwort zu erhalten.
-Von Vera Hollin kVan
+Greets,
+Stefan
