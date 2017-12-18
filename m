@@ -1,51 +1,44 @@
-From: Larkin Lowrey <llowrey@nuclearwinter.com>
-Subject: bcache shutdown sequence
-Date: Mon, 18 Dec 2017 12:37:13 -0500
-Message-ID: <480d3e9c-a7b0-46c7-6744-6aa5b4a75635@nuclearwinter.com>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: bcache shutdown sequence
+Date: Mon, 18 Dec 2017 10:23:22 -0800
+Message-ID: <CAJ+L6qeo9Zu1+jTYORbipNVv1JNkXgzGwrphq52jdkgwWDydgA@mail.gmail.com>
+References: <480d3e9c-a7b0-46c7-6744-6aa5b4a75635@nuclearwinter.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from titan.nuclearwinter.com ([205.185.120.7]:43276 "EHLO
-        titan.nuclearwinter.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1758087AbdLRSLd (ORCPT
+Received: from mail-qk0-f178.google.com ([209.85.220.178]:36421 "EHLO
+        mail-qk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S935095AbdLRSXX (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 18 Dec 2017 13:11:33 -0500
-Received: from [IPv6:2601:6c5:8000:1480:54ff:ba2b:b29:792c] ([IPv6:2601:6c5:8000:1480:54ff:ba2b:b29:792c])
-        (authenticated bits=0)
-        by titan.nuclearwinter.com (8.14.7/8.14.7) with ESMTP id vBIHbGrN021127
-        (version=TLSv1/SSLv3 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128 verify=NO)
-        for <linux-bcache@vger.kernel.org>; Mon, 18 Dec 2017 12:37:18 -0500
-Content-Language: en-US
+        Mon, 18 Dec 2017 13:23:23 -0500
+Received: by mail-qk0-f178.google.com with SMTP id 8so19473108qkj.3
+        for <linux-bcache@vger.kernel.org>; Mon, 18 Dec 2017 10:23:23 -0800 (PST)
+In-Reply-To: <480d3e9c-a7b0-46c7-6744-6aa5b4a75635@nuclearwinter.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
+To: Larkin Lowrey <llowrey@nuclearwinter.com>
+Cc: linux-bcache <linux-bcache@vger.kernel.org>
 
-I'm noticing that, with Fedora, dracut is trying to stop the mdraid 
-devices before bcache stops.
+Hi Larkin--
 
-> [ 1378.484141] dracut: Waiting for mdraid devices to be clean.
-> [ 1378.494073] dracut: Disassembling mdraid devices.
-> mdadm: Cannot get exclusive access to /dev/md1:Perhaps a running 
-> process, mounted filesystem or active volume group?
-> mdadm: Cannot get exclusive access to /dev/md0:Perhaps a running 
-> process, mounted filesystem or active volume group?
-> mdadm: Cannot get exclusive access to /dev/md1:Perhaps a running 
-> process, mounted filesystem or active volume group?
-> mdadm: Cannot get exclusive access to /dev/md0:Perhaps a running 
-> process, mounted filesystem or active volume group?
-> Powering off.
-> [ 1379.582761] bcache: bcache_reboot() Stopping all devices:
-> [ 1379.728768] bcache: bcache_device_free() bcache0 stopped
-> [ 1379.781601] bcache: cache_set_free() Cache set 
-> 4772d958-3d94-4411-b26c-86206cfa551e unregistered
-> [ 1379.792585] bcache: bcache_reboot() All devices stopped
+On Mon, Dec 18, 2017 at 9:37 AM, Larkin Lowrey
+<llowrey@nuclearwinter.com> wrote:
+> I'm noticing that, with Fedora, dracut is trying to stop the mdraid devices
+> before bcache stops.
+>
+> I haven't seen any data loss or corruption so this doesn't seem to be a
+> problem but it would be nice to have bcache stop first so I don't get so
+> alarmed by these messages.
 
-I haven't seen any data loss or corruption so this doesn't seem to be a 
-problem but it would be nice to have bcache stop first so I don't get so 
-alarmed by these messages.
+Well, plus, it'd be nice to properly stop md, else there's a chance
+you end up scrubbing volumes when you don't need to, etc.
 
-How is the shutdown sequence for bcache controlled? Where can I find the 
-relevant code?
+> How is the shutdown sequence for bcache controlled? Where can I find the
+> relevant code?
 
---Larkin
+All of that, unfortunately, is details maintained by your
+distribution.  And this is a tricky problem-- note some people build
+md-on-bcache instead of bcache-on-md (I prefer the latter), and the
+shutdown order would be correct for the former.
+
+Mike
