@@ -1,60 +1,51 @@
-From: Ming Lei <ming.lei@redhat.com>
-Subject: [PATCH V4 07/45] bcache: comment on direct access to bvec table
-Date: Mon, 18 Dec 2017 20:22:09 +0800
-Message-ID: <20171218122247.3488-8-ming.lei@redhat.com>
-References: <20171218122247.3488-1-ming.lei@redhat.com>
-Return-path: <owner-linux-mm@kvack.org>
-In-Reply-To: <20171218122247.3488-1-ming.lei@redhat.com>
-Sender: owner-linux-mm@kvack.org
-To: Jens Axboe <axboe@fb.com>, Christoph Hellwig <hch@infradead.org>, Alexander Viro <viro@zeniv.linux.org.uk>, Kent Overstreet <kent.overstreet@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>, linux-kernel@vger.kernel.org, linux-block@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, Theodore Ts'o <tytso@mit.edu>, "Darrick J . Wong" <darrick.wong@oracle.com>, Coly Li <colyli@suse.de>, Filipe Manana <fdmanana@gmail.com>, Ming Lei <ming.lei@redhat.com>, linux-bcache@vger.kernel.org
+From: Larkin Lowrey <llowrey@nuclearwinter.com>
+Subject: bcache shutdown sequence
+Date: Mon, 18 Dec 2017 12:37:13 -0500
+Message-ID: <480d3e9c-a7b0-46c7-6744-6aa5b4a75635@nuclearwinter.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from titan.nuclearwinter.com ([205.185.120.7]:43276 "EHLO
+        titan.nuclearwinter.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1758087AbdLRSLd (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 18 Dec 2017 13:11:33 -0500
+Received: from [IPv6:2601:6c5:8000:1480:54ff:ba2b:b29:792c] ([IPv6:2601:6c5:8000:1480:54ff:ba2b:b29:792c])
+        (authenticated bits=0)
+        by titan.nuclearwinter.com (8.14.7/8.14.7) with ESMTP id vBIHbGrN021127
+        (version=TLSv1/SSLv3 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128 verify=NO)
+        for <linux-bcache@vger.kernel.org>; Mon, 18 Dec 2017 12:37:18 -0500
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-All direct access to bvec table are safe even after multipage bvec is supported.
+I'm noticing that, with Fedora, dracut is trying to stop the mdraid 
+devices before bcache stops.
 
-Cc: linux-bcache@vger.kernel.org
-Acked-by: Coly Li <colyli@suse.de>
-Signed-off-by: Ming Lei <ming.lei@redhat.com>
----
- drivers/md/bcache/btree.c | 1 +
- drivers/md/bcache/util.c  | 7 +++++++
- 2 files changed, 8 insertions(+)
+> [ 1378.484141] dracut: Waiting for mdraid devices to be clean.
+> [ 1378.494073] dracut: Disassembling mdraid devices.
+> mdadm: Cannot get exclusive access to /dev/md1:Perhaps a running 
+> process, mounted filesystem or active volume group?
+> mdadm: Cannot get exclusive access to /dev/md0:Perhaps a running 
+> process, mounted filesystem or active volume group?
+> mdadm: Cannot get exclusive access to /dev/md1:Perhaps a running 
+> process, mounted filesystem or active volume group?
+> mdadm: Cannot get exclusive access to /dev/md0:Perhaps a running 
+> process, mounted filesystem or active volume group?
+> Powering off.
+> [ 1379.582761] bcache: bcache_reboot() Stopping all devices:
+> [ 1379.728768] bcache: bcache_device_free() bcache0 stopped
+> [ 1379.781601] bcache: cache_set_free() Cache set 
+> 4772d958-3d94-4411-b26c-86206cfa551e unregistered
+> [ 1379.792585] bcache: bcache_reboot() All devices stopped
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 81e8dc3dbe5e..02a4cf646fdc 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -432,6 +432,7 @@ static void do_btree_node_write(struct btree *b)
- 
- 		continue_at(cl, btree_node_write_done, NULL);
- 	} else {
-+		/* No problem for multipage bvec since the bio is just allocated */
- 		b->bio->bi_vcnt = 0;
- 		bch_bio_map(b->bio, i);
- 
-diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-index e548b8b51322..61813d230015 100644
---- a/drivers/md/bcache/util.c
-+++ b/drivers/md/bcache/util.c
-@@ -249,6 +249,13 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
- 		: 0;
- }
- 
-+/*
-+ * Generally it isn't good to access .bi_io_vec and .bi_vcnt directly,
-+ * the preferred way is bio_add_page, but in this case, bch_bio_map()
-+ * supposes that the bvec table is empty, so it is safe to access
-+ * .bi_vcnt & .bi_io_vec in this way even after multipage bvec is
-+ * supported.
-+ */
- void bch_bio_map(struct bio *bio, void *base)
- {
- 	size_t size = bio->bi_iter.bi_size;
--- 
-2.9.5
+I haven't seen any data loss or corruption so this doesn't seem to be a 
+problem but it would be nice to have bcache stop first so I don't get so 
+alarmed by these messages.
 
---
-To unsubscribe, send a message with 'unsubscribe linux-mm' in
-the body to majordomo@kvack.org.  For more info on Linux MM,
-see: http://www.linux-mm.org/ .
-Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+How is the shutdown sequence for bcache controlled? Where can I find the 
+relevant code?
+
+--Larkin
