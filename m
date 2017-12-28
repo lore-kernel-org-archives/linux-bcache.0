@@ -1,7 +1,7 @@
 From: tang.junhui@zte.com.cn
 Subject: Re: [for-416 PATCH 2/3] bcache: writeback: properly order backing device IO
-Date: Thu, 28 Dec 2017 09:27:21 +0800
-Message-ID: <1514424441-3078-1-git-send-email-tang.junhui@zte.com.cn>
+Date: Thu, 28 Dec 2017 09:30:46 +0800
+Message-ID: <1514424646-3221-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-block-owner@vger.kernel.org>
 Sender: linux-block-owner@vger.kernel.org
 To: mlyle@lyle.org
@@ -11,85 +11,123 @@ List-Id: linux-bcache@vger.kernel.org
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
 LGTM, and I tested it, it promotes the write-back performance.
+[Sorry for the wrong content in the previous email]
 
 Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
 Tested-by: Tang Junhui <tang.junhui@zte.com.cn>
 
-> From: Tang Junhui <tang.junhui@zte.com.cn>
+> Writeback keys are presently iterated and dispatched for writeback in
+> order of the logical block address on the backing device.  Multiple may
+> be, in parallel, read from the cache device and then written back
+> (especially when there are contiguous I/O).
 > 
-> In such scenario that there are some flash only volumes
-> , and some cached devices, when many tasks request these devices in
-> writeback mode, the write IOs may fall to the same bucket as bellow:
-> | cached data | flash data | cached data | cached data| flash data|
-> then after writeback of these cached devices, the bucket would
-> be like bellow bucket:
-> | free | flash data | free | free | flash data |
+> However-- there was no guarantee with the existing code that the writes
+> would be issued in LBA order, as the reads from the cache device are
+> often re-ordered.  In turn, when writing back quickly, the backing disk
+> often has to seek backwards-- this slows writeback and increases
+> utilization.
 > 
-> So, there are many free space in this bucket, but since data of flash
-> only volumes still exists, so this bucket cannot be reclaimable,
-> which would cause waste of bucket space.
+> This patch introduces an ordering mechanism that guarantees that the
+> original order of issue is maintained for the write portion of the I/O.
+> Performance for writeback is significantly improved when there are
+> multiple contiguous keys or high writeback rates.
 > 
-> In this patch, we segregate flash only volume write streams from
-> cached devices, so data from flash only volumes and cached devices
-> can store in different buckets.
-> 
-> Compare to v1 patch, this patch do not add a additionally open bucket
-> list, and it is try best to segregate flash only volume write streams
-> from cached devices, sectors of flash only volumes may still be mixed
-> with dirty sectors of cached device, but the number is very small.
-> 
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> Signed-off-by: Michael Lyle <mlyle@lyle.org>
 > ---
->  drivers/md/bcache/alloc.c | 19 ++++++++++++++-----
->  1 file changed, 14 insertions(+), 5 deletions(-)
->  mode change 100644 => 100755 drivers/md/bcache/alloc.c
+>  drivers/md/bcache/bcache.h    |  8 ++++++++
+>  drivers/md/bcache/writeback.c | 29 +++++++++++++++++++++++++++++
+>  2 files changed, 37 insertions(+)
 > 
-> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> old mode 100644
-> new mode 100755
-> index 0803563..4302922
-> --- a/drivers/md/bcache/alloc.c
-> +++ b/drivers/md/bcache/alloc.c
-> @@ -514,15 +514,21 @@ struct open_bucket {
+> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> index 1784e50eb857..3be0fcc19b1f 100644
+> --- a/drivers/md/bcache/bcache.h
+> +++ b/drivers/md/bcache/bcache.h
+> @@ -330,6 +330,14 @@ struct cached_dev {
 >  
->  /*
->   * We keep multiple buckets open for writes, and try to segregate different
-> - * write streams for better cache utilization: first we look for a bucket where
-> - * the last write to it was sequential with the current write, and failing that
-> - * we look for a bucket that was last used by the same task.
-> + * write streams for better cache utilization: first we try to segregate flash
-> + * only volume write streams from cached devices, secondly we look for a bucket
-> + * where the last write to it was sequential with the current write, and
-> + * failing that we look for a bucket that was last used by the same task.
->   *
->   * The ideas is if you've got multiple tasks pulling data into the cache at the
->   * same time, you'll get better cache utilization if you try to segregate their
->   * data and preserve locality.
->   *
-> - * For example, say you've starting Firefox at the same time you're copying a
-> + * For example, dirty sectors of flash only volume is not reclaimable, if their
-> + * dirty sectors mixed with dirty sectors of cached device, such buckets will 
-> + * be marked as dirty and won't be reclaimed, though the dirty data of cached 
-> + * device have been written back to backend device.
-> + *
-> + * And say you've starting Firefox at the same time you're copying a
->   * bunch of files. Firefox will likely end up being fairly hot and stay in the
->   * cache awhile, but the data you copied might not be; if you wrote all that
->   * data to the same buckets it'd get invalidated at the same time.
-> @@ -539,7 +545,10 @@ static struct open_bucket *pick_data_bucket(struct cache_set *c,
->      struct open_bucket *ret, *ret_task = NULL;
+>      struct keybuf        writeback_keys;
 >  
->      list_for_each_entry_reverse(ret, &c->data_buckets, list)
-> -        if (!bkey_cmp(&ret->key, search))
-> +        if (UUID_FLASH_ONLY(&c->uuids[KEY_INODE(&ret->key)]) != 
-> +            UUID_FLASH_ONLY(&c->uuids[KEY_INODE(search)]))
-> +            continue;
-> +        else if (!bkey_cmp(&ret->key, search))
->              goto found;
->          else if (ret->last_write_point == write_point)
->              ret_task = ret;
+> +    /*
+> +     * Order the write-half of writeback operations strongly in dispatch
+> +     * order.  (Maintain LBA order; don't allow reads completing out of
+> +     * order to re-order the writes...)
+> +     */
+> +    struct closure_waitlist writeback_ordering_wait;
+> +    atomic_t        writeback_sequence_next;
+> +
+>      /* For tracking sequential IO */
+>  #define RECENT_IO_BITS    7
+>  #define RECENT_IO    (1 << RECENT_IO_BITS)
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 4e4836c6e7cf..4084586d5991 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -130,6 +130,7 @@ static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
+>  struct dirty_io {
+>      struct closure        cl;
+>      struct cached_dev    *dc;
+> +    uint16_t        sequence;
+>      struct bio        bio;
+>  };
+>  
+> @@ -208,6 +209,27 @@ static void write_dirty(struct closure *cl)
+>  {
+>      struct dirty_io *io = container_of(cl, struct dirty_io, cl);
+>      struct keybuf_key *w = io->bio.bi_private;
+> +    struct cached_dev *dc = io->dc;
+> +
+> +    uint16_t next_sequence;
+> +
+> +    if (atomic_read(&dc->writeback_sequence_next) != io->sequence) {
+> +        /* Not our turn to write; wait for a write to complete */
+> +        closure_wait(&dc->writeback_ordering_wait, cl);
+> +
+> +        if (atomic_read(&dc->writeback_sequence_next) == io->sequence) {
+> +            /*
+> +             * Edge case-- it happened in indeterminate order
+> +             * relative to when we were added to wait list..
+> +             */
+> +            closure_wake_up(&dc->writeback_ordering_wait);
+> +        }
+> +
+> +        continue_at(cl, write_dirty, io->dc->writeback_write_wq);
+> +        return;
+> +    }
+> +
+> +    next_sequence = io->sequence + 1;
+>  
+>      /*
+>       * IO errors are signalled using the dirty bit on the key.
+> @@ -225,6 +247,9 @@ static void write_dirty(struct closure *cl)
+>          closure_bio_submit(&io->bio, cl);
+>      }
+>  
+> +    atomic_set(&dc->writeback_sequence_next, next_sequence);
+> +    closure_wake_up(&dc->writeback_ordering_wait);
+> +
+>      continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
+>  }
+>  
+> @@ -269,7 +294,10 @@ static void read_dirty(struct cached_dev *dc)
+>      int nk, i;
+>      struct dirty_io *io;
+>      struct closure cl;
+> +    uint16_t sequence = 0;
+>  
+> +    BUG_ON(!llist_empty(&dc->writeback_ordering_wait.list));
+> +    atomic_set(&dc->writeback_sequence_next, sequence);
+>      closure_init_stack(&cl);
+>  
+>      /*
+> @@ -330,6 +358,7 @@ static void read_dirty(struct cached_dev *dc)
+>  
+>              w->private    = io;
+>              io->dc        = dc;
+> +            io->sequence    = sequence++;
+>  
+>              dirty_init(w);
+>              bio_set_op_attrs(&io->bio, REQ_OP_READ, 0);
 > -- 
-> 1.8.3.1
+> 2.14.1
 
 Thanks,
 Tang
