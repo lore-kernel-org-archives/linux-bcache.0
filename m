@@ -1,131 +1,91 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [for-416 PATCH 2/3] bcache: writeback: properly order backing device IO
-Date: Wed, 27 Dec 2017 16:47:43 -0800
-Message-ID: <20171228004744.3522-2-mlyle@lyle.org>
+Subject: [for-416 PATCH 3/3] bcache: allow quick writeback when backing idle
+Date: Wed, 27 Dec 2017 16:47:44 -0800
+Message-ID: <20171228004744.3522-3-mlyle@lyle.org>
 References: <20171228004744.3522-1-mlyle@lyle.org>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pl0-f67.google.com ([209.85.160.67]:44167 "EHLO
-        mail-pl0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752782AbdL1AsJ (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 Dec 2017 19:48:09 -0500
-Received: by mail-pl0-f67.google.com with SMTP id n13so20277744plp.11
-        for <linux-bcache@vger.kernel.org>; Wed, 27 Dec 2017 16:48:09 -0800 (PST)
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20171228004744.3522-1-mlyle@lyle.org>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 Cc: Michael Lyle <mlyle@lyle.org>
+List-Id: linux-bcache@vger.kernel.org
 
-Writeback keys are presently iterated and dispatched for writeback in
-order of the logical block address on the backing device.  Multiple may
-be, in parallel, read from the cache device and then written back
-(especially when there are contiguous I/O).
-
-However-- there was no guarantee with the existing code that the writes
-would be issued in LBA order, as the reads from the cache device are
-often re-ordered.  In turn, when writing back quickly, the backing disk
-often has to seek backwards-- this slows writeback and increases
-utilization.
-
-This patch introduces an ordering mechanism that guarantees that the
-original order of issue is maintained for the write portion of the I/O.
-Performance for writeback is significantly improved when there are
-multiple contiguous keys or high writeback rates.
+If the control system would wait for at least half a second, and there's
+been no reqs hitting the backing disk for awhile: use an alternate mode
+where we have at most one contiguous set of writebacks in flight at a
+time. (But don't otherwise delay).  If front-end IO appears, it will
+still be quick, as it will only have to contend with one real operation
+in flight.  But otherwise, we'll be sending data to the backing disk as
+quickly as it can accept it (with one op at a time).
 
 Signed-off-by: Michael Lyle <mlyle@lyle.org>
 ---
- drivers/md/bcache/bcache.h    |  8 ++++++++
- drivers/md/bcache/writeback.c | 29 +++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
+ drivers/md/bcache/bcache.h    |  7 +++++++
+ drivers/md/bcache/request.c   |  1 +
+ drivers/md/bcache/writeback.c | 21 +++++++++++++++++++++
+ 3 files changed, 29 insertions(+)
 
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 1784e50eb857..3be0fcc19b1f 100644
+index 3be0fcc19b1f..5f7b0b2513cc 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -330,6 +330,14 @@ struct cached_dev {
- 
- 	struct keybuf		writeback_keys;
+@@ -320,6 +320,13 @@ struct cached_dev {
+ 	 */
+ 	atomic_t		has_dirty;
  
 +	/*
-+	 * Order the write-half of writeback operations strongly in dispatch
-+	 * order.  (Maintain LBA order; don't allow reads completing out of
-+	 * order to re-order the writes...)
++	 * Set to zero by things that touch the backing volume-- except
++	 * writeback.  Incremented by writeback.  Used to determine when to
++	 * accelerate idle writeback.
 +	 */
-+	struct closure_waitlist writeback_ordering_wait;
-+	atomic_t		writeback_sequence_next;
++	atomic_t		backing_idle;
 +
- 	/* For tracking sequential IO */
- #define RECENT_IO_BITS	7
- #define RECENT_IO	(1 << RECENT_IO_BITS)
+ 	struct bch_ratelimit	writeback_rate;
+ 	struct delayed_work	writeback_rate_update;
+ 
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index d1faaba6b93f..3b4defbdcbbd 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -996,6 +996,7 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
+ 	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
+ 	int rw = bio_data_dir(bio);
+ 
++	atomic_set(&dc->backing_idle, 0);
+ 	generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
+ 
+ 	bio_set_dev(bio, dc->bdev);
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 4e4836c6e7cf..4084586d5991 100644
+index 4084586d5991..bf309a480335 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -130,6 +130,7 @@ static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
- struct dirty_io {
- 	struct closure		cl;
- 	struct cached_dev	*dc;
-+	uint16_t		sequence;
- 	struct bio		bio;
- };
+@@ -383,6 +383,27 @@ static void read_dirty(struct cached_dev *dc)
  
-@@ -208,6 +209,27 @@ static void write_dirty(struct closure *cl)
- {
- 	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
- 	struct keybuf_key *w = io->bio.bi_private;
-+	struct cached_dev *dc = io->dc;
-+
-+	uint16_t next_sequence;
-+
-+	if (atomic_read(&dc->writeback_sequence_next) != io->sequence) {
-+		/* Not our turn to write; wait for a write to complete */
-+		closure_wait(&dc->writeback_ordering_wait, cl);
-+
-+		if (atomic_read(&dc->writeback_sequence_next) == io->sequence) {
-+			/*
-+			 * Edge case-- it happened in indeterminate order
-+			 * relative to when we were added to wait list..
+ 		delay = writeback_delay(dc, size);
+ 
++		/* If the control system would wait for at least half a
++		 * second, and there's been no reqs hitting the backing disk
++		 * for awhile: use an alternate mode where we have at most
++		 * one contiguous set of writebacks in flight at a time.  If
++		 * someone wants to do IO it will be quick, as it will only
++		 * have to contend with one operation in flight, and we'll
++		 * be round-tripping data to the backing disk as quickly as
++		 * it can accept it.
++		 */
++		if (delay >= HZ / 2) {
++			/* 3 means at least 1.5 seconds, up to 7.5 if we
++			 * have slowed way down.
 +			 */
-+			closure_wake_up(&dc->writeback_ordering_wait);
++			if (atomic_inc_return(&dc->backing_idle) >= 3) {
++				/* Wait for current I/Os to finish */
++				closure_sync(&cl);
++				/* And immediately launch a new set. */
++				delay = 0;
++			}
 +		}
 +
-+		continue_at(cl, write_dirty, io->dc->writeback_write_wq);
-+		return;
-+	}
-+
-+	next_sequence = io->sequence + 1;
- 
- 	/*
- 	 * IO errors are signalled using the dirty bit on the key.
-@@ -225,6 +247,9 @@ static void write_dirty(struct closure *cl)
- 		closure_bio_submit(&io->bio, cl);
- 	}
- 
-+	atomic_set(&dc->writeback_sequence_next, next_sequence);
-+	closure_wake_up(&dc->writeback_ordering_wait);
-+
- 	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
- }
- 
-@@ -269,7 +294,10 @@ static void read_dirty(struct cached_dev *dc)
- 	int nk, i;
- 	struct dirty_io *io;
- 	struct closure cl;
-+	uint16_t sequence = 0;
- 
-+	BUG_ON(!llist_empty(&dc->writeback_ordering_wait.list));
-+	atomic_set(&dc->writeback_sequence_next, sequence);
- 	closure_init_stack(&cl);
- 
- 	/*
-@@ -330,6 +358,7 @@ static void read_dirty(struct cached_dev *dc)
- 
- 			w->private	= io;
- 			io->dc		= dc;
-+			io->sequence    = sequence++;
- 
- 			dirty_init(w);
- 			bio_set_op_attrs(&io->bio, REQ_OP_READ, 0);
+ 		while (!kthread_should_stop() && delay) {
+ 			schedule_timeout_interruptible(delay);
+ 			delay = writeback_delay(dc, 0);
 -- 
 2.14.1
