@@ -1,42 +1,95 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [for-416 PATCH 1/3] bcache: writeback: collapse contiguous IO
- better
-Date: Wed, 27 Dec 2017 16:52:36 -0800
-Message-ID: <a2b093ac-7c9e-c791-808c-04dc1392d28e@lyle.org>
-References: <20171228004744.3522-1-mlyle@lyle.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f172.google.com ([209.85.192.172]:38412 "EHLO
-        mail-pf0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752016AbdL1Awi (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 Dec 2017 19:52:38 -0500
-Received: by mail-pf0-f172.google.com with SMTP id u25so20363946pfg.5
-        for <linux-bcache@vger.kernel.org>; Wed, 27 Dec 2017 16:52:38 -0800 (PST)
-In-Reply-To: <20171228004744.3522-1-mlyle@lyle.org>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: Re: [for-416 PATCH 2/3] bcache: writeback: properly order backing device IO
+Date: Thu, 28 Dec 2017 09:27:21 +0800
+Message-ID: <1514424441-3078-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-Hey everyone,
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-These were previously sent and there was an extension discussion about
-performance, finding that there was some slight regression on very large
-extent workloads and significant performance improvement on smaller
-extents.  This is a *huge* performance increase on my workload,
-especially the behavior enabled in the #3 patch that allows dirty data
-to be trimmed quickly during idle periods.
+LGTM, and I tested it, it promotes the write-back performance.
 
-Reviewed-by tags would be appreciated so that these can be staged for 4.16.
+Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+Tested-by: Tang Junhui <tang.junhui@zte.com.cn>
 
-I have additional changes coming in the next couple of days-- changes to
-the closure code picked from kmo's bcachefs tree that both improve
-performance and enhance correctness.  Just need a little more test and
-to work on the commit comments some.
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> In such scenario that there are some flash only volumes
+> , and some cached devices, when many tasks request these devices in
+> writeback mode, the write IOs may fall to the same bucket as bellow:
+> | cached data | flash data | cached data | cached data| flash data|
+> then after writeback of these cached devices, the bucket would
+> be like bellow bucket:
+> | free | flash data | free | free | flash data |
+> 
+> So, there are many free space in this bucket, but since data of flash
+> only volumes still exists, so this bucket cannot be reclaimable,
+> which would cause waste of bucket space.
+> 
+> In this patch, we segregate flash only volume write streams from
+> cached devices, so data from flash only volumes and cached devices
+> can store in different buckets.
+> 
+> Compare to v1 patch, this patch do not add a additionally open bucket
+> list, and it is try best to segregate flash only volume write streams
+> from cached devices, sectors of flash only volumes may still be mixed
+> with dirty sectors of cached device, but the number is very small.
+> 
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> ---
+>  drivers/md/bcache/alloc.c | 19 ++++++++++++++-----
+>  1 file changed, 14 insertions(+), 5 deletions(-)
+>  mode change 100644 => 100755 drivers/md/bcache/alloc.c
+> 
+> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+> old mode 100644
+> new mode 100755
+> index 0803563..4302922
+> --- a/drivers/md/bcache/alloc.c
+> +++ b/drivers/md/bcache/alloc.c
+> @@ -514,15 +514,21 @@ struct open_bucket {
+>  
+>  /*
+>   * We keep multiple buckets open for writes, and try to segregate different
+> - * write streams for better cache utilization: first we look for a bucket where
+> - * the last write to it was sequential with the current write, and failing that
+> - * we look for a bucket that was last used by the same task.
+> + * write streams for better cache utilization: first we try to segregate flash
+> + * only volume write streams from cached devices, secondly we look for a bucket
+> + * where the last write to it was sequential with the current write, and
+> + * failing that we look for a bucket that was last used by the same task.
+>   *
+>   * The ideas is if you've got multiple tasks pulling data into the cache at the
+>   * same time, you'll get better cache utilization if you try to segregate their
+>   * data and preserve locality.
+>   *
+> - * For example, say you've starting Firefox at the same time you're copying a
+> + * For example, dirty sectors of flash only volume is not reclaimable, if their
+> + * dirty sectors mixed with dirty sectors of cached device, such buckets will 
+> + * be marked as dirty and won't be reclaimed, though the dirty data of cached 
+> + * device have been written back to backend device.
+> + *
+> + * And say you've starting Firefox at the same time you're copying a
+>   * bunch of files. Firefox will likely end up being fairly hot and stay in the
+>   * cache awhile, but the data you copied might not be; if you wrote all that
+>   * data to the same buckets it'd get invalidated at the same time.
+> @@ -539,7 +545,10 @@ static struct open_bucket *pick_data_bucket(struct cache_set *c,
+>      struct open_bucket *ret, *ret_task = NULL;
+>  
+>      list_for_each_entry_reverse(ret, &c->data_buckets, list)
+> -        if (!bkey_cmp(&ret->key, search))
+> +        if (UUID_FLASH_ONLY(&c->uuids[KEY_INODE(&ret->key)]) != 
+> +            UUID_FLASH_ONLY(&c->uuids[KEY_INODE(search)]))
+> +            continue;
+> +        else if (!bkey_cmp(&ret->key, search))
+>              goto found;
+>          else if (ret->last_write_point == write_point)
+>              ret_task = ret;
+> -- 
+> 1.8.3.1
 
 Thanks,
-
-Mike
+Tang
