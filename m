@@ -1,226 +1,64 @@
-From: tang.junhui@zte.com.cn
-Subject: Re: [for-416 PATCH v2] bcache: writeback: collapse contiguous IO better
-Date: Fri, 29 Dec 2017 10:00:51 +0800
-Message-ID: <1514512851-3101-1-git-send-email-tang.junhui@zte.com.cn>
-Return-path: <linux-block-owner@vger.kernel.org>
-Sender: linux-block-owner@vger.kernel.org
-To: mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+From: Kai Krakow <hurikhan77@gmail.com>
+Subject: [4.14.9] WARNING at kernel/workqueue.c:2035
+ process_one_work+0x43/0x330
+Date: Fri, 29 Dec 2017 14:25:33 +0100
+Message-ID: <dbshhe-elm.ln1@hurikhan77.spdns.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from [195.159.176.226] ([195.159.176.226]:47546 "EHLO
+        blaine.gmane.org" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+        with ESMTP id S1750814AbdL2NZq (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 29 Dec 2017 08:25:46 -0500
+Received: from list by blaine.gmane.org with local (Exim 4.84_2)
+        (envelope-from <glbd-linux-bcache@m.gmane.org>)
+        id 1eUudO-0002Fl-Ea
+        for linux-bcache@vger.kernel.org; Fri, 29 Dec 2017 14:23:38 +0100
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+Hello!
 
-LGTM, I would like it much more if MAX_WRITEBACKS_IN_PASS(5) defines a 
-little bigger value.
+I'm seeing the following backtrace rarely which seems to be bcache
+related:
 
-Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
-
->Previously, there was some logic that attempted to immediately issue
->writeback of backing-contiguous blocks when the writeback rate was
->fast.
->
->The previous logic did not have any limits on the aggregate size it
->would issue, nor the number of keys it would combine at once.  It
->would also discard the chance to do a contiguous write when the
->writeback rate was low-- e.g. at "background" writeback of target
->rate = 8, it would not combine two adjacent 4k writes and would
->instead seek the disk twice.
->
->This patch imposes limits and explicitly understands the size of
->contiguous I/O during issue.  It also will combine contiguous I/O
->in all circumstances, not just when writeback is requested to be
->relatively fast.
->
->It is a win on its own, but also lays the groundwork for skip writes to
->short keys to make the I/O more sequential/contiguous.  It also gets
->ready to start using blk_*_plug, and to allow issuing of non-contig
->I/O in parallel if requested by the user (to make use of disk
->throughput benefits available from higher queue depths).
->
->This patch fixes a previous version where the contiguous information
->was not calculated properly, thanks to suggestions by Tang Junhui.
->
->Signed-off-by: Michael Lyle <mlyle@lyle.org>
->---
-> drivers/md/bcache/bcache.h    |   6 ---
-> drivers/md/bcache/writeback.c | 120 +++++++++++++++++++++++++++++-------------
-> drivers/md/bcache/writeback.h |   3 ++
-> 3 files changed, 85 insertions(+), 44 deletions(-)
->
->diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
->index 843877e017e1..1784e50eb857 100644
->--- a/drivers/md/bcache/bcache.h
->+++ b/drivers/md/bcache/bcache.h
->@@ -323,12 +323,6 @@ struct cached_dev {
->     struct bch_ratelimit    writeback_rate;
->     struct delayed_work    writeback_rate_update;
-> 
->-    /*
->-     * Internal to the writeback code, so read_dirty() can keep track of
->-     * where it's at.
->-     */
->-    sector_t        last_read;
->-
->     /* Limit number of writeback bios in flight */
->     struct semaphore    in_flight;
->     struct task_struct    *writeback_thread;
->diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
->index f3d680c907ae..6975003454d9 100644
->--- a/drivers/md/bcache/writeback.c
->+++ b/drivers/md/bcache/writeback.c
->@@ -251,7 +251,9 @@ static void read_dirty_submit(struct closure *cl)
-> static void read_dirty(struct cached_dev *dc)
-> {
->     unsigned delay = 0;
->-    struct keybuf_key *w;
->+    struct keybuf_key *next, *keys[MAX_WRITEBACKS_IN_PASS], *w;
->+    size_t size;
->+    int nk, i;
->     struct dirty_io *io;
->     struct closure cl;
-> 
->@@ -262,45 +264,87 @@ static void read_dirty(struct cached_dev *dc)
->      * mempools.
->      */
-> 
->-    while (!kthread_should_stop()) {
->-
->-        w = bch_keybuf_next(&dc->writeback_keys);
->-        if (!w)
->-            break;
->-
->-        BUG_ON(ptr_stale(dc->disk.c, &w->key, 0));
->-
->-        if (KEY_START(&w->key) != dc->last_read ||
->-            jiffies_to_msecs(delay) > 50)
->-            while (!kthread_should_stop() && delay)
->-                delay = schedule_timeout_interruptible(delay);
->-
->-        dc->last_read    = KEY_OFFSET(&w->key);
->-
->-        io = kzalloc(sizeof(struct dirty_io) + sizeof(struct bio_vec)
->-                 * DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS),
->-                 GFP_KERNEL);
->-        if (!io)
->-            goto err;
->-
->-        w->private    = io;
->-        io->dc        = dc;
->-
->-        dirty_init(w);
->-        bio_set_op_attrs(&io->bio, REQ_OP_READ, 0);
->-        io->bio.bi_iter.bi_sector = PTR_OFFSET(&w->key, 0);
->-        bio_set_dev(&io->bio, PTR_CACHE(dc->disk.c, &w->key, 0)->bdev);
->-        io->bio.bi_end_io    = read_dirty_endio;
->-
->-        if (bio_alloc_pages(&io->bio, GFP_KERNEL))
->-            goto err_free;
->-
->-        trace_bcache_writeback(&w->key);
->+    next = bch_keybuf_next(&dc->writeback_keys);
->+
->+    while (!kthread_should_stop() && next) {
->+        size = 0;
->+        nk = 0;
->+
->+        do {
->+            BUG_ON(ptr_stale(dc->disk.c, &next->key, 0));
->+
->+            /*
->+             * Don't combine too many operations, even if they
->+             * are all small.
->+             */
->+            if (nk >= MAX_WRITEBACKS_IN_PASS)
->+                break;
->+
->+            /*
->+             * If the current operation is very large, don't
->+             * further combine operations.
->+             */
->+            if (size >= MAX_WRITESIZE_IN_PASS)
->+                break;
->+
->+            /*
->+             * Operations are only eligible to be combined
->+             * if they are contiguous.
->+             *
->+             * TODO: add a heuristic willing to fire a
->+             * certain amount of non-contiguous IO per pass,
->+             * so that we can benefit from backing device
->+             * command queueing.
->+             */
->+            if ((nk != 0) && bkey_cmp(&keys[nk-1]->key,
->+                        &START_KEY(&next->key)))
->+                break;
->+
->+            size += KEY_SIZE(&next->key);
->+            keys[nk++] = next;
->+        } while ((next = bch_keybuf_next(&dc->writeback_keys)));
->+
->+        /* Now we have gathered a set of 1..5 keys to write back. */
->+        for (i = 0; i < nk; i++) {
->+            w = keys[i];
->+
->+            io = kzalloc(sizeof(struct dirty_io) +
->+                     sizeof(struct bio_vec) *
->+                     DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS),
->+                     GFP_KERNEL);
->+            if (!io)
->+                goto err;
->+
->+            w->private    = io;
->+            io->dc        = dc;
->+
->+            dirty_init(w);
->+            bio_set_op_attrs(&io->bio, REQ_OP_READ, 0);
->+            io->bio.bi_iter.bi_sector = PTR_OFFSET(&w->key, 0);
->+            bio_set_dev(&io->bio,
->+                    PTR_CACHE(dc->disk.c, &w->key, 0)->bdev);
->+            io->bio.bi_end_io    = read_dirty_endio;
->+
->+            if (bio_alloc_pages(&io->bio, GFP_KERNEL))
->+                goto err_free;
->+
->+            trace_bcache_writeback(&w->key);
->+
->+            down(&dc->in_flight);
->+
->+            /* We've acquired a semaphore for the maximum
->+             * simultaneous number of writebacks; from here
->+             * everything happens asynchronously.
->+             */
->+            closure_call(&io->cl, read_dirty_submit, NULL, &cl);
->+        }
-> 
->-        down(&dc->in_flight);
->-        closure_call(&io->cl, read_dirty_submit, NULL, &cl);
->+        delay = writeback_delay(dc, size);
-> 
->-        delay = writeback_delay(dc, KEY_SIZE(&w->key));
->+        while (!kthread_should_stop() && delay) {
->+            schedule_timeout_interruptible(delay);
->+            delay = writeback_delay(dc, 0);
->+        }
->     }
-> 
->     if (0) {
->diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
->index a9e3ffb4b03c..6d26927267f8 100644
->--- a/drivers/md/bcache/writeback.h
->+++ b/drivers/md/bcache/writeback.h
->@@ -5,6 +5,9 @@
-> #define CUTOFF_WRITEBACK    40
-> #define CUTOFF_WRITEBACK_SYNC    70
-> 
->+#define MAX_WRITEBACKS_IN_PASS  5
->+#define MAX_WRITESIZE_IN_PASS   5000    /* *512b */
->+
-> static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
-> {
->     uint64_t i, ret = 0;
->-- 
->2.14.1
+[ 8996.665841] ------------[ cut here ]------------
+[ 8996.665847] WARNING: CPU: 5 PID: 152 at kernel/workqueue.c:2035 process_one_work+0x43/0x330
+[ 8996.665848] Modules linked in: cifs ccm rfcomm fuse bridge stp llc xfs cachefiles bnep snd_hda_codec_hdmi snd_hda_codec_realtek btusb snd_hda_codec_generic btintel bluetooth snd_hda_intel iTCO_wdt snd_hda_codec snd_hda_core snd_pcm snd_timer rfkill ecdh_generic af_packet snd iTCO_vendor_support kvm_intel kvm soundcore lpc_ich rtc_cmos irqbypass uas usb_storage r8168(O) nvidia_drm(PO) vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) nvidia_uvm(PO) nvidia_modeset(PO) nvidia(PO) nct6775 hwmon_vid coretemp hwmon efivarfs
+[ 8996.665872] CPU: 5 PID: 152 Comm: bcache Tainted: P           O    4.14.9-ck #1
+[ 8996.665873] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./Z68 Pro3, BIOS L2.16A 02/22/2013
+[ 8996.665880] task: ffff880419bbd5c0 task.stack: ffffc900003b4000
+[ 8996.665882] RIP: 0010:process_one_work+0x43/0x330
+[ 8996.665883] RSP: 0018:ffffc900003b7e78 EFLAGS: 00010006
+[ 8996.665884] RAX: 0000000000000005 RBX: ffff88041905d540 RCX: ffff88042f21b0a0
+[ 8996.665884] RDX: ffff88042f21b098 RSI: ffff880411008f08 RDI: ffff88041905d540
+[ 8996.665885] RBP: ffff88042f21b080 R08: fffffffffffffffc R09: 0000000000000000
+[ 8996.665886] R10: 0000000000000000 R11: 0000000000000017 R12: ffff88042f224200
+[ 8996.665886] R13: 0000000000000000 R14: ffff88042f224280 R15: ffff880411008f08
+[ 8996.665887] FS:  0000000000000000(0000) GS:ffff88042f340000(0000) knlGS:0000000000000000
+[ 8996.665888] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 8996.665889] CR2: 00000000000000b0 CR3: 0000000002c0a004 CR4: 00000000001606e0
+[ 8996.665889] Call Trace:
+[ 8996.665894]  rescuer_thread+0x20d/0x380
+[ 8996.665895]  kthread+0xf2/0x130
+[ 8996.665897]  ? worker_thread+0x3e0/0x3e0
+[ 8996.665898]  ? kthread_create_on_node+0x40/0x40
+[ 8996.665901]  ret_from_fork+0x1f/0x30
+[ 8996.665902] Code: c0 41 83 e4 04 4c 0f 45 e0 49 8b 44 24 08 44 8b a8 00 01 00 00 41 83 e5 20 f6 45 10 04 75 0e 65 8b 05 aa 13 f7 7e 3b 45 04 74 02 <0f> ff 48 b9 eb 83 b5 80 46 86 c8 61 49 0f af cf 48 c1 e9 3a 48
+[ 8996.665923] ---[ end trace 97ac64ac8121d8c7 ]---
 
 
-Thanks,
-Tang
+This was also seen with 4.13, maybe earlier.
+
+It may be related to using the ck patchset but first, I'd like to ask
+here.
+
+
+-- 
+Regards,
+Kai
+
+Replies to list-only preferred.
