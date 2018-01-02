@@ -1,37 +1,55 @@
 From: tang.junhui@zte.com.cn
-Subject: Re: [for-416 PATCH 3/3] bcache: allow quick writeback when backing idle
-Date: Tue, 2 Jan 2018 16:53:56 +0800
-Message-ID: <1514883236-11844-1-git-send-email-tang.junhui@zte.com.cn>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mxhk.zte.com.cn ([63.217.80.70]:56264 "EHLO mxhk.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751666AbeABIwg (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 2 Jan 2018 03:52:36 -0500
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Subject: Re: Re: [for-416 PATCH] bcache: fix writeback target calc on large devices
+Date: Tue, 2 Jan 2018 17:25:12 +0800
+Message-ID: <1514885112-12218-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
 To: mlyle@lyle.org
 Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+List-Id: linux-bcache@vger.kernel.org
 
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
->I don't think so.   The thing that is controlled (in current code, and
->this patch set) is the rate of issuance, not of completion (though
->issuance rate is guaranteed not to exceed completion rate, because of
->the semaphore for the maximum number of I/Os outstanding).
 
-OK, I see.
+>Thank you for the feedback.
+>
+>On Mon, Jan 1, 2018 at 10:33 PM,  <tang.junhui@zte.com.cn> wrote:
+>> From: Tang Junhui <tang.junhui@zte.com.cn>
+>>
+>> This patch is useful for preventing the overflow of the expression
+>> (cache_dirty_target * bdev_sectors(dc->bdev)), but it also
+>> lead into a calc error, for example, when there is a 1G and
+>> 100*164G cached device, it would cause the "target" value to
+>> be aways zero of the 1G device, which would cause write-back
+>> threshold losing efficacy.
+>>
+>> Maybe at first we can judge if it overflows or not of the expression
+>> (cache_dirty_target * bdev_sectors(dc->bdev)), if it overflows,
+>> We can calc the value of target as the patch, otherwise,
+>> we calc it as old way.
+>
+>Maybe it'd be preferable just to ensure that share always >=1. 
+Yes, this is a good and simple way.
+ 
+>It
+>seems like a pretty narrow set of cases where the current math works
+>and the new math doesn't work, though, as I expect that it's
+>relatively rare to have such a variation in sizes, and even so 16.4TB
+>uses up 35 bits of the 64 bit quantity.
+>
+Truely, this issue is rare. But as we known, cache set is a sharable pool,
+we may attach various devices on it, such as petabyte big device or gigabyte
+small device. We would better to make them all works well in the same 
+cache set.
 
->The intention with this code is to notice when we are ahead on
->schedule on writeback, and if so, start the next I/O after all of the
->current set finishes.  Only in this case do we do closure_sync, as a
->way to wait for all the existing I/Os to complete.  This guarantees
->that we never have more than one I/O outstanding when doing
->"opportunistic idle writeback", and that new front-end I/O never has
->to compete with more than one thing in the queue in this case.
-
-If no front-end I/O coming, would this cause write-back IOs one by one
-(one write-back IO issued must after the completion of the previous IO)?
-though with zero delay time, is the write-back performance still good?
+>I don't really like special cases or trying two different ways to do
+>the math, because then it's very difficult to test.
+>
+>What do you think?
+Ha, I don't think it is difficult to do, actually you have provided a 
+simple and effective way above, and we can use a small partition device
+and a big partition device to test (such as a 100M device and a 2T device). 
+I believe you can do it better.
 
 Thanks,
 Tang Junhui
