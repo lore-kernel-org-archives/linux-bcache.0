@@ -1,45 +1,46 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [for-416 PATCH] bcache: fix writeback target calc on large devices
-Date: Tue, 2 Jan 2018 00:12:13 -0800
-Message-ID: <CAJ+L6qcbp92KkfzBWkpwZRX9fc6sFkXSs306YP7qcoJsVuybLg@mail.gmail.com>
-References: <1514874831-10255-1-git-send-email-tang.junhui@zte.com.cn>
+Subject: Re: [for-416 PATCH 3/3] bcache: allow quick writeback when backing idle
+Date: Tue, 2 Jan 2018 00:18:45 -0800
+Message-ID: <CAJ+L6qfmWSZ0bn06pa4UjXn_G2-t-ZX=J9KBAWE8dP-kQLK_Qw@mail.gmail.com>
+References: <1514876572-10611-1-git-send-email-tang.junhui@zte.com.cn>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1514874831-10255-1-git-send-email-tang.junhui@zte.com.cn>
-Sender: linux-block-owner@vger.kernel.org
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-qk0-f196.google.com ([209.85.220.196]:39452 "EHLO
+        mail-qk0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751712AbeABISr (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 2 Jan 2018 03:18:47 -0500
+Received: by mail-qk0-f196.google.com with SMTP id c5so1494478qkg.6
+        for <linux-bcache@vger.kernel.org>; Tue, 02 Jan 2018 00:18:46 -0800 (PST)
+In-Reply-To: <1514876572-10611-1-git-send-email-tang.junhui@zte.com.cn>
+Sender: linux-bcache-owner@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 To: Junhui Tang <tang.junhui@zte.com.cn>
 Cc: linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
 
-Tang Junhui--
-
-Thank you for the feedback.
-
-On Mon, Jan 1, 2018 at 10:33 PM,  <tang.junhui@zte.com.cn> wrote:
+On Mon, Jan 1, 2018 at 11:02 PM,  <tang.junhui@zte.com.cn> wrote:
 > From: Tang Junhui <tang.junhui@zte.com.cn>
 >
-> This patch is useful for preventing the overflow of the expression
-> (cache_dirty_target * bdev_sectors(dc->bdev)), but it also
-> lead into a calc error, for example, when there is a 1G and
-> 100*164G cached device, it would cause the "target" value to
-> be aways zero of the 1G device, which would cause write-back
-> threshold losing efficacy.
+> I noticed you add "closure_sync(&cl)" before assigning delay to zero in your patch,
+> I think we should add it before:
+> delay = writeback_delay(dc, size)
+> otherwise we would alays get a wrong value of delay after calling writeback_delay(),
+> since the write-back IO is just sended out and not finished yet.
 >
-> Maybe at first we can judge if it overflows or not of the expression
-> (cache_dirty_target * bdev_sectors(dc->bdev)), if it overflows,
-> We can calc the value of target as the patch, otherwise,
-> we calc it as old way.
+> Am I right?
 
-Maybe it'd be preferable just to ensure that share always >=1.  It
-seems like a pretty narrow set of cases where the current math works
-and the new math doesn't work, though, as I expect that it's
-relatively rare to have such a variation in sizes, and even so 16.4TB
-uses up 35 bits of the 64 bit quantity.
+I don't think so.   The thing that is controlled (in current code, and
+this patch set) is the rate of issuance, not of completion (though
+issuance rate is guaranteed not to exceed completion rate, because of
+the semaphore for the maximum number of I/Os outstanding).
 
-I don't really like special cases or trying two different ways to do
-the math, because then it's very difficult to test.
-
-What do you think?
+The intention with this code is to notice when we are ahead on
+schedule on writeback, and if so, start the next I/O after all of the
+current set finishes.  Only in this case do we do closure_sync, as a
+way to wait for all the existing I/Os to complete.  This guarantees
+that we never have more than one I/O outstanding when doing
+"opportunistic idle writeback", and that new front-end I/O never has
+to compete with more than one thing in the queue in this case.
 
 Mike
