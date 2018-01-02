@@ -1,56 +1,95 @@
 From: tang.junhui@zte.com.cn
-Subject: Re: [PATCH] bcache: fix unmatched generic_end_io_acct() &generic_start_io_acct()
-Date: Wed, 3 Jan 2018 00:43:11 +0800
-Message-ID: <1514911391-21692-1-git-send-email-tang.junhui@zte.com.cn>
-Return-path: <linux-block-owner@vger.kernel.org>
-Sender: linux-block-owner@vger.kernel.org
-To: kxuanobj@gmail.com
-Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+Subject: Re: [for-416 PATCH v2] bcache: fix writeback target calculation
+Date: Wed, 3 Jan 2018 01:20:07 +0800
+Message-ID: <1514913607-22144-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from out1.zte.com.cn ([202.103.147.172]:42110 "EHLO mxct.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751149AbeACGxG (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 3 Jan 2018 01:53:06 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
+When I saw the code "int64_t error = dirty - cache_dirty_target", I was 
+totally lost, I will try my best to get out. 
+And this patch dependent on your earlier patch(PI controller), did that
+patch have applied to upstreams branch? I searched in 4.14 branch, 
+and did not find it.
 
->The function cached_dev_make_request() and flash_dev_make_request() call
->generic_start_io_acct() with (struct bcache_device)->disk when they start a
->closure. Then the function bio_complete() calls generic_end_io_acct() with
->(struct search)->orig_bio->bi_disk when the closure has done.
->Since the `bi_disk` is not the bcache device, the generic_end_io_acct() is
->called with a wrong device queue.
->
->It causes the "inflight" (in struct hd_struct) counter keep increasing
->without decreasing.
->
->This patch fix the problem by calling generic_end_io_acct() with
->(struct bcache_device)->disk.
->
->Signed-off-by: Zhai Zhaoxuan <kxuanobj@gmail.com>
->---
-> drivers/md/bcache/request.c | 4 ++--
-> 1 file changed, 2 insertions(+), 2 deletions(-)
->
->diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
->index 643c3021624f..83de85fe4542 100644
->--- a/drivers/md/bcache/request.c
->+++ b/drivers/md/bcache/request.c
->@@ -611,8 +611,8 @@ static void request_endio(struct bio *bio)
-> static void bio_complete(struct search *s)
-> {
->     if (s->orig_bio) {
->-        struct request_queue *q = s->orig_bio->bi_disk->queue;
->-        generic_end_io_acct(q, bio_data_dir(s->orig_bio),
->+        generic_end_io_acct(s->d->disk->queue,
->+                    bio_data_dir(s->orig_bio),
->                     &s->d->disk->part0, s->start_time);
-> 
->         trace_bcache_request_end(s->d, s->orig_bio);
->-- 
->2.15.1
-
-
-LGTM.
-
-Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+> drivers/md/bcache/writeback.c | 38 ++++++++++++++++++++++++++++++--------    
+> 1 file changed, 30 insertions(+), 8 deletions(-)                             
+>                                                                              
+>diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c    
+>index 56a37884ca8b..be2840ad02d4 100644                                       
+>--- a/drivers/md/bcache/writeback.c                                           
+>+++ b/drivers/md/bcache/writeback.c                                           
+>@@ -26,16 +26,28 @@ static void __update_writeback_rate(struct cached_dev *dc)
+>                 bcache_flash_devs_sectors_dirty(c);                          
+>     uint64_t cache_dirty_target =                                            
+>         div_u64(cache_sectors * dc->writeback_percent, 100);                 
+>-    int64_t target = div64_u64(cache_dirty_target * bdev_sectors(dc->bdev),  
+>-                   c->cached_dev_sectors);                                   
+>+                                                                             
+>+    /*                                                                       
+>+     * 16384 is chosen here as something that each backing device should     
+>+     * be a reasonable fraction of the share, and to not blow up until       
+>+     * individual backing devices are a petabyte.                            
+>+     */                                                                      
+>+    uint32_t bdev_share_per16k =                                             
+>+        div64_u64(16384 * bdev_sectors(dc->bdev),                            
+>+                c->cached_dev_sectors);                                      
+>                                                                              
+>     /*                                                                       
+>      * PI controller:                                                        
+>      * Figures out the amount that should be written per second.             
+>      *                                                                       
+>      * First, the error (number of sectors that are dirty beyond our         
+>-     * target) is calculated.  The error is accumulated (numerically         
+>-     * integrated).                                                          
+>+     * target) is calculated.                                                
+>+     *                                                                       
+>+     * Unfortunately we don't know the exact share of dirty data for         
+>+     * each backing device; therefore the error is adjusted for this         
+>+     * backing disk's share of the overall error based on size.              
+>+     *                                                                       
+>+     * The error is accumulated (numerically integrated).                    
+>      *                                                                       
+>      * Then, the proportional value and integral value are scaled            
+>      * based on configured values.  These are stored as inverses to  
+>              
+>@@ -50,12 +62,22 @@ static void __update_writeback_rate(struct cached_dev *dc)
+>      * variations in usage like the p term.                                  
+>      */                                                                      
+>     int64_t dirty = bcache_dev_sectors_dirty(&dc->disk);                     
+>-    int64_t error = dirty - target;                                          
+>-    int64_t proportional_scaled =                                            
+>-        div_s64(error, dc->writeback_rate_p_term_inverse);                   
+>-    int64_t integral_scaled;                                                 
+>+    int64_t error = dirty - cache_dirty_target;                              
+>+    int64_t proportional_scaled, integral_scaled;                            
+>     uint32_t new_rate;                                                       
+>                                                                              
+>+    /*                                                                       
+>+     * Ensure even with large device size disparities that we still          
+>+     * writeback at least some.                                              
+>+     */                                                                      
+>+    if (bdev_share_per16k < 1)                                               
+>+        bdev_share_per16k = 1;                                               
+>+                                                                             
+>+    target = div_s64(error * bdev_share_per16k, 16384)                       
+>+                                                                             
+>+    proportional_scaled = div_s64(error,                                     
+>+            dc->writeback_rate_p_term_inverse);                              
+>+                                                                             
+>     if ((error < 0 && dc->writeback_rate_integral > 0) ||                    
+>         (error > 0 && time_before64(local_clock(),                           
+>              dc->writeback_rate.next + NSEC_PER_MSEC))) {                    
+>--                                                                            
+>2.14.1                                                                        
 
 Thanks,
 Tang Junhui
