@@ -1,46 +1,77 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: [for-416 PATCH 2/2] bcache: mark closure_sync() __sched
-Date: Sat, 30 Dec 2017 15:09:34 -0800
-Message-ID: <20171230230934.910-2-mlyle@lyle.org>
-References: <20171230230934.910-1-mlyle@lyle.org>
+From: tang.junhui@zte.com.cn
+Subject: Re: [for-416 PATCH] bcache: fix writeback target calc on large devices
+Date: Tue, 2 Jan 2018 14:33:51 +0800
+Message-ID: <1514874831-10255-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20171230230934.910-1-mlyle@lyle.org>
 Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Michael Lyle <mlyle@lyle.org>
+To: mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
 
-From: Kent Overstreet <kent.overstreet@gmail.com>
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-[edit by mlyle: include sched/debug.h to get __sched]
+This patch is useful for preventing the overflow of the expression
+(cache_dirty_target * bdev_sectors(dc->bdev)), but it also
+lead into a calc error, for example, when there is a 1G and
+100*164G cached device, it would cause the "target" value to
+be aways zero of the 1G device, which would cause write-back 
+threshold losing efficacy.
 
-Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
----
- drivers/md/bcache/closure.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Maybe at first we can judge if it overflows or not of the expression 
+(cache_dirty_target * bdev_sectors(dc->bdev)), if it overflows,
+We can calc the value of target as the patch, otherwise, 
+we calc it as old way.
 
-diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
-index 8a4f4e4f5537..23eb3d1223e7 100644
---- a/drivers/md/bcache/closure.c
-+++ b/drivers/md/bcache/closure.c
-@@ -8,6 +8,7 @@
- #include <linux/debugfs.h>
- #include <linux/module.h>
- #include <linux/seq_file.h>
-+#include <linux/sched/debug.h>
- 
- #include "closure.h"
- 
-@@ -107,7 +108,7 @@ static void closure_sync_fn(struct closure *cl)
- 	wake_up_process(cl->s->task);
- }
- 
--void __closure_sync(struct closure *cl)
-+void __sched __closure_sync(struct closure *cl)
- {
- 	struct closure_syncer s = { .task = current };
- 
--- 
-2.14.1
+>Bcache needs to scale the dirty data in the cache over the multiple
+>backing disks in order to calculate writeback rates for each.
+>The previous code did this by multiplying the target number of dirty
+>sectors by the backing device size, and expected it to fit into a
+>uint64_t; this blows up on relatively small backing devices.
+>
+>The new approach figures out the bdev's share in 16384ths of the overall
+>cached data.  This is chosen to cope well when bdevs drastically vary in
+>size and to ensure that bcache can cross the petabyte boundary for each
+>backing device.
+>
+>Reported-by: Jack Douglas <jack@douglastechnology.co.uk>
+>Signed-off-by: Michael Lyle <mlyle@lyle.org>
+>---
+> drivers/md/bcache/writeback.c | 17 +++++++++++++++--
+> 1 file changed, 15 insertions(+), 2 deletions(-)
+>
+>diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+>index 56a37884ca8b..ddbbeec1f0ee 100644
+>--- a/drivers/md/bcache/writeback.c
+>+++ b/drivers/md/bcache/writeback.c
+>@@ -24,10 +24,23 @@ static void __update_writeback_rate(struct cached_dev *dc)
+>     struct cache_set *c = dc->disk.c;
+>     uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
+>                 bcache_flash_devs_sectors_dirty(c);
+>+    /*
+>+     * Unfortunately we don't know the exact share of dirty data for
+>+     * each backing device.  Therefore, we need to infer the writeback
+>+     * for each disk based on its assumed proportion of dirty data.
+>+     *
+>+     * 16384 is chosen here as something that each backing device should
+>+     * be a reasonable fraction of the share, and not to blow up until
+>+     * individual backing devices are a petabyte.
+>+     */
+>+    uint32_t bdev_share_per16k =
+>+        div64_u64(bdev_sectors(dc->bdev) << 14,
+>+                c->cached_dev_sectors);
+>+
+>     uint64_t cache_dirty_target =
+>         div_u64(cache_sectors * dc->writeback_percent, 100);
+>-    int64_t target = div64_u64(cache_dirty_target * bdev_sectors(dc->bdev),
+>-                   c->cached_dev_sectors);
+>+
+>+    int64_t target = (cache_dirty_target * bdev_share_per16k) >> 14;
+> 
+>     /*
+>      * PI controller:
+>-- 
+>2.14.1
+>
+
+Thanks,
+Tang Junhui
