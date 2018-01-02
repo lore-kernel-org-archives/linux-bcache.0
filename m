@@ -1,45 +1,38 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [for-416 PATCH v2] bcache: fix writeback target calculation
-Date: Tue, 2 Jan 2018 11:02:07 -0800
-Message-ID: <1dfbbe4d-d445-7b54-de87-93be150b5597@lyle.org>
-References: <1514885112-12218-1-git-send-email-tang.junhui@zte.com.cn>
- <20180102190049.29237-1-mlyle@lyle.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180102190049.29237-1-mlyle@lyle.org>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: tang.junhui@zte.com.cn
+From: tang.junhui@zte.com.cn
+Subject: Re: Re: Re: [for-416 PATCH 3/3] bcache: allow quick writeback when backingidle
+Date: Tue, 2 Jan 2018 22:34:58 +0800
+Message-ID: <1514903698-19103-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from out1.zte.com.cn ([202.103.147.172]:51210 "EHLO mxct.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750748AbeACCsT (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 2 Jan 2018 21:48:19 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-Please note I have not tested this version yet: I'm just putting it out
-for review.
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Mike
 
-On 01/02/2018 11:00 AM, Michael Lyle wrote:
-> This fixes bcache writeback target calculation, for defects relating to
-> large cache sets and calculation errors when there are multiple backing
-> devices.
-> 
-> Bcache needs to scale the dirty data in the cache over the multiple
-> backing disks in order to calculate writeback rates for each.
-> The previous code did this by multiplying the target number of dirty
-> sectors by the backing device size, and expected it to fit into a
-> uint64_t; this blows up on relatively small backing devices.
-> 
-> The new approach figures out the bdev's share in 16384ths of the overall
-> cached data.  This is chosen to cope well when bdevs drastically vary in
-> size and to ensure that bcache can cross the petabyte boundary for each
-> backing device.
-> 
-> Per review, we ensure that every device gets at least 1/16384th of the
-> writeback share.  This also differs from v1 of the patchset in scaling
-> the error, which corrects previous problems with writeback rate
-> calculation across multiple devices.
-> 
-> Reported-by: Jack Douglas <jack@douglastechnology.co.uk>
-> Signed-off-by: Michael Lyle <mlyle@lyle.org>
+>On 01/02/2018 12:53 AM, tang.junhui@zte.com.cn wrote:
+>> If no front-end I/O coming, would this cause write-back IOs one by one
+>> (one write-back IO issued must after the completion of the previous IO)?
+>> though with zero delay time, is the write-back performance still good?
+>
+>Yes-- this speeds up writeback during idle from 4k/sec to about 10MB/sec
+>on my slow 5400RPM disk.  (It writes back at about 20MB/sec with deep
+>queues in the same scenario).  So in this case it's about 2500x faster
+>than current idle writeback, but half as fast as writeback with full
+>device utilization.
+>
+>With only one I/O outstanding at a time, if front-end I/O starts latency
+>for the first request is still good.
+>
+
+OK, LGTM.
+
+Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+
+Thanks,
+Tang Junhui
