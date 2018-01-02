@@ -1,20 +1,42 @@
-From: foundation@gmail.com
-Subject: =?utf-8?q?Spende_von_=E2=82=AC_3=2E400=2E000=2C00_EUR?=
-Date: Tue, 02 Jan 2018 13:48:59 +0200
-Message-ID: <20180102120949.4A99627056E0@wsbmail01.wsb.wroclaw.pl>
-Reply-To: roycockrumpovertyfoundation@gmail.com
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [for-416 PATCH 3/3] bcache: allow quick writeback when backing
+ idle
+Date: Tue, 2 Jan 2018 08:23:14 -0800
+Message-ID: <0fdcfaaf-af7a-adb8-075d-b321b9df4ef7@lyle.org>
+References: <1514883236-11844-1-git-send-email-tang.junhui@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.wsb.wroclaw.pl ([95.143.242.162]:54818 "EHLO
-        wsbmail01.wsb.wroclaw.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751729AbeABLt6 (ORCPT
+Received: from mail-pl0-f45.google.com ([209.85.160.45]:39090 "EHLO
+        mail-pl0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1750945AbeABQXS (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 2 Jan 2018 06:49:58 -0500
-Content-Description: Mail message body
+        Tue, 2 Jan 2018 11:23:18 -0500
+Received: by mail-pl0-f45.google.com with SMTP id bi12so28938169plb.6
+        for <linux-bcache@vger.kernel.org>; Tue, 02 Jan 2018 08:23:18 -0800 (PST)
+In-Reply-To: <1514883236-11844-1-git-send-email-tang.junhui@zte.com.cn>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Recipients <foundation@gmail.com>
+To: tang.junhui@zte.com.cn
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-Hallo, ich Roy Cockrum, 58, aus Knoxville, Tennessee Vereinigte Staaten von Amerika, du hast eine Wohltätigkeitsspende von € 3.400.000,00 EUR, ich gewann die America Lotterie in Amerika im Wert von $ 259,9 Millionen, und ich gebe einen Teil davon Zu fünf glücklichen Leuten und Wohltätigkeitshäusern in Gelübde, um die Armut vor dieser Welt zu beseitigen, ich kämpfe gegen die Armut. Kontaktieren Sie mich für weitere Details: roycockrumpovertyfoundation@gmail.com
+On 01/02/2018 12:53 AM, tang.junhui@zte.com.cn wrote:
+> If no front-end I/O coming, would this cause write-back IOs one by one
+> (one write-back IO issued must after the completion of the previous IO)?
+> though with zero delay time, is the write-back performance still good?
+
+Yes-- this speeds up writeback during idle from 4k/sec to about 10MB/sec
+on my slow 5400RPM disk.  (It writes back at about 20MB/sec with deep
+queues in the same scenario).  So in this case it's about 2500x faster
+than current idle writeback, but half as fast as writeback with full
+device utilization.
+
+With only one I/O outstanding at a time, if front-end I/O starts latency
+for the first request is still good.
+
+> Thanks,
+> Tang Junhui
+
+Mike
