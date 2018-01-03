@@ -1,47 +1,36 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [for-416 PATCH 3/3] bcache: allow quick writeback when backing
- idle
-Date: Thu, 4 Jan 2018 00:54:28 +0800
-Message-ID: <42e6fd64-1ab3-3b4d-4dfe-70a76152d9d2@suse.de>
-References: <1514883236-11844-1-git-send-email-tang.junhui@zte.com.cn>
- <0fdcfaaf-af7a-adb8-075d-b321b9df4ef7@lyle.org>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH] bcache: fix unmatched generic_end_io_acct() &
+ generic_start_io_acct()
+Date: Wed, 3 Jan 2018 08:57:05 -0800
+Message-ID: <ab64bfb0-652f-87c1-6acb-2e3810d4ab5b@lyle.org>
+References: <20180103043937.28235-1-kxuanobj@gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <0fdcfaaf-af7a-adb8-075d-b321b9df4ef7@lyle.org>
+In-Reply-To: <20180103043937.28235-1-kxuanobj@gmail.com>
 Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, tang.junhui@zte.com.cn
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+To: Zhai Zhaoxuan <kxuanobj@gmail.com>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
 
-On 03/01/2018 12:23 AM, Michael Lyle wrote:
-> On 01/02/2018 12:53 AM, tang.junhui@zte.com.cn wrote:
->> If no front-end I/O coming, would this cause write-back IOs one by one
->> (one write-back IO issued must after the completion of the previous IO)?
->> though with zero delay time, is the write-back performance still good?
+On 01/02/2018 08:39 PM, Zhai Zhaoxuan wrote:
+> The function cached_dev_make_request() and flash_dev_make_request() call
+> generic_start_io_acct() with (struct bcache_device)->disk when they start a
+> closure. Then the function bio_complete() calls generic_end_io_acct() with
+> (struct search)->orig_bio->bi_disk when the closure has done.
+> Since the `bi_disk` is not the bcache device, the generic_end_io_acct() is
+> called with a wrong device queue.
 > 
-
-Hi Mike,
-
-> Yes-- this speeds up writeback during idle from 4k/sec to about 10MB/sec
-> on my slow 5400RPM disk.  (It writes back at about 20MB/sec with deep
-> queues in the same scenario).  So in this case it's about 2500x faster
-> than current idle writeback, but half as fast as writeback with full
-> device utilization.
+> It causes the "inflight" (in struct hd_struct) counter keep increasing
+> without decreasing.
 > 
+> This patch fix the problem by calling generic_end_io_acct() with
+> (struct bcache_device)->disk.
+> 
+> Signed-off-by: Zhai Zhaoxuan <kxuanobj@gmail.com>
 
-Nice performance data!
+Verified, looks good to me, added to my for-next staging branch.
 
-
-> With only one I/O outstanding at a time, if front-end I/O starts latency
-> for the first request is still good.
-
-It is good idea, I like it.
-
-Acked-by: Coly Li <colyli@suse.de>
-
-Thanks for the effort :-)
-
-Coly Li
+Reviewed-by: Michael Lyle <mlyle@lyle.org>
