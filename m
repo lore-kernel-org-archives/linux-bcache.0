@@ -1,95 +1,150 @@
-From: tang.junhui@zte.com.cn
-Subject: Re: [for-416 PATCH v2] bcache: fix writeback target calculation
-Date: Wed, 3 Jan 2018 01:20:07 +0800
-Message-ID: <1514913607-22144-1-git-send-email-tang.junhui@zte.com.cn>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out1.zte.com.cn ([202.103.147.172]:42110 "EHLO mxct.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751149AbeACGxG (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 3 Jan 2018 01:53:06 -0500
-Sender: linux-bcache-owner@vger.kernel.org
+From: Zhaoxuan <kxuanobj@gmail.com>
+Subject: Re: [PATCH] bcache: fix unmatched generic_end_io_acct() &
+ generic_start_io_acct()
+Date: Wed, 3 Jan 2018 15:05:52 +0800
+Message-ID: <567f7731-915b-d654-4838-41c7872e651a@gmail.com>
+References: <20180103043937.28235-1-kxuanobj@gmail.com>
+ <58e10ebe-0a40-c866-94d7-50cd7a6872ea@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <58e10ebe-0a40-c866-94d7-50cd7a6872ea@suse.de>
+Content-Language: en-US
+Sender: linux-block-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: tang.junhui@zte.com.cn, Michael Lyle <mlyle@lyle.org>
 List-Id: linux-bcache@vger.kernel.org
-To: mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
 
-When I saw the code "int64_t error = dirty - cache_dirty_target", I was 
-totally lost, I will try my best to get out. 
-And this patch dependent on your earlier patch(PI controller), did that
-patch have applied to upstreams branch? I searched in 4.14 branch, 
-and did not find it.
+On 03/01/2018 13:45 PM, Coly Li wrote:
+> On 03/01/2018 12:39 PM, Zhai Zhaoxuan wrote:
+>> The function cached_dev_make_request() and flash_dev_make_request() call
+>> generic_start_io_acct() with (struct bcache_device)->disk when they start a
+>> closure. Then the function bio_complete() calls generic_end_io_acct() with
+>> (struct search)->orig_bio->bi_disk when the closure has done.
+>> Since the `bi_disk` is not the bcache device, the generic_end_io_acct() is
+>> called with a wrong device queue.
+>>
+>> It causes the "inflight" (in struct hd_struct) counter keep increasing
+>> without decreasing.
+>>
+>> This patch fix the problem by calling generic_end_io_acct() with
+>> (struct bcache_device)->disk.
+>>
+>> Signed-off-by: Zhai Zhaoxuan <kxuanobj@gmail.com>
+> Hi Zhaoxuan,
+>
+> Nice catch, it makes sense. Thanks.
+>
+> Reviewed-by: Coly Li <colyli@suse.de>
+>
+> One more question, do you experience any problem when inflight counter
+> increases only ? I just wondering.
 
-> drivers/md/bcache/writeback.c | 38 ++++++++++++++++++++++++++++++--------    
-> 1 file changed, 30 insertions(+), 8 deletions(-)                             
->                                                                              
->diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c    
->index 56a37884ca8b..be2840ad02d4 100644                                       
->--- a/drivers/md/bcache/writeback.c                                           
->+++ b/drivers/md/bcache/writeback.c                                           
->@@ -26,16 +26,28 @@ static void __update_writeback_rate(struct cached_dev *dc)
->                 bcache_flash_devs_sectors_dirty(c);                          
->     uint64_t cache_dirty_target =                                            
->         div_u64(cache_sectors * dc->writeback_percent, 100);                 
->-    int64_t target = div64_u64(cache_dirty_target * bdev_sectors(dc->bdev),  
->-                   c->cached_dev_sectors);                                   
->+                                                                             
->+    /*                                                                       
->+     * 16384 is chosen here as something that each backing device should     
->+     * be a reasonable fraction of the share, and to not blow up until       
->+     * individual backing devices are a petabyte.                            
->+     */                                                                      
->+    uint32_t bdev_share_per16k =                                             
->+        div64_u64(16384 * bdev_sectors(dc->bdev),                            
->+                c->cached_dev_sectors);                                      
->                                                                              
->     /*                                                                       
->      * PI controller:                                                        
->      * Figures out the amount that should be written per second.             
->      *                                                                       
->      * First, the error (number of sectors that are dirty beyond our         
->-     * target) is calculated.  The error is accumulated (numerically         
->-     * integrated).                                                          
->+     * target) is calculated.                                                
->+     *                                                                       
->+     * Unfortunately we don't know the exact share of dirty data for         
->+     * each backing device; therefore the error is adjusted for this         
->+     * backing disk's share of the overall error based on size.              
->+     *                                                                       
->+     * The error is accumulated (numerically integrated).                    
->      *                                                                       
->      * Then, the proportional value and integral value are scaled            
->      * based on configured values.  These are stored as inverses to  
->              
->@@ -50,12 +62,22 @@ static void __update_writeback_rate(struct cached_dev *dc)
->      * variations in usage like the p term.                                  
->      */                                                                      
->     int64_t dirty = bcache_dev_sectors_dirty(&dc->disk);                     
->-    int64_t error = dirty - target;                                          
->-    int64_t proportional_scaled =                                            
->-        div_s64(error, dc->writeback_rate_p_term_inverse);                   
->-    int64_t integral_scaled;                                                 
->+    int64_t error = dirty - cache_dirty_target;                              
->+    int64_t proportional_scaled, integral_scaled;                            
->     uint32_t new_rate;                                                       
->                                                                              
->+    /*                                                                       
->+     * Ensure even with large device size disparities that we still          
->+     * writeback at least some.                                              
->+     */                                                                      
->+    if (bdev_share_per16k < 1)                                               
->+        bdev_share_per16k = 1;                                               
->+                                                                             
->+    target = div_s64(error * bdev_share_per16k, 16384)                       
->+                                                                             
->+    proportional_scaled = div_s64(error,                                     
->+            dc->writeback_rate_p_term_inverse);                              
->+                                                                             
->     if ((error < 0 && dc->writeback_rate_integral > 0) ||                    
->         (error > 0 && time_before64(local_clock(),                           
->              dc->writeback_rate.next + NSEC_PER_MSEC))) {                    
->--                                                                            
->2.14.1                                                                        
+Hi Coly,
 
-Thanks,
-Tang Junhui
+Thanks for your review.
+
+There is a problem in `iostat -x`. `iostat` shows the bcache device keep 
+100.00%
+busy (100.00 in the "%util" column), even if the bcache is idle.
+
+[root@base ~]# iostat -x -d 1
+Linux 4.15.0-rc6-ARCH (base)    01/03/18        _x86_64_        (2 CPU)
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm %util
+vda               7.85     1.07   69.98   13.20  1818.60   158.20 
+47.54     0.04    1.08    0.67    3.28   0.30 2.47
+vdb               0.00     0.00    2.61    0.00    75.80     0.00 
+58.09     0.00    0.75    0.75    0.00   0.00 0.00
+bcache0           0.00     0.00    1.98    0.00    52.00     0.00 
+52.64    77.73    1.06    1.06    0.00 485.93 96.00
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm %util
+vda               0.00     0.00    0.00    0.00     0.00 0.00     
+0.00     0.00    0.00    0.00    0.00   0.00 0.00
+vdb               0.00     0.00    0.00    0.00     0.00 0.00     
+0.00     0.00    0.00    0.00    0.00   0.00 0.00
+bcache0           0.00     0.00    0.00    0.00     0.00 0.00     
+0.00    81.00    0.00    0.00    0.00   0.00 100.00
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+vda               0.00     9.00    0.00    2.00     0.00    44.00 
+44.00     0.00   10.00    0.00   10.00   0.00   0.00
+vdb               0.00     0.00    0.00    0.00     0.00 0.00     
+0.00     0.00    0.00    0.00    0.00   0.00   0.00
+bcache0           0.00     0.00    0.00    0.00     0.00 0.00     
+0.00    81.00    0.00    0.00    0.00   0.00 100.00
+
+Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s 
+avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+vda               0.00     0.00    0.00    0.00     0.00 0.00     
+0.00     0.00    0.00    0.00    0.00   0.00   0.00
+vdb               0.00     0.00    0.00    0.00     0.00 0.00     
+0.00     0.00    0.00    0.00    0.00   0.00   0.00
+bcache0           0.00     0.00    0.00    0.00     0.00 0.00     
+0.00    81.00    0.00    0.00    0.00   0.00 100.00
+
+^C
+[root@base ~]# bcache-super-show /dev/vdb
+sb.magic                ok
+sb.first_sector         8 [match]
+sb.csum                 54824DA53D2DC101 [match]
+sb.version              1 [backing device]
+
+dev.label               (empty)
+dev.uuid                c5e43e66-4b28-48d7-bd46-73fb6e1efdbb
+dev.sectors_per_block   1
+dev.sectors_per_bucket  1024
+dev.data.first_sector   16
+dev.data.cache_mode     0 [writethrough]
+dev.data.cache_state    1 [clean]
+
+cset.uuid               a79f8422-ed64-4b92-8688-692f48cd6d97
+[root@base ~]# bcache-super-show /dev/vda2
+sb.magic                ok
+sb.first_sector         8 [match]
+sb.csum                 EF7AB1A8928862E6 [match]
+sb.version              3 [cache device]
+
+dev.label               (empty)
+dev.uuid                5762b745-77f8-4831-81ce-9ee7866b8d84
+dev.sectors_per_block   1
+dev.sectors_per_bucket  1024
+dev.cache.first_sector  1024
+dev.cache.cache_sectors 2096128
+dev.cache.total_sectors 2097152
+dev.cache.ordered       yes
+dev.cache.discard       no
+dev.cache.pos           0
+dev.cache.replacement   0 [lru]
+
+cset.uuid               a79f8422-ed64-4b92-8688-692f48cd6d97
+
+
+> Coly
+>
+>> ---
+>>   drivers/md/bcache/request.c | 4 ++--
+>>   1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+>> index 643c3021624f..83de85fe4542 100644
+>> --- a/drivers/md/bcache/request.c
+>> +++ b/drivers/md/bcache/request.c
+>> @@ -611,8 +611,8 @@ static void request_endio(struct bio *bio)
+>>   static void bio_complete(struct search *s)
+>>   {
+>>   	if (s->orig_bio) {
+>> -		struct request_queue *q = s->orig_bio->bi_disk->queue;
+>> -		generic_end_io_acct(q, bio_data_dir(s->orig_bio),
+>> +		generic_end_io_acct(s->d->disk->queue,
+>> +				    bio_data_dir(s->orig_bio),
+>>   				    &s->d->disk->part0, s->start_time);
+>>   
+>>   		trace_bcache_request_end(s->d, s->orig_bio);
+>>
