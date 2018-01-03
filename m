@@ -1,69 +1,47 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v1 10/10] bcache: stop all attached bcache devices for a retired cache set
-Date: Wed,  3 Jan 2018 22:03:25 +0800
-Message-ID: <20180103140325.63175-11-colyli@suse.de>
-References: <20180103140325.63175-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:55098 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752506AbeACOEm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 3 Jan 2018 09:04:42 -0500
-In-Reply-To: <20180103140325.63175-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
+Subject: Re: [for-416 PATCH 3/3] bcache: allow quick writeback when backing
+ idle
+Date: Thu, 4 Jan 2018 00:54:28 +0800
+Message-ID: <42e6fd64-1ab3-3b4d-4dfe-70a76152d9d2@suse.de>
+References: <1514883236-11844-1-git-send-email-tang.junhui@zte.com.cn>
+ <0fdcfaaf-af7a-adb8-075d-b321b9df4ef7@lyle.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <0fdcfaaf-af7a-adb8-075d-b321b9df4ef7@lyle.org>
+Content-Language: en-US
+Sender: linux-block-owner@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>, tang.junhui@zte.com.cn
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn, Coly Li <colyli@suse.de>
 
-When there are too many I/O errors on cache device, current bcache code
-will retire the whole cache set, and detach all bcache devices. But the
-detached bcache devices are not stopped, which is problematic when bcache
-is in writeback mode.
+On 03/01/2018 12:23 AM, Michael Lyle wrote:
+> On 01/02/2018 12:53 AM, tang.junhui@zte.com.cn wrote:
+>> If no front-end I/O coming, would this cause write-back IOs one by one
+>> (one write-back IO issued must after the completion of the previous IO)?
+>> though with zero delay time, is the write-back performance still good?
+> 
 
-If the retired cache set has dirty data of backing devices, continue
-writing to bcache device will write to backing device directly. If the
-LBA of write request has a dirty version cached on cache device, next time
-when the cache device is re-registered and backing device re-attached to
-it again, the stale dirty data on cache device will be written to backing
-device, and overwrite latest directly written data. This situation causes
-a quite data corruption.
+Hi Mike,
 
-This patch checkes whether cache_set->io_disable is true in
-__cache_set_unregister(). If cache_set->io_disable is true, it means cache
-set is unregistering by too many I/O errors, then all attached bcache
-devices will be stopped as well. If cache_set->io_disable is not true, it
-means __cache_set_unregister() is triggered by writing 1 to sysfs file
-/sys/fs/bcache/<UUID>/bcache/stop. This is an exception because users do
-it explicitly, this patch keeps existing behavior and does not stop any
-bcache device.
+> Yes-- this speeds up writeback during idle from 4k/sec to about 10MB/sec
+> on my slow 5400RPM disk.  (It writes back at about 20MB/sec with deep
+> queues in the same scenario).  So in this case it's about 2500x faster
+> than current idle writeback, but half as fast as writeback with full
+> device utilization.
+> 
 
-Even the failed cache device has no dirty data, stopping bcache device is
-still a desired behavior by many Ceph and data base users. Then their
-application will report I/O errors due to disappeared bcache device, and
-operation people will know the cache device is broken or disconnected.
+Nice performance data!
 
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/super.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 49d6fedf89c3..20a7a6959506 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1458,6 +1458,14 @@ static void __cache_set_unregister(struct closure *cl)
- 				dc = container_of(c->devices[i],
- 						  struct cached_dev, disk);
- 				bch_cached_dev_detach(dc);
-+				/*
-+				 * If we come here by too many I/O errors,
-+				 * bcache device should be stopped too, to
-+				 * keep data consistency on cache and
-+				 * backing devices.
-+				 */
-+				if (c->io_disable)
-+					bcache_device_stop(c->devices[i]);
- 			} else {
- 				bcache_device_stop(c->devices[i]);
- 			}
--- 
-2.15.1
+> With only one I/O outstanding at a time, if front-end I/O starts latency
+> for the first request is still good.
+
+It is good idea, I like it.
+
+Acked-by: Coly Li <colyli@suse.de>
+
+Thanks for the effort :-)
+
+Coly Li
