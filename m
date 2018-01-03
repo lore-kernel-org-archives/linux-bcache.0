@@ -1,7 +1,7 @@
 From: tang.junhui@zte.com.cn
-Subject: Re: [PATCH v1 02/10] bcache: set task properly in allocator_wait()
-Date: Thu, 4 Jan 2018 02:29:37 +0800
-Message-ID: <1515004177-6779-1-git-send-email-tang.junhui@zte.com.cn>
+Subject: Re: [PATCH v1 01/10] bcache: exit bch_writeback_thread() with proper task state
+Date: Thu, 4 Jan 2018 02:30:47 +0800
+Message-ID: <1515004247-6831-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-block-owner@vger.kernel.org>
 Sender: linux-block-owner@vger.kernel.org
 To: colyli@suse.de
@@ -14,77 +14,55 @@ LGTM.
 
 Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
 
->Kernel thread routine bch_allocator_thread() references macro
->allocator_wait() to wait for a condition or quit to do_exit()
->when kthread_should_stop() is true.
+>Kernel thread routine bch_writeback_thread() has the following code block,
 >
->Macro allocator_wait() has 2 issues in setting task state, let's
->see its code piece,
+>452                         set_current_state(TASK_INTERRUPTIBLE);
+>453
+>454                         if (kthread_should_stop())
+>455                                 return 0;
+>456
+>457                         schedule();
+>458                         continue;
 >
->284         while (1) {                                                   \
->285                 set_current_state(TASK_INTERRUPTIBLE);                \
->286                 if (cond)                                             \
->287                         break;                                        \
->288                                                                       \
->289                 mutex_unlock(&(ca)->set->bucket_lock);                \
->290                 if (kthread_should_stop())                            \
->291                         return 0;                                     \
->292                                                                       \
->293                 schedule();                                           \
->294                 mutex_lock(&(ca)->set->bucket_lock);                  \
->295         }                                                             \
->296         __set_current_state(TASK_RUNNING);                            \
+>At line 452, its status is set to TASK_INTERRUPTIBLE, and at line 454 if
+>kthread_should_stop() is true, a "return 0" at line 455 will to function
+>kernel/kthread.c:kthread() and call do_exit().
 >
->1) At line 285, task state is set to TASK_INTERRUPTIBLE, if at line 290
->kthread_should_stop() is true, the kernel thread will terminate and return
->to kernel/kthread.s:kthread(), then calls do_exit() with TASK_INTERRUPTIBLE
->state. This is not a suggested behavior and a warning message will be
->reported by might_sleep() in do_exit() code path: "WARNING: do not call
->blocking ops when !TASK_RUNNING; state=1 set at [xxxx]".
+>It is not good to enter do_exit() with task state TASK_INTERRUPTIBLE, in
+>following code path might_sleep() is called and a warning message is
+>reported by __might_sleep(): "WARNING: do not call blocking ops when
+>!TASK_RUNNING; state=1 set at [xxxx]".
 >
->2) Because task state is set to TASK_INTERRUPTIBLE at line 285, when break
->while-loop the task state has to be set back to TASK_RUNNING at line 296.
->Indeed it is unncessary, if task state is set to TASK_INTERRUPTIBLE before
->calling schedule() at line 293, we don't need to set the state back to
->TASK_RUNNING at line 296 anymore. The reason is, allocator kthread is only
->woken up by wake_up_process(), this routine makes sure the task state of
->allocator kthread will be TASK_RUNNING after it returns from schedule() at
->line 294 (see kernel/sched/core.c:try_to_wake_up() for more detailed
->information).
+>Indeed it does not hurt when kernel thread exits with TASK_INTERRUPTIBLE
+>state, but this warning message scares users, makes them feel there might
+>be something risky with bcache and hurt their data.
 >
->This patch fixes the above 2 issues by,
->1) Setting TASK_INTERRUPTIBLE state just before calling schedule().
->2) Then setting TASK_RUNNING at line 296 is unnecessary, remove it.
+>In this patch, TASK_INTERRUPTIBLE is set after kthread_should_stop(),
+>so writeback kernel thread can exist and enter do_exit() with
+>TASK_RUNNING state. Warning message from might_sleep() is removed.
 >
 >Signed-off-by: Coly Li <colyli@suse.de>
 >---
-> drivers/md/bcache/alloc.c | 3 +--
-> 1 file changed, 1 insertion(+), 2 deletions(-)
+> drivers/md/bcache/writeback.c | 2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
 >
->diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
->index a0cc1bc6d884..48c002faf08d 100644
->--- a/drivers/md/bcache/alloc.c
->+++ b/drivers/md/bcache/alloc.c
->@@ -282,7 +282,6 @@ static void invalidate_buckets(struct cache *ca)
-> #define allocator_wait(ca, cond)                    \
-> do {                                    \
->     while (1) {                            \
->-        set_current_state(TASK_INTERRUPTIBLE);            \
->         if (cond)                        \
->             break;                        \
->                                     \
->@@ -290,10 +289,10 @@ do {                                    \
->         if (kthread_should_stop())                \
->             return 0;                    \
->                                     \
->+        set_current_state(TASK_INTERRUPTIBLE);            \
->         schedule();                        \
->         mutex_lock(&(ca)->set->bucket_lock);            \
->     }                                \
->-    __set_current_state(TASK_RUNNING);                \
-> } while (0)
+>diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+>index 56a37884ca8b..a57149803df6 100644
+>--- a/drivers/md/bcache/writeback.c
+>+++ b/drivers/md/bcache/writeback.c
+>@@ -449,11 +449,11 @@ static int bch_writeback_thread(void *arg)
+>             (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+>              !dc->writeback_running)) {
+>             up_write(&dc->writeback_lock);
+>-            set_current_state(TASK_INTERRUPTIBLE);
 > 
-> static int bch_allocator_push(struct cache *ca, long bucket)
+>             if (kthread_should_stop())
+>                 return 0;
+> 
+>+            set_current_state(TASK_INTERRUPTIBLE);
+>             schedule();
+>             continue;
+>         }
 >-- 
 >2.15.1
 
