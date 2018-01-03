@@ -1,61 +1,63 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v1 00/10] cache device failure handling improvement
-Date: Wed,  3 Jan 2018 22:03:15 +0800
-Message-ID: <20180103140325.63175-1-colyli@suse.de>
+Subject: [PATCH v1 01/10] bcache: exit bch_writeback_thread() with proper task state
+Date: Wed,  3 Jan 2018 22:03:16 +0800
+Message-ID: <20180103140325.63175-2-colyli@suse.de>
+References: <20180103140325.63175-1-colyli@suse.de>
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20180103140325.63175-1-colyli@suse.de>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi maintainers and folks,
+Kernel thread routine bch_writeback_thread() has the following code block,
 
-This patch set tries to improve cache device failure handling. A basic
-idea to handle failed cache device is,
-- Unregister cache set
-- Detach all backing devices attached to this cache set
-- Stop all bcache devices linked to this cache set
-The above process is named 'cache set retire' by me. The result of cache
-set retire is, cache set and bcache devices are all removed, following
-I/O requests will get failed immediately to notift upper layer or user
-space coce that the cache device is failed or disconnected.
+452                         set_current_state(TASK_INTERRUPTIBLE);
+453
+454                         if (kthread_should_stop())
+455                                 return 0;
+456
+457                         schedule();
+458                         continue;
 
-The first 8 patches of this patch set is to fix existing bugs in bcache,
-the last 2 patches do the real improvement. Order of applying these patches
-is important, if the last 2 patches are applied firstly, kernel panic or
-process hang will be observed. Therefore I suggest to apply the first 8
-fixes, then apply the last 2 patches.
+At line 452, its status is set to TASK_INTERRUPTIBLE, and at line 454 if
+kthread_should_stop() is true, a "return 0" at line 455 will to function
+kernel/kthread.c:kthread() and call do_exit().
 
-The patch set is tested with writethrough, writeback, writearound mode,
-read/write/readwrite workloads, so far it works as expected. IMHO the
-cache set retire logic is complicated, I need your help to review the
-patches, any question is warmly wlecome.
+It is not good to enter do_exit() with task state TASK_INTERRUPTIBLE, in
+following code path might_sleep() is called and a warning message is
+reported by __might_sleep(): "WARNING: do not call blocking ops when
+!TASK_RUNNING; state=1 set at [xxxx]".
 
-Coly Li (10):
-  bcache: exit bch_writeback_thread() with proper task state
-  bcache: set task properly in allocator_wait()
-  bcache: reduce cache_set devices iteration by devices_max_used
-  bcache: fix cached_dev->count usage for bch_cache_set_error()
-  bcache: stop dc->writeback_rate_update if cache set is stopping
-  bcache: stop dc->writeback_rate_update, dc->writeback_thread earlier
-  bcache: set error_limit correctly
-  bcache: fix misleading error message in bch_count_io_errors()
-  bcache: add io_disable to struct cache_set
-  bcache: stop all attached bcache devices for a retired cache set
+Indeed it does not hurt when kernel thread exits with TASK_INTERRUPTIBLE
+state, but this warning message scares users, makes them feel there might
+be something risky with bcache and hurt their data.
 
- drivers/md/bcache/alloc.c     |  5 ++---
- drivers/md/bcache/bcache.h    | 19 +++++++++++++++-
- drivers/md/bcache/btree.c     |  8 ++++---
- drivers/md/bcache/io.c        | 15 ++++++++-----
- drivers/md/bcache/journal.c   |  4 ++--
- drivers/md/bcache/request.c   | 26 ++++++++++++++++------
- drivers/md/bcache/super.c     | 51 +++++++++++++++++++++++++++++++++++--------
- drivers/md/bcache/sysfs.c     |  8 +++++--
- drivers/md/bcache/util.h      |  6 -----
- drivers/md/bcache/writeback.c | 51 +++++++++++++++++++++++++++++++++----------
- drivers/md/bcache/writeback.h |  4 +---
- 11 files changed, 144 insertions(+), 53 deletions(-)
+In this patch, TASK_INTERRUPTIBLE is set after kthread_should_stop(),
+so writeback kernel thread can exist and enter do_exit() with
+TASK_RUNNING state. Warning message from might_sleep() is removed.
 
-Thanks in advance.
+Signed-off-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/writeback.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Coly Li
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 56a37884ca8b..a57149803df6 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -449,11 +449,11 @@ static int bch_writeback_thread(void *arg)
+ 		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+ 		     !dc->writeback_running)) {
+ 			up_write(&dc->writeback_lock);
+-			set_current_state(TASK_INTERRUPTIBLE);
+ 
+ 			if (kthread_should_stop())
+ 				return 0;
+ 
++			set_current_state(TASK_INTERRUPTIBLE);
+ 			schedule();
+ 			continue;
+ 		}
+-- 
+2.15.1
