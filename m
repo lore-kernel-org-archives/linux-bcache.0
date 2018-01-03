@@ -1,128 +1,176 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v1 03/10] bcache: reduce cache_set devices iteration by devices_max_used
-Date: Wed,  3 Jan 2018 22:03:18 +0800
-Message-ID: <20180103140325.63175-4-colyli@suse.de>
+Subject: [PATCH v1 04/10] bcache: fix cached_dev->count usage for bch_cache_set_error()
+Date: Wed,  3 Jan 2018 22:03:19 +0800
+Message-ID: <20180103140325.63175-5-colyli@suse.de>
 References: <20180103140325.63175-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:54970 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752247AbeACOEA (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 3 Jan 2018 09:04:00 -0500
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180103140325.63175-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn, Coly Li <colyli@suse.de>
+List-Id: linux-bcache@vger.kernel.org
 
-Member devices of struct cache_set is used to reference all attached
-bcache devices to this cache set. If it is treated as array of pointers,
-size of devices[] is indicated by member nr_uuids of struct cache_set.
+When bcache metadata I/O fails, bcache will call bch_cache_set_error()
+to retire the whole cache set. The expected behavior to retire a cache
+set is to unregister the cache set, and unregister all backing device
+attached to this cache set, then remove sysfs entries of the cache set
+and all attached backing devices, finally release memory of structs
+cache_set, cache, cached_dev and bcache_device.
 
-nr_uuids is calculated in drivers/md/super.c:bch_cache_set_alloc(),
-	bucket_bytes(c) / sizeof(struct uuid_entry)
-Bucket size is determined by user space tool "make-bcache", by default it
-is 1024 sectors (defined in bcache-tools/make-bcache.c:main()). So default
-nr_uuids value is 4096 from the above calculation.
+In my testing when journal I/O failure triggered by disconnected cache
+device, sometimes the cache set cannot be retired, and its sysfs
+entry /sys/fs/bcache/<uuid> still exits and the backing device also
+references it. This is not expected behavior.
 
-Every time when bcache code iterates bcache devices of a cache set, all
-the 4096 pointers are checked even only 1 bcache device is attached to the
-cache set, that's a wast of time and unncessary.
+When metadata I/O failes, the call senquence to retire whole cache set is,
+	bch_cache_set_error()
+	bch_cache_set_unregister()
+	bch_cache_set_stop()
+	__cache_set_unregister()     <- called as callback by calling
+					clousre_queue(&c->caching)
+	cache_set_flush()            <- called as a callback when refcount
+					of cache_set->caching is 0
+	cache_set_free()             <- called as a callback when refcount
+					of catch_set->cl is 0
+	bch_cache_set_release()      <- called as a callback when refcount
+					of catch_set->kobj is 0
 
-This patch adds a member devices_max_used to struct cache_set. Its value
-is 1 + the maximum used index of devices[] in a cache set. When iterating
-all valid bcache devices of a cache set, use c->devices_max_used in
-for-loop may reduce a lot of useless checking.
+I find if kernel thread bch_writeback_thread() quits while-loop when
+kthread_should_stop() is true and searched_full_index is false, clousre
+callback cache_set_flush() set by continue_at() will never be called. The
+result is, bcache fails to retire whole cache set.
 
-Personally, my motivation of this patch is not for performance, I use it
-in bcache debugging, which helps me to narrow down the scape to check
-valid bcached devices of a cache set.
+cache_set_flush() will be called when refcount of closure c->caching is 0,
+and in function bcache_device_detach() refcount of closure c->caching is
+released to 0 by clousre_put(). In metadata error code path, function
+bcache_device_detach() is called by cached_dev_detach_finish(). This is a
+callback routine being called when cached_dev->count is 0. This refcount
+is decreased by cached_dev_put().
+
+The above dependence indicates, cache_set_flush() will be called when
+refcount of cache_set->cl is 0, and refcount of cache_set->cl to be 0
+when refcount of cache_dev->count is 0.
+
+The reason why sometimes cache_dev->count is not 0 (when metadata I/O fails
+and bch_cache_set_error() called) is, in bch_writeback_thread(), refcount
+of cache_dev is not decreased properly.
+
+In bch_writeback_thread(), cached_dev_put() is called only when
+searched_full_index is true and cached_dev->writeback_keys is empty, a.k.a
+there is no dirty data on cache. In most of run time it is correct, but
+when bch_writeback_thread() quits the while-loop while cache is still
+dirty, current code forget to call cached_dev_put() before this kernel
+thread exits. This is why sometimes cache_set_flush() is not executed and
+cache set fails to be retired.
+
+The reason to call cached_dev_put() in bch_writeback_rate() is, when the
+cache device changes from clean to dirty, cached_dev_get() is called, to
+make sure during writeback operatiions both backing and cache devices
+won't be released.
+
+Adding following code in bch_writeback_thread() does not work,
+    static int bch_writeback_thread(void *arg)
+    [code snip]
+
+    +       if (atomic_read(&dc->has_dirty))
+    +               cached_dev_put()
+    +
+        return 0;
+    [code snip]
+
+because writeback kernel thread can be waken up and start via sysfs entry:
+	echo 1 > /sys/block/bcache<N>/bcache/writeback_running
+It is difficult to check whether backing device is dirty without race and
+extra lock. So the above modification will introduce potential refcount
+underflow in some conditions.
+
+The correct fix is, to take cached dev refcount when creating the kernel
+thread, and put it before the kernel thread exits. Then bcache does not
+need to take a cached dev refcount when cache turns from clean to dirty,
+or to put a cached dev refcount when cache turns from ditry to clean. The
+writeback kernel thread is alwasy safe to reference data structure from
+cache set, cache and cached device (because a refcount of cache device is
+taken for it already), and no matter the kernel thread is stopped by I/O
+errors or system reboot, cached_dev->count can always be used correctly.
+
+The patch is simple, but understanding how it works is quite complicated.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/bcache.h    | 1 +
- drivers/md/bcache/btree.c     | 2 +-
- drivers/md/bcache/super.c     | 9 ++++++---
- drivers/md/bcache/writeback.h | 2 +-
- 4 files changed, 9 insertions(+), 5 deletions(-)
+ drivers/md/bcache/super.c     |  1 -
+ drivers/md/bcache/writeback.c | 10 +++++++---
+ drivers/md/bcache/writeback.h |  2 --
+ 3 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 843877e017e1..83c569942bd0 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -488,6 +488,7 @@ struct cache_set {
- 	int			caches_loaded;
- 
- 	struct bcache_device	**devices;
-+	unsigned		devices_max_used;
- 	struct list_head	cached_devs;
- 	uint64_t		cached_dev_sectors;
- 	struct closure		caching;
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 81e8dc3dbe5e..bf0d7978bc3d 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1678,7 +1678,7 @@ static void bch_btree_gc_finish(struct cache_set *c)
- 
- 	/* don't reclaim buckets to which writeback keys point */
- 	rcu_read_lock();
--	for (i = 0; i < c->nr_uuids; i++) {
-+	for (i = 0; i < c->devices_max_used; i++) {
- 		struct bcache_device *d = c->devices[i];
- 		struct cached_dev *dc;
- 		struct keybuf_key *w, *n;
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b4d28928dec5..064efd869017 100644
+index 064efd869017..5401d2356aa3 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -721,6 +721,9 @@ static void bcache_device_attach(struct bcache_device *d, struct cache_set *c,
- 	d->c = c;
- 	c->devices[id] = d;
+@@ -1044,7 +1044,6 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+ 		bch_sectors_dirty_init(&dc->disk);
+ 		atomic_set(&dc->has_dirty, 1);
+-		refcount_inc(&dc->count);
+ 		bch_writeback_queue(dc);
+ 	}
  
-+	if (id >= c->devices_max_used)
-+		c->devices_max_used = id + 1;
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index a57149803df6..0789a9e18337 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -451,7 +451,7 @@ static int bch_writeback_thread(void *arg)
+ 			up_write(&dc->writeback_lock);
+ 
+ 			if (kthread_should_stop())
+-				return 0;
++				break;
+ 
+ 			set_current_state(TASK_INTERRUPTIBLE);
+ 			schedule();
+@@ -463,7 +463,6 @@ static int bch_writeback_thread(void *arg)
+ 		if (searched_full_index &&
+ 		    RB_EMPTY_ROOT(&dc->writeback_keys.keys)) {
+ 			atomic_set(&dc->has_dirty, 0);
+-			cached_dev_put(dc);
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
+ 			bch_write_bdev_super(dc, NULL);
+ 		}
+@@ -484,6 +483,8 @@ static int bch_writeback_thread(void *arg)
+ 		}
+ 	}
+ 
++	cached_dev_put(dc);
 +
- 	closure_get(&c->caching);
+ 	return 0;
  }
  
-@@ -1261,7 +1264,7 @@ static int flash_devs_run(struct cache_set *c)
- 	struct uuid_entry *u;
+@@ -547,10 +548,13 @@ int bch_cached_dev_writeback_start(struct cached_dev *dc)
+ 	if (!dc->writeback_write_wq)
+ 		return -ENOMEM;
  
- 	for (u = c->uuids;
--	     u < c->uuids + c->nr_uuids && !ret;
-+	     u < c->uuids + c->devices_max_used && !ret;
- 	     u++)
- 		if (UUID_FLASH_ONLY(u))
- 			ret = flash_dev_run(c, u);
-@@ -1427,7 +1430,7 @@ static void __cache_set_unregister(struct closure *cl)
++	cached_dev_get(dc);
+ 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
+ 					      "bcache_writeback");
+-	if (IS_ERR(dc->writeback_thread))
++	if (IS_ERR(dc->writeback_thread)) {
++		cached_dev_put(dc);
+ 		return PTR_ERR(dc->writeback_thread);
++	}
  
- 	mutex_lock(&bch_register_lock);
- 
--	for (i = 0; i < c->nr_uuids; i++)
-+	for (i = 0; i < c->devices_max_used; i++)
- 		if (c->devices[i]) {
- 			if (!UUID_FLASH_ONLY(&c->uuids[i]) &&
- 			    test_bit(CACHE_SET_UNREGISTERING, &c->flags)) {
-@@ -1490,7 +1493,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 	c->bucket_bits		= ilog2(sb->bucket_size);
- 	c->block_bits		= ilog2(sb->block_size);
- 	c->nr_uuids		= bucket_bytes(c) / sizeof(struct uuid_entry);
--
-+	c->devices_max_used	= 0;
- 	c->btree_pages		= bucket_pages(c);
- 	if (c->btree_pages > BTREE_MAX_PAGES)
- 		c->btree_pages = max_t(int, c->btree_pages / 4,
+ 	schedule_delayed_work(&dc->writeback_rate_update,
+ 			      dc->writeback_rate_update_seconds * HZ);
 diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index a9e3ffb4b03c..1d284f3d0363 100644
+index 1d284f3d0363..aab21afe49cf 100644
 --- a/drivers/md/bcache/writeback.h
 +++ b/drivers/md/bcache/writeback.h
-@@ -21,7 +21,7 @@ static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
- 
- 	mutex_lock(&bch_register_lock);
- 
--	for (i = 0; i < c->nr_uuids; i++) {
-+	for (i = 0; i < c->devices_max_used; i++) {
- 		struct bcache_device *d = c->devices[i];
- 
- 		if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
+@@ -92,8 +92,6 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+ {
+ 	if (!atomic_read(&dc->has_dirty) &&
+ 	    !atomic_xchg(&dc->has_dirty, 1)) {
+-		refcount_inc(&dc->count);
+-
+ 		if (BDEV_STATE(&dc->sb) != BDEV_STATE_DIRTY) {
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_DIRTY);
+ 			/* XXX: should do this synchronously */
 -- 
 2.15.1
