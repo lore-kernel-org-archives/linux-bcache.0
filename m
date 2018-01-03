@@ -1,56 +1,45 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: Re: Re: [for-416 PATCH 3/3] bcache: allow quick writeback when backingidle
-Date: Tue, 2 Jan 2018 18:52:49 -0800
-Message-ID: <CAJ+L6qfzd-MKABBhoeumuOGtR-TJy-DTxR_J7qh9i+mYjdnYJA@mail.gmail.com>
-References: <1514903698-19103-1-git-send-email-tang.junhui@zte.com.cn>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-qt0-f195.google.com ([209.85.216.195]:40914 "EHLO
-        mail-qt0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751283AbeACCwv (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 2 Jan 2018 21:52:51 -0500
-Received: by mail-qt0-f195.google.com with SMTP id u42so704596qte.7
-        for <linux-bcache@vger.kernel.org>; Tue, 02 Jan 2018 18:52:51 -0800 (PST)
-In-Reply-To: <1514903698-19103-1-git-send-email-tang.junhui@zte.com.cn>
-Sender: linux-bcache-owner@vger.kernel.org
+From: Zhai Zhaoxuan <kxuanobj@gmail.com>
+Subject: [PATCH] bcache: fix unmatched generic_end_io_acct() & generic_start_io_acct()
+Date: Wed,  3 Jan 2018 12:39:37 +0800
+Message-ID: <20180103043937.28235-1-kxuanobj@gmail.com>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: tang.junhui@zte.com.cn, Michael Lyle <mlyle@lyle.org>, Zhai Zhaoxuan <kxuanobj@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Junhui Tang <tang.junhui@zte.com.cn>
-Cc: linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
 
-On Tue, Jan 2, 2018 at 6:34 AM,  <tang.junhui@zte.com.cn> wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
->
->>On 01/02/2018 12:53 AM, tang.junhui@zte.com.cn wrote:
->>> If no front-end I/O coming, would this cause write-back IOs one by one
->>> (one write-back IO issued must after the completion of the previous IO)?
->>> though with zero delay time, is the write-back performance still good?
->>
->>Yes-- this speeds up writeback during idle from 4k/sec to about 10MB/sec
->>on my slow 5400RPM disk.  (It writes back at about 20MB/sec with deep
->>queues in the same scenario).  So in this case it's about 2500x faster
->>than current idle writeback, but half as fast as writeback with full
->>device utilization.
->>
->>With only one I/O outstanding at a time, if front-end I/O starts latency
->>for the first request is still good.
->>
->
-> OK, LGTM.
+The function cached_dev_make_request() and flash_dev_make_request() call
+generic_start_io_acct() with (struct bcache_device)->disk when they start a
+closure. Then the function bio_complete() calls generic_end_io_acct() with
+(struct search)->orig_bio->bi_disk when the closure has done.
+Since the `bi_disk` is not the bcache device, the generic_end_io_acct() is
+called with a wrong device queue.
 
-Excellent, thank you!
+It causes the "inflight" (in struct hd_struct) counter keep increasing
+without decreasing.
 
-> Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+This patch fix the problem by calling generic_end_io_acct() with
+(struct bcache_device)->disk.
 
-Added to bcache-for-next.
+Signed-off-by: Zhai Zhaoxuan <kxuanobj@gmail.com>
+---
+ drivers/md/bcache/request.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Mike
-
->
-> Thanks,
-> Tang Junhui
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 643c3021624f..83de85fe4542 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -611,8 +611,8 @@ static void request_endio(struct bio *bio)
+ static void bio_complete(struct search *s)
+ {
+ 	if (s->orig_bio) {
+-		struct request_queue *q = s->orig_bio->bi_disk->queue;
+-		generic_end_io_acct(q, bio_data_dir(s->orig_bio),
++		generic_end_io_acct(s->d->disk->queue,
++				    bio_data_dir(s->orig_bio),
+ 				    &s->d->disk->part0, s->start_time);
+ 
+ 		trace_bcache_request_end(s->d, s->orig_bio);
+-- 
+2.15.1
