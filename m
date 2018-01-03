@@ -1,131 +1,124 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v1 06/10] bcache: stop dc->writeback_rate_update, dc->writeback_thread earlier
-Date: Wed,  3 Jan 2018 22:03:21 +0800
-Message-ID: <20180103140325.63175-7-colyli@suse.de>
+Subject: [PATCH v1 07/10] bcache: set error_limit correctly
+Date: Wed,  3 Jan 2018 22:03:22 +0800
+Message-ID: <20180103140325.63175-8-colyli@suse.de>
 References: <20180103140325.63175-1-colyli@suse.de>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:55019 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:55044 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752684AbeACOET (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 3 Jan 2018 09:04:19 -0500
+        id S1752676AbeACOE0 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 3 Jan 2018 09:04:26 -0500
 In-Reply-To: <20180103140325.63175-1-colyli@suse.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn, Coly Li <colyli@suse.de>
 
-Delayed worker dc->writeback_rate_update and kernel thread
-dc->writeback_thread reference cache set data structure in their routine,
-Therefor, before they are stopped, cache set should not be release. Other-
-wise, NULL pointer deference will be triggered.
+Struct cache uses io_errors for two purposes,
+- Error decay: when cache set error_decay is set, io_errors is used to
+  generate a small piece of delay when I/O error happens.
+- I/O errors counter: in order to generate big enough value for error
+  decay, I/O errors counter value is stored by left shifting 20 bits (a.k.a
+  IO_ERROR_SHIFT).
 
-Currenly delayed worker dc->writeback_rate_update and kernel thread
-dc->writeback_thread are stopped in cached_dev_free(). When cache set is
-retiring by too many I/O errors, cached_dev_free() is called when refcount
-of bcache device's closure (disk.cl) reaches 0. In most of cases, last
-refcount of disk.cl is dropped in last line of cached_dev_detach_finish().
-But in cached_dev_detach_finish() before calling closure_put(&dc->disk.cl),
-bcache_device_detach() is called, and inside bcache_device_detach()
-refcount of cache_set->caching is dropped by closure_put(&d->c->caching).
+In function bch_count_io_errors(), if I/O errors counter reaches cache set
+error limit, bch_cache_set_error() will be called to retire the whold cache
+set. But current code is problematic when checking the error limit, see the
+following code piece from bch_count_io_errors(),
 
-It is very probably this is the last refcount of this closure, so routine
-cache_set_flush() will be called (it is set in __cache_set_unregister()),
-and its parent closure cache_set->cl may also drop its last refcount and
-cache_set_free() is called too. In cache_set_free() the last refcount of
-cache_set->kobj is dropped and then bch_cache_set_release() is called. Now
-in bch_cache_set_release(), the memory of struct cache_set is freeed.
+ 90   if (error) {
+ 91           char buf[BDEVNAME_SIZE];
+ 92           unsigned errors = atomic_add_return(1 << IO_ERROR_SHIFT,
+ 93                                               &ca->io_errors);
+ 94           errors >>= IO_ERROR_SHIFT;
+ 95
+ 96           if (errors < ca->set->error_limit)
+ 97                   pr_err("%s: IO error on %s, recovering",
+ 98                          bdevname(ca->bdev, buf), m);
+ 99           else
+100                   bch_cache_set_error(ca->set,
+101                                       "%s: too many IO errors %s",
+102                                       bdevname(ca->bdev, buf), m);
+103   }
 
-bch_cache_set_release() is called before cached_dev_free(), then there is a
-time window after cache set memory freed and before dc->writeback_thread
-and dc->writeback_rate_update stopped, if one of them is scheduled to run,
-a NULL pointer deference will be triggered.
+At line 94, errors is right shifting IO_ERROR_SHIFT bits, now it is real
+errors counter to compare at line 96. But ca->set->error_limit is initia-
+lized with an amplified value in bch_cache_set_alloc(),
+1545   c->error_limit  = 8 << IO_ERROR_SHIFT;
 
-This patch fixes the above problem by stopping dc->writeback_thread and
-dc->writeback_rate_update earlier in bcache_device_detach() before calling
-closure_put(&d->c->caching). Because cancel_delayed_work_sync() and
-kthread_stop() are synchronized operations, we can make sure cache set
-is available when the delayed work and kthread are stopping.
+It means by default, in bch_count_io_errors(), before 8<<20 errors happened
+bch_cache_set_error() won't be called to retire the problematic cache
+device. If the average request size is 64KB, it means bcache won't handle
+failed device until 512GB data is requested. This is too large to be an I/O
+threashold. So I believe the correct error limit should be much less.
 
-Because cached_dev_free() can also be called by writing 1 to sysfs file
-/sys/block/bcache<N>/bcache/stop, this code path may not call
-bcache_device_detach() if d-c is NULL. So stopping dc->writeback_thread
-and dc->writeback_rate_update in cached_dev_free() is still necessary. In
-order to avoid stop them twice, dc->rate_update_canceled is added to
-indicate dc->writeback_rate_update is canceled, and dc->writeback_thread
-is set to NULL to indicate it is stopped.
+This patch sets default cache set error limit to 8, then in
+bch_count_io_errors() when errors counter reaches 8 (if it is default
+value), function bch_cache_set_error() will be called to retire the whole
+cache set. This patch also removes bits shifting when store or show
+io_error_limit value via sysfs interface.
+
+Nowadays most of SSDs handle internal flash failure automatically by LBA
+address re-indirect mapping. If an I/O error can be observed by upper layer
+code, it will be a notable error because that SSD can not re-indirect
+map the problematic LBA address to an available flash block. This situation
+indicates the whole SSD will be failed very soon. Therefore setting 8 as
+the default io error limit value makes sense, it is enough for most of
+cache devices.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/bcache.h    |  1 +
- drivers/md/bcache/super.c     | 21 +++++++++++++++++++--
- drivers/md/bcache/writeback.c |  1 +
- 3 files changed, 21 insertions(+), 2 deletions(-)
+ drivers/md/bcache/bcache.h | 1 +
+ drivers/md/bcache/super.c  | 2 +-
+ drivers/md/bcache/sysfs.c  | 4 ++--
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 83c569942bd0..395b87942a2f 100644
+index 395b87942a2f..a31dc3737dae 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -322,6 +322,7 @@ struct cached_dev {
+@@ -654,6 +654,7 @@ struct cache_set {
+ 		ON_ERROR_UNREGISTER,
+ 		ON_ERROR_PANIC,
+ 	}			on_error;
++#define DEFAULT_IO_ERROR_LIMIT 8
+ 	unsigned		error_limit;
+ 	unsigned		error_decay;
  
- 	struct bch_ratelimit	writeback_rate;
- 	struct delayed_work	writeback_rate_update;
-+	bool			rate_update_canceled;
- 
- 	/*
- 	 * Internal to the writeback code, so read_dirty() can keep track of
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 5401d2356aa3..8912be4165c5 100644
+index 8912be4165c5..02d9d7110769 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -696,8 +696,20 @@ static void bcache_device_link(struct bcache_device *d, struct cache_set *c,
+@@ -1561,7 +1561,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
  
- static void bcache_device_detach(struct bcache_device *d)
- {
-+	struct cached_dev *dc;
-+
- 	lockdep_assert_held(&bch_register_lock);
+ 	c->congested_read_threshold_us	= 2000;
+ 	c->congested_write_threshold_us	= 20000;
+-	c->error_limit	= 8 << IO_ERROR_SHIFT;
++	c->error_limit	= DEFAULT_IO_ERROR_LIMIT;
  
-+	dc = container_of(d, struct cached_dev, disk);
-+	if (!IS_ERR_OR_NULL(dc->writeback_thread)) {
-+		kthread_stop(dc->writeback_thread);
-+		dc->writeback_thread = NULL;
-+	}
-+	if (!dc->rate_update_canceled) {
-+		cancel_delayed_work_sync(&dc->writeback_rate_update);
-+		dc->rate_update_canceled = true;
-+	}
-+
- 	if (test_bit(BCACHE_DEV_DETACHING, &d->flags)) {
- 		struct uuid_entry *u = d->c->uuids + d->id;
+ 	return c;
+ err:
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b4184092c727..d7ce9a05b304 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -556,7 +556,7 @@ SHOW(__bch_cache_set)
  
-@@ -1071,9 +1083,14 @@ static void cached_dev_free(struct closure *cl)
- {
- 	struct cached_dev *dc = container_of(cl, struct cached_dev, disk.cl);
+ 	/* See count_io_errors for why 88 */
+ 	sysfs_print(io_error_halflife,	c->error_decay * 88);
+-	sysfs_print(io_error_limit,	c->error_limit >> IO_ERROR_SHIFT);
++	sysfs_print(io_error_limit,	c->error_limit);
  
--	cancel_delayed_work_sync(&dc->writeback_rate_update);
--	if (!IS_ERR_OR_NULL(dc->writeback_thread))
-+	if (!dc->rate_update_canceled) {
-+		cancel_delayed_work_sync(&dc->writeback_rate_update);
-+		dc->rate_update_canceled = true;
-+	}
-+	if (!IS_ERR_OR_NULL(dc->writeback_thread)) {
- 		kthread_stop(dc->writeback_thread);
-+		dc->writeback_thread = NULL;
-+	}
- 	if (dc->writeback_write_wq)
- 		destroy_workqueue(dc->writeback_write_wq);
+ 	sysfs_hprint(congested,
+ 		     ((uint64_t) bch_get_congested(c)) << 9);
+@@ -656,7 +656,7 @@ STORE(__bch_cache_set)
+ 	}
  
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 745d9b2a326f..ab2ac3d72393 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -548,6 +548,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 	dc->writeback_rate_i_term_inverse = 10000;
+ 	if (attr == &sysfs_io_error_limit)
+-		c->error_limit = strtoul_or_return(buf) << IO_ERROR_SHIFT;
++		c->error_limit = strtoul_or_return(buf);
  
- 	INIT_DELAYED_WORK(&dc->writeback_rate_update, update_writeback_rate);
-+	dc->rate_update_canceled = false;
- }
- 
- int bch_cached_dev_writeback_start(struct cached_dev *dc)
+ 	/* See count_io_errors() for why 88 */
+ 	if (attr == &sysfs_io_error_halflife)
 -- 
 2.15.1
