@@ -1,37 +1,51 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH v1 00/10] cache device failure handling improvement
-Date: Thu, 4 Jan 2018 09:46:00 -0800
-Message-ID: <59499361-3823-1cfb-1306-c0ef16125e8d@lyle.org>
-References: <20180103140325.63175-1-colyli@suse.de>
- <e53e363e-740d-5974-d989-6bf2c3a37dac@lyle.org>
- <d0c930bf-ea36-9fe5-3cce-b8f56e1b163e@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+From: tang.junhui@zte.com.cn
+Subject: Re: [PATCH v1 05/10] bcache: stop dc->writeback_rate_update if cache set is stopping
+Date: Thu, 4 Jan 2018 20:41:47 +0800
+Message-ID: <1515069707-18825-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <d0c930bf-ea36-9fe5-3cce-b8f56e1b163e@suse.de>
-Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: colyli@suse.de
+Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
 
-Coly--
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-On 01/03/2018 06:20 PM, Coly Li wrote:
-> Thanks for doing this. When you test the patch set, please apply them
-> together, because the bugs that the first 8 patches try to fix won't be
-> triggered without applying the last 2 patches, especially the io_disable
-> patch.
+Hello Coly,
 
-Eventually I will test & review the whole set, but I need to concentrate
-on testing something for a first submission to 4.16.  So I've taken
-1,2,3 and 8 because they're easiest and have some benefit on their own
-without 9 & 10.
+>When cache set is stopping, calculating writeback rate is wast of time.
+>This is the purpose of the first checking, to avoid unnecessary delay
+>from bcache_flash_devs_sectors_dirty() inside __update_writeback_rate().
 
-This means that next pass through the review we'll at least have a few
-fewer patches to look at, too.
+I thought twice, and found there is still a race.
+
+work update_writeback_rate is runing:                                                                                
+>@@ -91,6 +91,11 @@ static void update_writeback_rate(struct work_struct *work)
+>     struct cached_dev *dc = container_of(to_delayed_work(work),
+>                          struct cached_dev,
+>                          writeback_rate_update);
+>+    struct cache_set *c = dc->disk.c;
+>+
+>+    /* quit directly if cache set is stopping */
+>+    if (test_bit(CACHE_SET_STOPPING, &c->flags))
+>+        return;
+> 
+>     down_read(&dc->writeback_lock);
+> 
+>@@ -100,6 +105,10 @@ static void update_writeback_rate(struct work_struct *work)
+> 
+>     up_read(&dc->writeback_lock);
+> 
+>+    /* do not schedule delayed work if cache set is stopping */
+>+    if (test_bit(CACHE_SET_STOPPING, &c->flags))
+>+        return;
+>+
+
+and if cancel_delayed_wsrksync() runs at this moment, the code can not prevent the
+work re-arming itself to workqueue. So maybe we need a locker to protect it.    
+
+>     schedule_delayed_work(&dc->writeback_rate_update,
+>                   dc->writeback_rate_update_seconds * HZ);
+> }
 
 Thanks,
-
-Mike
+Tang Junhui
