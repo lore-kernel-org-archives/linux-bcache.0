@@ -1,136 +1,92 @@
-From: tang.junhui@zte.com.cn
-Subject: Re: [PATCH v1 03/10] bcache: reduce cache_set devices iteration by devices_max_used
-Date: Thu, 4 Jan 2018 03:14:38 +0800
-Message-ID: <1515006878-7375-1-git-send-email-tang.junhui@zte.com.cn>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from out1.zte.com.cn ([202.103.147.172]:34234 "EHLO mxct.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751294AbeADIrh (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 4 Jan 2018 03:47:37 -0500
-Sender: linux-bcache-owner@vger.kernel.org
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH v1 06/10] bcache: stop dc->writeback_rate_update,
+ dc->writeback_thread earlier
+Date: Thu, 4 Jan 2018 16:56:00 +0800
+Message-ID: <bfc45abe-dd4b-95e7-1fec-2507caebdf38@suse.de>
+References: <1515000433-6039-1-git-send-email-tang.junhui@zte.com.cn>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1515000433-6039-1-git-send-email-tang.junhui@zte.com.cn>
+Content-Language: en-US
+Sender: linux-block-owner@vger.kernel.org
+To: tang.junhui@zte.com.cn
+Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: colyli@suse.de
-Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 04/01/2018 1:27 AM, tang.junhui@zte.com.cn wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> Hello Coly,
+> Thanks for your works!
+> 
 
-LGTM.
+Hi Junhui,
 
-Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+> Acctually stopping write-back thread and writeback_rate_update work in 
+> bcache_device_detach() has already done in:
+> https://github.com/mlyle/linux/commit/397d02e162b8ee11940a4e9f45e16fee0650d64e
+>> Is it nessary to add "rate_update_canceled" to identify that
+> whether writeback_rate_update work are already stoped or not? 
+> I think it is ok to call cancel_delayed_work_sync(&dc->writeback_rate_update)
+> twice before the memory of writeback_rate_update being released (It will return
+> -ENOENT).
+> 
 
->Member devices of struct cache_set is used to reference all attached                              
->bcache devices to this cache set. If it is treated as array of pointers,                          
->size of devices[] is indicated by member nr_uuids of struct cache_set.                            
->                                                                                                  
->nr_uuids is calculated in drivers/md/super.c:bch_cache_set_alloc(),                               
->    bucket_bytes(c) / sizeof(struct uuid_entry)                                                   
->Bucket size is determined by user space tool "make-bcache", by default it                         
->is 1024 sectors (defined in bcache-tools/make-bcache.c:main()). So default                        
->nr_uuids value is 4096 from the above calculation.                                                
->                                                                                                  
->Every time when bcache code iterates bcache devices of a cache set, all                           
->the 4096 pointers are checked even only 1 bcache device is attached to the                        
->cache set, that's a wast of time and unncessary.                                                  
->                                                                                                  
->This patch adds a member devices_max_used to struct cache_set. Its value                          
->is 1 + the maximum used index of devices[] in a cache set. When iterating                         
->all valid bcache devices of a cache set, use c->devices_max_used in                               
->for-loop may reduce a lot of useless checking.                                                    
->                                                                                                  
->Personally, my motivation of this patch is not for performance, I use it                          
->in bcache debugging, which helps me to narrow down the scape to check                             
->valid bcached devices of a cache set.                                                             
->                                                                                                  
->Signed-off-by: Coly Li <colyli@suse.de>                                                           
->---                                                                                               
-> drivers/md/bcache/bcache.h    | 1 +                                                              
-> drivers/md/bcache/btree.c     | 2 +-                                                             
-> drivers/md/bcache/super.c     | 9 ++++++---                                                      
-> drivers/md/bcache/writeback.h | 2 +-                                                             
-> 4 files changed, 9 insertions(+), 5 deletions(-)                                                 
->                                                                                                  
->diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h                              
->index 843877e017e1..83c569942bd0 100644                                                           
->--- a/drivers/md/bcache/bcache.h                                                                  
->+++ b/drivers/md/bcache/bcache.h                                                                  
->@@ -488,6 +488,7 @@ struct cache_set {                                                            
->     int            caches_loaded;                                                                
->                                                                                                  
->     struct bcache_device    **devices;                                                           
->+    unsigned        devices_max_used;                                                            
->     struct list_head    cached_devs;                                                             
->     uint64_t        cached_dev_sectors;                                                          
->     struct closure        caching;                                                               
->diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c                                
->index 81e8dc3dbe5e..bf0d7978bc3d 100644                                                           
->--- a/drivers/md/bcache/btree.c                                                                   
->+++ b/drivers/md/bcache/btree.c                                                                   
->@@ -1678,7 +1678,7 @@ static void bch_btree_gc_finish(struct cache_set *c)                        
->                                                                                                  
->     /* don't reclaim buckets to which writeback keys point */                                    
->     rcu_read_lock();                                                                             
->-    for (i = 0; i < c->nr_uuids; i++) {                                                          
->+    for (i = 0; i < c->devices_max_used; i++) {                                                  
->         struct bcache_device *d = c->devices[i];                                                 
->         struct cached_dev *dc;                                                                   
->         struct keybuf_key *w, *n;                                                                
->diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c                                
->index b4d28928dec5..064efd869017 100644                                                           
->--- a/drivers/md/bcache/super.c                                                                   
->+++ b/drivers/md/bcache/super.c                                                                   
->@@ -721,6 +721,9 @@ static void bcache_device_attach(struct bcache_device *d, struct cache_set *c,
->     d->c = c;                                                                                    
->     c->devices[id] = d;                                                                          
->                                                                                                  
->+    if (id >= c->devices_max_used)                                                               
->+        c->devices_max_used = id + 1;                                                            
->+                                                                                                 
->     closure_get(&c->caching);                                                                    
-> }                                                                                                
->                                                                                                  
->@@ -1261,7 +1264,7 @@ static int flash_devs_run(struct cache_set *c)                              
->     struct uuid_entry *u;                                                                        
->                                                                                                  
->     for (u = c->uuids;                                                                           
->-         u < c->uuids + c->nr_uuids && !ret;                                                     
->+         u < c->uuids + c->devices_max_used && !ret;                                             
->          u++)                                                                                    
->         if (UUID_FLASH_ONLY(u))                                                                  
->             ret = flash_dev_run(c, u);                                                           
->@@ -1427,7 +1430,7 @@ static void __cache_set_unregister(struct closure *cl)                      
->                                                                                                  
->     mutex_lock(&bch_register_lock);                                                              
->                                                                                                  
->-    for (i = 0; i < c->nr_uuids; i++)                                                            
->+    for (i = 0; i < c->devices_max_used; i++)                                                    
->         if (c->devices[i]) {                                                                     
->             if (!UUID_FLASH_ONLY(&c->uuids[i]) &&                                                
->                 test_bit(CACHE_SET_UNREGISTERING, &c->flags)) {                                  
->@@ -1490,7 +1493,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)                  
->     c->bucket_bits        = ilog2(sb->bucket_size);                                              
->     c->block_bits        = ilog2(sb->block_size);                                                
->     c->nr_uuids        = bucket_bytes(c) / sizeof(struct uuid_entry);                            
->-                                                                                                 
->+    c->devices_max_used    = 0;                                                                  
->     c->btree_pages        = bucket_pages(c);                                                     
->     if (c->btree_pages > BTREE_MAX_PAGES)                                                        
->         c->btree_pages = max_t(int, c->btree_pages / 4,                                          
->diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h                        
->index a9e3ffb4b03c..1d284f3d0363 100644                                                           
->--- a/drivers/md/bcache/writeback.h                                                               
->+++ b/drivers/md/bcache/writeback.h                                                               
->@@ -21,7 +21,7 @@ static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)    
->                                                                                                  
->     mutex_lock(&bch_register_lock);                                                              
->                                                                                                  
->-    for (i = 0; i < c->nr_uuids; i++) {                                                          
->+    for (i = 0; i < c->devices_max_used; i++) {                                                  
->         struct bcache_device *d = c->devices[i];                                                 
->                                                                                                  
->         if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))                                                
->--                                                                                                
->2.15.1                                                                                            
+Good suggestion, I just find after cancel_delayed_work_sync() returns
+the worker is in idle state, so call cancel_delayed_work_sync() to an
+idle worker will return 0 immediately, so rate_update_canceled is
+unnecessary.
 
+It seems your patch is enough and does the job. Let me test v2 patch set
+against bcache-for-next, if it works I will remove this patch from my
+patch set.
 
-Thanks,
-Tang Junhui
+Thanks for your hint :-)
+
+Coly Li
+
+>> Delayed worker dc->writeback_rate_update and kernel thread
+>> dc->writeback_thread reference cache set data structure in their routine,
+>> Therefor, before they are stopped, cache set should not be release. Other-
+>> wise, NULL pointer deference will be triggered.
+>>
+>> Currenly delayed worker dc->writeback_rate_update and kernel thread
+>> dc->writeback_thread are stopped in cached_dev_free(). When cache set is
+>> retiring by too many I/O errors, cached_dev_free() is called when refcount
+>> of bcache device's closure (disk.cl) reaches 0. In most of cases, last
+>> refcount of disk.cl is dropped in last line of cached_dev_detach_finish().
+>> But in cached_dev_detach_finish() before calling closure_put(&dc->disk.cl),
+>> bcache_device_detach() is called, and inside bcache_device_detach()
+>> refcount of cache_set->caching is dropped by closure_put(&d->c->caching).
+>>
+>> It is very probably this is the last refcount of this closure, so routine
+>> cache_set_flush() will be called (it is set in __cache_set_unregister()),
+>> and its parent closure cache_set->cl may also drop its last refcount and
+>> cache_set_free() is called too. In cache_set_free() the last refcount of
+>> cache_set->kobj is dropped and then bch_cache_set_release() is called. Now
+>> in bch_cache_set_release(), the memory of struct cache_set is freeed.
+>>
+>> bch_cache_set_release() is called before cached_dev_free(), then there is a
+>> time window after cache set memory freed and before dc->writeback_thread
+>> and dc->writeback_rate_update stopped, if one of them is scheduled to run,
+>> a NULL pointer deference will be triggered.
+>>
+>> This patch fixes the above problem by stopping dc->writeback_thread and
+>> dc->writeback_rate_update earlier in bcache_device_detach() before calling
+>> closure_put(&d->c->caching). Because cancel_delayed_work_sync() and
+>> kthread_stop() are synchronized operations, we can make sure cache set
+>> is available when the delayed work and kthread are stopping.
+>>
+>> Because cached_dev_free() can also be called by writing 1 to sysfs file
+>> /sys/block/bcache<N>/bcache/stop, this code path may not call
+>> bcache_device_detach() if d-c is NULL. So stopping dc->writeback_thread
+>> and dc->writeback_rate_update in cached_dev_free() is still necessary. In
+>> order to avoid stop them twice, dc->rate_update_canceled is added to
+>> indicate dc->writeback_rate_update is canceled, and dc->writeback_thread
+>> is set to NULL to indicate it is stopped.
+>>
+>> Signed-off-by: Coly Li <colyli@suse.de>
+
+[code snip]
