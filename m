@@ -1,90 +1,64 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v1 05/10] bcache: stop dc->writeback_rate_update if cache
- set is stopping
-Date: Thu, 4 Jan 2018 16:06:47 +0800
-Message-ID: <b1447aad-0912-5262-f72e-d7ae6d0508cd@suse.de>
-References: <1514998071-5562-1-git-send-email-tang.junhui@zte.com.cn>
+Subject: Re: [PATCH v1 09/10] bcache: add io_disable to struct cache_set
+Date: Thu, 4 Jan 2018 16:17:53 +0800
+Message-ID: <0ae606b1-df66-501a-c0b9-8ddd075bfad6@suse.de>
+References: <1515002376-6411-1-git-send-email-tang.junhui@zte.com.cn>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1514998071-5562-1-git-send-email-tang.junhui@zte.com.cn>
+In-Reply-To: <1515002376-6411-1-git-send-email-tang.junhui@zte.com.cn>
 Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
 To: tang.junhui@zte.com.cn
 Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 04/01/2018 12:47 AM, tang.junhui@zte.com.cn wrote:
+On 04/01/2018 1:59 AM, tang.junhui@zte.com.cn wrote:
 > From: Tang Junhui <tang.junhui@zte.com.cn>
 > 
 > Hello Coly,
 > 
->> dc->writeback_rate_update is a special delayed worker, it re-arms itself
->> to run after several seconds by,
->>>>     schedule_delayed_work(&dc->writeback_rate_update,
->>>>                   dc->writeback_rate_update_seconds * HZ);
->>
->> I check the workqueue code, it seems cancel_delayed_work_sync() does not
->> prevent a delayed work to re-arm itself inside worker routine. And in my
->> test, around 5 seconds after cancel_delayed_work_sync() called, a NULL
->> pointer difference oops happens. 
-> I think I got how this issue would be occured:
-> 1)work writeback_rate_update is running;
-> 2)cancel_delayed_work_sync() is called, and waiting for work 
->   writeback_rate_update to run over, and conntinue to release cche set 
->   and cached device resources.
-> 3)In the end of step 1, work writeback_rate_update re-armed again, and
->   5s later, the work runs again.
+> This patch is great!
 > 
->> Cache set memory is freed within 2 seconds
->> after __cache_set_unregister() called, so inside
->> __update_writeback_rate() struct cache_set is referenced and causes the
->> NULL pointer deference bug.
->>
-> So, if it occured like I said above, it is not safty to judged by:
->>    struct cache_set *c = dc->disk.c;
->>    if (test_bit(CACHE_SET_STOPPING, &c->flags))
->>        return;
-> because cache_set, even bcache device and cache device are all released.                                             
-> Is that right?
+> One tips,
+> Could you replace the c->io_disable with the already exsited c->flags? 
+> So we can just need to add a new macro such as CACHE_SET_IO_DISABLE.
+> 
 
 Hi Junhui,
 
-It is about an implicit and interesting ordering, a simple patch with a
-lot detail behind. Let me explain why it's safe,
-
-- cancel_delayed_work_sync() is called in bcache_device_detach() when
-dc->count is 0. But cancel_delayed_work_sync() is called before
-closure_put(&d->c->caching) in bcache_device_detach().
-
-- After closure_put(&d->c->caching) called in bcache_device_detach(),
-refcount of c->caching becomes 0, and cache_set_flush() set in
-__cache_set_unregister() continue to execute.
-
-- See continue_at() and closure_put_after_sub(), after c->caching
-refoucnt reaches 0, and c->caching->fn gets called, closure_put(parent)
-will be called. Here the parent of c->caching is c->cl, so refcount of
-c->cl will reach 0, and closure_put_after_sub() will be called again for
-c->cl and call its cl->fn which is cache_set_free(). It is set in
-bch_cache_set_alloc().
-
-- So before closure_put(&d->c->caching) is called in
-bcache_device_detach(), cache_set_flush() in __cache_set_unregister()
-won't be executed and memory of cache_set won't be freed.
-
-Now back to delayed worker routine update_writeback_rate(), I check
-c->flags inside it, in this moment cancel_delayed_work_sync() is still
-waiting for update_writeback_rate() to exit, so refcount of c->caching
-is still hold and cache set memory will only be freed after
-cancel_delayed_work_sync() returns and refcount of c->caching dropped.
-
-And in cached_dev_free(), bcache_device_free() and
-kobject_put(&dc->disk.kobj) are called after cancel_delayed_work_sync()
-returns. Therefore when update_writeback_rate() is executing and
-accessing c->flgas inside, memory of cache_set, bcache_device and
-cached_dev are all there.
-
-This is why it is safe ;-)
+Your suggestion is cool! I will do it in v2 set. Thanks.
 
 Coly Li
+
+
+>> When too many I/Os failed on cache device, bch_cache_set_error() is called
+>> in the error handling code path to retire whole problematic cache set. If
+>> new I/O requests continue to come and take refcount dc->count, the cache
+>> set won't be retired immediately, this is a problem.
+>>
+>> Further more, there are several kernel thread and self-armed kernel work
+>> may still running after bch_cache_set_error() is called. It needs to wait
+>> quite a while for them to stop, or they won't stop at all. They also
+>> prevent the cache set from being retired.
+>>
+>> The solution in this patch is, to add per cache set flag to disable I/O
+>> request on this cache and all attached backing devices. Then new coming I/O
+>> requests can be rejected in *_make_request() before taking refcount, kernel
+>> threads and self-armed kernel worker can stop very fast when io_disable is
+>> true.
+>>
+>> Because bcache also do internal I/Os for writeback, garbage collection,
+>> bucket allocation, journaling, this kind of I/O should be disabled after
+>> bch_cache_set_error() is called. So closure_bio_submit() is modified to
+>> check whether cache_set->io_disable is true. If cache_set->io_disable is
+>> true, closure_bio_submit() will set bio->bi_status to BLK_STS_IOERR and
+>> return, generic_make_request() won't be called.
+>>
+>> A sysfs interface is also added for cache_set->io_disable, to read and set
+>> io_disable value for debugging. It is helpful to trigger more corner case
+>> issues for failed cache device.
+>>
+>> Signed-off-by: Coly Li <colyli@suse.de>
+[snip]
