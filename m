@@ -1,7 +1,7 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [416 PATCH 13/13] bcache: fix writeback target calc on large devices
-Date: Mon,  8 Jan 2018 12:21:30 -0800
-Message-ID: <20180108202130.31303-14-mlyle@lyle.org>
+Subject: [416 PATCH 07/13] bcache: allow quick writeback when backing idle
+Date: Mon,  8 Jan 2018 12:21:24 -0800
+Message-ID: <20180108202130.31303-8-mlyle@lyle.org>
 References: <20180108202130.31303-1-mlyle@lyle.org>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180108202130.31303-1-mlyle@lyle.org>
@@ -10,106 +10,84 @@ To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 Cc: axboe@fb.com, Michael Lyle <mlyle@lyle.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Bcache needs to scale the dirty data in the cache over the multiple
-backing disks in order to calculate writeback rates for each.
-The previous code did this by multiplying the target number of dirty
-sectors by the backing device size, and expected it to fit into a
-uint64_t; this blows up on relatively small backing devices.
+If the control system would wait for at least half a second, and there's
+been no reqs hitting the backing disk for awhile: use an alternate mode
+where we have at most one contiguous set of writebacks in flight at a
+time. (But don't otherwise delay).  If front-end IO appears, it will
+still be quick, as it will only have to contend with one real operation
+in flight.  But otherwise, we'll be sending data to the backing disk as
+quickly as it can accept it (with one op at a time).
 
-The new approach figures out the bdev's share in 16384ths of the overall
-cached data.  This is chosen to cope well when bdevs drastically vary in
-size and to ensure that bcache can cross the petabyte boundary for each
-backing device.
-
-This has been improved based on Tang Junhui's feedback to ensure that
-every device gets a share of dirty data, no matter how small it is
-compared to the total backing pool.
-
-The existing mechanism is very limited; this is purely a bug fix to
-remove limits on volume size.  However, there still needs to be change
-to make this "fair" over many volumes where some are idle.
-
-Reported-by: Jack Douglas <jack@douglastechnology.co.uk>
 Signed-off-by: Michael Lyle <mlyle@lyle.org>
 Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+Acked-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/writeback.c | 31 +++++++++++++++++++++++++++----
- drivers/md/bcache/writeback.h |  7 +++++++
- 2 files changed, 34 insertions(+), 4 deletions(-)
+ drivers/md/bcache/bcache.h    |  7 +++++++
+ drivers/md/bcache/request.c   |  1 +
+ drivers/md/bcache/writeback.c | 21 +++++++++++++++++++++
+ 3 files changed, 29 insertions(+)
 
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 3be0fcc19b1f..5f7b0b2513cc 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -320,6 +320,13 @@ struct cached_dev {
+ 	 */
+ 	atomic_t		has_dirty;
+ 
++	/*
++	 * Set to zero by things that touch the backing volume-- except
++	 * writeback.  Incremented by writeback.  Used to determine when to
++	 * accelerate idle writeback.
++	 */
++	atomic_t		backing_idle;
++
+ 	struct bch_ratelimit	writeback_rate;
+ 	struct delayed_work	writeback_rate_update;
+ 
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 52b4ce24f9e2..ddd941056f3c 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -996,6 +996,7 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
+ 	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
+ 	int rw = bio_data_dir(bio);
+ 
++	atomic_set(&dc->backing_idle, 0);
+ 	generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
+ 
+ 	bio_set_dev(bio, dc->bdev);
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 31b0a292a619..51306a19ab03 100644
+index 6e1d2fde43df..f82ffb2e9b9b 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -18,17 +18,39 @@
- #include <trace/events/bcache.h>
+@@ -356,6 +356,27 @@ static void read_dirty(struct cached_dev *dc)
  
- /* Rate limiting */
--
--static void __update_writeback_rate(struct cached_dev *dc)
-+static uint64_t __calc_target_rate(struct cached_dev *dc)
- {
- 	struct cache_set *c = dc->disk.c;
-+
-+	/*
-+	 * This is the size of the cache, minus the amount used for
-+	 * flash-only devices
-+	 */
- 	uint64_t cache_sectors = c->nbuckets * c->sb.bucket_size -
- 				bcache_flash_devs_sectors_dirty(c);
-+
-+	/*
-+	 * Unfortunately there is no control of global dirty data.  If the
-+	 * user states that they want 10% dirty data in the cache, and has,
-+	 * e.g., 5 backing volumes of equal size, we try and ensure each
-+	 * backing volume uses about 2% of the cache for dirty data.
-+	 */
-+	uint32_t bdev_share =
-+		div64_u64(bdev_sectors(dc->bdev) << WRITEBACK_SHARE_SHIFT,
-+				c->cached_dev_sectors);
-+
- 	uint64_t cache_dirty_target =
- 		div_u64(cache_sectors * dc->writeback_percent, 100);
--	int64_t target = div64_u64(cache_dirty_target * bdev_sectors(dc->bdev),
--				   c->cached_dev_sectors);
+ 		delay = writeback_delay(dc, size);
  
-+	/* Ensure each backing dev gets at least one dirty share */
-+	if (bdev_share < 1)
-+		bdev_share = 1;
++		/* If the control system would wait for at least half a
++		 * second, and there's been no reqs hitting the backing disk
++		 * for awhile: use an alternate mode where we have at most
++		 * one contiguous set of writebacks in flight at a time.  If
++		 * someone wants to do IO it will be quick, as it will only
++		 * have to contend with one operation in flight, and we'll
++		 * be round-tripping data to the backing disk as quickly as
++		 * it can accept it.
++		 */
++		if (delay >= HZ / 2) {
++			/* 3 means at least 1.5 seconds, up to 7.5 if we
++			 * have slowed way down.
++			 */
++			if (atomic_inc_return(&dc->backing_idle) >= 3) {
++				/* Wait for current I/Os to finish */
++				closure_sync(&cl);
++				/* And immediately launch a new set. */
++				delay = 0;
++			}
++		}
 +
-+	return (cache_dirty_target * bdev_share) >> WRITEBACK_SHARE_SHIFT;
-+}
-+
-+static void __update_writeback_rate(struct cached_dev *dc)
-+{
- 	/*
- 	 * PI controller:
- 	 * Figures out the amount that should be written per second.
-@@ -49,6 +71,7 @@ static void __update_writeback_rate(struct cached_dev *dc)
- 	 * This acts as a slow, long-term average that is not subject to
- 	 * variations in usage like the p term.
- 	 */
-+	int64_t target = __calc_target_rate(dc);
- 	int64_t dirty = bcache_dev_sectors_dirty(&dc->disk);
- 	int64_t error = dirty - target;
- 	int64_t proportional_scaled =
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index f102b1f9bc51..66f1c527fa24 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -8,6 +8,13 @@
- #define MAX_WRITEBACKS_IN_PASS  5
- #define MAX_WRITESIZE_IN_PASS   5000	/* *512b */
- 
-+/*
-+ * 14 (16384ths) is chosen here as something that each backing device
-+ * should be a reasonable fraction of the share, and not to blow up
-+ * until individual backing devices are a petabyte.
-+ */
-+#define WRITEBACK_SHARE_SHIFT   14
-+
- static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
- {
- 	uint64_t i, ret = 0;
+ 		while (!kthread_should_stop() && delay) {
+ 			schedule_timeout_interruptible(delay);
+ 			delay = writeback_delay(dc, 0);
 -- 
 2.14.1
