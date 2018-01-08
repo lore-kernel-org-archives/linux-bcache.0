@@ -1,96 +1,105 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v1 01/10] bcache: exit bch_writeback_thread() with proper
- task state
-Date: Mon, 8 Jan 2018 21:50:21 +0800
-Message-ID: <38691a4b-afaf-963a-ac40-2a8a1bee3995@suse.de>
+Subject: Re: [PATCH v1 05/10] bcache: stop dc->writeback_rate_update if cache
+ set is stopping
+Date: Tue, 9 Jan 2018 00:01:39 +0800
+Message-ID: <d954882e-de90-abbb-1f01-0625414b4618@suse.de>
 References: <20180103140325.63175-1-colyli@suse.de>
- <20180103140325.63175-2-colyli@suse.de>
- <c4183dae-0381-f510-1929-410b9a7a2b9d@suse.de>
+ <20180103140325.63175-6-colyli@suse.de>
+ <b399ead7-34b4-1dfd-16c3-f506516d4466@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:35383 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:53820 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1757447AbeAHNue (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jan 2018 08:50:34 -0500
-In-Reply-To: <c4183dae-0381-f510-1929-410b9a7a2b9d@suse.de>
+        id S1752093AbeAHQBx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 8 Jan 2018 11:01:53 -0500
+In-Reply-To: <b399ead7-34b4-1dfd-16c3-f506516d4466@suse.de>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: Hannes Reinecke <hare@suse.de>, linux-bcache@vger.kernel.org
 Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn
 
-On 08/01/2018 3:09 PM, Hannes Reinecke wrote:
+On 08/01/2018 3:22 PM, Hannes Reinecke wrote:
 > On 01/03/2018 03:03 PM, Coly Li wrote:
->> Kernel thread routine bch_writeback_thread() has the following code block,
+>> struct delayed_work writeback_rate_update in struct cache_dev is a delayed
+>> worker to call function update_writeback_rate() in period (the interval is
+>> defined by dc->writeback_rate_update_seconds).
 >>
->> 452                         set_current_state(TASK_INTERRUPTIBLE);
->> 453
->> 454                         if (kthread_should_stop())
->> 455                                 return 0;
->> 456
->> 457                         schedule();
->> 458                         continue;
+>> When a metadate I/O error happens on cache device, bcache error handling
+>> routine bch_cache_set_error() will call bch_cache_set_unregister() to
+>> retire whole cache set. On the unregister code path, cached_dev_free()
+>> calls cancel_delayed_work_sync(&dc->writeback_rate_update) to stop this
+>> delayed work.
 >>
->> At line 452, its status is set to TASK_INTERRUPTIBLE, and at line 454 if
->> kthread_should_stop() is true, a "return 0" at line 455 will to function
->> kernel/kthread.c:kthread() and call do_exit().
+>> dc->writeback_rate_update is a special delayed work from others in bcache.
+>> In its routine update_writeback_rate(), this delayed work is re-armed
+>> after a piece of time. That means when cancel_delayed_work_sync() returns,
+>> this delayed work can still be executed after several seconds defined by
+>> dc->writeback_rate_update_seconds.
 >>
->> It is not good to enter do_exit() with task state TASK_INTERRUPTIBLE, in
->> following code path might_sleep() is called and a warning message is
->> reported by __might_sleep(): "WARNING: do not call blocking ops when
->> !TASK_RUNNING; state=1 set at [xxxx]".
+>> The problem is, after cancel_delayed_work_sync() returns, the cache set
+>> unregister code path will eventually release memory of struct cache set.
+>> Then the delayed work is scheduled to run, and inside its routine
+>> update_writeback_rate() that already released cache set NULL pointer will
+>> be accessed. Now a NULL pointer deference panic is triggered.
 >>
->> Indeed it does not hurt when kernel thread exits with TASK_INTERRUPTIBLE
->> state, but this warning message scares users, makes them feel there might
->> be something risky with bcache and hurt their data.
->>
->> In this patch, TASK_INTERRUPTIBLE is set after kthread_should_stop(),
->> so writeback kernel thread can exist and enter do_exit() with
->> TASK_RUNNING state. Warning message from might_sleep() is removed.
+>> In order to avoid the above problem, this patch checks cache set flags in
+>> delayed work routine update_writeback_rate(). If flag CACHE_SET_STOPPING
+>> is set, this routine will quit without re-arm the delayed work. Then the
+>> NULL pointer deference panic won't happen after cache set is released.
 >>
 >> Signed-off-by: Coly Li <colyli@suse.de>
 >> ---
->>  drivers/md/bcache/writeback.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>  drivers/md/bcache/writeback.c | 9 +++++++++
+>>  1 file changed, 9 insertions(+)
 >>
 >> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
->> index 56a37884ca8b..a57149803df6 100644
+>> index 0789a9e18337..745d9b2a326f 100644
 >> --- a/drivers/md/bcache/writeback.c
 >> +++ b/drivers/md/bcache/writeback.c
->> @@ -449,11 +449,11 @@ static int bch_writeback_thread(void *arg)
->>  		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
->>  		     !dc->writeback_running)) {
->>  			up_write(&dc->writeback_lock);
->> -			set_current_state(TASK_INTERRUPTIBLE);
+>> @@ -91,6 +91,11 @@ static void update_writeback_rate(struct work_struct *work)
+>>  	struct cached_dev *dc = container_of(to_delayed_work(work),
+>>  					     struct cached_dev,
+>>  					     writeback_rate_update);
+>> +	struct cache_set *c = dc->disk.c;
+>> +
+>> +	/* quit directly if cache set is stopping */
+>> +	if (test_bit(CACHE_SET_STOPPING, &c->flags))
+>> +		return;
 >>  
->>  			if (kthread_should_stop())
->>  				return 0;
+>>  	down_read(&dc->writeback_lock);
 >>  
->> +			set_current_state(TASK_INTERRUPTIBLE);
->>  			schedule();
->>  			continue;
->>  		}
+>> @@ -100,6 +105,10 @@ static void update_writeback_rate(struct work_struct *work)
+>>  
+>>  	up_read(&dc->writeback_lock);
+>>  
+>> +	/* do not schedule delayed work if cache set is stopping */
+>> +	if (test_bit(CACHE_SET_STOPPING, &c->flags))
+>> +		return;
+>> +
+>>  	schedule_delayed_work(&dc->writeback_rate_update,
+>>  			      dc->writeback_rate_update_seconds * HZ);
+>>  }
 >>
-> Actually, TASK_INTERRUPTIBLE is okay for kthread_should_stop(); you just
-> need to set it to 'TASK_RUNNING' before calling 'return 0'.
-> 
-> So I think a fix like
-> 
-> set_current_state(TASK_INTERRUPTIBLE);
-> 
-> if (kthread_should_stop()) {
->     set_current_state(TASK_RUNNING);
->     return 0;
-> }
-> 
-> schedule();
-> 
-> would be better.
+> This is actually not quite correct; the function might still be called
+> after 'struct cached_dev' has been removed.
+> The correct way of fixing is to either take a reference to struct
+> cached_dev and release it once 'update_writeback_rate' is finished, or
+> to call 'cancel_delayed_work_sync()' before deleting struct cached_dev.
 
 Hi Hannes,
 
-Yes, this is same as v2 patch does. Thanks.
+The problem is not cached_dev, it is cache_set. In
+__update_writeback_rate(), struct cache_set is referenced. The solutions
+is similar as you suggested, call cancel_delayed_work_sync() before
+deleting struct cache_set. Junhui posted another patch to fix duplicated
+writeback threads issue, but also fixes this problem too. Therefore just
+prevent this kworker from re-arm itself again should be enough, and my
+next patche to stop dc->writeback_thread and dc->writeback_rate_update
+can be ignored, Junhui's patch is in bcache-for-next already.
+
+Thanks.
 
 Coly Li
