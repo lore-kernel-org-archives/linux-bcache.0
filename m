@@ -1,64 +1,48 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [416 PATCH 02/13] bcache: stop writeback thread after detaching
-Date: Mon,  8 Jan 2018 12:21:19 -0800
-Message-ID: <20180108202130.31303-3-mlyle@lyle.org>
-References: <20180108202130.31303-1-mlyle@lyle.org>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f66.google.com ([74.125.83.66]:42590 "EHLO
-        mail-pg0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S934310AbeAHUVm (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jan 2018 15:21:42 -0500
-Received: by mail-pg0-f66.google.com with SMTP id q67so6300559pga.9
-        for <linux-bcache@vger.kernel.org>; Mon, 08 Jan 2018 12:21:42 -0800 (PST)
-In-Reply-To: <20180108202130.31303-1-mlyle@lyle.org>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Subject: [416 PATCH 00/13] Bcache changes for 4.16
+Date: Mon,  8 Jan 2018 12:21:17 -0800
+Message-ID: <20180108202130.31303-1-mlyle@lyle.org>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Tang Junhui <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>
+Cc: axboe@fb.com
+List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+Jens,
 
-Currently, when a cached device detaching from cache, writeback thread is
-not stopped, and writeback_rate_update work is not canceled. For example,
-after the following command:
-echo 1 >/sys/block/sdb/bcache/detach
-you can still see the writeback thread. Then you attach the device to the
-cache again, bcache will create another writeback thread, for example,
-after below command:
-echo  ba0fb5cd-658a-4533-9806-6ce166d883b9 > /sys/block/sdb/bcache/attach
-then you will see 2 writeback threads.
-This patch stops writeback thread and cancels writeback_rate_update work
-when cached device detaching from cache.
+Please pick up the following reviewed changes for 4.16.  There's some
+small cleanliness changes, a few minor bug fixes (some in preparation
+for larger work), and ongoing work on writeback performance:
 
-Compare with patch v1, this v2 patch moves code down into the register
-lock for safety in case of any future changes as Coly and Mike suggested.
+ 11 files changed, 303 insertions(+), 133 deletions(-)
 
-[edit by mlyle: commit log spelling/formatting]
+Coly Li (2):
+      bcache: reduce cache_set devices iteration by devices_max_used
+      bcache: fix misleading error message in bch_count_io_errors()
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
----
- drivers/md/bcache/super.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+Kent Overstreet (2):
+      bcache: Fix, improve efficiency of closure_sync()
+      bcache: mark closure_sync() __sched
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 8399fe0651f2..553e841e897d 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -906,6 +906,12 @@ static void cached_dev_detach_finish(struct work_struct *w)
- 
- 	mutex_lock(&bch_register_lock);
- 
-+	cancel_delayed_work_sync(&dc->writeback_rate_update);
-+	if (!IS_ERR_OR_NULL(dc->writeback_thread)) {
-+		kthread_stop(dc->writeback_thread);
-+		dc->writeback_thread = NULL;
-+	}
-+
- 	memset(&dc->sb.set_uuid, 0, 16);
- 	SET_BDEV_STATE(&dc->sb, BDEV_STATE_NONE);
- 
--- 
-2.14.1
+Michael Lyle (3):
+      bcache: writeback: properly order backing device IO
+      bcache: allow quick writeback when backing idle
+      bcache: fix writeback target calc on large devices
+
+Rui Hua (1):
+      bcache: ret IOERR when read meets metadata error
+
+Tang Junhui (3):
+      bcache: stop writeback thread after detaching
+      bcache: segregate flash only volume write streams
+      bcache: fix wrong return value in bch_debug_init()
+
+Vasyl Gomonovych (1):
+      bcache: Use PTR_ERR_OR_ZERO()
+
+Zhai Zhaoxuan (1):
+      bcache: fix unmatched generic_end_io_acct() & generic_start_io_acct()
+
+Thanks,
+
+Mike
