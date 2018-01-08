@@ -1,52 +1,133 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [416 PATCH 10/13] bcache: fix unmatched generic_end_io_acct() & generic_start_io_acct()
-Date: Mon,  8 Jan 2018 12:21:27 -0800
-Message-ID: <20180108202130.31303-11-mlyle@lyle.org>
+Subject: [416 PATCH 06/13] bcache: writeback: properly order backing device IO
+Date: Mon,  8 Jan 2018 12:21:23 -0800
+Message-ID: <20180108202130.31303-7-mlyle@lyle.org>
 References: <20180108202130.31303-1-mlyle@lyle.org>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pg0-f67.google.com ([74.125.83.67]:43498 "EHLO
+        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1757226AbeAHUVr (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 8 Jan 2018 15:21:47 -0500
+Received: by mail-pg0-f67.google.com with SMTP id f14so3730423pga.10
+        for <linux-bcache@vger.kernel.org>; Mon, 08 Jan 2018 12:21:47 -0800 (PST)
 In-Reply-To: <20180108202130.31303-1-mlyle@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Zhai Zhaoxuan <kxuanobj@gmail.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: axboe@fb.com, Michael Lyle <mlyle@lyle.org>
 
-From: Zhai Zhaoxuan <kxuanobj@gmail.com>
+Writeback keys are presently iterated and dispatched for writeback in
+order of the logical block address on the backing device.  Multiple may
+be, in parallel, read from the cache device and then written back
+(especially when there are contiguous I/O).
 
-The function cached_dev_make_request() and flash_dev_make_request() call
-generic_start_io_acct() with (struct bcache_device)->disk when they start a
-closure. Then the function bio_complete() calls generic_end_io_acct() with
-(struct search)->orig_bio->bi_disk when the closure has done.
-Since the `bi_disk` is not the bcache device, the generic_end_io_acct() is
-called with a wrong device queue.
+However-- there was no guarantee with the existing code that the writes
+would be issued in LBA order, as the reads from the cache device are
+often re-ordered.  In turn, when writing back quickly, the backing disk
+often has to seek backwards-- this slows writeback and increases
+utilization.
 
-It causes the "inflight" (in struct hd_struct) counter keep increasing
-without decreasing.
+This patch introduces an ordering mechanism that guarantees that the
+original order of issue is maintained for the write portion of the I/O.
+Performance for writeback is significantly improved when there are
+multiple contiguous keys or high writeback rates.
 
-This patch fix the problem by calling generic_end_io_acct() with
-(struct bcache_device)->disk.
-
-Signed-off-by: Zhai Zhaoxuan <kxuanobj@gmail.com>
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
-Reviewed-by: Coly Li <colyli@suse.de>
+Signed-off-by: Michael Lyle <mlyle@lyle.org>
 Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+Tested-by: Tang Junhui <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/request.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/bcache/bcache.h    |  8 ++++++++
+ drivers/md/bcache/writeback.c | 29 +++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index ddd941056f3c..1a46b41dac70 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -633,8 +633,8 @@ static void request_endio(struct bio *bio)
- static void bio_complete(struct search *s)
- {
- 	if (s->orig_bio) {
--		struct request_queue *q = s->orig_bio->bi_disk->queue;
--		generic_end_io_acct(q, bio_data_dir(s->orig_bio),
-+		generic_end_io_acct(s->d->disk->queue,
-+				    bio_data_dir(s->orig_bio),
- 				    &s->d->disk->part0, s->start_time);
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 1784e50eb857..3be0fcc19b1f 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -330,6 +330,14 @@ struct cached_dev {
  
- 		trace_bcache_request_end(s->d, s->orig_bio);
+ 	struct keybuf		writeback_keys;
+ 
++	/*
++	 * Order the write-half of writeback operations strongly in dispatch
++	 * order.  (Maintain LBA order; don't allow reads completing out of
++	 * order to re-order the writes...)
++	 */
++	struct closure_waitlist writeback_ordering_wait;
++	atomic_t		writeback_sequence_next;
++
+ 	/* For tracking sequential IO */
+ #define RECENT_IO_BITS	7
+ #define RECENT_IO	(1 << RECENT_IO_BITS)
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 479095987f22..6e1d2fde43df 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -116,6 +116,7 @@ static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
+ struct dirty_io {
+ 	struct closure		cl;
+ 	struct cached_dev	*dc;
++	uint16_t		sequence;
+ 	struct bio		bio;
+ };
+ 
+@@ -194,6 +195,27 @@ static void write_dirty(struct closure *cl)
+ {
+ 	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
+ 	struct keybuf_key *w = io->bio.bi_private;
++	struct cached_dev *dc = io->dc;
++
++	uint16_t next_sequence;
++
++	if (atomic_read(&dc->writeback_sequence_next) != io->sequence) {
++		/* Not our turn to write; wait for a write to complete */
++		closure_wait(&dc->writeback_ordering_wait, cl);
++
++		if (atomic_read(&dc->writeback_sequence_next) == io->sequence) {
++			/*
++			 * Edge case-- it happened in indeterminate order
++			 * relative to when we were added to wait list..
++			 */
++			closure_wake_up(&dc->writeback_ordering_wait);
++		}
++
++		continue_at(cl, write_dirty, io->dc->writeback_write_wq);
++		return;
++	}
++
++	next_sequence = io->sequence + 1;
+ 
+ 	/*
+ 	 * IO errors are signalled using the dirty bit on the key.
+@@ -211,6 +233,9 @@ static void write_dirty(struct closure *cl)
+ 		closure_bio_submit(&io->bio, cl);
+ 	}
+ 
++	atomic_set(&dc->writeback_sequence_next, next_sequence);
++	closure_wake_up(&dc->writeback_ordering_wait);
++
+ 	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
+ }
+ 
+@@ -242,7 +267,10 @@ static void read_dirty(struct cached_dev *dc)
+ 	int nk, i;
+ 	struct dirty_io *io;
+ 	struct closure cl;
++	uint16_t sequence = 0;
+ 
++	BUG_ON(!llist_empty(&dc->writeback_ordering_wait.list));
++	atomic_set(&dc->writeback_sequence_next, sequence);
+ 	closure_init_stack(&cl);
+ 
+ 	/*
+@@ -303,6 +331,7 @@ static void read_dirty(struct cached_dev *dc)
+ 
+ 			w->private	= io;
+ 			io->dc		= dc;
++			io->sequence    = sequence++;
+ 
+ 			dirty_init(w);
+ 			bio_set_op_attrs(&io->bio, REQ_OP_READ, 0);
 -- 
 2.14.1
