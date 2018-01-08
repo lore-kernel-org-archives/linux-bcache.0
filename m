@@ -1,77 +1,94 @@
-From: tang.junhui@zte.com.cn
-Subject: Re: [PATCH v3] bcache: fix writeback target calc on large devices
-Date: Mon, 8 Jan 2018 10:46:27 +0800
-Message-ID: <1515379587-21540-1-git-send-email-tang.junhui@zte.com.cn>
+From: Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH v1 01/10] bcache: exit bch_writeback_thread() with proper
+ task state
+Date: Mon, 8 Jan 2018 08:09:16 +0100
+Message-ID: <c4183dae-0381-f510-1929-410b9a7a2b9d@suse.de>
+References: <20180103140325.63175-1-colyli@suse.de>
+ <20180103140325.63175-2-colyli@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20180103140325.63175-2-colyli@suse.de>
+Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 01/03/2018 03:03 PM, Coly Li wrote:
+> Kernel thread routine bch_writeback_thread() has the following code block,
+> 
+> 452                         set_current_state(TASK_INTERRUPTIBLE);
+> 453
+> 454                         if (kthread_should_stop())
+> 455                                 return 0;
+> 456
+> 457                         schedule();
+> 458                         continue;
+> 
+> At line 452, its status is set to TASK_INTERRUPTIBLE, and at line 454 if
+> kthread_should_stop() is true, a "return 0" at line 455 will to function
+> kernel/kthread.c:kthread() and call do_exit().
+> 
+> It is not good to enter do_exit() with task state TASK_INTERRUPTIBLE, in
+> following code path might_sleep() is called and a warning message is
+> reported by __might_sleep(): "WARNING: do not call blocking ops when
+> !TASK_RUNNING; state=1 set at [xxxx]".
+> 
+> Indeed it does not hurt when kernel thread exits with TASK_INTERRUPTIBLE
+> state, but this warning message scares users, makes them feel there might
+> be something risky with bcache and hurt their data.
+> 
+> In this patch, TASK_INTERRUPTIBLE is set after kthread_should_stop(),
+> so writeback kernel thread can exist and enter do_exit() with
+> TASK_RUNNING state. Warning message from might_sleep() is removed.
+> 
+> Signed-off-by: Coly Li <colyli@suse.de>
+> ---
+>  drivers/md/bcache/writeback.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 56a37884ca8b..a57149803df6 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -449,11 +449,11 @@ static int bch_writeback_thread(void *arg)
+>  		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+>  		     !dc->writeback_running)) {
+>  			up_write(&dc->writeback_lock);
+> -			set_current_state(TASK_INTERRUPTIBLE);
+>  
+>  			if (kthread_should_stop())
+>  				return 0;
+>  
+> +			set_current_state(TASK_INTERRUPTIBLE);
+>  			schedule();
+>  			continue;
+>  		}
+> 
+Actually, TASK_INTERRUPTIBLE is okay for kthread_should_stop(); you just
+need to set it to 'TASK_RUNNING' before calling 'return 0'.
 
->On Fri, Jan 5, 2018 at 11:29 PM,  <tang.junhui@zte.com.cn> wrote:
->> From: Tang Junhui <tang.junhui@zte.com.cn>
->>
->> Hello Mike,
->>
->> I thought twice, and feel this patch is a little complex and still not very accurate for
->> small backend devices. I think we can resolve it like this:
->>
->>      uint64_t cache_dirty_target =
->>          div_u64(cache_sectors * dc->writeback_percent, 100);
->>
->> -    int64_t target = div64_u64(cache_dirty_target * bdev_sectors(dc->bdev),
->> -                   c->cached_dev_sectors);
->> +    int64_t target = div64_u64(cache_dirty_target,
->> +                    div64_u64(c->cached_dev_sectors, bdev_sectors(dc->bdev)));
->>
->> c->cached_dev_sectors is always bigger than bdev_sectors(dc->bdev), so
->> div64_u64(c->cached_dev_sectors, bdev_sectors(dc->bdev) would be never smaller than 1,
->> and this expression has no multiplication operation, so we do not need to worry
->> about overflows.
->
->I thought about this, but as I think you've noticed below it's very
->inaccurate for typical cases.  e.g. if you have 1TB and 750GB backing
->volumes, you get (1750/1000) vs (1750/750) and the 750GB is allowed
->half as much dirty space, and you end up storing 150% of the desired
->info.  Other rounding approaches aren't good, either.
->
->> we also can multiply a value(2^10) to avoid loss of accuracy in division like bellow:
->> (it would support all device smaller than 2^54 BYTE).
->> +    int64_t target = div64_u64(cache_dirty_target<<10,
->> +                    div64_u64(c->cached_dev_sectors<<10, bdev_sectors(dc->bdev)));
->>
->> How do you think about?
->
->This is a bit better.  It trades a per-backing-volume limit of 1PB in
->my code for a total of 9PB cached limit.
->
->Really all of these approaches are "wrong" because they don't allow
->the total amount of dirty to be used if you have quiet volumes and
->should be replaced with something better.  I am just trying to get
->something temporary in to 4.16 because this is a real bug that is
->preventing real users from using bcache.  I'm pretty sure the new code
->works in all the cases the old code failed.
->
+So I think a fix like
 
-OK, please replace 16384 with macro, and replease 16384 * bdev_sectors(dc->bdev)
-with bit shift operation, eg: bdev_sectors(dc->bdev)<<MACRO.
+set_current_state(TASK_INTERRUPTIBLE);
 
-Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+if (kthread_should_stop()) {
+    set_current_state(TASK_RUNNING);
+    return 0;
+}
 
->Simultaneously having a 1GB and 16TB cached volume is a bit of a silly
->case, and what the code does in this silly case isn't completely
->stupid, so...
->
->We're running out of time to get a fix into the package for 4.16, and
->I've tested the current version a fair bit.
->
->Mike
->--
->To unsubscribe from this list: send the line "unsubscribe linux-bcache" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+schedule();
 
-Thanks,
-Tang Junhui
+would be better.
+
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		   Teamlead Storage & Networking
+hare@suse.de			               +49 911 74053 688
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: F. Imendörffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
+HRB 21284 (AG Nürnberg)
