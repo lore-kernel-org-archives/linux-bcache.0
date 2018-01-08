@@ -1,14 +1,15 @@
 From: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH v1 02/10] bcache: set task properly in allocator_wait()
-Date: Mon, 8 Jan 2018 08:10:49 +0100
-Message-ID: <49532f67-d6dc-805a-efe6-16dc3afcb34f@suse.de>
+Subject: Re: [PATCH v1 03/10] bcache: reduce cache_set devices iteration by
+ devices_max_used
+Date: Mon, 8 Jan 2018 08:12:41 +0100
+Message-ID: <a4ff7a4d-d0b4-5151-8bcd-1f9ab50d10f5@suse.de>
 References: <20180103140325.63175-1-colyli@suse.de>
- <20180103140325.63175-3-colyli@suse.de>
+ <20180103140325.63175-4-colyli@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180103140325.63175-3-colyli@suse.de>
+In-Reply-To: <20180103140325.63175-4-colyli@suse.de>
 Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
 To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
@@ -16,80 +17,121 @@ Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
 
 On 01/03/2018 03:03 PM, Coly Li wrote:
-> Kernel thread routine bch_allocator_thread() references macro
-> allocator_wait() to wait for a condition or quit to do_exit()
-> when kthread_should_stop() is true.
+> Member devices of struct cache_set is used to reference all attached
+> bcache devices to this cache set. If it is treated as array of pointers,
+> size of devices[] is indicated by member nr_uuids of struct cache_set.
 > 
-> Macro allocator_wait() has 2 issues in setting task state, let's
-> see its code piece,
+> nr_uuids is calculated in drivers/md/super.c:bch_cache_set_alloc(),
+> 	bucket_bytes(c) / sizeof(struct uuid_entry)
+> Bucket size is determined by user space tool "make-bcache", by default it
+> is 1024 sectors (defined in bcache-tools/make-bcache.c:main()). So default
+> nr_uuids value is 4096 from the above calculation.
 > 
-> 284         while (1) {                                                   \
-> 285                 set_current_state(TASK_INTERRUPTIBLE);                \
-> 286                 if (cond)                                             \
-> 287                         break;                                        \
-> 288                                                                       \
-> 289                 mutex_unlock(&(ca)->set->bucket_lock);                \
-> 290                 if (kthread_should_stop())                            \
-> 291                         return 0;                                     \
-> 292                                                                       \
-> 293                 schedule();                                           \
-> 294                 mutex_lock(&(ca)->set->bucket_lock);                  \
-> 295         }                                                             \
-> 296         __set_current_state(TASK_RUNNING);                            \
+> Every time when bcache code iterates bcache devices of a cache set, all
+> the 4096 pointers are checked even only 1 bcache device is attached to the
+> cache set, that's a wast of time and unncessary.
 > 
-> 1) At line 285, task state is set to TASK_INTERRUPTIBLE, if at line 290
-> kthread_should_stop() is true, the kernel thread will terminate and return
-> to kernel/kthread.s:kthread(), then calls do_exit() with TASK_INTERRUPTIBLE
-> state. This is not a suggested behavior and a warning message will be
-> reported by might_sleep() in do_exit() code path: "WARNING: do not call
-> blocking ops when !TASK_RUNNING; state=1 set at [xxxx]".
+> This patch adds a member devices_max_used to struct cache_set. Its value
+> is 1 + the maximum used index of devices[] in a cache set. When iterating
+> all valid bcache devices of a cache set, use c->devices_max_used in
+> for-loop may reduce a lot of useless checking.
 > 
-> 2) Because task state is set to TASK_INTERRUPTIBLE at line 285, when break
-> while-loop the task state has to be set back to TASK_RUNNING at line 296.
-> Indeed it is unncessary, if task state is set to TASK_INTERRUPTIBLE before
-> calling schedule() at line 293, we don't need to set the state back to
-> TASK_RUNNING at line 296 anymore. The reason is, allocator kthread is only
-> woken up by wake_up_process(), this routine makes sure the task state of
-> allocator kthread will be TASK_RUNNING after it returns from schedule() at
-> line 294 (see kernel/sched/core.c:try_to_wake_up() for more detailed
-> information).
-> 
-> This patch fixes the above 2 issues by,
-> 1) Setting TASK_INTERRUPTIBLE state just before calling schedule().
-> 2) Then setting TASK_RUNNING at line 296 is unnecessary, remove it.
+> Personally, my motivation of this patch is not for performance, I use it
+> in bcache debugging, which helps me to narrow down the scape to check
+> valid bcached devices of a cache set.
 > 
 > Signed-off-by: Coly Li <colyli@suse.de>
 > ---
->  drivers/md/bcache/alloc.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+>  drivers/md/bcache/bcache.h    | 1 +
+>  drivers/md/bcache/btree.c     | 2 +-
+>  drivers/md/bcache/super.c     | 9 ++++++---
+>  drivers/md/bcache/writeback.h | 2 +-
+>  4 files changed, 9 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> index a0cc1bc6d884..48c002faf08d 100644
-> --- a/drivers/md/bcache/alloc.c
-> +++ b/drivers/md/bcache/alloc.c
-> @@ -282,7 +282,6 @@ static void invalidate_buckets(struct cache *ca)
->  #define allocator_wait(ca, cond)					\
->  do {									\
->  	while (1) {							\
-> -		set_current_state(TASK_INTERRUPTIBLE);			\
->  		if (cond)						\
->  			break;						\
->  									\
-> @@ -290,10 +289,10 @@ do {									\
->  		if (kthread_should_stop())				\
->  			return 0;					\
->  									\
-> +		set_current_state(TASK_INTERRUPTIBLE);			\
->  		schedule();						\
->  		mutex_lock(&(ca)->set->bucket_lock);			\
->  	}								\
-> -	__set_current_state(TASK_RUNNING);				\
->  } while (0)
+> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> index 843877e017e1..83c569942bd0 100644
+> --- a/drivers/md/bcache/bcache.h
+> +++ b/drivers/md/bcache/bcache.h
+> @@ -488,6 +488,7 @@ struct cache_set {
+>  	int			caches_loaded;
 >  
->  static int bch_allocator_push(struct cache *ca, long bucket)
+>  	struct bcache_device	**devices;
+> +	unsigned		devices_max_used;
+>  	struct list_head	cached_devs;
+>  	uint64_t		cached_dev_sectors;
+>  	struct closure		caching;
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index 81e8dc3dbe5e..bf0d7978bc3d 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -1678,7 +1678,7 @@ static void bch_btree_gc_finish(struct cache_set *c)
+>  
+>  	/* don't reclaim buckets to which writeback keys point */
+>  	rcu_read_lock();
+> -	for (i = 0; i < c->nr_uuids; i++) {
+> +	for (i = 0; i < c->devices_max_used; i++) {
+>  		struct bcache_device *d = c->devices[i];
+>  		struct cached_dev *dc;
+>  		struct keybuf_key *w, *n;
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index b4d28928dec5..064efd869017 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -721,6 +721,9 @@ static void bcache_device_attach(struct bcache_device *d, struct cache_set *c,
+>  	d->c = c;
+>  	c->devices[id] = d;
+>  
+> +	if (id >= c->devices_max_used)
+> +		c->devices_max_used = id + 1;
+> +
+>  	closure_get(&c->caching);
+>  }
+>  
+> @@ -1261,7 +1264,7 @@ static int flash_devs_run(struct cache_set *c)
+>  	struct uuid_entry *u;
+>  
+>  	for (u = c->uuids;
+> -	     u < c->uuids + c->nr_uuids && !ret;
+> +	     u < c->uuids + c->devices_max_used && !ret;
+>  	     u++)
+>  		if (UUID_FLASH_ONLY(u))
+>  			ret = flash_dev_run(c, u);
+> @@ -1427,7 +1430,7 @@ static void __cache_set_unregister(struct closure *cl)
+>  
+>  	mutex_lock(&bch_register_lock);
+>  
+> -	for (i = 0; i < c->nr_uuids; i++)
+> +	for (i = 0; i < c->devices_max_used; i++)
+>  		if (c->devices[i]) {
+>  			if (!UUID_FLASH_ONLY(&c->uuids[i]) &&
+>  			    test_bit(CACHE_SET_UNREGISTERING, &c->flags)) {
+> @@ -1490,7 +1493,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+>  	c->bucket_bits		= ilog2(sb->bucket_size);
+>  	c->block_bits		= ilog2(sb->block_size);
+>  	c->nr_uuids		= bucket_bytes(c) / sizeof(struct uuid_entry);
+> -
+> +	c->devices_max_used	= 0;
+>  	c->btree_pages		= bucket_pages(c);
+>  	if (c->btree_pages > BTREE_MAX_PAGES)
+>  		c->btree_pages = max_t(int, c->btree_pages / 4,
+> diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+> index a9e3ffb4b03c..1d284f3d0363 100644
+> --- a/drivers/md/bcache/writeback.h
+> +++ b/drivers/md/bcache/writeback.h
+> @@ -21,7 +21,7 @@ static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
+>  
+>  	mutex_lock(&bch_register_lock);
+>  
+> -	for (i = 0; i < c->nr_uuids; i++) {
+> +	for (i = 0; i < c->devices_max_used; i++) {
+>  		struct bcache_device *d = c->devices[i];
+>  
+>  		if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
 > 
-Same as with the previous patch; why not simply set it to TASK_RUNNING
-before 'return 0' ?
+Hmm. This just cries out for using IDA ...
+but maybe for a later patchset.
+
+Reviewed-by: Hannes Reinecke <hare@suse.com>
 
 Cheers,
 
