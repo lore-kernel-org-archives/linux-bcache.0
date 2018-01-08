@@ -1,93 +1,128 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [416 PATCH 07/13] bcache: allow quick writeback when backing idle
-Date: Mon,  8 Jan 2018 12:21:24 -0800
-Message-ID: <20180108202130.31303-8-mlyle@lyle.org>
+Subject: [416 PATCH 11/13] bcache: reduce cache_set devices iteration by devices_max_used
+Date: Mon,  8 Jan 2018 12:21:28 -0800
+Message-ID: <20180108202130.31303-12-mlyle@lyle.org>
 References: <20180108202130.31303-1-mlyle@lyle.org>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180108202130.31303-1-mlyle@lyle.org>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Michael Lyle <mlyle@lyle.org>
+Cc: axboe@fb.com, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-If the control system would wait for at least half a second, and there's
-been no reqs hitting the backing disk for awhile: use an alternate mode
-where we have at most one contiguous set of writebacks in flight at a
-time. (But don't otherwise delay).  If front-end IO appears, it will
-still be quick, as it will only have to contend with one real operation
-in flight.  But otherwise, we'll be sending data to the backing disk as
-quickly as it can accept it (with one op at a time).
+From: Coly Li <colyli@suse.de>
 
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
+Member devices of struct cache_set is used to reference all attached
+bcache devices to this cache set. If it is treated as array of pointers,
+size of devices[] is indicated by member nr_uuids of struct cache_set.
+
+nr_uuids is calculated in drivers/md/super.c:bch_cache_set_alloc(),
+	bucket_bytes(c) / sizeof(struct uuid_entry)
+Bucket size is determined by user space tool "make-bcache", by default it
+is 1024 sectors (defined in bcache-tools/make-bcache.c:main()). So default
+nr_uuids value is 4096 from the above calculation.
+
+Every time when bcache code iterates bcache devices of a cache set, all
+the 4096 pointers are checked even only 1 bcache device is attached to the
+cache set, that's a wast of time and unncessary.
+
+This patch adds a member devices_max_used to struct cache_set. Its value
+is 1 + the maximum used index of devices[] in a cache set. When iterating
+all valid bcache devices of a cache set, use c->devices_max_used in
+for-loop may reduce a lot of useless checking.
+
+Personally, my motivation of this patch is not for performance, I use it
+in bcache debugging, which helps me to narrow down the scape to check
+valid bcached devices of a cache set.
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Michael Lyle <mlyle@lyle.org>
 Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
-Acked-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/bcache.h    |  7 +++++++
- drivers/md/bcache/request.c   |  1 +
- drivers/md/bcache/writeback.c | 21 +++++++++++++++++++++
- 3 files changed, 29 insertions(+)
+ drivers/md/bcache/bcache.h    | 1 +
+ drivers/md/bcache/btree.c     | 2 +-
+ drivers/md/bcache/super.c     | 9 ++++++---
+ drivers/md/bcache/writeback.h | 2 +-
+ 4 files changed, 9 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 3be0fcc19b1f..5f7b0b2513cc 100644
+index 5f7b0b2513cc..9117da5f494b 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -320,6 +320,13 @@ struct cached_dev {
- 	 */
- 	atomic_t		has_dirty;
+@@ -497,6 +497,7 @@ struct cache_set {
+ 	int			caches_loaded;
  
-+	/*
-+	 * Set to zero by things that touch the backing volume-- except
-+	 * writeback.  Incremented by writeback.  Used to determine when to
-+	 * accelerate idle writeback.
-+	 */
-+	atomic_t		backing_idle;
+ 	struct bcache_device	**devices;
++	unsigned		devices_max_used;
+ 	struct list_head	cached_devs;
+ 	uint64_t		cached_dev_sectors;
+ 	struct closure		caching;
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 9e30713dbdb8..bf3a48aa9a9a 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1679,7 +1679,7 @@ static void bch_btree_gc_finish(struct cache_set *c)
+ 
+ 	/* don't reclaim buckets to which writeback keys point */
+ 	rcu_read_lock();
+-	for (i = 0; i < c->nr_uuids; i++) {
++	for (i = 0; i < c->devices_max_used; i++) {
+ 		struct bcache_device *d = c->devices[i];
+ 		struct cached_dev *dc;
+ 		struct keybuf_key *w, *n;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 553e841e897d..d13e4ccb30a0 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -721,6 +721,9 @@ static void bcache_device_attach(struct bcache_device *d, struct cache_set *c,
+ 	d->c = c;
+ 	c->devices[id] = d;
+ 
++	if (id >= c->devices_max_used)
++		c->devices_max_used = id + 1;
 +
- 	struct bch_ratelimit	writeback_rate;
- 	struct delayed_work	writeback_rate_update;
+ 	closure_get(&c->caching);
+ }
  
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 52b4ce24f9e2..ddd941056f3c 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -996,6 +996,7 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
- 	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
- 	int rw = bio_data_dir(bio);
+@@ -1267,7 +1270,7 @@ static int flash_devs_run(struct cache_set *c)
+ 	struct uuid_entry *u;
  
-+	atomic_set(&dc->backing_idle, 0);
- 	generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
+ 	for (u = c->uuids;
+-	     u < c->uuids + c->nr_uuids && !ret;
++	     u < c->uuids + c->devices_max_used && !ret;
+ 	     u++)
+ 		if (UUID_FLASH_ONLY(u))
+ 			ret = flash_dev_run(c, u);
+@@ -1433,7 +1436,7 @@ static void __cache_set_unregister(struct closure *cl)
  
- 	bio_set_dev(bio, dc->bdev);
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 6e1d2fde43df..f82ffb2e9b9b 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -356,6 +356,27 @@ static void read_dirty(struct cached_dev *dc)
+ 	mutex_lock(&bch_register_lock);
  
- 		delay = writeback_delay(dc, size);
+-	for (i = 0; i < c->nr_uuids; i++)
++	for (i = 0; i < c->devices_max_used; i++)
+ 		if (c->devices[i]) {
+ 			if (!UUID_FLASH_ONLY(&c->uuids[i]) &&
+ 			    test_bit(CACHE_SET_UNREGISTERING, &c->flags)) {
+@@ -1496,7 +1499,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 	c->bucket_bits		= ilog2(sb->bucket_size);
+ 	c->block_bits		= ilog2(sb->block_size);
+ 	c->nr_uuids		= bucket_bytes(c) / sizeof(struct uuid_entry);
+-
++	c->devices_max_used	= 0;
+ 	c->btree_pages		= bucket_pages(c);
+ 	if (c->btree_pages > BTREE_MAX_PAGES)
+ 		c->btree_pages = max_t(int, c->btree_pages / 4,
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 6d26927267f8..f102b1f9bc51 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -24,7 +24,7 @@ static inline uint64_t  bcache_flash_devs_sectors_dirty(struct cache_set *c)
  
-+		/* If the control system would wait for at least half a
-+		 * second, and there's been no reqs hitting the backing disk
-+		 * for awhile: use an alternate mode where we have at most
-+		 * one contiguous set of writebacks in flight at a time.  If
-+		 * someone wants to do IO it will be quick, as it will only
-+		 * have to contend with one operation in flight, and we'll
-+		 * be round-tripping data to the backing disk as quickly as
-+		 * it can accept it.
-+		 */
-+		if (delay >= HZ / 2) {
-+			/* 3 means at least 1.5 seconds, up to 7.5 if we
-+			 * have slowed way down.
-+			 */
-+			if (atomic_inc_return(&dc->backing_idle) >= 3) {
-+				/* Wait for current I/Os to finish */
-+				closure_sync(&cl);
-+				/* And immediately launch a new set. */
-+				delay = 0;
-+			}
-+		}
-+
- 		while (!kthread_should_stop() && delay) {
- 			schedule_timeout_interruptible(delay);
- 			delay = writeback_delay(dc, 0);
+ 	mutex_lock(&bch_register_lock);
+ 
+-	for (i = 0; i < c->nr_uuids; i++) {
++	for (i = 0; i < c->devices_max_used; i++) {
+ 		struct bcache_device *d = c->devices[i];
+ 
+ 		if (!d || !UUID_FLASH_ONLY(&c->uuids[i]))
 -- 
 2.14.1
