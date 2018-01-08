@@ -1,105 +1,31 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v1 05/10] bcache: stop dc->writeback_rate_update if cache
- set is stopping
-Date: Tue, 9 Jan 2018 00:01:39 +0800
-Message-ID: <d954882e-de90-abbb-1f01-0625414b4618@suse.de>
-References: <20180103140325.63175-1-colyli@suse.de>
- <20180103140325.63175-6-colyli@suse.de>
- <b399ead7-34b4-1dfd-16c3-f506516d4466@suse.de>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH v3] bcache: fix writeback target calc on large devices
+Date: Mon, 8 Jan 2018 09:58:02 -0800
+Message-ID: <CAJ+L6qe=Roiswb7DfRtCGk=FnE4JG9vesyVy6OyT8Ex+GgDTcA@mail.gmail.com>
+References: <1515379587-21540-1-git-send-email-tang.junhui@zte.com.cn>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:53820 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752093AbeAHQBx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jan 2018 11:01:53 -0500
-In-Reply-To: <b399ead7-34b4-1dfd-16c3-f506516d4466@suse.de>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1515379587-21540-1-git-send-email-tang.junhui@zte.com.cn>
+Sender: linux-block-owner@vger.kernel.org
+To: Junhui Tang <tang.junhui@zte.com.cn>
+Cc: linux-bcache <linux-bcache@vger.kernel.org>, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Hannes Reinecke <hare@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn
 
-On 08/01/2018 3:22 PM, Hannes Reinecke wrote:
-> On 01/03/2018 03:03 PM, Coly Li wrote:
->> struct delayed_work writeback_rate_update in struct cache_dev is a delayed
->> worker to call function update_writeback_rate() in period (the interval is
->> defined by dc->writeback_rate_update_seconds).
->>
->> When a metadate I/O error happens on cache device, bcache error handling
->> routine bch_cache_set_error() will call bch_cache_set_unregister() to
->> retire whole cache set. On the unregister code path, cached_dev_free()
->> calls cancel_delayed_work_sync(&dc->writeback_rate_update) to stop this
->> delayed work.
->>
->> dc->writeback_rate_update is a special delayed work from others in bcache.
->> In its routine update_writeback_rate(), this delayed work is re-armed
->> after a piece of time. That means when cancel_delayed_work_sync() returns,
->> this delayed work can still be executed after several seconds defined by
->> dc->writeback_rate_update_seconds.
->>
->> The problem is, after cancel_delayed_work_sync() returns, the cache set
->> unregister code path will eventually release memory of struct cache set.
->> Then the delayed work is scheduled to run, and inside its routine
->> update_writeback_rate() that already released cache set NULL pointer will
->> be accessed. Now a NULL pointer deference panic is triggered.
->>
->> In order to avoid the above problem, this patch checks cache set flags in
->> delayed work routine update_writeback_rate(). If flag CACHE_SET_STOPPING
->> is set, this routine will quit without re-arm the delayed work. Then the
->> NULL pointer deference panic won't happen after cache set is released.
->>
->> Signed-off-by: Coly Li <colyli@suse.de>
->> ---
->>  drivers/md/bcache/writeback.c | 9 +++++++++
->>  1 file changed, 9 insertions(+)
->>
->> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
->> index 0789a9e18337..745d9b2a326f 100644
->> --- a/drivers/md/bcache/writeback.c
->> +++ b/drivers/md/bcache/writeback.c
->> @@ -91,6 +91,11 @@ static void update_writeback_rate(struct work_struct *work)
->>  	struct cached_dev *dc = container_of(to_delayed_work(work),
->>  					     struct cached_dev,
->>  					     writeback_rate_update);
->> +	struct cache_set *c = dc->disk.c;
->> +
->> +	/* quit directly if cache set is stopping */
->> +	if (test_bit(CACHE_SET_STOPPING, &c->flags))
->> +		return;
->>  
->>  	down_read(&dc->writeback_lock);
->>  
->> @@ -100,6 +105,10 @@ static void update_writeback_rate(struct work_struct *work)
->>  
->>  	up_read(&dc->writeback_lock);
->>  
->> +	/* do not schedule delayed work if cache set is stopping */
->> +	if (test_bit(CACHE_SET_STOPPING, &c->flags))
->> +		return;
->> +
->>  	schedule_delayed_work(&dc->writeback_rate_update,
->>  			      dc->writeback_rate_update_seconds * HZ);
->>  }
->>
-> This is actually not quite correct; the function might still be called
-> after 'struct cached_dev' has been removed.
-> The correct way of fixing is to either take a reference to struct
-> cached_dev and release it once 'update_writeback_rate' is finished, or
-> to call 'cancel_delayed_work_sync()' before deleting struct cached_dev.
+Tang Junhui--
 
-Hi Hannes,
+Thanks for your feedback, help, and flexibility.  I will try to make
+this better overall in the long term.
 
-The problem is not cached_dev, it is cache_set. In
-__update_writeback_rate(), struct cache_set is referenced. The solutions
-is similar as you suggested, call cancel_delayed_work_sync() before
-deleting struct cache_set. Junhui posted another patch to fix duplicated
-writeback threads issue, but also fixes this problem too. Therefore just
-prevent this kworker from re-arm itself again should be enough, and my
-next patche to stop dc->writeback_thread and dc->writeback_rate_update
-can be ignored, Junhui's patch is in bcache-for-next already.
+On Sun, Jan 7, 2018 at 6:46 PM,  <tang.junhui@zte.com.cn> wrote:
 
-Thanks.
+> OK, please replace 16384 with macro, and replease 16384 * bdev_sectors(dc->bdev)
+> with bit shift operation, eg: bdev_sectors(dc->bdev)<<MACRO.
+>
+> Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
 
-Coly Li
+I have pulled this into bcache-for-next and will be testing it all
+some today, hopefully to send out to linux-block/Jens late
+today/tomorrow.
+
+Mike
