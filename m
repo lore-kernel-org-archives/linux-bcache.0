@@ -1,133 +1,252 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [416 PATCH 06/13] bcache: writeback: properly order backing device IO
-Date: Mon,  8 Jan 2018 12:21:23 -0800
-Message-ID: <20180108202130.31303-7-mlyle@lyle.org>
+Subject: [416 PATCH 08/13] bcache: Fix, improve efficiency of closure_sync()
+Date: Mon,  8 Jan 2018 12:21:25 -0800
+Message-ID: <20180108202130.31303-9-mlyle@lyle.org>
 References: <20180108202130.31303-1-mlyle@lyle.org>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f67.google.com ([74.125.83.67]:43498 "EHLO
-        mail-pg0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1757226AbeAHUVr (ORCPT
+Received: from mail-pf0-f193.google.com ([209.85.192.193]:33778 "EHLO
+        mail-pf0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1757234AbeAHUVu (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jan 2018 15:21:47 -0500
-Received: by mail-pg0-f67.google.com with SMTP id f14so3730423pga.10
-        for <linux-bcache@vger.kernel.org>; Mon, 08 Jan 2018 12:21:47 -0800 (PST)
+        Mon, 8 Jan 2018 15:21:50 -0500
+Received: by mail-pf0-f193.google.com with SMTP id y89so6782797pfk.0
+        for <linux-bcache@vger.kernel.org>; Mon, 08 Jan 2018 12:21:49 -0800 (PST)
 In-Reply-To: <20180108202130.31303-1-mlyle@lyle.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Michael Lyle <mlyle@lyle.org>
+Cc: axboe@fb.com, Kent Overstreet <kent.overstreet@gmail.com>, Michael Lyle <mlyle@lyle.org>
 
-Writeback keys are presently iterated and dispatched for writeback in
-order of the logical block address on the backing device.  Multiple may
-be, in parallel, read from the cache device and then written back
-(especially when there are contiguous I/O).
+From: Kent Overstreet <kent.overstreet@gmail.com>
 
-However-- there was no guarantee with the existing code that the writes
-would be issued in LBA order, as the reads from the cache device are
-often re-ordered.  In turn, when writing back quickly, the backing disk
-often has to seek backwards-- this slows writeback and increases
-utilization.
+Eliminates cases where sync can race and fail to complete / get stuck.
+Removes many status flags and simplifies entering-and-exiting closure
+sleeping behaviors.
 
-This patch introduces an ordering mechanism that guarantees that the
-original order of issue is maintained for the write portion of the I/O.
-Performance for writeback is significantly improved when there are
-multiple contiguous keys or high writeback rates.
+[mlyle: fixed conflicts due to changed return behavior in mainline.
+extended commit comment, and squashed down two commits that were mostly
+contradictory to get to this state.  Changed __set_current_state to
+_set_current_state per Jens review comment]
 
+Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
 Signed-off-by: Michael Lyle <mlyle@lyle.org>
-Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
-Tested-by: Tang Junhui <tang.junhui@zte.com.cn>
+Reviewed-by: Michael Lyle <mlyle@lyle.org>
 ---
- drivers/md/bcache/bcache.h    |  8 ++++++++
- drivers/md/bcache/writeback.c | 29 +++++++++++++++++++++++++++++
- 2 files changed, 37 insertions(+)
+ drivers/md/bcache/closure.c | 46 +++++++++++++++++-----------------
+ drivers/md/bcache/closure.h | 60 +++++++++++++++++----------------------------
+ 2 files changed, 46 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 1784e50eb857..3be0fcc19b1f 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -330,6 +330,14 @@ struct cached_dev {
+diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+index 1841d0359bac..ca7ace6962a4 100644
+--- a/drivers/md/bcache/closure.c
++++ b/drivers/md/bcache/closure.c
+@@ -18,10 +18,6 @@ static inline void closure_put_after_sub(struct closure *cl, int flags)
+ 	BUG_ON(flags & CLOSURE_GUARD_MASK);
+ 	BUG_ON(!r && (flags & ~CLOSURE_DESTRUCTOR));
  
- 	struct keybuf		writeback_keys;
+-	/* Must deliver precisely one wakeup */
+-	if (r == 1 && (flags & CLOSURE_SLEEPING))
+-		wake_up_process(cl->task);
+-
+ 	if (!r) {
+ 		if (cl->fn && !(flags & CLOSURE_DESTRUCTOR)) {
+ 			atomic_set(&cl->remaining,
+@@ -100,28 +96,34 @@ bool closure_wait(struct closure_waitlist *waitlist, struct closure *cl)
+ }
+ EXPORT_SYMBOL(closure_wait);
  
-+	/*
-+	 * Order the write-half of writeback operations strongly in dispatch
-+	 * order.  (Maintain LBA order; don't allow reads completing out of
-+	 * order to re-order the writes...)
-+	 */
-+	struct closure_waitlist writeback_ordering_wait;
-+	atomic_t		writeback_sequence_next;
+-/**
+- * closure_sync - sleep until a closure has nothing left to wait on
+- *
+- * Sleeps until the refcount hits 1 - the thread that's running the closure owns
+- * the last refcount.
+- */
+-void closure_sync(struct closure *cl)
++struct closure_syncer {
++	struct task_struct	*task;
++	int			done;
++};
 +
- 	/* For tracking sequential IO */
- #define RECENT_IO_BITS	7
- #define RECENT_IO	(1 << RECENT_IO_BITS)
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 479095987f22..6e1d2fde43df 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -116,6 +116,7 @@ static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
- struct dirty_io {
- 	struct closure		cl;
- 	struct cached_dev	*dc;
-+	uint16_t		sequence;
- 	struct bio		bio;
- };
- 
-@@ -194,6 +195,27 @@ static void write_dirty(struct closure *cl)
++static void closure_sync_fn(struct closure *cl)
  {
- 	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
- 	struct keybuf_key *w = io->bio.bi_private;
-+	struct cached_dev *dc = io->dc;
-+
-+	uint16_t next_sequence;
-+
-+	if (atomic_read(&dc->writeback_sequence_next) != io->sequence) {
-+		/* Not our turn to write; wait for a write to complete */
-+		closure_wait(&dc->writeback_ordering_wait, cl);
-+
-+		if (atomic_read(&dc->writeback_sequence_next) == io->sequence) {
-+			/*
-+			 * Edge case-- it happened in indeterminate order
-+			 * relative to when we were added to wait list..
-+			 */
-+			closure_wake_up(&dc->writeback_ordering_wait);
-+		}
-+
-+		continue_at(cl, write_dirty, io->dc->writeback_write_wq);
-+		return;
-+	}
-+
-+	next_sequence = io->sequence + 1;
+-	while (1) {
+-		__closure_start_sleep(cl);
+-		closure_set_ret_ip(cl);
++	cl->s->done = 1;
++	wake_up_process(cl->s->task);
++}
  
- 	/*
- 	 * IO errors are signalled using the dirty bit on the key.
-@@ -211,6 +233,9 @@ static void write_dirty(struct closure *cl)
- 		closure_bio_submit(&io->bio, cl);
+-		if ((atomic_read(&cl->remaining) &
+-		     CLOSURE_REMAINING_MASK) == 1)
+-			break;
++void __closure_sync(struct closure *cl)
++{
++	struct closure_syncer s = { .task = current };
+ 
++	cl->s = &s;
++	continue_at(cl, closure_sync_fn, NULL);
++
++	while (1) {
++		set_current_state(TASK_UNINTERRUPTIBLE);
++		if (s.done)
++			break;
+ 		schedule();
  	}
  
-+	atomic_set(&dc->writeback_sequence_next, next_sequence);
-+	closure_wake_up(&dc->writeback_ordering_wait);
+-	__closure_end_sleep(cl);
++	__set_current_state(TASK_RUNNING);
+ }
+-EXPORT_SYMBOL(closure_sync);
++EXPORT_SYMBOL(__closure_sync);
+ 
+ #ifdef CONFIG_BCACHE_CLOSURES_DEBUG
+ 
+@@ -168,12 +170,10 @@ static int debug_seq_show(struct seq_file *f, void *data)
+ 			   cl, (void *) cl->ip, cl->fn, cl->parent,
+ 			   r & CLOSURE_REMAINING_MASK);
+ 
+-		seq_printf(f, "%s%s%s%s\n",
++		seq_printf(f, "%s%s\n",
+ 			   test_bit(WORK_STRUCT_PENDING_BIT,
+ 				    work_data_bits(&cl->work)) ? "Q" : "",
+-			   r & CLOSURE_RUNNING	? "R" : "",
+-			   r & CLOSURE_STACK	? "S" : "",
+-			   r & CLOSURE_SLEEPING	? "Sl" : "");
++			   r & CLOSURE_RUNNING	? "R" : "");
+ 
+ 		if (r & CLOSURE_WAITING)
+ 			seq_printf(f, " W %pF\n",
+diff --git a/drivers/md/bcache/closure.h b/drivers/md/bcache/closure.h
+index ccfbea6f9f6b..392a87cf1b92 100644
+--- a/drivers/md/bcache/closure.h
++++ b/drivers/md/bcache/closure.h
+@@ -103,6 +103,7 @@
+  */
+ 
+ struct closure;
++struct closure_syncer;
+ typedef void (closure_fn) (struct closure *);
+ 
+ struct closure_waitlist {
+@@ -115,10 +116,6 @@ enum closure_state {
+ 	 * the thread that owns the closure, and cleared by the thread that's
+ 	 * waking up the closure.
+ 	 *
+-	 * CLOSURE_SLEEPING: Must be set before a thread uses a closure to sleep
+-	 * - indicates that cl->task is valid and closure_put() may wake it up.
+-	 * Only set or cleared by the thread that owns the closure.
+-	 *
+ 	 * The rest are for debugging and don't affect behaviour:
+ 	 *
+ 	 * CLOSURE_RUNNING: Set when a closure is running (i.e. by
+@@ -128,22 +125,16 @@ enum closure_state {
+ 	 * continue_at() and closure_return() clear it for you, if you're doing
+ 	 * something unusual you can use closure_set_dead() which also helps
+ 	 * annotate where references are being transferred.
+-	 *
+-	 * CLOSURE_STACK: Sanity check - remaining should never hit 0 on a
+-	 * closure with this flag set
+ 	 */
+ 
+-	CLOSURE_BITS_START	= (1 << 23),
+-	CLOSURE_DESTRUCTOR	= (1 << 23),
+-	CLOSURE_WAITING		= (1 << 25),
+-	CLOSURE_SLEEPING	= (1 << 27),
+-	CLOSURE_RUNNING		= (1 << 29),
+-	CLOSURE_STACK		= (1 << 31),
++	CLOSURE_BITS_START	= (1U << 27),
++	CLOSURE_DESTRUCTOR	= (1U << 27),
++	CLOSURE_WAITING		= (1U << 29),
++	CLOSURE_RUNNING		= (1U << 31),
+ };
+ 
+ #define CLOSURE_GUARD_MASK					\
+-	((CLOSURE_DESTRUCTOR|CLOSURE_WAITING|CLOSURE_SLEEPING|	\
+-	  CLOSURE_RUNNING|CLOSURE_STACK) << 1)
++	((CLOSURE_DESTRUCTOR|CLOSURE_WAITING|CLOSURE_RUNNING) << 1)
+ 
+ #define CLOSURE_REMAINING_MASK		(CLOSURE_BITS_START - 1)
+ #define CLOSURE_REMAINING_INITIALIZER	(1|CLOSURE_RUNNING)
+@@ -152,7 +143,7 @@ struct closure {
+ 	union {
+ 		struct {
+ 			struct workqueue_struct *wq;
+-			struct task_struct	*task;
++			struct closure_syncer	*s;
+ 			struct llist_node	list;
+ 			closure_fn		*fn;
+ 		};
+@@ -178,7 +169,19 @@ void closure_sub(struct closure *cl, int v);
+ void closure_put(struct closure *cl);
+ void __closure_wake_up(struct closure_waitlist *list);
+ bool closure_wait(struct closure_waitlist *list, struct closure *cl);
+-void closure_sync(struct closure *cl);
++void __closure_sync(struct closure *cl);
 +
- 	continue_at(cl, write_dirty_finish, io->dc->writeback_write_wq);
++/**
++ * closure_sync - sleep until a closure a closure has nothing left to wait on
++ *
++ * Sleeps until the refcount hits 1 - the thread that's running the closure owns
++ * the last refcount.
++ */
++static inline void closure_sync(struct closure *cl)
++{
++	if ((atomic_read(&cl->remaining) & CLOSURE_REMAINING_MASK) != 1)
++		__closure_sync(cl);
++}
+ 
+ #ifdef CONFIG_BCACHE_CLOSURES_DEBUG
+ 
+@@ -215,24 +218,6 @@ static inline void closure_set_waiting(struct closure *cl, unsigned long f)
+ #endif
  }
  
-@@ -242,7 +267,10 @@ static void read_dirty(struct cached_dev *dc)
- 	int nk, i;
- 	struct dirty_io *io;
- 	struct closure cl;
-+	uint16_t sequence = 0;
+-static inline void __closure_end_sleep(struct closure *cl)
+-{
+-	__set_current_state(TASK_RUNNING);
+-
+-	if (atomic_read(&cl->remaining) & CLOSURE_SLEEPING)
+-		atomic_sub(CLOSURE_SLEEPING, &cl->remaining);
+-}
+-
+-static inline void __closure_start_sleep(struct closure *cl)
+-{
+-	closure_set_ip(cl);
+-	cl->task = current;
+-	set_current_state(TASK_UNINTERRUPTIBLE);
+-
+-	if (!(atomic_read(&cl->remaining) & CLOSURE_SLEEPING))
+-		atomic_add(CLOSURE_SLEEPING, &cl->remaining);
+-}
+-
+ static inline void closure_set_stopped(struct closure *cl)
+ {
+ 	atomic_sub(CLOSURE_RUNNING, &cl->remaining);
+@@ -241,7 +226,6 @@ static inline void closure_set_stopped(struct closure *cl)
+ static inline void set_closure_fn(struct closure *cl, closure_fn *fn,
+ 				  struct workqueue_struct *wq)
+ {
+-	BUG_ON(object_is_on_stack(cl));
+ 	closure_set_ip(cl);
+ 	cl->fn = fn;
+ 	cl->wq = wq;
+@@ -300,7 +284,7 @@ static inline void closure_init(struct closure *cl, struct closure *parent)
+ static inline void closure_init_stack(struct closure *cl)
+ {
+ 	memset(cl, 0, sizeof(struct closure));
+-	atomic_set(&cl->remaining, CLOSURE_REMAINING_INITIALIZER|CLOSURE_STACK);
++	atomic_set(&cl->remaining, CLOSURE_REMAINING_INITIALIZER);
+ }
  
-+	BUG_ON(!llist_empty(&dc->writeback_ordering_wait.list));
-+	atomic_set(&dc->writeback_sequence_next, sequence);
- 	closure_init_stack(&cl);
- 
- 	/*
-@@ -303,6 +331,7 @@ static void read_dirty(struct cached_dev *dc)
- 
- 			w->private	= io;
- 			io->dc		= dc;
-+			io->sequence    = sequence++;
- 
- 			dirty_init(w);
- 			bio_set_op_attrs(&io->bio, REQ_OP_READ, 0);
+ /**
+@@ -322,6 +306,8 @@ static inline void closure_wake_up(struct closure_waitlist *list)
+  * This is because after calling continue_at() you no longer have a ref on @cl,
+  * and whatever @cl owns may be freed out from under you - a running closure fn
+  * has a ref on its own closure which continue_at() drops.
++ *
++ * Note you are expected to immediately return after using this macro.
+  */
+ #define continue_at(_cl, _fn, _wq)					\
+ do {									\
 -- 
 2.14.1
