@@ -1,92 +1,62 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: [416 PATCH 01/13] bcache: ret IOERR when read meets metadata error
-Date: Mon,  8 Jan 2018 12:21:18 -0800
-Message-ID: <20180108202130.31303-2-mlyle@lyle.org>
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [416 PATCH 00/13] Bcache changes for 4.16
+Date: Mon, 8 Jan 2018 13:42:41 -0700
+Message-ID: <0692a21d-8465-9c1e-93a5-cf96dfb36cda@kernel.dk>
 References: <20180108202130.31303-1-mlyle@lyle.org>
-Return-path: <linux-block-owner@vger.kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-io0-f177.google.com ([209.85.223.177]:35730 "EHLO
+        mail-io0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1756363AbeAHUmo (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 8 Jan 2018 15:42:44 -0500
+Received: by mail-io0-f177.google.com with SMTP id 14so16065007iou.2
+        for <linux-bcache@vger.kernel.org>; Mon, 08 Jan 2018 12:42:44 -0800 (PST)
 In-Reply-To: <20180108202130.31303-1-mlyle@lyle.org>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Rui Hua <huarui.dev@gmail.com>, Michael Lyle <mlyle@lyle.org>
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-From: Rui Hua <huarui.dev@gmail.com>
+On 1/8/18 1:21 PM, Michael Lyle wrote:
+> Jens,
+> 
+> Please pick up the following reviewed changes for 4.16.  There's some
+> small cleanliness changes, a few minor bug fixes (some in preparation
+> for larger work), and ongoing work on writeback performance:
+> 
+>  11 files changed, 303 insertions(+), 133 deletions(-)
+> 
+> Coly Li (2):
+>       bcache: reduce cache_set devices iteration by devices_max_used
+>       bcache: fix misleading error message in bch_count_io_errors()
+> 
+> Kent Overstreet (2):
+>       bcache: Fix, improve efficiency of closure_sync()
+>       bcache: mark closure_sync() __sched
+> 
+> Michael Lyle (3):
+>       bcache: writeback: properly order backing device IO
+>       bcache: allow quick writeback when backing idle
+>       bcache: fix writeback target calc on large devices
+> 
+> Rui Hua (1):
+>       bcache: ret IOERR when read meets metadata error
+> 
+> Tang Junhui (3):
+>       bcache: stop writeback thread after detaching
+>       bcache: segregate flash only volume write streams
+>       bcache: fix wrong return value in bch_debug_init()
+> 
+> Vasyl Gomonovych (1):
+>       bcache: Use PTR_ERR_OR_ZERO()
+> 
+> Zhai Zhaoxuan (1):
+>       bcache: fix unmatched generic_end_io_acct() & generic_start_io_acct()
 
-The read request might meet error when searching the btree, but the error
-was not handled in cache_lookup(), and this kind of metadata failure will
-not go into cached_dev_read_error(), finally, the upper layer will receive
-bi_status=0.  In this patch we judge the metadata error by the return
-value of bch_btree_map_keys(), there are two potential paths give rise to
-the error:
+Looks good, thanks Mike. Applied for 4.16.
 
-1. Because the btree is not totally cached in memery, we maybe get error
-   when read btree node from cache device (see bch_btree_node_get()), the
-   likely errno is -EIO, -ENOMEM
-
-2. When read miss happens, bch_btree_insert_check_key() will be called to
-   insert a "replace_key" to btree(see cached_dev_cache_miss(), just for
-   doing preparatory work before insert the missed data to cache device),
-   a failure can also happen in this situation, the likely errno is
-   -ENOMEM
-
-bch_btree_map_keys() will return MAP_DONE in normal scenario, but we will
-get either -EIO or -ENOMEM in above two cases. if this happened, we should
-NOT recover data from backing device (when cache device is dirty) because
-we don't know whether bkeys the read request covered are all clean.  And
-after that happened, s->iop.status is still its initially value(0) before
-we submit s->bio.bio, we set it to BLK_STS_IOERR, so it can go into
-cached_dev_read_error(), and finally it can be passed to upper layer, or
-recovered by reread from backing device.
-
-[edit by mlyle: patch formatting, word-wrap, comment spelling,
-commit log format]
-
-Signed-off-by: Hua Rui <huarui.dev@gmail.com>
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
-Signed-off-by: Michael Lyle <mlyle@lyle.org>
----
- drivers/md/bcache/request.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
-
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index c493fb947dc9..52b4ce24f9e2 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -576,6 +576,7 @@ static void cache_lookup(struct closure *cl)
- {
- 	struct search *s = container_of(cl, struct search, iop.cl);
- 	struct bio *bio = &s->bio.bio;
-+	struct cached_dev *dc;
- 	int ret;
- 
- 	bch_btree_op_init(&s->op, -1);
-@@ -588,6 +589,27 @@ static void cache_lookup(struct closure *cl)
- 		return;
- 	}
- 
-+	/*
-+	 * We might meet err when searching the btree, If that happens, we will
-+	 * get negative ret, in this scenario we should not recover data from
-+	 * backing device (when cache device is dirty) because we don't know
-+	 * whether bkeys the read request covered are all clean.
-+	 *
-+	 * And after that happened, s->iop.status is still its initial value
-+	 * before we submit s->bio.bio
-+	 */
-+	if (ret < 0) {
-+		BUG_ON(ret == -EINTR);
-+		if (s->d && s->d->c &&
-+				!UUID_FLASH_ONLY(&s->d->c->uuids[s->d->id])) {
-+			dc = container_of(s->d, struct cached_dev, disk);
-+			if (dc && atomic_read(&dc->has_dirty))
-+				s->recoverable = false;
-+		}
-+		if (!s->iop.status)
-+			s->iop.status = BLK_STS_IOERR;
-+	}
-+
- 	closure_return(cl);
- }
- 
 -- 
-2.14.1
+Jens Axboe
