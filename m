@@ -1,86 +1,96 @@
-From: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH v1 10/10] bcache: stop all attached bcache devices for a
- retired cache set
-Date: Mon, 8 Jan 2018 08:31:43 +0100
-Message-ID: <edd0cdd7-6ef9-9269-eaf2-1c8ec97840fc@suse.de>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH v1 01/10] bcache: exit bch_writeback_thread() with proper
+ task state
+Date: Mon, 8 Jan 2018 21:50:21 +0800
+Message-ID: <38691a4b-afaf-963a-ac40-2a8a1bee3995@suse.de>
 References: <20180103140325.63175-1-colyli@suse.de>
- <20180103140325.63175-11-colyli@suse.de>
+ <20180103140325.63175-2-colyli@suse.de>
+ <c4183dae-0381-f510-1929-410b9a7a2b9d@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:38977 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:35383 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1755788AbeAHHbp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jan 2018 02:31:45 -0500
-In-Reply-To: <20180103140325.63175-11-colyli@suse.de>
+        id S1757447AbeAHNue (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 8 Jan 2018 08:50:34 -0500
+In-Reply-To: <c4183dae-0381-f510-1929-410b9a7a2b9d@suse.de>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
+To: Hannes Reinecke <hare@suse.de>, linux-bcache@vger.kernel.org
 Cc: linux-block@vger.kernel.org, mlyle@lyle.org, tang.junhui@zte.com.cn
 
-On 01/03/2018 03:03 PM, Coly Li wrote:
-> When there are too many I/O errors on cache device, current bcache code
-> will retire the whole cache set, and detach all bcache devices. But the
-> detached bcache devices are not stopped, which is problematic when bcache
-> is in writeback mode.
+On 08/01/2018 3:09 PM, Hannes Reinecke wrote:
+> On 01/03/2018 03:03 PM, Coly Li wrote:
+>> Kernel thread routine bch_writeback_thread() has the following code block,
+>>
+>> 452                         set_current_state(TASK_INTERRUPTIBLE);
+>> 453
+>> 454                         if (kthread_should_stop())
+>> 455                                 return 0;
+>> 456
+>> 457                         schedule();
+>> 458                         continue;
+>>
+>> At line 452, its status is set to TASK_INTERRUPTIBLE, and at line 454 if
+>> kthread_should_stop() is true, a "return 0" at line 455 will to function
+>> kernel/kthread.c:kthread() and call do_exit().
+>>
+>> It is not good to enter do_exit() with task state TASK_INTERRUPTIBLE, in
+>> following code path might_sleep() is called and a warning message is
+>> reported by __might_sleep(): "WARNING: do not call blocking ops when
+>> !TASK_RUNNING; state=1 set at [xxxx]".
+>>
+>> Indeed it does not hurt when kernel thread exits with TASK_INTERRUPTIBLE
+>> state, but this warning message scares users, makes them feel there might
+>> be something risky with bcache and hurt their data.
+>>
+>> In this patch, TASK_INTERRUPTIBLE is set after kthread_should_stop(),
+>> so writeback kernel thread can exist and enter do_exit() with
+>> TASK_RUNNING state. Warning message from might_sleep() is removed.
+>>
+>> Signed-off-by: Coly Li <colyli@suse.de>
+>> ---
+>>  drivers/md/bcache/writeback.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+>> index 56a37884ca8b..a57149803df6 100644
+>> --- a/drivers/md/bcache/writeback.c
+>> +++ b/drivers/md/bcache/writeback.c
+>> @@ -449,11 +449,11 @@ static int bch_writeback_thread(void *arg)
+>>  		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+>>  		     !dc->writeback_running)) {
+>>  			up_write(&dc->writeback_lock);
+>> -			set_current_state(TASK_INTERRUPTIBLE);
+>>  
+>>  			if (kthread_should_stop())
+>>  				return 0;
+>>  
+>> +			set_current_state(TASK_INTERRUPTIBLE);
+>>  			schedule();
+>>  			continue;
+>>  		}
+>>
+> Actually, TASK_INTERRUPTIBLE is okay for kthread_should_stop(); you just
+> need to set it to 'TASK_RUNNING' before calling 'return 0'.
 > 
-> If the retired cache set has dirty data of backing devices, continue
-> writing to bcache device will write to backing device directly. If the
-> LBA of write request has a dirty version cached on cache device, next time
-> when the cache device is re-registered and backing device re-attached to
-> it again, the stale dirty data on cache device will be written to backing
-> device, and overwrite latest directly written data. This situation causes
-> a quite data corruption.
+> So I think a fix like
 > 
-> This patch checkes whether cache_set->io_disable is true in
-> __cache_set_unregister(). If cache_set->io_disable is true, it means cache
-> set is unregistering by too many I/O errors, then all attached bcache
-> devices will be stopped as well. If cache_set->io_disable is not true, it
-> means __cache_set_unregister() is triggered by writing 1 to sysfs file
-> /sys/fs/bcache/<UUID>/bcache/stop. This is an exception because users do
-> it explicitly, this patch keeps existing behavior and does not stop any
-> bcache device.
+> set_current_state(TASK_INTERRUPTIBLE);
 > 
-> Even the failed cache device has no dirty data, stopping bcache device is
-> still a desired behavior by many Ceph and data base users. Then their
-> application will report I/O errors due to disappeared bcache device, and
-> operation people will know the cache device is broken or disconnected.
+> if (kthread_should_stop()) {
+>     set_current_state(TASK_RUNNING);
+>     return 0;
+> }
 > 
-> Signed-off-by: Coly Li <colyli@suse.de>
-> ---
->  drivers/md/bcache/super.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
+> schedule();
 > 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 49d6fedf89c3..20a7a6959506 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -1458,6 +1458,14 @@ static void __cache_set_unregister(struct closure *cl)
->  				dc = container_of(c->devices[i],
->  						  struct cached_dev, disk);
->  				bch_cached_dev_detach(dc);
-> +				/*
-> +				 * If we come here by too many I/O errors,
-> +				 * bcache device should be stopped too, to
-> +				 * keep data consistency on cache and
-> +				 * backing devices.
-> +				 */
-> +				if (c->io_disable)
-> +					bcache_device_stop(c->devices[i]);
->  			} else {
->  				bcache_device_stop(c->devices[i]);
->  			}
-> 
-Reviewed-by: Hannes Reinecke <hare@suse.com>
+> would be better.
 
-Cheers,
+Hi Hannes,
 
-Hannes
--- 
-Dr. Hannes Reinecke		   Teamlead Storage & Networking
-hare@suse.de			               +49 911 74053 688
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: F. Imendörffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
-HRB 21284 (AG Nürnberg)
+Yes, this is same as v2 patch does. Thanks.
+
+Coly Li
