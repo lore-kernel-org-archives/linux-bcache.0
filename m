@@ -1,62 +1,32 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [416 PATCH 00/13] Bcache changes for 4.16
-Date: Mon, 8 Jan 2018 13:42:41 -0700
-Message-ID: <0692a21d-8465-9c1e-93a5-cf96dfb36cda@kernel.dk>
-References: <20180108202130.31303-1-mlyle@lyle.org>
+From: Ming Lei <ming.lei@redhat.com>
+Subject: Re: [PATCH 08/10] block: move bio_alloc_pages() to bcache
+Date: Tue, 9 Jan 2018 09:21:52 +0800
+Message-ID: <20180109012151.GA31067@ming.t460p>
+References: <20171208131409.11889-1-ming.lei@redhat.com>
+ <20171208131409.11889-9-ming.lei@redhat.com>
+ <c388724b-45eb-445c-8a93-cf25c313fa65@lyle.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-io0-f177.google.com ([209.85.223.177]:35730 "EHLO
-        mail-io0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1756363AbeAHUmo (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jan 2018 15:42:44 -0500
-Received: by mail-io0-f177.google.com with SMTP id 14so16065007iou.2
-        for <linux-bcache@vger.kernel.org>; Mon, 08 Jan 2018 12:42:44 -0800 (PST)
-In-Reply-To: <20180108202130.31303-1-mlyle@lyle.org>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-block-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <c388724b-45eb-445c-8a93-cf25c313fa65@lyle.org>
+Sender: linux-block-owner@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: Jens Axboe <axboe@fb.com>, linux-block@vger.kernel.org, linux-bcache <linux-bcache@vger.kernel.org>, Christoph Hellwig <hch@infradead.org>
 List-Id: linux-bcache@vger.kernel.org
-To: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On 1/8/18 1:21 PM, Michael Lyle wrote:
-> Jens,
+On Mon, Jan 08, 2018 at 10:05:09AM -0800, Michael Lyle wrote:
+> On 12/08/2017 05:14 AM, Ming Lei wrote:
+> > bcache is the only user of bio_alloc_pages(), and all users should use
+> > bio_add_page() instead, so move this function into bcache, and avoid
+> > it misused in future.
 > 
-> Please pick up the following reviewed changes for 4.16.  There's some
-> small cleanliness changes, a few minor bug fixes (some in preparation
-> for larger work), and ongoing work on writeback performance:
-> 
->  11 files changed, 303 insertions(+), 133 deletions(-)
-> 
-> Coly Li (2):
->       bcache: reduce cache_set devices iteration by devices_max_used
->       bcache: fix misleading error message in bch_count_io_errors()
-> 
-> Kent Overstreet (2):
->       bcache: Fix, improve efficiency of closure_sync()
->       bcache: mark closure_sync() __sched
-> 
-> Michael Lyle (3):
->       bcache: writeback: properly order backing device IO
->       bcache: allow quick writeback when backing idle
->       bcache: fix writeback target calc on large devices
-> 
-> Rui Hua (1):
->       bcache: ret IOERR when read meets metadata error
-> 
-> Tang Junhui (3):
->       bcache: stop writeback thread after detaching
->       bcache: segregate flash only volume write streams
->       bcache: fix wrong return value in bch_debug_init()
-> 
-> Vasyl Gomonovych (1):
->       bcache: Use PTR_ERR_OR_ZERO()
-> 
-> Zhai Zhaoxuan (1):
->       bcache: fix unmatched generic_end_io_acct() & generic_start_io_acct()
+> Can things like this -please- be sent to the bcache list and bcache
+> maintainers?  I'm preparing my patch set for Jens and I'm surprised by
+> merge conflicts from stuff in my queue.  (Just showed up in next to show
+> the conflict in the past couple of days).
 
-Looks good, thanks Mike. Applied for 4.16.
+OK, will do next time.
 
 -- 
-Jens Axboe
+Ming
