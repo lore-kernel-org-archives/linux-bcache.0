@@ -1,14 +1,12 @@
 From: Coly Li <colyli@suse.de>
 Subject: [PATCH v2 12/12] bcache: stop bcache device when backing device is offline
-Date: Sun, 14 Jan 2018 01:10:50 +0800
-Message-ID: <20180113171050.22467-13-colyli@suse.de>
-References: <20180113171050.22467-1-colyli@suse.de>
+Date: Sun, 14 Jan 2018 01:14:03 +0800
+Message-ID: <20180113171403.22531-1-colyli@suse.de>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:37088 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:37160 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751715AbeAMRN1 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 13 Jan 2018 12:13:27 -0500
-In-Reply-To: <20180113171050.22467-1-colyli@suse.de>
+        id S1755184AbeAMROd (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 13 Jan 2018 12:14:33 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
