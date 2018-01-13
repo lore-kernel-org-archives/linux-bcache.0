@@ -1,52 +1,55 @@
-From: Pavel Vazharov <freakpv@gmail.com>
-Subject: [PATCH] bcache: btree.c: Fix GC thread exit in case of cache device failure and unregister
-Date: Fri, 12 Jan 2018 17:24:50 +0200
-Message-ID: <1515770690-18562-1-git-send-email-freakpv@gmail.com>
+From: Coly Li <i@coly.li>
+Subject: Re: [PATCH] bcache: io.c: Fix check against error_limit in case of io
+ errors
+Date: Sat, 13 Jan 2018 11:40:54 +0800
+Message-ID: <fe58efbf-a859-e9a3-ba86-ed86232cc51f@coly.li>
+References: <1515766051-13380-1-git-send-email-freakpv@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wr0-f194.google.com ([209.85.128.194]:35233 "EHLO
-        mail-wr0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S934002AbeALPZo (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 12 Jan 2018 10:25:44 -0500
+Received: from server.coly.li ([162.144.45.48]:35534 "EHLO server.coly.li"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S965415AbeAMDlC (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 12 Jan 2018 22:41:02 -0500
+In-Reply-To: <1515766051-13380-1-git-send-email-freakpv@gmail.com>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: mlyle@lyle.org, kent.overstreet@gmail.com
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, Pavel Vazharov <freakpv@gmail.com>
+To: Pavel Vazharov <freakpv@gmail.com>, mlyle@lyle.org, kent.overstreet@gmail.com
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 
-There was a possibility for infinite do-while loop inside the GC thread
-function in case of total failure of the caching device. I was able to
-reproduce it 3 times simulating disappearing of the caching device via
-'echo 1 > /sys/block/<dev>/device/delete'. In that case the btree_root
-starts to return non zero and non -EAGAIN result, 'gc failed' message
-start to fill the kernel log and the do-while becomes infinite loop
-occupying single CPU core at 100%.
-There is already a logic which unregisters the cache_set (or panics) in
-case of io errors and thus we exit the loop here if the unregistering
-procedure has already started.
+On 12/01/2018 10:07 PM, Pavel Vazharov wrote:
+> The actual sysfs io_error_limit value is left shifted IO_ERROR_SHIFT
+> times before it is stored in the error_limit.
+> This fixes the un-registering of the cache set when the io_errors reach
+> the error_limit value.
+> 
+> Signed-off-by: Pavel Vazharov <freakpv@gmail.com>
+> ---
+>  drivers/md/bcache/io.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+> index fac97ec..1ef6ae2 100644
+> --- a/drivers/md/bcache/io.c
+> +++ b/drivers/md/bcache/io.c
+> @@ -93,7 +93,7 @@ void bch_count_io_errors(struct cache *ca, blk_status_t error, const char *m)
+>  						    &ca->io_errors);
+>  		errors >>= IO_ERROR_SHIFT;
+>  
+> -		if (errors < ca->set->error_limit)
+> +		if (errors < (ca->set->error_limit >> IO_ERROR_SHIFT))
+>  			pr_err("%s: IO error on %s, recovering",
+>  			       bdevname(ca->bdev, buf), m);
+>  		else
+> 
 
-Signed-off-by: Pavel Vazharov <freakpv@gmail.com>
----
- drivers/md/bcache/btree.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Hi Pavel,
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 81e8dc3..a672081 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1748,8 +1748,12 @@ static void bch_btree_gc(struct cache_set *c)
- 		closure_sync(&writes);
- 		cond_resched();
- 
--		if (ret && ret != -EAGAIN)
--			pr_warn("gc failed!");
-+		if (ret && ret != -EAGAIN) {
-+			if (test_bit(CACHE_SET_UNREGISTERING, &c->flags))
-+				break;
-+			else
-+				pr_warn("gc failed!");
-+		}
- 	} while (ret);
- 
- 	bch_btree_gc_finish(c);
+A similar fix is also in my device failure patch set, its name is,
+    bcache: set error_limit correctly
+The difference is, I remove the bit shift of error_limit.
+
 -- 
-2.7.4
+Coly Li
