@@ -1,81 +1,96 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v2 01/12] bcache: set writeback_rate_update_seconds in range [1, 60] seconds
-Date: Sun, 14 Jan 2018 01:10:39 +0800
-Message-ID: <20180113171050.22467-2-colyli@suse.de>
+Subject: [PATCH v2 02/12] bcache: properly set task state in bch_writeback_thread()
+Date: Sun, 14 Jan 2018 01:10:40 +0800
+Message-ID: <20180113171050.22467-3-colyli@suse.de>
 References: <20180113171050.22467-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:36894 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1755231AbeAMRLM (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 13 Jan 2018 12:11:12 -0500
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180113171050.22467-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Hannes Reinecke <hare@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>
+List-Id: linux-bcache@vger.kernel.org
 
-dc->writeback_rate_update_seconds can be set via sysfs and its value can
-be set to [1, ULONG_MAX].  It does not make sense to set such a large
-value, 60 seconds is long enough value considering the default 5 seconds
-works well for long time.
+Kernel thread routine bch_writeback_thread() has the following code block,
 
-Because dc->writeback_rate_update is a special delayed work, it re-arms
-itself inside the delayed work routine update_writeback_rate(). When
-stopping it by cancel_delayed_work_sync(), there should be a timeout to
-wait and make sure the re-armed delayed work is stopped too. A small max
-value of dc->writeback_rate_update_seconds is also helpful to decide a
-reasonable small timeout.
+447         down_write(&dc->writeback_lock);
+448~450     if (check conditions) {
+451                 up_write(&dc->writeback_lock);
+452                 set_current_state(TASK_INTERRUPTIBLE);
+453
+454                 if (kthread_should_stop())
+455                         return 0;
+456
+457                 schedule();
+458                 continue;
+459         }
 
-This patch limits sysfs interface to set dc->writeback_rate_update_seconds
-in range of [1, 60] seconds, and replaces the hand-coded number by macros.
+If condition check is true, its task state is set to TASK_INTERRUPTIBLE
+and call schedule() to wait for others to wake up it.
+
+There are 2 issues in current code,
+1, Task state is set to TASK_INTERRUPTIBLE after the condition checks, if
+   another process changes the condition and call wake_up_process(dc->
+   writeback_thread), then at line 452 task state is set back to
+   TASK_INTERRUPTIBLE, the writeback kernel thread will lose a chance to be
+   waken up.
+2, At line 454 if kthread_should_stop() is true, writeback kernel thread
+   will return to kernel/kthread.c:kthread() with TASK_INTERRUPTIBLE and
+   call do_exit(). It is not good to enter do_exit() with task state
+   TASK_INTERRUPTIBLE, in following code path might_sleep() is called and a
+   warning message is reported by __might_sleep(): "WARNING: do not call
+   blocking ops when !TASK_RUNNING; state=1 set at [xxxx]".
+
+For the first issue, task state should be set before condition checks.
+Ineed because dc->writeback_lock is required when modifying all the
+conditions, calling set_current_state() inside code block where dc->
+writeback_lock is hold is safe. But this is quite implicit, so I still move
+set_current_state() before all the condition checks.
+
+For the second issue, frankley speaking it does not hurt when kernel thread
+exits with TASK_INTERRUPTIBLE state, but this warning message scares users,
+makes them feel there might be something risky with bcache and hurt their
+data.  Setting task state to TASK_RUNNING before returning fixes this
+problem.
+
+Changelog:
+v2: fix the race issue in v1 patch.
+v1: initial buggy fix.
 
 Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/sysfs.c     | 3 +++
- drivers/md/bcache/writeback.c | 2 +-
- drivers/md/bcache/writeback.h | 3 +++
- 3 files changed, 7 insertions(+), 1 deletion(-)
+ drivers/md/bcache/writeback.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index b4184092c727..a74a752c9e0f 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -215,6 +215,9 @@ STORE(__cached_dev)
- 	sysfs_strtoul_clamp(writeback_rate,
- 			    dc->writeback_rate.rate, 1, INT_MAX);
- 
-+	sysfs_strtoul_clamp(writeback_rate_update_seconds,
-+			    dc->writeback_rate_update_seconds,
-+			    1, WRITEBACK_RATE_UPDATE_SECS_MAX);
- 	d_strtoul_nonzero(writeback_rate_update_seconds);
- 	d_strtoul(writeback_rate_i_term_inverse);
- 	d_strtoul_nonzero(writeback_rate_p_term_inverse);
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 51306a19ab03..0ade883b6316 100644
+index 0ade883b6316..f1d2fc15abcc 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -652,7 +652,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 	dc->writeback_rate.rate		= 1024;
- 	dc->writeback_rate_minimum	= 8;
+@@ -564,18 +564,21 @@ static int bch_writeback_thread(void *arg)
  
--	dc->writeback_rate_update_seconds = 5;
-+	dc->writeback_rate_update_seconds = WRITEBACK_RATE_UPDATE_SECS_DEFAULT;
- 	dc->writeback_rate_p_term_inverse = 40;
- 	dc->writeback_rate_i_term_inverse = 10000;
+ 	while (!kthread_should_stop()) {
+ 		down_write(&dc->writeback_lock);
++		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (!atomic_read(&dc->has_dirty) ||
+ 		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+ 		     !dc->writeback_running)) {
+ 			up_write(&dc->writeback_lock);
+-			set_current_state(TASK_INTERRUPTIBLE);
  
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 66f1c527fa24..587b25599856 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -8,6 +8,9 @@
- #define MAX_WRITEBACKS_IN_PASS  5
- #define MAX_WRITESIZE_IN_PASS   5000	/* *512b */
+-			if (kthread_should_stop())
++			if (kthread_should_stop()) {
++				set_current_state(TASK_RUNNING);
+ 				return 0;
++			}
  
-+#define WRITEBACK_RATE_UPDATE_SECS_MAX		60
-+#define WRITEBACK_RATE_UPDATE_SECS_DEFAULT	5
-+
- /*
-  * 14 (16384ths) is chosen here as something that each backing device
-  * should be a reasonable fraction of the share, and not to blow up
+ 			schedule();
+ 			continue;
+ 		}
++		set_current_state(TASK_RUNNING);
+ 
+ 		searched_full_index = refill_dirty(dc);
+ 
 -- 
 2.15.1
