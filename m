@@ -1,81 +1,100 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v2 01/12] bcache: set writeback_rate_update_seconds in range [1, 60] seconds
-Date: Sun, 14 Jan 2018 01:01:38 +0800
-Message-ID: <20180113170149.22365-2-colyli@suse.de>
-References: <20180113170149.22365-1-colyli@suse.de>
+Subject: [PATCH v2 00/12] bcache: device failure handling improvement
+Date: Sun, 14 Jan 2018 01:01:37 +0800
+Message-ID: <20180113170149.22365-1-colyli@suse.de>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:36468 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:36454 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1755196AbeAMRCX (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 13 Jan 2018 12:02:23 -0500
-In-Reply-To: <20180113170149.22365-1-colyli@suse.de>
+        id S1755254AbeAMRCP (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 13 Jan 2018 12:02:15 -0500
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
 Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-dc->writeback_rate_update_seconds can be set via sysfs and its value can
-be set to [1, ULONG_MAX].  It does not make sense to set such a large
-value, 60 seconds is long enough value considering the default 5 seconds
-works well for long time.
+Hi maintainers and folks,
 
-Because dc->writeback_rate_update is a special delayed work, it re-arms
-itself inside the delayed work routine update_writeback_rate(). When
-stopping it by cancel_delayed_work_sync(), there should be a timeout to
-wait and make sure the re-armed delayed work is stopped too. A small max
-value of dc->writeback_rate_update_seconds is also helpful to decide a
-reasonable small timeout.
+This patch set tries to improve bcache device failure handling, including
+cache device and backing device failures.
 
-This patch limits sysfs interface to set dc->writeback_rate_update_seconds
-in range of [1, 60] seconds, and replaces the hand-coded number by macros.
+The basic idea to handle failed cache device is,
+- Unregister cache set
+- Detach all backing devices attached to this cache set
+- Stop all bcache devices linked to this cache set
+The above process is named 'cache set retire' by me. The result of cache
+set retire is, cache set and bcache devices are all removed, following
+I/O requests will get failed immediately to notift upper layer or user
+space coce that the cache device is failed or disconnected.
 
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/sysfs.c     | 3 +++
- drivers/md/bcache/writeback.c | 2 +-
- drivers/md/bcache/writeback.h | 3 +++
- 3 files changed, 7 insertions(+), 1 deletion(-)
+For failed backing device, there are two ways to handle them,
+- If device is disconnected, when kernel thread dc->status_update_thread
+  finds it is offline for BACKING_DEV_OFFLINE_TIMEOUT (5) seconds, the
+  kernel thread will set dc->io_disable and call bcache_device_stop() to
+  stop and remove the bcache device from system.
+- If device is connected but too many I/O errors happen, after errors
+  number exceeds dc->error_limit, call bch_cached_dev_error() to set
+  dc->io_disable and stop bcache device. Then the broken backing device
+  and its bcache device will be removed from system. 
 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index b4184092c727..a74a752c9e0f 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -215,6 +215,9 @@ STORE(__cached_dev)
- 	sysfs_strtoul_clamp(writeback_rate,
- 			    dc->writeback_rate.rate, 1, INT_MAX);
- 
-+	sysfs_strtoul_clamp(writeback_rate_update_seconds,
-+			    dc->writeback_rate_update_seconds,
-+			    1, WRITEBACK_RATE_UPDATE_SECS_MAX);
- 	d_strtoul_nonzero(writeback_rate_update_seconds);
- 	d_strtoul(writeback_rate_i_term_inverse);
- 	d_strtoul_nonzero(writeback_rate_p_term_inverse);
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 51306a19ab03..0ade883b6316 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -652,7 +652,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 	dc->writeback_rate.rate		= 1024;
- 	dc->writeback_rate_minimum	= 8;
- 
--	dc->writeback_rate_update_seconds = 5;
-+	dc->writeback_rate_update_seconds = WRITEBACK_RATE_UPDATE_SECS_DEFAULT;
- 	dc->writeback_rate_p_term_inverse = 40;
- 	dc->writeback_rate_i_term_inverse = 10000;
- 
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 66f1c527fa24..587b25599856 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -8,6 +8,9 @@
- #define MAX_WRITEBACKS_IN_PASS  5
- #define MAX_WRITESIZE_IN_PASS   5000	/* *512b */
- 
-+#define WRITEBACK_RATE_UPDATE_SECS_MAX		60
-+#define WRITEBACK_RATE_UPDATE_SECS_DEFAULT	5
-+
- /*
-  * 14 (16384ths) is chosen here as something that each backing device
-  * should be a reasonable fraction of the share, and not to blow up
+The v2 patch set fixes the problems addressed in v1 patch reviews, adds
+failure handling for backing device. This patch set also includes a patch
+from Junhui Tang. And the v2 patch set does not include 2 patches which are
+in bcache-for-next already. 
+
+A basic testing covered with writethrough, writeback, writearound mode, and
+read/write/readwrite workloads, cache set or bcache device can be removed
+by too many I/O errors or delete the device. For plugging out physical
+disks, a kernel bug triggers rcu oops in __do_softirq() and locks up all
+following accesses to the disconnected disk, this blocks my testing.
+
+While posting v2 patch set, I also continue to test the code from my side.
+Any comment, question and review are warmly welcome.
+
+Open issues:
+1, Detach backing device by writing sysfs detach file does not work, it is
+   because writeback thread does not drop dc->count refcount when cache
+   device turns from dirty into clean. This issue will be fixed in v3
+   patch set.
+2, A kernel bug in __do_softirq() when plugging out hard disk with heavy
+   I/O blocks my physical disk disconnection test. If any one knows this
+   bug, please give me a hint.
+
+Changelog:
+v2: fixes all problems found in v1 review.
+    add patches to handle backing device failure.
+    add one more patch to set writeback_rate_update_seconds range.
+    include a patch from Junhui Tang.
+v1: the initial version, only handles cache device failure.
+
+Coly Li (11):
+  bcache: set writeback_rate_update_seconds in range [1, 60] seconds
+  bcache: properly set task state in bch_writeback_thread()
+  bcache: set task properly in allocator_wait()
+  bcache: fix cached_dev->count usage for bch_cache_set_error()
+  bcache: stop dc->writeback_rate_update properly
+  bcache: set error_limit correctly
+  bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags
+  bcache: stop all attached bcache devices for a retired cache set
+  bcache: add backing_request_endio() for bi_end_io of attached backing
+    device I/O
+  bcache: add io_disable to struct cached_dev
+  bcache: stop bcache device when backing device is offline
+
+Tang Junhui (1):
+  bcache: fix inaccurate io state for detached bcache devices
+
+ drivers/md/bcache/alloc.c     |   5 +-
+ drivers/md/bcache/bcache.h    |  37 ++++++++-
+ drivers/md/bcache/btree.c     |  10 ++-
+ drivers/md/bcache/io.c        |  16 +++-
+ drivers/md/bcache/journal.c   |   4 +-
+ drivers/md/bcache/request.c   | 188 +++++++++++++++++++++++++++++++++++-------
+ drivers/md/bcache/super.c     | 134 ++++++++++++++++++++++++++++--
+ drivers/md/bcache/sysfs.c     |  45 +++++++++-
+ drivers/md/bcache/util.h      |   6 --
+ drivers/md/bcache/writeback.c |  79 +++++++++++++++---
+ drivers/md/bcache/writeback.h |   5 +-
+ 11 files changed, 458 insertions(+), 71 deletions(-)
+
 -- 
 2.15.1
