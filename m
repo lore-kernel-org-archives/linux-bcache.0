@@ -1,183 +1,276 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v2 04/12] bcache: fix cached_dev->count usage for bch_cache_set_error()
-Date: Sun, 14 Jan 2018 01:10:42 +0800
-Message-ID: <20180113171050.22467-5-colyli@suse.de>
+Subject: [PATCH v2 05/12] bcache: stop dc->writeback_rate_update properly
+Date: Sun, 14 Jan 2018 01:10:43 +0800
+Message-ID: <20180113171050.22467-6-colyli@suse.de>
 References: <20180113171050.22467-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:36953 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1755102AbeAMRMM (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 13 Jan 2018 12:12:12 -0500
 In-Reply-To: <20180113171050.22467-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Hannes Reinecke <hare@suse.com>, Junhui Tang <tang.junhui@zte.com.cn>
 
-When bcache metadata I/O fails, bcache will call bch_cache_set_error()
-to retire the whole cache set. The expected behavior to retire a cache
-set is to unregister the cache set, and unregister all backing device
-attached to this cache set, then remove sysfs entries of the cache set
-and all attached backing devices, finally release memory of structs
-cache_set, cache, cached_dev and bcache_device.
+struct delayed_work writeback_rate_update in struct cache_dev is a delayed
+worker to call function update_writeback_rate() in period (the interval is
+defined by dc->writeback_rate_update_seconds).
 
-In my testing when journal I/O failure triggered by disconnected cache
-device, sometimes the cache set cannot be retired, and its sysfs
-entry /sys/fs/bcache/<uuid> still exits and the backing device also
-references it. This is not expected behavior.
+When a metadate I/O error happens on cache device, bcache error handling
+routine bch_cache_set_error() will call bch_cache_set_unregister() to
+retire whole cache set. On the unregister code path, this delayed work is
+stopped by calling cancel_delayed_work_sync(&dc->writeback_rate_update).
 
-When metadata I/O failes, the call senquence to retire whole cache set is,
-        bch_cache_set_error()
-        bch_cache_set_unregister()
-        bch_cache_set_stop()
-        __cache_set_unregister()     <- called as callback by calling
-                                        clousre_queue(&c->caching)
-        cache_set_flush()            <- called as a callback when refcount
-                                        of cache_set->caching is 0
-        cache_set_free()             <- called as a callback when refcount
-                                        of catch_set->cl is 0
-        bch_cache_set_release()      <- called as a callback when refcount
-                                        of catch_set->kobj is 0
+dc->writeback_rate_update is a special delayed work from others in bcache.
+In its routine update_writeback_rate(), this delayed work is re-armed
+itself. That means when cancel_delayed_work_sync() returns, this delayed
+work can still be executed after several seconds defined by
+dc->writeback_rate_update_seconds.
 
-I find if kernel thread bch_writeback_thread() quits while-loop when
-kthread_should_stop() is true and searched_full_index is false, clousre
-callback cache_set_flush() set by continue_at() will never be called. The
-result is, bcache fails to retire whole cache set.
+The problem is, after cancel_delayed_work_sync() returns, the cache set
+unregister code path will continue and release memory of struct cache set.
+Then the delayed work is scheduled to run, __update_writeback_rate()
+will reference the already released cache_set memory, and trigger a NULL
+pointer deference fault.
 
-cache_set_flush() will be called when refcount of closure c->caching is 0,
-and in function bcache_device_detach() refcount of closure c->caching is
-released to 0 by clousre_put(). In metadata error code path, function
-bcache_device_detach() is called by cached_dev_detach_finish(). This is a
-callback routine being called when cached_dev->count is 0. This refcount
-is decreased by cached_dev_put().
+This patch introduces two more bcache device flags,
+- BCACHE_DEV_WB_RUNNING
+  bit set:  bcache device is in writeback mode and running, it is OK for
+            dc->writeback_rate_update to re-arm itself.
+  bit clear:bcache device is trying to stop dc->writeback_rate_update,
+            this delayed work should not re-arm itself and quit.
+- BCACHE_DEV_RATE_DW_RUNNING
+  bit set:  routine update_writeback_rate() is executing.
+  bit clear: routine update_writeback_rate() quits.
 
-The above dependence indicates, cache_set_flush() will be called when
-refcount of cache_set->cl is 0, and refcount of cache_set->cl to be 0
-when refcount of cache_dev->count is 0.
+This patch also adds a function cancel_writeback_rate_update_dwork() to
+wait for dc->writeback_rate_update quits before cancel it by calling
+cancel_delayed_work_sync(). In order to avoid a deadlock by unexpected
+quit dc->writeback_rate_update, after time_out seconds this function will
+give up and continue to call cancel_delayed_work_sync().
 
-The reason why sometimes cache_dev->count is not 0 (when metadata I/O fails
-and bch_cache_set_error() called) is, in bch_writeback_thread(), refcount
-of cache_dev is not decreased properly.
+And here I explain how this patch stops self re-armed delayed work properly
+with the above stuffs.
 
-In bch_writeback_thread(), cached_dev_put() is called only when
-searched_full_index is true and cached_dev->writeback_keys is empty, a.k.a
-there is no dirty data on cache. In most of run time it is correct, but
-when bch_writeback_thread() quits the while-loop while cache is still
-dirty, current code forget to call cached_dev_put() before this kernel
-thread exits. This is why sometimes cache_set_flush() is not executed and
-cache set fails to be retired.
+update_writeback_rate() sets BCACHE_DEV_RATE_DW_RUNNING at its beginning
+and clears BCACHE_DEV_RATE_DW_RUNNING at its end. Before calling
+cancel_writeback_rate_update_dwork() clear flag BCACHE_DEV_WB_RUNNING.
 
-The reason to call cached_dev_put() in bch_writeback_rate() is, when the
-cache device changes from clean to dirty, cached_dev_get() is called, to
-make sure during writeback operatiions both backing and cache devices
-won't be released.
+Before calling cancel_delayed_work_sync() wait utill flag
+BCACHE_DEV_RATE_DW_RUNNING is clear. So when calling
+cancel_delayed_work_sync(), dc->writeback_rate_update must be already re-
+armed, or quite by seeing BCACHE_DEV_WB_RUNNING cleared. In both cases
+delayed work routine update_writeback_rate() won't be executed after
+cancel_delayed_work_sync() returns.
 
-Adding following code in bch_writeback_thread() does not work,
-   static int bch_writeback_thread(void *arg)
-        }
+Inside update_writeback_rate() before calling schedule_delayed_work(), flag
+BCACHE_DEV_WB_RUNNING is checked before. If this flag is cleared, it means
+someone is about to stop the delayed work. Because flag
+BCACHE_DEV_RATE_DW_RUNNING is set already and cancel_delayed_work_sync()
+has to wait for this flag to be cleared, we don't need to worry about race
+condition here.
 
-+       if (atomic_read(&dc->has_dirty))
-+               cached_dev_put()
-+
-        return 0;
- }
-because writeback kernel thread can be waken up and start via sysfs entry:
-        echo 1 > /sys/block/bcache<N>/bcache/writeback_running
-It is difficult to check whether backing device is dirty without race and
-extra lock. So the above modification will introduce potential refcount
-underflow in some conditions.
+If update_writeback_rate() is scheduled to run after checking
+BCACHE_DEV_RATE_DW_RUNNING and before calling cancel_delayed_work_sync()
+in cancel_writeback_rate_update_dwork(), it is also safe. Because at this
+moment BCACHE_DEV_WB_RUNNING is cleared with memory barrier. As I mentioned
+previously, update_writeback_rate() will see BCACHE_DEV_WB_RUNNING is clear
+and quit immediately.
 
-The correct fix is, to take cached dev refcount when creating the kernel
-thread, and put it before the kernel thread exits. Then bcache does not
-need to take a cached dev refcount when cache turns from clean to dirty,
-or to put a cached dev refcount when cache turns from ditry to clean. The
-writeback kernel thread is alwasy safe to reference data structure from
-cache set, cache and cached device (because a refcount of cache device is
-taken for it already), and no matter the kernel thread is stopped by I/O
-errors or system reboot, cached_dev->count can always be used correctly.
-
-The patch is simple, but understanding how it works is quite complicated.
+Because there are more dependences inside update_writeback_rate() to struct
+cache_set memory, dc->writeback_rate_update is not a simple self re-arm
+delayed work. After trying many different methods (e.g. hold dc->count, or
+use locks), this is the only way I can find which works to properly stop
+dc->writeback_rate_update delayed work.
 
 Changelog:
-v2: set dc->writeback_thread to NULL in this patch, as suggested by Hannes.
-v1: inital version for review.
+v2: Try to fix the race issue which is pointed out by Junhui.
+v1: The initial version for review
 
 Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.com>
 Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Hannes Reinecke <hare@suse.com>
 Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/super.c     |  1 -
- drivers/md/bcache/writeback.c | 11 ++++++++---
- drivers/md/bcache/writeback.h |  2 --
- 3 files changed, 8 insertions(+), 6 deletions(-)
+ drivers/md/bcache/bcache.h    |  9 +++++----
+ drivers/md/bcache/super.c     | 39 +++++++++++++++++++++++++++++++++++----
+ drivers/md/bcache/sysfs.c     |  3 ++-
+ drivers/md/bcache/writeback.c | 29 ++++++++++++++++++++++++++++-
+ 4 files changed, 70 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 5e2d4e80198e..88d938c8d027 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -258,10 +258,11 @@ struct bcache_device {
+ 	struct gendisk		*disk;
+ 
+ 	unsigned long		flags;
+-#define BCACHE_DEV_CLOSING	0
+-#define BCACHE_DEV_DETACHING	1
+-#define BCACHE_DEV_UNLINK_DONE	2
+-
++#define BCACHE_DEV_CLOSING		0
++#define BCACHE_DEV_DETACHING		1
++#define BCACHE_DEV_UNLINK_DONE		2
++#define BCACHE_DEV_WB_RUNNING		4
++#define BCACHE_DEV_RATE_DW_RUNNING	8
+ 	unsigned		nr_stripes;
+ 	unsigned		stripe_size;
+ 	atomic_t		*stripe_sectors_dirty;
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 133b81225ea9..d14e09cce2f6 100644
+index d14e09cce2f6..6d888e8fea8c 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1052,7 +1052,6 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
- 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
- 		bch_sectors_dirty_init(&dc->disk);
- 		atomic_set(&dc->has_dirty, 1);
--		refcount_inc(&dc->count);
- 		bch_writeback_queue(dc);
- 	}
- 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index f1d2fc15abcc..b280c134dd4d 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -572,7 +572,7 @@ static int bch_writeback_thread(void *arg)
- 
- 			if (kthread_should_stop()) {
- 				set_current_state(TASK_RUNNING);
--				return 0;
-+				break;
- 			}
- 
- 			schedule();
-@@ -585,7 +585,6 @@ static int bch_writeback_thread(void *arg)
- 		if (searched_full_index &&
- 		    RB_EMPTY_ROOT(&dc->writeback_keys.keys)) {
- 			atomic_set(&dc->has_dirty, 0);
--			cached_dev_put(dc);
- 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
- 			bch_write_bdev_super(dc, NULL);
- 		}
-@@ -606,6 +605,9 @@ static int bch_writeback_thread(void *arg)
- 		}
- 	}
- 
-+	dc->writeback_thread = NULL;
-+	cached_dev_put(dc);
-+
- 	return 0;
+@@ -899,6 +899,32 @@ void bch_cached_dev_run(struct cached_dev *dc)
+ 		pr_debug("error creating sysfs link");
  }
  
-@@ -669,10 +671,13 @@ int bch_cached_dev_writeback_start(struct cached_dev *dc)
- 	if (!dc->writeback_write_wq)
- 		return -ENOMEM;
++/*
++ * If BCACHE_DEV_RATE_DW_RUNNING is set, it means routine of the delayed
++ * work dc->writeback_rate_update is running. Wait until the routine
++ * quits (BCACHE_DEV_RATE_DW_RUNNING is clear), then continue to
++ * cancel it. If BCACHE_DEV_RATE_DW_RUNNING is not clear after time_out
++ * seconds, give up waiting here and continue to cancel it too.
++ */
++static void cancel_writeback_rate_update_dwork(struct cached_dev *dc)
++{
++	int time_out = WRITEBACK_RATE_UPDATE_SECS_MAX * HZ;
++
++	do {
++		if (!test_bit(BCACHE_DEV_RATE_DW_RUNNING,
++			      &dc->disk.flags))
++			break;
++		time_out--;
++		schedule_timeout_interruptible(1);
++	} while (time_out > 0);
++
++	if (time_out == 0)
++		pr_warn("bcache: give up waiting for "
++			"dc->writeback_write_update to quit");
++
++	cancel_delayed_work_sync(&dc->writeback_rate_update);
++}
++
+ static void cached_dev_detach_finish(struct work_struct *w)
+ {
+ 	struct cached_dev *dc = container_of(w, struct cached_dev, detach);
+@@ -911,7 +937,9 @@ static void cached_dev_detach_finish(struct work_struct *w)
  
-+	cached_dev_get(dc);
- 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
- 					      "bcache_writeback");
--	if (IS_ERR(dc->writeback_thread))
-+	if (IS_ERR(dc->writeback_thread)) {
-+		cached_dev_put(dc);
- 		return PTR_ERR(dc->writeback_thread);
+ 	mutex_lock(&bch_register_lock);
+ 
+-	cancel_delayed_work_sync(&dc->writeback_rate_update);
++	if (test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
++		cancel_writeback_rate_update_dwork(dc);
++
+ 	if (!IS_ERR_OR_NULL(dc->writeback_thread)) {
+ 		kthread_stop(dc->writeback_thread);
+ 		dc->writeback_thread = NULL;
+@@ -954,6 +982,7 @@ void bch_cached_dev_detach(struct cached_dev *dc)
+ 	closure_get(&dc->disk.cl);
+ 
+ 	bch_writeback_queue(dc);
++
+ 	cached_dev_put(dc);
+ }
+ 
+@@ -1079,14 +1108,16 @@ static void cached_dev_free(struct closure *cl)
+ {
+ 	struct cached_dev *dc = container_of(cl, struct cached_dev, disk.cl);
+ 
+-	cancel_delayed_work_sync(&dc->writeback_rate_update);
++	mutex_lock(&bch_register_lock);
++
++	if (test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
++		cancel_writeback_rate_update_dwork(dc);
++
+ 	if (!IS_ERR_OR_NULL(dc->writeback_thread))
+ 		kthread_stop(dc->writeback_thread);
+ 	if (dc->writeback_write_wq)
+ 		destroy_workqueue(dc->writeback_write_wq);
+ 
+-	mutex_lock(&bch_register_lock);
+-
+ 	if (atomic_read(&dc->running))
+ 		bd_unlink_disk_holder(dc->bdev, dc->disk.disk);
+ 	bcache_device_free(&dc->disk);
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index a74a752c9e0f..b7166c504cdb 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -304,7 +304,8 @@ STORE(bch_cached_dev)
+ 		bch_writeback_queue(dc);
+ 
+ 	if (attr == &sysfs_writeback_percent)
+-		schedule_delayed_work(&dc->writeback_rate_update,
++		if (!test_and_set_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
++			schedule_delayed_work(&dc->writeback_rate_update,
+ 				      dc->writeback_rate_update_seconds * HZ);
+ 
+ 	mutex_unlock(&bch_register_lock);
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index b280c134dd4d..69957f97bf13 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -115,6 +115,21 @@ static void update_writeback_rate(struct work_struct *work)
+ 					     struct cached_dev,
+ 					     writeback_rate_update);
+ 
++	/*
++	 * should check BCACHE_DEV_RATE_DW_RUNNING before calling
++	 * cancel_delayed_work_sync().
++	 */
++	set_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
++	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
++	smp_mb();
++
++	if (!test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags)) {
++		clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
++		/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
++		smp_mb();
++		return;
 +	}
++
+ 	down_read(&dc->writeback_lock);
  
+ 	if (atomic_read(&dc->has_dirty) &&
+@@ -123,8 +138,18 @@ static void update_writeback_rate(struct work_struct *work)
+ 
+ 	up_read(&dc->writeback_lock);
+ 
+-	schedule_delayed_work(&dc->writeback_rate_update,
++	if (test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags)) {
++		schedule_delayed_work(&dc->writeback_rate_update,
+ 			      dc->writeback_rate_update_seconds * HZ);
++	}
++
++	/*
++	 * should check BCACHE_DEV_RATE_DW_RUNNING before calling
++	 * cancel_delayed_work_sync().
++	 */
++	clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
++	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
++	smp_mb();
+ }
+ 
+ static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
+@@ -661,6 +686,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+ 	dc->writeback_rate_p_term_inverse = 40;
+ 	dc->writeback_rate_i_term_inverse = 10000;
+ 
++	WARN_ON(test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags));
+ 	INIT_DELAYED_WORK(&dc->writeback_rate_update, update_writeback_rate);
+ }
+ 
+@@ -679,6 +705,7 @@ int bch_cached_dev_writeback_start(struct cached_dev *dc)
+ 		return PTR_ERR(dc->writeback_thread);
+ 	}
+ 
++	WARN_ON(test_and_set_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags));
  	schedule_delayed_work(&dc->writeback_rate_update,
  			      dc->writeback_rate_update_seconds * HZ);
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 587b25599856..0bba8f1c6cdf 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -105,8 +105,6 @@ static inline void bch_writeback_add(struct cached_dev *dc)
- {
- 	if (!atomic_read(&dc->has_dirty) &&
- 	    !atomic_xchg(&dc->has_dirty, 1)) {
--		refcount_inc(&dc->count);
--
- 		if (BDEV_STATE(&dc->sb) != BDEV_STATE_DIRTY) {
- 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_DIRTY);
- 			/* XXX: should do this synchronously */
+ 
 -- 
 2.15.1
