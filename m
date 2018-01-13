@@ -1,127 +1,100 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v2 06/12] bcache: set error_limit correctly
-Date: Sun, 14 Jan 2018 01:01:43 +0800
-Message-ID: <20180113170149.22365-7-colyli@suse.de>
-References: <20180113170149.22365-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180113170149.22365-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
+Subject: [PATCH v2 00/12] bcache: device failure handling improvement
+Date: Sun, 14 Jan 2018 01:10:38 +0800
+Message-ID: <20180113171050.22467-1-colyli@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:36881 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1755206AbeAMRLF (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 13 Jan 2018 12:11:05 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-Struct cache uses io_errors for two purposes,
-- Error decay: when cache set error_decay is set, io_errors is used to
-  generate a small piece of delay when I/O error happens.
-- I/O errors counter: in order to generate big enough value for error
-  decay, I/O errors counter value is stored by left shifting 20 bits (a.k.a
-  IO_ERROR_SHIFT).
+Hi maintainers and folks,
 
-In function bch_count_io_errors(), if I/O errors counter reaches cache set
-error limit, bch_cache_set_error() will be called to retire the whold cache
-set. But current code is problematic when checking the error limit, see the
-following code piece from bch_count_io_errors(),
+This patch set tries to improve bcache device failure handling, including
+cache device and backing device failures.
 
- 90     if (error) {
- 91             char buf[BDEVNAME_SIZE];
- 92             unsigned errors = atomic_add_return(1 << IO_ERROR_SHIFT,
- 93                                                 &ca->io_errors);
- 94             errors >>= IO_ERROR_SHIFT;
- 95
- 96             if (errors < ca->set->error_limit)
- 97                     pr_err("%s: IO error on %s, recovering",
- 98                            bdevname(ca->bdev, buf), m);
- 99             else
-100                     bch_cache_set_error(ca->set,
-101                                         "%s: too many IO errors %s",
-102                                         bdevname(ca->bdev, buf), m);
-103     }
+The basic idea to handle failed cache device is,
+- Unregister cache set
+- Detach all backing devices attached to this cache set
+- Stop all bcache devices linked to this cache set
+The above process is named 'cache set retire' by me. The result of cache
+set retire is, cache set and bcache devices are all removed, following
+I/O requests will get failed immediately to notift upper layer or user
+space coce that the cache device is failed or disconnected.
 
-At line 94, errors is right shifting IO_ERROR_SHIFT bits, now it is real
-errors counter to compare at line 96. But ca->set->error_limit is initia-
-lized with an amplified value in bch_cache_set_alloc(),
-1545         c->error_limit  = 8 << IO_ERROR_SHIFT;
+For failed backing device, there are two ways to handle them,
+- If device is disconnected, when kernel thread dc->status_update_thread
+  finds it is offline for BACKING_DEV_OFFLINE_TIMEOUT (5) seconds, the
+  kernel thread will set dc->io_disable and call bcache_device_stop() to
+  stop and remove the bcache device from system.
+- If device is connected but too many I/O errors happen, after errors
+  number exceeds dc->error_limit, call bch_cached_dev_error() to set
+  dc->io_disable and stop bcache device. Then the broken backing device
+  and its bcache device will be removed from system. 
 
-It means by default, in bch_count_io_errors(), before 8<<20 errors happened
-bch_cache_set_error() won't be called to retire the problematic cache
-device. If the average request size is 64KB, it means bcache won't handle
-failed device until 512GB data is requested. This is too large to be an I/O
-threashold. So I believe the correct error limit should be much less.
+The v2 patch set fixes the problems addressed in v1 patch reviews, adds
+failure handling for backing device. This patch set also includes a patch
+from Junhui Tang. And the v2 patch set does not include 2 patches which are
+in bcache-for-next already. 
 
-This patch sets default cache set error limit to 8, then in
-bch_count_io_errors() when errors counter reaches 8 (if it is default
-value), function bch_cache_set_error() will be called to retire the whole
-cache set. This patch also removes bits shifting when store or show
-io_error_limit value via sysfs interface.
+A basic testing covered with writethrough, writeback, writearound mode, and
+read/write/readwrite workloads, cache set or bcache device can be removed
+by too many I/O errors or delete the device. For plugging out physical
+disks, a kernel bug triggers rcu oops in __do_softirq() and locks up all
+following accesses to the disconnected disk, this blocks my testing.
 
-Nowadays most of SSDs handle internal flash failure automatically by LBA
-address re-indirect mapping. If an I/O error can be observed by upper layer
-code, it will be a notable error because that SSD can not re-indirect
-map the problematic LBA address to an available flash block. This situation
-indicates the whole SSD will be failed very soon. Therefore setting 8 as
-the default io error limit value makes sense, it is enough for most of
-cache devices.
+While posting v2 patch set, I also continue to test the code from my side.
+Any comment, question and review are warmly welcome.
+
+Open issues:
+1, Detach backing device by writing sysfs detach file does not work, it is
+   because writeback thread does not drop dc->count refcount when cache
+   device turns from dirty into clean. This issue will be fixed in v3
+   patch set.
+2, A kernel bug in __do_softirq() when plugging out hard disk with heavy
+   I/O blocks my physical disk disconnection test. If any one knows this
+   bug, please give me a hint.
 
 Changelog:
-v2: add reviewed-by from Hannes.
-v1: initial version for review.
+v2: fixes all problems found in v1 review.
+    add patches to handle backing device failure.
+    add one more patch to set writeback_rate_update_seconds range.
+    include a patch from Junhui Tang.
+v1: the initial version, only handles cache device failure.
 
-Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.com>
-Cc: Michael Lyle <mlyle@lyle.org>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/bcache.h | 1 +
- drivers/md/bcache/super.c  | 2 +-
- drivers/md/bcache/sysfs.c  | 4 ++--
- 3 files changed, 4 insertions(+), 3 deletions(-)
+Coly Li (11):
+  bcache: set writeback_rate_update_seconds in range [1, 60] seconds
+  bcache: properly set task state in bch_writeback_thread()
+  bcache: set task properly in allocator_wait()
+  bcache: fix cached_dev->count usage for bch_cache_set_error()
+  bcache: stop dc->writeback_rate_update properly
+  bcache: set error_limit correctly
+  bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags
+  bcache: stop all attached bcache devices for a retired cache set
+  bcache: add backing_request_endio() for bi_end_io of attached backing
+    device I/O
+  bcache: add io_disable to struct cached_dev
+  bcache: stop bcache device when backing device is offline
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 88d938c8d027..7d7512fa4f09 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -663,6 +663,7 @@ struct cache_set {
- 		ON_ERROR_UNREGISTER,
- 		ON_ERROR_PANIC,
- 	}			on_error;
-+#define DEFAULT_IO_ERROR_LIMIT 8
- 	unsigned		error_limit;
- 	unsigned		error_decay;
- 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 6d888e8fea8c..a373648b5d4b 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1583,7 +1583,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 
- 	c->congested_read_threshold_us	= 2000;
- 	c->congested_write_threshold_us	= 20000;
--	c->error_limit	= 8 << IO_ERROR_SHIFT;
-+	c->error_limit	= DEFAULT_IO_ERROR_LIMIT;
- 
- 	return c;
- err:
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index b7166c504cdb..ba62e987b503 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -560,7 +560,7 @@ SHOW(__bch_cache_set)
- 
- 	/* See count_io_errors for why 88 */
- 	sysfs_print(io_error_halflife,	c->error_decay * 88);
--	sysfs_print(io_error_limit,	c->error_limit >> IO_ERROR_SHIFT);
-+	sysfs_print(io_error_limit,	c->error_limit);
- 
- 	sysfs_hprint(congested,
- 		     ((uint64_t) bch_get_congested(c)) << 9);
-@@ -660,7 +660,7 @@ STORE(__bch_cache_set)
- 	}
- 
- 	if (attr == &sysfs_io_error_limit)
--		c->error_limit = strtoul_or_return(buf) << IO_ERROR_SHIFT;
-+		c->error_limit = strtoul_or_return(buf);
- 
- 	/* See count_io_errors() for why 88 */
- 	if (attr == &sysfs_io_error_halflife)
+Tang Junhui (1):
+  bcache: fix inaccurate io state for detached bcache devices
+
+ drivers/md/bcache/alloc.c     |   5 +-
+ drivers/md/bcache/bcache.h    |  37 ++++++++-
+ drivers/md/bcache/btree.c     |  10 ++-
+ drivers/md/bcache/io.c        |  16 +++-
+ drivers/md/bcache/journal.c   |   4 +-
+ drivers/md/bcache/request.c   | 188 +++++++++++++++++++++++++++++++++++-------
+ drivers/md/bcache/super.c     | 134 ++++++++++++++++++++++++++++--
+ drivers/md/bcache/sysfs.c     |  45 +++++++++-
+ drivers/md/bcache/util.h      |   6 --
+ drivers/md/bcache/writeback.c |  79 +++++++++++++++---
+ drivers/md/bcache/writeback.h |   5 +-
+ 11 files changed, 458 insertions(+), 71 deletions(-)
+
 -- 
 2.15.1
