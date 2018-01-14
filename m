@@ -1,76 +1,125 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v3 09/13] bcache: stop all attached bcache devices for a retired cache set
-Date: Sun, 14 Jan 2018 22:42:32 +0800
-Message-ID: <20180114144236.28213-10-colyli@suse.de>
+Subject: [PATCH v3 10/13] bcache: fix inaccurate io state for detached bcache devices
+Date: Sun, 14 Jan 2018 22:42:33 +0800
+Message-ID: <20180114144236.28213-11-colyli@suse.de>
 References: <20180114144236.28213-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:49090 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751709AbeANOoL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 14 Jan 2018 09:44:11 -0500
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180114144236.28213-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>
+Cc: linux-block@vger.kernel.org, Tang Junhui <tang.junhui@zte.com.cn>
+List-Id: linux-bcache@vger.kernel.org
 
-When there are too many I/O errors on cache device, current bcache code
-will retire the whole cache set, and detach all bcache devices. But the
-detached bcache devices are not stopped, which is problematic when bcache
-is in writeback mode.
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-If the retired cache set has dirty data of backing devices, continue
-writing to bcache device will write to backing device directly. If the
-LBA of write request has a dirty version cached on cache device, next time
-when the cache device is re-registered and backing device re-attached to
-it again, the stale dirty data on cache device will be written to backing
-device, and overwrite latest directly written data. This situation causes
-a quite data corruption.
+When we run IO in a detached device,  and run iostat to shows IO status,
+normally it will show like bellow (Omitted some fields):
+Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+sdd        ... 15.89     0.53    1.82    0.20    2.23   1.81  52.30
+bcache0    ... 15.89   115.42    0.00    0.00    0.00   2.40  69.60
+but after IO stopped, there are still very big avgqu-sz and %util
+values as bellow:
+Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+bcache0   ...      0   5326.32    0.00    0.00    0.00   0.00 100.10
 
-This patch checkes whether cache_set->io_disable is true in
-__cache_set_unregister(). If cache_set->io_disable is true, it means cache
-set is unregistering by too many I/O errors, then all attached bcache
-devices will be stopped as well. If cache_set->io_disable is not true, it
-means __cache_set_unregister() is triggered by writing 1 to sysfs file
-/sys/fs/bcache/<UUID>/bcache/stop. This is an exception because users do
-it explicitly, this patch keeps existing behavior and does not stop any
-bcache device.
+The reason for this issue is that, only generic_start_io_acct() called
+and no generic_end_io_acct() called for detached device in
+cached_dev_make_request(). See the code:
+//start generic_start_io_acct()
+generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
+if (cached_dev_get(dc)) {
+	//will callback generic_end_io_acct()
+}
+else {
+	//will not call generic_end_io_acct()
+}
 
-Even the failed cache device has no dirty data, stopping bcache device is
-still a desired behavior by many Ceph and data base users. Then their
-application will report I/O errors due to disappeared bcache device, and
-operation people will know the cache device is broken or disconnected.
+This patch calls generic_end_io_acct() in the end of IO for detached
+devices, so we can show IO state correctly.
 
-Changelog:
-v2: add Reviewed-by from Hannes.
-v1: initial version for review.
+(Modified to use GFP_NOIO in kzalloc() by Coly Li)
 
-Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.com>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>
-Cc: Michael Lyle <mlyle@lyle.org>
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+Reviewed-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/super.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/md/bcache/request.c | 58 +++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 51 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 4204d75aee7b..97e3bb8e1aee 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1478,6 +1478,14 @@ static void __cache_set_unregister(struct closure *cl)
- 				dc = container_of(c->devices[i],
- 						  struct cached_dev, disk);
- 				bch_cached_dev_detach(dc);
-+				/*
-+				 * If we come here by too many I/O errors,
-+				 * bcache device should be stopped too, to
-+				 * keep data consistency on cache and
-+				 * backing devices.
-+				 */
-+				if (test_bit(CACHE_SET_IO_DISABLE, &c->flags))
-+					bcache_device_stop(c->devices[i]);
- 			} else {
- 				bcache_device_stop(c->devices[i]);
- 			}
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 02296bda6384..e09c5ae745be 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -986,6 +986,55 @@ static void cached_dev_nodata(struct closure *cl)
+ 	continue_at(cl, cached_dev_bio_complete, NULL);
+ }
+ 
++struct detached_dev_io_private {
++	struct bcache_device	*d;
++	unsigned long		start_time;
++	bio_end_io_t		*bi_end_io;
++	void			*bi_private;
++};
++
++static void detatched_dev_end_io(struct bio *bio)
++{
++	struct detached_dev_io_private *ddip;
++
++	ddip = bio->bi_private;
++	bio->bi_end_io = ddip->bi_end_io;
++	bio->bi_private = ddip->bi_private;
++
++	generic_end_io_acct(ddip->d->disk->queue,
++			    bio_data_dir(bio),
++			    &ddip->d->disk->part0, ddip->start_time);
++
++	kfree(ddip);
++
++	bio->bi_end_io(bio);
++}
++
++static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
++{
++	struct detached_dev_io_private *ddip;
++	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
++
++	/*
++	 * no need to call closure_get(&dc->disk.cl),
++	 * because upper layer had already opened bcache device,
++	 * which would call closure_get(&dc->disk.cl)
++	 */
++	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
++	ddip->d = d;
++	ddip->start_time = jiffies;
++	ddip->bi_end_io = bio->bi_end_io;
++	ddip->bi_private = bio->bi_private;
++	bio->bi_end_io = detatched_dev_end_io;
++	bio->bi_private = ddip;
++
++	if ((bio_op(bio) == REQ_OP_DISCARD) &&
++	    !blk_queue_discard(bdev_get_queue(dc->bdev)))
++		bio->bi_end_io(bio);
++	else
++		generic_make_request(bio);
++}
++
+ /* Cached devices - read & write stuff */
+ 
+ static blk_qc_t cached_dev_make_request(struct request_queue *q,
+@@ -1028,13 +1077,8 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
+ 			else
+ 				cached_dev_read(dc, s);
+ 		}
+-	} else {
+-		if ((bio_op(bio) == REQ_OP_DISCARD) &&
+-		    !blk_queue_discard(bdev_get_queue(dc->bdev)))
+-			bio_endio(bio);
+-		else
+-			generic_make_request(bio);
+-	}
++	} else
++		detached_dev_do_request(d, bio);
+ 
+ 	return BLK_QC_T_NONE;
+ }
 -- 
 2.15.1
