@@ -1,136 +1,88 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: fix for allocator and register thread race
-Date: Tue, 16 Jan 2018 12:46:31 +0800
-Message-ID: <5f38197c-58d8-4e85-b152-41454871b919@suse.de>
-References: <1515574275-10782-1-git-send-email-tang.junhui@zte.com.cn>
+From: Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH v3 02/13] bcache: properly set task state in
+ bch_writeback_thread()
+Date: Tue, 16 Jan 2018 10:02:27 +0100
+Message-ID: <9d834b70-f35b-4ca3-017c-d923900c98a0@suse.de>
+References: <20180114144236.28213-1-colyli@suse.de>
+ <20180114144236.28213-3-colyli@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:59815 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:50238 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750903AbeAPEqn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 15 Jan 2018 23:46:43 -0500
-In-Reply-To: <1515574275-10782-1-git-send-email-tang.junhui@zte.com.cn>
+        id S1750812AbeAPJC3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 16 Jan 2018 04:02:29 -0500
+In-Reply-To: <20180114144236.28213-3-colyli@suse.de>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn, huarui.dev@gmail.com, mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
 
-On 10/01/2018 4:51 PM, tang.junhui@zte.com.cn wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
+On 01/14/2018 03:42 PM, Coly Li wrote:
+> Kernel thread routine bch_writeback_thread() has the following code block,
 > 
-> After long time run of random small IO writing,
-> reboot the machine, and after the machine power on,
-> bcache got stuck, the stack is:
-> [root@ceph153 ~]# cat /proc/2510/task/*/stack
-> [<ffffffffa06b2455>] closure_sync+0x25/0x90 [bcache]
-> [<ffffffffa06b6be8>] bch_journal+0x118/0x2b0 [bcache]
-> [<ffffffffa06b6dc7>] bch_journal_meta+0x47/0x70 [bcache]
-> [<ffffffffa06be8f7>] bch_prio_write+0x237/0x340 [bcache]
-> [<ffffffffa06a8018>] bch_allocator_thread+0x3c8/0x3d0 [bcache]
-> [<ffffffff810a631f>] kthread+0xcf/0xe0
-> [<ffffffff8164c318>] ret_from_fork+0x58/0x90
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> [root@ceph153 ~]# cat /proc/2038/task/*/stack
-> [<ffffffffa06b1abd>] __bch_btree_map_nodes+0x12d/0x150 [bcache]
-> [<ffffffffa06b1bd1>] bch_btree_insert+0xf1/0x170 [bcache]
-> [<ffffffffa06b637f>] bch_journal_replay+0x13f/0x230 [bcache]
-> [<ffffffffa06c75fe>] run_cache_set+0x79a/0x7c2 [bcache]
-> [<ffffffffa06c0cf8>] register_bcache+0xd48/0x1310 [bcache]
-> [<ffffffff812f702f>] kobj_attr_store+0xf/0x20
-> [<ffffffff8125b216>] sysfs_write_file+0xc6/0x140
-> [<ffffffff811dfbfd>] vfs_write+0xbd/0x1e0
-> [<ffffffff811e069f>] SyS_write+0x7f/0xe0
-> [<ffffffff8164c3c9>] system_call_fastpath+0x16/0x1
-> The stack shows the register thread and allocator thread
-> were getting stuck when registering cache device.
+> 447         down_write(&dc->writeback_lock);
+> 448~450     if (check conditions) {
+> 451                 up_write(&dc->writeback_lock);
+> 452                 set_current_state(TASK_INTERRUPTIBLE);
+> 453
+> 454                 if (kthread_should_stop())
+> 455                         return 0;
+> 456
+> 457                 schedule();
+> 458                 continue;
+> 459         }
 > 
-> we reboot the machine several times, the issue always
-> exsit in this machine.
+> If condition check is true, its task state is set to TASK_INTERRUPTIBLE
+> and call schedule() to wait for others to wake up it.
 > 
-> We debug the code, and found the call trace as bellow:
-> register_bcache()
->   ==>run_cache_set()
->      ==>bch_journal_replay()
->         ==>bch_btree_insert()
->            ==>__bch_btree_map_nodes()
->               ==>btree_insert_fn()
->                  ==>btree_split() //node need split
->                     ==>btree_check_reserve()
-> In btree_check_reserve(), It will check if there is enough buckets
-> of RESERVE_BTREE type, since allocator thread did not work yet, so
-> no buckets of RESERVE_BTREE type allocated, so the register thread
-> waits on c->btree_cache_wait, and goes to sleep.
+> There are 2 issues in current code,
+> 1, Task state is set to TASK_INTERRUPTIBLE after the condition checks, if
+>    another process changes the condition and call wake_up_process(dc->
+>    writeback_thread), then at line 452 task state is set back to
+>    TASK_INTERRUPTIBLE, the writeback kernel thread will lose a chance to be
+>    waken up.
+> 2, At line 454 if kthread_should_stop() is true, writeback kernel thread
+>    will return to kernel/kthread.c:kthread() with TASK_INTERRUPTIBLE and
+>    call do_exit(). It is not good to enter do_exit() with task state
+>    TASK_INTERRUPTIBLE, in following code path might_sleep() is called and a
+>    warning message is reported by __might_sleep(): "WARNING: do not call
+>    blocking ops when !TASK_RUNNING; state=1 set at [xxxx]".
 > 
-> Then the allocator thread initialized, and goes to work,
-> the call trace is bellow:
-> bch_allocator_thread()
->   ==>bch_prio_write()
->      ==>bch_journal_meta()
->         ==>bch_journal()
->            ==>journal_wait_for_write()
-> In journal_wait_for_write(), It will check if journal is full by
-> journal_full(), but the long time random small IO writing
-> causes the exhaustion of journal buckets(journal.blocks_free=0),
-> In order to release the journal buckets,
-> the allocator calls btree_flush_write() to flush keys to
-> btree nodes, and waits on c->journal.wait until btree nodes writing over
-> or there has already some journal buckets space, then the allocator
-> thread goes to sleep. but in btree_flush_write(), since
-> bch_journal_replay() is not finished, so no btree nodes have journal
-> (condition "if (btree_current_write(b)->journal)" never satisfied),
-> so we got no btree node to flush, no journal bucket released,
-> and allocator sleep all the times.
+> For the first issue, task state should be set before condition checks.
+> Ineed because dc->writeback_lock is required when modifying all the
+> conditions, calling set_current_state() inside code block where dc->
+> writeback_lock is hold is safe. But this is quite implicit, so I still move
+> set_current_state() before all the condition checks.
 > 
-> Through the above analysis, we can see that:
-> 1) Register thread wait for allocator thread to allocate buckets of
->    RESERVE_BTREE type;
-> 2) Alloctor thread wait for register thread to replay journal, so it
->    can flush btree nodes and get journal bucket.
->    then they are all got stuck by waiting for each other.
+> For the second issue, frankley speaking it does not hurt when kernel thread
+> exits with TASK_INTERRUPTIBLE state, but this warning message scares users,
+> makes them feel there might be something risky with bcache and hurt their
+> data.  Setting task state to TASK_RUNNING before returning fixes this
+> problem.
 > 
-> Hua Rui provided a patch for me, by allocating some buckets of
-> RESERVE_BTREE type in advance, so the register thread can get bucket
-> when btree node splitting and no need to waiting for the allocator thread.
-> I tested it, it has effect, and register thread run a step forward, but
-> finally are still got stuck, the reason is only 8 bucket of RESERVE_BTREE
-> type were allocated, and in bch_journal_replay(), after 2 btree nodes
-> splitting, only 4 bucket of RESERVE_BTREE type left, then
-> btree_check_reserve() is not satisfied anymore, so it goes to sleep again,
-> and in the same time, alloctor thread did not flush enough btree nodes to
-> release a journal bucket, so they all got stuck again.
+> Changelog:
+> v2: fix the race issue in v1 patch.
+> v1: initial buggy fix.
 > 
-> So we need to allocate more buckets of RESERVE_BTREE type in advance,
-> but how much is enough?  By experience and test, I think it should be
-> as much as journal buckets. Then I modify the code as this patch,
-> and test in the machine, and it works.
-> 
-> This patch modified base on Hua Rui’s patch, and allocate more buckets
-> of RESERVE_BTREE type in advance to avoid register thread and allocate
-> thread going to wait for each other.
-> 
-> Signed-off-by: Hua Rui <huarui.dev@gmail.com>
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-
-Hi Junhui,
-
-It spent some time for me to understand the problem and the fix :-)
-The root cause is because bcache journal does not reserve space
-previously, and allocates journal slot when btree node split by insert a
-node from journal to btree. If we reserve journal space previously, then
-we will need something like commit record to make sure the operation is
-atomic. That is complicated and I doubt whether bcache is deserved for it.
-
-This fix is much simpler and it makes things work. I am OK with it.
-
-Reviewed-by: Coly Li <colyli@suse.de>
-
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Cc: Michael Lyle <mlyle@lyle.org>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Junhui Tang <tang.junhui@zte.com.cn>
 > ---
->  drivers/md/bcache/btree.c |  9 ++++++---
->  drivers/md/bcache/super.c | 12 +++++++++++-
->  2 files changed, 17 insertions(+), 4 deletions(-)
-[code snipped]
+>  drivers/md/bcache/writeback.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+Reviewed-by: Hannes Reinecke <hare@suse.com>
 
-Coly Li
+Cheers,
+
+Hannes
+-- 
+Dr. Hannes Reinecke		   Teamlead Storage & Networking
+hare@suse.de			               +49 911 74053 688
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: F. Imendörffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
+HRB 21284 (AG Nürnberg)
