@@ -1,100 +1,62 @@
 From: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH v3 05/13] bcache: quit dc->writeback_thread when
- BCACHE_DEV_DETACHING is set
-Date: Tue, 16 Jan 2018 10:11:08 +0100
-Message-ID: <ae18a4d7-b275-0290-73ee-ce8a3e5f8b6d@suse.de>
+Subject: Re: [PATCH v3 10/13] bcache: fix inaccurate io state for detached
+ bcache devices
+Date: Tue, 16 Jan 2018 10:27:48 +0100
+Message-ID: <96cc45cb-be6b-c90f-ccfb-7c0a28a358e9@suse.de>
 References: <20180114144236.28213-1-colyli@suse.de>
- <20180114144236.28213-6-colyli@suse.de>
+ <20180114144236.28213-11-colyli@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180114144236.28213-6-colyli@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:52755 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1750821AbeAPJ1v (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 16 Jan 2018 04:27:51 -0500
+In-Reply-To: <20180114144236.28213-11-colyli@suse.de>
 Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Michael Lyle <mlyle@lyle.org>, Hannes Reinecke <hare@suse.com>, Huijun Tang <tang.junhui@zte.com.cn>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Tang Junhui <tang.junhui@zte.com.cn>
 
 On 01/14/2018 03:42 PM, Coly Li wrote:
-> In patch "bcache: fix cached_dev->count usage for bch_cache_set_error()",
-> cached_dev_get() is called when creating dc->writeback_thread, and
-> cached_dev_put() is called when exiting dc->writeback_thread. This
-> modification works well unless people detach the bcache device manually by
->     'echo 1 > /sys/block/bcache<N>/bcache/detach'
-> Because this sysfs interface only calls bch_cached_dev_detach() which wakes
-> up dc->writeback_thread but does not stop it. The reason is, before patch
-> "bcache: fix cached_dev->count usage for bch_cache_set_error()", inside
-> bch_writeback_thread(), if cache is not dirty after writeback,
-> cached_dev_put() will be called here. And in cached_dev_make_request() when
-> a new write request makes cache from clean to dirty, cached_dev_get() will
-> be called there. Since we don't operate dc->count in these locations,
-> refcount d->count cannot be dropped after cache becomes clean, and
-> cached_dev_detach_finish() won't be called to detach bcache device.
+> From: Tang Junhui <tang.junhui@zte.com.cn>
 > 
-> This patch fixes the issue by checking whether BCACHE_DEV_DETACHING is
-> set inside bch_writeback_thread(). If this bit is set and cache is clean
-> (no existing writeback_keys), break the while-loop, call cached_dev_put()
-> and quit the writeback thread.
+> When we run IO in a detached device,  and run iostat to shows IO status,
+> normally it will show like bellow (Omitted some fields):
+> Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+> sdd        ... 15.89     0.53    1.82    0.20    2.23   1.81  52.30
+> bcache0    ... 15.89   115.42    0.00    0.00    0.00   2.40  69.60
+> but after IO stopped, there are still very big avgqu-sz and %util
+> values as bellow:
+> Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+> bcache0   ...      0   5326.32    0.00    0.00    0.00   0.00 100.10
 > 
-> Please note if cache is still dirty, even BCACHE_DEV_DETACHING is set the
-> writeback thread should continue to perform writeback, this is the original
-> design of manually detach.
+> The reason for this issue is that, only generic_start_io_acct() called
+> and no generic_end_io_acct() called for detached device in
+> cached_dev_make_request(). See the code:
+> //start generic_start_io_acct()
+> generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
+> if (cached_dev_get(dc)) {
+> 	//will callback generic_end_io_acct()
+> }
+> else {
+> 	//will not call generic_end_io_acct()
+> }
 > 
-> I compose a separte patch because that patch "bcache: fix cached_dev->count
-> usage for bch_cache_set_error()" already gets a "Reviewed-by:" from Hannes
-> Reinecke. Also this fix is not trivial and good for a separate patch.
+> This patch calls generic_end_io_acct() in the end of IO for detached
+> devices, so we can show IO state correctly.
 > 
-> Signed-off-by: Coly Li <colyli@suse.de>
-> Cc: Michael Lyle <mlyle@lyle.org>
-> Cc: Hannes Reinecke <hare@suse.com>
-> Cc: Huijun Tang <tang.junhui@zte.com.cn>
+> (Modified to use GFP_NOIO in kzalloc() by Coly Li)
+> 
+> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+> Reviewed-by: Coly Li <colyli@suse.de>
 > ---
->  drivers/md/bcache/writeback.c | 20 +++++++++++++++++---
->  1 file changed, 17 insertions(+), 3 deletions(-)
+>  drivers/md/bcache/request.c | 58 +++++++++++++++++++++++++++++++++++++++------
+>  1 file changed, 51 insertions(+), 7 deletions(-)
 > 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index b280c134dd4d..4dbeaaa575bf 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -565,9 +565,15 @@ static int bch_writeback_thread(void *arg)
->  	while (!kthread_should_stop()) {
->  		down_write(&dc->writeback_lock);
->  		set_current_state(TASK_INTERRUPTIBLE);
-> -		if (!atomic_read(&dc->has_dirty) ||
-> -		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-> -		     !dc->writeback_running)) {
-> +		/*
-> +		 * If the bache device is detaching, skip here and continue
-> +		 * to perform writeback. Otherwise, if no dirty data on cache,
-> +		 * or there is dirty data on cache but writeback is disabled,
-> +		 * the writeback thread should sleep here and wait for others
-> +		 * to wake up it.
-> +		 */
-> +		if (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-> +		    (!atomic_read(&dc->has_dirty) || !dc->writeback_running)) {
->  			up_write(&dc->writeback_lock);
->  
->  			if (kthread_should_stop()) {
-> @@ -587,6 +593,14 @@ static int bch_writeback_thread(void *arg)
->  			atomic_set(&dc->has_dirty, 0);
->  			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
->  			bch_write_bdev_super(dc, NULL);
-> +			/*
-> +			 * If bcache device is detaching via sysfs interface,
-> +			 * writeback thread should stop after there is no dirty
-> +			 * data on cache. BCACHE_DEV_DETACHING flag is set in
-> +			 * bch_cached_dev_detach().
-> +			 */
-> +			if (test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))
-> +				break;
->  		}
->  
->  		up_write(&dc->writeback_lock);
-> 
-Checking several atomic flags in one statement renders the atomic pretty
-much pointless; you need to protect the 'if' clause with some lock or
-just check _one_ atomic statement.
+Reviewed-by: Hannes Reinecke <hare@suse.com>
 
 Cheers,
 
