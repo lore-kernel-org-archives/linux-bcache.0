@@ -1,93 +1,261 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v3 03/13] bcache: set task properly in allocator_wait()
-Date: Tue, 16 Jan 2018 17:29:46 +0800
-Message-ID: <0b4b000d-952c-8a5f-c691-c07e164dd76e@suse.de>
+From: Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH v3 12/13] bcache: add io_disable to struct cached_dev
+Date: Tue, 16 Jan 2018 10:32:05 +0100
+Message-ID: <054af0a5-8226-7a06-97e6-58f4eb6e32d1@suse.de>
 References: <20180114144236.28213-1-colyli@suse.de>
- <20180114144236.28213-4-colyli@suse.de>
- <5018c875-a48e-98b2-17a6-d1ae3a879c78@suse.de>
+ <20180114144236.28213-13-colyli@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:52921 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:53011 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1750908AbeAPJab (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 16 Jan 2018 04:30:31 -0500
-In-Reply-To: <5018c875-a48e-98b2-17a6-d1ae3a879c78@suse.de>
+        id S1750812AbeAPJcH (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 16 Jan 2018 04:32:07 -0500
+In-Reply-To: <20180114144236.28213-13-colyli@suse.de>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Hannes Reinecke <hare@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
+To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Michael Lyle <mlyle@lyle.org>, Hannes Reinecke <hare@suse.com>, Junhui Tang <tang.junhui@zte.com.cn>
 
-On 16/01/2018 5:05 PM, Hannes Reinecke wrote:
-> On 01/14/2018 03:42 PM, Coly Li wrote:
->> Kernel thread routine bch_allocator_thread() references macro
->> allocator_wait() to wait for a condition or quit to do_exit()
->> when kthread_should_stop() is true. Here is the code block,
->>
->> 284         while (1) {                                                   \
->> 285                 set_current_state(TASK_INTERRUPTIBLE);                \
->> 286                 if (cond)                                             \
->> 287                         break;                                        \
->> 288                                                                       \
->> 289                 mutex_unlock(&(ca)->set->bucket_lock);                \
->> 290                 if (kthread_should_stop())                            \
->> 291                         return 0;                                     \
->> 292                                                                       \
->> 293                 schedule();                                           \
->> 294                 mutex_lock(&(ca)->set->bucket_lock);                  \
->> 295         }                                                             \
->> 296         __set_current_state(TASK_RUNNING);                            \
->>
->> At line 285, task state is set to TASK_INTERRUPTIBLE, if at line 290
->> kthread_should_stop() is true, the kernel thread will terminate and return
->> to kernel/kthread.s:kthread(), then calls do_exit() with TASK_INTERRUPTIBLE
->> state. This is not a suggested behavior and a warning message will be
->> reported by might_sleep() in do_exit() code path: "WARNING: do not call
->> blocking ops when !TASK_RUNNING; state=1 set at [xxxx]".
->>
->> This patch fixes this problem by setting task state to TASK_RUNNING if
->> kthread_should_stop() is true and before kernel thread returns back to
->> kernel/kthread.s:kthread().
->>
->> Changelog:
->> v2: fix the race issue in v1 patch.
->> v1: initial buggy fix.
->>
->> Signed-off-by: Coly Li <colyli@suse.de>
->> Cc: Michael Lyle <mlyle@lyle.org>
->> Cc: Hannes Reinecke <hare@suse.de>
->> Cc: Junhui Tang <tang.junhui@zte.com.cn>
->> ---
->>  drivers/md/bcache/alloc.c | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
->> index 6cc6c0f9c3a9..458e1d38577d 100644
->> --- a/drivers/md/bcache/alloc.c
->> +++ b/drivers/md/bcache/alloc.c
->> @@ -287,8 +287,10 @@ do {									\
->>  			break;						\
->>  									\
->>  		mutex_unlock(&(ca)->set->bucket_lock);			\
->> -		if (kthread_should_stop())				\
->> +		if (kthread_should_stop()) {				\
->> +			set_current_state(TASK_RUNNING);		\
->>  			return 0;					\
->> +		}							\
->>  									\
->>  		schedule();						\
->>  		mutex_lock(&(ca)->set->bucket_lock);			\
->>
-> Might be an idea to merge it with the previous patch.
+On 01/14/2018 03:42 PM, Coly Li wrote:
+> If a bcache device is configured to writeback mode, current code does not
+> handle write I/O errors on backing devices properly.
 > 
-> Other than that:
+> In writeback mode, write request is written to cache device, and
+> latter being flushed to backing device. If I/O failed when writing from
+> cache device to the backing device, bcache code just ignores the error and
+> upper layer code is NOT noticed that the backing device is broken.
 > 
-> Reviewed-by: Hannes Reinecke <hare@suse.com>
+> This patch tries to handle backing device failure like how the cache device
+> failure is handled,
+> - Add a error counter 'io_errors' and error limit 'error_limit' in struct
+>   cached_dev. Add another io_disable to struct cached_dev to disable I/Os
+>   on the problematic backing device.
+> - When I/O error happens on backing device, increase io_errors counter. And
+>   if io_errors reaches error_limit, set cache_dev->io_disable to true, and
+>   stop the bcache device.
+> 
+> The result is, if backing device is broken of disconnected, and I/O errors
+> reach its error limit, backing device will be disabled and the associated
+> bcache device will be removed from system.
+> 
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Cc: Michael Lyle <mlyle@lyle.org>
+> Cc: Hannes Reinecke <hare@suse.com>
+> Cc: Junhui Tang <tang.junhui@zte.com.cn>
+> ---
+>  drivers/md/bcache/bcache.h  |  7 +++++++
+>  drivers/md/bcache/io.c      | 14 ++++++++++++++
+>  drivers/md/bcache/request.c | 14 ++++++++++++--
+>  drivers/md/bcache/super.c   | 22 ++++++++++++++++++++++
+>  drivers/md/bcache/sysfs.c   | 15 ++++++++++++++-
+>  5 files changed, 69 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> index c41736960045..5a811959392d 100644
+> --- a/drivers/md/bcache/bcache.h
+> +++ b/drivers/md/bcache/bcache.h
+> @@ -360,6 +360,7 @@ struct cached_dev {
+>  	unsigned		sequential_cutoff;
+>  	unsigned		readahead;
+>  
+> +	unsigned		io_disable:1;
+>  	unsigned		verify:1;
+>  	unsigned		bypass_torture_test:1;
+>  
+> @@ -379,6 +380,10 @@ struct cached_dev {
+>  	unsigned		writeback_rate_i_term_inverse;
+>  	unsigned		writeback_rate_p_term_inverse;
+>  	unsigned		writeback_rate_minimum;
+> +
+> +#define DEFAULT_CACHED_DEV_ERROR_LIMIT 64
+> +	atomic_t		io_errors;
+> +	unsigned		error_limit;
+>  };
+>  
+>  enum alloc_reserve {
+> @@ -882,6 +887,7 @@ static inline void closure_bio_submit(struct cache_set *c,
+>  
+>  /* Forward declarations */
+>  
+> +void bch_count_backing_io_errors(struct cached_dev *dc, struct bio *bio);
+>  void bch_count_io_errors(struct cache *, blk_status_t, int, const char *);
+>  void bch_bbio_count_io_errors(struct cache_set *, struct bio *,
+>  			      blk_status_t, const char *);
+> @@ -909,6 +915,7 @@ int bch_bucket_alloc_set(struct cache_set *, unsigned,
+>  			 struct bkey *, int, bool);
+>  bool bch_alloc_sectors(struct cache_set *, struct bkey *, unsigned,
+>  		       unsigned, unsigned, bool);
+> +bool bch_cached_dev_error(struct cached_dev *dc);
+>  
+>  __printf(2, 3)
+>  bool bch_cache_set_error(struct cache_set *, const char *, ...);
+> diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+> index 8013ecbcdbda..7fac97ae036e 100644
+> --- a/drivers/md/bcache/io.c
+> +++ b/drivers/md/bcache/io.c
+> @@ -50,6 +50,20 @@ void bch_submit_bbio(struct bio *bio, struct cache_set *c,
+>  }
+>  
+>  /* IO errors */
+> +void bch_count_backing_io_errors(struct cached_dev *dc, struct bio *bio)
+> +{
+> +	char buf[BDEVNAME_SIZE];
+> +	unsigned errors;
+> +
+> +	WARN_ONCE(!dc, "NULL pointer of struct cached_dev");
+> +
+> +	errors = atomic_add_return(1, &dc->io_errors);
+> +	if (errors < dc->error_limit)
+> +		pr_err("%s: IO error on backing device, unrecoverable",
+> +			bio_devname(bio, buf));
+> +	else
+> +		bch_cached_dev_error(dc);
+> +}
+>  
+>  void bch_count_io_errors(struct cache *ca,
+>  			 blk_status_t error,
+> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> index ad4cf71f7eab..386b388ce296 100644
+> --- a/drivers/md/bcache/request.c
+> +++ b/drivers/md/bcache/request.c
+> @@ -637,6 +637,8 @@ static void backing_request_endio(struct bio *bio)
+>  
+>  	if (bio->bi_status) {
+>  		struct search *s = container_of(cl, struct search, cl);
+> +		struct cached_dev *dc = container_of(s->d,
+> +						     struct cached_dev, disk);
+>  		/*
+>  		 * If a bio has REQ_PREFLUSH for writeback mode, it is
+>  		 * speically assembled in cached_dev_write() for a non-zero
+> @@ -657,6 +659,7 @@ static void backing_request_endio(struct bio *bio)
+>  		}
+>  		s->recoverable = false;
+>  		/* should count I/O error for backing device here */
+> +		bch_count_backing_io_errors(dc, bio);
+>  	}
+>  
+>  	bio_put(bio);
+> @@ -1067,8 +1070,14 @@ static void detatched_dev_end_io(struct bio *bio)
+>  			    bio_data_dir(bio),
+>  			    &ddip->d->disk->part0, ddip->start_time);
+>  
+> -	kfree(ddip);
+> +	if (bio->bi_status) {
+> +		struct cached_dev *dc = container_of(ddip->d,
+> +						     struct cached_dev, disk);
+> +		/* should count I/O error for backing device here */
+> +		bch_count_backing_io_errors(dc, bio);
+> +	}
+>  
+> +	kfree(ddip);
+>  	bio->bi_end_io(bio);
+>  }
+>  
+> @@ -1107,7 +1116,8 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
+>  	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
+>  	int rw = bio_data_dir(bio);
+>  
+> -	if (unlikely(d->c && test_bit(CACHE_SET_IO_DISABLE, &d->c->flags))) {
+> +	if (unlikely((d->c && test_bit(CACHE_SET_IO_DISABLE, &d->c->flags)) ||
+> +		     dc->io_disable)) {
+>  		bio->bi_status = BLK_STS_IOERR;
+>  		bio_endio(bio);
+>  		return BLK_QC_T_NONE;
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 08a0b541a4da..14fce3623770 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1188,6 +1188,10 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+>  		max(dc->disk.disk->queue->backing_dev_info->ra_pages,
+>  		    q->backing_dev_info->ra_pages);
+>  
+> +	atomic_set(&dc->io_errors, 0);
+> +	dc->io_disable = false;
+> +	dc->error_limit = DEFAULT_CACHED_DEV_ERROR_LIMIT;
+> +
+>  	bch_cached_dev_request_init(dc);
+>  	bch_cached_dev_writeback_init(dc);
+>  	return 0;
+> @@ -1339,6 +1343,24 @@ int bch_flash_dev_create(struct cache_set *c, uint64_t size)
+>  	return flash_dev_run(c, u);
+>  }
+>  
+> +bool bch_cached_dev_error(struct cached_dev *dc)
+> +{
+> +	char name[BDEVNAME_SIZE];
+> +
+> +	if (!dc || test_bit(BCACHE_DEV_CLOSING, &dc->disk.flags))
+> +		return false;
+> +
+> +	dc->io_disable = true;
+> +	/* make others know io_disable is true earlier */
+> +	smp_mb();
+> +
+> +	pr_err("bcache: stop %s: too many IO errors on backing device %s\n",
+> +		dc->disk.name, bdevname(dc->bdev, name));
+> +
+> +	bcache_device_stop(&dc->disk);
+> +	return true;
+> +}
+> +
+>  /* Cache set */
+>  
+>  __printf(2, 3)
+> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+> index afb051bcfca1..7288927f2a47 100644
+> --- a/drivers/md/bcache/sysfs.c
+> +++ b/drivers/md/bcache/sysfs.c
+> @@ -131,7 +131,9 @@ SHOW(__bch_cached_dev)
+>  	var_print(writeback_delay);
+>  	var_print(writeback_percent);
+>  	sysfs_hprint(writeback_rate,	dc->writeback_rate.rate << 9);
+> -
+> +	sysfs_hprint(io_errors,		atomic_read(&dc->io_errors));
+> +	sysfs_printf(io_error_limit,	"%i", dc->error_limit);
+> +	sysfs_printf(io_disable,	"%i", dc->io_disable);
+>  	var_print(writeback_rate_update_seconds);
+>  	var_print(writeback_rate_i_term_inverse);
+>  	var_print(writeback_rate_p_term_inverse);
+> @@ -223,6 +225,14 @@ STORE(__cached_dev)
+>  	d_strtoul(writeback_rate_i_term_inverse);
+>  	d_strtoul_nonzero(writeback_rate_p_term_inverse);
+>  
+> +	sysfs_strtoul_clamp(io_error_limit, dc->error_limit, 0, INT_MAX);
+> +
+> +	if (attr == &sysfs_io_disable) {
+> +		int v = strtoul_or_return(buf);
+> +
+> +		dc->io_disable = v ? 1 : 0;
+> +	}
+> +
+>  	d_strtoi_h(sequential_cutoff);
+>  	d_strtoi_h(readahead);
+>  
+> @@ -330,6 +340,9 @@ static struct attribute *bch_cached_dev_files[] = {
+>  	&sysfs_writeback_rate_i_term_inverse,
+>  	&sysfs_writeback_rate_p_term_inverse,
+>  	&sysfs_writeback_rate_debug,
+> +	&sysfs_errors,
+> +	&sysfs_io_error_limit,
+> +	&sysfs_io_disable,
+>  	&sysfs_dirty_data,
+>  	&sysfs_stripe_size,
+>  	&sysfs_partial_stripes_expensive,
+> 
+Personally, I'm not a big fan of using smp_mb() and not proper locking.
+But in this case it should be okay.
 
-Hi Hannes,
+Reviewed-by: Hannes Reinecke <hare@suse.com>
 
-Sure, I will do that in v4 patche set. Thanks for the review.
+Cheers,
 
-Coly Li
+Hannes
+-- 
+Dr. Hannes Reinecke		   Teamlead Storage & Networking
+hare@suse.de			               +49 911 74053 688
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: F. Imendörffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
+HRB 21284 (AG Nürnberg)
