@@ -1,174 +1,146 @@
-From: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH v3 13/13] bcache: stop bcache device when backing device
- is offline
-Date: Tue, 16 Jan 2018 10:33:56 +0100
-Message-ID: <e74fa1fd-50be-2282-f693-0bec66dde823@suse.de>
-References: <20180114144236.28213-1-colyli@suse.de>
- <20180114144236.28213-14-colyli@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180114144236.28213-14-colyli@suse.de>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Michael Lyle <mlyle@lyle.org>, Hannes Reinecke <hare@suse.com>, Junhui Tang <tang.junhui@zte.com.cn>
+From: tang.junhui@zte.com.cn
+Subject: Re: [PATCH v2 06/12] bcache: set error_limit correctly
+Date: Wed, 17 Jan 2018 14:09:15 +0800
+Message-ID: <1516169355-3057-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from out1.zte.com.cn ([202.103.147.172]:36622 "EHLO mxct.zte.com.cn"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1752100AbeAQGID (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 17 Jan 2018 01:08:03 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: colyli@suse.de
+Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 
-On 01/14/2018 03:42 PM, Coly Li wrote:
-> Currently bcache does not handle backing device failure, if backing
-> device is offline and disconnected from system, its bcache device can still
-> be accessible. If the bcache device is in writeback mode, I/O requests even
-> can success if the requests hit on cache device. That is to say, when and
-> how bcache handles offline backing device is undefined.
-> 
-> This patch tries to handle backing device offline in a rather simple way,
-> - Add cached_dev->status_update_thread kernel thread to update backing
->   device status in every 1 second.
-> - Add cached_dev->offline_seconds to record how many seconds the backing
->   device is observed to be offline. If the backing device is offline for
->   BACKING_DEV_OFFLINE_TIMEOUT (30) seconds, set dc->io_disable to 1 and
->   call bcache_device_stop() to stop the bache device which linked to the
->   offline backing device.
-> 
-> Now if a backing device is offline for BACKING_DEV_OFFLINE_TIMEOUT seconds,
-> its bcache device will be removed, then user space application writing on
-> it will get error immediately, and handler the device failure in time.
-> 
-> This patch is quite simple, does not handle more complicated situations.
-> Once the bcache device is stopped, users need to recovery the backing
-> device, register and attach it manually.
-> 
-> Signed-off-by: Coly Li <colyli@suse.de>
-> Cc: Michael Lyle <mlyle@lyle.org>
-> Cc: Hannes Reinecke <hare@suse.com>
-> Cc: Junhui Tang <tang.junhui@zte.com.cn>
-> ---
->  drivers/md/bcache/bcache.h |  2 ++
->  drivers/md/bcache/super.c  | 55 ++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 57 insertions(+)
-> 
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index 5a811959392d..9eedb35d01bc 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -338,6 +338,7 @@ struct cached_dev {
->  
->  	struct keybuf		writeback_keys;
->  
-> +	struct task_struct	*status_update_thread;
->  	/*
->  	 * Order the write-half of writeback operations strongly in dispatch
->  	 * order.  (Maintain LBA order; don't allow reads completing out of
-> @@ -384,6 +385,7 @@ struct cached_dev {
->  #define DEFAULT_CACHED_DEV_ERROR_LIMIT 64
->  	atomic_t		io_errors;
->  	unsigned		error_limit;
-> +	unsigned		offline_seconds;
->  };
->  
->  enum alloc_reserve {
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 14fce3623770..85adf1e29d11 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -646,6 +646,11 @@ static int ioctl_dev(struct block_device *b, fmode_t mode,
->  		     unsigned int cmd, unsigned long arg)
->  {
->  	struct bcache_device *d = b->bd_disk->private_data;
-> +	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
-> +
-> +	if (dc->io_disable)
-> +		return -EIO;
-> +
->  	return d->ioctl(d, mode, cmd, arg);
->  }
->  
-> @@ -856,6 +861,45 @@ static void calc_cached_dev_sectors(struct cache_set *c)
->  	c->cached_dev_sectors = sectors;
->  }
->  
-> +#define BACKING_DEV_OFFLINE_TIMEOUT 5
-> +static int cached_dev_status_update(void *arg)
-> +{
-> +	struct cached_dev *dc = arg;
-> +	struct request_queue *q;
-> +	char buf[BDEVNAME_SIZE];
-> +
-> +	/*
-> +	 * If this delayed worker is stopping outside, directly quit here.
-> +	 * dc->io_disable might be set via sysfs interface, so check it
-> +	 * here too.
-> +	 */
-> +	while (!kthread_should_stop() && !dc->io_disable) {
-> +		q = bdev_get_queue(dc->bdev);
-> +		if (blk_queue_dying(q))
-> +			dc->offline_seconds++;
-> +		else
-> +			dc->offline_seconds = 0;
-> +
-> +		if (dc->offline_seconds >= BACKING_DEV_OFFLINE_TIMEOUT) {
-> +			pr_err("%s: device offline for %d seconds",
-> +				bdevname(dc->bdev, buf),
-> +				BACKING_DEV_OFFLINE_TIMEOUT);
-> +			pr_err("%s: disable I/O request due to backing "
-> +				"device offline", dc->disk.name);
-> +			dc->io_disable = true;
-> +			/* let others know earlier that io_disable is true */
-> +			smp_mb();
-> +			bcache_device_stop(&dc->disk);
-> +			break;
-> +		}
-> +
-> +		schedule_timeout_interruptible(HZ);
-> +	}
-> +
-> +	dc->status_update_thread = NULL;
-> +	return 0;
-> +}
-> +
->  void bch_cached_dev_run(struct cached_dev *dc)
->  {
->  	struct bcache_device *d = &dc->disk;
-> @@ -898,6 +942,15 @@ void bch_cached_dev_run(struct cached_dev *dc)
->  	if (sysfs_create_link(&d->kobj, &disk_to_dev(d->disk)->kobj, "dev") ||
->  	    sysfs_create_link(&disk_to_dev(d->disk)->kobj, &d->kobj, "bcache"))
->  		pr_debug("error creating sysfs link");
-> +
-> +	dc->status_update_thread = kthread_run(cached_dev_status_update,
-> +					       dc,
-> +					      "bcache_status_update");
-> +	if (IS_ERR(dc->status_update_thread)) {
-> +		pr_warn("bcache: failed to create bcache_status_update "
-> +			"kthread, continue to run without monitoring backing "
-> +			"device status");
-> +	}
->  }
->  
->  /*
-> @@ -1118,6 +1171,8 @@ static void cached_dev_free(struct closure *cl)
->  		kthread_stop(dc->writeback_thread);
->  	if (dc->writeback_write_wq)
->  		destroy_workqueue(dc->writeback_write_wq);
-> +	if (!IS_ERR_OR_NULL(dc->status_update_thread))
-> +		kthread_stop(dc->status_update_thread);
->  
->  	if (atomic_read(&dc->running))
->  		bd_unlink_disk_holder(dc->bdev, dc->disk.disk);
-> 
-Hmm. Not exactly thrilled with this solution; maybe worth discussing it
-at LSF.
-But I can't see how it could be done better currently.
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Reviewed-by: Hannes Reinecke <hare@suse.com>
+Hello Coly:
 
-Cheers,
+Then in bch_count_io_errors(), why did us still keep these code:
+> 92             unsigned errors = atomic_add_return(1 << IO_ERROR_SHIFT,
+> 93                                                 &ca->io_errors);
+> 94             errors >>= IO_ERROR_SHIFT;
 
-Hannes
--- 
-Dr. Hannes Reinecke		   Teamlead Storage & Networking
-hare@suse.de			               +49 911 74053 688
-SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: F. Imendörffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
-HRB 21284 (AG Nürnberg)
+why not just modify the code as bellow:
+> 92             unsigned errors = atomic_add_return(1,
+> 93                                                 &ca->io_errors);
+
+
+>Struct cache uses io_errors for two purposes,
+>- Error decay: when cache set error_decay is set, io_errors is used to
+>  generate a small piece of delay when I/O error happens.
+>- I/O errors counter: in order to generate big enough value for error
+>  decay, I/O errors counter value is stored by left shifting 20 bits (a.k.a
+>  IO_ERROR_SHIFT).
+>
+>In function bch_count_io_errors(), if I/O errors counter reaches cache set
+>error limit, bch_cache_set_error() will be called to retire the whold cache
+>set. But current code is problematic when checking the error limit, see the
+>following code piece from bch_count_io_errors(),
+>
+> 90     if (error) {
+> 91             char buf[BDEVNAME_SIZE];
+> 92             unsigned errors = atomic_add_return(1 << IO_ERROR_SHIFT,
+> 93                                                 &ca->io_errors);
+> 94             errors >>= IO_ERROR_SHIFT;
+> 95
+> 96             if (errors < ca->set->error_limit)
+> 97                     pr_err("%s: IO error on %s, recovering",
+> 98                            bdevname(ca->bdev, buf), m);
+> 99             else
+>100                     bch_cache_set_error(ca->set,
+>101                                         "%s: too many IO errors %s",
+>102                                         bdevname(ca->bdev, buf), m);
+>103     }
+>
+>At line 94, errors is right shifting IO_ERROR_SHIFT bits, now it is real
+>errors counter to compare at line 96. But ca->set->error_limit is initia-
+>lized with an amplified value in bch_cache_set_alloc(),
+>1545         c->error_limit  = 8 << IO_ERROR_SHIFT;
+>
+>It means by default, in bch_count_io_errors(), before 8<<20 errors happened
+>bch_cache_set_error() won't be called to retire the problematic cache
+>device. If the average request size is 64KB, it means bcache won't handle
+>failed device until 512GB data is requested. This is too large to be an I/O
+>threashold. So I believe the correct error limit should be much less.
+>
+>This patch sets default cache set error limit to 8, then in
+>bch_count_io_errors() when errors counter reaches 8 (if it is default
+>value), function bch_cache_set_error() will be called to retire the whole
+>cache set. This patch also removes bits shifting when store or show
+>io_error_limit value via sysfs interface.
+>
+>Nowadays most of SSDs handle internal flash failure automatically by LBA
+>address re-indirect mapping. If an I/O error can be observed by upper layer
+>code, it will be a notable error because that SSD can not re-indirect
+>map the problematic LBA address to an available flash block. This situation
+>indicates the whole SSD will be failed very soon. Therefore setting 8 as
+>the default io error limit value makes sense, it is enough for most of
+>cache devices.
+>
+>Changelog:
+>v2: add reviewed-by from Hannes.
+>v1: initial version for review.
+>
+>Signed-off-by: Coly Li <colyli@suse.de>
+>Reviewed-by: Hannes Reinecke <hare@suse.com>
+>Cc: Michael Lyle <mlyle@lyle.org>
+>Cc: Junhui Tang <tang.junhui@zte.com.cn>
+>---
+> drivers/md/bcache/bcache.h | 1 +
+> drivers/md/bcache/super.c  | 2 +-
+> drivers/md/bcache/sysfs.c  | 4 ++--
+> 3 files changed, 4 insertions(+), 3 deletions(-)
+>
+>diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+>index 88d938c8d027..7d7512fa4f09 100644
+>--- a/drivers/md/bcache/bcache.h
+>+++ b/drivers/md/bcache/bcache.h
+>@@ -663,6 +663,7 @@ struct cache_set {
+>         ON_ERROR_UNREGISTER,
+>         ON_ERROR_PANIC,
+>     }            on_error;
+>+#define DEFAULT_IO_ERROR_LIMIT 8
+>     unsigned        error_limit;
+>     unsigned        error_decay;
+> 
+>diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>index 6d888e8fea8c..a373648b5d4b 100644
+>--- a/drivers/md/bcache/super.c
+>+++ b/drivers/md/bcache/super.c
+>@@ -1583,7 +1583,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+> 
+>     c->congested_read_threshold_us    = 2000;
+>     c->congested_write_threshold_us    = 20000;
+>-    c->error_limit    = 8 << IO_ERROR_SHIFT;
+>+    c->error_limit    = DEFAULT_IO_ERROR_LIMIT;
+> 
+>     return c;
+> err:
+>diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+>index b7166c504cdb..ba62e987b503 100644
+>--- a/drivers/md/bcache/sysfs.c
+>+++ b/drivers/md/bcache/sysfs.c
+>@@ -560,7 +560,7 @@ SHOW(__bch_cache_set)
+> 
+>     /* See count_io_errors for why 88 */
+>     sysfs_print(io_error_halflife,    c->error_decay * 88);
+>-    sysfs_print(io_error_limit,    c->error_limit >> IO_ERROR_SHIFT);
+>+    sysfs_print(io_error_limit,    c->error_limit);
+> 
+>     sysfs_hprint(congested,
+>              ((uint64_t) bch_get_congested(c)) << 9);
+>@@ -660,7 +660,7 @@ STORE(__bch_cache_set)
+>     }
+> 
+>     if (attr == &sysfs_io_error_limit)
+>-        c->error_limit = strtoul_or_return(buf) << IO_ERROR_SHIFT;
+>+        c->error_limit = strtoul_or_return(buf);
+> 
+>     /* See count_io_errors() for why 88 */
+>     if (attr == &sysfs_io_error_halflife)
+>-- 
+>2.15.1
+
+Thanks,
+Tang Junhui
