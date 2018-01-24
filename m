@@ -1,62 +1,27 @@
-From: Pavel Goran <via-bcache@pvgoran.name>
-Subject: Re[2]: best way to get the bdev of a bcache block device
-Date: Tue, 23 Jan 2018 07:32:19 +0300
-Message-ID: <1983233152.20180123073219@pvgoran.name>
-References: <3f40cbd2-46cd-d3d5-f43d-3e305da8ca6b@profihost.ag> <120a1d62-87bf-c9c5-81aa-254e619c7398@lyle.org>
-Reply-To: Pavel Goran <via-bcache@pvgoran.name>
+From: Pony Cheng <ponycheng0@gmail.com>
+Subject: how to understand bcache
+Date: Wed, 24 Jan 2018 10:34:41 +0800
+Message-ID: <CAATtUK=ABex5gos2LHdac+QiQbAP5HOmhrjCYez1wdQM5D7Z5A@mail.gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from vostok.pvgoran.name ([71.19.149.48]:52373 "EHLO
-        vostok.pvgoran.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751147AbeAWEh2 (ORCPT
+Received: from mail-wm0-f53.google.com ([74.125.82.53]:37692 "EHLO
+        mail-wm0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751940AbeAXCen (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 22 Jan 2018 23:37:28 -0500
-In-Reply-To: <120a1d62-87bf-c9c5-81aa-254e619c7398@lyle.org>
+        Tue, 23 Jan 2018 21:34:43 -0500
+Received: by mail-wm0-f53.google.com with SMTP id v71so5631749wmv.2
+        for <linux-bcache@vger.kernel.org>; Tue, 23 Jan 2018 18:34:42 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: Stefan Priebe - Profihost AG <s.priebe@profihost.ag>
 
-Hello Michael,
+Hi all,
 
-Tuesday, January 23, 2018, 1:20:28 AM, you wrote:
+I'm beginner of kernel module, and I'm reading bcache codebase now.
+But I'm very confused about many details, such as b+tree and io path.
 
-> On 01/22/2018 01:59 PM, Stefan Priebe - Profihost AG wrote:
->> Hello,
->> 
->> what's the best way to get the correct bcache backing device (bdev) form
->> a known dev (f.e. /dev/bcache2)?
->> 
->> I haven't found an easy reliable way through /sys/block.
->> 
->> Thanks!
->> 
->> Greets,
->> Stefan
+So, what should I do now, do you have some advices?
 
-> /sys/block/bcache0/slaves
-
-This lists both the backing device and the cache device(s), without an
-(apparent) way of identifying which one is backing.
-
-> /sys/block/bcache0/bcache/cache/bdev0
-
-/sys/block/bcache0/bcache/cache links to the cache set (/sys/fs/bcache/[UUID])
-which can serve several bcache devices, so bdev0 would link to the first
-backing device registered in the set, not the backing device that corresponds
-to the bcache device we started with.
-
-However, it's actually possible to go further: iterate all bdevX devices and
-identify the correct one by looking at the "dev" symlink:
-
-/sys/block/bcache0/bcache/cache/bdev0/dev
-/sys/block/bcache0/bcache/cache/bdev1/dev
-etc.
-
-The device whose "dev" symlink points to bcache0 should be the backing device
-for bcache0.
-
-Pavel Goran
-  
+Thanks,
+PonyCheng
