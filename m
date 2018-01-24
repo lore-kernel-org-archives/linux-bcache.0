@@ -1,27 +1,55 @@
-From: Pony Cheng <ponycheng0@gmail.com>
-Subject: how to understand bcache
-Date: Wed, 24 Jan 2018 10:34:41 +0800
-Message-ID: <CAATtUK=ABex5gos2LHdac+QiQbAP5HOmhrjCYez1wdQM5D7Z5A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-wm0-f53.google.com ([74.125.82.53]:37692 "EHLO
-        mail-wm0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751940AbeAXCen (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 23 Jan 2018 21:34:43 -0500
-Received: by mail-wm0-f53.google.com with SMTP id v71so5631749wmv.2
-        for <linux-bcache@vger.kernel.org>; Tue, 23 Jan 2018 18:34:42 -0800 (PST)
-Sender: linux-bcache-owner@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] bcache: lock in btree_flush_write() to avoid races
+Date: Wed, 24 Jan 2018 14:54:24 +0800
+Message-ID: <1516776864-26993-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Hi all,
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-I'm beginner of kernel module, and I'm reading bcache codebase now.
-But I'm very confused about many details, such as b+tree and io path.
+In btree_flush_write(), two places need to take a locker to
+avoid races:
 
-So, what should I do now, do you have some advices?
+Firstly, we need take rcu read locker to protect the bucket_hash
+traverse, since hlist_for_each_entry_rcu() must be called under
+the protection of rcu read locker.
 
-Thanks,
-PonyCheng
+Secondly, we need take b->write_lock locker to protect journal
+of the btree node, otherwise, the btree node may have been
+written, and the journal have been assign to NULL.
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/journal.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 02a98dd..505f9f3 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -375,7 +375,9 @@ static void btree_flush_write(struct cache_set *c)
+ retry:
+ 	best = NULL;
+ 
+-	for_each_cached_btree(b, c, i)
++	rcu_read_lock();
++	for_each_cached_btree(b, c, i) {
++		mutex_lock(&b->write_lock);
+ 		if (btree_current_write(b)->journal) {
+ 			if (!best)
+ 				best = b;
+@@ -385,6 +387,9 @@ static void btree_flush_write(struct cache_set *c)
+ 				best = b;
+ 			}
+ 		}
++		mutex_unlock(&b->write_lock);
++	}
++	rcu_read_unlock();
+ 
+ 	b = best;
+ 	if (b) {
+-- 
+1.8.3.1
