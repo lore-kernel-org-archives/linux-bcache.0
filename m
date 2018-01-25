@@ -1,120 +1,63 @@
-From: tang.junhui@zte.com.cn
-Subject: Re: [PATCH] bcache: lock in btree_flush_write() to avoid races
-Date: Thu, 25 Jan 2018 10:30:45 +0800
-Message-ID: <1516847445-10005-1-git-send-email-tang.junhui@zte.com.cn>
+From: Pavel Goran <via-bcache@pvgoran.name>
+Subject: Re[2]: [PATCH v3 00/13] bcache: device failure handling improvement
+Date: Thu, 25 Jan 2018 06:35:16 +0300
+Message-ID: <1664591662.20180125063516@pvgoran.name>
+References: <20180114144236.28213-1-colyli@suse.de> <87po5ykiaw.fsf@esperi.org.uk>
+Reply-To: Pavel Goran <via-bcache@pvgoran.name>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mxhk.zte.com.cn ([63.217.80.70]:52342 "EHLO mxhk.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752683AbeAYC3S (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 24 Jan 2018 21:29:18 -0500
+Received: from vostok.pvgoran.name ([71.19.149.48]:37649 "EHLO
+        vostok.pvgoran.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S932998AbeAYDfU (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 24 Jan 2018 22:35:20 -0500
+In-Reply-To: <87po5ykiaw.fsf@esperi.org.uk>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: kent.overstreet@gmail.com
-Cc: nix@esperi.org.uk, colyli@suse.de, mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: Nix <nix@esperi.org.uk>
+Cc: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+Hello Nix,
 
-Hello Kent
+Thursday, January 25, 2018, 1:23:19 AM, you wrote:
 
->The only purpose of rcu_read_lock() would be to ensure the object
->isn't freed out from under you. That's not an issue here.
-> 
-I do not think so. In for_each_cached_btree(), we traverse all
-btrees by hlist_for_each_entry_rcu(), and the hlist_for_each_entry_rcu()
-should be protect by rcu lock, as the API describle bellow:
- * This list-traversal primitive may safely run concurrently with
- * the _rcu list-mutation primitives such as hlist_add_head_rcu()
- * as long as the traversal is guarded by rcu_read_lock().
- */
-#define hlist_for_each_entry_rcu(pos, head, member)			\
-	for (pos = hlist_entry_safe (rcu_dereference_raw(hlist_first_rcu(head)),\
+> On 14 Jan 2018, Coly Li said:
 
->Racing with other writers isn't a correctness issue here, and if it
->was - just throwing write_lock around where you have it wouldn't be
->sufficient, you'd need something much more complicated.
-> 
-since we only read by hlist_for_each_entry_rcu(), so I think we does not 
-need any more write locker.
+>> Hi maintainers and folks,
+>>
+>> This patch set tries to improve bcache device failure handling, includes
+>> cache device and backing device failures.
+>>
+>> The basic idea to handle failed cache device is,
+>> - Unregister cache set
+>> - Detach all backing devices which are attached to this cache set
+>> - Stop all the detached bcache devices
+>> - Stop all flash only volume on the cache set
+>> The above process is named 'cache set retire' by me. The result of cache
+>> set retire is, cache set and bcache devices are all removed, following
+>> I/O requests will get failed immediately to notift upper layer or user
+>> space coce that the cache device is failed or disconnected.
 
->On Wed, Jan 24, 2018 at 8:50 PM,  <tang.junhui@zte.com.cn> wrote:
->> From: Tang Junhui <tang.junhui@zte.com.cn>
->>
->> Hello Kent && Nix
->>
->>>
->>>neither of those locks are needed - rcu_read_lock() isn't needed because we never
->>>free struct btree (except at shutdown), and we're not derefing journal there
->>
->> __bch_btree_node_write() is called in many places, in __bch_btree_node_write(),
->> before node writing over, it has changed the write buff index to another, but the
->> journal of changed write buff maybe still NULL if no journal writing occurred. But
->> luckily we only use the NULL as ZERO to calculate the fifo_idx, the result is a very
->> big value, so it does no harm. And since we cannot take mutex under rcu_read_lock,
->> we can ignore it.
->>
->> As to the rcu lock, though the btree is not freed, but we often delete it from one
->> list (such as one bucket_hash) and move it to another list (such as btree_cache_freed),
->> shouldn't it be protected by rcu locker?
->>
->>
->>>On Wed, Jan 24, 2018 at 5:30 AM, Nikolay Borisov <nborisov@suse.com> wrote:
->>>
->>>
->>>On 24.01.2018 08:54, tang.junhui@zte.com.cn wrote:
->>>> From: Tang Junhui <tang.junhui@zte.com.cn>
->>>>
->>>> In btree_flush_write(), two places need to take a locker to
->>>> avoid races:
->>>>
->>>> Firstly, we need take rcu read locker to protect the bucket_hash
->>>> traverse, since hlist_for_each_entry_rcu() must be called under
->>>> the protection of rcu read locker.
->>>>
->>>> Secondly, we need take b->write_lock locker to protect journal
->>>> of the btree node, otherwise, the btree node may have been
->>>> written, and the journal have been assign to NULL.
->>>>
->>>> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
->>>> ---
->>>>  drivers/md/bcache/journal.c | 7 ++++++-
->>>>  1 file changed, 6 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
->>>> index 02a98dd.505f9f3 100644
->>>> --- a/drivers/md/bcache/journal.c
->>>> +++ b/drivers/md/bcache/journal.c
->>>> @@ -375,7 +375,9 @@ static void btree_flush_write(struct cache_set *c)
->>>>  retry:
->>>>       best = NULL;
->>>>
->>>> -     for_each_cached_btree(b, c, i)
->>>> +     rcu_read_lock();
->>>> +     for_each_cached_btree(b, c, i) {
->>>> +             mutex_lock(&b->write_lock);
->>>
->>
->>>You can't sleep in rcu read critical section, yet here you take mutex
->>>which can sleep under rcu_read_lock.
->> To Nix: Yes, you are write. Good catch.
->>
->>>
->>>>               if (btree_current_write(b)->journal) {
->>>>                       if (!best)
->>>>                               best = b;
->>>> @@ -385,6 +387,9 @@ static void btree_flush_write(struct cache_set *c)
->>>>                               best = b;
->>>>                       }
->>>>               }
->>>> +             mutex_unlock(&b->write_lock);
->>>> +     }
->>>> +     rcu_read_unlock();
->>>>
->>>>       b = best;
->>>>       if (b) {
->>
->> Thanks,
->> Tang Junhui
->>
+> This feels wrong to me. If a cache device is writethrough, the cache is
+> a pure optimization: having such a device fail should not lead to I/O
+> failures of any sort, but should only flip the cache device to 'none' so
+> that writes to the backing store simply don't get cached any more.
 
-Thanks,
-Tang Junhui
+> Anything else leads to a reliability reduction, since in the end cache
+> devices *will* fail.
+
+It's one of those choices: "if something can't work as intended, should it be
+allowed to work at all?" I believe different use cases will have different
+answers to this question. So ideally this should be configurable by some kind
+of option stored in superblock, much like the "Errors behavior" option of ext*
+filesystems.
+
+Of course, this only applies to "writethrough" and "writearound" modes with
+zero dirty data; "writeback" bcache devices (or devices switched from
+writeback and still having some dirty data) should probably be disabled if the
+cache device fails.
+
+Pavel Goran
+  
