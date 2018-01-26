@@ -1,27 +1,121 @@
 From: tang.junhui@zte.com.cn
-Subject: Re: how to understand bcache
-Date: Fri, 26 Jan 2018 14:27:37 +0800
-Message-ID: <1516948057-3387-1-git-send-email-tang.junhui@zte.com.cn>
+Subject: [PATCH 1/2] bcache: add journal statistic
+Date: Fri, 26 Jan 2018 16:23:52 +0800
+Message-ID: <1516955032-6234-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-block-owner@vger.kernel.org>
 Sender: linux-block-owner@vger.kernel.org
-To: ponycheng0@gmail.com
-Cc: colyli@suse.de, mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
 
 From: Tang Junhui <tang.junhui@zte.com.cn>
 
+Sometimes, Journal takes up a lot of CPU, we need statistics
+to know what's the journal is doing. So this patch provide
+some journal statistics:
+1) reclaim: how many times the journal try to reclaim resource,
+   usually the journal bucket or/and the pin are exhausted.
+2) flush_write: how many times the journal try to flush btree node
+   to cache device, usually the journal bucket are exhausted.
+3) retry_flush_write: how many times the journal retry to flush
+   the next btree node, usually the previous tree node have been
+   flushed by other thread.
+we show these statistic by sysfs interface. Through these statistics
+We can totally see the status of journal module when the CPU is too
+high.
 
->On Wed, Jan 24, 2018 at 1:34 AM,  <tang.junhui@zte.com.cn> wrote:
->> you also can ask our dear maintainer Mike, who knows all about bcache,
->> but sometiomes he is very busy, It is normally you would hear nothing
->> from him for one weeks or two, sometimes maybe three, but never five,
->> since the merge window comes.
->
->;)  I didn't think I was this bad.  I'll try to do better.
-Welcome! We are looking forward to your back. You are good and
-important to us.
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/bcache.h  |  5 +++++
+ drivers/md/bcache/journal.c |  5 +++++
+ drivers/md/bcache/sysfs.c   | 15 +++++++++++++++
+ 3 files changed, 25 insertions(+)
 
-¨r(¨s¨Œ¨t)¨q
-
-Thanks,
-Tang Junhui
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index abd31e8..0432e28 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -647,6 +647,11 @@ struct cache_set {
+ 	atomic_long_t		writeback_keys_done;
+ 	atomic_long_t		writeback_keys_failed;
+ 
++
++	atomic_long_t		reclaim;
++	atomic_long_t		flush_write;
++	atomic_long_t		retry_flush_write;
++
+ 	enum			{
+ 		ON_ERROR_UNREGISTER,
+ 		ON_ERROR_PANIC,
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 02a98dd..47fd0b8 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -372,6 +372,8 @@ static void btree_flush_write(struct cache_set *c)
+ 	 */
+ 	struct btree *b, *best;
+ 	unsigned i;
++
++	atomic_long_inc(&c->flush_write);
+ retry:
+ 	best = NULL;
+ 
+@@ -392,6 +394,7 @@ static void btree_flush_write(struct cache_set *c)
+ 		if (!btree_current_write(b)->journal) {
+ 			mutex_unlock(&b->write_lock);
+ 			/* We raced */
++			atomic_long_inc(&c->retry_flush_write);
+ 			goto retry;
+ 		}
+ 
+@@ -471,6 +474,8 @@ static void journal_reclaim(struct cache_set *c)
+ 	unsigned iter, n = 0;
+ 	atomic_t p;
+ 
++	atomic_long_inc(&c->reclaim);
++
+ 	while (!atomic_read(&fifo_front(&c->journal.pin)))
+ 		fifo_pop(&c->journal.pin, p);
+ 
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 234b2f5..0afbf1a 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -65,6 +65,9 @@
+ 
+ read_attribute(state);
+ read_attribute(cache_read_races);
++read_attribute(reclaim);
++read_attribute(flush_write);
++read_attribute(retry_flush_write);
+ read_attribute(writeback_keys_done);
+ read_attribute(writeback_keys_failed);
+ read_attribute(io_errors);
+@@ -543,6 +546,15 @@ static unsigned bch_average_key_size(struct cache_set *c)
+ 	sysfs_print(cache_read_races,
+ 		    atomic_long_read(&c->cache_read_races));
+ 
++	sysfs_print(reclaim,
++		    atomic_long_read(&c->reclaim));
++
++	sysfs_print(flush_write,
++		    atomic_long_read(&c->flush_write));
++
++	sysfs_print(retry_flush_write,
++		    atomic_long_read(&c->retry_flush_write));
++
+ 	sysfs_print(writeback_keys_done,
+ 		    atomic_long_read(&c->writeback_keys_done));
+ 	sysfs_print(writeback_keys_failed,
+@@ -729,6 +741,9 @@ static void bch_cache_set_internal_release(struct kobject *k)
+ 
+ 	&sysfs_bset_tree_stats,
+ 	&sysfs_cache_read_races,
++	&sysfs_reclaim,
++	&sysfs_flush_write,
++	&sysfs_retry_flush_write,
+ 	&sysfs_writeback_keys_done,
+ 	&sysfs_writeback_keys_failed,
+ 
+-- 
+1.8.3.1
