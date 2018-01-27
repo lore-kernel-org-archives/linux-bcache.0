@@ -1,264 +1,187 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v4 10/13] bcache: add backing_request_endio() for bi_end_io of attached backing device I/O
-Date: Sat, 27 Jan 2018 22:24:03 +0800
-Message-ID: <20180127142406.89741-11-colyli@suse.de>
+Subject: [PATCH v4 03/13] bcache: fix cached_dev->count usage for bch_cache_set_error()
+Date: Sat, 27 Jan 2018 22:23:56 +0800
+Message-ID: <20180127142406.89741-4-colyli@suse.de>
 References: <20180127142406.89741-1-colyli@suse.de>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:38486 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:46721 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752303AbeA0PQt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 27 Jan 2018 10:16:49 -0500
+        id S1751905AbeA0RLR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 27 Jan 2018 12:11:17 -0500
 In-Reply-To: <20180127142406.89741-1-colyli@suse.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
 
-In order to catch I/O error of backing device, a separate bi_end_io
-call back is required. Then a per backing device counter can record I/O
-errors number and retire the backing device if the counter reaches a
-per backing device I/O error limit.
+When bcache metadata I/O fails, bcache will call bch_cache_set_error()
+to retire the whole cache set. The expected behavior to retire a cache
+set is to unregister the cache set, and unregister all backing device
+attached to this cache set, then remove sysfs entries of the cache set
+and all attached backing devices, finally release memory of structs
+cache_set, cache, cached_dev and bcache_device.
 
-This patch adds backing_request_endio() to bcache backing device I/O code
-path, this is a preparation for further complicated backing device failure
-handling. So far there is no real code logic change, I make this change a
-separate patch to make sure it is stable and reliable for further work.
+In my testing when journal I/O failure triggered by disconnected cache
+device, sometimes the cache set cannot be retired, and its sysfs
+entry /sys/fs/bcache/<uuid> still exits and the backing device also
+references it. This is not expected behavior.
+
+When metadata I/O failes, the call senquence to retire whole cache set is,
+        bch_cache_set_error()
+        bch_cache_set_unregister()
+        bch_cache_set_stop()
+        __cache_set_unregister()     <- called as callback by calling
+                                        clousre_queue(&c->caching)
+        cache_set_flush()            <- called as a callback when refcount
+                                        of cache_set->caching is 0
+        cache_set_free()             <- called as a callback when refcount
+                                        of catch_set->cl is 0
+        bch_cache_set_release()      <- called as a callback when refcount
+                                        of catch_set->kobj is 0
+
+I find if kernel thread bch_writeback_thread() quits while-loop when
+kthread_should_stop() is true and searched_full_index is false, clousre
+callback cache_set_flush() set by continue_at() will never be called. The
+result is, bcache fails to retire whole cache set.
+
+cache_set_flush() will be called when refcount of closure c->caching is 0,
+and in function bcache_device_detach() refcount of closure c->caching is
+released to 0 by clousre_put(). In metadata error code path, function
+bcache_device_detach() is called by cached_dev_detach_finish(). This is a
+callback routine being called when cached_dev->count is 0. This refcount
+is decreased by cached_dev_put().
+
+The above dependence indicates, cache_set_flush() will be called when
+refcount of cache_set->cl is 0, and refcount of cache_set->cl to be 0
+when refcount of cache_dev->count is 0.
+
+The reason why sometimes cache_dev->count is not 0 (when metadata I/O fails
+and bch_cache_set_error() called) is, in bch_writeback_thread(), refcount
+of cache_dev is not decreased properly.
+
+In bch_writeback_thread(), cached_dev_put() is called only when
+searched_full_index is true and cached_dev->writeback_keys is empty, a.k.a
+there is no dirty data on cache. In most of run time it is correct, but
+when bch_writeback_thread() quits the while-loop while cache is still
+dirty, current code forget to call cached_dev_put() before this kernel
+thread exits. This is why sometimes cache_set_flush() is not executed and
+cache set fails to be retired.
+
+The reason to call cached_dev_put() in bch_writeback_rate() is, when the
+cache device changes from clean to dirty, cached_dev_get() is called, to
+make sure during writeback operatiions both backing and cache devices
+won't be released.
+
+Adding following code in bch_writeback_thread() does not work,
+   static int bch_writeback_thread(void *arg)
+        }
+
++       if (atomic_read(&dc->has_dirty))
++               cached_dev_put()
++
+        return 0;
+ }
+because writeback kernel thread can be waken up and start via sysfs entry:
+        echo 1 > /sys/block/bcache<N>/bcache/writeback_running
+It is difficult to check whether backing device is dirty without race and
+extra lock. So the above modification will introduce potential refcount
+underflow in some conditions.
+
+The correct fix is, to take cached dev refcount when creating the kernel
+thread, and put it before the kernel thread exits. Then bcache does not
+need to take a cached dev refcount when cache turns from clean to dirty,
+or to put a cached dev refcount when cache turns from ditry to clean. The
+writeback kernel thread is alwasy safe to reference data structure from
+cache set, cache and cached device (because a refcount of cache device is
+taken for it already), and no matter the kernel thread is stopped by I/O
+errors or system reboot, cached_dev->count can always be used correctly.
+
+The patch is simple, but understanding how it works is quite complicated.
 
 Changelog:
-v2: indeed this is new added in this patch set.
+v2: set dc->writeback_thread to NULL in this patch, as suggested by Hannes.
+v1: initial version for review.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.com>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>
 Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/request.c   | 95 +++++++++++++++++++++++++++++++++++--------
- drivers/md/bcache/super.c     |  1 +
- drivers/md/bcache/writeback.c |  1 +
- 3 files changed, 81 insertions(+), 16 deletions(-)
+ drivers/md/bcache/super.c     |  1 -
+ drivers/md/bcache/writeback.c | 11 ++++++++---
+ drivers/md/bcache/writeback.h |  2 --
+ 3 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index e09c5ae745be..ad4cf71f7eab 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -139,6 +139,7 @@ static void bch_data_invalidate(struct closure *cl)
- 	}
- 
- 	op->insert_data_done = true;
-+	/* get in bch_data_insert() */
- 	bio_put(bio);
- out:
- 	continue_at(cl, bch_data_insert_keys, op->wq);
-@@ -630,6 +631,38 @@ static void request_endio(struct bio *bio)
- 	closure_put(cl);
- }
- 
-+static void backing_request_endio(struct bio *bio)
-+{
-+	struct closure *cl = bio->bi_private;
-+
-+	if (bio->bi_status) {
-+		struct search *s = container_of(cl, struct search, cl);
-+		/*
-+		 * If a bio has REQ_PREFLUSH for writeback mode, it is
-+		 * speically assembled in cached_dev_write() for a non-zero
-+		 * write request which has REQ_PREFLUSH. we don't set
-+		 * s->iop.status by this failure, the status will be decided
-+		 * by result of bch_data_insert() operation.
-+		 */
-+		if (unlikely(s->iop.writeback &&
-+			     bio->bi_opf & REQ_PREFLUSH)) {
-+			char buf[BDEVNAME_SIZE];
-+
-+			bio_devname(bio, buf);
-+			pr_err("Can't flush %s: returned bi_status %i",
-+				buf, bio->bi_status);
-+		} else {
-+			/* set to orig_bio->bi_status in bio_complete() */
-+			s->iop.status = bio->bi_status;
-+		}
-+		s->recoverable = false;
-+		/* should count I/O error for backing device here */
-+	}
-+
-+	bio_put(bio);
-+	closure_put(cl);
-+}
-+
- static void bio_complete(struct search *s)
- {
- 	if (s->orig_bio) {
-@@ -644,13 +677,21 @@ static void bio_complete(struct search *s)
- 	}
- }
- 
--static void do_bio_hook(struct search *s, struct bio *orig_bio)
-+static void do_bio_hook(struct search *s,
-+			struct bio *orig_bio,
-+			bio_end_io_t *end_io_fn)
- {
- 	struct bio *bio = &s->bio.bio;
- 
- 	bio_init(bio, NULL, 0);
- 	__bio_clone_fast(bio, orig_bio);
--	bio->bi_end_io		= request_endio;
-+	/*
-+	 * bi_end_io can be set separately somewhere else, e.g. the
-+	 * variants in,
-+	 * - cache_bio->bi_end_io from cached_dev_cache_miss()
-+	 * - n->bi_end_io from cache_lookup_fn()
-+	 */
-+	bio->bi_end_io		= end_io_fn;
- 	bio->bi_private		= &s->cl;
- 
- 	bio_cnt_set(bio, 3);
-@@ -676,7 +717,7 @@ static inline struct search *search_alloc(struct bio *bio,
- 	s = mempool_alloc(d->c->search, GFP_NOIO);
- 
- 	closure_init(&s->cl, NULL);
--	do_bio_hook(s, bio);
-+	do_bio_hook(s, bio, request_endio);
- 
- 	s->orig_bio		= bio;
- 	s->cache_miss		= NULL;
-@@ -743,10 +784,11 @@ static void cached_dev_read_error(struct closure *cl)
- 		trace_bcache_read_retry(s->orig_bio);
- 
- 		s->iop.status = 0;
--		do_bio_hook(s, s->orig_bio);
-+		do_bio_hook(s, s->orig_bio, backing_request_endio);
- 
- 		/* XXX: invalidate cache */
- 
-+		/* I/O request sent to backing device */
- 		closure_bio_submit(s->iop.c, bio, cl);
- 	}
- 
-@@ -859,7 +901,7 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
- 	bio_copy_dev(cache_bio, miss);
- 	cache_bio->bi_iter.bi_size	= s->insert_bio_sectors << 9;
- 
--	cache_bio->bi_end_io	= request_endio;
-+	cache_bio->bi_end_io	= backing_request_endio;
- 	cache_bio->bi_private	= &s->cl;
- 
- 	bch_bio_map(cache_bio, NULL);
-@@ -872,14 +914,16 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
- 	s->cache_miss	= miss;
- 	s->iop.bio	= cache_bio;
- 	bio_get(cache_bio);
-+	/* I/O request sent to backing device */
- 	closure_bio_submit(s->iop.c, cache_bio, &s->cl);
- 
- 	return ret;
- out_put:
- 	bio_put(cache_bio);
- out_submit:
--	miss->bi_end_io		= request_endio;
-+	miss->bi_end_io		= backing_request_endio;
- 	miss->bi_private	= &s->cl;
-+	/* I/O request sent to backing device */
- 	closure_bio_submit(s->iop.c, miss, &s->cl);
- 	return ret;
- }
-@@ -943,31 +987,48 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 		s->iop.bio = s->orig_bio;
- 		bio_get(s->iop.bio);
- 
--		if ((bio_op(bio) != REQ_OP_DISCARD) ||
--		    blk_queue_discard(bdev_get_queue(dc->bdev)))
--			closure_bio_submit(s->iop.c, bio, cl);
-+		if (bio_op(bio) == REQ_OP_DISCARD &&
-+		    !blk_queue_discard(bdev_get_queue(dc->bdev)))
-+			goto insert_data;
-+
-+		/* I/O request sent to backing device */
-+		bio->bi_end_io = backing_request_endio;
-+		closure_bio_submit(s->iop.c, bio, cl);
-+
- 	} else if (s->iop.writeback) {
- 		bch_writeback_add(dc);
- 		s->iop.bio = bio;
- 
- 		if (bio->bi_opf & REQ_PREFLUSH) {
--			/* Also need to send a flush to the backing device */
--			struct bio *flush = bio_alloc_bioset(GFP_NOIO, 0,
--							     dc->disk.bio_split);
--
-+			/*
-+			 * Also need to send a flush to the backing
-+			 * device, if failed on backing device.
-+			 */
-+			struct bio *flush;
-+
-+			flush = bio_alloc_bioset(GFP_NOIO, 0,
-+						 dc->disk.bio_split);
-+			if (!flush) {
-+				s->iop.status = BLK_STS_RESOURCE;
-+				goto insert_data;
-+			}
- 			bio_copy_dev(flush, bio);
--			flush->bi_end_io = request_endio;
-+			flush->bi_end_io = backing_request_endio;
- 			flush->bi_private = cl;
- 			flush->bi_opf = REQ_OP_WRITE | REQ_PREFLUSH;
--
-+			/* I/O request sent to backing device */
- 			closure_bio_submit(s->iop.c, flush, cl);
- 		}
-+		bch_writeback_add(dc);
-+
- 	} else {
- 		s->iop.bio = bio_clone_fast(bio, GFP_NOIO, dc->disk.bio_split);
--
-+		/* I/O request sent to backing device */
-+		bio->bi_end_io = backing_request_endio;
- 		closure_bio_submit(s->iop.c, bio, cl);
- 	}
- 
-+insert_data:
- 	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
- 	continue_at(cl, cached_dev_write_complete, NULL);
- }
-@@ -981,6 +1042,7 @@ static void cached_dev_nodata(struct closure *cl)
- 		bch_journal_meta(s->iop.c, cl);
- 
- 	/* If it's a flush, we send the flush to the backing device too */
-+	bio->bi_end_io = backing_request_endio;
- 	closure_bio_submit(s->iop.c, bio, cl);
- 
- 	continue_at(cl, cached_dev_bio_complete, NULL);
-@@ -1078,6 +1140,7 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
- 				cached_dev_read(dc, s);
- 		}
- 	} else
-+		/* I/O request sent to backing device */
- 		detached_dev_do_request(d, bio);
- 
- 	return BLK_QC_T_NONE;
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 97e3bb8e1aee..08a0b541a4da 100644
+index 133b81225ea9..d14e09cce2f6 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -265,6 +265,7 @@ void bch_write_bdev_super(struct cached_dev *dc, struct closure *parent)
- 	bio->bi_private = dc;
- 
- 	closure_get(cl);
-+	/* I/O request sent to backing device */
- 	__write_super(&dc->sb, bio);
- 
- 	closure_return_with_destructor(cl, bch_write_bdev_super_unlock);
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 3d7d8452e0de..4ebe0119ea7e 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -289,6 +289,7 @@ static void write_dirty(struct closure *cl)
- 		bio_set_dev(&io->bio, io->dc->bdev);
- 		io->bio.bi_end_io	= dirty_endio;
- 
-+		/* I/O request sent to backing device */
- 		closure_bio_submit(io->dc->disk.c, &io->bio, cl);
+@@ -1052,7 +1052,6 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+ 		bch_sectors_dirty_init(&dc->disk);
+ 		atomic_set(&dc->has_dirty, 1);
+-		refcount_inc(&dc->count);
+ 		bch_writeback_queue(dc);
  	}
  
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index f1d2fc15abcc..b280c134dd4d 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -572,7 +572,7 @@ static int bch_writeback_thread(void *arg)
+ 
+ 			if (kthread_should_stop()) {
+ 				set_current_state(TASK_RUNNING);
+-				return 0;
++				break;
+ 			}
+ 
+ 			schedule();
+@@ -585,7 +585,6 @@ static int bch_writeback_thread(void *arg)
+ 		if (searched_full_index &&
+ 		    RB_EMPTY_ROOT(&dc->writeback_keys.keys)) {
+ 			atomic_set(&dc->has_dirty, 0);
+-			cached_dev_put(dc);
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
+ 			bch_write_bdev_super(dc, NULL);
+ 		}
+@@ -606,6 +605,9 @@ static int bch_writeback_thread(void *arg)
+ 		}
+ 	}
+ 
++	dc->writeback_thread = NULL;
++	cached_dev_put(dc);
++
+ 	return 0;
+ }
+ 
+@@ -669,10 +671,13 @@ int bch_cached_dev_writeback_start(struct cached_dev *dc)
+ 	if (!dc->writeback_write_wq)
+ 		return -ENOMEM;
+ 
++	cached_dev_get(dc);
+ 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
+ 					      "bcache_writeback");
+-	if (IS_ERR(dc->writeback_thread))
++	if (IS_ERR(dc->writeback_thread)) {
++		cached_dev_put(dc);
+ 		return PTR_ERR(dc->writeback_thread);
++	}
+ 
+ 	schedule_delayed_work(&dc->writeback_rate_update,
+ 			      dc->writeback_rate_update_seconds * HZ);
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 587b25599856..0bba8f1c6cdf 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -105,8 +105,6 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+ {
+ 	if (!atomic_read(&dc->has_dirty) &&
+ 	    !atomic_xchg(&dc->has_dirty, 1)) {
+-		refcount_inc(&dc->count);
+-
+ 		if (BDEV_STATE(&dc->sb) != BDEV_STATE_DIRTY) {
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_DIRTY);
+ 			/* XXX: should do this synchronously */
 -- 
 2.15.1
