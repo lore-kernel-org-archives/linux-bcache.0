@@ -1,153 +1,99 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v4 12/13] bcache: stop bcache device when backing device is offline
-Date: Sat, 27 Jan 2018 22:24:05 +0800
-Message-ID: <20180127142406.89741-13-colyli@suse.de>
-References: <20180127142406.89741-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180127142406.89741-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
+Subject: [PATCH v4 00/13] bcache: device failure handling improvement
+Date: Sat, 27 Jan 2018 22:23:53 +0800
+Message-ID: <20180127142406.89741-1-colyli@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:59197 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751493AbeA0TsW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 27 Jan 2018 14:48:22 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-Currently bcache does not handle backing device failure, if backing
-device is offline and disconnected from system, its bcache device can still
-be accessible. If the bcache device is in writeback mode, I/O requests even
-can success if the requests hit on cache device. That is to say, when and
-how bcache handles offline backing device is undefined.
+Hi maintainers and folks,
 
-This patch tries to handle backing device offline in a rather simple way,
-- Add cached_dev->status_update_thread kernel thread to update backing
-  device status in every 1 second.
-- Add cached_dev->offline_seconds to record how many seconds the backing
-  device is observed to be offline. If the backing device is offline for
-  BACKING_DEV_OFFLINE_TIMEOUT (30) seconds, set dc->io_disable to 1 and
-  call bcache_device_stop() to stop the bache device which linked to the
-  offline backing device.
+This patch set tries to improve bcache device failure handling, includes
+cache device and backing device failures.
 
-Now if a backing device is offline for BACKING_DEV_OFFLINE_TIMEOUT seconds,
-its bcache device will be removed, then user space application writing on
-it will get error immediately, and handler the device failure in time.
+The basic idea to handle failed cache device is,
+- Unregister cache set
+- Detach all backing devices which are attached to this cache set
+- Stop all the detached bcache devices (configurable)
+- Stop all flash only volume on the cache set
+The above process is named 'cache set retire' by me. The result of cache
+set retire is, cache set and bcache devices are all removed, following
+I/O requests will get failed immediately to notift upper layer or user
+space coce that the cache device is failed or disconnected.
 
-This patch is quite simple, does not handle more complicated situations.
-Once the bcache device is stopped, users need to recovery the backing
-device, register and attach it manually.
+For failed backing device, there are two kinds of failures to handle,
+- If device is disconnected, and kernel thread dc->status_update_thread
+  finds it is offline for BACKING_DEV_OFFLINE_TIMEOUT (5) seconds, the
+  kernel thread will set dc->io_disable and call bcache_device_stop() to
+  stop and remove the bcache device from system.
+- If device is alive but returns too many I/O errors, after errors number
+  exceeds dc->error_limit, call bch_cached_dev_error() to set
+  dc->io_disable and stop bcache device. Then the broken backing device
+  and its bcache device will be removed from system.
 
-Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.com>
-Cc: Michael Lyle <mlyle@lyle.org>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>
+The v4 patch set combines two v3 patches into one, and adds one more patch
+to permit users to explicitly avoid stopping attached bcache device from a
+retiring cache set. This is a configurable option suggested by
+Nix <nix@esperi.org.uk>.
+
+Some patches of this patch set is already in bcache-for-next and not
+included here anymore. Most of the patches are reviewed by Hannes Reinecke
+and Junhui Tang. There are still severl patches need to be reviewed,
+- [PATCH v4 05/13] bcache: stop dc->writeback_rate_update properly
+- [PATCH v4 13/13] bcache: add stop_attached_devs_on_fail to struct
+  cached_dev 
+
+Any comment, question and review are warmly welcome. Thanks in advance.
+
+Changelog:
+v4: add per-cached_dev option stop_attached_devs_on_fail to avoid stopping
+    attached bcache device from a retiring cache set.
+v3: fix detach issue find in v2 patch set.
+v2: fixes all problems found in v1 review.
+    add patches to handle backing device failure.
+    add one more patch to set writeback_rate_update_seconds range.
+    include a patch from Junhui Tang.
+v1: the initial version, only handles cache device failure.
+
+Coly Li
 ---
- drivers/md/bcache/bcache.h |  2 ++
- drivers/md/bcache/super.c  | 55 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 57 insertions(+)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 5a811959392d..9eedb35d01bc 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -338,6 +338,7 @@ struct cached_dev {
- 
- 	struct keybuf		writeback_keys;
- 
-+	struct task_struct	*status_update_thread;
- 	/*
- 	 * Order the write-half of writeback operations strongly in dispatch
- 	 * order.  (Maintain LBA order; don't allow reads completing out of
-@@ -384,6 +385,7 @@ struct cached_dev {
- #define DEFAULT_CACHED_DEV_ERROR_LIMIT 64
- 	atomic_t		io_errors;
- 	unsigned		error_limit;
-+	unsigned		offline_seconds;
- };
- 
- enum alloc_reserve {
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 14fce3623770..85adf1e29d11 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -646,6 +646,11 @@ static int ioctl_dev(struct block_device *b, fmode_t mode,
- 		     unsigned int cmd, unsigned long arg)
- {
- 	struct bcache_device *d = b->bd_disk->private_data;
-+	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
-+
-+	if (dc->io_disable)
-+		return -EIO;
-+
- 	return d->ioctl(d, mode, cmd, arg);
- }
- 
-@@ -856,6 +861,45 @@ static void calc_cached_dev_sectors(struct cache_set *c)
- 	c->cached_dev_sectors = sectors;
- }
- 
-+#define BACKING_DEV_OFFLINE_TIMEOUT 5
-+static int cached_dev_status_update(void *arg)
-+{
-+	struct cached_dev *dc = arg;
-+	struct request_queue *q;
-+	char buf[BDEVNAME_SIZE];
-+
-+	/*
-+	 * If this delayed worker is stopping outside, directly quit here.
-+	 * dc->io_disable might be set via sysfs interface, so check it
-+	 * here too.
-+	 */
-+	while (!kthread_should_stop() && !dc->io_disable) {
-+		q = bdev_get_queue(dc->bdev);
-+		if (blk_queue_dying(q))
-+			dc->offline_seconds++;
-+		else
-+			dc->offline_seconds = 0;
-+
-+		if (dc->offline_seconds >= BACKING_DEV_OFFLINE_TIMEOUT) {
-+			pr_err("%s: device offline for %d seconds",
-+				bdevname(dc->bdev, buf),
-+				BACKING_DEV_OFFLINE_TIMEOUT);
-+			pr_err("%s: disable I/O request due to backing "
-+				"device offline", dc->disk.name);
-+			dc->io_disable = true;
-+			/* let others know earlier that io_disable is true */
-+			smp_mb();
-+			bcache_device_stop(&dc->disk);
-+			break;
-+		}
-+
-+		schedule_timeout_interruptible(HZ);
-+	}
-+
-+	dc->status_update_thread = NULL;
-+	return 0;
-+}
-+
- void bch_cached_dev_run(struct cached_dev *dc)
- {
- 	struct bcache_device *d = &dc->disk;
-@@ -898,6 +942,15 @@ void bch_cached_dev_run(struct cached_dev *dc)
- 	if (sysfs_create_link(&d->kobj, &disk_to_dev(d->disk)->kobj, "dev") ||
- 	    sysfs_create_link(&disk_to_dev(d->disk)->kobj, &d->kobj, "bcache"))
- 		pr_debug("error creating sysfs link");
-+
-+	dc->status_update_thread = kthread_run(cached_dev_status_update,
-+					       dc,
-+					      "bcache_status_update");
-+	if (IS_ERR(dc->status_update_thread)) {
-+		pr_warn("bcache: failed to create bcache_status_update "
-+			"kthread, continue to run without monitoring backing "
-+			"device status");
-+	}
- }
- 
- /*
-@@ -1118,6 +1171,8 @@ static void cached_dev_free(struct closure *cl)
- 		kthread_stop(dc->writeback_thread);
- 	if (dc->writeback_write_wq)
- 		destroy_workqueue(dc->writeback_write_wq);
-+	if (!IS_ERR_OR_NULL(dc->status_update_thread))
-+		kthread_stop(dc->status_update_thread);
- 
- 	if (atomic_read(&dc->running))
- 		bd_unlink_disk_holder(dc->bdev, dc->disk.disk);
+Coly Li (12):
+  bcache: set writeback_rate_update_seconds in range [1, 60] seconds
+  bcache: properly set task state in bch_writeback_thread()
+  bcache: fix cached_dev->count usage for bch_cache_set_error()
+  bcache: quit dc->writeback_thread when BCACHE_DEV_DETACHING is set
+  bcache: stop dc->writeback_rate_update properly
+  bcache: set error_limit correctly
+  bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags
+  bcache: stop all attached bcache devices for a retired cache set
+  bcache: add backing_request_endio() for bi_end_io of attached backing
+    device I/O
+  bcache: add io_disable to struct cached_dev
+  bcache: stop bcache device when backing device is offline
+  bcache: add stop_attached_devs_on_fail to struct cached_dev
+
+Tang Junhui (1):
+  bcache: fix inaccurate io state for detached bcache devices
+
+ drivers/md/bcache/alloc.c     |   5 +-
+ drivers/md/bcache/bcache.h    |  38 ++++++++-
+ drivers/md/bcache/btree.c     |  10 ++-
+ drivers/md/bcache/io.c        |  16 +++-
+ drivers/md/bcache/journal.c   |   4 +-
+ drivers/md/bcache/request.c   | 187 +++++++++++++++++++++++++++++++++++-------
+ drivers/md/bcache/super.c     | 181 ++++++++++++++++++++++++++++++++++++----
+ drivers/md/bcache/sysfs.c     |  55 ++++++++++++-
+ drivers/md/bcache/util.h      |   6 --
+ drivers/md/bcache/writeback.c |  99 ++++++++++++++++++----
+ drivers/md/bcache/writeback.h |   5 +-
+ 11 files changed, 522 insertions(+), 84 deletions(-)
+
 -- 
 2.15.1
