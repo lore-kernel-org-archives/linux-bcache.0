@@ -1,130 +1,127 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v4 09/13] bcache: fix inaccurate io state for detached bcache devices
-Date: Sat, 27 Jan 2018 22:24:02 +0800
-Message-ID: <20180127142406.89741-10-colyli@suse.de>
+Subject: [PATCH v4 06/13] bcache: set error_limit correctly
+Date: Sat, 27 Jan 2018 22:23:59 +0800
+Message-ID: <20180127142406.89741-7-colyli@suse.de>
 References: <20180127142406.89741-1-colyli@suse.de>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:41697 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751101AbeA0WVd (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 27 Jan 2018 17:21:33 -0500
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180127142406.89741-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Tang Junhui <tang.junhui@zte.com.cn>
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>
+List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+Struct cache uses io_errors for two purposes,
+- Error decay: when cache set error_decay is set, io_errors is used to
+  generate a small piece of delay when I/O error happens.
+- I/O errors counter: in order to generate big enough value for error
+  decay, I/O errors counter value is stored by left shifting 20 bits (a.k.a
+  IO_ERROR_SHIFT).
 
-When we run IO in a detached device,  and run iostat to shows IO status,
-normally it will show like bellow (Omitted some fields):
-Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
-sdd        ... 15.89     0.53    1.82    0.20    2.23   1.81  52.30
-bcache0    ... 15.89   115.42    0.00    0.00    0.00   2.40  69.60
-but after IO stopped, there are still very big avgqu-sz and %util
-values as bellow:
-Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
-bcache0   ...      0   5326.32    0.00    0.00    0.00   0.00 100.10
+In function bch_count_io_errors(), if I/O errors counter reaches cache set
+error limit, bch_cache_set_error() will be called to retire the whold cache
+set. But current code is problematic when checking the error limit, see the
+following code piece from bch_count_io_errors(),
 
-The reason for this issue is that, only generic_start_io_acct() called
-and no generic_end_io_acct() called for detached device in
-cached_dev_make_request(). See the code:
-//start generic_start_io_acct()
-generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
-if (cached_dev_get(dc)) {
-	//will callback generic_end_io_acct()
-}
-else {
-	//will not call generic_end_io_acct()
-}
+ 90     if (error) {
+ 91             char buf[BDEVNAME_SIZE];
+ 92             unsigned errors = atomic_add_return(1 << IO_ERROR_SHIFT,
+ 93                                                 &ca->io_errors);
+ 94             errors >>= IO_ERROR_SHIFT;
+ 95
+ 96             if (errors < ca->set->error_limit)
+ 97                     pr_err("%s: IO error on %s, recovering",
+ 98                            bdevname(ca->bdev, buf), m);
+ 99             else
+100                     bch_cache_set_error(ca->set,
+101                                         "%s: too many IO errors %s",
+102                                         bdevname(ca->bdev, buf), m);
+103     }
 
-This patch calls generic_end_io_acct() in the end of IO for detached
-devices, so we can show IO state correctly.
+At line 94, errors is right shifting IO_ERROR_SHIFT bits, now it is real
+errors counter to compare at line 96. But ca->set->error_limit is initia-
+lized with an amplified value in bch_cache_set_alloc(),
+1545         c->error_limit  = 8 << IO_ERROR_SHIFT;
 
-(Modified to use GFP_NOIO in kzalloc() by Coly Li)
+It means by default, in bch_count_io_errors(), before 8<<20 errors happened
+bch_cache_set_error() won't be called to retire the problematic cache
+device. If the average request size is 64KB, it means bcache won't handle
+failed device until 512GB data is requested. This is too large to be an I/O
+threashold. So I believe the correct error limit should be much less.
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-Reviewed-by: Coly Li <colyli@suse.de>
+This patch sets default cache set error limit to 8, then in
+bch_count_io_errors() when errors counter reaches 8 (if it is default
+value), function bch_cache_set_error() will be called to retire the whole
+cache set. This patch also removes bits shifting when store or show
+io_error_limit value via sysfs interface.
+
+Nowadays most of SSDs handle internal flash failure automatically by LBA
+address re-indirect mapping. If an I/O error can be observed by upper layer
+code, it will be a notable error because that SSD can not re-indirect
+map the problematic LBA address to an available flash block. This situation
+indicates the whole SSD will be failed very soon. Therefore setting 8 as
+the default io error limit value makes sense, it is enough for most of
+cache devices.
+
+Changelog:
+v2: add reviewed-by from Hannes.
+v1: initial version for review.
+
+Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.com>
+Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/request.c | 58 +++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 51 insertions(+), 7 deletions(-)
+ drivers/md/bcache/bcache.h | 1 +
+ drivers/md/bcache/super.c  | 2 +-
+ drivers/md/bcache/sysfs.c  | 4 ++--
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 02296bda6384..e09c5ae745be 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -986,6 +986,55 @@ static void cached_dev_nodata(struct closure *cl)
- 	continue_at(cl, cached_dev_bio_complete, NULL);
- }
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 88d938c8d027..7d7512fa4f09 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -663,6 +663,7 @@ struct cache_set {
+ 		ON_ERROR_UNREGISTER,
+ 		ON_ERROR_PANIC,
+ 	}			on_error;
++#define DEFAULT_IO_ERROR_LIMIT 8
+ 	unsigned		error_limit;
+ 	unsigned		error_decay;
  
-+struct detached_dev_io_private {
-+	struct bcache_device	*d;
-+	unsigned long		start_time;
-+	bio_end_io_t		*bi_end_io;
-+	void			*bi_private;
-+};
-+
-+static void detatched_dev_end_io(struct bio *bio)
-+{
-+	struct detached_dev_io_private *ddip;
-+
-+	ddip = bio->bi_private;
-+	bio->bi_end_io = ddip->bi_end_io;
-+	bio->bi_private = ddip->bi_private;
-+
-+	generic_end_io_acct(ddip->d->disk->queue,
-+			    bio_data_dir(bio),
-+			    &ddip->d->disk->part0, ddip->start_time);
-+
-+	kfree(ddip);
-+
-+	bio->bi_end_io(bio);
-+}
-+
-+static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
-+{
-+	struct detached_dev_io_private *ddip;
-+	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
-+
-+	/*
-+	 * no need to call closure_get(&dc->disk.cl),
-+	 * because upper layer had already opened bcache device,
-+	 * which would call closure_get(&dc->disk.cl)
-+	 */
-+	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
-+	ddip->d = d;
-+	ddip->start_time = jiffies;
-+	ddip->bi_end_io = bio->bi_end_io;
-+	ddip->bi_private = bio->bi_private;
-+	bio->bi_end_io = detatched_dev_end_io;
-+	bio->bi_private = ddip;
-+
-+	if ((bio_op(bio) == REQ_OP_DISCARD) &&
-+	    !blk_queue_discard(bdev_get_queue(dc->bdev)))
-+		bio->bi_end_io(bio);
-+	else
-+		generic_make_request(bio);
-+}
-+
- /* Cached devices - read & write stuff */
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 6d888e8fea8c..a373648b5d4b 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1583,7 +1583,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
  
- static blk_qc_t cached_dev_make_request(struct request_queue *q,
-@@ -1028,13 +1077,8 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
- 			else
- 				cached_dev_read(dc, s);
- 		}
--	} else {
--		if ((bio_op(bio) == REQ_OP_DISCARD) &&
--		    !blk_queue_discard(bdev_get_queue(dc->bdev)))
--			bio_endio(bio);
--		else
--			generic_make_request(bio);
--	}
-+	} else
-+		detached_dev_do_request(d, bio);
+ 	c->congested_read_threshold_us	= 2000;
+ 	c->congested_write_threshold_us	= 20000;
+-	c->error_limit	= 8 << IO_ERROR_SHIFT;
++	c->error_limit	= DEFAULT_IO_ERROR_LIMIT;
  
- 	return BLK_QC_T_NONE;
- }
+ 	return c;
+ err:
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b7166c504cdb..ba62e987b503 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -560,7 +560,7 @@ SHOW(__bch_cache_set)
+ 
+ 	/* See count_io_errors for why 88 */
+ 	sysfs_print(io_error_halflife,	c->error_decay * 88);
+-	sysfs_print(io_error_limit,	c->error_limit >> IO_ERROR_SHIFT);
++	sysfs_print(io_error_limit,	c->error_limit);
+ 
+ 	sysfs_hprint(congested,
+ 		     ((uint64_t) bch_get_congested(c)) << 9);
+@@ -660,7 +660,7 @@ STORE(__bch_cache_set)
+ 	}
+ 
+ 	if (attr == &sysfs_io_error_limit)
+-		c->error_limit = strtoul_or_return(buf) << IO_ERROR_SHIFT;
++		c->error_limit = strtoul_or_return(buf);
+ 
+ 	/* See count_io_errors() for why 88 */
+ 	if (attr == &sysfs_io_error_halflife)
 -- 
 2.15.1
