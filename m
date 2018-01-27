@@ -1,99 +1,189 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v4 00/13] bcache: device failure handling improvement
-Date: Sat, 27 Jan 2018 22:23:53 +0800
-Message-ID: <20180127142406.89741-1-colyli@suse.de>
+Subject: [PATCH v4 13/13] bcache: add stop_when_cache_set_failed to struct cached_dev
+Date: Sat, 27 Jan 2018 22:24:06 +0800
+Message-ID: <20180127142406.89741-14-colyli@suse.de>
+References: <20180127142406.89741-1-colyli@suse.de>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:59197 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:60031 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751493AbeA0TsW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 27 Jan 2018 14:48:22 -0500
+        id S1751982AbeA0UAo (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 27 Jan 2018 15:00:44 -0500
+In-Reply-To: <20180127142406.89741-1-colyli@suse.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Nix <nix@esperi.org.uk>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>
 
-Hi maintainers and folks,
+Current bcache failure handling code will stop all attached bcache devices
+when the cache set is broken or disconnected. This is desired behavior for
+most of enterprise or cloud use cases, but maybe not for low end
+configuration. Nix <nix@esperi.org.uk> points out, users may still want to
+access the bcache device after cache device failed, for example on laptops.
 
-This patch set tries to improve bcache device failure handling, includes
-cache device and backing device failures.
+This patch adds a per-cached_dev option stop_when_cache_set_failed, which
+is enabled (1) by default. Its value can be set via sysfs, when it is set
+to 0, the corresponding bcache device won't be stopped when a broken
+or disconnected cache set is retiring. 
 
-The basic idea to handle failed cache device is,
-- Unregister cache set
-- Detach all backing devices which are attached to this cache set
-- Stop all the detached bcache devices (configurable)
-- Stop all flash only volume on the cache set
-The above process is named 'cache set retire' by me. The result of cache
-set retire is, cache set and bcache devices are all removed, following
-I/O requests will get failed immediately to notift upper layer or user
-space coce that the cache device is failed or disconnected.
+When the cached device has dirty data on retiring cache set, if bcache
+device is not stopped, following I/O request on the bcache device may
+result data corruption on backing device. This patch also prints out warn-
+ing information in kernel message.
 
-For failed backing device, there are two kinds of failures to handle,
-- If device is disconnected, and kernel thread dc->status_update_thread
-  finds it is offline for BACKING_DEV_OFFLINE_TIMEOUT (5) seconds, the
-  kernel thread will set dc->io_disable and call bcache_device_stop() to
-  stop and remove the bcache device from system.
-- If device is alive but returns too many I/O errors, after errors number
-  exceeds dc->error_limit, call bch_cached_dev_error() to set
-  dc->io_disable and stop bcache device. Then the broken backing device
-  and its bcache device will be removed from system.
-
-The v4 patch set combines two v3 patches into one, and adds one more patch
-to permit users to explicitly avoid stopping attached bcache device from a
-retiring cache set. This is a configurable option suggested by
-Nix <nix@esperi.org.uk>.
-
-Some patches of this patch set is already in bcache-for-next and not
-included here anymore. Most of the patches are reviewed by Hannes Reinecke
-and Junhui Tang. There are still severl patches need to be reviewed,
-- [PATCH v4 05/13] bcache: stop dc->writeback_rate_update properly
-- [PATCH v4 13/13] bcache: add stop_attached_devs_on_fail to struct
-  cached_dev 
-
-Any comment, question and review are warmly welcome. Thanks in advance.
-
-Changelog:
-v4: add per-cached_dev option stop_attached_devs_on_fail to avoid stopping
-    attached bcache device from a retiring cache set.
-v3: fix detach issue find in v2 patch set.
-v2: fixes all problems found in v1 review.
-    add patches to handle backing device failure.
-    add one more patch to set writeback_rate_update_seconds range.
-    include a patch from Junhui Tang.
-v1: the initial version, only handles cache device failure.
-
-Coly Li
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Nix <nix@esperi.org.uk>
+Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
+Cc: Hannes Reinecke <hare@suse.com>
 ---
+ drivers/md/bcache/bcache.h |  1 +
+ drivers/md/bcache/super.c  | 63 +++++++++++++++++++++++++++++++++-------------
+ drivers/md/bcache/sysfs.c  | 10 ++++++++
+ 3 files changed, 56 insertions(+), 18 deletions(-)
 
-Coly Li (12):
-  bcache: set writeback_rate_update_seconds in range [1, 60] seconds
-  bcache: properly set task state in bch_writeback_thread()
-  bcache: fix cached_dev->count usage for bch_cache_set_error()
-  bcache: quit dc->writeback_thread when BCACHE_DEV_DETACHING is set
-  bcache: stop dc->writeback_rate_update properly
-  bcache: set error_limit correctly
-  bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags
-  bcache: stop all attached bcache devices for a retired cache set
-  bcache: add backing_request_endio() for bi_end_io of attached backing
-    device I/O
-  bcache: add io_disable to struct cached_dev
-  bcache: stop bcache device when backing device is offline
-  bcache: add stop_attached_devs_on_fail to struct cached_dev
-
-Tang Junhui (1):
-  bcache: fix inaccurate io state for detached bcache devices
-
- drivers/md/bcache/alloc.c     |   5 +-
- drivers/md/bcache/bcache.h    |  38 ++++++++-
- drivers/md/bcache/btree.c     |  10 ++-
- drivers/md/bcache/io.c        |  16 +++-
- drivers/md/bcache/journal.c   |   4 +-
- drivers/md/bcache/request.c   | 187 +++++++++++++++++++++++++++++++++++-------
- drivers/md/bcache/super.c     | 181 ++++++++++++++++++++++++++++++++++++----
- drivers/md/bcache/sysfs.c     |  55 ++++++++++++-
- drivers/md/bcache/util.h      |   6 --
- drivers/md/bcache/writeback.c |  99 ++++++++++++++++++----
- drivers/md/bcache/writeback.h |   5 +-
- 11 files changed, 522 insertions(+), 84 deletions(-)
-
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 9eedb35d01bc..3756a196916f 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -362,6 +362,7 @@ struct cached_dev {
+ 	unsigned		readahead;
+ 
+ 	unsigned		io_disable:1;
++	unsigned		stop_when_cache_set_failed:1;
+ 	unsigned		verify:1;
+ 	unsigned		bypass_torture_test:1;
+ 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 85adf1e29d11..93f720433b40 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1246,6 +1246,7 @@ static int cached_dev_init(struct cached_dev *dc, unsigned block_size)
+ 	atomic_set(&dc->io_errors, 0);
+ 	dc->io_disable = false;
+ 	dc->error_limit = DEFAULT_CACHED_DEV_ERROR_LIMIT;
++	dc->stop_when_cache_set_failed = 1;
+ 
+ 	bch_cached_dev_request_init(dc);
+ 	bch_cached_dev_writeback_init(dc);
+@@ -1541,33 +1542,59 @@ static void cache_set_flush(struct closure *cl)
+ 	closure_return(cl);
+ }
+ 
++/*
++ * dc->stop_when_cache_set_failed is default to true. If it is explicitly
++ * set to false by user, the bcache device won't be stopped when cache set
++ * is broken or disconnected. If there is dirty data on failed cache set,
++ * not stopping bcache device may result data corruption on backing device,
++ * pr_warn() notices the protential risk in kernel message.
++ */
++static void try_stop_bcache_device(struct cache_set *c,
++				   struct bcache_device *d,
++				   struct cached_dev *dc)
++{
++	if (dc->stop_when_cache_set_failed)
++		bcache_device_stop(d);
++	else if (!dc->stop_when_cache_set_failed &&
++		 atomic_read(&dc->has_dirty))
++		pr_warn("bcache: device %s won't be stopped while unregistering"
++			" broken dirty cache set %pU, your data has potential "
++			"risk to be corrupted. To disable this warning message,"
++			" please set /sys/block/%s/bcache/stop_when_"
++			"cache_set_failed to 1.",
++			d->name, c->sb.set_uuid, d->name);
++}
++
+ static void __cache_set_unregister(struct closure *cl)
+ {
+ 	struct cache_set *c = container_of(cl, struct cache_set, caching);
+ 	struct cached_dev *dc;
++	struct bcache_device *d;
+ 	size_t i;
+ 
+ 	mutex_lock(&bch_register_lock);
+ 
+-	for (i = 0; i < c->devices_max_used; i++)
+-		if (c->devices[i]) {
+-			if (!UUID_FLASH_ONLY(&c->uuids[i]) &&
+-			    test_bit(CACHE_SET_UNREGISTERING, &c->flags)) {
+-				dc = container_of(c->devices[i],
+-						  struct cached_dev, disk);
+-				bch_cached_dev_detach(dc);
+-				/*
+-				 * If we come here by too many I/O errors,
+-				 * bcache device should be stopped too, to
+-				 * keep data consistency on cache and
+-				 * backing devices.
+-				 */
+-				if (test_bit(CACHE_SET_IO_DISABLE, &c->flags))
+-					bcache_device_stop(c->devices[i]);
+-			} else {
+-				bcache_device_stop(c->devices[i]);
+-			}
++	for (i = 0; i < c->devices_max_used; i++) {
++		d = c->devices[i];
++		if (!d)
++			continue;
++
++		if (!UUID_FLASH_ONLY(&c->uuids[i]) &&
++		    test_bit(CACHE_SET_UNREGISTERING, &c->flags)) {
++			dc = container_of(d, struct cached_dev, disk);
++			bch_cached_dev_detach(dc);
++			/*
++			 * If we come here by too many I/O errors,
++			 * bcache device should be stopped too, to
++			 * keep data consistency on cache and
++			 * backing devices.
++			 */
++			if (test_bit(CACHE_SET_IO_DISABLE, &c->flags))
++				try_stop_bcache_device(c, d, dc);
++		} else {
++			bcache_device_stop(d);
+ 		}
++	}
+ 
+ 	mutex_unlock(&bch_register_lock);
+ 
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 7288927f2a47..b096d4c37c9b 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -93,6 +93,7 @@ read_attribute(partial_stripes_expensive);
+ rw_attribute(synchronous);
+ rw_attribute(journal_delay_ms);
+ rw_attribute(io_disable);
++rw_attribute(stop_when_cache_set_failed);
+ rw_attribute(discard);
+ rw_attribute(running);
+ rw_attribute(label);
+@@ -134,6 +135,8 @@ SHOW(__bch_cached_dev)
+ 	sysfs_hprint(io_errors,		atomic_read(&dc->io_errors));
+ 	sysfs_printf(io_error_limit,	"%i", dc->error_limit);
+ 	sysfs_printf(io_disable,	"%i", dc->io_disable);
++	sysfs_printf(stop_when_cache_set_failed, "%i",
++		     dc->stop_when_cache_set_failed);
+ 	var_print(writeback_rate_update_seconds);
+ 	var_print(writeback_rate_i_term_inverse);
+ 	var_print(writeback_rate_p_term_inverse);
+@@ -233,6 +236,12 @@ STORE(__cached_dev)
+ 		dc->io_disable = v ? 1 : 0;
+ 	}
+ 
++	if (attr == &sysfs_stop_when_cache_set_failed) {
++		int v = strtoul_or_return(buf);
++
++		dc->stop_when_cache_set_failed = v ? 1 : 0;
++	}
++
+ 	d_strtoi_h(sequential_cutoff);
+ 	d_strtoi_h(readahead);
+ 
+@@ -343,6 +352,7 @@ static struct attribute *bch_cached_dev_files[] = {
+ 	&sysfs_errors,
+ 	&sysfs_io_error_limit,
+ 	&sysfs_io_disable,
++	&sysfs_stop_when_cache_set_failed,
+ 	&sysfs_dirty_data,
+ 	&sysfs_stripe_size,
+ 	&sysfs_partial_stripes_expensive,
 -- 
 2.15.1
