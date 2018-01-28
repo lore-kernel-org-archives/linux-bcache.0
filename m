@@ -1,127 +1,121 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v4 06/13] bcache: set error_limit correctly
-Date: Sat, 27 Jan 2018 22:23:59 +0800
-Message-ID: <20180127142406.89741-7-colyli@suse.de>
-References: <20180127142406.89741-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180127142406.89741-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>
+Subject: [PATCH v4 02/13] bcache: properly set task state in bch_writeback_thread()
+Date: Sun, 28 Jan 2018 09:56:14 +0800
+Message-ID: <20180128015625.128497-3-colyli@suse.de>
+References: <20180128015625.128497-1-colyli@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:59156 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751832AbeA1CEK (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 27 Jan 2018 21:04:10 -0500
+In-Reply-To: <20180128015625.128497-1-colyli@suse.de>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
 
-Struct cache uses io_errors for two purposes,
-- Error decay: when cache set error_decay is set, io_errors is used to
-  generate a small piece of delay when I/O error happens.
-- I/O errors counter: in order to generate big enough value for error
-  decay, I/O errors counter value is stored by left shifting 20 bits (a.k.a
-  IO_ERROR_SHIFT).
+Kernel thread routine bch_writeback_thread() has the following code block,
 
-In function bch_count_io_errors(), if I/O errors counter reaches cache set
-error limit, bch_cache_set_error() will be called to retire the whold cache
-set. But current code is problematic when checking the error limit, see the
-following code piece from bch_count_io_errors(),
+447         down_write(&dc->writeback_lock);
+448~450     if (check conditions) {
+451                 up_write(&dc->writeback_lock);
+452                 set_current_state(TASK_INTERRUPTIBLE);
+453
+454                 if (kthread_should_stop())
+455                         return 0;
+456
+457                 schedule();
+458                 continue;
+459         }
 
- 90     if (error) {
- 91             char buf[BDEVNAME_SIZE];
- 92             unsigned errors = atomic_add_return(1 << IO_ERROR_SHIFT,
- 93                                                 &ca->io_errors);
- 94             errors >>= IO_ERROR_SHIFT;
- 95
- 96             if (errors < ca->set->error_limit)
- 97                     pr_err("%s: IO error on %s, recovering",
- 98                            bdevname(ca->bdev, buf), m);
- 99             else
-100                     bch_cache_set_error(ca->set,
-101                                         "%s: too many IO errors %s",
-102                                         bdevname(ca->bdev, buf), m);
-103     }
+If condition check is true, its task state is set to TASK_INTERRUPTIBLE
+and call schedule() to wait for others to wake up it.
 
-At line 94, errors is right shifting IO_ERROR_SHIFT bits, now it is real
-errors counter to compare at line 96. But ca->set->error_limit is initia-
-lized with an amplified value in bch_cache_set_alloc(),
-1545         c->error_limit  = 8 << IO_ERROR_SHIFT;
+There are 2 issues in current code,
+1, Task state is set to TASK_INTERRUPTIBLE after the condition checks, if
+   another process changes the condition and call wake_up_process(dc->
+   writeback_thread), then at line 452 task state is set back to
+   TASK_INTERRUPTIBLE, the writeback kernel thread will lose a chance to be
+   waken up.
+2, At line 454 if kthread_should_stop() is true, writeback kernel thread
+   will return to kernel/kthread.c:kthread() with TASK_INTERRUPTIBLE and
+   call do_exit(). It is not good to enter do_exit() with task state
+   TASK_INTERRUPTIBLE, in following code path might_sleep() is called and a
+   warning message is reported by __might_sleep(): "WARNING: do not call
+   blocking ops when !TASK_RUNNING; state=1 set at [xxxx]".
 
-It means by default, in bch_count_io_errors(), before 8<<20 errors happened
-bch_cache_set_error() won't be called to retire the problematic cache
-device. If the average request size is 64KB, it means bcache won't handle
-failed device until 512GB data is requested. This is too large to be an I/O
-threashold. So I believe the correct error limit should be much less.
+For the first issue, task state should be set before condition checks.
+Ineed because dc->writeback_lock is required when modifying all the
+conditions, calling set_current_state() inside code block where dc->
+writeback_lock is hold is safe. But this is quite implicit, so I still move
+set_current_state() before all the condition checks.
 
-This patch sets default cache set error limit to 8, then in
-bch_count_io_errors() when errors counter reaches 8 (if it is default
-value), function bch_cache_set_error() will be called to retire the whole
-cache set. This patch also removes bits shifting when store or show
-io_error_limit value via sysfs interface.
+For the second issue, frankley speaking it does not hurt when kernel thread
+exits with TASK_INTERRUPTIBLE state, but this warning message scares users,
+makes them feel there might be something risky with bcache and hurt their
+data.  Setting task state to TASK_RUNNING before returning fixes this
+problem.
 
-Nowadays most of SSDs handle internal flash failure automatically by LBA
-address re-indirect mapping. If an I/O error can be observed by upper layer
-code, it will be a notable error because that SSD can not re-indirect
-map the problematic LBA address to an available flash block. This situation
-indicates the whole SSD will be failed very soon. Therefore setting 8 as
-the default io error limit value makes sense, it is enough for most of
-cache devices.
+In alloc.c:allocator_wait(), there is also a similar issue, and is also
+fixed in this patch.
 
 Changelog:
-v2: add reviewed-by from Hannes.
-v1: initial version for review.
+v3: merge two similar fixes into one patch
+v2: fix the race issue in v1 patch.
+v1: initial buggy fix.
 
 Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.com>
-Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Cc: Michael Lyle <mlyle@lyle.org>
 Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/bcache.h | 1 +
- drivers/md/bcache/super.c  | 2 +-
- drivers/md/bcache/sysfs.c  | 4 ++--
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/md/bcache/alloc.c     | 4 +++-
+ drivers/md/bcache/writeback.c | 7 +++++--
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 88d938c8d027..7d7512fa4f09 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -663,6 +663,7 @@ struct cache_set {
- 		ON_ERROR_UNREGISTER,
- 		ON_ERROR_PANIC,
- 	}			on_error;
-+#define DEFAULT_IO_ERROR_LIMIT 8
- 	unsigned		error_limit;
- 	unsigned		error_decay;
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index 6cc6c0f9c3a9..458e1d38577d 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -287,8 +287,10 @@ do {									\
+ 			break;						\
+ 									\
+ 		mutex_unlock(&(ca)->set->bucket_lock);			\
+-		if (kthread_should_stop())				\
++		if (kthread_should_stop()) {				\
++			set_current_state(TASK_RUNNING);		\
+ 			return 0;					\
++		}							\
+ 									\
+ 		schedule();						\
+ 		mutex_lock(&(ca)->set->bucket_lock);			\
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 0ade883b6316..f1d2fc15abcc 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -564,18 +564,21 @@ static int bch_writeback_thread(void *arg)
  
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 6d888e8fea8c..a373648b5d4b 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1583,7 +1583,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 	while (!kthread_should_stop()) {
+ 		down_write(&dc->writeback_lock);
++		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (!atomic_read(&dc->has_dirty) ||
+ 		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
+ 		     !dc->writeback_running)) {
+ 			up_write(&dc->writeback_lock);
+-			set_current_state(TASK_INTERRUPTIBLE);
  
- 	c->congested_read_threshold_us	= 2000;
- 	c->congested_write_threshold_us	= 20000;
--	c->error_limit	= 8 << IO_ERROR_SHIFT;
-+	c->error_limit	= DEFAULT_IO_ERROR_LIMIT;
+-			if (kthread_should_stop())
++			if (kthread_should_stop()) {
++				set_current_state(TASK_RUNNING);
+ 				return 0;
++			}
  
- 	return c;
- err:
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index b7166c504cdb..ba62e987b503 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -560,7 +560,7 @@ SHOW(__bch_cache_set)
+ 			schedule();
+ 			continue;
+ 		}
++		set_current_state(TASK_RUNNING);
  
- 	/* See count_io_errors for why 88 */
- 	sysfs_print(io_error_halflife,	c->error_decay * 88);
--	sysfs_print(io_error_limit,	c->error_limit >> IO_ERROR_SHIFT);
-+	sysfs_print(io_error_limit,	c->error_limit);
+ 		searched_full_index = refill_dirty(dc);
  
- 	sysfs_hprint(congested,
- 		     ((uint64_t) bch_get_congested(c)) << 9);
-@@ -660,7 +660,7 @@ STORE(__bch_cache_set)
- 	}
- 
- 	if (attr == &sysfs_io_error_limit)
--		c->error_limit = strtoul_or_return(buf) << IO_ERROR_SHIFT;
-+		c->error_limit = strtoul_or_return(buf);
- 
- 	/* See count_io_errors() for why 88 */
- 	if (attr == &sysfs_io_error_halflife)
 -- 
 2.15.1
