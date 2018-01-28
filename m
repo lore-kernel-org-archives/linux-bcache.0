@@ -1,103 +1,187 @@
-From: Pavel Goran <via-bcache@pvgoran.name>
-Subject: Re[2]: [PATCH v4 13/13] bcache: add stop_when_cache_set_failed to struct cached_dev
-Date: Sun, 28 Jan 2018 08:55:51 +0300
-Message-ID: <1693067263.20180128085551@pvgoran.name>
-References: <20180127142406.89741-1-colyli@suse.de> <20180127142406.89741-14-colyli@suse.de> <772947374.20180128063333@pvgoran.name> <167389b2-3cd1-26e0-a75b-6c4b382296ae@suse.de>
-Reply-To: Pavel Goran <via-bcache@pvgoran.name>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH v4 03/13] bcache: fix cached_dev->count usage for bch_cache_set_error()
+Date: Sun, 28 Jan 2018 09:56:15 +0800
+Message-ID: <20180128015625.128497-4-colyli@suse.de>
+References: <20180128015625.128497-1-colyli@suse.de>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from vostok.pvgoran.name ([71.19.149.48]:58479 "EHLO
-        vostok.pvgoran.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751032AbeA1Fz4 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 28 Jan 2018 00:55:56 -0500
-In-Reply-To: <167389b2-3cd1-26e0-a75b-6c4b382296ae@suse.de>
+Received: from mx2.suse.de ([195.135.220.15]:49362 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751159AbeA1G1k (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 28 Jan 2018 01:27:40 -0500
+In-Reply-To: <20180128015625.128497-1-colyli@suse.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Nix <nix@esperi.org.uk>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
 
-Hello Coly,
+When bcache metadata I/O fails, bcache will call bch_cache_set_error()
+to retire the whole cache set. The expected behavior to retire a cache
+set is to unregister the cache set, and unregister all backing device
+attached to this cache set, then remove sysfs entries of the cache set
+and all attached backing devices, finally release memory of structs
+cache_set, cache, cached_dev and bcache_device.
 
-Sunday, January 28, 2018, 7:32:09 AM, you wrote:
+In my testing when journal I/O failure triggered by disconnected cache
+device, sometimes the cache set cannot be retired, and its sysfs
+entry /sys/fs/bcache/<uuid> still exits and the backing device also
+references it. This is not expected behavior.
 
->>> Current bcache failure handling code will stop all attached bcache devices
->>> when the cache set is broken or disconnected. This is desired behavior for
->>> most of enterprise or cloud use cases, but maybe not for low end
->>> configuration. Nix <nix@esperi.org.uk> points out, users may still want to
->>> access the bcache device after cache device failed, for example on laptops.
->> 
->> In the current state, this functionality is rather user-unfriendly.
->> 
->> 1. The new "stop_when_cache_set_failed" option doesn't seem to be persistent.
->> (At least, I did not see any explicit mechanism of saving/restoring it.) That
->> is, users will have to set it on each system startup.
->> 
->> 2. If the new option is set to zero, it will (supposedly) lead to data
->> corruption/loss when cache set of a "dirty" bcache device is detached. The
->> option that an average home user may want to switch shouldn't be a way to
->> shoot oneself in the foot!
->> > As a remedy, the option could be changed to have the states "always" and
->> "auto" instead of "1" and "0", so that "auto" would still stop the bcache
->> device if it (or the entire cache set) is "dirty". (Alternatively, it could be
->> renamed to "force_stop_when_cache_set_failed" or
->> "always_stop_when_cache_set_failed" with values "1" and "0", if string values
->> are undesirable.)
->> 
->> Also, the printed warning is somewhat misleading: it says "To disable this
->> warning message, please set /sys/block/%s/bcache/stop_when_cache_set_failed to
->> 1", whereas the suggested change would lead to behaviour change rather that to
->> just disabling the warning.
->> 
->> 3. If (2) is implemented, the default value for the option could be changed to
->> "auto". (The rationale is that enterprise users who want it enabled are better
->> prepared to tune their device settings on startup.) However, this is only
->> important if (1) is not implemented.
->> 
+When metadata I/O failes, the call senquence to retire whole cache set is,
+        bch_cache_set_error()
+        bch_cache_set_unregister()
+        bch_cache_set_stop()
+        __cache_set_unregister()     <- called as callback by calling
+                                        clousre_queue(&c->caching)
+        cache_set_flush()            <- called as a callback when refcount
+                                        of cache_set->caching is 0
+        cache_set_free()             <- called as a callback when refcount
+                                        of catch_set->cl is 0
+        bch_cache_set_release()      <- called as a callback when refcount
+                                        of catch_set->kobj is 0
 
-> Hi Pavel,
+I find if kernel thread bch_writeback_thread() quits while-loop when
+kthread_should_stop() is true and searched_full_index is false, clousre
+callback cache_set_flush() set by continue_at() will never be called. The
+result is, bcache fails to retire whole cache set.
 
-> I don't like "auto" since its behavior is unpredictable, sometimes whole
-> things are gone, sometimes bcache device exists but slower, for large
-> scale deployed environment, it is confused and misleading.
+cache_set_flush() will be called when refcount of closure c->caching is 0,
+and in function bcache_device_detach() refcount of closure c->caching is
+released to 0 by clousre_put(). In metadata error code path, function
+bcache_device_detach() is called by cached_dev_detach_finish(). This is a
+callback routine being called when cached_dev->count is 0. This refcount
+is decreased by cached_dev_put().
 
-In fact, during normal operations, this mode can be made rather predictable:
-the device is stopped if it's "writeback", the device isn't stopped if it's
-"writearound" or "writethrough". The only time it's unpredictable is when the
-device is being transitioned from "writeback" to other mode.
+The above dependence indicates, cache_set_flush() will be called when
+refcount of cache_set->cl is 0, and refcount of cache_set->cl to be 0
+when refcount of cache_dev->count is 0.
 
-However, I can see how this adds a certain informational inconsistency to the
-picture: an administrator won't be able to say "everything is good" just
-because all bcache devices work; he'll have to be aware that non-writeback
-devices get special handling.
+The reason why sometimes cache_dev->count is not 0 (when metadata I/O fails
+and bch_cache_set_error() called) is, in bch_writeback_thread(), refcount
+of cache_dev is not decreased properly.
 
-> After thinking for a while, I feel the "auto"/"always" options can make
-> both enterprise and home users get an agreement. I am not able to find
-> other better solution so far, thank you for the hint, brilliant!
+In bch_writeback_thread(), cached_dev_put() is called only when
+searched_full_index is true and cached_dev->writeback_keys is empty, a.k.a
+there is no dirty data on cache. In most of run time it is correct, but
+when bch_writeback_thread() quits the while-loop while cache is still
+dirty, current code forget to call cached_dev_put() before this kernel
+thread exits. This is why sometimes cache_set_flush() is not executed and
+cache set fails to be retired.
 
-> Personally I intend to set "always" as the default option, because I
-> maintain bcache for enterprise workloads. The persistent option problem
-> pointed by you does make sense, I will think how to solve it later
-> (probably from user space tools).
+The reason to call cached_dev_put() in bch_writeback_rate() is, when the
+cache device changes from clean to dirty, cached_dev_get() is called, to
+make sure during writeback operatiions both backing and cache devices
+won't be released.
 
-Providing persistency via user-space tools looks like a bad idea. User-space
-tools tend to lag behind kernel, so users will not see the new functionality
-in their distributions for several months or several years. Also, if you're
-talking about setting the option from user space on each startup, then
-additionally there is a problem of different incompatible init systems, which
-will further make things more complicated.
+Adding following code in bch_writeback_thread() does not work,
+   static int bch_writeback_thread(void *arg)
+        }
 
-Is there a way to save the option somewhere in bcache superblock, like the
-cache mode is saved?
++       if (atomic_read(&dc->has_dirty))
++               cached_dev_put()
++
+        return 0;
+ }
+because writeback kernel thread can be waken up and start via sysfs entry:
+        echo 1 > /sys/block/bcache<N>/bcache/writeback_running
+It is difficult to check whether backing device is dirty without race and
+extra lock. So the above modification will introduce potential refcount
+underflow in some conditions.
 
-> How do you think of this ?
+The correct fix is, to take cached dev refcount when creating the kernel
+thread, and put it before the kernel thread exits. Then bcache does not
+need to take a cached dev refcount when cache turns from clean to dirty,
+or to put a cached dev refcount when cache turns from ditry to clean. The
+writeback kernel thread is alwasy safe to reference data structure from
+cache set, cache and cached device (because a refcount of cache device is
+taken for it already), and no matter the kernel thread is stopped by I/O
+errors or system reboot, cached_dev->count can always be used correctly.
 
-Actually, I'd love to hear thoughts from other users and developers. Three
-opinions is too few for this kind of discussion.
+The patch is simple, but understanding how it works is quite complicated.
 
-> Coly Li
+Changelog:
+v2: set dc->writeback_thread to NULL in this patch, as suggested by Hannes.
+v1: initial version for review.
 
-Pavel Goran
-  
+Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Hannes Reinecke <hare@suse.com>
+Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/super.c     |  1 -
+ drivers/md/bcache/writeback.c | 11 ++++++++---
+ drivers/md/bcache/writeback.h |  2 --
+ 3 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 133b81225ea9..d14e09cce2f6 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1052,7 +1052,6 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+ 		bch_sectors_dirty_init(&dc->disk);
+ 		atomic_set(&dc->has_dirty, 1);
+-		refcount_inc(&dc->count);
+ 		bch_writeback_queue(dc);
+ 	}
+ 
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index f1d2fc15abcc..b280c134dd4d 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -572,7 +572,7 @@ static int bch_writeback_thread(void *arg)
+ 
+ 			if (kthread_should_stop()) {
+ 				set_current_state(TASK_RUNNING);
+-				return 0;
++				break;
+ 			}
+ 
+ 			schedule();
+@@ -585,7 +585,6 @@ static int bch_writeback_thread(void *arg)
+ 		if (searched_full_index &&
+ 		    RB_EMPTY_ROOT(&dc->writeback_keys.keys)) {
+ 			atomic_set(&dc->has_dirty, 0);
+-			cached_dev_put(dc);
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
+ 			bch_write_bdev_super(dc, NULL);
+ 		}
+@@ -606,6 +605,9 @@ static int bch_writeback_thread(void *arg)
+ 		}
+ 	}
+ 
++	dc->writeback_thread = NULL;
++	cached_dev_put(dc);
++
+ 	return 0;
+ }
+ 
+@@ -669,10 +671,13 @@ int bch_cached_dev_writeback_start(struct cached_dev *dc)
+ 	if (!dc->writeback_write_wq)
+ 		return -ENOMEM;
+ 
++	cached_dev_get(dc);
+ 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
+ 					      "bcache_writeback");
+-	if (IS_ERR(dc->writeback_thread))
++	if (IS_ERR(dc->writeback_thread)) {
++		cached_dev_put(dc);
+ 		return PTR_ERR(dc->writeback_thread);
++	}
+ 
+ 	schedule_delayed_work(&dc->writeback_rate_update,
+ 			      dc->writeback_rate_update_seconds * HZ);
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 587b25599856..0bba8f1c6cdf 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -105,8 +105,6 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+ {
+ 	if (!atomic_read(&dc->has_dirty) &&
+ 	    !atomic_xchg(&dc->has_dirty, 1)) {
+-		refcount_inc(&dc->count);
+-
+ 		if (BDEV_STATE(&dc->sb) != BDEV_STATE_DIRTY) {
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_DIRTY);
+ 			/* XXX: should do this synchronously */
+-- 
+2.15.1
