@@ -1,127 +1,99 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v4 13/13] bcache: add stop_when_cache_set_failed to struct
- cached_dev
-Date: Sun, 28 Jan 2018 17:39:37 +0800
-Message-ID: <c63e4e9f-1eb2-f90d-b294-ed4342034597@suse.de>
-References: <20180127142406.89741-1-colyli@suse.de>
- <20180127142406.89741-14-colyli@suse.de>
- <772947374.20180128063333@pvgoran.name>
- <167389b2-3cd1-26e0-a75b-6c4b382296ae@suse.de>
- <1693067263.20180128085551@pvgoran.name>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <1693067263.20180128085551@pvgoran.name>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Pavel Goran <via-bcache@pvgoran.name>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Nix <nix@esperi.org.uk>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>
+Subject: [PATCH v4 00/13] bcache: device failure handling improvement
+Date: Sun, 28 Jan 2018 09:56:12 +0800
+Message-ID: <20180128015625.128497-1-colyli@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:44399 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751251AbeA1LIm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 28 Jan 2018 06:08:42 -0500
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-On 28/01/2018 1:55 PM, Pavel Goran wrote:
-> Hello Coly,
-> 
-> Sunday, January 28, 2018, 7:32:09 AM, you wrote:
-> 
->>>> Current bcache failure handling code will stop all attached bcache devices
->>>> when the cache set is broken or disconnected. This is desired behavior for
->>>> most of enterprise or cloud use cases, but maybe not for low end
->>>> configuration. Nix <nix@esperi.org.uk> points out, users may still want to
->>>> access the bcache device after cache device failed, for example on laptops.
->>>
->>> In the current state, this functionality is rather user-unfriendly.
->>>
->>> 1. The new "stop_when_cache_set_failed" option doesn't seem to be persistent.
->>> (At least, I did not see any explicit mechanism of saving/restoring it.) That
->>> is, users will have to set it on each system startup.
->>>
->>> 2. If the new option is set to zero, it will (supposedly) lead to data
->>> corruption/loss when cache set of a "dirty" bcache device is detached. The
->>> option that an average home user may want to switch shouldn't be a way to
->>> shoot oneself in the foot!
->>>> As a remedy, the option could be changed to have the states "always" and
->>> "auto" instead of "1" and "0", so that "auto" would still stop the bcache
->>> device if it (or the entire cache set) is "dirty". (Alternatively, it could be
->>> renamed to "force_stop_when_cache_set_failed" or
->>> "always_stop_when_cache_set_failed" with values "1" and "0", if string values
->>> are undesirable.)
->>>
->>> Also, the printed warning is somewhat misleading: it says "To disable this
->>> warning message, please set /sys/block/%s/bcache/stop_when_cache_set_failed to
->>> 1", whereas the suggested change would lead to behaviour change rather that to
->>> just disabling the warning.
->>>
->>> 3. If (2) is implemented, the default value for the option could be changed to
->>> "auto". (The rationale is that enterprise users who want it enabled are better
->>> prepared to tune their device settings on startup.) However, this is only
->>> important if (1) is not implemented.
->>>
-> 
->> Hi Pavel,
-> 
->> I don't like "auto" since its behavior is unpredictable, sometimes whole
->> things are gone, sometimes bcache device exists but slower, for large
->> scale deployed environment, it is confused and misleading.
-> 
+Hi maintainers and folks,
 
-Hi Pavel,
+This patch set tries to improve bcache device failure handling, includes
+cache device and backing device failures.
 
-> In fact, during normal operations, this mode can be made rather predictable:
-> the device is stopped if it's "writeback", the device isn't stopped if it's
-> "writearound" or "writethrough". The only time it's unpredictable is when the
-> device is being transitioned from "writeback" to other mode.
-> 
-> However, I can see how this adds a certain informational inconsistency to the
-> picture: an administrator won't be able to say "everything is good" just
-> because all bcache devices work; he'll have to be aware that non-writeback
-> devices get special handling.
->
+The basic idea to handle failed cache device is,
+- Unregister cache set
+- Detach all backing devices which are attached to this cache set
+- Stop all the detached bcache devices (configurable)
+- Stop all flash only volume on the cache set
+The above process is named 'cache set retire' by me. The result of cache
+set retire is, cache set and bcache devices are all removed, following
+I/O requests will get failed immediately to notift upper layer or user
+space coce that the cache device is failed or disconnected.
 
-You got what I meant. I just hope people can know how errors are handled
-without extra document. In auto mode, print out kernel message to
-indicate why bcache device is stopped or not might be useful to users to
-understand what's going on.
+For failed backing device, there are two kinds of failures to handle,
+- If device is disconnected, and kernel thread dc->status_update_thread
+  finds it is offline for BACKING_DEV_OFFLINE_TIMEOUT (5) seconds, the
+  kernel thread will set dc->io_disable and call bcache_device_stop() to
+  stop and remove the bcache device from system.
+- If device is alive but returns too many I/O errors, after errors number
+  exceeds dc->error_limit, call bch_cached_dev_error() to set
+  dc->io_disable and stop bcache device. Then the broken backing device
+  and its bcache device will be removed from system.
 
->> After thinking for a while, I feel the "auto"/"always" options can make
->> both enterprise and home users get an agreement. I am not able to find
->> other better solution so far, thank you for the hint, brilliant!
-> 
->> Personally I intend to set "always" as the default option, because I
->> maintain bcache for enterprise workloads. The persistent option problem
->> pointed by you does make sense, I will think how to solve it later
->> (probably from user space tools).
-> 
-> Providing persistency via user-space tools looks like a bad idea. User-space
-> tools tend to lag behind kernel, so users will not see the new functionality
-> in their distributions for several months or several years. Also, if you're
-> talking about setting the option from user space on each startup, then
-> additionally there is a problem of different incompatible init systems, which
-> will further make things more complicated.
+The v4 patch set combines two v3 patches into one, and adds one more patch
+to permit users to explicitly avoid stopping attached bcache device from a
+retiring cache set. This is a configurable option suggested by
+Nix <nix@esperi.org.uk>.
 
-OK, I get your point, it makes sense. This is just a rough thought from
-me, the motivation was to avoid on-disk format change.
+Some patches of this patch set is already in bcache-for-next and not
+included here anymore. Most of the patches are reviewed by Hannes Reinecke
+and Junhui Tang. There are still severl patches need to be reviewed,
+- [PATCH v4 05/13] bcache: stop dc->writeback_rate_update properly
+- [PATCH v4 13/13] bcache: add stop_attached_devs_on_fail to struct
+  cached_dev 
 
-> 
-> Is there a way to save the option somewhere in bcache superblock, like the
-> cache mode is saved?
-> 
+Any comment, question and review are warmly welcome. Thanks in advance.
 
-It is possible to add flag in bcache superblock, but it means on disk
-format modification, this is something I try best to avoid. I need to
-check the code before I have the answer of yes or no.
-
-
->> How do you think of this ?
-> 
-> Actually, I'd love to hear thoughts from other users and developers. Three
-> opinions is too few for this kind of discussion.
-
-Sure I agree. Indeed the suggestion and feedback for you and Nix helps
-me quite a lot :-) Firstly I try to avoid data corruption and provide
-flexibility to enterprise and personal users, then we can improve it in
-future if someone may provide better suggestion than yours :-)
-
-Thanks.
+Changelog:
+v4: add per-cached_dev option stop_attached_devs_on_fail to avoid stopping
+    attached bcache device from a retiring cache set.
+v3: fix detach issue find in v2 patch set.
+v2: fixes all problems found in v1 review.
+    add patches to handle backing device failure.
+    add one more patch to set writeback_rate_update_seconds range.
+    include a patch from Junhui Tang.
+v1: the initial version, only handles cache device failure.
 
 Coly Li
+---
+
+Coly Li (12):
+  bcache: set writeback_rate_update_seconds in range [1, 60] seconds
+  bcache: properly set task state in bch_writeback_thread()
+  bcache: fix cached_dev->count usage for bch_cache_set_error()
+  bcache: quit dc->writeback_thread when BCACHE_DEV_DETACHING is set
+  bcache: stop dc->writeback_rate_update properly
+  bcache: set error_limit correctly
+  bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags
+  bcache: stop all attached bcache devices for a retired cache set
+  bcache: add backing_request_endio() for bi_end_io of attached backing
+    device I/O
+  bcache: add io_disable to struct cached_dev
+  bcache: stop bcache device when backing device is offline
+  bcache: add stop_attached_devs_on_fail to struct cached_dev
+
+Tang Junhui (1):
+  bcache: fix inaccurate io state for detached bcache devices
+
+ drivers/md/bcache/alloc.c     |   5 +-
+ drivers/md/bcache/bcache.h    |  38 ++++++++-
+ drivers/md/bcache/btree.c     |  10 ++-
+ drivers/md/bcache/io.c        |  16 +++-
+ drivers/md/bcache/journal.c   |   4 +-
+ drivers/md/bcache/request.c   | 187 +++++++++++++++++++++++++++++++++++-------
+ drivers/md/bcache/super.c     | 181 ++++++++++++++++++++++++++++++++++++----
+ drivers/md/bcache/sysfs.c     |  55 ++++++++++++-
+ drivers/md/bcache/util.h      |   6 --
+ drivers/md/bcache/writeback.c |  99 ++++++++++++++++++----
+ drivers/md/bcache/writeback.h |   5 +-
+ 11 files changed, 522 insertions(+), 84 deletions(-)
+
+-- 
+2.15.1
