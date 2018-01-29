@@ -1,116 +1,38 @@
-From: tang.junhui@zte.com.cn
-Subject: Re: [PATCH v4 05/13] bcache: stop dc->writeback_rate_update properly
-Date: Mon, 29 Jan 2018 20:22:37 +0800
-Message-ID: <1517228557-26030-1-git-send-email-tang.junhui@zte.com.cn>
+From: Nix <nix@esperi.org.uk>
+Subject: Re: [PATCH v4 13/13] bcache: add stop_when_cache_set_failed to struct cached_dev
+Date: Mon, 29 Jan 2018 12:57:07 +0000
+Message-ID: <87inbkesbg.fsf@esperi.org.uk>
+References: <20180127142406.89741-1-colyli@suse.de>
+        <20180127142406.89741-14-colyli@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20180127142406.89741-14-colyli@suse.de> (Coly Li's message of
+        "Sat, 27 Jan 2018 22:24:06 +0800")
 Sender: linux-block-owner@vger.kernel.org
-To: colyli@suse.de
-Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 27 Jan 2018, Coly Li said:
 
-Hello Coly:
+> Current bcache failure handling code will stop all attached bcache devices
+> when the cache set is broken or disconnected. This is desired behavior for
+> most of enterprise or cloud use cases, but maybe not for low end
+> configuration. Nix <nix@esperi.org.uk> points out, users may still want to
+> access the bcache device after cache device failed, for example on laptops.
 
-There are some differences,
-Using variable of atomic_t type can not guarantee the atomicity of transaction.
-for example:
-A thread runs in update_writeback_rate()
-update_writeback_rate(){
-	....
-+	if (test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags)) {
-+		schedule_delayed_work(&dc->writeback_rate_update,
- 			      dc->writeback_rate_update_seconds * HZ);
-+	}
+Actually I'm much interested in the server use case. On laptops, it's
+relatively easy to recover if you know what you're doing, because they
+usually have a user in front of them with console access -- but if a
+remote headless server with a hundred users a thousand miles away has
+its cache device wear out I would really rather the hundred users get
+served, if more slowly, rather than the whole machine going down for
+hours or days until I can get someone there to bash on the hardware!
 
-Then another thread executes in cached_dev_detach_finish():
-	if (test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
-		cancel_writeback_rate_update_dwork(dc);
+(Sure, ideally you'd detect the wearing out in advance, but SSDs are not
+always nice and helpful like that and sometimes just go instantly
+readonly or simply vanish off the bus entirely without warning.)
 
-+
-+	/*
-+	 * should check BCACHE_DEV_RATE_DW_RUNNING before calling
-+	 * cancel_delayed_work_sync().
-+	 */
-+	clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
-+	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
-+	smp_mb();
-
-Race still exists.
- 
-> 
-> On 29/01/2018 3:35 PM, tang.junhui@zte.com.cn wrote:
-> > From: Tang Junhui <tang.junhui@zte.com.cn>
-> > 
-> > Hello Coly:
-> > 
-> > This patch is somewhat difficult for me,
-> > I think we can resolve it in a simple way.
-> > 
-> > We can take the schedule_delayed_work() under the protection of 
-> > dc->writeback_lock, and judge if we need re-arm this work to queue.
-> > 
-> > static void update_writeback_rate(struct work_struct *work)
-> > {
-> >     struct cached_dev *dc = container_of(to_delayed_work(work),
-> >                          struct cached_dev,
-> >                          writeback_rate_update);
-> > 
-> >     down_read(&dc->writeback_lock);
-> > 
-> >     if (atomic_read(&dc->has_dirty) &&
-> >         dc->writeback_percent)
-> >         __update_writeback_rate(dc);
-> > 
-> > -    up_read(&dc->writeback_lock);
-> > +    if (NEED_RE-AEMING)    
-> >         schedule_delayed_work(&dc->writeback_rate_update,
-> >                   dc->writeback_rate_update_seconds * HZ);
-> > +    up_read(&dc->writeback_lock);
-> > }
-> > 
-> > In cached_dev_detach_finish() and cached_dev_free() we can set the no need
-> > flag under the protection of dc->writeback_lock, for example:
-> > 
-> > static void cached_dev_detach_finish(struct work_struct *w)
-> > {
-> >     ...
-> > +    down_write(&dc->writeback_lock);
-> > +    SET NO NEED RE-ARM FLAG
-> > +    up_write(&dc->writeback_lock);
-> >     cancel_delayed_work_sync(&dc->writeback_rate_update);
-> > }
-> > 
-> > I think this way is more simple and readable.
-> > 
-> 
-> Hi Junhui,
-> 
-> Your suggest is essentially almost same to my patch,
-> - clear BCACHE_DEV_DETACHING bit acts as SET NO NEED RE-ARM FLAG.
-> - cancel_writeback_rate_update_dwork acts as some kind of locking with a
-> timeout.
-> 
-> The difference is I don't use dc->writeback_lock, and replace it by
-> BCACHE_DEV_RATE_DW_RUNNING.
-> 
-> The reason is my following development. I plan to implement a real-time
-> update stripe_sectors_dirty of bcache device and cache set, then
-> bcache_flash_devs_sectors_dirty() can be very fast and bch_register_lock
-> can be removed here. And then I also plan to remove reference of
-> dc->writeback_lock in update_writeback_rate() because indeed it is
-> unnecessary here (the patch is held by Mike's locking resort work).
-> 
-> Since I plan to remove dc->writeback_lock from update_writeback_rate(),
-> I don't want to reference dc->writeback in the delayed work.
-> 
-> The basic idea behind your suggestion and this patch, is almost
-> identical. The only difference might be the timeout in
-> cancel_writeback_rate_update_dwork().
-> 
-> Thanks.
-> 
-> Coly Li
-
-Thanks.
-Tang Junhui
+-- 
+NULL && (void)
