@@ -1,317 +1,88 @@
-From: tang.junhui@zte.com.cn
+From: Coly Li <colyli@suse.de>
 Subject: Re: [PATCH v4 05/13] bcache: stop dc->writeback_rate_update properly
-Date: Mon, 29 Jan 2018 15:35:28 +0800
-Message-ID: <1517211328-19222-1-git-send-email-tang.junhui@zte.com.cn>
+Date: Mon, 29 Jan 2018 17:36:41 +0800
+Message-ID: <64f6cf83-0257-e907-ff83-7f902ef957f2@suse.de>
+References: <1517211328-19222-1-git-send-email-tang.junhui@zte.com.cn>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1517211328-19222-1-git-send-email-tang.junhui@zte.com.cn>
+Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: colyli@suse.de
-Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: tang.junhui@zte.com.cn
+Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 29/01/2018 3:35 PM, tang.junhui@zte.com.cn wrote:
+> From: Tang Junhui <tang.junhui@zte.com.cn>
+> 
+> Hello Coly:
+> 
+> This patch is somewhat difficult for me,
+> I think we can resolve it in a simple way.
+> 
+> We can take the schedule_delayed_work() under the protection of 
+> dc->writeback_lock, and judge if we need re-arm this work to queue.
+> 
+> static void update_writeback_rate(struct work_struct *work)
+> {
+> 	struct cached_dev *dc = container_of(to_delayed_work(work),
+> 					     struct cached_dev,
+> 					     writeback_rate_update);
+> 
+> 	down_read(&dc->writeback_lock);
+> 
+> 	if (atomic_read(&dc->has_dirty) &&
+> 	    dc->writeback_percent)
+> 		__update_writeback_rate(dc);
+> 
+> -	up_read(&dc->writeback_lock);
+> +	if (NEED_RE-AEMING)	
+> 		schedule_delayed_work(&dc->writeback_rate_update,
+> 			      dc->writeback_rate_update_seconds * HZ);
+> +	up_read(&dc->writeback_lock);
+> }
+> 
+> In cached_dev_detach_finish() and cached_dev_free() we can set the no need
+> flag under the protection of dc->writeback_lock, for example:
+> 
+> static void cached_dev_detach_finish(struct work_struct *w)
+> {
+> 	...
+> +	down_write(&dc->writeback_lock);
+> +	SET NO NEED RE-ARM FLAG
+> +	up_write(&dc->writeback_lock);
+> 	cancel_delayed_work_sync(&dc->writeback_rate_update);
+> }
+> 
+> I think this way is more simple and readable.
+> 
 
-Hello Coly:
+Hi Junhui,
 
-This patch is somewhat difficult for me,
-I think we can resolve it in a simple way.
+Your suggest is essentially almost same to my patch,
+- clear BCACHE_DEV_DETACHING bit acts as SET NO NEED RE-ARM FLAG.
+- cancel_writeback_rate_update_dwork acts as some kind of locking with a
+timeout.
 
-We can take the schedule_delayed_work() under the protection of 
-dc->writeback_lock, and judge if we need re-arm this work to queue.
+The difference is I don't use dc->writeback_lock, and replace it by
+BCACHE_DEV_RATE_DW_RUNNING.
 
-static void update_writeback_rate(struct work_struct *work)
-{
-	struct cached_dev *dc = container_of(to_delayed_work(work),
-					     struct cached_dev,
-					     writeback_rate_update);
+The reason is my following development. I plan to implement a real-time
+update stripe_sectors_dirty of bcache device and cache set, then
+bcache_flash_devs_sectors_dirty() can be very fast and bch_register_lock
+can be removed here. And then I also plan to remove reference of
+dc->writeback_lock in update_writeback_rate() because indeed it is
+unnecessary here (the patch is held by Mike's locking resort work).
 
-	down_read(&dc->writeback_lock);
+Since I plan to remove dc->writeback_lock from update_writeback_rate(),
+I don't want to reference dc->writeback in the delayed work.
 
-	if (atomic_read(&dc->has_dirty) &&
-	    dc->writeback_percent)
-		__update_writeback_rate(dc);
+The basic idea behind your suggestion and this patch, is almost
+identical. The only difference might be the timeout in
+cancel_writeback_rate_update_dwork().
 
--	up_read(&dc->writeback_lock);
-+	if (NEED_RE-AEMING)	
-		schedule_delayed_work(&dc->writeback_rate_update,
-			      dc->writeback_rate_update_seconds * HZ);
-+	up_read(&dc->writeback_lock);
-}
+Thanks.
 
-In cached_dev_detach_finish() and cached_dev_free() we can set the no need
-flag under the protection of dc->writeback_lock, for example:
-
-static void cached_dev_detach_finish(struct work_struct *w)
-{
-	...
-+	down_write(&dc->writeback_lock);
-+	SET NO NEED RE-ARM FLAG
-+	up_write(&dc->writeback_lock);
-	cancel_delayed_work_sync(&dc->writeback_rate_update);
-}
-
-I think this way is more simple and readable.
-
-
-> struct delayed_work writeback_rate_update in struct cache_dev is a delayed
-> worker to call function update_writeback_rate() in period (the interval is
-> defined by dc->writeback_rate_update_seconds).
-> 
-> When a metadate I/O error happens on cache device, bcache error handling
-> routine bch_cache_set_error() will call bch_cache_set_unregister() to
-> retire whole cache set. On the unregister code path, this delayed work is
-> stopped by calling cancel_delayed_work_sync(&dc->writeback_rate_update).
-> 
-> dc->writeback_rate_update is a special delayed work from others in bcache.
-> In its routine update_writeback_rate(), this delayed work is re-armed
-> itself. That means when cancel_delayed_work_sync() returns, this delayed
-> work can still be executed after several seconds defined by
-> dc->writeback_rate_update_seconds.
-> 
-> The problem is, after cancel_delayed_work_sync() returns, the cache set
-> unregister code path will continue and release memory of struct cache set.
-> Then the delayed work is scheduled to run, __update_writeback_rate()
-> will reference the already released cache_set memory, and trigger a NULL
-> pointer deference fault.
-> 
-> This patch introduces two more bcache device flags,
-> - BCACHE_DEV_WB_RUNNING
->   bit set:  bcache device is in writeback mode and running, it is OK for
->             dc->writeback_rate_update to re-arm itself.
->   bit clear:bcache device is trying to stop dc->writeback_rate_update,
->             this delayed work should not re-arm itself and quit.
-> - BCACHE_DEV_RATE_DW_RUNNING
->   bit set:  routine update_writeback_rate() is executing.
->   bit clear: routine update_writeback_rate() quits.
-> 
-> This patch also adds a function cancel_writeback_rate_update_dwork() to
-> wait for dc->writeback_rate_update quits before cancel it by calling
-> cancel_delayed_work_sync(). In order to avoid a deadlock by unexpected
-> quit dc->writeback_rate_update, after time_out seconds this function will
-> give up and continue to call cancel_delayed_work_sync().
-> 
-> And here I explain how this patch stops self re-armed delayed work properly
-> with the above stuffs.
-> 
-> update_writeback_rate() sets BCACHE_DEV_RATE_DW_RUNNING at its beginning
-> and clears BCACHE_DEV_RATE_DW_RUNNING at its end. Before calling
-> cancel_writeback_rate_update_dwork() clear flag BCACHE_DEV_WB_RUNNING.
-> 
-> Before calling cancel_delayed_work_sync() wait utill flag
-> BCACHE_DEV_RATE_DW_RUNNING is clear. So when calling
-> cancel_delayed_work_sync(), dc->writeback_rate_update must be already re-
-> armed, or quite by seeing BCACHE_DEV_WB_RUNNING cleared. In both cases
-> delayed work routine update_writeback_rate() won't be executed after
-> cancel_delayed_work_sync() returns.
-> 
-> Inside update_writeback_rate() before calling schedule_delayed_work(), flag
-> BCACHE_DEV_WB_RUNNING is checked before. If this flag is cleared, it means
-> someone is about to stop the delayed work. Because flag
-> BCACHE_DEV_RATE_DW_RUNNING is set already and cancel_delayed_work_sync()
-> has to wait for this flag to be cleared, we don't need to worry about race
-> condition here.
-> 
-> If update_writeback_rate() is scheduled to run after checking
-> BCACHE_DEV_RATE_DW_RUNNING and before calling cancel_delayed_work_sync()
-> in cancel_writeback_rate_update_dwork(), it is also safe. Because at this
-> moment BCACHE_DEV_WB_RUNNING is cleared with memory barrier. As I mentioned
-> previously, update_writeback_rate() will see BCACHE_DEV_WB_RUNNING is clear
-> and quit immediately.
-> 
-> Because there are more dependences inside update_writeback_rate() to struct
-> cache_set memory, dc->writeback_rate_update is not a simple self re-arm
-> delayed work. After trying many different methods (e.g. hold dc->count, or
-> use locks), this is the only way I can find which works to properly stop
-> dc->writeback_rate_update delayed work.
-> 
-> Changelog:
-> v2: Try to fix the race issue which is pointed out by Junhui.
-> v1: The initial version for review
-> 
-> Signed-off-by: Coly Li <colyli@suse.de>
-> Cc: Michael Lyle <mlyle@lyle.org>
-> Cc: Hannes Reinecke <hare@suse.com>
-> Cc: Junhui Tang <tang.junhui@zte.com.cn>
-> ---
->  drivers/md/bcache/bcache.h    |  9 +++++----
->  drivers/md/bcache/super.c     | 39 +++++++++++++++++++++++++++++++++++----
->  drivers/md/bcache/sysfs.c     |  3 ++-
->  drivers/md/bcache/writeback.c | 29 ++++++++++++++++++++++++++++-
->  4 files changed, 70 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index 5e2d4e80198e..88d938c8d027 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -258,10 +258,11 @@ struct bcache_device {
->      struct gendisk        *disk;
->  
->      unsigned long        flags;
-> -#define BCACHE_DEV_CLOSING    0
-> -#define BCACHE_DEV_DETACHING    1
-> -#define BCACHE_DEV_UNLINK_DONE    2
-> -
-> +#define BCACHE_DEV_CLOSING        0
-> +#define BCACHE_DEV_DETACHING        1
-> +#define BCACHE_DEV_UNLINK_DONE        2
-> +#define BCACHE_DEV_WB_RUNNING        4
-> +#define BCACHE_DEV_RATE_DW_RUNNING    8
->      unsigned        nr_stripes;
->      unsigned        stripe_size;
->      atomic_t        *stripe_sectors_dirty;
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index d14e09cce2f6..6d888e8fea8c 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -899,6 +899,32 @@ void bch_cached_dev_run(struct cached_dev *dc)
->          pr_debug("error creating sysfs link");
->  }
->  
-> +/*
-> + * If BCACHE_DEV_RATE_DW_RUNNING is set, it means routine of the delayed
-> + * work dc->writeback_rate_update is running. Wait until the routine
-> + * quits (BCACHE_DEV_RATE_DW_RUNNING is clear), then continue to
-> + * cancel it. If BCACHE_DEV_RATE_DW_RUNNING is not clear after time_out
-> + * seconds, give up waiting here and continue to cancel it too.
-> + */
-> +static void cancel_writeback_rate_update_dwork(struct cached_dev *dc)
-> +{
-> +    int time_out = WRITEBACK_RATE_UPDATE_SECS_MAX * HZ;
-> +
-> +    do {
-> +        if (!test_bit(BCACHE_DEV_RATE_DW_RUNNING,
-> +                  &dc->disk.flags))
-> +            break;
-> +        time_out--;
-> +        schedule_timeout_interruptible(1);
-> +    } while (time_out > 0);
-> +
-> +    if (time_out == 0)
-> +        pr_warn("bcache: give up waiting for "
-> +            "dc->writeback_write_update to quit");
-> +
-> +    cancel_delayed_work_sync(&dc->writeback_rate_update);
-> +}
-> +
->  static void cached_dev_detach_finish(struct work_struct *w)
->  {
->      struct cached_dev *dc = container_of(w, struct cached_dev, detach);
-> @@ -911,7 +937,9 @@ static void cached_dev_detach_finish(struct work_struct *w)
->  
->      mutex_lock(&bch_register_lock);
->  
-> -    cancel_delayed_work_sync(&dc->writeback_rate_update);
-> +    if (test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
-> +        cancel_writeback_rate_update_dwork(dc);
-> +
->      if (!IS_ERR_OR_NULL(dc->writeback_thread)) {
->          kthread_stop(dc->writeback_thread);
->          dc->writeback_thread = NULL;
-> @@ -954,6 +982,7 @@ void bch_cached_dev_detach(struct cached_dev *dc)
->      closure_get(&dc->disk.cl);
->  
->      bch_writeback_queue(dc);
-> +
->      cached_dev_put(dc);
->  }
->  
-> @@ -1079,14 +1108,16 @@ static void cached_dev_free(struct closure *cl)
->  {
->      struct cached_dev *dc = container_of(cl, struct cached_dev, disk.cl);
->  
-> -    cancel_delayed_work_sync(&dc->writeback_rate_update);
-> +    mutex_lock(&bch_register_lock);
-> +
-> +    if (test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
-> +        cancel_writeback_rate_update_dwork(dc);
-> +
->      if (!IS_ERR_OR_NULL(dc->writeback_thread))
->          kthread_stop(dc->writeback_thread);
->      if (dc->writeback_write_wq)
->          destroy_workqueue(dc->writeback_write_wq);
->  
-> -    mutex_lock(&bch_register_lock);
-> -
->      if (atomic_read(&dc->running))
->          bd_unlink_disk_holder(dc->bdev, dc->disk.disk);
->      bcache_device_free(&dc->disk);
-> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-> index a74a752c9e0f..b7166c504cdb 100644
-> --- a/drivers/md/bcache/sysfs.c
-> +++ b/drivers/md/bcache/sysfs.c
-> @@ -304,7 +304,8 @@ STORE(bch_cached_dev)
->          bch_writeback_queue(dc);
->  
->      if (attr == &sysfs_writeback_percent)
-> -        schedule_delayed_work(&dc->writeback_rate_update,
-> +        if (!test_and_set_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
-> +            schedule_delayed_work(&dc->writeback_rate_update,
->                        dc->writeback_rate_update_seconds * HZ);
->  
->      mutex_unlock(&bch_register_lock);
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 4dbeaaa575bf..8f98ef1038d3 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -115,6 +115,21 @@ static void update_writeback_rate(struct work_struct *work)
->                           struct cached_dev,
->                           writeback_rate_update);
->  
-> +    /*
-> +     * should check BCACHE_DEV_RATE_DW_RUNNING before calling
-> +     * cancel_delayed_work_sync().
-> +     */
-> +    set_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
-> +    /* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
-> +    smp_mb();
-> +
-> +    if (!test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags)) {
-> +        clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
-> +        /* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
-> +        smp_mb();
-> +        return;
-> +    }
-> +
->      down_read(&dc->writeback_lock);
->  
->      if (atomic_read(&dc->has_dirty) &&
-> @@ -123,8 +138,18 @@ static void update_writeback_rate(struct work_struct *work)
->  
->      up_read(&dc->writeback_lock);
->  
-> -    schedule_delayed_work(&dc->writeback_rate_update,
-> +    if (test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags)) {
-> +        schedule_delayed_work(&dc->writeback_rate_update,
->                    dc->writeback_rate_update_seconds * HZ);
-> +    }
-> +
-> +    /*
-> +     * should check BCACHE_DEV_RATE_DW_RUNNING before calling
-> +     * cancel_delayed_work_sync().
-> +     */
-> +    clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
-> +    /* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
-> +    smp_mb();
->  }
->  
->  static unsigned writeback_delay(struct cached_dev *dc, unsigned sectors)
-> @@ -675,6 +700,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
->      dc->writeback_rate_p_term_inverse = 40;
->      dc->writeback_rate_i_term_inverse = 10000;
->  
-> +    WARN_ON(test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags));
->      INIT_DELAYED_WORK(&dc->writeback_rate_update, update_writeback_rate);
->  }
->  
-> @@ -693,6 +719,7 @@ int bch_cached_dev_writeback_start(struct cached_dev *dc)
->          return PTR_ERR(dc->writeback_thread);
->      }
->  
-> +    WARN_ON(test_and_set_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags));
->      schedule_delayed_work(&dc->writeback_rate_update,
->                    dc->writeback_rate_update_seconds * HZ);
->  
-> -- 
-> 2.15.1
-
-Thanks,
-Tang Junhui
+Coly Li
