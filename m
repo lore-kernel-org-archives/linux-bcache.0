@@ -1,46 +1,47 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v4 05/13] bcache: stop dc->writeback_rate_update properly
-Date: Tue, 30 Jan 2018 10:20:46 +0800
-Message-ID: <ccae3e90-f69a-9804-fe8d-3cfd3c453689@suse.de>
-References: <1517277425-3641-1-git-send-email-tang.junhui@zte.com.cn>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:54292 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752221AbeA3CU7 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 29 Jan 2018 21:20:59 -0500
-In-Reply-To: <1517277425-3641-1-git-send-email-tang.junhui@zte.com.cn>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+From: tang.junhui@zte.com.cn
+Subject: [PATCH] bcache: fix error count in memory shrink
+Date: Wed, 31 Jan 2018 10:46:52 +0800
+Message-ID: <1517366812-26957-1-git-send-email-tang.junhui@zte.com.cn>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: colyli@suse.de, mlyle@lyle.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn
-Cc: mlyle@lyle.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On 30/01/2018 9:57 AM, tang.junhui@zte.com.cn wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
-> 
-> Hello Coly:
-> 
-> OK, I got your point now.
-> Thanks for your patience.
-> 
-> And there is a small issue I hope to be modified:
-> +#define BCACHE_DEV_WB_RUNNING        4
-> +#define BCACHE_DEV_RATE_DW_RUNNING    8
-> Would be OK just as:
-> +#define BCACHE_DEV_WB_RUNNING        3
-> +#define BCACHE_DEV_RATE_DW_RUNNING    4
-> 
-> Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
-> 
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
-Hi Junhui,
+In bch_mca_scan(), nr btree nodes are expected to shrink, so the for(;;)
+loop need to satisfy the condition freed < nr.
+And since c->btree_cache_used always decrease after mca_data_free() calling
+in for(;;) loop,  so we need a auto variable to record c->btree_cache_used
+before the for(;;) loop.
 
-I will fix that in v5 patch. Thanks for your review :-)
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
+---
+ drivers/md/bcache/btree.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Coly Li
-
-
-[snip]
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 81e8dc3..7e9ef3d 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -664,6 +664,7 @@ static unsigned long bch_mca_scan(struct shrinker *shrink,
+ 	struct btree *b, *t;
+ 	unsigned long i, nr = sc->nr_to_scan;
+ 	unsigned long freed = 0;
++	unsigned int btree_cache_used;
+ 
+ 	if (c->shrinker_disabled)
+ 		return SHRINK_STOP;
+@@ -700,7 +701,8 @@ static unsigned long bch_mca_scan(struct shrinker *shrink,
+ 		}
+ 	}
+ 
+-	for (i = 0; (nr--) && i < c->btree_cache_used; i++) {
++	btree_cache_used = c->btree_cache_used;
++	for (i = 0; freed < nr && i < btree_cache_used; i++) {
+ 		if (list_empty(&c->btree_cache))
+ 			goto out;
+ 
+-- 
+1.8.3.1
