@@ -1,68 +1,84 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH v4 01/13] bcache: set writeback_rate_update_seconds in
- range [1, 60] seconds
-Date: Thu, 1 Feb 2018 13:44:00 -0800
-Message-ID: <37cb226a-2335-89d6-26f7-af611c70586b@lyle.org>
+Subject: Re: [PATCH v4 02/13] bcache: properly set task state in
+ bch_writeback_thread()
+Date: Thu, 1 Feb 2018 13:45:15 -0800
+Message-ID: <ec59cf58-9337-498e-943d-9d5b69d41965@lyle.org>
 References: <20180127142406.89741-1-colyli@suse.de>
- <20180127142406.89741-2-colyli@suse.de>
+ <20180127142406.89741-3-colyli@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pl0-f67.google.com ([209.85.160.67]:39591 "EHLO
-        mail-pl0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751715AbeBAVoF (ORCPT
+Received: from mail-pf0-f195.google.com ([209.85.192.195]:34471 "EHLO
+        mail-pf0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751715AbeBAVpR (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 1 Feb 2018 16:44:05 -0500
-Received: by mail-pl0-f67.google.com with SMTP id o13so4549229pli.6
-        for <linux-bcache@vger.kernel.org>; Thu, 01 Feb 2018 13:44:05 -0800 (PST)
-In-Reply-To: <20180127142406.89741-2-colyli@suse.de>
+        Thu, 1 Feb 2018 16:45:17 -0500
+Received: by mail-pf0-f195.google.com with SMTP id g17so1948188pfh.1
+        for <linux-bcache@vger.kernel.org>; Thu, 01 Feb 2018 13:45:17 -0800 (PST)
+In-Reply-To: <20180127142406.89741-3-colyli@suse.de>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Junhui Tang <tang.junhui@zte.com.cn>
 
 On 01/27/2018 06:23 AM, Coly Li wrote:
-> dc->writeback_rate_update_seconds can be set via sysfs and its value can
-> be set to [1, ULONG_MAX].  It does not make sense to set such a large
-> value, 60 seconds is long enough value considering the default 5 seconds
-> works well for long time.
+> Kernel thread routine bch_writeback_thread() has the following code block,
 > 
-> Because dc->writeback_rate_update is a special delayed work, it re-arms
-> itself inside the delayed work routine update_writeback_rate(). When
-> stopping it by cancel_delayed_work_sync(), there should be a timeout to
-> wait and make sure the re-armed delayed work is stopped too. A small max
-> value of dc->writeback_rate_update_seconds is also helpful to decide a
-> reasonable small timeout.
+> 447         down_write(&dc->writeback_lock);
+> 448~450     if (check conditions) {
+> 451                 up_write(&dc->writeback_lock);
+> 452                 set_current_state(TASK_INTERRUPTIBLE);
+> 453
+> 454                 if (kthread_should_stop())
+> 455                         return 0;
+> 456
+> 457                 schedule();
+> 458                 continue;
+> 459         }
 > 
-> This patch limits sysfs interface to set dc->writeback_rate_update_seconds
-> in range of [1, 60] seconds, and replaces the hand-coded number by macros.
+> If condition check is true, its task state is set to TASK_INTERRUPTIBLE
+> and call schedule() to wait for others to wake up it.
+> 
+> There are 2 issues in current code,
+> 1, Task state is set to TASK_INTERRUPTIBLE after the condition checks, if
+>    another process changes the condition and call wake_up_process(dc->
+>    writeback_thread), then at line 452 task state is set back to
+>    TASK_INTERRUPTIBLE, the writeback kernel thread will lose a chance to be
+>    waken up.
+> 2, At line 454 if kthread_should_stop() is true, writeback kernel thread
+>    will return to kernel/kthread.c:kthread() with TASK_INTERRUPTIBLE and
+>    call do_exit(). It is not good to enter do_exit() with task state
+>    TASK_INTERRUPTIBLE, in following code path might_sleep() is called and a
+>    warning message is reported by __might_sleep(): "WARNING: do not call
+>    blocking ops when !TASK_RUNNING; state=1 set at [xxxx]".
+> 
+> For the first issue, task state should be set before condition checks.
+> Ineed because dc->writeback_lock is required when modifying all the
+> conditions, calling set_current_state() inside code block where dc->
+> writeback_lock is hold is safe. But this is quite implicit, so I still move
+> set_current_state() before all the condition checks.
+> 
+> For the second issue, frankley speaking it does not hurt when kernel thread
+> exits with TASK_INTERRUPTIBLE state, but this warning message scares users,
+> makes them feel there might be something risky with bcache and hurt their
+> data.  Setting task state to TASK_RUNNING before returning fixes this
+> problem.
+> 
+> In alloc.c:allocator_wait(), there is also a similar issue, and is also
+> fixed in this patch.
+> 
+> Changelog:
+> v3: merge two similar fixes into one patch
+> v2: fix the race issue in v1 patch.
+> v1: initial buggy fix.
 > 
 > Signed-off-by: Coly Li <colyli@suse.de>
-> Reviewed-by: Hannes Reinecke <hare@suse.com>
+> Reviewed-by: Hannes Reinecke <hare@suse.de>
+> Cc: Michael Lyle <mlyle@lyle.org>
+> Cc: Junhui Tang <tang.junhui@zte.com.cn>
 
-[snip]
+This one LGTM-- applying to my staging branch
 
-> ---
->  drivers/md/bcache/sysfs.c     | 3 +++
->  drivers/md/bcache/writeback.c | 2 +-
->  drivers/md/bcache/writeback.h | 3 +++
->  3 files changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-> index b4184092c727..a74a752c9e0f 100644
-> --- a/drivers/md/bcache/sysfs.c
-> +++ b/drivers/md/bcache/sysfs.c
-> @@ -215,6 +215,9 @@ STORE(__cached_dev)
->  	sysfs_strtoul_clamp(writeback_rate,
->  			    dc->writeback_rate.rate, 1, INT_MAX);
->  
-> +	sysfs_strtoul_clamp(writeback_rate_update_seconds,
-> +			    dc->writeback_rate_update_seconds,
-> +			    1, WRITEBACK_RATE_UPDATE_SECS_MAX);
->  	d_strtoul_nonzero(writeback_rate_update_seconds);
-
-Doesn't the above line need to be removed for this to work?
-
-Mike
+Reviewed-by: Michael Lyle <mlyle@lyle.org>
