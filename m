@@ -1,35 +1,38 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH v4 06/13] bcache: set error_limit correctly
-Date: Thu, 1 Feb 2018 13:49:09 -0800
-Message-ID: <a809420e-c55c-d722-682a-9c8c38da45ee@lyle.org>
-References: <20180127142406.89741-1-colyli@suse.de>
- <20180127142406.89741-7-colyli@suse.de>
+Subject: Re: [PATCH v4 00/13] bcache: device failure handling improvement
+Date: Thu, 1 Feb 2018 13:52:09 -0800
+Message-ID: <2fde00b8-f605-d0d0-a51c-c126a2939326@lyle.org>
+References: <20180128015625.128497-1-colyli@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pl0-f49.google.com ([209.85.160.49]:39757 "EHLO
-        mail-pl0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1752005AbeBAVtL (ORCPT
+Received: from mail-pf0-f175.google.com ([209.85.192.175]:38243 "EHLO
+        mail-pf0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751826AbeBAVwL (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 1 Feb 2018 16:49:11 -0500
-Received: by mail-pl0-f49.google.com with SMTP id o13so4558440pli.6
-        for <linux-bcache@vger.kernel.org>; Thu, 01 Feb 2018 13:49:11 -0800 (PST)
-In-Reply-To: <20180127142406.89741-7-colyli@suse.de>
+        Thu, 1 Feb 2018 16:52:11 -0500
+Received: by mail-pf0-f175.google.com with SMTP id k19so16165122pfj.5
+        for <linux-bcache@vger.kernel.org>; Thu, 01 Feb 2018 13:52:11 -0800 (PST)
+In-Reply-To: <20180128015625.128497-1-colyli@suse.de>
 Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Junhui Tang <tang.junhui@zte.com.cn>
+Cc: linux-block@vger.kernel.org
 
-On 01/27/2018 06:23 AM, Coly Li wrote:
-> Struct cache uses io_errors for two purposes,
-> - Error decay: when cache set error_decay is set, io_errors is used to
->   generate a small piece of delay when I/O error happens.
-> - I/O errors counter: in order to generate big enough value for error
->   decay, I/O errors counter value is stored by left shifting 20 bits (a.k.a
->   IO_ERROR_SHIFT).
+On 01/27/2018 05:56 PM, Coly Li wrote:
+> Hi maintainers and folks,
 
-This LGTM
+Hi Coly---
 
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
+> This patch set tries to improve bcache device failure handling, includes
+> cache device and backing device failures.
+
+I've skimmed this whole patchset and overall it looks good.  I have
+taken some pieces (2,6) for possible-4.16.  I understand you'll be
+sending out a v5 soon-- I'll perform a more detailed review then.
+
+Thanks,
+
+Mike
