@@ -1,8 +1,10 @@
 From: tang.junhui@zte.com.cn
 Subject: [PATCH v2 2/2] bcache: fix high CPU occupancy during journal
-Date: Thu, 1 Feb 2018 13:42:14 +0800
-Message-ID: <1517463734-20734-1-git-send-email-tang.junhui@zte.com.cn>
+Date: Thu, 1 Feb 2018 16:14:46 +0800
+Message-ID: <1517472886-4240-2-git-send-email-tang.junhui@zte.com.cn>
+References: <1517472886-4240-1-git-send-email-tang.junhui@zte.com.cn>
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <1517472886-4240-1-git-send-email-tang.junhui@zte.com.cn>
 Sender: linux-block-owner@vger.kernel.org
 To: colyli@suse.de, mlyle@lyle.org
 Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
