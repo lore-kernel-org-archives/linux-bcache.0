@@ -1,110 +1,68 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH] bcache: calculate the number of incremental GC nodes according to the total of btree nodes
-Date: Thu, 1 Feb 2018 16:14:45 +0800
-Message-ID: <1517472886-4240-1-git-send-email-tang.junhui@zte.com.cn>
+From: Michael Lyle <mlyle@lyle.org>
+Subject: Re: [PATCH v4 01/13] bcache: set writeback_rate_update_seconds in
+ range [1, 60] seconds
+Date: Thu, 1 Feb 2018 13:44:00 -0800
+Message-ID: <37cb226a-2335-89d6-26f7-af611c70586b@lyle.org>
+References: <20180127142406.89741-1-colyli@suse.de>
+ <20180127142406.89741-2-colyli@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mxhk.zte.com.cn ([63.217.80.70]:52698 "EHLO mxhk.zte.com.cn"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751272AbeBAIMW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 1 Feb 2018 03:12:22 -0500
+Received: from mail-pl0-f67.google.com ([209.85.160.67]:39591 "EHLO
+        mail-pl0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1751715AbeBAVoF (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 1 Feb 2018 16:44:05 -0500
+Received: by mail-pl0-f67.google.com with SMTP id o13so4549229pli.6
+        for <linux-bcache@vger.kernel.org>; Thu, 01 Feb 2018 13:44:05 -0800 (PST)
+In-Reply-To: <20180127142406.89741-2-colyli@suse.de>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: colyli@suse.de, mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 01/27/2018 06:23 AM, Coly Li wrote:
+> dc->writeback_rate_update_seconds can be set via sysfs and its value can
+> be set to [1, ULONG_MAX].  It does not make sense to set such a large
+> value, 60 seconds is long enough value considering the default 5 seconds
+> works well for long time.
+> 
+> Because dc->writeback_rate_update is a special delayed work, it re-arms
+> itself inside the delayed work routine update_writeback_rate(). When
+> stopping it by cancel_delayed_work_sync(), there should be a timeout to
+> wait and make sure the re-armed delayed work is stopped too. A small max
+> value of dc->writeback_rate_update_seconds is also helpful to decide a
+> reasonable small timeout.
+> 
+> This patch limits sysfs interface to set dc->writeback_rate_update_seconds
+> in range of [1, 60] seconds, and replaces the hand-coded number by macros.
+> 
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Reviewed-by: Hannes Reinecke <hare@suse.com>
 
-This patch base on "[PATCH] bcache: finish incremental GC".
+[snip]
 
-Since incremental GC would stop 100ms when front side I/O comes, so when
-there are many btree nodes, if GC only processes constant (100) nodes each
-time, GC would last a long time, and the front I/Os would run out of the
-buckets (since no new bucket can be allocated during GC), and I/Os be
-blocked again.
+> ---
+>  drivers/md/bcache/sysfs.c     | 3 +++
+>  drivers/md/bcache/writeback.c | 2 +-
+>  drivers/md/bcache/writeback.h | 3 +++
+>  3 files changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+> index b4184092c727..a74a752c9e0f 100644
+> --- a/drivers/md/bcache/sysfs.c
+> +++ b/drivers/md/bcache/sysfs.c
+> @@ -215,6 +215,9 @@ STORE(__cached_dev)
+>  	sysfs_strtoul_clamp(writeback_rate,
+>  			    dc->writeback_rate.rate, 1, INT_MAX);
+>  
+> +	sysfs_strtoul_clamp(writeback_rate_update_seconds,
+> +			    dc->writeback_rate_update_seconds,
+> +			    1, WRITEBACK_RATE_UPDATE_SECS_MAX);
+>  	d_strtoul_nonzero(writeback_rate_update_seconds);
 
-So GC should not process constant nodes, but varied nodes according to the
-number of btree nodes. In this patch, GC is divided into constant (100)
-times, so when there are many btree nodes, GC can process more nodes each
-time, otherwise GC will process less nodes each time (but not less than
-MIN_GC_NODES).
+Doesn't the above line need to be removed for this to work?
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/btree.c | 37 ++++++++++++++++++++++++++++++++++---
- 1 file changed, 34 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 48a4d18..d8a5d31 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -90,10 +90,10 @@
- 
- #define MAX_NEED_GC		64
- #define MAX_SAVE_PRIO		72
-+#define MAX_GC_TIMES		100
- #define MIN_GC_NODES		100
- #define GC_SLEEP_TIME		100
- 
--
- #define PTR_DIRTY_BIT		(((uint64_t) 1 << 36))
- 
- #define PTR_HASH(c, k)							\
-@@ -1511,6 +1511,31 @@ static unsigned btree_gc_count_keys(struct btree *b)
- 	return ret;
- }
- 
-+static size_t btree_gc_min_nodes(struct cache_set *c)
-+{
-+	size_t			min_nodes;
-+
-+	/*
-+	 * Since incremental GC would stop 100ms when front
-+	 * side I/O comes, so when there are many btree nodes,
-+	 * if GC only processes constant (100) nodes each time,
-+	 * GC would last a long time, and the front I/Os
-+	 * would run out of the buckets (since no new bucket
-+	 * can be allocated during GC), and be blocked again.
-+	 * So GC should not process constant nodes, but varied
-+	 * nodes according to the number of btree nodes, which
-+	 * realized by dividing GC into constant(100) times,
-+	 * so when there are many btree nodes, GC can process
-+	 * more nodes each time, otherwise, GC will process less
-+	 * nodes each time (but not less than MIN_GC_NODES)
-+	 */
-+	min_nodes = c->gc_stats.nodes / MAX_GC_TIMES;
-+	if (min_nodes < MIN_GC_NODES)
-+		min_nodes = MIN_GC_NODES;
-+
-+	return min_nodes;
-+}
-+
- static int btree_gc_recurse(struct btree *b, struct btree_op *op,
- 			    struct closure *writes, struct gc_stat *gc)
- {
-@@ -1577,7 +1602,7 @@ static int btree_gc_recurse(struct btree *b, struct btree_op *op,
- 		r->b = NULL;
- 
- 		if (atomic_read(&b->c->io_inflight) &&
--		    gc->nodes >= gc->nodes_pre + MIN_GC_NODES) {
-+		    gc->nodes >= gc->nodes_pre + btree_gc_min_nodes(b->c)) {
- 			gc->nodes_pre =  gc->nodes;
- 			ret = -EAGAIN;
- 			break;
-@@ -1835,8 +1860,14 @@ static int bch_btree_check_recurse(struct btree *b, struct btree_op *op)
- 		do {
- 			k = bch_btree_iter_next_filter(&iter, &b->keys,
- 						       bch_ptr_bad);
--			if (k)
-+			if (k) {
- 				btree_node_prefetch(b, k);
-+				/*
-+				 * initiallize c->gc_stats.nodes
-+				 * for incremental GC
-+				 */
-+				b->c->gc_stats.nodes++;
-+			}
- 
- 			if (p)
- 				ret = btree(check_recurse, p, b, op);
--- 
-1.8.3.1
+Mike
