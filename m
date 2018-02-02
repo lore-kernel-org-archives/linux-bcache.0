@@ -1,35 +1,50 @@
-From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH] [PATCH v2] bcache: fix for allocator and register thread
- race
-Date: Thu, 1 Feb 2018 13:55:41 -0800
-Message-ID: <adcfc52c-95ab-d3da-5526-47b3c9b70f70@lyle.org>
-References: <1516883456-4170-1-git-send-email-tang.junhui@zte.com.cn>
+From: Pony Cheng <ponycheng0@gmail.com>
+Subject: Re: bcache journal
+Date: Fri, 2 Feb 2018 10:18:39 +0800
+Message-ID: <CAATtUKkoqg6h9OdxtK3jShvwR4aH55Z3yjOgkgdituJ5HnCaPA@mail.gmail.com>
+References: <CAATtUKmyuZUXq0SLx6YmMJPWzFfw15cNm=EGZpD6pxeuHGqt+g@mail.gmail.com>
+ <fa369a50-679d-4d37-7a5d-5f9181bb8878@lyle.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg0-f42.google.com ([74.125.83.42]:42265 "EHLO
-        mail-pg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1751730AbeBAVzn (ORCPT
+Received: from mail-wr0-f172.google.com ([209.85.128.172]:43426 "EHLO
+        mail-wr0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1754113AbeBBCSl (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 1 Feb 2018 16:55:43 -0500
-Received: by mail-pg0-f42.google.com with SMTP id j16so11661847pgn.9
-        for <linux-bcache@vger.kernel.org>; Thu, 01 Feb 2018 13:55:43 -0800 (PST)
-In-Reply-To: <1516883456-4170-1-git-send-email-tang.junhui@zte.com.cn>
-Content-Language: en-US
+        Thu, 1 Feb 2018 21:18:41 -0500
+Received: by mail-wr0-f172.google.com with SMTP id b52so775544wrd.10
+        for <linux-bcache@vger.kernel.org>; Thu, 01 Feb 2018 18:18:40 -0800 (PST)
+In-Reply-To: <fa369a50-679d-4d37-7a5d-5f9181bb8878@lyle.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: tang.junhui@zte.com.cn, colyli@suse.de
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+To: Michael Lyle <mlyle@lyle.org>
+Cc: linux-bcache@vger.kernel.org
 
-Hi Tang Junhui--
+OK, thank you very much.
 
-On 01/25/2018 04:30 AM, tang.junhui@zte.com.cn wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
-[snip]
-> The stack shows the register thread and allocator thread
-> were getting stuck when registering cache device.
-
-This looks good-- applying to my 4.16-related test branch.
-
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
+2018-01-31 15:55 GMT+08:00 Michael Lyle <mlyle@lyle.org>:
+> Hi Pony Cheng--
+>
+> On 01/28/2018 11:23 PM, Pony Cheng wrote:
+>> Hi all:
+>>      I'm reading the source code of bcache, and I'm so confused about
+>> journal. Journal just use bucket of cache, why we need it, and what's
+>> the real purpose of journal in bcache. If we write to the bucket, do
+>> we need write it to journal first?
+>
+> The purpose of the journal is to control write amplification from btree
+> node writes.  If we have 100 things to insert into the btree because
+> we're just caching new things, and this would touch 100 different btree
+> nodes, we can just write the new nodes to the journal in a single I/O
+> instead of doing 100 different updates.  Later, we can free the journal
+> pages by doing those updates, but hopefully be doing more than one
+> update to each btree node and significantly lessen the total amount of I/O.
+>
+>>
+>> How do you think of these?
+>>
+>> Pony Cheng
+>
+> Regards,
+>
+> Mike
