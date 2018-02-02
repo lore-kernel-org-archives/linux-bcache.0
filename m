@@ -1,63 +1,39 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH] bcache: return attach error when no cache set exist
-Date: Fri, 2 Feb 2018 11:49:14 +0800
-Message-ID: <1517543354-3745-1-git-send-email-tang.junhui@zte.com.cn>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH v4 00/13] bcache: device failure handling improvement
+Date: Fri, 2 Feb 2018 10:04:15 +0800
+Message-ID: <aefd75a0-e7de-bbb6-386a-8e7f9a128e98@suse.de>
+References: <20180128015625.128497-1-colyli@suse.de>
+ <2fde00b8-f605-d0d0-a51c-c126a2939326@lyle.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <2fde00b8-f605-d0d0-a51c-c126a2939326@lyle.org>
+Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
-To: colyli@suse.de, mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+On 02/02/2018 5:52 AM, Michael Lyle wrote:
+> On 01/27/2018 05:56 PM, Coly Li wrote:
+>> Hi maintainers and folks,
+> 
+> Hi Coly---
+> 
+>> This patch set tries to improve bcache device failure handling, includes
+>> cache device and backing device failures.
+> 
+> I've skimmed this whole patchset and overall it looks good.  I have
+> taken some pieces (2,6) for possible-4.16.  I understand you'll be
+> sending out a v5 soon-- I'll perform a more detailed review then.
 
-I attach a back-end device to a cache set, and the cache set is not
-registered yet, this back-end device did not attach successfully, and no
-error returned:
-[root]# echo 87859280-fec6-4bcc-20df7ca8f86b > /sys/block/sde/bcache/attach
-[root]#
+Hi Mike,
 
-In sysfs_attach(), the return value "v" is initialized to "size" in
-the beginning, and if no cache set exist in bch_cache_sets, the "v" value
-would not change any more, and return to sysfs, sysfs regard it as success
-since the "size" is a positive number.
+Since you will pick patch 2,6 from v4 patch set, I will not include them
+in v5 patch set, and rebase the v5 cache set against the latest
+bcache-for-next.
 
-This patch fixes this issue by assigning "v" with "-ENOENT" in the
-initialization.
+Thanks.
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/sysfs.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index b418409..9c8fdd5 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -195,7 +195,7 @@
- {
- 	struct cached_dev *dc = container_of(kobj, struct cached_dev,
- 					     disk.kobj);
--	ssize_t v = size;
-+	ssize_t v;
- 	struct cache_set *c;
- 	struct kobj_uevent_env *env;
- 
-@@ -270,6 +270,7 @@
- 		if (bch_parse_uuid(buf, dc->sb.set_uuid) < 16)
- 			return -EINVAL;
- 
-+		v = -ENOENT;
- 		list_for_each_entry(c, &bch_cache_sets, list) {
- 			v = bch_cached_dev_attach(dc, c);
- 			if (!v)
-@@ -277,7 +278,7 @@
- 		}
- 
- 		pr_err("Can't attach %s: cache set not found", buf);
--		size = v;
-+		return v;
- 	}
- 
- 	if (attr == &sysfs_detach && dc->disk.c)
--- 
-1.8.3.1
+Coly Li
