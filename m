@@ -1,135 +1,183 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v5 03/10] bcache: quit dc->writeback_thread when BCACHE_DEV_DETACHING is set
-Date: Tue,  6 Feb 2018 12:20:53 +0800
-Message-ID: <20180206042100.65021-4-colyli@suse.de>
+Subject: [PATCH v5 02/10] bcache: fix cached_dev->count usage for bch_cache_set_error()
+Date: Tue,  6 Feb 2018 12:20:52 +0800
+Message-ID: <20180206042100.65021-3-colyli@suse.de>
 References: <20180206042100.65021-1-colyli@suse.de>
 Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180206042100.65021-1-colyli@suse.de>
 Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Hannes Reinecke <hare@suse.com>, Huijun Tang <tang.junhui@zte.com.cn>
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
 List-Id: linux-bcache@vger.kernel.org
 
-In patch "bcache: fix cached_dev->count usage for bch_cache_set_error()",
-cached_dev_get() is called when creating dc->writeback_thread, and
-cached_dev_put() is called when exiting dc->writeback_thread. This
-modification works well unless people detach the bcache device manually by
-    'echo 1 > /sys/block/bcache<N>/bcache/detach'
-Because this sysfs interface only calls bch_cached_dev_detach() which wakes
-up dc->writeback_thread but does not stop it. The reason is, before patch
-"bcache: fix cached_dev->count usage for bch_cache_set_error()", inside
-bch_writeback_thread(), if cache is not dirty after writeback,
-cached_dev_put() will be called here. And in cached_dev_make_request() when
-a new write request makes cache from clean to dirty, cached_dev_get() will
-be called there. Since we don't operate dc->count in these locations,
-refcount d->count cannot be dropped after cache becomes clean, and
-cached_dev_detach_finish() won't be called to detach bcache device.
+When bcache metadata I/O fails, bcache will call bch_cache_set_error()
+to retire the whole cache set. The expected behavior to retire a cache
+set is to unregister the cache set, and unregister all backing device
+attached to this cache set, then remove sysfs entries of the cache set
+and all attached backing devices, finally release memory of structs
+cache_set, cache, cached_dev and bcache_device.
 
-This patch fixes the issue by checking whether BCACHE_DEV_DETACHING is
-set inside bch_writeback_thread(). If this bit is set and cache is clean
-(no existing writeback_keys), break the while-loop, call cached_dev_put()
-and quit the writeback thread.
+In my testing when journal I/O failure triggered by disconnected cache
+device, sometimes the cache set cannot be retired, and its sysfs
+entry /sys/fs/bcache/<uuid> still exits and the backing device also
+references it. This is not expected behavior.
 
-Please note if cache is still dirty, even BCACHE_DEV_DETACHING is set the
-writeback thread should continue to perform writeback, this is the original
-design of manually detach.
+When metadata I/O failes, the call senquence to retire whole cache set is,
+        bch_cache_set_error()
+        bch_cache_set_unregister()
+        bch_cache_set_stop()
+        __cache_set_unregister()     <- called as callback by calling
+                                        clousre_queue(&c->caching)
+        cache_set_flush()            <- called as a callback when refcount
+                                        of cache_set->caching is 0
+        cache_set_free()             <- called as a callback when refcount
+                                        of catch_set->cl is 0
+        bch_cache_set_release()      <- called as a callback when refcount
+                                        of catch_set->kobj is 0
 
-It is safe to do the following check without locking, let me explain why,
-+	if (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-+	    (!atomic_read(&dc->has_dirty) || !dc->writeback_running)) {
+I find if kernel thread bch_writeback_thread() quits while-loop when
+kthread_should_stop() is true and searched_full_index is false, clousre
+callback cache_set_flush() set by continue_at() will never be called. The
+result is, bcache fails to retire whole cache set.
 
-If the kenrel thread does not sleep and continue to run due to conditions
-are not updated in time on the running CPU core, it just consumes more CPU
-cycles and has no hurt. This should-sleep-but-run is safe here. We just
-focus on the should-run-but-sleep condition, which means the writeback
-thread goes to sleep in mistake while it should continue to run.
-1, First of all, no matter the writeback thread is hung or not, kthread_stop() from
-   cached_dev_detach_finish() will wake up it and terminate by making
-   kthread_should_stop() return true. And in normal run time, bit on index
-   BCACHE_DEV_DETACHING is always cleared, the condition
-	!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags)
-   is always true and can be ignored as constant value.
-2, If one of the following conditions is true, the writeback thread should
-   go to sleep,
-   "!atomic_read(&dc->has_dirty)" or "!dc->writeback_running)"
-   each of them independently controls the writeback thread should sleep or
-   not, let's analyse them one by one.
-2.1 condition "!atomic_read(&dc->has_dirty)"
-   If dc->has_dirty is set from 0 to 1 on another CPU core, bcache will
-   call bch_writeback_queue() immediately or call bch_writeback_add() which
-   indirectly calls bch_writeback_queue() too. In bch_writeback_queue(),
-   wake_up_process(dc->writeback_thread) is called. It sets writeback
-   thread's task state to TASK_RUNNING and following an implicit memory
-   barrier, then tries to wake up the writeback thread.
-   In writeback thread, its task state is set to TASK_INTERRUPTIBLE before
-   doing the condition check. If other CPU core sets the TASK_RUNNING state
-   after writeback thread setting TASK_INTERRUPTIBLE, the writeback thread
-   will be scheduled to run very soon because its state is not
-   TASK_INTERRUPTIBLE. If other CPU core sets the TASK_RUNNING state before
-   writeback thread setting TASK_INTERRUPTIBLE, the implict memory barrier
-   of wake_up_process() will make sure modification of dc->has_dirty on
-   other CPU core is updated and observed on the CPU core of writeback
-   thread. Therefore the condition check will correctly be false, and
-   continue writeback code without sleeping.
-2.2 condition "!dc->writeback_running)"
-   dc->writeback_running can be changed via sysfs file, every time it is
-   modified, a following bch_writeback_queue() is alwasy called. So the
-   change is always observed on the CPU core of writeback thread. If
-   dc->writeback_running is changed from 0 to 1 on other CPU core, this
-   condition check will observe the modification and allow writeback
-   thread to continue to run without sleeping.
-Now we can see, even without a locking protection, multiple conditions
-check is safe here, no deadlock or process hang up will happen.
+cache_set_flush() will be called when refcount of closure c->caching is 0,
+and in function bcache_device_detach() refcount of closure c->caching is
+released to 0 by clousre_put(). In metadata error code path, function
+bcache_device_detach() is called by cached_dev_detach_finish(). This is a
+callback routine being called when cached_dev->count is 0. This refcount
+is decreased by cached_dev_put().
 
-I compose a separte patch because that patch "bcache: fix cached_dev->count
-usage for bch_cache_set_error()" already gets a "Reviewed-by:" from Hannes
-Reinecke. Also this fix is not trivial and good for a separate patch.
+The above dependence indicates, cache_set_flush() will be called when
+refcount of cache_set->cl is 0, and refcount of cache_set->cl to be 0
+when refcount of cache_dev->count is 0.
+
+The reason why sometimes cache_dev->count is not 0 (when metadata I/O fails
+and bch_cache_set_error() called) is, in bch_writeback_thread(), refcount
+of cache_dev is not decreased properly.
+
+In bch_writeback_thread(), cached_dev_put() is called only when
+searched_full_index is true and cached_dev->writeback_keys is empty, a.k.a
+there is no dirty data on cache. In most of run time it is correct, but
+when bch_writeback_thread() quits the while-loop while cache is still
+dirty, current code forget to call cached_dev_put() before this kernel
+thread exits. This is why sometimes cache_set_flush() is not executed and
+cache set fails to be retired.
+
+The reason to call cached_dev_put() in bch_writeback_rate() is, when the
+cache device changes from clean to dirty, cached_dev_get() is called, to
+make sure during writeback operatiions both backing and cache devices
+won't be released.
+
+Adding following code in bch_writeback_thread() does not work,
+   static int bch_writeback_thread(void *arg)
+        }
+
++       if (atomic_read(&dc->has_dirty))
++               cached_dev_put()
++
+        return 0;
+ }
+because writeback kernel thread can be waken up and start via sysfs entry:
+        echo 1 > /sys/block/bcache<N>/bcache/writeback_running
+It is difficult to check whether backing device is dirty without race and
+extra lock. So the above modification will introduce potential refcount
+underflow in some conditions.
+
+The correct fix is, to take cached dev refcount when creating the kernel
+thread, and put it before the kernel thread exits. Then bcache does not
+need to take a cached dev refcount when cache turns from clean to dirty,
+or to put a cached dev refcount when cache turns from ditry to clean. The
+writeback kernel thread is alwasy safe to reference data structure from
+cache set, cache and cached device (because a refcount of cache device is
+taken for it already), and no matter the kernel thread is stopped by I/O
+errors or system reboot, cached_dev->count can always be used correctly.
+
+The patch is simple, but understanding how it works is quite complicated.
+
+Changelog:
+v2: set dc->writeback_thread to NULL in this patch, as suggested by Hannes.
+v1: initial version for review.
 
 Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Hannes Reinecke <hare@suse.com>
 Cc: Michael Lyle <mlyle@lyle.org>
-Cc: Hannes Reinecke <hare@suse.com>
-Cc: Huijun Tang <tang.junhui@zte.com.cn>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/writeback.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ drivers/md/bcache/super.c     |  1 -
+ drivers/md/bcache/writeback.c | 11 ++++++++---
+ drivers/md/bcache/writeback.h |  2 --
+ 3 files changed, 8 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index a2ad37a8afc0..7d96dc6860fa 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1052,7 +1052,6 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+ 		bch_sectors_dirty_init(&dc->disk);
+ 		atomic_set(&dc->has_dirty, 1);
+-		refcount_inc(&dc->count);
+ 		bch_writeback_queue(dc);
+ 	}
+ 
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index b280c134dd4d..4dbeaaa575bf 100644
+index f1d2fc15abcc..b280c134dd4d 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -565,9 +565,15 @@ static int bch_writeback_thread(void *arg)
- 	while (!kthread_should_stop()) {
- 		down_write(&dc->writeback_lock);
- 		set_current_state(TASK_INTERRUPTIBLE);
--		if (!atomic_read(&dc->has_dirty) ||
--		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
--		     !dc->writeback_running)) {
-+		/*
-+		 * If the bache device is detaching, skip here and continue
-+		 * to perform writeback. Otherwise, if no dirty data on cache,
-+		 * or there is dirty data on cache but writeback is disabled,
-+		 * the writeback thread should sleep here and wait for others
-+		 * to wake up it.
-+		 */
-+		if (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-+		    (!atomic_read(&dc->has_dirty) || !dc->writeback_running)) {
- 			up_write(&dc->writeback_lock);
+@@ -572,7 +572,7 @@ static int bch_writeback_thread(void *arg)
  
  			if (kthread_should_stop()) {
-@@ -587,6 +593,14 @@ static int bch_writeback_thread(void *arg)
+ 				set_current_state(TASK_RUNNING);
+-				return 0;
++				break;
+ 			}
+ 
+ 			schedule();
+@@ -585,7 +585,6 @@ static int bch_writeback_thread(void *arg)
+ 		if (searched_full_index &&
+ 		    RB_EMPTY_ROOT(&dc->writeback_keys.keys)) {
  			atomic_set(&dc->has_dirty, 0);
+-			cached_dev_put(dc);
  			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
  			bch_write_bdev_super(dc, NULL);
-+			/*
-+			 * If bcache device is detaching via sysfs interface,
-+			 * writeback thread should stop after there is no dirty
-+			 * data on cache. BCACHE_DEV_DETACHING flag is set in
-+			 * bch_cached_dev_detach().
-+			 */
-+			if (test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))
-+				break;
  		}
+@@ -606,6 +605,9 @@ static int bch_writeback_thread(void *arg)
+ 		}
+ 	}
  
- 		up_write(&dc->writeback_lock);
++	dc->writeback_thread = NULL;
++	cached_dev_put(dc);
++
+ 	return 0;
+ }
+ 
+@@ -669,10 +671,13 @@ int bch_cached_dev_writeback_start(struct cached_dev *dc)
+ 	if (!dc->writeback_write_wq)
+ 		return -ENOMEM;
+ 
++	cached_dev_get(dc);
+ 	dc->writeback_thread = kthread_create(bch_writeback_thread, dc,
+ 					      "bcache_writeback");
+-	if (IS_ERR(dc->writeback_thread))
++	if (IS_ERR(dc->writeback_thread)) {
++		cached_dev_put(dc);
+ 		return PTR_ERR(dc->writeback_thread);
++	}
+ 
+ 	schedule_delayed_work(&dc->writeback_rate_update,
+ 			      dc->writeback_rate_update_seconds * HZ);
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 587b25599856..0bba8f1c6cdf 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -105,8 +105,6 @@ static inline void bch_writeback_add(struct cached_dev *dc)
+ {
+ 	if (!atomic_read(&dc->has_dirty) &&
+ 	    !atomic_xchg(&dc->has_dirty, 1)) {
+-		refcount_inc(&dc->count);
+-
+ 		if (BDEV_STATE(&dc->sb) != BDEV_STATE_DIRTY) {
+ 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_DIRTY);
+ 			/* XXX: should do this synchronously */
 -- 
 2.16.1
