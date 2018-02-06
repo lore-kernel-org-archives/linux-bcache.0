@@ -1,129 +1,99 @@
-From: tang.junhui@zte.com.cn
-Subject: [PATCH 2/2] bcache: fix for data collapse after re-attaching an attached device
-Date: Mon, 5 Feb 2018 20:11:59 +0800
-Message-ID: <1517832719-28525-1-git-send-email-tang.junhui@zte.com.cn>
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH v5 00/10] bcache: device failure handling improvement
+Date: Tue,  6 Feb 2018 12:20:50 +0800
+Message-ID: <20180206042100.65021-1-colyli@suse.de>
 Return-path: <linux-block-owner@vger.kernel.org>
 Sender: linux-block-owner@vger.kernel.org
-To: colyli@suse.de, mlyle@lyle.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, tang.junhui@zte.com.cn
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui@zte.com.cn>
+Hi maintainers and folks,
 
-back-end device sdm has already attached a cache_set with ID
-f67ebe1f-f8bc-4d73-bfe5-9dc88607f119, then try to attach with
-another cache set, and it returns with an error:
-[root]# cd /sys/block/sdm/bcache
-[root]# echo 5ccd0a63-148e-48b8-afa2-aca9cbd6279f > attach
--bash: echo: write error: Invalid argument
+This patch set tries to improve bcache device failure handling, includes
+cache device and backing device failures.
 
-After that, execute a command to modify the label of bcache
-device:
-[root]# echo data_disk1 > label
+The basic idea to handle failed cache device is,
+- Unregister cache set
+- Detach all backing devices which are attached to this cache set
+- Stop all the detached bcache devices (configurable)
+- Stop all flash only volume on the cache set
+The above process is named 'cache set retire' by me. The result of cache
+set retire is, cache set and bcache devices are all removed, following
+I/O requests will get failed immediately to notift upper layer or user
+space coce that the cache device is failed or disconnected.
+- Stop all the detached bcache devices (configurable)
+- Stop all flash only volume on the cache set
+The above process is named 'cache set retire' by me. The result of cache
+set retire is, cache set and bcache devices are all removed
+(configurable), following I/O requests will get failed immediately to
+notify upper layer or user space coce that the cache device is failed or
+disconnected.
 
-Then we reboot the system, when the system power on, the back-end
-device can not attach to cache_set, a messages show in the log:
-Feb  5 12:05:52 ceph152 kernel: [922385.508498] bcache:
-bch_cached_dev_attach() couldn't find uuid for sdm in set
+There are 2 patches from v4 patch set is merged into bcache-for-next, they
+are not in v5 patch set any more.
 
-In sysfs_attach(), dc->sb.set_uuid was assigned to the value
-which input through sysfs, no matter whether it is success
-or not in bch_cached_dev_attach(). For example, If the back-end
-device has already attached to an cache set, bch_cached_dev_attach()
-would fail, but dc->sb.set_uuid was changed. Then modify the
-label of bcache device, it will call bch_write_bdev_super(),
-which would write the dc->sb.set_uuid to the super block, so we
-record a wrong cache set ID in the super block, after the system
-reboot, the cache set couldn't find the uuid of the back-end
-device, so the bcache device couldn't exist and use any more.
+V5 patch set adds a new patch "bcache: add stop_when_cache_set_failed
+option to backing device", which provides "auto"/"always" options to
+configure whether or not to stop bcache device for a broken cache set. The
+patch "bcache: stop all attached bcache devices for a retired cache set"
+from v4 patch set is replaced by the above new added patch.
 
-In this patch, we don't assigned cache set ID to dc->sb.set_uuid
-in sysfs_attach() directly, but input it into bch_cached_dev_attach(),
-and assigned dc->sb.set_uuid to the cache set ID after the back-end
-device attached to the cache set successful.
+Most of the patches are reviewed by Hannes Reinecke and Junhui Tang. There
+are still severl patches need to be reviewed,
+- [PATCH v5 03/10] bcache: quit dc->writeback_thread when
+  BCACHE_DEV_DETACHING is set
+- [PATCH v5 06/10] bcache: add stop_when_cache_set_failed option to
+   backing device 
 
-Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
----
- drivers/md/bcache/bcache.h |  2 +-
- drivers/md/bcache/super.c  | 10 ++++++----
- drivers/md/bcache/sysfs.c  |  6 ++++--
- 3 files changed, 11 insertions(+), 7 deletions(-)
+Any comment, question and review are warmly welcome. Thanks in advance.
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 843877e..40f0267 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -907,7 +907,7 @@ bool bch_alloc_sectors(struct cache_set *, struct bkey *, unsigned,
- 
- int bch_flash_dev_create(struct cache_set *c, uint64_t size);
- 
--int bch_cached_dev_attach(struct cached_dev *, struct cache_set *);
-+int bch_cached_dev_attach(struct cached_dev *, struct cache_set *, uint8_t *);
- void bch_cached_dev_detach(struct cached_dev *);
- void bch_cached_dev_run(struct cached_dev *);
- void bcache_device_stop(struct bcache_device *);
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b4d2892..bdabdca 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -946,7 +946,8 @@ void bch_cached_dev_detach(struct cached_dev *dc)
- 	cached_dev_put(dc);
- }
- 
--int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
-+int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
-+			  uint8_t *set_uuid)
- {
- 	uint32_t rtime = cpu_to_le32(get_seconds());
- 	struct uuid_entry *u;
-@@ -954,7 +955,8 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c)
- 
- 	bdevname(dc->bdev, buf);
- 
--	if (memcmp(dc->sb.set_uuid, c->sb.set_uuid, 16))
-+	if ((set_uuid && memcmp(set_uuid, c->sb.set_uuid, 16)) ||
-+	    (!set_uuid && memcmp(dc->sb.set_uuid, c->sb.set_uuid, 16)))
- 		return -ENOENT;
- 
- 	if (dc->disk.c) {
-@@ -1183,7 +1185,7 @@ static void register_bdev(struct cache_sb *sb, struct page *sb_page,
- 
- 	list_add(&dc->list, &uncached_devices);
- 	list_for_each_entry(c, &bch_cache_sets, list)
--		bch_cached_dev_attach(dc, c);
-+		bch_cached_dev_attach(dc, c, NULL);
- 
- 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_NONE ||
- 	    BDEV_STATE(&dc->sb) == BDEV_STATE_STALE)
-@@ -1705,7 +1707,7 @@ static void run_cache_set(struct cache_set *c)
- 	bcache_write_super(c);
- 
- 	list_for_each_entry_safe(dc, t, &uncached_devices, list)
--		bch_cached_dev_attach(dc, c);
-+		bch_cached_dev_attach(dc, c, NULL);
- 
- 	flash_devs_run(c);
- 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 9c8fdd5..6316399 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -267,12 +267,14 @@
- 	}
- 
- 	if (attr == &sysfs_attach) {
--		if (bch_parse_uuid(buf, dc->sb.set_uuid) < 16)
-+		uint8_t		set_uuid[16];
-+
-+		if (bch_parse_uuid(buf, set_uuid) < 16)
- 			return -EINVAL;
- 
- 		v = -ENOENT;
- 		list_for_each_entry(c, &bch_cache_sets, list) {
--			v = bch_cached_dev_attach(dc, c);
-+			v = bch_cached_dev_attach(dc, c, set_uuid);
- 			if (!v)
- 				return size;
- 		}
+Changelog:
+v5: replace patch "bcache: stop all attached bcache devices for a retired
+    cache set" from v4 patch set by "bcache: add stop_when_cache_set_failed
+    option to backing device" from v5 patch set. 
+    fix issues from v4 patch set.
+    improve kernel message format, remove redundant prefix string.
+v4: add per-cached_dev option stop_attached_devs_on_fail to avoid stopping
+    attached bcache device from a retiring cache set.
+v3: fix detach issue find in v2 patch set.
+v2: fixes all problems found in v1 review.
+    add patches to handle backing device failure.
+    add one more patch to set writeback_rate_update_seconds range.
+    include a patch from Junhui Tang.
+v1: the initial version, only handles cache device failure.
+
+Coly Li
+
+
+Coly Li (10):
+  bcache: set writeback_rate_update_seconds in range [1, 60] seconds
+  bcache: fix cached_dev->count usage for bch_cache_set_error()
+  bcache: quit dc->writeback_thread when BCACHE_DEV_DETACHING is set
+  bcache: stop dc->writeback_rate_update properly
+  bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags
+  bcache: stop all attached bcache devices for a retired cache set
+  bcache: add backing_request_endio() for bi_end_io of attached backing
+    device I/O
+  bcache: add io_disable to struct cached_dev
+  bcache: stop bcache device when backing device is offline
+  bcache: add stop_when_cache_set_failed option to backing device
+
+Tang Junhui (1):
+  bcache: fix inaccurate io state for detached bcache devices
+
+ drivers/md/bcache/alloc.c     |   3 +-
+ drivers/md/bcache/bcache.h    |  44 ++++++++-
+ drivers/md/bcache/btree.c     |  10 +-
+ drivers/md/bcache/io.c        |  16 +++-
+ drivers/md/bcache/journal.c   |   4 +-
+ drivers/md/bcache/request.c   | 185 +++++++++++++++++++++++++++++++------
+ drivers/md/bcache/super.c     | 206 ++++++++++++++++++++++++++++++++++++++----
+ drivers/md/bcache/sysfs.c     |  59 +++++++++++-
+ drivers/md/bcache/util.h      |   6 --
+ drivers/md/bcache/writeback.c |  94 ++++++++++++++++---
+ drivers/md/bcache/writeback.h |   5 +-
+ 11 files changed, 551 insertions(+), 81 deletions(-)
+
 -- 
-1.8.3.1
+2.16.1
