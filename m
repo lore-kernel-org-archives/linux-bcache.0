@@ -1,93 +1,130 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: [PATCH 6/8] bcache: set writeback_rate_update_seconds in range [1, 60] seconds
-Date: Wed,  7 Feb 2018 11:41:44 -0800
-Message-ID: <20180207194146.5095-7-mlyle@lyle.org>
+Subject: [PATCH 4/8] bcache: set error_limit correctly
+Date: Wed,  7 Feb 2018 11:41:42 -0800
+Message-ID: <20180207194146.5095-5-mlyle@lyle.org>
 References: <20180207194146.5095-1-mlyle@lyle.org>
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pf0-f195.google.com ([209.85.192.195]:44010 "EHLO
-        mail-pf0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1754320AbeBGTmF (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 7 Feb 2018 14:42:05 -0500
-Received: by mail-pf0-f195.google.com with SMTP id b62so764268pfk.10
-        for <linux-bcache@vger.kernel.org>; Wed, 07 Feb 2018 11:42:04 -0800 (PST)
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20180207194146.5095-1-mlyle@lyle.org>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-Cc: axboe@fb.com, Coly Li <colyli@suse.de>
+Cc: axboe@fb.com, Coly Li <colyli@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>
+List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-dc->writeback_rate_update_seconds can be set via sysfs and its value can
-be set to [1, ULONG_MAX].  It does not make sense to set such a large
-value, 60 seconds is long enough value considering the default 5 seconds
-works well for long time.
+Struct cache uses io_errors for two purposes,
+- Error decay: when cache set error_decay is set, io_errors is used to
+  generate a small piece of delay when I/O error happens.
+- I/O errors counter: in order to generate big enough value for error
+  decay, I/O errors counter value is stored by left shifting 20 bits (a.k.a
+  IO_ERROR_SHIFT).
 
-Because dc->writeback_rate_update is a special delayed work, it re-arms
-itself inside the delayed work routine update_writeback_rate(). When
-stopping it by cancel_delayed_work_sync(), there should be a timeout to
-wait and make sure the re-armed delayed work is stopped too. A small max
-value of dc->writeback_rate_update_seconds is also helpful to decide a
-reasonable small timeout.
+In function bch_count_io_errors(), if I/O errors counter reaches cache set
+error limit, bch_cache_set_error() will be called to retire the whold cache
+set. But current code is problematic when checking the error limit, see the
+following code piece from bch_count_io_errors(),
 
-This patch limits sysfs interface to set dc->writeback_rate_update_seconds
-in range of [1, 60] seconds, and replaces the hand-coded number by macros.
+ 90     if (error) {
+ 91             char buf[BDEVNAME_SIZE];
+ 92             unsigned errors = atomic_add_return(1 << IO_ERROR_SHIFT,
+ 93                                                 &ca->io_errors);
+ 94             errors >>= IO_ERROR_SHIFT;
+ 95
+ 96             if (errors < ca->set->error_limit)
+ 97                     pr_err("%s: IO error on %s, recovering",
+ 98                            bdevname(ca->bdev, buf), m);
+ 99             else
+100                     bch_cache_set_error(ca->set,
+101                                         "%s: too many IO errors %s",
+102                                         bdevname(ca->bdev, buf), m);
+103     }
+
+At line 94, errors is right shifting IO_ERROR_SHIFT bits, now it is real
+errors counter to compare at line 96. But ca->set->error_limit is initia-
+lized with an amplified value in bch_cache_set_alloc(),
+1545         c->error_limit  = 8 << IO_ERROR_SHIFT;
+
+It means by default, in bch_count_io_errors(), before 8<<20 errors happened
+bch_cache_set_error() won't be called to retire the problematic cache
+device. If the average request size is 64KB, it means bcache won't handle
+failed device until 512GB data is requested. This is too large to be an I/O
+threashold. So I believe the correct error limit should be much less.
+
+This patch sets default cache set error limit to 8, then in
+bch_count_io_errors() when errors counter reaches 8 (if it is default
+value), function bch_cache_set_error() will be called to retire the whole
+cache set. This patch also removes bits shifting when store or show
+io_error_limit value via sysfs interface.
+
+Nowadays most of SSDs handle internal flash failure automatically by LBA
+address re-indirect mapping. If an I/O error can be observed by upper layer
+code, it will be a notable error because that SSD can not re-indirect
+map the problematic LBA address to an available flash block. This situation
+indicates the whole SSD will be failed very soon. Therefore setting 8 as
+the default io error limit value makes sense, it is enough for most of
+cache devices.
 
 Changelog:
-v2: fix a rebase typo in v4, which is pointed out by Michael Lyle.
-v1: initial version.
+v2: add reviewed-by from Hannes.
+v1: initial version for review.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.com>
+Reviewed-by: Tang Junhui <tang.junhui@zte.com.cn>
 Reviewed-by: Michael Lyle <mlyle@lyle.org>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/sysfs.c     | 4 +++-
- drivers/md/bcache/writeback.c | 2 +-
- drivers/md/bcache/writeback.h | 3 +++
- 3 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/md/bcache/bcache.h | 1 +
+ drivers/md/bcache/super.c  | 2 +-
+ drivers/md/bcache/sysfs.c  | 4 ++--
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index a857eb3c10de..b8c2e1bef1f1 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -666,6 +666,7 @@ struct cache_set {
+ 		ON_ERROR_UNREGISTER,
+ 		ON_ERROR_PANIC,
+ 	}			on_error;
++#define DEFAULT_IO_ERROR_LIMIT 8
+ 	unsigned		error_limit;
+ 	unsigned		error_decay;
+ 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 133b81225ea9..e29150ec17e7 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1553,7 +1553,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 
+ 	c->congested_read_threshold_us	= 2000;
+ 	c->congested_write_threshold_us	= 20000;
+-	c->error_limit	= 8 << IO_ERROR_SHIFT;
++	c->error_limit	= DEFAULT_IO_ERROR_LIMIT;
+ 
+ 	return c;
+ err:
 diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index c524305cc9a7..4a6a697e1680 100644
+index 46e7a6b3e7c7..c524305cc9a7 100644
 --- a/drivers/md/bcache/sysfs.c
 +++ b/drivers/md/bcache/sysfs.c
-@@ -218,7 +218,9 @@ STORE(__cached_dev)
- 	sysfs_strtoul_clamp(writeback_rate,
- 			    dc->writeback_rate.rate, 1, INT_MAX);
+@@ -568,7 +568,7 @@ SHOW(__bch_cache_set)
  
--	d_strtoul_nonzero(writeback_rate_update_seconds);
-+	sysfs_strtoul_clamp(writeback_rate_update_seconds,
-+			    dc->writeback_rate_update_seconds,
-+			    1, WRITEBACK_RATE_UPDATE_SECS_MAX);
- 	d_strtoul(writeback_rate_i_term_inverse);
- 	d_strtoul_nonzero(writeback_rate_p_term_inverse);
+ 	/* See count_io_errors for why 88 */
+ 	sysfs_print(io_error_halflife,	c->error_decay * 88);
+-	sysfs_print(io_error_limit,	c->error_limit >> IO_ERROR_SHIFT);
++	sysfs_print(io_error_limit,	c->error_limit);
  
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 58218f7e77c3..f1d2fc15abcc 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -655,7 +655,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 	dc->writeback_rate.rate		= 1024;
- 	dc->writeback_rate_minimum	= 8;
+ 	sysfs_hprint(congested,
+ 		     ((uint64_t) bch_get_congested(c)) << 9);
+@@ -668,7 +668,7 @@ STORE(__bch_cache_set)
+ 	}
  
--	dc->writeback_rate_update_seconds = 5;
-+	dc->writeback_rate_update_seconds = WRITEBACK_RATE_UPDATE_SECS_DEFAULT;
- 	dc->writeback_rate_p_term_inverse = 40;
- 	dc->writeback_rate_i_term_inverse = 10000;
+ 	if (attr == &sysfs_io_error_limit)
+-		c->error_limit = strtoul_or_return(buf) << IO_ERROR_SHIFT;
++		c->error_limit = strtoul_or_return(buf);
  
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 66f1c527fa24..587b25599856 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -8,6 +8,9 @@
- #define MAX_WRITEBACKS_IN_PASS  5
- #define MAX_WRITESIZE_IN_PASS   5000	/* *512b */
- 
-+#define WRITEBACK_RATE_UPDATE_SECS_MAX		60
-+#define WRITEBACK_RATE_UPDATE_SECS_DEFAULT	5
-+
- /*
-  * 14 (16384ths) is chosen here as something that each backing device
-  * should be a reasonable fraction of the share, and not to blow up
+ 	/* See count_io_errors() for why 88 */
+ 	if (attr == &sysfs_io_error_halflife)
 -- 
 2.14.1
