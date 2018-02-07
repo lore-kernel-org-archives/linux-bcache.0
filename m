@@ -1,136 +1,130 @@
 From: Michael Lyle <mlyle@lyle.org>
-Subject: Re: [PATCH v5 07/10] bcache: fix inaccurate io state for detached
- bcache devices
-Date: Wed, 7 Feb 2018 09:39:05 -0800
-Message-ID: <e55f7656-0f19-a997-1777-f6cd5abda3b5@lyle.org>
-References: <20180206042100.65021-1-colyli@suse.de>
- <20180206042100.65021-8-colyli@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20180206042100.65021-8-colyli@suse.de>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Tang Junhui <tang.junhui@zte.com.cn>
+Subject: [PATCH 1/8] bcache: add journal statistic
+Date: Wed,  7 Feb 2018 11:41:39 -0800
+Message-ID: <20180207194146.5095-2-mlyle@lyle.org>
+References: <20180207194146.5095-1-mlyle@lyle.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-pg0-f65.google.com ([74.125.83.65]:33770 "EHLO
+        mail-pg0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1754049AbeBGTl6 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 7 Feb 2018 14:41:58 -0500
+Received: by mail-pg0-f65.google.com with SMTP id u1so702799pgr.0
+        for <linux-bcache@vger.kernel.org>; Wed, 07 Feb 2018 11:41:58 -0800 (PST)
+In-Reply-To: <20180207194146.5095-1-mlyle@lyle.org>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Cc: axboe@fb.com, Tang Junhui <tang.junhui@zte.com.cn>
 
-detatched should be detached, otherwise lgtm.
+From: Tang Junhui <tang.junhui@zte.com.cn>
 
+Sometimes, Journal takes up a lot of CPU, we need statistics
+to know what's the journal is doing. So this patch provide
+some journal statistics:
+1) reclaim: how many times the journal try to reclaim resource,
+   usually the journal bucket or/and the pin are exhausted.
+2) flush_write: how many times the journal try to flush btree node
+   to cache device, usually the journal bucket are exhausted.
+3) retry_flush_write: how many times the journal retry to flush
+   the next btree node, usually the previous tree node have been
+   flushed by other thread.
+we show these statistic by sysfs interface. Through these statistics
+We can totally see the status of journal module when the CPU is too
+high.
+
+Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
 Reviewed-by: Michael Lyle <mlyle@lyle.org>
+---
+ drivers/md/bcache/bcache.h  |  4 ++++
+ drivers/md/bcache/journal.c |  5 +++++
+ drivers/md/bcache/sysfs.c   | 15 +++++++++++++++
+ 3 files changed, 24 insertions(+)
 
-On 02/05/2018 08:20 PM, Coly Li wrote:
-> From: Tang Junhui <tang.junhui@zte.com.cn>
-> 
-> When we run IO in a detached device,  and run iostat to shows IO status,
-> normally it will show like bellow (Omitted some fields):
-> Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
-> sdd        ... 15.89     0.53    1.82    0.20    2.23   1.81  52.30
-> bcache0    ... 15.89   115.42    0.00    0.00    0.00   2.40  69.60
-> but after IO stopped, there are still very big avgqu-sz and %util
-> values as bellow:
-> Device: ... avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
-> bcache0   ...      0   5326.32    0.00    0.00    0.00   0.00 100.10
-> 
-> The reason for this issue is that, only generic_start_io_acct() called
-> and no generic_end_io_acct() called for detached device in
-> cached_dev_make_request(). See the code:
-> //start generic_start_io_acct()
-> generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
-> if (cached_dev_get(dc)) {
-> 	//will callback generic_end_io_acct()
-> }
-> else {
-> 	//will not call generic_end_io_acct()
-> }
-> 
-> This patch calls generic_end_io_acct() in the end of IO for detached
-> devices, so we can show IO state correctly.
-> 
-> (Modified to use GFP_NOIO in kzalloc() by Coly Li)
-> 
-> Signed-off-by: Tang Junhui <tang.junhui@zte.com.cn>
-> Reviewed-by: Coly Li <colyli@suse.de>
-> Reviewed-by: Hannes Reinecke <hare@suse.com>
-> ---
->  drivers/md/bcache/request.c | 58 +++++++++++++++++++++++++++++++++++++++------
->  1 file changed, 51 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index 02296bda6384..e09c5ae745be 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -986,6 +986,55 @@ static void cached_dev_nodata(struct closure *cl)
->  	continue_at(cl, cached_dev_bio_complete, NULL);
->  }
->  
-> +struct detached_dev_io_private {
-> +	struct bcache_device	*d;
-> +	unsigned long		start_time;
-> +	bio_end_io_t		*bi_end_io;
-> +	void			*bi_private;
-> +};
-> +
-> +static void detatched_dev_end_io(struct bio *bio)
-> +{
-> +	struct detached_dev_io_private *ddip;
-> +
-> +	ddip = bio->bi_private;
-> +	bio->bi_end_io = ddip->bi_end_io;
-> +	bio->bi_private = ddip->bi_private;
-> +
-> +	generic_end_io_acct(ddip->d->disk->queue,
-> +			    bio_data_dir(bio),
-> +			    &ddip->d->disk->part0, ddip->start_time);
-> +
-> +	kfree(ddip);
-> +
-> +	bio->bi_end_io(bio);
-> +}
-> +
-> +static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
-> +{
-> +	struct detached_dev_io_private *ddip;
-> +	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
-> +
-> +	/*
-> +	 * no need to call closure_get(&dc->disk.cl),
-> +	 * because upper layer had already opened bcache device,
-> +	 * which would call closure_get(&dc->disk.cl)
-> +	 */
-> +	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
-> +	ddip->d = d;
-> +	ddip->start_time = jiffies;
-> +	ddip->bi_end_io = bio->bi_end_io;
-> +	ddip->bi_private = bio->bi_private;
-> +	bio->bi_end_io = detatched_dev_end_io;
-> +	bio->bi_private = ddip;
-> +
-> +	if ((bio_op(bio) == REQ_OP_DISCARD) &&
-> +	    !blk_queue_discard(bdev_get_queue(dc->bdev)))
-> +		bio->bi_end_io(bio);
-> +	else
-> +		generic_make_request(bio);
-> +}
-> +
->  /* Cached devices - read & write stuff */
->  
->  static blk_qc_t cached_dev_make_request(struct request_queue *q,
-> @@ -1028,13 +1077,8 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
->  			else
->  				cached_dev_read(dc, s);
->  		}
-> -	} else {
-> -		if ((bio_op(bio) == REQ_OP_DISCARD) &&
-> -		    !blk_queue_discard(bdev_get_queue(dc->bdev)))
-> -			bio_endio(bio);
-> -		else
-> -			generic_make_request(bio);
-> -	}
-> +	} else
-> +		detached_dev_do_request(d, bio);
->  
->  	return BLK_QC_T_NONE;
->  }
-> 
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 5e2d4e80198e..b98d7705acb6 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -658,6 +658,10 @@ struct cache_set {
+ 	atomic_long_t		writeback_keys_done;
+ 	atomic_long_t		writeback_keys_failed;
+ 
++	atomic_long_t		reclaim;
++	atomic_long_t		flush_write;
++	atomic_long_t		retry_flush_write;
++
+ 	enum			{
+ 		ON_ERROR_UNREGISTER,
+ 		ON_ERROR_PANIC,
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index a87165c1d8e5..f5296007a9d5 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -377,6 +377,8 @@ static void btree_flush_write(struct cache_set *c)
+ 	 */
+ 	struct btree *b, *best;
+ 	unsigned i;
++
++	atomic_long_inc(&c->flush_write);
+ retry:
+ 	best = NULL;
+ 
+@@ -397,6 +399,7 @@ static void btree_flush_write(struct cache_set *c)
+ 		if (!btree_current_write(b)->journal) {
+ 			mutex_unlock(&b->write_lock);
+ 			/* We raced */
++			atomic_long_inc(&c->retry_flush_write);
+ 			goto retry;
+ 		}
+ 
+@@ -476,6 +479,8 @@ static void journal_reclaim(struct cache_set *c)
+ 	unsigned iter, n = 0;
+ 	atomic_t p;
+ 
++	atomic_long_inc(&c->reclaim);
++
+ 	while (!atomic_read(&fifo_front(&c->journal.pin)))
+ 		fifo_pop(&c->journal.pin, p);
+ 
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b4184092c727..46e7a6b3e7c7 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -65,6 +65,9 @@ read_attribute(bset_tree_stats);
+ 
+ read_attribute(state);
+ read_attribute(cache_read_races);
++read_attribute(reclaim);
++read_attribute(flush_write);
++read_attribute(retry_flush_write);
+ read_attribute(writeback_keys_done);
+ read_attribute(writeback_keys_failed);
+ read_attribute(io_errors);
+@@ -545,6 +548,15 @@ SHOW(__bch_cache_set)
+ 	sysfs_print(cache_read_races,
+ 		    atomic_long_read(&c->cache_read_races));
+ 
++	sysfs_print(reclaim,
++		    atomic_long_read(&c->reclaim));
++
++	sysfs_print(flush_write,
++		    atomic_long_read(&c->flush_write));
++
++	sysfs_print(retry_flush_write,
++		    atomic_long_read(&c->retry_flush_write));
++
+ 	sysfs_print(writeback_keys_done,
+ 		    atomic_long_read(&c->writeback_keys_done));
+ 	sysfs_print(writeback_keys_failed,
+@@ -731,6 +743,9 @@ static struct attribute *bch_cache_set_internal_files[] = {
+ 
+ 	&sysfs_bset_tree_stats,
+ 	&sysfs_cache_read_races,
++	&sysfs_reclaim,
++	&sysfs_flush_write,
++	&sysfs_retry_flush_write,
+ 	&sysfs_writeback_keys_done,
+ 	&sysfs_writeback_keys_failed,
+ 
+-- 
+2.14.1
