@@ -1,260 +1,161 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v6 7/9] bcache: add backing_request_endio() for bi_end_io of attached backing device I/O
-Date: Thu,  8 Feb 2018 23:45:01 +0800
-Message-ID: <20180208154503.92463-8-colyli@suse.de>
+Subject: [PATCH v6 9/9] bcache: stop bcache device when backing device is offline
+Date: Thu,  8 Feb 2018 23:45:03 +0800
+Message-ID: <20180208154503.92463-10-colyli@suse.de>
 References: <20180208154503.92463-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:47818 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751094AbeBHPqc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 8 Feb 2018 10:46:32 -0500
 In-Reply-To: <20180208154503.92463-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Michael Lyle <mlyle@lyle.org>, Junhui Tang <tang.junhui@zte.com.cn>
 
-In order to catch I/O error of backing device, a separate bi_end_io
-call back is required. Then a per backing device counter can record I/O
-errors number and retire the backing device if the counter reaches a
-per backing device I/O error limit.
+Currently bcache does not handle backing device failure, if backing
+device is offline and disconnected from system, its bcache device can still
+be accessible. If the bcache device is in writeback mode, I/O requests even
+can success if the requests hit on cache device. That is to say, when and
+how bcache handles offline backing device is undefined.
 
-This patch adds backing_request_endio() to bcache backing device I/O code
-path, this is a preparation for further complicated backing device failure
-handling. So far there is no real code logic change, I make this change a
-separate patch to make sure it is stable and reliable for further work.
+This patch tries to handle backing device offline in a rather simple way,
+- Add cached_dev->status_update_thread kernel thread to update backing
+  device status in every 1 second.
+- Add cached_dev->offline_seconds to record how many seconds the backing
+  device is observed to be offline. If the backing device is offline for
+  BACKING_DEV_OFFLINE_TIMEOUT (30) seconds, set dc->io_disable to 1 and
+  call bcache_device_stop() to stop the bache device which linked to the
+  offline backing device.
+
+Now if a backing device is offline for BACKING_DEV_OFFLINE_TIMEOUT seconds,
+its bcache device will be removed, then user space application writing on
+it will get error immediately, and handler the device failure in time.
+
+This patch is quite simple, does not handle more complicated situations.
+Once the bcache device is stopped, users need to recovery the backing
+device, register and attach it manually.
 
 Changelog:
-v2: Fix code comments typo, remove a redundant bch_writeback_add() line
-    added in v4 patch set.
-v1: indeed this is new added in this patch set.
+v2: remove "bcache: " prefix when calling pr_warn().
+v1: initial version.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.com>
-Cc: Junhui Tang <tang.junhui@zte.com.cn>
 Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
 ---
- drivers/md/bcache/request.c   | 93 +++++++++++++++++++++++++++++++++++--------
- drivers/md/bcache/super.c     |  1 +
- drivers/md/bcache/writeback.c |  1 +
- 3 files changed, 79 insertions(+), 16 deletions(-)
+ drivers/md/bcache/bcache.h |  2 ++
+ drivers/md/bcache/super.c  | 55 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 57 insertions(+)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index e09c5ae745be..9c6dda3b0068 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -139,6 +139,7 @@ static void bch_data_invalidate(struct closure *cl)
- 	}
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index dbc4fb48c754..e465a661f32e 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -344,6 +344,7 @@ struct cached_dev {
  
- 	op->insert_data_done = true;
-+	/* get in bch_data_insert() */
- 	bio_put(bio);
- out:
- 	continue_at(cl, bch_data_insert_keys, op->wq);
-@@ -630,6 +631,38 @@ static void request_endio(struct bio *bio)
- 	closure_put(cl);
- }
+ 	struct keybuf		writeback_keys;
  
-+static void backing_request_endio(struct bio *bio)
-+{
-+	struct closure *cl = bio->bi_private;
-+
-+	if (bio->bi_status) {
-+		struct search *s = container_of(cl, struct search, cl);
-+		/*
-+		 * If a bio has REQ_PREFLUSH for writeback mode, it is
-+		 * speically assembled in cached_dev_write() for a non-zero
-+		 * write request which has REQ_PREFLUSH. we don't set
-+		 * s->iop.status by this failure, the status will be decided
-+		 * by result of bch_data_insert() operation.
-+		 */
-+		if (unlikely(s->iop.writeback &&
-+			     bio->bi_opf & REQ_PREFLUSH)) {
-+			char buf[BDEVNAME_SIZE];
-+
-+			bio_devname(bio, buf);
-+			pr_err("Can't flush %s: returned bi_status %i",
-+				buf, bio->bi_status);
-+		} else {
-+			/* set to orig_bio->bi_status in bio_complete() */
-+			s->iop.status = bio->bi_status;
-+		}
-+		s->recoverable = false;
-+		/* should count I/O error for backing device here */
-+	}
-+
-+	bio_put(bio);
-+	closure_put(cl);
-+}
-+
- static void bio_complete(struct search *s)
- {
- 	if (s->orig_bio) {
-@@ -644,13 +677,21 @@ static void bio_complete(struct search *s)
- 	}
- }
++	struct task_struct	*status_update_thread;
+ 	/*
+ 	 * Order the write-half of writeback operations strongly in dispatch
+ 	 * order.  (Maintain LBA order; don't allow reads completing out of
+@@ -391,6 +392,7 @@ struct cached_dev {
+ #define DEFAULT_CACHED_DEV_ERROR_LIMIT	64
+ 	atomic_t		io_errors;
+ 	unsigned		error_limit;
++	unsigned		offline_seconds;
+ };
  
--static void do_bio_hook(struct search *s, struct bio *orig_bio)
-+static void do_bio_hook(struct search *s,
-+			struct bio *orig_bio,
-+			bio_end_io_t *end_io_fn)
- {
- 	struct bio *bio = &s->bio.bio;
- 
- 	bio_init(bio, NULL, 0);
- 	__bio_clone_fast(bio, orig_bio);
--	bio->bi_end_io		= request_endio;
-+	/*
-+	 * bi_end_io can be set separately somewhere else, e.g. the
-+	 * variants in,
-+	 * - cache_bio->bi_end_io from cached_dev_cache_miss()
-+	 * - n->bi_end_io from cache_lookup_fn()
-+	 */
-+	bio->bi_end_io		= end_io_fn;
- 	bio->bi_private		= &s->cl;
- 
- 	bio_cnt_set(bio, 3);
-@@ -676,7 +717,7 @@ static inline struct search *search_alloc(struct bio *bio,
- 	s = mempool_alloc(d->c->search, GFP_NOIO);
- 
- 	closure_init(&s->cl, NULL);
--	do_bio_hook(s, bio);
-+	do_bio_hook(s, bio, request_endio);
- 
- 	s->orig_bio		= bio;
- 	s->cache_miss		= NULL;
-@@ -743,10 +784,11 @@ static void cached_dev_read_error(struct closure *cl)
- 		trace_bcache_read_retry(s->orig_bio);
- 
- 		s->iop.status = 0;
--		do_bio_hook(s, s->orig_bio);
-+		do_bio_hook(s, s->orig_bio, backing_request_endio);
- 
- 		/* XXX: invalidate cache */
- 
-+		/* I/O request sent to backing device */
- 		closure_bio_submit(s->iop.c, bio, cl);
- 	}
- 
-@@ -859,7 +901,7 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
- 	bio_copy_dev(cache_bio, miss);
- 	cache_bio->bi_iter.bi_size	= s->insert_bio_sectors << 9;
- 
--	cache_bio->bi_end_io	= request_endio;
-+	cache_bio->bi_end_io	= backing_request_endio;
- 	cache_bio->bi_private	= &s->cl;
- 
- 	bch_bio_map(cache_bio, NULL);
-@@ -872,14 +914,16 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
- 	s->cache_miss	= miss;
- 	s->iop.bio	= cache_bio;
- 	bio_get(cache_bio);
-+	/* I/O request sent to backing device */
- 	closure_bio_submit(s->iop.c, cache_bio, &s->cl);
- 
- 	return ret;
- out_put:
- 	bio_put(cache_bio);
- out_submit:
--	miss->bi_end_io		= request_endio;
-+	miss->bi_end_io		= backing_request_endio;
- 	miss->bi_private	= &s->cl;
-+	/* I/O request sent to backing device */
- 	closure_bio_submit(s->iop.c, miss, &s->cl);
- 	return ret;
- }
-@@ -943,31 +987,46 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 		s->iop.bio = s->orig_bio;
- 		bio_get(s->iop.bio);
- 
--		if ((bio_op(bio) != REQ_OP_DISCARD) ||
--		    blk_queue_discard(bdev_get_queue(dc->bdev)))
--			closure_bio_submit(s->iop.c, bio, cl);
-+		if (bio_op(bio) == REQ_OP_DISCARD &&
-+		    !blk_queue_discard(bdev_get_queue(dc->bdev)))
-+			goto insert_data;
-+
-+		/* I/O request sent to backing device */
-+		bio->bi_end_io = backing_request_endio;
-+		closure_bio_submit(s->iop.c, bio, cl);
-+
- 	} else if (s->iop.writeback) {
- 		bch_writeback_add(dc);
- 		s->iop.bio = bio;
- 
- 		if (bio->bi_opf & REQ_PREFLUSH) {
--			/* Also need to send a flush to the backing device */
--			struct bio *flush = bio_alloc_bioset(GFP_NOIO, 0,
--							     dc->disk.bio_split);
--
-+			/*
-+			 * Also need to send a flush to the backing
-+			 * device.
-+			 */
-+			struct bio *flush;
-+
-+			flush = bio_alloc_bioset(GFP_NOIO, 0,
-+						 dc->disk.bio_split);
-+			if (!flush) {
-+				s->iop.status = BLK_STS_RESOURCE;
-+				goto insert_data;
-+			}
- 			bio_copy_dev(flush, bio);
--			flush->bi_end_io = request_endio;
-+			flush->bi_end_io = backing_request_endio;
- 			flush->bi_private = cl;
- 			flush->bi_opf = REQ_OP_WRITE | REQ_PREFLUSH;
--
-+			/* I/O request sent to backing device */
- 			closure_bio_submit(s->iop.c, flush, cl);
- 		}
- 	} else {
- 		s->iop.bio = bio_clone_fast(bio, GFP_NOIO, dc->disk.bio_split);
--
-+		/* I/O request sent to backing device */
-+		bio->bi_end_io = backing_request_endio;
- 		closure_bio_submit(s->iop.c, bio, cl);
- 	}
- 
-+insert_data:
- 	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
- 	continue_at(cl, cached_dev_write_complete, NULL);
- }
-@@ -981,6 +1040,7 @@ static void cached_dev_nodata(struct closure *cl)
- 		bch_journal_meta(s->iop.c, cl);
- 
- 	/* If it's a flush, we send the flush to the backing device too */
-+	bio->bi_end_io = backing_request_endio;
- 	closure_bio_submit(s->iop.c, bio, cl);
- 
- 	continue_at(cl, cached_dev_bio_complete, NULL);
-@@ -1078,6 +1138,7 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
- 				cached_dev_read(dc, s);
- 		}
- 	} else
-+		/* I/O request sent to backing device */
- 		detached_dev_do_request(d, bio);
- 
- 	return BLK_QC_T_NONE;
+ enum alloc_reserve {
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 52d5012948c9..93b39e7ae63f 100644
+index 1c5b7074bd6c..ea25cef924ff 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -273,6 +273,7 @@ void bch_write_bdev_super(struct cached_dev *dc, struct closure *parent)
- 	bio->bi_private = dc;
+@@ -654,6 +654,11 @@ static int ioctl_dev(struct block_device *b, fmode_t mode,
+ 		     unsigned int cmd, unsigned long arg)
+ {
+ 	struct bcache_device *d = b->bd_disk->private_data;
++	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
++
++	if (dc->io_disable)
++		return -EIO;
++
+ 	return d->ioctl(d, mode, cmd, arg);
+ }
  
- 	closure_get(cl);
-+	/* I/O request sent to backing device */
- 	__write_super(&dc->sb, bio);
+@@ -864,6 +869,45 @@ static void calc_cached_dev_sectors(struct cache_set *c)
+ 	c->cached_dev_sectors = sectors;
+ }
  
- 	closure_return_with_destructor(cl, bch_write_bdev_super_unlock);
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 3d7d8452e0de..4ebe0119ea7e 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -289,6 +289,7 @@ static void write_dirty(struct closure *cl)
- 		bio_set_dev(&io->bio, io->dc->bdev);
- 		io->bio.bi_end_io	= dirty_endio;
++#define BACKING_DEV_OFFLINE_TIMEOUT 5
++static int cached_dev_status_update(void *arg)
++{
++	struct cached_dev *dc = arg;
++	struct request_queue *q;
++	char buf[BDEVNAME_SIZE];
++
++	/*
++	 * If this delayed worker is stopping outside, directly quit here.
++	 * dc->io_disable might be set via sysfs interface, so check it
++	 * here too.
++	 */
++	while (!kthread_should_stop() && !dc->io_disable) {
++		q = bdev_get_queue(dc->bdev);
++		if (blk_queue_dying(q))
++			dc->offline_seconds++;
++		else
++			dc->offline_seconds = 0;
++
++		if (dc->offline_seconds >= BACKING_DEV_OFFLINE_TIMEOUT) {
++			pr_err("%s: device offline for %d seconds",
++				bdevname(dc->bdev, buf),
++				BACKING_DEV_OFFLINE_TIMEOUT);
++			pr_err("%s: disable I/O request due to backing "
++				"device offline", dc->disk.name);
++			dc->io_disable = true;
++			/* let others know earlier that io_disable is true */
++			smp_mb();
++			bcache_device_stop(&dc->disk);
++			break;
++		}
++
++		schedule_timeout_interruptible(HZ);
++	}
++
++	dc->status_update_thread = NULL;
++	return 0;
++}
++
+ void bch_cached_dev_run(struct cached_dev *dc)
+ {
+ 	struct bcache_device *d = &dc->disk;
+@@ -906,6 +950,15 @@ void bch_cached_dev_run(struct cached_dev *dc)
+ 	if (sysfs_create_link(&d->kobj, &disk_to_dev(d->disk)->kobj, "dev") ||
+ 	    sysfs_create_link(&disk_to_dev(d->disk)->kobj, &d->kobj, "bcache"))
+ 		pr_debug("error creating sysfs link");
++
++	dc->status_update_thread = kthread_run(cached_dev_status_update,
++					       dc,
++					      "bcache_status_update");
++	if (IS_ERR(dc->status_update_thread)) {
++		pr_warn("failed to create bcache_status_update kthread, "
++			"continue to run without monitoring backing "
++			"device status");
++	}
+ }
  
-+		/* I/O request sent to backing device */
- 		closure_bio_submit(io->dc->disk.c, &io->bio, cl);
- 	}
+ /*
+@@ -1128,6 +1181,8 @@ static void cached_dev_free(struct closure *cl)
+ 		kthread_stop(dc->writeback_thread);
+ 	if (dc->writeback_write_wq)
+ 		destroy_workqueue(dc->writeback_write_wq);
++	if (!IS_ERR_OR_NULL(dc->status_update_thread))
++		kthread_stop(dc->status_update_thread);
  
+ 	if (atomic_read(&dc->running))
+ 		bd_unlink_disk_holder(dc->bdev, dc->disk.disk);
 -- 
 2.16.1
