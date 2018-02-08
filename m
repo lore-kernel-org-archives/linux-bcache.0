@@ -1,135 +1,500 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH v6 2/9] bcache: quit dc->writeback_thread when BCACHE_DEV_DETACHING is set
-Date: Thu,  8 Feb 2018 23:44:56 +0800
-Message-ID: <20180208154503.92463-3-colyli@suse.de>
+Subject: [PATCH v6 4/9] bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags
+Date: Thu,  8 Feb 2018 23:44:58 +0800
+Message-ID: <20180208154503.92463-5-colyli@suse.de>
 References: <20180208154503.92463-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:47680 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1751079AbeBHPpw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 8 Feb 2018 10:45:52 -0500
 In-Reply-To: <20180208154503.92463-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.com>, Huijun Tang <tang.junhui@zte.com.cn>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Junhui Tang <tang.junhui@zte.com.cn>, Michael Lyle <mlyle@lyle.org>, Pavel Vazharov <freakpv@gmail.com>
 
-In patch "bcache: fix cached_dev->count usage for bch_cache_set_error()",
-cached_dev_get() is called when creating dc->writeback_thread, and
-cached_dev_put() is called when exiting dc->writeback_thread. This
-modification works well unless people detach the bcache device manually by
-    'echo 1 > /sys/block/bcache<N>/bcache/detach'
-Because this sysfs interface only calls bch_cached_dev_detach() which wakes
-up dc->writeback_thread but does not stop it. The reason is, before patch
-"bcache: fix cached_dev->count usage for bch_cache_set_error()", inside
-bch_writeback_thread(), if cache is not dirty after writeback,
-cached_dev_put() will be called here. And in cached_dev_make_request() when
-a new write request makes cache from clean to dirty, cached_dev_get() will
-be called there. Since we don't operate dc->count in these locations,
-refcount d->count cannot be dropped after cache becomes clean, and
-cached_dev_detach_finish() won't be called to detach bcache device.
+When too many I/Os failed on cache device, bch_cache_set_error() is called
+in the error handling code path to retire whole problematic cache set. If
+new I/O requests continue to come and take refcount dc->count, the cache
+set won't be retired immediately, this is a problem.
 
-This patch fixes the issue by checking whether BCACHE_DEV_DETACHING is
-set inside bch_writeback_thread(). If this bit is set and cache is clean
-(no existing writeback_keys), break the while-loop, call cached_dev_put()
-and quit the writeback thread.
+Further more, there are several kernel thread and self-armed kernel work
+may still running after bch_cache_set_error() is called. It needs to wait
+quite a while for them to stop, or they won't stop at all. They also
+prevent the cache set from being retired.
 
-Please note if cache is still dirty, even BCACHE_DEV_DETACHING is set the
-writeback thread should continue to perform writeback, this is the original
-design of manually detach.
+The solution in this patch is, to add per cache set flag to disable I/O
+request on this cache and all attached backing devices. Then new coming I/O
+requests can be rejected in *_make_request() before taking refcount, kernel
+threads and self-armed kernel worker can stop very fast when flags bit
+CACHE_SET_IO_DISABLE is set.
 
-It is safe to do the following check without locking, let me explain why,
-+	if (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-+	    (!atomic_read(&dc->has_dirty) || !dc->writeback_running)) {
+Because bcache also do internal I/Os for writeback, garbage collection,
+bucket allocation, journaling, this kind of I/O should be disabled after
+bch_cache_set_error() is called. So closure_bio_submit() is modified to
+check whether CACHE_SET_IO_DISABLE is set on cache_set->flags. If set,
+closure_bio_submit() will set bio->bi_status to BLK_STS_IOERR and
+return, generic_make_request() won't be called.
 
-If the kenrel thread does not sleep and continue to run due to conditions
-are not updated in time on the running CPU core, it just consumes more CPU
-cycles and has no hurt. This should-sleep-but-run is safe here. We just
-focus on the should-run-but-sleep condition, which means the writeback
-thread goes to sleep in mistake while it should continue to run.
-1, First of all, no matter the writeback thread is hung or not, kthread_stop() from
-   cached_dev_detach_finish() will wake up it and terminate by making
-   kthread_should_stop() return true. And in normal run time, bit on index
-   BCACHE_DEV_DETACHING is always cleared, the condition
-	!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags)
-   is always true and can be ignored as constant value.
-2, If one of the following conditions is true, the writeback thread should
-   go to sleep,
-   "!atomic_read(&dc->has_dirty)" or "!dc->writeback_running)"
-   each of them independently controls the writeback thread should sleep or
-   not, let's analyse them one by one.
-2.1 condition "!atomic_read(&dc->has_dirty)"
-   If dc->has_dirty is set from 0 to 1 on another CPU core, bcache will
-   call bch_writeback_queue() immediately or call bch_writeback_add() which
-   indirectly calls bch_writeback_queue() too. In bch_writeback_queue(),
-   wake_up_process(dc->writeback_thread) is called. It sets writeback
-   thread's task state to TASK_RUNNING and following an implicit memory
-   barrier, then tries to wake up the writeback thread.
-   In writeback thread, its task state is set to TASK_INTERRUPTIBLE before
-   doing the condition check. If other CPU core sets the TASK_RUNNING state
-   after writeback thread setting TASK_INTERRUPTIBLE, the writeback thread
-   will be scheduled to run very soon because its state is not
-   TASK_INTERRUPTIBLE. If other CPU core sets the TASK_RUNNING state before
-   writeback thread setting TASK_INTERRUPTIBLE, the implict memory barrier
-   of wake_up_process() will make sure modification of dc->has_dirty on
-   other CPU core is updated and observed on the CPU core of writeback
-   thread. Therefore the condition check will correctly be false, and
-   continue writeback code without sleeping.
-2.2 condition "!dc->writeback_running)"
-   dc->writeback_running can be changed via sysfs file, every time it is
-   modified, a following bch_writeback_queue() is alwasy called. So the
-   change is always observed on the CPU core of writeback thread. If
-   dc->writeback_running is changed from 0 to 1 on other CPU core, this
-   condition check will observe the modification and allow writeback
-   thread to continue to run without sleeping.
-Now we can see, even without a locking protection, multiple conditions
-check is safe here, no deadlock or process hang up will happen.
+A sysfs interface is also added to set or clear CACHE_SET_IO_DISABLE bit
+from cache_set->flags, to disable or enable cache set I/O for debugging. It
+is helpful to trigger more corner case issues for failed cache device.
 
-I compose a separte patch because that patch "bcache: fix cached_dev->count
-usage for bch_cache_set_error()" already gets a "Reviewed-by:" from Hannes
-Reinecke. Also this fix is not trivial and good for a separate patch.
+Changelog
+v3, change CACHE_SET_IO_DISABLE from 4 to 3, since it is bit index.
+    remove "bcache: " prefix when printing out kernel message.
+v2, more changes by previous review,
+- Use CACHE_SET_IO_DISABLE of cache_set->flags, suggested by Junhui.
+- Check CACHE_SET_IO_DISABLE in bch_btree_gc() to stop a while-loop, this
+  is reported and inspired from origal patch of Pavel Vazharov.
+v1, initial version.
 
 Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Michael Lyle <mlyle@lyle.org>
-Cc: Hannes Reinecke <hare@suse.com>
-Cc: Huijun Tang <tang.junhui@zte.com.cn>
+Reviewed-by: Hannes Reinecke <hare@suse.com>
+Cc: Junhui Tang <tang.junhui@zte.com.cn>
+Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Pavel Vazharov <freakpv@gmail.com>
 ---
- drivers/md/bcache/writeback.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ drivers/md/bcache/alloc.c     |  3 ++-
+ drivers/md/bcache/bcache.h    | 18 ++++++++++++++++++
+ drivers/md/bcache/btree.c     | 10 +++++++---
+ drivers/md/bcache/io.c        |  2 +-
+ drivers/md/bcache/journal.c   |  4 ++--
+ drivers/md/bcache/request.c   | 26 +++++++++++++++++++-------
+ drivers/md/bcache/super.c     |  6 +++++-
+ drivers/md/bcache/sysfs.c     | 20 ++++++++++++++++++++
+ drivers/md/bcache/util.h      |  6 ------
+ drivers/md/bcache/writeback.c | 35 +++++++++++++++++++++++++++--------
+ 10 files changed, 101 insertions(+), 29 deletions(-)
 
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index 458e1d38577d..004cc3cc6123 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -287,7 +287,8 @@ do {									\
+ 			break;						\
+ 									\
+ 		mutex_unlock(&(ca)->set->bucket_lock);			\
+-		if (kthread_should_stop()) {				\
++		if (kthread_should_stop() ||				\
++		    test_bit(CACHE_SET_IO_DISABLE, &ca->set->flags)) {	\
+ 			set_current_state(TASK_RUNNING);		\
+ 			return 0;					\
+ 		}							\
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index b5ddb848cd31..56179fff1e59 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -475,10 +475,15 @@ struct gc_stat {
+  *
+  * CACHE_SET_RUNNING means all cache devices have been registered and journal
+  * replay is complete.
++ *
++ * CACHE_SET_IO_DISABLE is set when bcache is stopping the whold cache set, all
++ * external and internal I/O should be denied when this flag is set.
++ *
+  */
+ #define CACHE_SET_UNREGISTERING		0
+ #define	CACHE_SET_STOPPING		1
+ #define	CACHE_SET_RUNNING		2
++#define CACHE_SET_IO_DISABLE		3
+ 
+ struct cache_set {
+ 	struct closure		cl;
+@@ -868,6 +873,19 @@ static inline void wake_up_allocators(struct cache_set *c)
+ 		wake_up_process(ca->alloc_thread);
+ }
+ 
++static inline void closure_bio_submit(struct cache_set *c,
++				      struct bio *bio,
++				      struct closure *cl)
++{
++	closure_get(cl);
++	if (unlikely(test_bit(CACHE_SET_IO_DISABLE, &c->flags))) {
++		bio->bi_status = BLK_STS_IOERR;
++		bio_endio(bio);
++		return;
++	}
++	generic_make_request(bio);
++}
++
+ /* Forward declarations */
+ 
+ void bch_count_io_errors(struct cache *, blk_status_t, int, const char *);
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index fad9fe8817eb..8ca50f387a1d 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1744,6 +1744,7 @@ static void bch_btree_gc(struct cache_set *c)
+ 
+ 	btree_gc_start(c);
+ 
++	/* if CACHE_SET_IO_DISABLE set, gc thread should stop too */
+ 	do {
+ 		ret = btree_root(gc_root, c, &op, &writes, &stats);
+ 		closure_sync(&writes);
+@@ -1751,7 +1752,7 @@ static void bch_btree_gc(struct cache_set *c)
+ 
+ 		if (ret && ret != -EAGAIN)
+ 			pr_warn("gc failed!");
+-	} while (ret);
++	} while (ret && !test_bit(CACHE_SET_IO_DISABLE, &c->flags));
+ 
+ 	bch_btree_gc_finish(c);
+ 	wake_up_allocators(c);
+@@ -1789,9 +1790,12 @@ static int bch_gc_thread(void *arg)
+ 
+ 	while (1) {
+ 		wait_event_interruptible(c->gc_wait,
+-			   kthread_should_stop() || gc_should_run(c));
++			   kthread_should_stop() ||
++			   test_bit(CACHE_SET_IO_DISABLE, &c->flags) ||
++			   gc_should_run(c));
+ 
+-		if (kthread_should_stop())
++		if (kthread_should_stop() ||
++		    test_bit(CACHE_SET_IO_DISABLE, &c->flags))
+ 			break;
+ 
+ 		set_gc_sectors(c);
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index a783c5a41ff1..8013ecbcdbda 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -38,7 +38,7 @@ void __bch_submit_bbio(struct bio *bio, struct cache_set *c)
+ 	bio_set_dev(bio, PTR_CACHE(c, &b->key, 0)->bdev);
+ 
+ 	b->submit_time_us = local_clock_us();
+-	closure_bio_submit(bio, bio->bi_private);
++	closure_bio_submit(c, bio, bio->bi_private);
+ }
+ 
+ void bch_submit_bbio(struct bio *bio, struct cache_set *c,
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 1b736b860739..c94085f400a4 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -62,7 +62,7 @@ reread:		left = ca->sb.bucket_size - offset;
+ 		bio_set_op_attrs(bio, REQ_OP_READ, 0);
+ 		bch_bio_map(bio, data);
+ 
+-		closure_bio_submit(bio, &cl);
++		closure_bio_submit(ca->set, bio, &cl);
+ 		closure_sync(&cl);
+ 
+ 		/* This function could be simpler now since we no longer write
+@@ -674,7 +674,7 @@ static void journal_write_unlocked(struct closure *cl)
+ 	spin_unlock(&c->journal.lock);
+ 
+ 	while ((bio = bio_list_pop(&list)))
+-		closure_bio_submit(bio, cl);
++		closure_bio_submit(c, bio, cl);
+ 
+ 	continue_at(cl, journal_write_done, NULL);
+ }
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 1a46b41dac70..02296bda6384 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -747,7 +747,7 @@ static void cached_dev_read_error(struct closure *cl)
+ 
+ 		/* XXX: invalidate cache */
+ 
+-		closure_bio_submit(bio, cl);
++		closure_bio_submit(s->iop.c, bio, cl);
+ 	}
+ 
+ 	continue_at(cl, cached_dev_cache_miss_done, NULL);
+@@ -872,7 +872,7 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
+ 	s->cache_miss	= miss;
+ 	s->iop.bio	= cache_bio;
+ 	bio_get(cache_bio);
+-	closure_bio_submit(cache_bio, &s->cl);
++	closure_bio_submit(s->iop.c, cache_bio, &s->cl);
+ 
+ 	return ret;
+ out_put:
+@@ -880,7 +880,7 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
+ out_submit:
+ 	miss->bi_end_io		= request_endio;
+ 	miss->bi_private	= &s->cl;
+-	closure_bio_submit(miss, &s->cl);
++	closure_bio_submit(s->iop.c, miss, &s->cl);
+ 	return ret;
+ }
+ 
+@@ -945,7 +945,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+ 
+ 		if ((bio_op(bio) != REQ_OP_DISCARD) ||
+ 		    blk_queue_discard(bdev_get_queue(dc->bdev)))
+-			closure_bio_submit(bio, cl);
++			closure_bio_submit(s->iop.c, bio, cl);
+ 	} else if (s->iop.writeback) {
+ 		bch_writeback_add(dc);
+ 		s->iop.bio = bio;
+@@ -960,12 +960,12 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+ 			flush->bi_private = cl;
+ 			flush->bi_opf = REQ_OP_WRITE | REQ_PREFLUSH;
+ 
+-			closure_bio_submit(flush, cl);
++			closure_bio_submit(s->iop.c, flush, cl);
+ 		}
+ 	} else {
+ 		s->iop.bio = bio_clone_fast(bio, GFP_NOIO, dc->disk.bio_split);
+ 
+-		closure_bio_submit(bio, cl);
++		closure_bio_submit(s->iop.c, bio, cl);
+ 	}
+ 
+ 	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
+@@ -981,7 +981,7 @@ static void cached_dev_nodata(struct closure *cl)
+ 		bch_journal_meta(s->iop.c, cl);
+ 
+ 	/* If it's a flush, we send the flush to the backing device too */
+-	closure_bio_submit(bio, cl);
++	closure_bio_submit(s->iop.c, bio, cl);
+ 
+ 	continue_at(cl, cached_dev_bio_complete, NULL);
+ }
+@@ -996,6 +996,12 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
+ 	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
+ 	int rw = bio_data_dir(bio);
+ 
++	if (unlikely(d->c && test_bit(CACHE_SET_IO_DISABLE, &d->c->flags))) {
++		bio->bi_status = BLK_STS_IOERR;
++		bio_endio(bio);
++		return BLK_QC_T_NONE;
++	}
++
+ 	atomic_set(&dc->backing_idle, 0);
+ 	generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
+ 
+@@ -1112,6 +1118,12 @@ static blk_qc_t flash_dev_make_request(struct request_queue *q,
+ 	struct bcache_device *d = bio->bi_disk->private_data;
+ 	int rw = bio_data_dir(bio);
+ 
++	if (unlikely(d->c && test_bit(CACHE_SET_IO_DISABLE, &d->c->flags))) {
++		bio->bi_status = BLK_STS_IOERR;
++		bio_endio(bio);
++		return BLK_QC_T_NONE;
++	}
++
+ 	generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
+ 
+ 	s = search_alloc(bio, d);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 531cd967c05f..a1abeebc7643 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -521,7 +521,7 @@ static void prio_io(struct cache *ca, uint64_t bucket, int op,
+ 	bio_set_op_attrs(bio, op, REQ_SYNC|REQ_META|op_flags);
+ 	bch_bio_map(bio, ca->disk_buckets);
+ 
+-	closure_bio_submit(bio, &ca->prio);
++	closure_bio_submit(ca->set, bio, &ca->prio);
+ 	closure_sync(cl);
+ }
+ 
+@@ -1351,6 +1351,9 @@ bool bch_cache_set_error(struct cache_set *c, const char *fmt, ...)
+ 	    test_bit(CACHE_SET_STOPPING, &c->flags))
+ 		return false;
+ 
++	if (test_and_set_bit(CACHE_SET_IO_DISABLE, &c->flags))
++		pr_warn("CACHE_SET_IO_DISABLE already set");
++
+ 	/* XXX: we can be called from atomic context
+ 	acquire_console_sem();
+ 	*/
+@@ -1586,6 +1589,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 	c->congested_read_threshold_us	= 2000;
+ 	c->congested_write_threshold_us	= 20000;
+ 	c->error_limit	= DEFAULT_IO_ERROR_LIMIT;
++	WARN_ON(test_and_clear_bit(CACHE_SET_IO_DISABLE, &c->flags));
+ 
+ 	return c;
+ err:
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 55673508628f..e75279b7d180 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -95,6 +95,7 @@ read_attribute(partial_stripes_expensive);
+ 
+ rw_attribute(synchronous);
+ rw_attribute(journal_delay_ms);
++rw_attribute(io_disable);
+ rw_attribute(discard);
+ rw_attribute(running);
+ rw_attribute(label);
+@@ -591,6 +592,8 @@ SHOW(__bch_cache_set)
+ 	sysfs_printf(gc_always_rewrite,		"%i", c->gc_always_rewrite);
+ 	sysfs_printf(btree_shrinker_disabled,	"%i", c->shrinker_disabled);
+ 	sysfs_printf(copy_gc_enabled,		"%i", c->copy_gc_enabled);
++	sysfs_printf(io_disable,		"%i",
++		     test_bit(CACHE_SET_IO_DISABLE, &c->flags));
+ 
+ 	if (attr == &sysfs_bset_tree_stats)
+ 		return bch_bset_print_stats(c, buf);
+@@ -680,6 +683,22 @@ STORE(__bch_cache_set)
+ 	if (attr == &sysfs_io_error_halflife)
+ 		c->error_decay = strtoul_or_return(buf) / 88;
+ 
++	if (attr == &sysfs_io_disable) {
++		int v = strtoul_or_return(buf);
++
++		if (v) {
++			if (test_and_set_bit(CACHE_SET_IO_DISABLE,
++					     &c->flags))
++				pr_warn("CACHE_SET_IO_DISABLE"
++					" already set");
++		} else {
++			if (!test_and_clear_bit(CACHE_SET_IO_DISABLE,
++						&c->flags))
++				pr_warn("CACHE_SET_IO_DISABLE"
++					" already cleared");
++		}
++	}
++
+ 	sysfs_strtoul(journal_delay_ms,		c->journal_delay_ms);
+ 	sysfs_strtoul(verify,			c->verify);
+ 	sysfs_strtoul(key_merging_disabled,	c->key_merging_disabled);
+@@ -765,6 +784,7 @@ static struct attribute *bch_cache_set_internal_files[] = {
+ 	&sysfs_gc_always_rewrite,
+ 	&sysfs_btree_shrinker_disabled,
+ 	&sysfs_copy_gc_enabled,
++	&sysfs_io_disable,
+ 	NULL
+ };
+ KTYPE(bch_cache_set_internal);
+diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+index a6763db7f061..268024529edd 100644
+--- a/drivers/md/bcache/util.h
++++ b/drivers/md/bcache/util.h
+@@ -567,12 +567,6 @@ static inline sector_t bdev_sectors(struct block_device *bdev)
+ 	return bdev->bd_inode->i_size >> 9;
+ }
+ 
+-#define closure_bio_submit(bio, cl)					\
+-do {									\
+-	closure_get(cl);						\
+-	generic_make_request(bio);					\
+-} while (0)
+-
+ uint64_t bch_crc64_update(uint64_t, const void *, size_t);
+ uint64_t bch_crc64(const void *, size_t);
+ 
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index b280c134dd4d..4dbeaaa575bf 100644
+index 8f98ef1038d3..3d7d8452e0de 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -565,9 +565,15 @@ static int bch_writeback_thread(void *arg)
- 	while (!kthread_should_stop()) {
- 		down_write(&dc->writeback_lock);
- 		set_current_state(TASK_INTERRUPTIBLE);
--		if (!atomic_read(&dc->has_dirty) ||
--		    (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
--		     !dc->writeback_running)) {
-+		/*
-+		 * If the bache device is detaching, skip here and continue
-+		 * to perform writeback. Otherwise, if no dirty data on cache,
-+		 * or there is dirty data on cache but writeback is disabled,
-+		 * the writeback thread should sleep here and wait for others
-+		 * to wake up it.
-+		 */
-+		if (!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags) &&
-+		    (!atomic_read(&dc->has_dirty) || !dc->writeback_running)) {
- 			up_write(&dc->writeback_lock);
+@@ -114,6 +114,7 @@ static void update_writeback_rate(struct work_struct *work)
+ 	struct cached_dev *dc = container_of(to_delayed_work(work),
+ 					     struct cached_dev,
+ 					     writeback_rate_update);
++	struct cache_set *c = dc->disk.c;
  
- 			if (kthread_should_stop()) {
-@@ -587,6 +593,14 @@ static int bch_writeback_thread(void *arg)
- 			atomic_set(&dc->has_dirty, 0);
- 			SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
- 			bch_write_bdev_super(dc, NULL);
-+			/*
-+			 * If bcache device is detaching via sysfs interface,
-+			 * writeback thread should stop after there is no dirty
-+			 * data on cache. BCACHE_DEV_DETACHING flag is set in
-+			 * bch_cached_dev_detach().
-+			 */
-+			if (test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))
-+				break;
+ 	/*
+ 	 * should check BCACHE_DEV_RATE_DW_RUNNING before calling
+@@ -123,7 +124,12 @@ static void update_writeback_rate(struct work_struct *work)
+ 	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
+ 	smp_mb();
+ 
+-	if (!test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags)) {
++	/*
++	 * CACHE_SET_IO_DISABLE might be set via sysfs interface,
++	 * check it here too.
++	 */
++	if (!test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags) ||
++	    test_bit(CACHE_SET_IO_DISABLE, &c->flags)) {
+ 		clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
+ 		/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
+ 		smp_mb();
+@@ -138,7 +144,12 @@ static void update_writeback_rate(struct work_struct *work)
+ 
+ 	up_read(&dc->writeback_lock);
+ 
+-	if (test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags)) {
++	/*
++	 * CACHE_SET_IO_DISABLE might be set via sysfs interface,
++	 * check it here too.
++	 */
++	if (test_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags) &&
++	    !test_bit(CACHE_SET_IO_DISABLE, &c->flags)) {
+ 		schedule_delayed_work(&dc->writeback_rate_update,
+ 			      dc->writeback_rate_update_seconds * HZ);
+ 	}
+@@ -278,7 +289,7 @@ static void write_dirty(struct closure *cl)
+ 		bio_set_dev(&io->bio, io->dc->bdev);
+ 		io->bio.bi_end_io	= dirty_endio;
+ 
+-		closure_bio_submit(&io->bio, cl);
++		closure_bio_submit(io->dc->disk.c, &io->bio, cl);
+ 	}
+ 
+ 	atomic_set(&dc->writeback_sequence_next, next_sequence);
+@@ -304,7 +315,7 @@ static void read_dirty_submit(struct closure *cl)
+ {
+ 	struct dirty_io *io = container_of(cl, struct dirty_io, cl);
+ 
+-	closure_bio_submit(&io->bio, cl);
++	closure_bio_submit(io->dc->disk.c, &io->bio, cl);
+ 
+ 	continue_at(cl, write_dirty, io->dc->writeback_write_wq);
+ }
+@@ -330,7 +341,9 @@ static void read_dirty(struct cached_dev *dc)
+ 
+ 	next = bch_keybuf_next(&dc->writeback_keys);
+ 
+-	while (!kthread_should_stop() && next) {
++	while (!kthread_should_stop() &&
++	       !test_bit(CACHE_SET_IO_DISABLE, &dc->disk.c->flags) &&
++	       next) {
+ 		size = 0;
+ 		nk = 0;
+ 
+@@ -427,7 +440,9 @@ static void read_dirty(struct cached_dev *dc)
+ 			}
  		}
  
- 		up_write(&dc->writeback_lock);
+-		while (!kthread_should_stop() && delay) {
++		while (!kthread_should_stop() &&
++		       !test_bit(CACHE_SET_IO_DISABLE, &dc->disk.c->flags) &&
++		       delay) {
+ 			schedule_timeout_interruptible(delay);
+ 			delay = writeback_delay(dc, 0);
+ 		}
+@@ -583,11 +598,13 @@ static bool refill_dirty(struct cached_dev *dc)
+ static int bch_writeback_thread(void *arg)
+ {
+ 	struct cached_dev *dc = arg;
++	struct cache_set *c = dc->disk.c;
+ 	bool searched_full_index;
+ 
+ 	bch_ratelimit_reset(&dc->writeback_rate);
+ 
+-	while (!kthread_should_stop()) {
++	while (!kthread_should_stop() &&
++	       !test_bit(CACHE_SET_IO_DISABLE, &c->flags)) {
+ 		down_write(&dc->writeback_lock);
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		/*
+@@ -601,7 +618,8 @@ static int bch_writeback_thread(void *arg)
+ 		    (!atomic_read(&dc->has_dirty) || !dc->writeback_running)) {
+ 			up_write(&dc->writeback_lock);
+ 
+-			if (kthread_should_stop()) {
++			if (kthread_should_stop() ||
++			    test_bit(CACHE_SET_IO_DISABLE, &c->flags)) {
+ 				set_current_state(TASK_RUNNING);
+ 				break;
+ 			}
+@@ -637,6 +655,7 @@ static int bch_writeback_thread(void *arg)
+ 
+ 			while (delay &&
+ 			       !kthread_should_stop() &&
++			       !test_bit(CACHE_SET_IO_DISABLE, &c->flags) &&
+ 			       !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))
+ 				delay = schedule_timeout_interruptible(delay);
+ 
 -- 
 2.16.1
