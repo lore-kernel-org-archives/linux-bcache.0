@@ -1,38 +1,24 @@
-From: "Peter Williams" <tusong@bxcm2016.com>
-Subject: this is what you need
-Date: Tue, 13 Feb 2018 14:28:24 +0100
-Message-ID: <232075eff4ec87fad15f0e35ccccfc3b@footballshirtsutd.com>
-Reply-To: qizongyos@aliyun.com
+From: Nix <nix@esperi.org.uk>
+Subject: Re: [PATCH v3 00/13] bcache: device failure handling improvement
+Date: Fri, 16 Feb 2018 12:11:03 +0000
+Message-ID: <87tvuhp220.fsf@esperi.org.uk>
+References: <20180114144236.28213-1-colyli@suse.de>
+        <87po5ykiaw.fsf@esperi.org.uk>
+        <1664591662.20180125063516@pvgoran.name>
+        <874ln9hilm.fsf@esperi.org.uk> <355593907.20180126071541@pvgoran.name>
+        <f2034e77-d351-cb50-d8e0-853ddc48db59@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from unassigned.psychz.net ([45.35.35.151]:59069 "EHLO jkkgjt.com"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-        id S934808AbeBMQ1N (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 13 Feb 2018 11:27:13 -0500
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <f2034e77-d351-cb50-d8e0-853ddc48db59@suse.de> (Coly Li's message
+        of "Fri, 26 Jan 2018 12:56:11 +0800")
+Sender: linux-block-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: Pavel Goran <via-bcache@pvgoran.name>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Hi,
+On 26 Jan 2018, Coly Li uttered the following:
+> Nix, how do you think of the above idea ?
 
-I wanted to check in with you, did you receive my email from last week?
-
-I want to share a proven system with you.
-
-This system allows you to try the whole thing for f.r_ee for 30 days.
-
-You can finally change your future without giving up any sensitive
-information in advance.
-
-I s-ig-ned up myself just a while ago and I'm already making more than in
-my regular nine to five job that I plan on quitting any day now.
-
-Despite of this, this is probably the best thing that ever happened to you
-if you take action now.
-
-Please reply if interested.
-
-Thanks,
-Peter
+This is weeks too late because you already sent the patch through, but I
+think it's an excellent idea :)
