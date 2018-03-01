@@ -1,11 +1,11 @@
 From: Joseph Salisbury <joseph.salisbury@canonical.com>
 Subject: [PATCH] bcache: decouple emitting a cached_dev CHANGE uevent
 Date: Thu,  1 Mar 2018 14:38:46 -0500
-Message-ID: <07844d5b6f5e3273f774db248815da4d50cb4e3c.1513001217.git.joseph.salisbury__25867.1984229752$1519933015$gmane$org@canonical.com>
+Message-ID: <07844d5b6f5e3273f774db248815da4d50cb4e3c.1513001217.git.joseph.salisbury__3388.99839339337$1519933031$gmane$org@canonical.com>
 References: <cover.1513001217.git.joseph.salisbury@canonical.com>
-Return-path: <linux-kernel-owner@vger.kernel.org>
+Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <cover.1513001217.git.joseph.salisbury@canonical.com>
-Sender: linux-kernel-owner@vger.kernel.org
+Sender: stable-owner@vger.kernel.org
 To: mlyle@lyle.org, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: ryan.harper@canonical.com, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
