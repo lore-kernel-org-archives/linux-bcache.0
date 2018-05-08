@@ -1,86 +1,208 @@
 From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: [PATCH 0/2] bcachefs: on disk data structures, ioctl interface - review requested for upstreaming
-Date: Tue,  8 May 2018 18:17:58 -0400
-Message-ID: <20180508221800.2642-1-kent.overstreet@gmail.com>
+Subject: [PATCH 2/2] bcachefs: Ioctl interface
+Date: Tue,  8 May 2018 18:18:00 -0400
+Message-ID: <20180508221800.2642-3-kent.overstreet@gmail.com>
+References: <20180508221800.2642-1-kent.overstreet@gmail.com>
 Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20180508221800.2642-1-kent.overstreet@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 Cc: Kent Overstreet <kent.overstreet@gmail.com>, Dave Chinner <dchinner@redhat.com>, "Darrick J . Wong" <darrick.wong@oracle.com>, hare@suse.com
 List-Id: linux-bcache@vger.kernel.org
 
-So, a few weeks ago I finally showed up at LSF to talk about this filesystem
-I've been working on - as well as upstreaming it - and really the whole thing
-was surprisingly uneventful; the general response was "start sending out
-patches".
-
-Background for anyone who hasn't heard about bcachefs:
-https://www.spinics.net/lists/linux-fsdevel/msg121577.html
-https://bcachefs.org
-
-Git repo:
-https://evilpiepirate.org/git/bcachefs.git
-
-Dave suggested I start out by sending out just the on disk format and ioctl
-interface since the whole thing is over 50k lines, so that's what I'm doing
-here. I just wrote a new overview of the on disk data structures, which is at
-the top of that patch.
-
-More documentation on the internals is up at the bcachefs website:
-https://bcachefs.org/Architecture/
-
-I would definitely appreciate feedback on documentation, and in particular what
-kind of documentation would be useful to add.
-And if anyone can think of anything critical I might have m
-
+Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
 ---
-
-Regarding upstreaming status, there's not a whole lot left that I can think of
-on my end.
-
-As I mentioned at LSF I've pretty much run out of decent reasons for breaking
-the on disk format, so that's one of the big motivations for popping up to talk
-about upstreaming this thing now. I've been focusing on polishing and bug fixing
-for quite awhile at this point - there are lots of features left that would be
-really great to have, but they're not blocking people from using it, people are
-finding bcachefs useful right now. The code is - alas - not bug free or perfect
-yet, but it is definitely more solid and reliable than a filesystem generally
-ought to be at this point in its development and deployment.
-
-I have some patches to core code I'll be sending out shortly, but it's mostly
-relatively minor stuff - one of the things Ted asked at LSF was if bcachefs was
-going to be making new weird assumptions that the VM has to contend with, and
-really no - bcachefs is pretty self contained, no weird page forking or anything
-like that.
-
----
-
-Re bcache: one of the things we talked about at LSF (with Hannes in particular)
-is that it would be good to provide an upgrade path to bcache users - the bcache
-code is not without issues (i.e. lack of big endian support, which is non
-trivial to add without on disk format changes - changes I did do for bcachefs).
-
-Bcachefs is partly just a vastly improved version of bcache, minus the block
-layer interface and plus a filesystem interface - but the majority of the code
-doesn't know or care about which interface is used, and for most of bcachefs
-development I did maintain the bcache block layer interface in parallel with the
-filesystem interface.
-
-So providing that upgrade path is one of the goals with upstreaming bcachefs.
-How exactly it happens is still undecided, but we've got plenty of options -
-since with bcache can detach a cache from a backing device and use it in
-passthrough mode at runtime, we don't actually have to teach bcachefs to read
-the bcache on disk format, except for the backing device superblock (which be
-really hard).
-
-Kent Overstreet (2):
-  bcachefs: On disk data structures
-  bcachefs: Ioctl interface
-
- fs/bcachefs/bcachefs_format.h | 1448 +++++++++++++++++++++++++++++++++
- fs/bcachefs/bcachefs_ioctl.h  |  182 +++++
- 2 files changed, 1630 insertions(+)
- create mode 100644 fs/bcachefs/bcachefs_format.h
+ fs/bcachefs/bcachefs_ioctl.h | 182 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 182 insertions(+)
  create mode 100644 fs/bcachefs/bcachefs_ioctl.h
 
+diff --git a/fs/bcachefs/bcachefs_ioctl.h b/fs/bcachefs/bcachefs_ioctl.h
+new file mode 100644
+index 0000000000..4442a02b5c
+--- /dev/null
++++ b/fs/bcachefs/bcachefs_ioctl.h
+@@ -0,0 +1,182 @@
++#ifndef _BCACHEFS_IOCTL_H
++#define _BCACHEFS_IOCTL_H
++
++#include <linux/uuid.h>
++#include <asm/ioctl.h>
++#include "bcachefs_format.h"
++
++/*
++ * Flags common to multiple ioctls:
++ */
++#define BCH_FORCE_IF_DATA_LOST		(1 << 0)
++#define BCH_FORCE_IF_METADATA_LOST	(1 << 1)
++#define BCH_FORCE_IF_DATA_DEGRADED	(1 << 2)
++#define BCH_FORCE_IF_METADATA_DEGRADED	(1 << 3)
++
++#define BCH_FORCE_IF_DEGRADED			\
++	(BCH_FORCE_IF_DATA_DEGRADED|		\
++	 BCH_FORCE_IF_METADATA_DEGRADED)
++
++/*
++ * If cleared, ioctl that refer to a device pass it as a pointer to a pathname
++ * (e.g. /dev/sda1); if set, the dev field is the device's index within the
++ * filesystem:
++ */
++#define BCH_BY_INDEX			(1 << 4)
++
++/*
++ * For BCH_IOCTL_READ_SUPER: get superblock of a specific device, not filesystem
++ * wide superblock:
++ */
++#define BCH_READ_DEV			(1 << 5)
++
++/* global control dev: */
++
++/* These are currently broken, and probably unnecessary: */
++#if 0
++#define BCH_IOCTL_ASSEMBLE	_IOW(0xbc, 1, struct bch_ioctl_assemble)
++#define BCH_IOCTL_INCREMENTAL	_IOW(0xbc, 2, struct bch_ioctl_incremental)
++
++struct bch_ioctl_assemble {
++	__u32			flags;
++	__u32			nr_devs;
++	__u64			pad;
++	__u64			devs[];
++};
++
++struct bch_ioctl_incremental {
++	__u32			flags;
++	__u64			pad;
++	__u64			dev;
++};
++#endif
++
++/* filesystem ioctls: */
++
++#define BCH_IOCTL_QUERY_UUID	_IOR(0xbc,	1,  struct bch_ioctl_query_uuid)
++#define BCH_IOCTL_START		_IOW(0xbc,	2,  struct bch_ioctl_start)
++#define BCH_IOCTL_STOP		_IO(0xbc,	3)
++#define BCH_IOCTL_DISK_ADD	_IOW(0xbc,	4,  struct bch_ioctl_disk)
++#define BCH_IOCTL_DISK_REMOVE	_IOW(0xbc,	5,  struct bch_ioctl_disk)
++#define BCH_IOCTL_DISK_ONLINE	_IOW(0xbc,	6,  struct bch_ioctl_disk)
++#define BCH_IOCTL_DISK_OFFLINE	_IOW(0xbc,	7,  struct bch_ioctl_disk)
++#define BCH_IOCTL_DISK_SET_STATE _IOW(0xbc,	8,  struct bch_ioctl_disk_set_state)
++#define BCH_IOCTL_DATA		_IOW(0xbc,	10, struct bch_ioctl_data)
++#define BCH_IOCTL_USAGE		_IOWR(0xbc,	11, struct bch_ioctl_usage)
++#define BCH_IOCTL_READ_SUPER	_IOW(0xbc,	12, struct bch_ioctl_read_super)
++#define BCH_IOCTL_DISK_GET_IDX	_IOW(0xbc,	13,  struct bch_ioctl_disk_get_idx)
++#define BCH_IOCTL_DISK_RESIZE	_IOW(0xbc,	13,  struct bch_ioctl_disk_resize)
++
++struct bch_ioctl_query_uuid {
++	uuid_le			uuid;
++};
++
++struct bch_ioctl_start {
++	__u32			flags;
++	__u32			pad;
++};
++
++struct bch_ioctl_disk {
++	__u32			flags;
++	__u32			pad;
++	__u64			dev;
++};
++
++struct bch_ioctl_disk_set_state {
++	__u32			flags;
++	__u8			new_state;
++	__u8			pad[3];
++	__u64			dev;
++};
++
++/*
++ * BCH_IOCTL_DATA: operations that walk and manipulate filesystem data (e.g.
++ * scrub, rereplicate, migrate).
++ *
++ * This ioctl kicks off a job in the background, and returns a file descriptor.
++ * Reading from the file descriptor returns a struct bch_ioctl_data_progress,
++ * indicating current progress, and closing the file descriptor will stop the
++ * job. The file descriptor is O_CLOEXEC.
++ */
++
++enum bch_data_ops {
++	BCH_DATA_OP_SCRUB	= 0,
++	BCH_DATA_OP_REREPLICATE	= 1,
++	BCH_DATA_OP_MIGRATE	= 2,
++	BCH_DATA_OP_NR		= 3,
++};
++
++struct bch_ioctl_data {
++	__u32			op;
++	__u32			flags;
++
++	struct bpos		start;
++	struct bpos		end;
++
++	union {
++	struct {
++		__u32		dev;
++		__u32		pad;
++	}			migrate;
++	};
++} __attribute__((packed, aligned(8)));
++
++struct bch_ioctl_data_progress {
++	__u8			data_type;
++	__u8			btree_id;
++	__u8			pad[2];
++	struct bpos		pos;
++
++	__u64			sectors_done;
++	__u64			sectors_total;
++} __attribute__((packed, aligned(8)));
++
++struct bch_ioctl_dev_usage {
++	__u8			state;
++	__u8			alive;
++	__u8			pad[6];
++	__u32			dev;
++
++	__u32			bucket_size;
++	__u64			nr_buckets;
++
++	__u64			buckets[BCH_DATA_NR];
++	__u64			sectors[BCH_DATA_NR];
++};
++
++struct bch_ioctl_fs_usage {
++	__u64			capacity;
++	__u64			used;
++	__u64			online_reserved;
++	__u64			persistent_reserved[BCH_REPLICAS_MAX];
++	__u64			sectors[BCH_DATA_NR][BCH_REPLICAS_MAX];
++};
++
++struct bch_ioctl_usage {
++	__u16			nr_devices;
++	__u16			pad[3];
++
++	struct bch_ioctl_fs_usage fs;
++	struct bch_ioctl_dev_usage devs[0];
++};
++
++struct bch_ioctl_read_super {
++	__u32			flags;
++	__u32			pad;
++	__u64			dev;
++	__u64			size;
++	__u64			sb;
++};
++
++struct bch_ioctl_disk_get_idx {
++	__u64			dev;
++};
++
++struct bch_ioctl_disk_resize {
++	__u32			flags;
++	__u32			pad;
++	__u64			dev;
++	__u64			nbuckets;
++};
++
++#endif /* _BCACHEFS_IOCTL_H */
 -- 
 2.17.0
