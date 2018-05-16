@@ -1,69 +1,43 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH] bcache: return 0 from bch_debug_init() if CONFIG_DEBUG_FS=n
-Date: Wed, 16 May 2018 20:39:19 +0800
-Message-ID: <20180516123919.2159-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-Sender: stable-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+Subject: Re: [PATCH v2 09/11] docs: Fix some broken references
+Date: Wed, 16 May 2018 09:12:56 -0600
+Message-ID: <CANLsYkwXUGJ-DM4M48SXuy+31r6sC7_Q3fc9Rgue6wFdeMQv6g@mail.gmail.com>
+References: <cover.1525870886.git.mchehab+samsung@kernel.org>
+ <e959f23d6f6905ee606fadfda13e2bb37deed017.1525870886.git.mchehab+samsung@kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <xen-devel-bounces@lists.xenproject.org>
+In-Reply-To: <e959f23d6f6905ee606fadfda13e2bb37deed017.1525870886.git.mchehab+samsung@kernel.org>
+List-Unsubscribe: <https://lists.xenproject.org/mailman/options/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=unsubscribe>
+List-Post: <mailto:xen-devel@lists.xenproject.org>
+List-Help: <mailto:xen-devel-request@lists.xenproject.org?subject=help>
+List-Subscribe: <https://lists.xenproject.org/mailman/listinfo/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=subscribe>
+Errors-To: xen-devel-bounces@lists.xenproject.org
+Sender: "Xen-devel" <xen-devel-bounces@lists.xenproject.org>
+To: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>, Linus Walleij <linus.walleij@linaro.org>, Will Deacon <will.deacon@arm.com>, dri-devel@lists.freedesktop.org, Jaroslav Kysela <perex@perex.cz>, Eric Paris <eparis@parisplace.org>, linux-clk@vger.kernel.org, James Morris <jmorris@namei.org>, Alan Stern <stern@rowland.harvard.edu>, xen-devel@lists.xenproject.org, Boqun Feng <boqun.feng@gmail.com>, Nicholas Piggin <npiggin@gmail.com>, Sean Paul <seanpaul@chromium.org>, Thomas Gleixner <tglx@linutronix.de>, Antoine Jacquet <royale@zerezo.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, Li Zefan <lizefan@huawei.com>, linux-crypto@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>, alsa-devel@alsa-project.org, Linux Doc Mailing List <linux-doc@vger.kernel.org>, David Airlie <airlied@linux.ie>
 List-Id: linux-bcache@vger.kernel.org
 
-Commit 539d39eb2708 ("bcache: fix wrong return value in bch_debug_init()")
-returns the return value of debugfs_create_dir() to bcache_init(). When
-CONFIG_DEBUG_FS=n, bch_debug_init() always returns 1 and makes
-bcache_init() failedi.
-
-This patch makes bch_debug_init() always returns 0 if CONFIG_DEBUG_FS=n,
-so bcache can continue to work for the kernels which don't have debugfs
-enanbled.
-
-Fixes: Commit 539d39eb2708 ("bcache: fix wrong return value in bch_debug_init()")
-Cc: stable@vger.kernel.org
-Signed-off-by: Coly Li <colyli@suse.de>
-Reported-by: Massimo B. <massimo.b@gmx.net>
-Reported-by: Kai Krakow <kai@kaishome.de>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>
----
- drivers/md/bcache/bcache.h | 5 +++++
- drivers/md/bcache/debug.c  | 4 ++--
- 2 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 3a0cfb237af9..5b3fe87f32ee 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -994,8 +994,13 @@ void bch_open_buckets_free(struct cache_set *);
- 
- int bch_cache_allocator_start(struct cache *ca);
- 
-+#ifdef CONFIG_DEBUG_FS
- void bch_debug_exit(void);
- int bch_debug_init(struct kobject *);
-+#else
-+static inline void bch_debug_exit(void) {};
-+static inline int bch_debug_init(struct kobject *kobj) { return 0; };
-+#endif
- void bch_request_exit(void);
- int bch_request_init(void);
- 
-diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
-index 4e63c6f6c04d..34a0ed4ed70c 100644
---- a/drivers/md/bcache/debug.c
-+++ b/drivers/md/bcache/debug.c
-@@ -240,8 +240,6 @@ void bch_debug_init_cache_set(struct cache_set *c)
- 	}
- }
- 
--#endif
--
- void bch_debug_exit(void)
- {
- 	if (!IS_ERR_OR_NULL(bcache_debug))
-@@ -254,3 +252,5 @@ int __init bch_debug_init(struct kobject *kobj)
- 
- 	return IS_ERR_OR_NULL(bcache_debug);
- }
-+
-+#endif
--- 
-2.16.3
+T24gOSBNYXkgMjAxOCBhdCAwNzoxOCwgTWF1cm8gQ2FydmFsaG8gQ2hlaGFiCjxtY2hlaGFiK3Nh
+bXN1bmdAa2VybmVsLm9yZz4gd3JvdGU6Cj4gQXMgd2UgbW92ZSBzdHVmZiBhcm91bmQsIHNvbWUg
+ZG9jIHJlZmVyZW5jZXMgYXJlIGJyb2tlbi4gRml4IHNvbWUgb2YKPiB0aGVtIHZpYSB0aGlzIHNj
+cmlwdDoKPiAgICAgICAgIC4vc2NyaXB0cy9kb2N1bWVudGF0aW9uLWZpbGUtcmVmLWNoZWNrIC0t
+Zml4LXJzdAo+Cj4gTWFudWFsbHkgY2hlY2tlZCBpZiB0aGUgcHJvZHVjZWQgcmVzdWx0IGlzIHZh
+bGlkLCByZW1vdmluZyBhIGZldwo+IGZhbHNlLXBvc2l0aXZlcy4KPgo+IFNpZ25lZC1vZmYtYnk6
+IE1hdXJvIENhcnZhbGhvIENoZWhhYiA8bWNoZWhhYitzYW1zdW5nQGtlcm5lbC5vcmc+Cj4gLS0t
+Cgo+Cj4gZGlmZiAtLWdpdCBhL0RvY3VtZW50YXRpb24vdHJhY2UvY29yZXNpZ2h0LnR4dCBiL0Rv
+Y3VtZW50YXRpb24vdHJhY2UvY29yZXNpZ2h0LnR4dAo+IGluZGV4IDFkNzRhZDAyMDJiNi4uZWZi
+YzgzMjE0NmU3IDEwMDY0NAo+IC0tLSBhL0RvY3VtZW50YXRpb24vdHJhY2UvY29yZXNpZ2h0LnR4
+dAo+ICsrKyBiL0RvY3VtZW50YXRpb24vdHJhY2UvY29yZXNpZ2h0LnR4dAo+IEBAIC00MjYsNSAr
+NDI2LDUgQEAgcm9vdEBnZW5lcmljYXJtdjg6fiMKPiAgRGV0YWlscyBvbiBob3cgdG8gdXNlIHRo
+ZSBnZW5lcmljIFNUTSBBUEkgY2FuIGJlIGZvdW5kIGhlcmUgWzJdLgo+Cj4gIFsxXS4gRG9jdW1l
+bnRhdGlvbi9BQkkvdGVzdGluZy9zeXNmcy1idXMtY29yZXNpZ2h0LWRldmljZXMtc3RtCj4gLVsy
+XS4gRG9jdW1lbnRhdGlvbi90cmFjZS9zdG0udHh0Cj4gK1syXS4gRG9jdW1lbnRhdGlvbi90cmFj
+ZS9zdG0ucnN0Cj4gIFszXS4gaHR0cHM6Ly9naXRodWIuY29tL0xpbmFyby9wZXJmLW9wZW5jc2QK
+CkFja2VkLWJ5OiBNYXRoaWV1IFBvaXJpZXIgPG1hdGhpZXUucG9pcmllckBsaW5hcm8ub3JnPgoK
+X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18KWGVuLWRldmVs
+IG1haWxpbmcgbGlzdApYZW4tZGV2ZWxAbGlzdHMueGVucHJvamVjdC5vcmcKaHR0cHM6Ly9saXN0
+cy54ZW5wcm9qZWN0Lm9yZy9tYWlsbWFuL2xpc3RpbmZvL3hlbi1kZXZlbA==
