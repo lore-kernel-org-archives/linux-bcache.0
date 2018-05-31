@@ -1,51 +1,55 @@
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: Re: PostgreSQL licensed code on Linux
-Date: Wed, 30 May 2018 03:10:18 +0300
-Message-ID: <CAHp75Vf4AUrCbvsqaTZipC6xdHN=H+rRz1ACVkUpKzNQ4jbKbQ@mail.gmail.com>
-References: <CAB=NE6XGCM0nZqvq74JPnSKgvL37Nkwvr3H3cAQ=ooTYJt7Rdg@mail.gmail.com>
- <20180529192643.GA3487@kmo-pixel> <20180529205143.GB7381@thunk.org>
- <20180529210025.GB3487@kmo-pixel> <20180529225928.GI31712@garbanzo.do-not-panic.com>
- <CAB=NE6XBPjcGCbK2L_ELjMVVSO34BeJQv8cSiC6M_r7MDVFLvQ@mail.gmail.com>
- <CAHp75Vefx7zwrn4CwhDYZrMSLdaaqta1uJHJrqD7c40MQ_N0ZA@mail.gmail.com> <20180530000321.GP4511@wotan.suse.de>
+From: Yisheng Xie <xieyisheng1@huawei.com>
+Subject: [PATCH v2 19/21] bcache: use match_string() helper
+Date: Thu, 31 May 2018 19:11:24 +0800
+Message-ID: <1527765086-19873-20-git-send-email-xieyisheng1@huawei.com>
+References: <1527765086-19873-1-git-send-email-xieyisheng1@huawei.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20180530000321.GP4511@wotan.suse.de>
+In-Reply-To: <1527765086-19873-1-git-send-email-xieyisheng1@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
-To: "Luis R. Rodriguez" <mcgrof@kernel.org>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Jessica Yu <jeyu@kernel.org>, Tso Ted <tytso@mit.edu>, Coly Li <colyli@suse.de>, Ciaran Farrell <ciaran.farrell@suse.com>, One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, linux-bcache@vger.kernel.org, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Philippe Ombredanne <pombredanne@nexb.com>, Kate Stewart <kstewart@linuxfoundation.org>, Jonas Oberg <jonas@fsfe.org>
+To: linux-kernel@vger.kernel.org
+Cc: andy.shevchenko@gmail.com, Yisheng Xie <xieyisheng1@huawei.com>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, May 30, 2018 at 3:03 AM, Luis R. Rodriguez <mcgrof@kernel.org> wrote:
-> On Wed, May 30, 2018 at 02:22:14AM +0300, Andy Shevchenko wrote:
->> On Wed, May 30, 2018 at 2:12 AM, Luis R. Rodriguez <mcgrof@kernel.org> wrote:
->> > It would seem I did follow up with a v3 patch and Rusty noted that although
->> > I may be right, its hard to care [0]. But of relevance here is again if one
->> > of the MODULE_LICENSE() dual tags should be used or the GPL tag. I'll
->> > continue to side recommending with the MODULE_LICENSE("GPL") tag even on
->> > files with permissive licenses, and even if it we haven't clarified this in
->> > documentation as I think scaling these tags further is just silly.
->> >
->> > [0] http://lkml.kernel.org/r/87bom0hf0f.fsf@rustcorp.com.au
->>
->> https://www.spinics.net/lists/linux-bcache/msg06048.html
->>
->> https://www.spinics.net/lists/linux-bcache/msg06058.html
->
-> For those that are not developers:
->
-> The proposed changes referenced in the above URLs take old portions PostgreSQL
-> C code which were previously on a larger C file and move them to a new module
-> which has the PostgreSQL header. Modules need to have a MODULE_LICENSE() tag,
-> and if one is not used the kernel assumes the module is proprietary. The above
-> code lacks a MODULE_LICENSE() tag as such currently the driver is proprietary.
+match_string() returns the index of an array for a matching string,
+which can be used instead of open coded variant.
 
-Thanks for explaining this for audience.
+Cc: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org 
+Signed-off-by: Yisheng Xie <xieyisheng1@huawei.com>
+---
+ drivers/md/bcache/util.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-> Clearly that needs to be fixed before upstreaming.
-
-Yes, that's why Coly deferred the change for getting clear with licenses.
-
+diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+index 74febd5..cd1f4fd 100644
+--- a/drivers/md/bcache/util.c
++++ b/drivers/md/bcache/util.c
+@@ -136,22 +136,17 @@ ssize_t bch_snprint_string_list(char *buf, size_t size, const char * const list[
+ 
+ ssize_t bch_read_string_list(const char *buf, const char * const list[])
+ {
+-	size_t i;
++	ssize_t i;
+ 	char *s, *d = kstrndup(buf, PAGE_SIZE - 1, GFP_KERNEL);
+ 	if (!d)
+ 		return -ENOMEM;
+ 
+ 	s = strim(d);
+ 
+-	for (i = 0; list[i]; i++)
+-		if (!strcmp(list[i], s))
+-			break;
++	i = match_string(list, -1, s);
+ 
+ 	kfree(d);
+ 
+-	if (!list[i])
+-		return -EINVAL;
+-
+ 	return i;
+ }
+ 
 -- 
-With Best Regards,
-Andy Shevchenko
+1.7.12.4
