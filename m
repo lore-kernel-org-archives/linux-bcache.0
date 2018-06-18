@@ -1,15 +1,15 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 2/3] bcache: do not assign in if condition in
- bcache_init()
-Date: Mon, 18 Jun 2018 21:44:35 +0800
-Message-ID: <ef26a060-689d-8ee9-57fb-b8473ca97fea@suse.de>
+Subject: Re: [PATCH 3/3] bcache: do not assign in if condition in
+ bcache_device_init()
+Date: Mon, 18 Jun 2018 21:45:53 +0800
+Message-ID: <79b31a5a-ef33-2f4e-6dfd-38c67304ded8@suse.de>
 References: <20180618100902.4015-1-flo@geekplace.eu>
- <20180618100902.4015-3-flo@geekplace.eu>
+ <20180618100902.4015-4-flo@geekplace.eu>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20180618100902.4015-3-flo@geekplace.eu>
+In-Reply-To: <20180618100902.4015-4-flo@geekplace.eu>
 Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
 To: Florian Schmaus <flo@geekplace.eu>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
@@ -21,40 +21,48 @@ On 2018/6/18 6:09 PM, Florian Schmaus wrote:
 > assigning a variable in an if condition.
 > 
 > Signed-off-by: Florian Schmaus <flo@geekplace.eu>
+> ---
+>  drivers/md/bcache/super.c | 16 +++++++++++-----
+>  1 file changed, 11 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index f09f4f046315..4a2a028c8754 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -796,11 +796,12 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+>  		return idx;
+>  
+>  	if (bioset_init(&d->bio_split, 4, offsetof(struct bbio, bio),
+> -			BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER) ||
+> -	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
+> -		ida_simple_remove(&bcache_device_idx, idx);
+> -		return -ENOMEM;
+> -	}
+> +				BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
 
 Signed-off-by: Coly Li <colyli@suse.de>
-
-Added into for-next patch set.
-
-Thanks.
+I fix the above indent and added the patch into for-next patch set. Thanks.
 
 Coly Li
 
-> ---
->  drivers/md/bcache/super.c | 12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index db7177d422e5..f09f4f046315 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -2328,9 +2328,15 @@ static int __init bcache_init(void)
->  		return bcache_major;
->  	}
+> +		goto err;
+> +
+> +	d->disk = alloc_disk(BCACHE_MINORS);
+> +	if (!d->disk)
+> +		goto err;
 >  
-> -	if (!(bcache_wq = alloc_workqueue("bcache", WQ_MEM_RECLAIM, 0)) ||
-> -	    !(bcache_kobj = kobject_create_and_add("bcache", fs_kobj)) ||
-> -	    bch_request_init() ||
-> +	bcache_wq = alloc_workqueue("bcache", WQ_MEM_RECLAIM, 0);
-> +	if (!bcache_wq)
-> +		goto err;
+>  	set_capacity(d->disk, sectors);
+>  	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", idx);
+> @@ -834,6 +835,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
+>  	blk_queue_write_cache(q, true, true);
+>  
+>  	return 0;
 > +
-> +	bcache_kobj = kobject_create_and_add("bcache", fs_kobj);
-> +	if (!bcache_kobj)
-> +		goto err;
+> +err:
+> +	ida_simple_remove(&bcache_device_idx, idx);
+> +	return -ENOMEM;
 > +
-> +	if (bch_request_init() ||
->  	    bch_debug_init(bcache_kobj) || closure_debug_init() ||
->  	    sysfs_create_files(bcache_kobj, files))
->  		goto err;
+>  }
+>  
+>  /* Cached device */
 > 
