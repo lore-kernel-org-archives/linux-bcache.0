@@ -1,7 +1,7 @@
 From: Florian Schmaus <flo@geekplace.eu>
-Subject: [PATCH 1/3] bcache: do not assign in if condition register_bcache()
-Date: Mon, 18 Jun 2018 12:09:00 +0200
-Message-ID: <20180618100902.4015-2-flo@geekplace.eu>
+Subject: [PATCH 2/3] bcache: do not assign in if condition in bcache_init()
+Date: Mon, 18 Jun 2018 12:09:01 +0200
+Message-ID: <20180618100902.4015-3-flo@geekplace.eu>
 References: <20180618100902.4015-1-flo@geekplace.eu>
 Return-path: <linux-kernel-owner@vger.kernel.org>
 In-Reply-To: <20180618100902.4015-1-flo@geekplace.eu>
@@ -15,27 +15,31 @@ assigning a variable in an if condition.
 
 Signed-off-by: Florian Schmaus <flo@geekplace.eu>
 ---
- drivers/md/bcache/super.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/md/bcache/super.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index fa4058e43202..db7177d422e5 100644
+index db7177d422e5..f09f4f046315 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -2163,8 +2163,12 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 	if (!try_module_get(THIS_MODULE))
- 		return -EBUSY;
+@@ -2328,9 +2328,15 @@ static int __init bcache_init(void)
+ 		return bcache_major;
+ 	}
  
--	if (!(path = kstrndup(buffer, size, GFP_KERNEL)) ||
--	    !(sb = kmalloc(sizeof(struct cache_sb), GFP_KERNEL)))
-+	path = kstrndup(buffer, size, GFP_KERNEL);
-+	if (!path)
+-	if (!(bcache_wq = alloc_workqueue("bcache", WQ_MEM_RECLAIM, 0)) ||
+-	    !(bcache_kobj = kobject_create_and_add("bcache", fs_kobj)) ||
+-	    bch_request_init() ||
++	bcache_wq = alloc_workqueue("bcache", WQ_MEM_RECLAIM, 0);
++	if (!bcache_wq)
 +		goto err;
 +
-+	sb = kmalloc(sizeof(struct cache_sb), GFP_KERNEL);
-+	if (!sb)
++	bcache_kobj = kobject_create_and_add("bcache", fs_kobj);
++	if (!bcache_kobj)
++		goto err;
++
++	if (bch_request_init() ||
+ 	    bch_debug_init(bcache_kobj) || closure_debug_init() ||
+ 	    sysfs_create_files(bcache_kobj, files))
  		goto err;
- 
- 	err = "failed to open device";
 -- 
 2.16.4
