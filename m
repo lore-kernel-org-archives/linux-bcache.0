@@ -1,68 +1,52 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 3/3] bcache: do not assign in if condition in
- bcache_device_init()
-Date: Mon, 18 Jun 2018 21:45:53 +0800
-Message-ID: <79b31a5a-ef33-2f4e-6dfd-38c67304ded8@suse.de>
-References: <20180618100902.4015-1-flo@geekplace.eu>
- <20180618100902.4015-4-flo@geekplace.eu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20180618100902.4015-4-flo@geekplace.eu>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Florian Schmaus <flo@geekplace.eu>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
+From: Christoph Hellwig <hch@lst.de>
+Subject: [PATCH 1/6] dm: use bio_split() when splitting out the already processed bio
+Date: Tue, 19 Jun 2018 06:52:11 +0200
+Message-ID: <20180619045216.21130-2-hch@lst.de>
+References: <20180619045216.21130-1-hch@lst.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20180619045216.21130-1-hch@lst.de>
+Sender: stable-owner@vger.kernel.org
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Ming Lei <ming.lei@redhat.com>, Boaz Harrosh <ooo@electrozaur.com>, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@redhat.com, Mike Snitzer <snitzer@redhat.com>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2018/6/18 6:09 PM, Florian Schmaus wrote:
-> Fixes an error condition reported by checkpatch.pl which is caused by
-> assigning a variable in an if condition.
-> 
-> Signed-off-by: Florian Schmaus <flo@geekplace.eu>
-> ---
->  drivers/md/bcache/super.c | 16 +++++++++++-----
->  1 file changed, 11 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index f09f4f046315..4a2a028c8754 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -796,11 +796,12 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
->  		return idx;
->  
->  	if (bioset_init(&d->bio_split, 4, offsetof(struct bbio, bio),
-> -			BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER) ||
-> -	    !(d->disk = alloc_disk(BCACHE_MINORS))) {
-> -		ida_simple_remove(&bcache_device_idx, idx);
-> -		return -ENOMEM;
-> -	}
-> +				BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
+From: Mike Snitzer <snitzer@redhat.com>
 
-Signed-off-by: Coly Li <colyli@suse.de>
-I fix the above indent and added the patch into for-next patch set. Thanks.
+Use of bio_clone_bioset() is inefficient if there is no need to clone
+the original bio's bio_vec array.  Best to use the bio_clone_fast()
+variant.  Also, just using bio_advance() is only part of what is needed
+to properly setup the clone -- it doesn't account for the various
+bio_integrity() related work that also needs to be performed (see
+bio_split).
 
-Coly Li
+Address both of these issues by switching from bio_clone_bioset() to
+bio_split().
 
-> +		goto err;
-> +
-> +	d->disk = alloc_disk(BCACHE_MINORS);
-> +	if (!d->disk)
-> +		goto err;
->  
->  	set_capacity(d->disk, sectors);
->  	snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", idx);
-> @@ -834,6 +835,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned block_size,
->  	blk_queue_write_cache(q, true, true);
->  
->  	return 0;
-> +
-> +err:
-> +	ida_simple_remove(&bcache_device_idx, idx);
-> +	return -ENOMEM;
-> +
->  }
->  
->  /* Cached device */
-> 
+Fixes: 18a25da8 ("dm: ensure bio submission follows a depth-first tree walk")
+Cc: stable@vger.kernel.org # 4.15+, requires removal of '&' before md->queue->bio_split
+Reported-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: NeilBrown <neilb@suse.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+---
+ drivers/md/dm.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index e65429a29c06..a3b103e8e3ce 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1606,10 +1606,9 @@ static blk_qc_t __split_and_process_bio(struct mapped_device *md,
+ 				 * the usage of io->orig_bio in dm_remap_zone_report()
+ 				 * won't be affected by this reassignment.
+ 				 */
+-				struct bio *b = bio_clone_bioset(bio, GFP_NOIO,
+-								 &md->queue->bio_split);
++				struct bio *b = bio_split(bio, bio_sectors(bio) - ci.sector_count,
++							  GFP_NOIO, &md->queue->bio_split);
+ 				ci.io->orig_bio = b;
+-				bio_advance(bio, (bio_sectors(bio) - ci.sector_count) << 9);
+ 				bio_chain(b, bio);
+ 				ret = generic_make_request(bio);
+ 				break;
+-- 
+2.17.1
