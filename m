@@ -1,43 +1,128 @@
-From: Ming Lei <ming.lei@redhat.com>
-Subject: Re: [RFC] kill bio_clone_kmalloc and bio_clone_bioset
-Date: Wed, 20 Jun 2018 17:12:06 +0800
-Message-ID: <20180620091204.GA11780@ming.t460p>
-References: <20180619045216.21130-1-hch@lst.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <dm-devel-bounces@redhat.com>
-Content-Disposition: inline
-In-Reply-To: <20180619045216.21130-1-hch@lst.de>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/dm-devel>
-List-Post: <mailto:dm-devel@redhat.com>
-List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=subscribe>
-Sender: dm-devel-bounces@redhat.com
-Errors-To: dm-devel-bounces@redhat.com
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, Boaz Harrosh <ooo@electrozaur.com>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, dm-devel@redhat.com
+From: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] bcache: stop using the deprecated get_seconds()
+Date: Wed, 20 Jun 2018 11:51:54 +0200
+Message-ID: <20180620095228.3686471-1-arnd@arndb.de>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>
+Cc: y2038@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>, Michael Lyle <mlyle@lyle.org>, Tang Junhui <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>, Bart Van Assche <bart.vanassche@wdc.com>, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jun 19, 2018 at 06:52:10AM +0200, Christoph Hellwig wrote:
-> Hi all,
-> 
-> this series removes all but one users of the traditional deep bio clone,
-> and then moves bio_clone_bioset to its only caller so that we get rid
-> of the deep bio cloning in the block layer API.
-> 
-> Patch 1 is already in the device mapper queue for 4.18, so we should
-> wait for that to go in before the series is applied.  The series is
-> inteded as preparation work for the multi-page biovecs so that it doesn't
-> have to deal with the difference between single page or larger bio vecs
-> for cloning.
+bcache uses get_seconds() to read the current system time and store it in
+the superblock as well as in uuid_entry structures that are user visible.
 
-Looks good cleanup:
+This changes over from the deprecated function to
+ktime_get_real_seconds(), which returns a 64-bit timestamp as it
+should. Unfortunately, the two structures are still limited to 32 bits,
+so this won't fix any real problems. Let's at least document that
+properly, in case we get an updated format in the future it can be
+fixed. Until then, we still have some time, and checking the tools
+at https://github.com/koverstreet/bcache-tools reveals no access to
+any of them.
 
-Reviewed-by: Ming Lei <ming.lei@redhat.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/md/bcache/super.c   | 23 +++++++++++++++++------
+ include/uapi/linux/bcache.h |  4 ++--
+ 2 files changed, 19 insertions(+), 8 deletions(-)
 
-Thanks,
-Ming
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index fa4058e43202..aa9790ee5cb5 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -53,6 +53,17 @@ struct workqueue_struct *bcache_wq;
+ /* limitation of bcache devices number on single system */
+ #define BCACHE_DEVICE_IDX_MAX	((1U << MINORBITS)/BCACHE_MINORS)
+ 
++/*
++ * various timestamp fields in the superblock are unfortunately
++ * limited to 32 bits, which will lead to overflow in year 2106.
++ *
++ * If we ever get a new superblock format, that should be fixed.
++ */
++static inline u32 bcache_get_realtime32(void)
++{
++	return (u32)ktime_get_real_seconds();
++}
++
+ /* Superblock */
+ 
+ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+@@ -181,7 +192,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+ 		goto err;
+ 	}
+ 
+-	sb->last_mount = get_seconds();
++	sb->last_mount = bcache_get_realtime32();
+ 	err = NULL;
+ 
+ 	get_page(bh->b_page);
+@@ -701,7 +712,7 @@ static void bcache_device_detach(struct bcache_device *d)
+ 
+ 		SET_UUID_FLASH_ONLY(u, 0);
+ 		memcpy(u->uuid, invalid_uuid, 16);
+-		u->invalidated = cpu_to_le32(get_seconds());
++		u->invalidated = cpu_to_le32(bcache_get_realtime32());
+ 		bch_uuid_write(d->c);
+ 	}
+ 
+@@ -1027,7 +1038,7 @@ void bch_cached_dev_detach(struct cached_dev *dc)
+ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 			  uint8_t *set_uuid)
+ {
+-	uint32_t rtime = cpu_to_le32(get_seconds());
++	uint32_t rtime = cpu_to_le32(bcache_get_realtime32());
+ 	struct uuid_entry *u;
+ 	struct cached_dev *exist_dc, *t;
+ 
+@@ -1070,7 +1081,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 	    (BDEV_STATE(&dc->sb) == BDEV_STATE_STALE ||
+ 	     BDEV_STATE(&dc->sb) == BDEV_STATE_NONE)) {
+ 		memcpy(u->uuid, invalid_uuid, 16);
+-		u->invalidated = cpu_to_le32(get_seconds());
++		u->invalidated = cpu_to_le32(bcache_get_realtime32());
+ 		u = NULL;
+ 	}
+ 
+@@ -1390,7 +1401,7 @@ int bch_flash_dev_create(struct cache_set *c, uint64_t size)
+ 
+ 	get_random_bytes(u->uuid, 16);
+ 	memset(u->label, 0, 32);
+-	u->first_reg = u->last_reg = cpu_to_le32(get_seconds());
++	u->first_reg = u->last_reg = cpu_to_le32(bcache_get_realtime32());
+ 
+ 	SET_UUID_FLASH_ONLY(u, 1);
+ 	u->sectors = size >> 9;
+@@ -1894,7 +1905,7 @@ static void run_cache_set(struct cache_set *c)
+ 		goto err;
+ 
+ 	closure_sync(&cl);
+-	c->sb.last_mount = get_seconds();
++	c->sb.last_mount = bcache_get_realtime32();
+ 	bcache_write_super(c);
+ 
+ 	list_for_each_entry_safe(dc, t, &uncached_devices, list)
+diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
+index 821f71a2e48f..8d19e02d752a 100644
+--- a/include/uapi/linux/bcache.h
++++ b/include/uapi/linux/bcache.h
+@@ -195,7 +195,7 @@ struct cache_sb {
+ 	};
+ 	};
+ 
+-	__u32			last_mount;	/* time_t */
++	__u32			last_mount;	/* time overflow in y2106 */
+ 
+ 	__u16			first_bucket;
+ 	union {
+@@ -318,7 +318,7 @@ struct uuid_entry {
+ 		struct {
+ 			__u8	uuid[16];
+ 			__u8	label[32];
+-			__u32	first_reg;
++			__u32	first_reg; /* time overflow in y2106 */
+ 			__u32	last_reg;
+ 			__u32	invalidated;
+ 
+-- 
+2.9.0
