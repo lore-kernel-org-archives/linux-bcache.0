@@ -1,75 +1,113 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: stop using the deprecated get_seconds()
-Date: Thu, 21 Jun 2018 00:52:34 +0800
-Message-ID: <55942b2f-c6a3-e708-3cd3-504071e80cf8@suse.de>
-References: <20180620095228.3686471-1-arnd@arndb.de>
- <5ffd5433-6bb3-71a8-2b33-ceef50ddf6d7@suse.de>
- <CAK8P3a1S4mRH5jkpv3ecKhEkHUH5799uEF6eq_wBx7Z07NqVWA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+From: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] [v2] bcache: stop using the deprecated get_seconds()
+Date: Fri, 22 Jun 2018 15:48:41 +0200
+Message-ID: <20180622134907.227131-1-arnd@arndb.de>
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <CAK8P3a1S4mRH5jkpv3ecKhEkHUH5799uEF6eq_wBx7Z07NqVWA@mail.gmail.com>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, y2038 Mailman List <y2038@lists.linaro.org>, Jens Axboe <axboe@kernel.dk>, Michael Lyle <mlyle@lyle.org>, Tang Junhui <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>, Bart Van Assche <bart.vanassche@wdc.com>, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, linux-bcache@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>
+Cc: y2038@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>, Michael Lyle <mlyle@lyle.org>, Tang Junhui <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2018/6/21 12:20 AM, Arnd Bergmann wrote:
-> On Wed, Jun 20, 2018 at 5:51 PM, Coly Li <colyli@suse.de> wrote:
->> On 2018/6/20 5:51 PM, Arnd Bergmann wrote:
->>> bcache uses get_seconds() to read the current system time and store it in
->>> the superblock as well as in uuid_entry structures that are user visible.
->>>
->>> This changes over from the deprecated function to
->>> ktime_get_real_seconds(), which returns a 64-bit timestamp as it
->>> should. Unfortunately, the two structures are still limited to 32 bits,
->>> so this won't fix any real problems. Let's at least document that
->>> properly, in case we get an updated format in the future it can be
->>> fixed. Until then, we still have some time, and checking the tools
->>> at https://github.com/koverstreet/bcache-tools reveals no access to
->>> any of them.
->>>
->>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->>
->> Hi Arnd,
->>
->> Firstly thanks to your patch, especially the detailed information in
->> patch log, it helps me to understand the problem more easier.
->>
->> From the information, it seems the problem is current 32bit time stamp
->> will be overflow in 2106. So it will be 88 years later, which I have to
->> say I don't care.
->>
->> Also for get_seconds() which works well for current code as many other
->> places call it, I would like to keep it.
-> 
-> I'm currently in the process of removing all instances of get_seconds()
-> with patches like this. In many cases, we actually want to use
-> ktime_get_seconds() to return a monotonic time that is immune
-> to concurrent setttimeofday() calls, in others the code needs to be
-> changed to avoid the y2038 overflow. For bcache, we don't
-> really need either of them, but I'd still want to move over everything
-> to ktime_get_* based interfaces.
-> 
+The get_seconds function is deprecated now since it returns a 32-bit
+value that will eventually overflow, and we are replacing it throughout
+the kernel with ktime_get_seconds() or ktime_get_real_seconds() that
+return a time64_t.
 
-Hi Arnd,
+bcache uses get_seconds() to read the current system time and store it in
+the superblock as well as in uuid_entry structures that are user visible.
 
-Oh I see. Now I agree with you, and no more concern. Thanks for your
-explaining.
+Unfortunately, the two structures in are still limited to 32 bits, so this
+won't fix any real problems but will still overflow in year 2106. Let's
+at least document that properly, in case we get an updated format in the
+future it can be fixed. We still have a long time before the overflow
+and checking the tools at https://github.com/koverstreet/bcache-tools
+reveals no access to any of them.
 
-> Should I clarify that motivation in the changelog text further?
-> 
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+---
+ drivers/md/bcache/super.c   | 12 ++++++------
+ include/uapi/linux/bcache.h |  4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-Yes please, that will be great.
-
-> I can also do a simple replacement of get_seconds() with
-> ktime_get_real_seconds() throughout bcache instead of
-> adding the intermediate helper function.
-
-Yes please, it will be better IMHO.
-
-Thanks.
-
-Coly Li
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index fa4058e43202..74746d8ee05e 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -181,7 +181,7 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+ 		goto err;
+ 	}
+ 
+-	sb->last_mount = get_seconds();
++	sb->last_mount = (u32)ktime_get_real_seconds();
+ 	err = NULL;
+ 
+ 	get_page(bh->b_page);
+@@ -701,7 +701,7 @@ static void bcache_device_detach(struct bcache_device *d)
+ 
+ 		SET_UUID_FLASH_ONLY(u, 0);
+ 		memcpy(u->uuid, invalid_uuid, 16);
+-		u->invalidated = cpu_to_le32(get_seconds());
++		u->invalidated = cpu_to_le32((u32)ktime_get_real_seconds());
+ 		bch_uuid_write(d->c);
+ 	}
+ 
+@@ -1027,7 +1027,7 @@ void bch_cached_dev_detach(struct cached_dev *dc)
+ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 			  uint8_t *set_uuid)
+ {
+-	uint32_t rtime = cpu_to_le32(get_seconds());
++	uint32_t rtime = cpu_to_le32((u32)ktime_get_real_seconds());
+ 	struct uuid_entry *u;
+ 	struct cached_dev *exist_dc, *t;
+ 
+@@ -1070,7 +1070,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 	    (BDEV_STATE(&dc->sb) == BDEV_STATE_STALE ||
+ 	     BDEV_STATE(&dc->sb) == BDEV_STATE_NONE)) {
+ 		memcpy(u->uuid, invalid_uuid, 16);
+-		u->invalidated = cpu_to_le32(get_seconds());
++		u->invalidated = cpu_to_le32((u32)ktime_get_real_seconds());
+ 		u = NULL;
+ 	}
+ 
+@@ -1390,7 +1390,7 @@ int bch_flash_dev_create(struct cache_set *c, uint64_t size)
+ 
+ 	get_random_bytes(u->uuid, 16);
+ 	memset(u->label, 0, 32);
+-	u->first_reg = u->last_reg = cpu_to_le32(get_seconds());
++	u->first_reg = u->last_reg = cpu_to_le32((u32)ktime_get_real_seconds());
+ 
+ 	SET_UUID_FLASH_ONLY(u, 1);
+ 	u->sectors = size >> 9;
+@@ -1894,7 +1894,7 @@ static void run_cache_set(struct cache_set *c)
+ 		goto err;
+ 
+ 	closure_sync(&cl);
+-	c->sb.last_mount = get_seconds();
++	c->sb.last_mount = (u32)ktime_get_real_seconds();
+ 	bcache_write_super(c);
+ 
+ 	list_for_each_entry_safe(dc, t, &uncached_devices, list)
+diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
+index 821f71a2e48f..8d19e02d752a 100644
+--- a/include/uapi/linux/bcache.h
++++ b/include/uapi/linux/bcache.h
+@@ -195,7 +195,7 @@ struct cache_sb {
+ 	};
+ 	};
+ 
+-	__u32			last_mount;	/* time_t */
++	__u32			last_mount;	/* time overflow in y2106 */
+ 
+ 	__u16			first_bucket;
+ 	union {
+@@ -318,7 +318,7 @@ struct uuid_entry {
+ 		struct {
+ 			__u8	uuid[16];
+ 			__u8	label[32];
+-			__u32	first_reg;
++			__u32	first_reg; /* time overflow in y2106 */
+ 			__u32	last_reg;
+ 			__u32	invalidated;
+ 
+-- 
+2.9.0
