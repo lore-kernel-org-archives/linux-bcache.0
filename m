@@ -1,59 +1,61 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] [v2] bcache: stop using the deprecated get_seconds()
-Date: Fri, 13 Jul 2018 13:38:11 -0600
-Message-ID: <b73a9580-849a-d946-b203-2eacc31509eb@kernel.dk>
-References: <20180622134907.227131-1-arnd@arndb.de>
- <b5de0a86-b3cd-9e45-ac39-9c4eb7611016@suse.de>
- <CAK8P3a3FULT7uakRyZ4Nfq3E-ij+Gkn06=XP4Rn2m9u4Wd2OWA@mail.gmail.com>
- <83724892-de0f-40ff-e16a-792a90d77ff1@suse.de>
- <CAK8P3a0GDUpXQ8WnS6ake2AuAu0Q1gZg+hFQVPgXCBqQ1sS+jw@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH 0/4] add crc64 calculation as kernel library
+Date: Tue, 17 Jul 2018 00:55:03 +0800
+Message-ID: <20180716165507.23100-1-colyli@suse.de>
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <CAK8P3a0GDUpXQ8WnS6ake2AuAu0Q1gZg+hFQVPgXCBqQ1sS+jw@mail.gmail.com>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Arnd Bergmann <arnd@arndb.de>, Coly Li <colyli@suse.de>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, y2038 Mailman List <y2038@lists.linaro.org>, Michael Lyle <mlyle@lyle.org>, Tang Junhui <tang.junhui@zte.com.cn>, Hannes Reinecke <hare@suse.com>, linux-bcache@vger.kernel.org, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, "Luis R . Rodriguez" <mcgrof@suse.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Kate Stewart <kstewart@linuxfoundation.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 7/13/18 12:57 PM, Arnd Bergmann wrote:
-> On Fri, Jul 13, 2018 at 5:34 PM, Coly Li <colyli@suse.de> wrote:
->> On 2018/7/13 10:20 PM, Arnd Bergmann wrote:
->>> On Sat, Jun 23, 2018 at 10:12 AM, Coly Li <colyli@suse.de> wrote:
-> 
->>>> Added to 4.19 for-next.
->>>
->>> I noticed this isn't part of linux-next (yet). Did it get dropped?
->>>
->>>       Arnd
->>>
->> Hi Arnd,
->>
->> It is here,
->> https://git.kernel.org/pub/scm/linux/kernel/git/colyli/bcache-patches.git/tree/for-next/0004-bcache-stop-using-the-deprecated-get_seconds.patch
-> 
-> Ok, thanks for the confirmation!
-> 
->> It is for Linux v4.19, the merge window is not available yet, and I
->> don't post them to Jens yet.
-> 
-> That sounds like an odd way to handle your patches. Normally all patches
-> should be part of linux-next *before* the merge window so they get tested
-> as part of the linux-next kernel before the pull request to Linus is sent.
-> 
-> It's not important for me for this particular patch, but generally speaking,
-> the Documentation/process/2.Process.rst states:
-> 
-> "all patches merged during a given merge window should really have found
-> their way into linux-next some time before the merge window opens."
+This patch set adds basic implementation of crc64 calculation as Linux
+kernel library. Since bcache already does crc64 by itself, this patch
+set also modifies bcache code to use the new crc64 library routine.
 
-Coly does generally send before the merge window, I think the phrasing
-is just a little bit off. Depending on risk, I usually tell folks to
-submit their stuff for the next window at no later than -rc5 time,
-so it'll be in for-next for a least two weeks before the merge window
-opens.
+bcache uses crc64 as storage checksum, if a change of crc lib routines
+results an inconsistent result, the unmatched checksum may make bcache
+'think' the on-disk is corrupted, such change should be avoided or
+detected as early as possible. Therefore the last patch in this series
+adds a crc test framework, to check consistency of different calculations.
+
+Coly Li
+
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Luis R. Rodriguez <mcgrof@suse.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Michael Lyle <mlyle@lyle.org>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: Kate Stewart <kstewart@linuxfoundation.org>
+---
+Andy Shevchenko (1):
+  lib/crc64: add crc64 option to lib/Kconfig
+
+Coly Li (3):
+  lib: add crc64 calculation routines
+  bcache: use routines from lib/crc64.c for CRC64 calculation
+  lib/test_crc: Add test cases for crc calculation
+
+ drivers/md/bcache/bcache.h  |   7 +-
+ drivers/md/bcache/btree.c   |   2 +-
+ drivers/md/bcache/request.c |   2 +-
+ drivers/md/bcache/super.c   |   5 +-
+ drivers/md/bcache/util.c    | 131 ----------------------------------
+ drivers/md/bcache/util.h    |   5 +-
+ include/linux/crc64.h       |  15 ++++
+ lib/.gitignore              |   2 +
+ lib/Kconfig                 |   8 +++
+ lib/Kconfig.debug           |  11 +++
+ lib/Makefile                |  12 ++++
+ lib/crc64.c                 |  71 +++++++++++++++++++
+ lib/gen_crc64table.c        |  76 ++++++++++++++++++++
+ lib/test_crc.c              | 136 ++++++++++++++++++++++++++++++++++++
+ 14 files changed, 341 insertions(+), 142 deletions(-)
+ create mode 100644 include/linux/crc64.h
+ create mode 100644 lib/crc64.c
+ create mode 100644 lib/gen_crc64table.c
+ create mode 100644 lib/test_crc.c
 
 -- 
-Jens Axboe
+2.17.1
