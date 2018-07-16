@@ -1,61 +1,50 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 0/4] add crc64 calculation as kernel library
-Date: Tue, 17 Jul 2018 00:55:03 +0800
-Message-ID: <20180716165507.23100-1-colyli@suse.de>
+Subject: [PATCH 1/4] lib/crc64: add crc64 option to lib/Kconfig
+Date: Tue, 17 Jul 2018 00:55:04 +0800
+Message-ID: <20180716165507.23100-2-colyli@suse.de>
+References: <20180716165507.23100-1-colyli@suse.de>
 Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20180716165507.23100-1-colyli@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, "Luis R . Rodriguez" <mcgrof@suse.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Kate Stewart <kstewart@linuxfoundation.org>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Coly Li <colyli@suse.de>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, "Luis R . Rodriguez" <mcgrof@suse.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>
 List-Id: linux-bcache@vger.kernel.org
 
-This patch set adds basic implementation of crc64 calculation as Linux
-kernel library. Since bcache already does crc64 by itself, this patch
-set also modifies bcache code to use the new crc64 library routine.
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 
-bcache uses crc64 as storage checksum, if a change of crc lib routines
-results an inconsistent result, the unmatched checksum may make bcache
-'think' the on-disk is corrupted, such change should be avoided or
-detected as early as possible. Therefore the last patch in this series
-adds a crc test framework, to check consistency of different calculations.
+This patch adds crc64 option entry in lib/Kconfig. This patch is part of
+a patch originally written by Andy Shevchenko, Coly Li cherry-picks it
+and compose the commit log for a re-written crc64 source code.
 
-Coly Li
-
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Coly Li <colyli@suse.de>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Luis R. Rodriguez <mcgrof@suse.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Michael Lyle <mlyle@lyle.org>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>
 Cc: Kate Stewart <kstewart@linuxfoundation.org>
 ---
-Andy Shevchenko (1):
-  lib/crc64: add crc64 option to lib/Kconfig
+ lib/Kconfig | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-Coly Li (3):
-  lib: add crc64 calculation routines
-  bcache: use routines from lib/crc64.c for CRC64 calculation
-  lib/test_crc: Add test cases for crc calculation
-
- drivers/md/bcache/bcache.h  |   7 +-
- drivers/md/bcache/btree.c   |   2 +-
- drivers/md/bcache/request.c |   2 +-
- drivers/md/bcache/super.c   |   5 +-
- drivers/md/bcache/util.c    | 131 ----------------------------------
- drivers/md/bcache/util.h    |   5 +-
- include/linux/crc64.h       |  15 ++++
- lib/.gitignore              |   2 +
- lib/Kconfig                 |   8 +++
- lib/Kconfig.debug           |  11 +++
- lib/Makefile                |  12 ++++
- lib/crc64.c                 |  71 +++++++++++++++++++
- lib/gen_crc64table.c        |  76 ++++++++++++++++++++
- lib/test_crc.c              | 136 ++++++++++++++++++++++++++++++++++++
- 14 files changed, 341 insertions(+), 142 deletions(-)
- create mode 100644 include/linux/crc64.h
- create mode 100644 lib/crc64.c
- create mode 100644 lib/gen_crc64table.c
- create mode 100644 lib/test_crc.c
-
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 706836ec314d..4059df9ec4c7 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -170,6 +170,14 @@ config CRC32_BIT
+ 
+ endchoice
+ 
++config CRC64
++	tristate "CRC64 functions"
++	help
++	  This option is provided for the case where no in-kernel-tree
++	  modules require CRC64 functions, but a module built outside
++	  the kernel tree does. Such modules that use library CRC64
++	  functions require M he
++
+ config CRC4
+ 	tristate "CRC4 functions"
+ 	help
 -- 
 2.17.1
