@@ -1,196 +1,81 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 4/4] lib/test_crc: Add test cases for crc calculation
-Date: Tue, 17 Jul 2018 12:38:57 +0800
-Message-ID: <687c7f69-b1b4-8d0d-dcda-45da3fa2ca9c@suse.de>
+From: Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH 0/4] add crc64 calculation as kernel library
+Date: Tue, 17 Jul 2018 07:46:46 +0200
+Message-ID: <8538b45b-bf30-926a-50fb-700b4bf1c636@suse.de>
 References: <20180716165507.23100-1-colyli@suse.de>
- <20180716165507.23100-5-colyli@suse.de>
- <CAHp75VchQOrUU1pA3GRraXO=gdhr9Uwibxo-ri1W_mwtehRtyw@mail.gmail.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <CAHp75VchQOrUU1pA3GRraXO=gdhr9Uwibxo-ri1W_mwtehRtyw@mail.gmail.com>
+In-Reply-To: <20180716165507.23100-1-colyli@suse.de>
 Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, "Luis R . Rodriguez" <mcgrof@suse.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>
+To: Coly Li <colyli@suse.de>, linux-kernel@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, "Luis R . Rodriguez" <mcgrof@suse.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Kate Stewart <kstewart@linuxfoundation.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2018/7/17 4:47 AM, Andy Shevchenko wrote:
-> On Mon, Jul 16, 2018 at 7:55 PM, Coly Li <colyli@suse.de> wrote:
->> This patch adds a kernel module to test the consistency of multiple crc
->> calculation in Linux kernel. It is enabled with CONFIG_TEST_CRC enabled.
->>
->> The test results are printed into kernel message, which look like,
->>
->> test_crc: crc64_le: PASSED (0x4e6b> +
-> 1ff972fa8c55, expval 0x4e6b1ff972fa8c55)
->> test_crc: crc64_le_bch: PASSED (0x0e4f1391d7a4a62e, expval 0x0e4f1391d7a4a62e)
->> test_crc: crc64_le_update: FAILED (0x03d4d0d85685d9a1, expval 0x3d4d0d85685d9a1f)
->>
->> kernel 0day system has framework to check kernel message, then the above
->> result can be handled by 0day system. If crc calculation inconsistency
->> happens, it can be detected quite soon.
->>
->> lib/test_crc.c can is a testing frame work for all crc consistency
->> testings. For now, there are only test caes for 3 crc routines,
->> - crc64_le()
->> - crc64_le_bch()
->> - crc64_le_update()
+On 07/16/2018 06:55 PM, Coly Li wrote:
+> This patch set adds basic implementation of crc64 calculation as Linux
+> kernel library. Since bcache already does crc64 by itself, this patch
+> set also modifies bcache code to use the new crc64 library routine.
 > 
->> +config TEST_CRC
->> +       tristate "CRC calculation test driver"
+> bcache uses crc64 as storage checksum, if a change of crc lib routines
+> results an inconsistent result, the unmatched checksum may make bcache
+> 'think' the on-disk is corrupted, such change should be avoided or
+> detected as early as possible. Therefore the last patch in this series
+> adds a crc test framework, to check consistency of different calculations.
 > 
+> Coly Li
+> 
+> Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Luis R. Rodriguez <mcgrof@suse.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Michael Lyle <mlyle@lyle.org>
+> Cc: Kent Overstreet <kent.overstreet@gmail.com>
+> Cc: Kate Stewart <kstewart@linuxfoundation.org>
+> ---
+> Andy Shevchenko (1):
+>   lib/crc64: add crc64 option to lib/Kconfig
+> 
+> Coly Li (3):
+>   lib: add crc64 calculation routines
+>   bcache: use routines from lib/crc64.c for CRC64 calculation
+>   lib/test_crc: Add test cases for crc calculation
+> 
+>  drivers/md/bcache/bcache.h  |   7 +-
+>  drivers/md/bcache/btree.c   |   2 +-
+>  drivers/md/bcache/request.c |   2 +-
+>  drivers/md/bcache/super.c   |   5 +-
+>  drivers/md/bcache/util.c    | 131 ----------------------------------
+>  drivers/md/bcache/util.h    |   5 +-
+>  include/linux/crc64.h       |  15 ++++
+>  lib/.gitignore              |   2 +
+>  lib/Kconfig                 |   8 +++
+>  lib/Kconfig.debug           |  11 +++
+>  lib/Makefile                |  12 ++++
+>  lib/crc64.c                 |  71 +++++++++++++++++++
+>  lib/gen_crc64table.c        |  76 ++++++++++++++++++++
+>  lib/test_crc.c              | 136 ++++++++++++++++++++++++++++++++++++
+>  14 files changed, 341 insertions(+), 142 deletions(-)
+>  create mode 100644 include/linux/crc64.h
+>  create mode 100644 lib/crc64.c
+>  create mode 100644 lib/gen_crc64table.c
+>  create mode 100644 lib/test_crc.c
+> 
+Actually, I would merge patch 1 & 2 together (pointless to introduce an
+option for which no code exists).
+Otherwise for the whole series:
 
-Hi Andy,
+Reviewed-by: Hannes Reinecke <hare@suse.com>
 
->> +       default n
-> 
-> Default default is n.
-> 
+Cheers,
 
-I see TEST_FIRMWARE, TEST_SYSCTL, TEST_UDELAY, TEST_STATIC_KEYS arround
-TEST_CRC all have 'default n', then I think to follow the style it might
-be better to have 'default n' here too.
-
-
->> +       depends on CRC64
-> 
->> +#include <linux/init.h>
->> +#include <linux/list.h>
->> +#include <linux/module.h>
->> +#include <linux/printk.h>
->> +#include <linux/fs.h>
->> +#include <linux/miscdevice.h>
->> +#include <linux/slab.h>
->> +#include <linux/uaccess.h>
->> +#include <linux/async.h>
->> +#include <linux/delay.h>
->> +#include <linux/vmalloc.h>
->> +#include <linux/crc64.h>
-> 
-> Perhaps in order?
-
-Do you mean in alphabet order of header file names ? I will do it in v2
-series.
-
-> 
-> Moreover, either init.h or module.h depending on the Kconfig (here
-> seems module.h is a right choice).
-> 
-
-Sure I will keep module.h in v2 series.
-
->> +struct crc_test_record {
-> 
->> +
-> 
-> Redundant.
-
-Removed.
-
-> 
->> +       char    *name;
->> +       __le64  data[4];
->> +       __le64  initval;
->> +       __le64  expval;
->> +       int     (*handler)(struct crc_test_record *rec);
->> +};
->> +
->> +static int chk_and_msg(const char *name, __le64 crc, __le64 expval)
->> +{
->> +       int ret = 0;
->> +
->> +       if (crc == expval) {
->> +               pr_info("test_crc: %s: PASSED:(0x%016llx, expval 0x%016llx)",
->> +                       name, crc, expval);
->> +       } else {
->> +               pr_err("test_crc: %s: FAILED:(0x%016llx, expval 0x%016llx)",
->> +                       name, crc, expval);
->> +               ret = -EINVAL;
->> +       }
->> +
->> +       return ret;
-> 
-> Perhaps collect statistics instead how it's done in many other tests?
-> 
-
-Good idea. I will add this in v2 series.
-
->> +}
->> +
->> +/* Add your crc test caese here */
-> 
-> caese ?
-
-Fixed.
-
-> 
->> +static int test_crc64_le(struct crc_test_record *rec)
->> +{
->> +       __le64 crc;
->> +
->> +       crc = crc64_le(rec->data, sizeof(rec->data));
->> +       return chk_and_msg(rec->name, crc, rec->expval);
-> 
->> +
-> 
-> Redundant.
-> 
-
-Fixed.
-
->> +}
-> 
->> +       { .name = NULL, }
-> 
-> Simple {} would work.
-> 
-
-Fixed.
-
->> +static int __init test_crc_init(void)
->> +{
->> +       int i;
->> +       int v, ret = 0;
->> +
->> +       pr_info("Kernel crc consitency testing:");
->> +       for (i = 0; test_data[i].name; i++) {
-> 
->> +               v = test_data[i].handler(&test_data[i]);
->> +               if (v < 0 && ret == 0)
->> +                       ret = -EINVAL;
-> 
-> A bit strange. Anyway, better to collect statistics and print it at
-> the end with corresponding return code.
-> 
-
-Sure, I will add this :-)
-
->> +       }
->> +
->> +       return ret;
->> +}
-> 
->> +late_initcall(test_crc_init);
-> 
-> Why?
-
-Oh, IMHO this is a test module, we don't need to occupy boot time and it
-should be good to invoke it after other modules loaded. As I see many
-other test modules do this.
-
-> 
->> +static void __exit test_crc_exit(void) { }
->> +module_exit(test_crc_exit);
-> 
->> +MODULE_LICENSE("GPL");
-> 
-> It's not the same as in SPDX.
-> 
-
-Nice catch, I will change it to MODULE_LICENSE("GPL v2").
-
-Thanks for all your review !
-
-Coly Li
+Hannes
+-- 
+Dr. Hannes Reinecke		   Teamlead Storage & Networking
+hare@suse.de			               +49 911 74053 688
+SUSE LINUX GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: F. Imendörffer, J. Smithard, J. Guild, D. Upmanyu, G. Norton
+HRB 21284 (AG Nürnberg)
