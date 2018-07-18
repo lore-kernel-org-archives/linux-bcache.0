@@ -1,42 +1,84 @@
-From: Noah Massey <noah.massey@gmail.com>
-Subject: Re: [PATCH v3 3/3] lib/test_crc: Add test cases for crc calculation
-Date: Wed, 18 Jul 2018 14:30:27 -0400
-Message-ID: <CADfjVrg_oe1d5+3Hr3dv5fVpcA9jYP44B24LJS2_OsUFpnyB5g@mail.gmail.com>
-References: <20180717145525.50852-1-colyli@suse.de> <20180717145525.50852-4-colyli@suse.de>
- <CADfjVriarrPnxixjun1g0m7izp4kMCvP4vXuPtNTth7_LWXrMA@mail.gmail.com> <CAHp75Ve7w8HxAcRXozsctFETuBtA0VD6jAsExEb6Wtq4UYRNAg@mail.gmail.com>
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v4 3/3] lib/test_crc: Add test cases for crc calculation
+Date: Wed, 18 Jul 2018 14:24:14 -0700
+Message-ID: <20180718142414.1cab5d98b1f4b01102cd429a@linux-foundation.org>
+References: <20180718165545.1622-1-colyli@suse.de>
+        <20180718165545.1622-4-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <CAHp75Ve7w8HxAcRXozsctFETuBtA0VD6jAsExEb6Wtq4UYRNAg@mail.gmail.com>
+In-Reply-To: <20180718165545.1622-4-colyli@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
-To: andy.shevchenko@gmail.com
-Cc: Coly Li <colyli@suse.de>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, gregkh@linuxfoundation.org, torvalds@linux-foundation.org, tglx@linutronix.de, kstewart@linuxfoundation.org
+To: Coly Li <colyli@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>, Randy Dunlap <rdunlap@infradead.org>, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Noah Massey <noah.massey@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On Tue, Jul 17, 2018 at 4:59 PM Andy Shevchenko
-<andy.shevchenko@gmail.com> wrote:
-> On Tue, Jul 17, 2018 at 9:51 PM, Noah Massey <noah.massey@gmail.com> wrote:
-> > On Tue, Jul 17, 2018 at 10:56 AM Coly Li <colyli@suse.de> wrote:
->
-> >> +       if (err == 0)
-> >> +               pr_info("test_crc: all %d tests passed\n", i);
-> >
-> > Similar to previous comment: we should not report the number of passed
-> > tests, since adding a test would invalidate previous golden output.
-> > Also, consider the situation where some tests are conditionally
-> > executed depending on kconfig.
->
-> We do similar in many test modules and I know at least two that had
-> been changed in order to get new test cases.
-> Are you proposing to change 'em all?
->
+On Thu, 19 Jul 2018 00:55:45 +0800 Coly Li <colyli@suse.de> wrote:
 
-I was proposing that the message should be "test_crc: all tests
-passed\n", since that would maintain a static expected output. Upon
-further review, parsing minor variations in the messages is simple
-enough so if the automated test tools already handle it keeping the
-test count in the output is better.
+> This patch adds a kernel module to test the consistency of multiple crc
+> calculation in Linux kernel. It is enabled with CONFIG_TEST_CRC enabled.
+> 
+> The test results are printed into kernel message, which look like,
+> 
+> test_crc: crc64_be: FAILED (0x03d4d0d85685d9a1, expected 0x3d4d0d85685d9a1f)
+> 
+> kernel 0day system has framework to check kernel message, then the above
+> result can be handled by 0day system. If crc calculation inconsistency
+> happens, it can be detected quite soon.
+> 
+> lib/test_crc.c is a testing frame work for many crc consistency
+> testings. For now, there is only one test caes for crc64_be().
 
-Sorry for the noise,
+Some tweaks.
 
-~ Noah
+
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: lib-test_crc-add-test-cases-for-crc-calculation-fix
+
+make two globals static, regularize code layout, remove unneeded initialization
+
+Cc: Coly Li <colyli@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ lib/test_crc.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff -puN lib/test_crc.c~lib-test_crc-add-test-cases-for-crc-calculation-fix lib/test_crc.c
+--- a/lib/test_crc.c~lib-test_crc-add-test-cases-for-crc-calculation-fix
++++ a/lib/test_crc.c
+@@ -25,8 +25,8 @@ struct crc_test_record {
+ 	void	(*handler)(struct crc_test_record *rec);
+ };
+ 
+-int failed_tests;
+-int total_tests;
++static int failed_tests;
++static int total_tests;
+ 
+ static void chk_and_msg(const char *name, u64 crc, u64 expval)
+ {
+@@ -68,9 +68,6 @@ static int __init test_crc_init(void)
+ {
+ 	int i;
+ 
+-	failed_tests = 0;
+-	total_tests = 0;
+-
+ 	pr_info("Kernel CRC consistency testing:\n");
+ 	for (i = 0; test_data[i].name; i++)
+ 		test_data[i].handler(&test_data[i]);
+@@ -85,7 +82,9 @@ static int __init test_crc_init(void)
+ }
+ late_initcall(test_crc_init);
+ 
+-static void __exit test_crc_exit(void) { }
++static void __exit test_crc_exit(void)
++{
++}
+ module_exit(test_crc_exit);
+ 
+ MODULE_DESCRIPTION("CRC consistency testing driver");
+_
