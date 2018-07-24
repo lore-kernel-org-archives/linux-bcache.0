@@ -1,59 +1,94 @@
-From: David Laight <David.Laight@ACULAB.COM>
-Subject: RE: [PATCH v3 1/3] lib: add crc64 calculation routines
-Date: Tue, 24 Jul 2018 13:33:52 +0000
-Message-ID: <86570dc992b64bd5a9df0898e10ce643@AcuMS.aculab.com>
-References: <20180717145525.50852-1-colyli@suse.de>
- <20180717145525.50852-2-colyli@suse.de>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH v4 3/3] lib/test_crc: Add test cases for crc calculation
+Date: Wed, 25 Jul 2018 00:28:15 +0800
+Message-ID: <2feeece1-6d92-aa08-c9b6-1b0c646eed29@suse.de>
+References: <20180718165545.1622-1-colyli@suse.de>
+ <20180718165545.1622-4-colyli@suse.de>
+ <20180724044420.GB1944@sol.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20180717145525.50852-2-colyli@suse.de>
+In-Reply-To: <20180724044420.GB1944@sol.localdomain>
 Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: 'Coly Li' <colyli@suse.de>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>, Eric Biggers <ebiggers3@gmail.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>, Andrew Morton <akpm@linux-foundation.org>, Randy Dunlap <rdunlap@infradead.org>, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Noah Massey <noah.massey@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Coly Li
-> Sent: 17 July 2018 15:55
+On 2018/7/24 12:44 PM, Eric Biggers wrote:
+> On Thu, Jul 19, 2018 at 12:55:45AM +0800, Coly Li wrote:
+>> This patch adds a kernel module to test the consistency of multiple crc
+>> calculation in Linux kernel. It is enabled with CONFIG_TEST_CRC enabled.
+>>
+>> The test results are printed into kernel message, which look like,
+>>
+>> test_crc: crc64_be: FAILED (0x03d4d0d85685d9a1, expected 0x3d4d0d85685d9a1f)
+>>
+>> kernel 0day system has framework to check kernel message, then the above
+>> result can be handled by 0day system. If crc calculation inconsistency
+>> happens, it can be detected quite soon.
+>>
+>> lib/test_crc.c is a testing frame work for many crc consistency
+>> testings. For now, there is only one test caes for crc64_be().
 > 
-> This patch adds the re-write crc64 calculation routines for Linux kernel.
-> The CRC64 polynomical arithmetic follows ECMA-182 specification, inspired
-> by CRC paper of Dr. Ross N. Williams
-> (see http://www.ross.net/crc/download/crc_v3.txt) and other public domain
-> implementations.
+> Are you aware there's already a CRC-32 test module: CONFIG_CRC32_SELFTEST and
+> lib/crc32test.c?  Confusingly, your patch uses a different naming convention for
+> the new CRC-64 one, and puts the Kconfig option in a different place, and makes
+> it sound like it's a generic test for all CRC implementations rather than just
+> the CRC-64 one.  Please use the existing convention (i.e. add
+> CONFIG_CRC64_SELFTEST and lib/crc64test.c) unless you have a strong argument for
+> why it should be done differently.
 > 
-> All the changes work in this way,
-> - When Linux kernel is built, host program lib/gen_crc64table.c will be
->   compiled to lib/gen_crc64table and executed.
+> (And I don't think it makes sense to combine all CRC tests into one module,
+> since you should be able to e.g. enable just CRC32 and CRC32_SELFTEST without
+> also pulling in a dependency on all the other CRC variants.)
+> 
 
-That seems excessive for a fixed table.
-No real point doing more than putting a commented out copy of the code
-with the initialisation data.
+Hi Eric,
 
-> - The output of gen_crc64table execution is an array called as lookup
->   table (a.k.a POLY 0x42f0e1eba9ea369) which contain 256 64bits-long
->   numbers, this talbe is dumped into header file lib/crc64table.h.
-> - Then the header file is included by lib/crc64.c for normal 64bit crc
->   calculation.
+The purpose of test_crc is to provide a unified crc calculation
+consistency testing for 0day. So far it is only crc64, and I will add
+more test cases later. I see there is crc-32 test module, which does
+more testing then consistency check, and no unified format for 0day
+system to detect. This is why people suggested me to add this test
+framework.
 
-How long are the buffers being processed?
-For short buffers a lot of bytes will suffer cache line misses.
-For longer buffers you'll be displacing 2k of data from the L1 data cache.
-That could easily have a knock on effect on the surrounding code.
+>> +/* Add your crc test cases here */
+>> +static void test_crc64_be(struct crc_test_record *rec)
+>> +{
+>> +	u64 crc;
+>> +
+>> +	crc = crc64_be(rec->initval, rec->data, sizeof(rec->data));
+>> +	chk_and_msg(rec->name, crc, rec->expval);
+>> +}
+>> +
+>> +/*
+>> + * Set up your crc test initial data here.
+>> + * Do not change the existing items, they are hard coded with
+>> + * pre-calculated values.
+>> + */
+>> +static struct crc_test_record test_data[] = {
+>> +	{ .name		= "crc64_be",
+>> +	  .data		= { 0x42F0E1EBA9EA3693, 0x85E1C3D753D46D26,
+>> +			    0xC711223CFA3E5BB5, 0x493366450E42ECDF },
+>> +	  .initval	= 0x61C8864680B583EB,
+>> +	  .expval	= 0xb2c863673f4292bf,
+>> +	  .handler	= test_crc64_be,
+>> +	},
+>> +	{}
+>> +};
+> 
+> This is incorrect; the test is checksumming data that has a CPU-specific
+> endianness.  So, it will fail on big-endian systems.  The data needs to be
+> declared as a byte or char array instead.  See e.g. what crypto/testmgr.h does
+> for crypto API algorithms.
+> 
+> Also please mark the test data structures 'const'.
 
-You might find that a nibble based loop and lookup table is faster.
-Or, relying on the linearity of CRCs, separate lookup tables
-for the high and low nibbles of each byte.
+Sure, I will send fix patches (not rebase the posted patches because
+they are in linux-next for now) soon.
 
-So replacing:
-		crc = crc64table[t] ^ (crc << 8);
-with:
-		crc = crc64table_hi[t >> 4] ^ crc64table_lo[t & 15] ^ (crc << 8);
+Thanks for your comments.
 
-	David
-
--
-Registered Address Lakeside, Bramley Road, Mount Farm, Milton Keynes, MK1 1PT, UK
-Registration No: 1397386 (Wales)
+Coly Li
