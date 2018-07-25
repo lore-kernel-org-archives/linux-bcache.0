@@ -1,35 +1,51 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: kill bio_clone_kmalloc and bio_clone_bioset
-Date: Tue, 24 Jul 2018 13:43:37 -0700
-Message-ID: <8539f366-178d-ee2d-7c24-2bf339f4caff@kernel.dk>
-References: <20180724075234.26861-1-hch@lst.de>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH v4 1/3] lib: add crc64 calculation routines
+Date: Wed, 25 Jul 2018 10:37:23 +0800
+Message-ID: <01f8e352-a49f-2f41-6264-bb6395bb0bf2@suse.de>
+References: <20180718165545.1622-1-colyli@suse.de>
+ <20180718165545.1622-2-colyli@suse.de>
+ <20180724042637.GA1944@sol.localdomain>
+ <dd95ab25-562e-1318-19e9-c8163969252f@suse.de>
+ <399c1cc851f983370a0308c76c68a97ff41a5d4f.camel@linux.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Return-path: <dm-devel-bounces@redhat.com>
-In-Reply-To: <20180724075234.26861-1-hch@lst.de>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <399c1cc851f983370a0308c76c68a97ff41a5d4f.camel@linux.intel.com>
 Content-Language: en-US
-List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/dm-devel>
-List-Post: <mailto:dm-devel@redhat.com>
-List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
-	<mailto:dm-devel-request@redhat.com?subject=subscribe>
-Sender: dm-devel-bounces@redhat.com
-Errors-To: dm-devel-bounces@redhat.com
-To: Christoph Hellwig <hch@lst.de>
-Cc: linux-block@vger.kernel.org, Boaz Harrosh <ooo@electrozaur.com>, linux-bcache@vger.kernel.org, dm-devel@redhat.com
+Sender: linux-kernel-owner@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Eric Biggers <ebiggers3@gmail.com>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>, Randy Dunlap <rdunlap@infradead.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 7/24/18 12:52 AM, Christoph Hellwig wrote:
-> Hi all,
+On 2018/7/25 1:06 AM, Andy Shevchenko wrote:
+> On Wed, 2018-07-25 at 00:29 +0800, Coly Li wrote:
+>> On 2018/7/24 12:26 PM, Eric Biggers wrote:
+>>> On Thu, Jul 19, 2018 at 12:55:43AM +0800, Coly Li wrote:
+>>>> This patch adds the re-write crc64 calculation routines for Linux
+>>>> kernel.
+>>>> The CRC64 polynomical arithmetic follows ECMA-182 specification,
+>>>> inspired
+>>>
+>>> "polynomical" => "polynomial".  Same everywhere else in the patches.
+>>>
+>>
+>> Hi Eric,
+>>
+>> Thanks for your careful review. I will post a fixing patch to fix all
+>> these issues.
 > 
-> this series removes all but one users of the traditional deep bio clone,
-> and then moves bio_clone_bioset to its only caller so that we get rid
-> of the deep bio cloning in the block layer API.
+> IIUC this series in Andrew's quilt. So, it's still possible to replace
+> it with better one, I suppose. Ask Andrew (at least I remember recent
+> case where he just replaced series by fixed one).
 
-Applied for 4.19.
+Hi Andrew,
 
--- 
-Jens Axboe
+It seems there should be some fix/update for this series. I see current
+series is in linux-next for now. If I want to add the fix, should I post
+a new version of the series, or the incremental patches to fix current
+series ?
+
+Thanks in advance for your advice.
+
+Coly Li
