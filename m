@@ -1,384 +1,101 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH 9/9] bcache: set max writeback rate when I/O request is idle
-Date: Thu, 26 Jul 2018 22:22:39 +0800
-Message-ID: <20180726142239.44669-10-colyli@suse.de>
-References: <20180726142239.44669-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20180726142239.44669-1-colyli@suse.de>
-Sender: stable-owner@vger.kernel.org
-To: colyli@suse.de, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, stable@vger.kernel.org, Michael Lyle <mlyle@lyle.org>
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v5 1/2] lib: add crc64 calculation routines
+Date: Thu, 26 Jul 2018 13:02:10 -0700
+Message-ID: <20180726130210.97450a74c164a02d7cfd79c1@linux-foundation.org>
+References: <20180726053352.2781-1-colyli@suse.de>
+        <20180726053352.2781-2-colyli@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20180726053352.2781-2-colyli@suse.de>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>, Eric Biggers <ebiggers3@gmail.com>, Randy Dunlap <rdunlap@infradead.org>
 List-Id: linux-bcache@vger.kernel.org
 
-Commit b1092c9af9ed ("bcache: allow quick writeback when backing idle")
-allows the writeback rate to be faster if there is no I/O request on a
-bcache device. It works well if there is only one bcache device attached
-to the cache set. If there are many bcache devices attached to a cache
-set, it may introduce performance regression because multiple faster
-writeback threads of the idle bcache devices will compete the btree level
-locks with the bcache device who have I/O requests coming.
+On Thu, 26 Jul 2018 13:33:51 +0800 Coly Li <colyli@suse.de> wrote:
 
-This patch fixes the above issue by only permitting fast writebac when
-all bcache devices attached on the cache set are idle. And if one of the
-bcache devices has new I/O request coming, minimized all writeback
-throughput immediately and let PI controller __update_writeback_rate()
-to decide the upcoming writeback rate for each bcache device.
+> This patch adds the re-write crc64 calculation routines for Linux kernel.
+> The CRC64 polynomial arithmetic follows ECMA-182 specification, inspired
+> by CRC paper of Dr. Ross N. Williams
+> (see http://www.ross.net/crc/download/crc_v3.txt) and other public domain
+> implementations.
+> 
+> All the changes work in this way,
+> - When Linux kernel is built, host program lib/gen_crc64table.c will be
+>   compiled to lib/gen_crc64table and executed.
+> - The output of gen_crc64table execution is an array called as lookup
+>   table (a.k.a POLY 0x42f0e1eba9ea369) which contain 256 64-bit long
+>   numbers, this talbe is dumped into header file lib/crc64table.h.
+> - Then the header file is included by lib/crc64.c for normal 64bit crc
+>   calculation.
+> - Function declaration of the crc64 calculation routines is placed in
+>   include/linux/crc64.h
+> 
+> Currently bcache is the only user of crc64_be(), another potential user
+> is bcachefs which is on the way to be in mainline kernel. Therefore it
+> makes sense to move crc64 calculation into lib/crc64.c as public code.
 
-Also when all bcache devices are idle, limited wrieback rate to a small
-number is wast of thoughput, especially when backing devices are slower
-non-rotation devices (e.g. SATA SSD). This patch sets a max writeback
-rate for each backing device if the whole cache set is idle. A faster
-writeback rate in idle time means new I/Os may have more available space
-for dirty data, and people may observe a better write performance then.
+delta from v4:
 
-Please note bcache may change its cache mode in run time, and this patch
-still works if the cache mode is switched from writeback mode and there
-is still dirty data on cache.
-
-Fixes: Commit b1092c9af9ed ("bcache: allow quick writeback when backing idle")
-Cc: stable@vger.kernel.org #4.16+
-Signed-off-by: Coly Li <colyli@suse.de>
-Tested-by: Kai Krakow <kai@kaishome.de>
-Tested-by: Stefan Priebe <s.priebe@profihost.ag>
-Cc: Michael Lyle <mlyle@lyle.org>
----
- drivers/md/bcache/bcache.h    | 10 ++--
- drivers/md/bcache/request.c   | 54 ++++++++++++++++++++-
- drivers/md/bcache/super.c     |  4 ++
- drivers/md/bcache/sysfs.c     | 15 ++++--
- drivers/md/bcache/util.c      |  2 +-
- drivers/md/bcache/util.h      |  2 +-
- drivers/md/bcache/writeback.c | 91 +++++++++++++++++++++++------------
- 7 files changed, 134 insertions(+), 44 deletions(-)
-
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 5f7082aab1b0..97489573dedc 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -328,13 +328,6 @@ struct cached_dev {
- 	 */
- 	atomic_t		has_dirty;
+--- a/include/linux/crc64.h~lib-add-crc64-calculation-routines-v5
++++ a/include/linux/crc64.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0 */
+ /*
+- * See lib/crc64.c for the related specification and polynomical arithmetic.
++ * See lib/crc64.c for the related specification and polynomial arithmetic.
+  */
+ #ifndef _LINUX_CRC64_H
+ #define _LINUX_CRC64_H
+--- a/lib/crc64.c~lib-add-crc64-calculation-routines-v5
++++ a/lib/crc64.c
+@@ -12,7 +12,7 @@
+  * from,
+  * http://www.ross.net/crc/download/crc_v3.txt
+  *
+- * crc64table[256] is the lookup table of a table-driver 64-bit CRC
++ * crc64table[256] is the lookup table of a table-driven 64-bit CRC
+  * calculation, which is generated by gen_crc64table.c in kernel build
+  * time. The polynomial of crc64 arithmetic is from ECMA-182 specification
+  * as well, which is defined as,
+@@ -35,8 +35,8 @@ MODULE_LICENSE("GPL v2");
  
--	/*
--	 * Set to zero by things that touch the backing volume-- except
--	 * writeback.  Incremented by writeback.  Used to determine when to
--	 * accelerate idle writeback.
--	 */
--	atomic_t		backing_idle;
--
- 	struct bch_ratelimit	writeback_rate;
- 	struct delayed_work	writeback_rate_update;
+ /**
+  * crc64_be - Calculate bitwise big-endian ECMA-182 CRC64
+- * @crc: seed value for computation. 0 for a new CRC computing, or the
+- *	previous crc64 value if computing incrementally.
++ * @crc: seed value for computation. 0 or (u64)~0 for a new CRC calculation,
++	or the previous crc64 value if computing incrementally.
+  * @p: pointer to buffer over which CRC64 is run
+  * @len: length of buffer @p
+  */
+--- a/lib/gen_crc64table.c~lib-add-crc64-calculation-routines-v5
++++ a/lib/gen_crc64table.c
+@@ -1,13 +1,13 @@
+ // SPDX-License-Identifier: GPL-2.0
+ /*
+- * Generate lookup table for the talbe-driven CRC64 calculation.
++ * Generate lookup table for the table-driven CRC64 calculation.
+  *
+  * gen_crc64table is executed in kernel build time and generates
+  * lib/crc64table.h. This header is included by lib/crc64.c for
+- * the table-driver CRC64 calculation.
++ * the table-driven CRC64 calculation.
+  *
+  * See lib/crc64.c for more information about which specification
+- * and polynomical arithmetic that gen_crc64table.c follows to
++ * and polynomial arithmetic that gen_crc64table.c follows to
+  * generate the lookup table.
+  *
+  * Copyright 2018 SUSE Linux.
+@@ -20,7 +20,7 @@
  
-@@ -515,6 +508,8 @@ struct cache_set {
- 	struct cache_accounting accounting;
+ #define CRC64_ECMA182_POLY 0x42F0E1EBA9EA3693ULL
  
- 	unsigned long		flags;
-+	atomic_t		idle_counter;
-+	atomic_t		at_max_writeback_rate;
+-static int64_t crc64_table[256] = {0};
++static uint64_t crc64_table[256] = {0};
  
- 	struct cache_sb		sb;
- 
-@@ -524,6 +519,7 @@ struct cache_set {
- 
- 	struct bcache_device	**devices;
- 	unsigned		devices_max_used;
-+	atomic_t		attached_dev_nr;
- 	struct list_head	cached_devs;
- 	uint64_t		cached_dev_sectors;
- 	atomic_long_t		flash_dev_dirty_sectors;
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 91206f329971..86a977c2a176 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1105,6 +1105,44 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
- 		generic_make_request(bio);
- }
- 
-+static void quit_max_writeback_rate(struct cache_set *c,
-+				    struct cached_dev *this_dc)
-+{
-+	int i;
-+	struct bcache_device *d;
-+	struct cached_dev *dc;
-+
-+	/*
-+	 * mutex bch_register_lock may compete with other parallel requesters,
-+	 * or attach/detach operations on other backing device. Waiting to
-+	 * the mutex lock may increase I/O request latency for seconds or more.
-+	 * To avoid such situation, if mutext_trylock() failed, only writeback
-+	 * rate of current cached device is set to 1, and __update_write_back()
-+	 * will decide writeback rate of other cached devices (remember now
-+	 * c->idle_counter is 0 already).
-+	 */
-+	if (mutex_trylock(&bch_register_lock)) {
-+		for (i = 0; i < c->devices_max_used; i++) {
-+			if (!c->devices[i])
-+				continue;
-+
-+			if (UUID_FLASH_ONLY(&c->uuids[i]))
-+				continue;
-+
-+			d = c->devices[i];
-+			dc = container_of(d, struct cached_dev, disk);
-+			/*
-+			 * set writeback rate to default minimum value,
-+			 * then let update_writeback_rate() to decide the
-+			 * upcoming rate.
-+			 */
-+			atomic_long_set(&dc->writeback_rate.rate, 1);
-+		}
-+		mutex_unlock(&bch_register_lock);
-+	} else
-+		atomic_long_set(&this_dc->writeback_rate.rate, 1);
-+}
-+
- /* Cached devices - read & write stuff */
- 
- static blk_qc_t cached_dev_make_request(struct request_queue *q,
-@@ -1122,7 +1160,21 @@ static blk_qc_t cached_dev_make_request(struct request_queue *q,
- 		return BLK_QC_T_NONE;
- 	}
- 
--	atomic_set(&dc->backing_idle, 0);
-+	if (likely(d->c)) {
-+		if (atomic_read(&d->c->idle_counter))
-+			atomic_set(&d->c->idle_counter, 0);
-+		/*
-+		 * If at_max_writeback_rate of cache set is true and new I/O
-+		 * comes, quit max writeback rate of all cached devices
-+		 * attached to this cache set, and set at_max_writeback_rate
-+		 * to false.
-+		 */
-+		if (unlikely(atomic_read(&d->c->at_max_writeback_rate) == 1)) {
-+			atomic_set(&d->c->at_max_writeback_rate, 0);
-+			quit_max_writeback_rate(d->c, dc);
-+		}
-+	}
-+
- 	generic_start_io_acct(q, rw, bio_sectors(bio), &d->disk->part0);
- 
- 	bio_set_dev(bio, dc->bdev);
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index f517d7d1fa10..32b95f3b9461 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -696,6 +696,8 @@ static void bcache_device_detach(struct bcache_device *d)
+ static void generate_crc64_table(void)
  {
- 	lockdep_assert_held(&bch_register_lock);
- 
-+	atomic_dec(&d->c->attached_dev_nr);
-+
- 	if (test_bit(BCACHE_DEV_DETACHING, &d->flags)) {
- 		struct uuid_entry *u = d->c->uuids + d->id;
- 
-@@ -1144,6 +1146,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
- 
- 	bch_cached_dev_run(dc);
- 	bcache_device_link(&dc->disk, c, "bdev");
-+	atomic_inc(&c->attached_dev_nr);
- 
- 	/* Allow the writeback thread to proceed */
- 	up_write(&dc->writeback_lock);
-@@ -1696,6 +1699,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 	c->block_bits		= ilog2(sb->block_size);
- 	c->nr_uuids		= bucket_bytes(c) / sizeof(struct uuid_entry);
- 	c->devices_max_used	= 0;
-+	atomic_set(&c->attached_dev_nr, 0);
- 	c->btree_pages		= bucket_pages(c);
- 	if (c->btree_pages > BTREE_MAX_PAGES)
- 		c->btree_pages = max_t(int, c->btree_pages / 4,
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 3e9d3459a224..6e88142514fb 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -171,7 +171,8 @@ SHOW(__bch_cached_dev)
- 	var_printf(writeback_running,	"%i");
- 	var_print(writeback_delay);
- 	var_print(writeback_percent);
--	sysfs_hprint(writeback_rate,	wb ? dc->writeback_rate.rate << 9 : 0);
-+	sysfs_hprint(writeback_rate,
-+		     wb ? atomic_long_read(&dc->writeback_rate.rate) << 9 : 0);
- 	sysfs_hprint(io_errors,		atomic_read(&dc->io_errors));
- 	sysfs_printf(io_error_limit,	"%i", dc->error_limit);
- 	sysfs_printf(io_disable,	"%i", dc->io_disable);
-@@ -193,7 +194,9 @@ SHOW(__bch_cached_dev)
- 		 * Except for dirty and target, other values should
- 		 * be 0 if writeback is not running.
- 		 */
--		bch_hprint(rate, wb ? dc->writeback_rate.rate << 9 : 0);
-+		bch_hprint(rate,
-+			   wb ? atomic_long_read(&dc->writeback_rate.rate) << 9
-+			      : 0);
- 		bch_hprint(dirty, bcache_dev_sectors_dirty(&dc->disk) << 9);
- 		bch_hprint(target, dc->writeback_rate_target << 9);
- 		bch_hprint(proportional,
-@@ -261,8 +264,12 @@ STORE(__cached_dev)
- 
- 	sysfs_strtoul_clamp(writeback_percent, dc->writeback_percent, 0, 40);
- 
--	sysfs_strtoul_clamp(writeback_rate,
--			    dc->writeback_rate.rate, 1, INT_MAX);
-+	if (attr == &sysfs_writeback_rate) {
-+		int v;
-+
-+		sysfs_strtoul_clamp(writeback_rate, v, 1, INT_MAX);
-+		atomic_long_set(&dc->writeback_rate.rate, v);
-+	}
- 
- 	sysfs_strtoul_clamp(writeback_rate_update_seconds,
- 			    dc->writeback_rate_update_seconds,
-diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-index f912c372978c..c6a99dfa1ad9 100644
---- a/drivers/md/bcache/util.c
-+++ b/drivers/md/bcache/util.c
-@@ -200,7 +200,7 @@ uint64_t bch_next_delay(struct bch_ratelimit *d, uint64_t done)
- {
- 	uint64_t now = local_clock();
- 
--	d->next += div_u64(done * NSEC_PER_SEC, d->rate);
-+	d->next += div_u64(done * NSEC_PER_SEC, atomic_long_read(&d->rate));
- 
- 	/* Bound the time.  Don't let us fall further than 2 seconds behind
- 	 * (this prevents unnecessary backlog that would make it impossible
-diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
-index a1579e28049f..5ff055f0a653 100644
---- a/drivers/md/bcache/util.h
-+++ b/drivers/md/bcache/util.h
-@@ -443,7 +443,7 @@ struct bch_ratelimit {
- 	 * Rate at which we want to do work, in units per second
- 	 * The units here correspond to the units passed to bch_next_delay()
- 	 */
--	uint32_t		rate;
-+	atomic_long_t		rate;
- };
- 
- static inline void bch_ratelimit_reset(struct bch_ratelimit *d)
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 912e969fedba..481d4cf38ac0 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -104,11 +104,56 @@ static void __update_writeback_rate(struct cached_dev *dc)
- 
- 	dc->writeback_rate_proportional = proportional_scaled;
- 	dc->writeback_rate_integral_scaled = integral_scaled;
--	dc->writeback_rate_change = new_rate - dc->writeback_rate.rate;
--	dc->writeback_rate.rate = new_rate;
-+	dc->writeback_rate_change = new_rate -
-+			atomic_long_read(&dc->writeback_rate.rate);
-+	atomic_long_set(&dc->writeback_rate.rate, new_rate);
- 	dc->writeback_rate_target = target;
- }
- 
-+static bool set_at_max_writeback_rate(struct cache_set *c,
-+				       struct cached_dev *dc)
-+{
-+	/*
-+	 * Idle_counter is increased everytime when update_writeback_rate() is
-+	 * called. If all backing devices attached to the same cache set have
-+	 * identical dc->writeback_rate_update_seconds values, it is about 6
-+	 * rounds of update_writeback_rate() on each backing device before
-+	 * c->at_max_writeback_rate is set to 1, and then max wrteback rate set
-+	 * to each dc->writeback_rate.rate.
-+	 * In order to avoid extra locking cost for counting exact dirty cached
-+	 * devices number, c->attached_dev_nr is used to calculate the idle
-+	 * throushold. It might be bigger if not all cached device are in write-
-+	 * back mode, but it still works well with limited extra rounds of
-+	 * update_writeback_rate().
-+	 */
-+	if (atomic_inc_return(&c->idle_counter) <
-+	    atomic_read(&c->attached_dev_nr) * 6)
-+		return false;
-+
-+	if (atomic_read(&c->at_max_writeback_rate) != 1)
-+		atomic_set(&c->at_max_writeback_rate, 1);
-+
-+	atomic_long_set(&dc->writeback_rate.rate, INT_MAX);
-+
-+	/* keep writeback_rate_target as existing value */
-+	dc->writeback_rate_proportional = 0;
-+	dc->writeback_rate_integral_scaled = 0;
-+	dc->writeback_rate_change = 0;
-+
-+	/*
-+	 * Check c->idle_counter and c->at_max_writeback_rate agagain in case
-+	 * new I/O arrives during before set_at_max_writeback_rate() returns.
-+	 * Then the writeback rate is set to 1, and its new value should be
-+	 * decided via __update_writeback_rate().
-+	 */
-+	if ((atomic_read(&c->idle_counter) <
-+	     atomic_read(&c->attached_dev_nr) * 6) ||
-+	    !atomic_read(&c->at_max_writeback_rate))
-+		return false;
-+
-+	return true;
-+}
-+
- static void update_writeback_rate(struct work_struct *work)
- {
- 	struct cached_dev *dc = container_of(to_delayed_work(work),
-@@ -136,13 +181,20 @@ static void update_writeback_rate(struct work_struct *work)
- 		return;
- 	}
- 
--	down_read(&dc->writeback_lock);
--
--	if (atomic_read(&dc->has_dirty) &&
--	    dc->writeback_percent)
--		__update_writeback_rate(dc);
-+	if (atomic_read(&dc->has_dirty) && dc->writeback_percent) {
-+		/*
-+		 * If the whole cache set is idle, set_at_max_writeback_rate()
-+		 * will set writeback rate to a max number. Then it is
-+		 * unncessary to update writeback rate for an idle cache set
-+		 * in maximum writeback rate number(s).
-+		 */
-+		if (!set_at_max_writeback_rate(c, dc)) {
-+			down_read(&dc->writeback_lock);
-+			__update_writeback_rate(dc);
-+			up_read(&dc->writeback_lock);
-+		}
-+	}
- 
--	up_read(&dc->writeback_lock);
- 
- 	/*
- 	 * CACHE_SET_IO_DISABLE might be set via sysfs interface,
-@@ -422,27 +474,6 @@ static void read_dirty(struct cached_dev *dc)
- 
- 		delay = writeback_delay(dc, size);
- 
--		/* If the control system would wait for at least half a
--		 * second, and there's been no reqs hitting the backing disk
--		 * for awhile: use an alternate mode where we have at most
--		 * one contiguous set of writebacks in flight at a time.  If
--		 * someone wants to do IO it will be quick, as it will only
--		 * have to contend with one operation in flight, and we'll
--		 * be round-tripping data to the backing disk as quickly as
--		 * it can accept it.
--		 */
--		if (delay >= HZ / 2) {
--			/* 3 means at least 1.5 seconds, up to 7.5 if we
--			 * have slowed way down.
--			 */
--			if (atomic_inc_return(&dc->backing_idle) >= 3) {
--				/* Wait for current I/Os to finish */
--				closure_sync(&cl);
--				/* And immediately launch a new set. */
--				delay = 0;
--			}
--		}
--
- 		while (!kthread_should_stop() &&
- 		       !test_bit(CACHE_SET_IO_DISABLE, &dc->disk.c->flags) &&
- 		       delay) {
-@@ -741,7 +772,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
- 	dc->writeback_running		= true;
- 	dc->writeback_percent		= 10;
- 	dc->writeback_delay		= 30;
--	dc->writeback_rate.rate		= 1024;
-+	atomic_long_set(&dc->writeback_rate.rate, 1024);
- 	dc->writeback_rate_minimum	= 8;
- 
- 	dc->writeback_rate_update_seconds = WRITEBACK_RATE_UPDATE_SECS_DEFAULT;
--- 
-2.17.1
