@@ -1,68 +1,56 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 2/2] bcache: add undef for macro in function
-Date: Wed, 15 Aug 2018 00:25:25 +0800
-Message-ID: <a223a080-6fbe-36cb-8085-361294a89c96@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+From: Dongbo Cao <cdbdyx@163.com>
+Subject: [PATCH 2/2] fix potential memory leak in function "register_bcache"
+Date: Wed, 15 Aug 2018 14:50:06 +0800
+Message-ID: <20180815065006.19856-1-cdbdyx@163.com>
 Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: "cdbdyx@163.com" <cdbdyx@163.com>
-Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, kent.overstreet@gmail.com
+To: colyli@suse.de
+Cc: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, Dongbo Cao <cdbdyx@163.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2018/8/14 10:59 PM, cdbdyx@163.com wrote:
-> Hi Coly，
-> The three macros is only locally used in func "__cached_dev"，I think
-> they should be undefined before leaving the func.
-> 
+if register_cache get error, memory pointed by ca should be released.
+and also, blkdev_put should be called I think.
 
-Hi Dongbo,
+Signed-off-by: Dongbo Cao <cdbdyx@163.com>
+---
+ drivers/md/bcache/super.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-It is worthy to do this if there is a potential conflict. But they are
-defined in sysfs.c and not exported to anywhere else, I guess there
-won't be any symbol conflict. Then we don't need to worry about this.
-
-Coly Li
-
-
-> ---Original---
-> *From:* "Coly Li"<colyli@suse.de>
-> *Date:* Tue, Aug 14, 2018 20:16 PM
-> *To:* "Dongbo Cao"<cdbdyx@163.com>;
-> *Cc:*
-> "linux-kernel"<linux-kernel@vger.kernel.org>;"linux-bcache"<linux-bcache@vger.kernel.org>;"kent.overstreet"<kent.overstreet@gmail.com>;
-> *Subject:* Re: [PATCH 2/2] bcache: add undef for macro in function
-> 
-> On 2018/8/14 4:16 PM, Dongbo Cao wrote:
->> add undef for macro d_strtoul,d_strtoul_nonzero and d_strtoi_h
->> 
->> Signed-off-by: Dongbo Cao 
->> ---
->>  drivers/md/bcache/sysfs.c | 3 +++
->>  1 file changed, 3 insertions(+)
->> 
->> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
->> index 225b15aa..ed67a290 100644
->> --- a/drivers/md/bcache/sysfs.c
->> +++ b/drivers/md/bcache/sysfs.c
->> @@ -349,6 +349,9 @@ STORE(__cached_dev)
->>   if (attr == &sysfs_stop)
->>   bcache_device_stop(&dc->disk);
->>  
->> +#undef d_strtoul
->> +#undef d_strtoul_nonzero
->> +#undef d_strtoi_h
->>   return size;
->>  }
->>  
->> 
-> 
-> Hi Dongbo,
-> 
-> Could you please to provide the motivation why you make this change ?
-> 
-> Thanks.
-> 
-> Coly Li
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index f98352d4..14c31e03 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -2159,6 +2159,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 	struct cache_sb *sb = NULL;
+ 	struct block_device *bdev = NULL;
+ 	struct page *sb_page = NULL;
++	struct cache *ca = NULL;
+ 
+ 	if (!try_module_get(THIS_MODULE))
+ 		return -EBUSY;
+@@ -2206,12 +2207,12 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 		register_bdev(sb, sb_page, bdev, dc);
+ 		mutex_unlock(&bch_register_lock);
+ 	} else {
+-		struct cache *ca = kzalloc(sizeof(*ca), GFP_KERNEL);
++		ca = kzalloc(sizeof(struct cache), GFP_KERNEL);
+ 		if (!ca)
+ 			goto err_close;
+ 
+ 		if (register_cache(sb, sb_page, bdev, ca) != 0)
+-			goto err;
++			goto err_register;
+ 	}
+ out:
+ 	if (sb_page)
+@@ -2221,6 +2222,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 	module_put(THIS_MODULE);
+ 	return ret;
+ 
++err_register:
++	kfree(ca);
+ err_close:
+ 	blkdev_put(bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
+ err:
+-- 
+2.17.1
