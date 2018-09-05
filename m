@@ -1,41 +1,41 @@
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 04/11] UAPI: bcache: Fix use of embedded flexible array
-Date: Wed, 05 Sep 2018 16:55:03 +0100
-Message-ID: <153616290368.23468.7806230605345568524.stgit@warthog.procyon.org.uk>
+From: Greg KH <greg-U8xfFu+wG4EAvxtiuMwx3w@public.gmane.org>
+Subject: Re: [RFC] UAPI: Check headers by compiling all together as C++
+Date: Wed, 5 Sep 2018 18:55:52 +0200
+Message-ID: <20180905165552.GB25206@kroah.com>
 References: <153616286704.23468.584491117180383924.stgit@warthog.procyon.org.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <153616286704.23468.584491117180383924.stgit@warthog.procyon.org.uk>
-Sender: linux-kernel-owner@vger.kernel.org
-To: linux-api@vger.kernel.org, linux-kbuild@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, dhowells@redhat.com
+Return-path: <linux-nvdimm-bounces-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <153616286704.23468.584491117180383924.stgit-S6HVgzuS8uM4Awkfq6JHfwNdhmdF6hFW@public.gmane.org>
+List-Unsubscribe: <https://lists.01.org/mailman/options/linux-nvdimm>,
+ <mailto:linux-nvdimm-request-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://lists.01.org/pipermail/linux-nvdimm/>
+List-Post: <mailto:linux-nvdimm-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org>
+List-Help: <mailto:linux-nvdimm-request-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org?subject=help>
+List-Subscribe: <https://lists.01.org/mailman/listinfo/linux-nvdimm>,
+ <mailto:linux-nvdimm-request-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org?subject=subscribe>
+Errors-To: linux-nvdimm-bounces-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org
+Sender: "Linux-nvdimm" <linux-nvdimm-bounces-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org>
+To: David Howells <dhowells-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>
+Cc: moderated for non-subscribers <alsa-devel-K7yf7f+aM1XWsZ/bQMPhNw@public.gmane.org>, "Michael S. Tsirkin" <mst-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, David Airlie <airlied-cv59FeDIM0c@public.gmane.org>, Jason Wang <jasowang-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org>, Mat Martineau <mathew.j.martineau-VuQAYsv1563Yd54FQh9/CA@public.gmane.org>, dri-devel-PD4FTy7X32lNgt0PjOBp9y5qC8QIuHrW@public.gmane.org, virtualization-cunTk1MwBs9QetFLy7KEm3xJsTq8ys+cHZ5vskTnxNA@public.gmane.org, Masahiro Yamada <yamada.masahiro-uWyLwvC0a2jby3iVrkZq2A@public.gmane.org>, keyrings-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Ryusuke Konishi <konishi.ryusuke-Zyj7fXuS5i5L9jVzuh4AOg@public.gmane.org>, linux-nilfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-nvdimm-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org, codalist-/uMB558Y47wP4a1z8dhFYw@public.gmane.org, coda-ETDLCGt7PQU3uPMLIKxrzw@public.gmane.org, coreteam-Cap9r6Oaw4JrovVCs/uTlw@public.gmane.org, Kent Overstreet <kent.overstreet-Re5JQEeQqe8AvxtiuMwx3w@public.gmane.org>, linux-kbuild-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-arm-msm-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Coly Li <colyli-l3A5Bk7waGM@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Jaroslav Kysela <perex-/Fr2/VpizcU@public.gmane.org>, Jan Harkes <jaharkes-ETDLCGt7PQU3uPMLIKxrzw@public.gmane.org>, Michal Marek <michal.lkml-yyZNWGI4GtDR7s880joybQ@public.gmane.org>, linux-api-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Takashi Iwai <tiwai-IBi9RG/b67k@public.gmane.org>, linux-kernel@
 List-Id: linux-bcache@vger.kernel.org
 
-The bkey struct defined by bcache is embedded in the jset struct.  However,
-this is illegal in C++ as there's a "flexible array" at the end of the
-struct.  Change this to be a 0-length struct instead.
+On Wed, Sep 05, 2018 at 04:54:27PM +0100, David Howells wrote:
+> 
+> Here's a set of patches that inserts a step into the build process to make
+> sure that the UAPI headers can all be built together with C++ (if the
+> compiler being used supports C++).  All but the final patch perform fixups,
+> including:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
-cc: Coly Li <colyli@suse.de>
-cc: Kent Overstreet <kent.overstreet@gmail.com>
-cc: linux-bcache@vger.kernel.org
----
+Wait, why do we care?  What has recently changed to start to directly
+import kernel uapi files into C++ code?
 
- include/uapi/linux/bcache.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+And if userspace wants to do this, can't they do the C namespace trick
+themselves when they do the import?  That must be how they are doing it
+today, right?
 
-diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-index 5d4f58e059fd..11863e903bff 100644
---- a/include/uapi/linux/bcache.h
-+++ b/include/uapi/linux/bcache.h
-@@ -23,7 +23,7 @@ static inline void SET_##name(type *k, __u64 v)			\
- struct bkey {
- 	__u64	high;
- 	__u64	low;
--	__u64	ptr[];
-+	__u64	ptr[0];
- };
- 
- #define KEY_FIELD(name, field, offset, size)				\
+thanks,
+
+greg k-h
