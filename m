@@ -1,113 +1,76 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 1/1] bcache: add separate workqueue for journal_write to avoid deadlock
-Date: Thu, 27 Sep 2018 23:41:46 +0800
-Message-ID: <20180927154146.28262-2-colyli@suse.de>
-References: <20180927154146.28262-1-colyli@suse.de>
+Subject: Re: [PATCH] use STORE_LOCKED instead of STORE macro
+Date: Thu, 27 Sep 2018 23:44:16 +0800
+Message-ID: <4e1bb3e5-82f2-51ff-c95b-fa76da4081da@suse.de>
+References: <20180927053142.4529-1-cdbdyx@163.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20180927154146.28262-1-colyli@suse.de>
-Sender: stable-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org, axboe@kernel.dk
-Cc: linux-block@vger.kernel.org, guoju <fangguoju@gmail.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20180927053142.4529-1-cdbdyx@163.com>
+Content-Language: en-US
+Sender: linux-kernel-owner@vger.kernel.org
+To: Dongbo Cao <cdbdyx@163.com>
+Cc: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: guoju <fangguoju@gmail.com>
 
-After write SSD completed, bcache schedules journal_write work to
-system_wq, which is a public workqueue in system, without WQ_MEM_RECLAIM
-flag. system_wq is also a bound wq, and there may be no idle kworker on
-current processor. Creating a new kworker may unfortunately need to
-reclaim memory first, by shrinking cache and slab used by vfs, which
-depends on bcache device. That's a deadlock.
+On 9/27/18 1:31 PM, Dongbo Cao wrote:
+> merge sysfs_writeback_running attr and sysfs_writeback_percent attr together with other attrs of cached_dev.
+>
+> Signed-off-by: Dongbo Cao <cdbdyx@163.com>
 
-This patch create a new workqueue for journal_write with WQ_MEM_RECLAIM
-flag. It's rescuer thread will work to avoid the deadlock.
+Could you please to explain more what you want to do, and why you make 
+this change?
 
-Signed-off-by: guoju <fangguoju@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/bcache.h  | 1 +
- drivers/md/bcache/journal.c | 6 +++---
- drivers/md/bcache/super.c   | 8 ++++++++
- 3 files changed, 12 insertions(+), 3 deletions(-)
+Thanks.
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 83504dd8100a..954dad29e6e8 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -965,6 +965,7 @@ void bch_prio_write(struct cache *ca);
- void bch_write_bdev_super(struct cached_dev *dc, struct closure *parent);
- 
- extern struct workqueue_struct *bcache_wq;
-+extern struct workqueue_struct *bch_journal_wq;
- extern struct mutex bch_register_lock;
- extern struct list_head bch_cache_sets;
- 
-diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index 6116bbf870d8..522c7426f3a0 100644
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -485,7 +485,7 @@ static void do_journal_discard(struct cache *ca)
- 
- 		closure_get(&ca->set->cl);
- 		INIT_WORK(&ja->discard_work, journal_discard_work);
--		schedule_work(&ja->discard_work);
-+		queue_work(bch_journal_wq, &ja->discard_work);
- 	}
- }
- 
-@@ -592,7 +592,7 @@ static void journal_write_done(struct closure *cl)
- 		: &j->w[0];
- 
- 	__closure_wake_up(&w->wait);
--	continue_at_nobarrier(cl, journal_write, system_wq);
-+	continue_at_nobarrier(cl, journal_write, bch_journal_wq);
- }
- 
- static void journal_write_unlock(struct closure *cl)
-@@ -627,7 +627,7 @@ static void journal_write_unlocked(struct closure *cl)
- 		spin_unlock(&c->journal.lock);
- 
- 		btree_flush_write(c);
--		continue_at(cl, journal_write, system_wq);
-+		continue_at(cl, journal_write, bch_journal_wq);
- 		return;
- 	}
- 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 94c756c66bd7..30ba9aeb5ee8 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -47,6 +47,7 @@ static int bcache_major;
- static DEFINE_IDA(bcache_device_idx);
- static wait_queue_head_t unregister_wait;
- struct workqueue_struct *bcache_wq;
-+struct workqueue_struct *bch_journal_wq;
- 
- #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
- /* limitation of partitions number on single bcache device */
-@@ -2341,6 +2342,9 @@ static void bcache_exit(void)
- 		kobject_put(bcache_kobj);
- 	if (bcache_wq)
- 		destroy_workqueue(bcache_wq);
-+	if (bch_journal_wq)
-+		destroy_workqueue(bch_journal_wq);
-+
- 	if (bcache_major)
- 		unregister_blkdev(bcache_major, "bcache");
- 	unregister_reboot_notifier(&reboot);
-@@ -2370,6 +2374,10 @@ static int __init bcache_init(void)
- 	if (!bcache_wq)
- 		goto err;
- 
-+	bch_journal_wq = alloc_workqueue("bch_journal", WQ_MEM_RECLAIM, 0);
-+	if (!bch_journal_wq)
-+		goto err;
-+
- 	bcache_kobj = kobject_create_and_add("bcache", fs_kobj);
- 	if (!bcache_kobj)
- 		goto err;
--- 
-2.19.0
+
+Coly Li
+
+> ---
+>   drivers/md/bcache/sysfs.c | 15 ++-------------
+>   1 file changed, 2 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+> index 26f035a0..14fc9104 100644
+> --- a/drivers/md/bcache/sysfs.c
+> +++ b/drivers/md/bcache/sysfs.c
+> @@ -245,7 +245,7 @@ SHOW(__bch_cached_dev)
+>   }
+>   SHOW_LOCKED(bch_cached_dev)
+>   
+> -STORE(__cached_dev)
+> +STORE(__bch_cached_dev)
+>   {
+>   	struct cached_dev *dc = container_of(kobj, struct cached_dev,
+>   					     disk.kobj);
+> @@ -373,17 +373,6 @@ STORE(__cached_dev)
+>   	if (attr == &sysfs_stop)
+>   		bcache_device_stop(&dc->disk);
+>   
+> -	return size;
+> -}
+> -
+> -STORE(bch_cached_dev)
+> -{
+> -	struct cached_dev *dc = container_of(kobj, struct cached_dev,
+> -					     disk.kobj);
+> -
+> -	mutex_lock(&bch_register_lock);
+> -	size = __cached_dev_store(kobj, attr, buf, size);
+> -
+>   	if (attr == &sysfs_writeback_running)
+>   		bch_writeback_queue(dc);
+>   
+> @@ -392,9 +381,9 @@ STORE(bch_cached_dev)
+>   			schedule_delayed_work(&dc->writeback_rate_update,
+>   				      dc->writeback_rate_update_seconds * HZ);
+>   
+> -	mutex_unlock(&bch_register_lock);
+>   	return size;
+>   }
+> +STORE_LOCKED(bch_cached_dev)
+>   
+>   static struct attribute *bch_cached_dev_files[] = {
+>   	&sysfs_attach,
