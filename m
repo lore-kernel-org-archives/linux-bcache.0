@@ -1,52 +1,45 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: add separate workqueue for journal_write to avoid
- deadlock
-Date: Fri, 28 Sep 2018 10:32:53 +0800
-Message-ID: <ef36fbef-9f2e-0208-aa00-bd9ba656de31@suse.de>
-References: <1538055919-5757-1-git-send-email-fangguoju@gmail.com>
- <bda92f58-d321-d4db-c73f-0ceecbfd9c38@suse.de>
- <9b1abe65-c6f5-77b4-290e-e6af21723cfc@ehuk.net>
+From: Jan Engelhardt <jengelh@inai.de>
+Subject: Re: [PATCH 04/11] UAPI: bcache: Fix use of embedded flexible array
+Date: Tue, 2 Oct 2018 16:52:56 +0200 (CEST)
+Message-ID: <nycvar.YFH.7.76.1810021622320.11696@n3.vanv.qr>
+References: <153616290368.23468.7806230605345568524.stgit@warthog.procyon.org.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <9b1abe65-c6f5-77b4-290e-e6af21723cfc@ehuk.net>
-Content-Language: en-US
+In-Reply-To: <153616290368.23468.7806230605345568524.stgit@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Eddie Chapman <eddie@ehuk.net>
-Cc: guoju <fangguoju@gmail.com>, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: David Howells <dhowells@redhat.com>
+Cc: linux-api@vger.kernel.org, linux-kbuild@vger.kernel.org, Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 
-On 9/27/18 11:53 PM, Eddie Chapman wrote:
-> On 27/09/18 16:23, Coly Li wrote:
->>
->> On 9/27/18 9:45 PM, guoju wrote:
->>> After write SSD completed, bcache schedule journal_write work to
->>> system_wq, that is a public workqueue in system, without WQ_MEM_RECLAIM
->>> flag. system_wq is also a bound wq, and there may be no idle kworker on
->>> current processor. Creating a new kworker may unfortunately need to
->>> reclaim memory first, by shrinking cache and slab used by vfs, which
->>> depends on bcache device. That's a deadlock.
->>>
->>> This patch create a new workqueue for journal_write with WQ_MEM_RECLAIM
->>> flag. It's rescuer thread will work to avoid the deadlock.
->>>
->>> Signed-off-by: guoju <fangguoju@gmail.com>
->>
->> Nice catch, this fix is quite important. I will try to submit to Jens 
->> ASAP.
->>
->> Thanks.
->>
->> Coly Li
+On Wed, 05 Sep 2018 16:55:03 +0100, David Howells wrote:
 >
-> Once this goes into 4.19, would this be a candidate for backporting to 
-> any stable kernels, or does it only fix something introduced in this 
-> cycle?
+>The bkey struct defined by bcache is embedded in the jset struct. However,
+>this is illegal in C++ as there's a "flexible array" at the end of the struct.
+>Change this to be a 0-length struct instead.
 >
-This bug exists in upstream for quite long time, it should be applied to 
-all stable kernels which it can be applied. And it is Cced to 
-stable@vger.kernel.org already.
+>-	__u64	ptr[];
+>+	__u64	ptr[0];
 
-Coly Li
+As per the C++ standard, it is _also_ illegal to declare an array of size zero.
+
+"""it [the array size expression] shall be a converted constant expression of
+type std::size_t and its value shall be greater than zero."""
+—http://eel.is/c++draft/dcl.array
+
+That makes both "__u64 ptr[]" and "__u64 ptr[0]" *implementation-specific
+extensions*.
+
+
+3rd party tooling (concerns both C and C++):
+
+Coverity Scan (IIRC) treats "__u64 ptr[0]" as an array of "definitely-zero"
+size. Writing to any element will outright flag an out-of-bounds violation.
+That is sensible, since only "ptr[]" was standardized.
+
+
+Conclusion:
+
+So please, do never use __u64 ptr[0].
