@@ -1,7 +1,7 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 04/15] bcache: fix ioctl in flash device
-Date: Mon,  8 Oct 2018 20:41:10 +0800
-Message-ID: <20181008124121.20192-5-colyli@suse.de>
+Subject: [PATCH 06/15] bcache: correct dirty data statistics
+Date: Mon,  8 Oct 2018 20:41:12 +0800
+Message-ID: <20181008124121.20192-7-colyli@suse.de>
 References: <20181008124121.20192-1-colyli@suse.de>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -14,48 +14,35 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Tang Junhui <tang.junhui.linux@gmail.com>
 
-When doing ioctl in flash device, it will call ioctl_dev() in super.c,
-then we should not to get cached device since flash only device has
-no backend device. This patch just move the jugement dc->io_disable
-to cached_dev_ioctl() to make ioctl in flash device correctly.
+When bcache device is clean, dirty keys may still exist after
+journal replay, so we need to count these dirty keys even
+device in clean status, otherwise after writeback, the amount
+of dirty data would be incorrect.
 
-Fixes: 0f0709e6bfc3c ("bcache: stop bcache device when backing device is offline")
 Signed-off-by: Tang Junhui <tang.junhui.linux@gmail.com>
 Cc: stable@vger.kernel.org
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/request.c | 3 +++
- drivers/md/bcache/super.c   | 4 ----
- 2 files changed, 3 insertions(+), 4 deletions(-)
+ drivers/md/bcache/super.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index ee15fb039fd0..3bf35914bb57 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1218,6 +1218,9 @@ static int cached_dev_ioctl(struct bcache_device *d, fmode_t mode,
- {
- 	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
- 
-+	if (dc->io_disable)
-+		return -EIO;
-+
- 	return __blkdev_driver_ioctl(dc->bdev, mode, cmd, arg);
- }
- 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 448e531e8c2d..a99af19d2f91 100644
+index a99af19d2f91..4989c7d4d4d0 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -647,10 +647,6 @@ static int ioctl_dev(struct block_device *b, fmode_t mode,
- 		     unsigned int cmd, unsigned long arg)
- {
- 	struct bcache_device *d = b->bd_disk->private_data;
--	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
--
--	if (dc->io_disable)
--		return -EIO;
+@@ -1152,11 +1152,12 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 	}
  
- 	return d->ioctl(d, mode, cmd, arg);
- }
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_DIRTY) {
+-		bch_sectors_dirty_init(&dc->disk);
+ 		atomic_set(&dc->has_dirty, 1);
+ 		bch_writeback_queue(dc);
+ 	}
+ 
++	bch_sectors_dirty_init(&dc->disk);
++
+ 	bch_cached_dev_run(dc);
+ 	bcache_device_link(&dc->disk, c, "bdev");
+ 	atomic_inc(&c->attached_dev_nr);
 -- 
 2.19.0
