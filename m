@@ -1,77 +1,102 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: fix indentation issue, remove tabs on a hunk of
- code
-Date: Sat, 22 Dec 2018 21:03:43 +0800
-Message-ID: <4d3bdea3-d155-b116-f09f-ad5a0b00718a@suse.de>
-References: <20181221231812.16086-1-colin.king@canonical.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20181221231812.16086-1-colin.king@canonical.com>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Colin King <colin.king@canonical.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] bcache: treat stale && dirty keys as bad keys
+Date: Wed, 26 Dec 2018 13:04:55 +0800
+Message-ID: <20181226050455.24290-2-colyli@suse.de>
+References: <20181226050455.24290-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20181226050455.24290-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Tang Junhui <tang.junhui.linux@gmail.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-On 12/22/18 7:18 上午, Colin King wrote:
-> From: Colin Ian King <colin.king@canonical.com>
-> 
-> There is a hunk of code that is indented one level too deep, fix this
-> by removing the extra tabs.
-> 
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
+From: Tang Junhui <tang.junhui.linux@gmail.com>
 
-Hi Colin,
+Stale && dirty keys can be produced in the follow way:
+After writeback in write_dirty_finish(), dirty keys k1 will
+replace by clean keys k2
+==>ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
+==>btree_insert_fn(struct btree_op *b_op, struct btree *b)
+==>static int bch_btree_insert_node(struct btree *b,
+       struct btree_op *op,
+       struct keylist *insert_keys,
+       atomic_t *journal_ref,
+Then two steps:
+A) update k1 to k2 in btree node memory;
+   bch_btree_insert_keys(b, op, insert_keys, replace_key)
+B) Write the bset(contains k2) to cache disk by a 30s delay work
+   bch_btree_leaf_dirty(b, journal_ref).
+But before the 30s delay work write the bset to cache device,
+these things happened:
+A) GC works, and reclaim the bucket k2 point to;
+B) Allocator works, and invalidate the bucket k2 point to,
+   and increase the gen of the bucket, and place it into free_inc
+   fifo;
+C) Until now, the 30s delay work still does not finish work,
+   so in the disk, the key still is k1, it is dirty and stale
+   (its gen is smaller than the gen of the bucket). and then the
+   machine power off suddenly happens;
+D) When the machine power on again, after the btree reconstruction,
+   the stale dirty key appear.
 
-Nice catch, thank you! I will add it into my for-next directory.
+In bch_extent_bad(), when expensive_debug_checks is off, it would
+treat the dirty key as good even it is stale keys, and it would
+cause bellow probelms:
+A) In read_dirty() it would cause machine crash:
+   BUG_ON(ptr_stale(dc->disk.c, &w->key, 0));
+B) It could be worse when reads hits stale dirty keys, it would
+   read old incorrect data.
 
-Coly Li
+This patch tolerate the existence of these stale && dirty keys,
+and treat them as bad key in bch_extent_bad().
 
-> ---
->  drivers/md/bcache/super.c | 30 +++++++++++++++---------------
->  1 file changed, 15 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 4dee119c3664..a697a3a923cd 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -1615,21 +1615,21 @@ static void conditional_stop_bcache_device(struct cache_set *c,
->  		 */
->  		pr_warn("stop_when_cache_set_failed of %s is \"auto\" and cache is dirty, stop it to avoid potential data corruption.",
->  			d->disk->disk_name);
-> -			/*
-> -			 * There might be a small time gap that cache set is
-> -			 * released but bcache device is not. Inside this time
-> -			 * gap, regular I/O requests will directly go into
-> -			 * backing device as no cache set attached to. This
-> -			 * behavior may also introduce potential inconsistence
-> -			 * data in writeback mode while cache is dirty.
-> -			 * Therefore before calling bcache_device_stop() due
-> -			 * to a broken cache device, dc->io_disable should be
-> -			 * explicitly set to true.
-> -			 */
-> -			dc->io_disable = true;
-> -			/* make others know io_disable is true earlier */
-> -			smp_mb();
-> -			bcache_device_stop(d);
-> +		/*
-> +		 * There might be a small time gap that cache set is
-> +		 * released but bcache device is not. Inside this time
-> +		 * gap, regular I/O requests will directly go into
-> +		 * backing device as no cache set attached to. This
-> +		 * behavior may also introduce potential inconsistence
-> +		 * data in writeback mode while cache is dirty.
-> +		 * Therefore before calling bcache_device_stop() due
-> +		 * to a broken cache device, dc->io_disable should be
-> +		 * explicitly set to true.
-> +		 */
-> +		dc->io_disable = true;
-> +		/* make others know io_disable is true earlier */
-> +		smp_mb();
-> +		bcache_device_stop(d);
->  	} else {
->  		/*
->  		 * dc->stop_when_cache_set_failed == BCH_CACHED_STOP_AUTO
-> 
+(Coly Li: fix indent format which was modified by sender's email
+ client)
+
+Signed-off-by: Tang Junhui <tang.junhui.linux@gmail.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/extents.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
+index 956004366699..886710043025 100644
+--- a/drivers/md/bcache/extents.c
++++ b/drivers/md/bcache/extents.c
+@@ -538,6 +538,7 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
+ {
+ 	struct btree *b = container_of(bk, struct btree, keys);
+ 	unsigned int i, stale;
++	char buf[80];
+ 
+ 	if (!KEY_PTRS(k) ||
+ 	    bch_extent_invalid(bk, k))
+@@ -547,19 +548,19 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
+ 		if (!ptr_available(b->c, k, i))
+ 			return true;
+ 
+-	if (!expensive_debug_checks(b->c) && KEY_DIRTY(k))
+-		return false;
+-
+ 	for (i = 0; i < KEY_PTRS(k); i++) {
+ 		stale = ptr_stale(b->c, k, i);
+ 
++		if (stale && KEY_DIRTY(k)) {
++			bch_extent_to_text(buf, sizeof(buf), k);
++			pr_info("stale dirty pointer, stale %u, key: %s",
++				stale, buf);
++		}
++
+ 		btree_bug_on(stale > BUCKET_GC_GEN_MAX, b,
+ 			     "key too stale: %i, need_gc %u",
+ 			     stale, b->c->need_gc);
+ 
+-		btree_bug_on(stale && KEY_DIRTY(k) && KEY_SIZE(k),
+-			     b, "stale dirty pointer");
+-
+ 		if (stale)
+ 			return true;
+ 
+-- 
+2.16.4
