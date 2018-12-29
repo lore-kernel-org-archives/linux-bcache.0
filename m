@@ -1,102 +1,94 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH 1/1] bcache: treat stale && dirty keys as bad keys
-Date: Wed, 26 Dec 2018 13:04:55 +0800
-Message-ID: <20181226050455.24290-2-colyli@suse.de>
-References: <20181226050455.24290-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20181226050455.24290-1-colyli@suse.de>
-Sender: stable-owner@vger.kernel.org
-To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Tang Junhui <tang.junhui.linux@gmail.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
+From: NeilBrown <neil@brown.name>
+Subject: Re: [PATCH v5 1/2] lib: add crc64 calculation routines
+Date: Sat, 29 Dec 2018 13:58:09 +1100
+Message-ID: <87y3899gzi.fsf@notabene.neil.brown.name>
+References: <20180726053352.2781-1-colyli@suse.de> <20180726053352.2781-2-colyli@suse.de> <20180726130210.97450a74c164a02d7cfd79c1@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+        micalg=pgp-sha256; protocol="application/pgp-signature"
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20180726130210.97450a74c164a02d7cfd79c1@linux-foundation.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>, Coly Li <colyli@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>, Eric Biggers <ebiggers3@gmail.com>, Randy Dunlap <rdunlap@infradead.org>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui.linux@gmail.com>
+--=-=-=
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-Stale && dirty keys can be produced in the follow way:
-After writeback in write_dirty_finish(), dirty keys k1 will
-replace by clean keys k2
-==>ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
-==>btree_insert_fn(struct btree_op *b_op, struct btree *b)
-==>static int bch_btree_insert_node(struct btree *b,
-       struct btree_op *op,
-       struct keylist *insert_keys,
-       atomic_t *journal_ref,
-Then two steps:
-A) update k1 to k2 in btree node memory;
-   bch_btree_insert_keys(b, op, insert_keys, replace_key)
-B) Write the bset(contains k2) to cache disk by a 30s delay work
-   bch_btree_leaf_dirty(b, journal_ref).
-But before the 30s delay work write the bset to cache device,
-these things happened:
-A) GC works, and reclaim the bucket k2 point to;
-B) Allocator works, and invalidate the bucket k2 point to,
-   and increase the gen of the bucket, and place it into free_inc
-   fifo;
-C) Until now, the 30s delay work still does not finish work,
-   so in the disk, the key still is k1, it is dirty and stale
-   (its gen is smaller than the gen of the bucket). and then the
-   machine power off suddenly happens;
-D) When the machine power on again, after the btree reconstruction,
-   the stale dirty key appear.
+On Thu, Jul 26 2018, Andrew Morton wrote:
 
-In bch_extent_bad(), when expensive_debug_checks is off, it would
-treat the dirty key as good even it is stale keys, and it would
-cause bellow probelms:
-A) In read_dirty() it would cause machine crash:
-   BUG_ON(ptr_stale(dc->disk.c, &w->key, 0));
-B) It could be worse when reads hits stale dirty keys, it would
-   read old incorrect data.
+> On Thu, 26 Jul 2018 13:33:51 +0800 Coly Li <colyli@suse.de> wrote:
+>
+>> This patch adds the re-write crc64 calculation routines for Linux kernel.
+>> The CRC64 polynomial arithmetic follows ECMA-182 specification, inspired
+>> by CRC paper of Dr. Ross N. Williams
+>> (see http://www.ross.net/crc/download/crc_v3.txt) and other public domain
+>> implementations.
 
-This patch tolerate the existence of these stale && dirty keys,
-and treat them as bad key in bch_extent_bad().
+Hi Coly and Andrew,
 
-(Coly Li: fix indent format which was modified by sender's email
- client)
+This patch breaks compilation if linux headers files are not installed
+(reported at https://github.com/gnubee-git/GnuBee_Docs/issues/75).
+Following fixes it.
 
-Signed-off-by: Tang Junhui <tang.junhui.linux@gmail.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/extents.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+Thanks,
+NeilBrown
 
-diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
-index 956004366699..886710043025 100644
---- a/drivers/md/bcache/extents.c
-+++ b/drivers/md/bcache/extents.c
-@@ -538,6 +538,7 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
- {
- 	struct btree *b = container_of(bk, struct btree, keys);
- 	unsigned int i, stale;
-+	char buf[80];
- 
- 	if (!KEY_PTRS(k) ||
- 	    bch_extent_invalid(bk, k))
-@@ -547,19 +548,19 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
- 		if (!ptr_available(b->c, k, i))
- 			return true;
- 
--	if (!expensive_debug_checks(b->c) && KEY_DIRTY(k))
--		return false;
--
- 	for (i = 0; i < KEY_PTRS(k); i++) {
- 		stale = ptr_stale(b->c, k, i);
- 
-+		if (stale && KEY_DIRTY(k)) {
-+			bch_extent_to_text(buf, sizeof(buf), k);
-+			pr_info("stale dirty pointer, stale %u, key: %s",
-+				stale, buf);
-+		}
-+
- 		btree_bug_on(stale > BUCKET_GC_GEN_MAX, b,
- 			     "key too stale: %i, need_gc %u",
- 			     stale, b->c->need_gc);
- 
--		btree_bug_on(stale && KEY_DIRTY(k) && KEY_SIZE(k),
--			     b, "stale dirty pointer");
--
- 		if (stale)
- 			return true;
- 
--- 
-2.16.4
+From: NeilBrown <neil@brown.name>
+Subject: [PATCH] lib: don't depend on linux headers being installed.
+
+gen_crc64table requires linux include files to be installed
+in /usr/include/linux.  This is a new requrement so hosts that
+could previously build the kernel, now cannot.
+
+gen_crc64table makes this requirement by including <linux/swab.h>,
+but nothing from that header is actaully used.
+
+So remove the #include, so that the linux headers no longer
+need to be installed.
+
+Fixes: feba04fd2cf8 ("lib: add crc64 calculation routines")
+Signed-off-by: NeilBrown <neil@brown.name>
+=2D--
+ lib/gen_crc64table.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/lib/gen_crc64table.c b/lib/gen_crc64table.c
+index 9011926e4162..094b43aef8db 100644
+=2D-- a/lib/gen_crc64table.c
++++ b/lib/gen_crc64table.c
+@@ -16,8 +16,6 @@
+ #include <inttypes.h>
+ #include <stdio.h>
+=20
+=2D#include <linux/swab.h>
+=2D
+ #define CRC64_ECMA182_POLY 0x42F0E1EBA9EA3693ULL
+=20
+ static uint64_t crc64_table[256] =3D {0};
+=2D-=20
+2.14.0.rc0.dirty
+
+
+--=-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+
+iQIzBAEBCAAdFiEEG8Yp69OQ2HB7X0l6Oeye3VZigbkFAlwm4sEACgkQOeye3VZi
+gbnPcw/+Ju6khZuWMFREuKIm4iD3s/TJI70OINya8wbY0Q+CnwZTUf1nzHrPwb7u
+jRchv0puHVPLHtUmiJR/9h/eO+fRaMNTPPUiTMS8FHV+uIYXrhRwGiNdJZE9bVN7
+WUkz5qlvUxb++qc115gRAO2LwglkOis8BUyG7oM4kLXH/XdNMQJiX5wub6swLRGz
+QzmEIiZaL39393+/arYz7AhY6IZ8VCX7jl8QMqWsDy3xFAFFDI+jj7h0qnmJ+QBp
+dwwEzfO7aSnoRodzo58Z869NKhT9TG4xYwzf8++GvPVcExtlWl0X0o54hxP691eD
+Ee7MjsPT5hYrNIr8GZJ6sexg8WR+73/CHNgy3jZL+64O031qq+y5XwXUhLSPgwNa
+NrlSNlUU/FvzKbtXxDcgcBAVhV/EWuduLRbXTAc8g3c5uXeVUqC2+i/JGyEuQiWD
+lredVpk5c06mbjwfUMhO8YV68RdGcuXXUSEm0zCwv+Y8EmBOllhOEiTIH5xoyFtP
+DqzRRSKIUJtMgrw0E6cRw12IW/ziOXW/6crZ4I7GovZUzEw3hA67Ol/Sm885pdqa
+u4XTL1z212qom5fBsDkRfLbVMtiSQIqmrVQ1Cy5hKNrq/jp9Zgx5QhGK5bpyjmEM
+Iz8BzfU5tph28tzu8MrW81kKszOVZLPxXxaQRkcs/lE1qjvYVHo=
+=IWQn
+-----END PGP SIGNATURE-----
+--=-=-=--
