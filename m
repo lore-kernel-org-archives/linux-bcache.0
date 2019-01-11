@@ -1,99 +1,291 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v5 1/2] lib: add crc64 calculation routines
-Date: Sat, 29 Dec 2018 11:57:16 +0800
-Message-ID: <5084b641-0a9e-aeb3-4956-247b45eeffd2@suse.de>
-References: <20180726053352.2781-1-colyli@suse.de>
- <20180726053352.2781-2-colyli@suse.de>
- <20180726130210.97450a74c164a02d7cfd79c1@linux-foundation.org>
- <87y3899gzi.fsf@notabene.neil.brown.name>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+From: Ming Lei <ming.lei@redhat.com>
+Subject: [PATCH V13 00/19] block: support multi-page bvec
+Date: Fri, 11 Jan 2019 19:01:08 +0800
+Message-ID: <20190111110127.21664-1-ming.lei@redhat.com>
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <87y3899gzi.fsf@notabene.neil.brown.name>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: NeilBrown <neil@brown.name>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Andy Shevchenko <andriy.shevchenko@linux.intel.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Michael Lyle <mlyle@lyle.org>, Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Thomas Gleixner <tglx@linutronix.de>, Kate Stewart <kstewart@linuxfoundation.org>, Eric Biggers <ebiggers3@gmail.com>, Randy Dunlap <rdunlap@infradead.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org, Theodore Ts'o <tytso@mit.edu>, Omar Sandoval <osandov@fb.com>, Sagi Grimberg <sagi@grimberg.me>, Dave Chinner <dchinner@redhat.com>, Kent Overstreet <kent.overstreet@gmail.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org, David Sterba <dsterba@suse.com>, linux-btrfs@vger.kernel.org, "Darrick J . Wong" <darrick.wong@oracle.com>, linux-xfs@vger.kernel.org, Gao Xiang <gaoxiang25@huawei.com>, Christoph Hellwig <hch@lst.de>, linux-ext4@vger.kernel.org, Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, Boaz Harrosh <ooo@electrozaur.com>, Bob Peterson <rpeterso@redhat.com>, clus
 List-Id: linux-bcache@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA256
+Hi,
 
-On 12/29/18 10:58 上午, NeilBrown wrote:
-> On Thu, Jul 26 2018, Andrew Morton wrote:
-> 
->> On Thu, 26 Jul 2018 13:33:51 +0800 Coly Li <colyli@suse.de>
->> wrote:
->> 
->>> This patch adds the re-write crc64 calculation routines for
->>> Linux kernel. The CRC64 polynomial arithmetic follows ECMA-182
->>> specification, inspired by CRC paper of Dr. Ross N. Williams 
->>> (see http://www.ross.net/crc/download/crc_v3.txt) and other
->>> public domain implementations.
-> 
-> Hi Coly and Andrew,
-> 
-> This patch breaks compilation if linux headers files are not
-> installed (reported at
-> https://github.com/gnubee-git/GnuBee_Docs/issues/75). Following
-> fixes it.
-> 
-> Thanks, NeilBrown
-> 
+This patchset brings multi-page bvec into block layer:
 
-Hi Neil,
+1) what is multi-page bvec?
 
-Thanks for the fix. I add by Acked-by.
+Multipage bvecs means that one 'struct bio_bvec' can hold multiple pages
+which are physically contiguous instead of one single page used in linux
+kernel for long time.
 
-Coly Li
+2) why is multi-page bvec introduced?
+
+Kent proposed the idea[1] first. 
+
+As system's RAM becomes much bigger than before, and huge page, transparent
+huge page and memory compaction are widely used, it is a bit easy now
+to see physically contiguous pages from fs in I/O. On the other hand, from
+block layer's view, it isn't necessary to store intermediate pages into bvec,
+and it is enough to just store the physicallly contiguous 'segment' in each
+io vector.
+
+Also huge pages are being brought to filesystem and swap [2][6], we can
+do IO on a hugepage each time[3], which requires that one bio can transfer
+at least one huge page one time. Turns out it isn't flexiable to change
+BIO_MAX_PAGES simply[3][5]. Multipage bvec can fit in this case very well.
+As we saw, if CONFIG_THP_SWAP is enabled, BIO_MAX_PAGES can be configured
+as much bigger, such as 512, which requires at least two 4K pages for holding
+the bvec table.
+
+With multi-page bvec:
+
+- Inside block layer, both bio splitting and sg map can become more
+efficient than before by just traversing the physically contiguous
+'segment' instead of each page.
+
+- segment handling in block layer can be improved much in future since it
+should be quite easy to convert multipage bvec into segment easily. For
+example, we might just store segment in each bvec directly in future.
+
+- bio size can be increased and it should improve some high-bandwidth IO
+case in theory[4].
+
+- there is opportunity in future to improve memory footprint of bvecs. 
+
+3) how is multi-page bvec implemented in this patchset?
+
+Patch 1 ~ 4 parpares for supporting multi-page bvec. 
+
+Patches 5 ~ 15 implement multipage bvec in block layer:
+
+	- put all tricks into bvec/bio/rq iterators, and as far as
+	drivers and fs use these standard iterators, they are happy
+	with multipage bvec
+
+	- introduce bio_for_each_bvec() to iterate over multipage bvec for splitting
+	bio and mapping sg
+
+	- keep current bio_for_each_segment*() to itereate over singlepage bvec and
+	make sure current users won't be broken; especailly, convert to this
+	new helper prototype in single patch 21 given it is bascially a mechanism
+	conversion
+
+	- deal with iomap & xfs's sub-pagesize io vec in patch 13
+
+	- enalbe multipage bvec in patch 14 
+
+Patch 16 redefines BIO_MAX_PAGES as 256.
+
+Patch 17 documents usages of bio iterator helpers.
+
+Patch 18~19 kills NO_SG_MERGE.
+
+These patches can be found in the following git tree:
+
+	git:  https://github.com/ming1/linux.git  for-4.21-block-mp-bvec-V12
+
+Lots of test(blktest, xfstests, ltp io, ...) have been run with this patchset,
+and not see regression.
+
+Thanks Christoph for reviewing the early version and providing very good
+suggestions, such as: introduce bio_init_with_vec_table(), remove another
+unnecessary helpers for cleanup and so on.
+
+Thanks Chritoph and Omar for reviewing V10/V11/V12, and provides lots of
+helpful comments.
+
+V13:
+	- rebase on v5.0-rc2
+	- address Omar's comment on patch 1 of V12 by using V11's approach
+	- rename one local vairable in patch 15 as suggested by Christoph
+
+V12:
+	- deal with non-cluster by max segment size & segment boundary limit
+	- rename bvec helper's name
+	- revert new change on bvec_iter_advance() in V11
+	- introduce rq_for_each_bvec()
+	- use simpler check on enalbing multi-page bvec
+	- fix Document change
+
+V11:
+	- address most of reviews from Omar and christoph
+	- rename mp_bvec_* as segment_* helpers
+	- remove 'mp' parameter from bvec_iter_advance() and related helpers
+	- cleanup patch on bvec_split_segs() and blk_bio_segment_split(),
+	  remove unnecessary checks
+	- simplify bvec_last_segment()
+	- drop bio_pages_all()
+	- introduce dedicated functions/file for handling non-cluser bio for
+	avoiding checking queue cluster before adding page to bio
+	- introduce bio_try_merge_segment() for simplifying iomap/xfs page
+	  accounting code
+	- Fix Document change
+
+V10:
+	- no any code change, just add more guys and list into patch's CC list,
+	as suggested by Christoph and Dave Chinner
+V9:
+	- fix regression on iomap's sub-pagesize io vec, covered by patch 13
+V8:
+	- remove prepare patches which all are merged to linus tree
+	- rebase on for-4.21/block
+	- address comments on V7
+	- add patches of killing NO_SG_MERGE
+
+V7:
+	- include Christoph and Mike's bio_clone_bioset() patches, which is
+	  actually prepare patches for multipage bvec
+	- address Christoph's comments
+
+V6:
+	- avoid to introduce lots of renaming, follow Jen's suggestion of
+	using the name of chunk for multipage io vector
+	- include Christoph's three prepare patches
+	- decrease stack usage for using bio_for_each_chunk_segment_all()
+	- address Kent's comment
+
+V5:
+	- remove some of prepare patches, which have been merged already
+	- add bio_clone_seg_bioset() to fix DM's bio clone, which
+	is introduced by 18a25da84354c6b (dm: ensure bio submission follows
+	a depth-first tree walk)
+	- rebase on the latest block for-v4.18
+
+V4:
+	- rename bio_for_each_segment*() as bio_for_each_page*(), rename
+	bio_segments() as bio_pages(), rename rq_for_each_segment() as
+	rq_for_each_pages(), because these helpers never return real
+	segment, and they always return single page bvec
+	
+	- introducing segment_for_each_page_all()
+
+	- introduce new bio_for_each_segment*()/rq_for_each_segment()/bio_segments()
+	for returning real multipage segment
+
+	- rewrite segment_last_page()
+
+	- rename bvec iterator helper as suggested by Christoph
+
+	- replace comment with applying bio helpers as suggested by Christoph
+
+	- document usage of bio iterator helpers
+
+	- redefine BIO_MAX_PAGES as 256 to make the biggest bvec table
+	accommodated in 4K page
+
+	- move bio_alloc_pages() into bcache as suggested by Christoph
+
+V3:
+	- rebase on v4.13-rc3 with for-next of block tree
+	- run more xfstests: xfs/ext4 over NVMe, Sata, DM(linear),
+	MD(raid1), and not see regressions triggered
+	- add Reviewed-by on some btrfs patches
+	- remove two MD patches because both are merged to linus tree
+	  already
+
+V2:
+	- bvec table direct access in raid has been cleaned, so NO_MP
+	flag is dropped
+	- rebase on recent Neil Brown's change on bio and bounce code
+	- reorganize the patchset
+
+V1:
+	- against v4.10-rc1 and some cleanup in V0 are in -linus already
+	- handle queue_virt_boundary() in mp bvec change and make NVMe happy
+	- further BTRFS cleanup
+	- remove QUEUE_FLAG_SPLIT_MP
+	- rename for two new helpers of bio_for_each_segment_all()
+	- fix bounce convertion
+	- address comments in V0
+
+[1], http://marc.info/?l=linux-kernel&m=141680246629547&w=2
+[2], https://patchwork.kernel.org/patch/9451523/
+[3], http://marc.info/?t=147735447100001&r=1&w=2
+[4], http://marc.info/?l=linux-mm&m=147745525801433&w=2
+[5], http://marc.info/?t=149569484500007&r=1&w=2
+[6], http://marc.info/?t=149820215300004&r=1&w=2
 
 
-> From: NeilBrown <neil@brown.name> Subject: [PATCH] lib: don't
-> depend on linux headers being installed.
-> 
-> gen_crc64table requires linux include files to be installed in
-> /usr/include/linux.  This is a new requrement so hosts that could
-> previously build the kernel, now cannot.
-> 
-> gen_crc64table makes this requirement by including <linux/swab.h>, 
-> but nothing from that header is actaully used.
-> 
-> So remove the #include, so that the linux headers no longer need to
-> be installed.
-> 
-> Fixes: feba04fd2cf8 ("lib: add crc64 calculation routines") 
-> Signed-off-by: NeilBrown <neil@brown.name>
 
-Acked-by: Coly Li <colyli@suse.de>
 
-> --- lib/gen_crc64table.c | 2 -- 1 file changed, 2 deletions(-)
-> 
-> diff --git a/lib/gen_crc64table.c b/lib/gen_crc64table.c index
-> 9011926e4162..094b43aef8db 100644 --- a/lib/gen_crc64table.c +++
-> b/lib/gen_crc64table.c @@ -16,8 +16,6 @@ #include <inttypes.h> 
-> #include <stdio.h>
-> 
-> -#include <linux/swab.h> - #define CRC64_ECMA182_POLY
-> 0x42F0E1EBA9EA3693ULL
-> 
-> static uint64_t crc64_table[256] = {0};
-> 
+Christoph Hellwig (1):
+  btrfs: look at bi_size for repair decisions
 
------BEGIN PGP SIGNATURE-----
-Comment: GPGTools - http://gpgtools.org
+Ming Lei (18):
+  block: don't use bio->bi_vcnt to figure out segment number
+  block: remove bvec_iter_rewind()
+  block: rename bvec helpers
+  block: introduce multi-page bvec helpers
+  block: introduce bio_for_each_bvec() and rq_for_each_bvec()
+  block: use bio_for_each_bvec() to compute multi-page bvec count
+  block: use bio_for_each_bvec() to map sg
+  block: introduce bvec_last_segment()
+  fs/buffer.c: use bvec iterator to truncate the bio
+  btrfs: use bvec_last_segment to get bio's last page
+  block: loop: pass multi-page bvec to iov_iter
+  bcache: avoid to use bio_for_each_segment_all() in
+    bch_bio_alloc_pages()
+  block: allow bio_for_each_segment_all() to iterate over multi-page
+    bvec
+  block: enable multipage bvecs
+  block: always define BIO_MAX_PAGES as 256
+  block: document usage of bio iterator helpers
+  block: kill QUEUE_FLAG_NO_SG_MERGE
+  block: kill BLK_MQ_F_SG_MERGE
 
-iQIzBAEBCAAdFiEE6j5FL/T5SGCN6PrQxzkHk2t9+PwFAlwm8JsACgkQxzkHk2t9
-+PxELA//U8FohU56Xty9Yfe/5IX0WXHzpLk8efz34xNodo1bavy9yIlpzG8l9cX5
-c2vaM4hYvc2rrYokgkxHcANSpFkRzD9TjkwNbij7wd37lEJYzPWr0Qk1Ttuojs7b
-iJYLis0pbu6WTeUpM4NwdkKzylqWXg0dRrf3tNpF5ttN+LZOSEzbIiP8P2rnQUmD
-a9WCM6Ka/E9dP5H2CIvR6gAJL/BwsVyFgd6PiYy8ElMVYBpIu2uG34eO0tx6ebSE
-TPxWrSXY92jWCggJUBNr5zDXyBQADBQfy0YIv36zsplcolF/4mN4LWF2WCC4jp0c
-XLBrvSslzombjxq3h+zE4GNXsDNiKtaNQy1N30b1+N3ilXa4uav1wVvaBQBMwf4I
-QQDM8ZZ2alS5zAyzgtnbIr0AhlNEya+GO+42+rY0yrWG2Ffg3ONHSgylQ7hANVdk
-2qAWugdXZLw/pqustIodIR3hjsWLc4zZDF+d6BywdB5WqSiS54u7ENSPkbGInKRR
-8zprb2tjjjgwxL1MXF+6J1HG+GoTvEjjwjh26XDSiFbWCIX3hRjej+EjltKDARIo
-RWfX6/hTVnljkNUEpBfsi7DaiDVwkgo1OLQ3OSXgG9rZxs50ASMb4dBuN8wGdRrX
-jK3PF5m3ddVxCW2I5CFltd3qHlUFn+fmQojXtU6VSACgw0roQhw=
-=qnbZ
------END PGP SIGNATURE-----
+ .clang-format                     |   2 +-
+ Documentation/block/biovecs.txt   |  25 +++++
+ block/bio.c                       |  49 ++++++---
+ block/blk-merge.c                 | 206 +++++++++++++++++++++++++-------------
+ block/blk-mq-debugfs.c            |   2 -
+ block/blk-mq.c                    |   3 -
+ block/bounce.c                    |   6 +-
+ drivers/block/loop.c              |  22 ++--
+ drivers/block/nbd.c               |   2 +-
+ drivers/block/rbd.c               |   2 +-
+ drivers/block/skd_main.c          |   1 -
+ drivers/block/xen-blkfront.c      |   2 +-
+ drivers/md/bcache/btree.c         |   3 +-
+ drivers/md/bcache/util.c          |   6 +-
+ drivers/md/dm-crypt.c             |   3 +-
+ drivers/md/dm-integrity.c         |   2 +-
+ drivers/md/dm-io.c                |   4 +-
+ drivers/md/dm-rq.c                |   2 +-
+ drivers/md/dm-table.c             |  13 ---
+ drivers/md/raid1.c                |   3 +-
+ drivers/mmc/core/queue.c          |   3 +-
+ drivers/nvdimm/blk.c              |   4 +-
+ drivers/nvdimm/btt.c              |   4 +-
+ drivers/scsi/scsi_lib.c           |   2 +-
+ drivers/staging/erofs/data.c      |   3 +-
+ drivers/staging/erofs/unzip_vle.c |   3 +-
+ fs/block_dev.c                    |   6 +-
+ fs/btrfs/compression.c            |   3 +-
+ fs/btrfs/disk-io.c                |   3 +-
+ fs/btrfs/extent_io.c              |  16 +--
+ fs/btrfs/inode.c                  |   6 +-
+ fs/btrfs/raid56.c                 |   3 +-
+ fs/buffer.c                       |   5 +-
+ fs/crypto/bio.c                   |   3 +-
+ fs/direct-io.c                    |   4 +-
+ fs/exofs/ore.c                    |   3 +-
+ fs/exofs/ore_raid.c               |   3 +-
+ fs/ext4/page-io.c                 |   3 +-
+ fs/ext4/readpage.c                |   3 +-
+ fs/f2fs/data.c                    |   9 +-
+ fs/gfs2/lops.c                    |   6 +-
+ fs/gfs2/meta_io.c                 |   3 +-
+ fs/iomap.c                        |  10 +-
+ fs/mpage.c                        |   3 +-
+ fs/xfs/xfs_aops.c                 |   9 +-
+ include/linux/bio.h               |  47 +++++----
+ include/linux/blk-mq.h            |   1 -
+ include/linux/blkdev.h            |   5 +-
+ include/linux/bvec.h              | 104 ++++++++++++++-----
+ include/linux/ceph/messenger.h    |   2 +-
+ lib/iov_iter.c                    |   2 +-
+ net/ceph/messenger.c              |  14 +--
+ 52 files changed, 419 insertions(+), 234 deletions(-)
+
+-- 
+2.9.5
