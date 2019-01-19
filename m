@@ -1,15 +1,14 @@
-From: Daniel Axtens <dja@axtens.net>
-Subject: Re: NULL ptr deref in blk_queue_split with bcache:
-	bio->bi_io_vec == NULL
-Date: Wed, 16 Jan 2019 11:04:18 +1100
-Message-ID: <87h8e9ii2l.fsf@linkitivity.dja.id.au>
-References: <87zhs3ogd6.fsf@linkitivity.dja.id.au>
-	<a2eee193-df00-047e-0600-61e6b96ff824@canonical.com>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH] bcache: never writeback a discard operation
+Date: Sat, 19 Jan 2019 19:03:36 +0800
+Message-ID: <b269c2f9-91fe-3b61-75e7-f319ba2b39de@suse.de>
+References: <20190118051825.18196-1-dja@axtens.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="gbk"
+Content-Transfer-Encoding: base64
 Return-path: <dm-devel-bounces@redhat.com>
-In-Reply-To: <a2eee193-df00-047e-0600-61e6b96ff824@canonical.com>
+In-Reply-To: <20190118051825.18196-1-dja@axtens.net>
+Content-Language: en-US
 List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
 	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
 List-Archive: <https://www.redhat.com/archives/dm-devel>
@@ -19,256 +18,115 @@ List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
 	<mailto:dm-devel-request@redhat.com?subject=subscribe>
 Sender: dm-devel-bounces@redhat.com
 Errors-To: dm-devel-bounces@redhat.com
-To: linux-block@vger.kernel.org, dm-devel@redhat.com
-Cc: Michael Lyle <mlyle@lyle.org>, linux-bcache@vger.kernel.org, gpiccoli@canonical.com, Kent Overstreet <kent.overstreet@gmail.com>, Mauricio Oliveira <mauricio.oliveira@canonical.com>
+To: Daniel Axtens <dja@axtens.net>
+Cc: Michael Lyle <mlyle@lyle.org>, "Guilherme G . Piccoli" <gpiccoli@canonical.com>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, dm-devel@redhat.com, Mauricio Oliveira <mauricio.oliveira@canonical.com>, Kent Overstreet <kent.overstreet@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-+dm-devel
-
-I think I have made some progress here. One of my colleagues ran a test
-with tracepoints on and I spotted that the last write has its flags
-flipped compared to the other writes:
-
-fstrim-18019 [022] .... 91107.302026: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4260112 + 196352 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302050: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4456464 + 262144 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302075: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4718608 + 81920 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302094: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5324816 + 180224 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302121: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5505040 + 262144 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302145: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5767184 + 81920 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.308777: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 6373392 + 180224 hit 1 bypass 0
-
-I think this causes it to go down a different path in cached_dev_write
-which leads to the issue.
-
-Instrumenting cached_dev_write confirmed that this block was being hit:
-
-	if (should_writeback(dc, s->orig_bio,
-			     cache_mode(dc),
-			     s->iop.bypass)) {
-		s->iop.bypass = false;
-		s->iop.writeback = true;
-	}
-
-Looking at should_writeback(), the relevant bits are:
-
-static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
-				    unsigned cache_mode, bool would_skip)
-{
-...
-
-	if (dc->partial_stripes_expensive &&
-	    bcache_dev_stripe_dirty(dc, bio->bi_iter.bi_sector,
-				    bio_sectors(bio)))
-		return true;
-
-	if (would_skip)
-		return false;
-
-We were hitting a case where that partial strip condition was returning
-true and so should_writeback() was returning true early.
-
-If that hadn't been the case, it would have hit the would_skip test, and
-as would_skip == s->iop.bypass == true, should_writeback() would have
-returned false.
-
-Looking at the git history from 72c270612bd3 ("bcache: Write out full
-stripes"), it looks like the idea was to optimise for raid5/6:
-
-     * If a stripe is already dirty, force writes to that stripe to
-       writeback mode - to help build up full stripes of dirty data
-    
-If I swap those two conditions so that the would_skip test is earlier,
-my system no longer crashes with the reproducer:
-
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index a0bb87894a6f..de3c58c2da11 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -72,14 +72,14 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
-            in_use > CUTOFF_WRITEBACK_SYNC)
-                return false;
- 
-+       if (would_skip)
-+               return false;
-+
-        if (dc->partial_stripes_expensive &&
-            bcache_dev_stripe_dirty(dc, bio->bi_iter.bi_sector,
-                                    bio_sectors(bio)))
-                return true;
- 
--       if (would_skip)
--               return false;
--
-        return (op_is_sync(bio->bi_opf) ||
-                bio->bi_opf & (REQ_META|REQ_PRIO) ||
-                in_use <= CUTOFF_WRITEBACK);
-
-
-I think this change just undoes the optimisation in some cases. However,
-looking at the structure and history I'm a bit worried that it's too big
-of a hammer. Perhaps a more specific test might be preferable - maybe
-one that checks for a discard? I'm happy to assemble a patch, I just
-wanted to check in with people with more experience in this area of the
-kernel first!
-
-Regards,
-Daniel
-
->> We have a couple of machines that are experiencing NULL pointer
->> dereferences when executing fstrim.
->> 
->> It can be reliably reproduced on at least:
->>  - HP ProLiant DL360 Gen9/ProLiant DL360 Gen9, BIOS P89 12/27/2015
->>  - Cisco Systems Inc UCSC-C240-M5L/UCSC-C240-M5L
->> 
->> In both cases we have:
->> 1) LVM/devmapper involved (bcache backing device is LVM volume) 
->> 2) writeback cache involved (bcache cache_mode is writeback) 
->> 
->> On the HP box, we can reliably reproduce it with:
->> 
->> # echo writeback > /sys/block/bcache0/bcache/cache_mode # not sure if this is required
->> # mount /dev/bcache0 /test 
->> # for i in {0..10}; do file="$(mktemp /test/zero.XXX)"; dd if=/dev/zero of="$file" bs=1M count=256; sync; rm $file; done; fstrim -v /test 
->> This has been Oopsing in the first try.
->> 
->> We have seen it on mainline (commit 40a31da), and as far back as v4.15.
->> 
->> The panic reads as follows:
->> 
->> [  421.796849] EXT4-fs (bcache0): mounted filesystem with ordered data mode. Opts: (null)
->> [  529.803060] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
->> [  530.183928] #PF error: [normal kernel read fault]
->> [  530.412392] PGD 8000001f42163067 P4D 8000001f42163067 PUD 1f42168067 PMD 0 
->> [  530.750887] Oops: 0000 [#1] SMP PTI
->> [  530.920869] CPU: 10 PID: 4167 Comm: fstrim Kdump: loaded Not tainted 5.0.0-rc1+ #3
->> [  531.290204] Hardware name: HP ProLiant DL360 Gen9/ProLiant DL360 Gen9, BIOS P89 12/27/2015
->> [  531.693137] RIP: 0010:blk_queue_split+0x148/0x620
->> [  531.922205] Code: 60 38 89 55 a0 45 31 db 45 31 f6 45 31 c9 31 ff 89 4d 98 85 db 0f 84 7f 04 00 00 44 8b 6d 98 4c 89 ee 48 c1 e6 04 49 03 70 78 <8b> 46 08 44 8b 56 0c 48 8b 16 44 29 e0 39 d8 48 89 55 a8 0f 47 c3
->> [  532.838634] RSP: 0018:ffffb9b708df39b0 EFLAGS: 00010246
->> [  533.093571] RAX: 00000000ffffffff RBX: 0000000000046000 RCX: 0000000000000000
->> [  533.441865] RDX: 0000000000000200 RSI: 0000000000000000 RDI: 0000000000000000
->> [  533.789922] RBP: ffffb9b708df3a48 R08: ffff940d3b3fdd20 R09: 0000000000000000
->> [  534.137512] R10: ffffb9b708df3958 R11: 0000000000000000 R12: 0000000000000000
->> [  534.485329] R13: 0000000000000000 R14: 0000000000000000 R15: ffff940d39212020
->> [  534.833319] FS:  00007efec26e3840(0000) GS:ffff940d1f480000(0000) knlGS:0000000000000000
->> [  535.224098] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->> [  535.504318] CR2: 0000000000000008 CR3: 0000001f4e256004 CR4: 00000000001606e0
->> [  535.851759] Call Trace:
->> [  535.970308]  ? mempool_alloc_slab+0x15/0x20
->> [  536.174152]  ? bch_data_insert+0x42/0xd0 [bcache]
->> [  536.403399]  blk_mq_make_request+0x97/0x4f0
->> [  536.607036]  generic_make_request+0x1e2/0x410
->> [  536.819164]  submit_bio+0x73/0x150
->> [  536.980168]  ? submit_bio+0x73/0x150
->> [  537.149731]  ? bio_associate_blkg_from_css+0x3b/0x60
->> [  537.391595]  ? _cond_resched+0x1a/0x50
->> [  537.573774]  submit_bio_wait+0x59/0x90
->> [  537.756105]  blkdev_issue_discard+0x80/0xd0
->> [  537.959590]  ext4_trim_fs+0x4a9/0x9e0
->> [  538.137636]  ? ext4_trim_fs+0x4a9/0x9e0
->> [  538.324087]  ext4_ioctl+0xea4/0x1530
->> [  538.497712]  ? _copy_to_user+0x2a/0x40
->> [  538.679632]  do_vfs_ioctl+0xa6/0x600
->> [  538.853127]  ? __do_sys_newfstat+0x44/0x70
->> [  539.051951]  ksys_ioctl+0x6d/0x80
->> [  539.212785]  __x64_sys_ioctl+0x1a/0x20
->> [  539.394918]  do_syscall_64+0x5a/0x110
->> [  539.568674]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
->> 
->> Looking at the disassembly for blk_queue_split, it appears that the
->> issue is that bi_io_vec is NULL.  The address of the bio is in r8, and
->> indeed bi_io_vec is NULL:
->> 
->> crash> struct bio ffff940d3b3fdd20
->> struct bio {
->>   bi_next = 0x0, 
->>   bi_disk = 0xffff940c17c56800, 
->>   bi_opf = 1, 
->>   bi_flags = 1540, 
->>   bi_ioprio = 0, 
->>   bi_write_hint = 0, 
->>   bi_status = 0 '\000', 
->>   bi_partno = 0 '\000', 
->>   bi_phys_segments = 0, 
->>   bi_seg_front_size = 0, 
->>   bi_seg_back_size = 0, 
->>   bi_iter = {
->>     bi_sector = 212452816, 
->>     bi_size = 286720, 
->>     bi_idx = 0, 
->>     bi_bvec_done = 0
->>   }, 
->>   __bi_remaining = {
->>     counter = 1
->>   }, 
->>   bi_end_io = 0xffffffffc0455810 <bch_data_insert_endio>, 
->>   bi_private = 0xffff940c04f698a0, 
->>   bi_blkg = 0xffff940c129a7400, 
->>   bi_issue = {
->>     value = 1261008425052734119
->>   }, 
->>   {
->>     bi_integrity = 0x0
->>   }, 
->>   bi_vcnt = 0, 
->>   bi_max_vecs = 0, 
->>   __bi_cnt = {
->>     counter = 1
->>   }, 
->>   bi_io_vec = 0x0, 
->>   bi_pool = 0xffff940d3a280de0, 
->>   bi_inline_vecs = 0xffff940d3b3fdda8
->> }
->> 
->> 
->> The stack being a bit odd, we used ftrace to get a function graph
->> trace. That clarified things a bit - here is the chronology:
->> 
->> Looking at generic_make_request(), we see:
->> 
->> 	bio_list_init(&bio_list_on_stack[0]);
->> 	current->bio_list = bio_list_on_stack;
->> 	do {
->> 		struct request_queue *q = bio->bi_disk->queue;
->> 		blk_mq_req_flags_t flags = bio->bi_opf & REQ_NOWAIT ?
->> 			BLK_MQ_REQ_NOWAIT : 0;
->> 
->> 		if (likely(blk_queue_enter(q, flags) == 0)) {
->> 			struct bio_list lower, same;
->> 
->> 			/* Create a fresh bio_list for all subordinate requests */
->> 			bio_list_on_stack[1] = bio_list_on_stack[0];
->> 			bio_list_init(&bio_list_on_stack[0]);
->> 			ret = q->make_request_fn(q, bio);
->> 
->> On the first iteration of the loop, q->make_request_function invokes
->> cached_dev_make_request(). That calls generic_make_request a few times -
->> making what I understand to be requests to write out to the underlying
->> device. Then cached_dev_make_request returns, and in the next iteration
->> of the loop, one of the new entries is pulled off the list,
->> blk_mq_make_request attempts to call blk_queue_split on it, and that
->> explodes.
->> 
->> I'm not quite sure why the new bios have bi_io_vec as NULL - it would
->> seem to imply the original bio had it as NULL too. I don't know why
->> that would be and I haven't been able to trace that far backwards just
->> yet.
->> 
->> I'm having some trouble unpicking the closures that make up bcache, so
->> I was hoping someone would be able to point me in the right direction?
->> 
->> As I said, we can reproduce this easily so we're happy to gather any
->> extra information required or test anything.
->> 
->> Regards,
->> Daniel
->> 
->
->
-> +linux-block
->
-> Cheers,
->
->
-> Guilherme
+1NogMjAxOS8xLzE4IM/CzucxOjE4LCBEYW5pZWwgQXh0ZW5zINC0tcA6Cj4gU29tZSB1c2VycyBz
+ZWUgcGFuaWNzIGxpa2UgdGhlIGZvbGxvd2luZyB3aGVuIHBlcmZvcm1pbmcgZnN0cmltIG9uIGEg
+YmNhY2hlZCB2b2x1bWU6Cj4gCj4gWyAgNTI5LjgwMzA2MF0gQlVHOiB1bmFibGUgdG8gaGFuZGxl
+IGtlcm5lbCBOVUxMIHBvaW50ZXIgZGVyZWZlcmVuY2UgYXQgMDAwMDAwMDAwMDAwMDAwOAo+IFsg
+IDUzMC4xODM5MjhdICNQRiBlcnJvcjogW25vcm1hbCBrZXJuZWwgcmVhZCBmYXVsdF0KPiBbICA1
+MzAuNDEyMzkyXSBQR0QgODAwMDAwMWY0MjE2MzA2NyBQNEQgODAwMDAwMWY0MjE2MzA2NyBQVUQg
+MWY0MjE2ODA2NyBQTUQgMAo+IFsgIDUzMC43NTA4ODddIE9vcHM6IDAwMDAgWyMxXSBTTVAgUFRJ
+Cj4gWyAgNTMwLjkyMDg2OV0gQ1BVOiAxMCBQSUQ6IDQxNjcgQ29tbTogZnN0cmltIEtkdW1wOiBs
+b2FkZWQgTm90IHRhaW50ZWQgNS4wLjAtcmMxKyAjMwo+IFsgIDUzMS4yOTAyMDRdIEhhcmR3YXJl
+IG5hbWU6IEhQIFByb0xpYW50IERMMzYwIEdlbjkvUHJvTGlhbnQgREwzNjAgR2VuOSwgQklPUyBQ
+ODkgMTIvMjcvMjAxNQo+IFsgIDUzMS42OTMxMzddIFJJUDogMDAxMDpibGtfcXVldWVfc3BsaXQr
+MHgxNDgvMHg2MjAKPiBbICA1MzEuOTIyMjA1XSBDb2RlOiA2MCAzOCA4OSA1NSBhMCA0NSAzMSBk
+YiA0NSAzMSBmNiA0NSAzMSBjOSAzMSBmZiA4OSA0ZCA5OCA4NSBkYiAwZiA4NCA3ZiAwNCAwMCAw
+MCA0NCA4YiA2ZCA5OCA0YyA4OSBlZSA0OCBjMSBlNiAwNCA0OSAwMyA3MCA3OCA8OGI+IDQ2IDA4
+IDQ0IDhiIDU2IDBjIDQ4Cj4gOGIgMTYgNDQgMjkgZTAgMzkgZDggNDggODkgNTUgYTggMGYgNDcg
+YzMKPiBbICA1MzIuODM4NjM0XSBSU1A6IDAwMTg6ZmZmZmI5YjcwOGRmMzliMCBFRkxBR1M6IDAw
+MDEwMjQ2Cj4gWyAgNTMzLjA5MzU3MV0gUkFYOiAwMDAwMDAwMGZmZmZmZmZmIFJCWDogMDAwMDAw
+MDAwMDA0NjAwMCBSQ1g6IDAwMDAwMDAwMDAwMDAwMDAKPiBbICA1MzMuNDQxODY1XSBSRFg6IDAw
+MDAwMDAwMDAwMDAyMDAgUlNJOiAwMDAwMDAwMDAwMDAwMDAwIFJESTogMDAwMDAwMDAwMDAwMDAw
+MAo+IFsgIDUzMy43ODk5MjJdIFJCUDogZmZmZmI5YjcwOGRmM2E0OCBSMDg6IGZmZmY5NDBkM2Iz
+ZmRkMjAgUjA5OiAwMDAwMDAwMDAwMDAwMDAwCj4gWyAgNTM0LjEzNzUxMl0gUjEwOiBmZmZmYjli
+NzA4ZGYzOTU4IFIxMTogMDAwMDAwMDAwMDAwMDAwMCBSMTI6IDAwMDAwMDAwMDAwMDAwMDAKPiBb
+ICA1MzQuNDg1MzI5XSBSMTM6IDAwMDAwMDAwMDAwMDAwMDAgUjE0OiAwMDAwMDAwMDAwMDAwMDAw
+IFIxNTogZmZmZjk0MGQzOTIxMjAyMAo+IFsgIDUzNC44MzMzMTldIEZTOiAgMDAwMDdlZmVjMjZl
+Mzg0MCgwMDAwKSBHUzpmZmZmOTQwZDFmNDgwMDAwKDAwMDApIGtubEdTOjAwMDAwMDAwMDAwMDAw
+MDAKPiBbICA1MzUuMjI0MDk4XSBDUzogIDAwMTAgRFM6IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAw
+MDAwMDgwMDUwMDMzCj4gWyAgNTM1LjUwNDMxOF0gQ1IyOiAwMDAwMDAwMDAwMDAwMDA4IENSMzog
+MDAwMDAwMWY0ZTI1NjAwNCBDUjQ6IDAwMDAwMDAwMDAxNjA2ZTAKPiBbICA1MzUuODUxNzU5XSBD
+YWxsIFRyYWNlOgo+IFsgIDUzNS45NzAzMDhdICA/IG1lbXBvb2xfYWxsb2Nfc2xhYisweDE1LzB4
+MjAKPiBbICA1MzYuMTc0MTUyXSAgPyBiY2hfZGF0YV9pbnNlcnQrMHg0Mi8weGQwIFtiY2FjaGVd
+Cj4gWyAgNTM2LjQwMzM5OV0gIGJsa19tcV9tYWtlX3JlcXVlc3QrMHg5Ny8weDRmMAo+IFsgIDUz
+Ni42MDcwMzZdICBnZW5lcmljX21ha2VfcmVxdWVzdCsweDFlMi8weDQxMAo+IFsgIDUzNi44MTkx
+NjRdICBzdWJtaXRfYmlvKzB4NzMvMHgxNTAKPiBbICA1MzYuOTgwMTY4XSAgPyBzdWJtaXRfYmlv
+KzB4NzMvMHgxNTAKPiBbICA1MzcuMTQ5NzMxXSAgPyBiaW9fYXNzb2NpYXRlX2Jsa2dfZnJvbV9j
+c3MrMHgzYi8weDYwCj4gWyAgNTM3LjM5MTU5NV0gID8gX2NvbmRfcmVzY2hlZCsweDFhLzB4NTAK
+PiBbICA1MzcuNTczNzc0XSAgc3VibWl0X2Jpb193YWl0KzB4NTkvMHg5MAo+IFsgIDUzNy43NTYx
+MDVdICBibGtkZXZfaXNzdWVfZGlzY2FyZCsweDgwLzB4ZDAKPiBbICA1MzcuOTU5NTkwXSAgZXh0
+NF90cmltX2ZzKzB4NGE5LzB4OWUwCj4gWyAgNTM4LjEzNzYzNl0gID8gZXh0NF90cmltX2ZzKzB4
+NGE5LzB4OWUwCj4gWyAgNTM4LjMyNDA4N10gIGV4dDRfaW9jdGwrMHhlYTQvMHgxNTMwCj4gWyAg
+NTM4LjQ5NzcxMl0gID8gX2NvcHlfdG9fdXNlcisweDJhLzB4NDAKPiBbICA1MzguNjc5NjMyXSAg
+ZG9fdmZzX2lvY3RsKzB4YTYvMHg2MDAKPiBbICA1MzguODUzMTI3XSAgPyBfX2RvX3N5c19uZXdm
+c3RhdCsweDQ0LzB4NzAKPiBbICA1MzkuMDUxOTUxXSAga3N5c19pb2N0bCsweDZkLzB4ODAKPiBb
+ICA1MzkuMjEyNzg1XSAgX194NjRfc3lzX2lvY3RsKzB4MWEvMHgyMAo+IFsgIDUzOS4zOTQ5MThd
+ICBkb19zeXNjYWxsXzY0KzB4NWEvMHgxMTAKPiBbICA1MzkuNTY4Njc0XSAgZW50cnlfU1lTQ0FM
+TF82NF9hZnRlcl9od2ZyYW1lKzB4NDQvMHhhOQo+IAo+IFdlIGhhdmUgb2JzZXJ2ZWQgaXQgd2hl
+cmUgYm90aDoKPiAxKSBMVk0vZGV2bWFwcGVyIGlzIGludm9sdmVkIChiY2FjaGUgYmFja2luZyBk
+ZXZpY2UgaXMgTFZNIHZvbHVtZSkgYW5kCj4gMikgd3JpdGViYWNrIGNhY2hlIGlzIGludm9sdmVk
+IChiY2FjaGUgY2FjaGVfbW9kZSBpcyB3cml0ZWJhY2spCj4gCj4gT24gb25lIG1hY2hpbmUsIHdl
+IGNhbiByZWxpYWJseSByZXByb2R1Y2UgaXQgd2l0aDoKPiAKPiAgIyBlY2hvIHdyaXRlYmFjayA+
+IC9zeXMvYmxvY2svYmNhY2hlMC9iY2FjaGUvY2FjaGVfbW9kZSAjIG5vdCBzdXJlIGlmIHRoaXMg
+aXMgcmVxdWlyZWQKPiAgIyBtb3VudCAvZGV2L2JjYWNoZTAgL3Rlc3QKPiAgIyBmb3IgaSBpbiB7
+MC4uMTB9OyBkbyBmaWxlPSIkKG1rdGVtcCAvdGVzdC96ZXJvLlhYWCkiOyBkZCBpZj0vZGV2L3pl
+cm8gb2Y9IiRmaWxlIiBicz0xTSBjb3VudD0yNTY7IHN5bmM7IHJtICRmaWxlOyBkb25lOyBmc3Ry
+aW0gLXYgL3Rlc3QKPiAKPiBPYnNlcnZpbmcgdGhpcyB3aXRoIHRyYWNlcG9pbnRzIG9uLCB3ZSBz
+ZWUgdGhlIGZvbGxvd2luZyB3cml0ZXM6Cj4gCj4gZnN0cmltLTE4MDE5IFswMjJdIC4uLi4gOTEx
+MDcuMzAyMDI2OiBiY2FjaGVfd3JpdGU6IDczZjk1NTgzLTU2MWMtNDA4Zi1hOTNhLTRjYmQyNDk4
+ZjVjOCBpbm9kZSAwICBEUyA0MjYwMTEyICsgMTk2MzUyIGhpdCAwIGJ5cGFzcyAxCj4gZnN0cmlt
+LTE4MDE5IFswMjJdIC4uLi4gOTExMDcuMzAyMDUwOiBiY2FjaGVfd3JpdGU6IDczZjk1NTgzLTU2
+MWMtNDA4Zi1hOTNhLTRjYmQyNDk4ZjVjOCBpbm9kZSAwICBEUyA0NDU2NDY0ICsgMjYyMTQ0IGhp
+dCAwIGJ5cGFzcyAxCj4gZnN0cmltLTE4MDE5IFswMjJdIC4uLi4gOTExMDcuMzAyMDc1OiBiY2Fj
+aGVfd3JpdGU6IDczZjk1NTgzLTU2MWMtNDA4Zi1hOTNhLTRjYmQyNDk4ZjVjOCBpbm9kZSAwICBE
+UyA0NzE4NjA4ICsgODE5MjAgaGl0IDAgYnlwYXNzIDEKPiBmc3RyaW0tMTgwMTkgWzAyMl0gLi4u
+LiA5MTEwNy4zMDIwOTQ6IGJjYWNoZV93cml0ZTogNzNmOTU1ODMtNTYxYy00MDhmLWE5M2EtNGNi
+ZDI0OThmNWM4IGlub2RlIDAgIERTIDUzMjQ4MTYgKyAxODAyMjQgaGl0IDAgYnlwYXNzIDEKPiBm
+c3RyaW0tMTgwMTkgWzAyMl0gLi4uLiA5MTEwNy4zMDIxMjE6IGJjYWNoZV93cml0ZTogNzNmOTU1
+ODMtNTYxYy00MDhmLWE5M2EtNGNiZDI0OThmNWM4IGlub2RlIDAgIERTIDU1MDUwNDAgKyAyNjIx
+NDQgaGl0IDAgYnlwYXNzIDEKPiBmc3RyaW0tMTgwMTkgWzAyMl0gLi4uLiA5MTEwNy4zMDIxNDU6
+IGJjYWNoZV93cml0ZTogNzNmOTU1ODMtNTYxYy00MDhmLWE5M2EtNGNiZDI0OThmNWM4IGlub2Rl
+IDAgIERTIDU3NjcxODQgKyA4MTkyMCBoaXQgMCBieXBhc3MgMQo+IGZzdHJpbS0xODAxOSBbMDIy
+XSAuLi4uIDkxMTA3LjMwODc3NzogYmNhY2hlX3dyaXRlOiA3M2Y5NTU4My01NjFjLTQwOGYtYTkz
+YS00Y2JkMjQ5OGY1YzggaW5vZGUgMCAgRFMgNjM3MzM5MiArIDE4MDIyNCBoaXQgMSBieXBhc3Mg
+MAo+IDxjcmFzaD4KPiAKPiBOb3RlIHRoZSBmaW5hbCBvbmUgaGFzIGRpZmZlcmVudCBoaXQvYnlw
+YXNzIGZsYWdzLgo+IAo+IFRoaXMgaXMgYmVjYXVzZSBpbiBzaG91bGRfd3JpdGViYWNrKCksIHdl
+IHdlcmUgaGl0dGluZyBhIGNhc2Ugd2hlcmUKPiB0aGUgcGFydGlhbCBzdHJpcGUgY29uZGl0aW9u
+IHdhcyByZXR1cm5pbmcgdHJ1ZSBhbmQgc28KPiBzaG91bGRfd3JpdGViYWNrKCkgd2FzIHJldHVy
+bmluZyB0cnVlIGVhcmx5Lgo+IAo+IElmIHRoYXQgaGFkbid0IGJlZW4gdGhlIGNhc2UsIGl0IHdv
+dWxkIGhhdmUgaGl0IHRoZSB3b3VsZF9za2lwIHRlc3QsIGFuZAo+IGFzIHdvdWxkX3NraXAgPT0g
+cy0+aW9wLmJ5cGFzcyA9PSB0cnVlLCBzaG91bGRfd3JpdGViYWNrKCkgd291bGQgaGF2ZQo+IHJl
+dHVybmVkIGZhbHNlLgo+IAo+IExvb2tpbmcgYXQgdGhlIGdpdCBoaXN0b3J5IGZyb20gNzJjMjcw
+NjEyYmQzICgiYmNhY2hlOiBXcml0ZSBvdXQgZnVsbAo+IHN0cmlwZXMiKSwgaXQgbG9va3MgbGlr
+ZSB0aGUgaWRlYSB3YXMgdG8gb3B0aW1pc2UgZm9yIHJhaWQ1LzY6Cj4gCj4gICAgICAgICogSWYg
+YSBzdHJpcGUgaXMgYWxyZWFkeSBkaXJ0eSwgZm9yY2Ugd3JpdGVzIHRvIHRoYXQgc3RyaXBlIHRv
+Cj4gCSB3cml0ZWJhY2sgbW9kZSAtIHRvIGhlbHAgYnVpbGQgdXAgZnVsbCBzdHJpcGVzIG9mIGRp
+cnR5IGRhdGEKPiAKPiBUbyBmaXggdGhpcyBpc3N1ZSwgbWFrZSBzdXJlIHRoYXQgc2hvdWxkX3dy
+aXRlYmFjaygpIG9uIGEgZGlzY2FyZCBvcAo+IG5ldmVyIHJldHVybnMgdHJ1ZS4KPiAKPiBNb3Jl
+IGRldGFpbHMgb2YgZGVidWdnaW5nOiBodHRwczovL3d3dy5zcGluaWNzLm5ldC9saXN0cy9saW51
+eC1iY2FjaGUvbXNnMDY5OTYuaHRtbAo+IAo+IFByZXZpb3VzIHJlcG9ydHM6Cj4gIC0gaHR0cHM6
+Ly9idWd6aWxsYS5rZXJuZWwub3JnL3Nob3dfYnVnLmNnaT9pZD0yMDEwNTEKPiAgLSBodHRwczov
+L2J1Z3ppbGxhLmtlcm5lbC5vcmcvc2hvd19idWcuY2dpP2lkPTE5NjEwMwo+ICAtIGh0dHBzOi8v
+d3d3LnNwaW5pY3MubmV0L2xpc3RzL2xpbnV4LWJjYWNoZS9tc2cwNjg4NS5odG1sCj4gCj4gQ2M6
+IEtlbnQgT3ZlcnN0cmVldCA8a292ZXJzdHJlZXRAZ29vZ2xlLmNvbT4KPiBDYzogc3RhYmxlQHZn
+ZXIua2VybmVsLm9yZwo+IEZpeGVzOiA3MmMyNzA2MTJiZDMgKCJiY2FjaGU6IFdyaXRlIG91dCBm
+dWxsIHN0cmlwZXMiKQo+IFNpZ25lZC1vZmYtYnk6IERhbmllbCBBeHRlbnMgPGRqYUBheHRlbnMu
+bmV0Pgo+IC0tLQo+ICBkcml2ZXJzL21kL2JjYWNoZS93cml0ZWJhY2suaCB8IDMgKysrCj4gIDEg
+ZmlsZSBjaGFuZ2VkLCAzIGluc2VydGlvbnMoKykKPiAKPiBkaWZmIC0tZ2l0IGEvZHJpdmVycy9t
+ZC9iY2FjaGUvd3JpdGViYWNrLmggYi9kcml2ZXJzL21kL2JjYWNoZS93cml0ZWJhY2suaAo+IGlu
+ZGV4IDZhNzQzZDNiYjMzOC4uNGU0YzY4MTBkYzNjIDEwMDY0NAo+IC0tLSBhL2RyaXZlcnMvbWQv
+YmNhY2hlL3dyaXRlYmFjay5oCj4gKysrIGIvZHJpdmVycy9tZC9iY2FjaGUvd3JpdGViYWNrLmgK
+PiBAQCAtNzEsNiArNzEsOSBAQCBzdGF0aWMgaW5saW5lIGJvb2wgc2hvdWxkX3dyaXRlYmFjayhz
+dHJ1Y3QgY2FjaGVkX2RldiAqZGMsIHN0cnVjdCBiaW8gKmJpbywKPiAgCSAgICBpbl91c2UgPiBi
+Y2hfY3V0b2ZmX3dyaXRlYmFja19zeW5jKQo+ICAJCXJldHVybiBmYWxzZTsKPiAgCj4gKwlpZiAo
+YmlvX29wKGJpbykgPT0gUkVRX09QX0RJU0NBUkQpCj4gKwkJcmV0dXJuIGZhbHNlOwo+ICsKPiAg
+CWlmIChkYy0+cGFydGlhbF9zdHJpcGVzX2V4cGVuc2l2ZSAmJgo+ICAJICAgIGJjYWNoZV9kZXZf
+c3RyaXBlX2RpcnR5KGRjLCBiaW8tPmJpX2l0ZXIuYmlfc2VjdG9yLAo+ICAJCQkJICAgIGJpb19z
+ZWN0b3JzKGJpbykpKQo+IAoKSGkgRGFuaWVsLAoKTmljZSBjYXRjaCEgSSBhZGQgdGhpcyBvbmUg
+dG8gbXkgZm9yLW5leHQgZGlyZWN0b3J5LCBmb3IgdjUuMSBtZXJnZSB3aW5kb3cuCgpUaGFua3Mu
+CgotLSAKCkNvbHkgTGkKCi0tCmRtLWRldmVsIG1haWxpbmcgbGlzdApkbS1kZXZlbEByZWRoYXQu
+Y29tCmh0dHBzOi8vd3d3LnJlZGhhdC5jb20vbWFpbG1hbi9saXN0aW5mby9kbS1kZXZlbA==
