@@ -1,55 +1,59 @@
-From: Ming Lei <ming.lei@redhat.com>
-Subject: Re: [PATCH V14 00/18] block: support multi-page bvec
-Date: Tue, 22 Jan 2019 10:01:30 +0800
-Message-ID: <20190122020128.GB2490@ming.t460p>
-References: <20190121081805.32727-1-ming.lei@redhat.com>
-	<61dfaa1e-e7bf-75f1-410b-ed32f97d0782@grimberg.me>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH] bcache: never writeback a discard operation
+Date: Wed, 23 Jan 2019 09:39:15 +0800
+Message-ID: <b6f67dae-1de4-256b-1498-d377961fe27e@suse.de>
+References: <20190118051825.18196-1-dja@axtens.net>
+	<20190122155556.478CB217D6@mail.kernel.org>
+	<87womwp71z.fsf@linkitivity.dja.id.au>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <cluster-devel-bounces@redhat.com>
-Content-Disposition: inline
-In-Reply-To: <61dfaa1e-e7bf-75f1-410b-ed32f97d0782@grimberg.me>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/cluster-devel>,
-	<mailto:cluster-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/cluster-devel>
-List-Post: <mailto:cluster-devel@redhat.com>
-List-Help: <mailto:cluster-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/cluster-devel>,
-	<mailto:cluster-devel-request@redhat.com?subject=subscribe>
-Sender: cluster-devel-bounces@redhat.com
-Errors-To: cluster-devel-bounces@redhat.com
-To: Sagi Grimberg <sagi@grimberg.me>
-Cc: Mike Snitzer <snitzer@redhat.com>, linux-mm@kvack.org, dm-devel@redhat.com, Christoph Hellwig <hch@lst.de>, "Darrick J . Wong" <darrick.wong@oracle.com>, Omar Sandoval <osandov@fb.com>, cluster-devel@redhat.com, linux-ext4@vger.kernel.org, Kent Overstreet <kent.overstreet@gmail.com>, Boaz Harrosh <ooo@electrozaur.com>, Gao Xiang <gaoxiang25@huawei.com>, Coly Li <colyli@suse.de>, linux-raid@vger.kernel.org, linux-bcache@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>, David Sterba <dsterba@suse.com>, Jens Axboe <axboe@kernel.dk>, linux-block@vger.kernel.org, Theodore Ts'o <tytso@mit.edu>, linux-kernel@vger.kernel.org, linux-xfs@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <dm-devel-bounces@redhat.com>
+In-Reply-To: <87womwp71z.fsf@linkitivity.dja.id.au>
+Content-Language: en-US
+List-Unsubscribe: <https://www.redhat.com/mailman/options/dm-devel>,
+	<mailto:dm-devel-request@redhat.com?subject=unsubscribe>
+List-Archive: <https://www.redhat.com/archives/dm-devel>
+List-Post: <mailto:dm-devel@redhat.com>
+List-Help: <mailto:dm-devel-request@redhat.com?subject=help>
+List-Subscribe: <https://www.redhat.com/mailman/listinfo/dm-devel>,
+	<mailto:dm-devel-request@redhat.com?subject=subscribe>
+Sender: dm-devel-bounces@redhat.com
+Errors-To: dm-devel-bounces@redhat.com
+To: Daniel Axtens <dja@axtens.net>, Sasha Levin <sashal@kernel.org>
+Cc: Michael Lyle <mlyle@lyle.org>, Kent Overstreet <koverstreet@google.com>, "Guilherme G . Piccoli" <gpiccoli@canonical.com>, dm-devel@redhat.com, linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, Jan 21, 2019 at 01:43:21AM -0800, Sagi Grimberg wrote:
-> 
-> > V14:
-> > 	- drop patch(patch 4 in V13) for renaming bvec helpers, as suggested by Jens
-> > 	- use mp_bvec_* as multi-page bvec helper name
-> > 	- fix one build issue, which is caused by missing one converion of
-> > 	bio_for_each_segment_all in fs/gfs2
-> > 	- fix one 32bit ARCH specific issue caused by segment boundary mask
-> > 	overflow
-> 
-> Hey Ming,
-> 
-> So is nvme-tcp also affected here? The only point where I see nvme-tcp
-> can be affected is when initializing a bvec iter using bio_segments() as
-> everywhere else we use iters which should transparently work..
-> 
-> I see that loop was converted, does it mean that nvme-tcp needs to
-> call something like?
-> --
-> 	bio_for_each_mp_bvec(bv, bio, iter)
-> 		nr_bvecs++;
-
-bio_for_each_segment()/bio_segments() still works, just not as efficient
-as bio_for_each_mp_bvec() given each multi-page bvec(very similar with scatterlist)
-is returned in each loop.
-
-I don't look at nvme-tcp code yet. But if nvme-tcp supports this way,
-it can benefit from bio_for_each_mp_bvec().
-
-Thanks,
-Ming
+5ZyoIDIwMTkvMS8yMyDkuIrljYg4OjEwLCBEYW5pZWwgQXh0ZW5zIOWGmemBkzoKPiBIaSBTYXNo
+YSwKPiAKPj4gVGhpcyBjb21taXQgaGFzIGJlZW4gcHJvY2Vzc2VkIGJlY2F1c2UgaXQgY29udGFp
+bnMgYSAiRml4ZXM6IiB0YWcsCj4+IGZpeGluZyBjb21taXQ6IDcyYzI3MDYxMmJkMyBiY2FjaGU6
+IFdyaXRlIG91dCBmdWxsIHN0cmlwZXMuCj4gCj4gSSBhZGRlZCB0aGF0IGZpeGVzIHRhZyBiZWNh
+dXNlIHRoYXQgd2FzIHRoZSBjb21taXQgdGhhdCBhZGRlZCB0aGUKPiBjb2RlLiBIb3dldmVyLCBJ
+IG5vdGljZWQgdGhhdCBvbmUgb2YgdGhlIGJ1ZyByZXBvcnRzIG1lbnRpb25zIHRoYXQgdGhlCj4g
+cHJvYmxlbSBvbmx5IGFyaXNpbmcgYWZ0ZXIgdjQuOC4gWzFdIEkgZG9uJ3QgcXVpdGUga25vdyB3
+aGF0IHRvIG1ha2Ugb2YKPiB0aGlzOiBwZXJoYXBzIGl0IGlzIGEgY29uc2VxdWVuY2Ugb2YgYW5v
+dGhlciBjaGFuZ2UgZW5hYmxpbmcgdGhlIGJyb2tlbgo+IHBhdGguIE1heWJlIHNvbWVvbmUgb24g
+b25lIG9mIHRoZSBsaXN0cyB3aWxsIGhhdmUgYW4gaWRlYS4KPiAKCj5Gcm9tIGNvZGUgbG9naWMs
+IGJjYWNoZSBzaG91bGQgbm90IGhhdmUgYSBkaXNjYXJkIGJpbyBpbiBjYWNoZSBkZXZpY2UsCm90
+aGVyd2lzZSBpdCBpcyBhIGJ1Zy4gVGhlcmVmb3JlIG5vIG1hdHRlciB3aGV0aGVyIHRoZSBpc3N1
+ZSBoYXBwZW5zCmJlZm9yZSB2NC44IGtlcm5lbCwgSSdkIGxpa2UgdG8gaGF2ZSB0aGUgZml4IGlu
+LgoKPj4gdjQuNC4xNzE6IEJ1aWxkIGZhaWxlZCEgRXJyb3JzOgo+PiAgICAgZHJpdmVycy9tZC9i
+Y2FjaGUvd3JpdGViYWNrLmg6NzE6NjogZXJyb3I6IGltcGxpY2l0IGRlY2xhcmF0aW9uIG9mIGZ1
+bmN0aW9uIOKAmGJpb19vcOKAmTsgZGlkIHlvdSBtZWFuIOKAmGJpb19yd+KAmT8gWy1XZXJyb3I9
+aW1wbGljaXQtZnVuY3Rpb24tZGVjbGFyYXRpb25dCj4+ICAgICBkcml2ZXJzL21kL2JjYWNoZS93
+cml0ZWJhY2suaDo3MToyMTogZXJyb3I6IOKAmFJFUV9PUF9ESVNDQVJE4oCZIHVuZGVjbGFyZWQg
+KGZpcnN0IHVzZSBpbiB0aGlzIGZ1bmN0aW9uKTsgZGlkIHlvdSBtZWFuIOKAmFJFUV9ESVNDQVJE
+4oCZPwo+Pgo+PiB2My4xOC4xMzI6IEJ1aWxkIGZhaWxlZCEgRXJyb3JzOgo+PiAgICAgZHJpdmVy
+cy9tZC9iY2FjaGUvd3JpdGViYWNrLmg6NzE6NjogZXJyb3I6IGltcGxpY2l0IGRlY2xhcmF0aW9u
+IG9mIGZ1bmN0aW9uIOKAmGJpb19vcOKAmTsgZGlkIHlvdSBtZWFuIOKAmGJpb19yd+KAmT8gWy1X
+ZXJyb3I9aW1wbGljaXQtZnVuY3Rpb24tZGVjbGFyYXRpb25dCj4+ICAgICBkcml2ZXJzL21kL2Jj
+YWNoZS93cml0ZWJhY2suaDo3MToyMTogZXJyb3I6IOKAmFJFUV9PUF9ESVNDQVJE4oCZIHVuZGVj
+bGFyZWQgKGZpcnN0IHVzZSBpbiB0aGlzIGZ1bmN0aW9uKTsgZGlkIHlvdSBtZWFuIOKAmFJFUV9E
+SVNDQVJE4oCZPwo+Pgo+Pgo+PiBIb3cgc2hvdWxkIHdlIHByb2NlZWQgd2l0aCB0aGlzIHBhdGNo
+Pwo+IAo+IFRoZSBwYXRjaCBzZWVtcyByZWFzb25hYmx5IGVhc3kgdG8gYmFja3BvcnQuIENvbXBp
+bGUtdGVzdGVkIG9ubHksIGFuZAo+IG9ubHkgYWdhaW5zdCB2NC40LjE3MS4KCkkgZG9uJ3QgaGF2
+ZSBpZGVhIHdoZXRoZXIgc3RhYmxlIGtlcm5lbHMgYWNjZXB0IHJlYmFzZWQgcGF0Y2hlcywgZm9y
+ClNVU0Uga2VybmVsIEkgd2lsbCBkbyBiYWNrIHBvcnQgZm9yIGFsbCBuZWNlc3Nhcnkga2VybmVs
+IHZlcnNpb25zLgoKLS0gCgpDb2x5IExpCgotLQpkbS1kZXZlbCBtYWlsaW5nIGxpc3QKZG0tZGV2
+ZWxAcmVkaGF0LmNvbQpodHRwczovL3d3dy5yZWRoYXQuY29tL21haWxtYW4vbGlzdGluZm8vZG0t
+ZGV2ZWw=
