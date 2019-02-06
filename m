@@ -1,93 +1,64 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: use kmemdup_nul for CACHED_LABEL buffer
-Date: Wed, 6 Feb 2019 16:37:36 +0800
-Message-ID: <04ebd070-3c9c-0cd4-f2d8-d7b078ea2582@suse.de>
-References: <04ff7c6d5cdd8b389d471989704c2f9dc3def554.1548840161.git.geliangtang@gmail.com>
+From: Nix <nix@esperi.org.uk>
+Subject: bcache on XFS: metadata I/O (dirent I/O?) not getting cached at all?
+Date: Wed, 06 Feb 2019 22:11:21 +0000
+Message-ID: <87h8dgefee.fsf@esperi.org.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <04ff7c6d5cdd8b389d471989704c2f9dc3def554.1548840161.git.geliangtang@gmail.com>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Geliang Tang <geliangtang@gmail.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: linux-bcache@vger.kernel.org, linux-xfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/1/30 5:29 下午, Geliang Tang wrote:
-> This patch uses kmemdup_nul to create a NUL-terminated string from
-> dc->sb.label. This is better than open coding it.
-> 
-> With this, we can move env[2] initialization into env[] array to make
-> code more elegant.
-> 
-> Signed-off-by: Geliang Tang <geliangtang@gmail.com>
+So I just upgraded to 4.20 and revived my long-turned-off bcache now
+that the metadata corruption leading to mount failure on dirty close may
+have been identified (applying Tang Junhui's patch to do so)... and I
+spotted something a bit disturbing. It appears that XFS directory and
+metadata I/O is going more or less entirely uncached.
 
-Hi Geliang,
+Here's some bcache stats before and after a git status of a *huge*
+uncached tree (Chromium) on my no-writeback readaround cache. It takes
+many minutes and pounds the disk with massively seeky metadata I/O in
+the process:
 
-In general I am OK with your idea. But I feel there might be some
-regression with your change. I comment your patch in line, correct me if
-I am wrong.
+Before:
 
+stats_total/bypassed: 48.3G
+stats_total/cache_bypass_hits: 7942
+stats_total/cache_bypass_misses: 861045
+stats_total/cache_hit_ratio: 3
+stats_total/cache_hits: 16286
+stats_total/cache_miss_collisions: 25
+stats_total/cache_misses: 411575
+stats_total/cache_readaheads: 0
 
-> ---
->  drivers/md/bcache/super.c | 10 ++++------
->  1 file changed, 4 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 4dee119c3664..84ab241c8516 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -906,21 +906,18 @@ static int cached_dev_status_update(void *arg)
->  void bch_cached_dev_run(struct cached_dev *dc)
->  {
->  	struct bcache_device *d = &dc->disk;
-> -	char buf[SB_LABEL_SIZE + 1];
-> +	char *buf = kmemdup_nul(dc->sb.label, SB_LABEL_SIZE, GFP_KERNEL);
+After:
+stats_total/bypassed: 49.3G
+stats_total/cache_bypass_hits: 7942
+stats_total/cache_bypass_misses: 1154887
+stats_total/cache_hit_ratio: 3
+stats_total/cache_hits: 16291
+stats_total/cache_miss_collisions: 25
+stats_total/cache_misses: 411625
+stats_total/cache_readaheads: 0
 
-If kdumdup_null() is failed, buf will be NULL.
+Huge increase in bypassed reads, essentially no new cached reads. This
+is... basically the optimum case for bcache, and it's not caching it!
 
->  	char *env[] = {
->  		"DRIVER=bcache",
->  		kasprintf(GFP_KERNEL, "CACHED_UUID=%pU", dc->sb.uuid),
-> -		NULL,
-> +		kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", buf ? : ""),
+From my reading of xfs_dir2_leaf_readbuf(), it looks like essentially
+all directory reads in XFS appear to bcache as a single non-readahead
+followed by a pile of readahead I/O: bcache bypasses readahead bios, so
+all directory reads (or perhaps all directory reads larger than a single
+block) are going to be bypassed out of hand.
 
-If buf is NULL, env[2] here is pointed to "" which is allocated in
-read-only data segment, and not a dynamic memory.
+This seems... suboptimal, but so does filling up the cache with
+read-ahead blocks (particularly for non-metadata) that are never used.
+Anyone got any ideas, 'cos I'm currently at a loss: XFS doesn't appear
+to let us distinguish between "read-ahead just in case but almost
+certain to be accessed" (like directory blocks) and "read ahead on the
+offchance because someone did a single-block file read and what the hell
+let's suck in a bunch more".
 
->  		NULL,
->  	};
->  
-> -	memcpy(buf, dc->sb.label, SB_LABEL_SIZE);
-> -	buf[SB_LABEL_SIZE] = '\0';
-> -	env[2] = kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", buf);
-> -
->  	if (atomic_xchg(&dc->running, 1)) {
->  		kfree(env[1]);
->  		kfree(env[2]);
-
-Then kfree() here will try to release a read-only memory segment. I
-guess this is problematic.
-
-> +		kfree(buf);
->  		return;
->  	}
->  
-> @@ -944,6 +941,7 @@ void bch_cached_dev_run(struct cached_dev *dc)
->  	kobject_uevent_env(&disk_to_dev(d->disk)->kobj, KOBJ_CHANGE, env);
->  	kfree(env[1]);
->  	kfree(env[2]);
-
-Same problem might happen here for env[2].
-
-> +	kfree(buf);
->  
->  	if (sysfs_create_link(&d->kobj, &disk_to_dev(d->disk)->kobj, "dev") ||
->  	    sysfs_create_link(&disk_to_dev(d->disk)->kobj, &d->kobj, "bcache"))
-> 
-
-
--- 
-
-Coly Li
+As it is, this seems to render bcache more or less useless with XFS,
+since bcache's primary raison d'etre is precisely to cache seeky stuff
+like metadata. :(
