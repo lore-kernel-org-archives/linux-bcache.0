@@ -1,34 +1,69 @@
-From: Nix <nix@esperi.org.uk>
-Subject: Re: bcache on XFS: metadata I/O (dirent I/O?) not getting cached at all?
-Date: Thu, 07 Feb 2019 13:10:52 +0000
-Message-ID: <875ztveobn.fsf@esperi.org.uk>
-References: <87h8dgefee.fsf@esperi.org.uk> <20190206234328.GH14116@dastard>
-        <20190207002425.GX24140@tuebingen.mpg.de>
-        <20190207022657.GI14116@dastard>
-        <438851ef-ef77-b5f2-d46d-05762b6330b2@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <438851ef-ef77-b5f2-d46d-05762b6330b2@suse.de> (Coly Li's message
-        of "Thu, 7 Feb 2019 10:38:58 +0800")
-Sender: linux-kernel-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: Dave Chinner <david@fromorbit.com>, Andre Noll <maan@tuebingen.mpg.de>, linux-bcache@vger.kernel.org, linux-xfs@vger.kernel.org, linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>, axboe@kernel.dk
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH v2] bcache: use (REQ_META|REQ_PRIO) to indicate bio for metadata
+Date: Thu,  7 Feb 2019 21:11:44 +0800
+Message-ID: <20190207131144.3385-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+Sender: stable-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>
 List-Id: linux-bcache@vger.kernel.org
 
-On 7 Feb 2019, Coly Li stated:
-> On 2019/2/7 10:26 上午, Dave Chinner wrote:
->> So, yeah, that needs to be reverted if you want bcache to function
->> properly for metadata caching.
->
-> Sure, I will fix this, once I make it clear to me.
+In 'commit 752f66a75aba ("bcache: use REQ_PRIO to indicate bio for
+metadata")' REQ_META is replaced by REQ_PRIO to indicate metadata bio.
+This assumption is not always correct, e.g. XFS uses REQ_META to mark
+metadata bio other than REQ_PRIO. This is why Nix noticed that bcache
+does not cache metadata for XFS after the above commit.
 
-I'll give it a test :)
+Thanks to Dave Chinner, he explains the difference between REQ_META and
+REQ_PRIO from view of file system developer. Here I quote part of his
+explanation from mailing list,
+   REQ_META is used for metadata. REQ_PRIO is used to communicate to
+   the lower layers that the submitter considers this IO to be more
+   important that non REQ_PRIO IO and so dispatch should be expedited.
 
-The meaning of these flags was somewhat opaque to me, too (mostly due to
-novelty: I've never really looked at anything in the block layer
-before).
+   IOWs, if the filesystem considers metadata IO to be more important
+   that user data IO, then it will use REQ_PRIO | REQ_META rather than
+   just REQ_META.
 
+Then it seems bios with REQ_META or REQ_PRIO should both be cached for
+performance optimation, because they are all probably low I/O latency
+demand by upper layer (e.g. file system).
+
+So in this patch, when we want to decide whether to bypass the cache,
+REQ_META and REQ_PRIO are both checked. Then both metadata and
+high priority I/O requests will be handled properly.
+
+Reported-by: Nix <nix@esperi.org.uk>
+Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Andre Noll <maan@tuebingen.mpg.de>
+Cc: stable@vger.kernel.org
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@lst.de>
+---
+ drivers/md/bcache/request.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 3bf35914bb57..62bda90a38dc 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -395,7 +395,7 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
+ 	 * unless the read-ahead request is for metadata (eg, for gfs2 or xfs).
+ 	 */
+ 	if (bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND) &&
+-	    !(bio->bi_opf & REQ_PRIO))
++	    !(bio->bi_opf & (REQ_META|REQ_PRIO)))
+ 		goto skip;
+ 
+ 	if (bio->bi_iter.bi_sector & (c->sb.block_size - 1) ||
+@@ -877,7 +877,7 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
+ 	}
+ 
+ 	if (!(bio->bi_opf & REQ_RAHEAD) &&
+-	    !(bio->bi_opf & REQ_PRIO) &&
++	    !(bio->bi_opf & (REQ_META|REQ_PRIO)) &&
+ 	    s->iop.c->gc_stats.in_use < CUTOFF_CACHE_READA)
+ 		reada = min_t(sector_t, dc->readahead >> 9,
+ 			      get_capacity(bio->bi_disk) - bio_end_sector(bio));
 -- 
-NULL && (void)
+2.16.4
