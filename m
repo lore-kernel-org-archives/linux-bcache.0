@@ -1,139 +1,101 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 01/19] bcache: never writeback a discard operation
-Date: Sat,  9 Feb 2019 12:52:53 +0800
-Message-ID: <20190209045311.15677-2-colyli@suse.de>
+Subject: [PATCH 06/19] bcache: treat stale && dirty keys as bad keys
+Date: Sat,  9 Feb 2019 12:52:58 +0800
+Message-ID: <20190209045311.15677-7-colyli@suse.de>
 References: <20190209045311.15677-1-colyli@suse.de>
 Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20190209045311.15677-1-colyli@suse.de>
 Sender: stable-owner@vger.kernel.org
 To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Daniel Axtens <dja@axtens.net>, Kent Overstreet <koverstreet@google.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Tang Junhui <tang.junhui.linux@gmail.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Daniel Axtens <dja@axtens.net>
+From: Tang Junhui <tang.junhui.linux@gmail.com>
 
-Some users see panics like the following when performing fstrim on a
-bcached volume:
+Stale && dirty keys can be produced in the follow way:
+After writeback in write_dirty_finish(), dirty keys k1 will
+replace by clean keys k2
+==>ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
+==>btree_insert_fn(struct btree_op *b_op, struct btree *b)
+==>static int bch_btree_insert_node(struct btree *b,
+       struct btree_op *op,
+       struct keylist *insert_keys,
+       atomic_t *journal_ref,
+Then two steps:
+A) update k1 to k2 in btree node memory;
+   bch_btree_insert_keys(b, op, insert_keys, replace_key)
+B) Write the bset(contains k2) to cache disk by a 30s delay work
+   bch_btree_leaf_dirty(b, journal_ref).
+But before the 30s delay work write the bset to cache device,
+these things happened:
+A) GC works, and reclaim the bucket k2 point to;
+B) Allocator works, and invalidate the bucket k2 point to,
+   and increase the gen of the bucket, and place it into free_inc
+   fifo;
+C) Until now, the 30s delay work still does not finish work,
+   so in the disk, the key still is k1, it is dirty and stale
+   (its gen is smaller than the gen of the bucket). and then the
+   machine power off suddenly happens;
+D) When the machine power on again, after the btree reconstruction,
+   the stale dirty key appear.
 
-[  529.803060] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
-[  530.183928] #PF error: [normal kernel read fault]
-[  530.412392] PGD 8000001f42163067 P4D 8000001f42163067 PUD 1f42168067 PMD 0
-[  530.750887] Oops: 0000 [#1] SMP PTI
-[  530.920869] CPU: 10 PID: 4167 Comm: fstrim Kdump: loaded Not tainted 5.0.0-rc1+ #3
-[  531.290204] Hardware name: HP ProLiant DL360 Gen9/ProLiant DL360 Gen9, BIOS P89 12/27/2015
-[  531.693137] RIP: 0010:blk_queue_split+0x148/0x620
-[  531.922205] Code: 60 38 89 55 a0 45 31 db 45 31 f6 45 31 c9 31 ff 89 4d 98 85 db 0f 84 7f 04 00 00 44 8b 6d 98 4c 89 ee 48 c1 e6 04 49 03 70 78 <8b> 46 08 44 8b 56 0c 48
-8b 16 44 29 e0 39 d8 48 89 55 a8 0f 47 c3
-[  532.838634] RSP: 0018:ffffb9b708df39b0 EFLAGS: 00010246
-[  533.093571] RAX: 00000000ffffffff RBX: 0000000000046000 RCX: 0000000000000000
-[  533.441865] RDX: 0000000000000200 RSI: 0000000000000000 RDI: 0000000000000000
-[  533.789922] RBP: ffffb9b708df3a48 R08: ffff940d3b3fdd20 R09: 0000000000000000
-[  534.137512] R10: ffffb9b708df3958 R11: 0000000000000000 R12: 0000000000000000
-[  534.485329] R13: 0000000000000000 R14: 0000000000000000 R15: ffff940d39212020
-[  534.833319] FS:  00007efec26e3840(0000) GS:ffff940d1f480000(0000) knlGS:0000000000000000
-[  535.224098] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  535.504318] CR2: 0000000000000008 CR3: 0000001f4e256004 CR4: 00000000001606e0
-[  535.851759] Call Trace:
-[  535.970308]  ? mempool_alloc_slab+0x15/0x20
-[  536.174152]  ? bch_data_insert+0x42/0xd0 [bcache]
-[  536.403399]  blk_mq_make_request+0x97/0x4f0
-[  536.607036]  generic_make_request+0x1e2/0x410
-[  536.819164]  submit_bio+0x73/0x150
-[  536.980168]  ? submit_bio+0x73/0x150
-[  537.149731]  ? bio_associate_blkg_from_css+0x3b/0x60
-[  537.391595]  ? _cond_resched+0x1a/0x50
-[  537.573774]  submit_bio_wait+0x59/0x90
-[  537.756105]  blkdev_issue_discard+0x80/0xd0
-[  537.959590]  ext4_trim_fs+0x4a9/0x9e0
-[  538.137636]  ? ext4_trim_fs+0x4a9/0x9e0
-[  538.324087]  ext4_ioctl+0xea4/0x1530
-[  538.497712]  ? _copy_to_user+0x2a/0x40
-[  538.679632]  do_vfs_ioctl+0xa6/0x600
-[  538.853127]  ? __do_sys_newfstat+0x44/0x70
-[  539.051951]  ksys_ioctl+0x6d/0x80
-[  539.212785]  __x64_sys_ioctl+0x1a/0x20
-[  539.394918]  do_syscall_64+0x5a/0x110
-[  539.568674]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+In bch_extent_bad(), when expensive_debug_checks is off, it would
+treat the dirty key as good even it is stale keys, and it would
+cause bellow probelms:
+A) In read_dirty() it would cause machine crash:
+   BUG_ON(ptr_stale(dc->disk.c, &w->key, 0));
+B) It could be worse when reads hits stale dirty keys, it would
+   read old incorrect data.
 
-We have observed it where both:
-1) LVM/devmapper is involved (bcache backing device is LVM volume) and
-2) writeback cache is involved (bcache cache_mode is writeback)
+This patch tolerate the existence of these stale && dirty keys,
+and treat them as bad key in bch_extent_bad().
 
-On one machine, we can reliably reproduce it with:
+(Coly Li: fix indent which was modified by sender's email client)
 
- # echo writeback > /sys/block/bcache0/bcache/cache_mode
-   (not sure whether above line is required)
- # mount /dev/bcache0 /test
- # for i in {0..10}; do
-	file="$(mktemp /test/zero.XXX)"
-	dd if=/dev/zero of="$file" bs=1M count=256
-	sync
-	rm $file
-    done
-  # fstrim -v /test
-
-Observing this with tracepoints on, we see the following writes:
-
-fstrim-18019 [022] .... 91107.302026: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4260112 + 196352 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302050: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4456464 + 262144 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302075: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4718608 + 81920 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302094: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5324816 + 180224 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302121: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5505040 + 262144 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.302145: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5767184 + 81920 hit 0 bypass 1
-fstrim-18019 [022] .... 91107.308777: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 6373392 + 180224 hit 1 bypass 0
-<crash>
-
-Note the final one has different hit/bypass flags.
-
-This is because in should_writeback(), we were hitting a case where
-the partial stripe condition was returning true and so
-should_writeback() was returning true early.
-
-If that hadn't been the case, it would have hit the would_skip test, and
-as would_skip == s->iop.bypass == true, should_writeback() would have
-returned false.
-
-Looking at the git history from 'commit 72c270612bd3 ("bcache: Write out
-full stripes")', it looks like the idea was to optimise for raid5/6:
-
-       * If a stripe is already dirty, force writes to that stripe to
-	 writeback mode - to help build up full stripes of dirty data
-
-To fix this issue, make sure that should_writeback() on a discard op
-never returns true.
-
-More details of debugging:
-https://www.spinics.net/lists/linux-bcache/msg06996.html
-
-Previous reports:
- - https://bugzilla.kernel.org/show_bug.cgi?id=201051
- - https://bugzilla.kernel.org/show_bug.cgi?id=196103
- - https://www.spinics.net/lists/linux-bcache/msg06885.html
-
-(Coly Li: minor modification to follow maximum 75 chars per line rule)
-
-Cc: Kent Overstreet <koverstreet@google.com>
+Signed-off-by: Tang Junhui <tang.junhui.linux@gmail.com>
 Cc: stable@vger.kernel.org
-Fixes: 72c270612bd3 ("bcache: Write out full stripes")
-Signed-off-by: Daniel Axtens <dja@axtens.net>
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/writeback.h | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/bcache/extents.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 6a743d3bb338..4e4c6810dc3c 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -71,6 +71,9 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
- 	    in_use > bch_cutoff_writeback_sync)
- 		return false;
+diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
+index 956004366699..886710043025 100644
+--- a/drivers/md/bcache/extents.c
++++ b/drivers/md/bcache/extents.c
+@@ -538,6 +538,7 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
+ {
+ 	struct btree *b = container_of(bk, struct btree, keys);
+ 	unsigned int i, stale;
++	char buf[80];
  
-+	if (bio_op(bio) == REQ_OP_DISCARD)
-+		return false;
+ 	if (!KEY_PTRS(k) ||
+ 	    bch_extent_invalid(bk, k))
+@@ -547,19 +548,19 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
+ 		if (!ptr_available(b->c, k, i))
+ 			return true;
+ 
+-	if (!expensive_debug_checks(b->c) && KEY_DIRTY(k))
+-		return false;
+-
+ 	for (i = 0; i < KEY_PTRS(k); i++) {
+ 		stale = ptr_stale(b->c, k, i);
+ 
++		if (stale && KEY_DIRTY(k)) {
++			bch_extent_to_text(buf, sizeof(buf), k);
++			pr_info("stale dirty pointer, stale %u, key: %s",
++				stale, buf);
++		}
 +
- 	if (dc->partial_stripes_expensive &&
- 	    bcache_dev_stripe_dirty(dc, bio->bi_iter.bi_sector,
- 				    bio_sectors(bio)))
+ 		btree_bug_on(stale > BUCKET_GC_GEN_MAX, b,
+ 			     "key too stale: %i, need_gc %u",
+ 			     stale, b->c->need_gc);
+ 
+-		btree_bug_on(stale && KEY_DIRTY(k) && KEY_SIZE(k),
+-			     b, "stale dirty pointer");
+-
+ 		if (stale)
+ 			return true;
+ 
 -- 
 2.16.4
