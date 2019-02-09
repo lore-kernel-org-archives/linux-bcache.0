@@ -1,101 +1,77 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 06/19] bcache: treat stale && dirty keys as bad keys
-Date: Sat,  9 Feb 2019 12:52:58 +0800
-Message-ID: <20190209045311.15677-7-colyli@suse.de>
+Subject: [PATCH 19/19] bcache: use (REQ_META|REQ_PRIO) to indicate bio for metadata
+Date: Sat,  9 Feb 2019 12:53:11 +0800
+Message-ID: <20190209045311.15677-20-colyli@suse.de>
 References: <20190209045311.15677-1-colyli@suse.de>
 Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20190209045311.15677-1-colyli@suse.de>
 Sender: stable-owner@vger.kernel.org
 To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Tang Junhui <tang.junhui.linux@gmail.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Tang Junhui <tang.junhui.linux@gmail.com>
+In 'commit 752f66a75aba ("bcache: use REQ_PRIO to indicate bio for
+metadata")' REQ_META is replaced by REQ_PRIO to indicate metadata bio.
+This assumption is not always correct, e.g. XFS uses REQ_META to mark
+metadata bio other than REQ_PRIO. This is why Nix noticed that bcache
+does not cache metadata for XFS after the above commit.
 
-Stale && dirty keys can be produced in the follow way:
-After writeback in write_dirty_finish(), dirty keys k1 will
-replace by clean keys k2
-==>ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
-==>btree_insert_fn(struct btree_op *b_op, struct btree *b)
-==>static int bch_btree_insert_node(struct btree *b,
-       struct btree_op *op,
-       struct keylist *insert_keys,
-       atomic_t *journal_ref,
-Then two steps:
-A) update k1 to k2 in btree node memory;
-   bch_btree_insert_keys(b, op, insert_keys, replace_key)
-B) Write the bset(contains k2) to cache disk by a 30s delay work
-   bch_btree_leaf_dirty(b, journal_ref).
-But before the 30s delay work write the bset to cache device,
-these things happened:
-A) GC works, and reclaim the bucket k2 point to;
-B) Allocator works, and invalidate the bucket k2 point to,
-   and increase the gen of the bucket, and place it into free_inc
-   fifo;
-C) Until now, the 30s delay work still does not finish work,
-   so in the disk, the key still is k1, it is dirty and stale
-   (its gen is smaller than the gen of the bucket). and then the
-   machine power off suddenly happens;
-D) When the machine power on again, after the btree reconstruction,
-   the stale dirty key appear.
+Thanks to Dave Chinner, he explains the difference between REQ_META and
+REQ_PRIO from view of file system developer. Here I quote part of his
+explanation from mailing list,
+   REQ_META is used for metadata. REQ_PRIO is used to communicate to
+   the lower layers that the submitter considers this IO to be more
+   important that non REQ_PRIO IO and so dispatch should be expedited.
 
-In bch_extent_bad(), when expensive_debug_checks is off, it would
-treat the dirty key as good even it is stale keys, and it would
-cause bellow probelms:
-A) In read_dirty() it would cause machine crash:
-   BUG_ON(ptr_stale(dc->disk.c, &w->key, 0));
-B) It could be worse when reads hits stale dirty keys, it would
-   read old incorrect data.
+   IOWs, if the filesystem considers metadata IO to be more important
+   that user data IO, then it will use REQ_PRIO | REQ_META rather than
+   just REQ_META.
 
-This patch tolerate the existence of these stale && dirty keys,
-and treat them as bad key in bch_extent_bad().
+Then it seems bios with REQ_META or REQ_PRIO should both be cached for
+performance optimation, because they are all probably low I/O latency
+demand by upper layer (e.g. file system).
 
-(Coly Li: fix indent which was modified by sender's email client)
+So in this patch, when we want to decide whether to bypass the cache,
+REQ_META and REQ_PRIO are both checked. Then both metadata and
+high priority I/O requests will be handled properly.
 
-Signed-off-by: Tang Junhui <tang.junhui.linux@gmail.com>
-Cc: stable@vger.kernel.org
+Reported-by: Nix <nix@esperi.org.uk>
 Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Andre Noll <maan@tuebingen.mpg.de>
+Tested-by: Nix <nix@esperi.org.uk>
+Cc: stable@vger.kernel.org
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@lst.de>
 ---
- drivers/md/bcache/extents.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/md/bcache/request.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
-index 956004366699..886710043025 100644
---- a/drivers/md/bcache/extents.c
-+++ b/drivers/md/bcache/extents.c
-@@ -538,6 +538,7 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
- {
- 	struct btree *b = container_of(bk, struct btree, keys);
- 	unsigned int i, stale;
-+	char buf[80];
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 15070412a32e..f101bfe8657a 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -392,10 +392,11 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
  
- 	if (!KEY_PTRS(k) ||
- 	    bch_extent_invalid(bk, k))
-@@ -547,19 +548,19 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
- 		if (!ptr_available(b->c, k, i))
- 			return true;
+ 	/*
+ 	 * Flag for bypass if the IO is for read-ahead or background,
+-	 * unless the read-ahead request is for metadata (eg, for gfs2).
++	 * unless the read-ahead request is for metadata
++	 * (eg, for gfs2 or xfs).
+ 	 */
+ 	if (bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND) &&
+-	    !(bio->bi_opf & REQ_PRIO))
++	    !(bio->bi_opf & (REQ_META|REQ_PRIO)))
+ 		goto skip;
  
--	if (!expensive_debug_checks(b->c) && KEY_DIRTY(k))
--		return false;
--
- 	for (i = 0; i < KEY_PTRS(k); i++) {
- 		stale = ptr_stale(b->c, k, i);
+ 	if (bio->bi_iter.bi_sector & (c->sb.block_size - 1) ||
+@@ -877,7 +878,7 @@ static int cached_dev_cache_miss(struct btree *b, struct search *s,
+ 	}
  
-+		if (stale && KEY_DIRTY(k)) {
-+			bch_extent_to_text(buf, sizeof(buf), k);
-+			pr_info("stale dirty pointer, stale %u, key: %s",
-+				stale, buf);
-+		}
-+
- 		btree_bug_on(stale > BUCKET_GC_GEN_MAX, b,
- 			     "key too stale: %i, need_gc %u",
- 			     stale, b->c->need_gc);
- 
--		btree_bug_on(stale && KEY_DIRTY(k) && KEY_SIZE(k),
--			     b, "stale dirty pointer");
--
- 		if (stale)
- 			return true;
- 
+ 	if (!(bio->bi_opf & REQ_RAHEAD) &&
+-	    !(bio->bi_opf & REQ_PRIO) &&
++	    !(bio->bi_opf & (REQ_META|REQ_PRIO)) &&
+ 	    s->iop.c->gc_stats.in_use < CUTOFF_CACHE_READA)
+ 		reada = min_t(sector_t, dc->readahead >> 9,
+ 			      get_capacity(bio->bi_disk) - bio_end_sector(bio));
 -- 
 2.16.4
