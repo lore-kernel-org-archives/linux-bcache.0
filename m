@@ -1,91 +1,139 @@
-From: Nix <nix@esperi.org.uk>
-Subject: Re: bcache on XFS: metadata I/O (dirent I/O?) not getting cached at all?
-Date: Thu, 07 Feb 2019 20:51:26 +0000
-Message-ID: <87k1ib8gq9.fsf@esperi.org.uk>
-References: <87h8dgefee.fsf@esperi.org.uk>
-        <64f32487-5b8f-f6c2-37a9-84bb0717a9e1@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <64f32487-5b8f-f6c2-37a9-84bb0717a9e1@suse.de> (Coly Li's message
-        of "Thu, 7 Feb 2019 16:16:48 +0800")
-Sender: linux-kernel-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-xfs@vger.kernel.org, linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>, Andre Noll <maan@tuebingen.mpg.de>
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH 01/19] bcache: never writeback a discard operation
+Date: Sat,  9 Feb 2019 12:52:53 +0800
+Message-ID: <20190209045311.15677-2-colyli@suse.de>
+References: <20190209045311.15677-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190209045311.15677-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Daniel Axtens <dja@axtens.net>, Kent Overstreet <koverstreet@google.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-On 7 Feb 2019, Coly Li uttered the following:
-> On 2019/2/7 6:11 上午, Nix wrote:
->> As it is, this seems to render bcache more or less useless with XFS,
->> since bcache's primary raison d'etre is precisely to cache seeky stuff
->> like metadata. :(
->
-> Hi Nix,
->
-> Could you please to try whether the attached patch makes things better ?
+From: Daniel Axtens <dja@axtens.net>
 
-Looks good! Before huge tree cp -al:
+Some users see panics like the following when performing fstrim on a
+bcached volume:
 
-loom:~# bcache-stats 
-stats_total/bypassed: 1.0G
-stats_total/cache_bypass_hits: 16
-stats_total/cache_bypass_misses: 26436
-stats_total/cache_hit_ratio: 46
-stats_total/cache_hits: 24349
-stats_total/cache_miss_collisions: 8
-stats_total/cache_misses: 27898
-stats_total/cache_readaheads: 0
+[  529.803060] BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+[  530.183928] #PF error: [normal kernel read fault]
+[  530.412392] PGD 8000001f42163067 P4D 8000001f42163067 PUD 1f42168067 PMD 0
+[  530.750887] Oops: 0000 [#1] SMP PTI
+[  530.920869] CPU: 10 PID: 4167 Comm: fstrim Kdump: loaded Not tainted 5.0.0-rc1+ #3
+[  531.290204] Hardware name: HP ProLiant DL360 Gen9/ProLiant DL360 Gen9, BIOS P89 12/27/2015
+[  531.693137] RIP: 0010:blk_queue_split+0x148/0x620
+[  531.922205] Code: 60 38 89 55 a0 45 31 db 45 31 f6 45 31 c9 31 ff 89 4d 98 85 db 0f 84 7f 04 00 00 44 8b 6d 98 4c 89 ee 48 c1 e6 04 49 03 70 78 <8b> 46 08 44 8b 56 0c 48
+8b 16 44 29 e0 39 d8 48 89 55 a8 0f 47 c3
+[  532.838634] RSP: 0018:ffffb9b708df39b0 EFLAGS: 00010246
+[  533.093571] RAX: 00000000ffffffff RBX: 0000000000046000 RCX: 0000000000000000
+[  533.441865] RDX: 0000000000000200 RSI: 0000000000000000 RDI: 0000000000000000
+[  533.789922] RBP: ffffb9b708df3a48 R08: ffff940d3b3fdd20 R09: 0000000000000000
+[  534.137512] R10: ffffb9b708df3958 R11: 0000000000000000 R12: 0000000000000000
+[  534.485329] R13: 0000000000000000 R14: 0000000000000000 R15: ffff940d39212020
+[  534.833319] FS:  00007efec26e3840(0000) GS:ffff940d1f480000(0000) knlGS:0000000000000000
+[  535.224098] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  535.504318] CR2: 0000000000000008 CR3: 0000001f4e256004 CR4: 00000000001606e0
+[  535.851759] Call Trace:
+[  535.970308]  ? mempool_alloc_slab+0x15/0x20
+[  536.174152]  ? bch_data_insert+0x42/0xd0 [bcache]
+[  536.403399]  blk_mq_make_request+0x97/0x4f0
+[  536.607036]  generic_make_request+0x1e2/0x410
+[  536.819164]  submit_bio+0x73/0x150
+[  536.980168]  ? submit_bio+0x73/0x150
+[  537.149731]  ? bio_associate_blkg_from_css+0x3b/0x60
+[  537.391595]  ? _cond_resched+0x1a/0x50
+[  537.573774]  submit_bio_wait+0x59/0x90
+[  537.756105]  blkdev_issue_discard+0x80/0xd0
+[  537.959590]  ext4_trim_fs+0x4a9/0x9e0
+[  538.137636]  ? ext4_trim_fs+0x4a9/0x9e0
+[  538.324087]  ext4_ioctl+0xea4/0x1530
+[  538.497712]  ? _copy_to_user+0x2a/0x40
+[  538.679632]  do_vfs_ioctl+0xa6/0x600
+[  538.853127]  ? __do_sys_newfstat+0x44/0x70
+[  539.051951]  ksys_ioctl+0x6d/0x80
+[  539.212785]  __x64_sys_ioctl+0x1a/0x20
+[  539.394918]  do_syscall_64+0x5a/0x110
+[  539.568674]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
 
-After:
+We have observed it where both:
+1) LVM/devmapper is involved (bcache backing device is LVM volume) and
+2) writeback cache is involved (bcache cache_mode is writeback)
 
-stats_total/bypassed: 1.1G
-stats_total/cache_bypass_hits: 16
-stats_total/cache_bypass_misses: 27176
-stats_total/cache_hit_ratio: 43
-stats_total/cache_hits: 24443
-stats_total/cache_miss_collisions: 9
-stats_total/cache_misses: 32152           <----
-stats_total/cache_readaheads: 0
+On one machine, we can reliably reproduce it with:
 
-So loads of new misses. (A bunch of bypassed misses too. Not sure where
-those came from, maybe some larger sequential reads somewhere, but a lot
-is getting cached now, and every bit of metadata that gets cached means
-things get a bit faster.)
+ # echo writeback > /sys/block/bcache0/bcache/cache_mode
+   (not sure whether above line is required)
+ # mount /dev/bcache0 /test
+ # for i in {0..10}; do
+	file="$(mktemp /test/zero.XXX)"
+	dd if=/dev/zero of="$file" bs=1M count=256
+	sync
+	rm $file
+    done
+  # fstrim -v /test
 
+Observing this with tracepoints on, we see the following writes:
 
-btw I have ported ewheeler's ioprio-based cache hinting patch to 4.20;
-I/O below the ioprio threshold bypasses everything, even metadata and
-REQ_PRIO stuff. It was trivial, but I was able to spot and fix a tiny
-bypass accounting bug in the patch in the process): see
-http://www.esperi.org.uk/~nix/bundles/bcache-ioprio.bundle. (I figured
-you didn't want almost exactly the same patch series as before posted to
-the list, but I can do that if you prefer.)
+fstrim-18019 [022] .... 91107.302026: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4260112 + 196352 hit 0 bypass 1
+fstrim-18019 [022] .... 91107.302050: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4456464 + 262144 hit 0 bypass 1
+fstrim-18019 [022] .... 91107.302075: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 4718608 + 81920 hit 0 bypass 1
+fstrim-18019 [022] .... 91107.302094: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5324816 + 180224 hit 0 bypass 1
+fstrim-18019 [022] .... 91107.302121: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5505040 + 262144 hit 0 bypass 1
+fstrim-18019 [022] .... 91107.302145: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 5767184 + 81920 hit 0 bypass 1
+fstrim-18019 [022] .... 91107.308777: bcache_write: 73f95583-561c-408f-a93a-4cbd2498f5c8 inode 0  DS 6373392 + 180224 hit 1 bypass 0
+<crash>
 
+Note the final one has different hit/bypass flags.
 
-Put this all together and it seems to work very well: my test massive
-compile triggered 500MiB of metadata writes at the start and then the
-actual compile (being entirely sequential reads) hardly wrote anything
-out and was almost entirely bypassed: meanwhile a huge git push I ran at
-idle priority didn't pollute the cache at all. Excellent!
+This is because in should_writeback(), we were hitting a case where
+the partial stripe condition was returning true and so
+should_writeback() was returning true early.
 
-(I'm also keeping write volumes down by storing transient things like
-objdirs that just sit in the page cache and then get deleted on a
-separate non-bcached, non-journalled ext4 fs at the start of the the
-spinning rust disk, with subdirs of this fs bind-mounted into various
-places as needed. I should make the scripts that do that public because
-they seem likely to be useful to bcache users...)
+If that hadn't been the case, it would have hit the would_skip test, and
+as would_skip == s->iop.bypass == true, should_writeback() would have
+returned false.
 
+Looking at the git history from 'commit 72c270612bd3 ("bcache: Write out
+full stripes")', it looks like the idea was to optimise for raid5/6:
 
-Semi-unrelated side note: after my most recent reboot, which involved a
-bcache journal replay even though my shutdown was clean, the stats_total
-reset; the cache device's bcache/written and
-bcache/set/cache_available_percent also flipped to 0 and 100%,. I
-suspect this is merely a stats bug of some sort, because the boot was
-notably faster than before and cache_hits was about 6000 by the time it
-was done. bcache/priority_stats *does* say that the cache is "only" 98%
-unused, like it did before. Maybe cache_available_percent doesn't mean
-what I thought it did.
+       * If a stripe is already dirty, force writes to that stripe to
+	 writeback mode - to help build up full stripes of dirty data
 
+To fix this issue, make sure that should_writeback() on a discard op
+never returns true.
+
+More details of debugging:
+https://www.spinics.net/lists/linux-bcache/msg06996.html
+
+Previous reports:
+ - https://bugzilla.kernel.org/show_bug.cgi?id=201051
+ - https://bugzilla.kernel.org/show_bug.cgi?id=196103
+ - https://www.spinics.net/lists/linux-bcache/msg06885.html
+
+(Coly Li: minor modification to follow maximum 75 chars per line rule)
+
+Cc: Kent Overstreet <koverstreet@google.com>
+Cc: stable@vger.kernel.org
+Fixes: 72c270612bd3 ("bcache: Write out full stripes")
+Signed-off-by: Daniel Axtens <dja@axtens.net>
+Signed-off-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/writeback.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 6a743d3bb338..4e4c6810dc3c 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -71,6 +71,9 @@ static inline bool should_writeback(struct cached_dev *dc, struct bio *bio,
+ 	    in_use > bch_cutoff_writeback_sync)
+ 		return false;
+ 
++	if (bio_op(bio) == REQ_OP_DISCARD)
++		return false;
++
+ 	if (dc->partial_stripes_expensive &&
+ 	    bcache_dev_stripe_dirty(dc, bio->bi_iter.bi_sector,
+ 				    bio_sectors(bio)))
 -- 
-NULL && (void)
+2.16.4
