@@ -1,18 +1,19 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 06/19] bcache: treat stale && dirty keys as bad keys
-Date: Wed, 13 Feb 2019 00:42:17 +0800
-Message-ID: <7cc56107-e680-90ba-11ef-927a068d7c60@suse.de>
-References: <20190209045311.15677-7-colyli@suse.de>
- <20190212132825.E476F217D9@mail.kernel.org>
+Subject: Re: [PATCH 19/19] bcache: use (REQ_META|REQ_PRIO) to indicate bio for
+ metadata
+Date: Wed, 13 Feb 2019 00:48:33 +0800
+Message-ID: <7fc65caf-8982-61d2-776b-ab08cb29711e@suse.de>
+References: <20190209045311.15677-20-colyli@suse.de>
+ <20190212132824.1D1502084E@mail.kernel.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190212132825.E476F217D9@mail.kernel.org>
+In-Reply-To: <20190212132824.1D1502084E@mail.kernel.org>
 Content-Language: en-US
 Sender: stable-owner@vger.kernel.org
-To: Sasha Levin <sashal@kernel.org>, Tang Junhui <tang.junhui.linux@gmail.com>
-Cc: axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, stable@vger.kernel.org
+To: Sasha Levin <sashal@kernel.org>
+Cc: axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, stable@vger.kernel.org, Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>
 List-Id: linux-bcache@vger.kernel.org
 
 On 2019/2/12 9:28 下午, Sasha Levin wrote:
@@ -27,97 +28,57 @@ On 2019/2/12 9:28 下午, Sasha Levin wrote:
 > 
 > v4.20.7: Build OK!
 > v4.19.20: Failed to apply! Possible dependencies:
->     149d0efada77 ("bcache: replace hard coded number with BUCKET_GC_GEN_MAX")
+>     752f66a75aba ("bcache: use REQ_PRIO to indicate bio for metadata")
 > 
 > v4.14.98: Failed to apply! Possible dependencies:
->     1d316e658374 ("bcache: implement PI controller for writeback rate")
->     25d8be77e192 ("block: move bio_alloc_pages() to bcache")
->     27a40ab9269e ("bcache: add backing_request_endio() for bi_end_io")
->     2831231d4c3f ("bcache: reduce cache_set devices iteration by devices_max_used")
->     3b304d24a718 ("bcache: convert cached_dev.count from atomic_t to refcount_t")
->     3fd47bfe55b0 ("bcache: stop dc->writeback_rate_update properly")
->     5138ac6748e3 ("bcache: fix misleading error message in bch_count_io_errors()")
->     539d39eb2708 ("bcache: fix wrong return value in bch_debug_init()")
->     5fa89fb9a86b ("bcache: don't write back data if reading it failed")
->     6f10f7d1b02b ("bcache: style fix to replace 'unsigned' by 'unsigned int'")
->     771f393e8ffc ("bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags")
->     7ba0d830dc0e ("bcache: set error_limit correctly")
->     7e027ca4b534 ("bcache: add stop_when_cache_set_failed option to backing device")
->     804f3c6981f5 ("bcache: fix cached_dev->count usage for bch_cache_set_error()")
->     a8500fc816b1 ("bcache: rearrange writeback main thread ratelimit")
->     b1092c9af9ed ("bcache: allow quick writeback when backing idle")
->     bc082a55d25c ("bcache: fix inaccurate io state for detached bcache devices")
->     c7b7bd07404c ("bcache: add io_disable to struct cached_dev")
+>     752f66a75aba ("bcache: use REQ_PRIO to indicate bio for metadata")
+>     b41c9b0266e8 ("bcache: update bio->bi_opf bypass/writeback REQ_ flag hints")
 > 
 > v4.9.155: Failed to apply! Possible dependencies:
->     1d316e658374 ("bcache: implement PI controller for writeback rate")
->     2831231d4c3f ("bcache: reduce cache_set devices iteration by devices_max_used")
->     297e3d854784 ("blk-throttle: make throtl_slice tunable")
->     3fd47bfe55b0 ("bcache: stop dc->writeback_rate_update properly")
->     4e4cbee93d56 ("block: switch bios to blk_status_t")
->     5138ac6748e3 ("bcache: fix misleading error message in bch_count_io_errors()")
->     6f10f7d1b02b ("bcache: style fix to replace 'unsigned' by 'unsigned int'")
->     7e027ca4b534 ("bcache: add stop_when_cache_set_failed option to backing device")
->     87760e5eef35 ("block: hook up writeback throttling")
->     9e234eeafbe1 ("blk-throttle: add a simple idle detection")
->     c7b7bd07404c ("bcache: add io_disable to struct cached_dev")
->     cf43e6be865a ("block: add scalable completion tracking of requests")
->     e806402130c9 ("block: split out request-only flags into a new namespace")
->     fbbaf700e7b1 ("block: trace completion of all bios.")
+>     752f66a75aba ("bcache: use REQ_PRIO to indicate bio for metadata")
+>     83b5df67c509 ("bcache: use op_is_sync to check for synchronous requests")
+>     b41c9b0266e8 ("bcache: update bio->bi_opf bypass/writeback REQ_ flag hints")
 > 
 > v4.4.173: Failed to apply! Possible dependencies:
->     005411ea7ee7 ("doc: update block/queue-sysfs.txt entries")
->     1d316e658374 ("bcache: implement PI controller for writeback rate")
->     27489a3c827b ("blk-mq: turn hctx->run_work into a regular work struct")
->     2831231d4c3f ("bcache: reduce cache_set devices iteration by devices_max_used")
->     297e3d854784 ("blk-throttle: make throtl_slice tunable")
->     38f8baae8905 ("block: factor out chained bio completion")
->     3fd47bfe55b0 ("bcache: stop dc->writeback_rate_update properly")
->     4e4cbee93d56 ("block: switch bios to blk_status_t")
->     511cbce2ff8b ("irq_poll: make blk-iopoll available outside the block layer")
->     5138ac6748e3 ("bcache: fix misleading error message in bch_count_io_errors()")
->     6f10f7d1b02b ("bcache: style fix to replace 'unsigned' by 'unsigned int'")
->     7e027ca4b534 ("bcache: add stop_when_cache_set_failed option to backing device")
->     87760e5eef35 ("block: hook up writeback throttling")
->     8d354f133e86 ("blk-mq: improve layout of blk_mq_hw_ctx")
->     9467f85960a3 ("blk-mq/cpu-notif: Convert to new hotplug state machine")
->     9e234eeafbe1 ("blk-throttle: add a simple idle detection")
->     af3e3a5259e3 ("block: don't unecessarily clobber bi_error for chained bios")
->     ba8c6967b739 ("block: cleanup bio_endio")
->     c7b7bd07404c ("bcache: add io_disable to struct cached_dev")
->     cf43e6be865a ("block: add scalable completion tracking of requests")
->     e57690fe009b ("blk-mq: don't overwrite rq->mq_ctx")
->     fbbaf700e7b1 ("block: trace completion of all bios.")
+>     09cbfeaf1a5a ("mm, fs: get rid of PAGE_CACHE_* and page_cache_{get,release} macros")
+>     1c2e54e1ed6f ("dm thin: bump thin and thin-pool target versions")
+>     1eff9d322a44 ("block: rename bio bi_rw to bi_opf")
+>     202bae52934d ("dm thin: unroll issue_discard() to create longer discard bio chains")
+>     38f252553300 ("block: add __blkdev_issue_discard")
+>     3dba53a958a7 ("dm thin: use __blkdev_issue_discard for async discard support")
+>     4e49ea4a3d27 ("block/fs/drivers: remove rw argument from submit_bio")
+>     83b5df67c509 ("bcache: use op_is_sync to check for synchronous requests")
+>     9082e87bfbf8 ("block: remove struct bio_batch")
+>     a6111d11b8b5 ("btrfs: raid56: Use raid_write_end_io for scrub")
+>     b41c9b0266e8 ("bcache: update bio->bi_opf bypass/writeback REQ_ flag hints")
+>     bbd848e0fade ("block: reinstate early return of -EOPNOTSUPP from blkdev_issue_discard")
+>     c3667cc61904 ("dm thin: consistently return -ENOSPC if pool has run out of data space")
+>     c8d93247f1d0 ("bcache: use op_is_write instead of checking for REQ_WRITE")
+>     d57d611505d9 ("kernel/fs: fix I/O wait not accounted for RW O_DSYNC")
 > 
 > v3.18.134: Failed to apply! Possible dependencies:
->     0f8087ecdeac ("block: Consolidate static integrity profile properties")
 >     1b94b5567e9c ("Btrfs, raid56: use a variant to record the operation type")
->     1d316e658374 ("bcache: implement PI controller for writeback rate")
->     2831231d4c3f ("bcache: reduce cache_set devices iteration by devices_max_used")
+>     1eff9d322a44 ("block: rename bio bi_rw to bi_opf")
 >     2c8cdd6ee4e7 ("Btrfs, replace: write dirty pages into the replace target device")
 >     326e1dbb5736 ("block: remove management of bi_remaining when restoring original bi_end_io")
->     3fd47bfe55b0 ("bcache: stop dc->writeback_rate_update properly")
->     4246a0b63bd8 ("block: add a bi_error field to struct bio")
->     4e4cbee93d56 ("block: switch bios to blk_status_t")
->     5138ac6748e3 ("bcache: fix misleading error message in bch_count_io_errors()")
+>     4245215d6a8d ("Btrfs, raid56: fix use-after-free problem in the final device replace procedure on raid56")
 >     5a6ac9eacb49 ("Btrfs, raid56: support parity scrub on raid56")
 >     6e9606d2a2dc ("Btrfs: add ref_count and free function for btrfs_bio")
->     6f10f7d1b02b ("bcache: style fix to replace 'unsigned' by 'unsigned int'")
->     7e027ca4b534 ("bcache: add stop_when_cache_set_failed option to backing device")
+>     83b5df67c509 ("bcache: use op_is_sync to check for synchronous requests")
 >     8e5cfb55d3f7 ("Btrfs: Make raid_map array be inlined in btrfs_bio structure")
 >     af8e2d1df984 ("Btrfs, scrub: repair the common data on RAID5/6 if it is corrupted")
+>     b41c9b0266e8 ("bcache: update bio->bi_opf bypass/writeback REQ_ flag hints")
+>     b7c44ed9d2fc ("block: manipulate bio->bi_flags through helpers")
 >     b89e1b012c7f ("Btrfs, raid56: don't change bbio and raid_map")
 >     c4cf5261f8bf ("bio: skip atomic inc/dec of ->bi_remaining for non-chains")
->     c7b7bd07404c ("bcache: add io_disable to struct cached_dev")
+>     c8d93247f1d0 ("bcache: use op_is_write instead of checking for REQ_WRITE")
 >     f90523d1aa3c ("Btrfs: remove noused bbio_ret in __btrfs_map_block in condition")
 > 
 > 
 > How should we proceed with this patch?
 
-Can we rebase this patch for stable kernels, and send them to stable
-kernel maintainers separately? If this behavior is accepted for stable
-kernel maintenance, I would suggest Junhui Tang to think about to rebase
-for these stable kernels.
+Can I rebase this patch for each stable kernel, and send the patch to
+stable@vger.kernel.org ?
 
 Thanks.
 
