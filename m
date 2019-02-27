@@ -1,156 +1,55 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: use kmemdup_nul for CACHED_LABEL buffer
-Date: Tue, 26 Feb 2019 19:03:41 +0800
-Message-ID: <44f39202-6dca-eb25-f8ca-60ca000503f1@suse.de>
-References: <04ff7c6d5cdd8b389d471989704c2f9dc3def554.1548840161.git.geliangtang@gmail.com>
- <04ebd070-3c9c-0cd4-f2d8-d7b078ea2582@suse.de>
- <20190226100102.GA10363@OptiPlex>
+From: Jon Hunter <jonathanh@nvidia.com>
+Subject: Re: [PATCH V15 14/18] block: enable multipage bvecs
+Date: Wed, 27 Feb 2019 20:47:09 +0000
+Message-ID: <0dbbee64-5c6b-0374-4360-6dc218c70d58@nvidia.com>
+References: <20190215111324.30129-1-ming.lei@redhat.com>
+ <20190215111324.30129-15-ming.lei@redhat.com>
+ <CGME20190221084301eucas1p11e8841a62b4b1da3cccca661b6f4c29d@eucas1p1.samsung.com>
+ <6c9ae4de-c56f-a2b3-2542-da7d8b95601d@samsung.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190226100102.GA10363@OptiPlex>
+In-Reply-To: <6c9ae4de-c56f-a2b3-2542-da7d8b95601d@samsung.com>
 Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Geliang Tang <geliangtang@gmail.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Marek Szyprowski <m.szyprowski@samsung.com>, Ming Lei <ming.lei@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org, Theodore Ts'o <tytso@mit.edu>, Omar Sandoval <osandov@fb.com>, Sagi Grimberg <sagi@grimberg.me>, Dave Chinner <dchinner@redhat.com>, Kent Overstreet <kent.overstreet@gmail.com>, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org, linux-raid@vger.kernel.org, David Sterba <dsterba@suse.com>, linux-btrfs@vger.kernel.org, "Darrick J . Wong" <darrick.wong@oracle.com>, linux-xfs@vger.kernel.org, Gao Xiang <gaoxiang25@huawei.com>, Christoph Hellwig <hch@lst.de>, linux-ext4@vger.kernel.org, Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org, Boaz Harrosh <ooo@electrozaur.com>, Bob Peterson <rpeter>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/2/26 6:01 下午, Geliang Tang wrote:
-> On Wed, Feb 06, 2019 at 04:37:36PM +0800, Coly Li wrote:
->> On 2019/1/30 5:29 下午, Geliang Tang wrote:
->>> This patch uses kmemdup_nul to create a NUL-terminated string from
->>> dc->sb.label. This is better than open coding it.
->>>
->>> With this, we can move env[2] initialization into env[] array to make
->>> code more elegant.
->>>
->>> Signed-off-by: Geliang Tang <geliangtang@gmail.com>
->>
->> Hi Geliang,
->>
->> In general I am OK with your idea. But I feel there might be some
->> regression with your change. I comment your patch in line, correct me if
->> I am wrong.
->>
->>
->>> ---
->>>  drivers/md/bcache/super.c | 10 ++++------
->>>  1 file changed, 4 insertions(+), 6 deletions(-)
->>>
->>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
->>> index 4dee119c3664..84ab241c8516 100644
->>> --- a/drivers/md/bcache/super.c
->>> +++ b/drivers/md/bcache/super.c
->>> @@ -906,21 +906,18 @@ static int cached_dev_status_update(void *arg)
->>>  void bch_cached_dev_run(struct cached_dev *dc)
->>>  {
->>>  	struct bcache_device *d = &dc->disk;
->>> -	char buf[SB_LABEL_SIZE + 1];
->>> +	char *buf = kmemdup_nul(dc->sb.label, SB_LABEL_SIZE, GFP_KERNEL);
->>
->> If kdumdup_null() is failed, buf will be NULL.
->>
->>>  	char *env[] = {
->>>  		"DRIVER=bcache",
->>>  		kasprintf(GFP_KERNEL, "CACHED_UUID=%pU", dc->sb.uuid),
->>> -		NULL,
->>> +		kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", buf ? : ""),
->>
->> If buf is NULL, env[2] here is pointed to "" which is allocated in
->> read-only data segment, and not a dynamic memory.
-> 
-> Hi Coly,
-> 
-> Sorry for my late reply.
-> 
-> If buf is NULL, env[2] is kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", "");
 
-Oh, I overlooked the location of last bracket.
+On 21/02/2019 08:42, Marek Szyprowski wrote:
+> Dear All,
+> 
+> On 2019-02-15 12:13, Ming Lei wrote:
+>> This patch pulls the trigger for multi-page bvecs.
+>>
+>> Reviewed-by: Omar Sandoval <osandov@fb.com>
+>> Signed-off-by: Ming Lei <ming.lei@redhat.com>
+> 
+> Since Linux next-20190218 I've observed problems with block layer on one
+> of my test devices (Odroid U3 with EXT4 rootfs on SD card). Bisecting
+> this issue led me to this change. This is also the first linux-next
+> release with this change merged. The issue is fully reproducible and can
+> be observed in the following kernel log:
+> 
+> sdhci: Secure Digital Host Controller Interface driver
+> sdhci: Copyright(c) Pierre Ossman
+> s3c-sdhci 12530000.sdhci: clock source 2: mmc_busclk.2 (100000000 Hz)
+> s3c-sdhci 12530000.sdhci: Got CD GPIO
+> mmc0: SDHCI controller on samsung-hsmmc [12530000.sdhci] using ADMA
+> mmc0: new high speed SDHC card at address aaaa
+> mmcblk0: mmc0:aaaa SL16G 14.8 GiB
+I have also noticed some failures when writing to an eMMC device on one
+of our Tegra boards. We have a simple eMMC write/read test and it is
+currently failing because the data written does not match the source.
 
+I did not seem the same crash as reported here, however, in our case the
+rootfs is NFS mounted and so probably would not. However, the bisect
+points to this commit and reverting on top of -next fixes the issues.
 
-> In this case, env[2] is also a dynamic memory, a string like this, "CACHED_LABEL=".
-> So we can use kfree() to free it. There is no problem.
-> 
-
-Sure, it is OK to me. I will add it into my for-test directory.
-
-Thanks.
-
-Coly Li
-
-> And here is a test case:
-> 
-> $ cat test.c 
-> #include <linux/init.h>
-> #include <linux/module.h>
-> #include <linux/slab.h>
-> 
-> static int __init test_init(void)
-> {
-> 	char *env = kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", "");
-> 	pr_info("env = [%s]\n", env);
-> 	kfree(env);
-> 	return 0;
-> }
-> 
-> static void __exit test_exit(void)
-> {
-> }
-> 
-> module_init(test_init);
-> module_exit(test_exit);
-> 
-> MODULE_LICENSE("GPL");
-> 
-> $ sudo insmod test.ko
-> $ dmesg
-> [ 3026.072298] env = [CACHED_LABEL=]
-> $ sudo rmmod test
-> 
-> Thanks.
-> 
-> -Geliang
-> 
->>
->>>  		NULL,
->>>  	};
->>>  
->>> -	memcpy(buf, dc->sb.label, SB_LABEL_SIZE);
->>> -	buf[SB_LABEL_SIZE] = '\0';
->>> -	env[2] = kasprintf(GFP_KERNEL, "CACHED_LABEL=%s", buf);
->>> -
->>>  	if (atomic_xchg(&dc->running, 1)) {
->>>  		kfree(env[1]);
->>>  		kfree(env[2]);
->>
->> Then kfree() here will try to release a read-only memory segment. I
->> guess this is problematic.
->>
->>> +		kfree(buf);
->>>  		return;
->>>  	}
->>>  
->>> @@ -944,6 +941,7 @@ void bch_cached_dev_run(struct cached_dev *dc)
->>>  	kobject_uevent_env(&disk_to_dev(d->disk)->kobj, KOBJ_CHANGE, env);
->>>  	kfree(env[1]);
->>>  	kfree(env[2]);
->>
->> Same problem might happen here for env[2].
->>
->>> +	kfree(buf);
->>>  
->>>  	if (sysfs_create_link(&d->kobj, &disk_to_dev(d->disk)->kobj, "dev") ||
->>>  	    sysfs_create_link(&disk_to_dev(d->disk)->kobj, &d->kobj, "bcache"))
->>>
->>
->>
->> -- 
->>
->> Coly Li
-> 
-
+Cheers
+Jon
 
 -- 
-
-Coly Li
+nvpublic
