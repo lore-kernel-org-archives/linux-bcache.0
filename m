@@ -1,65 +1,61 @@
-From: Shile Zhang <shile.zhang@linux.alibaba.com>
-Subject: Re: [PATCH] bcache: add cond_resched() in __bch_cache_cmp()
-Date: Fri, 8 Mar 2019 08:35:17 +0800
-Message-ID: <b548e4a1-865e-61f1-1ac1-4daf84111f86@linux.alibaba.com>
-References: <1551935728-243664-1-git-send-email-shile.zhang@linux.alibaba.com>
- <24916a71-39ff-7324-ad12-9d79cc68d0da@suse.de>
- <3640cd7f-f32a-1509-dbef-6000b6e14e75@linux.alibaba.com>
- <c421d715-6d14-a6f0-907b-644318120c8e@suse.de>
- <20190307154421.GA8829@suse.cz>
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH] bcache: Zero initialize bucket in bch_allocator_thread
+Date: Fri, 8 Mar 2019 10:10:20 +0800
+Message-ID: <94c7f399-7101-2297-43e0-834f50c3510f@suse.de>
+References: <20190307221054.13126-1-natechancellor@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190307154421.GA8829@suse.cz>
+In-Reply-To: <20190307221054.13126-1-natechancellor@gmail.com>
 Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Vojtech Pavlik <vojtech@suse.com>, Coly Li <colyli@suse.de>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Nathan Chancellor <natechancellor@gmail.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, clang-built-linux@googlegroups.com, Nick Desaulniers <ndesaulniers@google.com>
 List-Id: linux-bcache@vger.kernel.org
 
+On 2019/3/8 6:10 上午, Nathan Chancellor wrote:
+> When building with -Wsometimes-uninitialized, Clang warns:
+> 
+> drivers/md/bcache/alloc.c:333:4: warning: variable 'bucket' is used
+> uninitialized whenever 'if' condition is false
+> [-Wsometimes-uninitialized]
+> 
+> fifo_pop expands to a conditional depending on '!fifo_empty(...)', which
+> is the same condition as the while loop. It seems Clang can't piece
+> together that this condition will never been false as long as we are in
+> the while loop because they are the same condition. It's easy enough to
+> silence this warning by just explicitly zero initializing bucket.
+> 
+> Link: https://github.com/ClangBuiltLinux/linux/issues/396
+> Signed-off-by: Nathan Chancellor <natechancellor@gmail.com>
 
-On 2019/3/7 23:44, Vojtech Pavlik wrote:
-> On Thu, Mar 07, 2019 at 11:36:18PM +0800, Coly Li wrote:
->> On 2019/3/7 11:06 下午, Shile Zhang wrote:
->>> On 2019/3/7 18:34, Coly Li wrote:
->>>> On 2019/3/7 1:15 下午, shile.zhang@linux.alibaba.com wrote:
->>>>> From: Shile Zhang <shile.zhang@linux.alibaba.com>
->>>>>
->>>>> Read /sys/fs/bcache/<uuid>/cacheN/priority_stats can take very long
->>>>> time with huge cache after long run.
->>>>>
->>>>> Signed-off-by: Shile Zhang <shile.zhang@linux.alibaba.com>
->>>> Hi Shile,
->>>>
->>>> Do you test your change ? It will be helpful with more performance data
->>>> (what problem that you improved).
->>> In case of 960GB SSD cache device, once read of the 'priority_stats'
->>> costs about 600ms in our test environment.
->>>
->> After the fix, how much time it takes ?
->>
->>
->>> The perf tool shown that near 50% CPU time consumed by 'sort()', this
->>> means once sort will hold the CPU near 300ms.
->>>
->>> In our case, the statistics collector reads the 'priority_stats'
->>> periodically, it will trigger the schedule latency jitters of the
->>>
->>> task which shared same CPU core.
->>>
->> Hmm, it seems you just make the sort slower, and nothing more changes.
->> Am I right ?
-> Well, it has to make the sort slower, but it'll also avoid hogging the
-> CPU (on a non-preemptible kernel), avoiding a potential soft lockup
-> warning and allowing other tasks to run.
->
-Yes, there is a risk that other tasks have no chance to run due to sort 
-hogging the CPU, it is harmful to some schedule-latency sensitive tasks.
-This change just try to reduce the impact of sort, but not a performance 
-improvement of it. I'm not sure if a better way can handle it more 
-efficiency.
+Hi Nathan,
 
-Thanks,
+Nice catch, I will add it to my for-test. Thanks.
 
-Shile
+Coly Li
+
+> ---
+>  drivers/md/bcache/alloc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+> index 5002838ea476..c72094901ac6 100644
+> --- a/drivers/md/bcache/alloc.c
+> +++ b/drivers/md/bcache/alloc.c
+> @@ -328,7 +328,7 @@ static int bch_allocator_thread(void *arg)
+>  		 * the free list:
+>  		 */
+>  		while (!fifo_empty(&ca->free_inc)) {
+> -			long bucket;
+> +			long bucket = 0;
+>  
+>  			fifo_pop(&ca->free_inc, bucket);
+>  
+> 
+
+
+-- 
+
+Coly Li
