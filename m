@@ -1,84 +1,81 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: add cond_resched() in __bch_cache_cmp()
-Date: Fri, 8 Mar 2019 10:19:15 +0800
-Message-ID: <c13b1d2a-a8e6-f20c-604e-a375c018bf66@suse.de>
-References: <1551935728-243664-1-git-send-email-shile.zhang@linux.alibaba.com>
- <24916a71-39ff-7324-ad12-9d79cc68d0da@suse.de>
- <3640cd7f-f32a-1509-dbef-6000b6e14e75@linux.alibaba.com>
- <c421d715-6d14-a6f0-907b-644318120c8e@suse.de>
- <20190307154421.GA8829@suse.cz>
- <b548e4a1-865e-61f1-1ac1-4daf84111f86@linux.alibaba.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+From: Liang Chen <liangchen.linux@gmail.com>
+Subject: [PATCH v1] bcache: fix a race between cache register and cacheset unregister
+Date: Wed, 13 Mar 2019 09:37:24 -0400
+Message-ID: <1552484244-3510-1-git-send-email-liangchen.linux@gmail.com>
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <b548e4a1-865e-61f1-1ac1-4daf84111f86@linux.alibaba.com>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Shile Zhang <shile.zhang@linux.alibaba.com>
-Cc: Vojtech Pavlik <vojtech@suse.com>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: colyli@suse.de
+Cc: kent.overstreet@gmail.com, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Liang Chen <liangchen.linux@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/3/8 8:35 上午, Shile Zhang wrote:
-> 
-> On 2019/3/7 23:44, Vojtech Pavlik wrote:
->> On Thu, Mar 07, 2019 at 11:36:18PM +0800, Coly Li wrote:
->>> On 2019/3/7 11:06 下午, Shile Zhang wrote:
->>>> On 2019/3/7 18:34, Coly Li wrote:
->>>>> On 2019/3/7 1:15 下午, shile.zhang@linux.alibaba.com wrote:
->>>>>> From: Shile Zhang <shile.zhang@linux.alibaba.com>
->>>>>>
->>>>>> Read /sys/fs/bcache/<uuid>/cacheN/priority_stats can take very long
->>>>>> time with huge cache after long run.
->>>>>>
->>>>>> Signed-off-by: Shile Zhang <shile.zhang@linux.alibaba.com>
->>>>> Hi Shile,
->>>>>
->>>>> Do you test your change ? It will be helpful with more performance
->>>>> data
->>>>> (what problem that you improved).
->>>> In case of 960GB SSD cache device, once read of the 'priority_stats'
->>>> costs about 600ms in our test environment.
->>>>
->>> After the fix, how much time it takes ?
->>>
->>>
->>>> The perf tool shown that near 50% CPU time consumed by 'sort()', this
->>>> means once sort will hold the CPU near 300ms.
->>>>
->>>> In our case, the statistics collector reads the 'priority_stats'
->>>> periodically, it will trigger the schedule latency jitters of the
->>>>
->>>> task which shared same CPU core.
->>>>
->>> Hmm, it seems you just make the sort slower, and nothing more changes.
->>> Am I right ?
->> Well, it has to make the sort slower, but it'll also avoid hogging the
->> CPU (on a non-preemptible kernel), avoiding a potential soft lockup
->> warning and allowing other tasks to run.
->>
-> Yes, there is a risk that other tasks have no chance to run due to sort
-> hogging the CPU, it is harmful to some schedule-latency sensitive tasks.
-> This change just try to reduce the impact of sort, but not a performance
-> improvement of it. I'm not sure if a better way can handle it more
-> efficiency.
-I know the above concept, since I would expect when people talking about
-performance improvement, it would be better to provide real performance
-number. Under some conditions it might be hard, but in this exact
-example, it won't.
+There is a race between cache device register and cache set unregister.
+For an already registered cache device, register_bcache will call
+bch_is_open to iterate through all cachesets and check every cache
+there. The race occurs if cache_set_free executes at the same time and
+clears the caches right before ca is dereferenced in bch_is_open_cache.
+To close the race, let's make sure the clean up work is protected by
+the bch_register_lock as well.
 
-Could you please provide some data that on your configuration, how slow
-'sort' becomes ?
+This issue can be reproduced as follows,
+while true; do echo /dev/XXX> /sys/fs/bcache/register ; done&
+while true; do echo 1> /sys/block/XXX/bcache/set/unregister ; done &
 
-AND, reading priority_stats in period for performance monitoring is not
-good idea. The problem is not from 'sort', it is from
-mutex_lock(&ca->set->bucket_lock) lines above the sort in sysfs.c, when
-you have a quite large or very busy cache device, you may see normal I/O
-performance drops due to too much time holding bucket_lock here.
+and results in the following oops,
 
-Anyway, this is just my suggestion. Back to this patch, please provide
-performance number.
+[  +0.000053] BUG: unable to handle kernel NULL pointer dereference at 0000000000000998
+[  +0.000457] #PF error: [normal kernel read fault]
+[  +0.000464] PGD 800000003ca9d067 P4D 800000003ca9d067 PUD 3ca9c067 PMD 0
+[  +0.000388] Oops: 0000 [#1] SMP PTI
+[  +0.000269] CPU: 1 PID: 3266 Comm: bash Not tainted 5.0.0+ #6
+[  +0.000346] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.11.0-2.fc28 04/01/2014
+[  +0.000472] RIP: 0010:register_bcache+0x1829/0x1990 [bcache]
+[  +0.000344] Code: b0 48 83 e8 50 48 81 fa e0 e1 10 c0 0f 84 a9 00 00 00 48 89 c6 48 89 ca 0f b7 ba 54 04 00 00 4c 8b 82 60 0c 00 00 85 ff 74 2f <49> 3b a8 98 09 00 00 74 4e 44 8d 47 ff 31 ff 49 c1 e0 03 eb 0d
+[  +0.000839] RSP: 0018:ffff92ee804cbd88 EFLAGS: 00010202
+[  +0.000328] RAX: ffffffffc010e190 RBX: ffff918b5c6b5000 RCX: ffff918b7d8e0000
+[  +0.000399] RDX: ffff918b7d8e0000 RSI: ffffffffc010e190 RDI: 0000000000000001
+[  +0.000398] RBP: ffff918b7d318340 R08: 0000000000000000 R09: ffffffffb9bd2d7a
+[  +0.000385] R10: ffff918b7eb253c0 R11: ffffb95980f51200 R12: ffffffffc010e1a0
+[  +0.000411] R13: fffffffffffffff2 R14: 000000000000000b R15: ffff918b7e232620
+[  +0.000384] FS:  00007f955bec2740(0000) GS:ffff918b7eb00000(0000) knlGS:0000000000000000
+[  +0.000420] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  +0.000801] CR2: 0000000000000998 CR3: 000000003cad6000 CR4: 00000000001406e0
+[  +0.000837] Call Trace:
+[  +0.000682]  ? _cond_resched+0x10/0x20
+[  +0.000691]  ? __kmalloc+0x131/0x1b0
+[  +0.000710]  kernfs_fop_write+0xfa/0x170
+[  +0.000733]  __vfs_write+0x2e/0x190
+[  +0.000688]  ? inode_security+0x10/0x30
+[  +0.000698]  ? selinux_file_permission+0xd2/0x120
+[  +0.000752]  ? security_file_permission+0x2b/0x100
+[  +0.000753]  vfs_write+0xa8/0x1a0
+[  +0.000676]  ksys_write+0x4d/0xb0
+[  +0.000699]  do_syscall_64+0x3a/0xf0
+[  +0.000692]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
 
-Thanks.
+Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+---
+ drivers/md/bcache/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Coly Li
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 4dee119..ee36e6b 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1516,6 +1516,7 @@ static void cache_set_free(struct closure *cl)
+ 	bch_btree_cache_free(c);
+ 	bch_journal_free(c);
+ 
++	mutex_lock(&bch_register_lock);
+ 	for_each_cache(ca, c, i)
+ 		if (ca) {
+ 			ca->set = NULL;
+@@ -1534,7 +1535,6 @@ static void cache_set_free(struct closure *cl)
+ 	mempool_exit(&c->search);
+ 	kfree(c->devices);
+ 
+-	mutex_lock(&bch_register_lock);
+ 	list_del(&c->list);
+ 	mutex_unlock(&bch_register_lock);
+ 
+-- 
+1.8.3.1
