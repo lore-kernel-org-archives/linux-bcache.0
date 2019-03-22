@@ -1,81 +1,75 @@
-From: Liang Chen <liangchen.linux@gmail.com>
-Subject: [PATCH v1] bcache: fix a race between cache register and cacheset unregister
-Date: Wed, 13 Mar 2019 09:37:24 -0400
-Message-ID: <1552484244-3510-1-git-send-email-liangchen.linux@gmail.com>
+From: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] bcache: avoid clang -Wunintialized warning
+Date: Fri, 22 Mar 2019 15:35:00 +0100
+Message-ID: <20190322143507.1256436-1-arnd@arndb.de>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
-To: colyli@suse.de
-Cc: kent.overstreet@gmail.com, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Liang Chen <liangchen.linux@gmail.com>
+To: Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>
+Cc: clang-built-linux@googlegroups.com, Nick Desaulniers <ndesaulniers@google.com>, Nathan Chancellor <natechancellor@gmail.com>, Arnd Bergmann <arnd@arndb.de>, Jens Axboe <axboe@kernel.dk>, Shenghui Wang <shhuiw@foxmail.com>, Hannes Reinecke <hare@suse.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-There is a race between cache device register and cache set unregister.
-For an already registered cache device, register_bcache will call
-bch_is_open to iterate through all cachesets and check every cache
-there. The race occurs if cache_set_free executes at the same time and
-clears the caches right before ca is dereferenced in bch_is_open_cache.
-To close the race, let's make sure the clean up work is protected by
-the bch_register_lock as well.
+clang has identified a code path in which it thinks a
+variable may be unused:
 
-This issue can be reproduced as follows,
-while true; do echo /dev/XXX> /sys/fs/bcache/register ; done&
-while true; do echo 1> /sys/block/XXX/bcache/set/unregister ; done &
+drivers/md/bcache/alloc.c:333:4: error: variable 'bucket' is used uninitialized whenever 'if' condition is false
+      [-Werror,-Wsometimes-uninitialized]
+                        fifo_pop(&ca->free_inc, bucket);
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
+ #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
+                                ^~~~~~~~~~~~~~~~~~~~~~~~~
+drivers/md/bcache/util.h:189:6: note: expanded from macro 'fifo_pop_front'
+        if (_r) {                                                       \
+            ^~
+drivers/md/bcache/alloc.c:343:46: note: uninitialized use occurs here
+                        allocator_wait(ca, bch_allocator_push(ca, bucket));
+                                                                  ^~~~~~
+drivers/md/bcache/alloc.c:287:7: note: expanded from macro 'allocator_wait'
+                if (cond)                                               \
+                    ^~~~
+drivers/md/bcache/alloc.c:333:4: note: remove the 'if' if its condition is always true
+                        fifo_pop(&ca->free_inc, bucket);
+                        ^
+drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
+ #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
+                                ^
+drivers/md/bcache/util.h:189:2: note: expanded from macro 'fifo_pop_front'
+        if (_r) {                                                       \
+        ^
+drivers/md/bcache/alloc.c:331:15: note: initialize the variable 'bucket' to silence this warning
+                        long bucket;
+                                   ^
 
-and results in the following oops,
+This cannot happen in practice because we only enter the loop
+if there is at least one element in the list.
 
-[  +0.000053] BUG: unable to handle kernel NULL pointer dereference at 0000000000000998
-[  +0.000457] #PF error: [normal kernel read fault]
-[  +0.000464] PGD 800000003ca9d067 P4D 800000003ca9d067 PUD 3ca9c067 PMD 0
-[  +0.000388] Oops: 0000 [#1] SMP PTI
-[  +0.000269] CPU: 1 PID: 3266 Comm: bash Not tainted 5.0.0+ #6
-[  +0.000346] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.11.0-2.fc28 04/01/2014
-[  +0.000472] RIP: 0010:register_bcache+0x1829/0x1990 [bcache]
-[  +0.000344] Code: b0 48 83 e8 50 48 81 fa e0 e1 10 c0 0f 84 a9 00 00 00 48 89 c6 48 89 ca 0f b7 ba 54 04 00 00 4c 8b 82 60 0c 00 00 85 ff 74 2f <49> 3b a8 98 09 00 00 74 4e 44 8d 47 ff 31 ff 49 c1 e0 03 eb 0d
-[  +0.000839] RSP: 0018:ffff92ee804cbd88 EFLAGS: 00010202
-[  +0.000328] RAX: ffffffffc010e190 RBX: ffff918b5c6b5000 RCX: ffff918b7d8e0000
-[  +0.000399] RDX: ffff918b7d8e0000 RSI: ffffffffc010e190 RDI: 0000000000000001
-[  +0.000398] RBP: ffff918b7d318340 R08: 0000000000000000 R09: ffffffffb9bd2d7a
-[  +0.000385] R10: ffff918b7eb253c0 R11: ffffb95980f51200 R12: ffffffffc010e1a0
-[  +0.000411] R13: fffffffffffffff2 R14: 000000000000000b R15: ffff918b7e232620
-[  +0.000384] FS:  00007f955bec2740(0000) GS:ffff918b7eb00000(0000) knlGS:0000000000000000
-[  +0.000420] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  +0.000801] CR2: 0000000000000998 CR3: 000000003cad6000 CR4: 00000000001406e0
-[  +0.000837] Call Trace:
-[  +0.000682]  ? _cond_resched+0x10/0x20
-[  +0.000691]  ? __kmalloc+0x131/0x1b0
-[  +0.000710]  kernfs_fop_write+0xfa/0x170
-[  +0.000733]  __vfs_write+0x2e/0x190
-[  +0.000688]  ? inode_security+0x10/0x30
-[  +0.000698]  ? selinux_file_permission+0xd2/0x120
-[  +0.000752]  ? security_file_permission+0x2b/0x100
-[  +0.000753]  vfs_write+0xa8/0x1a0
-[  +0.000676]  ksys_write+0x4d/0xb0
-[  +0.000699]  do_syscall_64+0x3a/0xf0
-[  +0.000692]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+Slightly rearranging the code makes this clearer to both the
+reader and the compiler, which avoids the warning.
 
-Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/md/bcache/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/bcache/alloc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 4dee119..ee36e6b 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1516,6 +1516,7 @@ static void cache_set_free(struct closure *cl)
- 	bch_btree_cache_free(c);
- 	bch_journal_free(c);
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index 5002838ea476..f8986effcb50 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -327,10 +327,11 @@ static int bch_allocator_thread(void *arg)
+ 		 * possibly issue discards to them, then we add the bucket to
+ 		 * the free list:
+ 		 */
+-		while (!fifo_empty(&ca->free_inc)) {
++		while (1) {
+ 			long bucket;
  
-+	mutex_lock(&bch_register_lock);
- 	for_each_cache(ca, c, i)
- 		if (ca) {
- 			ca->set = NULL;
-@@ -1534,7 +1535,6 @@ static void cache_set_free(struct closure *cl)
- 	mempool_exit(&c->search);
- 	kfree(c->devices);
+-			fifo_pop(&ca->free_inc, bucket);
++			if (!fifo_pop(&ca->free_inc, bucket))
++				break;
  
--	mutex_lock(&bch_register_lock);
- 	list_del(&c->list);
- 	mutex_unlock(&bch_register_lock);
- 
+ 			if (ca->discard) {
+ 				mutex_unlock(&ca->set->bucket_lock);
 -- 
-1.8.3.1
+2.20.0
