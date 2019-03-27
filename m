@@ -1,7 +1,7 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.0 161/262] bcache: fix input overflow to sequential_cutoff
-Date: Wed, 27 Mar 2019 14:00:16 -0400
-Message-ID: <20190327180158.10245-161-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.0 160/262] bcache: fix input overflow to cache set sysfs file io_error_halflife
+Date: Wed, 27 Mar 2019 14:00:15 -0400
+Message-ID: <20190327180158.10245-160-sashal@kernel.org>
 References: <20190327180158.10245-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -14,39 +14,47 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit 8c27a3953e92eb0b22dbb03d599f543a05f9574e ]
+[ Upstream commit a91fbda49f746119828f7e8ad0f0aa2ab0578f65 ]
 
-People may set sequential_cutoff of a cached device via sysfs file,
-but current code does not check input value overflow. E.g. if value
-4294967295 (UINT_MAX) is written to file sequential_cutoff, its value
-is 4GB, but if 4294967296 (UINT_MAX + 1) is written into, its value
-will be 0. This is an unexpected behavior.
+Cache set sysfs entry io_error_halflife is used to set c->error_decay.
+c->error_decay is in type unsigned int, and it is converted by
+strtoul_or_return(), therefore overflow to c->error_decay is possible
+for a large input value.
 
-This patch replaces d_strtoi_h() by sysfs_strtoul_clamp() to convert
-input string to unsigned integer value, and limit its range in
-[0, UINT_MAX]. Then the input overflow can be fixed.
+This patch fixes the overflow by using strtoul_safe_clamp() to convert
+input string to an unsigned long value in range [0, UINT_MAX], then
+divides by 88 and set it to c->error_decay.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/sysfs.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/bcache/sysfs.c | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 3b287f974fd9..f98cda32065d 100644
+index 557a8a3270a1..3b287f974fd9 100644
 --- a/drivers/md/bcache/sysfs.c
 +++ b/drivers/md/bcache/sysfs.c
-@@ -299,7 +299,9 @@ STORE(__cached_dev)
- 		dc->io_disable = v ? 1 : 0;
- 	}
+@@ -778,8 +778,17 @@ STORE(__bch_cache_set)
+ 		c->error_limit = strtoul_or_return(buf);
  
--	d_strtoi_h(sequential_cutoff);
-+	sysfs_strtoul_clamp(sequential_cutoff,
-+			    dc->sequential_cutoff,
-+			    0, UINT_MAX);
- 	d_strtoi_h(readahead);
+ 	/* See count_io_errors() for why 88 */
+-	if (attr == &sysfs_io_error_halflife)
+-		c->error_decay = strtoul_or_return(buf) / 88;
++	if (attr == &sysfs_io_error_halflife) {
++		unsigned long v = 0;
++		ssize_t ret;
++
++		ret = strtoul_safe_clamp(buf, v, 0, UINT_MAX);
++		if (!ret) {
++			c->error_decay = v / 88;
++			return size;
++		}
++		return ret;
++	}
  
- 	if (attr == &sysfs_clear_stats)
+ 	if (attr == &sysfs_io_disable) {
+ 		v = strtoul_or_return(buf);
 -- 
 2.19.1
