@@ -1,7 +1,7 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 115/192] bcache: fix potential div-zero error of writeback_rate_i_term_inverse
-Date: Wed, 27 Mar 2019 14:09:07 -0400
-Message-ID: <20190327181025.13507-115-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 114/192] bcache: fix input overflow to sequential_cutoff
+Date: Wed, 27 Mar 2019 14:09:06 -0400
+Message-ID: <20190327181025.13507-114-sashal@kernel.org>
 References: <20190327181025.13507-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -14,25 +14,17 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit c3b75a2199cdbfc1c335155fe143d842604b1baa ]
+[ Upstream commit 8c27a3953e92eb0b22dbb03d599f543a05f9574e ]
 
-dc->writeback_rate_i_term_inverse can be set via sysfs interface. It is
-in type unsigned int, and convert from input string by d_strtoul(). The
-problem is d_strtoul() does not check valid range of the input, if
-4294967296 is written into sysfs file writeback_rate_i_term_inverse,
-an overflow of unsigned integer will happen and value 0 is set to
-dc->writeback_rate_i_term_inverse.
+People may set sequential_cutoff of a cached device via sysfs file,
+but current code does not check input value overflow. E.g. if value
+4294967295 (UINT_MAX) is written to file sequential_cutoff, its value
+is 4GB, but if 4294967296 (UINT_MAX + 1) is written into, its value
+will be 0. This is an unexpected behavior.
 
-In writeback.c:__update_writeback_rate(), there are following lines of
-code,
-      integral_scaled = div_s64(dc->writeback_rate_integral,
-                      dc->writeback_rate_i_term_inverse);
-If dc->writeback_rate_i_term_inverse is set to 0 via sysfs interface,
-a div-zero error might be triggered in the above code.
-
-Therefore we need to add a range limitation in the sysfs interface,
-this is what this patch does, use sysfs_stroul_clamp() to replace
-d_strtoul() and restrict the input range in [1, UINT_MAX].
+This patch replaces d_strtoi_h() by sysfs_strtoul_clamp() to convert
+input string to unsigned integer value, and limit its range in
+[0, UINT_MAX]. Then the input overflow can be fixed.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
@@ -42,19 +34,19 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 01c7c4452a26..503ad954ccc0 100644
+index 59bf13faf752..01c7c4452a26 100644
 --- a/drivers/md/bcache/sysfs.c
 +++ b/drivers/md/bcache/sysfs.c
-@@ -283,7 +283,9 @@ STORE(__cached_dev)
- 	sysfs_strtoul_clamp(writeback_rate_update_seconds,
- 			    dc->writeback_rate_update_seconds,
- 			    1, WRITEBACK_RATE_UPDATE_SECS_MAX);
--	d_strtoul(writeback_rate_i_term_inverse);
-+	sysfs_strtoul_clamp(writeback_rate_i_term_inverse,
-+			    dc->writeback_rate_i_term_inverse,
-+			    1, UINT_MAX);
- 	d_strtoul_nonzero(writeback_rate_p_term_inverse);
- 	d_strtoul_nonzero(writeback_rate_minimum);
+@@ -295,7 +295,9 @@ STORE(__cached_dev)
+ 		dc->io_disable = v ? 1 : 0;
+ 	}
  
+-	d_strtoi_h(sequential_cutoff);
++	sysfs_strtoul_clamp(sequential_cutoff,
++			    dc->sequential_cutoff,
++			    0, UINT_MAX);
+ 	d_strtoi_h(readahead);
+ 
+ 	if (attr == &sysfs_clear_stats)
 -- 
 2.19.1
