@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 116/192] bcache: improve sysfs_strtoul_clamp()
-Date: Wed, 27 Mar 2019 14:09:08 -0400
-Message-ID: <20190327181025.13507-116-sashal@kernel.org>
-References: <20190327181025.13507-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.14 076/123] bcache: fix input overflow to sequential_cutoff
+Date: Wed, 27 Mar 2019 14:15:40 -0400
+Message-ID: <20190327181628.15899-76-sashal@kernel.org>
+References: <20190327181628.15899-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190327181025.13507-1-sashal@kernel.org>
+In-Reply-To: <20190327181628.15899-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
@@ -14,61 +14,39 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit 596b5a5dd1bc2fa019fdaaae522ef331deef927f ]
+[ Upstream commit 8c27a3953e92eb0b22dbb03d599f543a05f9574e ]
 
-Currently sysfs_strtoul_clamp() is defined as,
- 82 #define sysfs_strtoul_clamp(file, var, min, max)                   \
- 83 do {                                                               \
- 84         if (attr == &sysfs_ ## file)                               \
- 85                 return strtoul_safe_clamp(buf, var, min, max)      \
- 86                         ?: (ssize_t) size;                         \
- 87 } while (0)
+People may set sequential_cutoff of a cached device via sysfs file,
+but current code does not check input value overflow. E.g. if value
+4294967295 (UINT_MAX) is written to file sequential_cutoff, its value
+is 4GB, but if 4294967296 (UINT_MAX + 1) is written into, its value
+will be 0. This is an unexpected behavior.
 
-The problem is, if bit width of var is less then unsigned long, min and
-max may not protect var from integer overflow, because overflow happens
-in strtoul_safe_clamp() before checking min and max.
-
-To fix such overflow in sysfs_strtoul_clamp(), to make min and max take
-effect, this patch adds an unsigned long variable, and uses it to macro
-strtoul_safe_clamp() to convert an unsigned long value in range defined
-by [min, max]. Then assign this value to var. By this method, if bit
-width of var is less than unsigned long, integer overflow won't happen
-before min and max are checking.
-
-Now sysfs_strtoul_clamp() can properly handle smaller data type like
-unsigned int, of cause min and max should be defined in range of
-unsigned int too.
+This patch replaces d_strtoi_h() by sysfs_strtoul_clamp() to convert
+input string to unsigned integer value, and limit its range in
+[0, UINT_MAX]. Then the input overflow can be fixed.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/sysfs.h | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ drivers/md/bcache/sysfs.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/sysfs.h b/drivers/md/bcache/sysfs.h
-index 3fe82425859c..0ad2715a884e 100644
---- a/drivers/md/bcache/sysfs.h
-+++ b/drivers/md/bcache/sysfs.h
-@@ -81,9 +81,16 @@ do {									\
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 43ff7fbcbc7c..def9c3478b89 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -217,7 +217,9 @@ STORE(__cached_dev)
+ 	d_strtoul(writeback_rate_d_term);
+ 	d_strtoul_nonzero(writeback_rate_p_term_inverse);
  
- #define sysfs_strtoul_clamp(file, var, min, max)			\
- do {									\
--	if (attr == &sysfs_ ## file)					\
--		return strtoul_safe_clamp(buf, var, min, max)		\
--			?: (ssize_t) size;				\
-+	if (attr == &sysfs_ ## file) {					\
-+		unsigned long v = 0;					\
-+		ssize_t ret;						\
-+		ret = strtoul_safe_clamp(buf, v, min, max);		\
-+		if (!ret) {						\
-+			var = v;					\
-+			return size;					\
-+		}							\
-+		return ret;						\
-+	}								\
- } while (0)
+-	d_strtoi_h(sequential_cutoff);
++	sysfs_strtoul_clamp(sequential_cutoff,
++			    dc->sequential_cutoff,
++			    0, UINT_MAX);
+ 	d_strtoi_h(readahead);
  
- #define strtoul_or_return(cp)						\
+ 	if (attr == &sysfs_clear_stats)
 -- 
 2.19.1
