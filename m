@@ -1,7 +1,7 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.0 262/262] bcache: fix potential div-zero error of writeback_rate_p_term_inverse
-Date: Wed, 27 Mar 2019 14:01:57 -0400
-Message-ID: <20190327180158.10245-262-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.0 163/262] bcache: improve sysfs_strtoul_clamp()
+Date: Wed, 27 Mar 2019 14:00:18 -0400
+Message-ID: <20190327180158.10245-163-sashal@kernel.org>
 References: <20190327180158.10245-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -14,45 +14,61 @@ List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit 5b5fd3c94eef69dcfaa8648198e54c92e5687d6d ]
+[ Upstream commit 596b5a5dd1bc2fa019fdaaae522ef331deef927f ]
 
-Current code already uses d_strtoul_nonzero() to convert input string
-to an unsigned integer, to make sure writeback_rate_p_term_inverse
-won't be zero value. But overflow may happen when converting input
-string to an unsigned integer value by d_strtoul_nonzero(), then
-dc->writeback_rate_p_term_inverse can still be set to 0 even if the
-sysfs file input value is not zero, e.g. 4294967296 (a.k.a UINT_MAX+1).
+Currently sysfs_strtoul_clamp() is defined as,
+ 82 #define sysfs_strtoul_clamp(file, var, min, max)                   \
+ 83 do {                                                               \
+ 84         if (attr == &sysfs_ ## file)                               \
+ 85                 return strtoul_safe_clamp(buf, var, min, max)      \
+ 86                         ?: (ssize_t) size;                         \
+ 87 } while (0)
 
-If dc->writeback_rate_p_term_inverse is set to 0, it might cause a
-dev-zero error in following code from __update_writeback_rate(),
-	int64_t proportional_scaled =
-		div_s64(error, dc->writeback_rate_p_term_inverse);
+The problem is, if bit width of var is less then unsigned long, min and
+max may not protect var from integer overflow, because overflow happens
+in strtoul_safe_clamp() before checking min and max.
 
-This patch replaces d_strtoul_nonzero() by sysfs_strtoul_clamp() and
-limit the value range in [1, UINT_MAX]. Then the unsigned integer
-overflow and dev-zero error can be avoided.
+To fix such overflow in sysfs_strtoul_clamp(), to make min and max take
+effect, this patch adds an unsigned long variable, and uses it to macro
+strtoul_safe_clamp() to convert an unsigned long value in range defined
+by [min, max]. Then assign this value to var. By this method, if bit
+width of var is less than unsigned long, integer overflow won't happen
+before min and max are checking.
+
+Now sysfs_strtoul_clamp() can properly handle smaller data type like
+unsigned int, of cause min and max should be defined in range of
+unsigned int too.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/sysfs.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/bcache/sysfs.h | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 28e0d5a5e25b..e5daf91310f6 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -290,7 +290,9 @@ STORE(__cached_dev)
- 	sysfs_strtoul_clamp(writeback_rate_i_term_inverse,
- 			    dc->writeback_rate_i_term_inverse,
- 			    1, UINT_MAX);
--	d_strtoul_nonzero(writeback_rate_p_term_inverse);
-+	sysfs_strtoul_clamp(writeback_rate_p_term_inverse,
-+			    dc->writeback_rate_p_term_inverse,
-+			    1, UINT_MAX);
- 	d_strtoul_nonzero(writeback_rate_minimum);
+diff --git a/drivers/md/bcache/sysfs.h b/drivers/md/bcache/sysfs.h
+index 3fe82425859c..0ad2715a884e 100644
+--- a/drivers/md/bcache/sysfs.h
++++ b/drivers/md/bcache/sysfs.h
+@@ -81,9 +81,16 @@ do {									\
  
- 	sysfs_strtoul_clamp(io_error_limit, dc->error_limit, 0, INT_MAX);
+ #define sysfs_strtoul_clamp(file, var, min, max)			\
+ do {									\
+-	if (attr == &sysfs_ ## file)					\
+-		return strtoul_safe_clamp(buf, var, min, max)		\
+-			?: (ssize_t) size;				\
++	if (attr == &sysfs_ ## file) {					\
++		unsigned long v = 0;					\
++		ssize_t ret;						\
++		ret = strtoul_safe_clamp(buf, v, min, max);		\
++		if (!ret) {						\
++			var = v;					\
++			return size;					\
++		}							\
++		return ret;						\
++	}								\
+ } while (0)
+ 
+ #define strtoul_or_return(cp)						\
 -- 
 2.19.1
