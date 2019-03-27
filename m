@@ -1,85 +1,52 @@
-From: Nathan Chancellor <natechancellor@gmail.com>
-Subject: Re: [PATCH] bcache: avoid clang -Wunintialized warning
-Date: Fri, 22 Mar 2019 09:03:50 -0700
-Message-ID: <20190322160350.GE21978@archlinux-ryzen>
-References: <20190322143507.1256436-1-arnd@arndb.de>
+From: Sasha Levin <sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.0 161/262] bcache: fix input overflow to sequential_cutoff
+Date: Wed, 27 Mar 2019 14:00:16 -0400
+Message-ID: <20190327180158.10245-161-sashal@kernel.org>
+References: <20190327180158.10245-1-sashal@kernel.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <20190322143507.1256436-1-arnd@arndb.de>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, clang-built-linux@googlegroups.com, Nick Desaulniers <ndesaulniers@google.com>, Jens Axboe <axboe@kernel.dk>, Shenghui Wang <shhuiw@foxmail.com>, Hannes Reinecke <hare@suse.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190327180158.10245-1-sashal@kernel.org>
+Sender: stable-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Mar 22, 2019 at 03:35:00PM +0100, Arnd Bergmann wrote:
-> clang has identified a code path in which it thinks a
-> variable may be unused:
-> 
-> drivers/md/bcache/alloc.c:333:4: error: variable 'bucket' is used uninitialized whenever 'if' condition is false
->       [-Werror,-Wsometimes-uninitialized]
->                         fifo_pop(&ca->free_inc, bucket);
->                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
->  #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
->                                 ^~~~~~~~~~~~~~~~~~~~~~~~~
-> drivers/md/bcache/util.h:189:6: note: expanded from macro 'fifo_pop_front'
->         if (_r) {                                                       \
->             ^~
-> drivers/md/bcache/alloc.c:343:46: note: uninitialized use occurs here
->                         allocator_wait(ca, bch_allocator_push(ca, bucket));
->                                                                   ^~~~~~
-> drivers/md/bcache/alloc.c:287:7: note: expanded from macro 'allocator_wait'
->                 if (cond)                                               \
->                     ^~~~
-> drivers/md/bcache/alloc.c:333:4: note: remove the 'if' if its condition is always true
->                         fifo_pop(&ca->free_inc, bucket);
->                         ^
-> drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
->  #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
->                                 ^
-> drivers/md/bcache/util.h:189:2: note: expanded from macro 'fifo_pop_front'
->         if (_r) {                                                       \
->         ^
-> drivers/md/bcache/alloc.c:331:15: note: initialize the variable 'bucket' to silence this warning
->                         long bucket;
->                                    ^
-> 
-> This cannot happen in practice because we only enter the loop
-> if there is at least one element in the list.
-> 
-> Slightly rearranging the code makes this clearer to both the
-> reader and the compiler, which avoids the warning.
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+From: Coly Li <colyli@suse.de>
 
-Yes, I like this much better than my patch, thanks!
+[ Upstream commit 8c27a3953e92eb0b22dbb03d599f543a05f9574e ]
 
-Reviewed-by: Nathan Chancellor <natechancellor@gmail.com>
+People may set sequential_cutoff of a cached device via sysfs file,
+but current code does not check input value overflow. E.g. if value
+4294967295 (UINT_MAX) is written to file sequential_cutoff, its value
+is 4GB, but if 4294967296 (UINT_MAX + 1) is written into, its value
+will be 0. This is an unexpected behavior.
 
-> ---
->  drivers/md/bcache/alloc.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> index 5002838ea476..f8986effcb50 100644
-> --- a/drivers/md/bcache/alloc.c
-> +++ b/drivers/md/bcache/alloc.c
-> @@ -327,10 +327,11 @@ static int bch_allocator_thread(void *arg)
->  		 * possibly issue discards to them, then we add the bucket to
->  		 * the free list:
->  		 */
-> -		while (!fifo_empty(&ca->free_inc)) {
-> +		while (1) {
->  			long bucket;
->  
-> -			fifo_pop(&ca->free_inc, bucket);
-> +			if (!fifo_pop(&ca->free_inc, bucket))
-> +				break;
->  
->  			if (ca->discard) {
->  				mutex_unlock(&ca->set->bucket_lock);
-> -- 
-> 2.20.0
-> 
+This patch replaces d_strtoi_h() by sysfs_strtoul_clamp() to convert
+input string to unsigned integer value, and limit its range in
+[0, UINT_MAX]. Then the input overflow can be fixed.
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ drivers/md/bcache/sysfs.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 3b287f974fd9..f98cda32065d 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -299,7 +299,9 @@ STORE(__cached_dev)
+ 		dc->io_disable = v ? 1 : 0;
+ 	}
+ 
+-	d_strtoi_h(sequential_cutoff);
++	sysfs_strtoul_clamp(sequential_cutoff,
++			    dc->sequential_cutoff,
++			    0, UINT_MAX);
+ 	d_strtoi_h(readahead);
+ 
+ 	if (attr == &sysfs_clear_stats)
+-- 
+2.19.1
