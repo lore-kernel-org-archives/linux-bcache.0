@@ -1,73 +1,28 @@
 From: jglisse@redhat.com
-Subject: [PATCH v1 00/15] Keep track of GUPed pages in fs and block
-Date: Thu, 11 Apr 2019 17:08:19 -0400
-Message-ID: <20190411210834.4105-1-jglisse@redhat.com>
+Subject: [PATCH v1 03/15] block: introduce bvec_page()/bvec_set_page() to get/set bio_vec.bv_page
+Date: Thu, 11 Apr 2019 17:08:22 -0400
+Message-ID: <20190411210834.4105-4-jglisse@redhat.com>
+References: <20190411210834.4105-1-jglisse@redhat.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20190411210834.4105-1-jglisse@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>, linux-fsdevel@vger.kernel.org, linux-block@vger.kernel.org, linux-mm@kvack.org, John Hubbard <jhubbard@nvidia.com>, Jan Kara <jack@suse.cz>, Dan Williams <dan.j.williams@intel.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Johannes Thumshirn <jthumshirn@suse.de>, Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, Ming Lei <ming.lei@redhat.com>, Dave Chinner <david@fromorbit.com>, Jason Gunthorpe <jgg@ziepe.ca>, Matthew Wilcox <willy@infradead.org>, Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, Yan Zheng <zyan@redhat.com>, Sage Weil <sage@redhat.com>, Ilya Dryomov <idryomov@gmail.com>, Alex Elder <elder@kernel.org>, ceph-devel@vger.kernel.org
+Cc: =?UTF-8?q?J=C3=A9r=C3=B4me=20Glisse?= <jglisse@redhat.com>, linux-fsdevel@vger.kernel.org, linux-block@vger.kernel.org, linux-mm@kvack.org, John Hubbard <jhubbard@nvidia.com>, Jan Kara <jack@suse.cz>, Dan Williams <dan.j.williams@intel.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Johannes Thumshirn <jthumshirn@suse.de>, Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, Ming Lei <ming.lei@redhat.com>, Dave Chinner <david@fromorbit.com>, Jason Gunthorpe <jgg@ziepe.ca>, Matthew Wilcox <willy@infradead.org>, Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 From: Jérôme Glisse <jglisse@redhat.com>
 
-This patchset depends on various small fixes [1] and also on patchset
-which introduce put_user_page*() [2] and thus is 5.3 material as those
-pre-requisite will get in 5.2 at best. Nonetheless i am posting it now
-so that it can get review and comments on how and what should be done
-to test things.
+This add an helper to lookup the page a bvec struct points to. We want
+to convert all direct dereference of bvec->page to call to those helpers
+so that we can change the bvec->page fields.
 
-For various reasons [2] [3] we want to track page reference through GUP
-differently than "regular" page reference. Thus we need to keep track
-of how we got a page within the block and fs layer. To do so this patch-
-set change the bio_bvec struct to store a pfn and flags instead of a
-direct pointer to a page. This way we can flag page that are coming from
-GUP.
+To make coccinelle convertion (in latter patch) easier this patch also
+do update some macro and some code that coccinelle is not able to match.
 
-This patchset is divided as follow:
-    - First part of the patchset is just small cleanup i believe they
-      can go in as his assuming people are ok with them.
-    - Second part convert bio_vec->bv_page to bio_vec->bv_pfn this is
-      done in multi-step, first we replace all direct dereference of
-      the field by call to inline helper, then we introduce macro for
-      bio_bvec that are initialized on the stack. Finaly we change the
-      bv_page field to bv_pfn.
-    - Third part replace put_page(bv_page(bio_vec)) with a new helper
-      which will use put_user_page() when the page in the bio_vec is
-      coming from GUP.
-    - Fourth part update BIO to use bv_set_user_page() for page that
-      are coming from GUP this means updating bio_add_page*() to pass
-      down the origin of the page (GUP or not).
-    - Fith part convert few more places that directly use bvec_io or
-      BIO.
-
-Note that after this patchset they are still places in the kernel where
-we should use put_user_page*(). The intention is to separate that task
-in chewable chunk (driver by driver, sub-system by sub-system).
-
-
-I have only lightly tested this patchset (branch [4]) on my desktop and
-have not seen anything obviously wrong but i might have miss something.
-What kind of test suite should i run to stress test the vfs/block layer
-around DIO and BIO ?
-
-
-Note that you coccinelle [5] recent enough for the semantic patch to work
-properly ([5] with git commit >= eac73d191e4f03d759957fc5620062428fadada8).
-
-Cheers,
-Jérôme Glisse
-
-[1] https://cgit.freedesktop.org/~glisse/linux/commit/?h=gup-fs-block&id=5f67db69fd9f95d12987d2a030a82bc390e05a71
-    https://cgit.freedesktop.org/~glisse/linux/commit/?h=gup-fs-block&id=b070348d0e1fd9397eb8d0e97b4c89f1d04d5a0a
-    https://cgit.freedesktop.org/~glisse/linux/commit/?h=gup-fs-block&id=83691c86a6c8f560b5b78f3f57fcd62c0f3f1c7a
-[2] https://lkml.org/lkml/2019/3/26/1395
-[3] https://lwn.net/Articles/753027/
-[4] https://cgit.freedesktop.org/~glisse/linux/log/?h=gup-fs-block
-[5] https://github.com/coccinelle/coccinelle
-
+Signed-off-by: Jérôme Glisse <jglisse@redhat.com>
 Cc: linux-fsdevel@vger.kernel.org
 Cc: linux-block@vger.kernel.org
 Cc: linux-mm@kvack.org
@@ -82,173 +37,236 @@ Cc: Ming Lei <ming.lei@redhat.com>
 Cc: Dave Chinner <david@fromorbit.com>
 Cc: Jason Gunthorpe <jgg@ziepe.ca>
 Cc: Matthew Wilcox <willy@infradead.org>
-Cc: Steve French <sfrench@samba.org>
-Cc: linux-cifs@vger.kernel.org
-Cc: samba-technical@lists.samba.org
-Cc: Yan Zheng <zyan@redhat.com>
-Cc: Sage Weil <sage@redhat.com>
-Cc: Ilya Dryomov <idryomov@gmail.com>
-Cc: Alex Elder <elder@kernel.org>
-Cc: ceph-devel@vger.kernel.org
-Cc: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: Latchesar Ionkov <lucho@ionkov.net>
-Cc: Mike Marshall <hubcap@omnibond.com>
-Cc: Martin Brandenburg <martin@omnibond.com>
-Cc: devel@lists.orangefs.org
-Cc: Dominique Martinet <asmadeus@codewreck.org>
-Cc: v9fs-developer@lists.sourceforge.net
 Cc: Coly Li <colyli@suse.de>
 Cc: Kent Overstreet <kent.overstreet@gmail.com>
 Cc: linux-bcache@vger.kernel.org
-Cc: Ernesto A. Fernández <ernesto.mnd.fernandez@gmail.com>
+---
+ block/bounce.c            |  2 +-
+ drivers/block/rbd.c       |  2 +-
+ drivers/md/bcache/btree.c |  2 +-
+ include/linux/bvec.h      | 14 ++++++++++++--
+ lib/iov_iter.c            | 32 ++++++++++++++++----------------
+ 5 files changed, 31 insertions(+), 21 deletions(-)
 
-Jérôme Glisse (15):
-  fs/direct-io: fix trailing whitespace issues
-  iov_iter: add helper to test if an iter would use GUP
-  block: introduce bvec_page()/bvec_set_page() to get/set
-    bio_vec.bv_page
-  block: introduce BIO_VEC_INIT() macro to initialize bio_vec structure
-  block: replace all bio_vec->bv_page by bvec_page()/bvec_set_page()
-  block: convert bio_vec.bv_page to bv_pfn to store pfn and not page
-  block: add bvec_put_page_dirty*() to replace put_page(bvec_page())
-  block: use bvec_put_page() instead of put_page(bvec_page())
-  block: bvec_put_page_dirty* instead of set_page_dirty* and
-    bvec_put_page
-  block: add gup flag to
-    bio_add_page()/bio_add_pc_page()/__bio_add_page()
-  block: make sure bio_add_page*() knows page that are coming from GUP
-  fs/direct-io: keep track of wether a page is coming from GUP or not
-  fs/splice: use put_user_page() when appropriate
-  fs: use bvec_set_gup_page() where appropriate
-  ceph: use put_user_pages() instead of ceph_put_page_vector()
-
- Documentation/block/biodoc.txt      |  7 +-
- arch/m68k/emu/nfblock.c             |  2 +-
- arch/um/drivers/ubd_kern.c          |  2 +-
- arch/xtensa/platforms/iss/simdisk.c |  2 +-
- block/bio-integrity.c               |  8 +--
- block/bio.c                         | 92 ++++++++++++++++-----------
- block/blk-core.c                    |  2 +-
- block/blk-integrity.c               |  7 +-
- block/blk-lib.c                     |  5 +-
- block/blk-merge.c                   |  9 +--
- block/blk.h                         |  4 +-
- block/bounce.c                      | 26 ++++----
- block/t10-pi.c                      |  4 +-
- drivers/block/aoe/aoecmd.c          |  4 +-
- drivers/block/brd.c                 |  2 +-
- drivers/block/drbd/drbd_actlog.c    |  2 +-
- drivers/block/drbd/drbd_bitmap.c    |  4 +-
- drivers/block/drbd/drbd_main.c      |  4 +-
- drivers/block/drbd/drbd_receiver.c  |  6 +-
- drivers/block/drbd/drbd_worker.c    |  2 +-
- drivers/block/floppy.c              |  6 +-
- drivers/block/loop.c                | 16 ++---
- drivers/block/null_blk_main.c       |  6 +-
- drivers/block/pktcdvd.c             |  4 +-
- drivers/block/ps3disk.c             |  2 +-
- drivers/block/ps3vram.c             |  2 +-
- drivers/block/rbd.c                 | 12 ++--
- drivers/block/rsxx/dma.c            |  3 +-
- drivers/block/umem.c                |  2 +-
- drivers/block/virtio_blk.c          |  4 +-
- drivers/block/xen-blkback/blkback.c |  2 +-
- drivers/block/zram/zram_drv.c       | 24 +++----
- drivers/lightnvm/core.c             |  2 +-
- drivers/lightnvm/pblk-core.c        | 12 ++--
- drivers/lightnvm/pblk-rb.c          |  2 +-
- drivers/lightnvm/pblk-read.c        |  6 +-
- drivers/md/bcache/btree.c           |  2 +-
- drivers/md/bcache/debug.c           |  4 +-
- drivers/md/bcache/request.c         |  4 +-
- drivers/md/bcache/super.c           |  6 +-
- drivers/md/bcache/util.c            | 11 ++--
- drivers/md/dm-bufio.c               |  2 +-
- drivers/md/dm-crypt.c               | 18 ++++--
- drivers/md/dm-integrity.c           | 18 +++---
- drivers/md/dm-io.c                  |  7 +-
- drivers/md/dm-log-writes.c          | 20 +++---
- drivers/md/dm-verity-target.c       |  4 +-
- drivers/md/dm-writecache.c          |  3 +-
- drivers/md/dm-zoned-metadata.c      |  6 +-
- drivers/md/md.c                     |  4 +-
- drivers/md/raid1-10.c               |  2 +-
- drivers/md/raid1.c                  |  4 +-
- drivers/md/raid10.c                 |  4 +-
- drivers/md/raid5-cache.c            |  7 +-
- drivers/md/raid5-ppl.c              |  6 +-
- drivers/md/raid5.c                  | 10 +--
- drivers/nvdimm/blk.c                |  6 +-
- drivers/nvdimm/btt.c                |  5 +-
- drivers/nvdimm/pmem.c               |  4 +-
- drivers/nvme/host/core.c            |  4 +-
- drivers/nvme/host/tcp.c             |  2 +-
- drivers/nvme/target/io-cmd-bdev.c   |  2 +-
- drivers/nvme/target/io-cmd-file.c   |  2 +-
- drivers/s390/block/dasd_diag.c      |  2 +-
- drivers/s390/block/dasd_eckd.c      | 14 ++--
- drivers/s390/block/dasd_fba.c       |  6 +-
- drivers/s390/block/dcssblk.c        |  2 +-
- drivers/s390/block/scm_blk.c        |  2 +-
- drivers/s390/block/xpram.c          |  2 +-
- drivers/scsi/sd.c                   | 25 ++++----
- drivers/staging/erofs/data.c        |  6 +-
- drivers/staging/erofs/unzip_vle.c   |  4 +-
- drivers/target/target_core_file.c   |  6 +-
- drivers/target/target_core_iblock.c |  4 +-
- drivers/target/target_core_pscsi.c  |  2 +-
- drivers/xen/biomerge.c              |  4 +-
- fs/9p/vfs_addr.c                    |  4 +-
- fs/afs/fsclient.c                   |  2 +-
- fs/afs/rxrpc.c                      |  4 +-
- fs/afs/yfsclient.c                  |  2 +-
- fs/block_dev.c                      | 10 ++-
- fs/btrfs/check-integrity.c          |  6 +-
- fs/btrfs/compression.c              | 22 +++----
- fs/btrfs/disk-io.c                  |  4 +-
- fs/btrfs/extent_io.c                | 16 ++---
- fs/btrfs/file-item.c                |  8 +--
- fs/btrfs/inode.c                    | 20 +++---
- fs/btrfs/raid56.c                   |  8 +--
- fs/btrfs/scrub.c                    | 10 +--
- fs/buffer.c                         |  4 +-
- fs/ceph/file.c                      | 20 +++---
- fs/cifs/connect.c                   |  4 +-
- fs/cifs/misc.c                      | 14 ++--
- fs/cifs/smb2ops.c                   |  2 +-
- fs/cifs/smbdirect.c                 |  2 +-
- fs/cifs/transport.c                 |  2 +-
- fs/crypto/bio.c                     |  4 +-
- fs/direct-io.c                      | 94 +++++++++++++++++++--------
- fs/ext4/page-io.c                   |  4 +-
- fs/ext4/readpage.c                  |  4 +-
- fs/f2fs/data.c                      | 20 +++---
- fs/gfs2/lops.c                      |  8 +--
- fs/gfs2/meta_io.c                   |  4 +-
- fs/gfs2/ops_fstype.c                |  2 +-
- fs/hfsplus/wrapper.c                |  3 +-
- fs/io_uring.c                       |  4 +-
- fs/iomap.c                          | 10 +--
- fs/jfs/jfs_logmgr.c                 |  4 +-
- fs/jfs/jfs_metapage.c               |  6 +-
- fs/mpage.c                          |  6 +-
- fs/nfs/blocklayout/blocklayout.c    |  2 +-
- fs/nilfs2/segbuf.c                  |  3 +-
- fs/ocfs2/cluster/heartbeat.c        |  2 +-
- fs/orangefs/inode.c                 |  2 +-
- fs/splice.c                         | 13 ++--
- fs/xfs/xfs_aops.c                   |  8 +--
- fs/xfs/xfs_buf.c                    |  2 +-
- include/linux/bio.h                 | 13 ++--
- include/linux/bvec.h                | 99 +++++++++++++++++++++++++----
- include/linux/uio.h                 | 11 ++++
- kernel/power/swap.c                 |  2 +-
- lib/iov_iter.c                      | 32 +++++-----
- mm/page_io.c                        |  8 +--
- net/ceph/messenger.c                | 10 +--
- net/sunrpc/xdr.c                    |  2 +-
- net/sunrpc/xprtsock.c               |  4 +-
- 126 files changed, 628 insertions(+), 467 deletions(-)
-
+diff --git a/block/bounce.c b/block/bounce.c
+index 47eb7e936e22..d6ba1cac969f 100644
+--- a/block/bounce.c
++++ b/block/bounce.c
+@@ -85,7 +85,7 @@ static void bounce_copy_vec(struct bio_vec *to, unsigned char *vfrom)
+ #else /* CONFIG_HIGHMEM */
+ 
+ #define bounce_copy_vec(to, vfrom)	\
+-	memcpy(page_address((to)->bv_page) + (to)->bv_offset, vfrom, (to)->bv_len)
++	memcpy(page_address(bvec_page(to)) + (to)->bv_offset, vfrom, (to)->bv_len)
+ 
+ #endif /* CONFIG_HIGHMEM */
+ 
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index 2210c1b9491b..aa3b82be5946 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -2454,7 +2454,7 @@ static bool is_zero_bvecs(struct bio_vec *bvecs, u32 bytes)
+ 	};
+ 
+ 	ceph_bvec_iter_advance_step(&it, bytes, ({
+-		if (memchr_inv(page_address(bv.bv_page) + bv.bv_offset, 0,
++		if (memchr_inv(page_address(bvec_page(&bv)) + bv.bv_offset, 0,
+ 			       bv.bv_len))
+ 			return false;
+ 	}));
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 64def336f053..b5f3168dc5ff 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -435,7 +435,7 @@ static void do_btree_node_write(struct btree *b)
+ 		struct bvec_iter_all iter_all;
+ 
+ 		bio_for_each_segment_all(bv, b->bio, j, iter_all)
+-			memcpy(page_address(bv->bv_page),
++			memcpy(page_address(bvec_page(bv)),
+ 			       base + j * PAGE_SIZE, PAGE_SIZE);
+ 
+ 		bch_submit_bbio(b->bio, b->c, &k.key, 0);
+diff --git a/include/linux/bvec.h b/include/linux/bvec.h
+index f6275c4da13a..44866555258a 100644
+--- a/include/linux/bvec.h
++++ b/include/linux/bvec.h
+@@ -51,6 +51,16 @@ struct bvec_iter_all {
+ 	unsigned	done;
+ };
+ 
++static inline struct page *bvec_page(const struct bio_vec *bvec)
++{
++	return bvec->bv_page;
++}
++
++static inline void bvec_set_page(struct bio_vec *bvec, struct page *page)
++{
++	bvec->bv_page = page;
++}
++
+ static inline struct page *bvec_nth_page(struct page *page, int idx)
+ {
+ 	return idx == 0 ? page : nth_page(page, idx);
+@@ -64,7 +74,7 @@ static inline struct page *bvec_nth_page(struct page *page, int idx)
+ 
+ /* multi-page (mp_bvec) helpers */
+ #define mp_bvec_iter_page(bvec, iter)				\
+-	(__bvec_iter_bvec((bvec), (iter))->bv_page)
++	(bvec_page(__bvec_iter_bvec((bvec), (iter))))
+ 
+ #define mp_bvec_iter_len(bvec, iter)				\
+ 	min((iter).bi_size,					\
+@@ -192,6 +202,6 @@ static inline void mp_bvec_last_segment(const struct bio_vec *bvec,
+ #define mp_bvec_for_each_page(pg, bv, i)				\
+ 	for (i = (bv)->bv_offset / PAGE_SIZE;				\
+ 		(i <= (((bv)->bv_offset + (bv)->bv_len - 1) / PAGE_SIZE)) && \
+-		(pg = bvec_nth_page((bv)->bv_page, i)); i += 1)
++		(pg = bvec_nth_page(bvec_page(bv), i)); i += 1)
+ 
+ #endif /* __LINUX_BVEC_ITER_H */
+diff --git a/lib/iov_iter.c b/lib/iov_iter.c
+index ea36dc355da1..e20a3b1d8b0e 100644
+--- a/lib/iov_iter.c
++++ b/lib/iov_iter.c
+@@ -608,7 +608,7 @@ size_t _copy_to_iter(const void *addr, size_t bytes, struct iov_iter *i)
+ 		might_fault();
+ 	iterate_and_advance(i, bytes, v,
+ 		copyout(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len),
+-		memcpy_to_page(v.bv_page, v.bv_offset,
++		memcpy_to_page(bvec_page(&v), v.bv_offset,
+ 			       (from += v.bv_len) - v.bv_len, v.bv_len),
+ 		memcpy(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len)
+ 	)
+@@ -709,7 +709,7 @@ size_t _copy_to_iter_mcsafe(const void *addr, size_t bytes, struct iov_iter *i)
+ 	iterate_and_advance(i, bytes, v,
+ 		copyout_mcsafe(v.iov_base, (from += v.iov_len) - v.iov_len, v.iov_len),
+ 		({
+-		rem = memcpy_mcsafe_to_page(v.bv_page, v.bv_offset,
++		rem = memcpy_mcsafe_to_page(bvec_page(&v), v.bv_offset,
+                                (from += v.bv_len) - v.bv_len, v.bv_len);
+ 		if (rem) {
+ 			curr_addr = (unsigned long) from;
+@@ -744,7 +744,7 @@ size_t _copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
+ 		might_fault();
+ 	iterate_and_advance(i, bytes, v,
+ 		copyin((to += v.iov_len) - v.iov_len, v.iov_base, v.iov_len),
+-		memcpy_from_page((to += v.bv_len) - v.bv_len, v.bv_page,
++		memcpy_from_page((to += v.bv_len) - v.bv_len, bvec_page(&v),
+ 				 v.bv_offset, v.bv_len),
+ 		memcpy((to += v.iov_len) - v.iov_len, v.iov_base, v.iov_len)
+ 	)
+@@ -770,7 +770,7 @@ bool _copy_from_iter_full(void *addr, size_t bytes, struct iov_iter *i)
+ 				      v.iov_base, v.iov_len))
+ 			return false;
+ 		0;}),
+-		memcpy_from_page((to += v.bv_len) - v.bv_len, v.bv_page,
++		memcpy_from_page((to += v.bv_len) - v.bv_len, bvec_page(&v),
+ 				 v.bv_offset, v.bv_len),
+ 		memcpy((to += v.iov_len) - v.iov_len, v.iov_base, v.iov_len)
+ 	)
+@@ -790,7 +790,7 @@ size_t _copy_from_iter_nocache(void *addr, size_t bytes, struct iov_iter *i)
+ 	iterate_and_advance(i, bytes, v,
+ 		__copy_from_user_inatomic_nocache((to += v.iov_len) - v.iov_len,
+ 					 v.iov_base, v.iov_len),
+-		memcpy_from_page((to += v.bv_len) - v.bv_len, v.bv_page,
++		memcpy_from_page((to += v.bv_len) - v.bv_len, bvec_page(&v),
+ 				 v.bv_offset, v.bv_len),
+ 		memcpy((to += v.iov_len) - v.iov_len, v.iov_base, v.iov_len)
+ 	)
+@@ -824,7 +824,7 @@ size_t _copy_from_iter_flushcache(void *addr, size_t bytes, struct iov_iter *i)
+ 	iterate_and_advance(i, bytes, v,
+ 		__copy_from_user_flushcache((to += v.iov_len) - v.iov_len,
+ 					 v.iov_base, v.iov_len),
+-		memcpy_page_flushcache((to += v.bv_len) - v.bv_len, v.bv_page,
++		memcpy_page_flushcache((to += v.bv_len) - v.bv_len, bvec_page(&v),
+ 				 v.bv_offset, v.bv_len),
+ 		memcpy_flushcache((to += v.iov_len) - v.iov_len, v.iov_base,
+ 			v.iov_len)
+@@ -849,7 +849,7 @@ bool _copy_from_iter_full_nocache(void *addr, size_t bytes, struct iov_iter *i)
+ 					     v.iov_base, v.iov_len))
+ 			return false;
+ 		0;}),
+-		memcpy_from_page((to += v.bv_len) - v.bv_len, v.bv_page,
++		memcpy_from_page((to += v.bv_len) - v.bv_len, bvec_page(&v),
+ 				 v.bv_offset, v.bv_len),
+ 		memcpy((to += v.iov_len) - v.iov_len, v.iov_base, v.iov_len)
+ 	)
+@@ -951,7 +951,7 @@ size_t iov_iter_zero(size_t bytes, struct iov_iter *i)
+ 		return pipe_zero(bytes, i);
+ 	iterate_and_advance(i, bytes, v,
+ 		clear_user(v.iov_base, v.iov_len),
+-		memzero_page(v.bv_page, v.bv_offset, v.bv_len),
++		memzero_page(bvec_page(&v), v.bv_offset, v.bv_len),
+ 		memset(v.iov_base, 0, v.iov_len)
+ 	)
+ 
+@@ -974,7 +974,7 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 	}
+ 	iterate_all_kinds(i, bytes, v,
+ 		copyin((p += v.iov_len) - v.iov_len, v.iov_base, v.iov_len),
+-		memcpy_from_page((p += v.bv_len) - v.bv_len, v.bv_page,
++		memcpy_from_page((p += v.bv_len) - v.bv_len, bvec_page(&v),
+ 				 v.bv_offset, v.bv_len),
+ 		memcpy((p += v.iov_len) - v.iov_len, v.iov_base, v.iov_len)
+ 	)
+@@ -1300,7 +1300,7 @@ ssize_t iov_iter_get_pages(struct iov_iter *i,
+ 	0;}),({
+ 		/* can't be more than PAGE_SIZE */
+ 		*start = v.bv_offset;
+-		get_page(*pages = v.bv_page);
++		get_page(*pages = bvec_page(&v));
+ 		return v.bv_len;
+ 	}),({
+ 		return -EFAULT;
+@@ -1387,7 +1387,7 @@ ssize_t iov_iter_get_pages_alloc(struct iov_iter *i,
+ 		*pages = p = get_pages_array(1);
+ 		if (!p)
+ 			return -ENOMEM;
+-		get_page(*p = v.bv_page);
++		get_page(*p = bvec_page(&v));
+ 		return v.bv_len;
+ 	}),({
+ 		return -EFAULT;
+@@ -1419,7 +1419,7 @@ size_t csum_and_copy_from_iter(void *addr, size_t bytes, __wsum *csum,
+ 		}
+ 		err ? v.iov_len : 0;
+ 	}), ({
+-		char *p = kmap_atomic(v.bv_page);
++		char *p = kmap_atomic(bvec_page(&v));
+ 		sum = csum_and_memcpy((to += v.bv_len) - v.bv_len,
+ 				      p + v.bv_offset, v.bv_len,
+ 				      sum, off);
+@@ -1461,7 +1461,7 @@ bool csum_and_copy_from_iter_full(void *addr, size_t bytes, __wsum *csum,
+ 		off += v.iov_len;
+ 		0;
+ 	}), ({
+-		char *p = kmap_atomic(v.bv_page);
++		char *p = kmap_atomic(bvec_page(&v));
+ 		sum = csum_and_memcpy((to += v.bv_len) - v.bv_len,
+ 				      p + v.bv_offset, v.bv_len,
+ 				      sum, off);
+@@ -1507,7 +1507,7 @@ size_t csum_and_copy_to_iter(const void *addr, size_t bytes, void *csump,
+ 		}
+ 		err ? v.iov_len : 0;
+ 	}), ({
+-		char *p = kmap_atomic(v.bv_page);
++		char *p = kmap_atomic(bvec_page(&v));
+ 		sum = csum_and_memcpy(p + v.bv_offset,
+ 				      (from += v.bv_len) - v.bv_len,
+ 				      v.bv_len, sum, off);
+@@ -1696,10 +1696,10 @@ int iov_iter_for_each_range(struct iov_iter *i, size_t bytes,
+ 		return 0;
+ 
+ 	iterate_all_kinds(i, bytes, v, -EINVAL, ({
+-		w.iov_base = kmap(v.bv_page) + v.bv_offset;
++		w.iov_base = kmap(bvec_page(&v)) + v.bv_offset;
+ 		w.iov_len = v.bv_len;
+ 		err = f(&w, context);
+-		kunmap(v.bv_page);
++		kunmap(bvec_page(&v));
+ 		err;}), ({
+ 		w = v;
+ 		err = f(&w, context);})
 -- 
 2.20.1
