@@ -1,37 +1,166 @@
-From: Dan Williams <dan.j.williams@intel.com>
-Subject: Re: [PATCH v1 00/15] Keep track of GUPed pages in fs and block
-Date: Thu, 18 Apr 2019 11:03:16 -0700
-Message-ID: <CAPcyv4iSyM2r5fv=p4B=h=1sR8Zok3gxb1BVsQOy6FHmQtjGCg@mail.gmail.com>
-References: <20190411210834.4105-1-jglisse@redhat.com> <2c124cc4-b97e-ee28-2926-305bc6bc74bd@plexistor.com>
- <20190416185922.GA12818@kmo-pixel> <CAPcyv4jLrQ6evLAJzsASh=H6Tzx8E1oiF+YR3L2fOpbZYNUWGg@mail.gmail.com>
- <20190416194936.GD21526@redhat.com> <CAPcyv4i-YHH+dH8za1i1aMcHzQXfovVSrRFp_nfa-KYN-XhAvw@mail.gmail.com>
- <20190417222858.GA4146@redhat.com> <20190418104205.GA28541@quack2.suse.cz>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190418104205.GA28541@quack2.suse.cz>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Jan Kara <jack@suse.cz>
-Cc: Jerome Glisse <jglisse@redhat.com>, Kent Overstreet <kent.overstreet@gmail.com>, Boaz Harrosh <boaz@plexistor.com>, Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-block@vger.kernel.org, Linux MM <linux-mm@kvack.org>, John Hubbard <jhubbard@nvidia.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Johannes Thumshirn <jthumshirn@suse.de>, Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, Ming Lei <ming.lei@redhat.com>, Jason Gunthorpe <jgg@ziepe.ca>, Matthew Wilcox <willy@infradead.org>, Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org, samba-technical@lists.samba.org, Yan Zheng <zyan@redhat.com>, Sage Weil <sage@redhat.com>, Ilya Dryomov <idryomov@gmail.com>, Alex Elder <elder@kernel>
+From: Coly Li <colyli@suse.de>
+Subject: [RFC PATCH v2 03/16] bcache: reload jouranl key information during journal replay
+Date: Sat, 20 Apr 2019 00:04:56 +0800
+Message-ID: <20190419160509.66298-4-colyli@suse.de>
+References: <20190419160509.66298-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190419160509.66298-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, Apr 18, 2019 at 3:42 AM Jan Kara <jack@suse.cz> wrote:
-> > Except that this solution (biasing everyone in bio) would _more complex_
-> > it is only conceptualy appealing. The changes are on the other hand much
-> > deeper and much riskier but you decided to ignore that and focus on some-
-> > thing i was just giving as an example.
->
-> Yeah, after going and reading several places like fs/iomap.c, fs/mpage.c,
-> drivers/md/dm-io.c I agree with you. The places that are not doing direct
-> IO usually just don't hold any page reference that could be directly
-> attributed to the bio (and they don't drop it when bio finishes). They
-> rather use other means (like PageLocked, PageWriteback) to make sure the
-> page stays alive so mandating gup-pin reference for all pages attached to a
-> bio would require a lot of reworking of places that are not related to our
-> problem and currently work just fine. So I withdraw my suggestion. Nice in
-> theory, too much work in practice ;).
+When bcache journal initiates during running cache set, cache set
+journal.blocks_free is initiated as 0. Then during journal replay if
+journal_meta() is called and an empty jset is written to cache device,
+journal_reclaim() is called. If there is available journal bucket to
+reclaim, c->journal.blocks_free is set to numbers of blocks of a journal
+bucket, which is c->sb.bucket_size >> c->block_bits.
 
-Is it though? We already have BIO_NO_PAGE_REF, so it seems it would be
-a useful cleanup to have all locations that don't participate in page
-references use that existing flag and then teach all other locations
-to use gup-pinned pages.
+Most of time the above process works correctly, expect the condtion
+when journal space is almost full. "Almost full" means there is no free
+journal bucket, but there are still free blocks in last available
+bucket indexed by ja->cur_idx.
+
+If system crashes or reboots when journal space is almost full, problem
+comes. During cache set reload after the reboot, c->journal.blocks_free
+is initialized as 0, when jouranl replay process writes bcache jouranl,
+journal_reclaim() will be called to reclaim available journal bucket and
+set c->journal.blocks_free to c->sb.bucket_size >> c->block_bits. But
+there is no fully free bucket to reclaim in journal_reclaim(), so value
+of c->journal.blocks_free will keep 0. If the first journal entry
+processed by journal_replay() causes btree split and requires writing
+journal space by journal_meta(), journal_meta() has to go into an
+infinite loop to reclaim jouranl bucket, and blocks the whole cache set
+to run.
+
+Such buggy situation can be solved if we do following things before
+journal replay starts,
+- Recover previous value of c->journal.blocks_free in last run time,
+  and set it to current c->journal.blocks_free as initial value.
+- Recover previous value of ja->cur_idx in last run time, and set it to
+  KEY_PTR of current c->journal.key as initial value.
+
+After c->journal.blocks_free and c->journal.key are recovered, in
+condition when jouranl space is almost full and cache set is reloaded,
+meta journal entry from journal reply can be written into free blocks of
+the last available journal bucket, then old jouranl entries can be
+replayed and reclaimed for further journaling request.
+
+This patch adds bch_journal_key_reload() to recover journal blocks_free
+and key ptr value for above purpose. bch_journal_key_reload() is called
+in bch_journal_read() before replying journal by bch_journal_replay().
+
+Cc: stable@vger.kernel.org
+Signed-off-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/journal.c | 87 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 87 insertions(+)
+
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 5180bed911ef..a6deb16c15c8 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -143,6 +143,89 @@ reread:		left = ca->sb.bucket_size - offset;
+ 	return ret;
+ }
+ 
++static int bch_journal_key_reload(struct cache_set *c)
++{
++	struct cache *ca;
++	unsigned int iter, n = 0;
++	struct bkey *k = &c->journal.key;
++	int ret = 0;
++
++	for_each_cache(ca, c, iter) {
++		struct journal_device *ja = &ca->journal;
++		struct bio *bio = &ja->bio;
++		struct jset *j, *data = c->journal.w[0].data;
++		struct closure cl;
++		unsigned int len, left;
++		unsigned int offset = 0, used_blocks = 0;
++		sector_t bucket = bucket_to_sector(c, ca->sb.d[ja->cur_idx]);
++
++		closure_init_stack(&cl);
++
++		while (offset < ca->sb.bucket_size) {
++reread:			left = ca->sb.bucket_size - offset;
++			len = min_t(unsigned int,
++				    left, PAGE_SECTORS << JSET_BITS);
++
++			bio_reset(bio);
++			bio->bi_iter.bi_sector = bucket + offset;
++			bio_set_dev(bio, ca->bdev);
++			bio->bi_iter.bi_size = len << 9;
++
++			bio->bi_end_io = journal_read_endio;
++			bio->bi_private = &cl;
++			bio_set_op_attrs(bio, REQ_OP_READ, 0);
++			bch_bio_map(bio, data);
++
++			closure_bio_submit(c, bio, &cl);
++			closure_sync(&cl);
++
++			j = data;
++			while (len) {
++				size_t blocks, bytes = set_bytes(j);
++
++				if (j->magic != jset_magic(&ca->sb))
++					goto out;
++
++				if (bytes > left << 9 ||
++				    bytes > PAGE_SIZE << JSET_BITS) {
++					pr_err("jset may be correpted: too big");
++					ret = -EIO;
++					goto err;
++				}
++
++				if (bytes > len << 9)
++					goto reread;
++
++				if (j->csum != csum_set(j)) {
++					pr_err("jset may be corrupted: bad csum");
++					ret = -EIO;
++					goto err;
++				}
++
++				blocks = set_blocks(j, block_bytes(c));
++				used_blocks += blocks;
++
++				offset	+= blocks * ca->sb.block_size;
++				len	-= blocks * ca->sb.block_size;
++				j = ((void *) j) + blocks * block_bytes(ca);
++			}
++		}
++out:
++		c->journal.blocks_free =
++			(c->sb.bucket_size >> c->block_bits) -
++			used_blocks;
++
++		k->ptr[n++] = MAKE_PTR(0, bucket, ca->sb.nr_this_dev);
++	}
++
++	BUG_ON(n == 0);
++	bkey_init(k);
++	SET_KEY_PTRS(k, n);
++
++err:
++	return ret;
++}
++
+ int bch_journal_read(struct cache_set *c, struct list_head *list)
+ {
+ #define read_bucket(b)							\
+@@ -268,6 +351,10 @@ int bch_journal_read(struct cache_set *c, struct list_head *list)
+ 					    struct journal_replay,
+ 					    list)->j.seq;
+ 
++	/* Initial value of c->journal.blocks_free should be 0 */
++	BUG_ON(c->journal.blocks_free != 0);
++	ret = bch_journal_key_reload(c);
++
+ 	return ret;
+ #undef read_bucket
+ }
+-- 
+2.16.4
