@@ -1,119 +1,87 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [RFC PATCH v2 13/16] bcache: fix fifo index swapping condition in
- btree_flush_write()
-Date: Tue, 23 Apr 2019 15:16:25 +0800
-Message-ID: <997a12a1-8002-b3b7-efc4-c4b9d122f42b@suse.de>
-References: <20190419160509.66298-1-colyli@suse.de>
- <20190419160509.66298-14-colyli@suse.de>
- <0f302a9e-3718-e042-abb0-0ed518ee1583@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Subject: [PATCH 06/18] bcache: fix a race between cache register and cacheset unregister
+Date: Thu, 25 Apr 2019 00:48:31 +0800
+Message-ID: <20190424164843.29535-7-colyli@suse.de>
+References: <20190424164843.29535-1-colyli@suse.de>
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <0f302a9e-3718-e042-abb0-0ed518ee1583@suse.de>
-Content-Language: en-US
+In-Reply-To: <20190424164843.29535-1-colyli@suse.de>
 Sender: stable-owner@vger.kernel.org
-To: Hannes Reinecke <hare@suse.de>, linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, stable@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Liang Chen <liangchen.linux@gmail.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/4/23 3:09 下午, Hannes Reinecke wrote:
-> On 4/19/19 6:05 PM, Coly Li wrote:
->> Current journal_max_cmp() and journal_min_cmp() assume that smaller fifo
->> index indicating elder journal entries, but this is only true when fifo
->> index is not swapped.
->>
->> Fifo structure journal.pin is implemented by a cycle buffer, if the head
->> index reaches highest location of the cycle buffer, it will be swapped
->> to 0. Once the swapping happens, it means a smaller fifo index might be
->> associated to a newer journal entry. So the btree node with oldest
->> journal entry won't be selected by btree_flush_write() to flush out to
->> cache device. The result is, the oldest journal entries may always has
->> no chance to be written into cache device, and after a reboot
->> bch_journal_replay() may complain some journal entries are missing.
->>
->> This patch handles the fifo index swapping conditions properly, then in
->> btree_flush_write() the btree node with oldest journal entry can be
->> slected from c->flush_btree correctly.
->>
->> Cc: stable@vger.kernel.org
->> Signed-off-by: Coly Li <colyli@suse.de>
->> ---
->>   drivers/md/bcache/journal.c | 47
->> +++++++++++++++++++++++++++++++++++++++------
->>   1 file changed, 41 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
->> index bdb6f9cefe48..bc0e01151155 100644
->> --- a/drivers/md/bcache/journal.c
->> +++ b/drivers/md/bcache/journal.c
->> @@ -464,12 +464,47 @@ int bch_journal_replay(struct cache_set *s,
->> struct list_head *list)
->>   }
->>     /* Journalling */
->> -#define journal_max_cmp(l, r) \
->> -    (fifo_idx(&c->journal.pin, btree_current_write(l)->journal) < \
->> -     fifo_idx(&(c)->journal.pin, btree_current_write(r)->journal))
->> -#define journal_min_cmp(l, r) \
->> -    (fifo_idx(&c->journal.pin, btree_current_write(l)->journal) > \
->> -     fifo_idx(&(c)->journal.pin, btree_current_write(r)->journal))
->> +#define journal_max_cmp(l, r)                        \
->> +({                                    \
->> +    int l_idx, r_idx, f_idx, b_idx;                    \
->> +    bool _ret = true;                        \
->> +                                    \
->> +    l_idx = fifo_idx(&c->journal.pin,
->> btree_current_write(l)->journal); \
->> +    r_idx = fifo_idx(&c->journal.pin,
->> btree_current_write(r)->journal); \
->> +    f_idx = c->journal.pin.front;                    \
->> +    b_idx = c->journal.pin.back;                    \
->> +                                    \
->> +    _ret = (l_idx < r_idx);                        \
->> +    /* in case fifo back pointer is swapped */            \
->> +    if (b_idx < f_idx) {                         \
->> +        if (l_idx <= b_idx && r_idx >= f_idx)            \
->> +            _ret = false;                    \
->> +        else if (l_idx >= f_idx && r_idx <= b_idx)        \
->> +            _ret = true;                    \
->> +    }                                \
->> +    _ret;                                \
->> +})
->> +
->> +#define journal_min_cmp(l, r)                        \
->> +({                                    \
->> +    int l_idx, r_idx, f_idx, b_idx;                    \
->> +    bool _ret = true;                        \
->> +                                    \
->> +    l_idx = fifo_idx(&c->journal.pin,
->> btree_current_write(l)->journal); \
->> +    r_idx = fifo_idx(&c->journal.pin,
->> btree_current_write(r)->journal); \
->> +    f_idx = c->journal.pin.front;                    \
->> +    b_idx = c->journal.pin.back;                    \
->> +                                    \
->> +    _ret = (l_idx > r_idx);                        \
->> +    /* in case fifo back pointer is swapped */            \
->> +    if (b_idx < f_idx) {                        \
->> +        if (l_idx <= b_idx && r_idx >= f_idx)            \
->> +            _ret = true;                    \
->> +        else if (l_idx >= f_idx && r_idx <= b_idx)        \
->> +            _ret = false;                    \
->> +    }                                \
->> +    _ret;                                \
->> +})
->>     static void btree_flush_write(struct cache_set *c)
->>   {
->>
-> Please make it a proper function.
-> This is far too convoluted for being handled via #define, and it would
-> avoid cluttering the function namespace with hidden variables.
+From: Liang Chen <liangchen.linux@gmail.com>
 
-Hi Hannes,
+There is a race between cache device register and cache set unregister.
+For an already registered cache device, register_bcache will call
+bch_is_open to iterate through all cachesets and check every cache
+there. The race occurs if cache_set_free executes at the same time and
+clears the caches right before ca is dereferenced in bch_is_open_cache.
+To close the race, let's make sure the clean up work is protected by
+the bch_register_lock as well.
 
-Sure let me do it in next version. Thanks.
+This issue can be reproduced as follows,
+while true; do echo /dev/XXX> /sys/fs/bcache/register ; done&
+while true; do echo 1> /sys/block/XXX/bcache/set/unregister ; done &
 
+and results in the following oops,
 
+[  +0.000053] BUG: unable to handle kernel NULL pointer dereference at 0000000000000998
+[  +0.000457] #PF error: [normal kernel read fault]
+[  +0.000464] PGD 800000003ca9d067 P4D 800000003ca9d067 PUD 3ca9c067 PMD 0
+[  +0.000388] Oops: 0000 [#1] SMP PTI
+[  +0.000269] CPU: 1 PID: 3266 Comm: bash Not tainted 5.0.0+ #6
+[  +0.000346] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.11.0-2.fc28 04/01/2014
+[  +0.000472] RIP: 0010:register_bcache+0x1829/0x1990 [bcache]
+[  +0.000344] Code: b0 48 83 e8 50 48 81 fa e0 e1 10 c0 0f 84 a9 00 00 00 48 89 c6 48 89 ca 0f b7 ba 54 04 00 00 4c 8b 82 60 0c 00 00 85 ff 74 2f <49> 3b a8 98 09 00 00 74 4e 44 8d 47 ff 31 ff 49 c1 e0 03 eb 0d
+[  +0.000839] RSP: 0018:ffff92ee804cbd88 EFLAGS: 00010202
+[  +0.000328] RAX: ffffffffc010e190 RBX: ffff918b5c6b5000 RCX: ffff918b7d8e0000
+[  +0.000399] RDX: ffff918b7d8e0000 RSI: ffffffffc010e190 RDI: 0000000000000001
+[  +0.000398] RBP: ffff918b7d318340 R08: 0000000000000000 R09: ffffffffb9bd2d7a
+[  +0.000385] R10: ffff918b7eb253c0 R11: ffffb95980f51200 R12: ffffffffc010e1a0
+[  +0.000411] R13: fffffffffffffff2 R14: 000000000000000b R15: ffff918b7e232620
+[  +0.000384] FS:  00007f955bec2740(0000) GS:ffff918b7eb00000(0000) knlGS:0000000000000000
+[  +0.000420] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  +0.000801] CR2: 0000000000000998 CR3: 000000003cad6000 CR4: 00000000001406e0
+[  +0.000837] Call Trace:
+[  +0.000682]  ? _cond_resched+0x10/0x20
+[  +0.000691]  ? __kmalloc+0x131/0x1b0
+[  +0.000710]  kernfs_fop_write+0xfa/0x170
+[  +0.000733]  __vfs_write+0x2e/0x190
+[  +0.000688]  ? inode_security+0x10/0x30
+[  +0.000698]  ? selinux_file_permission+0xd2/0x120
+[  +0.000752]  ? security_file_permission+0x2b/0x100
+[  +0.000753]  vfs_write+0xa8/0x1a0
+[  +0.000676]  ksys_write+0x4d/0xb0
+[  +0.000699]  do_syscall_64+0x3a/0xf0
+[  +0.000692]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+
+Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 6e618cb6126c..53c5e3e0ac22 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1514,6 +1514,7 @@ static void cache_set_free(struct closure *cl)
+ 	bch_btree_cache_free(c);
+ 	bch_journal_free(c);
+ 
++	mutex_lock(&bch_register_lock);
+ 	for_each_cache(ca, c, i)
+ 		if (ca) {
+ 			ca->set = NULL;
+@@ -1532,7 +1533,6 @@ static void cache_set_free(struct closure *cl)
+ 	mempool_exit(&c->search);
+ 	kfree(c->devices);
+ 
+-	mutex_lock(&bch_register_lock);
+ 	list_del(&c->list);
+ 	mutex_unlock(&bch_register_lock);
+ 
 -- 
-
-Coly Li
+2.16.4
