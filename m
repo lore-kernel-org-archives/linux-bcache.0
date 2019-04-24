@@ -1,87 +1,100 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 06/18] bcache: fix a race between cache register and cacheset unregister
-Date: Thu, 25 Apr 2019 00:48:31 +0800
-Message-ID: <20190424164843.29535-7-colyli@suse.de>
+Subject: [PATCH 08/18] bcache: never set KEY_PTRS of jouranl key to 0 in journal_reclaim()
+Date: Thu, 25 Apr 2019 00:48:33 +0800
+Message-ID: <20190424164843.29535-9-colyli@suse.de>
 References: <20190424164843.29535-1-colyli@suse.de>
 Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20190424164843.29535-1-colyli@suse.de>
 Sender: stable-owner@vger.kernel.org
 To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Liang Chen <liangchen.linux@gmail.com>, stable@vger.kernel.org, Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Liang Chen <liangchen.linux@gmail.com>
+In journal_reclaim() ja->cur_idx of each cache will be update to
+reclaim available journal buckets. Variable 'int n' is used to count how
+many cache is successfully reclaimed, then n is set to c->journal.key
+by SET_KEY_PTRS(). Later in journal_write_unlocked(), a for_each_cache()
+loop will write the jset data onto each cache.
 
-There is a race between cache device register and cache set unregister.
-For an already registered cache device, register_bcache will call
-bch_is_open to iterate through all cachesets and check every cache
-there. The race occurs if cache_set_free executes at the same time and
-clears the caches right before ca is dereferenced in bch_is_open_cache.
-To close the race, let's make sure the clean up work is protected by
-the bch_register_lock as well.
+The problem is, if all jouranl buckets on each cache is full, the
+following code in journal_reclaim(),
 
-This issue can be reproduced as follows,
-while true; do echo /dev/XXX> /sys/fs/bcache/register ; done&
-while true; do echo 1> /sys/block/XXX/bcache/set/unregister ; done &
+529 for_each_cache(ca, c, iter) {
+530       struct journal_device *ja = &ca->journal;
+531       unsigned int next = (ja->cur_idx + 1) % ca->sb.njournal_buckets;
+532
+533       /* No space available on this device */
+534       if (next == ja->discard_idx)
+535               continue;
+536
+537       ja->cur_idx = next;
+538       k->ptr[n++] = MAKE_PTR(0,
+539                         bucket_to_sector(c, ca->sb.d[ja->cur_idx]),
+540                         ca->sb.nr_this_dev);
+541 }
+542
+543 bkey_init(k);
+544 SET_KEY_PTRS(k, n);
 
-and results in the following oops,
+If there is no available bucket to reclaim, the if() condition at line
+534 will always true, and n remains 0. Then at line 544, SET_KEY_PTRS()
+will set KEY_PTRS field of c->journal.key to 0.
 
-[  +0.000053] BUG: unable to handle kernel NULL pointer dereference at 0000000000000998
-[  +0.000457] #PF error: [normal kernel read fault]
-[  +0.000464] PGD 800000003ca9d067 P4D 800000003ca9d067 PUD 3ca9c067 PMD 0
-[  +0.000388] Oops: 0000 [#1] SMP PTI
-[  +0.000269] CPU: 1 PID: 3266 Comm: bash Not tainted 5.0.0+ #6
-[  +0.000346] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.11.0-2.fc28 04/01/2014
-[  +0.000472] RIP: 0010:register_bcache+0x1829/0x1990 [bcache]
-[  +0.000344] Code: b0 48 83 e8 50 48 81 fa e0 e1 10 c0 0f 84 a9 00 00 00 48 89 c6 48 89 ca 0f b7 ba 54 04 00 00 4c 8b 82 60 0c 00 00 85 ff 74 2f <49> 3b a8 98 09 00 00 74 4e 44 8d 47 ff 31 ff 49 c1 e0 03 eb 0d
-[  +0.000839] RSP: 0018:ffff92ee804cbd88 EFLAGS: 00010202
-[  +0.000328] RAX: ffffffffc010e190 RBX: ffff918b5c6b5000 RCX: ffff918b7d8e0000
-[  +0.000399] RDX: ffff918b7d8e0000 RSI: ffffffffc010e190 RDI: 0000000000000001
-[  +0.000398] RBP: ffff918b7d318340 R08: 0000000000000000 R09: ffffffffb9bd2d7a
-[  +0.000385] R10: ffff918b7eb253c0 R11: ffffb95980f51200 R12: ffffffffc010e1a0
-[  +0.000411] R13: fffffffffffffff2 R14: 000000000000000b R15: ffff918b7e232620
-[  +0.000384] FS:  00007f955bec2740(0000) GS:ffff918b7eb00000(0000) knlGS:0000000000000000
-[  +0.000420] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  +0.000801] CR2: 0000000000000998 CR3: 000000003cad6000 CR4: 00000000001406e0
-[  +0.000837] Call Trace:
-[  +0.000682]  ? _cond_resched+0x10/0x20
-[  +0.000691]  ? __kmalloc+0x131/0x1b0
-[  +0.000710]  kernfs_fop_write+0xfa/0x170
-[  +0.000733]  __vfs_write+0x2e/0x190
-[  +0.000688]  ? inode_security+0x10/0x30
-[  +0.000698]  ? selinux_file_permission+0xd2/0x120
-[  +0.000752]  ? security_file_permission+0x2b/0x100
-[  +0.000753]  vfs_write+0xa8/0x1a0
-[  +0.000676]  ksys_write+0x4d/0xb0
-[  +0.000699]  do_syscall_64+0x3a/0xf0
-[  +0.000692]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+Setting KEY_PTRS field of c->journal.key to 0 is wrong. Because in
+journal_write_unlocked() the journal data is written in following loop,
 
-Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
-Cc: stable@vger.kernel.org
+649	for (i = 0; i < KEY_PTRS(k); i++) {
+650-671		submit journal data to cache device
+672	}
+
+If KEY_PTRS field is set to 0 in jouranl_reclaim(), the journal data
+won't be written to cache device here. If system crahed or rebooted
+before bkeys of the lost journal entries written into btree nodes, data
+corruption will be reported during bcache reload after rebooting the
+system.
+
+Indeed there is only one cache in a cache set, there is no need to set
+KEY_PTRS field in journal_reclaim() at all. But in order to keep the
+for_each_cache() logic consistent for now, this patch fixes the above
+problem by not setting 0 KEY_PTRS of journal key, if there is no bucket
+available to reclaim.
+
 Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Hannes Reinecke <hare@suse.com>
+Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/bcache/journal.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 6e618cb6126c..53c5e3e0ac22 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1514,6 +1514,7 @@ static void cache_set_free(struct closure *cl)
- 	bch_btree_cache_free(c);
- 	bch_journal_free(c);
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 6e18057d1d82..5180bed911ef 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -541,11 +541,11 @@ static void journal_reclaim(struct cache_set *c)
+ 				  ca->sb.nr_this_dev);
+ 	}
  
-+	mutex_lock(&bch_register_lock);
- 	for_each_cache(ca, c, i)
- 		if (ca) {
- 			ca->set = NULL;
-@@ -1532,7 +1533,6 @@ static void cache_set_free(struct closure *cl)
- 	mempool_exit(&c->search);
- 	kfree(c->devices);
+-	bkey_init(k);
+-	SET_KEY_PTRS(k, n);
+-
+-	if (n)
++	if (n) {
++		bkey_init(k);
++		SET_KEY_PTRS(k, n);
+ 		c->journal.blocks_free = c->sb.bucket_size >> c->block_bits;
++	}
+ out:
+ 	if (!journal_full(&c->journal))
+ 		__closure_wake_up(&c->journal.wait);
+@@ -672,6 +672,9 @@ static void journal_write_unlocked(struct closure *cl)
+ 		ca->journal.seq[ca->journal.cur_idx] = w->data->seq;
+ 	}
  
--	mutex_lock(&bch_register_lock);
- 	list_del(&c->list);
- 	mutex_unlock(&bch_register_lock);
- 
++	/* If KEY_PTRS(k) == 0, this jset gets lost in air */
++	BUG_ON(i == 0);
++
+ 	atomic_dec_bug(&fifo_back(&c->journal.pin));
+ 	bch_journal_next(&c->journal);
+ 	journal_reclaim(c);
 -- 
 2.16.4
