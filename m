@@ -1,100 +1,90 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH 08/18] bcache: never set KEY_PTRS of jouranl key to 0 in journal_reclaim()
-Date: Thu, 25 Apr 2019 00:48:33 +0800
-Message-ID: <20190424164843.29535-9-colyli@suse.de>
-References: <20190424164843.29535-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190424164843.29535-1-colyli@suse.de>
-Sender: stable-owner@vger.kernel.org
-To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org
+From: Nathan Chancellor <natechancellor@gmail.com>
+Subject: Re: [PATCH] bcache: avoid clang -Wunintialized warning
+Date: Thu, 25 Apr 2019 11:08:53 -0700
+Message-ID: <20190425180853.GA4507@archlinux-i9>
+References: <20190322143507.1256436-1-arnd@arndb.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <20190322143507.1256436-1-arnd@arndb.de>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, clang-built-linux@googlegroups.com, Nick Desaulniers <ndesaulniers@google.com>, Jens Axboe <axboe@kernel.dk>, Shenghui Wang <shhuiw@foxmail.com>, Hannes Reinecke <hare@suse.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-In journal_reclaim() ja->cur_idx of each cache will be update to
-reclaim available journal buckets. Variable 'int n' is used to count how
-many cache is successfully reclaimed, then n is set to c->journal.key
-by SET_KEY_PTRS(). Later in journal_write_unlocked(), a for_each_cache()
-loop will write the jset data onto each cache.
+On Fri, Mar 22, 2019 at 03:35:00PM +0100, Arnd Bergmann wrote:
+> clang has identified a code path in which it thinks a
+> variable may be unused:
+> 
+> drivers/md/bcache/alloc.c:333:4: error: variable 'bucket' is used uninitialized whenever 'if' condition is false
+>       [-Werror,-Wsometimes-uninitialized]
+>                         fifo_pop(&ca->free_inc, bucket);
+>                         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
+>  #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
+>                                 ^~~~~~~~~~~~~~~~~~~~~~~~~
+> drivers/md/bcache/util.h:189:6: note: expanded from macro 'fifo_pop_front'
+>         if (_r) {                                                       \
+>             ^~
+> drivers/md/bcache/alloc.c:343:46: note: uninitialized use occurs here
+>                         allocator_wait(ca, bch_allocator_push(ca, bucket));
+>                                                                   ^~~~~~
+> drivers/md/bcache/alloc.c:287:7: note: expanded from macro 'allocator_wait'
+>                 if (cond)                                               \
+>                     ^~~~
+> drivers/md/bcache/alloc.c:333:4: note: remove the 'if' if its condition is always true
+>                         fifo_pop(&ca->free_inc, bucket);
+>                         ^
+> drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
+>  #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
+>                                 ^
+> drivers/md/bcache/util.h:189:2: note: expanded from macro 'fifo_pop_front'
+>         if (_r) {                                                       \
+>         ^
+> drivers/md/bcache/alloc.c:331:15: note: initialize the variable 'bucket' to silence this warning
+>                         long bucket;
+>                                    ^
+> 
+> This cannot happen in practice because we only enter the loop
+> if there is at least one element in the list.
+> 
+> Slightly rearranging the code makes this clearer to both the
+> reader and the compiler, which avoids the warning.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  drivers/md/bcache/alloc.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+> index 5002838ea476..f8986effcb50 100644
+> --- a/drivers/md/bcache/alloc.c
+> +++ b/drivers/md/bcache/alloc.c
+> @@ -327,10 +327,11 @@ static int bch_allocator_thread(void *arg)
+>  		 * possibly issue discards to them, then we add the bucket to
+>  		 * the free list:
+>  		 */
+> -		while (!fifo_empty(&ca->free_inc)) {
+> +		while (1) {
+>  			long bucket;
+>  
+> -			fifo_pop(&ca->free_inc, bucket);
+> +			if (!fifo_pop(&ca->free_inc, bucket))
+> +				break;
+>  
+>  			if (ca->discard) {
+>  				mutex_unlock(&ca->set->bucket_lock);
+> -- 
+> 2.20.0
+> 
 
-The problem is, if all jouranl buckets on each cache is full, the
-following code in journal_reclaim(),
+Hi all,
 
-529 for_each_cache(ca, c, iter) {
-530       struct journal_device *ja = &ca->journal;
-531       unsigned int next = (ja->cur_idx + 1) % ca->sb.njournal_buckets;
-532
-533       /* No space available on this device */
-534       if (next == ja->discard_idx)
-535               continue;
-536
-537       ja->cur_idx = next;
-538       k->ptr[n++] = MAKE_PTR(0,
-539                         bucket_to_sector(c, ca->sb.d[ja->cur_idx]),
-540                         ca->sb.nr_this_dev);
-541 }
-542
-543 bkey_init(k);
-544 SET_KEY_PTRS(k, n);
+Could someone please review/pick this up? This is one of two remaining
+-Wsometimes-uninitialized warnings among arm, arm64, and x86_64
+all{yes,mod}config and I'd like to get it turned on as soon as possible
+to catch more bugs.
 
-If there is no available bucket to reclaim, the if() condition at line
-534 will always true, and n remains 0. Then at line 544, SET_KEY_PTRS()
-will set KEY_PTRS field of c->journal.key to 0.
-
-Setting KEY_PTRS field of c->journal.key to 0 is wrong. Because in
-journal_write_unlocked() the journal data is written in following loop,
-
-649	for (i = 0; i < KEY_PTRS(k); i++) {
-650-671		submit journal data to cache device
-672	}
-
-If KEY_PTRS field is set to 0 in jouranl_reclaim(), the journal data
-won't be written to cache device here. If system crahed or rebooted
-before bkeys of the lost journal entries written into btree nodes, data
-corruption will be reported during bcache reload after rebooting the
-system.
-
-Indeed there is only one cache in a cache set, there is no need to set
-KEY_PTRS field in journal_reclaim() at all. But in order to keep the
-for_each_cache() logic consistent for now, this patch fixes the above
-problem by not setting 0 KEY_PTRS of journal key, if there is no bucket
-available to reclaim.
-
-Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.com>
-Cc: stable@vger.kernel.org
----
- drivers/md/bcache/journal.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index 6e18057d1d82..5180bed911ef 100644
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -541,11 +541,11 @@ static void journal_reclaim(struct cache_set *c)
- 				  ca->sb.nr_this_dev);
- 	}
- 
--	bkey_init(k);
--	SET_KEY_PTRS(k, n);
--
--	if (n)
-+	if (n) {
-+		bkey_init(k);
-+		SET_KEY_PTRS(k, n);
- 		c->journal.blocks_free = c->sb.bucket_size >> c->block_bits;
-+	}
- out:
- 	if (!journal_full(&c->journal))
- 		__closure_wake_up(&c->journal.wait);
-@@ -672,6 +672,9 @@ static void journal_write_unlocked(struct closure *cl)
- 		ca->journal.seq[ca->journal.cur_idx] = w->data->seq;
- 	}
- 
-+	/* If KEY_PTRS(k) == 0, this jset gets lost in air */
-+	BUG_ON(i == 0);
-+
- 	atomic_dec_bug(&fifo_back(&c->journal.pin));
- 	bch_journal_next(&c->journal);
- 	journal_reclaim(c);
--- 
-2.16.4
+Thanks,
+Nathan
