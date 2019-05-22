@@ -1,7 +1,7 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 066/244] bcache: avoid potential memleak of list of journal_replay(s) in the CACHE_SYNC branch of run_cache_set
-Date: Wed, 22 May 2019 15:23:32 -0400
-Message-ID: <20190522192630.24917-66-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 070/244] bcache: avoid clang -Wunintialized warning
+Date: Wed, 22 May 2019 15:23:36 -0400
+Message-ID: <20190522192630.24917-70-sashal@kernel.org>
 References: <20190522192630.24917-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -9,62 +9,77 @@ Return-path: <linux-kernel-owner@vger.kernel.org>
 In-Reply-To: <20190522192630.24917-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Shenghui Wang <shhuiw@foxmail.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Nathan Chancellor <natechancellor@gmail.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Shenghui Wang <shhuiw@foxmail.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-[ Upstream commit 95f18c9d1310730d075499a75aaf13bcd60405a7 ]
+[ Upstream commit 78d4eb8ad9e1d413449d1b7a060f50b6efa81ebd ]
 
-In the CACHE_SYNC branch of run_cache_set(), LIST_HEAD(journal) is used
-to collect journal_replay(s) and filled by bch_journal_read().
+clang has identified a code path in which it thinks a
+variable may be unused:
 
-If all goes well, bch_journal_replay() will release the list of
-jounal_replay(s) at the end of the branch.
+drivers/md/bcache/alloc.c:333:4: error: variable 'bucket' is used uninitialized whenever 'if' condition is false
+      [-Werror,-Wsometimes-uninitialized]
+                        fifo_pop(&ca->free_inc, bucket);
+                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
+ #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
+                                ^~~~~~~~~~~~~~~~~~~~~~~~~
+drivers/md/bcache/util.h:189:6: note: expanded from macro 'fifo_pop_front'
+        if (_r) {                                                       \
+            ^~
+drivers/md/bcache/alloc.c:343:46: note: uninitialized use occurs here
+                        allocator_wait(ca, bch_allocator_push(ca, bucket));
+                                                                  ^~~~~~
+drivers/md/bcache/alloc.c:287:7: note: expanded from macro 'allocator_wait'
+                if (cond)                                               \
+                    ^~~~
+drivers/md/bcache/alloc.c:333:4: note: remove the 'if' if its condition is always true
+                        fifo_pop(&ca->free_inc, bucket);
+                        ^
+drivers/md/bcache/util.h:219:27: note: expanded from macro 'fifo_pop'
+ #define fifo_pop(fifo, i)       fifo_pop_front(fifo, (i))
+                                ^
+drivers/md/bcache/util.h:189:2: note: expanded from macro 'fifo_pop_front'
+        if (_r) {                                                       \
+        ^
+drivers/md/bcache/alloc.c:331:15: note: initialize the variable 'bucket' to silence this warning
+                        long bucket;
+                                   ^
 
-If something goes wrong, code flow will jump to the label "err:" and leave
-the list unreleased.
+This cannot happen in practice because we only enter the loop
+if there is at least one element in the list.
 
-This patch will release the list of journal_replay(s) in the case of
-error detected.
+Slightly rearranging the code makes this clearer to both the
+reader and the compiler, which avoids the warning.
 
-v1 -> v2:
-* Move the release code to the location after label 'err:' to
-  simply the change.
-
-Signed-off-by: Shenghui Wang <shhuiw@foxmail.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Nathan Chancellor <natechancellor@gmail.com>
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/super.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/md/bcache/alloc.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 03bb5cee2b835..0dffb97d49833 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1777,6 +1777,8 @@ static void run_cache_set(struct cache_set *c)
- 	struct cache *ca;
- 	struct closure cl;
- 	unsigned int i;
-+	LIST_HEAD(journal);
-+	struct journal_replay *l;
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index 7a28232d868bd..de85b3af3b39d 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -327,10 +327,11 @@ static int bch_allocator_thread(void *arg)
+ 		 * possibly issue discards to them, then we add the bucket to
+ 		 * the free list:
+ 		 */
+-		while (!fifo_empty(&ca->free_inc)) {
++		while (1) {
+ 			long bucket;
  
- 	closure_init_stack(&cl);
+-			fifo_pop(&ca->free_inc, bucket);
++			if (!fifo_pop(&ca->free_inc, bucket))
++				break;
  
-@@ -1934,6 +1936,12 @@ static void run_cache_set(struct cache_set *c)
- 	set_bit(CACHE_SET_RUNNING, &c->flags);
- 	return;
- err:
-+	while (!list_empty(&journal)) {
-+		l = list_first_entry(&journal, struct journal_replay, list);
-+		list_del(&l->list);
-+		kfree(l);
-+	}
-+
- 	closure_sync(&cl);
- 	/* XXX: test this, it's broken */
- 	bch_cache_set_error(c, "%s", err);
+ 			if (ca->discard) {
+ 				mutex_unlock(&ca->set->bucket_lock);
 -- 
 2.20.1
