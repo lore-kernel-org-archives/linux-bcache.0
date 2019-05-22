@@ -1,13 +1,13 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.14 045/167] bcache: add failure check to run_cache_set() for journal replay
-Date: Wed, 22 May 2019 15:26:40 -0400
-Message-ID: <20190522192842.25858-45-sashal@kernel.org>
-References: <20190522192842.25858-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.9 030/114] bcache: add failure check to run_cache_set() for journal replay
+Date: Wed, 22 May 2019 15:28:53 -0400
+Message-ID: <20190522193017.26567-30-sashal@kernel.org>
+References: <20190522193017.26567-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190522192842.25858-1-sashal@kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190522193017.26567-1-sashal@kernel.org>
+Sender: stable-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
@@ -45,10 +45,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 9e875aba41b9b..6a5670db7b44a 100644
+index 894992ae9be07..0b5f0803712ba 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1560,7 +1560,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+@@ -1561,7 +1561,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
  	return NULL;
  }
  
@@ -57,7 +57,7 @@ index 9e875aba41b9b..6a5670db7b44a 100644
  {
  	const char *err = "cannot allocate memory";
  	struct cached_dev *dc, *t;
-@@ -1652,7 +1652,9 @@ static void run_cache_set(struct cache_set *c)
+@@ -1653,7 +1653,9 @@ static void run_cache_set(struct cache_set *c)
  		if (j->version < BCACHE_JSET_VERSION_UUID)
  			__uuid_write(c);
  
@@ -68,7 +68,7 @@ index 9e875aba41b9b..6a5670db7b44a 100644
  	} else {
  		pr_notice("invalidating existing data");
  
-@@ -1720,11 +1722,13 @@ static void run_cache_set(struct cache_set *c)
+@@ -1721,11 +1723,13 @@ static void run_cache_set(struct cache_set *c)
  	flash_devs_run(c);
  
  	set_bit(CACHE_SET_RUNNING, &c->flags);
@@ -83,7 +83,7 @@ index 9e875aba41b9b..6a5670db7b44a 100644
  }
  
  static bool can_attach_cache(struct cache *ca, struct cache_set *c)
-@@ -1788,8 +1792,11 @@ static const char *register_cache_set(struct cache *ca)
+@@ -1789,8 +1793,11 @@ static const char *register_cache_set(struct cache *ca)
  	ca->set->cache[ca->sb.nr_this_dev] = ca;
  	c->cache_by_alloc[c->caches_loaded++] = ca;
  
