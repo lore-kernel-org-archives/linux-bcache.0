@@ -1,61 +1,112 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 03/15] bcache: ignore read-ahead request failure on backing device
-Date: Tue,  4 Jun 2019 23:16:12 +0800
-Message-ID: <20190604151624.105150-4-colyli@suse.de>
-References: <20190604151624.105150-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190604151624.105150-1-colyli@suse.de>
-Sender: stable-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org
+Subject: Re: bcache: oops when writing to writeback_percent without a cache
+ device
+Date: Tue, 4 Jun 2019 23:41:43 +0800
+Message-ID: <3399cad5-4387-dd23-77f1-a70e551fb531@suse.de>
+References: <CAEYzJUH1L5qyWKN3_s4Sz81frho6nKB9bkyDoGxXCvLNO484ew@mail.gmail.com>
+ <6823d3ab-5f93-da74-0dbc-19bdb7be6907@suse.de>
+Mime-Version: 1.0
+Content-Type: multipart/mixed;
+ boundary="------------102620AF45697B91F3AE3BB5"
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <6823d3ab-5f93-da74-0dbc-19bdb7be6907@suse.de>
+Content-Language: en-US
+Sender: linux-kernel-owner@vger.kernel.org
+To: =?UTF-8?Q?Bj=c3=b8rn_Forsman?= <bjorn.forsman@gmail.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 List-Id: linux-bcache@vger.kernel.org
 
-When md raid device (e.g. raid456) is used as backing device, read-ahead
-requests on a degrading and recovering md raid device might be failured
-immediately by md raid code, but indeed this md raid array can still be
-read or write for normal I/O requests. Therefore such failed read-ahead
-request are not real hardware failure. Further more, after degrading and
-recovering accomplished, read-ahead requests will be handled by md raid
-array again.
+This is a multi-part message in MIME format.
+--------------102620AF45697B91F3AE3BB5
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 
-For such condition, I/O failures of read-ahead requests don't indicate
-real health status (because normal I/O still be served), they should not
-be counted into I/O error counter dc->io_errors.
+On 2019/6/4 10:59 下午, Coly Li wrote:
+> On 2019/6/4 7:00 下午, Bjørn Forsman wrote:
+>> Hi all,
+>>
+>> I get a kernel oops from bcache when writing to
+>> /sys/block/bcache0/bcache/writeback_percent and there is no attached
+>> cache device. See the oops itself below my signature.
+>>
+>> This is on Linux 4.19.46. I looked in git and see many commits to
+>> bcache lately, but none seem to address this particular issue.
+>>
+>> Background: I'm writing to .../writeback_percent with
+>> systemd-tmpfiles. I'd rather not replace it with a script that figures
+>> out whether or not the kernel will oops if writing to the sysfs file
+>> -- the kernel should not oops in the first place.
+> 
+> Hi Bjorn,
+> 
+> Thank you for the reporting. I believe this is a case we missed in
+> testings. When a bcache device is not attached, it does not make sense
+> to update the writeback rate in period by the changing of writeback_percent.
+> 
+> I will post a patch for your testing soon.
 
-Since there is no simple way to detect whether the backing divice is a
-md raid device, this patch simply ignores I/O failures for read-ahead
-bios on backing device, to avoid bogus backing device failure on a
-degrading md raid array.
+Hi Bjorn,
 
-Suggested-and-tested-by: Thorsten Knabe <linux@thorsten-knabe.de>
-Signed-off-by: Coly Li <colyli@suse.de>
-Cc: stable@vger.kernel.org
----
- drivers/md/bcache/io.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Could you please to try this patch ? Hope it may help a bit.
 
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index c25097968319..4d93f07f63e5 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -58,6 +58,18 @@ void bch_count_backing_io_errors(struct cached_dev *dc, struct bio *bio)
- 
- 	WARN_ONCE(!dc, "NULL pointer of struct cached_dev");
- 
-+	/*
-+	 * Read-ahead requests on a degrading and recovering md raid
-+	 * (e.g. raid6) device might be failured immediately by md
-+	 * raid code, which is not a real hardware media failure. So
-+	 * we shouldn't count failed REQ_RAHEAD bio to dc->io_errors.
-+	 */
-+	if (bio->bi_opf & REQ_RAHEAD) {
-+		pr_warn_ratelimited("%s: Read-ahead I/O failed on backing device, ignore",
-+				    dc->backing_dev_name);
-+		return;
-+	}
-+
- 	errors = atomic_add_return(1, &dc->io_errors);
- 	if (errors < dc->error_limit)
- 		pr_err("%s: IO error on backing device, unrecoverable",
--- 
-2.16.4
+Thanks.
+
+Coly Li
+
+
+>>
+>> Jun 04 12:35:42 kernel: BUG: unable to handle kernel NULL pointer
+>> dereference at 0000000000000340
+>> Jun 04 12:35:42 kernel: PGD 0 P4D 0
+>> Jun 04 12:35:42 kernel: Oops: 0000 [#1] SMP PTI
+>> Jun 04 12:35:42 kernel: CPU: 6 PID: 20266 Comm: kworker/6:220 Not
+>> tainted 4.19.46 #1-NixOS
+>> Jun 04 12:35:42 kernel: Hardware name: To Be Filled By O.E.M. To Be
+>> Filled By O.E.M./X99 Extreme4/3.1, BIOS P3.60 04/06/2018
+>> Jun 04 12:35:42 kernel: Workqueue: events update_writeback_rate [bcache]
+>> Jun 04 12:35:42 kernel: RIP: 0010:update_writeback_rate+0x2f/0x2e0 [bcache]
+[snipped]
+
+--------------102620AF45697B91F3AE3BB5
+Content-Type: text/plain; charset=UTF-8; x-mac-type="0"; x-mac-creator="0";
+ name="0001-bcache-only-set-BCACHE_DEV_WB_RUNNING-when-cached-de.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*0="0001-bcache-only-set-BCACHE_DEV_WB_RUNNING-when-cached-de.pa";
+ filename*1="tch"
+
+RnJvbSA5ZGVhMWU2YWQwZTZjNDBlM2JjNmVlNmNmNGFkMjQzYzA3Y2E2Y2E5IE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBDb2x5IExpIDxjb2x5bGlAc3VzZS5kZT4KRGF0ZTog
+VHVlLCA0IEp1biAyMDE5IDIzOjI0OjA5ICswODAwClN1YmplY3Q6IFtQQVRDSF0gYmNhY2hl
+OiBvbmx5IHNldCBCQ0FDSEVfREVWX1dCX1JVTk5JTkcgd2hlbiBjYWNoZWQgZGV2aWNlCiBh
+dHRhY2hlZAoKV2hlbiBwZW9wbGUgc2V0IGEgd3JpdGViYWNrIHBlcmNlbnQgdmlhIHN5c2Zz
+IGZpbGUsCiAgL3N5cy9ibG9jay9iY2FjaGU8Tj4vYmNhY2hlL3dyaXRlYmFja19wZXJjZW50
+CmN1cnJlbnQgY29kZSBkaXJlY3RseSBzZXRzIEJDQUNIRV9ERVZfV0JfUlVOTklORyB0byBk
+Yy0+ZGlzay5mbGFncwphbmQgc2NoZWR1bGVzIGt3b3JrZXIgZGMtPndyaXRlYmFja19yYXRl
+X3VwZGF0ZS4KCklmIHRoZXJlIGlzIG5vIGNhY2hlIHNldCBhdHRhY2hlZCB0bywgdGhlIHdy
+aXRlYmFjIGtlcm5lbCB0aHJlYWQgaXMKbm90IHJ1bm5pbmcgaW5kZWVkLCBydW5uaW5nIGRj
+LT53cml0ZWJhY2tfcmF0ZV91cGRhdGUgZG9lcyBub3QgbWFrZQpzZW5zZSBhbmQgbWF5IGNh
+dXNlIE5VTEwgcG9pbnRlciBkZWZlcmVuY2Ugd2hlbiByZWZlcmVuY2UgY2FjaGUgc2V0CnBv
+aW50ZXIgaW5zaWRlIHVwZGF0ZV93cml0ZWJhY2tfcmF0ZSgpLgoKVGhpcyBwYXRjaCBjaGVj
+a3Mgd2hldGhlciB0aGUgY2FjaGUgc2V0IHBvaW50IChkYy0+ZGlzay5jKSBpcyBOVUxMIGlu
+CnN5c2ZzIGludGVyZmFjZSBoYW5kbGVyLCBhbmQgb25seSBzZXQgQkNBQ0hFX0RFVl9XQl9S
+VU5OSU5HIGFuZApzY2hlZHVsZSBkYy0+d3JpdGViYWNrX3JhdGVfdXBkYXRlIHdoZW4gZGMt
+PmRpc2suYyBpcyBub3QgTlVMTCAoaXQKbWVhbnMgdGhlIGNhY2hlIGRldmljZSBpcyBhdHRh
+Y2hlZCB0byBhIGNhY2hlIHNldCkuCgpSZXBvcnRlZC1ieTogQmrDuHJuIEZvcnNtYW4gPGJq
+b3JuLmZvcnNtYW5AZ21haWwuY29tPgpTaWduZWQtb2ZmLWJ5OiBDb2x5IExpIDxjb2x5bGlA
+c3VzZS5kZT4KLS0tCiBkcml2ZXJzL21kL2JjYWNoZS9zeXNmcy5jIHwgNyArKysrKystCiAx
+IGZpbGUgY2hhbmdlZCwgNiBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9uKC0pCgpkaWZmIC0t
+Z2l0IGEvZHJpdmVycy9tZC9iY2FjaGUvc3lzZnMuYyBiL2RyaXZlcnMvbWQvYmNhY2hlL3N5
+c2ZzLmMKaW5kZXggMTI5MDMxNjYzY2M4Li5lYjY3OGU0M2FjMDAgMTAwNjQ0Ci0tLSBhL2Ry
+aXZlcnMvbWQvYmNhY2hlL3N5c2ZzLmMKKysrIGIvZHJpdmVycy9tZC9iY2FjaGUvc3lzZnMu
+YwpAQCAtNDMwLDggKzQzMCwxMyBAQCBTVE9SRShiY2hfY2FjaGVkX2RldikKIAkJCWJjaF93
+cml0ZWJhY2tfcXVldWUoZGMpOwogCX0KIAorCS8qCisJICogT25seSBzZXQgQkNBQ0hFX0RF
+Vl9XQl9SVU5OSU5HIHdoZW4gY2FjaGVkIGRldmljZSBhdHRhY2hlZCB0bworCSAqIGEgY2Fj
+aGUgc2V0LCBvdGhlcndpc2UgaXQgZG9lc24ndCBtYWtlIHNlbnNlLgorCSAqLwogCWlmIChh
+dHRyID09ICZzeXNmc193cml0ZWJhY2tfcGVyY2VudCkKLQkJaWYgKCF0ZXN0X2FuZF9zZXRf
+Yml0KEJDQUNIRV9ERVZfV0JfUlVOTklORywgJmRjLT5kaXNrLmZsYWdzKSkKKwkJaWYgKChk
+Yy0+ZGlzay5jICE9IE5VTEwpICYmCisJCSAgICAoIXRlc3RfYW5kX3NldF9iaXQoQkNBQ0hF
+X0RFVl9XQl9SVU5OSU5HLCAmZGMtPmRpc2suZmxhZ3MpKSkKIAkJCXNjaGVkdWxlX2RlbGF5
+ZWRfd29yaygmZGMtPndyaXRlYmFja19yYXRlX3VwZGF0ZSwKIAkJCQkgICAgICBkYy0+d3Jp
+dGViYWNrX3JhdGVfdXBkYXRlX3NlY29uZHMgKiBIWik7CiAKLS0gCjIuMTYuNAoK
+--------------102620AF45697B91F3AE3BB5--
