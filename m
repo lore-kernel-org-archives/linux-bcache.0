@@ -1,67 +1,134 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: bcache: oops when writing to writeback_percent without a cache
- device
-Date: Wed, 5 Jun 2019 12:41:01 +0800
-Message-ID: <78880cf8-07c6-e00d-0084-ce9c211eeec6@suse.de>
-References: <CAEYzJUH1L5qyWKN3_s4Sz81frho6nKB9bkyDoGxXCvLNO484ew@mail.gmail.com>
- <6823d3ab-5f93-da74-0dbc-19bdb7be6907@suse.de>
- <3399cad5-4387-dd23-77f1-a70e551fb531@suse.de>
- <CAEYzJUE0SuO3uHm1TTxfr1kPtLic1ggUPnGFYTSPcwk6nfq82g@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <CAEYzJUE0SuO3uHm1TTxfr1kPtLic1ggUPnGFYTSPcwk6nfq82g@mail.gmail.com>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: =?UTF-8?Q?Bj=c3=b8rn_Forsman?= <bjorn.forsman@gmail.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/6] bcache: Revert "bcache: fix high CPU occupancy during journal"
+Date: Wed,  5 Jun 2019 15:27:13 +0800
+Message-ID: <20190605072718.121379-2-colyli@suse.de>
+References: <20190605072718.121379-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190605072718.121379-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Tang Junhui <tang.junhui.linux@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/6/5 1:24 上午, Bjørn Forsman wrote:
-> On Tue, 4 Jun 2019 at 17:41, Coly Li <colyli@suse.de> wrote:
->>
->> On 2019/6/4 10:59 下午, Coly Li wrote:
->>> On 2019/6/4 7:00 下午, Bjørn Forsman wrote:
->>>> Hi all,
->>>>
->>>> I get a kernel oops from bcache when writing to
->>>> /sys/block/bcache0/bcache/writeback_percent and there is no attached
->>>> cache device. See the oops itself below my signature.
->>>>
->>>> This is on Linux 4.19.46. I looked in git and see many commits to
->>>> bcache lately, but none seem to address this particular issue.
->>>>
->>>> Background: I'm writing to .../writeback_percent with
->>>> systemd-tmpfiles. I'd rather not replace it with a script that figures
->>>> out whether or not the kernel will oops if writing to the sysfs file
->>>> -- the kernel should not oops in the first place.
->>>
->>> Hi Bjorn,
->>>
->>> Thank you for the reporting. I believe this is a case we missed in
->>> testings. When a bcache device is not attached, it does not make sense
->>> to update the writeback rate in period by the changing of writeback_percent.
->>>
->>> I will post a patch for your testing soon.
->>
->> Hi Bjorn,
->>
->> Could you please to try this patch ? Hope it may help a bit.
-> 
-> Hi Coly,
-> 
-> Thanks for the quick patch! I tested it on linux 5.2-rc2 and it indeed
-> fixes the problem.
-> 
-> There is one typo in the patch/commit message: s/writebac/writeback/
-> 
+This reverts commit c4dc2497d50d9c6fb16aa0d07b6a14f3b2adb1e0.
 
-Hi Bjorn,
+This patch enlarges a race between normal btree flush code path and
+flush_btree_write(), which causes deadlock when journal space is
+exhausted. Reverts this patch makes the race window from 128 btree
+nodes to only 1 btree nodes.
 
-Thanks for the patch review. Do you mind if I add Reviewed-By: tag with
-your name and email address ?
+Fixes: c4dc2497d50d ("bcache: fix high CPU occupancy during journal")
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: stable@vger.kernel.org
+Cc: Tang Junhui <tang.junhui.linux@gmail.com>
+---
+ drivers/md/bcache/bcache.h  |  2 --
+ drivers/md/bcache/journal.c | 47 +++++++++++++++------------------------------
+ drivers/md/bcache/util.h    |  2 --
+ 3 files changed, 15 insertions(+), 36 deletions(-)
 
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 73a97586a2ef..cb268d7c6cea 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -726,8 +726,6 @@ struct cache_set {
+ 
+ #define BUCKET_HASH_BITS	12
+ 	struct hlist_head	bucket_hash[1 << BUCKET_HASH_BITS];
+-
+-	DECLARE_HEAP(struct btree *, flush_btree);
+ };
+ 
+ struct bbio {
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index d3f2331fc559..ce176bbef3fe 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -415,12 +415,6 @@ int bch_journal_replay(struct cache_set *s, struct list_head *list)
+ }
+ 
+ /* Journalling */
+-#define journal_max_cmp(l, r) \
+-	(fifo_idx(&c->journal.pin, btree_current_write(l)->journal) < \
+-	 fifo_idx(&(c)->journal.pin, btree_current_write(r)->journal))
+-#define journal_min_cmp(l, r) \
+-	(fifo_idx(&c->journal.pin, btree_current_write(l)->journal) > \
+-	 fifo_idx(&(c)->journal.pin, btree_current_write(r)->journal))
+ 
+ static void btree_flush_write(struct cache_set *c)
+ {
+@@ -428,35 +422,25 @@ static void btree_flush_write(struct cache_set *c)
+ 	 * Try to find the btree node with that references the oldest journal
+ 	 * entry, best is our current candidate and is locked if non NULL:
+ 	 */
+-	struct btree *b;
+-	int i;
++	struct btree *b, *best;
++	unsigned int i;
+ 
+ 	atomic_long_inc(&c->flush_write);
+-
+ retry:
+-	spin_lock(&c->journal.lock);
+-	if (heap_empty(&c->flush_btree)) {
+-		for_each_cached_btree(b, c, i)
+-			if (btree_current_write(b)->journal) {
+-				if (!heap_full(&c->flush_btree))
+-					heap_add(&c->flush_btree, b,
+-						 journal_max_cmp);
+-				else if (journal_max_cmp(b,
+-					 heap_peek(&c->flush_btree))) {
+-					c->flush_btree.data[0] = b;
+-					heap_sift(&c->flush_btree, 0,
+-						  journal_max_cmp);
+-				}
++	best = NULL;
++
++	for_each_cached_btree(b, c, i)
++		if (btree_current_write(b)->journal) {
++			if (!best)
++				best = b;
++			else if (journal_pin_cmp(c,
++					btree_current_write(best)->journal,
++					btree_current_write(b)->journal)) {
++				best = b;
+ 			}
++		}
+ 
+-		for (i = c->flush_btree.used / 2 - 1; i >= 0; --i)
+-			heap_sift(&c->flush_btree, i, journal_min_cmp);
+-	}
+-
+-	b = NULL;
+-	heap_pop(&c->flush_btree, b, journal_min_cmp);
+-	spin_unlock(&c->journal.lock);
+-
++	b = best;
+ 	if (b) {
+ 		mutex_lock(&b->write_lock);
+ 		if (!btree_current_write(b)->journal) {
+@@ -898,8 +882,7 @@ int bch_journal_alloc(struct cache_set *c)
+ 	j->w[0].c = c;
+ 	j->w[1].c = c;
+ 
+-	if (!(init_heap(&c->flush_btree, 128, GFP_KERNEL)) ||
+-	    !(init_fifo(&j->pin, JOURNAL_PIN, GFP_KERNEL)) ||
++	if (!(init_fifo(&j->pin, JOURNAL_PIN, GFP_KERNEL)) ||
+ 	    !(j->w[0].data = (void *) __get_free_pages(GFP_KERNEL, JSET_BITS)) ||
+ 	    !(j->w[1].data = (void *) __get_free_pages(GFP_KERNEL, JSET_BITS)))
+ 		return -ENOMEM;
+diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+index 1fbced94e4cc..c029f7443190 100644
+--- a/drivers/md/bcache/util.h
++++ b/drivers/md/bcache/util.h
+@@ -113,8 +113,6 @@ do {									\
+ 
+ #define heap_full(h)	((h)->used == (h)->size)
+ 
+-#define heap_empty(h)	((h)->used == 0)
+-
+ #define DECLARE_FIFO(type, name)					\
+ 	struct {							\
+ 		size_t front, back, size, mask;				\
 -- 
-
-Coly Li
+2.16.4
