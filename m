@@ -1,70 +1,138 @@
-From: =?UTF-8?Q?Bj=C3=B8rn_Forsman?= <bjorn.forsman@gmail.com>
-Subject: Re: bcache: oops when writing to writeback_percent without a cache device
-Date: Wed, 5 Jun 2019 11:21:46 +0200
-Message-ID: <CAEYzJUFUxgQXDTOf5ai9+9UijEL-Eb+_91UbVPC2hc=8G-++4Q@mail.gmail.com>
-References: <CAEYzJUH1L5qyWKN3_s4Sz81frho6nKB9bkyDoGxXCvLNO484ew@mail.gmail.com>
- <6823d3ab-5f93-da74-0dbc-19bdb7be6907@suse.de> <3399cad5-4387-dd23-77f1-a70e551fb531@suse.de>
- <CAEYzJUE0SuO3uHm1TTxfr1kPtLic1ggUPnGFYTSPcwk6nfq82g@mail.gmail.com> <78880cf8-07c6-e00d-0084-ce9c211eeec6@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <78880cf8-07c6-e00d-0084-ce9c211eeec6@suse.de>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH 1/2] bcache: fix stack corruption by PRECEDING_KEY()
+Date: Mon, 10 Jun 2019 06:13:34 +0800
+Message-ID: <20190609221335.24616-2-colyli@suse.de>
+References: <20190609221335.24616-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190609221335.24616-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, rolf@rolffokkens.nl, pierre.juhen@orange.fr, Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>, Nix <nix@esperi.org.uk>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, 5 Jun 2019 at 06:41, Coly Li <colyli@suse.de> wrote:
->
-> On 2019/6/5 1:24 =E4=B8=8A=E5=8D=88, Bj=C3=B8rn Forsman wrote:
-> > On Tue, 4 Jun 2019 at 17:41, Coly Li <colyli@suse.de> wrote:
-> >>
-> >> On 2019/6/4 10:59 =E4=B8=8B=E5=8D=88, Coly Li wrote:
-> >>> On 2019/6/4 7:00 =E4=B8=8B=E5=8D=88, Bj=C3=B8rn Forsman wrote:
-> >>>> Hi all,
-> >>>>
-> >>>> I get a kernel oops from bcache when writing to
-> >>>> /sys/block/bcache0/bcache/writeback_percent and there is no attached
-> >>>> cache device. See the oops itself below my signature.
-> >>>>
-> >>>> This is on Linux 4.19.46. I looked in git and see many commits to
-> >>>> bcache lately, but none seem to address this particular issue.
-> >>>>
-> >>>> Background: I'm writing to .../writeback_percent with
-> >>>> systemd-tmpfiles. I'd rather not replace it with a script that figur=
-es
-> >>>> out whether or not the kernel will oops if writing to the sysfs file
-> >>>> -- the kernel should not oops in the first place.
-> >>>
-> >>> Hi Bjorn,
-> >>>
-> >>> Thank you for the reporting. I believe this is a case we missed in
-> >>> testings. When a bcache device is not attached, it does not make sens=
-e
-> >>> to update the writeback rate in period by the changing of writeback_p=
-ercent.
-> >>>
-> >>> I will post a patch for your testing soon.
-> >>
-> >> Hi Bjorn,
-> >>
-> >> Could you please to try this patch ? Hope it may help a bit.
-> >
-> > Hi Coly,
-> >
-> > Thanks for the quick patch! I tested it on linux 5.2-rc2 and it indeed
-> > fixes the problem.
-> >
-> > There is one typo in the patch/commit message: s/writebac/writeback/
-> >
->
-> Hi Bjorn,
->
-> Thanks for the patch review. Do you mind if I add Reviewed-By: tag with
-> your name and email address ?
+Recently people report bcache code compiled with gcc9 is broken, one of
+the buggy behavior I observe is that two adjacent 4KB I/Os should merge
+into one but they don't. Finally it turns out to be a stack corruption
+caused by macro PRECEDING_KEY().
 
-Yes, you can add my Reviewed-By: tag.
+See how PRECEDING_KEY() is defined in bset.h,
+437 #define PRECEDING_KEY(_k)                                       \
+438 ({                                                              \
+439         struct bkey *_ret = NULL;                               \
+440                                                                 \
+441         if (KEY_INODE(_k) || KEY_OFFSET(_k)) {                  \
+442                 _ret = &KEY(KEY_INODE(_k), KEY_OFFSET(_k), 0);  \
+443                                                                 \
+444                 if (!_ret->low)                                 \
+445                         _ret->high--;                           \
+446                 _ret->low--;                                    \
+447         }                                                       \
+448                                                                 \
+449         _ret;                                                   \
+450 })
 
---=20
-Bj=C3=B8rn Forsman
+At line 442, _ret points to address of a on-stack variable combined by
+KEY(), the life range of this on-stack variable is in line 442-446,
+once _ret is returned to bch_btree_insert_key(), the returned address
+points to an invalid stack address and this address is overwritten in
+the following called bch_btree_iter_init(). Then argument 'search' of
+bch_btree_iter_init() points to some address inside stackframe of
+bch_btree_iter_init(), exact address depends on how the compiler
+allocates stack space. Now the stack is corrupted.
+
+Fixes: 0eacac22034c ("bcache: PRECEDING_KEY()")
+Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Rolf Fokkens <rolf@rolffokkens.nl>
+Reviewed-by: Pierre JUHEN <pierre.juhen@orange.fr>
+Tested-by: Shenghui Wang <shhuiw@foxmail.com>
+Tested-by: Pierre JUHEN <pierre.juhen@orange.fr>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: Nix <nix@esperi.org.uk>
+Cc: stable@vger.kernel.org
+---
+Changlog:
+V2: Fix a pointer assignment problem in preceding_key(), which is
+    pointed by Rolf Fokkens and Pierre JUHEN.
+V1: Initial RFC patch for review and comment.
+
+ drivers/md/bcache/bset.c | 16 +++++++++++++---
+ drivers/md/bcache/bset.h | 34 ++++++++++++++++++++--------------
+ 2 files changed, 33 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+index 8f07fa6e1739..268f1b685084 100644
+--- a/drivers/md/bcache/bset.c
++++ b/drivers/md/bcache/bset.c
+@@ -887,12 +887,22 @@ unsigned int bch_btree_insert_key(struct btree_keys *b, struct bkey *k,
+ 	struct bset *i = bset_tree_last(b)->data;
+ 	struct bkey *m, *prev = NULL;
+ 	struct btree_iter iter;
++	struct bkey preceding_key_on_stack = ZERO_KEY;
++	struct bkey *preceding_key_p = &preceding_key_on_stack;
+ 
+ 	BUG_ON(b->ops->is_extents && !KEY_SIZE(k));
+ 
+-	m = bch_btree_iter_init(b, &iter, b->ops->is_extents
+-				? PRECEDING_KEY(&START_KEY(k))
+-				: PRECEDING_KEY(k));
++	/*
++	 * If k has preceding key, preceding_key_p will be set to address
++	 *  of k's preceding key; otherwise preceding_key_p will be set
++	 * to NULL inside preceding_key().
++	 */
++	if (b->ops->is_extents)
++		preceding_key(&START_KEY(k), &preceding_key_p);
++	else
++		preceding_key(k, &preceding_key_p);
++
++	m = bch_btree_iter_init(b, &iter, preceding_key_p);
+ 
+ 	if (b->ops->insert_fixup(b, k, &iter, replace_key))
+ 		return status;
+diff --git a/drivers/md/bcache/bset.h b/drivers/md/bcache/bset.h
+index bac76aabca6d..c71365e7c1fa 100644
+--- a/drivers/md/bcache/bset.h
++++ b/drivers/md/bcache/bset.h
+@@ -434,20 +434,26 @@ static inline bool bch_cut_back(const struct bkey *where, struct bkey *k)
+ 	return __bch_cut_back(where, k);
+ }
+ 
+-#define PRECEDING_KEY(_k)					\
+-({								\
+-	struct bkey *_ret = NULL;				\
+-								\
+-	if (KEY_INODE(_k) || KEY_OFFSET(_k)) {			\
+-		_ret = &KEY(KEY_INODE(_k), KEY_OFFSET(_k), 0);	\
+-								\
+-		if (!_ret->low)					\
+-			_ret->high--;				\
+-		_ret->low--;					\
+-	}							\
+-								\
+-	_ret;							\
+-})
++/*
++ * Pointer '*preceding_key_p' points to a memory object to store preceding
++ * key of k. If the preceding key does not exist, set '*preceding_key_p' to
++ * NULL. So the caller of preceding_key() needs to take care of memory
++ * which '*preceding_key_p' pointed to before calling preceding_key().
++ * Currently the only caller of preceding_key() is bch_btree_insert_key(),
++ * and it points to an on-stack variable, so the memory release is handled
++ * by stackframe itself.
++ */
++static inline void preceding_key(struct bkey *k, struct bkey **preceding_key_p)
++{
++	if (KEY_INODE(k) || KEY_OFFSET(k)) {
++		(**preceding_key_p) = KEY(KEY_INODE(k), KEY_OFFSET(k), 0);
++		if (!(*preceding_key_p)->low)
++			(*preceding_key_p)->high--;
++		(*preceding_key_p)->low--;
++	} else {
++		(*preceding_key_p) = NULL;
++	}
++}
+ 
+ static inline bool bch_ptr_invalid(struct btree_keys *b, const struct bkey *k)
+ {
+-- 
+2.16.4
