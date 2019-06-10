@@ -1,7 +1,7 @@
 From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: [PATCH 03/12] mm: pagecache add lock
-Date: Mon, 10 Jun 2019 15:14:11 -0400
-Message-ID: <20190610191420.27007-4-kent.overstreet@gmail.com>
+Subject: [PATCH 06/12] fs: factor out d_mark_tmpfile()
+Date: Mon, 10 Jun 2019 15:14:14 -0400
+Message-ID: <20190610191420.27007-7-kent.overstreet@gmail.com>
 References: <20190610191420.27007-1-kent.overstreet@gmail.com>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -12,222 +12,56 @@ To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-bcache@vg
 Cc: Kent Overstreet <kent.overstreet@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-Add a per address space lock around adding pages to the pagecache - making it
-possible for fallocate INSERT_RANGE/COLLAPSE_RANGE to work correctly, and also
-hopefully making truncate and dio a bit saner.
+New helper for bcachefs - bcachefs doesn't want the
+inode_dec_link_count() call that d_tmpfile does, it handles i_nlink on
+its own atomically with other btree updates
 
 Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
 ---
- fs/inode.c            |  1 +
- include/linux/fs.h    | 24 +++++++++++++
- include/linux/sched.h |  4 +++
- init/init_task.c      |  1 +
- mm/filemap.c          | 81 +++++++++++++++++++++++++++++++++++++++++--
- 5 files changed, 108 insertions(+), 3 deletions(-)
+ fs/dcache.c            | 10 ++++++++--
+ include/linux/dcache.h |  1 +
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/fs/inode.c b/fs/inode.c
-index 9a453f3637..8881dc551f 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -350,6 +350,7 @@ EXPORT_SYMBOL(inc_nlink);
- static void __address_space_init_once(struct address_space *mapping)
+diff --git a/fs/dcache.c b/fs/dcache.c
+index aac41adf47..18edb4e5bc 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -3042,9 +3042,8 @@ void d_genocide(struct dentry *parent)
+ 
+ EXPORT_SYMBOL(d_genocide);
+ 
+-void d_tmpfile(struct dentry *dentry, struct inode *inode)
++void d_mark_tmpfile(struct dentry *dentry, struct inode *inode)
  {
- 	xa_init_flags(&mapping->i_pages, XA_FLAGS_LOCK_IRQ);
-+	pagecache_lock_init(&mapping->add_lock);
- 	init_rwsem(&mapping->i_mmap_rwsem);
- 	INIT_LIST_HEAD(&mapping->private_list);
- 	spin_lock_init(&mapping->private_lock);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index dd28e76790..a88d994751 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -418,6 +418,28 @@ int pagecache_write_end(struct file *, struct address_space *mapping,
- 				loff_t pos, unsigned len, unsigned copied,
- 				struct page *page, void *fsdata);
- 
-+/*
-+ * Two-state lock - can be taken for add or block - both states are shared,
-+ * like read side of rwsem, but conflict with other state:
-+ */
-+struct pagecache_lock {
-+	atomic_long_t		v;
-+	wait_queue_head_t	wait;
-+};
-+
-+static inline void pagecache_lock_init(struct pagecache_lock *lock)
-+{
-+	atomic_long_set(&lock->v, 0);
-+	init_waitqueue_head(&lock->wait);
+-	inode_dec_link_count(inode);
+ 	BUG_ON(dentry->d_name.name != dentry->d_iname ||
+ 		!hlist_unhashed(&dentry->d_u.d_alias) ||
+ 		!d_unlinked(dentry));
+@@ -3054,6 +3053,13 @@ void d_tmpfile(struct dentry *dentry, struct inode *inode)
+ 				(unsigned long long)inode->i_ino);
+ 	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&dentry->d_parent->d_lock);
 +}
++EXPORT_SYMBOL(d_mark_tmpfile);
 +
-+void pagecache_add_put(struct pagecache_lock *);
-+void pagecache_add_get(struct pagecache_lock *);
-+void __pagecache_block_put(struct pagecache_lock *);
-+void __pagecache_block_get(struct pagecache_lock *);
-+void pagecache_block_put(struct pagecache_lock *);
-+void pagecache_block_get(struct pagecache_lock *);
-+
- /**
-  * struct address_space - Contents of a cacheable, mappable object.
-  * @host: Owner, either the inode or the block_device.
-@@ -452,6 +474,8 @@ struct address_space {
- 	spinlock_t		private_lock;
- 	struct list_head	private_list;
- 	void			*private_data;
-+	struct pagecache_lock	add_lock
-+		____cacheline_aligned_in_smp;	/* protects adding new pages */
- } __attribute__((aligned(sizeof(long)))) __randomize_layout;
- 	/*
- 	 * On most architectures that alignment is already the case; but
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1549584a15..a46baade99 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -43,6 +43,7 @@ struct io_context;
- struct mempolicy;
- struct nameidata;
- struct nsproxy;
-+struct pagecache_lock;
- struct perf_event_context;
- struct pid_namespace;
- struct pipe_inode_info;
-@@ -935,6 +936,9 @@ struct task_struct {
- 	unsigned int			in_ubsan;
- #endif
- 
-+	/* currently held lock, for avoiding recursing in fault path: */
-+	struct pagecache_lock *pagecache_lock;
-+
- 	/* Journalling filesystem info: */
- 	void				*journal_info;
- 
-diff --git a/init/init_task.c b/init/init_task.c
-index c70ef656d0..92bbb6e909 100644
---- a/init/init_task.c
-+++ b/init/init_task.c
-@@ -115,6 +115,7 @@ struct task_struct init_task
- 	},
- 	.blocked	= {{0}},
- 	.alloc_lock	= __SPIN_LOCK_UNLOCKED(init_task.alloc_lock),
-+	.pagecache_lock = NULL,
- 	.journal_info	= NULL,
- 	INIT_CPU_TIMERS(init_task)
- 	.pi_lock	= __RAW_SPIN_LOCK_UNLOCKED(init_task.pi_lock),
-diff --git a/mm/filemap.c b/mm/filemap.c
-index d78f577bae..93d7e0e686 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -113,6 +113,73 @@
-  *   ->tasklist_lock            (memory_failure, collect_procs_ao)
-  */
- 
-+static void __pagecache_lock_put(struct pagecache_lock *lock, long i)
++void d_tmpfile(struct dentry *dentry, struct inode *inode)
 +{
-+	BUG_ON(atomic_long_read(&lock->v) == 0);
-+
-+	if (atomic_long_sub_return_release(i, &lock->v) == 0)
-+		wake_up_all(&lock->wait);
-+}
-+
-+static bool __pagecache_lock_tryget(struct pagecache_lock *lock, long i)
-+{
-+	long v = atomic_long_read(&lock->v), old;
-+
-+	do {
-+		old = v;
-+
-+		if (i > 0 ? v < 0 : v > 0)
-+			return false;
-+	} while ((v = atomic_long_cmpxchg_acquire(&lock->v,
-+					old, old + i)) != old);
-+	return true;
-+}
-+
-+static void __pagecache_lock_get(struct pagecache_lock *lock, long i)
-+{
-+	wait_event(lock->wait, __pagecache_lock_tryget(lock, i));
-+}
-+
-+void pagecache_add_put(struct pagecache_lock *lock)
-+{
-+	__pagecache_lock_put(lock, 1);
-+}
-+EXPORT_SYMBOL(pagecache_add_put);
-+
-+void pagecache_add_get(struct pagecache_lock *lock)
-+{
-+	__pagecache_lock_get(lock, 1);
-+}
-+EXPORT_SYMBOL(pagecache_add_get);
-+
-+void __pagecache_block_put(struct pagecache_lock *lock)
-+{
-+	__pagecache_lock_put(lock, -1);
-+}
-+EXPORT_SYMBOL(__pagecache_block_put);
-+
-+void __pagecache_block_get(struct pagecache_lock *lock)
-+{
-+	__pagecache_lock_get(lock, -1);
-+}
-+EXPORT_SYMBOL(__pagecache_block_get);
-+
-+void pagecache_block_put(struct pagecache_lock *lock)
-+{
-+	BUG_ON(current->pagecache_lock != lock);
-+	current->pagecache_lock = NULL;
-+	__pagecache_lock_put(lock, -1);
-+}
-+EXPORT_SYMBOL(pagecache_block_put);
-+
-+void pagecache_block_get(struct pagecache_lock *lock)
-+{
-+	__pagecache_lock_get(lock, -1);
-+	BUG_ON(current->pagecache_lock);
-+	current->pagecache_lock = lock;
-+}
-+EXPORT_SYMBOL(pagecache_block_get);
-+
- static void page_cache_delete(struct address_space *mapping,
- 				   struct page *page, void *shadow)
- {
-@@ -829,11 +896,14 @@ static int __add_to_page_cache_locked(struct page *page,
- 	VM_BUG_ON_PAGE(PageSwapBacked(page), page);
- 	mapping_set_update(&xas, mapping);
- 
-+	if (current->pagecache_lock != &mapping->add_lock)
-+		pagecache_add_get(&mapping->add_lock);
-+
- 	if (!huge) {
- 		error = mem_cgroup_try_charge(page, current->mm,
- 					      gfp_mask, &memcg, false);
- 		if (error)
--			return error;
-+			goto out;
- 	}
- 
- 	get_page(page);
-@@ -869,14 +939,19 @@ static int __add_to_page_cache_locked(struct page *page,
- 	if (!huge)
- 		mem_cgroup_commit_charge(page, memcg, false, false);
- 	trace_mm_filemap_add_to_page_cache(page);
--	return 0;
-+	error = 0;
-+out:
-+	if (current->pagecache_lock != &mapping->add_lock)
-+		pagecache_add_put(&mapping->add_lock);
-+	return error;
- error:
- 	page->mapping = NULL;
- 	/* Leave page->index set: truncation relies upon it */
- 	if (!huge)
- 		mem_cgroup_cancel_charge(page, memcg, false);
- 	put_page(page);
--	return xas_error(&xas);
-+	error = xas_error(&xas);
-+	goto out;
++	inode_dec_link_count(inode);
++	d_mark_tmpfile(dentry, inode);
+ 	d_instantiate(dentry, inode);
  }
+ EXPORT_SYMBOL(d_tmpfile);
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 60996e64c5..e0fe330162 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -255,6 +255,7 @@ extern struct dentry * d_make_root(struct inode *);
+ /* <clickety>-<click> the ramfs-type tree */
+ extern void d_genocide(struct dentry *);
  
- /**
++extern void d_mark_tmpfile(struct dentry *, struct inode *);
+ extern void d_tmpfile(struct dentry *, struct inode *);
+ 
+ extern struct dentry *d_find_alias(struct inode *);
 -- 
 2.20.1
