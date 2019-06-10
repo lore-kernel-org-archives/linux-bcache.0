@@ -1,7 +1,7 @@
 From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: [PATCH 09/12] bcache: optimize continue_at_nobarrier()
-Date: Mon, 10 Jun 2019 15:14:17 -0400
-Message-ID: <20190610191420.27007-10-kent.overstreet@gmail.com>
+Subject: [PATCH 12/12] closures: fix a race on wakeup from closure_sync
+Date: Mon, 10 Jun 2019 15:14:20 -0400
+Message-ID: <20190610191420.27007-13-kent.overstreet@gmail.com>
 References: <20190610191420.27007-1-kent.overstreet@gmail.com>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -14,37 +14,29 @@ List-Id: linux-bcache@vger.kernel.org
 
 Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
 ---
- drivers/md/bcache/closure.h | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ lib/closure.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/closure.h b/drivers/md/bcache/closure.h
-index c88cdc4ae4..376c5e659c 100644
---- a/drivers/md/bcache/closure.h
-+++ b/drivers/md/bcache/closure.h
-@@ -245,7 +245,7 @@ static inline void closure_queue(struct closure *cl)
- 		     != offsetof(struct work_struct, func));
- 	if (wq) {
- 		INIT_WORK(&cl->work, cl->work.func);
--		BUG_ON(!queue_work(wq, &cl->work));
-+		queue_work(wq, &cl->work);
- 	} else
- 		cl->fn(cl);
- }
-@@ -340,8 +340,13 @@ do {									\
-  */
- #define continue_at_nobarrier(_cl, _fn, _wq)				\
- do {									\
--	set_closure_fn(_cl, _fn, _wq);					\
--	closure_queue(_cl);						\
-+	closure_set_ip(_cl);						\
-+	if (_wq) {							\
-+		INIT_WORK(&(_cl)->work, (void *) _fn);			\
-+		queue_work((_wq), &(_cl)->work);			\
-+	} else {							\
-+		(_fn)(_cl);						\
-+	}								\
- } while (0)
+diff --git a/lib/closure.c b/lib/closure.c
+index 46cfe4c382..3e6366c262 100644
+--- a/lib/closure.c
++++ b/lib/closure.c
+@@ -104,8 +104,14 @@ struct closure_syncer {
  
- /**
+ static void closure_sync_fn(struct closure *cl)
+ {
+-	cl->s->done = 1;
+-	wake_up_process(cl->s->task);
++	struct closure_syncer *s = cl->s;
++	struct task_struct *p;
++
++	rcu_read_lock();
++	p = READ_ONCE(s->task);
++	s->done = 1;
++	wake_up_process(p);
++	rcu_read_unlock();
+ }
+ 
+ void __sched __closure_sync(struct closure *cl)
 -- 
 2.20.1
