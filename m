@@ -1,97 +1,134 @@
-From: Dave Chinner <david@fromorbit.com>
-Subject: Re: bcachefs status update (it's done cooking; let's get this sucker
- merged)
-Date: Thu, 13 Jun 2019 09:02:24 +1000
-Message-ID: <20190612230224.GJ14308@dread.disaster.area>
-References: <20190610191420.27007-1-kent.overstreet@gmail.com>
- <CAHk-=wi0iMHcO5nsYug06fV3-8s8fz7GDQWCuanefEGq6mHH1Q@mail.gmail.com>
- <20190611011737.GA28701@kmo-pixel>
- <20190611043336.GB14363@dread.disaster.area>
- <20190612162144.GA7619@kmo-pixel>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <20190612162144.GA7619@kmo-pixel>
-Sender: linux-kernel-owner@vger.kernel.org
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Dave Chinner <dchinner@redhat.com>, Waiman Long <longman@redhat.com>, Peter Zijlstra <peterz@infradead.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-bcache@vger.kernel.org, "Darrick J . Wong" <darrick.wong@oracle.com>, Zach Brown <zach.brown@ni.com>, Jens Axboe <axboe@kernel.dk>, Josef Bacik <josef@toxicpanda.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH 01/29] bcache: Revert "bcache: fix high CPU occupancy during journal"
+Date: Fri, 14 Jun 2019 21:13:30 +0800
+Message-ID: <20190614131358.2771-2-colyli@suse.de>
+References: <20190614131358.2771-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190614131358.2771-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Tang Junhui <tang.junhui.linux@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On Wed, Jun 12, 2019 at 12:21:44PM -0400, Kent Overstreet wrote:
-> On Tue, Jun 11, 2019 at 02:33:36PM +1000, Dave Chinner wrote:
-> > I just recently said this with reference to the range lock stuff I'm
-> > working on in the background:
-> > 
-> > 	FWIW, it's to avoid problems with stupid userspace stuff
-> > 	that nobody really should be doing that I want range locks
-> > 	for the XFS inode locks.  If userspace overlaps the ranges
-> > 	and deadlocks in that case, they they get to keep all the
-> > 	broken bits because, IMO, they are doing something
-> > 	monumentally stupid. I'd probably be making it return
-> > 	EDEADLOCK back out to userspace in the case rather than
-> > 	deadlocking but, fundamentally, I think it's broken
-> > 	behaviour that we should be rejecting with an error rather
-> > 	than adding complexity trying to handle it.
-> > 
-> > So I think this recusive locking across a page fault case should
-> > just fail, not add yet more complexity to try to handle a rare
-> > corner case that exists more in theory than in reality. i.e put the
-> > lock context in the current task, then if the page fault requires a
-> > conflicting lock context to be taken, we terminate the page fault,
-> > back out of the IO and return EDEADLOCK out to userspace. This works
-> > for all types of lock contexts - only the filesystem itself needs to
-> > know what the lock context pointer contains....
-> 
-> Ok, I'm totally on board with returning EDEADLOCK.
-> 
-> Question: Would we be ok with returning EDEADLOCK for any IO where the buffer is
-> in the same address space as the file being read/written to, even if the buffer
-> and the IO don't technically overlap?
+This reverts commit c4dc2497d50d9c6fb16aa0d07b6a14f3b2adb1e0.
 
-I'd say that depends on the lock granularity. For a range lock,
-we'd be able to do the IO for non-overlapping ranges. For a normal
-mutex or rwsem, then we risk deadlock if the page fault triggers on
-the same address space host as we already have locked for IO. That's
-the case we currently handle with the second IO lock in XFS, ext4,
-btrfs, etc (XFS_MMAPLOCK_* in XFS).
+This patch enlarges a race between normal btree flush code path and
+flush_btree_write(), which causes deadlock when journal space is
+exhausted. Reverts this patch makes the race window from 128 btree
+nodes to only 1 btree nodes.
 
-One of the reasons I'm looking at range locks for XFS is to get rid
-of the need for this second mmap lock, as there is no reason for it
-existing if we can lock ranges and EDEADLOCK inside page faults and
-return errors.
+Fixes: c4dc2497d50d ("bcache: fix high CPU occupancy during journal")
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: stable@vger.kernel.org
+Cc: Tang Junhui <tang.junhui.linux@gmail.com>
+---
+ drivers/md/bcache/bcache.h  |  2 --
+ drivers/md/bcache/journal.c | 47 +++++++++++++++------------------------------
+ drivers/md/bcache/util.h    |  2 --
+ 3 files changed, 15 insertions(+), 36 deletions(-)
 
-> This would simplify things a lot and eliminate a really nasty corner case - page
-> faults trigger readahead. Even if the buffer and the direct IO don't overlap,
-> readahead can pull in pages that do overlap with the dio.
-
-Page cache readahead needs to be moved under the filesystem IO
-locks. There was a recent thread about how readahead can race with
-hole punching and other fallocate() operations because page cache
-readahead bypasses the filesystem IO locks used to serialise page
-cache invalidation.
-
-e.g. Readahead can be directed by userspace via fadvise, so we now
-have file->f_op->fadvise() so that filesystems can lock the inode
-before calling generic_fadvise() such that page cache instantiation
-and readahead dispatch can be serialised against page cache
-invalidation. I have a patch for XFS sitting around somewhere that
-implements the ->fadvise method.
-
-I think there are some other patches floating around to address the
-other readahead mechanisms to only be done under filesytem IO locks,
-but I haven't had time to dig into it any further. Readahead from
-page faults most definitely needs to be under the MMAPLOCK at
-least so it serialises against fallocate()...
-
-> And on getting EDEADLOCK we could fall back to buffered IO, so
-> userspace would never know....
-
-Yup, that's a choice that individual filesystems can make.
-
-Cheers,
-
-Dave.
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index fdf75352e16a..e30a983a68cd 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -726,8 +726,6 @@ struct cache_set {
+ 
+ #define BUCKET_HASH_BITS	12
+ 	struct hlist_head	bucket_hash[1 << BUCKET_HASH_BITS];
+-
+-	DECLARE_HEAP(struct btree *, flush_btree);
+ };
+ 
+ struct bbio {
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 12dae9348147..621ebf5c62a5 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -391,12 +391,6 @@ int bch_journal_replay(struct cache_set *s, struct list_head *list)
+ }
+ 
+ /* Journalling */
+-#define journal_max_cmp(l, r) \
+-	(fifo_idx(&c->journal.pin, btree_current_write(l)->journal) < \
+-	 fifo_idx(&(c)->journal.pin, btree_current_write(r)->journal))
+-#define journal_min_cmp(l, r) \
+-	(fifo_idx(&c->journal.pin, btree_current_write(l)->journal) > \
+-	 fifo_idx(&(c)->journal.pin, btree_current_write(r)->journal))
+ 
+ static void btree_flush_write(struct cache_set *c)
+ {
+@@ -404,35 +398,25 @@ static void btree_flush_write(struct cache_set *c)
+ 	 * Try to find the btree node with that references the oldest journal
+ 	 * entry, best is our current candidate and is locked if non NULL:
+ 	 */
+-	struct btree *b;
+-	int i;
++	struct btree *b, *best;
++	unsigned int i;
+ 
+ 	atomic_long_inc(&c->flush_write);
+-
+ retry:
+-	spin_lock(&c->journal.lock);
+-	if (heap_empty(&c->flush_btree)) {
+-		for_each_cached_btree(b, c, i)
+-			if (btree_current_write(b)->journal) {
+-				if (!heap_full(&c->flush_btree))
+-					heap_add(&c->flush_btree, b,
+-						 journal_max_cmp);
+-				else if (journal_max_cmp(b,
+-					 heap_peek(&c->flush_btree))) {
+-					c->flush_btree.data[0] = b;
+-					heap_sift(&c->flush_btree, 0,
+-						  journal_max_cmp);
+-				}
++	best = NULL;
++
++	for_each_cached_btree(b, c, i)
++		if (btree_current_write(b)->journal) {
++			if (!best)
++				best = b;
++			else if (journal_pin_cmp(c,
++					btree_current_write(best)->journal,
++					btree_current_write(b)->journal)) {
++				best = b;
+ 			}
++		}
+ 
+-		for (i = c->flush_btree.used / 2 - 1; i >= 0; --i)
+-			heap_sift(&c->flush_btree, i, journal_min_cmp);
+-	}
+-
+-	b = NULL;
+-	heap_pop(&c->flush_btree, b, journal_min_cmp);
+-	spin_unlock(&c->journal.lock);
+-
++	b = best;
+ 	if (b) {
+ 		mutex_lock(&b->write_lock);
+ 		if (!btree_current_write(b)->journal) {
+@@ -870,8 +854,7 @@ int bch_journal_alloc(struct cache_set *c)
+ 	j->w[0].c = c;
+ 	j->w[1].c = c;
+ 
+-	if (!(init_heap(&c->flush_btree, 128, GFP_KERNEL)) ||
+-	    !(init_fifo(&j->pin, JOURNAL_PIN, GFP_KERNEL)) ||
++	if (!(init_fifo(&j->pin, JOURNAL_PIN, GFP_KERNEL)) ||
+ 	    !(j->w[0].data = (void *) __get_free_pages(GFP_KERNEL, JSET_BITS)) ||
+ 	    !(j->w[1].data = (void *) __get_free_pages(GFP_KERNEL, JSET_BITS)))
+ 		return -ENOMEM;
+diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+index 1fbced94e4cc..c029f7443190 100644
+--- a/drivers/md/bcache/util.h
++++ b/drivers/md/bcache/util.h
+@@ -113,8 +113,6 @@ do {									\
+ 
+ #define heap_full(h)	((h)->used == (h)->size)
+ 
+-#define heap_empty(h)	((h)->used == 0)
+-
+ #define DECLARE_FIFO(type, name)					\
+ 	struct {							\
+ 		size_t front, back, size, mask;				\
 -- 
-Dave Chinner
-david@fromorbit.com
+2.16.4
