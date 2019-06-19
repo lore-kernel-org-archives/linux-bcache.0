@@ -1,61 +1,54 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH 11/29] bcache: ignore read-ahead request failure on backing device
-Date: Fri, 14 Jun 2019 21:13:40 +0800
-Message-ID: <20190614131358.2771-12-colyli@suse.de>
-References: <20190614131358.2771-1-colyli@suse.de>
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190614131358.2771-1-colyli@suse.de>
-Sender: stable-owner@vger.kernel.org
-To: linux-bcache@vger.kernel.org
-Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org
+From: Jan Kara <jack@suse.cz>
+Subject: Re: bcachefs status update (it's done cooking; let's get this sucker
+ merged)
+Date: Wed, 19 Jun 2019 10:21:41 +0200
+Message-ID: <20190619082141.GA32409@quack2.suse.cz>
+References: <20190610191420.27007-1-kent.overstreet@gmail.com>
+ <CAHk-=wi0iMHcO5nsYug06fV3-8s8fz7GDQWCuanefEGq6mHH1Q@mail.gmail.com>
+ <20190611011737.GA28701@kmo-pixel>
+ <20190611043336.GB14363@dread.disaster.area>
+ <20190612162144.GA7619@kmo-pixel>
+ <20190612230224.GJ14308@dread.disaster.area>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <20190612230224.GJ14308@dread.disaster.area>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Dave Chinner <david@fromorbit.com>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Dave Chinner <dchinner@redhat.com>, Waiman Long <longman@redhat.com>, Peter Zijlstra <peterz@infradead.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-bcache@vger.kernel.org, "Darrick J . Wong" <darrick.wong@oracle.com>, Zach Brown <zach.brown@ni.com>, Jens Axboe <axboe@kernel.dk>, Josef Bacik <josef@toxicpanda.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
 List-Id: linux-bcache@vger.kernel.org
 
-When md raid device (e.g. raid456) is used as backing device, read-ahead
-requests on a degrading and recovering md raid device might be failured
-immediately by md raid code, but indeed this md raid array can still be
-read or write for normal I/O requests. Therefore such failed read-ahead
-request are not real hardware failure. Further more, after degrading and
-recovering accomplished, read-ahead requests will be handled by md raid
-array again.
+On Thu 13-06-19 09:02:24, Dave Chinner wrote:
+> On Wed, Jun 12, 2019 at 12:21:44PM -0400, Kent Overstreet wrote:
+> > This would simplify things a lot and eliminate a really nasty corner case - page
+> > faults trigger readahead. Even if the buffer and the direct IO don't overlap,
+> > readahead can pull in pages that do overlap with the dio.
+> 
+> Page cache readahead needs to be moved under the filesystem IO
+> locks. There was a recent thread about how readahead can race with
+> hole punching and other fallocate() operations because page cache
+> readahead bypasses the filesystem IO locks used to serialise page
+> cache invalidation.
+> 
+> e.g. Readahead can be directed by userspace via fadvise, so we now
+> have file->f_op->fadvise() so that filesystems can lock the inode
+> before calling generic_fadvise() such that page cache instantiation
+> and readahead dispatch can be serialised against page cache
+> invalidation. I have a patch for XFS sitting around somewhere that
+> implements the ->fadvise method.
+> 
+> I think there are some other patches floating around to address the
+> other readahead mechanisms to only be done under filesytem IO locks,
+> but I haven't had time to dig into it any further. Readahead from
+> page faults most definitely needs to be under the MMAPLOCK at
+> least so it serialises against fallocate()...
 
-For such condition, I/O failures of read-ahead requests don't indicate
-real health status (because normal I/O still be served), they should not
-be counted into I/O error counter dc->io_errors.
+Yes, I have patch to make madvise(MADV_WILLNEED) go through ->fadvise() as
+well. I'll post it soon since the rest of the series isn't really dependent
+on it.
 
-Since there is no simple way to detect whether the backing divice is a
-md raid device, this patch simply ignores I/O failures for read-ahead
-bios on backing device, to avoid bogus backing device failure on a
-degrading md raid array.
-
-Suggested-and-tested-by: Thorsten Knabe <linux@thorsten-knabe.de>
-Signed-off-by: Coly Li <colyli@suse.de>
-Cc: stable@vger.kernel.org
----
- drivers/md/bcache/io.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index c25097968319..4d93f07f63e5 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -58,6 +58,18 @@ void bch_count_backing_io_errors(struct cached_dev *dc, struct bio *bio)
- 
- 	WARN_ONCE(!dc, "NULL pointer of struct cached_dev");
- 
-+	/*
-+	 * Read-ahead requests on a degrading and recovering md raid
-+	 * (e.g. raid6) device might be failured immediately by md
-+	 * raid code, which is not a real hardware media failure. So
-+	 * we shouldn't count failed REQ_RAHEAD bio to dc->io_errors.
-+	 */
-+	if (bio->bi_opf & REQ_RAHEAD) {
-+		pr_warn_ratelimited("%s: Read-ahead I/O failed on backing device, ignore",
-+				    dc->backing_dev_name);
-+		return;
-+	}
-+
- 	errors = atomic_add_return(1, &dc->io_errors);
- 	if (errors < dc->error_limit)
- 		pr_err("%s: IO error on backing device, unrecoverable",
+								Honza
 -- 
-2.16.4
+Jan Kara <jack@suse.com>
+SUSE Labs, CR
