@@ -1,8 +1,8 @@
 From: Coly Li <colyli@suse.de>
 Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent for
  hardware raid5/6
-Date: Mon, 24 Jun 2019 14:57:42 +0800
-Message-ID: <1185f3ad-ac4c-7f48-206f-22fdbbfe289e@suse.de>
+Date: Mon, 24 Jun 2019 15:05:27 +0800
+Message-ID: <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de>
 References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de>
  <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net>
 Mime-Version: 1.0
