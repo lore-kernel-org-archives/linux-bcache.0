@@ -1,90 +1,39 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent
- for hardware raid5/6
-Date: Wed, 26 Jun 2019 00:23:09 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1906260005570.1114@mx.ewheeler.net>
-References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de>        <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net>        <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de>        <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net>
- <yq17e9ao9c3.fsf@oracle.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent for hardware raid5/6
+Date: Tue, 25 Jun 2019 22:50:47 -0400
+Message-ID: <yq1ef3hm54o.fsf@oracle.com>
+References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de>
+        <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net>
+        <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de>
+        <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net>
+        <yq17e9ao9c3.fsf@oracle.com>
+        <alpine.LRH.2.11.1906260005570.1114@mx.ewheeler.net>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <yq17e9ao9c3.fsf@oracle.com>
+In-Reply-To: <alpine.LRH.2.11.1906260005570.1114@mx.ewheeler.net> (Eric
+        Wheeler's message of "Wed, 26 Jun 2019 00:23:09 +0000 (UTC)")
 Sender: linux-kernel-owner@vger.kernel.org
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Coly Li <colyli@suse.de>, linux-block@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>, Kent Overstreet <kent.overstreet@gmail.com>, "open list\\:DOCUMENTATION" <linux-doc@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "open list\\:BCACHE \\(BLOCK LAYER CACHE\\)" <linux-bcache@vger.kernel.org>
+To: Eric Wheeler <bcache@lists.ewheeler.net>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, Coly Li <colyli@suse.de>, linux-block@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>, Kent Overstreet <kent.overstreet@gmail.com>, "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On Mon, 24 Jun 2019, Martin K. Petersen wrote:
-> > Perhaps they do not set stripe_width using io_opt? I did a grep to see
-> > if any of them did, but I didn't see them. How is stripe_width
-> > indicated by RAID controllers?
-> 
-> The values are reported in the Block Limits VPD page for each SCSI block
-> device and are thus set by the SCSI disk driver. IOW, the RAID
-> controller device drivers have nothing to do with this.
-> 
-> For RAID controllers specifically, the controller firmware will fill out
-> the VPD fields for each virtual SCSI disk when you configure a RAID
-> set. For pretty much everything else, the Block Limits come straight
-> from the device itself.
-> 
-> Also note that these values aren't specific to RAID controllers at
-> all. Most new SCSI devices, including disk drives and SSDs, will fill
-> out the Block Limits VPD page one way or the other. Even some USB
-> storage devices are providing this page.
 
-Thanks, that makes sense.  Interesting about USB.
+Eric,
 
-> > If they do set io_opt, then at least my Areca 1883 does not set io_opt
-> > as of 4.19.x. I also have a LSI MegaRAID 3108 which does not report
-> > io_opt as of 4.1.x, but that is an older kernel so maybe support has
-> > been added since then.
-> 
-> I have several MegaRAIDs that all report it. But it depends on the
-> controller firmware.
-> 
-> > Is it visible through sysfs or debugfs so I can check my hardware
-> > support without hacking debugging the kernel?
-> 
-> To print the block device topology:
-> 
->   # lsblk -t
-> 
-> or look up io_opt in sysfs:
-> 
->   # grep . /sys/block/sdX/queue/optimal_io_size
-> 
-> You can also query a SCSI device's Block Limits directly:
-> 
->   # sg_vpd -p bl /dev/sdX
+> * LSI 2108 (Supermicro)
+> * LSI 3108 (Dell)
+> * Areca 1882
+> * Areca 1883
+> * Fibrechannel 8gbe connected to a Storwize 3700
 
-Perfect, thank you for that.  I've tried the following controllers that I 
-have access to.  One worked (hspa/HP Gen8 Smart Array Controller), but the 
-others I tried are not providing VPDs:
+I have a 3108 that provides the BL VPD. Surprised the 1883 doesn't.
 
-* LSI 2108 (Supermicro)
-* LSI 3108 (Dell)
-* Areca 1882
-* Areca 1883
-* Fibrechannel 8gbe connected to a Storwize 3700
+As a rule of thumb, you need 12 Gbps SAS or 16 Gbps FC devices for the
+VPD page to be present. The protocol feature is not tied to the
+transport signaling speed in any way. But general support for the BL VPD
+page roughly coincided with vendors introducing 12 Gbps SAS and 16 Gbps
+FC products to the market.
 
-~]# sg_vpd -p bl /dev/sdb
-VPD page=0xb0
-fetching VPD page failed
-
-> If you want to tinker, you can simulate a SCSI disk with your choice of
-> io_opt:
-> 
->   # modprobe scsi_debug opt_blks=N
-> 
-> where N is the number of logical blocks to report as being the optimal
-> I/O size.
-
-Neat, thanks for the hint!
-
--Eric
-
-> 
-> -- 
-> Martin K. Petersen	Oracle Linux Engineering
-> 
+-- 
+Martin K. Petersen	Oracle Linux Engineering
