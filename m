@@ -1,92 +1,90 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent for
- hardware raid5/6
-Date: Tue, 25 Jun 2019 09:59:23 +0800
-Message-ID: <8a9131dc-9bf7-a24a-f7b8-35e0c019e905@suse.de>
-References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de>
- <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net>
- <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de>
- <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent
+ for hardware raid5/6
+Date: Wed, 26 Jun 2019 00:23:09 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1906260005570.1114@mx.ewheeler.net>
+References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de>        <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net>        <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de>        <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net>
+ <yq17e9ao9c3.fsf@oracle.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net>
-Content-Language: en-US
+In-Reply-To: <yq17e9ao9c3.fsf@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: linux-block@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>, Kent Overstreet <kent.overstreet@gmail.com>, "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>, "Martin K. Petersen" <martin.petersen@oracle.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Coly Li <colyli@suse.de>, linux-block@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>, Kent Overstreet <kent.overstreet@gmail.com>, "open list\\:DOCUMENTATION" <linux-doc@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "open list\\:BCACHE \\(BLOCK LAYER CACHE\\)" <linux-bcache@vger.kernel.org>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/6/25 2:14 上午, Eric Wheeler wrote:
-> On Mon, 24 Jun 2019, Coly Li wrote:
+On Mon, 24 Jun 2019, Martin K. Petersen wrote:
+> > Perhaps they do not set stripe_width using io_opt? I did a grep to see
+> > if any of them did, but I didn't see them. How is stripe_width
+> > indicated by RAID controllers?
 > 
->> On 2019/6/23 7:16 上午, Eric Wheeler wrote:
->>> From: Eric Wheeler <git@linux.ewheeler.net>
->>>
->>> While some drivers set queue_limits.io_opt (e.g., md raid5), there are
->>> currently no SCSI/RAID controller drivers that do.  Previously stripe_size
->>> and partial_stripes_expensive were read-only values and could not be
->>> tuned by users (eg, for hardware RAID5/6).
->>>
->>> This patch enables users to save the optimal IO size via sysfs through
->>> the backing device attributes stripe_size and partial_stripes_expensive
->>> into the bcache superblock.
->>>
->>> Superblock changes are backwards-compatable:
->>>
->>> *  partial_stripes_expensive: One bit was used in the superblock flags field
->>>
->>> *  stripe_size: There are eight 64-bit "pad" fields for future use in
->>>    the superblock which default to 0; from those, 32-bits are now used
->>>    to save the stripe_size and load at device registration time.
->>>
->>> Signed-off-by: Eric Wheeler <bcache@linux.ewheeler.net>
->>
->> Hi Eric,
->>
->> In general I am OK with this patch. Since Peter comments lots of SCSI
->> RAID devices reports a stripe width, could you please list the hardware
->> raid devices which don't list stripe size ? Then we can make decision
->> whether it is necessary to have such option enabled.
+> The values are reported in the Block Limits VPD page for each SCSI block
+> device and are thus set by the SCSI disk driver. IOW, the RAID
+> controller device drivers have nothing to do with this.
 > 
-> Perhaps they do not set stripe_width using io_opt? I did a grep to see if 
-> any of them did, but I didn't see them. How is stripe_width indicated by 
-> RAID controllers? 
+> For RAID controllers specifically, the controller firmware will fill out
+> the VPD fields for each virtual SCSI disk when you configure a RAID
+> set. For pretty much everything else, the Block Limits come straight
+> from the device itself.
 > 
-> If they do set io_opt, then at least my Areca 1883 does not set io_opt as 
-> of 4.19.x. I also have a LSI MegaRAID 3108 which does not report io_opt as 
-> of 4.1.x, but that is an older kernel so maybe support has been added 
-> since then.
+> Also note that these values aren't specific to RAID controllers at
+> all. Most new SCSI devices, including disk drives and SSDs, will fill
+> out the Block Limits VPD page one way or the other. Even some USB
+> storage devices are providing this page.
+
+Thanks, that makes sense.  Interesting about USB.
+
+> > If they do set io_opt, then at least my Areca 1883 does not set io_opt
+> > as of 4.19.x. I also have a LSI MegaRAID 3108 which does not report
+> > io_opt as of 4.1.x, but that is an older kernel so maybe support has
+> > been added since then.
 > 
-> Martin,
+> I have several MegaRAIDs that all report it. But it depends on the
+> controller firmware.
 > 
-> Where would stripe_width be configured in the SCSI drivers? Is it visible 
-> through sysfs or debugfs so I can check my hardware support without 
-> hacking debugging the kernel?
+> > Is it visible through sysfs or debugfs so I can check my hardware
+> > support without hacking debugging the kernel?
 > 
->>
->> Another point is, this patch changes struct cache_sb, it is no problem
->> to change on-disk format. I plan to update the super block version soon,
->> to store more configuration persistently into super block. stripe_size
->> can be added to cache_sb with other on-disk changes.
+> To print the block device topology:
 > 
+>   # lsblk -t
+> 
+> or look up io_opt in sysfs:
+> 
+>   # grep . /sys/block/sdX/queue/optimal_io_size
+> 
+> You can also query a SCSI device's Block Limits directly:
+> 
+>   # sg_vpd -p bl /dev/sdX
 
-Hi Eric,
+Perfect, thank you for that.  I've tried the following controllers that I 
+have access to.  One worked (hspa/HP Gen8 Smart Array Controller), but the 
+others I tried are not providing VPDs:
 
-> Maybe bumping version makes sense, but even if you do not, this is safe to 
-> use on systems without bumping the version because the values are unused 
-> and default to 0.
+* LSI 2108 (Supermicro)
+* LSI 3108 (Dell)
+* Areca 1882
+* Areca 1883
+* Fibrechannel 8gbe connected to a Storwize 3700
 
-Yes, I understand you, it works as you suggested. I need to think how to
-organize all options in struct cache_sb, stripe_size will be arranged
-then. And I will ask help to you for reviewing the changes of on-disk
-format.
+~]# sg_vpd -p bl /dev/sdb
+VPD page=0xb0
+fetching VPD page failed
 
-Thanks.
+> If you want to tinker, you can simulate a SCSI disk with your choice of
+> io_opt:
+> 
+>   # modprobe scsi_debug opt_blks=N
+> 
+> where N is the number of logical blocks to report as being the optimal
+> I/O size.
 
-[snipped]
+Neat, thanks for the hint!
 
--- 
+-Eric
 
-Coly Li
+> 
+> -- 
+> Martin K. Petersen	Oracle Linux Engineering
+> 
