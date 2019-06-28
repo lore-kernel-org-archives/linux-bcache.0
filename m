@@ -1,39 +1,69 @@
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent for hardware raid5/6
-Date: Tue, 25 Jun 2019 22:50:47 -0400
-Message-ID: <yq1ef3hm54o.fsf@oracle.com>
-References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de>
-        <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net>
-        <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de>
-        <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net>
-        <yq17e9ao9c3.fsf@oracle.com>
-        <alpine.LRH.2.11.1906260005570.1114@mx.ewheeler.net>
-Mime-Version: 1.0
-Content-Type: text/plain
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <alpine.LRH.2.11.1906260005570.1114@mx.ewheeler.net> (Eric
-        Wheeler's message of "Wed, 26 Jun 2019 00:23:09 +0000 (UTC)")
-Sender: linux-kernel-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, Coly Li <colyli@suse.de>, linux-block@vger.kernel.org, Jonathan Corbet <corbet@lwn.net>, Kent Overstreet <kent.overstreet@gmail.com>, "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>, open list <linux-kernel@vger.kernel.org>, "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH 04/37] Revert "bcache: set CACHE_SET_IO_DISABLE in bch_cached_dev_error()"
+Date: Fri, 28 Jun 2019 19:59:27 +0800
+Message-ID: <20190628120000.40753-5-colyli@suse.de>
+References: <20190628120000.40753-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190628120000.40753-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
+This reverts commit 6147305c73e4511ca1a975b766b97a779d442567.
 
-Eric,
+Although this patch helps the failed bcache device to stop faster when
+too many I/O errors detected on corresponding cached device, setting
+CACHE_SET_IO_DISABLE bit to cache set c->flags was not a good idea. This
+operation will disable all I/Os on cache set, which means other attached
+bcache devices won't work neither.
 
-> * LSI 2108 (Supermicro)
-> * LSI 3108 (Dell)
-> * Areca 1882
-> * Areca 1883
-> * Fibrechannel 8gbe connected to a Storwize 3700
+Without this patch, the failed bcache device can also be stopped
+eventually if internal I/O accomplished (e.g. writeback). Therefore here
+I revert it.
 
-I have a 3108 that provides the BL VPD. Surprised the 1883 doesn't.
+Fixes: 6147305c73e4 ("bcache: set CACHE_SET_IO_DISABLE in bch_cached_dev_error()")
+Reported-by: Yong Li <mr.liyong@qq.com>
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: stable@vger.kernel.org
+---
+ drivers/md/bcache/super.c | 17 -----------------
+ 1 file changed, 17 deletions(-)
 
-As a rule of thumb, you need 12 Gbps SAS or 16 Gbps FC devices for the
-VPD page to be present. The protocol feature is not tied to the
-transport signaling speed in any way. But general support for the BL VPD
-page roughly coincided with vendors introducing 12 Gbps SAS and 16 Gbps
-FC products to the market.
-
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 64d9de89a63f..ba2ad093bc80 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1437,8 +1437,6 @@ int bch_flash_dev_create(struct cache_set *c, uint64_t size)
+ 
+ bool bch_cached_dev_error(struct cached_dev *dc)
+ {
+-	struct cache_set *c;
+-
+ 	if (!dc || test_bit(BCACHE_DEV_CLOSING, &dc->disk.flags))
+ 		return false;
+ 
+@@ -1449,21 +1447,6 @@ bool bch_cached_dev_error(struct cached_dev *dc)
+ 	pr_err("stop %s: too many IO errors on backing device %s\n",
+ 		dc->disk.disk->disk_name, dc->backing_dev_name);
+ 
+-	/*
+-	 * If the cached device is still attached to a cache set,
+-	 * even dc->io_disable is true and no more I/O requests
+-	 * accepted, cache device internal I/O (writeback scan or
+-	 * garbage collection) may still prevent bcache device from
+-	 * being stopped. So here CACHE_SET_IO_DISABLE should be
+-	 * set to c->flags too, to make the internal I/O to cache
+-	 * device rejected and stopped immediately.
+-	 * If c is NULL, that means the bcache device is not attached
+-	 * to any cache set, then no CACHE_SET_IO_DISABLE bit to set.
+-	 */
+-	c = dc->disk.c;
+-	if (c && test_and_set_bit(CACHE_SET_IO_DISABLE, &c->flags))
+-		pr_info("CACHE_SET_IO_DISABLE already set");
+-
+ 	bcache_device_stop(&dc->disk);
+ 	return true;
+ }
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+2.16.4
