@@ -1,7 +1,7 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 06/37] bcache: ignore read-ahead request failure on backing device
-Date: Fri, 28 Jun 2019 19:59:29 +0800
-Message-ID: <20190628120000.40753-7-colyli@suse.de>
+Subject: [PATCH 20/37] bcache: fix mistaken sysfs entry for io_error counter
+Date: Fri, 28 Jun 2019 19:59:43 +0800
+Message-ID: <20190628120000.40753-21-colyli@suse.de>
 References: <20190628120000.40753-1-colyli@suse.de>
 Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20190628120000.40753-1-colyli@suse.de>
@@ -10,52 +10,40 @@ To: axboe@kernel.dk
 Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-When md raid device (e.g. raid456) is used as backing device, read-ahead
-requests on a degrading and recovering md raid device might be failured
-immediately by md raid code, but indeed this md raid array can still be
-read or write for normal I/O requests. Therefore such failed read-ahead
-request are not real hardware failure. Further more, after degrading and
-recovering accomplished, read-ahead requests will be handled by md raid
-array again.
+In bch_cached_dev_files[] from driver/md/bcache/sysfs.c, sysfs_errors is
+incorrectly inserted in. The correct entry should be sysfs_io_errors.
 
-For such condition, I/O failures of read-ahead requests don't indicate
-real health status (because normal I/O still be served), they should not
-be counted into I/O error counter dc->io_errors.
+This patch fixes the problem and now I/O errors of cached device can be
+read from /sys/block/bcache<N>/bcache/io_errors.
 
-Since there is no simple way to detect whether the backing divice is a
-md raid device, this patch simply ignores I/O failures for read-ahead
-bios on backing device, to avoid bogus backing device failure on a
-degrading md raid array.
-
-Suggested-and-tested-by: Thorsten Knabe <linux@thorsten-knabe.de>
+Fixes: c7b7bd07404c5 ("bcache: add io_disable to struct cached_dev")
 Signed-off-by: Coly Li <colyli@suse.de>
 Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/io.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/md/bcache/sysfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
-index c25097968319..4d93f07f63e5 100644
---- a/drivers/md/bcache/io.c
-+++ b/drivers/md/bcache/io.c
-@@ -58,6 +58,18 @@ void bch_count_backing_io_errors(struct cached_dev *dc, struct bio *bio)
- 
- 	WARN_ONCE(!dc, "NULL pointer of struct cached_dev");
- 
-+	/*
-+	 * Read-ahead requests on a degrading and recovering md raid
-+	 * (e.g. raid6) device might be failured immediately by md
-+	 * raid code, which is not a real hardware media failure. So
-+	 * we shouldn't count failed REQ_RAHEAD bio to dc->io_errors.
-+	 */
-+	if (bio->bi_opf & REQ_RAHEAD) {
-+		pr_warn_ratelimited("%s: Read-ahead I/O failed on backing device, ignore",
-+				    dc->backing_dev_name);
-+		return;
-+	}
-+
- 	errors = atomic_add_return(1, &dc->io_errors);
- 	if (errors < dc->error_limit)
- 		pr_err("%s: IO error on backing device, unrecoverable",
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index eb678e43ac00..dddb8d4048ce 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -176,7 +176,7 @@ SHOW(__bch_cached_dev)
+ 	var_print(writeback_percent);
+ 	sysfs_hprint(writeback_rate,
+ 		     wb ? atomic_long_read(&dc->writeback_rate.rate) << 9 : 0);
+-	sysfs_hprint(io_errors,		atomic_read(&dc->io_errors));
++	sysfs_printf(io_errors,		"%i", atomic_read(&dc->io_errors));
+ 	sysfs_printf(io_error_limit,	"%i", dc->error_limit);
+ 	sysfs_printf(io_disable,	"%i", dc->io_disable);
+ 	var_print(writeback_rate_update_seconds);
+@@ -463,7 +463,7 @@ static struct attribute *bch_cached_dev_files[] = {
+ 	&sysfs_writeback_rate_p_term_inverse,
+ 	&sysfs_writeback_rate_minimum,
+ 	&sysfs_writeback_rate_debug,
+-	&sysfs_errors,
++	&sysfs_io_errors,
+ 	&sysfs_io_error_limit,
+ 	&sysfs_io_disable,
+ 	&sysfs_dirty_data,
 -- 
 2.16.4
