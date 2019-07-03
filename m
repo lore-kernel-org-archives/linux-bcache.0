@@ -1,93 +1,38 @@
-From: Boaz Harrosh <openosd@gmail.com>
-Subject: [PATCH] mm: Support madvise_willneed override by Filesystems
-Date: Wed, 3 Jul 2019 04:04:57 +0300
-Message-ID: <27171de5-430e-b3a8-16f1-7ce25b76c874@gmail.com>
-References: <20190610191420.27007-1-kent.overstreet@gmail.com>
- <CAHk-=wi0iMHcO5nsYug06fV3-8s8fz7GDQWCuanefEGq6mHH1Q@mail.gmail.com>
- <20190611011737.GA28701@kmo-pixel>
- <20190611043336.GB14363@dread.disaster.area>
- <20190612162144.GA7619@kmo-pixel>
- <20190612230224.GJ14308@dread.disaster.area>
- <20190619082141.GA32409@quack2.suse.cz>
+From: Chaitanya Kulkarni <Chaitanya.Kulkarni@wdc.com>
+Subject: Re: [PATCH V3 4/9] blk-zoned: update
+ blkdev_reset_zones() with helper
+Date: Wed, 3 Jul 2019 02:29:33 +0000
+Message-ID: <DM6PR04MB5754D27FC41D86E2D419DD6C86FB0@DM6PR04MB5754.namprd04.prod.outlook.com>
+References: <20190702174236.3332-1-chaitanya.kulkarni@wdc.com>
+ <20190702174236.3332-5-chaitanya.kulkarni@wdc.com>
+ <20190703002347.GE15705@minwoo-desktop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190619082141.GA32409@quack2.suse.cz>
-Content-Language: en-MW
-Sender: linux-kernel-owner@vger.kernel.org
-To: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Dave Chinner <dchinner@redhat.com>, Waiman Long <longman@redhat.com>, Peter Zijlstra <peterz@infradead.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-bcache@vger.kernel.org, "Darrick J . Wong" <darrick.wong@oracle.com>, Zach Brown <zach.brown@ni.com>, Jens Axboe <axboe@kernel.dk>, Josef Bacik <josef@toxicpanda.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>, Amir Goldstein <amir73il@gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <xen-devel-bounces@lists.xenproject.org>
+Content-Language: en-US
+List-Unsubscribe: <https://lists.xenproject.org/mailman/options/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=unsubscribe>
+List-Post: <mailto:xen-devel@lists.xenproject.org>
+List-Help: <mailto:xen-devel-request@lists.xenproject.org?subject=help>
+List-Subscribe: <https://lists.xenproject.org/mailman/listinfo/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=subscribe>
+Errors-To: xen-devel-bounces@lists.xenproject.org
+Sender: "Xen-devel" <xen-devel-bounces@lists.xenproject.org>
+To: Minwoo Im <minwoo.im.dev@gmail.com>
+Cc: Damien Le Moal <Damien.LeMoal@wdc.com>, "linux-btrace@vger.kernel.org" <linux-btrace@vger.kernel.org>, "bvanassche@acm.org" <bvanassche@acm.org>, "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>, "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>, "yuchao0@huawei.com" <yuchao0@huawei.com>, "colyli@suse.de" <colyli@suse.de>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "jaegeuk@kernel.org" <jaegeuk@kernel.org>, "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, "roger.pau@citrix.com" <roger.pau@citrix.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 19/06/2019 11:21, Jan Kara wrote:
-<>
-> Yes, I have patch to make madvise(MADV_WILLNEED) go through ->fadvise() as
-> well. I'll post it soon since the rest of the series isn't really dependent
-> on it.
-> 
-> 								Honza
-> 
-
-Hi Jan
-
-Funny I'm sitting on the same patch since LSF last. I need it too for other
-reasons. I have not seen, have you pushed your patch yet?
-(Is based on old v4.20)
-
-~~~~~~~~~
-From fddb38169e33d23060ddd444ba6f2319f76edc89 Mon Sep 17 00:00:00 2001
-From: Boaz Harrosh <boazh@netapp.com>
-Date: Thu, 16 May 2019 20:02:14 +0300
-Subject: [PATCH] mm: Support madvise_willneed override by Filesystems
-
-In the patchset:
-	[b833a3660394] ovl: add ovl_fadvise()
-	[3d8f7615319b] vfs: implement readahead(2) using POSIX_FADV_WILLNEED
-	[45cd0faae371] vfs: add the fadvise() file operation
-
-Amir Goldstein introduced a way for filesystems to overide fadvise.
-Well madvise_willneed is exactly as fadvise_willneed except it always
-returns 0.
-
-In this patch we call the FS vector if it exists.
-
-NOTE: I called vfs_fadvise(..,POSIX_FADV_WILLNEED);
-      (Which is my artistic preference)
-
-I could also selectively call
-	if (file->f_op->fadvise)
-		return file->f_op->fadvise(..., POSIX_FADV_WILLNEED);
-If we fear theoretical side effects. I don't mind either way.
-
-CC: Amir Goldstein <amir73il@gmail.com>
-CC: Miklos Szeredi <mszeredi@redhat.com>
-Signed-off-by: Boaz Harrosh <boazh@netapp.com>
----
- mm/madvise.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/mm/madvise.c b/mm/madvise.c
-index 6cb1ca93e290..6b84ddcaaaf2 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -24,6 +24,7 @@
- #include <linux/swapops.h>
- #include <linux/shmem_fs.h>
- #include <linux/mmu_notifier.h>
-+#include <linux/fadvise.h>
- 
- #include <asm/tlb.h>
- 
-@@ -303,7 +304,8 @@ static long madvise_willneed(struct vm_area_struct *vma,
- 		end = vma->vm_end;
- 	end = ((end - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
- 
--	force_page_cache_readahead(file->f_mapping, file, start, end - start);
-+	vfs_fadvise(file, start << PAGE_SHIFT, (end - start) << PAGE_SHIFT,
-+		    POSIX_FADV_WILLNEED);
- 	return 0;
- }
- 
--- 
-2.20.1
+T24gNy8yLzE5IDU6MjMgUE0sIE1pbndvbyBJbSB3cm90ZToKPiBPbiAxOS0wNy0wMiAxMDo0Mjoz
+MCwgQ2hhaXRhbnlhIEt1bGthcm5pIHdyb3RlOgo+PiBUaGlzIHBhdGNoIHVwZGF0ZXMgdGhlIGJs
+a2Rldl9yZXNldF96b25lcygpIHdpdGggbmV3bHkgaW50cm9kdWNlZAo+PiBoZWxwZXIgZnVuY3Rp
+b24gdG8gcmVhZCB0aGUgbnJfc2VjdHMgZnJvbSBibG9jayBkZXZpY2UncyBoZF9wYXJ0cyB3aXRo
+Cj4+IHRoZSBoZWxwIG9mIHBhcnRfbnJfc2VjdHNfcmVhZCgpLgo+IENoYWl0YW55YSwKPgo+IEFy
+ZSB0aGUgZmlyc3QgdGhyZWUgcGF0Y2hlcyBzcGxpdCBmb3IgYSBzcGVjaWFsIHJlYXNvbj8gIElN
+SE8sIGl0IGNvdWxkCj4gYmUgc3F1YXNoZWQgaW50byBhIHNpbmdsZSBvbmUuCj4KPiBJdCBsb29r
+cyBnb29kIHRvIG1lLCBieSB0aGUgd2F5LgoKSW4gdGhlIGJsay16b25lZC5jIGluIHRoaXMgd2F5
+IGl0IGlzIGVhc2llciB0byBiaXNlY3QgaWYvd2hlbiB0aGUgcHJvYmxlbQoKY29tZXMuCgo+Cj4g
+UmV2aWV3ZWQtYnk6IE1pbndvbyBJbSA8bWlud29vLmltLmRldkBnbWFpbC5jb20+Cj4KCgpfX19f
+X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fXwpYZW4tZGV2ZWwgbWFp
+bGluZyBsaXN0Clhlbi1kZXZlbEBsaXN0cy54ZW5wcm9qZWN0Lm9yZwpodHRwczovL2xpc3RzLnhl
+bnByb2plY3Qub3JnL21haWxtYW4vbGlzdGluZm8veGVuLWRldmVs
