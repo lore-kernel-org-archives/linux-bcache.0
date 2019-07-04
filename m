@@ -1,53 +1,95 @@
-From: Boaz Harrosh <openosd@gmail.com>
-Subject: Re: [PATCH] mm: Support madvise_willneed override by Filesystems
-Date: Wed, 3 Jul 2019 21:03:42 +0300
-Message-ID: <7206059e-5a57-aa46-0a6c-e62b085f6c75@gmail.com>
-References: <20190610191420.27007-1-kent.overstreet@gmail.com>
- <CAHk-=wi0iMHcO5nsYug06fV3-8s8fz7GDQWCuanefEGq6mHH1Q@mail.gmail.com>
- <20190611011737.GA28701@kmo-pixel>
- <20190611043336.GB14363@dread.disaster.area>
- <20190612162144.GA7619@kmo-pixel>
- <20190612230224.GJ14308@dread.disaster.area>
- <20190619082141.GA32409@quack2.suse.cz>
- <27171de5-430e-b3a8-16f1-7ce25b76c874@gmail.com>
- <20190703172141.GD26423@quack2.suse.cz>
+From: Chaitanya Kulkarni <Chaitanya.Kulkarni@wdc.com>
+Subject: Re: [PATCH V3 1/9] block: add a helper function to read
+ nr_setcs
+Date: Thu, 4 Jul 2019 00:11:48 +0000
+Message-ID: <BYAPR04MB57492202BACDEE2991620E4D86FA0@BYAPR04MB5749.namprd04.prod.outlook.com>
+References: <20190702174236.3332-1-chaitanya.kulkarni@wdc.com>
+ <20190702174236.3332-2-chaitanya.kulkarni@wdc.com>
+ <26917678-fd82-b6c8-761e-220bc7d3b179@acm.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190703172141.GD26423@quack2.suse.cz>
-Content-Language: en-MW
-Sender: linux-kernel-owner@vger.kernel.org
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>, Kent Overstreet <kent.overstreet@gmail.com>, Linus Torvalds <torvalds@linux-foundation.org>, Dave Chinner <dchinner@redhat.com>, Waiman Long <longman@redhat.com>, Peter Zijlstra <peterz@infradead.org>, Linux List Kernel Mailing <linux-kernel@vger.kernel.org>, linux-fsdevel <linux-fsdevel@vger.kernel.org>, linux-bcache@vger.kernel.org, "Darrick J . Wong" <darrick.wong@oracle.com>, Zach Brown <zach.brown@ni.com>, Jens Axboe <axboe@kernel.dk>, Josef Bacik <josef@toxicpanda.com>, Alexander Viro <viro@zeniv.linux.org.uk>, Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>, Amir Goldstein <amir73il@gmail.com>
+Content-Type: multipart/mixed; boundary="===============8352981984950808594=="
+Return-path: <xen-devel-bounces@lists.xenproject.org>
+Content-Language: en-US
+List-Unsubscribe: <https://lists.xenproject.org/mailman/options/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=unsubscribe>
+List-Post: <mailto:xen-devel@lists.xenproject.org>
+List-Help: <mailto:xen-devel-request@lists.xenproject.org?subject=help>
+List-Subscribe: <https://lists.xenproject.org/mailman/listinfo/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=subscribe>
+Errors-To: xen-devel-bounces@lists.xenproject.org
+Sender: "Xen-devel" <xen-devel-bounces@lists.xenproject.org>
+To: Bart Van Assche <bvanassche@acm.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
+Cc: Damien Le Moal <Damien.LeMoal@wdc.com>, "linux-btrace@vger.kernel.org" <linux-btrace@vger.kernel.org>, "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>, "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>, "yuchao0@huawei.com" <yuchao0@huawei.com>, "colyli@suse.de" <colyli@suse.de>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "jaegeuk@kernel.org" <jaegeuk@kernel.org>, "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>, "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>, "roger.pau@citrix.com" <roger.pau@citrix.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 03/07/2019 20:21, Jan Kara wrote:
-> On Wed 03-07-19 04:04:57, Boaz Harrosh wrote:
->> On 19/06/2019 11:21, Jan Kara wrote:
->> <>
-<>
->> Hi Jan
->>
->> Funny I'm sitting on the same patch since LSF last. I need it too for other
->> reasons. I have not seen, have you pushed your patch yet?
->> (Is based on old v4.20)
-> 
-> Your patch is wrong due to lock ordering. You should not call vfs_fadvise()
-> under mmap_sem. So we need to do a similar dance like madvise_remove(). I
-> have to get to writing at least XFS fix so that the madvise change gets
-> used and post the madvise patch with it... Sorry it takes me so long.
-> 
-> 								Honza
+--===============8352981984950808594==
+Content-Language: en-US
+Content-Type: multipart/alternative;
+	boundary="_000_BYAPR04MB57492202BACDEE2991620E4D86FA0BYAPR04MB5749namp_"
 
-Ha Sorry I was not aware of this. Lockdep did not catch it on my setup
-because my setup does not have any locking conflicts with mmap_sem on the
-WILL_NEED path.
+--_000_BYAPR04MB57492202BACDEE2991620E4D86FA0BYAPR04MB5749namp_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-But surly you are right because the all effort is to fix the locking problems.
+On 7/3/19 8:03 AM, Bart Van Assche wrote:
 
-I will also try in a day or two to do as you suggest, and look at madvise_remove()
-once I have a bit of time. Who ever gets to be less busy ...
++}
 
-Thank you for your help
-Boaz
+
+Is the comment above bdev_nr_sects() really useful or should it be left out=
+?
+
+Thanks,
+
+Bart.
+
+
+
+Sure, let me send V4 without the comment.
+
+--_000_BYAPR04MB57492202BACDEE2991620E4D86FA0BYAPR04MB5749namp_
+Content-Type: text/html; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+<head>
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dus-ascii"=
+>
+</head>
+<body text=3D"#000000" bgcolor=3D"#FFFFFF">
+<div class=3D"moz-cite-prefix">On 7/3/19 8:03 AM, Bart Van Assche wrote:<br=
+>
+</div>
+<blockquote type=3D"cite" cite=3D"mid:26917678-fd82-b6c8-761e-220bc7d3b179@=
+acm.org">
+<blockquote type=3D"cite" style=3D"color: #000000;">
+<pre class=3D"moz-quote-pre" wrap=3D"">&#43;}=0A=
+</pre>
+</blockquote>
+<pre class=3D"moz-quote-pre" wrap=3D"">Is the comment above bdev_nr_sects()=
+ really useful or should it be left out?=0A=
+=0A=
+Thanks,=0A=
+=0A=
+Bart.=0A=
+=0A=
+</pre>
+</blockquote>
+Sure, let me send V4 without the comment.<br>
+</body>
+</html>
+
+--_000_BYAPR04MB57492202BACDEE2991620E4D86FA0BYAPR04MB5749namp_--
+
+
+--===============8352981984950808594==
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: base64
+Content-Disposition: inline
+
+X19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX18KWGVuLWRldmVs
+IG1haWxpbmcgbGlzdApYZW4tZGV2ZWxAbGlzdHMueGVucHJvamVjdC5vcmcKaHR0cHM6Ly9saXN0
+cy54ZW5wcm9qZWN0Lm9yZy9tYWlsbWFuL2xpc3RpbmZvL3hlbi1kZXZlbA==
+
+--===============8352981984950808594==--
