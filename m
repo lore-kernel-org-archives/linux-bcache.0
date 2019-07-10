@@ -1,162 +1,152 @@
-From: Coly Li <colyli@suse.de>
+From: Andrea Righi <andrea.righi@canonical.com>
 Subject: Re: [PATCH] bcache: fix deadlock in bcache_allocator()
-Date: Wed, 10 Jul 2019 23:11:37 +0800
-Message-ID: <82f1c5a9-9da4-3529-1ca5-af724d280580@suse.de>
+Date: Wed, 10 Jul 2019 17:46:56 +0200
+Message-ID: <20190710154656.GA7572@xps-13>
 References: <20190710093117.GA2792@xps-13>
+ <82f1c5a9-9da4-3529-1ca5-af724d280580@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190710093117.GA2792@xps-13>
-Content-Language: en-US
+Content-Disposition: inline
+In-Reply-To: <82f1c5a9-9da4-3529-1ca5-af724d280580@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Andrea Righi <andrea.righi@canonical.com>
+To: Coly Li <colyli@suse.de>
 Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/7/10 5:31 下午, Andrea Righi wrote:
-> bcache_allocator() can call the following:
+On Wed, Jul 10, 2019 at 11:11:37PM +0800, Coly Li wrote:
+> On 2019/7/10 5:31 下午, Andrea Righi wrote:
+> > bcache_allocator() can call the following:
+> > 
+> >  bch_allocator_thread()
+> >   -> bch_prio_write()
+> >      -> bch_bucket_alloc()
+> >         -> wait on &ca->set->bucket_wait
+> > 
+> > But the wake up event on bucket_wait is supposed to come from
+> > bch_allocator_thread() itself => deadlock:
+> > 
+> >  [ 242.888435] INFO: task bcache_allocato:9015 blocked for more than 120 seconds.
+> >  [ 242.893786] Not tainted 4.20.0-042000rc3-generic #201811182231
+> >  [ 242.896669] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> >  [ 242.900428] bcache_allocato D 0 9015 2 0x80000000
+> >  [ 242.900434] Call Trace:
+> >  [ 242.900448] __schedule+0x2a2/0x880
+> >  [ 242.900455] ? __schedule+0x2aa/0x880
+> >  [ 242.900462] schedule+0x2c/0x80
+> >  [ 242.900480] bch_bucket_alloc+0x19d/0x380 [bcache]
+> >  [ 242.900503] ? wait_woken+0x80/0x80
+> >  [ 242.900519] bch_prio_write+0x190/0x340 [bcache]
+> >  [ 242.900530] bch_allocator_thread+0x482/0xd10 [bcache]
+> >  [ 242.900535] kthread+0x120/0x140
+> >  [ 242.900546] ? bch_invalidate_one_bucket+0x80/0x80 [bcache]
+> >  [ 242.900549] ? kthread_park+0x90/0x90
+> >  [ 242.900554] ret_from_fork+0x35/0x40
+> > 
+> > Fix by making the call to bch_prio_write() non-blocking, so that
+> > bch_allocator_thread() never waits on itself.
+> > 
+> > Moreover, make sure to wake up the garbage collector thread when
+> > bch_prio_write() is failing to allocate buckets.
+> > 
+> > BugLink: https://bugs.launchpad.net/bugs/1784665
+> > Signed-off-by: Andrea Righi <andrea.righi@canonical.com>
 > 
->  bch_allocator_thread()
->   -> bch_prio_write()
->      -> bch_bucket_alloc()
->         -> wait on &ca->set->bucket_wait
-> 
-> But the wake up event on bucket_wait is supposed to come from
-> bch_allocator_thread() itself => deadlock:
-> 
->  [ 242.888435] INFO: task bcache_allocato:9015 blocked for more than 120 seconds.
->  [ 242.893786] Not tainted 4.20.0-042000rc3-generic #201811182231
->  [ 242.896669] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->  [ 242.900428] bcache_allocato D 0 9015 2 0x80000000
->  [ 242.900434] Call Trace:
->  [ 242.900448] __schedule+0x2a2/0x880
->  [ 242.900455] ? __schedule+0x2aa/0x880
->  [ 242.900462] schedule+0x2c/0x80
->  [ 242.900480] bch_bucket_alloc+0x19d/0x380 [bcache]
->  [ 242.900503] ? wait_woken+0x80/0x80
->  [ 242.900519] bch_prio_write+0x190/0x340 [bcache]
->  [ 242.900530] bch_allocator_thread+0x482/0xd10 [bcache]
->  [ 242.900535] kthread+0x120/0x140
->  [ 242.900546] ? bch_invalidate_one_bucket+0x80/0x80 [bcache]
->  [ 242.900549] ? kthread_park+0x90/0x90
->  [ 242.900554] ret_from_fork+0x35/0x40
-> 
-> Fix by making the call to bch_prio_write() non-blocking, so that
-> bch_allocator_thread() never waits on itself.
-> 
-> Moreover, make sure to wake up the garbage collector thread when
-> bch_prio_write() is failing to allocate buckets.
-> 
-> BugLink: https://bugs.launchpad.net/bugs/1784665
-> Signed-off-by: Andrea Righi <andrea.righi@canonical.com>
-
-Hi Andrea,
-
-From the BugLink, it seems several critical bcache fixes are missing.
-Could you please to try current 5.3-rc kernel, and try whether such
-problem exists or not ?
-
-For this patch itself, it looks good except that I am not sure whether
-invoking garbage collection is a proper method. Because bch_prio_write()
-is called right after garbage collection gets done, jump back to
-retry_invalidate: again may just hide a non-space long time waiting
-condition.
-
-Could you please give me some hint, on how to reproduce such hang
-timeout situation. If I am lucky to reproduce such problem on 5.3-rc
-kernel, it may be very helpful to understand what exact problem your
-patch fixes.
-
-Thanks in advance.
-
-Coly Li
-
-
-> ---
->  drivers/md/bcache/alloc.c  |  6 +++++-
->  drivers/md/bcache/bcache.h |  2 +-
->  drivers/md/bcache/super.c  | 13 +++++++++----
->  3 files changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> index f8986effcb50..0797587600c7 100644
-> --- a/drivers/md/bcache/alloc.c
-> +++ b/drivers/md/bcache/alloc.c
-> @@ -377,7 +377,11 @@ static int bch_allocator_thread(void *arg)
->  			if (!fifo_full(&ca->free_inc))
->  				goto retry_invalidate;
->  
-> -			bch_prio_write(ca);
-> +			if (bch_prio_write(ca, false) < 0) {
-> +				ca->invalidate_needs_gc = 1;
-> +				wake_up_gc(ca->set);
-> +				goto retry_invalidate;
-> +			}
->  		}
->  	}
->  out:
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index fdf75352e16a..dc5106b21260 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -979,7 +979,7 @@ bool bch_cached_dev_error(struct cached_dev *dc);
->  __printf(2, 3)
->  bool bch_cache_set_error(struct cache_set *c, const char *fmt, ...);
->  
-> -void bch_prio_write(struct cache *ca);
-> +int bch_prio_write(struct cache *ca, bool wait);
->  void bch_write_bdev_super(struct cached_dev *dc, struct closure *parent);
->  
->  extern struct workqueue_struct *bcache_wq;
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 1b63ac876169..6598b457df1a 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -525,7 +525,7 @@ static void prio_io(struct cache *ca, uint64_t bucket, int op,
->  	closure_sync(cl);
->  }
->  
-> -void bch_prio_write(struct cache *ca)
-> +int bch_prio_write(struct cache *ca, bool wait)
->  {
->  	int i;
->  	struct bucket *b;
-> @@ -560,8 +560,12 @@ void bch_prio_write(struct cache *ca)
->  		p->magic	= pset_magic(&ca->sb);
->  		p->csum		= bch_crc64(&p->magic, bucket_bytes(ca) - 8);
->  
-> -		bucket = bch_bucket_alloc(ca, RESERVE_PRIO, true);
-> -		BUG_ON(bucket == -1);
-> +		bucket = bch_bucket_alloc(ca, RESERVE_PRIO, wait);
-> +		if (bucket == -1) {
-> +			if (!wait)
-> +				return -ENOMEM;
-> +			BUG_ON(1);
-> +		}
->  
->  		mutex_unlock(&ca->set->bucket_lock);
->  		prio_io(ca, bucket, REQ_OP_WRITE, 0);
-> @@ -589,6 +593,7 @@ void bch_prio_write(struct cache *ca)
->  
->  		ca->prio_last_buckets[i] = ca->prio_buckets[i];
->  	}
-> +	return 0;
->  }
->  
->  static void prio_read(struct cache *ca, uint64_t bucket)
-> @@ -1903,7 +1908,7 @@ static int run_cache_set(struct cache_set *c)
->  
->  		mutex_lock(&c->bucket_lock);
->  		for_each_cache(ca, c, i)
-> -			bch_prio_write(ca);
-> +			bch_prio_write(ca, true);
->  		mutex_unlock(&c->bucket_lock);
->  
->  		err = "cannot allocate new UUID bucket";
+> Hi Andrea,
 > 
 
+Hi Coly,
 
--- 
+> >From the BugLink, it seems several critical bcache fixes are missing.
+> Could you please to try current 5.3-rc kernel, and try whether such
+> problem exists or not ?
 
-Coly Li
+Sure, I'll do a test with the latest 5.3-rc kernel. I just wanna mention
+that I've been able to reproduce this problem after backporting all the
+fixes (even those from linux-next), but I agree that testing 5.3-rc is a
+better idea (I may have introduced bugs while backporting stuff).
+
+> 
+> For this patch itself, it looks good except that I am not sure whether
+> invoking garbage collection is a proper method. Because bch_prio_write()
+> is called right after garbage collection gets done, jump back to
+> retry_invalidate: again may just hide a non-space long time waiting
+> condition.
+
+Honestly I was thinking the same, but if I don't call the garbage
+collector bch_allocator_thread() gets stuck forever (or for a very very
+long time) in the retry_invalidate loop...
+
+> 
+> Could you please give me some hint, on how to reproduce such hang
+> timeout situation. If I am lucky to reproduce such problem on 5.3-rc
+> kernel, it may be very helpful to understand what exact problem your
+> patch fixes.
+
+Fortunately I have a reproducer, here's the script that I'm using:
+
+---
+#!/bin/bash -x
+
+BACKING=/sys/class/block/bcache0
+CACHE=/sys/fs/bcache/*-*-*
+while true; do
+    echo "1" | tee ${BACKING}/bcache/stop
+    echo "1" | tee ${CACHE}/stop
+    udevadm settle
+    [ ! -e "${BACKING}" -a ! -e "${CACHE}" ] && break
+    sleep 1
+done
+wipefs --all --force /dev/vdc2
+wipefs --all --force /dev/vdc1
+wipefs --all --force /dev/vdc
+wipefs --all --force /dev/vdd
+blockdev --rereadpt /dev/vdc
+blockdev --rereadpt /dev/vdd
+udevadm settle
+
+# create ext4 fs over bcache
+parted /dev/vdc --script mklabel msdos || exit 1
+udevadm settle --exit-if-exists=/dev/vdc
+parted /dev/vdc --script mkpart primary 2048s 2047999s || exit 1
+udevadm settle --exit-if-exists=/dev/vdc1
+parted /dev/vdc --script mkpart primary 2048000s 20922367s || exit 1
+udevadm settle --exit-if-exists=/dev/vdc2
+make-bcache -C /dev/vdd || exit 1
+while true; do
+    udevadm settle
+    CSET=`ls /sys/fs/bcache | grep -- -`
+    [ -n "$CSET" ] && break;
+    sleep 1
+done
+make-bcache -B /dev/vdc2 || exit 1
+while true; do
+    udevadm settle
+    [ -e "${BACKING}" ] && break
+    sleep 1;
+done
+echo $CSET | tee ${BACKING}/bcache/attach
+udevadm settle --exit-if-exists=/dev/bcache0
+bcache-super-show /dev/vdc2
+udevadm settle
+mkfs.ext4 -F -L boot-fs -U e9f00d20-95a0-11e8-82a2-525400123401 /dev/vdc1
+udevadm settle
+mkfs.ext4 -F -L root-fs -U e9f00d21-95a0-11e8-82a2-525400123401 /dev/bcache0 || exit 1
+blkid
+---
+
+I just run this as root in a busy loop (something like
+`while :; do ./test.sh; done`) on a kvm instance with two extra disks
+(in addition to the root disk).
+
+The extra disks are created as following:
+
+ qemu-img create -f qcow2 disk1.qcow 10G
+ qemu-img create -f qcow2 disk2.qcow 2G
+
+I'm using these particular sizes, but I think we can reproduce the same
+problem also using different sizes.
+
+Thanks,
+-Andrea
