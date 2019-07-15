@@ -1,225 +1,173 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.2 197/249] bcache: avoid a deadlock in bcache_reboot()
-Date: Mon, 15 Jul 2019 09:46:02 -0400
-Message-ID: <20190715134655.4076-197-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.2 195/249] bcache: acquire bch_register_lock later in cached_dev_free()
+Date: Mon, 15 Jul 2019 09:46:00 -0400
+Message-ID: <20190715134655.4076-195-sashal@kernel.org>
 References: <20190715134655.4076-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <stable-owner@vger.kernel.org>
+Return-path: <linux-kernel-owner@vger.kernel.org>
 In-Reply-To: <20190715134655.4076-1-sashal@kernel.org>
-Sender: stable-owner@vger.kernel.org
+Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit a59ff6ccc2bf2e2934b31bbf734f0bc04b5ec78a ]
+[ Upstream commit 80265d8dfd77792e133793cef44a21323aac2908 ]
 
-It is quite frequently to observe deadlock in bcache_reboot() happens
-and hang the system reboot process. The reason is, in bcache_reboot()
-when calling bch_cache_set_stop() and bcache_device_stop() the mutex
-bch_register_lock is held. But in the process to stop cache set and
-bcache device, bch_register_lock will be acquired again. If this mutex
-is held here, deadlock will happen inside the stopping process. The
-aftermath of the deadlock is, whole system reboot gets hung.
+When enable lockdep engine, a lockdep warning can be observed when
+reboot or shutdown system,
 
-The fix is to avoid holding bch_register_lock for the following loops
-in bcache_reboot(),
-       list_for_each_entry_safe(c, tc, &bch_cache_sets, list)
-                bch_cache_set_stop(c);
+[ 3142.764557][    T1] bcache: bcache_reboot() Stopping all devices:
+[ 3142.776265][ T2649]
+[ 3142.777159][ T2649] ======================================================
+[ 3142.780039][ T2649] WARNING: possible circular locking dependency detected
+[ 3142.782869][ T2649] 5.2.0-rc4-lp151.20-default+ #1 Tainted: G        W
+[ 3142.785684][ T2649] ------------------------------------------------------
+[ 3142.788479][ T2649] kworker/3:67/2649 is trying to acquire lock:
+[ 3142.790738][ T2649] 00000000aaf02291 ((wq_completion)bcache_writeback_wq){+.+.}, at: flush_workqueue+0x87/0x4c0
+[ 3142.794678][ T2649]
+[ 3142.794678][ T2649] but task is already holding lock:
+[ 3142.797402][ T2649] 000000004fcf89c5 (&bch_register_lock){+.+.}, at: cached_dev_free+0x17/0x120 [bcache]
+[ 3142.801462][ T2649]
+[ 3142.801462][ T2649] which lock already depends on the new lock.
+[ 3142.801462][ T2649]
+[ 3142.805277][ T2649]
+[ 3142.805277][ T2649] the existing dependency chain (in reverse order) is:
+[ 3142.808902][ T2649]
+[ 3142.808902][ T2649] -> #2 (&bch_register_lock){+.+.}:
+[ 3142.812396][ T2649]        __mutex_lock+0x7a/0x9d0
+[ 3142.814184][ T2649]        cached_dev_free+0x17/0x120 [bcache]
+[ 3142.816415][ T2649]        process_one_work+0x2a4/0x640
+[ 3142.818413][ T2649]        worker_thread+0x39/0x3f0
+[ 3142.820276][ T2649]        kthread+0x125/0x140
+[ 3142.822061][ T2649]        ret_from_fork+0x3a/0x50
+[ 3142.823965][ T2649]
+[ 3142.823965][ T2649] -> #1 ((work_completion)(&cl->work)#2){+.+.}:
+[ 3142.827244][ T2649]        process_one_work+0x277/0x640
+[ 3142.829160][ T2649]        worker_thread+0x39/0x3f0
+[ 3142.830958][ T2649]        kthread+0x125/0x140
+[ 3142.832674][ T2649]        ret_from_fork+0x3a/0x50
+[ 3142.834915][ T2649]
+[ 3142.834915][ T2649] -> #0 ((wq_completion)bcache_writeback_wq){+.+.}:
+[ 3142.838121][ T2649]        lock_acquire+0xb4/0x1c0
+[ 3142.840025][ T2649]        flush_workqueue+0xae/0x4c0
+[ 3142.842035][ T2649]        drain_workqueue+0xa9/0x180
+[ 3142.844042][ T2649]        destroy_workqueue+0x17/0x250
+[ 3142.846142][ T2649]        cached_dev_free+0x52/0x120 [bcache]
+[ 3142.848530][ T2649]        process_one_work+0x2a4/0x640
+[ 3142.850663][ T2649]        worker_thread+0x39/0x3f0
+[ 3142.852464][ T2649]        kthread+0x125/0x140
+[ 3142.854106][ T2649]        ret_from_fork+0x3a/0x50
+[ 3142.855880][ T2649]
+[ 3142.855880][ T2649] other info that might help us debug this:
+[ 3142.855880][ T2649]
+[ 3142.859663][ T2649] Chain exists of:
+[ 3142.859663][ T2649]   (wq_completion)bcache_writeback_wq --> (work_completion)(&cl->work)#2 --> &bch_register_lock
+[ 3142.859663][ T2649]
+[ 3142.865424][ T2649]  Possible unsafe locking scenario:
+[ 3142.865424][ T2649]
+[ 3142.868022][ T2649]        CPU0                    CPU1
+[ 3142.869885][ T2649]        ----                    ----
+[ 3142.871751][ T2649]   lock(&bch_register_lock);
+[ 3142.873379][ T2649]                                lock((work_completion)(&cl->work)#2);
+[ 3142.876399][ T2649]                                lock(&bch_register_lock);
+[ 3142.879727][ T2649]   lock((wq_completion)bcache_writeback_wq);
+[ 3142.882064][ T2649]
+[ 3142.882064][ T2649]  *** DEADLOCK ***
+[ 3142.882064][ T2649]
+[ 3142.885060][ T2649] 3 locks held by kworker/3:67/2649:
+[ 3142.887245][ T2649]  #0: 00000000e774cdd0 ((wq_completion)events){+.+.}, at: process_one_work+0x21e/0x640
+[ 3142.890815][ T2649]  #1: 00000000f7df89da ((work_completion)(&cl->work)#2){+.+.}, at: process_one_work+0x21e/0x640
+[ 3142.894884][ T2649]  #2: 000000004fcf89c5 (&bch_register_lock){+.+.}, at: cached_dev_free+0x17/0x120 [bcache]
+[ 3142.898797][ T2649]
+[ 3142.898797][ T2649] stack backtrace:
+[ 3142.900961][ T2649] CPU: 3 PID: 2649 Comm: kworker/3:67 Tainted: G        W         5.2.0-rc4-lp151.20-default+ #1
+[ 3142.904789][ T2649] Hardware name: VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform, BIOS 6.00 04/13/2018
+[ 3142.909168][ T2649] Workqueue: events cached_dev_free [bcache]
+[ 3142.911422][ T2649] Call Trace:
+[ 3142.912656][ T2649]  dump_stack+0x85/0xcb
+[ 3142.914181][ T2649]  print_circular_bug+0x19a/0x1f0
+[ 3142.916193][ T2649]  __lock_acquire+0x16cd/0x1850
+[ 3142.917936][ T2649]  ? __lock_acquire+0x6a8/0x1850
+[ 3142.919704][ T2649]  ? lock_acquire+0xb4/0x1c0
+[ 3142.921335][ T2649]  ? find_held_lock+0x34/0xa0
+[ 3142.923052][ T2649]  lock_acquire+0xb4/0x1c0
+[ 3142.924635][ T2649]  ? flush_workqueue+0x87/0x4c0
+[ 3142.926375][ T2649]  flush_workqueue+0xae/0x4c0
+[ 3142.928047][ T2649]  ? flush_workqueue+0x87/0x4c0
+[ 3142.929824][ T2649]  ? drain_workqueue+0xa9/0x180
+[ 3142.931686][ T2649]  drain_workqueue+0xa9/0x180
+[ 3142.933534][ T2649]  destroy_workqueue+0x17/0x250
+[ 3142.935787][ T2649]  cached_dev_free+0x52/0x120 [bcache]
+[ 3142.937795][ T2649]  process_one_work+0x2a4/0x640
+[ 3142.939803][ T2649]  worker_thread+0x39/0x3f0
+[ 3142.941487][ T2649]  ? process_one_work+0x640/0x640
+[ 3142.943389][ T2649]  kthread+0x125/0x140
+[ 3142.944894][ T2649]  ? kthread_create_worker_on_cpu+0x70/0x70
+[ 3142.947744][ T2649]  ret_from_fork+0x3a/0x50
+[ 3142.970358][ T2649] bcache: bcache_device_free() bcache0 stopped
 
-        list_for_each_entry_safe(dc, tdc, &uncached_devices, list)
-                bcache_device_stop(&dc->disk);
+Here is how the deadlock happens.
+1) bcache_reboot() calls bcache_device_stop(), then inside
+   bcache_device_stop() BCACHE_DEV_CLOSING bit is set on d->flags.
+   Then closure_queue(&d->cl) is called to invoke cached_dev_flush().
+2) In cached_dev_flush(), cached_dev_free() is called by continu_at().
+3) In cached_dev_free(), when stopping the writeback kthread of the
+   cached device by kthread_stop(), dc->writeback_thread will be waken
+   up to quite the kthread while-loop, then cached_dev_put() is called
+   in bch_writeback_thread().
+4) Calling cached_dev_put() in writeback kthread may drop dc->count to
+   0, then dc->detach kworker is scheduled, which is initialized as
+   cached_dev_detach_finish().
+5) Inside cached_dev_detach_finish(), the last line of code is to call
+   closure_put(&dc->disk.cl), which drops the last reference counter of
+   closrure dc->disk.cl, then the callback cached_dev_flush() gets
+   called.
+Now cached_dev_flush() is called for second time in the code path, the
+first time is in step 2). And again bch_register_lock will be acquired
+again, and a A-A lock (lockdep terminology) is happening.
 
-A module range variable 'bcache_is_reboot' is added, it sets to true
-in bcache_reboot(). In register_bcache(), if bcache_is_reboot is checked
-to be true, reject the registration by returning -EBUSY immediately.
+The root cause of the above A-A lock is in cached_dev_free(), mutex
+bch_register_lock is held before stopping writeback kthread and other
+kworkers. Fortunately now we have variable 'bcache_is_reboot', which may
+prevent device registration or unregistration during reboot/shutdown
+time, so it is unncessary to hold bch_register_lock such early now.
+
+This is how this patch fixes the reboot/shutdown time A-A lock issue:
+After moving mutex_lock(&bch_register_lock) to a later location where
+before atomic_read(&dc->running) in cached_dev_free(), such A-A lock
+problem can be solved without any reboot time registration race.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/super.c | 40 ++++++++++++++++++++++++++++++++++++++-
- drivers/md/bcache/sysfs.c | 26 +++++++++++++++++++++++++
- 2 files changed, 65 insertions(+), 1 deletion(-)
+ drivers/md/bcache/super.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 4cc8a300a557..dcd8b319a01e 100644
+index 1b63ac876169..0a25774e175a 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -40,6 +40,7 @@ static const char invalid_uuid[] = {
- 
- static struct kobject *bcache_kobj;
- struct mutex bch_register_lock;
-+bool bcache_is_reboot;
- LIST_HEAD(bch_cache_sets);
- static LIST_HEAD(uncached_devices);
- 
-@@ -49,6 +50,7 @@ static wait_queue_head_t unregister_wait;
- struct workqueue_struct *bcache_wq;
- struct workqueue_struct *bch_journal_wq;
- 
-+
- #define BTREE_MAX_PAGES		(256 * 1024 / PAGE_SIZE)
- /* limitation of partitions number on single bcache device */
- #define BCACHE_MINORS		128
-@@ -2301,6 +2303,11 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 	if (!try_module_get(THIS_MODULE))
- 		return -EBUSY;
- 
-+	/* For latest state of bcache_is_reboot */
-+	smp_mb();
-+	if (bcache_is_reboot)
-+		return -EBUSY;
-+
- 	path = kstrndup(buffer, size, GFP_KERNEL);
- 	if (!path)
- 		goto err;
-@@ -2380,6 +2387,9 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 
- static int bcache_reboot(struct notifier_block *n, unsigned long code, void *x)
+@@ -1190,8 +1190,6 @@ static void cached_dev_free(struct closure *cl)
  {
-+	if (bcache_is_reboot)
-+		return NOTIFY_DONE;
+ 	struct cached_dev *dc = container_of(cl, struct cached_dev, disk.cl);
+ 
+-	mutex_lock(&bch_register_lock);
+-
+ 	if (test_and_clear_bit(BCACHE_DEV_WB_RUNNING, &dc->disk.flags))
+ 		cancel_writeback_rate_update_dwork(dc);
+ 
+@@ -1202,6 +1200,8 @@ static void cached_dev_free(struct closure *cl)
+ 	if (!IS_ERR_OR_NULL(dc->status_update_thread))
+ 		kthread_stop(dc->status_update_thread);
+ 
++	mutex_lock(&bch_register_lock);
 +
- 	if (code == SYS_DOWN ||
- 	    code == SYS_HALT ||
- 	    code == SYS_POWER_OFF) {
-@@ -2392,19 +2402,45 @@ static int bcache_reboot(struct notifier_block *n, unsigned long code, void *x)
- 
- 		mutex_lock(&bch_register_lock);
- 
-+		if (bcache_is_reboot)
-+			goto out;
-+
-+		/* New registration is rejected since now */
-+		bcache_is_reboot = true;
-+		/*
-+		 * Make registering caller (if there is) on other CPU
-+		 * core know bcache_is_reboot set to true earlier
-+		 */
-+		smp_mb();
-+
- 		if (list_empty(&bch_cache_sets) &&
- 		    list_empty(&uncached_devices))
- 			goto out;
- 
-+		mutex_unlock(&bch_register_lock);
-+
- 		pr_info("Stopping all devices:");
- 
-+		/*
-+		 * The reason bch_register_lock is not held to call
-+		 * bch_cache_set_stop() and bcache_device_stop() is to
-+		 * avoid potential deadlock during reboot, because cache
-+		 * set or bcache device stopping process will acqurie
-+		 * bch_register_lock too.
-+		 *
-+		 * We are safe here because bcache_is_reboot sets to
-+		 * true already, register_bcache() will reject new
-+		 * registration now. bcache_is_reboot also makes sure
-+		 * bcache_reboot() won't be re-entered on by other thread,
-+		 * so there is no race in following list iteration by
-+		 * list_for_each_entry_safe().
-+		 */
- 		list_for_each_entry_safe(c, tc, &bch_cache_sets, list)
- 			bch_cache_set_stop(c);
- 
- 		list_for_each_entry_safe(dc, tdc, &uncached_devices, list)
- 			bcache_device_stop(&dc->disk);
- 
--		mutex_unlock(&bch_register_lock);
- 
- 		/*
- 		 * Give an early chance for other kthreads and
-@@ -2531,6 +2567,8 @@ static int __init bcache_init(void)
- 	bch_debug_init();
- 	closure_debug_init();
- 
-+	bcache_is_reboot = false;
-+
- 	return 0;
- err:
- 	bcache_exit();
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index bfb437ffb13c..327493f634bb 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -16,6 +16,8 @@
- #include <linux/sort.h>
- #include <linux/sched/clock.h>
- 
-+extern bool bcache_is_reboot;
-+
- /* Default is 0 ("writethrough") */
- static const char * const bch_cache_modes[] = {
- 	"writethrough",
-@@ -271,6 +273,10 @@ STORE(__cached_dev)
- 	struct cache_set *c;
- 	struct kobj_uevent_env *env;
- 
-+	/* no user space access if system is rebooting */
-+	if (bcache_is_reboot)
-+		return -EBUSY;
-+
- #define d_strtoul(var)		sysfs_strtoul(var, dc->var)
- #define d_strtoul_nonzero(var)	sysfs_strtoul_clamp(var, dc->var, 1, INT_MAX)
- #define d_strtoi_h(var)		sysfs_hatoi(var, dc->var)
-@@ -408,6 +414,10 @@ STORE(bch_cached_dev)
- 	struct cached_dev *dc = container_of(kobj, struct cached_dev,
- 					     disk.kobj);
- 
-+	/* no user space access if system is rebooting */
-+	if (bcache_is_reboot)
-+		return -EBUSY;
-+
- 	mutex_lock(&bch_register_lock);
- 	size = __cached_dev_store(kobj, attr, buf, size);
- 
-@@ -511,6 +521,10 @@ STORE(__bch_flash_dev)
- 					       kobj);
- 	struct uuid_entry *u = &d->c->uuids[d->id];
- 
-+	/* no user space access if system is rebooting */
-+	if (bcache_is_reboot)
-+		return -EBUSY;
-+
- 	sysfs_strtoul(data_csum,	d->data_csum);
- 
- 	if (attr == &sysfs_size) {
-@@ -746,6 +760,10 @@ STORE(__bch_cache_set)
- 	struct cache_set *c = container_of(kobj, struct cache_set, kobj);
- 	ssize_t v;
- 
-+	/* no user space access if system is rebooting */
-+	if (bcache_is_reboot)
-+		return -EBUSY;
-+
- 	if (attr == &sysfs_unregister)
- 		bch_cache_set_unregister(c);
- 
-@@ -865,6 +883,10 @@ STORE(bch_cache_set_internal)
- {
- 	struct cache_set *c = container_of(kobj, struct cache_set, internal);
- 
-+	/* no user space access if system is rebooting */
-+	if (bcache_is_reboot)
-+		return -EBUSY;
-+
- 	return bch_cache_set_store(&c->kobj, attr, buf, size);
- }
- 
-@@ -1050,6 +1072,10 @@ STORE(__bch_cache)
- 	struct cache *ca = container_of(kobj, struct cache, kobj);
- 	ssize_t v;
- 
-+	/* no user space access if system is rebooting */
-+	if (bcache_is_reboot)
-+		return -EBUSY;
-+
- 	if (attr == &sysfs_discard) {
- 		bool v = strtoul_or_return(buf);
- 
+ 	if (atomic_read(&dc->running))
+ 		bd_unlink_disk_holder(dc->bdev, dc->disk.disk);
+ 	bcache_device_free(&dc->disk);
 -- 
 2.20.1
