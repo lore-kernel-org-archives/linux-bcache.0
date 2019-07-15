@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.9 64/73] bcache: check c->gc_thread by IS_ERR_OR_NULL in cache_set_flush()
-Date: Mon, 15 Jul 2019 10:36:20 -0400
-Message-ID: <20190715143629.10893-64-sashal@kernel.org>
-References: <20190715143629.10893-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.4 49/53] bcache: check c->gc_thread by IS_ERR_OR_NULL in cache_set_flush()
+Date: Mon, 15 Jul 2019 10:45:31 -0400
+Message-ID: <20190715144535.11636-49-sashal@kernel.org>
+References: <20190715144535.11636-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190715143629.10893-1-sashal@kernel.org>
+In-Reply-To: <20190715144535.11636-1-sashal@kernel.org>
 Sender: stable-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
@@ -123,10 +123,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 9f2588eaaf5f..c5bc3e5e921e 100644
+index 02757b90e402..e42092146083 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1405,7 +1405,7 @@ static void cache_set_flush(struct closure *cl)
+@@ -1403,7 +1403,7 @@ static void cache_set_flush(struct closure *cl)
  	kobject_put(&c->internal);
  	kobject_del(&c->kobj);
  
