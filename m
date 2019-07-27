@@ -1,55 +1,90 @@
-From: Kent Overstreet <kent.overstreet@gmail.com>
-Subject: Re: [PATCH 12/12] closures: fix a race on wakeup from closure_sync
-Date: Mon, 22 Jul 2019 13:22:09 -0400
-Message-ID: <20190722172209.GA25176@kmo-pixel>
-References: <20190610191420.27007-1-kent.overstreet@gmail.com>
- <20190610191420.27007-13-kent.overstreet@gmail.com>
- <8381178e-4c1e-e0fe-430b-a459be1a9389@suse.de>
- <48527b97-e39a-0791-e038-d9f2ec28943e@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+From: Yaowei Bai <baiyaowei@cmss.chinamobile.com>
+Subject: [PATCH 3/3] bcache: count cache_available_percent accurately
+Date: Sat, 27 Jul 2019 18:19:59 +0800
+Message-ID: <1564222799-10603-3-git-send-email-baiyaowei@cmss.chinamobile.com>
+References: <1564222799-10603-1-git-send-email-baiyaowei@cmss.chinamobile.com>
 Return-path: <linux-kernel-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <48527b97-e39a-0791-e038-d9f2ec28943e@suse.de>
+In-Reply-To: <1564222799-10603-1-git-send-email-baiyaowei@cmss.chinamobile.com>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-bcache@vger.kernel.org
+To: colyli@suse.de, kent.overstreet@gmail.com
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, baiyaowei@cmss.chinamobile.com
 List-Id: linux-bcache@vger.kernel.org
 
-On Thu, Jul 18, 2019 at 03:46:46PM +0800, Coly Li wrote:
-> On 2019/7/16 6:47 下午, Coly Li wrote:
-> > Hi Kent,
-> > 
-> > On 2019/6/11 3:14 上午, Kent Overstreet wrote:
-> >> Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
-> > Acked-by: Coly Li <colyli@suse.de>
-> > 
-> > And also I receive report for suspicious closure race condition in
-> > bcache, and people ask for having this patch into Linux v5.3.
-> > 
-> > So before this patch gets merged into upstream, I plan to rebase it to
-> > drivers/md/bcache/closure.c at this moment. Of cause the author is you.
-> > 
-> > When lib/closure.c merged into upstream, I will rebase all closure usage
-> > from bcache to use lib/closure.{c,h}.
-> 
-> Hi Kent,
-> 
-> The race bug reporter replies me that the closure race bug is very rare
-> to reproduce, after applying the patch and testing, they are not sure
-> whether their closure race problem is fixed or not.
-> 
-> And I notice rcu_read_lock()/rcu_read_unlock() is used here, but it is
-> not clear to me what is the functionality of the rcu read lock in
-> closure_sync_fn(). I believe you have reason to use the rcu stuffs here,
-> could you please provide some hints to help me to understand the change
-> better ?
+The interface cache_available_percent is used to indicate how
+many buckets in percent are available to be used to cache data
+at a specific moment. It should include the unused and clean
+buckets which we get from bch_btree_gc_finish function:
 
-The race was when a thread using closure_sync() notices cl->s->done == 1 before
-the thread calling closure_put() calls wake_up_process(). Then, it's possible
-for that thread to return and exit just before wake_up_process() is called - so
-we're trying to wake up a process that no longer exists.
+	if (!GC_MARK(b) || GC_MARK(b) == GC_MARK_RECLAIMABLE)
+		 c->avail_nbuckets++;
 
-rcu_read_lock() is sufficient to protect against this, as there's an rcu barrier
-somewhere in the process teardown path.
+However currently in the allocation code we didn't distinguish
+these available buckets with the metadata and dirty buckets, we
+just decrease the c->avail_nbuckets everytime we allocate a bucket,
+and correct it after a gc completes. With this, in a read-only
+scenario, you can observe that cache_available_percent bounces,
+it first go down to a number, like 95, and then bounces back to
+100. It goes on and on, making users confused.
+
+This patch fixes this problem by decreasing c->avail_nbuckets
+only when allocate metadata and dirty buckets. With this patch,
+cache_available_percent will always be accurate and avoid the
+confusion.
+
+Signed-off-by: Yaowei Bai <baiyaowei@cmss.chinamobile.com>
+---
+ drivers/md/bcache/alloc.c   | 10 +++++-----
+ drivers/md/bcache/request.c |  9 ++++++++-
+ 2 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index 609df38..dc7f6c2 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -443,17 +443,17 @@ long bch_bucket_alloc(struct cache *ca, unsigned int reserve, bool wait)
+ 		SET_GC_MARK(b, GC_MARK_METADATA);
+ 		SET_GC_MOVE(b, 0);
+ 		b->prio = BTREE_PRIO;
++
++		if (ca->set->avail_nbuckets > 0) {
++			ca->set->avail_nbuckets--;
++			bch_update_bucket_in_use(ca->set, &ca->set->gc_stats);
++		}
+ 	} else {
+ 		SET_GC_MARK(b, GC_MARK_RECLAIMABLE);
+ 		SET_GC_MOVE(b, 0);
+ 		b->prio = INITIAL_PRIO;
+ 	}
+ 
+-	if (ca->set->avail_nbuckets > 0) {
+-		ca->set->avail_nbuckets--;
+-		bch_update_bucket_in_use(ca->set, &ca->set->gc_stats);
+-	}
+-
+ 	return r;
+ }
+ 
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 41adcd1..b69bd8d 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -244,9 +244,16 @@ static void bch_data_insert_start(struct closure *cl)
+ 		if (op->writeback) {
+ 			SET_KEY_DIRTY(k, true);
+ 
+-			for (i = 0; i < KEY_PTRS(k); i++)
++			for (i = 0; i < KEY_PTRS(k); i++) {
+ 				SET_GC_MARK(PTR_BUCKET(op->c, k, i),
+ 					    GC_MARK_DIRTY);
++
++				if (op->c->avail_nbuckets > 0) {
++					op->c->avail_nbuckets--;
++					bch_update_bucket_in_use(op->c,
++								 &op->c->gc_stats);
++				}
++			}
+ 		}
+ 
+ 		SET_KEY_CSUM(k, op->csum);
+-- 
+1.8.3.1
