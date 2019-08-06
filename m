@@ -1,20 +1,19 @@
-From: Coly Li <colyli@suse.de>
+From: Andrea Righi <andrea.righi@canonical.com>
 Subject: Re: [PATCH v2] bcache: fix deadlock in bcache_allocator
-Date: Tue, 6 Aug 2019 20:59:16 +0800
-Message-ID: <29c73faa-4829-f791-b714-b37159f5b956@suse.de>
+Date: Tue, 6 Aug 2019 19:36:48 +0200
+Message-ID: <20190806173648.GB27866@xps-13>
 References: <20190806091801.GC11184@xps-13>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
 In-Reply-To: <20190806091801.GC11184@xps-13>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Andrea Righi <andrea.righi@canonical.com>
+To: Coly Li <colyli@suse.de>
 Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/8/6 5:18 下午, Andrea Righi wrote:
+On Tue, Aug 06, 2019 at 11:18:01AM +0200, Andrea Righi wrote:
 > bcache_allocator() can call the following:
 > 
 >  bch_allocator_thread()
@@ -50,17 +49,6 @@ On 2019/8/6 5:18 下午, Andrea Righi wrote:
 > BugLink: https://bugs.launchpad.net/bugs/1784665
 > BugLink: https://bugs.launchpad.net/bugs/1796292
 > Signed-off-by: Andrea Righi <andrea.righi@canonical.com>
-
-At this moment I am not able to find a better solution, so I take this
-patch in my for-test.
-
-Thank you. And I hope you may continue to maintain this change if people
-report problem (I mean if) in future.
-
-
-Coly Li
-
-
 > ---
 > Changes in v2:
 >  - prevent retry_invalidate busy loop in bch_allocator_thread()
@@ -124,29 +112,75 @@ Coly Li
 > +				return -ENOMEM;
 > +			BUG_ON(1);
 > +		}
->  
->  		mutex_unlock(&ca->set->bucket_lock);
->  		prio_io(ca, bucket, REQ_OP_WRITE, 0);
-> @@ -593,6 +597,7 @@ void bch_prio_write(struct cache *ca)
->  
->  		ca->prio_last_buckets[i] = ca->prio_buckets[i];
->  	}
-> +	return 0;
->  }
->  
->  static void prio_read(struct cache *ca, uint64_t bucket)
-> @@ -1954,7 +1959,7 @@ static int run_cache_set(struct cache_set *c)
->  
->  		mutex_lock(&c->bucket_lock);
->  		for_each_cache(ca, c, i)
-> -			bch_prio_write(ca);
-> +			bch_prio_write(ca, true);
->  		mutex_unlock(&c->bucket_lock);
->  
->  		err = "cannot allocate new UUID bucket";
-> 
 
+Coly,
 
+looking more at this change, I think we should handle the failure path
+properly or we may leak buckets, am I right? (sorry for not realizing
+this before). Maybe we need something like the following on top of my
+previous patch.
+
+I'm going to run more stress tests with this patch applied and will try
+to figure out if we're actually leaking buckets without it.
+
+---
+Subject: bcache: prevent leaking buckets in bch_prio_write()
+
+Handle the allocation failure path properly in bch_prio_write() to avoid
+leaking buckets from the previous successful iterations.
+
+Signed-off-by: Andrea Righi <andrea.righi@canonical.com>
+---
+ drivers/md/bcache/super.c | 20 +++++++++++---------
+ 1 file changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 716ea27..727266f 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -531,7 +531,7 @@ static void prio_io(struct cache *ca, uint64_t bucket, int op,
+ 
+ int bch_prio_write(struct cache *ca, bool wait)
+ {
+-	int i;
++	int i, j, ret = 0;
+ 	struct bucket *b;
+ 	struct closure cl;
+ 
+@@ -566,9 +566,11 @@ int bch_prio_write(struct cache *ca, bool wait)
+ 
+ 		bucket = bch_bucket_alloc(ca, RESERVE_PRIO, wait);
+ 		if (bucket == -1) {
+-			if (!wait)
+-				return -ENOMEM;
+-			BUG_ON(1);
++			if (!wait) {
++				ret = -ENOMEM;
++				break;
++			}
++			BUG();
+ 		}
+ 
+ 		mutex_unlock(&ca->set->bucket_lock);
+@@ -590,14 +592,14 @@ int bch_prio_write(struct cache *ca, bool wait)
+ 	 * Don't want the old priorities to get garbage collected until after we
+ 	 * finish writing the new ones, and they're journalled
+ 	 */
+-	for (i = 0; i < prio_buckets(ca); i++) {
+-		if (ca->prio_last_buckets[i])
++	for (j = prio_buckets(ca) - 1; j > i; --j) {
++		if (ca->prio_last_buckets[j])
+ 			__bch_bucket_free(ca,
+-				&ca->buckets[ca->prio_last_buckets[i]]);
++				&ca->buckets[ca->prio_last_buckets[j]]);
+ 
+-		ca->prio_last_buckets[i] = ca->prio_buckets[i];
++		ca->prio_last_buckets[j] = ca->prio_buckets[j];
+ 	}
+-	return 0;
++	return ret;
+ }
+ 
+ static void prio_read(struct cache *ca, uint64_t bucket)
 -- 
-
-Coly Li
+2.7.4
