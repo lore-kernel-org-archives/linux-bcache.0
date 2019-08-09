@@ -1,173 +1,151 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v3] bcache: fix deadlock in bcache_allocator
-Date: Wed, 7 Aug 2019 21:53:46 +0800
-Message-ID: <1360a7e6-9135-6f3e-fc30-0834779bcf69@suse.de>
-References: <20190807103806.GA15450@xps-13>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190807103806.GA15450@xps-13>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Andrea Righi <andrea.righi@canonical.com>, Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] bcache: Revert "bcache: use sysfs_match_string() instead of __sysfs_match_string()"
+Date: Fri,  9 Aug 2019 14:08:29 +0800
+Message-ID: <20190809060829.73489-2-colyli@suse.de>
+References: <20190809060829.73489-1-colyli@suse.de>
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20190809060829.73489-1-colyli@suse.de>
+Sender: stable-owner@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Alexandru Ardelean <alexandru.ardelean@analog.com>
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/8/7 6:38 下午, Andrea Righi wrote:
-> bcache_allocator can call the following:
-> 
->  bch_allocator_thread()
->   -> bch_prio_write()
->      -> bch_bucket_alloc()
->         -> wait on &ca->set->bucket_wait
-> 
-> But the wake up event on bucket_wait is supposed to come from
-> bch_allocator_thread() itself => deadlock:
-> 
-> [ 1158.490744] INFO: task bcache_allocato:15861 blocked for more than 10 seconds.
-> [ 1158.495929]       Not tainted 5.3.0-050300rc3-generic #201908042232
-> [ 1158.500653] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [ 1158.504413] bcache_allocato D    0 15861      2 0x80004000
-> [ 1158.504419] Call Trace:
-> [ 1158.504429]  __schedule+0x2a8/0x670
-> [ 1158.504432]  schedule+0x2d/0x90
-> [ 1158.504448]  bch_bucket_alloc+0xe5/0x370 [bcache]
-> [ 1158.504453]  ? wait_woken+0x80/0x80
-> [ 1158.504466]  bch_prio_write+0x1dc/0x390 [bcache]
-> [ 1158.504476]  bch_allocator_thread+0x233/0x490 [bcache]
-> [ 1158.504491]  kthread+0x121/0x140
-> [ 1158.504503]  ? invalidate_buckets+0x890/0x890 [bcache]
-> [ 1158.504506]  ? kthread_park+0xb0/0xb0
-> [ 1158.504510]  ret_from_fork+0x35/0x40
-> 
-> Fix by making the call to bch_prio_write() non-blocking, so that
-> bch_allocator_thread() never waits on itself.
-> 
-> Moreover, make sure to wake up the garbage collector thread when
-> bch_prio_write() is failing to allocate buckets.
-> 
-> BugLink: https://bugs.launchpad.net/bugs/1784665
-> BugLink: https://bugs.launchpad.net/bugs/1796292
-> Signed-off-by: Andrea Righi <andrea.righi@canonical.com>
+This reverts commit 89e0341af082dbc170019f908846f4a424efc86b.
 
-OK, I add this version into my for-test directory. Once you have a new
-version, I will update it. Thanks.
+In drivers/md/bcache/sysfs.c:bch_snprint_string_list(), NULL pointer at
+the end of list is necessary. Remove the NULL from last element of each
+lists will cause the following panic,
 
-Coly Li
+[ 4340.455652] bcache: register_cache() registered cache device nvme0n1
+[ 4340.464603] bcache: register_bdev() registered backing device sdk
+[ 4421.587335] bcache: bch_cached_dev_run() cached dev sdk is running already
+[ 4421.587348] bcache: bch_cached_dev_attach() Caching sdk as bcache0 on set 354e1d46-d99f-4d8b-870b-078b80dc88a6
+[ 5139.247950] general protection fault: 0000 [#1] SMP NOPTI
+[ 5139.247970] CPU: 9 PID: 5896 Comm: cat Not tainted 4.12.14-95.29-default #1 SLE12-SP4
+[ 5139.247988] Hardware name: HPE ProLiant DL380 Gen10/ProLiant DL380 Gen10, BIOS U30 04/18/2019
+[ 5139.248006] task: ffff888fb25c0b00 task.stack: ffff9bbacc704000
+[ 5139.248021] RIP: 0010:string+0x21/0x70
+[ 5139.248030] RSP: 0018:ffff9bbacc707bf0 EFLAGS: 00010286
+[ 5139.248043] RAX: ffffffffa7e432e3 RBX: ffff8881c20da02a RCX: ffff0a00ffffff04
+[ 5139.248058] RDX: 3f00656863616362 RSI: ffff8881c20db000 RDI: ffffffffffffffff
+[ 5139.248075] RBP: ffff8881c20db000 R08: 0000000000000000 R09: ffff8881c20da02a
+[ 5139.248090] R10: 0000000000000004 R11: 0000000000000000 R12: ffff9bbacc707c48
+[ 5139.248104] R13: 0000000000000fd6 R14: ffffffffc0665855 R15: ffffffffc0665855
+[ 5139.248119] FS:  00007faf253b8700(0000) GS:ffff88903f840000(0000) knlGS:0000000000000000
+[ 5139.248137] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 5139.248149] CR2: 00007faf25395008 CR3: 0000000f72150006 CR4: 00000000007606e0
+[ 5139.248164] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 5139.248179] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+[ 5139.248193] PKRU: 55555554
+[ 5139.248200] Call Trace:
+[ 5139.248210]  vsnprintf+0x1fb/0x510
+[ 5139.248221]  snprintf+0x39/0x40
+[ 5139.248238]  bch_snprint_string_list.constprop.15+0x5b/0x90 [bcache]
+[ 5139.248256]  __bch_cached_dev_show+0x44d/0x5f0 [bcache]
+[ 5139.248270]  ? __alloc_pages_nodemask+0xb2/0x210
+[ 5139.248284]  bch_cached_dev_show+0x2c/0x50 [bcache]
+[ 5139.248297]  sysfs_kf_seq_show+0xbb/0x190
+[ 5139.248308]  seq_read+0xfc/0x3c0
+[ 5139.248317]  __vfs_read+0x26/0x140
+[ 5139.248327]  vfs_read+0x87/0x130
+[ 5139.248336]  SyS_read+0x42/0x90
+[ 5139.248346]  do_syscall_64+0x74/0x160
+[ 5139.248358]  entry_SYSCALL_64_after_hwframe+0x3d/0xa2
+[ 5139.248370] RIP: 0033:0x7faf24eea370
+[ 5139.248379] RSP: 002b:00007fff82d03f38 EFLAGS: 00000246 ORIG_RAX: 0000000000000000
+[ 5139.248395] RAX: ffffffffffffffda RBX: 0000000000020000 RCX: 00007faf24eea370
+[ 5139.248411] RDX: 0000000000020000 RSI: 00007faf25396000 RDI: 0000000000000003
+[ 5139.248426] RBP: 00007faf25396000 R08: 00000000ffffffff R09: 0000000000000000
+[ 5139.248441] R10: 000000007c9d4d41 R11: 0000000000000246 R12: 00007faf25396000
+[ 5139.248456] R13: 0000000000000003 R14: 0000000000000000 R15: 0000000000000fff
+[ 5139.248892] Code: ff ff ff 0f 1f 80 00 00 00 00 49 89 f9 48 89 cf 48 c7 c0 e3 32 e4 a7 48 c1 ff 30 48 81 fa ff 0f 00 00 48 0f 46 d0 48 85 ff 74 45 <44> 0f b6 02 48 8d 42 01 45 84 c0 74 38 48 01 fa 4c 89 cf eb 0e
 
-> ---
-> Changes in v3:
->  - prevent buckets leak in bch_prio_write()
-> 
->  drivers/md/bcache/alloc.c  |  5 ++++-
->  drivers/md/bcache/bcache.h |  2 +-
->  drivers/md/bcache/super.c  | 27 +++++++++++++++++++++------
->  3 files changed, 26 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> index 6f776823b9ba..a1df0d95151c 100644
-> --- a/drivers/md/bcache/alloc.c
-> +++ b/drivers/md/bcache/alloc.c
-> @@ -377,7 +377,10 @@ static int bch_allocator_thread(void *arg)
->  			if (!fifo_full(&ca->free_inc))
->  				goto retry_invalidate;
->  
-> -			bch_prio_write(ca);
-> +			if (bch_prio_write(ca, false) < 0) {
-> +				ca->invalidate_needs_gc = 1;
-> +				wake_up_gc(ca->set);
-> +			}
->  		}
->  	}
->  out:
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index 013e35a9e317..deb924e1d790 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -977,7 +977,7 @@ bool bch_cached_dev_error(struct cached_dev *dc);
->  __printf(2, 3)
->  bool bch_cache_set_error(struct cache_set *c, const char *fmt, ...);
->  
-> -void bch_prio_write(struct cache *ca);
-> +int bch_prio_write(struct cache *ca, bool wait);
->  void bch_write_bdev_super(struct cached_dev *dc, struct closure *parent);
->  
->  extern struct workqueue_struct *bcache_wq;
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 20ed838e9413..bd153234290d 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -529,12 +529,29 @@ static void prio_io(struct cache *ca, uint64_t bucket, int op,
->  	closure_sync(cl);
->  }
->  
-> -void bch_prio_write(struct cache *ca)
-> +int bch_prio_write(struct cache *ca, bool wait)
->  {
->  	int i;
->  	struct bucket *b;
->  	struct closure cl;
->  
-> +	pr_debug("free_prio=%zu, free_none=%zu, free_inc=%zu",
-> +		 fifo_used(&ca->free[RESERVE_PRIO]),
-> +		 fifo_used(&ca->free[RESERVE_NONE]),
-> +		 fifo_used(&ca->free_inc));
-> +
-> +	/*
-> +	 * Pre-check if there are enough free buckets. In the non-blocking
-> +	 * scenario it's better to fail early rather than starting to allocate
-> +	 * buckets and do a cleanup later in case of failure.
-> +	 */
-> +	if (!wait) {
-> +		size_t avail = fifo_used(&ca->free[RESERVE_PRIO]) +
-> +			       fifo_used(&ca->free[RESERVE_NONE]);
-> +		if (prio_buckets(ca) > avail)
-> +			return -ENOMEM;
-> +	}
-> +
->  	closure_init_stack(&cl);
->  
->  	lockdep_assert_held(&ca->set->bucket_lock);
-> @@ -544,9 +561,6 @@ void bch_prio_write(struct cache *ca)
->  	atomic_long_add(ca->sb.bucket_size * prio_buckets(ca),
->  			&ca->meta_sectors_written);
->  
-> -	//pr_debug("free %zu, free_inc %zu, unused %zu", fifo_used(&ca->free),
-> -	//	 fifo_used(&ca->free_inc), fifo_used(&ca->unused));
-> -
->  	for (i = prio_buckets(ca) - 1; i >= 0; --i) {
->  		long bucket;
->  		struct prio_set *p = ca->disk_buckets;
-> @@ -564,7 +578,7 @@ void bch_prio_write(struct cache *ca)
->  		p->magic	= pset_magic(&ca->sb);
->  		p->csum		= bch_crc64(&p->magic, bucket_bytes(ca) - 8);
->  
-> -		bucket = bch_bucket_alloc(ca, RESERVE_PRIO, true);
-> +		bucket = bch_bucket_alloc(ca, RESERVE_PRIO, wait);
->  		BUG_ON(bucket == -1);
->  
->  		mutex_unlock(&ca->set->bucket_lock);
-> @@ -593,6 +607,7 @@ void bch_prio_write(struct cache *ca)
->  
->  		ca->prio_last_buckets[i] = ca->prio_buckets[i];
->  	}
-> +	return 0;
->  }
->  
->  static void prio_read(struct cache *ca, uint64_t bucket)
-> @@ -1954,7 +1969,7 @@ static int run_cache_set(struct cache_set *c)
->  
->  		mutex_lock(&c->bucket_lock);
->  		for_each_cache(ca, c, i)
-> -			bch_prio_write(ca);
-> +			bch_prio_write(ca, true);
->  		mutex_unlock(&c->bucket_lock);
->  
->  		err = "cannot allocate new UUID bucket";
-> 
+The simplest way to fix is to revert commit 89e0341af082 ("bcache: use
+sysfs_match_string() instead of __sysfs_match_string()").
 
+This bug was introduced in Linux v5.2, so this fix only applies to
+Linux v5.2 is enough for stable tree maintainer.
 
+Signed-off-by: Coly Li <colyli@suse.de>
+Reported-by: Peifeng Lin <pflin@suse.com>
+Cc: stable@vger.kernel.org
+Cc: Alexandru Ardelean <alexandru.ardelean@analog.com>
+---
+ drivers/md/bcache/sysfs.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 9f0826712845..e2059af90791 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -23,24 +23,28 @@ static const char * const bch_cache_modes[] = {
+ 	"writethrough",
+ 	"writeback",
+ 	"writearound",
+-	"none"
++	"none",
++	NULL
+ };
+ 
+ /* Default is 0 ("auto") */
+ static const char * const bch_stop_on_failure_modes[] = {
+ 	"auto",
+-	"always"
++	"always",
++	NULL
+ };
+ 
+ static const char * const cache_replacement_policies[] = {
+ 	"lru",
+ 	"fifo",
+-	"random"
++	"random",
++	NULL
+ };
+ 
+ static const char * const error_actions[] = {
+ 	"unregister",
+-	"panic"
++	"panic",
++	NULL
+ };
+ 
+ write_attribute(attach);
+@@ -338,7 +342,7 @@ STORE(__cached_dev)
+ 	}
+ 
+ 	if (attr == &sysfs_cache_mode) {
+-		v = sysfs_match_string(bch_cache_modes, buf);
++		v = __sysfs_match_string(bch_cache_modes, -1, buf);
+ 		if (v < 0)
+ 			return v;
+ 
+@@ -349,7 +353,7 @@ STORE(__cached_dev)
+ 	}
+ 
+ 	if (attr == &sysfs_stop_when_cache_set_failed) {
+-		v = sysfs_match_string(bch_stop_on_failure_modes, buf);
++		v = __sysfs_match_string(bch_stop_on_failure_modes, -1, buf);
+ 		if (v < 0)
+ 			return v;
+ 
+@@ -816,7 +820,7 @@ STORE(__bch_cache_set)
+ 			    0, UINT_MAX);
+ 
+ 	if (attr == &sysfs_errors) {
+-		v = sysfs_match_string(error_actions, buf);
++		v = __sysfs_match_string(error_actions, -1, buf);
+ 		if (v < 0)
+ 			return v;
+ 
+@@ -1088,7 +1092,7 @@ STORE(__bch_cache)
+ 	}
+ 
+ 	if (attr == &sysfs_cache_replacement_policy) {
+-		v = sysfs_match_string(cache_replacement_policies, buf);
++		v = __sysfs_match_string(cache_replacement_policies, -1, buf);
+ 		if (v < 0)
+ 			return v;
+ 
 -- 
-
-Coly Li
+2.16.4
