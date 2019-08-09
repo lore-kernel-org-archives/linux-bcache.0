@@ -1,152 +1,128 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH v2 1/1] bcache: Revert "bcache: use sysfs_match_string() instead of __sysfs_match_string()"
-Date: Fri,  9 Aug 2019 14:14:05 +0800
-Message-ID: <20190809061405.73653-2-colyli@suse.de>
+From: "Ardelean, Alexandru" <alexandru.Ardelean@analog.com>
+Subject: Re: [PATCH v2 1/1] bcache: Revert "bcache: use sysfs_match_string()
+ instead of __sysfs_match_string()"
+Date: Fri, 9 Aug 2019 11:40:01 +0000
+Message-ID: <32305f1e72f625762316aadb55c73a13e7f3ed1a.camel@analog.com>
 References: <20190809061405.73653-1-colyli@suse.de>
+         <20190809061405.73653-2-colyli@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190809061405.73653-1-colyli@suse.de>
+In-Reply-To: <20190809061405.73653-2-colyli@suse.de>
+Content-Language: en-US
+Content-ID: <40D1F678B363BB4D80888BBB435DA4E3@analog.com>
 Sender: stable-owner@vger.kernel.org
-To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Alexandru Ardelean <alexandru.ardelean@analog.com>
+To: "axboe@kernel.dk" <axboe@kernel.dk>, "colyli@suse.de" <colyli@suse.de>
+Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
 List-Id: linux-bcache@vger.kernel.org
 
-This reverts commit 89e0341af082dbc170019f908846f4a424efc86b.
-
-In drivers/md/bcache/sysfs.c:bch_snprint_string_list(), NULL pointer at
-the end of list is necessary. Remove the NULL from last element of each
-lists will cause the following panic,
-
-[ 4340.455652] bcache: register_cache() registered cache device nvme0n1
-[ 4340.464603] bcache: register_bdev() registered backing device sdk
-[ 4421.587335] bcache: bch_cached_dev_run() cached dev sdk is running already
-[ 4421.587348] bcache: bch_cached_dev_attach() Caching sdk as bcache0 on set 354e1d46-d99f-4d8b-870b-078b80dc88a6
-[ 5139.247950] general protection fault: 0000 [#1] SMP NOPTI
-[ 5139.247970] CPU: 9 PID: 5896 Comm: cat Not tainted 4.12.14-95.29-default #1 SLE12-SP4
-[ 5139.247988] Hardware name: HPE ProLiant DL380 Gen10/ProLiant DL380 Gen10, BIOS U30 04/18/2019
-[ 5139.248006] task: ffff888fb25c0b00 task.stack: ffff9bbacc704000
-[ 5139.248021] RIP: 0010:string+0x21/0x70
-[ 5139.248030] RSP: 0018:ffff9bbacc707bf0 EFLAGS: 00010286
-[ 5139.248043] RAX: ffffffffa7e432e3 RBX: ffff8881c20da02a RCX: ffff0a00ffffff04
-[ 5139.248058] RDX: 3f00656863616362 RSI: ffff8881c20db000 RDI: ffffffffffffffff
-[ 5139.248075] RBP: ffff8881c20db000 R08: 0000000000000000 R09: ffff8881c20da02a
-[ 5139.248090] R10: 0000000000000004 R11: 0000000000000000 R12: ffff9bbacc707c48
-[ 5139.248104] R13: 0000000000000fd6 R14: ffffffffc0665855 R15: ffffffffc0665855
-[ 5139.248119] FS:  00007faf253b8700(0000) GS:ffff88903f840000(0000) knlGS:0000000000000000
-[ 5139.248137] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 5139.248149] CR2: 00007faf25395008 CR3: 0000000f72150006 CR4: 00000000007606e0
-[ 5139.248164] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 5139.248179] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-[ 5139.248193] PKRU: 55555554
-[ 5139.248200] Call Trace:
-[ 5139.248210]  vsnprintf+0x1fb/0x510
-[ 5139.248221]  snprintf+0x39/0x40
-[ 5139.248238]  bch_snprint_string_list.constprop.15+0x5b/0x90 [bcache]
-[ 5139.248256]  __bch_cached_dev_show+0x44d/0x5f0 [bcache]
-[ 5139.248270]  ? __alloc_pages_nodemask+0xb2/0x210
-[ 5139.248284]  bch_cached_dev_show+0x2c/0x50 [bcache]
-[ 5139.248297]  sysfs_kf_seq_show+0xbb/0x190
-[ 5139.248308]  seq_read+0xfc/0x3c0
-[ 5139.248317]  __vfs_read+0x26/0x140
-[ 5139.248327]  vfs_read+0x87/0x130
-[ 5139.248336]  SyS_read+0x42/0x90
-[ 5139.248346]  do_syscall_64+0x74/0x160
-[ 5139.248358]  entry_SYSCALL_64_after_hwframe+0x3d/0xa2
-[ 5139.248370] RIP: 0033:0x7faf24eea370
-[ 5139.248379] RSP: 002b:00007fff82d03f38 EFLAGS: 00000246 ORIG_RAX: 0000000000000000
-[ 5139.248395] RAX: ffffffffffffffda RBX: 0000000000020000 RCX: 00007faf24eea370
-[ 5139.248411] RDX: 0000000000020000 RSI: 00007faf25396000 RDI: 0000000000000003
-[ 5139.248426] RBP: 00007faf25396000 R08: 00000000ffffffff R09: 0000000000000000
-[ 5139.248441] R10: 000000007c9d4d41 R11: 0000000000000246 R12: 00007faf25396000
-[ 5139.248456] R13: 0000000000000003 R14: 0000000000000000 R15: 0000000000000fff
-[ 5139.248892] Code: ff ff ff 0f 1f 80 00 00 00 00 49 89 f9 48 89 cf 48 c7 c0 e3 32 e4 a7 48 c1 ff 30 48 81 fa ff 0f 00 00 48 0f 46 d0 48 85 ff 74 45 <44> 0f b6 02 48 8d 42 01 45 84 c0 74 38 48 01 fa 4c 89 cf eb 0e
-
-The simplest way to fix is to revert commit 89e0341af082 ("bcache: use
-sysfs_match_string() instead of __sysfs_match_string()").
-
-This bug was introduced in Linux v5.2, so this fix only applies to
-Linux v5.2 is enough for stable tree maintainer.
-
-Fixes: 89e0341af082 ("bcache: use sysfs_match_string() instead of __sysfs_match_string()")
-Signed-off-by: Coly Li <colyli@suse.de>
-Reported-by: Peifeng Lin <pflin@suse.com>
-Cc: stable@vger.kernel.org
-Cc: Alexandru Ardelean <alexandru.ardelean@analog.com>
----
- drivers/md/bcache/sysfs.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 9f0826712845..e2059af90791 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -23,24 +23,28 @@ static const char * const bch_cache_modes[] = {
- 	"writethrough",
- 	"writeback",
- 	"writearound",
--	"none"
-+	"none",
-+	NULL
- };
- 
- /* Default is 0 ("auto") */
- static const char * const bch_stop_on_failure_modes[] = {
- 	"auto",
--	"always"
-+	"always",
-+	NULL
- };
- 
- static const char * const cache_replacement_policies[] = {
- 	"lru",
- 	"fifo",
--	"random"
-+	"random",
-+	NULL
- };
- 
- static const char * const error_actions[] = {
- 	"unregister",
--	"panic"
-+	"panic",
-+	NULL
- };
- 
- write_attribute(attach);
-@@ -338,7 +342,7 @@ STORE(__cached_dev)
- 	}
- 
- 	if (attr == &sysfs_cache_mode) {
--		v = sysfs_match_string(bch_cache_modes, buf);
-+		v = __sysfs_match_string(bch_cache_modes, -1, buf);
- 		if (v < 0)
- 			return v;
- 
-@@ -349,7 +353,7 @@ STORE(__cached_dev)
- 	}
- 
- 	if (attr == &sysfs_stop_when_cache_set_failed) {
--		v = sysfs_match_string(bch_stop_on_failure_modes, buf);
-+		v = __sysfs_match_string(bch_stop_on_failure_modes, -1, buf);
- 		if (v < 0)
- 			return v;
- 
-@@ -816,7 +820,7 @@ STORE(__bch_cache_set)
- 			    0, UINT_MAX);
- 
- 	if (attr == &sysfs_errors) {
--		v = sysfs_match_string(error_actions, buf);
-+		v = __sysfs_match_string(error_actions, -1, buf);
- 		if (v < 0)
- 			return v;
- 
-@@ -1088,7 +1092,7 @@ STORE(__bch_cache)
- 	}
- 
- 	if (attr == &sysfs_cache_replacement_policy) {
--		v = sysfs_match_string(cache_replacement_policies, buf);
-+		v = __sysfs_match_string(cache_replacement_policies, -1, buf);
- 		if (v < 0)
- 			return v;
- 
--- 
-2.16.4
+T24gRnJpLCAyMDE5LTA4LTA5IGF0IDE0OjE0ICswODAwLCBDb2x5IExpIHdyb3RlOg0KPiBbRXh0
+ZXJuYWxdDQo+IA0KPiBUaGlzIHJldmVydHMgY29tbWl0IDg5ZTAzNDFhZjA4MmRiYzE3MDAxOWY5
+MDg4NDZmNGE0MjRlZmM4NmIuDQo+IA0KPiBJbiBkcml2ZXJzL21kL2JjYWNoZS9zeXNmcy5jOmJj
+aF9zbnByaW50X3N0cmluZ19saXN0KCksIE5VTEwgcG9pbnRlciBhdA0KPiB0aGUgZW5kIG9mIGxp
+c3QgaXMgbmVjZXNzYXJ5LiBSZW1vdmUgdGhlIE5VTEwgZnJvbSBsYXN0IGVsZW1lbnQgb2YgZWFj
+aA0KPiBsaXN0cyB3aWxsIGNhdXNlIHRoZSBmb2xsb3dpbmcgcGFuaWMsDQo+IA0KPiBbIDQzNDAu
+NDU1NjUyXSBiY2FjaGU6IHJlZ2lzdGVyX2NhY2hlKCkgcmVnaXN0ZXJlZCBjYWNoZSBkZXZpY2Ug
+bnZtZTBuMQ0KPiBbIDQzNDAuNDY0NjAzXSBiY2FjaGU6IHJlZ2lzdGVyX2JkZXYoKSByZWdpc3Rl
+cmVkIGJhY2tpbmcgZGV2aWNlIHNkaw0KPiBbIDQ0MjEuNTg3MzM1XSBiY2FjaGU6IGJjaF9jYWNo
+ZWRfZGV2X3J1bigpIGNhY2hlZCBkZXYgc2RrIGlzIHJ1bm5pbmcgYWxyZWFkeQ0KPiBbIDQ0MjEu
+NTg3MzQ4XSBiY2FjaGU6IGJjaF9jYWNoZWRfZGV2X2F0dGFjaCgpIENhY2hpbmcgc2RrIGFzIGJj
+YWNoZTAgb24gc2V0IDM1NGUxZDQ2LWQ5OWYtNGQ4Yi04NzBiLTA3OGI4MGRjODhhNg0KPiBbIDUx
+MzkuMjQ3OTUwXSBnZW5lcmFsIHByb3RlY3Rpb24gZmF1bHQ6IDAwMDAgWyMxXSBTTVAgTk9QVEkN
+Cj4gWyA1MTM5LjI0Nzk3MF0gQ1BVOiA5IFBJRDogNTg5NiBDb21tOiBjYXQgTm90IHRhaW50ZWQg
+NC4xMi4xNC05NS4yOS1kZWZhdWx0ICMxIFNMRTEyLVNQNA0KPiBbIDUxMzkuMjQ3OTg4XSBIYXJk
+d2FyZSBuYW1lOiBIUEUgUHJvTGlhbnQgREwzODAgR2VuMTAvUHJvTGlhbnQgREwzODAgR2VuMTAs
+IEJJT1MgVTMwIDA0LzE4LzIwMTkNCj4gWyA1MTM5LjI0ODAwNl0gdGFzazogZmZmZjg4OGZiMjVj
+MGIwMCB0YXNrLnN0YWNrOiBmZmZmOWJiYWNjNzA0MDAwDQo+IFsgNTEzOS4yNDgwMjFdIFJJUDog
+MDAxMDpzdHJpbmcrMHgyMS8weDcwDQo+IFsgNTEzOS4yNDgwMzBdIFJTUDogMDAxODpmZmZmOWJi
+YWNjNzA3YmYwIEVGTEFHUzogMDAwMTAyODYNCj4gWyA1MTM5LjI0ODA0M10gUkFYOiBmZmZmZmZm
+ZmE3ZTQzMmUzIFJCWDogZmZmZjg4ODFjMjBkYTAyYSBSQ1g6IGZmZmYwYTAwZmZmZmZmMDQNCj4g
+WyA1MTM5LjI0ODA1OF0gUkRYOiAzZjAwNjU2ODYzNjE2MzYyIFJTSTogZmZmZjg4ODFjMjBkYjAw
+MCBSREk6IGZmZmZmZmZmZmZmZmZmZmYNCj4gWyA1MTM5LjI0ODA3NV0gUkJQOiBmZmZmODg4MWMy
+MGRiMDAwIFIwODogMDAwMDAwMDAwMDAwMDAwMCBSMDk6IGZmZmY4ODgxYzIwZGEwMmENCj4gWyA1
+MTM5LjI0ODA5MF0gUjEwOiAwMDAwMDAwMDAwMDAwMDA0IFIxMTogMDAwMDAwMDAwMDAwMDAwMCBS
+MTI6IGZmZmY5YmJhY2M3MDdjNDgNCj4gWyA1MTM5LjI0ODEwNF0gUjEzOiAwMDAwMDAwMDAwMDAw
+ZmQ2IFIxNDogZmZmZmZmZmZjMDY2NTg1NSBSMTU6IGZmZmZmZmZmYzA2NjU4NTUNCj4gWyA1MTM5
+LjI0ODExOV0gRlM6ICAwMDAwN2ZhZjI1M2I4NzAwKDAwMDApIEdTOmZmZmY4ODkwM2Y4NDAwMDAo
+MDAwMCkga25sR1M6MDAwMDAwMDAwMDAwMDAwMA0KPiBbIDUxMzkuMjQ4MTM3XSBDUzogIDAwMTAg
+RFM6IDAwMDAgRVM6IDAwMDAgQ1IwOiAwMDAwMDAwMDgwMDUwMDMzDQo+IFsgNTEzOS4yNDgxNDld
+IENSMjogMDAwMDdmYWYyNTM5NTAwOCBDUjM6IDAwMDAwMDBmNzIxNTAwMDYgQ1I0OiAwMDAwMDAw
+MDAwNzYwNmUwDQo+IFsgNTEzOS4yNDgxNjRdIERSMDogMDAwMDAwMDAwMDAwMDAwMCBEUjE6IDAw
+MDAwMDAwMDAwMDAwMDAgRFIyOiAwMDAwMDAwMDAwMDAwMDAwDQo+IFsgNTEzOS4yNDgxNzldIERS
+MzogMDAwMDAwMDAwMDAwMDAwMCBEUjY6IDAwMDAwMDAwZmZmZTBmZjAgRFI3OiAwMDAwMDAwMDAw
+MDAwNDAwDQo+IFsgNTEzOS4yNDgxOTNdIFBLUlU6IDU1NTU1NTU0DQo+IFsgNTEzOS4yNDgyMDBd
+IENhbGwgVHJhY2U6DQo+IFsgNTEzOS4yNDgyMTBdICB2c25wcmludGYrMHgxZmIvMHg1MTANCj4g
+WyA1MTM5LjI0ODIyMV0gIHNucHJpbnRmKzB4MzkvMHg0MA0KPiBbIDUxMzkuMjQ4MjM4XSAgYmNo
+X3NucHJpbnRfc3RyaW5nX2xpc3QuY29uc3Rwcm9wLjE1KzB4NWIvMHg5MCBbYmNhY2hlXQ0KPiBb
+IDUxMzkuMjQ4MjU2XSAgX19iY2hfY2FjaGVkX2Rldl9zaG93KzB4NDRkLzB4NWYwIFtiY2FjaGVd
+DQo+IFsgNTEzOS4yNDgyNzBdICA/IF9fYWxsb2NfcGFnZXNfbm9kZW1hc2srMHhiMi8weDIxMA0K
+PiBbIDUxMzkuMjQ4Mjg0XSAgYmNoX2NhY2hlZF9kZXZfc2hvdysweDJjLzB4NTAgW2JjYWNoZV0N
+Cj4gWyA1MTM5LjI0ODI5N10gIHN5c2ZzX2tmX3NlcV9zaG93KzB4YmIvMHgxOTANCj4gWyA1MTM5
+LjI0ODMwOF0gIHNlcV9yZWFkKzB4ZmMvMHgzYzBiY2hfc25wcmludF9zdHJpbmdfbGlzdCgpDQo+
+IFsgNTEzOS4yNDgzMTddICBfX3Zmc19yZWFkKzB4MjYvMHgxNDANCj4gWyA1MTM5LjI0ODMyN10g
+IHZmc19yZWFkKzB4ODcvMHgxMzANCj4gWyA1MTM5LjI0ODMzNl0gIFN5U19yZWFkKzB4NDIvMHg5
+MA0KPiBbIDUxMzkuMjQ4MzQ2XSAgZG9fc3lzY2FsbF82NCsweDc0LzB4MTYwDQo+IFsgNTEzOS4y
+NDgzNThdICBlbnRyeV9TWVNDQUxMXzY0X2FmdGVyX2h3ZnJhbWUrMHgzZC8weGEyDQo+IFsgNTEz
+OS4yNDgzNzBdIFJJUDogMDAzMzoweDdmYWYyNGVlYTM3MA0KPiBbIDUxMzkuMjQ4Mzc5XSBSU1A6
+IDAwMmI6MDAwMDdmZmY4MmQwM2YzOCBFRkxBR1M6IDAwMDAwMjQ2IE9SSUdfUkFYOiAwMDAwMDAw
+MDAwMDAwMDAwDQo+IFsgNTEzOS4yNDgzOTVdIFJBWDogZmZmZmZmZmZmZmZmZmZkYSBSQlg6IDAw
+MDAwMDAwMDAwMjAwMDAgUkNYOiAwMDAwN2ZhZjI0ZWVhMzcwDQo+IFsgNTEzOS4yNDg0MTFdIFJE
+WDogMDAwMDAwMDAwMDAyMDAwMCBSU0k6IDAwMDA3ZmFmMjUzOTYwMDAgUkRJOiAwMDAwMDAwMDAw
+MDAwMDAzDQo+IFsgNTEzOS4yNDg0MjZdIFJCUDogMDAwMDdmYWYyNTM5NjAwMCBSMDg6IDAwMDAw
+MDAwZmZmZmZmZmYgUjA5OiAwMDAwMDAwMDAwMDAwMDAwDQo+IFsgNTEzOS4yNDg0NDFdIFIxMDog
+MDAwMDAwMDA3YzlkNGQ0MSBSMTE6IDAwMDAwMDAwMDAwMDAyNDYgUjEyOiAwMDAwN2ZhZjI1Mzk2
+MDAwDQo+IFsgNTEzOS4yNDg0NTZdIFIxMzogMDAwMDAwMDAwMDAwMDAwMyBSMTQ6IDAwMDAwMDAw
+MDAwMDAwMDAgUjE1OiAwMDAwMDAwMDAwMDAwZmZmDQo+IFsgNTEzOS4yNDg4OTJdIENvZGU6IGZm
+IGZmIGZmIDBmIDFmIDgwIDAwIDAwIDAwIDAwIDQ5IDg5IGY5IDQ4IDg5IGNmIDQ4IGM3IGMwIGUz
+IDMyIGU0IGE3IDQ4IGMxIGZmIDMwIDQ4IDgxIGZhIGZmIDBmDQo+IDAwIDAwIDQ4IDBmIDQ2IGQw
+IDQ4IDg1IGZmIDc0IDQ1IDw0ND4gMGYgYjYgMDIgNDggOGQgNDIgMDEgNDUgODQgYzAgNzQgMzgg
+NDggMDEgZmEgNGMgODkgY2YgZWIgMGUNCj4gDQo+IFRoZSBzaW1wbGVzdCB3YXkgdG8gZml4IGlz
+IHRvIHJldmVydCBjb21taXQgODllMDM0MWFmMDgyICgiYmNhY2hlOiB1c2UNCj4gc3lzZnNfbWF0
+Y2hfc3RyaW5nKCkgaW5zdGVhZCBvZiBfX3N5c2ZzX21hdGNoX3N0cmluZygpIikuDQo+IA0KPiBU
+aGlzIGJ1ZyB3YXMgaW50cm9kdWNlZCBpbiBMaW51eCB2NS4yLCBzbyB0aGlzIGZpeCBvbmx5IGFw
+cGxpZXMgdG8NCj4gTGludXggdjUuMiBpcyBlbm91Z2ggZm9yIHN0YWJsZSB0cmVlIG1haW50YWlu
+ZXIuDQoNClNvcnJ5IGFib3V0IHRoZSBicmVha2FnZS4NCg0KQWNrZWQtYnk6IEFsZXhhbmRydSBB
+cmRlbGVhbiA8YWxleGFuZHJ1LmFyZGVsZWFuQGFuYWxvZy5jb20+DQoNClRoZSBhbHRlcm5hdGl2
+ZSB3b3VsZCBoYXZlIGJlZW4gdG8gZXh0ZW5kL2ZpeCBiY2hfc25wcmludF9zdHJpbmdfbGlzdCgp
+LCBidXQgSSBhbHNvIGFncmVlIHJldmVydGluZyBpcyBlYXNpZXIuDQoNClRoYW5rcw0KQWxleA0K
+DQo+IA0KPiBGaXhlczogODllMDM0MWFmMDgyICgiYmNhY2hlOiB1c2Ugc3lzZnNfbWF0Y2hfc3Ry
+aW5nKCkgaW5zdGVhZCBvZiBfX3N5c2ZzX21hdGNoX3N0cmluZygpIikNCj4gU2lnbmVkLW9mZi1i
+eTogQ29seSBMaSA8Y29seWxpQHN1c2UuZGU+DQo+IFJlcG9ydGVkLWJ5OiBQZWlmZW5nIExpbiA8
+cGZsaW5Ac3VzZS5jb20+DQo+IENjOiBzdGFibGVAdmdlci5rZXJuZWwub3JnDQo+IENjOiBBbGV4
+YW5kcnUgQXJkZWxlYW4gPGFsZXhhbmRydS5hcmRlbGVhbkBhbmFsb2cuY29tPg0KPiAtLS0NCj4g
+IGRyaXZlcnMvbWQvYmNhY2hlL3N5c2ZzLmMgfCAyMCArKysrKysrKysrKystLS0tLS0tLQ0KPiAg
+MSBmaWxlIGNoYW5nZWQsIDEyIGluc2VydGlvbnMoKyksIDggZGVsZXRpb25zKC0pDQo+IA0KPiBk
+aWZmIC0tZ2l0IGEvZHJpdmVycy9tZC9iY2FjaGUvc3lzZnMuYyBiL2RyaXZlcnMvbWQvYmNhY2hl
+L3N5c2ZzLmMNCj4gaW5kZXggOWYwODI2NzEyODQ1Li5lMjA1OWFmOTA3OTEgMTAwNjQ0DQo+IC0t
+LSBhL2RyaXZlcnMvbWQvYmNhY2hlL3N5c2ZzLmMNCj4gKysrIGIvZHJpdmVycy9tZC9iY2FjaGUv
+c3lzZnMuYw0KPiBAQCAtMjMsMjQgKzIzLDI4IEBAIHN0YXRpYyBjb25zdCBjaGFyICogY29uc3Qg
+YmNoX2NhY2hlX21vZGVzW10gPSB7DQo+ICAJIndyaXRldGhyb3VnaCIsDQo+ICAJIndyaXRlYmFj
+ayIsDQo+ICAJIndyaXRlYXJvdW5kIiwNCj4gLQkibm9uZSINCj4gKwkibm9uZSIsDQo+ICsJTlVM
+TA0KPiAgfTsNCj4gIA0KPiAgLyogRGVmYXVsdCBpcyAwICgiYXV0byIpICovDQo+ICBzdGF0aWMg
+Y29uc3QgY2hhciAqIGNvbnN0IGJjaF9zdG9wX29uX2ZhaWx1cmVfbW9kZXNbXSA9IHsNCj4gIAki
+YXV0byIsDQo+IC0JImFsd2F5cyINCj4gKwkiYWx3YXlzIiwNCj4gKwlOVUxMDQo+ICB9Ow0KPiAg
+DQo+ICBzdGF0aWMgY29uc3QgY2hhciAqIGNvbnN0IGNhY2hlX3JlcGxhY2VtZW50X3BvbGljaWVz
+W10gPSB7DQo+ICAJImxydSIsDQo+ICAJImZpZm8iLA0KPiAtCSJyYW5kb20iDQo+ICsJInJhbmRv
+bSIsDQo+ICsJTlVMTA0KPiAgfTsNCj4gIA0KPiAgc3RhdGljIGNvbnN0IGNoYXIgKiBjb25zdCBl
+cnJvcl9hY3Rpb25zW10gPSB7DQo+ICAJInVucmVnaXN0ZXIiLA0KPiAtCSJwYW5pYyINCj4gKwki
+cGFuaWMiLA0KPiArCU5VTEwNCj4gIH07DQo+ICANCj4gIHdyaXRlX2F0dHJpYnV0ZShhdHRhY2gp
+Ow0KPiBAQCAtMzM4LDcgKzM0Miw3IEBAIFNUT1JFKF9fY2FjaGVkX2RldikNCj4gIAl9DQo+ICAN
+Cj4gIAlpZiAoYXR0ciA9PSAmc3lzZnNfY2FjaGVfbW9kZSkgew0KPiAtCQl2ID0gc3lzZnNfbWF0
+Y2hfc3RyaW5nKGJjaF9jYWNoZV9tb2RlcywgYnVmKTsNCj4gKwkJdiA9IF9fc3lzZnNfbWF0Y2hf
+c3RyaW5nKGJjaF9jYWNoZV9tb2RlcywgLTEsIGJ1Zik7DQo+ICAJCWlmICh2IDwgMCkNCj4gIAkJ
+CXJldHVybiB2Ow0KPiAgDQo+IEBAIC0zNDksNyArMzUzLDcgQEAgU1RPUkUoX19jYWNoZWRfZGV2
+KQ0KPiAgCX0NCj4gIA0KPiAgCWlmIChhdHRyID09ICZzeXNmc19zdG9wX3doZW5fY2FjaGVfc2V0
+X2ZhaWxlZCkgew0KPiAtCQl2ID0gc3lzZnNfbWF0Y2hfc3RyaW5nKGJjaF9zdG9wX29uX2ZhaWx1
+cmVfbW9kZXMsIGJ1Zik7DQo+ICsJCXYgPSBfX3N5c2ZzX21hdGNoX3N0cmluZyhiY2hfc3RvcF9v
+bl9mYWlsdXJlX21vZGVzLCAtMSwgYnVmKTsNCj4gIAkJaWYgKHYgPCAwKQ0KPiAgCQkJcmV0dXJu
+IHY7DQo+ICANCj4gQEAgLTgxNiw3ICs4MjAsNyBAQCBTVE9SRShfX2JjaF9jYWNoZV9zZXQpDQo+
+ICAJCQkgICAgMCwgVUlOVF9NQVgpOw0KPiAgDQo+ICAJaWYgKGF0dHIgPT0gJnN5c2ZzX2Vycm9y
+cykgew0KPiAtCQl2ID0gc3lzZnNfbWF0Y2hfc3RyaW5nKGVycm9yX2FjdGlvbnMsIGJ1Zik7DQo+
+ICsJCXYgPSBfX3N5c2ZzX21hdGNoX3N0cmluZyhlcnJvcl9hY3Rpb25zLCAtMSwgYnVmKTsNCj4g
+IAkJaWYgKHYgPCAwKQ0KPiAgCQkJcmV0dXJuIHY7DQo+ICANCj4gQEAgLTEwODgsNyArMTA5Miw3
+IEBAIFNUT1JFKF9fYmNoX2NhY2hlKQ0KPiAgCX0NCj4gIA0KPiAgCWlmIChhdHRyID09ICZzeXNm
+c19jYWNoZV9yZXBsYWNlbWVudF9wb2xpY3kpIHsNCj4gLQkJdiA9IHN5c2ZzX21hdGNoX3N0cmlu
+ZyhjYWNoZV9yZXBsYWNlbWVudF9wb2xpY2llcywgYnVmKTsNCj4gKwkJdiA9IF9fc3lzZnNfbWF0
+Y2hfc3RyaW5nKGNhY2hlX3JlcGxhY2VtZW50X3BvbGljaWVzLCAtMSwgYnVmKTsNCj4gIAkJaWYg
+KHYgPCAwKQ0KPiAgCQkJcmV0dXJuIHY7DQo+ICANCg==
