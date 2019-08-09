@@ -1,10 +1,10 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 1/1] bcache: Revert "bcache: use sysfs_match_string() instead of __sysfs_match_string()"
-Date: Fri,  9 Aug 2019 14:08:29 +0800
-Message-ID: <20190809060829.73489-2-colyli@suse.de>
-References: <20190809060829.73489-1-colyli@suse.de>
+Subject: [PATCH v2 1/1] bcache: Revert "bcache: use sysfs_match_string() instead of __sysfs_match_string()"
+Date: Fri,  9 Aug 2019 14:14:05 +0800
+Message-ID: <20190809061405.73653-2-colyli@suse.de>
+References: <20190809061405.73653-1-colyli@suse.de>
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190809060829.73489-1-colyli@suse.de>
+In-Reply-To: <20190809061405.73653-1-colyli@suse.de>
 Sender: stable-owner@vger.kernel.org
 To: axboe@kernel.dk
 Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, stable@vger.kernel.org, Alexandru Ardelean <alexandru.ardelean@analog.com>
@@ -66,6 +66,7 @@ sysfs_match_string() instead of __sysfs_match_string()").
 This bug was introduced in Linux v5.2, so this fix only applies to
 Linux v5.2 is enough for stable tree maintainer.
 
+Fixes: 89e0341af082 ("bcache: use sysfs_match_string() instead of __sysfs_match_string()")
 Signed-off-by: Coly Li <colyli@suse.de>
 Reported-by: Peifeng Lin <pflin@suse.com>
 Cc: stable@vger.kernel.org
