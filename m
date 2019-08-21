@@ -1,71 +1,45 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: add cond_resched() in __bch_cache_cmp()
-Date: Thu, 15 Aug 2019 00:50:03 +0800
-Message-ID: <74950e24-245a-c627-0e2e-32ac0b304a6c@suse.de>
-References: <c13b1d2a-a8e6-f20c-604e-a375c018bf66@suse.de>
- <20190814142301.32556-1-halves@canonical.com>
+From: Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
+Subject: [PATCH V5 1/9] block: add a helper function to read
+ nr_setcs
+Date: Tue, 20 Aug 2019 23:14:15 -0700
+Message-ID: <20190821061423.3408-2-chaitanya.kulkarni@wdc.com>
+References: <20190821061423.3408-1-chaitanya.kulkarni@wdc.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190814142301.32556-1-halves@canonical.com>
-Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Heitor Alves de Siqueira <halves@canonical.com>
-Cc: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, shile.zhang@linux.alibaba.com, vojtech@suse.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <xen-devel-bounces@lists.xenproject.org>
+In-Reply-To: <20190821061423.3408-1-chaitanya.kulkarni@wdc.com>
+List-Unsubscribe: <https://lists.xenproject.org/mailman/options/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=unsubscribe>
+List-Post: <mailto:xen-devel@lists.xenproject.org>
+List-Help: <mailto:xen-devel-request@lists.xenproject.org?subject=help>
+List-Subscribe: <https://lists.xenproject.org/mailman/listinfo/xen-devel>,
+ <mailto:xen-devel-request@lists.xenproject.org?subject=subscribe>
+Errors-To: xen-devel-bounces@lists.xenproject.org
+Sender: "Xen-devel" <xen-devel-bounces@lists.xenproject.org>
+To: linux-block@vger.kernel.org
+Cc: damien.lemoal@wdc.com, linux-btrace@vger.kernel.org, bvanassche@acm.org, linux-scsi@vger.kernel.org, konrad.wilk@oracle.com, Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>, yuchao0@huawei.com, colyli@suse.de, linux-bcache@vger.kernel.org, jaegeuk@kernel.org, xen-devel@lists.xenproject.org, kent.overstreet@gmail.com, roger.pau@citrix.com
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/8/14 10:23 下午, Heitor Alves de Siqueira wrote:
-> Hi Coly,
-> 
-> We've had users impacted by system stalls and were able to trace it back to the
-> bcache priority_stats query. After investigating a bit further, it seems that
-> the sorting step in the quantiles calculation can cause heavy CPU
-> contention. This has a severe performance impact on any task that is running in
-> the same CPU as the sysfs query, and caused issues even for non-bcache
-> workloads.
-> 
-> We did some test runs with fio to get a better picture of the impact on
-> read/write workloads while a priority_stats query is running, and came up with
-> some interesting results. The bucket locking doesn't seem to have that
-> much performance impact even in full-write workloads, but the 'sort' can affect
-> bcache device throughput and latency pretty heavily (and any other tasks that
-> are "unlucky" to be scheduled together with it). In some of our tests, there was
-> a performance reduction of almost 90% in random read IOPS to the bcache device
-> (refer to the comparison graph at [0]). There's a few more details on the
-> Launchpad bug [1] we've created to track this, together with the complete fio
-> results + comparison graphs.
-> 
-> The cond_resched() patch suggested by Shile Zhang actually improved performance
-> a lot, and eliminated the stalls we've observed during the priority_stats
-> query. Even though it may cause the sysfs query to take a bit longer, it seems
-> like a decent tradeoff for general performance when running that query on a
-> system under heavy load. It's also a cheap short-term solution until we can look
-> into a more complex re-write of the priority_stats calculation (perhaps one that
-> doesn't require the locking?). Could we revisit Shile's patch, and consider
-> merging it?
-> 
-> Thanks!
-> Heitor
-> 
-> [0] https://people.canonical.com/~halves/priority_stats/read/4k-iops-2Dsmooth.png
-> [1] https://bugs.launchpad.net/bugs/1840043
-> 
-
-Hi Heitor,
-
-With your very detailed explanation I come to understand why people
-cares about performance impact of pririty_stats. In the case of system
-monitoring, how long priority_stats returns is less important than
-overall system throughput.
-
-Yes I agree with your opinion and the benchmark chart makes me confident
-with the original patch. I will add this patch to v5.4 window with
-tested-by: Heitor Alves de Siqueira <halves@canonical.com>
-
-Thanks for your detailed information. And thanks for Shile Zhang
-originally composing this patch.
-
--- 
-
-Coly Li
+VGhpcyBwYXRjaCBpbnRyb2R1Y2VzIGhlbHBlciBmdW5jdGlvbiB0byByZWFkIHRoZSBudW1iZXIg
+b2Ygc2VjdG9ycwpmcm9tIHN0cnVjdCBibG9ja19kZXZpY2UtPmJkX3BhcnQgbWVtYmVyLiBGb3Ig
+bW9yZSBkZXRhaWxzIFBsZWFzZSByZWZlcgp0byB0aGUgY29tbWVudCBpbiB0aGUgaW5jbHVkZS9s
+aW51eC9nZW5oZC5oIGZvciBwYXJ0X25yX3NlY3RzX3JlYWQoKS4KClJldmlld2VkLWJ5OiBNaW53
+b28gSW0gPG1pbndvby5pbS5kZXZAZ21haWwuY29tPgpSZXZpZXdlZC1ieTogTWFydGluIEsuIFBl
+dGVyc2VuIDxtYXJ0aW4ucGV0ZXJzZW5AeHh4eHh4eHh4eD4KU2lnbmVkLW9mZi1ieTogQ2hhaXRh
+bnlhIEt1bGthcm5pIDxjaGFpdGFueWEua3Vsa2FybmlAd2RjLmNvbT4KLS0tCiBpbmNsdWRlL2xp
+bnV4L2Jsa2Rldi5oIHwgNSArKysrKwogMSBmaWxlIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygrKQoK
+ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvYmxrZGV2LmggYi9pbmNsdWRlL2xpbnV4L2Jsa2Rl
+di5oCmluZGV4IDQ3OThiYjI1ZjFlZS4uYWE1ODAxYzhmZjczIDEwMDY0NAotLS0gYS9pbmNsdWRl
+L2xpbnV4L2Jsa2Rldi5oCisrKyBiL2luY2x1ZGUvbGludXgvYmxrZGV2LmgKQEAgLTE0NjgsNiAr
+MTQ2OCwxMSBAQCBzdGF0aWMgaW5saW5lIHZvaWQgcHV0X2Rldl9zZWN0b3IoU2VjdG9yIHApCiAJ
+cHV0X3BhZ2UocC52KTsKIH0KIAorc3RhdGljIGlubGluZSBzZWN0b3JfdCBiZGV2X25yX3NlY3Rz
+KHN0cnVjdCBibG9ja19kZXZpY2UgKmJkZXYpCit7CisJcmV0dXJuIHBhcnRfbnJfc2VjdHNfcmVh
+ZChiZGV2LT5iZF9wYXJ0KTsKK30KKwogaW50IGtibG9ja2Rfc2NoZWR1bGVfd29yayhzdHJ1Y3Qg
+d29ya19zdHJ1Y3QgKndvcmspOwogaW50IGtibG9ja2Rfc2NoZWR1bGVfd29ya19vbihpbnQgY3B1
+LCBzdHJ1Y3Qgd29ya19zdHJ1Y3QgKndvcmspOwogaW50IGtibG9ja2RfbW9kX2RlbGF5ZWRfd29y
+a19vbihpbnQgY3B1LCBzdHJ1Y3QgZGVsYXllZF93b3JrICpkd29yaywgdW5zaWduZWQgbG9uZyBk
+ZWxheSk7Ci0tIAoyLjE3LjAKCgpfX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fX19fX19fXwpYZW4tZGV2ZWwgbWFpbGluZyBsaXN0Clhlbi1kZXZlbEBsaXN0cy54ZW5wcm9q
+ZWN0Lm9yZwpodHRwczovL2xpc3RzLnhlbnByb2plY3Qub3JnL21haWxtYW4vbGlzdGluZm8veGVu
+LWRldmVs
