@@ -1,61 +1,71 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 158/167] bcache: add comments for mutex_lock(&b->write_lock)
-Date: Tue,  3 Sep 2019 12:25:10 -0400
-Message-ID: <20190903162519.7136-158-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 157/167] bcache: only clear BTREE_NODE_dirty bit when it is set
+Date: Tue,  3 Sep 2019 12:25:09 -0400
+Message-ID: <20190903162519.7136-157-sashal@kernel.org>
 References: <20190903162519.7136-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
+Return-path: <stable-owner@vger.kernel.org>
 In-Reply-To: <20190903162519.7136-1-sashal@kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
+Sender: stable-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit 41508bb7d46b74dba631017e5a702a86caf1db8c ]
+[ Upstream commit e5ec5f4765ada9c75fb3eee93a6e72f0e50599d5 ]
 
-When accessing or modifying BTREE_NODE_dirty bit, it is not always
-necessary to acquire b->write_lock. In bch_btree_cache_free() and
-mca_reap() acquiring b->write_lock is necessary, and this patch adds
-comments to explain why mutex_lock(&b->write_lock) is necessary for
-checking or clearing BTREE_NODE_dirty bit there.
+In bch_btree_cache_free() and btree_node_free(), BTREE_NODE_dirty is
+always set no matter btree node is dirty or not. The code looks like
+this,
+	if (btree_node_dirty(b))
+		btree_complete_write(b, btree_current_write(b));
+	clear_bit(BTREE_NODE_dirty, &b->flags);
+
+Indeed if btree_node_dirty(b) returns false, it means BTREE_NODE_dirty
+bit is cleared, then it is unnecessary to clear the bit again.
+
+This patch only clears BTREE_NODE_dirty when btree_node_dirty(b) is
+true (the bit is set), to save a few CPU cycles.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/btree.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/md/bcache/btree.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 8c80833e73a9a..e0468fd41b6ea 100644
+index 3f4211b5cd334..8c80833e73a9a 100644
 --- a/drivers/md/bcache/btree.c
 +++ b/drivers/md/bcache/btree.c
-@@ -649,6 +649,11 @@ static int mca_reap(struct btree *b, unsigned int min_order, bool flush)
- 		up(&b->io_mutex);
- 	}
- 
-+	/*
-+	 * BTREE_NODE_dirty might be cleared in btree_flush_btree() by
-+	 * __bch_btree_node_write(). To avoid an extra flush, acquire
-+	 * b->write_lock before checking BTREE_NODE_dirty bit.
-+	 */
- 	mutex_lock(&b->write_lock);
- 	if (btree_node_dirty(b))
- 		__bch_btree_node_write(b, &cl);
-@@ -772,6 +777,11 @@ void bch_btree_cache_free(struct cache_set *c)
+@@ -772,10 +772,10 @@ void bch_btree_cache_free(struct cache_set *c)
  	while (!list_empty(&c->btree_cache)) {
  		b = list_first_entry(&c->btree_cache, struct btree, list);
  
-+		/*
-+		 * This function is called by cache_set_free(), no I/O
-+		 * request on cache now, it is unnecessary to acquire
-+		 * b->write_lock before clearing BTREE_NODE_dirty anymore.
-+		 */
- 		if (btree_node_dirty(b)) {
+-		if (btree_node_dirty(b))
++		if (btree_node_dirty(b)) {
  			btree_complete_write(b, btree_current_write(b));
- 			clear_bit(BTREE_NODE_dirty, &b->flags);
+-		clear_bit(BTREE_NODE_dirty, &b->flags);
+-
++			clear_bit(BTREE_NODE_dirty, &b->flags);
++		}
+ 		mca_data_free(b);
+ 	}
+ 
+@@ -1063,9 +1063,10 @@ static void btree_node_free(struct btree *b)
+ 
+ 	mutex_lock(&b->write_lock);
+ 
+-	if (btree_node_dirty(b))
++	if (btree_node_dirty(b)) {
+ 		btree_complete_write(b, btree_current_write(b));
+-	clear_bit(BTREE_NODE_dirty, &b->flags);
++		clear_bit(BTREE_NODE_dirty, &b->flags);
++	}
+ 
+ 	mutex_unlock(&b->write_lock);
+ 
 -- 
 2.20.1
