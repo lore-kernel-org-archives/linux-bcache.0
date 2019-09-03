@@ -1,36 +1,66 @@
-From: Bart Van Assche <bvanassche@acm.org>
-Subject: Re: [PATCH V5 0/9] block: use right accessor to read
- nr_sects
-Date: Wed, 21 Aug 2019 08:20:24 -0700
-Message-ID: <1aaf1d56-c1a2-957c-28b6-048f9965f412@acm.org>
-References: <20190821061423.3408-1-chaitanya.kulkarni@wdc.com>
+From: Sasha Levin <sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.2 01/23] bcache: only clear BTREE_NODE_dirty bit when it is set
+Date: Tue,  3 Sep 2019 12:24:02 -0400
+Message-ID: <20190903162424.6877-1-sashal@kernel.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; Format="flowed"
-Content-Transfer-Encoding: base64
-Return-path: <xen-devel-bounces@lists.xenproject.org>
-In-Reply-To: <20190821061423.3408-1-chaitanya.kulkarni@wdc.com>
-Content-Language: en-US
-List-Unsubscribe: <https://lists.xenproject.org/mailman/options/xen-devel>,
- <mailto:xen-devel-request@lists.xenproject.org?subject=unsubscribe>
-List-Post: <mailto:xen-devel@lists.xenproject.org>
-List-Help: <mailto:xen-devel-request@lists.xenproject.org?subject=help>
-List-Subscribe: <https://lists.xenproject.org/mailman/listinfo/xen-devel>,
- <mailto:xen-devel-request@lists.xenproject.org?subject=subscribe>
-Errors-To: xen-devel-bounces@lists.xenproject.org
-Sender: "Xen-devel" <xen-devel-bounces@lists.xenproject.org>
-To: Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>, linux-block@vger.kernel.org
-Cc: damien.lemoal@wdc.com, linux-btrace@vger.kernel.org, linux-scsi@vger.kernel.org, konrad.wilk@oracle.com, yuchao0@huawei.com, colyli@suse.de, linux-bcache@vger.kernel.org, jaegeuk@kernel.org, xen-devel@lists.xenproject.org, kent.overstreet@gmail.com, roger.pau@citrix.com
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-T24gOC8yMC8xOSAxMToxNCBQTSwgQ2hhaXRhbnlhIEt1bGthcm5pIHdyb3RlOgo+IEluIHRoZSBi
-bGstem9uZWQsIGJjYWNoZSwgZjJmcywgdGFyZ2V0LXBzY3NpLCB4ZW4gYW5kIGJsa3RyYWNlCj4g
-aW1wbGVtZW50YXRpb24gYmxvY2sgZGV2aWNlLT5oZF9wYXJ0LT5udW1iZXIgb2Ygc2VjdG9ycyBm
-aWVsZCBpcwo+IGFjY2Vzc2VkIGRpcmVjdGx5IHdpdGhvdXQgYW55IGFwcHJvcHJpYXRlIGxvY2tp
-bmcgb3IgYWNjZXNzb3IgZnVuY3Rpb24uCj4gVGhlcmUgaXMgYW4gZXhpc3RpbmcgYWNjZXNzb3Ig
-ZnVuY3Rpb24gcHJlc2VudCBpbiB0aGUgaW4KPiBpbmNsdWRlL2xpbnV4L2dlbmhkLmggd2hpY2gg
-c2hvdWxkIGJlIHVzZWQgdG8gcmVhZCB0aGUKPiBiZGV2LT5oZF9wYXJ0LT5ucl9zZWN0cy4KCkZv
-ciB0aGUgZW50aXJlIHNlcmllczoKClJldmlld2VkLWJ5OiBCYXJ0IFZhbiBBc3NjaGUgPGJ2YW5h
-c3NjaGVAYWNtLm9yZz4KCl9fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19f
-X19fX19fClhlbi1kZXZlbCBtYWlsaW5nIGxpc3QKWGVuLWRldmVsQGxpc3RzLnhlbnByb2plY3Qu
-b3JnCmh0dHBzOi8vbGlzdHMueGVucHJvamVjdC5vcmcvbWFpbG1hbi9saXN0aW5mby94ZW4tZGV2
-ZWw=
+From: Coly Li <colyli@suse.de>
+
+In bch_btree_cache_free() and btree_node_free(), BTREE_NODE_dirty is
+always set no matter btree node is dirty or not. The code looks like
+this,
+	if (btree_node_dirty(b))
+		btree_complete_write(b, btree_current_write(b));
+	clear_bit(BTREE_NODE_dirty, &b->flags);
+
+Indeed if btree_node_dirty(b) returns false, it means BTREE_NODE_dirty
+bit is cleared, then it is unnecessary to clear the bit again.
+
+This patch only clears BTREE_NODE_dirty when btree_node_dirty(b) is
+true (the bit is set), to save a few CPU cycles.
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+---
+ drivers/md/bcache/btree.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 773f5fdad25fb..3fbadf2058a65 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -778,10 +778,10 @@ void bch_btree_cache_free(struct cache_set *c)
+ 	while (!list_empty(&c->btree_cache)) {
+ 		b = list_first_entry(&c->btree_cache, struct btree, list);
+ 
+-		if (btree_node_dirty(b))
++		if (btree_node_dirty(b)) {
+ 			btree_complete_write(b, btree_current_write(b));
+-		clear_bit(BTREE_NODE_dirty, &b->flags);
+-
++			clear_bit(BTREE_NODE_dirty, &b->flags);
++		}
+ 		mca_data_free(b);
+ 	}
+ 
+@@ -1069,9 +1069,10 @@ static void btree_node_free(struct btree *b)
+ 
+ 	mutex_lock(&b->write_lock);
+ 
+-	if (btree_node_dirty(b))
++	if (btree_node_dirty(b)) {
+ 		btree_complete_write(b, btree_current_write(b));
+-	clear_bit(BTREE_NODE_dirty, &b->flags);
++		clear_bit(BTREE_NODE_dirty, &b->flags);
++	}
+ 
+ 	mutex_unlock(&b->write_lock);
+ 
+-- 
+2.20.1
