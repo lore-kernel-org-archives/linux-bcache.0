@@ -1,18 +1,20 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.2 03/23] bcache: fix race in btree_flush_write()
-Date: Tue,  3 Sep 2019 12:24:04 -0400
-Message-ID: <20190903162424.6877-3-sashal@kernel.org>
-References: <20190903162424.6877-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 159/167] bcache: fix race in btree_flush_write()
+Date: Tue,  3 Sep 2019 12:25:11 -0400
+Message-ID: <20190903162519.7136-159-sashal@kernel.org>
+References: <20190903162519.7136-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190903162424.6877-1-sashal@kernel.org>
+In-Reply-To: <20190903162519.7136-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, kbuild test robot <lkp@intel.com>, Jens Axboe <axboe@kernel.dk>, linux-bcache@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, kbuild test robot <lkp@intel.com>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
+
+[ Upstream commit 50a260e859964002dab162513a10f91ae9d3bcd3 ]
 
 There is a race between mca_reap(), btree_node_free() and journal code
 btree_flush_write(), which results very rare and strange deadlock or
@@ -75,6 +77,7 @@ Signed-off-by: Coly Li <colyli@suse.de>
 Reported-and-tested-by: kbuild test robot <lkp@intel.com>
 Cc: stable@vger.kernel.org
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
  drivers/md/bcache/btree.c   | 28 +++++++++++++++++++++++++++-
  drivers/md/bcache/btree.h   |  2 ++
@@ -82,7 +85,7 @@ Signed-off-by: Jens Axboe <axboe@kernel.dk>
  3 files changed, 36 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 9788b2ee6638f..5cf3247e8afb2 100644
+index e0468fd41b6ea..45f684689c357 100644
 --- a/drivers/md/bcache/btree.c
 +++ b/drivers/md/bcache/btree.c
 @@ -35,7 +35,7 @@
@@ -94,7 +97,7 @@ index 9788b2ee6638f..5cf3247e8afb2 100644
  #include <trace/events/bcache.h>
  
  /*
-@@ -655,12 +655,25 @@ static int mca_reap(struct btree *b, unsigned int min_order, bool flush)
+@@ -649,12 +649,25 @@ static int mca_reap(struct btree *b, unsigned int min_order, bool flush)
  		up(&b->io_mutex);
  	}
  
@@ -120,7 +123,7 @@ index 9788b2ee6638f..5cf3247e8afb2 100644
  	if (btree_node_dirty(b))
  		__bch_btree_node_write(b, &cl);
  	mutex_unlock(&b->write_lock);
-@@ -1077,7 +1090,20 @@ static void btree_node_free(struct btree *b)
+@@ -1071,7 +1084,20 @@ static void btree_node_free(struct btree *b)
  
  	BUG_ON(b == b->c->root);
  
@@ -142,7 +145,7 @@ index 9788b2ee6638f..5cf3247e8afb2 100644
  	if (btree_node_dirty(b)) {
  		btree_complete_write(b, btree_current_write(b));
 diff --git a/drivers/md/bcache/btree.h b/drivers/md/bcache/btree.h
-index d1c72ef64edf5..76cfd121a4861 100644
+index a68d6c55783bd..4d0cca145f699 100644
 --- a/drivers/md/bcache/btree.h
 +++ b/drivers/md/bcache/btree.h
 @@ -158,11 +158,13 @@ enum btree_flags {
@@ -160,10 +163,10 @@ index d1c72ef64edf5..76cfd121a4861 100644
  static inline struct btree_write *btree_current_write(struct btree *b)
  {
 diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index cae2aff5e27ae..33556acdcf9cd 100644
+index ec1e35a62934d..7bb15cddca5ec 100644
 --- a/drivers/md/bcache/journal.c
 +++ b/drivers/md/bcache/journal.c
-@@ -405,6 +405,7 @@ static void btree_flush_write(struct cache_set *c)
+@@ -404,6 +404,7 @@ static void btree_flush_write(struct cache_set *c)
  retry:
  	best = NULL;
  
@@ -171,7 +174,7 @@ index cae2aff5e27ae..33556acdcf9cd 100644
  	for_each_cached_btree(b, c, i)
  		if (btree_current_write(b)->journal) {
  			if (!best)
-@@ -417,9 +418,14 @@ static void btree_flush_write(struct cache_set *c)
+@@ -416,9 +417,14 @@ static void btree_flush_write(struct cache_set *c)
  		}
  
  	b = best;
@@ -186,7 +189,7 @@ index cae2aff5e27ae..33556acdcf9cd 100644
  			mutex_unlock(&b->write_lock);
  			/* We raced */
  			atomic_long_inc(&c->retry_flush_write);
-@@ -427,6 +433,7 @@ static void btree_flush_write(struct cache_set *c)
+@@ -426,6 +432,7 @@ static void btree_flush_write(struct cache_set *c)
  		}
  
  		__bch_btree_node_write(b, NULL);
