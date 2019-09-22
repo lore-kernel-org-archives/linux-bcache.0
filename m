@@ -1,45 +1,58 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 063/167] bcache: replace hard coded number with BUCKET_GC_GEN_MAX
-Date: Tue,  3 Sep 2019 12:23:35 -0400
-Message-ID: <20190903162519.7136-63-sashal@kernel.org>
-References: <20190903162519.7136-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.3 159/203] closures: fix a race on wakeup from closure_sync
+Date: Sun, 22 Sep 2019 14:43:05 -0400
+Message-ID: <20190922184350.30563-159-sashal@kernel.org>
+References: <20190922184350.30563-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20190903162519.7136-1-sashal@kernel.org>
-Sender: stable-owner@vger.kernel.org
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20190922184350.30563-1-sashal@kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Coly Li <colyli@suse.de>
+From: Kent Overstreet <kent.overstreet@gmail.com>
 
-[ Upstream commit 149d0efada7777ad5a5242b095692af142f533d8 ]
+[ Upstream commit a22a9602b88fabf10847f238ff81fde5f906fef7 ]
 
-In extents.c:bch_extent_bad(), number 96 is used as parameter to call
-btree_bug_on(). The purpose is to check whether stale gen value exceeds
-BUCKET_GC_GEN_MAX, so it is better to use macro BUCKET_GC_GEN_MAX to
-make the code more understandable.
+The race was when a thread using closure_sync() notices cl->s->done == 1
+before the thread calling closure_put() calls wake_up_process(). Then,
+it's possible for that thread to return and exit just before
+wake_up_process() is called - so we're trying to wake up a process that
+no longer exists.
 
-Signed-off-by: Coly Li <colyli@suse.de>
+rcu_read_lock() is sufficient to protect against this, as there's an rcu
+barrier somewhere in the process teardown path.
+
+Signed-off-by: Kent Overstreet <kent.overstreet@gmail.com>
+Acked-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/extents.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/bcache/closure.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/extents.c b/drivers/md/bcache/extents.c
-index c809724e6571e..9560043666999 100644
---- a/drivers/md/bcache/extents.c
-+++ b/drivers/md/bcache/extents.c
-@@ -553,7 +553,7 @@ static bool bch_extent_bad(struct btree_keys *bk, const struct bkey *k)
- 	for (i = 0; i < KEY_PTRS(k); i++) {
- 		stale = ptr_stale(b->c, k, i);
+diff --git a/drivers/md/bcache/closure.c b/drivers/md/bcache/closure.c
+index 73f5319295bc9..c12cd809ab193 100644
+--- a/drivers/md/bcache/closure.c
++++ b/drivers/md/bcache/closure.c
+@@ -105,8 +105,14 @@ struct closure_syncer {
  
--		btree_bug_on(stale > 96, b,
-+		btree_bug_on(stale > BUCKET_GC_GEN_MAX, b,
- 			     "key too stale: %i, need_gc %u",
- 			     stale, b->c->need_gc);
+ static void closure_sync_fn(struct closure *cl)
+ {
+-	cl->s->done = 1;
+-	wake_up_process(cl->s->task);
++	struct closure_syncer *s = cl->s;
++	struct task_struct *p;
++
++	rcu_read_lock();
++	p = READ_ONCE(s->task);
++	s->done = 1;
++	wake_up_process(p);
++	rcu_read_unlock();
+ }
  
+ void __sched __closure_sync(struct closure *cl)
 -- 
 2.20.1
