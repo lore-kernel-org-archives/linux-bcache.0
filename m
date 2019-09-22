@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 102/128] closures: fix a race on wakeup from closure_sync
-Date: Sun, 22 Sep 2019 14:53:52 -0400
-Message-ID: <20190922185418.2158-102-sashal@kernel.org>
-References: <20190922185418.2158-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.2 144/185] closures: fix a race on wakeup from closure_sync
+Date: Sun, 22 Sep 2019 14:48:42 -0400
+Message-ID: <20190922184924.32534-144-sashal@kernel.org>
+References: <20190922184924.32534-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20190922185418.2158-1-sashal@kernel.org>
+In-Reply-To: <20190922184924.32534-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Kent Overstreet <kent.overstreet@gmail.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
