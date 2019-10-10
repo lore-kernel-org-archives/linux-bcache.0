@@ -1,119 +1,67 @@
-From: Eric Wheeler <dm-devel@lists.ewheeler.net>
-Subject: Re: kernel BUG at
- drivers/md/persistent-data/dm-space-map-disk.c:178 with
- scsi_mod.use_blk_mq=y
-Date: Fri, 27 Sep 2019 18:45:33 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1909271819450.20939@mx.ewheeler.net>
-References: <alpine.LRH.2.11.1909251814220.15810@mx.ewheeler.net>
-	<20190925200138.GA20584@redhat.com>
-	<alpine.LRH.2.11.1909261819300.15810@mx.ewheeler.net>
-	<20190927083239.xy6jwbkbektwqu3h@reti>
-Reply-To: LVM2 development <lvm-devel@redhat.com>
+From: Andrea Righi <andrea.righi@canonical.com>
+Subject: Re: [PATCH v3] bcache: fix deadlock in bcache_allocator
+Date: Thu, 10 Oct 2019 17:21:24 +0200
+Message-ID: <20191010152124.GA25334@xps-13>
+References: <20190807103806.GA15450@xps-13>
+ <1360a7e6-9135-6f3e-fc30-0834779bcf69@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Return-path: <lvm-devel-bounces@redhat.com>
-In-Reply-To: <20190927083239.xy6jwbkbektwqu3h@reti>
-List-Unsubscribe: <https://www.redhat.com/mailman/options/lvm-devel>,
-	<mailto:lvm-devel-request@redhat.com?subject=unsubscribe>
-List-Archive: <https://www.redhat.com/archives/lvm-devel>
-List-Post: <mailto:lvm-devel@redhat.com>
-List-Help: <mailto:lvm-devel-request@redhat.com?subject=help>
-List-Subscribe: <https://www.redhat.com/mailman/listinfo/lvm-devel>,
-	<mailto:lvm-devel-request@redhat.com?subject=subscribe>
-Sender: lvm-devel-bounces@redhat.com
-Errors-To: lvm-devel-bounces@redhat.com
-To: Joe Thornber <thornber@redhat.com>
-Cc: joe.thornber@gmail.com, Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com, linux-bcache@vger.kernel.org, Coly Li <colyli@suse.de>, linux-block@vger.kernel.org, ejt@redhat.com, lvm-devel@redhat.com
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <1360a7e6-9135-6f3e-fc30-0834779bcf69@suse.de>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, 27 Sep 2019, Joe Thornber wrote:
-
-> Hi Eric,
-> 
-> On Thu, Sep 26, 2019 at 06:27:09PM +0000, Eric Wheeler wrote:
-> > I pvmoved the tmeta to an SSD logical volume (dm-linear) on a non-bcache 
-> > volume and we got the same trace this morning, so while the tdata still 
-> > passes through bcache, all meta operations are direct to an SSD. This is 
-> > still using multi-queue scsi, but dm_mod.use_blk_mq=N.
+On Wed, Aug 07, 2019 at 09:53:46PM +0800, Coly Li wrote:
+> On 2019/8/7 6:38 下午, Andrea Righi wrote:
+> > bcache_allocator can call the following:
 > > 
-> > Since bcache is no longer involved with metadata operations, and since 
-> > this appears to be a metadata issue, are there any other reasons to 
-> > suspect bcache?
+> >  bch_allocator_thread()
+> >   -> bch_prio_write()
+> >      -> bch_bucket_alloc()
+> >         -> wait on &ca->set->bucket_wait
+> > 
+> > But the wake up event on bucket_wait is supposed to come from
+> > bch_allocator_thread() itself => deadlock:
+> > 
+> > [ 1158.490744] INFO: task bcache_allocato:15861 blocked for more than 10 seconds.
+> > [ 1158.495929]       Not tainted 5.3.0-050300rc3-generic #201908042232
+> > [ 1158.500653] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > [ 1158.504413] bcache_allocato D    0 15861      2 0x80004000
+> > [ 1158.504419] Call Trace:
+> > [ 1158.504429]  __schedule+0x2a8/0x670
+> > [ 1158.504432]  schedule+0x2d/0x90
+> > [ 1158.504448]  bch_bucket_alloc+0xe5/0x370 [bcache]
+> > [ 1158.504453]  ? wait_woken+0x80/0x80
+> > [ 1158.504466]  bch_prio_write+0x1dc/0x390 [bcache]
+> > [ 1158.504476]  bch_allocator_thread+0x233/0x490 [bcache]
+> > [ 1158.504491]  kthread+0x121/0x140
+> > [ 1158.504503]  ? invalidate_buckets+0x890/0x890 [bcache]
+> > [ 1158.504506]  ? kthread_park+0xb0/0xb0
+> > [ 1158.504510]  ret_from_fork+0x35/0x40
+> > 
+> > Fix by making the call to bch_prio_write() non-blocking, so that
+> > bch_allocator_thread() never waits on itself.
+> > 
+> > Moreover, make sure to wake up the garbage collector thread when
+> > bch_prio_write() is failing to allocate buckets.
+> > 
+> > BugLink: https://bugs.launchpad.net/bugs/1784665
+> > BugLink: https://bugs.launchpad.net/bugs/1796292
+> > Signed-off-by: Andrea Righi <andrea.righi@canonical.com>
 > 
-> Did you recreate the pool, or are you just using the existing pool but with
-> a different IO path?  If it's the latter then there could still be something
-> wrong with the metadata, introduced while bcache was in the stack.
-
-We did not create the pool after the initial problem, though the pool was 
-new just before the problem occurred. 
- 
-> Would it be possible to send me a copy of the metadata device please so
-> I can double check the space maps (I presume you've run thin_check on it)?
-
-~]# /usr/local/bin/thin_check /dev/mapper/data-data--pool_tmeta 
-examining superblock
-TRANSACTION_ID=2347
-METADATA_FREE_BLOCKS=4145151
-examining devices tree
-examining mapping tree
-checking space map counts
-
-~]# echo $?
-0
-
-~]# /usr/local/bin/thin_check -V
-0.8.5
-
-> [Assuming you're using the existing pool] Another useful experiment would be to 
-> thump_dump and then thin_restore the metadata, which will create totally fresh
-> metadata and see if you can still reproduce the issue.
-
-It didn't lockup last night, but I'll keep working to reproduce the 
-problem and let you know what we find.
-
-Mike said it could be a race:
-
-> The stack shows the call to sm_disk_new_block() is due to
-> dm_pool_alloc_data_block().
+> OK, I add this version into my for-test directory. Once you have a new
+> version, I will update it. Thanks.
 > 
-> sm_disk_new_block()'s BUG_ON(ev != SM_ALLOC) indicates that somehow it is
-> getting called without the passed 'ev' being set to SM_ALLOC.  Only
-> drivers/md/persistent-dat/dm-space-map-common.c:sm_ll_mutate() sets
-> SM_ALLOC. sm_disk_new_block() is indirectly calling sm_ll_mutate()
-> 
-> sm_ll_mutate() will only return 0 if ll->save_ie() does, the ll_disk *ll
-> should be ll_disk, and so disk_ll_save_ie()'s call to dm_btree_insert()
-> returns 0 -- which simply means success.  And on success
-> sm_disk_new_block() assumes ev was set to SM_ALLOC (by sm_ll_mutate).
-> 
-> sm_ll_mutate() decided to _not_ set SM_ALLOC because either:
-> 1) ref_count wasn't set
-> or
-> 2) old was identified
-> 
-> So all said: somehow a new data block was found to already be in use.
-> _WHY_ that is the case isn't clear from this stack...
->
-> But it does speak to the possibility of data block allocation racing
-> with other operations to the same block.  Which implies missing locking.
+> Coly Li
 
-Would a spinlock on the block solve the issue?
+Hi Coly,
 
-Where might such a spinlock be added?
+any news about this patch? We're still using it in Ubuntu and no errors
+have been reported so far. Do you think we can add this to linux-next?
 
-
---
-Eric Wheeler
-
-
-> 
-> Thanks,
-> 
-> - Joe
-> 
-
---
-lvm-devel mailing list
-lvm-devel@redhat.com
-https://www.redhat.com/mailman/listinfo/lvm-devel
+Thanks,
+-Andrea
