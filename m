@@ -1,80 +1,51 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH v3] bcache: fix deadlock in bcache_allocator
-Date: Fri, 11 Oct 2019 13:36:09 +0800
-Message-ID: <734d5e9b-cde0-07ec-3162-e502a73752b6@suse.de>
-References: <20190807103806.GA15450@xps-13>
- <1360a7e6-9135-6f3e-fc30-0834779bcf69@suse.de>
- <20191010152124.GA25334@xps-13>
+From: Sasha Levin <sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 013/100] bcache: fix input overflow to writeback_rate_minimum
+Date: Fri, 18 Oct 2019 18:03:58 -0400
+Message-ID: <20191018220525.9042-13-sashal@kernel.org>
+References: <20191018220525.9042-1-sashal@kernel.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20191010152124.GA25334@xps-13>
-Content-Language: en-US
+In-Reply-To: <20191018220525.9042-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Andrea Righi <andrea.righi@canonical.com>
-Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/10/10 11:21 下午, Andrea Righi wrote:
-> On Wed, Aug 07, 2019 at 09:53:46PM +0800, Coly Li wrote:
->> On 2019/8/7 6:38 下午, Andrea Righi wrote:
->>> bcache_allocator can call the following:
->>>
->>>  bch_allocator_thread()
->>>   -> bch_prio_write()
->>>      -> bch_bucket_alloc()
->>>         -> wait on &ca->set->bucket_wait
->>>
->>> But the wake up event on bucket_wait is supposed to come from
->>> bch_allocator_thread() itself => deadlock:
->>>
->>> [ 1158.490744] INFO: task bcache_allocato:15861 blocked for more than 10 seconds.
->>> [ 1158.495929]       Not tainted 5.3.0-050300rc3-generic #201908042232
->>> [ 1158.500653] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->>> [ 1158.504413] bcache_allocato D    0 15861      2 0x80004000
->>> [ 1158.504419] Call Trace:
->>> [ 1158.504429]  __schedule+0x2a8/0x670
->>> [ 1158.504432]  schedule+0x2d/0x90
->>> [ 1158.504448]  bch_bucket_alloc+0xe5/0x370 [bcache]
->>> [ 1158.504453]  ? wait_woken+0x80/0x80
->>> [ 1158.504466]  bch_prio_write+0x1dc/0x390 [bcache]
->>> [ 1158.504476]  bch_allocator_thread+0x233/0x490 [bcache]
->>> [ 1158.504491]  kthread+0x121/0x140
->>> [ 1158.504503]  ? invalidate_buckets+0x890/0x890 [bcache]
->>> [ 1158.504506]  ? kthread_park+0xb0/0xb0
->>> [ 1158.504510]  ret_from_fork+0x35/0x40
->>>
->>> Fix by making the call to bch_prio_write() non-blocking, so that
->>> bch_allocator_thread() never waits on itself.
->>>
->>> Moreover, make sure to wake up the garbage collector thread when
->>> bch_prio_write() is failing to allocate buckets.
->>>
->>> BugLink: https://bugs.launchpad.net/bugs/1784665
->>> BugLink: https://bugs.launchpad.net/bugs/1796292
->>> Signed-off-by: Andrea Righi <andrea.righi@canonical.com>
->>
->> OK, I add this version into my for-test directory. Once you have a new
->> version, I will update it. Thanks.
->>
->> Coly Li
-> 
-> Hi Coly,
-> 
-> any news about this patch? We're still using it in Ubuntu and no errors
+From: Coly Li <colyli@suse.de>
 
-It has been testing on your side for quite long time, and I don't have
-better idea on the fix. It looks solid enough, and indeed I have it in
-my development patches already with more testing.
+[ Upstream commit dab71b2db98dcdd4657d151b01a7be88ce10f9d1 ]
 
-> have been reported so far. Do you think we can add this to linux-next?
+dc->writeback_rate_minimum is type unsigned integer variable, it is set
+via sysfs interface, and converte from input string to unsigned integer
+by d_strtoul_nonzero(). When the converted input value is larger than
+UINT_MAX, overflow to unsigned integer happens.
 
-Yes, this is my plan. It is in my testing queue with other developing
-patches.
+This patch fixes the overflow by using sysfs_strotoul_clamp() to
+convert input string and limit the value in range [1, UINT_MAX], then
+the overflow can be avoided.
 
-Thanks.
+Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ drivers/md/bcache/sysfs.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 5bb81e564ce88..3e8d1f1b562f8 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -289,7 +289,9 @@ STORE(__cached_dev)
+ 	sysfs_strtoul_clamp(writeback_rate_p_term_inverse,
+ 			    dc->writeback_rate_p_term_inverse,
+ 			    1, UINT_MAX);
+-	d_strtoul_nonzero(writeback_rate_minimum);
++	sysfs_strtoul_clamp(writeback_rate_minimum,
++			    dc->writeback_rate_minimum,
++			    1, UINT_MAX);
+ 
+ 	sysfs_strtoul_clamp(io_error_limit, dc->error_limit, 0, INT_MAX);
+ 
 -- 
-
-Coly Li
+2.20.1
