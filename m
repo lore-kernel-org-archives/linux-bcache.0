@@ -1,51 +1,68 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 013/100] bcache: fix input overflow to writeback_rate_minimum
-Date: Fri, 18 Oct 2019 18:03:58 -0400
-Message-ID: <20191018220525.9042-13-sashal@kernel.org>
-References: <20191018220525.9042-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 145/209] bcache: account size of buckets used in uuid write to ca->meta_sectors_written
+Date: Tue, 12 Nov 2019 20:49:21 -0500
+Message-ID: <20191113015025.9685-145-sashal@kernel.org>
+References: <20191113015025.9685-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20191018220525.9042-1-sashal@kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20191113015025.9685-1-sashal@kernel.org>
+Sender: stable-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+Cc: Shenghui Wang <shhuiw@foxmail.com>, Tang Junhui <tang.junhui.linux@gmail.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Coly Li <colyli@suse.de>
+From: Shenghui Wang <shhuiw@foxmail.com>
 
-[ Upstream commit dab71b2db98dcdd4657d151b01a7be88ce10f9d1 ]
+[ Upstream commit 7a55948d38eb9b274cbbdd56dc1dd4b96ebfbe04 ]
 
-dc->writeback_rate_minimum is type unsigned integer variable, it is set
-via sysfs interface, and converte from input string to unsigned integer
-by d_strtoul_nonzero(). When the converted input value is larger than
-UINT_MAX, overflow to unsigned integer happens.
+UUIDs are considered as metadata. __uuid_write should add the number
+of buckets (in sectors) written to disk to ca->meta_sectors_written.
+Currently only 1 bucket is used in uuid write.
 
-This patch fixes the overflow by using sysfs_strotoul_clamp() to
-convert input string and limit the value in range [1, UINT_MAX], then
-the overflow can be avoided.
+Steps to test:
+1) create a fresh backing device and a fresh cache device separately.
+   The backing device didn't attach to any cache set.
+2) cd /sys/block/<cache device>/bcache
+   cat metadata_written      // record the output value
+   cat bucket_size
+3) attach the backing device to cache set
+4) cat metadata_written
+   The output value is almost the same as the value in step 2
+   before the change.
+   After the change, the value is bigger about 1 bucket size.
 
+Signed-off-by: Shenghui Wang <shhuiw@foxmail.com>
+Reviewed-by: Tang Junhui <tang.junhui.linux@gmail.com>
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/sysfs.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/md/bcache/super.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 5bb81e564ce88..3e8d1f1b562f8 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -289,7 +289,9 @@ STORE(__cached_dev)
- 	sysfs_strtoul_clamp(writeback_rate_p_term_inverse,
- 			    dc->writeback_rate_p_term_inverse,
- 			    1, UINT_MAX);
--	d_strtoul_nonzero(writeback_rate_minimum);
-+	sysfs_strtoul_clamp(writeback_rate_minimum,
-+			    dc->writeback_rate_minimum,
-+			    1, UINT_MAX);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 2321643974dab..c4da2fe623e9e 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -418,6 +418,7 @@ static int __uuid_write(struct cache_set *c)
+ {
+ 	BKEY_PADDED(key) k;
+ 	struct closure cl;
++	struct cache *ca;
  
- 	sysfs_strtoul_clamp(io_error_limit, dc->error_limit, 0, INT_MAX);
+ 	closure_init_stack(&cl);
+ 	lockdep_assert_held(&bch_register_lock);
+@@ -429,6 +430,10 @@ static int __uuid_write(struct cache_set *c)
+ 	uuid_io(c, REQ_OP_WRITE, 0, &k.key, &cl);
+ 	closure_sync(&cl);
  
++	/* Only one bucket used for uuid write */
++	ca = PTR_CACHE(c, &k.key, 0);
++	atomic_long_add(ca->sb.bucket_size, &ca->meta_sectors_written);
++
+ 	bkey_copy(&c->uuid_bucket, &k.key);
+ 	bkey_put(c, &k.key);
+ 	return 0;
 -- 
 2.20.1
