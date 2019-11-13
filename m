@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.9 49/68] bcache: recal cached_dev_sectors on detach
-Date: Tue, 12 Nov 2019 20:59:13 -0500
-Message-ID: <20191113015932.12655-49-sashal@kernel.org>
-References: <20191113015932.12655-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.4 34/48] bcache: recal cached_dev_sectors on detach
+Date: Tue, 12 Nov 2019 21:01:17 -0500
+Message-ID: <20191113020131.13356-34-sashal@kernel.org>
+References: <20191113020131.13356-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20191113015932.12655-1-sashal@kernel.org>
+In-Reply-To: <20191113020131.13356-1-sashal@kernel.org>
 Sender: stable-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Shenghui Wang <shhuiw@foxmail.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
@@ -31,10 +31,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index c5bc3e5e921e4..080f9afcde8da 100644
+index e420921460836..df8f1e69077f6 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -904,6 +904,7 @@ static void cached_dev_detach_finish(struct work_struct *w)
+@@ -902,6 +902,7 @@ static void cached_dev_detach_finish(struct work_struct *w)
  	bch_write_bdev_super(dc, &cl);
  	closure_sync(&cl);
  
