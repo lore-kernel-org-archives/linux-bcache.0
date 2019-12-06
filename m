@@ -1,113 +1,35 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH] bcache: add REQ_FUA to avoid data lost in writeback
- mode
-Date: Fri, 6 Dec 2019 00:04:02 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1912052358380.11561@mx.ewheeler.net>
-References: <20191202102409.3980-1-wings.wyang@gmail.com> <785fe04f-f841-3083-66db-53fab7bc0577@suse.de> <alpine.LRH.2.11.1912021932570.11561@mx.ewheeler.net> <1a728329-1b12-0ebf-21a4-058ef6f65ead@suse.de>
-Mime-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-844282404-27533672-1575590423=:11561"
+From: Liang Chen <liangchen.linux@gmail.com>
+Subject: [PATCH 1/2] [PATCH] bcache: cached_dev_free needs to put the sb page
+Date: Fri,  6 Dec 2019 16:55:42 +0800
+Message-ID: <1575622543-22470-1-git-send-email-liangchen.linux@gmail.com>
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1a728329-1b12-0ebf-21a4-058ef6f65ead@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: kungf <wings.wyang@gmail.com>, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: colyli@suse.de
+Cc: kent.overstreet@gmail.com, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org, Liang Chen <liangchen.linux@gmail.com>
 List-Id: linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Same as cache device, the buffer page needs to be put while
+freeing cached_dev.  Otherwise a page would be leaked every
+time a cached_dev is stopped.
 
----844282404-27533672-1575590423=:11561
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
+Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+---
+ drivers/md/bcache/super.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-On Tue, 3 Dec 2019, Coly Li wrote:
-
-> On 2019/12/3 3:34 上午, Eric Wheeler wrote:
-> > On Mon, 2 Dec 2019, Coly Li wrote:
-> >> On 2019/12/2 6:24 下午, kungf wrote:
-> >>> data may lost when in the follow scene of writeback mode:
-> >>> 1. client write data1 to bcache
-> >>> 2. client fdatasync
-> >>> 3. bcache flush cache set and backing device
-> >>> if now data1 was not writed back to backing, it was only guaranteed safe in cache.
-> >>> 4.then cache writeback data1 to backing with only REQ_OP_WRITE
-> >>> So data1 was not guaranteed in non-volatile storage,  it may lost if  power interruption 
-> >>>
-> >>
-> >> Hi,
-> >>
-> >> Do you encounter such problem in real work load ? With bcache journal, I
-> >> don't see the possibility of data lost with your description.
-> >>
-> >> Correct me if I am wrong.
-> >>
-> >> Coly Li
-> > 
-> > If this does become necessary, then we should have a sysfs or superblock 
-> > flag to disable FUA for those with RAID BBUs.
-> 
-> Hi Eric,
-> 
-> I doubt it is necessary to add FUA tag for all writeback bios, it is
-> unnecessary. If power failure happens after dirty data written to
-> backing device and the bkey turns into clean, a following read request
-> will go to cache device because the LBA can be indexed no matter it is
-> dirty or clean. Unless the bkey is invalidated from the B+tree, read
-> will always go to cache device firstly in writeback mode. If a power
-> failure happens before the cached bkey turns from dirty to clean, just
-> an extra writeback bio flushed from cache device to backing device with
-> identical data. Comparing the FUA tag for all writeback bios (it will be
-> really slow), the extra writeback IOs after a power failure is more
-> acceptable to me.
-
-I agree.  FWIW, I just learned about /sys/block/sdX/queue/write_cache from 
-Nikos Tsironis <ntsironis@arrikto.com>.  Thus, my flag request for a FUA 
-bypass isn't necessary anyway, even if you did want an FUA there, because 
-FUAs are stripped when a blockdev is set to "write back" (QUEUE_FLAG_WC).
-
-----------------------------------------------------------------------
-This happens in generic_make_request_checks():
-
-              /*
-               * Filter flush bio's early so that make_request based
-               * drivers without flush support don't have to worry
-               * about them.
-               */
-              if (op_is_flush(bio->bi_opf) &&
-                  !test_bit(QUEUE_FLAG_WC, &q->queue_flags)) {
-                      bio->bi_opf &= ~(REQ_PREFLUSH | REQ_FUA);
-                      if (!nr_sectors) {
-                              status = BLK_STS_OK;
-                              goto end_io;
-                      }
-              }
-----------------------------------------------------------------------
-
--Eric
-
-> 
-> Coly Li
-> 
-> > 
-> >>> Signed-off-by: kungf <wings.wyang@gmail.com>
-> >>> ---
-> >>>  drivers/md/bcache/writeback.c | 2 +-
-> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>
-> >>> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> >>> index 4a40f9eadeaf..e5cecb60569e 100644
-> >>> --- a/drivers/md/bcache/writeback.c
-> >>> +++ b/drivers/md/bcache/writeback.c
-> >>> @@ -357,7 +357,7 @@ static void write_dirty(struct closure *cl)
-> >>>  	 */
-> >>>  	if (KEY_DIRTY(&w->key)) {
-> >>>  		dirty_init(w);
-> >>> -		bio_set_op_attrs(&io->bio, REQ_OP_WRITE, 0);
-> >>> +		bio_set_op_attrs(&io->bio, REQ_OP_WRITE | REQ_FUA, 0);
-> >>>  		io->bio.bi_iter.bi_sector = KEY_START(&w->key);
-> >>>  		bio_set_dev(&io->bio, io->dc->bdev);
-> >>>  		io->bio.bi_end_io	= dirty_endio;
-> >>>
-> >>
-> 
----844282404-27533672-1575590423=:11561--
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 77e9869345e7..a573ce1d85aa 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1275,6 +1275,9 @@ static void cached_dev_free(struct closure *cl)
+ 
+ 	mutex_unlock(&bch_register_lock);
+ 
++	if (dc->sb_bio.bi_inline_vecs[0].bv_page)
++		put_page(bio_first_page_all(&dc->sb_bio));
++
+ 	if (!IS_ERR_OR_NULL(dc->bdev))
+ 		blkdev_put(dc->bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
+ 
+-- 
+2.17.0
