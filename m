@@ -1,46 +1,50 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: add REQ_FUA to avoid data lost in writeback mode
-Date: Wed, 4 Dec 2019 18:55:08 +0800
-Message-ID: <2d085823-57ac-dba9-6d2e-1cf01c949875@suse.de>
-References: <20191202102409.3980-1-wings.wyang@gmail.com>
- <785fe04f-f841-3083-66db-53fab7bc0577@suse.de>
- <alpine.LRH.2.11.1912021932570.11561@mx.ewheeler.net>
- <1a728329-1b12-0ebf-21a4-058ef6f65ead@suse.de>
+From: Eric Wheeler <bcache@lists.ewheeler.net>
+Subject: Re: [PATCH] bcache: add REQ_FUA to avoid data lost in writeback
+ mode
+Date: Fri, 6 Dec 2019 00:04:02 +0000 (UTC)
+Message-ID: <alpine.LRH.2.11.1912052358380.11561@mx.ewheeler.net>
+References: <20191202102409.3980-1-wings.wyang@gmail.com> <785fe04f-f841-3083-66db-53fab7bc0577@suse.de> <alpine.LRH.2.11.1912021932570.11561@mx.ewheeler.net> <1a728329-1b12-0ebf-21a4-058ef6f65ead@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="-844282404-27533672-1575590423=:11561"
 Return-path: <linux-kernel-owner@vger.kernel.org>
 In-Reply-To: <1a728329-1b12-0ebf-21a4-058ef6f65ead@suse.de>
-Content-Language: en-US
 Sender: linux-kernel-owner@vger.kernel.org
-To: Eric Wheeler <bcache@lists.ewheeler.net>
+To: Coly Li <colyli@suse.de>
 Cc: kungf <wings.wyang@gmail.com>, kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2019/12/3 10:21 下午, Coly Li wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+---844282404-27533672-1575590423=:11561
+Content-Type: TEXT/PLAIN; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Tue, 3 Dec 2019, Coly Li wrote:
+
 > On 2019/12/3 3:34 上午, Eric Wheeler wrote:
->> On Mon, 2 Dec 2019, Coly Li wrote:
->>> On 2019/12/2 6:24 下午, kungf wrote:
->>>> data may lost when in the follow scene of writeback mode:
->>>> 1. client write data1 to bcache
->>>> 2. client fdatasync
->>>> 3. bcache flush cache set and backing device
->>>> if now data1 was not writed back to backing, it was only guaranteed safe in cache.
->>>> 4.then cache writeback data1 to backing with only REQ_OP_WRITE
->>>> So data1 was not guaranteed in non-volatile storage,  it may lost if  power interruption 
->>>>
->>>
->>> Hi,
->>>
->>> Do you encounter such problem in real work load ? With bcache journal, I
->>> don't see the possibility of data lost with your description.
->>>
->>> Correct me if I am wrong.
->>>
->>> Coly Li
->>
->> If this does become necessary, then we should have a sysfs or superblock 
->> flag to disable FUA for those with RAID BBUs.
+> > On Mon, 2 Dec 2019, Coly Li wrote:
+> >> On 2019/12/2 6:24 下午, kungf wrote:
+> >>> data may lost when in the follow scene of writeback mode:
+> >>> 1. client write data1 to bcache
+> >>> 2. client fdatasync
+> >>> 3. bcache flush cache set and backing device
+> >>> if now data1 was not writed back to backing, it was only guaranteed safe in cache.
+> >>> 4.then cache writeback data1 to backing with only REQ_OP_WRITE
+> >>> So data1 was not guaranteed in non-volatile storage,  it may lost if  power interruption 
+> >>>
+> >>
+> >> Hi,
+> >>
+> >> Do you encounter such problem in real work load ? With bcache journal, I
+> >> don't see the possibility of data lost with your description.
+> >>
+> >> Correct me if I am wrong.
+> >>
+> >> Coly Li
+> > 
+> > If this does become necessary, then we should have a sysfs or superblock 
+> > flag to disable FUA for those with RAID BBUs.
 > 
 > Hi Eric,
 > 
@@ -56,10 +60,54 @@ On 2019/12/3 10:21 下午, Coly Li wrote:
 > really slow), the extra writeback IOs after a power failure is more
 > acceptable to me.
 
-Hi Eric,
+I agree.  FWIW, I just learned about /sys/block/sdX/queue/write_cache from 
+Nikos Tsironis <ntsironis@arrikto.com>.  Thus, my flag request for a FUA 
+bypass isn't necessary anyway, even if you did want an FUA there, because 
+FUAs are stripped when a blockdev is set to "write back" (QUEUE_FLAG_WC).
 
-I come to realize what the problem is. Yes there is potential
-possibility.With FUA the writeback performance will be very low, it is
-quite tricky....
+----------------------------------------------------------------------
+This happens in generic_make_request_checks():
 
-Coly Li
+              /*
+               * Filter flush bio's early so that make_request based
+               * drivers without flush support don't have to worry
+               * about them.
+               */
+              if (op_is_flush(bio->bi_opf) &&
+                  !test_bit(QUEUE_FLAG_WC, &q->queue_flags)) {
+                      bio->bi_opf &= ~(REQ_PREFLUSH | REQ_FUA);
+                      if (!nr_sectors) {
+                              status = BLK_STS_OK;
+                              goto end_io;
+                      }
+              }
+----------------------------------------------------------------------
+
+-Eric
+
+> 
+> Coly Li
+> 
+> > 
+> >>> Signed-off-by: kungf <wings.wyang@gmail.com>
+> >>> ---
+> >>>  drivers/md/bcache/writeback.c | 2 +-
+> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> >>> index 4a40f9eadeaf..e5cecb60569e 100644
+> >>> --- a/drivers/md/bcache/writeback.c
+> >>> +++ b/drivers/md/bcache/writeback.c
+> >>> @@ -357,7 +357,7 @@ static void write_dirty(struct closure *cl)
+> >>>  	 */
+> >>>  	if (KEY_DIRTY(&w->key)) {
+> >>>  		dirty_init(w);
+> >>> -		bio_set_op_attrs(&io->bio, REQ_OP_WRITE, 0);
+> >>> +		bio_set_op_attrs(&io->bio, REQ_OP_WRITE | REQ_FUA, 0);
+> >>>  		io->bio.bi_iter.bi_sector = KEY_START(&w->key);
+> >>>  		bio_set_dev(&io->bio, io->dc->bdev);
+> >>>  		io->bio.bi_end_io	= dirty_endio;
+> >>>
+> >>
+> 
+---844282404-27533672-1575590423=:11561--
