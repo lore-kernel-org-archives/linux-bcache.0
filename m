@@ -1,52 +1,44 @@
-From: Eric Wheeler <bcache@lists.ewheeler.net>
-Subject: Re: [PATCH 1/2] [PATCH] bcache: cached_dev_free needs to put the sb
- page
-Date: Fri, 6 Dec 2019 23:08:55 +0000 (UTC)
-Message-ID: <alpine.LRH.2.11.1912062308370.11561@mx.ewheeler.net>
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 2/2] [PATCH] bcache: __write_super to handle page sizes
+ other than 4k
+Date: Sun, 8 Dec 2019 23:37:44 -0800
+Message-ID: <20191209073744.GB3852@infradead.org>
 References: <1575622543-22470-1-git-send-email-liangchen.linux@gmail.com>
+ <1575622543-22470-2-git-send-email-liangchen.linux@gmail.com>
+ <e44b8bd9-470d-08af-be7f-a0808504772e@suse.de>
 Mime-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <1575622543-22470-1-git-send-email-liangchen.linux@gmail.com>
+Content-Disposition: inline
+In-Reply-To: <e44b8bd9-470d-08af-be7f-a0808504772e@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
-To: Liang Chen <liangchen.linux@gmail.com>
-Cc: colyli@suse.de, kent.overstreet@gmail.com, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: Liang Chen <liangchen.linux@gmail.com>, kent.overstreet@gmail.com, linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, 6 Dec 2019, Liang Chen wrote:
-
-> Same as cache device, the buffer page needs to be put while
-> freeing cached_dev.  Otherwise a page would be leaked every
-> time a cached_dev is stopped.
+On Fri, Dec 06, 2019 at 05:44:38PM +0800, Coly Li wrote:
+> >  {
+> > -	struct cache_sb *out = page_address(bio_first_page_all(bio));
+> > +	struct cache_sb *out;
+> >  	unsigned int i;
+> > +	struct buffer_head *bh;
+> > +
+> > +	/*
+> > +	 * The page is held since read_super, this __bread * should not
+> > +	 * cause an extra io read.
+> > +	 */
+> > +	bh = __bread(bdev, 1, SB_SIZE);
+> > +	if (!bh)
+> > +		goto out_bh;
+> > +
+> > +	out = (struct cache_sb *) bh->b_data;
 > 
-> Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+> This is quite tricky here. Could you please to move this code piece into
+> an inline function and add code comments to explain why a read is
+> necessary for a write.
 
-
-+cc stable?
-
---
-Eric Wheeler
-
-
-> ---
->  drivers/md/bcache/super.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 77e9869345e7..a573ce1d85aa 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -1275,6 +1275,9 @@ static void cached_dev_free(struct closure *cl)
->  
->  	mutex_unlock(&bch_register_lock);
->  
-> +	if (dc->sb_bio.bi_inline_vecs[0].bv_page)
-> +		put_page(bio_first_page_all(&dc->sb_bio));
-> +
->  	if (!IS_ERR_OR_NULL(dc->bdev))
->  		blkdev_put(dc->bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
->  
-> -- 
-> 2.17.0
-> 
-> 
+A read is not nessecary.  He only added it because he was too fearful
+of calculating the data offset directly.  But calculating it directly
+is almost trivial and should just be done here.  Alternatively if that
+is still to hard just keep a pointer to the cache_sb around, which is
+how most file systems do it.
