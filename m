@@ -1,13 +1,13 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.4 290/350] bcache: fix deadlock in bcache_allocator
-Date: Tue, 10 Dec 2019 16:06:35 -0500
-Message-ID: <20191210210735.9077-251-sashal@kernel.org>
-References: <20191210210735.9077-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 149/177] bcache: fix deadlock in bcache_allocator
+Date: Tue, 10 Dec 2019 16:31:53 -0500
+Message-ID: <20191210213221.11921-149-sashal@kernel.org>
+References: <20191210213221.11921-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20191210210735.9077-1-sashal@kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20191210213221.11921-1-sashal@kernel.org>
+Sender: stable-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Andrea Righi <andrea.righi@canonical.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
@@ -61,7 +61,7 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  3 files changed, 26 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 6f776823b9ba5..a1df0d95151c6 100644
+index 9c3beb1e382b9..46794cac167e7 100644
 --- a/drivers/md/bcache/alloc.c
 +++ b/drivers/md/bcache/alloc.c
 @@ -377,7 +377,10 @@ static int bch_allocator_thread(void *arg)
@@ -77,10 +77,10 @@ index 6f776823b9ba5..a1df0d95151c6 100644
  	}
  out:
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 013e35a9e317a..deb924e1d790a 100644
+index 83f0b91aeb90d..4677b18ac2810 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -977,7 +977,7 @@ bool bch_cached_dev_error(struct cached_dev *dc);
+@@ -959,7 +959,7 @@ bool bch_cached_dev_error(struct cached_dev *dc);
  __printf(2, 3)
  bool bch_cache_set_error(struct cache_set *c, const char *fmt, ...);
  
@@ -90,10 +90,10 @@ index 013e35a9e317a..deb924e1d790a 100644
  
  extern struct workqueue_struct *bcache_wq;
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index d2654880b7b9e..64999c7a8033f 100644
+index 2d60bcdb5b9c1..c45d9ad010770 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -529,12 +529,29 @@ static void prio_io(struct cache *ca, uint64_t bucket, int op,
+@@ -525,12 +525,29 @@ static void prio_io(struct cache *ca, uint64_t bucket, int op,
  	closure_sync(cl);
  }
  
@@ -124,7 +124,7 @@ index d2654880b7b9e..64999c7a8033f 100644
  	closure_init_stack(&cl);
  
  	lockdep_assert_held(&ca->set->bucket_lock);
-@@ -544,9 +561,6 @@ void bch_prio_write(struct cache *ca)
+@@ -540,9 +557,6 @@ void bch_prio_write(struct cache *ca)
  	atomic_long_add(ca->sb.bucket_size * prio_buckets(ca),
  			&ca->meta_sectors_written);
  
@@ -134,7 +134,7 @@ index d2654880b7b9e..64999c7a8033f 100644
  	for (i = prio_buckets(ca) - 1; i >= 0; --i) {
  		long bucket;
  		struct prio_set *p = ca->disk_buckets;
-@@ -564,7 +578,7 @@ void bch_prio_write(struct cache *ca)
+@@ -560,7 +574,7 @@ void bch_prio_write(struct cache *ca)
  		p->magic	= pset_magic(&ca->sb);
  		p->csum		= bch_crc64(&p->magic, bucket_bytes(ca) - 8);
  
@@ -143,7 +143,7 @@ index d2654880b7b9e..64999c7a8033f 100644
  		BUG_ON(bucket == -1);
  
  		mutex_unlock(&ca->set->bucket_lock);
-@@ -593,6 +607,7 @@ void bch_prio_write(struct cache *ca)
+@@ -589,6 +603,7 @@ void bch_prio_write(struct cache *ca)
  
  		ca->prio_last_buckets[i] = ca->prio_buckets[i];
  	}
@@ -151,7 +151,7 @@ index d2654880b7b9e..64999c7a8033f 100644
  }
  
  static void prio_read(struct cache *ca, uint64_t bucket)
-@@ -1962,7 +1977,7 @@ static int run_cache_set(struct cache_set *c)
+@@ -1884,7 +1899,7 @@ static int run_cache_set(struct cache_set *c)
  
  		mutex_lock(&c->bucket_lock);
  		for_each_cache(ca, c, i)
