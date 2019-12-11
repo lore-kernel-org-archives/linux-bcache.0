@@ -1,107 +1,60 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 143/177] bcache: fix static checker warning in bcache_device_free()
-Date: Tue, 10 Dec 2019 16:31:47 -0500
-Message-ID: <20191210213221.11921-143-sashal@kernel.org>
-References: <20191210213221.11921-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.4 074/134] bcache: at least try to shrink 1 node in bch_mca_scan()
+Date: Wed, 11 Dec 2019 10:10:50 -0500
+Message-ID: <20191211151150.19073-74-sashal@kernel.org>
+References: <20191211151150.19073-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20191210213221.11921-1-sashal@kernel.org>
+In-Reply-To: <20191211151150.19073-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, Dan Carpenter <dan.carpenter@oracle.com>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit 2d8869518a525c9bce5f5268419df9dfbe3dfdeb ]
+[ Upstream commit 9fcc34b1a6dd4b8e5337e2b6ef45e428897eca6b ]
 
-Commit cafe56359144 ("bcache: A block layer cache") leads to the
-following static checker warning:
+In bch_mca_scan(), the number of shrinking btree node is calculated
+by code like this,
+	unsigned long nr = sc->nr_to_scan;
 
-    ./drivers/md/bcache/super.c:770 bcache_device_free()
-    warn: variable dereferenced before check 'd->disk' (see line 766)
+        nr /= c->btree_pages;
+        nr = min_t(unsigned long, nr, mca_can_free(c));
+variable sc->nr_to_scan is number of objects (here is bcache B+tree
+nodes' number) to shrink, and pointer variable sc is sent from memory
+management code as parametr of a callback.
 
-drivers/md/bcache/super.c
-   762  static void bcache_device_free(struct bcache_device *d)
-   763  {
-   764          lockdep_assert_held(&bch_register_lock);
-   765
-   766          pr_info("%s stopped", d->disk->disk_name);
-                                      ^^^^^^^^^
-Unchecked dereference.
+If sc->nr_to_scan is smaller than c->btree_pages, after the above
+calculation, variable 'nr' will be 0 and nothing will be shrunk. It is
+frequeently observed that only 1 or 2 is set to sc->nr_to_scan and make
+nr to be zero. Then bch_mca_scan() will do nothing more then acquiring
+and releasing mutex c->bucket_lock.
 
-   767
-   768          if (d->c)
-   769                  bcache_device_detach(d);
-   770          if (d->disk && d->disk->flags & GENHD_FL_UP)
-                    ^^^^^^^
-Check too late.
+This patch checkes whether nr is 0 after the above calculation, if 0
+is the result then set 1 to variable 'n'. Then at least bch_mca_scan()
+will try to shrink a single B+tree node.
 
-   771                  del_gendisk(d->disk);
-   772          if (d->disk && d->disk->queue)
-   773                  blk_cleanup_queue(d->disk->queue);
-   774          if (d->disk) {
-   775                  ida_simple_remove(&bcache_device_idx,
-   776                                    first_minor_to_idx(d->disk->first_minor));
-   777                  put_disk(d->disk);
-   778          }
-   779
-
-It is not 100% sure that the gendisk struct of bcache device will always
-be there, the warning makes sense when there is problem in block core.
-
-This patch tries to remove the static checking warning by checking
-d->disk to avoid NULL pointer deferences.
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/super.c | 24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ drivers/md/bcache/btree.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 14d381cc6d747..2d60bcdb5b9c1 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -747,20 +747,28 @@ static inline int idx_to_first_minor(int idx)
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index ba434d9ac7204..46a8b5a91c386 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -723,6 +723,8 @@ static unsigned long bch_mca_scan(struct shrinker *shrink,
+ 	 * IO can always make forward progress:
+ 	 */
+ 	nr /= c->btree_pages;
++	if (nr == 0)
++		nr = 1;
+ 	nr = min_t(unsigned long, nr, mca_can_free(c));
  
- static void bcache_device_free(struct bcache_device *d)
- {
-+	struct gendisk *disk = d->disk;
-+
- 	lockdep_assert_held(&bch_register_lock);
- 
--	pr_info("%s stopped", d->disk->disk_name);
-+	if (disk)
-+		pr_info("%s stopped", disk->disk_name);
-+	else
-+		pr_err("bcache device (NULL gendisk) stopped");
- 
- 	if (d->c)
- 		bcache_device_detach(d);
--	if (d->disk && d->disk->flags & GENHD_FL_UP)
--		del_gendisk(d->disk);
--	if (d->disk && d->disk->queue)
--		blk_cleanup_queue(d->disk->queue);
--	if (d->disk) {
-+
-+	if (disk) {
-+		if (disk->flags & GENHD_FL_UP)
-+			del_gendisk(disk);
-+
-+		if (disk->queue)
-+			blk_cleanup_queue(disk->queue);
-+
- 		ida_simple_remove(&bcache_device_idx,
--				  first_minor_to_idx(d->disk->first_minor));
--		put_disk(d->disk);
-+				  first_minor_to_idx(disk->first_minor));
-+		put_disk(disk);
- 	}
- 
- 	bioset_exit(&d->bio_split);
+ 	i = 0;
 -- 
 2.20.1
