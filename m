@@ -1,76 +1,54 @@
-From: "John Stoffel" <john@stoffel.org>
-Subject: Re: [PATCH AUTOSEL 4.14 32/58] bcache: at least try to shrink 1 node
- in bch_mca_scan()
-Date: Wed, 11 Dec 2019 23:00:40 -0500
-Message-ID: <24049.47976.479357.312176@quad.stoffel.home>
-References: <20191211152831.23507-1-sashal@kernel.org>
-        <20191211152831.23507-32-sashal@kernel.org>
-        <24049.47251.286105.88377@quad.stoffel.home>
-        <3363848c-6422-31b7-4ec2-0899f605a7f5@suse.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+From: Coly Li <colyli@suse.de>
+Subject: [PATCH] bcache: back to cache all readahead I/Os
+Date: Sat,  4 Jan 2020 14:58:02 +0800
+Message-ID: <20200104065802.113137-1-colyli@suse.de>
 Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <3363848c-6422-31b7-4ec2-0899f605a7f5@suse.de>
 Sender: stable-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: John Stoffel <john@stoffel.org>, Sasha Levin <sashal@kernel.org>, linux-kernel@vger.kernel.org, stable@vger.kernel.org, Jens Axboe <axboe@kernel.dk>, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, stable@vger.kernel.org, Eric Wheeler <bcache@linux.ewheeler.net>
 List-Id: linux-bcache@vger.kernel.org
 
->>>>> "Coly" == Coly Li <colyli@suse.de> writes:
+In year 2007 high performance SSD was still expensive, in order to
+save more space for real workload or meta data, the readahead I/Os
+for non-meta data was bypassed and not cached on SSD.
 
-Coly> On 2019/12/12 11:48 上午, John Stoffel wrote:
->>>>>>> "Sasha" == Sasha Levin <sashal@kernel.org> writes:
->> 
-Sasha> From: Coly Li <colyli@suse.de>
-Sasha> [ Upstream commit 9fcc34b1a6dd4b8e5337e2b6ef45e428897eca6b ]
->> 
-Sasha> In bch_mca_scan(), the number of shrinking btree node is calculated
-Sasha> by code like this,
-Sasha> unsigned long nr = sc->nr_to_scan;
->> 
-Sasha> nr /= c->btree_pages;
-Sasha> nr = min_t(unsigned long, nr, mca_can_free(c));
-Sasha> variable sc->nr_to_scan is number of objects (here is bcache B+tree
-Sasha> nodes' number) to shrink, and pointer variable sc is sent from memory
-Sasha> management code as parametr of a callback.
->> 
-Sasha> If sc->nr_to_scan is smaller than c->btree_pages, after the above
-Sasha> calculation, variable 'nr' will be 0 and nothing will be shrunk. It is
-Sasha> frequeently observed that only 1 or 2 is set to sc->nr_to_scan and make
-Sasha> nr to be zero. Then bch_mca_scan() will do nothing more then acquiring
-Sasha> and releasing mutex c->bucket_lock.
->> 
-Sasha> This patch checkes whether nr is 0 after the above calculation, if 0
-Sasha> is the result then set 1 to variable 'n'. Then at least bch_mca_scan()
-Sasha> will try to shrink a single B+tree node.
->> 
-Sasha> nr /= c->btree_pages;
-Sasha> +	if (nr == 0)
-Sasha> +		nr = 1;
->> 
->> 
->> Wouldn't it be even more clear with:
->> 
->> nr /= c->bree_pages || 1;
->> 
->> instead?
+In now days, SSD price drops a lot and people can find larger size
+SSD with more comfortable price. It is unncessary to bypass normal
+readahead I/Os to save SSD space for now.
 
-Coly> No, it is not more clear. At least to me, I may confuse does it mean,
-Coly> - nr = (nr / c->btree_pages) || 1;
-Coly> - or nr = nr / (c->btree_pages || 1)
+This patch removes the code which checks REQ_RAHEAD tag of bio in
+check_should_bypass(), then all readahead I/Os will be cached on SSD.
 
-Coly> If I don't check C manual, I am not able to tell the correct
-Coly> calculate at first time.
+NOTE: this patch still keeps the checking of "REQ_META|REQ_PRIO" in
+should_writeback(), because we still want to cache meta data I/Os
+even they are asynchronized.
 
-You're right, it's not quite as clear, it needs proper parenthesis.
-But maybe instead of a (possibly) expensive division all the time, why
-not just shift and assume you have it shrink a node, or try to.
+Cc: stable@vger.kernel.org
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Eric Wheeler <bcache@linux.ewheeler.net>
+---
+ drivers/md/bcache/request.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-I honestly haven't looked closely enough at the code to figure out the
-best shift to use here.  But isn't this calculation wrong anyway?  If
-you have lots of c->bree_pages, wouldn't you want to do more freeing?
-
-I'd need to read the code better, but I'm heading to bed now.  Sorry.
-
-John
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 73478a91a342..acc07c4f27ae 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -378,15 +378,6 @@ static bool check_should_bypass(struct cached_dev *dc, struct bio *bio)
+ 	     op_is_write(bio_op(bio))))
+ 		goto skip;
+ 
+-	/*
+-	 * Flag for bypass if the IO is for read-ahead or background,
+-	 * unless the read-ahead request is for metadata
+-	 * (eg, for gfs2 or xfs).
+-	 */
+-	if (bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND) &&
+-	    !(bio->bi_opf & (REQ_META|REQ_PRIO)))
+-		goto skip;
+-
+ 	if (bio->bi_iter.bi_sector & (c->sb.block_size - 1) ||
+ 	    bio_sectors(bio) & (c->sb.block_size - 1)) {
+ 		pr_debug("skipping unaligned io");
+-- 
+2.16.4
