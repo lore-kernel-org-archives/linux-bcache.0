@@ -1,32 +1,35 @@
-From: Peter Wong <peterwong@hsbc.com.hk>
-Subject: Investment opportunity
-Date: Sun, 12 Jan 2020 06:00:18 +0100 (CET)
-Message-ID: <18113969.460694.1578805219152.JavaMail.cash@217.130.24.55>
-Reply-To: Peter Wong <peterwonghkhsbc@gmail.com>
+From: Rick Schaech <cathben72@gmail.com>
+Subject: I wait for your swift response,
+Date: Mon, 13 Jan 2020 01:52:24 -0400
+Message-ID: <CAEcBxO=TAnFn5LzizHa22hUC0Db5FuiZJF28m=yX3_9m--jRqg__45382.3445642897$1578894864$gmane$org@mail.gmail.com>
+Reply-To: rickschaech@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail02.vodafone.es ([217.130.24.81]:56129 "EHLO
-        mail02.vodafone.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2387415AbgAMEC2 (ORCPT
+Received: from mail-oi1-f195.google.com ([209.85.167.195]:40904 "EHLO
+        mail-oi1-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726277AbgAMFwZ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 12 Jan 2020 23:02:28 -0500
-Received: from unknown (HELO 192.168.1.3) (quesosbelda@[217.217.179.17])
-          (envelope-sender <peterwong@hsbc.com.hk>)
-          by mailrel04.vodafone.es (qmail-ldap-1.03) with SMTP
-          for <linux-bcache@vger.kernel.org>; 12 Jan 2020 05:00:19 -0000
+        Mon, 13 Jan 2020 00:52:25 -0500
+Received: by mail-oi1-f195.google.com with SMTP id c77so7195810oib.7
+        for <linux-bcache@vger.kernel.org>; Sun, 12 Jan 2020 21:52:25 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Greetings,
-Please read the attached investment proposal and reply for more details.
-Are you interested in loan?
-Sincerely: Peter Wong
+Dear, I'm Mr Rick Schaech, I am the General Account Auditor, Though i
+know we have not meet each other before but sometimes in life God have
+a reason of bringing two people from two different countries together
+as business partners or life partners.
 
+My dear friend, I have the sum of 15.7 Million USD i wish to put in
+your name due to the death of my late client who died several years
+ago as his next of kin column still remain blank. Though the internet
+medium is highly abuse these days but am assuring you that this
+transaction is legitimate and I am contacting you that we may have a
+deal, note for your cooperation and collaboration 40% of the sum will
+be for you while the other 60% will be for me as well. I wait for your
+swift response for more details. please forward your response to my
+personal E-mail: rickschaech@gmail.com
 
-
-
-----------------------------------------------------
-This email was sent by the shareware version of Postman Professional.
+Yours sincerely,
+Rick Schaech.
