@@ -1,49 +1,82 @@
-From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 522/671] bcache: Fix an error code in bch_dump_read()
-Date: Thu, 16 Jan 2020 12:02:40 -0500
-Message-ID: <20200116170509.12787-259-sashal@kernel.org>
-References: <20200116170509.12787-1-sashal@kernel.org>
+From: Clodoaldo Neto <clodoaldo.pinto.neto@gmail.com>
+Subject: Re: undo make-bcache (was: Re: Can't mount an encrypted backing device)
+Date: Thu, 16 Jan 2020 18:56:00 -0300
+Message-ID: <CA+Z73LGmM2YV1PkADFpQghqaNVNqAGjPg+LF8NSG9UTahcxGtg@mail.gmail.com>
+References: <CA+Z73LFJLiP7Z2_cDUsO4Om_8pdD6w1jTSGQB0jY5sL-+nw1Wg@mail.gmail.com>
+ <CA+Z73LGvXa_V8t=KYPkrmeJ-xmEXmz1uAnaT=Yj5AReZgLeqhg@mail.gmail.com>
+ <65c05b80-679b-2ccb-1bd1-a9a6887c9c51@suse.de> <20200113124415.Horde.G9hpYwu_fqvg2w0msexL3ri@webmail.nde.ag>
+ <0c6c3fea-5580-3a71-264c-b383b5b4fe66@suse.de> <CA+Z73LGG1pBtT=0WN5vEyqEvzxEnqMRZ26S_2x4Gd5JPSmuXmQ@mail.gmail.com>
+ <CA+Z73LFNxP8kDMSq74DBKDbCXpbtMA9svpc1KddkUmrk-cfnOA@mail.gmail.com> <CA+Z73LGXJOwYEb+GmPuuDi3TcJbGG=NLv-5vCRcEvB+kgr4a+A@mail.gmail.com>
+Reply-To: clodoaldo.pinto.neto@gmail.com
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200116170509.12787-1-sashal@kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-qk1-f181.google.com ([209.85.222.181]:41651 "EHLO
+        mail-qk1-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1729153AbgAPV4M (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 16 Jan 2020 16:56:12 -0500
+Received: by mail-qk1-f181.google.com with SMTP id x129so20739392qke.8
+        for <linux-bcache@vger.kernel.org>; Thu, 16 Jan 2020 13:56:11 -0800 (PST)
+In-Reply-To: <CA+Z73LGXJOwYEb+GmPuuDi3TcJbGG=NLv-5vCRcEvB+kgr4a+A@mail.gmail.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+Em seg, 13 de jan de 2020 11:19, Coly Li <colyli@suse.de> escreveu:
+>
+> On 2020/1/13 8:44 =E4=B8=8B=E5=8D=88, Jens-U. Mozdzen wrote:
+> > Hi Coly,
+> >
+> > jumping in here, because I was looking for a way to revert from bcache
+> > to plain device:
+> >
+> > Zitat von Coly Li <colyli@suse.de>:
+> >> The super block location of the backing disk is occupied by bcache. Yo=
+u
+> >> cannot mount the file system directly from the backing disk which is
+> >> formated as bcache backing device [...] (bcache offset all I/Os on
+> >> bcache device 4KB behind the requesting
+> >> LBA on backing disk).
+> >
+> > Assuming that no caching device is associated with a backing device (so
+> > the backing device is "clean" as in "containing all data blocks with th=
+e
+> > current content"), could one convert the content of a backing device to
+> > a "non-bcached device" by removing the first 4096 octets of the backing
+> > device content?
+> >
+> > Something like "dd if=3Dbackingdev of=3Dnewdev skip_bytes=3D4096 ..."?
+>
+> Hi Jens-U,
+>
+> you may try dmsetup to setup a linear device mapper target, and the map
+> table just skipping the first 4KB (bcache superblock area). If you are
+> lucky, I mean the real file system is not corrupted, the created device
+> mapper target can be mounted directly.
 
-[ Upstream commit d66c9920c0cf984cf99cab5036fd5f3a1b7fba46 ]
 
-The copy_to_user() function returns the number of bytes remaining to be
-copied, but the intention here was to return -EFAULT if the copy fails.
+I'm trying dmsetup but it does not accept anything other than 0 and 0
+at the beginning and end of the table:
 
-Fixes: cafe56359144 ("bcache: A block layer cache")
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Coly Li <colyli@suse.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
----
- drivers/md/bcache/debug.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+# echo '0 3774578672 linear /dev/mapper/backing-device 8' | dmsetup create =
+dmb
+device-mapper: reload ioctl on dmb  failed: Invalid argument
+Command failed.
 
-diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
-index 8c53d874ada4..f6b60d5908f7 100644
---- a/drivers/md/bcache/debug.c
-+++ b/drivers/md/bcache/debug.c
-@@ -178,10 +178,9 @@ static ssize_t bch_dump_read(struct file *file, char __user *buf,
- 	while (size) {
- 		struct keybuf_key *w;
- 		unsigned int bytes = min(i->bytes, size);
--		int err = copy_to_user(buf, i->buf, bytes);
- 
--		if (err)
--			return err;
-+		if (copy_to_user(buf, i->buf, bytes))
-+			return -EFAULT;
- 
- 		ret	 += bytes;
- 		buf	 += bytes;
--- 
-2.20.1
+# echo '8 3774578664 linear /dev/mapper/backing-device 0' | dmsetup create =
+dmb
+device-mapper: reload ioctl on dmb  failed: Invalid argument
+Command failed.
+
+I'm not sure about how it works. Is it not 8 sectors for 4k bytes?
+
+
+Clodoaldo
+
+>
+> --
+>
+> Coly Li
+>
