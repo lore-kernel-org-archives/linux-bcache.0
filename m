@@ -1,45 +1,45 @@
 From: colyli@suse.de
-Subject: [PATCH 10/17] lib: crc64: include <linux/crc64.h> for 'crc64_be'
-Date: Fri, 24 Jan 2020 01:01:35 +0800
-Message-ID: <20200123170142.98974-11-colyli@suse.de>
+Subject: [PATCH 11/17] bcache: add code comments for state->pool in __btree_sort()
+Date: Fri, 24 Jan 2020 01:01:36 +0800
+Message-ID: <20200123170142.98974-12-colyli@suse.de>
 References: <20200123170142.98974-1-colyli@suse.de>
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:51762 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:51782 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1729396AbgAWRCy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 23 Jan 2020 12:02:54 -0500
+        id S1729396AbgAWRC5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 23 Jan 2020 12:02:57 -0500
 In-Reply-To: <20200123170142.98974-1-colyli@suse.de>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, "Ben Dooks (Codethink)" <ben.dooks@codethink.co.uk>, Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-From: "Ben Dooks (Codethink)" <ben.dooks@codethink.co.uk>
+From: Coly Li <colyli@suse.de>
 
-The crc64_be() is declared in <linux/crc64.h> so include
-this where the symbol is defined to avoid the following
-warning:
+To explain the pages allocated from mempool state->pool can be
+swapped in __btree_sort(), because state->pool is a page pool,
+which allocates pages by alloc_pages() indeed.
 
-lib/crc64.c:43:12: warning: symbol 'crc64_be' was not declared. Should it be static?
-
-Signed-off-by: Ben Dooks (Codethink) <ben.dooks@codethink.co.uk>
-Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- lib/crc64.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/bcache/bset.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/lib/crc64.c b/lib/crc64.c
-index 0ef8ae6ac047..f8928ce28280 100644
---- a/lib/crc64.c
-+++ b/lib/crc64.c
-@@ -28,6 +28,7 @@
+diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+index cffcdc9feefb..4385303836d8 100644
+--- a/drivers/md/bcache/bset.c
++++ b/drivers/md/bcache/bset.c
+@@ -1257,6 +1257,11 @@ static void __btree_sort(struct btree_keys *b, struct btree_iter *iter,
+ 		 * Our temporary buffer is the same size as the btree node's
+ 		 * buffer, we can just swap buffers instead of doing a big
+ 		 * memcpy()
++		 *
++		 * Don't worry event 'out' is allocated from mempool, it can
++		 * still be swapped here. Because state->pool is a page mempool
++		 * creaated by by mempool_init_page_pool(), which allocates
++		 * pages by alloc_pages() indeed.
+ 		 */
  
- #include <linux/module.h>
- #include <linux/types.h>
-+#include <linux/crc64.h>
- #include "crc64table.h"
- 
- MODULE_DESCRIPTION("CRC64 calculations");
+ 		out->magic	= b->set->data->magic;
 -- 
 2.16.4
