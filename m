@@ -1,119 +1,66 @@
 From: colyli@suse.de
-Subject: [PATCH 02/17] bcache: use a separate data structure for the on-disk super block
-Date: Fri, 24 Jan 2020 01:01:27 +0800
-Message-ID: <20200123170142.98974-3-colyli@suse.de>
+Subject: [PATCH 04/17] bcache: properly initialize 'path' and 'err' in register_bcache()
+Date: Fri, 24 Jan 2020 01:01:29 +0800
+Message-ID: <20200123170142.98974-5-colyli@suse.de>
 References: <20200123170142.98974-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:51400 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1730014AbgAWRCM (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 23 Jan 2020 12:02:12 -0500
 In-Reply-To: <20200123170142.98974-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Christoph Hellwig <hch@lst.de>, Coly Li <colyli@suse.de>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-From: Christoph Hellwig <hch@lst.de>
+From: Coly Li <colyli@suse.de>
 
-Split out an on-disk version struct cache_sb with the proper endianness
-annotations.  This fixes a fair chunk of sparse warnings, but there are
-some left due to the way the checksum is defined.
+Patch "bcache: rework error unwinding in register_bcache" from
+Christoph Hellwig changes the local variables 'path' and 'err'
+in undefined initial state. If the code in register_bcache() jumps
+to label 'out:' or 'out_module_put:' by goto, these two variables
+might be reference with undefined value by the following line,
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+	out_module_put:
+	        module_put(THIS_MODULE);
+	out:
+	        pr_info("error %s: %s", path, err);
+	        return ret;
+
+Therefore this patch initializes these two local variables properly
+in register_bcache() to avoid such issue.
+
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/super.c   |  6 +++---
- include/uapi/linux/bcache.h | 51 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+), 3 deletions(-)
+ drivers/md/bcache/super.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index a573ce1d85aa..3045f27e0d67 100644
+index e8013e1b0a14..ee7c87f38d0d 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -63,14 +63,14 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 			      struct page **res)
+@@ -2376,18 +2376,20 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 			       const char *buffer, size_t size)
  {
  	const char *err;
--	struct cache_sb *s;
-+	struct cache_sb_disk *s;
- 	struct buffer_head *bh = __bread(bdev, 1, SB_SIZE);
- 	unsigned int i;
+-	char *path;
++	char *path = NULL;
+ 	struct cache_sb *sb;
+ 	struct block_device *bdev = NULL;
+ 	struct page *sb_page;
+ 	ssize_t ret;
  
- 	if (!bh)
- 		return "IO error";
+ 	ret = -EBUSY;
++	err = "failed to reference bcache module";
+ 	if (!try_module_get(THIS_MODULE))
+ 		goto out;
  
--	s = (struct cache_sb *) bh->b_data;
-+	s = (struct cache_sb_disk *)bh->b_data;
+ 	/* For latest state of bcache_is_reboot */
+ 	smp_mb();
++	err = "bcache is in reboot";
+ 	if (bcache_is_reboot)
+ 		goto out_module_put;
  
- 	sb->offset		= le64_to_cpu(s->offset);
- 	sb->version		= le64_to_cpu(s->version);
-@@ -209,7 +209,7 @@ static void write_bdev_super_endio(struct bio *bio)
- 
- static void __write_super(struct cache_sb *sb, struct bio *bio)
- {
--	struct cache_sb *out = page_address(bio_first_page_all(bio));
-+	struct cache_sb_disk *out = page_address(bio_first_page_all(bio));
- 	unsigned int i;
- 
- 	bio->bi_iter.bi_sector	= SB_SECTOR;
-diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-index 5d4f58e059fd..1d8b3a9fc080 100644
---- a/include/uapi/linux/bcache.h
-+++ b/include/uapi/linux/bcache.h
-@@ -156,6 +156,57 @@ static inline struct bkey *bkey_idx(const struct bkey *k, unsigned int nr_keys)
- 
- #define BDEV_DATA_START_DEFAULT		16	/* sectors */
- 
-+struct cache_sb_disk {
-+	__le64			csum;
-+	__le64			offset;	/* sector where this sb was written */
-+	__le64			version;
-+
-+	__u8			magic[16];
-+
-+	__u8			uuid[16];
-+	union {
-+		__u8		set_uuid[16];
-+		__le64		set_magic;
-+	};
-+	__u8			label[SB_LABEL_SIZE];
-+
-+	__le64			flags;
-+	__le64			seq;
-+	__le64			pad[8];
-+
-+	union {
-+	struct {
-+		/* Cache devices */
-+		__le64		nbuckets;	/* device size */
-+
-+		__le16		block_size;	/* sectors */
-+		__le16		bucket_size;	/* sectors */
-+
-+		__le16		nr_in_set;
-+		__le16		nr_this_dev;
-+	};
-+	struct {
-+		/* Backing devices */
-+		__le64		data_offset;
-+
-+		/*
-+		 * block_size from the cache device section is still used by
-+		 * backing devices, so don't add anything here until we fix
-+		 * things to not need it for backing devices anymore
-+		 */
-+	};
-+	};
-+
-+	__le32			last_mount;	/* time overflow in y2106 */
-+
-+	__le16			first_bucket;
-+	union {
-+		__le16		njournal_buckets;
-+		__le16		keys;
-+	};
-+	__le64			d[SB_JOURNAL_BUCKETS];	/* journal buckets */
-+};
-+
- struct cache_sb {
- 	__u64			csum;
- 	__u64			offset;	/* sector where this sb was written */
 -- 
 2.16.4
