@@ -1,85 +1,45 @@
 From: colyli@suse.de
-Subject: [PATCH 09/17] bcache: use read_cache_page_gfp to read the superblock
-Date: Fri, 24 Jan 2020 01:01:34 +0800
-Message-ID: <20200123170142.98974-10-colyli@suse.de>
+Subject: [PATCH 10/17] lib: crc64: include <linux/crc64.h> for 'crc64_be'
+Date: Fri, 24 Jan 2020 01:01:35 +0800
+Message-ID: <20200123170142.98974-11-colyli@suse.de>
 References: <20200123170142.98974-1-colyli@suse.de>
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:51762 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1729396AbgAWRCy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 23 Jan 2020 12:02:54 -0500
 In-Reply-To: <20200123170142.98974-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Christoph Hellwig <hch@lst.de>, Coly Li <colyli@suse.de>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, "Ben Dooks (Codethink)" <ben.dooks@codethink.co.uk>, Coly Li <colyli@suse.de>
 
-From: Christoph Hellwig <hch@lst.de>
+From: "Ben Dooks (Codethink)" <ben.dooks@codethink.co.uk>
 
-Avoid a pointless dependency on buffer heads in bcache by simply open
-coding reading a single page.  Also add a SB_OFFSET define for the
-byte offset of the superblock instead of using magic numbers.
+The crc64_be() is declared in <linux/crc64.h> so include
+this where the symbol is defined to avoid the following
+warning:
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+lib/crc64.c:43:12: warning: symbol 'crc64_be' was not declared. Should it be static?
+
+Signed-off-by: Ben Dooks (Codethink) <ben.dooks@codethink.co.uk>
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/super.c   | 16 +++++++---------
- include/uapi/linux/bcache.h |  1 +
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ lib/crc64.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 5797c03f993e..3dea1d5acd5c 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -15,7 +15,6 @@
- #include "writeback.h"
+diff --git a/lib/crc64.c b/lib/crc64.c
+index 0ef8ae6ac047..f8928ce28280 100644
+--- a/lib/crc64.c
++++ b/lib/crc64.c
+@@ -28,6 +28,7 @@
  
- #include <linux/blkdev.h>
--#include <linux/buffer_head.h>
- #include <linux/debugfs.h>
- #include <linux/genhd.h>
- #include <linux/idr.h>
-@@ -64,13 +63,14 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- {
- 	const char *err;
- 	struct cache_sb_disk *s;
--	struct buffer_head *bh = __bread(bdev, 1, SB_SIZE);
-+	struct page *page;
- 	unsigned int i;
+ #include <linux/module.h>
+ #include <linux/types.h>
++#include <linux/crc64.h>
+ #include "crc64table.h"
  
--	if (!bh)
-+	page = read_cache_page_gfp(bdev->bd_inode->i_mapping,
-+				   SB_OFFSET >> PAGE_SHIFT, GFP_KERNEL);
-+	if (IS_ERR(page))
- 		return "IO error";
--
--	s = (struct cache_sb_disk *)bh->b_data;
-+	s = page_address(page) + offset_in_page(SB_OFFSET);
- 
- 	sb->offset		= le64_to_cpu(s->offset);
- 	sb->version		= le64_to_cpu(s->version);
-@@ -188,12 +188,10 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 	}
- 
- 	sb->last_mount = (u32)ktime_get_real_seconds();
--	err = NULL;
--
--	get_page(bh->b_page);
- 	*res = s;
-+	return NULL;
- err:
--	put_bh(bh);
-+	put_page(page);
- 	return err;
- }
- 
-diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-index 1d8b3a9fc080..9a1965c6c3d0 100644
---- a/include/uapi/linux/bcache.h
-+++ b/include/uapi/linux/bcache.h
-@@ -148,6 +148,7 @@ static inline struct bkey *bkey_idx(const struct bkey *k, unsigned int nr_keys)
- #define BCACHE_SB_MAX_VERSION		4
- 
- #define SB_SECTOR			8
-+#define SB_OFFSET			(SB_SECTOR << SECTOR_SHIFT)
- #define SB_SIZE				4096
- #define SB_LABEL_SIZE			32
- #define SB_JOURNAL_BUCKETS		256U
+ MODULE_DESCRIPTION("CRC64 calculations");
 -- 
 2.16.4
