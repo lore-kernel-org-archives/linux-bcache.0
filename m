@@ -1,102 +1,68 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: Kernel panic after clearing stats
-Date: Sun, 26 Jan 2020 16:22:54 +0800
-Message-ID: <d9e773d0-7417-cfc9-8208-933f7b655196@suse.de>
-References: <DA4005F3-FCC5-4D1E-9D2D-146AADA0CD3A@bank-hlynov.ru>
+From: Dan Carpenter <dan.carpenter@oracle.com>
+Subject: [bug report] bcache: avoid unnecessary btree nodes flushing in
+ btree_flush_write()
+Date: Mon, 27 Jan 2020 09:17:41 +0300
+Message-ID: <20200127061740.kzggwhgxtmmwy34i@kili.mountain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:57558 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726443AbgAZIXJ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 26 Jan 2020 03:23:09 -0500
-In-Reply-To: <DA4005F3-FCC5-4D1E-9D2D-146AADA0CD3A@bank-hlynov.ru>
-Content-Language: en-US
+Received: from userp2120.oracle.com ([156.151.31.85]:38362 "EHLO
+        userp2120.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725775AbgA0GRy (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 27 Jan 2020 01:17:54 -0500
+Content-Disposition: inline
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?UTF-8?B?0KHQvtGA0L7QutC40L0g0JDRgNGC0LXQvCDQodC10YDQs9C10LXQstC40Yc=?= <a.sorokin@bank-hlynov.ru>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: colyli@suse.de
+Cc: linux-bcache@vger.kernel.org
 
-T24gMjAyMC8xLzIwIDk6MjIg5LiL5Y2ILCDQodC+0YDQvtC60LjQvSDQkNGA0YLQtdC8INCh
-0LXRgNCz0LXQtdCy0LjRhyB3cm90ZToNCj4gSGVsbG8uDQo+IEkgaGF2ZSBrZXJuZWwgcGFu
-aWMgYWZ0ZXIgY2xlYXJpbmcgc3RhdHMgb24ga2VybmVsIDUuNC4xMi4NCj4gU3RlcHMgdG8g
-cmVwcm9kdWNlOg0KPiAxLiBDcmVhdGUgbmV3IHNldDogbWFrZS1iY2FjaGUgLUIgL2Rldi9u
-dm1lMW4xIC1DIC9kZXYvc2RhIC0td2lwZS1iY2FjaGUNCj4gMi4gUnVuIGluIC9zeXMvZnMv
-YmNhY2hlLzx1dWlkPjogZWNobyAxID4gY2xlYXJfc3RhdHMgJiYgY2F0IHN0YXRzX2ZpdmVf
-bWludXRlL2NhY2hlX2J5cGFzc19oaXRzDQo+IA0KDQpDb3BpZWQsIG5vdyBJIGFtIGluIEx1
-bmFyIE5lYXIgWWVhciB2YWNhdGlvbiwgbGV0IG1lIGhhdmUgYSBsb29rIGxhdGVyDQphbmQg
-cmVzcG9uc2UgeW91Lg0KDQpUaGFua3MgZm9yIHRoZSByZXBvcnQuDQoNCj4gWzE0NjQwLjU4
-OTg0M10gQlVHOiBrZXJuZWwgTlVMTCBwb2ludGVyIGRlcmVmZXJlbmNlLCBhZGRyZXNzOiAw
-MDAwMDAwMDAwMDAwMDAwDQo+IFsxNDY0MC41OTEwMDZdICNQRjogc3VwZXJ2aXNvciByZWFk
-IGFjY2VzcyBpbiBrZXJuZWwgbW9kZQ0KPiBbMTQ2NDAuNTkyMTIzXSAjUEY6IGVycm9yX2Nv
-ZGUoMHgwMDAwKSAtIG5vdC1wcmVzZW50IHBhZ2UNCj4gWzE0NjQwLjU5MzIxN10gUEdEIDY4
-NDk4ZTA2NyBQNEQgNjg0OThlMDY3IFBVRCA1ZWRiMTkwNjcgUE1EIDANCj4gWzE0NjQwLjU5
-NDMzNV0gT29wczogMDAwMCBbIzFdIFNNUCBOT1BUSQ0KPiBbMTQ2NDAuNTk1NDI1XSBDUFU6
-IDMgUElEOiA0NTc4OCBDb21tOiBmaWxlIEtkdW1wOiBsb2FkZWQgTm90IHRhaW50ZWQgNS40
-LjEyLTEuZWw3Lng4Nl82NCAjMQ0KPiBbMTQ2NDAuNTk2NTI2XSBIYXJkd2FyZSBuYW1lOiBE
-ZWxsIEluYy4gUG93ZXJFZGdlIFI1MTUvMFk5Q0hYLCBCSU9TIDIuNC4xIDA1LzA0LzIwMTgN
-Cj4gWzE0NjQwLjU5NzYzNl0gUklQOiAwMDEwOnN5c2ZzX2tmX3NlcV9zaG93KzB4YWEvMHgx
-YTANCj4gWzE0NjQwLjU5ODc1NF0gQ29kZTogMDAgMDAgMDAgNDAgZjYgYzcgMDQgMGYgODUg
-YjggMDAgMDAgMDAgNDQgODkgYzkgMzEgYzAgYzEgZTkgMDMgNDEgZjYgYzEgMDQgZjMgNDgg
-YWIgNzUgN2QgNDEgZjYgYzEgMDIgNzUgNjUgNDEgODMgZTEgMDEgNzUgNGUgPDQ5PiA4YiAw
-NCAyNCA0OCA4NSBjMCA3NCA1MSA0OCA4YiAwZSA0YyA4OSBjNyA0OCA4YiA3MSA2MCBlOCBl
-ZSAzYg0KPiBbMTQ2NDAuNjAxMDM0XSBSU1A6IDAwMTg6ZmZmZmM5MDAwY2ZlN2RjOCBFRkxB
-R1M6IDAwMDEwMjQ2DQo+IFsxNDY0MC42MDIxNzJdIFJBWDogMDAwMDAwMDAwMDAwMDAwMCBS
-Qlg6IGZmZmY4ODg4MzYxZTQzMDAgUkNYOiAwMDAwMDAwMDAwMDAwMDAwDQo+IFsxNDY0MC42
-MDMzMThdIFJEWDogZmZmZjg4ODg0MDY0MzAwMCBSU0k6IGZmZmY4ODg3OWM3NmNmYzAgUkRJ
-OiBmZmZmODg4ODQwNjQ0MDAwDQo+IFsxNDY0MC42MDQ0NzRdIFJCUDogZmZmZmM5MDAwY2Zl
-N2RkOCBSMDg6IGZmZmY4ODkwMTY2ZTAxYzAgUjA5OiAwMDAwMDAwMDAwMDAwMDAwDQo+IFsx
-NDY0MC42MDU2MDddIFIxMDogMDAwMDAwMDAwMDAwMTAwMCBSMTE6IDAwMDAwMDAwMDAwMDAw
-MDAgUjEyOiAwMDAwMDAwMDAwMDAwMDAwDQo+IFsxNDY0MC42MDY3MjRdIFIxMzogZmZmZjg4
-ODg0Y2M3MjMwMCBSMTQ6IGZmZmY4ODg4MzYxZTQzMDAgUjE1OiAwMDAwMDAwMDAwMDAwMDAx
-DQo+IFsxNDY0MC42MDc4NDldIEZTOiAgMDAwMDdmYTNkODJjZjc0MCgwMDAwKSBHUzpmZmZm
-ODg4ODVmYWMwMDAwKDAwMDApIGtubEdTOjAwMDAwMDAwMDAwMDAwMDANCj4gWzE0NjQwLjYw
-ODk4NV0gQ1M6ICAwMDEwIERTOiAwMDAwIEVTOiAwMDAwIENSMDogMDAwMDAwMDA4MDA1MDAz
-Mw0KPiBbMTQ2NDAuNjEwMDk2XSBDUjI6IDAwMDAwMDAwMDAwMDAwMDAgQ1IzOiAwMDAwMDAw
-NWM2MjY4MDAwIENSNDogMDAwMDAwMDAwMDA0MDZlMA0KPiBbMTQ2NDAuNjExMjEzXSBDYWxs
-IFRyYWNlOg0KPiBbMTQ2NDAuNjEyMzMyXSAga2VybmZzX3NlcV9zaG93KzB4MjcvMHgzMA0K
-PiBbMTQ2NDAuNjEzNDM0XSAgc2VxX3JlYWQrMHgxNjEvMHgzZjANCj4gWzE0NjQwLjYxNDUx
-NF0gIGtlcm5mc19mb3BfcmVhZCsweDExZi8weDFiMA0KPiBbMTQ2NDAuNjE1NTkxXSAgX192
-ZnNfcmVhZCsweDFiLzB4NDANCj4gWzE0NjQwLjYxNjY2OF0gIHZmc19yZWFkKzB4OGUvMHgx
-NDANCj4gWzE0NjQwLjYxNzcyMl0gIGtzeXNfcmVhZCsweDYxLzB4ZDANCj4gWzE0NjQwLjYx
-ODc1OF0gIF9feDY0X3N5c19yZWFkKzB4MWEvMHgyMA0KPiBbMTQ2NDAuNjE5Nzc0XSAgZG9f
-c3lzY2FsbF82NCsweDYwLzB4MWMwDQo+IFsxNDY0MC42MjA3OTJdICBlbnRyeV9TWVNDQUxM
-XzY0X2FmdGVyX2h3ZnJhbWUrMHg0NC8weGE5DQo+IFsxNDY0MC42MjE4MDJdIFJJUDogMDAz
-MzoweDdmYTNkNzk5OTdlMA0KPiBbMTQ2NDAuNjIyNzk5XSBDb2RlOiAwYiAzMSBjMCA0OCA4
-MyBjNCAwOCBlOSBiZSBmZSBmZiBmZiA0OCA4ZCAzZCBiZiA4NSAwOSAwMCBlOCA4MiA2NSAw
-MiAwMCA2NiA5MCA4MyAzZCA5ZCA4NyAyZCAwMCAwMCA3NSAxMCBiOCAwMCAwMCAwMCAwMCAw
-ZiAwNSA8NDg+IDNkIDAxIGYwIGZmIGZmIDczIDMxIGMzIDQ4IDgzIGVjIDA4IGU4IDJlIGM3
-IDAxIDAwIDQ4IDg5IDA0IDI0DQo+IFsxNDY0MC42MjQ4NjFdIFJTUDogMDAyYjowMDAwN2Zm
-ZmQyMGI1ZDE4IEVGTEFHUzogMDAwMDAyNDYgT1JJR19SQVg6IDAwMDAwMDAwMDAwMDAwMDAN
-Cj4gWzE0NjQwLjYyNTg5NV0gUkFYOiBmZmZmZmZmZmZmZmZmZmRhIFJCWDogMDAwMDdmYTNk
-ODI4NzAxMCBSQ1g6IDAwMDA3ZmEzZDc5OTk3ZTANCj4gWzE0NjQwLjYyNjk1M10gUkRYOiAw
-MDAwMDAwMDAwMDQwMDAwIFJTSTogMDAwMDdmYTNkODI4NzAxMCBSREk6IDAwMDAwMDAwMDAw
-MDAwMDMNCj4gWzE0NjQwLjYyNzk4OV0gUkJQOiAwMDAwMDAwMDAwMDAwMDAzIFIwODogZmZm
-ZmZmZmZmZmZmZmZmZiBSMDk6IDAwMDAwMDAwMDAwNDAwNDENCj4gWzE0NjQwLjYyOTAxNl0g
-UjEwOiAwMDAwN2ZmZmQyMGI1OWEwIFIxMTogMDAwMDAwMDAwMDAwMDI0NiBSMTI6IDAwMDAw
-MDAwMDE0NWZmMjANCj4gWzE0NjQwLjYzMDAzMl0gUjEzOiAwMDAwN2ZmZmQyMGI3NzEwIFIx
-NDogMDAwMDAwMDAwMDAwMDAwMCBSMTU6IDAwMDAwMDAwMDAwMDAwNGUNCj4gWzE0NjQwLjYz
-MTAzOV0gTW9kdWxlcyBsaW5rZWQgaW46IGJjYWNoZSBjcmM2NCBtcHQzc2FzIHJhaWRfY2xh
-c3Mgc2NzaV90cmFuc3BvcnRfc2FzIG1wdGN0bCBtcHRiYXNlIGRlbGxfcmJ1IHh0X25hdCB2
-ZXRoIHh0X01BU1FVRVJBREUgbmZfY29ubnRyYWNrX25ldGxpbmsgeHRfYWRkcnR5cGUgb3Zl
-cmxheSA4MDIxcSBnYXJwIG1ycCBib25kaW5nIGlwNnRfcnBmaWx0ZXIgaXA2dF9SRUpFQ1Qg
-bmZfcmVqZWN0X2lwdjYgaXB0X1JFSkVDVCBuZl9yZWplY3RfaXB2NCB4dF9jb25udHJhY2sg
-ZWJ0YWJsZV9uYXQgZWJ0YWJsZV9icm91dGUgaXA2dGFibGVfbmF0IGlwNnRhYmxlX21hbmds
-ZSBpcDZ0YWJsZV9zZWN1cml0eSBpcDZ0YWJsZV9yYXcgaXB0YWJsZV9uYXQgbmZfbmF0IGlw
-dGFibGVfbWFuZ2xlIGlwdGFibGVfc2VjdXJpdHkgaXB0YWJsZV9yYXcgbmZfY29ubnRyYWNr
-IG5mX2RlZnJhZ19pcHY2IG5mX2RlZnJhZ19pcHY0IGxpYmNyYzMyYyByZmtpbGwgaXBfc2V0
-IG5mbmV0bGluayBlYnRhYmxlX2ZpbHRlciBlYnRhYmxlcyBpcDZ0YWJsZV9maWx0ZXIgaXA2
-X3RhYmxlcyBpcHRhYmxlX2ZpbHRlciBhbWQ2NF9lZGFjX21vZCBlZGFjX21jZV9hbWQga3Zt
-X2FtZCBjY3Aga3ZtIGlycWJ5cGFzcyBkY2RiYXMgY3JjdDEwZGlmX3BjbG11bCBjcmMzMl9w
-Y2xtdWwgZ2hhc2hfY2xtdWxuaV9pbnRlbCBhZXNuaV9pbnRlbCBzcl9tb2QgY3J5cHRvX3Np
-bWQgY3J5cHRkIGNkcm9tIGpveWRldiBnbHVlX2hlbHBlciBpbnB1dF9sZWRzIHBjc3BrciBz
-ZyBpcG1pX3NpIGlwbWlfZGV2aW50ZiBpcG1pX21zZ2hhbmRsZXIgYWNwaV9wb3dlcl9tZXRl
-ciBzcDUxMDBfdGNvIGsxMHRlbXAgaTJjX3BpaXg0IGZhbTE1aF9wb3dlciBpcF90YWJsZXMg
-ZXh0NCBtYmNhY2hlIGpiZDIgdWFzIHVzYl9zdG9yYWdlIHNkX21vZCBhdGFfZ2VuZXJpYyBw
-YXRhX2FjcGkgbWdhZzIwMCBkcm1fa21zX2hlbHBlciBzeXNjb3B5YXJlYSBjcmMzMmNfaW50
-ZWwgc3lzZmlsbHJlY3Qgc3kNCj4gIHNpbWdibHQNCj4gWzE0NjQwLjYzMTA3OF0gIGZiX3N5
-c19mb3BzIGRybV92cmFtX2hlbHBlciB0dG0gc2VyaW9fcmF3IGRybSBpMmNfYWxnb19iaXQg
-YWhjaSBwYXRhX2F0aWl4cCBsaWJhaGNpIG52bWUgaXhnYmUgbGliYXRhIG1kaW8gYm54MiBt
-ZWdhcmFpZF9zYXMgcHRwIHBwc19jb3JlIG52bWVfY29yZSBkY2EgW2xhc3QgdW5sb2FkZWQ6
-IGJjYWNoZV0NCj4gWzE0NjQwLjY0MjM1OV0gQ1IyOiAwMDAwMDAwMDAwMDAwMDAwDQo+IA0K
-DQoNCi0tIA0KDQpDb2x5IExpDQo=
+Hello Coly Li,
+
+The patch 2aa8c529387c: "bcache: avoid unnecessary btree nodes
+flushing in btree_flush_write()" from Jan 24, 2020, leads to the
+following static checker warning:
+
+	drivers/md/bcache/journal.c:444 btree_flush_write()
+	warn: 'ref_nr' unsigned <= 0
+
+drivers/md/bcache/journal.c
+   422  static void btree_flush_write(struct cache_set *c)
+   423  {
+   424          struct btree *b, *t, *btree_nodes[BTREE_FLUSH_NR];
+   425          unsigned int i, nr, ref_nr;
+                                    ^^^^^^
+
+   426          atomic_t *fifo_front_p, *now_fifo_front_p;
+   427          size_t mask;
+   428  
+   429          if (c->journal.btree_flushing)
+   430                  return;
+   431  
+   432          spin_lock(&c->journal.flush_write_lock);
+   433          if (c->journal.btree_flushing) {
+   434                  spin_unlock(&c->journal.flush_write_lock);
+   435                  return;
+   436          }
+   437          c->journal.btree_flushing = true;
+   438          spin_unlock(&c->journal.flush_write_lock);
+   439  
+   440          /* get the oldest journal entry and check its refcount */
+   441          spin_lock(&c->journal.lock);
+   442          fifo_front_p = &fifo_front(&c->journal.pin);
+   443          ref_nr = atomic_read(fifo_front_p);
+   444          if (ref_nr <= 0) {
+                    ^^^^^^^^^^^
+Unsigned can't be less than zero.
+
+   445                  /*
+   446                   * do nothing if no btree node references
+   447                   * the oldest journal entry
+   448                   */
+   449                  spin_unlock(&c->journal.lock);
+   450                  goto out;
+   451          }
+   452          spin_unlock(&c->journal.lock);
+
+regards,
+dan carpenter
