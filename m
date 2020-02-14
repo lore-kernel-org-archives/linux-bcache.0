@@ -1,60 +1,47 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.9 135/141] bcache: explicity type cast in bset_bkey_last()
-Date: Fri, 14 Feb 2020 11:21:15 -0500
-Message-ID: <20200214162122.19794-135-sashal@kernel.org>
-References: <20200214162122.19794-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 212/252] bcache: cached_dev_free needs to put the sb page
+Date: Fri, 14 Feb 2020 11:11:07 -0500
+Message-ID: <20200214161147.15842-212-sashal@kernel.org>
+References: <20200214161147.15842-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200214162122.19794-1-sashal@kernel.org>
+In-Reply-To: <20200214161147.15842-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, kbuild test robot <lkp@intel.com>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Cc: Liang Chen <liangchen.linux@gmail.com>, Christoph Hellwig <hch@lst.de>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-From: Coly Li <colyli@suse.de>
+From: Liang Chen <liangchen.linux@gmail.com>
 
-[ Upstream commit 7c02b0055f774ed9afb6e1c7724f33bf148ffdc0 ]
+[ Upstream commit e8547d42095e58bee658f00fef8e33d2a185c927 ]
 
-In bset.h, macro bset_bkey_last() is defined as,
-    bkey_idx((struct bkey *) (i)->d, (i)->keys)
+Same as cache device, the buffer page needs to be put while
+freeing cached_dev.  Otherwise a page would be leaked every
+time a cached_dev is stopped.
 
-Parameter i can be variable type of data structure, the macro always
-works once the type of struct i has member 'd' and 'keys'.
-
-bset_bkey_last() is also used in macro csum_set() to calculate the
-checksum of a on-disk data structure. When csum_set() is used to
-calculate checksum of on-disk bcache super block, the parameter 'i'
-data type is struct cache_sb_disk. Inside struct cache_sb_disk (also in
-struct cache_sb) the member keys is __u16 type. But bkey_idx() expects
-unsigned int (a 32bit width), so there is problem when sending
-parameters via stack to call bkey_idx().
-
-Sparse tool from Intel 0day kbuild system reports this incompatible
-problem. bkey_idx() is part of user space API, so the simplest fix is
-to cast the (i)->keys to unsigned int type in macro bset_bkey_last().
-
-Reported-by: kbuild test robot <lkp@intel.com>
+Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Coly Li <colyli@suse.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/bset.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/md/bcache/super.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/md/bcache/bset.h b/drivers/md/bcache/bset.h
-index b935839ab79c6..f483041eed986 100644
---- a/drivers/md/bcache/bset.h
-+++ b/drivers/md/bcache/bset.h
-@@ -380,7 +380,8 @@ void bch_btree_keys_stats(struct btree_keys *, struct bset_stats *);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index c45d9ad010770..5b5cbfadd003d 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1226,6 +1226,9 @@ static void cached_dev_free(struct closure *cl)
  
- /* Bkey utility code */
+ 	mutex_unlock(&bch_register_lock);
  
--#define bset_bkey_last(i)	bkey_idx((struct bkey *) (i)->d, (i)->keys)
-+#define bset_bkey_last(i)	bkey_idx((struct bkey *) (i)->d, \
-+					 (unsigned int)(i)->keys)
++	if (dc->sb_bio.bi_inline_vecs[0].bv_page)
++		put_page(bio_first_page_all(&dc->sb_bio));
++
+ 	if (!IS_ERR_OR_NULL(dc->bdev))
+ 		blkdev_put(dc->bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
  
- static inline struct bkey *bset_bkey_idx(struct bset *i, unsigned idx)
- {
 -- 
 2.20.1
