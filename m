@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 240/252] bcache: explicity type cast in bset_bkey_last()
-Date: Fri, 14 Feb 2020 11:11:35 -0500
-Message-ID: <20200214161147.15842-240-sashal@kernel.org>
-References: <20200214161147.15842-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.14 178/186] bcache: explicity type cast in bset_bkey_last()
+Date: Fri, 14 Feb 2020 11:17:07 -0500
+Message-ID: <20200214161715.18113-178-sashal@kernel.org>
+References: <20200214161715.18113-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200214161147.15842-1-sashal@kernel.org>
+In-Reply-To: <20200214161715.18113-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, kbuild test robot <lkp@intel.com>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
@@ -43,10 +43,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/bset.h b/drivers/md/bcache/bset.h
-index c71365e7c1fac..a50dcfda656f5 100644
+index 8d1964b472e7e..0bfde500af196 100644
 --- a/drivers/md/bcache/bset.h
 +++ b/drivers/md/bcache/bset.h
-@@ -397,7 +397,8 @@ void bch_btree_keys_stats(struct btree_keys *b, struct bset_stats *state);
+@@ -381,7 +381,8 @@ void bch_btree_keys_stats(struct btree_keys *, struct bset_stats *);
  
  /* Bkey utility code */
  
@@ -54,7 +54,7 @@ index c71365e7c1fac..a50dcfda656f5 100644
 +#define bset_bkey_last(i)	bkey_idx((struct bkey *) (i)->d, \
 +					 (unsigned int)(i)->keys)
  
- static inline struct bkey *bset_bkey_idx(struct bset *i, unsigned int idx)
+ static inline struct bkey *bset_bkey_idx(struct bset *i, unsigned idx)
  {
 -- 
 2.20.1
