@@ -1,16 +1,20 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.14 178/186] bcache: explicity type cast in bset_bkey_last()
-Date: Fri, 14 Feb 2020 11:17:07 -0500
-Message-ID: <20200214161715.18113-178-sashal@kernel.org>
-References: <20200214161715.18113-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.4 097/100] bcache: explicity type cast in bset_bkey_last()
+Date: Fri, 14 Feb 2020 11:24:21 -0500
+Message-ID: <20200214162425.21071-97-sashal@kernel.org>
+References: <20200214162425.21071-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200214161715.18113-1-sashal@kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail.kernel.org ([198.145.29.99]:37052 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S2406418AbgBNQ00 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 14 Feb 2020 11:26:26 -0500
+In-Reply-To: <20200214162425.21071-1-sashal@kernel.org>
+Sender: linux-bcache-owner@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, kbuild test robot <lkp@intel.com>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
@@ -43,10 +47,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/bset.h b/drivers/md/bcache/bset.h
-index 8d1964b472e7e..0bfde500af196 100644
+index b935839ab79c6..f483041eed986 100644
 --- a/drivers/md/bcache/bset.h
 +++ b/drivers/md/bcache/bset.h
-@@ -381,7 +381,8 @@ void bch_btree_keys_stats(struct btree_keys *, struct bset_stats *);
+@@ -380,7 +380,8 @@ void bch_btree_keys_stats(struct btree_keys *, struct bset_stats *);
  
  /* Bkey utility code */
  
