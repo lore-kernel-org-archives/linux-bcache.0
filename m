@@ -1,29 +1,170 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 0/3] bcache patches for Linux v5.6-rc2
-Date: Thu, 13 Feb 2020 08:54:09 -0700
-Message-ID: <d724bf95-31f5-ae94-9774-d978c00ca544@kernel.dk>
-References: <20200213141207.77219-1-colyli@suse.de>
+From: Sasha Levin <sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.5 453/542] bcache: rework error unwinding in register_bcache
+Date: Fri, 14 Feb 2020 10:47:25 -0500
+Message-ID: <20200214154854.6746-453-sashal@kernel.org>
+References: <20200214154854.6746-1-sashal@kernel.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20200213141207.77219-1-colyli@suse.de>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20200214154854.6746-1-sashal@kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Christoph Hellwig <hch@lst.de>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2/13/20 7:12 AM, Coly Li wrote:
-> Hi Jens,
-> 
-> Here are 3 minor fixes Linux v5.6-rc2. The first 2 patches fix
-> kthread creating failure during bcache cache set starts up. The
-> last patch is a code clean up.
-> 
-> Please take them. Thanks in advance.
+From: Christoph Hellwig <hch@lst.de>
 
-Applied, thanks.
+[ Upstream commit 50246693f81fe887f4db78bf7089051d7f1894cc ]
 
+Split the successful and error return path, and use one goto label for each
+resource to unwind.  This also fixes some small errors like leaking the
+module reference count in the reboot case (which seems entirely harmless)
+or printing the wrong warning messages for early failures.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ drivers/md/bcache/super.c | 75 +++++++++++++++++++++++----------------
+ 1 file changed, 45 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index a573ce1d85aae..bd2ae1d78fe15 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -2375,29 +2375,33 @@ static bool bch_is_open(struct block_device *bdev)
+ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 			       const char *buffer, size_t size)
+ {
+-	ssize_t ret = -EINVAL;
+-	const char *err = "cannot allocate memory";
+-	char *path = NULL;
+-	struct cache_sb *sb = NULL;
++	const char *err;
++	char *path;
++	struct cache_sb *sb;
+ 	struct block_device *bdev = NULL;
+-	struct page *sb_page = NULL;
++	struct page *sb_page;
++	ssize_t ret;
+ 
++	ret = -EBUSY;
+ 	if (!try_module_get(THIS_MODULE))
+-		return -EBUSY;
++		goto out;
+ 
+ 	/* For latest state of bcache_is_reboot */
+ 	smp_mb();
+ 	if (bcache_is_reboot)
+-		return -EBUSY;
++		goto out_module_put;
+ 
++	ret = -ENOMEM;
++	err = "cannot allocate memory";
+ 	path = kstrndup(buffer, size, GFP_KERNEL);
+ 	if (!path)
+-		goto err;
++		goto out_module_put;
+ 
+ 	sb = kmalloc(sizeof(struct cache_sb), GFP_KERNEL);
+ 	if (!sb)
+-		goto err;
++		goto out_free_path;
+ 
++	ret = -EINVAL;
+ 	err = "failed to open device";
+ 	bdev = blkdev_get_by_path(strim(path),
+ 				  FMODE_READ|FMODE_WRITE|FMODE_EXCL,
+@@ -2414,57 +2418,68 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 			if (!IS_ERR(bdev))
+ 				bdput(bdev);
+ 			if (attr == &ksysfs_register_quiet)
+-				goto quiet_out;
++				goto done;
+ 		}
+-		goto err;
++		goto out_free_sb;
+ 	}
+ 
+ 	err = "failed to set blocksize";
+ 	if (set_blocksize(bdev, 4096))
+-		goto err_close;
++		goto out_blkdev_put;
+ 
+ 	err = read_super(sb, bdev, &sb_page);
+ 	if (err)
+-		goto err_close;
++		goto out_blkdev_put;
+ 
+ 	err = "failed to register device";
+ 	if (SB_IS_BDEV(sb)) {
+ 		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
+ 
+ 		if (!dc)
+-			goto err_close;
++			goto out_put_sb_page;
+ 
+ 		mutex_lock(&bch_register_lock);
+ 		ret = register_bdev(sb, sb_page, bdev, dc);
+ 		mutex_unlock(&bch_register_lock);
+ 		/* blkdev_put() will be called in cached_dev_free() */
+-		if (ret < 0)
+-			goto err;
++		if (ret < 0) {
++			bdev = NULL;
++			goto out_put_sb_page;
++		}
+ 	} else {
+ 		struct cache *ca = kzalloc(sizeof(*ca), GFP_KERNEL);
+ 
+ 		if (!ca)
+-			goto err_close;
++			goto out_put_sb_page;
+ 
+ 		/* blkdev_put() will be called in bch_cache_release() */
+-		if (register_cache(sb, sb_page, bdev, ca) != 0)
+-			goto err;
++		if (register_cache(sb, sb_page, bdev, ca) != 0) {
++			bdev = NULL;
++			goto out_put_sb_page;
++		}
+ 	}
+-quiet_out:
+-	ret = size;
+-out:
+-	if (sb_page)
+-		put_page(sb_page);
++
++	put_page(sb_page);
++done:
+ 	kfree(sb);
+ 	kfree(path);
+ 	module_put(THIS_MODULE);
+-	return ret;
+-
+-err_close:
+-	blkdev_put(bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
+-err:
++	return size;
++
++out_put_sb_page:
++	put_page(sb_page);
++out_blkdev_put:
++	if (bdev)
++		blkdev_put(bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
++out_free_sb:
++	kfree(sb);
++out_free_path:
++	kfree(path);
++out_module_put:
++	module_put(THIS_MODULE);
++out:
+ 	pr_info("error %s: %s", path, err);
+-	goto out;
++	return ret;
+ }
+ 
+ 
 -- 
-Jens Axboe
+2.20.1
