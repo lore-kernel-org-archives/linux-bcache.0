@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.4 437/459] bcache: explicity type cast in bset_bkey_last()
-Date: Fri, 14 Feb 2020 11:01:27 -0500
-Message-ID: <20200214160149.11681-437-sashal@kernel.org>
-References: <20200214160149.11681-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 240/252] bcache: explicity type cast in bset_bkey_last()
+Date: Fri, 14 Feb 2020 11:11:35 -0500
+Message-ID: <20200214161147.15842-240-sashal@kernel.org>
+References: <20200214161147.15842-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200214160149.11681-1-sashal@kernel.org>
+In-Reply-To: <20200214161147.15842-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, kbuild test robot <lkp@intel.com>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
