@@ -1,7 +1,7 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.4 391/459] bcache: fix use-after-free in register_bcache()
-Date: Fri, 14 Feb 2020 11:00:41 -0500
-Message-ID: <20200214160149.11681-391-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.4 437/459] bcache: explicity type cast in bset_bkey_last()
+Date: Fri, 14 Feb 2020 11:01:27 -0500
+Message-ID: <20200214160149.11681-437-sashal@kernel.org>
 References: <20200214160149.11681-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -9,53 +9,52 @@ Return-path: <linux-kernel-owner@vger.kernel.org>
 In-Reply-To: <20200214160149.11681-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Coly Li <colyli@suse.de>, Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, kbuild test robot <lkp@intel.com>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-[ Upstream commit ae3cd299919af6eb670d5af0bc9d7ba14086bd8e ]
+[ Upstream commit 7c02b0055f774ed9afb6e1c7724f33bf148ffdc0 ]
 
-The patch "bcache: rework error unwinding in register_bcache" introduces
-a use-after-free regression in register_bcache(). Here are current code,
-	2510 out_free_path:
-	2511         kfree(path);
-	2512 out_module_put:
-	2513         module_put(THIS_MODULE);
-	2514 out:
-	2515         pr_info("error %s: %s", path, err);
-	2516         return ret;
-If some error happens and the above code path is executed, at line 2511
-path is released, but referenced at line 2515. Then KASAN reports a use-
-after-free error message.
+In bset.h, macro bset_bkey_last() is defined as,
+    bkey_idx((struct bkey *) (i)->d, (i)->keys)
 
-This patch changes line 2515 in the following way to fix the problem,
-	2515         pr_info("error %s: %s", path?path:"", err);
+Parameter i can be variable type of data structure, the macro always
+works once the type of struct i has member 'd' and 'keys'.
 
+bset_bkey_last() is also used in macro csum_set() to calculate the
+checksum of a on-disk data structure. When csum_set() is used to
+calculate checksum of on-disk bcache super block, the parameter 'i'
+data type is struct cache_sb_disk. Inside struct cache_sb_disk (also in
+struct cache_sb) the member keys is __u16 type. But bkey_idx() expects
+unsigned int (a 32bit width), so there is problem when sending
+parameters via stack to call bkey_idx().
+
+Sparse tool from Intel 0day kbuild system reports this incompatible
+problem. bkey_idx() is part of user space API, so the simplest fix is
+to cast the (i)->keys to unsigned int type in macro bset_bkey_last().
+
+Reported-by: kbuild test robot <lkp@intel.com>
 Signed-off-by: Coly Li <colyli@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Sasha Levin <sashal@kernel.org>
 ---
- drivers/md/bcache/super.c | 3 ++-
+ drivers/md/bcache/bset.h | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 86f7e09d31516..485ebc2b2144c 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2472,10 +2472,11 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 	kfree(sb);
- out_free_path:
- 	kfree(path);
-+	path = NULL;
- out_module_put:
- 	module_put(THIS_MODULE);
- out:
--	pr_info("error %s: %s", path, err);
-+	pr_info("error %s: %s", path?path:"", err);
- 	return ret;
- }
+diff --git a/drivers/md/bcache/bset.h b/drivers/md/bcache/bset.h
+index c71365e7c1fac..a50dcfda656f5 100644
+--- a/drivers/md/bcache/bset.h
++++ b/drivers/md/bcache/bset.h
+@@ -397,7 +397,8 @@ void bch_btree_keys_stats(struct btree_keys *b, struct bset_stats *state);
  
+ /* Bkey utility code */
+ 
+-#define bset_bkey_last(i)	bkey_idx((struct bkey *) (i)->d, (i)->keys)
++#define bset_bkey_last(i)	bkey_idx((struct bkey *) (i)->d, \
++					 (unsigned int)(i)->keys)
+ 
+ static inline struct bkey *bset_bkey_idx(struct bset *i, unsigned int idx)
+ {
 -- 
 2.20.1
