@@ -1,51 +1,65 @@
-From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.5 452/542] bcache: cached_dev_free needs to put the sb page
-Date: Fri, 14 Feb 2020 10:47:24 -0500
-Message-ID: <20200214154854.6746-452-sashal@kernel.org>
-References: <20200214154854.6746-1-sashal@kernel.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.kernel.org ([198.145.29.99]:42648 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S2388621AbgBNP6d (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 14 Feb 2020 10:58:33 -0500
-In-Reply-To: <20200214154854.6746-1-sashal@kernel.org>
-Sender: linux-bcache-owner@vger.kernel.org
+From: Coly Li <colyli@suse.de>
+Subject: [RFC PATCH 0/3] bcache: accelerate device registration speed
+Date: Sat, 15 Feb 2020 16:28:55 +0800
+Message-ID: <20200215082858.128025-1-colyli@suse.de>
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Liang Chen <liangchen.linux@gmail.com>, Christoph Hellwig <hch@lst.de>, Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 
-From: Liang Chen <liangchen.linux@gmail.com>
+Hi folks,
 
-[ Upstream commit e8547d42095e58bee658f00fef8e33d2a185c927 ]
+This series is an effort to accelerate bcache device registration
+speed. With this series the registration speed can be x3 ~ 7x times
+faster in my tests.
 
-Same as cache device, the buffer page needs to be put while
-freeing cached_dev.  Otherwise a page would be leaked every
-time a cached_dev is stopped.
+Since Linux v5.6-rc1, the bcache code may survive more than 24+ horus
+on my testing machine (Lenovo SR650, 48 Cores, both NVMe SSDs as
+cache device and cached device). Before Linux v5.3, bcache code may
+only survive around 40 minutes then deadlock detected. After Linux v5.3,
+bcache code may survive 12+ hours then out-of-memory happens and whole
+system huang. Now in my testing bcache can survive from 24+ hours high
+randome write I/Os, and generate a very large internal btree. After a
+reboot, registring a single cached device and cache device may take
+55 minutes on my testing machine, this is too long time IMHO.
 
-Signed-off-by: Liang Chen <liangchen.linux@gmail.com>
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Coly Li <colyli@suse.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
+I don't realize such problem because bcache could not work for so long
+time before. After look into the bcache registration code, I realize
+the bcache registration time is consumed by 3 steps,
+1) Check btree nodes
+   To check each key of all the btree nodes are valid and good.
+2) Journal replay
+   Replay all valid journal entries and insert them back to btree.
+3) Count dirty sectors
+   For a specific bcache device, iterate all btree keys and count
+   dirty sectors (or stripes) for it.
+
+The step 2) is strictly linear order, no chance to speed up. But the
+step 1) and 3) accesses btree nodes in read-only more, they can be
+speed up by parallelized threads. This series try to create multiple
+threads to check btrees and count dirty sectors, from my testing
+it can speed up x3 ~ x7 times for bcache registration.
+
+It will be helpful if you may test the patches and feed back me the
+result or problem. Currently I target these patchs for next merge
+window of Linux v5.7.
+
+Thanks in advance.
+
+Coly Li
 ---
- drivers/md/bcache/super.c | 3 +++
- 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 77e9869345e70..a573ce1d85aae 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1275,6 +1275,9 @@ static void cached_dev_free(struct closure *cl)
- 
- 	mutex_unlock(&bch_register_lock);
- 
-+	if (dc->sb_bio.bi_inline_vecs[0].bv_page)
-+		put_page(bio_first_page_all(&dc->sb_bio));
-+
- 	if (!IS_ERR_OR_NULL(dc->bdev))
- 		blkdev_put(dc->bdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
- 
+Coly Li (3):
+  bcache: move macro btree() and btree_root() into btree.h
+  bcache: make bch_btree_check() to be multiple threads
+  bcache: make bch_sectors_dirty_init() to be multiple threads
+
+ drivers/md/bcache/btree.c     | 229 ++++++++++++++++++++++++++++++------------
+ drivers/md/bcache/btree.h     |  88 ++++++++++++++++
+ drivers/md/bcache/writeback.c | 156 +++++++++++++++++++++++++++-
+ drivers/md/bcache/writeback.h |  19 ++++
+ 4 files changed, 427 insertions(+), 65 deletions(-)
+
 -- 
-2.20.1
+2.16.4
