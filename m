@@ -1,26 +1,25 @@
-From: "urs portmann" <mucios@imp.edu.mx>
-Subject: 19-02-2020
-Date: Wed, 19 Feb 2020 21:51:39 +1100
-Message-ID: <20200219105141.A3A89180635F4E__29306.199988217$1582119401$gmane$org@imp.edu.mx>
-Reply-To: onube@qq.com
+From: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 1/3] bcache: move macro btree() and btree_root() into
+ btree.h
+Date: Wed, 19 Feb 2020 08:29:45 -0800
+Message-ID: <20200219162945.GD10644@infradead.org>
+References: <20200215082858.128025-1-colyli@suse.de>
+ <20200215082858.128025-2-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from scm.imp.edu.mx ([132.247.16.103]:18945 "EHLO scm.imp.edu.mx"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726548AbgBSNgc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 19 Feb 2020 08:36:32 -0500
-Content-Description: Mail message body
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-block-owner@vger.kernel.org>
+Content-Disposition: inline
+In-Reply-To: <20200215082858.128025-2-colyli@suse.de>
+Sender: linux-block-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Recipients <mucios@imp.edu.mx>
 
-Guten Morgen,
-                                          19-02-2020
-Wir haben versucht, Sie zu erreichen und haben noch nichts von Ihnen gehört. Haben Sie unsere letzte E-Mail über Ihre S.p.e.n.d.e erhalten? Wenn nicht, melden Sie sich bitte bei uns, um weitere Informationen zu erhalten.
+On Sat, Feb 15, 2020 at 04:28:56PM +0800, Coly Li wrote:
+> In order to accelerate bcache registration speed, the macro btree()
+> and btree_root() will be referenced out of btree.c. This patch moves
+> them from btree.c into btree.h with other relative function declaration
+> in btree.h, for the following changes.
 
-Wir warten darauf, von Ihnen zu hören, sobald Sie diese Nachricht erhalten, die Sie bei der weiteren Vorgehensweise unterstützt.
-
-Mfg
-urs portmann
+Can you give them a bcache_ prefix?  That names are awfully generic
+and bound to clash sooner or later.
