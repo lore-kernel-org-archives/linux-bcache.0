@@ -1,64 +1,26 @@
-From: Nix <nix@esperi.org.uk>
-Subject: Re: reads no longer cached since kernel 4.19
-Date: Mon, 17 Feb 2020 14:31:47 +0000
-Message-ID: <87sgj9thd8.fsf@esperi.org.uk>
-References: <b039d510-9b03-e6a3-499a-1dbe72764cbe@postgarage.at>
-        <98d03769-c58d-98dc-64aa-7d8fbf39ceea@postgarage.at>
+From: "urs portmann" <mucios@imp.edu.mx>
+Subject: 19-02-2020
+Date: Wed, 19 Feb 2020 21:51:39 +1100
+Message-ID: <20200219105141.A3A89180635F4E__29306.199988217$1582119401$gmane$org@imp.edu.mx>
+Reply-To: onube@qq.com
 Mime-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from icebox.esperi.org.uk ([81.187.191.129]:33892 "EHLO
-        mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726781AbgBQOb4 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 17 Feb 2020 09:31:56 -0500
-In-Reply-To: <98d03769-c58d-98dc-64aa-7d8fbf39ceea@postgarage.at> (Postgarage
-        Graz's message of "Wed, 12 Feb 2020 07:02:28 +0100")
+Received: from scm.imp.edu.mx ([132.247.16.103]:18945 "EHLO scm.imp.edu.mx"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1726548AbgBSNgc (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 19 Feb 2020 08:36:32 -0500
+Content-Description: Mail message body
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Postgarage Graz IT <it@postgarage.at>
-Cc: linux-bcache@vger.kernel.org
+To: Recipients <mucios@imp.edu.mx>
 
-On 12 Feb 2020, Postgarage Graz stated:
+Guten Morgen,
+                                          19-02-2020
+Wir haben versucht, Sie zu erreichen und haben noch nichts von Ihnen gehört. Haben Sie unsere letzte E-Mail über Ihre S.p.e.n.d.e erhalten? Wenn nicht, melden Sie sich bitte bei uns, um weitere Informationen zu erhalten.
 
-> On 10.02.20 17:10, Ville Aakko wrote:
->> Hi,
->> 
->> A fellow user responding here.
->> 
->> I've noticed similar behavior and have asked on this same mailing list
->> previously. See:
->> https://www.spinics.net/lists/linux-bcache/msg07859.html
->> 
->> Also seems there are other users with this issue on the Arch Forum,
->> where I have also started a discussion:
->> https://bbs.archlinux.org/viewtopic.php?id=250525
->> There is yet to be a single user to reply there (or on this mailing
->> list) claiming they have a working setup (for caching reads).
->> 
->> Judging from the Arch Linux thread, I have a hunch there were some
->> changes ~4.18, which broke read caching for many (all?) desktop users
->> (as anything which is flagged as readahed will not be cached, despite
->> setting sequential_cutoff). Also (again from the Arch thread) a
->> planned patch might enable expected read caching: "[PATCH 3/5] bcache:
->> add readahead cache policy options via sysfs interface" / see:
->> https://www.spinics.net/lists/linux-bcache/msg08074.html
->
-> Indeed that patch works.
-> Now I'm using the 5.6-rc1 kernel and the performance gain is huge.
+Wir warten darauf, von Ihnen zu hören, sobald Sie diese Nachricht erhalten, die Sie bei der weiteren Vorgehensweise unterstützt.
 
-Note: 4.19 had an *extra* bug as well, which eliminated all metadata
-caching on some filesystems (like XFS, but IIRC not ext4). It was fixed
-in v5.1 by commit dc7292a5bcb4c878b.
-
-So you had two problems :)
-
-(I've just moved to a readahead-caching kernel, and while I don't see
-any performance gain yet, I'm sure it will come once the cache finishes
-populating. It's certainly seeing more writes, 20GiB written in only two
-days where before it took a month to write that much.)
-
-Note: the readahead fix was well-timed, since it was only in v5.4 that
-the Linux NFS client stopped hardwiring a readahead size of 15 times the
-optimal read size, i.e., uh, 15MiB with most servers. That really would
-have filled the bcache of the NFS server with a lot of junk.)
+Mfg
+urs portmann
