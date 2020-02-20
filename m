@@ -1,39 +1,43 @@
-From: Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 1/3] bcache: ignore pending signals when creating gc and
- allocator thread
-Date: Wed, 19 Feb 2020 08:32:00 -0800
-Message-ID: <20200219163200.GA18377@infradead.org>
-References: <20200213141207.77219-1-colyli@suse.de>
- <20200213141207.77219-2-colyli@suse.de>
+From: "Mrs. Susan S. Cage" <drgoodluckebelejonathan061@gmail.com>
+Subject: Attention:Beneficiary
+Date: Thu, 20 Feb 2020 02:00:02 -0800
+Message-ID: <CALjo5=-rRrA1501A5OOVr2Q-Yun753shbPf_ZDKj87r8zs=TJw@mail.gmail.com>
+Reply-To: cagesusan199@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from bombadil.infradead.org ([198.137.202.133]:34100 "EHLO
-        bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726729AbgBSQcA (ORCPT
+Received: from mail-pj1-f68.google.com ([209.85.216.68]:50777 "EHLO
+        mail-pj1-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726921AbgBTKAD (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 19 Feb 2020 11:32:00 -0500
-Content-Disposition: inline
-In-Reply-To: <20200213141207.77219-2-colyli@suse.de>
+        Thu, 20 Feb 2020 05:00:03 -0500
+Received: by mail-pj1-f68.google.com with SMTP id r67so675212pjb.0
+        for <linux-bcache@vger.kernel.org>; Thu, 20 Feb 2020 02:00:03 -0800 (PST)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On Thu, Feb 13, 2020 at 10:12:05PM +0800, Coly Li wrote:
-> +	/*
-> +	 * In case previous btree check operation occupies too many
-> +	 * system memory for bcache btree node cache, and the
-> +	 * registering process is selected by OOM killer. Here just
-> +	 * ignore the SIGKILL sent by OOM killer if there is, to
-> +	 * avoid kthread_run() being failed by pending signals. The
-> +	 * bcache registering process will exit after the registration
-> +	 * done.
-> +	 */
-> +	if (signal_pending(current))
-> +		flush_signals(current);
-> +
-> +	k = kthread_run(bch_allocator_thread, ca, "bcache_allocator");
+-- 
+Dearest Friend,
 
-This really needs to go into the kthread code itself instead of
-requiring cargo culting in the callers.
+Sorry for invading your privacy, my name is Susan S. Cage I am 81
+years, citizen of United States and presently in hospital undergoing
+chromatography for bronchogenic carcinomas (Lung cancer) which
+affected both Lungs. The doctors said I have few days to live because
+the cancer has now affected my brain.
+
+My late husband left Fifteen Million, Five Hundred British Pounds
+Sterling in my account, I want to transfer the money to you and I want
+you to use it as a donate for charitable and help the needy,
+motherless, less privileged and widows within your location.
+
+I need your assurance that you will use the fund for charity, once I a
+favorable reply from you, will inform my Bank through my lawyer to
+transfer the fund to you as my Next of Kin and Sole Beneficiary. Once
+I receive your response, I will inform my bank in writing through my
+lawyer.
+
+
+
+Thank you and God bless you.
+
+Mrs. Susan S. Cage
