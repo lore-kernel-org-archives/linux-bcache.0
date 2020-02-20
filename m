@@ -1,43 +1,82 @@
-From: "Mrs. Susan S. Cage" <drgoodluckebelejonathan061@gmail.com>
-Subject: Attention:Beneficiary
-Date: Thu, 20 Feb 2020 02:00:02 -0800
-Message-ID: <CALjo5=-rRrA1501A5OOVr2Q-Yun753shbPf_ZDKj87r8zs=TJw@mail.gmail.com>
-Reply-To: cagesusan199@gmail.com
+From: Coly Li <colyli@suse.de>
+Subject: Re: [PATCH 1/3] bcache: ignore pending signals when creating gc and
+ allocator thread
+Date: Thu, 20 Feb 2020 21:20:49 +0800
+Message-ID: <1f6cd622-3476-068b-3593-f918ab011156@suse.de>
+References: <20200213141207.77219-1-colyli@suse.de>
+ <20200213141207.77219-2-colyli@suse.de>
+ <20200219163200.GA18377@infradead.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pj1-f68.google.com ([209.85.216.68]:50777 "EHLO
-        mail-pj1-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726921AbgBTKAD (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 20 Feb 2020 05:00:03 -0500
-Received: by mail-pj1-f68.google.com with SMTP id r67so675212pjb.0
-        for <linux-bcache@vger.kernel.org>; Thu, 20 Feb 2020 02:00:03 -0800 (PST)
+Received: from mx2.suse.de ([195.135.220.15]:41328 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1727943AbgBTNVR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 20 Feb 2020 08:21:17 -0500
+In-Reply-To: <20200219163200.GA18377@infradead.org>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Christoph Hellwig <hch@infradead.org>
+Cc: axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+
+On 2020/2/20 12:32 上午, Christoph Hellwig wrote:
+> On Thu, Feb 13, 2020 at 10:12:05PM +0800, Coly Li wrote:
+>> +	/*
+>> +	 * In case previous btree check operation occupies too many
+>> +	 * system memory for bcache btree node cache, and the
+>> +	 * registering process is selected by OOM killer. Here just
+>> +	 * ignore the SIGKILL sent by OOM killer if there is, to
+>> +	 * avoid kthread_run() being failed by pending signals. The
+>> +	 * bcache registering process will exit after the registration
+>> +	 * done.
+>> +	 */
+>> +	if (signal_pending(current))
+>> +		flush_signals(current);
+>> +
+>> +	k = kthread_run(bch_allocator_thread, ca, "bcache_allocator");
+> 
+> This really needs to go into the kthread code itself instead of
+> requiring cargo culting in the callers.
+> 
+
+Hi Christoph,
+
+Correct me if I am wrong.
+
+If the signal is set before calling kthread_run(), kthread_run() will
+fail and return -EINTR as code comment of __kthread_create_on_node() says,
+
+ 315  /*
+ 316   * Wait for completion in killable state, for I might be chosen by
+ 317   * the OOM killer while kthreadd is trying to allocate memory for
+ 318   * new kernel thread.
+ 319   */
+ 320   if (unlikely(wait_for_completion_killable(&done))) {
+ 321       /*
+ 322       * If I was SIGKILLed before kthreadd (or new kernel thread)
+ 323       * calls complete(), leave the cleanup of this structure to
+ 324       * that thread.
+ 325       */
+ 326       if (xchg(&create->done, NULL))
+ 327             return ERR_PTR(-EINTR);
+ 328       /*
+ 329        * kthreadd (or new kernel thread) will call complete()
+ 330        * shortly.
+ 331        */
+ 332        wait_for_completion(&done);
+ 333   }
+
+So the caller of kthread_run(), in this case it is
+bch_cache_allocator_start() will receive -EINTR, and returns error to
+its caller bch_cache_set_alloc(). Then the registration will fail and
+ignore what the kthread routine does in parallel.
+
+Therefore I need to explicitly call pending_signal() before calling
+kthread_run().
+
 
 -- 
-Dearest Friend,
 
-Sorry for invading your privacy, my name is Susan S. Cage I am 81
-years, citizen of United States and presently in hospital undergoing
-chromatography for bronchogenic carcinomas (Lung cancer) which
-affected both Lungs. The doctors said I have few days to live because
-the cancer has now affected my brain.
-
-My late husband left Fifteen Million, Five Hundred British Pounds
-Sterling in my account, I want to transfer the money to you and I want
-you to use it as a donate for charitable and help the needy,
-motherless, less privileged and widows within your location.
-
-I need your assurance that you will use the fund for charity, once I a
-favorable reply from you, will inform my Bank through my lawyer to
-transfer the fund to you as my Next of Kin and Sole Beneficiary. Once
-I receive your response, I will inform my bank in writing through my
-lawyer.
-
-
-
-Thank you and God bless you.
-
-Mrs. Susan S. Cage
+Coly Li
