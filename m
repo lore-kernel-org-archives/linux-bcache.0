@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 24/25] bcache: ignore pending signals when creating gc and allocator thread
-Date: Sat, 22 Feb 2020 21:23:38 -0500
-Message-ID: <20200223022339.1885-24-sashal@kernel.org>
-References: <20200223022339.1885-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.4 43/50] bcache: ignore pending signals when creating gc and allocator thread
+Date: Sat, 22 Feb 2020 21:22:28 -0500
+Message-ID: <20200223022235.1404-43-sashal@kernel.org>
+References: <20200223022235.1404-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200223022339.1885-1-sashal@kernel.org>
+In-Reply-To: <20200223022235.1404-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
@@ -40,7 +40,7 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  2 files changed, 29 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 46794cac167e7..2074860cbb16c 100644
+index a1df0d95151c6..8bc1faf71ff2f 100644
 --- a/drivers/md/bcache/alloc.c
 +++ b/drivers/md/bcache/alloc.c
 @@ -67,6 +67,7 @@
@@ -76,7 +76,7 @@ index 46794cac167e7..2074860cbb16c 100644
  		return PTR_ERR(k);
  
 diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index bb40bd66a10e4..83d6739fd067b 100644
+index 46a8b5a91c386..a6e05503b7723 100644
 --- a/drivers/md/bcache/btree.c
 +++ b/drivers/md/bcache/btree.c
 @@ -34,6 +34,7 @@
@@ -87,7 +87,7 @@ index bb40bd66a10e4..83d6739fd067b 100644
  #include <linux/rculist.h>
  #include <linux/delay.h>
  #include <trace/events/bcache.h>
-@@ -1898,6 +1899,18 @@ static int bch_gc_thread(void *arg)
+@@ -1908,6 +1909,18 @@ static int bch_gc_thread(void *arg)
  
  int bch_gc_thread_start(struct cache_set *c)
  {
