@@ -1,40 +1,110 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 1/3] bcache: ignore pending signals when creating gc and
- allocator thread
-Date: Fri, 21 Feb 2020 00:47:56 +0800
-Message-ID: <b2f997ce-3b47-19ec-439d-e29a35ff7ef4@suse.de>
-References: <20200213141207.77219-1-colyli@suse.de>
- <20200213141207.77219-2-colyli@suse.de>
- <20200219163200.GA18377@infradead.org>
- <1f6cd622-3476-068b-3593-f918ab011156@suse.de>
- <20200220163803.GA12147@infradead.org>
+From: Sasha Levin <sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.14 20/21] bcache: ignore pending signals when creating gc and allocator thread
+Date: Sat, 22 Feb 2020 21:24:10 -0500
+Message-ID: <20200223022411.2159-20-sashal@kernel.org>
+References: <20200223022411.2159-1-sashal@kernel.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20200220163803.GA12147@infradead.org>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Christoph Hellwig <hch@infradead.org>
-Cc: axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20200223022411.2159-1-sashal@kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2020/2/21 12:38 上午, Christoph Hellwig wrote:
-> On Thu, Feb 20, 2020 at 09:20:49PM +0800, Coly Li wrote:
->> Therefore I need to explicitly call pending_signal() before calling
->> kthread_run().
-> 
-> Right now you have to.  But the proper fix is to not require this and
-> fix kthread_run to work from a thread that has been selected by the OOM
-> killer.  In the most trivial version by moving your code into
-> kthread_run, but there probably are better ways as well.
-> 
+From: Coly Li <colyli@suse.de>
 
-Yes I see. Let me think about it, at this moment kthread_run() is still
-not very clear in my mind.
+[ Upstream commit 0b96da639a4874311e9b5156405f69ef9fc3bef8 ]
 
-Thanks for the hint.
+When run a cache set, all the bcache btree node of this cache set will
+be checked by bch_btree_check(). If the bcache btree is very large,
+iterating all the btree nodes will occupy too much system memory and
+the bcache registering process might be selected and killed by system
+OOM killer. kthread_run() will fail if current process has pending
+signal, therefore the kthread creating in run_cache_set() for gc and
+allocator kernel threads are very probably failed for a very large
+bcache btree.
 
+Indeed such OOM is safe and the registering process will exit after
+the registration done. Therefore this patch flushes pending signals
+during the cache set start up, specificly in bch_cache_allocator_start()
+and bch_gc_thread_start(), to make sure run_cache_set() won't fail for
+large cahced data set.
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ drivers/md/bcache/alloc.c | 18 ++++++++++++++++--
+ drivers/md/bcache/btree.c | 13 +++++++++++++
+ 2 files changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index ada94a01e1423..9e85d44faeb49 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -67,6 +67,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/kthread.h>
+ #include <linux/random.h>
++#include <linux/sched/signal.h>
+ #include <trace/events/bcache.h>
+ 
+ #define MAX_OPEN_BUCKETS 128
+@@ -700,8 +701,21 @@ int bch_open_buckets_alloc(struct cache_set *c)
+ 
+ int bch_cache_allocator_start(struct cache *ca)
+ {
+-	struct task_struct *k = kthread_run(bch_allocator_thread,
+-					    ca, "bcache_allocator");
++	struct task_struct *k;
++
++	/*
++	 * In case previous btree check operation occupies too many
++	 * system memory for bcache btree node cache, and the
++	 * registering process is selected by OOM killer. Here just
++	 * ignore the SIGKILL sent by OOM killer if there is, to
++	 * avoid kthread_run() being failed by pending signals. The
++	 * bcache registering process will exit after the registration
++	 * done.
++	 */
++	if (signal_pending(current))
++		flush_signals(current);
++
++	k = kthread_run(bch_allocator_thread, ca, "bcache_allocator");
+ 	if (IS_ERR(k))
+ 		return PTR_ERR(k);
+ 
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 96a6583e7b522..d61c1a4937109 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -34,6 +34,7 @@
+ #include <linux/random.h>
+ #include <linux/rcupdate.h>
+ #include <linux/sched/clock.h>
++#include <linux/sched/signal.h>
+ #include <linux/rculist.h>
+ 
+ #include <trace/events/bcache.h>
+@@ -1801,6 +1802,18 @@ static int bch_gc_thread(void *arg)
+ 
+ int bch_gc_thread_start(struct cache_set *c)
+ {
++	/*
++	 * In case previous btree check operation occupies too many
++	 * system memory for bcache btree node cache, and the
++	 * registering process is selected by OOM killer. Here just
++	 * ignore the SIGKILL sent by OOM killer if there is, to
++	 * avoid kthread_run() being failed by pending signals. The
++	 * bcache registering process will exit after the registration
++	 * done.
++	 */
++	if (signal_pending(current))
++		flush_signals(current);
++
+ 	c->gc_thread = kthread_run(bch_gc_thread, c, "bcache_gc");
+ 	if (IS_ERR(c->gc_thread))
+ 		return PTR_ERR(c->gc_thread);
 -- 
-
-Coly Li
+2.20.1
