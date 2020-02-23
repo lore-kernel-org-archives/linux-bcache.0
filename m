@@ -1,12 +1,12 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.14 20/21] bcache: ignore pending signals when creating gc and allocator thread
-Date: Sat, 22 Feb 2020 21:24:10 -0500
-Message-ID: <20200223022411.2159-20-sashal@kernel.org>
-References: <20200223022411.2159-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 24/25] bcache: ignore pending signals when creating gc and allocator thread
+Date: Sat, 22 Feb 2020 21:23:38 -0500
+Message-ID: <20200223022339.1885-24-sashal@kernel.org>
+References: <20200223022339.1885-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200223022411.2159-1-sashal@kernel.org>
+In-Reply-To: <20200223022339.1885-1-sashal@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
@@ -40,7 +40,7 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  2 files changed, 29 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index ada94a01e1423..9e85d44faeb49 100644
+index 46794cac167e7..2074860cbb16c 100644
 --- a/drivers/md/bcache/alloc.c
 +++ b/drivers/md/bcache/alloc.c
 @@ -67,6 +67,7 @@
@@ -51,7 +51,7 @@ index ada94a01e1423..9e85d44faeb49 100644
  #include <trace/events/bcache.h>
  
  #define MAX_OPEN_BUCKETS 128
-@@ -700,8 +701,21 @@ int bch_open_buckets_alloc(struct cache_set *c)
+@@ -733,8 +734,21 @@ int bch_open_buckets_alloc(struct cache_set *c)
  
  int bch_cache_allocator_start(struct cache *ca)
  {
@@ -76,7 +76,7 @@ index ada94a01e1423..9e85d44faeb49 100644
  		return PTR_ERR(k);
  
 diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 96a6583e7b522..d61c1a4937109 100644
+index bb40bd66a10e4..83d6739fd067b 100644
 --- a/drivers/md/bcache/btree.c
 +++ b/drivers/md/bcache/btree.c
 @@ -34,6 +34,7 @@
@@ -85,9 +85,9 @@ index 96a6583e7b522..d61c1a4937109 100644
  #include <linux/sched/clock.h>
 +#include <linux/sched/signal.h>
  #include <linux/rculist.h>
- 
+ #include <linux/delay.h>
  #include <trace/events/bcache.h>
-@@ -1801,6 +1802,18 @@ static int bch_gc_thread(void *arg)
+@@ -1898,6 +1899,18 @@ static int bch_gc_thread(void *arg)
  
  int bch_gc_thread_start(struct cache_set *c)
  {
@@ -104,7 +104,7 @@ index 96a6583e7b522..d61c1a4937109 100644
 +		flush_signals(current);
 +
  	c->gc_thread = kthread_run(bch_gc_thread, c, "bcache_gc");
- 	if (IS_ERR(c->gc_thread))
- 		return PTR_ERR(c->gc_thread);
+ 	return PTR_ERR_OR_ZERO(c->gc_thread);
+ }
 -- 
 2.20.1
