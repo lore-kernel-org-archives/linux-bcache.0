@@ -1,60 +1,77 @@
-From: Hannes Reinecke <hare@suse.de>
+From: Michal Hocko <mhocko@kernel.org>
 Subject: Re: [PATCH 1/2] bcache: ignore pending signals in
  bcache_device_init()
-Date: Tue, 3 Mar 2020 08:22:20 +0100
-Message-ID: <3e6b36e3-72eb-30e4-c99d-40665ea31725@suse.de>
+Date: Tue, 3 Mar 2020 09:05:44 +0100
+Message-ID: <20200303080544.GW4380@dhcp22.suse.cz>
 References: <20200302093450.48016-1-colyli@suse.de>
  <20200302093450.48016-2-colyli@suse.de>
- <20200302122748.GH4380@dhcp22.suse.cz> <20200302134919.GB9769@redhat.com>
- <48c6480a-3b26-fb7f-034d-923f9b8875f1@suse.de>
- <dfcd5b4d-592d-fe2a-5c25-ac22729b479e@kernel.dk>
- <2e4898f0-0c2b-9320-b925-456a85ebdea0@suse.de>
+ <20200302122748.GH4380@dhcp22.suse.cz>
+ <20200302134919.GB9769@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:59622 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727340AbgCCHWX (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 3 Mar 2020 02:22:23 -0500
-In-Reply-To: <2e4898f0-0c2b-9320-b925-456a85ebdea0@suse.de>
-Content-Language: en-US
+Received: from mail-wm1-f66.google.com ([209.85.128.66]:39317 "EHLO
+        mail-wm1-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1727659AbgCCIFr (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 3 Mar 2020 03:05:47 -0500
+Content-Disposition: inline
+In-Reply-To: <20200302134919.GB9769@redhat.com>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>
-Cc: Oleg Nesterov <oleg@redhat.com>, Michal Hocko <mhocko@kernel.org>, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, mkoutny@suse.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Coly Li <colyli@suse.de>, axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, hare@suse.de, mkoutny@suse.com
 
-On 3/2/20 6:32 PM, Coly Li wrote:
-> On 2020/3/3 1:19 上午, Jens Axboe wrote:
-[ ..
->> What if someone else tried to kill the startup? It'd be pretty
->> frustrating that it was impossible, just because signals were blocked or
->> flushed. The assumption that systemd is the ONLY task that would want to
->> kill it is flawed.
->>
+On Mon 02-03-20 14:49:19, Oleg Nesterov wrote:
+> On 03/02, Michal Hocko wrote:
+> >
+> > I cannot really comment on the bcache part because I am not familiar
+> > with the code.
 > 
-> Indeed now the bcache registration can not be killed. I guess it is
-> because the mutex lock held during the metadata checking.
-> Sure I will look at how to extend udevd timeout value now, and ask for
-> help later.
+> same here...
 > 
-Please check if the bcache registration really needs to be synchronous.
-What exactly do you gain from having a return value (which, seeing
-that's a simple write() to a sysfs attribute, is probably ignored anyway)?
-To my understanding, the bcache registration process creates the actual
-bcache device, which in itself will generate a udev event.
-So the existence of the bcache device will already signal a successful
-completion of the registration process.
-Hence it should be possible to shift the actual bcache registration to a
-kworker, and have the 'write()' call completed after schedule_work() (or
-equivalents) are called.
-That would circumvent the problem, no?
+> > > This patch calls flush_signals() in bcache_device_init() if there is
+> > > pending signal for current process. It avoids bcache registration
+> > > failure in system boot up time due to bcache udev rule timeout.
+> >
+> > this sounds like a wrong way to address the issue. Killing the udev
+> > worker is a userspace policy and the kernel shouldn't simply ignore it.
+> 
+> Agreed. If nothing else, if a userspace process has pending SIKILL then
+> flush_signals() is very wrong.
+> 
+> > Btw. Oleg, I have noticed quite a lot of flush_signals usage in the
+> > drivers land and I have really hard time to understand their purpose.
+> 
+> Heh. I bet most if not all users of flush_signals() are simply wrong.
+> 
+> > What is the actual valid usage of this function?
+> 
+> I thinks it should die...
 
-Cheers,
+Can we simply deprecate it and add a big fat comment explaning why this
+is wrong interface to use?
 
-Hannes
+So what about this?
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 9ad8dea93dbb..8a895e565e84 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -465,7 +465,13 @@ void flush_sigqueue(struct sigpending *queue)
+ }
+ 
+ /*
+- * Flush all pending signals for this kthread.
++ * Flush all pending signals for this kthread. Please note that this interface
++ * shouldn't be used and in fact it is DEPRECATED.
++ * Existing users should be double checked because most of them are likely
++ * obsolete. Kernel threads are not on the receiving end of signal delivery
++ * unless they explicitly request that by allow_signal() and in that case
++ * flush_signals is almost always a bug because signal should be processed
++ * by kernel_dequeue_signal rather than dropping them on the floor.
+  */
+ void flush_signals(struct task_struct *t)
+ {
 -- 
-Dr. Hannes Reinecke		           Kernel Storage Architect
-hare@suse.de			                  +49 911 74053 688
-SUSE Software Solutions Germany GmbH, Maxfeldstr. 5, 90409 Nürnberg
-HRB 36809 (AG Nürnberg), GF: Felix Imendörffer
+Michal Hocko
+SUSE Labs
