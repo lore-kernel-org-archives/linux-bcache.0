@@ -1,8 +1,8 @@
-From: Oleg Nesterov <oleg@redhat.com>
+From: Michal Hocko <mhocko@kernel.org>
 Subject: Re: [PATCH 1/2] bcache: ignore pending signals in
  bcache_device_init()
-Date: Wed, 4 Mar 2020 12:53:31 +0100
-Message-ID: <20200304115330.GB13170@redhat.com>
+Date: Wed, 4 Mar 2020 12:57:18 +0100
+Message-ID: <20200304115718.GI16139@dhcp22.suse.cz>
 References: <20200302093450.48016-1-colyli@suse.de>
  <20200302093450.48016-2-colyli@suse.de>
  <20200302122748.GH4380@dhcp22.suse.cz>
@@ -13,22 +13,38 @@ References: <20200302093450.48016-1-colyli@suse.de>
  <20200304113613.GA13170@redhat.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-wr1-f68.google.com ([209.85.221.68]:34625 "EHLO
+        mail-wr1-f68.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726440AbgCDL5W (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 4 Mar 2020 06:57:22 -0500
 Content-Disposition: inline
 In-Reply-To: <20200304113613.GA13170@redhat.com>
-Sender: linux-block-owner@vger.kernel.org
-To: Michal Hocko <mhocko@kernel.org>
-Cc: Coly Li <colyli@suse.de>, axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, hare@suse.de, mkoutny@suse.com
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Coly Li <colyli@suse.de>, axboe@kernel.dk, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, hare@suse.de, mkoutny@suse.com
 
-On 03/04, Oleg Nesterov wrote:
->
-> arch/arm/common/bL_switcher.c:bL_switcher_thread(). Why does it do
-> flush_signals() ? signal_pending() must not be possible. It seems that
-> people think that wait_event_interruptible() or even schedule() in
-> TASK_INTERRUPTIBLE state can lead to a pending signal but this is not
-> true. Of course, I could miss allow_signal() in bL_switch_to() paths...
+On Wed 04-03-20 12:36:13, Oleg Nesterov wrote:
+[...]
+> IOW, I mostly agree with
+> 
+> 	- * Flush all pending signals for this kthread.
+> 	+ * Flush all pending signals for this kthread. Please note that this interface
+> 	+ * shouldn't be used and in fact it is DEPRECATED.
+> 	+ * Existing users should be double checked because most of them are likely
+> 	+ * obsolete. Kernel threads are not on the receiving end of signal delivery
+> 	+ * unless they explicitly request that by allow_signal() and in that case
+> 	+ * flush_signals is almost always a bug because signal should be processed
+> 	+ * by kernel_dequeue_signal rather than dropping them on the floor.
+> 
+> you wrote in your previous email, but "DEPRECATED" and "almost always a bug"
+> looks a bit too strong to me.
 
-Jens, could you explain flush_signals() in io_sq_thread() ?
+So what would be a legit usecase to drop all signals while explicitly
+calling allow_signal? 
 
-Oleg.
+-- 
+Michal Hocko
+SUSE Labs
