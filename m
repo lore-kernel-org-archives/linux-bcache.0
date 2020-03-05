@@ -1,31 +1,33 @@
-From: Maria Alessandra Filippi <maria.filippi@comune.nogara.vr.it>
-Subject: (unknown)
-Date: Thu, 5 Mar 2020 00:30:40 +0100 (CET)
-Message-ID: <1577997526.223367.1583364640583.JavaMail.zimbra@comune.nogara.vr.it>
-Reply-To: "mrsmariaelisabethschaeffler11@gmail.com"
-          <mrsmariaelisabethschaeffler11@gmail.com>
+From: ''Michael Weirsky'' <alex.zari@11d02.mspz7.gob.ec>
+Subject: =?utf-8?q?Wohlt=C3=A4tigkeitsspende_von_2=2E000=2E000_Millionen_Euro?=
+Date: Thu, 05 Mar 2020 11:33:18 +0200
+Message-ID: <20200305094020.1044F1471D9@mail.11d02.mspz7.gob.ec>
+Reply-To: mikeweirskyspende@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.comune.nogara.vr.it ([46.21.176.248]:48973 "EHLO
-        mail.comune.nogara.vr.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2388407AbgCDXfS (ORCPT
+Received: from mail.11d02.mspz7.gob.ec ([181.211.254.254]:43870 "EHLO
+        mail.11d02.mspz7.gob.ec" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726079AbgCEOMq (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 4 Mar 2020 18:35:18 -0500
+        Thu, 5 Mar 2020 09:12:46 -0500
+Content-Description: Mail message body
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Recipients <alex.zari@11d02.mspz7.gob.ec>
 
+Lieber Freund,
 
+Ich bin Herr Mike Weirsky, New Jersey, Vereinigte Staaten von Amerika, der Mega-Gewinner von $ 273million In Mega Millions Jackpot, spende ich an 5 zufällige Personen, wenn Sie diese E-Mail erhalten, dann wurde Ihre E-Mail nach einem Spinball ausgewählt.Ich habe den größten Teil meines Vermögens auf eine Reihe von Wohltätigkeitsorganisationen und Organisationen verteilt.Ich habe mich freiwillig dazu entschieden, die Summe von € 2.000.000,00 an Sie als eine der ausgewählten 5 zu spenden, um meine Gewinne zu überprüfen.
+Das ist dein Spendencode: [MW530342019]
+www.youtube.com/watch?v=un8yRTmrYMY
 
-Hallo,
+Antworten Sie mit dem SPENDE-CODE an diese 
 
-Ich bin Frau Maria Elisabeth Schaeffler, eine deutsche Wirtschaftsmagnatin, Investorin und Philanthropin. Ich bin der Vorsitzende von Wipro Limited. Ich habe 25 Prozent meines pers&ouml;nlichen Verm&ouml;gens f&uuml;r wohlt&auml;tige Zwecke ausgegeben. Und ich habe auch versprochen, den Rest von 25% in diesem Jahr 2020 an Einzelpersonen zu verschenken. Ich habe beschlossen, 1.000.000,00 Euro an Sie zu spenden. Wenn Sie an meiner Spende interessiert sind, kontaktieren Sie mich f&uuml;r weitere Informationen.
+E-Mail:mikeweirskyspende@gmail.com
 
-Sie k&ouml;nnen auch mehr &uuml;ber mich &uuml;ber den Link unten lesen
+Ich hoffe, Sie und Ihre Familie glücklich zu machen.
 
-https://en.wikipedia.org/wiki/Maria-Elisabeth_Schaeffler
-Herzlicher Gruss
-Gesch&auml;ftsf&uuml;hrer Wipro Limited
-Maria-Elisabeth_Schaeffler
-E-Mail: mrsmariaelisabethschaeffler11@gmail.com
+Grüße
+Herr Mike Weirsky
