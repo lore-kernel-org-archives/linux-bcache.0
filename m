@@ -1,33 +1,26 @@
-From: ''Michael Weirsky'' <alex.zari@11d02.mspz7.gob.ec>
-Subject: =?utf-8?q?Wohlt=C3=A4tigkeitsspende_von_2=2E000=2E000_Millionen_Euro?=
-Date: Thu, 05 Mar 2020 11:33:18 +0200
-Message-ID: <20200305094020.1044F1471D9@mail.11d02.mspz7.gob.ec>
-Reply-To: mikeweirskyspende@gmail.com
+From: postmaster@hokusetubad.sakura.ne.jp
+Subject: BUSINESS PROPOSAL
+Date: Mon, 09 Mar 2020 00:51:24 +0900
+Message-ID: <202003081551.028FpOOQ061609__21624.2986660049$1583686504$gmane$org@www752.sakura.ne.jp>
+Reply-To: abulkareem461@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.11d02.mspz7.gob.ec ([181.211.254.254]:43870 "EHLO
-        mail.11d02.mspz7.gob.ec" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726079AbgCEOMq (ORCPT
+Received: from www752.sakura.ne.jp ([59.106.19.202]:51631 "EHLO
+        www752.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726332AbgCHQyy (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 5 Mar 2020 09:12:46 -0500
-Content-Description: Mail message body
+        Sun, 8 Mar 2020 12:54:54 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Recipients <alex.zari@11d02.mspz7.gob.ec>
+To: nJreyes@midway.edu
 
-Lieber Freund,
+Dearest Friend
 
-Ich bin Herr Mike Weirsky, New Jersey, Vereinigte Staaten von Amerika, der Mega-Gewinner von $ 273million In Mega Millions Jackpot, spende ich an 5 zufällige Personen, wenn Sie diese E-Mail erhalten, dann wurde Ihre E-Mail nach einem Spinball ausgewählt.Ich habe den größten Teil meines Vermögens auf eine Reihe von Wohltätigkeitsorganisationen und Organisationen verteilt.Ich habe mich freiwillig dazu entschieden, die Summe von € 2.000.000,00 an Sie als eine der ausgewählten 5 zu spenden, um meine Gewinne zu überprüfen.
-Das ist dein Spendencode: [MW530342019]
-www.youtube.com/watch?v=un8yRTmrYMY
-
-Antworten Sie mit dem SPENDE-CODE an diese 
-
-E-Mail:mikeweirskyspende@gmail.com
-
-Ich hoffe, Sie und Ihre Familie glücklich zu machen.
-
-Grüße
-Herr Mike Weirsky
+I am Mr Abdul Kareem working with Emirate NBD Bank Dubai,United Arab Emirate as Finance Manager.
+I have a very profitable Business that concerns you and will benefit both of us after completion.
+Kindly get back to me for more details.
+Awaiting your response.
+Regards
+Abdul Kareem
