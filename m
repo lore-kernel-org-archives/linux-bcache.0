@@ -1,31 +1,38 @@
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: [PATCH v3] block: refactor duplicated macros
-Date: Tue, 10 Mar 2020 22:42:17 -0400
-Message-ID: <yq1k13rr4s6.fsf@oracle.com>
-References: <20200311002254.121365-1-mcroce@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain
-Return-path: <linux-mmc-owner@vger.kernel.org>
-In-Reply-To: <20200311002254.121365-1-mcroce@redhat.com> (Matteo Croce's
-        message of "Wed, 11 Mar 2020 01:22:54 +0100")
-Sender: linux-mmc-owner@vger.kernel.org
-To: Matteo Croce <mcroce@redhat.com>
-Cc: linux-block@vger.kernel.org, linux-kernel@vger.kernel.org, linux-nvdimm@lists.01.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-mmc@vger.kernel.org, xen-devel@lists.xenproject.org, linux-scsi@vger.kernel.org, linux-nfs@vger.kernel.org, Jens Axboe <axboe@kernel.dk>, "James E.J. Bottomley" <jejb@linux.ibm.com>, Ulf Hansson <ulf.hansson@linaro.org>, Anna Schumaker <anna.schumaker@netapp.com>, Dan Williams <dan.j.williams@intel.com>, Song Liu <song@kernel.org>, Guoqing Jiang <guoqing.jiang@cloud.ionos.com>
+From: Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH] bcache: Use scnprintf() for avoiding potential buffer overflow
+Date: Wed, 11 Mar 2020 08:45:58 +0100
+Message-ID: <20200311074558.8517-1-tiwai@suse.de>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:49980 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1726160AbgCKHqA (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 11 Mar 2020 03:46:00 -0400
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Coly Li <colyli@suse.de>, Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
 
+Since snprintf() returns the would-be-output size instead of the
+actual output size, the succeeding calls may go beyond the given
+buffer limit.  Fix it by replacing with scnprintf().
 
-Matteo,
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+---
+ drivers/md/bcache/sysfs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> The macros PAGE_SECTORS, PAGE_SECTORS_SHIFT and SECTOR_MASK are
-> defined several times in different flavours across the whole tree.
-> Define them just once in a common header.
->
-> While at it, replace replace "PAGE_SHIFT - 9" with
-> "PAGE_SECTORS_SHIFT" too and rename SECTOR_MASK to PAGE_SECTORS_MASK.
-
-Looks OK to me.
-
-Reviewed-by: Martin K. Petersen <martin.petersen@oracle.com>
-
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 3470fae4eabc..323276994aab 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -154,7 +154,7 @@ static ssize_t bch_snprint_string_list(char *buf,
+ 	size_t i;
+ 
+ 	for (i = 0; list[i]; i++)
+-		out += snprintf(out, buf + size - out,
++		out += scnprintf(out, buf + size - out,
+ 				i == selected ? "[%s] " : "%s ", list[i]);
+ 
+ 	out[-1] = '\n';
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+2.16.4
