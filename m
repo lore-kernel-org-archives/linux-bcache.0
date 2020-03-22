@@ -1,7 +1,7 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 6/7] bcache: optimize barrier usage for Rmw atomic bitops
-Date: Sun, 22 Mar 2020 14:03:04 +0800
-Message-ID: <20200322060305.70637-7-colyli@suse.de>
+Subject: [PATCH 7/7] bcache: optimize barrier usage for atomic operations
+Date: Sun, 22 Mar 2020 14:03:05 +0800
+Message-ID: <20200322060305.70637-8-colyli@suse.de>
 References: <20200322060305.70637-1-colyli@suse.de>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -9,50 +9,88 @@ Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20200322060305.70637-1-colyli@suse.de>
 Sender: linux-block-owner@vger.kernel.org
 To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Davidlohr Bueso <dave@stgolabs.net>, Davidlohr Bueso <dbueso@suse.de>, Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>, Davidlohr Bueso <dave@stgolabs.net>
 List-Id: linux-bcache@vger.kernel.org
 
-From: Davidlohr Bueso <dave@stgolabs.net>
+The idea of this patch is from Davidlohr Bueso, he posts a patch
+for bcache to optimize barrier usage for read-modify-write atomic
+bitops. Indeed such optimization can also apply on other locations
+where smp_mb() is used before or after an atomic operation.
 
-We can avoid the unnecessary barrier on non LL/SC architectures,
-such as x86. Instead, use the smp_mb__after_atomic().
+This patch replaces smp_mb() with smp_mb__before_atomic() or
+smp_mb__after_atomic() in btree.c and writeback.c,  where it is used
+to synchronize memory cache just earlier on other cores. Although
+the locations are not on hot code path, it is always not bad to mkae
+things a little better.
 
-Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Davidlohr Bueso <dave@stgolabs.net>
 ---
+ drivers/md/bcache/btree.c     | 6 +++---
  drivers/md/bcache/writeback.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 74d66b641169..72856e5f23a3 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1947,7 +1947,7 @@ static int bch_btree_check_thread(void *arg)
+ 				 */
+ 				atomic_set(&check_state->enough, 1);
+ 				/* Update check_state->enough earlier */
+-				smp_mb();
++				smp_mb__after_atomic();
+ 				goto out;
+ 			}
+ 			skip_nr--;
+@@ -1972,7 +1972,7 @@ static int bch_btree_check_thread(void *arg)
+ out:
+ 	info->result = ret;
+ 	/* update check_state->started among all CPUs */
+-	smp_mb();
++	smp_mb__before_atomic();
+ 	if (atomic_dec_and_test(&check_state->started))
+ 		wake_up(&check_state->wait);
+ 
+@@ -2031,7 +2031,7 @@ int bch_btree_check(struct cache_set *c)
+ 	 */
+ 	for (i = 0; i < check_state->total_threads; i++) {
+ 		/* fetch latest check_state->enough earlier */
+-		smp_mb();
++		smp_mb__before_atomic();
+ 		if (atomic_read(&check_state->enough))
+ 			break;
+ 
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 6673a37c8bd2..72ba6d015786 100644
+index 72ba6d015786..3f7641fb28d5 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -183,7 +183,7 @@ static void update_writeback_rate(struct work_struct *work)
- 	 */
- 	set_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
- 	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
--	smp_mb();
-+	smp_mb__after_atomic();
+@@ -854,7 +854,7 @@ static int bch_dirty_init_thread(void *arg)
+ 			else {
+ 				atomic_set(&state->enough, 1);
+ 				/* Update state->enough earlier */
+-				smp_mb();
++				smp_mb__after_atomic();
+ 				goto out;
+ 			}
+ 			skip_nr--;
+@@ -873,7 +873,7 @@ static int bch_dirty_init_thread(void *arg)
  
- 	/*
- 	 * CACHE_SET_IO_DISABLE might be set via sysfs interface,
-@@ -193,7 +193,7 @@ static void update_writeback_rate(struct work_struct *work)
- 	    test_bit(CACHE_SET_IO_DISABLE, &c->flags)) {
- 		clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
- 		/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
+ out:
+ 	/* In order to wake up state->wait in time */
+-	smp_mb();
++	smp_mb__before_atomic();
+ 	if (atomic_dec_and_test(&state->started))
+ 		wake_up(&state->wait);
+ 
+@@ -932,7 +932,7 @@ void bch_sectors_dirty_init(struct bcache_device *d)
+ 
+ 	for (i = 0; i < state->total_threads; i++) {
+ 		/* Fetch latest state->enough earlier */
 -		smp_mb();
-+		smp_mb__after_atomic();
- 		return;
- 	}
++		smp_mb__before_atomic();
+ 		if (atomic_read(&state->enough))
+ 			break;
  
-@@ -229,7 +229,7 @@ static void update_writeback_rate(struct work_struct *work)
- 	 */
- 	clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
- 	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
--	smp_mb();
-+	smp_mb__after_atomic();
- }
- 
- static unsigned int writeback_delay(struct cached_dev *dc,
 -- 
 2.25.0
