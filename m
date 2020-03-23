@@ -1,67 +1,40 @@
 From: Hannes Reinecke <hare@suse.de>
-Subject: Re: [PATCH 6/7] bcache: optimize barrier usage for Rmw atomic bitops
-Date: Mon, 23 Mar 2020 08:08:15 +0100
-Message-ID: <990e3e35-bd4f-7347-9027-e7dfa5171085@suse.de>
+Subject: Re: [PATCH 7/7] bcache: optimize barrier usage for atomic operations
+Date: Mon, 23 Mar 2020 08:09:23 +0100
+Message-ID: <8536b839-252d-8b88-d2fc-d41cfc0a9af3@suse.de>
 References: <20200322060305.70637-1-colyli@suse.de>
- <20200322060305.70637-7-colyli@suse.de>
+ <20200322060305.70637-8-colyli@suse.de>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20200322060305.70637-7-colyli@suse.de>
+In-Reply-To: <20200322060305.70637-8-colyli@suse.de>
 Content-Language: en-US
 Sender: linux-block-owner@vger.kernel.org
 To: Coly Li <colyli@suse.de>, axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Davidlohr Bueso <dave@stgolabs.net>, Davidlohr Bueso <dbueso@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Davidlohr Bueso <dave@stgolabs.net>
 List-Id: linux-bcache@vger.kernel.org
 
 On 3/22/20 7:03 AM, Coly Li wrote:
-> From: Davidlohr Bueso <dave@stgolabs.net>
+> The idea of this patch is from Davidlohr Bueso, he posts a patch
+> for bcache to optimize barrier usage for read-modify-write atomic
+> bitops. Indeed such optimization can also apply on other locations
+> where smp_mb() is used before or after an atomic operation.
 > 
-> We can avoid the unnecessary barrier on non LL/SC architectures,
-> such as x86. Instead, use the smp_mb__after_atomic().
+> This patch replaces smp_mb() with smp_mb__before_atomic() or
+> smp_mb__after_atomic() in btree.c and writeback.c,  where it is used
+> to synchronize memory cache just earlier on other cores. Although
+> the locations are not on hot code path, it is always not bad to mkae
+> things a little better.
 > 
-> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 > Signed-off-by: Coly Li <colyli@suse.de>
+> Cc: Davidlohr Bueso <dave@stgolabs.net>
 > ---
+>   drivers/md/bcache/btree.c     | 6 +++---
 >   drivers/md/bcache/writeback.c | 6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
+>   2 files changed, 6 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 6673a37c8bd2..72ba6d015786 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -183,7 +183,7 @@ static void update_writeback_rate(struct work_struct *work)
->   	 */
->   	set_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
->   	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
-> -	smp_mb();
-> +	smp_mb__after_atomic();
->   
->   	/*
->   	 * CACHE_SET_IO_DISABLE might be set via sysfs interface,
-> @@ -193,7 +193,7 @@ static void update_writeback_rate(struct work_struct *work)
->   	    test_bit(CACHE_SET_IO_DISABLE, &c->flags)) {
->   		clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
->   		/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
-> -		smp_mb();
-> +		smp_mb__after_atomic();
->   		return;
->   	}
->   
-> @@ -229,7 +229,7 @@ static void update_writeback_rate(struct work_struct *work)
->   	 */
->   	clear_bit(BCACHE_DEV_RATE_DW_RUNNING, &dc->disk.flags);
->   	/* paired with where BCACHE_DEV_RATE_DW_RUNNING is tested */
-> -	smp_mb();
-> +	smp_mb__after_atomic();
->   }
->   
->   static unsigned int writeback_delay(struct cached_dev *dc,
-> 
-Personally, I'd typically tend to use 'test_and_set_bit', as this not 
-only implies a barrier, but also captures any errors; if you just use
-'set_bit' you'll never know if the bit had been set already.
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 
 Cheers,
 
