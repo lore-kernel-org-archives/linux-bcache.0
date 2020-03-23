@@ -1,45 +1,279 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 0/7] bcache patches for Linux v5.7-rc1
-Date: Sun, 22 Mar 2020 10:07:35 -0600
-Message-ID: <61344bad-e454-1827-c0bc-038f7e73dc16@kernel.dk>
+From: Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH 3/7] bcache: make bch_btree_check() to be multithreaded
+Date: Mon, 23 Mar 2020 08:00:04 +0100
+Message-ID: <aa1a60c0-c1f4-c40d-6666-21044235bf94@suse.de>
 References: <20200322060305.70637-1-colyli@suse.de>
+ <20200322060305.70637-4-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail-pg1-f193.google.com ([209.85.215.193]:34876 "EHLO
-        mail-pg1-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1725881AbgCVQHo (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 22 Mar 2020 12:07:44 -0400
-Received: by mail-pg1-f193.google.com with SMTP id 7so5872830pgr.2
-        for <linux-bcache@vger.kernel.org>; Sun, 22 Mar 2020 09:07:43 -0700 (PDT)
-In-Reply-To: <20200322060305.70637-1-colyli@suse.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20200322060305.70637-4-colyli@suse.de>
 Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>, axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Christoph Hellwig <hch@infradead.org>
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On 3/22/20 12:02 AM, Coly Li wrote:
-> Hi Jens,
+On 3/22/20 7:03 AM, Coly Li wrote:
+> When registering a cache device, bch_btree_check() is called to check
+> all btree node, to make sure the btree is consistency and no corruption.
 > 
-> These are bcache patches for Linux v5.7-rc1.
+> bch_btree_check() is recursively executed in single thread, when there
+> are a lot of data cached and the btree is huge, it may take very long
+> time to check all the btree nodes. In my testing, I observed it took
+> around 50 minutes to finish bch_btree_check().
 > 
-> The major change is to make bcache btree check and dirty secrtors
-> counting being multithreaded, then the registration time can be
-> much less. My first four patches are for this purpose.
+> When checking the bcache btree nodes, the cache set is not running yet,
+> and indeed the whole tree is in read-only state, it is safe to create
+> multiple threads to check the btree in parallel.
 > 
-> Davidlohr Bueso contributes a patch to optimize barrier usage for
-> atomic operations. By his inspiration I also compose a patch for
-> the rested locations to change.
+> This patch tries to create multiple threads, and each thread tries to
+> one-by-one check the sub-tree indexed by a key from the btree root node.
+> The parallel thread number depends on how many keys in the btree root
+> node. At most BCH_BTR_CHKTHREAD_MAX (64) threads can be created, but in
+> practice is should be min(cpu-number/2, root-node-keys-number).
 > 
-> Takashi Iwai contributes a helpful patch to avoid potential
-> buffer overflow in bcache sysfs code path.
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Cc: Christoph Hellwig <hch@infradead.org>
+> ---
+>   drivers/md/bcache/btree.c | 169 +++++++++++++++++++++++++++++++++++++-
+>   drivers/md/bcache/btree.h |  22 +++++
+>   2 files changed, 188 insertions(+), 3 deletions(-)
 > 
-> Please take them, and thank you in advance.
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index faf152524a16..74d66b641169 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -1897,13 +1897,176 @@ static int bch_btree_check_recurse(struct btree *b, struct btree_op *op)
+>   	return ret;
+>   }
+>   
+> +
+> +static int bch_btree_check_thread(void *arg)
+> +{
+> +	int ret;
+> +	struct btree_check_info *info = arg;
+> +	struct btree_check_state *check_state = info->state;
+> +	struct cache_set *c = check_state->c;
+> +	struct btree_iter iter;
+> +	struct bkey *k, *p;
+> +	int cur_idx, prev_idx, skip_nr;
+> +	int i, n;
+> +
+> +	k = p = NULL;
+> +	i = n = 0;
+> +	cur_idx = prev_idx = 0;
+> +	ret = 0;
+> +
+> +	/* root node keys are checked before thread created */
+> +	bch_btree_iter_init(&c->root->keys, &iter, NULL);
+> +	k = bch_btree_iter_next_filter(&iter, &c->root->keys, bch_ptr_bad);
+> +	BUG_ON(!k);
+> +
+> +	p = k;
+> +	while (k) {
+> +		/*
+> +		 * Fetch a root node key index, skip the keys which
+> +		 * should be fetched by other threads, then check the
+> +		 * sub-tree indexed by the fetched key.
+> +		 */
+> +		spin_lock(&check_state->idx_lock);
+> +		cur_idx = check_state->key_idx;
+> +		check_state->key_idx++;
+> +		spin_unlock(&check_state->idx_lock);
+> +
+> +		skip_nr = cur_idx - prev_idx;
+> +
+> +		while (skip_nr) {
+> +			k = bch_btree_iter_next_filter(&iter,
+> +						       &c->root->keys,
+> +						       bch_ptr_bad);
+> +			if (k)
+> +				p = k;
+> +			else {
+> +				/*
+> +				 * No more keys to check in root node,
+> +				 * current checking threads are enough,
+> +				 * stop creating more.
+> +				 */
+> +				atomic_set(&check_state->enough, 1);
+> +				/* Update check_state->enough earlier */
+> +				smp_mb();
+> +				goto out;
+> +			}
+> +			skip_nr--;
+> +			cond_resched();
+> +		}
+> +
+> +		if (p) {
+> +			struct btree_op op;
+> +
+> +			btree_node_prefetch(c->root, p);
+> +			c->gc_stats.nodes++;
+> +			bch_btree_op_init(&op, 0);
+> +			ret = bcache_btree(check_recurse, p, c->root, &op);
+> +			if (ret)
+> +				goto out;
+> +		}
+> +		p = NULL;
+> +		prev_idx = cur_idx;
+> +		cond_resched();
+> +	}
+> +
+> +out:
+> +	info->result = ret;
+> +	/* update check_state->started among all CPUs */
+> +	smp_mb();
+> +	if (atomic_dec_and_test(&check_state->started))
+> +		wake_up(&check_state->wait);
+> +
+> +	return ret;
+> +}
+> +
+> +
+> +
+> +static int bch_btree_chkthread_nr(void)
+> +{
+> +	int n = num_online_cpus()/2;
+> +
+> +	if (n == 0)
+> +		n = 1;
+> +	else if (n > BCH_BTR_CHKTHREAD_MAX)
+> +		n = BCH_BTR_CHKTHREAD_MAX;
+> +
+> +	return n;
+> +}
+> +
+>   int bch_btree_check(struct cache_set *c)
+>   {
+> -	struct btree_op op;
+> +	int ret = 0;
+> +	int i;
+> +	struct bkey *k = NULL;
+> +	struct btree_iter iter;
+> +	struct btree_check_state *check_state;
+> +	char name[32];
+>   
+> -	bch_btree_op_init(&op, SHRT_MAX);
+> +	/* check and mark root node keys */
+> +	for_each_key_filter(&c->root->keys, k, &iter, bch_ptr_invalid)
+> +		bch_initial_mark_key(c, c->root->level, k);
+> +
+> +	bch_initial_mark_key(c, c->root->level + 1, &c->root->key);
+> +
+> +	if (c->root->level == 0)
+> +		return 0;
+> +
+> +	check_state = kzalloc(sizeof(struct btree_check_state), GFP_KERNEL);
+> +	if (!check_state)
+> +		return -ENOMEM;
+> +
+> +	check_state->c = c;
+> +	check_state->total_threads = bch_btree_chkthread_nr();
+> +	check_state->key_idx = 0;
+> +	spin_lock_init(&check_state->idx_lock);
+> +	atomic_set(&check_state->started, 0);
+> +	atomic_set(&check_state->enough, 0);
+> +	init_waitqueue_head(&check_state->wait);
+>   
+> -	return bcache_btree_root(check_recurse, c, &op);
+> +	/*
+> +	 * Run multiple threads to check btree nodes in parallel,
+> +	 * if check_state->enough is non-zero, it means current
+> +	 * running check threads are enough, unncessary to create
+> +	 * more.
+> +	 */
+> +	for (i = 0; i < check_state->total_threads; i++) {
+> +		/* fetch latest check_state->enough earlier */
+> +		smp_mb();
+> +		if (atomic_read(&check_state->enough))
+> +			break;
+> +
+> +		check_state->infos[i].result = 0;
+> +		check_state->infos[i].state = check_state;
+> +		snprintf(name, sizeof(name), "bch_btrchk[%u]", i);
+> +		atomic_inc(&check_state->started);
+> +
+> +		check_state->infos[i].thread =
+> +			kthread_run(bch_btree_check_thread,
+> +				    &check_state->infos[i],
+> +				    name);
+> +		if (IS_ERR(check_state->infos[i].thread)) {
+> +			pr_err("fails to run thread bch_btrchk[%d]", i);
+> +			for (--i; i >= 0; i--)
+> +				kthread_stop(check_state->infos[i].thread);
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
+> +	}
+> +
+> +	wait_event_interruptible(check_state->wait,
+> +				 atomic_read(&check_state->started) == 0 ||
+> +				  test_bit(CACHE_SET_IO_DISABLE, &c->flags));
+> +
+> +	for (i = 0; i < check_state->total_threads; i++) {
+> +		if (check_state->infos[i].result) {
+> +			ret = check_state->infos[i].result;
+> +			goto out;
+> +		}
+> +	}
+> +
+> +out:
+> +	kfree(check_state);
+> +	return ret;
+>   }
+>   
+>   void bch_initial_gc_finish(struct cache_set *c)
+> diff --git a/drivers/md/bcache/btree.h b/drivers/md/bcache/btree.h
+> index 19e30266070a..7c884f278da8 100644
+> --- a/drivers/md/bcache/btree.h
+> +++ b/drivers/md/bcache/btree.h
+> @@ -145,6 +145,9 @@ struct btree {
+>   	struct bio		*bio;
+>   };
+>   
+> +
+> +
+> +
+>   #define BTREE_FLAG(flag)						\
+>   static inline bool btree_node_ ## flag(struct btree *b)			\
+>   {	return test_bit(BTREE_NODE_ ## flag, &b->flags); }		\
+> @@ -216,6 +219,25 @@ struct btree_op {
+>   	unsigned int		insert_collision:1;
+>   };
+>   
+> +struct btree_check_state;
+> +struct btree_check_info {
+> +	struct btree_check_state	*state;
+> +	struct task_struct		*thread;
+> +	int				result;
+> +};
+> +
+> +#define BCH_BTR_CHKTHREAD_MAX	64
+> +struct btree_check_state {
+> +	struct cache_set		*c;
+> +	int				total_threads;
+> +	int				key_idx;
+> +	spinlock_t			idx_lock;
+> +	atomic_t			started;
+> +	atomic_t			enough;
+> +	wait_queue_head_t		wait;
+> +	struct btree_check_info		infos[BCH_BTR_CHKTHREAD_MAX];
+> +};
+> +
+>   static inline void bch_btree_op_init(struct btree_op *op, int write_lock_level)
+>   {
+>   	memset(op, 0, sizeof(struct btree_op));
+> 
+Any particular reason why you are not using workqueues?
+Kthreads is a bit of an overkill here I think...
 
-Applied, thanks.
+Cheers,
 
+Hannes
 -- 
-Jens Axboe
+Dr. Hannes Reinecke            Teamlead Storage & Networking
+hare@suse.de                               +49 911 74053 688
+SUSE Software Solutions GmbH, Maxfeldstr. 5, 90409 Nürnberg
+HRB 36809 (AG Nürnberg), Geschäftsführer: Felix Imendörffer
