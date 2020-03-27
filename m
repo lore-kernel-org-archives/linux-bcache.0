@@ -1,65 +1,122 @@
 From: Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 2/5] null_blk: use blk_mq_init_queue_data
-Date: Fri, 27 Mar 2020 09:30:09 +0100
-Message-ID: <20200327083012.1618778-3-hch@lst.de>
+Subject: [PATCH 3/5] bcache: pass the make_request methods to blk_queue_make_request
+Date: Fri, 27 Mar 2020 09:30:10 +0100
+Message-ID: <20200327083012.1618778-4-hch@lst.de>
 References: <20200327083012.1618778-1-hch@lst.de>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from bombadil.infradead.org ([198.137.202.133]:58240 "EHLO
+        bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725946AbgC0Ien (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Mar 2020 04:34:43 -0400
 In-Reply-To: <20200327083012.1618778-1-hch@lst.de>
-Sender: linux-block-owner@vger.kernel.org
+Sender: linux-bcache-owner@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
 
-Use the new blk_mq_init_queue_data instead of open coding the queue
-allocation and initialization.
+bcache is the only driver not actually passing its make_request
+methods to blk_queue_make_request, but instead just sets them up
+manually a little later.  Make bcache follow the common way of
+setting up make_request based queues.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/block/null_blk_main.c | 23 +----------------------
- 1 file changed, 1 insertion(+), 22 deletions(-)
+ drivers/md/bcache/request.c |  7 ++-----
+ drivers/md/bcache/request.h |  3 +++
+ drivers/md/bcache/super.c   | 10 ++++++----
+ 3 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/block/null_blk_main.c b/drivers/block/null_blk_main.c
-index 89bb16a99007..2f864782550d 100644
---- a/drivers/block/null_blk_main.c
-+++ b/drivers/block/null_blk_main.c
-@@ -1698,27 +1698,6 @@ static bool null_setup_fault(void)
- 	return true;
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 820d8402a1dc..71a90fbec314 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -1161,8 +1161,7 @@ static void quit_max_writeback_rate(struct cache_set *c,
+ 
+ /* Cached devices - read & write stuff */
+ 
+-static blk_qc_t cached_dev_make_request(struct request_queue *q,
+-					struct bio *bio)
++blk_qc_t cached_dev_make_request(struct request_queue *q, struct bio *bio)
+ {
+ 	struct search *s;
+ 	struct bcache_device *d = bio->bi_disk->private_data;
+@@ -1266,7 +1265,6 @@ void bch_cached_dev_request_init(struct cached_dev *dc)
+ {
+ 	struct gendisk *g = dc->disk.disk;
+ 
+-	g->queue->make_request_fn		= cached_dev_make_request;
+ 	g->queue->backing_dev_info->congested_fn = cached_dev_congested;
+ 	dc->disk.cache_miss			= cached_dev_cache_miss;
+ 	dc->disk.ioctl				= cached_dev_ioctl;
+@@ -1301,8 +1299,7 @@ static void flash_dev_nodata(struct closure *cl)
+ 	continue_at(cl, search_free, NULL);
  }
  
--/*
-- * This function is identical to blk_mq_init_queue() except that it sets
-- * queuedata before .init_hctx is called.
-- */
--static struct request_queue *nullb_alloc_queue(struct nullb *nullb)
--{
--	struct request_queue *uninit_q, *q;
--	struct blk_mq_tag_set *set = nullb->tag_set;
--
--	uninit_q = blk_alloc_queue_node(GFP_KERNEL, set->numa_node);
--	if (!uninit_q)
--		return ERR_PTR(-ENOMEM);
--
--	uninit_q->queuedata = nullb;
--	q = blk_mq_init_allocated_queue(set, uninit_q, false);
--	if (IS_ERR(q))
--		blk_cleanup_queue(uninit_q);
--
--	return q;
--}
--
- static int null_add_dev(struct nullb_device *dev)
+-static blk_qc_t flash_dev_make_request(struct request_queue *q,
+-					     struct bio *bio)
++blk_qc_t flash_dev_make_request(struct request_queue *q, struct bio *bio)
  {
- 	struct nullb *nullb;
-@@ -1758,7 +1737,7 @@ static int null_add_dev(struct nullb_device *dev)
- 			goto out_cleanup_queues;
+ 	struct search *s;
+ 	struct closure *cl;
+diff --git a/drivers/md/bcache/request.h b/drivers/md/bcache/request.h
+index c64dbd7a91aa..bb005c93dd72 100644
+--- a/drivers/md/bcache/request.h
++++ b/drivers/md/bcache/request.h
+@@ -37,7 +37,10 @@ unsigned int bch_get_congested(const struct cache_set *c);
+ void bch_data_insert(struct closure *cl);
  
- 		nullb->tag_set->timeout = 5 * HZ;
--		nullb->q = nullb_alloc_queue(nullb);
-+		nullb->q = blk_mq_init_queue_data(nullb->tag_set, nullb);
- 		if (IS_ERR(nullb->q)) {
- 			rv = -ENOMEM;
- 			goto out_cleanup_tags;
+ void bch_cached_dev_request_init(struct cached_dev *dc);
++blk_qc_t cached_dev_make_request(struct request_queue *q, struct bio *bio);
++
+ void bch_flash_dev_request_init(struct bcache_device *d);
++blk_qc_t flash_dev_make_request(struct request_queue *q, struct bio *bio);
+ 
+ extern struct kmem_cache *bch_search_cache;
+ 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 0c3c5419c52b..5e38a167c85e 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -816,7 +816,7 @@ static void bcache_device_free(struct bcache_device *d)
+ }
+ 
+ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+-			      sector_t sectors)
++			      sector_t sectors, make_request_fn make_request_fn)
+ {
+ 	struct request_queue *q;
+ 	const size_t max_stripes = min_t(size_t, INT_MAX,
+@@ -870,7 +870,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+ 	if (!q)
+ 		return -ENOMEM;
+ 
+-	blk_queue_make_request(q, NULL);
++	blk_queue_make_request(q, make_request_fn);
+ 	d->disk->queue			= q;
+ 	q->queuedata			= d;
+ 	q->backing_dev_info->congested_data = d;
+@@ -1339,7 +1339,8 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
+ 			q->limits.raid_partial_stripes_expensive;
+ 
+ 	ret = bcache_device_init(&dc->disk, block_size,
+-			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset);
++			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset,
++			 cached_dev_make_request);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1451,7 +1452,8 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+ 
+ 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
+ 
+-	if (bcache_device_init(d, block_bytes(c), u->sectors))
++	if (bcache_device_init(d, block_bytes(c), u->sectors,
++			flash_dev_make_request))
+ 		goto err;
+ 
+ 	bcache_device_attach(d, c, u - c->uuids);
 -- 
 2.25.1
