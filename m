@@ -1,16 +1,78 @@
 From: Christoph Hellwig <hch@lst.de>
-Subject: simplify queue allocation
-Date: Fri, 27 Mar 2020 09:30:07 +0100
-Message-ID: <20200327083012.1618778-1-hch@lst.de>
+Subject: [PATCH 1/5] block: add a blk_mq_init_queue_data helper
+Date: Fri, 27 Mar 2020 09:30:08 +0100
+Message-ID: <20200327083012.1618778-2-hch@lst.de>
+References: <20200327083012.1618778-1-hch@lst.de>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-Sender: linux-block-owner@vger.kernel.org
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from bombadil.infradead.org ([198.137.202.133]:58230 "EHLO
+        bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725946AbgC0Iei (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Mar 2020 04:34:38 -0400
+In-Reply-To: <20200327083012.1618778-1-hch@lst.de>
+Sender: linux-bcache-owner@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
 
-Hi Jens,
+This allows a driver to pass a queuedata member before ->init_hctx is
+called.  null_blk currently open codes this logic, but I'd rather have
+it in the core to ease future maintainance.
 
-this series ensures all allocated queues have a valid ->make_request_fn
-and also nicely consolidates the code for allocating queues.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ block/blk-mq.c         | 10 +++++++++-
+ include/linux/blk-mq.h |  2 ++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 745ec592a513..216bf62e88b6 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -2724,13 +2724,15 @@ void blk_mq_release(struct request_queue *q)
+ 	blk_mq_sysfs_deinit(q);
+ }
+ 
+-struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
++struct request_queue *blk_mq_init_queue_data(struct blk_mq_tag_set *set,
++		void *queuedata)
+ {
+ 	struct request_queue *uninit_q, *q;
+ 
+ 	uninit_q = blk_alloc_queue_node(GFP_KERNEL, set->numa_node);
+ 	if (!uninit_q)
+ 		return ERR_PTR(-ENOMEM);
++	uninit_q->queuedata = queuedata;
+ 
+ 	/*
+ 	 * Initialize the queue without an elevator. device_add_disk() will do
+@@ -2742,6 +2744,12 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
+ 
+ 	return q;
+ }
++EXPORT_SYMBOL_GPL(blk_mq_init_queue_data);
++
++struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *set)
++{
++	return blk_mq_init_queue_data(set, NULL);
++}
+ EXPORT_SYMBOL(blk_mq_init_queue);
+ 
+ /*
+diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
+index 31344d5f83e2..f389d7c724bd 100644
+--- a/include/linux/blk-mq.h
++++ b/include/linux/blk-mq.h
+@@ -412,6 +412,8 @@ enum {
+ 		<< BLK_MQ_F_ALLOC_POLICY_START_BIT)
+ 
+ struct request_queue *blk_mq_init_queue(struct blk_mq_tag_set *);
++struct request_queue *blk_mq_init_queue_data(struct blk_mq_tag_set *set,
++		void *queuedata);
+ struct request_queue *blk_mq_init_allocated_queue(struct blk_mq_tag_set *set,
+ 						  struct request_queue *q,
+ 						  bool elevator_init);
+-- 
+2.25.1
