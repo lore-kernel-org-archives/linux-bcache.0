@@ -1,46 +1,23 @@
-From: Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 5/5] Revert "blkdev: check for valid request queue before issuing flush"
-Date: Fri, 27 Mar 2020 09:30:12 +0100
-Message-ID: <20200327083012.1618778-6-hch@lst.de>
+From: Johannes Thumshirn <Johannes.Thumshirn@wdc.com>
+Subject: Re: [PATCH 1/5] block: add a blk_mq_init_queue_data helper
+Date: Fri, 27 Mar 2020 10:05:35 +0000
+Message-ID: <SN4PR0401MB3598E4E30FCEFB06280409339BCC0@SN4PR0401MB3598.namprd04.prod.outlook.com>
 References: <20200327083012.1618778-1-hch@lst.de>
+ <20200327083012.1618778-2-hch@lst.de>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20200327083012.1618778-1-hch@lst.de>
-Sender: linux-block-owner@vger.kernel.org
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from esa5.hgst.iphmx.com ([216.71.153.144]:58556 "EHLO
+        esa5.hgst.iphmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725946AbgC0KFi (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Mar 2020 06:05:38 -0400
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
 
-This reverts commit f10d9f617a65905c556c3b37c9b9646ae7d04ed7.
-
-We can't have queues without a make_request_fn any more (and the
-loop device uses blk-mq these days anyway..).
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/blk-flush.c | 9 ---------
- 1 file changed, 9 deletions(-)
-
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 843d25683691..c7f396e3d5e2 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -454,15 +454,6 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
- 	if (!q)
- 		return -ENXIO;
- 
--	/*
--	 * some block devices may not have their queue correctly set up here
--	 * (e.g. loop device without a backing file) and so issuing a flush
--	 * here will panic. Ensure there is a request function before issuing
--	 * the flush.
--	 */
--	if (!q->make_request_fn)
--		return -ENXIO;
--
- 	bio = bio_alloc(gfp_mask, 0);
- 	bio_set_dev(bio, bdev);
- 	bio->bi_opf = REQ_OP_WRITE | REQ_PREFLUSH;
--- 
-2.25.1
+Looks good,=0A=
+Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>=0A=
