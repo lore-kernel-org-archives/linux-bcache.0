@@ -1,30 +1,51 @@
-From: Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 4/5] block: simplify queue allocation
-Date: Fri, 27 Mar 2020 12:21:31 +0100
-Message-ID: <20200327112131.GA1096@lst.de>
-References: <20200327083012.1618778-1-hch@lst.de> <20200327083012.1618778-5-hch@lst.de> <SN4PR0401MB3598BF20E4DCF8F1B129625E9BCC0@SN4PR0401MB3598.namprd04.prod.outlook.com>
+From: Andrew Ede <consumingfirechurch4@gmail.com>
+Subject: HOW ARE YOU?
+Date: Fri, 27 Mar 2020 15:39:22 +0200
+Message-ID: <CAK6CGFdL5MtU6ObikHiEfGO9mY5yxFBtxufYYn0fakLGH0cu5w@mail.gmail.com>
+Reply-To: officework_progress@yahoo.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-block-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <SN4PR0401MB3598BF20E4DCF8F1B129625E9BCC0@SN4PR0401MB3598.namprd04.prod.outlook.com>
-Sender: linux-block-owner@vger.kernel.org
-To: Johannes Thumshirn <Johannes.Thumshirn@wdc.com>
-Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail-il1-f194.google.com ([209.85.166.194]:39482 "EHLO
+        mail-il1-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726275AbgC0NjX (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Mar 2020 09:39:23 -0400
+Received: by mail-il1-f194.google.com with SMTP id r5so8751697ilq.6
+        for <linux-bcache@vger.kernel.org>; Fri, 27 Mar 2020 06:39:22 -0700 (PDT)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, Mar 27, 2020 at 10:11:08AM +0000, Johannes Thumshirn wrote:
-> On 27/03/2020 09:34, Christoph Hellwig wrote:
-> > -struct request_queue *blk_alloc_queue(gfp_t gfp_mask)
-> > -{
-> > -	return blk_alloc_queue_node(gfp_mask, NUMA_NO_NODE);
-> > -}
-> > -EXPORT_SYMBOL(blk_alloc_queue);
-> 
-> Why are you removing the non _node() variant? The memory allocation 
-> function for instance have this indirection as well and I don't think it 
-> simplifies a lot passing NUMA_NO_NODE in each block driver.
+Good day.
 
-Because the two variants are rather pointless.  And this might get
-more people to actually pass a useful node ID instead of copy and
-pasting some old example code.
+My reason of contacting you is that I and my colleagues working in our
+country=E2=80=99s National Petroleum Corporation want to buy any existing
+modern crude oil refinery in any part of the world.
+
+We are ready to buy any available land to build the Refinery or buy
+the existing one anywhere outside Africa. We will make you our foreign
+partner abroad with some percentage shareholding if you will be
+interested to work with us on this project.
+
+We have the sum of ($600 Million Dollars) Six Hundred Million Dollars
+for this project.
+
+Meanwhile, this amount of ($600 Million Dollars) will be accessible
+through Foreign Contract Purchase Fund. We are going to clarify what
+we meant by Foreign Contract Purchase Fund as soon as we hear from you
+for better understanding and the way forward.
+
+However, in case you are not capable to handle this project with us,
+please kindly connect us to any capable person or company that would
+handle the project with us in order to enable us proceed at once.
+
+We hope to hear you in no distance time through this e-mail address
+at: officework_progress@yahoo.com, for immediate communication and
+more facts on how to go on.
+
+With respect
+
+Best Regards
+
+Andrew Ede and Co,,
