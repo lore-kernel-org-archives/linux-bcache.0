@@ -1,20 +1,16 @@
 From: Wang Hai <wanghai38@huawei.com>
 Subject: [PATCH] bcache: remove set but not used variable 'i'
 Date: Mon, 6 Apr 2020 02:25:41 -0000 (UTC)
-Message-ID: <1586259407-23673-1-git-send-email-wanghai38@huawei.com>
+Message-ID: <1586259407-23673-1-git-send-email-wanghai38__46542.0067355566$1586139941$gmane$org@huawei.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from szxga04-in.huawei.com ([45.249.212.190]:12614 "EHLO huawei.com"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1726408AbgDFCZS (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 5 Apr 2020 22:25:18 -0400
+Return-path: <linux-kernel-owner@vger.kernel.org>
 Date: Tue, 7 Apr 2020 07:36:47 -0400
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-kernel-owner@vger.kernel.org
 To: colyli@suse.de, kent.overstreet@gmail.com
 Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, wanghai38@huawei.com
+List-Id: linux-bcache@vger.kernel.org
 
 Fixes gcc '-Wunused-but-set-variable' warning:
 
