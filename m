@@ -1,62 +1,71 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 1/2] bcache: ignore pending signals in
- bcache_device_init()
-Date: Mon, 13 Apr 2020 16:17:22 +0800
-Message-ID: <8d86b345-f919-f089-245d-f227401d028d@suse.de>
-References: <20200302093450.48016-1-colyli@suse.de>
- <20200302093450.48016-2-colyli@suse.de>
- <20200302122748.GH4380@dhcp22.suse.cz>
- <29a1c9fa-46e2-af5f-9531-c25dbb0a3dca@suse.de>
- <20200302134048.GK4380@dhcp22.suse.cz>
- <cc759569-e79e-a1a0-3019-0e07dd6957cb@suse.de>
- <6D00F9F9-D44F-4853-AC85-22AC1455B653@bank-hlynov.ru>
+From: Barrister Robert Richter UN-Attorney at Law Court-Benin
+        <info.zennitbankplcnigerian@gmail.com>
+Subject: I have already sent you first payment US$5000.00 this morning through
+ MONEY Gram service.it is available to pick up in address now.
+Date: Mon, 13 Apr 2020 13:41:07 +0200
+Message-ID: <CABHzvrm3rWryg1yAooKeHwdxzrKD47PRAEfC+ay1A6i5z3Wdiw__17564.1111492709$1586778598$gmane$org@mail.gmail.com>
+Reply-To: mgbenin903@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from lindbergh.monkeyblade.net ([23.128.96.18]:42376 "EHLO
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43768 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1727971AbgDMIRc (ORCPT
+        with ESMTP id S1729175AbgDMLtr (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 13 Apr 2020 04:17:32 -0400
-Received: from mx2.suse.de (mx2.suse.de [195.135.220.15])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A6E8FC00860B
-        for <linux-bcache@vger.kernel.org>; Mon, 13 Apr 2020 01:17:31 -0700 (PDT)
-In-Reply-To: <6D00F9F9-D44F-4853-AC85-22AC1455B653@bank-hlynov.ru>
-Content-Language: en-US
+        Mon, 13 Apr 2020 07:49:47 -0400
+Received: from mail-il1-x132.google.com (mail-il1-x132.google.com [IPv6:2607:f8b0:4864:20::132])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CB695C00861A
+        for <linux-bcache@vger.kernel.org>; Mon, 13 Apr 2020 04:41:09 -0700 (PDT)
+Received: by mail-il1-x132.google.com with SMTP id d2so7836626ilc.0
+        for <linux-bcache@vger.kernel.org>; Mon, 13 Apr 2020 04:41:09 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: =?UTF-8?B?0KHQvtGA0L7QutC40L0g0JDRgNGC0LXQvCDQodC10YDQs9C10LXQstC40Yc=?= <a.sorokin@bank-hlynov.ru>
-Cc: Michal Hocko <mhocko@kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "hare@suse.de" <hare@suse.de>, "mkoutny@suse.com" <mkoutny@suse.com>, Oleg Nesterov <oleg@redhat.com>, Christoph Hellwig <hch@lst.de>
 
-On 2020/3/3 14:58, Сорокин Артем Сергеевич wrote:
-> Hello Coly,
-> 
-> On 2 Mar 2020, at 20:06, Coly Li <colyli@suse.de> wrote:
->>
->> I see your concern. But the udev timeout is global for all udev rules, I
->> am not sure whether change it to a very long time is good ... (indeed I
->> tried to add event_timeout=3600 but I can still see the signal received).
->>
->> Ignore the pending signal in bcache registering code is the only method
->> currently I know to avoid bcache auto-register failure in boot time. If
->> there is other way I can achieve the same goal, I'd like to try.
->>
->> BTW, by the mean time, I am still looking for the reason why
->> event_timeout=3600 in /etc/udev/udev.conf does not take effect...
-> 
-> In my setup, i completely moved bcache registration from udev to systemd. As a result, there is no need to change udev timeout or worry about kill signals. But this approach breaks hot-plugging bcache devices and require to modify udev rules and probe-bcache from bcache-tools.
-> 
-> It also helps me to manage startup dependencies to ensure that ceph-osd will start only when bcache is ready.
-> 
-> I can elaborate on my approach if you are interested.
-> 
+ATTN DEAR BENEFICIARY.
 
-Yes please, I am interesting.
+GOOD NEWS.
 
-Now I continue to look at the timeout issue. I'd like to get many input
-of different ideas, then make a proper way to fix.
+I have already sent you first payment US$5000.00 this morning through
+MONEY Gram service.it is available to pick up in address now.
 
-Thanks.
+So we advise you to Contact This Money Gram office to pick up your
+transfer $US5000.00 today.
 
-Coly Li
+
+Note that your compensation payment funds is total amount $US2.800,000
+Million Dollars.We have instructed the Money Gram Agent,Mr. James
+Gadner to keep sending the transfer to you daily, but the maximum
+amount you will be receiving everyday is US$5000.00. Contact Agent now
+to pick up your first payment $US5000.00 immediately.
+
+Contact Person, Mr. James Gadner, Dir. Money Gram Benin.
+Email: mgbenin903@gmail.com
+Telephone Numbers: +229 62819378/ +229 98477762
+
+HERE IS YOUR PAYMENT DETAILS FOR THE FIRST =C2=A3US5000.00 SENT TODAY.
+
+Track View Website link:
+https://secure.moneygram.com/track
+Sender=E2=80=99s First name: David
+Sender=E2=80=99s Last Name: Joiner
+Money Transfer Control Number (MTCN) (REFERENCE)# 26046856
+
+Contact the Mmoney Gram Urgent and reconfirm your address to the
+office before, they will allow you to pick up the transfer today.
+
+HERE IS WHAT REQUIRED OF YOU.
+
+YOUR FULL NAME---------
+ADDRESS--------------
+COUNTRY-----------------------------
+TELEPHONE NUMBERS-----------------
+
+Note, I paid the transfer fee for you, but only you are required to
+send to the office is $75 only,Been Your Payment File activation fee,
+Send once you contact the office,before you can able to pick up your
+transfer today.
+
+Let me know once you pick up first payment today.
+
+Barrister Robert Richter UN-Attorney at Law Court-Benin
