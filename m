@@ -1,86 +1,94 @@
-From: Coly Li <colyli@suse.de>
+From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
 Subject: Re: bcache: unlock new_nodes[i]->write_lock in btree_gc_coalesce
-Date: Mon, 20 Apr 2020 15:10:30 +0800
-Message-ID: <94f5343a-66c6-713c-4ce9-78c12ae5fd7a@suse.de>
+Date: Mon, 20 Apr 2020 15:48:01 +0800
+Message-ID: <e4e1738c-7e42-5bb0-2e6b-3d7b1571f2c5@huawei.com>
 References: <f4a66326-5ac5-7089-a570-0e02ad3093fa@huawei.com>
  <c913f4bb-cbae-d8e5-e8cb-a3a527392b00@huawei.com>
+ <94f5343a-66c6-713c-4ce9-78c12ae5fd7a@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:39200 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725773AbgDTHKk (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 20 Apr 2020 03:10:40 -0400
-In-Reply-To: <c913f4bb-cbae-d8e5-e8cb-a3a527392b00@huawei.com>
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <94f5343a-66c6-713c-4ce9-78c12ae5fd7a@suse.de>
 Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
-To: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>
 Cc: kmo@daterainc.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, "wubo (T)" <wubo40@huawei.com>, Mingfangsen <mingfangsen@huawei.com>, Yanxiaodan <yanxiaodan@huawei.com>, linfeilong <linfeilong@huawei.com>
+List-Id: linux-bcache@vger.kernel.org
 
-On 2020/4/20 14:55, Zhiqiang Liu wrote:
-> friendly ping...
+
+
+On 2020/4/20 15:10, Coly Li wrote:
+> On 2020/4/20 14:55, Zhiqiang Liu wrote:
+>> friendly ping...
+>>
 > 
+> The patch is good. Just it would be better if the commit log can be more
+> accurate and understandable for other readers who are not very familiar
+> with bcache code.
+> 
+> Thanks.
+> 
+> 
+> Coly Li
 
-The patch is good. Just it would be better if the commit log can be more
-accurate and understandable for other readers who are not very familiar
-with bcache code.
+Thanks for your reply. I will try my best to rewrite the commit log.
 
-Thanks.
+Regards.
+Zhiqiang Liu.
 
-
-Coly Li
-
-
-> On 2020/4/15 19:42, Zhiqiang Liu wrote:
->> From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+> 
+> 
+>> On 2020/4/15 19:42, Zhiqiang Liu wrote:
+>>> From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+>>>
+>>> coccicheck reports:
+>>>   drivers/md//bcache/btree.c:1538:1-7: preceding lock on line 1417
+>>>
+>>> After obtaining new_nodes[i]->write_lock, we may go to out_nocoalesce
+>>> tag without releasing lock. Here, we add a new tag
+>>> 'out_unlock_nocoalesce' before out_nocoalesce tag to release
+>>> new_nodes[i]->write_lock.
+>>>
+>>> Fixes: 2a285686c1 ("bcache: btree locking rework")
+>>> Signed-off-by: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+>>> ---
+>>>  drivers/md/bcache/btree.c | 8 ++++++--
+>>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+>>> index fa872df4e770..cad8b0b97e33 100644
+>>> --- a/drivers/md/bcache/btree.c
+>>> +++ b/drivers/md/bcache/btree.c
+>>> @@ -1447,7 +1447,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+>>>  			if (__set_blocks(n1, n1->keys + n2->keys,
+>>>  					 block_bytes(b->c)) >
+>>>  			    btree_blocks(new_nodes[i]))
+>>> -				goto out_nocoalesce;
+>>> +				goto out_unlock_nocoalesce;
+>>>
+>>>  			keys = n2->keys;
+>>>  			/* Take the key of the node we're getting rid of */
+>>> @@ -1476,7 +1476,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+>>>
+>>>  		if (__bch_keylist_realloc(&keylist,
+>>>  					  bkey_u64s(&new_nodes[i]->key)))
+>>> -			goto out_nocoalesce;
+>>> +			goto out_unlock_nocoalesce;
+>>>
+>>>  		bch_btree_node_write(new_nodes[i], &cl);
+>>>  		bch_keylist_add(&keylist, &new_nodes[i]->key);
+>>> @@ -1522,6 +1522,10 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+>>>  	/* Invalidated our iterator */
+>>>  	return -EINTR;
+>>>
+>>> +out_unlock_nocoalesce:
+>>> +	for (i = 0; i < nodes; i++)
+>>> +		mutex_unlock(&new_nodes[i]->write_lock);
+>>> +
+>>>  out_nocoalesce:
+>>>  	closure_sync(&cl);
+>>>
 >>
->> coccicheck reports:
->>   drivers/md//bcache/btree.c:1538:1-7: preceding lock on line 1417
->>
->> After obtaining new_nodes[i]->write_lock, we may go to out_nocoalesce
->> tag without releasing lock. Here, we add a new tag
->> 'out_unlock_nocoalesce' before out_nocoalesce tag to release
->> new_nodes[i]->write_lock.
->>
->> Fixes: 2a285686c1 ("bcache: btree locking rework")
->> Signed-off-by: Zhiqiang Liu <liuzhiqiang26@huawei.com>
->> ---
->>  drivers/md/bcache/btree.c | 8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
->> index fa872df4e770..cad8b0b97e33 100644
->> --- a/drivers/md/bcache/btree.c
->> +++ b/drivers/md/bcache/btree.c
->> @@ -1447,7 +1447,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
->>  			if (__set_blocks(n1, n1->keys + n2->keys,
->>  					 block_bytes(b->c)) >
->>  			    btree_blocks(new_nodes[i]))
->> -				goto out_nocoalesce;
->> +				goto out_unlock_nocoalesce;
->>
->>  			keys = n2->keys;
->>  			/* Take the key of the node we're getting rid of */
->> @@ -1476,7 +1476,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
->>
->>  		if (__bch_keylist_realloc(&keylist,
->>  					  bkey_u64s(&new_nodes[i]->key)))
->> -			goto out_nocoalesce;
->> +			goto out_unlock_nocoalesce;
->>
->>  		bch_btree_node_write(new_nodes[i], &cl);
->>  		bch_keylist_add(&keylist, &new_nodes[i]->key);
->> @@ -1522,6 +1522,10 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
->>  	/* Invalidated our iterator */
->>  	return -EINTR;
->>
->> +out_unlock_nocoalesce:
->> +	for (i = 0; i < nodes; i++)
->> +		mutex_unlock(&new_nodes[i]->write_lock);
->> +
->>  out_nocoalesce:
->>  	closure_sync(&cl);
->>
+> 
 > 
