@@ -1,29 +1,33 @@
-From: "Felix" <adi@pop02.odn.ne.jp>
-Subject: Reply for more information
-Date: 17 Apr 2020 15:10:30 +0100
-Message-ID: <20200417151029.0375DD3C32BC1D27@pop02.odn.ne.jp>
-Reply-To: info@free221.com
+From: "Morgan Stanley" <finance-@mail-customercaremarketing.com>
+Subject: Investment opportunity
+Date: Mon, 20 Apr 2020 01:15:41 -0400
+Message-ID: <bd64685d3e3555ece663b4a6c9d0fc9b.squirrel@webmail.no-log.org>
+Reply-To: finance-@mail-customercaremarketing.com
 Mime-Version: 1.0
-Content-Type: text/plain;
-        charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from [199.76.72.254] ([199.76.72.254]:31231 "EHLO pop02.odn.ne.jp"
-        rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1730916AbgDQOKt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 17 Apr 2020 10:10:49 -0400
+Received: from webmail.no-log.org ([80.67.172.39]:40789 "EHLO
+        webmail.no-log.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725710AbgDTFfH (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 20 Apr 2020 01:35:07 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: linux-bcache@vger.kernel.org
 
-Hi,
- 
-My name is felix. I have a quick and easy business offer that 
-will benefit us both immensely. The amount involved is over 9.4 
-Milli0n in US d0llars.
- 
-I await your immediate reply so that I can give full details.
- 
-Rgds
- 
-Felix
+
+
+
+-- 
+Morgan Stanley hat ein tolles Angebot für Sie. Investieren Sie einen
+Kapitalbetrag von 500 Euro in Morgan Stanley Online Global Market Trading
+und verdienen Sie innerhalb von fünf Arbeitstagen 5000 Euro. Dieser Trade
+wird von Morgan Stanley Digital Know-how betrieben. Um mehr über uns zu
+erfahren, erreichen Sie uns bitte unter:
+Finance-@mail-customercaremarketing.com
+
+Morgan Stanley  has a great offer for you.  Invest a capital amount of 500
+euros with Morgan Stanley online Global Market Trading and make 5000 euros
+within five working days, this trade is run by Morgan StanleyDigital
+expertise, to know more about us kindly reach us at:
+finance-@mail-customercaremarketing.com
