@@ -1,94 +1,44 @@
-From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
-Subject: Re: bcache: unlock new_nodes[i]->write_lock in btree_gc_coalesce
-Date: Mon, 20 Apr 2020 15:48:01 +0800
-Message-ID: <e4e1738c-7e42-5bb0-2e6b-3d7b1571f2c5@huawei.com>
-References: <f4a66326-5ac5-7089-a570-0e02ad3093fa@huawei.com>
- <c913f4bb-cbae-d8e5-e8cb-a3a527392b00@huawei.com>
- <94f5343a-66c6-713c-4ce9-78c12ae5fd7a@suse.de>
+From: Coly Li <colyli@suse.de>
+Subject: Request For Suggestion: how to handle udevd timeout for bcache
+ registration
+Date: Thu, 23 Apr 2020 19:23:00 +0800
+Message-ID: <7c92cd67-8e62-7d55-c520-345c30513bfa@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <94f5343a-66c6-713c-4ce9-78c12ae5fd7a@suse.de>
+Return-path: <linux-block-owner@vger.kernel.org>
 Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Coly Li <colyli@suse.de>
-Cc: kmo@daterainc.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, "wubo (T)" <wubo40@huawei.com>, Mingfangsen <mingfangsen@huawei.com>, Yanxiaodan <yanxiaodan@huawei.com>, linfeilong <linfeilong@huawei.com>
+Sender: linux-block-owner@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Cc: linux-block@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
+Hi folk,
+
+I want to listen to your suggestion on how to handle the udevd timeout
+for bcache registration.
+
+First of all let me introduce the background of this timeout problem.
+
+Now the bcache registration is synchronized, the registering process
+will be blocked until the whole registration done. In boot up time, such
+registration can be initiated from a bcache udev rule. Normally it won't
+be problem, but for very large cached data size there might be a large
+internal btree on the cache device. During the registration checking all
+the btree nodes may take 50+ minutes as a udev task, it exceeds 180
+seconds timeout and udevd will kill it. The killing signal will make
+kthread_create() fail during bcache initialization, then the automatic
+bcache registration in boot up time will fail.
+
+The above text describes the problem I need to solve: make boot up time
+automatic bache registration always success no mater how long it will take.
+
+I know there are several solutions to solve such problem, I do
+appreciate if you may share the solution so that I may learn good ideas
+from them.
+
+Thank you in advance for the information sharing of my request of
+suggestion.
 
 
-On 2020/4/20 15:10, Coly Li wrote:
-> On 2020/4/20 14:55, Zhiqiang Liu wrote:
->> friendly ping...
->>
-> 
-> The patch is good. Just it would be better if the commit log can be more
-> accurate and understandable for other readers who are not very familiar
-> with bcache code.
-> 
-> Thanks.
-> 
-> 
-> Coly Li
-
-Thanks for your reply. I will try my best to rewrite the commit log.
-
-Regards.
-Zhiqiang Liu.
-
-> 
-> 
->> On 2020/4/15 19:42, Zhiqiang Liu wrote:
->>> From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
->>>
->>> coccicheck reports:
->>>   drivers/md//bcache/btree.c:1538:1-7: preceding lock on line 1417
->>>
->>> After obtaining new_nodes[i]->write_lock, we may go to out_nocoalesce
->>> tag without releasing lock. Here, we add a new tag
->>> 'out_unlock_nocoalesce' before out_nocoalesce tag to release
->>> new_nodes[i]->write_lock.
->>>
->>> Fixes: 2a285686c1 ("bcache: btree locking rework")
->>> Signed-off-by: Zhiqiang Liu <liuzhiqiang26@huawei.com>
->>> ---
->>>  drivers/md/bcache/btree.c | 8 ++++++--
->>>  1 file changed, 6 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
->>> index fa872df4e770..cad8b0b97e33 100644
->>> --- a/drivers/md/bcache/btree.c
->>> +++ b/drivers/md/bcache/btree.c
->>> @@ -1447,7 +1447,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
->>>  			if (__set_blocks(n1, n1->keys + n2->keys,
->>>  					 block_bytes(b->c)) >
->>>  			    btree_blocks(new_nodes[i]))
->>> -				goto out_nocoalesce;
->>> +				goto out_unlock_nocoalesce;
->>>
->>>  			keys = n2->keys;
->>>  			/* Take the key of the node we're getting rid of */
->>> @@ -1476,7 +1476,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
->>>
->>>  		if (__bch_keylist_realloc(&keylist,
->>>  					  bkey_u64s(&new_nodes[i]->key)))
->>> -			goto out_nocoalesce;
->>> +			goto out_unlock_nocoalesce;
->>>
->>>  		bch_btree_node_write(new_nodes[i], &cl);
->>>  		bch_keylist_add(&keylist, &new_nodes[i]->key);
->>> @@ -1522,6 +1522,10 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
->>>  	/* Invalidated our iterator */
->>>  	return -EINTR;
->>>
->>> +out_unlock_nocoalesce:
->>> +	for (i = 0; i < nodes; i++)
->>> +		mutex_unlock(&new_nodes[i]->write_lock);
->>> +
->>>  out_nocoalesce:
->>>  	closure_sync(&cl);
->>>
->>
-> 
-> 
+Coly Li
