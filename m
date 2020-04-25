@@ -1,56 +1,41 @@
-From: Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 2/3] dm: remove the make_request_fn check in device_area_is_invalid
-Date: Sat, 25 Apr 2020 09:53:35 +0200
-Message-ID: <20200425075336.721021-3-hch@lst.de>
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: avoid the ->make_request_fn indirect for blk-mq drivers
+Date: Sat, 25 Apr 2020 09:45:34 -0600
+Message-ID: <98cd7aac-e4ee-8de0-e7aa-0d3e1a2b20e0@kernel.dk>
 References: <20200425075336.721021-1-hch@lst.de>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52558 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-FAIL-OK-FAIL)
+        by vger.kernel.org with ESMTP id S1726076AbgDYPpg (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 25 Apr 2020 11:45:36 -0400
+Received: from mail-pj1-x102e.google.com (mail-pj1-x102e.google.com [IPv6:2607:f8b0:4864:20::102e])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 46355C09B04B
+        for <linux-bcache@vger.kernel.org>; Sat, 25 Apr 2020 08:45:36 -0700 (PDT)
+Received: by mail-pj1-x102e.google.com with SMTP id t9so5187047pjw.0
+        for <linux-bcache@vger.kernel.org>; Sat, 25 Apr 2020 08:45:36 -0700 (PDT)
 In-Reply-To: <20200425075336.721021-1-hch@lst.de>
-Sender: linux-block-owner@vger.kernel.org
-To: Jens Axboe <axboe@kernel.dk>
-Cc: dm-devel@redhat.com, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Language: en-US
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Christoph Hellwig <hch@lst.de>
+Cc: dm-devel@redhat.com, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/md/dm-table.c | 17 -----------------
- 1 file changed, 17 deletions(-)
+On 4/25/20 1:53 AM, Christoph Hellwig wrote:
+> Hi Jens,
+> 
+> this small series avoids an indirect call for every submitted bio that
+> eventually ends up being handled by blk-mq drivers.  Let me know what
+> you think.
 
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index 0a2cc197f62b4..8277b959e00bd 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -279,7 +279,6 @@ static struct dm_dev_internal *find_device(struct list_head *l, dev_t dev)
- static int device_area_is_invalid(struct dm_target *ti, struct dm_dev *dev,
- 				  sector_t start, sector_t len, void *data)
- {
--	struct request_queue *q;
- 	struct queue_limits *limits = data;
- 	struct block_device *bdev = dev->bdev;
- 	sector_t dev_size =
-@@ -288,22 +287,6 @@ static int device_area_is_invalid(struct dm_target *ti, struct dm_dev *dev,
- 		limits->logical_block_size >> SECTOR_SHIFT;
- 	char b[BDEVNAME_SIZE];
- 
--	/*
--	 * Some devices exist without request functions,
--	 * such as loop devices not yet bound to backing files.
--	 * Forbid the use of such devices.
--	 */
--	q = bdev_get_queue(bdev);
--	if (!q || !q->make_request_fn) {
--		DMWARN("%s: %s is not yet initialised: "
--		       "start=%llu, len=%llu, dev_size=%llu",
--		       dm_device_name(ti->table->md), bdevname(bdev, b),
--		       (unsigned long long)start,
--		       (unsigned long long)len,
--		       (unsigned long long)dev_size);
--		return 1;
--	}
--
- 	if (!dev_size)
- 		return 0;
- 
+I like it, I've been pondering something like this for a bit, but
+I like the simplicity of this one and changing it so that only
+non-regular make_request_fn is set.
+
+I'll apply this.
+
 -- 
-2.26.1
+Jens Axboe
