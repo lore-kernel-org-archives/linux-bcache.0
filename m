@@ -1,41 +1,78 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: avoid the ->make_request_fn indirect for blk-mq drivers
-Date: Sat, 25 Apr 2020 09:45:34 -0600
-Message-ID: <98cd7aac-e4ee-8de0-e7aa-0d3e1a2b20e0@kernel.dk>
-References: <20200425075336.721021-1-hch@lst.de>
+From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+Subject: [PATCH V2] bcache: fix potential deadlock problem in
+ btree_gc_coalesce
+Date: Sun, 26 Apr 2020 16:06:27 +0800
+Message-ID: <8a6f5fe3-33f9-48e2-e347-05781c3295fd@huawei.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52558 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-FAIL-OK-FAIL)
-        by vger.kernel.org with ESMTP id S1726076AbgDYPpg (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Apr 2020 11:45:36 -0400
-Received: from mail-pj1-x102e.google.com (mail-pj1-x102e.google.com [IPv6:2607:f8b0:4864:20::102e])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 46355C09B04B
-        for <linux-bcache@vger.kernel.org>; Sat, 25 Apr 2020 08:45:36 -0700 (PDT)
-Received: by mail-pj1-x102e.google.com with SMTP id t9so5187047pjw.0
-        for <linux-bcache@vger.kernel.org>; Sat, 25 Apr 2020 08:45:36 -0700 (PDT)
-In-Reply-To: <20200425075336.721021-1-hch@lst.de>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
 Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Sender: linux-kernel-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>, kmo@daterainc.com, linux-bcache@vger.kernel.org, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "wubo (T)" <wubo40@huawei.com>, Mingfangsen <mingfangsen@huawei.com>, Yanxiaodan <yanxiaodan@huawei.com>, linfeilong <linfeilong@huawei.com>, renxudong <renxudong1@huawei.com>
 List-Id: linux-bcache@vger.kernel.org
-To: Christoph Hellwig <hch@lst.de>
-Cc: dm-devel@redhat.com, linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-On 4/25/20 1:53 AM, Christoph Hellwig wrote:
-> Hi Jens,
-> 
-> this small series avoids an indirect call for every submitted bio that
-> eventually ends up being handled by blk-mq drivers.  Let me know what
-> you think.
+From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
 
-I like it, I've been pondering something like this for a bit, but
-I like the simplicity of this one and changing it so that only
-non-regular make_request_fn is set.
+coccicheck reports:
+  drivers/md//bcache/btree.c:1538:1-7: preceding lock on line 1417
 
-I'll apply this.
+btree_gc_coalesce func is designed to coalesce two adjacent nodes in
+new_nodes[GC_MERGE_NODES] and finally release one node. All nodes`write_lock,
+new_nodes[i]->write_lock, are holded before coalescing adjacent nodes,
+and them will be released after coalescing successfully.
+
+However, if the coalescing process fails, such as no enough space of new_nodes[1]
+to fit all of the remaining keys in new_nodes[0] and realloc keylist failed, we
+will goto to out_nocoalesce tag directly without releasing new_nodes[i]->write_lock.
+Then, a deadlock will occur after calling btree_node_free to free new_nodes[i],
+which also try to acquire new_nodes[i]->write_lock.
+
+Here, we add a new tag 'out_unlock_nocoalesce' before out_nocoalesce tag to release
+new_nodes[i]->write_lock when coalescing process fails.
+
+--
+V1->V2: rewrite commit log (suggested by Coly Li) and rename the patch
+
+Fixes: 2a285686c1 ("bcache: btree locking rework")
+Signed-off-by: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+---
+ drivers/md/bcache/btree.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index fa872df4e770..cad8b0b97e33 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1447,7 +1447,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 			if (__set_blocks(n1, n1->keys + n2->keys,
+ 					 block_bytes(b->c)) >
+ 			    btree_blocks(new_nodes[i]))
+-				goto out_nocoalesce;
++				goto out_unlock_nocoalesce;
+
+ 			keys = n2->keys;
+ 			/* Take the key of the node we're getting rid of */
+@@ -1476,7 +1476,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+
+ 		if (__bch_keylist_realloc(&keylist,
+ 					  bkey_u64s(&new_nodes[i]->key)))
+-			goto out_nocoalesce;
++			goto out_unlock_nocoalesce;
+
+ 		bch_btree_node_write(new_nodes[i], &cl);
+ 		bch_keylist_add(&keylist, &new_nodes[i]->key);
+@@ -1522,6 +1522,10 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 	/* Invalidated our iterator */
+ 	return -EINTR;
+
++out_unlock_nocoalesce:
++	for (i = 0; i < nodes; i++)
++		mutex_unlock(&new_nodes[i]->write_lock);
++
+ out_nocoalesce:
+ 	closure_sync(&cl);
 
 -- 
-Jens Axboe
+2.19.1
