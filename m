@@ -1,190 +1,120 @@
-Return-Path: <SRS0=hH7c=6J=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=Xm3D=6K=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
-	DKIM_SIGNED,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-11.5 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 03652C55185
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Apr 2020 07:53:48 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1D27CC55191
+	for <linux-bcache@archiver.kernel.org>; Sun, 26 Apr 2020 08:06:56 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D0BC520706
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Apr 2020 07:53:47 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="FJV8YV7Y"
+	by mail.kernel.org (Postfix) with ESMTP id 039BF20700
+	for <linux-bcache@archiver.kernel.org>; Sun, 26 Apr 2020 08:06:56 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726142AbgDYHxr (ORCPT
+        id S1726117AbgDZIGj (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Apr 2020 03:53:47 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36162 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-FAIL-OK-FAIL)
-        by vger.kernel.org with ESMTP id S1725837AbgDYHxr (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Apr 2020 03:53:47 -0400
-Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F2D66C09B049;
-        Sat, 25 Apr 2020 00:53:46 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=bombadil.20170209; h=Content-Transfer-Encoding:
-        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
-        :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=T8tQwPcvJ8L22/CgfVpdAP5ZKnnyuxv1LKNpOQCm/qY=; b=FJV8YV7YcQ923y2wN4PNhPD8TZ
-        rpvuvIMHIw0NnNrlYgx+6Q/fDz3zaGeqJ/xLVSS+LpuBzmj4przJn2Mfl4JwH3iNxfz7Bc0VjfqON
-        AgM26RH6PfIMfbMF27qA2qbb58rclbWLdVKryz+T9S0WmFYlTDKcUZYQqz9xlFYmuCfbvGxrQLcau
-        h2mSZxBuXTAQh7gLJOpNG+muRotqfLEgboHPhFZ8ac8EdXeqfmiZ0f/E/93Rmt+gPXI/mVYz8pjr9
-        42FSDBHsWjbgKsCuBZLoAuMc8sO2++sGCBX8yMEfKvmmEpSa/pHiHwAzlFZBk0PQJl3nCEbCaNmQy
-        9YHWu5zQ==;
-Received: from [2001:4bb8:193:f203:c70:4a89:bc61:2] (helo=localhost)
-        by bombadil.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jSFdC-0007dx-3k; Sat, 25 Apr 2020 07:53:46 +0000
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jens Axboe <axboe@kernel.dk>
-Cc:     dm-devel@redhat.com, linux-bcache@vger.kernel.org,
-        linux-block@vger.kernel.org
-Subject: [PATCH 3/3] block: bypass ->make_request_fn for blk-mq drivers
-Date:   Sat, 25 Apr 2020 09:53:36 +0200
-Message-ID: <20200425075336.721021-4-hch@lst.de>
-X-Mailer: git-send-email 2.26.1
-In-Reply-To: <20200425075336.721021-1-hch@lst.de>
-References: <20200425075336.721021-1-hch@lst.de>
+        Sun, 26 Apr 2020 04:06:39 -0400
+Received: from szxga07-in.huawei.com ([45.249.212.35]:37890 "EHLO huawei.com"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1726112AbgDZIGi (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 26 Apr 2020 04:06:38 -0400
+Received: from DGGEMS405-HUB.china.huawei.com (unknown [172.30.72.60])
+        by Forcepoint Email with ESMTP id A4842D6E4359EE11E246;
+        Sun, 26 Apr 2020 16:06:35 +0800 (CST)
+Received: from [127.0.0.1] (10.166.215.235) by DGGEMS405-HUB.china.huawei.com
+ (10.3.19.205) with Microsoft SMTP Server id 14.3.487.0; Sun, 26 Apr 2020
+ 16:06:29 +0800
+To:     Coly Li <colyli@suse.de>, <kmo@daterainc.com>,
+        <linux-bcache@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC:     "wubo (T)" <wubo40@huawei.com>,
+        Mingfangsen <mingfangsen@huawei.com>,
+        Yanxiaodan <yanxiaodan@huawei.com>,
+        linfeilong <linfeilong@huawei.com>,
+        renxudong <renxudong1@huawei.com>
+From:   Zhiqiang Liu <liuzhiqiang26@huawei.com>
+Subject: [PATCH V2] bcache: fix potential deadlock problem in
+ btree_gc_coalesce
+Message-ID: <8a6f5fe3-33f9-48e2-e347-05781c3295fd@huawei.com>
+Date:   Sun, 26 Apr 2020 16:06:27 +0800
+User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101
+ Thunderbird/68.2.2
 MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Language: en-US
 Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
+X-Originating-IP: [10.166.215.235]
+X-CFilter-Loop: Reflected
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200425075336.ExnyUIVBP_HQXWAXPhfFkalIifIxQWyVUUUlQx-mBEc@z>
+Message-ID: <20200426080627.9lZnkaAcp2_mnghiuAQj3qcfxG8tdGDAYp5B5Atvl-U@z>
 
-Call blk_mq_make_request when no ->make_request_fn is set.  This is
-safe now that blk_alloc_queue always sets up the pointer for make_request
-based drivers.  This avoids an indirect call in the blk-mq driver I/O
-fast path, which is rather expensive due to spectre mitigations.
+From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
+coccicheck reports:
+  drivers/md//bcache/btree.c:1538:1-7: preceding lock on line 1417
+
+btree_gc_coalesce func is designed to coalesce two adjacent nodes in
+new_nodes[GC_MERGE_NODES] and finally release one node. All nodes`write_lock,
+new_nodes[i]->write_lock, are holded before coalescing adjacent nodes,
+and them will be released after coalescing successfully.
+
+However, if the coalescing process fails, such as no enough space of new_nodes[1]
+to fit all of the remaining keys in new_nodes[0] and realloc keylist failed, we
+will goto to out_nocoalesce tag directly without releasing new_nodes[i]->write_lock.
+Then, a deadlock will occur after calling btree_node_free to free new_nodes[i],
+which also try to acquire new_nodes[i]->write_lock.
+
+Here, we add a new tag 'out_unlock_nocoalesce' before out_nocoalesce tag to release
+new_nodes[i]->write_lock when coalescing process fails.
+
+--
+V1->V2: rewrite commit log (suggested by Coly Li) and rename the patch
+
+Fixes: 2a285686c1 ("bcache: btree locking rework")
+Signed-off-by: Zhiqiang Liu <liuzhiqiang26@huawei.com>
 ---
- block/blk-core.c       | 26 +++++++++++++++++---------
- block/blk-mq.c         |  4 ++--
- drivers/md/dm.c        |  3 +++
- include/linux/blk-mq.h |  2 ++
- 4 files changed, 24 insertions(+), 11 deletions(-)
+ drivers/md/bcache/btree.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 311596d5dbc41..0e9e1c83e5e84 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1072,7 +1072,10 @@ blk_qc_t generic_make_request(struct bio *bio)
- 			/* Create a fresh bio_list for all subordinate requests */
- 			bio_list_on_stack[1] = bio_list_on_stack[0];
- 			bio_list_init(&bio_list_on_stack[0]);
--			ret = q->make_request_fn(q, bio);
-+			if (q->make_request_fn)
-+				ret = q->make_request_fn(q, bio);
-+			else
-+				ret = blk_mq_make_request(q, bio);
- 
- 			blk_queue_exit(q);
- 
-@@ -1112,9 +1115,7 @@ EXPORT_SYMBOL(generic_make_request);
-  *
-  * This function behaves like generic_make_request(), but does not protect
-  * against recursion.  Must only be used if the called driver is known
-- * to not call generic_make_request (or direct_make_request) again from
-- * its make_request function.  (Calling direct_make_request again from
-- * a workqueue is perfectly fine as that doesn't recurse).
-+ * to be blk-mq based.
-  */
- blk_qc_t direct_make_request(struct bio *bio)
- {
-@@ -1122,20 +1123,27 @@ blk_qc_t direct_make_request(struct bio *bio)
- 	bool nowait = bio->bi_opf & REQ_NOWAIT;
- 	blk_qc_t ret;
- 
-+	if (WARN_ON_ONCE(q->make_request_fn))
-+		goto io_error;
- 	if (!generic_make_request_checks(bio))
- 		return BLK_QC_T_NONE;
- 
- 	if (unlikely(blk_queue_enter(q, nowait ? BLK_MQ_REQ_NOWAIT : 0))) {
- 		if (nowait && !blk_queue_dying(q))
--			bio_wouldblock_error(bio);
--		else
--			bio_io_error(bio);
--		return BLK_QC_T_NONE;
-+			goto would_block;
-+		goto io_error;
- 	}
- 
--	ret = q->make_request_fn(q, bio);
-+	ret = blk_mq_make_request(q, bio);
- 	blk_queue_exit(q);
- 	return ret;
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index fa872df4e770..cad8b0b97e33 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1447,7 +1447,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 			if (__set_blocks(n1, n1->keys + n2->keys,
+ 					 block_bytes(b->c)) >
+ 			    btree_blocks(new_nodes[i]))
+-				goto out_nocoalesce;
++				goto out_unlock_nocoalesce;
+
+ 			keys = n2->keys;
+ 			/* Take the key of the node we're getting rid of */
+@@ -1476,7 +1476,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+
+ 		if (__bch_keylist_realloc(&keylist,
+ 					  bkey_u64s(&new_nodes[i]->key)))
+-			goto out_nocoalesce;
++			goto out_unlock_nocoalesce;
+
+ 		bch_btree_node_write(new_nodes[i], &cl);
+ 		bch_keylist_add(&keylist, &new_nodes[i]->key);
+@@ -1522,6 +1522,10 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 	/* Invalidated our iterator */
+ 	return -EINTR;
+
++out_unlock_nocoalesce:
++	for (i = 0; i < nodes; i++)
++		mutex_unlock(&new_nodes[i]->write_lock);
 +
-+would_block:
-+	bio_wouldblock_error(bio);
-+	return BLK_QC_T_NONE;
-+io_error:
-+	bio_io_error(bio);
-+	return BLK_QC_T_NONE;
- }
- EXPORT_SYMBOL_GPL(direct_make_request);
- 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 71d0894ce1c58..bcc3a2397d4ae 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1984,7 +1984,7 @@ static void blk_add_rq_to_plug(struct blk_plug *plug, struct request *rq)
-  *
-  * Returns: Request queue cookie.
-  */
--static blk_qc_t blk_mq_make_request(struct request_queue *q, struct bio *bio)
-+blk_qc_t blk_mq_make_request(struct request_queue *q, struct bio *bio)
- {
- 	const int is_sync = op_is_sync(bio->bi_opf);
- 	const int is_flush_fua = op_is_flush(bio->bi_opf);
-@@ -2096,6 +2096,7 @@ static blk_qc_t blk_mq_make_request(struct request_queue *q, struct bio *bio)
- 
- 	return cookie;
- }
-+EXPORT_SYMBOL_GPL(blk_mq_make_request); /* only for request based dm */
- 
- void blk_mq_free_rqs(struct blk_mq_tag_set *set, struct blk_mq_tags *tags,
- 		     unsigned int hctx_idx)
-@@ -2955,7 +2956,6 @@ struct request_queue *blk_mq_init_allocated_queue(struct blk_mq_tag_set *set,
- 	INIT_LIST_HEAD(&q->requeue_list);
- 	spin_lock_init(&q->requeue_lock);
- 
--	q->make_request_fn = blk_mq_make_request;
- 	q->nr_requests = set->queue_depth;
- 
- 	/*
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index db9e461146531..0eb93da44ea2a 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1788,6 +1788,9 @@ static blk_qc_t dm_make_request(struct request_queue *q, struct bio *bio)
- 	int srcu_idx;
- 	struct dm_table *map;
- 
-+	if (dm_get_md_type(md) == DM_TYPE_REQUEST_BASED)
-+		return blk_mq_make_request(q, bio);
-+
- 	map = dm_get_live_table(md, &srcu_idx);
- 
- 	/* if we're suspended, we have to queue this io for later */
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index 51fbf6f76593a..d7307795439a4 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -578,4 +578,6 @@ static inline void blk_mq_cleanup_rq(struct request *rq)
- 		rq->q->mq_ops->cleanup_rq(rq);
- }
- 
-+blk_qc_t blk_mq_make_request(struct request_queue *q, struct bio *bio);
-+
- #endif
+ out_nocoalesce:
+ 	closure_sync(&cl);
+
 -- 
-2.26.1
+2.19.1
+
 
