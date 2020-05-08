@@ -1,33 +1,22 @@
-From: Ming Lei <ming.lei@redhat.com>
-Subject: Re: remove a few uses of ->queuedata
-Date: Sat, 9 May 2020 06:13:21 +0800
-Message-ID: <20200508221321.GD1389136@T590>
-References: <20200508161517.252308-1-hch@lst.de>
+From: Barbara D Wilkins <endrigo.lsantos@itanhaem.sp.gov.br>
+Subject: (unknown)
+Date: Fri, 8 May 2020 20:51:33 -0300 (ART)
+Message-ID: <2042436495.980792.1588981893835.JavaMail.zimbra@itanhaem.sp.gov.br>
+Reply-To: "mrsbarbarawilkinsfunds.usa@gmail.com"
+          <mrsbarbarawilkinsfunds.usa@gmail.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-block-owner@vger.kernel.org>
-Content-Disposition: inline
-In-Reply-To: <20200508161517.252308-1-hch@lst.de>
-Sender: linux-block-owner@vger.kernel.org
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, Jim Paris <jim@jtan.com>, Geoff Levand <geoff@infradead.org>, Joshua Morris <josh.h.morris@us.ibm.com>, Philip Kelleher <pjk1939@linux.ibm.com>, Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>, Sergey Senozhatsky <sergey.senozhatsky.work@gmail.com>, linux-m68k@lists.linux-m68k.org, linux-kernel@vger.kernel.org, linux-xtensa@linux-xtensa.org, drbd-dev@lists.linbit.com, linux-block@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-nvdimm@lists.01.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mail.itanhaem.sp.gov.br ([187.8.184.45]:53580 "EHLO
+        mail.itanhaem.sp.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1727878AbgEIABm (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 8 May 2020 20:01:42 -0400
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
 
-On Fri, May 08, 2020 at 06:15:02PM +0200, Christoph Hellwig wrote:
-> Hi all,
-> 
-> various bio based drivers use queue->queuedata despite already having
-> set up disk->private_data, which can be used just as easily.  This
-> series cleans them up to only use a single private data pointer.
-> 
-> blk-mq based drivers that have code pathes that can't easily get at
-> the gendisk are unaffected by this series.
-
-Yeah, before adding disk, there still may be requests queued to LLD
-for blk-mq based drivers.
-
-So are there this similar situation for these bio based drivers?
 
 
-Thanks,
-Ming
+Hallo,          Wir sind eine christliche Organisation, die gegründet wurde, um Menschen zu helfen, die Hilfe benötigen, beispielsweise finanzielle Hilfe. Wenn Sie also finanzielle Schwierigkeiten haben oder sich in einem finanziellen Chaos befinden und Geld benötigen, um Ihr eigenes Unternehmen zu gründen, oder wenn Sie einen Kredit benötigen Begleichen Sie Ihre Schulden oder zahlen Sie Ihre Rechnungen ab, gründen Sie ein gutes Geschäft oder es fällt Ihnen schwer, einen Kapitalkredit von lokalen Banken zu erhalten. Kontaktieren Sie uns noch heute per E-Mail:  Lassen Sie sich diese Gelegenheit also nicht entgehen weil Jesus gestern, heute und für immer derselbe ist. Bitte, diese sind für ernsthafte und gottesfürchtige Menschen.Dein Name:Darlehensbetrag:Leihdauer:Gülti
+ ge Handynummer:Vielen Dank für Ihr Verständnis für Ihren Kontakt, während wir warten: mrsbarbarawilkinsfunds.usagmail.comGrüßeVerwaltung
