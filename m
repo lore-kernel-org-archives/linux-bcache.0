@@ -1,403 +1,478 @@
-From: Coly Li <colyli@suse.de>
+From: Damien Le Moal <Damien.LeMoal@wdc.com>
 Subject: Re: [RFC PATCH v2] bcache: export zoned information for backing
  device
-Date: Mon, 11 May 2020 19:00:00 +0800
-Message-ID: <3672c550-5453-5de5-5c5c-34ab8dafb017@suse.de>
+Date: Mon, 11 May 2020 11:20:26 +0000
+Message-ID: <BY5PR04MB6900128DCDE2106663CEE9EAE7A10@BY5PR04MB6900.namprd04.prod.outlook.com>
 References: <20200510165232.67500-1-colyli@suse.de>
  <BY5PR04MB690062564D66C5E3573CE1E1E7A10@BY5PR04MB6900.namprd04.prod.outlook.com>
+ <3672c550-5453-5de5-5c5c-34ab8dafb017@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <BY5PR04MB690062564D66C5E3573CE1E1E7A10@BY5PR04MB6900.namprd04.prod.outlook.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from esa4.hgst.iphmx.com ([216.71.154.42]:27251 "EHLO
+        esa4.hgst.iphmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725993AbgEKLUi (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 11 May 2020 07:20:38 -0400
 Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Damien Le Moal <Damien.LeMoal@wdc.com>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Cc: "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, Hannes Reinecke <hare@suse.com>, Johannes Thumshirn <Johannes.Thumshirn@wdc.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Coly Li <colyli@suse.de>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+Cc: "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, Hannes Reinecke <hare@suse.com>, Johannes Thumshirn <Johannes.Thumshirn@wdc.com>
 
-On 2020/5/11 17:06, Damien Le Moal wrote:
-> On 2020/05/11 1:52, Coly Li wrote:
->> This is a very basic zoned device support. With this patch, bcache
->> device is able to,
->> - Export zoned device attribution via sysfs
->> - Response report zones request, e.g. by command 'blkzone report'
->> But the bcache device is still NOT able to,
->> - Response any zoned device management request or IOCTL command
->>
->> Here are the testings I have done,
->> - read /sys/block/bcache0/queue/zoned, content is 'host-managed'
->> - read /sys/block/bcache0/queue/nr_zones, content is number of zones
->>   including all zone types.
->> - read /sys/block/bcache0/queue/chunk_sectors, content is zone size
->>   in sectors.
->> - run 'blkzone report /dev/bcache0', all zones information displayed.
->> - run 'blkzone reset /dev/bcache0', operation is rejected with error
->>   information: "blkzone: /dev/bcache0: BLKRESETZONE ioctl failed:
->>   Operation not supported"
-> 
-> Weird. If report zones works, reset should also, modulo the zone size problem
-> for the first zone. You may get EINVAL, but not ENOTTY.
-> 
-
-This is on purpose. Because reset the underlying zones layout may
-corrupt the bcache mapping between cache device and backing device. So
-such management commands are rejected.
-
-
-
->> - Sequential writes by dd, I can see some zones' write pointer 'wptr'
->>   values updated.
->>
->> All of these are very basic testings, if you have better testing
->> tools or cases, please offer me hint.
->>
->> Thanks in advance for your review and comments.
->>
->> Signed-off-by: Coly Li <colyli@suse.de>
->> CC: Hannes Reinecke <hare@suse.com>
->> CC: Damien Le Moal <damien.lemoal@wdc.com>
->> CC: Johannes Thumshirn <johannes.thumshirn@wdc.com>
->> ---
->>  drivers/md/bcache/bcache.h  | 10 +++++
->>  drivers/md/bcache/request.c | 74 +++++++++++++++++++++++++++++++++++++
->>  drivers/md/bcache/super.c   | 51 +++++++++++++++++++++----
->>  3 files changed, 128 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
->> index 74a9849ea164..0d298b48707f 100644
->> --- a/drivers/md/bcache/bcache.h
->> +++ b/drivers/md/bcache/bcache.h
->> @@ -221,6 +221,7 @@ BITMASK(GC_MOVE, struct bucket, gc_mark, 15, 1);
->>  struct search;
->>  struct btree;
->>  struct keybuf;
->> +struct bch_report_zones_args;
->>  
->>  struct keybuf_key {
->>  	struct rb_node		node;
->> @@ -277,6 +278,8 @@ struct bcache_device {
->>  			  struct bio *bio, unsigned int sectors);
->>  	int (*ioctl)(struct bcache_device *d, fmode_t mode,
->>  		     unsigned int cmd, unsigned long arg);
->> +	int (*report_zones)(struct bch_report_zones_args *args,
->> +			    unsigned int nr_zones);
->>  };
->>  
->>  struct io {
->> @@ -748,6 +751,13 @@ struct bbio {
->>  	struct bio		bio;
->>  };
->>  
->> +struct bch_report_zones_args {
->> +	struct bcache_device *bcache_device;
->> +	sector_t sector;
->> +	void *orig_data;
->> +	report_zones_cb orig_cb;
->> +};
->> +
->>  #define BTREE_PRIO		USHRT_MAX
->>  #define INITIAL_PRIO		32768U
->>  
->> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
->> index 71a90fbec314..bd50204caac7 100644
->> --- a/drivers/md/bcache/request.c
->> +++ b/drivers/md/bcache/request.c
->> @@ -1190,6 +1190,19 @@ blk_qc_t cached_dev_make_request(struct request_queue *q, struct bio *bio)
->>  		}
->>  	}
->>  
->> +	/*
->> +	 * zone management request may change the data layout and content
->> +	 * implicitly on backing device, which introduces unacceptible
-> 
-> s/unacceptible/unacceptable
-> 
->> +	 * inconsistency between the backing device and the cache device.
->> +	 * Therefore all zone management related request will be denied here.
->> +	 */
->> +	if (op_is_zone_mgmt(bio->bi_opf)) {
->> +		pr_err_ratelimited("zoned device management request denied.");
->> +		bio->bi_status = BLK_STS_NOTSUPP;
->> +		bio_endio(bio);
->> +		return BLK_QC_T_NONE;
-> 
-> OK. That explains the operation not supported for "blkzone reset". I do not
-> think this is good. With this, the drive will be writable only exactly once,
-> without the possibility for the user to reset any zone and rewrite them. All
-> zone compliant file systems will fail (f2fs, zonefs, btrfs coming).
-> 
-> At the very least REQ_OP_ZONE_RESET should be allowed and trigger an
-> invalidation on the cache device of all blocks of the zone that are cached.
-> 
-
-Copied. Then I should find a method to invalid the cached data on SSD in
-a proper way.
-
-> Note: the zone management operations will need to be remapped like report zones,
-> but in reverse: the BIO start sector must be increase by the zone size.
-> 
-
-Thanks for the hint :-)
-
-
->> +	}
->> +
->>  	generic_start_io_acct(q,
->>  			      bio_op(bio),
->>  			      bio_sectors(bio),
->> @@ -1233,6 +1246,24 @@ static int cached_dev_ioctl(struct bcache_device *d, fmode_t mode,
->>  	if (dc->io_disable)
->>  		return -EIO;
->>  
->> +	/*
->> +	 * zone management ioctl commands may change the data layout
->> +	 * and content implicitly on backing device, which introduces
->> +	 * unacceptible inconsistency between the backing device and
->> +	 * the cache device. Therefore all zone management related
->> +	 * ioctl commands will be denied here.
->> +	 */
->> +	switch (cmd) {
->> +	case BLKRESETZONE:
->> +	case BLKOPENZONE:
->> +	case BLKCLOSEZONE:
->> +	case BLKFINISHZONE:
->> +		return -EOPNOTSUPP;
-> 
-> Same comment as above. Of note is that only BLKRESETZONE will result in cache
-> inconsistency if not taken care of with an invalidation of the cached blocks of
-> the zone on the cache device. Open and close operations have no effect on data.
-> Finish zone will artificially increase the zone write pointer to the end of the
-> zone to make it full but without actually writing any data. So there is no need
-> I think to change anything on the cache device in that case.
-> 
-
-Copied. I will handle this.
-
-One thing not cleared to me is, what is the purpose of BLKOPENZONE and
-BLKCLOSEZONE, is it used to update writer pointer only ? Or it is also
-used to set a specific zone to be offline ?
-
-
->> +	default:
->> +		/* Other commands fall through*/
->> +		break;
->> +	}
->> +
->>  	return __blkdev_driver_ioctl(dc->bdev, mode, cmd, arg);
->>  }
->>  
->> @@ -1261,6 +1292,48 @@ static int cached_dev_congested(void *data, int bits)
->>  	return ret;
->>  }
->>  
->> +static int cached_dev_report_zones_cb(struct blk_zone *zone,
->> +				      unsigned int idx,
->> +				      void *data)
->> +{
->> +	struct bch_report_zones_args *args = data;
->> +	struct bcache_device *d = args->bcache_device;
->> +	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
->> +	unsigned long data_offset = dc->sb.data_offset;
->> +
->> +	if (zone->start >= data_offset) {
->> +		zone->start -= data_offset;
->> +		zone->wp -= data_offset;
-> 
-> Since the zone that contains the super block has to be ignored, the remapping of
-> the zone start can be done unconditionally. For the write pointer remapping, you
-> need to handle several cases: conventional zones, full zones and read-only zones
-> do not have a valid write pointer value, so no updating. You also need to skip
-> offline zones.
-> 
-
-Copied, I will fix here in next version.
-
-
->> +	} else {
->> +		/*
->> +		 * Normally the first zone is conventional zone,
->> +		 * we don't need to worry about how to maintain
->> +		 * the write pointer.
->> +		 * But the zone->len is special, because the
->> +		 * sector 0 on bcache device is 8KB offset on
->> +		 * backing device indeed.
->> +		 */
->> +		zone->len -= data_offset;
-> 
-> This should not be necessary if the first zone containing the super block is
-> skipped entirely.
-> 
-
-Yes, it will be.
-
-
->> +	}
->> +
->> +	return args->orig_cb(zone, idx, args->orig_data);
->> +}
->> +
->> +static int cached_dev_report_zones(struct bch_report_zones_args *args,
->> +				   unsigned int nr_zones)
->> +{
->> +	struct bcache_device *d = args->bcache_device;
->> +	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
->> +	sector_t sector = args->sector + dc->sb.data_offset;
->> +
->> +	/* sector is real LBA of backing device */
->> +	return blkdev_report_zones(dc->bdev,
->> +				   sector,
->> +				   nr_zones,
->> +				   cached_dev_report_zones_cb,
->> +				   args);
->> +}
->> +
->>  void bch_cached_dev_request_init(struct cached_dev *dc)
->>  {
->>  	struct gendisk *g = dc->disk.disk;
->> @@ -1268,6 +1341,7 @@ void bch_cached_dev_request_init(struct cached_dev *dc)
->>  	g->queue->backing_dev_info->congested_fn = cached_dev_congested;
->>  	dc->disk.cache_miss			= cached_dev_cache_miss;
->>  	dc->disk.ioctl				= cached_dev_ioctl;
->> +	dc->disk.report_zones			= cached_dev_report_zones;
->>  }
->>  
->>  /* Flash backed devices */
->> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
->> index d98354fa28e3..b7d496040cee 100644
->> --- a/drivers/md/bcache/super.c
->> +++ b/drivers/md/bcache/super.c
->> @@ -679,10 +679,31 @@ static int ioctl_dev(struct block_device *b, fmode_t mode,
->>  	return d->ioctl(d, mode, cmd, arg);
->>  }
->>  
->> +static int report_zones_dev(struct gendisk *disk,
->> +			    sector_t sector,
->> +			    unsigned int nr_zones,
->> +			    report_zones_cb cb,
->> +			    void *data)
->> +{
->> +	struct bcache_device *d = disk->private_data;
->> +	struct bch_report_zones_args args = {
->> +		.bcache_device = d,
->> +		.sector = sector,
->> +		.orig_data = data,
->> +		.orig_cb = cb,
->> +	};
->> +
->> +	if (d->report_zones)
->> +		return d->report_zones(&args, nr_zones);
-> 
-> It looks to me like this is not necessary. This function could just be
-> cached_dev_report_zones() and you can drop the dc->disk.report_zones method.
-> 
-
-Yes, I will fix it.
-
-
->> +
->> +	return -EOPNOTSUPP;
->> +}
->> +
->>  static const struct block_device_operations bcache_ops = {
->>  	.open		= open_dev,
->>  	.release	= release_dev,
->>  	.ioctl		= ioctl_dev,
->> +	.report_zones	= report_zones_dev,
->>  	.owner		= THIS_MODULE,
->>  };
->>  
->> @@ -815,8 +836,12 @@ static void bcache_device_free(struct bcache_device *d)
->>  	closure_debug_destroy(&d->cl);
->>  }
->>  
->> -static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
->> -			      sector_t sectors, make_request_fn make_request_fn)
->> +static int bcache_device_init(struct cached_dev *dc,
->> +			      struct bcache_device *d,
->> +			      unsigned int block_size,
->> +			      sector_t sectors,
->> +			      make_request_fn make_request_fn)
->> +
->>  {
->>  	struct request_queue *q;
->>  	const size_t max_stripes = min_t(size_t, INT_MAX,
->> @@ -886,6 +911,17 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
->>  	blk_queue_flag_clear(QUEUE_FLAG_ADD_RANDOM, d->disk->queue);
->>  	blk_queue_flag_set(QUEUE_FLAG_DISCARD, d->disk->queue);
->>  
->> +	/*
->> +	 * If this is for backing device registration, and it is an
->> +	 * zoned device (e.g. host-managed S.M.R. hard drive), set
->> +	 * up zoned device attribution properly for sysfs interface.
->> +	 */
->> +	if (dc && bdev_is_zoned(dc->bdev)) {
->> +		q->limits.zoned = bdev_zoned_model(dc->bdev);
->> +		q->nr_zones = blkdev_nr_zones(dc->bdev->bd_disk);
->> +		q->limits.chunk_sectors = bdev_zone_sectors(dc->bdev);
-> 
-> You need to call blk_revalidate_disk_zones() here:
-> 
-> 	blk_revalidate_disk_zones(dc->bdev->bd_disk);
-> 
-> but call it *after* setting the bc device capacity to
-> 
-> 	get_capacity(dc->bdev->bd_disk) - bdev_zone_sectors(dc->bdev);
-> 
-> Which I think is in fact the sectors argument to this function ?
-> 
-> With that information blk_revalidate_disk_zones() will check the zones and set
-> q->nr_zones.
-> 
-> 
-
-This is something I didn't notice. Yes I should revalidate teh zones.
-Will do it in next version.
-
-
->> +	}
->> +
->>  	blk_queue_write_cache(q, true, true);
->>  
->>  	return 0;
->> @@ -1337,9 +1373,9 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
->>  		dc->partial_stripes_expensive =
->>  			q->limits.raid_partial_stripes_expensive;
->>  
->> -	ret = bcache_device_init(&dc->disk, block_size,
->> -			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset,
->> -			 cached_dev_make_request);
->> +	ret = bcache_device_init(dc, &dc->disk, block_size,
->> +			dc->bdev->bd_part->nr_sects - dc->sb.data_offset,
-> 
-> dc->sb.data_offset should be the device zone size (chunk sectors) to skip the
-> entire first zone and preserve the "all zones have the same size" constraint.
-> 
-
-
-Sure, and the bcache-tools should be fixed to recognize zoned device as
-well.
-
->> +			cached_dev_make_request);
->>  	if (ret)
->>  		return ret;
->>  
->> @@ -1451,8 +1487,9 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
->>  
->>  	kobject_init(&d->kobj, &bch_flash_dev_ktype);
->>  
->> -	if (bcache_device_init(d, block_bytes(c), u->sectors,
->> -			flash_dev_make_request))
->> +	if (bcache_device_init(NULL, d, block_bytes(c),
->> +			       u->sectors,
->> +			       flash_dev_make_request))
->>  		goto err;
->>  
->>  	bcache_device_attach(d, c, u - c->uuids);
->>
-> 
-> 
-
-Thanks for your review. I will post v2 soon.
-
-Coly Li
+On 2020/05/11 20:00, Coly Li wrote:=0A=
+> On 2020/5/11 17:06, Damien Le Moal wrote:=0A=
+>> On 2020/05/11 1:52, Coly Li wrote:=0A=
+>>> This is a very basic zoned device support. With this patch, bcache=0A=
+>>> device is able to,=0A=
+>>> - Export zoned device attribution via sysfs=0A=
+>>> - Response report zones request, e.g. by command 'blkzone report'=0A=
+>>> But the bcache device is still NOT able to,=0A=
+>>> - Response any zoned device management request or IOCTL command=0A=
+>>>=0A=
+>>> Here are the testings I have done,=0A=
+>>> - read /sys/block/bcache0/queue/zoned, content is 'host-managed'=0A=
+>>> - read /sys/block/bcache0/queue/nr_zones, content is number of zones=0A=
+>>>   including all zone types.=0A=
+>>> - read /sys/block/bcache0/queue/chunk_sectors, content is zone size=0A=
+>>>   in sectors.=0A=
+>>> - run 'blkzone report /dev/bcache0', all zones information displayed.=
+=0A=
+>>> - run 'blkzone reset /dev/bcache0', operation is rejected with error=0A=
+>>>   information: "blkzone: /dev/bcache0: BLKRESETZONE ioctl failed:=0A=
+>>>   Operation not supported"=0A=
+>>=0A=
+>> Weird. If report zones works, reset should also, modulo the zone size pr=
+oblem=0A=
+>> for the first zone. You may get EINVAL, but not ENOTTY.=0A=
+>>=0A=
+> =0A=
+> This is on purpose. Because reset the underlying zones layout may=0A=
+> corrupt the bcache mapping between cache device and backing device. So=0A=
+> such management commands are rejected.=0A=
+> =0A=
+> =0A=
+> =0A=
+>>> - Sequential writes by dd, I can see some zones' write pointer 'wptr'=
+=0A=
+>>>   values updated.=0A=
+>>>=0A=
+>>> All of these are very basic testings, if you have better testing=0A=
+>>> tools or cases, please offer me hint.=0A=
+>>>=0A=
+>>> Thanks in advance for your review and comments.=0A=
+>>>=0A=
+>>> Signed-off-by: Coly Li <colyli@suse.de>=0A=
+>>> CC: Hannes Reinecke <hare@suse.com>=0A=
+>>> CC: Damien Le Moal <damien.lemoal@wdc.com>=0A=
+>>> CC: Johannes Thumshirn <johannes.thumshirn@wdc.com>=0A=
+>>> ---=0A=
+>>>  drivers/md/bcache/bcache.h  | 10 +++++=0A=
+>>>  drivers/md/bcache/request.c | 74 +++++++++++++++++++++++++++++++++++++=
+=0A=
+>>>  drivers/md/bcache/super.c   | 51 +++++++++++++++++++++----=0A=
+>>>  3 files changed, 128 insertions(+), 7 deletions(-)=0A=
+>>>=0A=
+>>> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h=0A=
+>>> index 74a9849ea164..0d298b48707f 100644=0A=
+>>> --- a/drivers/md/bcache/bcache.h=0A=
+>>> +++ b/drivers/md/bcache/bcache.h=0A=
+>>> @@ -221,6 +221,7 @@ BITMASK(GC_MOVE, struct bucket, gc_mark, 15, 1);=0A=
+>>>  struct search;=0A=
+>>>  struct btree;=0A=
+>>>  struct keybuf;=0A=
+>>> +struct bch_report_zones_args;=0A=
+>>>  =0A=
+>>>  struct keybuf_key {=0A=
+>>>  	struct rb_node		node;=0A=
+>>> @@ -277,6 +278,8 @@ struct bcache_device {=0A=
+>>>  			  struct bio *bio, unsigned int sectors);=0A=
+>>>  	int (*ioctl)(struct bcache_device *d, fmode_t mode,=0A=
+>>>  		     unsigned int cmd, unsigned long arg);=0A=
+>>> +	int (*report_zones)(struct bch_report_zones_args *args,=0A=
+>>> +			    unsigned int nr_zones);=0A=
+>>>  };=0A=
+>>>  =0A=
+>>>  struct io {=0A=
+>>> @@ -748,6 +751,13 @@ struct bbio {=0A=
+>>>  	struct bio		bio;=0A=
+>>>  };=0A=
+>>>  =0A=
+>>> +struct bch_report_zones_args {=0A=
+>>> +	struct bcache_device *bcache_device;=0A=
+>>> +	sector_t sector;=0A=
+>>> +	void *orig_data;=0A=
+>>> +	report_zones_cb orig_cb;=0A=
+>>> +};=0A=
+>>> +=0A=
+>>>  #define BTREE_PRIO		USHRT_MAX=0A=
+>>>  #define INITIAL_PRIO		32768U=0A=
+>>>  =0A=
+>>> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c=
+=0A=
+>>> index 71a90fbec314..bd50204caac7 100644=0A=
+>>> --- a/drivers/md/bcache/request.c=0A=
+>>> +++ b/drivers/md/bcache/request.c=0A=
+>>> @@ -1190,6 +1190,19 @@ blk_qc_t cached_dev_make_request(struct request_=
+queue *q, struct bio *bio)=0A=
+>>>  		}=0A=
+>>>  	}=0A=
+>>>  =0A=
+>>> +	/*=0A=
+>>> +	 * zone management request may change the data layout and content=0A=
+>>> +	 * implicitly on backing device, which introduces unacceptible=0A=
+>>=0A=
+>> s/unacceptible/unacceptable=0A=
+>>=0A=
+>>> +	 * inconsistency between the backing device and the cache device.=0A=
+>>> +	 * Therefore all zone management related request will be denied here.=
+=0A=
+>>> +	 */=0A=
+>>> +	if (op_is_zone_mgmt(bio->bi_opf)) {=0A=
+>>> +		pr_err_ratelimited("zoned device management request denied.");=0A=
+>>> +		bio->bi_status =3D BLK_STS_NOTSUPP;=0A=
+>>> +		bio_endio(bio);=0A=
+>>> +		return BLK_QC_T_NONE;=0A=
+>>=0A=
+>> OK. That explains the operation not supported for "blkzone reset". I do =
+not=0A=
+>> think this is good. With this, the drive will be writable only exactly o=
+nce,=0A=
+>> without the possibility for the user to reset any zone and rewrite them.=
+ All=0A=
+>> zone compliant file systems will fail (f2fs, zonefs, btrfs coming).=0A=
+>>=0A=
+>> At the very least REQ_OP_ZONE_RESET should be allowed and trigger an=0A=
+>> invalidation on the cache device of all blocks of the zone that are cach=
+ed.=0A=
+>>=0A=
+> =0A=
+> Copied. Then I should find a method to invalid the cached data on SSD in=
+=0A=
+> a proper way.=0A=
+> =0A=
+>> Note: the zone management operations will need to be remapped like repor=
+t zones,=0A=
+>> but in reverse: the BIO start sector must be increase by the zone size.=
+=0A=
+>>=0A=
+> =0A=
+> Thanks for the hint :-)=0A=
+> =0A=
+> =0A=
+>>> +	}=0A=
+>>> +=0A=
+>>>  	generic_start_io_acct(q,=0A=
+>>>  			      bio_op(bio),=0A=
+>>>  			      bio_sectors(bio),=0A=
+>>> @@ -1233,6 +1246,24 @@ static int cached_dev_ioctl(struct bcache_device=
+ *d, fmode_t mode,=0A=
+>>>  	if (dc->io_disable)=0A=
+>>>  		return -EIO;=0A=
+>>>  =0A=
+>>> +	/*=0A=
+>>> +	 * zone management ioctl commands may change the data layout=0A=
+>>> +	 * and content implicitly on backing device, which introduces=0A=
+>>> +	 * unacceptible inconsistency between the backing device and=0A=
+>>> +	 * the cache device. Therefore all zone management related=0A=
+>>> +	 * ioctl commands will be denied here.=0A=
+>>> +	 */=0A=
+>>> +	switch (cmd) {=0A=
+>>> +	case BLKRESETZONE:=0A=
+>>> +	case BLKOPENZONE:=0A=
+>>> +	case BLKCLOSEZONE:=0A=
+>>> +	case BLKFINISHZONE:=0A=
+>>> +		return -EOPNOTSUPP;=0A=
+>>=0A=
+>> Same comment as above. Of note is that only BLKRESETZONE will result in =
+cache=0A=
+>> inconsistency if not taken care of with an invalidation of the cached bl=
+ocks of=0A=
+>> the zone on the cache device. Open and close operations have no effect o=
+n data.=0A=
+>> Finish zone will artificially increase the zone write pointer to the end=
+ of the=0A=
+>> zone to make it full but without actually writing any data. So there is =
+no need=0A=
+>> I think to change anything on the cache device in that case.=0A=
+>>=0A=
+> =0A=
+> Copied. I will handle this.=0A=
+> =0A=
+> One thing not cleared to me is, what is the purpose of BLKOPENZONE and=0A=
+> BLKCLOSEZONE, is it used to update writer pointer only ? Or it is also=0A=
+> used to set a specific zone to be offline ?=0A=
+=0A=
+open and close have no effect on the wp of a zone. No change. The open oper=
+ation=0A=
+is a hint to the drive to tell it "I am going to write intensively to this =
+zone,=0A=
+so keep resources for it around" and the close operation frees the zone=0A=
+resources. Everything works fine without these for SMR HDDs and the perform=
+ance=0A=
+gain from using open/close can hardly be measured at all. These operations =
+will=0A=
+however be more important for upcoming ZNS devices due to the different med=
+ia=0A=
+characteristics. Since these operations have no impact on the zone data, th=
+ey=0A=
+are safe for bcache, regardless of the cache state.=0A=
+=0A=
+Only reset and finish change a zone wp. And only reset needs invalidation o=
+f the=0A=
+cache device blocks of the zone.=0A=
+=0A=
+> =0A=
+> =0A=
+>>> +	default:=0A=
+>>> +		/* Other commands fall through*/=0A=
+>>> +		break;=0A=
+>>> +	}=0A=
+>>> +=0A=
+>>>  	return __blkdev_driver_ioctl(dc->bdev, mode, cmd, arg);=0A=
+>>>  }=0A=
+>>>  =0A=
+>>> @@ -1261,6 +1292,48 @@ static int cached_dev_congested(void *data, int =
+bits)=0A=
+>>>  	return ret;=0A=
+>>>  }=0A=
+>>>  =0A=
+>>> +static int cached_dev_report_zones_cb(struct blk_zone *zone,=0A=
+>>> +				      unsigned int idx,=0A=
+>>> +				      void *data)=0A=
+>>> +{=0A=
+>>> +	struct bch_report_zones_args *args =3D data;=0A=
+>>> +	struct bcache_device *d =3D args->bcache_device;=0A=
+>>> +	struct cached_dev *dc =3D container_of(d, struct cached_dev, disk);=
+=0A=
+>>> +	unsigned long data_offset =3D dc->sb.data_offset;=0A=
+>>> +=0A=
+>>> +	if (zone->start >=3D data_offset) {=0A=
+>>> +		zone->start -=3D data_offset;=0A=
+>>> +		zone->wp -=3D data_offset;=0A=
+>>=0A=
+>> Since the zone that contains the super block has to be ignored, the rema=
+pping of=0A=
+>> the zone start can be done unconditionally. For the write pointer remapp=
+ing, you=0A=
+>> need to handle several cases: conventional zones, full zones and read-on=
+ly zones=0A=
+>> do not have a valid write pointer value, so no updating. You also need t=
+o skip=0A=
+>> offline zones.=0A=
+>>=0A=
+> =0A=
+> Copied, I will fix here in next version.=0A=
+> =0A=
+> =0A=
+>>> +	} else {=0A=
+>>> +		/*=0A=
+>>> +		 * Normally the first zone is conventional zone,=0A=
+>>> +		 * we don't need to worry about how to maintain=0A=
+>>> +		 * the write pointer.=0A=
+>>> +		 * But the zone->len is special, because the=0A=
+>>> +		 * sector 0 on bcache device is 8KB offset on=0A=
+>>> +		 * backing device indeed.=0A=
+>>> +		 */=0A=
+>>> +		zone->len -=3D data_offset;=0A=
+>>=0A=
+>> This should not be necessary if the first zone containing the super bloc=
+k is=0A=
+>> skipped entirely.=0A=
+>>=0A=
+> =0A=
+> Yes, it will be.=0A=
+> =0A=
+> =0A=
+>>> +	}=0A=
+>>> +=0A=
+>>> +	return args->orig_cb(zone, idx, args->orig_data);=0A=
+>>> +}=0A=
+>>> +=0A=
+>>> +static int cached_dev_report_zones(struct bch_report_zones_args *args,=
+=0A=
+>>> +				   unsigned int nr_zones)=0A=
+>>> +{=0A=
+>>> +	struct bcache_device *d =3D args->bcache_device;=0A=
+>>> +	struct cached_dev *dc =3D container_of(d, struct cached_dev, disk);=
+=0A=
+>>> +	sector_t sector =3D args->sector + dc->sb.data_offset;=0A=
+>>> +=0A=
+>>> +	/* sector is real LBA of backing device */=0A=
+>>> +	return blkdev_report_zones(dc->bdev,=0A=
+>>> +				   sector,=0A=
+>>> +				   nr_zones,=0A=
+>>> +				   cached_dev_report_zones_cb,=0A=
+>>> +				   args);=0A=
+>>> +}=0A=
+>>> +=0A=
+>>>  void bch_cached_dev_request_init(struct cached_dev *dc)=0A=
+>>>  {=0A=
+>>>  	struct gendisk *g =3D dc->disk.disk;=0A=
+>>> @@ -1268,6 +1341,7 @@ void bch_cached_dev_request_init(struct cached_de=
+v *dc)=0A=
+>>>  	g->queue->backing_dev_info->congested_fn =3D cached_dev_congested;=0A=
+>>>  	dc->disk.cache_miss			=3D cached_dev_cache_miss;=0A=
+>>>  	dc->disk.ioctl				=3D cached_dev_ioctl;=0A=
+>>> +	dc->disk.report_zones			=3D cached_dev_report_zones;=0A=
+>>>  }=0A=
+>>>  =0A=
+>>>  /* Flash backed devices */=0A=
+>>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c=0A=
+>>> index d98354fa28e3..b7d496040cee 100644=0A=
+>>> --- a/drivers/md/bcache/super.c=0A=
+>>> +++ b/drivers/md/bcache/super.c=0A=
+>>> @@ -679,10 +679,31 @@ static int ioctl_dev(struct block_device *b, fmod=
+e_t mode,=0A=
+>>>  	return d->ioctl(d, mode, cmd, arg);=0A=
+>>>  }=0A=
+>>>  =0A=
+>>> +static int report_zones_dev(struct gendisk *disk,=0A=
+>>> +			    sector_t sector,=0A=
+>>> +			    unsigned int nr_zones,=0A=
+>>> +			    report_zones_cb cb,=0A=
+>>> +			    void *data)=0A=
+>>> +{=0A=
+>>> +	struct bcache_device *d =3D disk->private_data;=0A=
+>>> +	struct bch_report_zones_args args =3D {=0A=
+>>> +		.bcache_device =3D d,=0A=
+>>> +		.sector =3D sector,=0A=
+>>> +		.orig_data =3D data,=0A=
+>>> +		.orig_cb =3D cb,=0A=
+>>> +	};=0A=
+>>> +=0A=
+>>> +	if (d->report_zones)=0A=
+>>> +		return d->report_zones(&args, nr_zones);=0A=
+>>=0A=
+>> It looks to me like this is not necessary. This function could just be=
+=0A=
+>> cached_dev_report_zones() and you can drop the dc->disk.report_zones met=
+hod.=0A=
+>>=0A=
+> =0A=
+> Yes, I will fix it.=0A=
+> =0A=
+> =0A=
+>>> +=0A=
+>>> +	return -EOPNOTSUPP;=0A=
+>>> +}=0A=
+>>> +=0A=
+>>>  static const struct block_device_operations bcache_ops =3D {=0A=
+>>>  	.open		=3D open_dev,=0A=
+>>>  	.release	=3D release_dev,=0A=
+>>>  	.ioctl		=3D ioctl_dev,=0A=
+>>> +	.report_zones	=3D report_zones_dev,=0A=
+>>>  	.owner		=3D THIS_MODULE,=0A=
+>>>  };=0A=
+>>>  =0A=
+>>> @@ -815,8 +836,12 @@ static void bcache_device_free(struct bcache_devic=
+e *d)=0A=
+>>>  	closure_debug_destroy(&d->cl);=0A=
+>>>  }=0A=
+>>>  =0A=
+>>> -static int bcache_device_init(struct bcache_device *d, unsigned int bl=
+ock_size,=0A=
+>>> -			      sector_t sectors, make_request_fn make_request_fn)=0A=
+>>> +static int bcache_device_init(struct cached_dev *dc,=0A=
+>>> +			      struct bcache_device *d,=0A=
+>>> +			      unsigned int block_size,=0A=
+>>> +			      sector_t sectors,=0A=
+>>> +			      make_request_fn make_request_fn)=0A=
+>>> +=0A=
+>>>  {=0A=
+>>>  	struct request_queue *q;=0A=
+>>>  	const size_t max_stripes =3D min_t(size_t, INT_MAX,=0A=
+>>> @@ -886,6 +911,17 @@ static int bcache_device_init(struct bcache_device=
+ *d, unsigned int block_size,=0A=
+>>>  	blk_queue_flag_clear(QUEUE_FLAG_ADD_RANDOM, d->disk->queue);=0A=
+>>>  	blk_queue_flag_set(QUEUE_FLAG_DISCARD, d->disk->queue);=0A=
+>>>  =0A=
+>>> +	/*=0A=
+>>> +	 * If this is for backing device registration, and it is an=0A=
+>>> +	 * zoned device (e.g. host-managed S.M.R. hard drive), set=0A=
+>>> +	 * up zoned device attribution properly for sysfs interface.=0A=
+>>> +	 */=0A=
+>>> +	if (dc && bdev_is_zoned(dc->bdev)) {=0A=
+>>> +		q->limits.zoned =3D bdev_zoned_model(dc->bdev);=0A=
+>>> +		q->nr_zones =3D blkdev_nr_zones(dc->bdev->bd_disk);=0A=
+>>> +		q->limits.chunk_sectors =3D bdev_zone_sectors(dc->bdev);=0A=
+>>=0A=
+>> You need to call blk_revalidate_disk_zones() here:=0A=
+>>=0A=
+>> 	blk_revalidate_disk_zones(dc->bdev->bd_disk);=0A=
+>>=0A=
+>> but call it *after* setting the bc device capacity to=0A=
+>>=0A=
+>> 	get_capacity(dc->bdev->bd_disk) - bdev_zone_sectors(dc->bdev);=0A=
+>>=0A=
+>> Which I think is in fact the sectors argument to this function ?=0A=
+>>=0A=
+>> With that information blk_revalidate_disk_zones() will check the zones a=
+nd set=0A=
+>> q->nr_zones.=0A=
+>>=0A=
+>>=0A=
+> =0A=
+> This is something I didn't notice. Yes I should revalidate teh zones.=0A=
+> Will do it in next version.=0A=
+> =0A=
+> =0A=
+>>> +	}=0A=
+>>> +=0A=
+>>>  	blk_queue_write_cache(q, true, true);=0A=
+>>>  =0A=
+>>>  	return 0;=0A=
+>>> @@ -1337,9 +1373,9 @@ static int cached_dev_init(struct cached_dev *dc,=
+ unsigned int block_size)=0A=
+>>>  		dc->partial_stripes_expensive =3D=0A=
+>>>  			q->limits.raid_partial_stripes_expensive;=0A=
+>>>  =0A=
+>>> -	ret =3D bcache_device_init(&dc->disk, block_size,=0A=
+>>> -			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset,=0A=
+>>> -			 cached_dev_make_request);=0A=
+>>> +	ret =3D bcache_device_init(dc, &dc->disk, block_size,=0A=
+>>> +			dc->bdev->bd_part->nr_sects - dc->sb.data_offset,=0A=
+>>=0A=
+>> dc->sb.data_offset should be the device zone size (chunk sectors) to ski=
+p the=0A=
+>> entire first zone and preserve the "all zones have the same size" constr=
+aint.=0A=
+>>=0A=
+> =0A=
+> =0A=
+> Sure, and the bcache-tools should be fixed to recognize zoned device as=
+=0A=
+> well.=0A=
+> =0A=
+>>> +			cached_dev_make_request);=0A=
+>>>  	if (ret)=0A=
+>>>  		return ret;=0A=
+>>>  =0A=
+>>> @@ -1451,8 +1487,9 @@ static int flash_dev_run(struct cache_set *c, str=
+uct uuid_entry *u)=0A=
+>>>  =0A=
+>>>  	kobject_init(&d->kobj, &bch_flash_dev_ktype);=0A=
+>>>  =0A=
+>>> -	if (bcache_device_init(d, block_bytes(c), u->sectors,=0A=
+>>> -			flash_dev_make_request))=0A=
+>>> +	if (bcache_device_init(NULL, d, block_bytes(c),=0A=
+>>> +			       u->sectors,=0A=
+>>> +			       flash_dev_make_request))=0A=
+>>>  		goto err;=0A=
+>>>  =0A=
+>>>  	bcache_device_attach(d, c, u - c->uuids);=0A=
+>>>=0A=
+>>=0A=
+>>=0A=
+> =0A=
+> Thanks for your review. I will post v2 soon.=0A=
+> =0A=
+> Coly Li=0A=
+> =0A=
+> =0A=
+=0A=
+=0A=
+-- =0A=
+Damien Le Moal=0A=
+Western Digital Research=0A=
