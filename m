@@ -4,35 +4,37 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E0062C433E1
-	for <linux-bcache@archiver.kernel.org>; Fri, 15 May 2020 16:36:26 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 907EFC433DF
+	for <linux-bcache@archiver.kernel.org>; Fri, 15 May 2020 16:36:35 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id C0CF9206C0
-	for <linux-bcache@archiver.kernel.org>; Fri, 15 May 2020 16:36:26 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 735A9206C0
+	for <linux-bcache@archiver.kernel.org>; Fri, 15 May 2020 16:36:35 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726179AbgEOQg0 (ORCPT
+        id S1726247AbgEOQgf (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 15 May 2020 12:36:26 -0400
-Received: from mx2.suse.de ([195.135.220.15]:47406 "EHLO mx2.suse.de"
+        Fri, 15 May 2020 12:36:35 -0400
+Received: from mx2.suse.de ([195.135.220.15]:47524 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726168AbgEOQg0 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 15 May 2020 12:36:26 -0400
+        id S1726246AbgEOQge (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 15 May 2020 12:36:34 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.220.254])
-        by mx2.suse.de (Postfix) with ESMTP id D4FE8AD66;
-        Fri, 15 May 2020 16:36:26 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 049E2AD5F;
+        Fri, 15 May 2020 16:36:34 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-block@vger.kernel.org, damien.lemoal@wdc.com, hare@suse.com,
         hch@lst.de, axboe@kernel.dk
 Cc:     linux-bcache@vger.kernel.org, Coly Li <colyli@suse.de>,
+        Ajay Joshi <ajay.joshi@wdc.com>,
         Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>,
+        Hannes Reinecke <hare@suse.de>,
         Johannes Thumshirn <johannes.thumshirn@wdc.com>
-Subject: [RFC PATCH 2/4] block: block: change REQ_OP_ZONE_RESET from 8 to 15
-Date:   Sat, 16 May 2020 00:31:55 +0800
-Message-ID: <20200515163157.72796-3-colyli@suse.de>
+Subject: [RFC PATCH 4/4] block: set bi_size to REQ_OP_ZONE_RESET bio
+Date:   Sat, 16 May 2020 00:31:57 +0800
+Message-ID: <20200515163157.72796-5-colyli@suse.de>
 X-Mailer: git-send-email 2.25.0
 In-Reply-To: <20200515163157.72796-1-colyli@suse.de>
 References: <20200515163157.72796-1-colyli@suse.de>
@@ -42,62 +44,92 @@ Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200515163155.vAv6REtrNseRYPUUjQNYaEL1iG_D594diomEANfFITQ@z>
+Message-ID: <20200515163157.u1ew630pz5reLwQnrscQa285jgqQXkwEx2QC-Gvi91g@z>
 
-For a zoned device, e.g. host managed SMR hard drive, the request op
-REQ_OP_ZONE_RESET_ALL is to reset LBA of all zones' writer pointers to
-the start LBA of the zone they belong to. After all the write pointers
-are reset, all previously stored data is invalid and unaccessible.
-Therefore this op code changes on-disk data, belongs to WRITE request
-op code.
+Now for zoned device, zone management ioctl commands are converted into
+zone management bios and handled by blkdev_zone_mgmt(). There are 4 zone
+management bios are handled, their op code is,
+- REQ_OP_ZONE_RESET
+  Reset the zone's writer pointer and empty all previously stored data.
+- REQ_OP_ZONE_OPEN
+  Open the zones in the specified sector range, no influence on data.
+- REQ_OP_ZONE_CLOSE
+  Close the zones in the specified sector range, no influence on data.
+- REQ_OP_ZONE_FINISH
+  Mark the zone as full, no influence on data.
+All the zone management bios has 0 byte size, a.k.a their bi_size is 0.
 
-Similar to the problem of REQ_OP_ZONE_RESET, REQ_OP_ZONE_RESET is an
-even number 8, it means bios with REQ_OP_ZONE_RESET_ALL in bio->bi_opf
-will be treated as READ request by op_is_write().
+Exept for REQ_OP_ZONE_RESET request, zero length bio works fine for
+other zone management bio, before the zoned device e.g. host managed SMR
+hard drive can be created as a bcache device.
 
-Same problem will happen when bcache device is created on top of zoned
-device like host managed SMR hard drive, bcache driver should invalid
-all cached data for the REQ_OP_ZONE_RESET_ALL request, but this zone
-management bio is mistakenly treated as READ request and go into bcache
-read code path, which will cause undefined behavior.
+When a bcache device (virtual block device to forward bios like md raid
+drivers) can be created on top of the zoned device, and a fast SSD is
+attached as a cache device, bcache driver may cache the frequent random
+READ requests on fast SSD to accelerate hot data READ performance.
 
-This patch changes REQ_OP_ZONE_RESET_ALL value from 8 to 15, this new
-odd number will make bcache driver handle this zone management bio in
-write request code path properly.
+When bcache driver receives a zone management bio for REQ_OP_ZONE_RESET
+op, while forwarding the request to underlying zoned device e.g. host
+managed SMR hard drive, it should also invalidate all cached data from
+SSD for the resetting zone. Otherwise bcache will continue provide the
+outdated cached data to READ request and cause potential data storage
+inconsistency and corruption.
 
-Fixes: e84e8f066395 ("block: add req op to reset all zones and flag")
+In order to invalidate outdated data from SSD for the reset zone, bcache
+needs to know not only the start LBA but also the range length of the
+resetting zone. Otherwise, bcache won't be able to accurately invalidate
+the outdated cached data.
+
+Is it possible to simply set the bi_size inside bcache driver? The
+answer is NO. Although every REQ_OP_ZONE_RESET bio has exact length as
+zone size or q->limits.chunk_sectors, it is possible that some other
+layer stacking block driver (in the future) exists between bcache driver
+and blkdev_zone_mgmt() where the zone management bio is made.
+
+The best location to set bi_size is where the zone management bio is
+composed in blkdev_zone_mgmt(), then no matter how this bio is split
+before bcache driver receives it, bcache driver can always correctly
+invalidate the resetting range.
+
+This patch sets the bi_size of REQ_OP_ZONE_RESET bio for each resetting
+zone. Here REQ_OP_ZONE_RESET is special whose bi_size should be set as
+capacity of whole drive size, then bcache can invalidate all cached data
+from SSD for the zoned backing device.
+
+With this change, now bcache code can handle REQ_OP_ZONE_RESET bio in
+the way very similar to REQ_OP_DISCARD bio with very little change.
+
 Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Ajay Joshi <ajay.joshi@wdc.com>
 Cc: Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
+Cc: Christoph Hellwig <hch@lst.de>
 Cc: Damien Le Moal <damien.lemoal@wdc.com>
-Cc: Hannes Reinecke <hare@suse.com>
-Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Hannes Reinecke <hare@suse.de>
 Cc: Johannes Thumshirn <johannes.thumshirn@wdc.com>
 ---
- include/linux/blk_types.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ block/blk-zoned.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 8f7bc15a6de3..618032fa1b29 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -284,8 +284,6 @@ enum req_opf {
- 	REQ_OP_SECURE_ERASE	= 5,
- 	/* write the same sector many times */
- 	REQ_OP_WRITE_SAME	= 7,
--	/* reset all the zone present on the device */
--	REQ_OP_ZONE_RESET_ALL	= 8,
- 	/* write the zero filled sector many times */
- 	REQ_OP_WRITE_ZEROES	= 9,
- 	/* Open a zone */
-@@ -296,6 +294,8 @@ enum req_opf {
- 	REQ_OP_ZONE_FINISH	= 12,
- 	/* reset a zone write pointer */
- 	REQ_OP_ZONE_RESET	= 13,
-+	/* reset all the zone present on the device */
-+	REQ_OP_ZONE_RESET_ALL	= 15,
+diff --git a/block/blk-zoned.c b/block/blk-zoned.c
+index 1e0708c68267..01d91314399b 100644
+--- a/block/blk-zoned.c
++++ b/block/blk-zoned.c
+@@ -227,11 +227,15 @@ int blkdev_zone_mgmt(struct block_device *bdev, enum req_opf op,
+ 		if (op == REQ_OP_ZONE_RESET &&
+ 		    blkdev_allow_reset_all_zones(bdev, sector, nr_sectors)) {
+ 			bio->bi_opf = REQ_OP_ZONE_RESET_ALL;
++			bio->bi_iter.bi_sector = sector;
++			bio->bi_iter.bi_size = nr_sectors;
+ 			break;
+ 		}
  
- 	/* SCSI passthrough using struct scsi_request */
- 	REQ_OP_SCSI_IN		= 32,
+ 		bio->bi_opf = op | REQ_SYNC;
+ 		bio->bi_iter.bi_sector = sector;
++		if (op == REQ_OP_ZONE_RESET)
++			bio->bi_iter.bi_size = zone_sectors;
+ 		sector += zone_sectors;
+ 
+ 		/* This may take a while, so be nice to others */
 -- 
 2.25.0
 
