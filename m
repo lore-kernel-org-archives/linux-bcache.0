@@ -1,77 +1,68 @@
 From: Coly Li <colyli@suse.de>
-Subject: [RFC PATCH 1/4] block: change REQ_OP_ZONE_RESET from 6 to 13
-Date: Sat, 16 May 2020 00:31:54 +0800
-Message-ID: <20200515163157.72796-2-colyli@suse.de>
+Subject: [RFC PATCH 2/4] block: block: change REQ_OP_ZONE_RESET from 8 to 15
+Date: Sat, 16 May 2020 00:31:55 +0800
+Message-ID: <20200515163157.72796-3-colyli@suse.de>
 References: <20200515163157.72796-1-colyli@suse.de>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:46634 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726191AbgEOQf3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 15 May 2020 12:35:29 -0400
+Return-path: <linux-block-owner@vger.kernel.org>
 In-Reply-To: <20200515163157.72796-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Sender: linux-block-owner@vger.kernel.org
 To: linux-block@vger.kernel.org, damien.lemoal@wdc.com, hare@suse.com, hch@lst.de, axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>, Jens Axboe <axboe@fb.com>, Johannes Thumshirn <johannes.thumshirn@wdc.com>, Shaun Tancheff <shaun.tancheff@seagate.com>
+Cc: linux-bcache@vger.kernel.org, Coly Li <colyli@suse.de>, Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>, Johannes Thumshirn <johannes.thumshirn@wdc.com>
+List-Id: linux-bcache@vger.kernel.org
 
-For a zoned device, e.g. host managed SMR hard drive, REQ_OP_ZONE_RESET
-is to reset the LBA of a zone's write pointer back to the start LBA of
-this zone. After the write point is reset, all previously stored data
-in this zone is invalid and unaccessible anymore. Therefore, this op
-code changes on disk data, belongs to a WRITE request op code.
+For a zoned device, e.g. host managed SMR hard drive, the request op
+REQ_OP_ZONE_RESET_ALL is to reset LBA of all zones' writer pointers to
+the start LBA of the zone they belong to. After all the write pointers
+are reset, all previously stored data is invalid and unaccessible.
+Therefore this op code changes on-disk data, belongs to WRITE request
+op code.
 
-Current REQ_OP_ZONE_RESET is defined as number 6, but the convention of
-the op code is, READ requests are even numbers, and WRITE requests are
-odd numbers. See how op_is_write defined,
+Similar to the problem of REQ_OP_ZONE_RESET, REQ_OP_ZONE_RESET is an
+even number 8, it means bios with REQ_OP_ZONE_RESET_ALL in bio->bi_opf
+will be treated as READ request by op_is_write().
 
-397 static inline bool op_is_write(unsigned int op)
-398 {
-399         return (op & 1);
-400 }
+Same problem will happen when bcache device is created on top of zoned
+device like host managed SMR hard drive, bcache driver should invalid
+all cached data for the REQ_OP_ZONE_RESET_ALL request, but this zone
+management bio is mistakenly treated as READ request and go into bcache
+read code path, which will cause undefined behavior.
 
-When create bcache device on top of the zoned SMR drive, bcache driver
-has to handle the REQ_OP_ZONE_RESET bio by invalidate all cached data
-belongs to the LBA range of the restting zone. A wrong op code value
-will make the this zone management bio goes into bcache' read requests
-code path and causes undefined result.
+This patch changes REQ_OP_ZONE_RESET_ALL value from 8 to 15, this new
+odd number will make bcache driver handle this zone management bio in
+write request code path properly.
 
-This patch changes REQ_OP_ZONE_RESET value from 6 to 13, the new odd
-number will make bcache driver handle this zone management bio properly
-in write requests code path.
-
-Fixes: 87374179c535 ("block: add a proper block layer data direction encoding")
+Fixes: e84e8f066395 ("block: add req op to reset all zones and flag")
 Signed-off-by: Coly Li <colyli@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
+Cc: Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
 Cc: Damien Le Moal <damien.lemoal@wdc.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Jens Axboe <axboe@fb.com>
+Cc: Hannes Reinecke <hare@suse.com>
+Cc: Jens Axboe <axboe@kernel.dk>
 Cc: Johannes Thumshirn <johannes.thumshirn@wdc.com>
-Cc: Shaun Tancheff <shaun.tancheff@seagate.com>
 ---
  include/linux/blk_types.h | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 31eb92876be7..8f7bc15a6de3 100644
+index 8f7bc15a6de3..618032fa1b29 100644
 --- a/include/linux/blk_types.h
 +++ b/include/linux/blk_types.h
-@@ -282,8 +282,6 @@ enum req_opf {
- 	REQ_OP_DISCARD		= 3,
- 	/* securely erase sectors */
+@@ -284,8 +284,6 @@ enum req_opf {
  	REQ_OP_SECURE_ERASE	= 5,
--	/* reset a zone write pointer */
--	REQ_OP_ZONE_RESET	= 6,
  	/* write the same sector many times */
  	REQ_OP_WRITE_SAME	= 7,
- 	/* reset all the zone present on the device */
+-	/* reset all the zone present on the device */
+-	REQ_OP_ZONE_RESET_ALL	= 8,
+ 	/* write the zero filled sector many times */
+ 	REQ_OP_WRITE_ZEROES	= 9,
+ 	/* Open a zone */
 @@ -296,6 +294,8 @@ enum req_opf {
- 	REQ_OP_ZONE_CLOSE	= 11,
- 	/* Transition a zone to full */
  	REQ_OP_ZONE_FINISH	= 12,
-+	/* reset a zone write pointer */
-+	REQ_OP_ZONE_RESET	= 13,
+ 	/* reset a zone write pointer */
+ 	REQ_OP_ZONE_RESET	= 13,
++	/* reset all the zone present on the device */
++	REQ_OP_ZONE_RESET_ALL	= 15,
  
  	/* SCSI passthrough using struct scsi_request */
  	REQ_OP_SCSI_IN		= 32,
