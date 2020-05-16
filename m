@@ -1,55 +1,54 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [RFC PATCH v2 3/4] block: remove queue_is_mq restriction from
- blk_revalidate_disk_zones()
-Date: Sat, 16 May 2020 21:13:50 +0800
-Message-ID: <d3fe49f1-d37b-689e-ae0e-078b1254d7e7@suse.de>
-References: <20200516035434.82809-1-colyli@suse.de>
- <20200516035434.82809-4-colyli@suse.de> <20200516124020.GC13448@lst.de>
+Subject: [PATCH 0/3] bcache-tools: suport zoned device as making backing evice
+Date: Sat, 16 May 2020 22:09:37 +0800
+Message-ID: <20200516140940.101190-1-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:35870 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:47068 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726202AbgEPNN6 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 16 May 2020 09:13:58 -0400
-In-Reply-To: <20200516124020.GC13448@lst.de>
-Content-Language: en-US
+        id S1726266AbgEPOKT (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 16 May 2020 10:10:19 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Christoph Hellwig <hch@lst.de>
-Cc: linux-block@vger.kernel.org, damien.lemoal@wdc.com, hare@suse.com, axboe@kernel.dk, linux-bcache@vger.kernel.org, kbusch@kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-On 2020/5/16 20:40, Christoph Hellwig wrote:
-> On Sat, May 16, 2020 at 11:54:33AM +0800, Coly Li wrote:
->> The bcache driver is bio based and NOT request based multiqueued driver,
->> if a zoned SMR hard drive is used as backing device of a bcache device,
->> calling blk_revalidate_disk_zones() for the bcache device will fail due
->> to the following check in blk_revalidate_disk_zones(),
->> 478       if (WARN_ON_ONCE(!queue_is_mq(q)))
->> 479             return -EIO;
->>
->> Now bcache is able to export the zoned information from the underlying
->> zoned SMR drives and format zonefs on top of a bcache device, the
->> resitriction that a zoned device should be multiqueued is unnecessary
->> for now.
->>
->> Although in commit ae58954d8734c ("block: don't handle bio based drivers
->> in blk_revalidate_disk_zones") it is said that bio based drivers should
->> not call blk_revalidate_disk_zones() and just manually update their own
->> q->nr_zones, but this is inaccurate. The bio based drivers also need to
->> set their zone size and initialize bitmaps for cnv and seq zones, it is
->> necessary to call blk_revalidate_disk_zones() for bio based drivers.
-> 
-> Why would you need these bitmaps for bcache?  There is no reason to
-> serialize requests for stacking drivers, and you can already derive
-> if a zone is sequential or not from whatever internal information
-> you use.
-> 
-> So without a user that actually makes sense: NAK.
-> 
+Hi folks,
 
-It is OK for me to set the zone_nr and zone size without calling
-blk_revalidate_disk_zones().
+This series is for bcache-tools to support making zoned device as
+bcache backing device.
+
+There are two major ideas to support zoned device as bcache backing
+device,
+- The super block data_offset should be aligned to zone size. By default
+  the data_offset is set to 1 zone size for zoned backing device.
+- Writeback mode is not supported yet. If the cache mode is explicitly
+  set to writeback, print message to terminal to inform users that the
+  cache mode is converted to wrightthough.
+
+After the data_offset and cache mode is set properly, the rested stuffs
+for zoned device support are from bcache driver in Linux kernel.
+
+Thanks for your review in advance.
 
 Coly Li
+---
+
+Coly Li (3):
+  bcache-tools: set zoned size aligned data_offset on backing device for
+    zoned devive
+  bcache-tools: add is_zoned_device()
+  bcache-tools: convert writeback to writethrough mode for zoned backing
+    device
+
+ Makefile |  4 +--
+ make.c   | 20 +++++++++++-
+ zoned.c  | 94 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ zoned.h  | 14 +++++++++
+ 4 files changed, 129 insertions(+), 3 deletions(-)
+ create mode 100644 zoned.c
+ create mode 100644 zoned.h
+
+-- 
+2.25.0
