@@ -1,109 +1,27 @@
-From: Coly Li <colyli@suse.de>
-Subject: [RFC PATCH v2 4/4] block: set bi_size to REQ_OP_ZONE_RESET bio
-Date: Sat, 16 May 2020 11:54:34 +0800
-Message-ID: <20200516035434.82809-5-colyli@suse.de>
+From: Chaitanya Kulkarni <Chaitanya.Kulkarni@wdc.com>
+Subject: Re: [RFC PATCH v2 1/4] block: change REQ_OP_ZONE_RESET from 6 to 13
+Date: Sat, 16 May 2020 04:06:27 +0000
+Message-ID: <BYAPR04MB496596D3B85F70D25A1C6E6986BA0@BYAPR04MB4965.namprd04.prod.outlook.com>
 References: <20200516035434.82809-1-colyli@suse.de>
+ <20200516035434.82809-2-colyli@suse.de>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:40808 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726247AbgEPDzT (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 15 May 2020 23:55:19 -0400
-In-Reply-To: <20200516035434.82809-1-colyli@suse.de>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+Return-path: <linux-block-owner@vger.kernel.org>
+Content-Language: en-US
+Sender: linux-block-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>, "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, Damien Le Moal <Damien.LeMoal@wdc.com>, "hare@suse.com" <hare@suse.com>, "hch@lst.de" <hch@lst.de>, "axboe@kernel.dk" <axboe@kernel.dk>
+Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>, "kbusch@kernel.org" <kbusch@kernel.org>, Hannes Reinecke <hare@suse.de>, Jens Axboe <axboe@fb.com>, Johannes Thumshirn <Johannes.Thumshirn@wdc.com>, Shaun Tancheff <shaun.tancheff@seagate.com>
 List-Id: linux-bcache@vger.kernel.org
-To: linux-block@vger.kernel.org, damien.lemoal@wdc.com, hare@suse.com, hch@lst.de, axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, kbusch@kernel.org, Coly Li <colyli@suse.de>, Ajay Joshi <ajay.joshi@wdc.com>, Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>, Hannes Reinecke <hare@suse.de>, Johannes Thumshirn <johannes.thumshirn@wdc.com>
 
-Now for zoned device, zone management ioctl commands are converted into
-zone management bios and handled by blkdev_zone_mgmt(). There are 4 zone
-management bios are handled, their op code is,
-- REQ_OP_ZONE_RESET
-  Reset the zone's writer pointer and empty all previously stored data.
-- REQ_OP_ZONE_OPEN
-  Open the zones in the specified sector range, no influence on data.
-- REQ_OP_ZONE_CLOSE
-  Close the zones in the specified sector range, no influence on data.
-- REQ_OP_ZONE_FINISH
-  Mark the zone as full, no influence on data.
-All the zone management bios has 0 byte size, a.k.a their bi_size is 0.
-
-Exept for REQ_OP_ZONE_RESET request, zero length bio works fine for
-other zone management bio, before the zoned device e.g. host managed SMR
-hard drive can be created as a bcache device.
-
-When a bcache device (virtual block device to forward bios like md raid
-drivers) can be created on top of the zoned device, and a fast SSD is
-attached as a cache device, bcache driver may cache the frequent random
-READ requests on fast SSD to accelerate hot data READ performance.
-
-When bcache driver receives a zone management bio for REQ_OP_ZONE_RESET
-op, while forwarding the request to underlying zoned device e.g. host
-managed SMR hard drive, it should also invalidate all cached data from
-SSD for the resetting zone. Otherwise bcache will continue provide the
-outdated cached data to READ request and cause potential data storage
-inconsistency and corruption.
-
-In order to invalidate outdated data from SSD for the reset zone, bcache
-needs to know not only the start LBA but also the range length of the
-resetting zone. Otherwise, bcache won't be able to accurately invalidate
-the outdated cached data.
-
-Is it possible to simply set the bi_size inside bcache driver? The
-answer is NO. Although every REQ_OP_ZONE_RESET bio has exact length as
-zone size or q->limits.chunk_sectors, it is possible that some other
-layer stacking block driver (in the future) exists between bcache driver
-and blkdev_zone_mgmt() where the zone management bio is made.
-
-The best location to set bi_size is where the zone management bio is
-composed in blkdev_zone_mgmt(), then no matter how this bio is split
-before bcache driver receives it, bcache driver can always correctly
-invalidate the resetting range.
-
-This patch sets the bi_size of REQ_OP_ZONE_RESET bio for each resetting
-zone. Here REQ_OP_ZONE_RESET_ALL is special whose bi_size should be set
-as capacity of whole drive size, then bcache can invalidate all cached
-data from SSD for the zoned backing device.
-
-With this change, now bcache code can handle REQ_OP_ZONE_RESET bio in
-the way very similar to REQ_OP_DISCARD bio with very little change.
-
-Signed-off-by: Coly Li <colyli@suse.de>
-Cc: Ajay Joshi <ajay.joshi@wdc.com>
-Cc: Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Damien Le Moal <damien.lemoal@wdc.com>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Johannes Thumshirn <johannes.thumshirn@wdc.com>
-Cc: Keith Busch <kbusch@kernel.org>
----
-Changelog:
-v2: fix typo for REQ_OP_ZONE_RESET_ALL.
-v1: initial version.
-
- block/blk-zoned.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/block/blk-zoned.c b/block/blk-zoned.c
-index 1e0708c68267..01d91314399b 100644
---- a/block/blk-zoned.c
-+++ b/block/blk-zoned.c
-@@ -227,11 +227,15 @@ int blkdev_zone_mgmt(struct block_device *bdev, enum req_opf op,
- 		if (op == REQ_OP_ZONE_RESET &&
- 		    blkdev_allow_reset_all_zones(bdev, sector, nr_sectors)) {
- 			bio->bi_opf = REQ_OP_ZONE_RESET_ALL;
-+			bio->bi_iter.bi_sector = sector;
-+			bio->bi_iter.bi_size = nr_sectors;
- 			break;
- 		}
- 
- 		bio->bi_opf = op | REQ_SYNC;
- 		bio->bi_iter.bi_sector = sector;
-+		if (op == REQ_OP_ZONE_RESET)
-+			bio->bi_iter.bi_size = zone_sectors;
- 		sector += zone_sectors;
- 
- 		/* This may take a while, so be nice to others */
--- 
-2.25.0
+On 05/15/2020 08:55 PM, Coly Li wrote:=0A=
+>   	REQ_OP_ZONE_FINISH	=3D 12,=0A=
+> +	/* reset a zone write pointer */=0A=
+> +	REQ_OP_ZONE_RESET	=3D 13,=0A=
+=0A=
+I think 13 is taken, I found this in block tree branch :-=0A=
+for-5.8/block=0A=
+=0A=
+316         REQ_OP_ZONE_FINISH      =3D 12,=0A=
+317         /* write data at the current zone write pointer */=0A=
+318         REQ_OP_ZONE_APPEND      =3D 13,=0A=
