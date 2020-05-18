@@ -2,204 +2,140 @@ Return-Path: <SRS0=cyis=7A=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-4.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 1F171C433DF
-	for <linux-bcache@archiver.kernel.org>; Mon, 18 May 2020 00:40:03 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A1BEBC433E0
+	for <linux-bcache@archiver.kernel.org>; Mon, 18 May 2020 05:09:28 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id DF8CE207BB
-	for <linux-bcache@archiver.kernel.org>; Mon, 18 May 2020 00:40:02 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 7174420787
+	for <linux-bcache@archiver.kernel.org>; Mon, 18 May 2020 05:09:28 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=wdc.com header.i=@wdc.com header.b="JTkFWNa2";
-	dkim=pass (1024-bit key) header.d=sharedspace.onmicrosoft.com header.i=@sharedspace.onmicrosoft.com header.b="tKPw42+A"
+	dkim=fail reason="signature verification failed" (2048-bit key) header.d=wdc.com header.i=@wdc.com header.b="lqqAhFfR";
+	dkim=pass (1024-bit key) header.d=sharedspace.onmicrosoft.com header.i=@sharedspace.onmicrosoft.com header.b="wTxbp9Uc"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726680AbgERAkC (ORCPT
+        id S1726343AbgERFJ2 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sun, 17 May 2020 20:40:02 -0400
-Received: from esa5.hgst.iphmx.com ([216.71.153.144]:3297 "EHLO
+        Mon, 18 May 2020 01:09:28 -0400
+Received: from esa5.hgst.iphmx.com ([216.71.153.144]:10617 "EHLO
         esa5.hgst.iphmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726668AbgERAkC (ORCPT
+        with ESMTP id S1726040AbgERFJ1 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 17 May 2020 20:40:02 -0400
+        Mon, 18 May 2020 01:09:27 -0400
 DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple;
   d=wdc.com; i=@wdc.com; q=dns/txt; s=dkim.wdc.com;
-  t=1589762401; x=1621298401;
+  t=1589778567; x=1621314567;
   h=from:to:cc:subject:date:message-id:references:
    content-transfer-encoding:mime-version;
-  bh=5ymd8aeO88j+6HFp398nll0rdU+weVCFAjVF5RzXip0=;
-  b=JTkFWNa22Ez489P92gkhXhlvJrqtk3xl2MUTgLMFZ4X8Flf4gXK/Bw87
-   5iGPBT4g0PZTmxCQsinD3zSCWe5bUfQ13KI2D0thXUFTNVnYwPWKphKUH
-   pOqfMAXzbYHOBt5oojiAffkHCIlXU+joycK0L9d3HknWocY42hJZ8pWTl
-   4fdNMyhu70B+Bd7PU/elzQhdJ9ibyRFiTK5+jDeK40qy9PFDx6QcuRnvr
-   qGV75DuPrOPvtzib21CsQVgCauC84m7nwE1h8PdlglezTyScBpMMrooCL
-   x6Gn/l+dDAq2/ouIlosC1sULsoSIhzfDPZPlGwRb5JcyZSo+Ic3wvbExL
-   w==;
-IronPort-SDR: uIS42MHEvYvsNkgzG1ecMQdMsbJrHNE0YTiDYOuMNtjnkiPH4KCmwxF/FvaJKfUeBO2l/ef7Zg
- t3qgASYn6W3eXCLVGJjp65WQkdBK444L4GxaV4wSB0rUsMyRB7bhS+b8WeshG/F3G34MASXVkB
- xvTxh/5ZHCmDHsiLziZWC1hrOmx/upQLHCUKW/e2Es6JWFMzGfFVN8IOVCzoz8nLdmpQk3YaN/
- tDbjtt89/0g1hY1nZ4nTyN8u1JUV8oz3f6xfm0RNFC9H9HG4P5taNbtfW6IKaeXrQwTRIlMhcb
- 53Q=
-X-IronPort-AV: E=Sophos;i="5.73,405,1583164800"; 
-   d="scan'208";a="138235422"
-Received: from mail-mw2nam12lp2041.outbound.protection.outlook.com (HELO NAM12-MW2-obe.outbound.protection.outlook.com) ([104.47.66.41])
-  by ob1.hgst.iphmx.com with ESMTP; 18 May 2020 08:40:00 +0800
+  bh=jniKQ7KenpPaVIeWxR/nKeX6MjkX1glXIyhjq8SKq64=;
+  b=lqqAhFfR24IvXYoGD0FN6CeEZJemykbHu2K4tpkhZkJg8hObYlVAUrPW
+   yY3sejXOWb4s5Y6GKRkXZOtdjUIxkxS4ESMNvlxJweXSY+OKxx2Nb8OY4
+   dcCKpgW6G8rK4OEtn52O6unUocev47CPGcsi4oC9lPxq2+J5oxDKXdvhl
+   gJpqkMsPPmq+k8Gc6i3LsZdIr649qn680q+oQ9uRERAbu0i6mpMghRmxg
+   VxGLVWGBJ+02qpXQi7ukcuuijWMerBAxR60pNDbJfl8yNnxp64sU4JUCv
+   OX+6TI3ONxRxvlWdJloKLH0kIqmYSXOXgWKtAssKAQ3IRNOLm/s4j3k0d
+   Q==;
+IronPort-SDR: yfbcf31rCBtUzj7GGbxnmtzsIH/otDigbUypAtrtanmXOBhP2Cl33f8XkFkT2g936ydD8F3zXg
+ VOXtFfCHcIzEmtlGtXk6QSlJKPTQYwucrgS3/dh5wcil5VK7gQQUpyCtdOb0TlVRBLYDXNFQYv
+ 3ohvLRUbsjQdIO7MEUJaffzUWoTFICnF04tNvG147MgIFAvFknoAegLpeJ3aULQWQsSCw1xME7
+ 5y2nXCBPpcXyOuLQuMVrgriaLqzj+yR2Om3+ulms++CgJVJj/+sOK5LE6pIeU3pIXGqevUMsR0
+ LL4=
+X-IronPort-AV: E=Sophos;i="5.73,406,1583164800"; 
+   d="scan'208";a="138249946"
+Received: from mail-bn7nam10lp2107.outbound.protection.outlook.com (HELO NAM10-BN7-obe.outbound.protection.outlook.com) ([104.47.70.107])
+  by ob1.hgst.iphmx.com with ESMTP; 18 May 2020 13:09:25 +0800
 ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
- b=ZkiftdV7D62x/uk89FoKOnkUFECuj/WtXKOQL4vtHElVGWqWQin9BJ0fMU5SzfOl09nepFsLKDv4YnU7zcSlUUJYvpb5Vx2Tf2C6wz2q86fzOD4PvGpgr9M/sIl78subBnLpE7xyAIY4GhyoH90JvXIqai1K7rjAxdEub/5Alg3H7XR6kF3gdQMNsUCObOhOvf5dAhOLouH2XggdWnbdL7Jam7+/vD9HRwM82gn28/8jgx5INn4e4SfuB1XqQHyRMCcjtWXd/qybjKK5DSsQt4BA539PTNWcx64w38jseH6I6csE3/ZrnoFzqrZIfkdIB+TwW4yhH0JvSZHHPIHdVg==
+ b=VGa0Vv+xtN1FGSYD4fMySfBKUJJGk6FOp1nkTGsAWCN6ZYNgXv4ia1slCFAufwltNmng+sH2tM/RgU88GnbXMcO5kmy3zRrpTd9qciG0QXCRtHcPh6PjPBHwJ+6NJeLWMRQYA2jdrO/97ZjB9DkWm5C7FWLjpj4gP8NCXUJvJN2E7zU4BTADElMfcO6EqpSLcWRfbGrajGw+TYGkIILN/ViqtawY2ae+iD0PFrnixcnK44pn4iXRfM+ZthQmQ2/zE2YFJ0o/QvRPcBXUYpVPtO6aokLVKSCcrZd04j89+bQAOrPZpGsDEBzDRZRNQ/vUY3UFAzkZ2XUohbHVEHQTvg==
 ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
  s=arcselector9901;
  h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=hnBQ7j+/h3JBoe1TJM7F2QPmZcImzUOWf2Y+fMaqzv0=;
- b=odn9kEzXOSjPIpbLiumUwPAoVNgNm81BDVfsi+L6m9UgpCT1ZlivQZrM/AseKpcq9J/A93TusyPyPXnZSQTQQy0gFGbgghCXBbQtd+XtvX0JoZP544opBtI3KYDBhzdoQd/Eb1+19Y7pgvt4/LZ68PXuIK2bIIF9QPzoa55Sn3O4n9QG6BPDN0AxWuUVLLntTcnj+M69+rPbf5hfxNkfloMfXX6EpD3q9TLt/Ga7Kt73iRGVkro5e+oqgMT3dTXN3FTpdBhc/iQ6sdgP9fwbmmmBlw7pWEIMOjrilJXOy4bEpPclIUonImWkaRva26kMIcE1/5VsawvULGyfUXzT5w==
+ bh=jniKQ7KenpPaVIeWxR/nKeX6MjkX1glXIyhjq8SKq64=;
+ b=RhZhFi5QDFp4jtcQBDeZ3bCqTBxTrRXLOWqKpNYsMZjWbu/8uSNvN+AcHZBuSeDnpPh6mm6p2Cr5iEztU/VyIwgm7gLvproBdnpBlC3QTu7SCcQ/gAQ1s06nNJ6lDuA8RvkYJir37sK9GgGgEGTrV8oLhpH24Nq1X4wJj8JjKbRiH5b5i3+iPY7gVz4DETufr3fau9gD5GJcUjWGYPnuyDUiy3Ql5IOuafOMlK9FoL0/m0w7YBCs/wr6M0y8VXxCZQ7jlWCl2Q3UthcAcasFVRGc/vh7KcJVVUWhJmFHLOxHvs5OPMKlkxH42DJ45jXBdlfszLfpfyA4Ko7ztrif/w==
 ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
  smtp.mailfrom=wdc.com; dmarc=pass action=none header.from=wdc.com; dkim=pass
  header.d=wdc.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
  d=sharedspace.onmicrosoft.com; s=selector2-sharedspace-onmicrosoft-com;
  h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=hnBQ7j+/h3JBoe1TJM7F2QPmZcImzUOWf2Y+fMaqzv0=;
- b=tKPw42+AZmRE+c9iYdqWdQoJoONheLWl7jxE9egir/WiRpkwEJeZk8pUNC9KyBw6PY5RIJ/f/yDO5S9grzvT6sANWzD9IQlDba61gBBpAeOy3hUzU3RVWWER8s/OYsLcQYDpOwfxGBcXVbuFsXGjJAfPdwQmwz7rzQyF9sDGyJ8=
-Received: from BY5PR04MB6900.namprd04.prod.outlook.com (2603:10b6:a03:229::20)
- by BY5PR04MB7121.namprd04.prod.outlook.com (2603:10b6:a03:223::18) with
+ bh=jniKQ7KenpPaVIeWxR/nKeX6MjkX1glXIyhjq8SKq64=;
+ b=wTxbp9UcLD6blaUzAbuZ3GzAwGtIQroyzI/D/Vy+Ry9dkK8V623luDqNKKBnLNK/odlJebdl6Mx5dDhqqG4CjqOH/iuaXFrpa03WFf5ziXNbxDtl+mudLbBiQGSWiDgwEJSkTaweKqZz7A0RX3qiMQaX/7CoaDxbFjj+vZup2yw=
+Received: from BYAPR04MB4965.namprd04.prod.outlook.com (2603:10b6:a03:4d::25)
+ by BYAPR04MB4549.namprd04.prod.outlook.com (2603:10b6:a03:5e::10) with
  Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.3000.24; Mon, 18 May
- 2020 00:39:57 +0000
-Received: from BY5PR04MB6900.namprd04.prod.outlook.com
- ([fe80::b574:3071:da2f:7606]) by BY5PR04MB6900.namprd04.prod.outlook.com
- ([fe80::b574:3071:da2f:7606%6]) with mapi id 15.20.3000.033; Mon, 18 May 2020
- 00:39:57 +0000
-From:   Damien Le Moal <Damien.LeMoal@wdc.com>
-To:     Coly Li <colyli@suse.de>,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.3000.25; Mon, 18 May
+ 2020 05:09:23 +0000
+Received: from BYAPR04MB4965.namprd04.prod.outlook.com
+ ([fe80::4d72:27c:c075:c5e6]) by BYAPR04MB4965.namprd04.prod.outlook.com
+ ([fe80::4d72:27c:c075:c5e6%7]) with mapi id 15.20.3000.033; Mon, 18 May 2020
+ 05:09:23 +0000
+From:   Chaitanya Kulkarni <Chaitanya.Kulkarni@wdc.com>
+To:     Damien Le Moal <Damien.LeMoal@wdc.com>, Coly Li <colyli@suse.de>,
         "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>,
         "hare@suse.com" <hare@suse.com>, "hch@lst.de" <hch@lst.de>,
         "axboe@kernel.dk" <axboe@kernel.dk>
 CC:     "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        "kbusch@kernel.org" <kbusch@kernel.org>
-Subject: Re: [RFC PATCH v2 3/4] block: remove queue_is_mq restriction from
- blk_revalidate_disk_zones()
-Thread-Topic: [RFC PATCH v2 3/4] block: remove queue_is_mq restriction from
- blk_revalidate_disk_zones()
-Thread-Index: AQHWKzXQPn7ylq1QrUmRrc4/xaJzyQ==
-Date:   Mon, 18 May 2020 00:39:57 +0000
-Message-ID: <BY5PR04MB69002D8AB1B63F428D28428FE7B80@BY5PR04MB6900.namprd04.prod.outlook.com>
+        "kbusch@kernel.org" <kbusch@kernel.org>,
+        Hannes Reinecke <hare@suse.de>, Jens Axboe <axboe@fb.com>,
+        Johannes Thumshirn <Johannes.Thumshirn@wdc.com>,
+        Shaun Tancheff <shaun.tancheff@seagate.com>
+Subject: Re: [RFC PATCH v2 1/4] block: change REQ_OP_ZONE_RESET from 6 to 13
+Thread-Topic: [RFC PATCH v2 1/4] block: change REQ_OP_ZONE_RESET from 6 to 13
+Thread-Index: AQHWKzXNx0htYVAnNEmE+sJXY3ZbhA==
+Date:   Mon, 18 May 2020 05:09:23 +0000
+Message-ID: <BYAPR04MB4965F50C13415E486F519DC986B80@BYAPR04MB4965.namprd04.prod.outlook.com>
 References: <20200516035434.82809-1-colyli@suse.de>
- <20200516035434.82809-4-colyli@suse.de>
+ <20200516035434.82809-2-colyli@suse.de>
+ <BY5PR04MB69005621AE920061F7FD383CE7B80@BY5PR04MB6900.namprd04.prod.outlook.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-authentication-results: suse.de; dkim=none (message not signed)
- header.d=none;suse.de; dmarc=none action=none header.from=wdc.com;
-x-originating-ip: [129.253.182.57]
+authentication-results: wdc.com; dkim=none (message not signed)
+ header.d=none;wdc.com; dmarc=none action=none header.from=wdc.com;
+x-originating-ip: [199.255.45.62]
 x-ms-publictraffictype: Email
 x-ms-office365-filtering-ht: Tenant
-x-ms-office365-filtering-correlation-id: 84bac8ef-0f42-466d-eb58-08d7fac3fd65
-x-ms-traffictypediagnostic: BY5PR04MB7121:
-x-microsoft-antispam-prvs: <BY5PR04MB712117293A2787D018253208E7B80@BY5PR04MB7121.namprd04.prod.outlook.com>
+x-ms-office365-filtering-correlation-id: aa6ae7c5-30df-4dfc-90c3-08d7fae9a11e
+x-ms-traffictypediagnostic: BYAPR04MB4549:
+x-ms-exchange-transport-forked: True
+x-microsoft-antispam-prvs: <BYAPR04MB45499AC5AC21F0EBD44F140B86B80@BYAPR04MB4549.namprd04.prod.outlook.com>
 wdcipoutbound: EOP-TRUE
-x-ms-oob-tlc-oobclassifiers: OLM:10000;
+x-ms-oob-tlc-oobclassifiers: OLM:8273;
 x-forefront-prvs: 04073E895A
 x-ms-exchange-senderadcheck: 1
 x-microsoft-antispam: BCL:0;
-x-microsoft-antispam-message-info: zxdwxI3tniXmVpaVn2pPy9Fe+jTjBjGjmjxwYwRiNpptMjVPQCneh6bZg7pmBLBSKM6sN9/tOvfCs83NMIPnR9tnnVLdFocVWl7GfoJDH8O4u5U/6Sz0wDeCrKLzRD/EsJqAMjQvDsCxLR18mdXqRqREQZPj38NjZvED7hJGaB1sYDlcDk3Jzd/GrVs4GVcOb6353LpMVNHSfkW0BkLvITaT+RPd5ghvAdctMrd5dM0OI1JMdO5pL399imOysfq7M1yFzTxYTiQPJ3D24G+njWEOeUEIKsM8g4a8V5TWtgz1GRI+ZBujiVE5llNCKYiJOsJ8aDQA6GfyxmQLSa365U05EthJqwJE2RDWYN+kxNgUO5vrjg4jeZwh/esBFB4jNdGRPyekP3DXc9Go4V2J0B3IQFh1hYk4FUra/vkuj3gLOYkqlowyhc0PT3W+S0NE
-x-forefront-antispam-report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:BY5PR04MB6900.namprd04.prod.outlook.com;PTR:;CAT:NONE;SFTY:;SFS:(4636009)(39860400002)(346002)(376002)(366004)(396003)(136003)(52536014)(110136005)(54906003)(2906002)(316002)(8676002)(7696005)(66446008)(478600001)(76116006)(66476007)(66556008)(66946007)(64756008)(8936002)(53546011)(86362001)(6506007)(55016002)(186003)(9686003)(5660300002)(26005)(33656002)(4326008)(71200400001);DIR:OUT;SFP:1102;
-x-ms-exchange-antispam-messagedata: sYsgV2/lpYYZzRM5bgNtRVXJ4Os5vzmkV7c3rIRdttnV2y+PuJ0uxDDTCAlDAAylyaIUisiwgsucJQOsza7FcXXnRJpjijeOcBGAmTrn05VVsD51im84gmYVSJftMBLrzuR8jkFprEBzuYZ0lAJSVboo/ba1ElgLybOGkbtUlmDxBAB49WWuwc/JGx7U2miAwc++haD5jxyVBJPcfrVN2/1ZEMApcJGOsM7JAoPIS1uk2qyS6++Ztx45m1dMKcwFmf8TGbzj+AFZ/Wa39Sf+VGNCspUk0bBhZRs2aaR1nT7k058V8pqm+BFfQMA5vJJBBhoxEm7K6dK3fxossW4AoXRlneOwUBO9GVj6rHrC4M0Tlf25INq5GMqmZWQl+p6TZly/iaibP6Jvn3+3hxDeOm5kkqx2T1UHkWU43CgZFq+ePFiiPWPAmILgSmtWttYyS6rliUzW3VcLCAA4dwZbRGCSkPMX0zAYRYOoaKz94nVviZvus78nPkvAdLbLOfBb
-x-ms-exchange-transport-forked: True
+x-microsoft-antispam-message-info: ij8NsrbIpegiuBm0b/1vORHnewLWFzUM6TOnvx5JP5IVlqZ+nxIzv1VsUIWXhmzCDo0eI7yXwi1RPGiprSimpHHSC1JGXEfku+SS5EL4BbmXd+MHCVZbp4IALZdPzR6LcKzZ0R2g+E/zd0BWq3ep2YWi8kvuFm689VVFP0LEkcnQoTxLStG7aXd+JGv4EGr0naO6tUN0llhB4sX7+U/37B1JVQf6ng+zAwSM5qqcWv44JizYw9N+qXhzfQpAS+uo2IkiKcRneFVddlB+hy7UzyA1Cmdd7xrgLzxyjB92yi1kjneh0bDLYPrtMWpXeeR//hEAdOJAJxd5IDrG97AyyJ2DsCMV11xycdQzxtzrqjRvj5Ev0BwmCe9xoEjZBwLYVsjY6GDMLmBf/m8cOQBqCTC7d5Fh9waNqDQJ6q20whNqyida3Csi0LLNEbSjmVrM
+x-forefront-antispam-report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:BYAPR04MB4965.namprd04.prod.outlook.com;PTR:;CAT:NONE;SFTY:;SFS:(4636009)(39860400002)(136003)(366004)(346002)(376002)(396003)(4744005)(110136005)(7696005)(478600001)(53546011)(6506007)(316002)(4326008)(26005)(33656002)(54906003)(7416002)(52536014)(186003)(2906002)(5660300002)(8936002)(71200400001)(8676002)(66446008)(55016002)(9686003)(66946007)(86362001)(76116006)(66476007)(66556008)(64756008);DIR:OUT;SFP:1102;
+x-ms-exchange-antispam-messagedata: UIACVAM5V4WM/WZvVJSze/YVxb/fCyoYe65eOwZcLcmTCfMw+5x8tYE71CK/NKlfkglXXSBiKf/vol4C3pFIQuvOyjyelmnmhoYxeCKHIAlX3oMRdqX///dmXzy+/wjVaC5sBonFWREfdRiAfG/xpx+GukXqumrsfWFwJZoiCYFVEdS5kpVhhknB4giMdZe2B/Bscjbuj0y7kpzSz/d6/AcU2Z4fHIKxFI8X4aoDzwj69yNfozWgvWbbd9HXn1SgA/modQRo1WqgDT6F+YHCtSADXalcTd1RwZpoxmeB9oBxIxMyv+qnQNm3Xmug9nr3LvKzP2cclN++VTMJhuHNTICz/W+1Shhw3/cYlYhTTRLV6HOG2ILoD720192wTpC7T6pDPqYksdLZ5mLmDj0r16KTws12PzqZXPoTgxbAk6hh89zRV1MdZ2FZyUWoa/FQ45bkooVqjUM/8MWrMvY8Ey8qaO1mYQ9254JftI9k6NA=
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
 X-OriginatorOrg: wdc.com
-X-MS-Exchange-CrossTenant-Network-Message-Id: 84bac8ef-0f42-466d-eb58-08d7fac3fd65
-X-MS-Exchange-CrossTenant-originalarrivaltime: 18 May 2020 00:39:57.0816
+X-MS-Exchange-CrossTenant-Network-Message-Id: aa6ae7c5-30df-4dfc-90c3-08d7fae9a11e
+X-MS-Exchange-CrossTenant-originalarrivaltime: 18 May 2020 05:09:23.2074
  (UTC)
 X-MS-Exchange-CrossTenant-fromentityheader: Hosted
 X-MS-Exchange-CrossTenant-id: b61c8803-16f3-4c35-9b17-6f65f441df86
 X-MS-Exchange-CrossTenant-mailboxtype: HOSTED
-X-MS-Exchange-CrossTenant-userprincipalname: 8OQcPHM9N78lZ1nTgvRsvDz7XxgXwmPOSTHybFg6glM51/LJVbbv8pdzgjYReGR31dPXB0IdxzK2FgQPkMBXWQ==
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY5PR04MB7121
+X-MS-Exchange-CrossTenant-userprincipalname: 4PQSe6saTyFbYJ4gK/l+/MfiETBM+H3yrH9HK4yl+oyA15RAWqMG5k6cQ6fTb8XUy6971ZE6ASnNPHjsLFTveWxEzcVbO1tywUMLSiSjNBE=
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BYAPR04MB4549
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200518003957.4yAjhYGmgLOrCNweiFWW_lc350gJC96g_YEAPkl_8NM@z>
+Message-ID: <20200518050923.IuOC8_-_jKWOvQMna7IoUsg8Lvocw363B9nTuTYocVA@z>
 
-On 2020/05/16 12:55, Coly Li wrote:=0A=
-> The bcache driver is bio based and NOT request based multiqueued driver,=
-=0A=
-> if a zoned SMR hard drive is used as backing device of a bcache device,=
-=0A=
-> calling blk_revalidate_disk_zones() for the bcache device will fail due=
-=0A=
-> to the following check in blk_revalidate_disk_zones(),=0A=
-> 478       if (WARN_ON_ONCE(!queue_is_mq(q)))=0A=
-> 479             return -EIO;=0A=
+On 5/17/20 5:33 PM, Damien Le Moal wrote:=0A=
+> As Chaitanya pointed out, this is already used. Please rebase on Jens=0A=
+> block/for-5.8/block branch.=0A=
 > =0A=
-> Now bcache is able to export the zoned information from the underlying=0A=
-> zoned SMR drives and format zonefs on top of a bcache device, the=0A=
-> resitriction that a zoned device should be multiqueued is unnecessary=0A=
-> for now.=0A=
-> =0A=
-> Although in commit ae58954d8734c ("block: don't handle bio based drivers=
-=0A=
-> in blk_revalidate_disk_zones") it is said that bio based drivers should=
-=0A=
-> not call blk_revalidate_disk_zones() and just manually update their own=
-=0A=
-> q->nr_zones, but this is inaccurate. The bio based drivers also need to=
-=0A=
-> set their zone size and initialize bitmaps for cnv and seq zones, it is=
-=0A=
-> necessary to call blk_revalidate_disk_zones() for bio based drivers.=0A=
-> =0A=
-> This patch removes the above queue_is_mq() restriction to permit=0A=
-> bcache driver calls blk_revalidate_disk_zones() for bcache device zoned=
-=0A=
-> information initialization.=0A=
-> =0A=
-> Fixes: ae58954d8734c ("block: don't handle bio based drivers in blk_reval=
-idate_disk_zones")=0A=
-> Signed-off-by: Coly Li <colyli@suse.de>=0A=
-> Cc: Christoph Hellwig <hch@lst.de>=0A=
-> Cc: Damien Le Moal <damien.lemoal@wdc.com>=0A=
-> Cc: Hannes Reinecke <hare@suse.com>=0A=
-> Cc: Jens Axboe <axboe@kernel.dk>=0A=
-> Cc: Keith Busch <kbusch@kernel.org>=0A=
-> ---=0A=
->  block/blk-zoned.c | 2 --=0A=
->  1 file changed, 2 deletions(-)=0A=
-> =0A=
-> diff --git a/block/blk-zoned.c b/block/blk-zoned.c=0A=
-> index f87956e0dcaf..1e0708c68267 100644=0A=
-> --- a/block/blk-zoned.c=0A=
-> +++ b/block/blk-zoned.c=0A=
-> @@ -475,8 +475,6 @@ int blk_revalidate_disk_zones(struct gendisk *disk)=
-=0A=
->  =0A=
->  	if (WARN_ON_ONCE(!blk_queue_is_zoned(q)))=0A=
->  		return -EIO;=0A=
-> -	if (WARN_ON_ONCE(!queue_is_mq(q)))=0A=
-> -		return -EIO;=0A=
-=0A=
-Same comment as Christoph: BIO drivers can set nr_zones and chunk_sectors=
-=0A=
-themselves, manually. They also do not need the bitmaps as BIO devices do n=
-ot=0A=
-have an elevator, and as Christoph said, can (if needed) look at the bitmap=
-s of=0A=
-the underlying device (e.g. for zone conv vs seq zone type differentiation)=
-.=0A=
-=0A=
-So I do not think this patch is needed, and would only cause more memory=0A=
-consumption for no good reason that I can see.=0A=
-=0A=
->  =0A=
->  	/*=0A=
->  	 * Ensure that all memory allocations in this context are done as if=0A=
-> =0A=
-=0A=
-=0A=
--- =0A=
-Damien Le Moal=0A=
-Western Digital Research=0A=
+> I do not see any problem with this change, but as Christoph commented, si=
+nce=0A=
+> zone reset does not transfer any data, I do not really see the necessity =
+for=0A=
+> this. Zone reset is indeed data-destructive, but it is not a "write" comm=
+and.=0A=
+> But following DISCARD and having the op number as an odd number is OK I t=
+hink.=0A=
+Let's keep reset consistent with discard and write-zeroes.=0A=
