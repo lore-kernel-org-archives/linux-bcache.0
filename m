@@ -1,35 +1,28 @@
-From: pedro hills <abhay@dvp24.com>
-Subject: (DONATION) $2 Million Has Been Donated
-Date: Mon, 18 May 2020 12:03:47 +0100
-Message-ID: <48fae56db7d72b6c8944f63bdd887348__15368.9798129321$1589801110$gmane$org@dvp24.com>
-Reply-To: <pedrohills@outlook.es>
+From: "Mazer" <belvue@surry.net>
+Subject: Offer
+Date: 21 May 2020 20:48:40 +0200
+Message-ID: <20200521204840.D334D2ED9FF93C68@surry.net>
+Reply-To: info@free221.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+        charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57054 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726339AbgERLZC (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 18 May 2020 07:25:02 -0400
+Received: from mail.ihi-europower.eu ([89.1.23.210]:56144 "EHLO surry.net"
+        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1728551AbgEUSsm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 21 May 2020 14:48:42 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
 
-
-
--- 
-$2 Million Has Been Donated To You,By PEDRO this is Real For More Info
-  Contact PEDRO immediately for your clame This Email:
-  pedrohills@outlook.es
-
-  Contact phone number +34632232897
-  Send Your Response To: pedrohills@outlook.es
-
-  2 Millionen US-Dollar wurden an Sie gespendet. Von PEDRO ist dies für
-weitere Informationen real
-  Wenden Sie sich umgehend an PEDRO. Diese E-Mail:
-  pedrohills@outlook.es
-
-  Kontakttelefonnummer +34632232897
-  Senden Sie Ihre Antwort an: pedrohills@outlook.es
+I hope you are doing great?
+ 
+This is Felix from Toronto-Canada. I have a lucrative business 
+offer that will benefit us both immensely within a very short 
+period of time. However, I need your initial approval of interest 
+prior to further and complete details regarding the deal.
+ 
+Thanks,
+ 
+Felix.
