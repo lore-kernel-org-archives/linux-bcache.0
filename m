@@ -1,124 +1,119 @@
-Return-Path: <SRS0=cyis=7A=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=jTNe=7E=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
-	SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-7.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	USER_AGENT_GIT autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D5B9FC433E0
-	for <linux-bcache@archiver.kernel.org>; Mon, 18 May 2020 06:53:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9E086C433E1
+	for <linux-bcache@archiver.kernel.org>; Fri, 22 May 2020 12:18:52 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id BCF2520715
-	for <linux-bcache@archiver.kernel.org>; Mon, 18 May 2020 06:53:40 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 761A520756
+	for <linux-bcache@archiver.kernel.org>; Fri, 22 May 2020 12:18:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726478AbgERGxk (ORCPT
+        id S1729846AbgEVMSt (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 18 May 2020 02:53:40 -0400
-Received: from mx2.suse.de ([195.135.220.15]:40502 "EHLO mx2.suse.de"
+        Fri, 22 May 2020 08:18:49 -0400
+Received: from mx2.suse.de ([195.135.220.15]:52318 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726040AbgERGxk (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 18 May 2020 02:53:40 -0400
+        id S1729016AbgEVMSs (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 22 May 2020 08:18:48 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.220.254])
-        by mx2.suse.de (Postfix) with ESMTP id 34DC9ABEC;
-        Mon, 18 May 2020 06:53:40 +0000 (UTC)
-Subject: Re: [RFC PATCH v2 1/4] block: change REQ_OP_ZONE_RESET from 6 to 13
-To:     Coly Li <colyli@suse.de>, Christoph Hellwig <hch@lst.de>
-Cc:     linux-block@vger.kernel.org, damien.lemoal@wdc.com, hare@suse.com,
-        axboe@kernel.dk, linux-bcache@vger.kernel.org, kbusch@kernel.org,
-        Jens Axboe <axboe@fb.com>,
-        Johannes Thumshirn <johannes.thumshirn@wdc.com>,
-        Shaun Tancheff <shaun.tancheff@seagate.com>
-References: <20200516035434.82809-1-colyli@suse.de>
- <20200516035434.82809-2-colyli@suse.de> <20200516123801.GB13448@lst.de>
- <fc0fd3c9-ea46-7c62-2a57-abd64e79cd08@suse.de>
- <20200516125027.GA13730@lst.de>
- <f57da1e7-1563-db1e-8730-8daca219cbe7@suse.de>
- <20200516153649.GB16693@lst.de>
- <c50be737-da25-1e48-3e26-aa15df175110@suse.de>
-From:   Hannes Reinecke <hare@suse.de>
-Message-ID: <19eea726-590c-bf55-2dbf-35b71c9d1600@suse.de>
-Date:   Mon, 18 May 2020 08:53:30 +0200
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.7.0
+        by mx2.suse.de (Postfix) with ESMTP id C3B4CAF73;
+        Fri, 22 May 2020 12:18:48 +0000 (UTC)
+From:   Coly Li <colyli@suse.de>
+To:     linux-bcache@vger.kernel.org
+Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
+Subject: [RFC PATCH v4 0/3] bcache: support zoned device as bcache backing device
+Date:   Fri, 22 May 2020 20:18:34 +0800
+Message-ID: <20200522121837.109651-1-colyli@suse.de>
+X-Mailer: git-send-email 2.25.0
 MIME-Version: 1.0
-In-Reply-To: <c50be737-da25-1e48-3e26-aa15df175110@suse.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Language: en-US
 Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200518065330.mvrS_PoEFNyOk2r4Rx_mqBMatBAIx8Owvr3a6ZxAaH0@z>
+Message-ID: <20200522121834.ciIcwGmP9kMHf8lAGeiCjN7l4yIQky9x8reWAJZ9ZvY@z>
 
-On 5/17/20 7:30 AM, Coly Li wrote:
-> On 2020/5/16 23:36, Christoph Hellwig wrote:
->> On Sat, May 16, 2020 at 09:05:39PM +0800, Coly Li wrote:
->>> On 2020/5/16 20:50, Christoph Hellwig wrote:
->>>> On Sat, May 16, 2020 at 08:44:45PM +0800, Coly Li wrote:
->>>>> Yes you are right, just like REQ_OP_DISCARD which does not transfer any
->>>>> data but changes the data on device. If the request changes the stored
->>>>> data, it does transfer data.
->>>>
->>>> REQ_OP_DISCARD is a special case, because most implementation end up
->>>> transferring data, it just gets attached in the low-level driver.
->>>>
->>>
->>> Yes, REQ_OP_ZONE_RESET and REQ_OP_ZONE_RESET_ALL are quite similar to
->>> REQ_OP_DISCARD. Data read from the LBA range of reset zone is not
->>> suggested and the content is undefined.
->>>
->>> For bcache, similar to REQ_OP_DISCARD, REQ_OP_ZONE_RESET and
->>> REQ_OP_ZONE_RESET_ALL are handled in same way: If the backing device
->>> supports discard/zone_reset, and the operation successes, then cached
->>> data on SSD covered by the LBA range should be invalid, otherwise users
->>> will read outdated and garbage data.
->>>
->>> We should treat REQ_OP_ZONE_RESET and REQ_OP_ZONE_RESET_ALL being in
->>> WRITE direction.
->>
->> No, the difference is that the underlying SCSI/ATA/NVMe command tend to
->> usually actually transfer data.  Take a look at the special_vec field
->> in struct request and the RQF_SPECIAL_PAYLOAD flag.
->>
-> 
-> Then bio_data_dir() will be problematic, as it is defined,
->   52 /*
->   53  * Return the data direction, READ or WRITE.
->   54  */
->   55 #define bio_data_dir(bio) \
->   56         (op_is_write(bio_op(bio)) ? WRITE : READ)
-> 
-> For the REQ_OP_ZONE_RESET bio, bio_data_dir() will report it as READ.
-> 
-> Since the author is you, how to fix this ?
-> 
+Hi folks,
 
-Well, but I do think that Coly is right in that bio_data_dir() is very 
-unconvincing, or at least improperly documented.
+This is series, now bcache can support zoned device (e.g. host managed
+SMR hard drive) as the backing deice. Currently writeback mode is not
+support yet, which is on the to-do list (requires on-disk super block
+format change).
 
-I can't quite follow Christoph's argument in that bio_data_dir() 
-reflects whether data is _actually_ transferred (if so, why would 
-REQ_OP_ZONE_CLOSE() be marked as WRITE?)
-However, in most cases bio_data_dir() will only come into effect if 
-there are attached bvecs.
+The first patch makes bcache to export the zoned information to upper
+layer code, for example formatting zonefs on top of the bcache device.
+By default, zone 0 of the zoned device is fully reserved for bcache
+super block, therefore the reported zones number is 1 less than the
+exact zones number of the physical SMR hard drive.
 
-So the _correct_ usage for bio_data_dir() would be to check if there is 
-data attached to the bio (eg by using bio_has_data()), and only call 
-bio_data_dir() if that returns true. For false you'd need to add a 
-switch evaluating the individual commands.
+The second patch handles zone management command for bcache. Indeed
+these zone management commands are wrappered as zone management bios.
+For REQ_OP_ZONE_RESET and REQ_OP_ZONE_RESET_ALL zone management bios,
+before forwarding the bio to backing device, all cached data covered
+by the resetting zone(s) must be invalidated to keep data consistency.
+For rested zone management bios just minus the bi_sector by data_offset
+and simply forward to the zoned backing device.
 
-And, btw, bio_has_data() needs updating, too; all the zone commands are 
-missing from there, too.
+The third patch is to make sure after bcache device starts, the cache
+mode cannot be changed to writeback via sysfs interface. Bcache-tools
+is modified to notice users and convert to writeback mode to the default
+writethrough mode when making a bcache device.
 
-Cheers,
+There is one thing not addressed by this series, that is re-write the
+bcache super block after REQ_OP_ZONE_RESET_ALL command. There will be
+quite soon that all seq zones device may appear, but it is OK to make
+bcache support such all seq-zones device a bit later.
 
-Hannes
+Now a bcache device created with a zoned SMR drive can pass these test
+cases,
+- read /sys/block/bcache0/queue/zoned, content is 'host-managed'
+- read /sys/block/bcache0/queue/nr_zones, content is number of zones
+  excluding zone 0 of the backing device (reserved for bcache super
+  block).
+- read /sys/block/bcache0/queue/chunk_sectors, content is zone size
+  in sectors.
+- run 'blkzone report /dev/bcache0', all zones information displayed.
+- run 'blkzone reset -o <zone LBA> -c <zones number> /dev/bcache0',
+  conventional zones will reject the command, seqential zones covered
+  by the command range will reset its write pointer to start LBA of
+  their zones. If <zone LBA> is 0 and <zones number> covers all zones,
+  REQ_OP_ZONE_RESET_ALL command will be received and handled by bcache
+  device properly.
+- zonefs can be created on top of the bcache device, with/without cache
+  device attached. All sequential direct write and random read work well
+  and zone reset by 'truncate -s 0 <zone file>' works too.
+- Writeback cache mode does not support yet.
+
+Now all prevous code review comments are addressed by this RFC version.
+Please don't hesitate to offer your opinion on this version.
+
+Thanks in advance for your help.
+
+Coly Li
+---
+Changelog:
+v4: another improved version without any other generic block change.
+v3: an improved version depends on other generic block layer changes.
+v2: the first RFC version for comments and review.
+v1: the initial version posted just for information.
+
+
+Coly Li (3):
+  bcache: export bcache zone information for zoned backing device
+  bcache: handle zone management bios for bcache device
+  bcache: reject writeback cache mode for zoned backing device
+
+ drivers/md/bcache/bcache.h  |  10 +++
+ drivers/md/bcache/request.c | 168 +++++++++++++++++++++++++++++++++++-
+ drivers/md/bcache/super.c   |  98 ++++++++++++++++++++-
+ drivers/md/bcache/sysfs.c   |   5 ++
+ 4 files changed, 279 insertions(+), 2 deletions(-)
+
 -- 
-Dr. Hannes Reinecke            Teamlead Storage & Networking
-hare@suse.de                               +49 911 74053 688
-SUSE Software Solutions GmbH, Maxfeldstr. 5, 90409 Nürnberg
-HRB 36809 (AG Nürnberg), Geschäftsführer: Felix Imendörffer
+2.25.0
+
