@@ -2,119 +2,81 @@ Return-Path: <SRS0=H5gp=7H=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
-	DKIM_SIGNED,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+X-Spam-Status: No, score=-5.9 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
+	NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A25A1C433DF
-	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 11:31:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A9829C433DF
+	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 12:34:31 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 835A120723
-	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 11:31:54 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8416020812
+	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 12:34:31 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="hlyzKgUq"
+	dkim=pass (1024-bit key) header.d=yandex-team.ru header.i=@yandex-team.ru header.b="yMuAin8O"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2390224AbgEYLaf (ORCPT
+        id S2390554AbgEYMe1 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 25 May 2020 07:30:35 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46508 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2390223AbgEYLae (ORCPT
+        Mon, 25 May 2020 08:34:27 -0400
+Received: from forwardcorp1j.mail.yandex.net ([5.45.199.163]:50808 "EHLO
+        forwardcorp1j.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S2390488AbgEYMe0 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 25 May 2020 07:30:34 -0400
-Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 86F82C061A0E;
-        Mon, 25 May 2020 04:30:34 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=bombadil.20170209; h=Content-Transfer-Encoding:
-        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
-        :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=Kem+Md/o9biQbHpho+JPveOv/KJgvNSOsgvRyoxBLPU=; b=hlyzKgUqDe1/rLenQn+uC206Ho
-        /J6TShCG77UAdZcVIY7FfB+NtnL427bJlsQYe9uxJIXV2SIz40hPLqjho+RnpL7dM0XFZDlxoMEuT
-        UNUB8p69Xy+cFD19VHQN3q9PCyJss6xkizSNa4nDz3EctwokrVP07bSimwhL68Ks3/Q4vGD6oVDEE
-        aM44+6Y7S7abnK5al5vSKSV3lB/RAEuhARAUwRq7RUPrie4/YnzvHyRVGW6pCE5GcM57LZ0eKKbGb
-        NoA5c2aBaPxAuC7Dny41hYm/dVAwzuOBYph7qRXldqc4XqvgKajczFOUHJhzk3ycuoiGMRAlaa5DK
-        HpOgujPg==;
-Received: from [2001:4bb8:18c:5da7:c70:4a89:bc61:2] (helo=localhost)
-        by bombadil.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jdBJJ-0002Nh-W9; Mon, 25 May 2020 11:30:26 +0000
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jens Axboe <axboe@kernel.dk>
-Cc:     Konstantin Khlebnikov <khlebnikov@yandex-team.ru>,
-        Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>, dm-devel@redhat.com,
-        linux-block@vger.kernel.org, drbd-dev@lists.linbit.com,
-        linux-bcache@vger.kernel.org, linux-nvdimm@lists.01.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 03/16] rsxx: use bio_{start,end}_io_acct
-Date:   Mon, 25 May 2020 13:30:01 +0200
-Message-ID: <20200525113014.345997-4-hch@lst.de>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20200525113014.345997-1-hch@lst.de>
+        Mon, 25 May 2020 08:34:26 -0400
+Received: from mxbackcorp1j.mail.yandex.net (mxbackcorp1j.mail.yandex.net [IPv6:2a02:6b8:0:1619::162])
+        by forwardcorp1j.mail.yandex.net (Yandex) with ESMTP id C52572E1499;
+        Mon, 25 May 2020 15:34:23 +0300 (MSK)
+Received: from iva8-88b7aa9dc799.qloud-c.yandex.net (iva8-88b7aa9dc799.qloud-c.yandex.net [2a02:6b8:c0c:77a0:0:640:88b7:aa9d])
+        by mxbackcorp1j.mail.yandex.net (mxbackcorp/Yandex) with ESMTP id ZJIXPPS6z9-YLTi9Z9T;
+        Mon, 25 May 2020 15:34:23 +0300
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yandex-team.ru; s=default;
+        t=1590410063; bh=ai4SFAnq/6nSINx/FBKSEuSs6VEDwe9CKXW2LSyg3rA=;
+        h=In-Reply-To:Message-ID:From:Date:References:To:Subject:Cc;
+        b=yMuAin8OkKoPyA6fM61Kd5gq/kMQik8QtpCqmqv1ySlA0gbKNgjehnM/Avo4jesLA
+         1NJfntE9wrGKJwo4Sk3LwQYzT/Ut83m1kxlcVbmccuRAiCW947q9+smxOC+ZIq8b+K
+         PGM0Lk7vsx2iw92s7aN1ayw2f6hxBIH5GbKWN1pU=
+Authentication-Results: mxbackcorp1j.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Received: from dynamic-vpn.dhcp.yndx.net (dynamic-vpn.dhcp.yndx.net [2a02:6b8:b081:603::1:c])
+        by iva8-88b7aa9dc799.qloud-c.yandex.net (smtpcorp/Yandex) with ESMTPSA id O3BMKGQlP9-YLXqqoTf;
+        Mon, 25 May 2020 15:34:21 +0300
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits))
+        (Client certificate not present)
+Subject: Re: block I/O accounting improvements
+To:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
+Cc:     Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        dm-devel@redhat.com, linux-block@vger.kernel.org,
+        drbd-dev@lists.linbit.com, linux-bcache@vger.kernel.org,
+        linux-nvdimm@lists.01.org, linux-kernel@vger.kernel.org
 References: <20200525113014.345997-1-hch@lst.de>
+From:   Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+Message-ID: <81f4057b-124a-d0e7-94af-15a198d48d50@yandex-team.ru>
+Date:   Mon, 25 May 2020 15:34:21 +0300
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
+ Thunderbird/68.7.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
+In-Reply-To: <20200525113014.345997-1-hch@lst.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Language: en-CA
+Content-Transfer-Encoding: 7bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200525113001.yH2FbEiPkUHMulMVYWX19MyyCkJS82GDEl6CzEi71aw@z>
+Message-ID: <20200525123421._5YvbRjQIQocw53QoHt0xqgnetM3X2cC81_fcaDthoM@z>
 
-Switch rsxx to use the nicer bio accounting helpers.
+On 25/05/2020 14.29, Christoph Hellwig wrote:
+> Hi Jens,
+> 
+> they series contains various improvement for block I/O accounting.  The
+> first bunch of patches switch the bio based drivers to better accounting
+> helpers compared to the current mess.  The end contains a fix and various
+> performanc improvements.  Most of this comes from a series Konstantin
+> sent a few weeks ago, rebased on changes that landed in your tree since
+> and my change to always use the percpu version of the disk stats.
+> 
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- drivers/block/rsxx/dev.c | 19 ++-----------------
- 1 file changed, 2 insertions(+), 17 deletions(-)
+Thanks for picking this up.
 
-diff --git a/drivers/block/rsxx/dev.c b/drivers/block/rsxx/dev.c
-index 8ffa8260dcafe..3ba07ab30c84f 100644
---- a/drivers/block/rsxx/dev.c
-+++ b/drivers/block/rsxx/dev.c
-@@ -96,20 +96,6 @@ static const struct block_device_operations rsxx_fops = {
- 	.ioctl		= rsxx_blkdev_ioctl,
- };
- 
--static void disk_stats_start(struct rsxx_cardinfo *card, struct bio *bio)
--{
--	generic_start_io_acct(card->queue, bio_op(bio), bio_sectors(bio),
--			     &card->gendisk->part0);
--}
--
--static void disk_stats_complete(struct rsxx_cardinfo *card,
--				struct bio *bio,
--				unsigned long start_time)
--{
--	generic_end_io_acct(card->queue, bio_op(bio),
--			    &card->gendisk->part0, start_time);
--}
--
- static void bio_dma_done_cb(struct rsxx_cardinfo *card,
- 			    void *cb_data,
- 			    unsigned int error)
-@@ -121,7 +107,7 @@ static void bio_dma_done_cb(struct rsxx_cardinfo *card,
- 
- 	if (atomic_dec_and_test(&meta->pending_dmas)) {
- 		if (!card->eeh_state && card->gendisk)
--			disk_stats_complete(card, meta->bio, meta->start_time);
-+			bio_end_io_acct(meta->bio, meta->start_time);
- 
- 		if (atomic_read(&meta->error))
- 			bio_io_error(meta->bio);
-@@ -167,10 +153,9 @@ static blk_qc_t rsxx_make_request(struct request_queue *q, struct bio *bio)
- 	bio_meta->bio = bio;
- 	atomic_set(&bio_meta->error, 0);
- 	atomic_set(&bio_meta->pending_dmas, 0);
--	bio_meta->start_time = jiffies;
- 
- 	if (!unlikely(card->halt))
--		disk_stats_start(card, bio);
-+		bio_meta->start_time = bio_start_io_acct(bio);
- 
- 	dev_dbg(CARD_TO_DEV(card), "BIO[%c]: meta: %p addr8: x%llx size: %d\n",
- 		 bio_data_dir(bio) ? 'W' : 'R', bio_meta,
--- 
-2.26.2
+One note about possible further improvement in reply to first patch.
 
+Reviewed-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
