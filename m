@@ -1,368 +1,171 @@
-Return-Path: <SRS0=jTNe=7E=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=H5gp=7H=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
+X-Spam-Status: No, score=-10.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 85693C433DF
-	for <linux-bcache@archiver.kernel.org>; Fri, 22 May 2020 12:18:53 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3BAE6C433E0
+	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 01:26:38 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 6B55F20756
-	for <linux-bcache@archiver.kernel.org>; Fri, 22 May 2020 12:18:53 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1741A206D5
+	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 01:26:38 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=fail reason="signature verification failed" (2048-bit key) header.d=wdc.com header.i=@wdc.com header.b="YhznDPoa";
+	dkim=pass (1024-bit key) header.d=sharedspace.onmicrosoft.com header.i=@sharedspace.onmicrosoft.com header.b="rmLepJ9t"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729847AbgEVMSw (ORCPT
+        id S2388600AbgEYB0g (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 22 May 2020 08:18:52 -0400
-Received: from mx2.suse.de ([195.135.220.15]:52390 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1728772AbgEVMSv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 22 May 2020 08:18:51 -0400
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.220.254])
-        by mx2.suse.de (Postfix) with ESMTP id 2F168AF01;
-        Fri, 22 May 2020 12:18:52 +0000 (UTC)
-From:   Coly Li <colyli@suse.de>
-To:     linux-bcache@vger.kernel.org
-Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>,
-        Damien Le Moal <damien.lemoal@wdc.com>,
+        Sun, 24 May 2020 21:26:36 -0400
+Received: from esa2.hgst.iphmx.com ([68.232.143.124]:12028 "EHLO
+        esa2.hgst.iphmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S2388104AbgEYB0g (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 24 May 2020 21:26:36 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple;
+  d=wdc.com; i=@wdc.com; q=dns/txt; s=dkim.wdc.com;
+  t=1590369998; x=1621905998;
+  h=from:to:cc:subject:date:message-id:references:
+   content-transfer-encoding:mime-version;
+  bh=FCgobR2yZaSu9BjQqG7kwkV6a0gtDE5Q+2dseJeWndc=;
+  b=YhznDPoaVz4AMcQw/D23ufVlu7ZiLBSLFDqNGqhnl8alHy6hkOxnz/uw
+   y27FP/MXkzbA2iM+I2UAiZZexbRZYnnnM+XNDsdRSeih81ojznwktBCir
+   811eFbd2jQFuOb7ZQJBwdOC/uMmNsp2BEoaPvTPMSpjXY1v9iRupPufCb
+   xqjEM4WMZh9VCFIK+32vR5SbXVHIevoJFs6pKdqjp/JT9U15b+YhTNA/k
+   cuWaO2EvArNyfWF013CaCzuyTPZXu4C7FifQZLt1XrOY0NdJiy2mmLnzC
+   Qy6ENKnNpi/ZWgIQRE5hu7HoR/EbvQVi/kbFL82xeqWgbFHq1aOCkwvmu
+   Q==;
+IronPort-SDR: 2+F3DX740Qx7QzsHLDOhQSc5r6XnNKr+l/sxf0/CTQHPVukEQrXREyrl8fDnLSKhW3ZpQ2DNVe
+ hHtXDlULbeFBqfQJ6beiNJH5niuWbZDgO3Z3305VteaPHl+EM4V4ByZYXQ9Hrb5p3XNpm3wQFs
+ G5FRG844XM/ihE+gdE7woyt7h1QTRPLaaPm/RhcRmssFOlS3WP4B4h87MIAl23bN/5bgnkI27F
+ xFqWu7ANsRdh9wTVyrAqQOxIXiCNMzVynTgc/Sj833Il3lHFOQ8BadMrRRZEwOxD+xGJuVsM7X
+ iz4=
+X-IronPort-AV: E=Sophos;i="5.73,431,1583164800"; 
+   d="scan'208";a="241212342"
+Received: from mail-dm6nam11lp2169.outbound.protection.outlook.com (HELO NAM11-DM6-obe.outbound.protection.outlook.com) ([104.47.57.169])
+  by ob1.hgst.iphmx.com with ESMTP; 25 May 2020 09:26:36 +0800
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
+ b=EIjm1nuIYeK1CDMp/g1ea6KAVjG1QP7Mqc6Q/zbhnczZvdabirdqLWvHJCn05U+T+RcDSJtqjB0sWwp5jWijlYTzfffdOL4/RqztQq6YocaVxMSaES3UA8ks9oTlS0H1oPGaw2dq3DmGKsmTzMOf8Gjc8UjuNNumkRKhMNsLa+0rOXIViH5Xfe3Lg5dDm5Pt8kbqtlOaHRlImyOg9xCMAK12xvZLBtX6NoVb5TD3qOFWwmCF9AUh/RLxxrpWydtIcwE+xK6pcJwk7YfZ4/dJYJ/FwS8ftyRodDUXT1SFPMUEq0QKFnqOjRSjHM+oQjBgJ4cABGEZAyeaqWnw7hxChw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector9901;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=hsj81HchLqLU5DXDBC9yPl2xJbDEsWiyIokBioqvpGo=;
+ b=JUe5h/NJrh4QLIZDJxiKpjxmS+YtgkI0p5a9Wxkh2avOLG4xK4g3G/zCAkWTY3YS5vwrlpU1XFumbIE3ed8Bm+tnW2A7IopiJtVJ+C5eEl7CPDPA82P7HvIE1MIWxu6pG4pdKMRPVKehEI03brBop0dPgCwYO8ju40Ay3WRAvUIy9iHk4XBKyknarjdTJHPEz/8G/h7bs2lj+TuNZzdv9n8Y8sGoO2pm1+enkPjNypLucMy8G9y3de+Z2J7gLgoZ6d8OGENcjf/ZTHUgZVOBAzeKk5fFG/4XGYKHPzIFY2wCpZzS42OrYMiw4RGRr+HwudYXdSQk3nkWboFBRfuSGQ==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
+ smtp.mailfrom=wdc.com; dmarc=pass action=none header.from=wdc.com; dkim=pass
+ header.d=wdc.com; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=sharedspace.onmicrosoft.com; s=selector2-sharedspace-onmicrosoft-com;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=hsj81HchLqLU5DXDBC9yPl2xJbDEsWiyIokBioqvpGo=;
+ b=rmLepJ9tBZbbBTExl4zMyz9Er/Vsn4oBUAGfynqY12w4hPWlUt+raz7HbDo5lvX6jG2Z3jBA24zerulGlyUmBNgxcnvlIe0VNXwW2Cy40rUY9TOxngzYpNzf3M7AOlAMK2xwHlmJjCSF04mUM++rPnEF+NuYi+/7m6lh6+YxQlM=
+Received: from CY4PR04MB3751.namprd04.prod.outlook.com (2603:10b6:903:ec::14)
+ by CY4PR04MB0745.namprd04.prod.outlook.com (2603:10b6:903:ea::13) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.3021.27; Mon, 25 May
+ 2020 01:26:34 +0000
+Received: from CY4PR04MB3751.namprd04.prod.outlook.com
+ ([fe80::c593:f271:eebe:ac7]) by CY4PR04MB3751.namprd04.prod.outlook.com
+ ([fe80::c593:f271:eebe:ac7%9]) with mapi id 15.20.3021.029; Mon, 25 May 2020
+ 01:26:34 +0000
+From:   Damien Le Moal <Damien.LeMoal@wdc.com>
+To:     Coly Li <colyli@suse.de>,
+        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+CC:     "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>,
         Hannes Reinecke <hare@suse.com>,
-        Johannes Thumshirn <johannes.thumshirn@wdc.com>
-Subject: [RFC PATCH v4 1/3] bcache: export bcache zone information for zoned backing device
-Date:   Fri, 22 May 2020 20:18:35 +0800
-Message-ID: <20200522121837.109651-2-colyli@suse.de>
-X-Mailer: git-send-email 2.25.0
-In-Reply-To: <20200522121837.109651-1-colyli@suse.de>
+        Johannes Thumshirn <Johannes.Thumshirn@wdc.com>
+Subject: Re: [RFC PATCH v4 3/3] bcache: reject writeback cache mode for zoned
+ backing device
+Thread-Topic: [RFC PATCH v4 3/3] bcache: reject writeback cache mode for zoned
+ backing device
+Thread-Index: AQHWMDMt3QijFk0LH0ivzDyeGN49DQ==
+Date:   Mon, 25 May 2020 01:26:34 +0000
+Message-ID: <CY4PR04MB3751EF222D4DFFB9C05AB38EE7B30@CY4PR04MB3751.namprd04.prod.outlook.com>
 References: <20200522121837.109651-1-colyli@suse.de>
+ <20200522121837.109651-4-colyli@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+authentication-results: suse.de; dkim=none (message not signed)
+ header.d=none;suse.de; dmarc=none action=none header.from=wdc.com;
+x-originating-ip: [199.255.47.8]
+x-ms-publictraffictype: Email
+x-ms-office365-filtering-ht: Tenant
+x-ms-office365-filtering-correlation-id: 529200e3-e29b-4340-38bb-08d8004aa979
+x-ms-traffictypediagnostic: CY4PR04MB0745:
+x-ms-exchange-transport-forked: True
+x-microsoft-antispam-prvs: <CY4PR04MB0745758A86AD28C5126F20BDE7B30@CY4PR04MB0745.namprd04.prod.outlook.com>
+wdcipoutbound: EOP-TRUE
+x-ms-oob-tlc-oobclassifiers: OLM:7219;
+x-forefront-prvs: 0414DF926F
+x-ms-exchange-senderadcheck: 1
+x-microsoft-antispam: BCL:0;
+x-microsoft-antispam-message-info: TwIKZBgWa5UQqCkegGeybk6QdLXldzjAvrhGKemiFE/I/JiAJjs2TSqWQdIxYXc3n45GCzr11Fpf1BSkRlZBaXq0+vkxzbtUgaLw4jOLRoBnhBspeAqp1kRCGdvv8LUZFNTq5RrFzDym27Rtzw/0NdqmBkObLaTLv9Y9g5qbWhzaUJLQO3bahIAvnJJS56/e23rb/y74tRZ9p6dQZc23SMQx5mv6CFUi3RF6HT57snQW5YdgHwWX9lLJ+Sqmwitb3D6Nz/UaaGJe9trqIPimgSgej9EXs0tEdHbQR9EB5VrhZMXbWWr1lKj7gesUgbNycvKsR0h/cjLVCgt9WqYAAA==
+x-forefront-antispam-report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:CY4PR04MB3751.namprd04.prod.outlook.com;PTR:;CAT:NONE;SFTY:;SFS:(4636009)(366004)(39860400002)(396003)(136003)(376002)(346002)(66446008)(52536014)(110136005)(54906003)(66476007)(76116006)(91956017)(316002)(66946007)(64756008)(66556008)(9686003)(478600001)(4326008)(55016002)(71200400001)(53546011)(7696005)(186003)(86362001)(26005)(33656002)(5660300002)(2906002)(6506007)(8676002)(8936002);DIR:OUT;SFP:1102;
+x-ms-exchange-antispam-messagedata: cnQrAKdw/eev0Hv0frbfU3s77WqJNoyioOyeFIj/O4nD5Um0Ti5euKyVS5vFZsfi/S4cs2ISfet0fR1fhCxBAq/K6am/G8dO20RSj85CZDIgHC8IAQjgPQhE69vAlw+AkkSoEQ2iBCrjnaZtiBXq6NW0k/d+29vdXMcMpl8KMs9dEwm4dqXBXP6wNmCmZCD7SQUgXEyV88dyc/sLe9k26J8SPUGa1NBOfXzzknM5wLl06MZJOaENMW6EUPX41JU5SvZTQhmIAVeAAE4a0TUH9nBuIvOsF6VOMbtsQ/EGT/gEsqiplEWTmXw/ZXhi+VtxPuordHlHvbyATwylVphE9p9uEoz2Lclhb3IS4bN7DqlKwswku4lB1kppQzqRYtFkt2pEiVlMXYXmCFOsQNx4q8n1yNeHyN/4DvI0n/rLUeM1Rhf4neif5nJ/nTB4Sm07PdHnOYkG1moYh05VeXXVw5GJ4bxTNE2b1kQMfCmsvvk=
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+X-OriginatorOrg: wdc.com
+X-MS-Exchange-CrossTenant-Network-Message-Id: 529200e3-e29b-4340-38bb-08d8004aa979
+X-MS-Exchange-CrossTenant-originalarrivaltime: 25 May 2020 01:26:34.3449
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: b61c8803-16f3-4c35-9b17-6f65f441df86
+X-MS-Exchange-CrossTenant-mailboxtype: HOSTED
+X-MS-Exchange-CrossTenant-userprincipalname: 4LxQYEAeYFBXwmIDK/R/wT3tpFEwcwuYINVwC/K+w1sVgUQB0x/7xOfL2wOr+Ig4mtiZyOvJ1iFPyNP3fdA23w==
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY4PR04MB0745
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200522121835.iSIh_-qRDLM3E4zc5j5Wz7VsgKeXxwdPWTjnK8-Za-c@z>
+Message-ID: <20200525012634.NVm2Y4K1usz3ura_f99U55ssKixw6McvBkTbCXBFkFY@z>
 
-When using a zoned device e.g. SMR hard drive as the backing device,
-if bcache can export the zoned device information then it is possible
-to help the upper layer code to accelerate hot READ I/O requests.
-
-This patch adds the report_zones method for the bcache device which has
-zoned device as backing device. Now such bcache device can be treated as
-a zoned device, by configured to writethrough, writearound mode or none
-mode, zonefs can be formated on top of such bcache device.
-
-Here is a simple performance data for read requests via zonefs on top of
-bcache. The cache device of bcache is a 4TB NVMe SSD, the backing device
-is a 14TB host managed SMR hard drive. The formatted zonefs has 52155
-zone files, 523 of them are for convential zones (1 zone is reserved
-for bcache super block and not reported), 51632 of them are for
-sequential zones.
-
-First run to read first 4KB from all the zone files with 50 processes,
-it takes 5 minutes 55 seconds. Second run takes 12 seconds only because
-all the read requests hit on cache device.
-
-29 times faster is as expected for an ideal case when all READ I/Os hit
-on NVMe cache device.
-
-Besides providing report_zones method of the bcache gendisk structure,
-this patch also initializes the following zoned device attribution for
-the bcache device,
-- zones number: the total zones number minus reserved zone(s) for bcache
-  super block.
-- zone size: same size as reported from the underlying zoned device
-- zone mode: same mode as reported from the underlying zoned device
-Currently blk_revalidate_disk_zones() does not accept non-mq drivers, so
-all the above attribution are initialized mannally in bcache code.
-
-This patch just provides the report_zones method only. Handling all zone
-management commands will be addressed in following patches.
-
-Signed-off-by: Coly Li <colyli@suse.de>
-Cc: Damien Le Moal <damien.lemoal@wdc.com>
-Cc: Hannes Reinecke <hare@suse.com>
-Cc: Johannes Thumshirn <johannes.thumshirn@wdc.com>
----
-Changelog:
-v4: the version without any generic block layer change.
-v3: the version depends on other generic block layer changes.
-v2: an improved version for comments.
-v1: initial version.
- drivers/md/bcache/bcache.h  | 10 ++++
- drivers/md/bcache/request.c | 69 ++++++++++++++++++++++++++
- drivers/md/bcache/super.c   | 96 ++++++++++++++++++++++++++++++++++++-
- 3 files changed, 174 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 74a9849ea164..0d298b48707f 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -221,6 +221,7 @@ BITMASK(GC_MOVE, struct bucket, gc_mark, 15, 1);
- struct search;
- struct btree;
- struct keybuf;
-+struct bch_report_zones_args;
- 
- struct keybuf_key {
- 	struct rb_node		node;
-@@ -277,6 +278,8 @@ struct bcache_device {
- 			  struct bio *bio, unsigned int sectors);
- 	int (*ioctl)(struct bcache_device *d, fmode_t mode,
- 		     unsigned int cmd, unsigned long arg);
-+	int (*report_zones)(struct bch_report_zones_args *args,
-+			    unsigned int nr_zones);
- };
- 
- struct io {
-@@ -748,6 +751,13 @@ struct bbio {
- 	struct bio		bio;
- };
- 
-+struct bch_report_zones_args {
-+	struct bcache_device *bcache_device;
-+	sector_t sector;
-+	void *orig_data;
-+	report_zones_cb orig_cb;
-+};
-+
- #define BTREE_PRIO		USHRT_MAX
- #define INITIAL_PRIO		32768U
- 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 71a90fbec314..34f63da2338d 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1233,6 +1233,30 @@ static int cached_dev_ioctl(struct bcache_device *d, fmode_t mode,
- 	if (dc->io_disable)
- 		return -EIO;
- 
-+	/*
-+	 * All zoned device ioctl commands are handled in
-+	 * other code paths,
-+	 * - BLKREPORTZONE: by report_zones method of bcache_ops.
-+	 * - BLKRESETZONE/BLKOPENZONE/BLKCLOSEZONE/BLKFINISHZONE: all handled
-+	 *   by bio code path.
-+	 * - BLKGETZONESZ/BLKGETNRZONES:directly handled inside generic block
-+	 *   ioctl handler blkdev_common_ioctl().
-+	 */
-+	switch (cmd) {
-+	case BLKREPORTZONE:
-+	case BLKRESETZONE:
-+	case BLKGETZONESZ:
-+	case BLKGETNRZONES:
-+	case BLKOPENZONE:
-+	case BLKCLOSEZONE:
-+	case BLKFINISHZONE:
-+		pr_warn("Zoned device ioctl cmd should not be here.\n");
-+		return -EOPNOTSUPP;
-+	default:
-+		/* Other commands  */
-+		break;
-+	}
-+
- 	return __blkdev_driver_ioctl(dc->bdev, mode, cmd, arg);
- }
- 
-@@ -1261,6 +1285,50 @@ static int cached_dev_congested(void *data, int bits)
- 	return ret;
- }
- 
-+/*
-+ * The callback routine to parse a specific zone from all reporting
-+ * zones. args->orig_cb() is the upper layer report zones callback,
-+ * which should be called after the LBA conversion.
-+ * Notice: all zones after zone 0 will be reported, including the
-+ * offlined zones, how to handle the different types of zones are
-+ * fully decided by upper layer who calss for reporting zones of
-+ * the bcache device.
-+ */
-+static int cached_dev_report_zones_cb(struct blk_zone *zone,
-+				      unsigned int idx,
-+				      void *data)
-+{
-+	struct bch_report_zones_args *args = data;
-+	struct bcache_device *d = args->bcache_device;
-+	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
-+	unsigned long data_offset = dc->sb.data_offset;
-+
-+	/* Zone 0 should not be reported */
-+	BUG_ON(zone->start < data_offset);
-+
-+	/* convert back to LBA of the bcache device*/
-+	zone->start -= data_offset;
-+	zone->wp -= data_offset;
-+
-+	return args->orig_cb(zone, idx, args->orig_data);
-+}
-+
-+static int cached_dev_report_zones(struct bch_report_zones_args *args,
-+				   unsigned int nr_zones)
-+{
-+	struct bcache_device *d = args->bcache_device;
-+	struct cached_dev *dc = container_of(d, struct cached_dev, disk);
-+	/* skip zone 0 which is fully occupied by bcache super block */
-+	sector_t sector = args->sector + dc->sb.data_offset;
-+
-+	/* sector is real LBA of backing device */
-+	return blkdev_report_zones(dc->bdev,
-+				   sector,
-+				   nr_zones,
-+				   cached_dev_report_zones_cb,
-+				   args);
-+}
-+
- void bch_cached_dev_request_init(struct cached_dev *dc)
- {
- 	struct gendisk *g = dc->disk.disk;
-@@ -1268,6 +1336,7 @@ void bch_cached_dev_request_init(struct cached_dev *dc)
- 	g->queue->backing_dev_info->congested_fn = cached_dev_congested;
- 	dc->disk.cache_miss			= cached_dev_cache_miss;
- 	dc->disk.ioctl				= cached_dev_ioctl;
-+	dc->disk.report_zones			= cached_dev_report_zones;
- }
- 
- /* Flash backed devices */
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index d98354fa28e3..d5da7ad5157d 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -679,10 +679,36 @@ static int ioctl_dev(struct block_device *b, fmode_t mode,
- 	return d->ioctl(d, mode, cmd, arg);
- }
- 
-+static int report_zones_dev(struct gendisk *disk,
-+			    sector_t sector,
-+			    unsigned int nr_zones,
-+			    report_zones_cb cb,
-+			    void *data)
-+{
-+	struct bcache_device *d = disk->private_data;
-+	struct bch_report_zones_args args = {
-+		.bcache_device = d,
-+		.sector = sector,
-+		.orig_data = data,
-+		.orig_cb = cb,
-+	};
-+
-+	/*
-+	 * only bcache device with backing device has
-+	 * report_zones method, flash device does not.
-+	 */
-+	if (d->report_zones)
-+		return d->report_zones(&args, nr_zones);
-+
-+	/* flash dev does not have report_zones method */
-+	return -EOPNOTSUPP;
-+}
-+
- static const struct block_device_operations bcache_ops = {
- 	.open		= open_dev,
- 	.release	= release_dev,
- 	.ioctl		= ioctl_dev,
-+	.report_zones	= report_zones_dev,
- 	.owner		= THIS_MODULE,
- };
- 
-@@ -817,6 +843,7 @@ static void bcache_device_free(struct bcache_device *d)
- 
- static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
- 			      sector_t sectors, make_request_fn make_request_fn)
-+
- {
- 	struct request_queue *q;
- 	const size_t max_stripes = min_t(size_t, INT_MAX,
-@@ -1307,6 +1334,67 @@ static void cached_dev_flush(struct closure *cl)
- 	continue_at(cl, cached_dev_free, system_wq);
- }
- 
-+static inline int cached_dev_data_offset_check(struct cached_dev *dc)
-+{
-+	if (!bdev_is_zoned(dc->bdev))
-+		return 0;
-+
-+	/*
-+	 * If the backing hard drive is zoned device, sb.data_offset
-+	 * should be aligned to zone size, which is automatically
-+	 * handled by 'bcache' util of bcache-tools. If the data_offset
-+	 * is not aligned to zone size, it means the bcache-tools is
-+	 * outdated.
-+	 */
-+	if (dc->sb.data_offset & (bdev_zone_sectors(dc->bdev) - 1)) {
-+		pr_err("data_offset %llu is not aligned to zone size %llu, please update bcache-tools and re-make the zoned backing device.\n",
-+			dc->sb.data_offset, bdev_zone_sectors(dc->bdev));
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * Initialize zone information for the bcache device, this function
-+ * assumes the bcache device has a cached device (dc != NULL), and
-+ * the cached device is zoned device (bdev_is_zoned(dc->bdev) == true).
-+ *
-+ * The following zone information of the bcache device will be set,
-+ * - zoned mode, same as the mode of zoned backing device
-+ * - zone size in sectors, same as the zoned backing device
-+ * - zones number, it is zones number of zoned backing device minus the
-+ *   reserved zones for bcache super blocks.
-+ */
-+static int bch_cached_dev_zone_init(struct cached_dev *dc)
-+{
-+	struct request_queue *d_q, *b_q;
-+	enum blk_zoned_model mode;
-+
-+	if (!bdev_is_zoned(dc->bdev))
-+		return 0;
-+
-+	/* queue of bcache device */
-+	d_q = dc->disk.disk->queue;
-+	/* queue of backing device */
-+	b_q = bdev_get_queue(dc->bdev);
-+
-+	mode = blk_queue_zoned_model(b_q);
-+	if (mode != BLK_ZONED_NONE) {
-+		d_q->limits.zoned = mode;
-+		blk_queue_chunk_sectors(d_q, b_q->limits.chunk_sectors);
-+		/*
-+		 * (dc->sb.data_offset / q->limits.chunk_sectors) is the
-+		 * zones number reserved for bcache super block. By default
-+		 * it is set to 1 by bcache-tools.
-+		 */
-+		d_q->nr_zones = b_q->nr_zones -
-+			(dc->sb.data_offset / d_q->limits.chunk_sectors);
-+	}
-+
-+	return 0;
-+}
-+
- static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
- {
- 	int ret;
-@@ -1333,6 +1421,10 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
- 
- 	dc->disk.stripe_size = q->limits.io_opt >> 9;
- 
-+	ret = cached_dev_data_offset_check(dc);
-+	if (ret)
-+		return ret;
-+
- 	if (dc->disk.stripe_size)
- 		dc->partial_stripes_expensive =
- 			q->limits.raid_partial_stripes_expensive;
-@@ -1355,7 +1447,9 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
- 
- 	bch_cached_dev_request_init(dc);
- 	bch_cached_dev_writeback_init(dc);
--	return 0;
-+	ret = bch_cached_dev_zone_init(dc);
-+
-+	return ret;
- }
- 
- /* Cached device - bcache superblock */
--- 
-2.25.0
-
+On 2020/05/22 21:19, Coly Li wrote:=0A=
+> Currently we don't support writeback mode for zoned device as backing=0A=
+> device. So reject it by sysfs interface.=0A=
+> =0A=
+> This rejection will be removed after the writeback cache mode support=0A=
+> for zoned device gets done.=0A=
+> =0A=
+> Signed-off-by: Coly Li <colyli@suse.de>=0A=
+> Cc: Damien Le Moal <damien.lemoal@wdc.com>=0A=
+> Cc: Hannes Reinecke <hare@suse.com>=0A=
+> Cc: Johannes Thumshirn <johannes.thumshirn@wdc.com>=0A=
+> ---=0A=
+>  drivers/md/bcache/sysfs.c | 5 +++++=0A=
+>  1 file changed, 5 insertions(+)=0A=
+> =0A=
+> diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c=0A=
+> index 323276994aab..41bdbc42a17d 100644=0A=
+> --- a/drivers/md/bcache/sysfs.c=0A=
+> +++ b/drivers/md/bcache/sysfs.c=0A=
+> @@ -359,6 +359,11 @@ STORE(__cached_dev)=0A=
+>  		if (v < 0)=0A=
+>  			return v;=0A=
+>  =0A=
+> +		if ((unsigned int) v =3D=3D CACHE_MODE_WRITEBACK) {=0A=
+> +			pr_err("writeback mode is not supported for zoned backing device.\n")=
+;=0A=
+> +			return -ENOTSUPP;=0A=
+> +		}=0A=
+> +=0A=
+>  		if ((unsigned int) v !=3D BDEV_CACHE_MODE(&dc->sb)) {=0A=
+>  			SET_BDEV_CACHE_MODE(&dc->sb, v);=0A=
+>  			bch_write_bdev_super(dc, NULL);=0A=
+> =0A=
+=0A=
+Do you have a similar check in bcache user tools at format time ? Or is the=
+=0A=
+cache mode specified only when the bcache device is started ?=0A=
+=0A=
+Looks good.=0A=
+=0A=
+Reviewed-by: Damien Le Moal <damien.lemoal@wdc.com>=0A=
+=0A=
+-- =0A=
+Damien Le Moal=0A=
+Western Digital Research=0A=
