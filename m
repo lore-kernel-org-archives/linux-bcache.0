@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
 	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 21AB3C433E0
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A25A1C433DF
 	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 11:31:54 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id EEEC220723
-	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 11:31:53 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 835A120723
+	for <linux-bcache@archiver.kernel.org>; Mon, 25 May 2020 11:31:54 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="eb5D4gdO"
+	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="hlyzKgUq"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2390249AbgEYLag (ORCPT
+        id S2390224AbgEYLaf (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 25 May 2020 07:30:36 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46514 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2390236AbgEYLaf (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
         Mon, 25 May 2020 07:30:35 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46508 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S2390223AbgEYLae (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 25 May 2020 07:30:34 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A1BB2C061A0E;
-        Mon, 25 May 2020 04:30:35 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 86F82C061A0E;
+        Mon, 25 May 2020 04:30:34 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20170209; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=4l6W1pONc3UxiSnk6DubFsvt00KzTgN7kVDel1/2bWw=; b=eb5D4gdOfaLLHkXG2M6FtfiwSg
-        jwjPSSnLzU1CLw+QFPZlEt7wjAExb8k+qtx9MiFRUtnFZ+m+gfyAyeYVecHMUuRQ+XUdzlU+yIDx9
-        RuZdByv/M1LIWCPEg0066vJdpEsZn9WrnqyIE125/3XLg0V/tlN05+VPLggB9jMfep7Tdn5g0XoTU
-        3JspDn3SzsXcMIm3lrdwcLUqF10AiAwqclcXzcSVv4gyqa5vZzRJk2ih1jzp1/eSxHUQsbHCGmg/N
-        AyMEicu4E++3K4aZp0zsH+Q9xyHuwIceloLaSOh3lBJDg9pVjicjARBI+OGL/E8RPACTyXoPIonr6
-        AlOV1Fcw==;
+        bh=Kem+Md/o9biQbHpho+JPveOv/KJgvNSOsgvRyoxBLPU=; b=hlyzKgUqDe1/rLenQn+uC206Ho
+        /J6TShCG77UAdZcVIY7FfB+NtnL427bJlsQYe9uxJIXV2SIz40hPLqjho+RnpL7dM0XFZDlxoMEuT
+        UNUB8p69Xy+cFD19VHQN3q9PCyJss6xkizSNa4nDz3EctwokrVP07bSimwhL68Ks3/Q4vGD6oVDEE
+        aM44+6Y7S7abnK5al5vSKSV3lB/RAEuhARAUwRq7RUPrie4/YnzvHyRVGW6pCE5GcM57LZ0eKKbGb
+        NoA5c2aBaPxAuC7Dny41hYm/dVAwzuOBYph7qRXldqc4XqvgKajczFOUHJhzk3ycuoiGMRAlaa5DK
+        HpOgujPg==;
 Received: from [2001:4bb8:18c:5da7:c70:4a89:bc61:2] (helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jdBJP-0002P7-NQ; Mon, 25 May 2020 11:30:32 +0000
+        id 1jdBJJ-0002Nh-W9; Mon, 25 May 2020 11:30:26 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Konstantin Khlebnikov <khlebnikov@yandex-team.ru>,
@@ -47,9 +47,9 @@ Cc:     Konstantin Khlebnikov <khlebnikov@yandex-team.ru>,
         linux-block@vger.kernel.org, drbd-dev@lists.linbit.com,
         linux-bcache@vger.kernel.org, linux-nvdimm@lists.01.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/16] bcache: use bio_{start,end}_io_acct
-Date:   Mon, 25 May 2020 13:30:03 +0200
-Message-ID: <20200525113014.345997-6-hch@lst.de>
+Subject: [PATCH 03/16] rsxx: use bio_{start,end}_io_acct
+Date:   Mon, 25 May 2020 13:30:01 +0200
+Message-ID: <20200525113014.345997-4-hch@lst.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200525113014.345997-1-hch@lst.de>
 References: <20200525113014.345997-1-hch@lst.de>
@@ -60,81 +60,61 @@ Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200525113003.izWwbqyxlLtnJ45T0vBkZ2dLfKktOBAKSIKNMhrv0OQ@z>
+Message-ID: <20200525113001.yH2FbEiPkUHMulMVYWX19MyyCkJS82GDEl6CzEi71aw@z>
 
-Switch bcache to use the nicer bio accounting helpers, and call the
-routines where we also sample the start time to give coherent accounting
-results.
+Switch rsxx to use the nicer bio accounting helpers.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/md/bcache/request.c | 18 ++++--------------
- 1 file changed, 4 insertions(+), 14 deletions(-)
+ drivers/block/rsxx/dev.c | 19 ++-----------------
+ 1 file changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 77d1a26975174..22b483527176b 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -668,9 +668,7 @@ static void backing_request_endio(struct bio *bio)
- static void bio_complete(struct search *s)
- {
- 	if (s->orig_bio) {
--		generic_end_io_acct(s->d->disk->queue, bio_op(s->orig_bio),
--				    &s->d->disk->part0, s->start_time);
+diff --git a/drivers/block/rsxx/dev.c b/drivers/block/rsxx/dev.c
+index 8ffa8260dcafe..3ba07ab30c84f 100644
+--- a/drivers/block/rsxx/dev.c
++++ b/drivers/block/rsxx/dev.c
+@@ -96,20 +96,6 @@ static const struct block_device_operations rsxx_fops = {
+ 	.ioctl		= rsxx_blkdev_ioctl,
+ };
+ 
+-static void disk_stats_start(struct rsxx_cardinfo *card, struct bio *bio)
+-{
+-	generic_start_io_acct(card->queue, bio_op(bio), bio_sectors(bio),
+-			     &card->gendisk->part0);
+-}
 -
-+		bio_end_io_acct(s->orig_bio, s->start_time);
- 		trace_bcache_request_end(s->d, s->orig_bio);
- 		s->orig_bio->bi_status = s->iop.status;
- 		bio_endio(s->orig_bio);
-@@ -730,7 +728,7 @@ static inline struct search *search_alloc(struct bio *bio,
- 	s->recoverable		= 1;
- 	s->write		= op_is_write(bio_op(bio));
- 	s->read_dirty_data	= 0;
--	s->start_time		= jiffies;
-+	s->start_time		= bio_start_io_acct(bio);
- 
- 	s->iop.c		= d->c;
- 	s->iop.bio		= NULL;
-@@ -1082,8 +1080,7 @@ static void detached_dev_end_io(struct bio *bio)
- 	bio->bi_end_io = ddip->bi_end_io;
- 	bio->bi_private = ddip->bi_private;
- 
--	generic_end_io_acct(ddip->d->disk->queue, bio_op(bio),
--			    &ddip->d->disk->part0, ddip->start_time);
-+	bio_end_io_acct(bio, ddip->start_time);
- 
- 	if (bio->bi_status) {
- 		struct cached_dev *dc = container_of(ddip->d,
-@@ -1108,7 +1105,7 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
- 	 */
- 	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
- 	ddip->d = d;
--	ddip->start_time = jiffies;
-+	ddip->start_time = bio_start_io_acct(bio);
- 	ddip->bi_end_io = bio->bi_end_io;
- 	ddip->bi_private = bio->bi_private;
- 	bio->bi_end_io = detached_dev_end_io;
-@@ -1190,11 +1187,6 @@ blk_qc_t cached_dev_make_request(struct request_queue *q, struct bio *bio)
- 		}
- 	}
- 
--	generic_start_io_acct(q,
--			      bio_op(bio),
--			      bio_sectors(bio),
--			      &d->disk->part0);
+-static void disk_stats_complete(struct rsxx_cardinfo *card,
+-				struct bio *bio,
+-				unsigned long start_time)
+-{
+-	generic_end_io_acct(card->queue, bio_op(bio),
+-			    &card->gendisk->part0, start_time);
+-}
 -
- 	bio_set_dev(bio, dc->bdev);
- 	bio->bi_iter.bi_sector += dc->sb.data_offset;
+ static void bio_dma_done_cb(struct rsxx_cardinfo *card,
+ 			    void *cb_data,
+ 			    unsigned int error)
+@@ -121,7 +107,7 @@ static void bio_dma_done_cb(struct rsxx_cardinfo *card,
  
-@@ -1311,8 +1303,6 @@ blk_qc_t flash_dev_make_request(struct request_queue *q, struct bio *bio)
- 		return BLK_QC_T_NONE;
- 	}
+ 	if (atomic_dec_and_test(&meta->pending_dmas)) {
+ 		if (!card->eeh_state && card->gendisk)
+-			disk_stats_complete(card, meta->bio, meta->start_time);
++			bio_end_io_acct(meta->bio, meta->start_time);
  
--	generic_start_io_acct(q, bio_op(bio), bio_sectors(bio), &d->disk->part0);
--
- 	s = search_alloc(bio, d);
- 	cl = &s->cl;
- 	bio = &s->bio.bio;
+ 		if (atomic_read(&meta->error))
+ 			bio_io_error(meta->bio);
+@@ -167,10 +153,9 @@ static blk_qc_t rsxx_make_request(struct request_queue *q, struct bio *bio)
+ 	bio_meta->bio = bio;
+ 	atomic_set(&bio_meta->error, 0);
+ 	atomic_set(&bio_meta->pending_dmas, 0);
+-	bio_meta->start_time = jiffies;
+ 
+ 	if (!unlikely(card->halt))
+-		disk_stats_start(card, bio);
++		bio_meta->start_time = bio_start_io_acct(bio);
+ 
+ 	dev_dbg(CARD_TO_DEV(card), "BIO[%c]: meta: %p addr8: x%llx size: %d\n",
+ 		 bio_data_dir(bio) ? 'W' : 'R', bio_meta,
 -- 
 2.26.2
 
