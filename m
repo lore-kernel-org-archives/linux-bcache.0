@@ -1,98 +1,44 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 05/16] bcache: use bio_{start,end}_io_acct
-Date: Mon, 25 May 2020 21:03:39 +0800
-Message-ID: <85828157-ac53-57e8-1a27-068478ab5f5c@suse.de>
-References: <20200525113014.345997-1-hch@lst.de>
- <20200525113014.345997-6-hch@lst.de>
+Subject: [PATCH 0/2] bcache: asynchronous devices registration
+Date: Tue, 26 May 2020 16:46:23 +0800
+Message-ID: <20200526084625.24989-1-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20200525113014.345997-6-hch@lst.de>
-Content-Language: en-US
-Sender: linux-block-owner@vger.kernel.org
-To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
-Cc: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>, Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>, dm-devel@redhat.com, linux-block@vger.kernel.org, drbd-dev@lists.linbit.com, linux-bcache@vger.kernel.org, linux-nvdimm@lists.01.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mx2.suse.de ([195.135.220.15]:41886 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1727948AbgEZIqb (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 26 May 2020 04:46:31 -0400
+Received: from relay2.suse.de (unknown [195.135.220.254])
+        by mx2.suse.de (Postfix) with ESMTP id 5FD8AAEF9
+        for <linux-bcache@vger.kernel.org>; Tue, 26 May 2020 08:46:33 +0000 (UTC)
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: Coly Li <colyli@suse.de>
 
-On 2020/5/25 19:30, Christoph Hellwig wrote:
-> Switch bcache to use the nicer bio accounting helpers, and call the
-> routines where we also sample the start time to give coherent accounting
-> results.
-> 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+This simple series is to add an asynchronous devices registration
+interface for experiment. The async registration may help the bcache
+register udev task to return without wait, and avoid to be killed
+due to the udevd timeout.
 
-Acked-by: Coly Li <colyli@suse.de>
+For common users this async interface is unnecessary. For users who
+has extream large cached data set and encounters the boot time bcache
+registration failure may have a try on this series. This asynchronous
+registration behavior will be set to default in future.
 
+Thanks in advance for your comments and feedback.
 
 Coly Li
+---
 
-> ---
->  drivers/md/bcache/request.c | 18 ++++--------------
->  1 file changed, 4 insertions(+), 14 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index 77d1a26975174..22b483527176b 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -668,9 +668,7 @@ static void backing_request_endio(struct bio *bio)
->  static void bio_complete(struct search *s)
->  {
->  	if (s->orig_bio) {
-> -		generic_end_io_acct(s->d->disk->queue, bio_op(s->orig_bio),
-> -				    &s->d->disk->part0, s->start_time);
-> -
-> +		bio_end_io_acct(s->orig_bio, s->start_time);
->  		trace_bcache_request_end(s->d, s->orig_bio);
->  		s->orig_bio->bi_status = s->iop.status;
->  		bio_endio(s->orig_bio);
-> @@ -730,7 +728,7 @@ static inline struct search *search_alloc(struct bio *bio,
->  	s->recoverable		= 1;
->  	s->write		= op_is_write(bio_op(bio));
->  	s->read_dirty_data	= 0;
-> -	s->start_time		= jiffies;
-> +	s->start_time		= bio_start_io_acct(bio);
->  
->  	s->iop.c		= d->c;
->  	s->iop.bio		= NULL;
-> @@ -1082,8 +1080,7 @@ static void detached_dev_end_io(struct bio *bio)
->  	bio->bi_end_io = ddip->bi_end_io;
->  	bio->bi_private = ddip->bi_private;
->  
-> -	generic_end_io_acct(ddip->d->disk->queue, bio_op(bio),
-> -			    &ddip->d->disk->part0, ddip->start_time);
-> +	bio_end_io_acct(bio, ddip->start_time);
->  
->  	if (bio->bi_status) {
->  		struct cached_dev *dc = container_of(ddip->d,
-> @@ -1108,7 +1105,7 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
->  	 */
->  	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
->  	ddip->d = d;
-> -	ddip->start_time = jiffies;
-> +	ddip->start_time = bio_start_io_acct(bio);
->  	ddip->bi_end_io = bio->bi_end_io;
->  	ddip->bi_private = bio->bi_private;
->  	bio->bi_end_io = detached_dev_end_io;
-> @@ -1190,11 +1187,6 @@ blk_qc_t cached_dev_make_request(struct request_queue *q, struct bio *bio)
->  		}
->  	}
->  
-> -	generic_start_io_acct(q,
-> -			      bio_op(bio),
-> -			      bio_sectors(bio),
-> -			      &d->disk->part0);
-> -
->  	bio_set_dev(bio, dc->bdev);
->  	bio->bi_iter.bi_sector += dc->sb.data_offset;
->  
-> @@ -1311,8 +1303,6 @@ blk_qc_t flash_dev_make_request(struct request_queue *q, struct bio *bio)
->  		return BLK_QC_T_NONE;
->  	}
->  
-> -	generic_start_io_acct(q, bio_op(bio), bio_sectors(bio), &d->disk->part0);
-> -
->  	s = search_alloc(bio, d);
->  	cl = &s->cl;
->  	bio = &s->bio.bio;
-> 
+Coly Li (2):
+  bcache: asynchronous devices registration
+  bcache: configure the asynchronous registertion to be experimental
+
+ drivers/md/bcache/Kconfig |   9 ++++
+ drivers/md/bcache/super.c | 102 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 111 insertions(+)
+
+-- 
+2.25.0
