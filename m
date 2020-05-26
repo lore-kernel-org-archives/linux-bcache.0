@@ -1,54 +1,43 @@
 From: Coly Li <colyli@suse.de>
-Subject: [PATCH 0/5] bcache patches for Linux-5.8
-Date: Tue, 26 May 2020 23:59:23 +0800
-Message-ID: <20200526155928.32036-1-colyli@suse.de>
+Subject: [PATCH 1/5] bcache: remove redundant variables i and n
+Date: Tue, 26 May 2020 23:59:24 +0800
+Message-ID: <20200526155928.32036-2-colyli@suse.de>
+References: <20200526155928.32036-1-colyli@suse.de>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20200526155928.32036-1-colyli@suse.de>
 Sender: linux-block-owner@vger.kernel.org
 To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Colin Ian King <colin.king@canonical.com>, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
 
-Hi Jens,
+From: Colin Ian King <colin.king@canonical.com>
 
-This is the bcache patches for Linux v5.8.
+Variables i and n are being assigned but are never used. They are
+redundant and can be removed.
 
-Patches from Colin Ian King and Joe Perches are sent again for v5.8
-merge windows. The first patch from me is to fix a refcount underflow
-issue when stopping a pending backing device without created bcache
-device. The last two patches from me is for an experiment sysfs
-interface to register bcache devices in asynchronous way, to avoid
-the udevd timeout issue which I tried before.
-
-Please take them for v5.8, and thank you in advance.
-
-Coly Li
+Addresses-Coverity: ("Unused value")
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+Signed-off-by: Coly Li <colyli@suse.de>
 ---
+ drivers/md/bcache/btree.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-Colin Ian King (1):
-  bcache: remove redundant variables i and n
-
-Coly Li (3):
-  bcache: fix refcount underflow in bcache_device_free()
-  bcache: asynchronous devices registration
-  bcache: configure the asynchronous registertion to be experimental
-
-Joe Perches (1):
-  bcache: Convert pr_<level> uses to a more typical style
-
- drivers/md/bcache/Kconfig     |   9 ++
- drivers/md/bcache/bcache.h    |   2 +-
- drivers/md/bcache/bset.c      |   6 +-
- drivers/md/bcache/btree.c     |  16 +--
- drivers/md/bcache/extents.c   |  12 +-
- drivers/md/bcache/io.c        |   8 +-
- drivers/md/bcache/journal.c   |  34 ++---
- drivers/md/bcache/request.c   |   6 +-
- drivers/md/bcache/super.c     | 234 +++++++++++++++++++++++++---------
- drivers/md/bcache/sysfs.c     |   8 +-
- drivers/md/bcache/writeback.c |   6 +-
- 11 files changed, 228 insertions(+), 113 deletions(-)
-
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 72856e5f23a3..114d0d73d909 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1907,10 +1907,8 @@ static int bch_btree_check_thread(void *arg)
+ 	struct btree_iter iter;
+ 	struct bkey *k, *p;
+ 	int cur_idx, prev_idx, skip_nr;
+-	int i, n;
+ 
+ 	k = p = NULL;
+-	i = n = 0;
+ 	cur_idx = prev_idx = 0;
+ 	ret = 0;
+ 
 -- 
 2.25.0
