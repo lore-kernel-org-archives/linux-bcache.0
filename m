@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
 	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AFE41C433E1
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 May 2020 05:24:57 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 50DE6C433DF
+	for <linux-bcache@archiver.kernel.org>; Wed, 27 May 2020 05:25:20 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8A335208E4
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 May 2020 05:24:57 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 21F2B207ED
+	for <linux-bcache@archiver.kernel.org>; Wed, 27 May 2020 05:25:20 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="b9lpto70"
+	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="HgOzNOGA"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729037AbgE0FYz (ORCPT
+        id S1729097AbgE0FZK (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 27 May 2020 01:24:55 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44686 "EHLO
+        Wed, 27 May 2020 01:25:10 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44734 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1729033AbgE0FYx (ORCPT
+        with ESMTP id S1729093AbgE0FZI (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 May 2020 01:24:53 -0400
+        Wed, 27 May 2020 01:25:08 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2F8EEC061A0F;
-        Tue, 26 May 2020 22:24:53 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5ABF9C03E96E;
+        Tue, 26 May 2020 22:25:08 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20170209; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=jAURZKlR3wABF7HVZ7jgwwb3T9+sEOkFONnpRICBtxk=; b=b9lpto70CQqiKdI3uzCEpMlbCf
-        S0IgWN79A13NXEagh9OH9+Qh+JTDTOeMoPjVIuUNfJiAQ+P7WzUbKwDKQk3vPhbGqHsJrVSk4utl2
-        rE2/SU1j43BMRA/XFHmWBPxMeSz9zQ0oiXDhfvPgsGJAMrsPJXTrGLcxfBBf8qGIfJynA3Mobq3E+
-        mjfsUtnhu0yeIU4MY49hiV9ahnzRBQyET4zmj6BzzQpIjttHnvEwO+71DYXKl/DaMmQljzKYxd6aJ
-        NND9YGXuZ3liozt0LHGnA/lee1fDLPc7pwEf9Q19tbT96+Z0qcD37iWSLoJ4ojAms6K5BNdcZ5fSX
-        fU8Jbe+Q==;
+        bh=TB9a5RlSCttsRGqQbKXaUpDsmIDKmbhQMWP6LpH5XS4=; b=HgOzNOGAvq1hieB8BGbaYM8Yd6
+        OtocAuujspm6nkP05lUCMyukmzw/shOAkGR7H6vwElNxY37f5Gf6FH74JCcPV0KXohlfK46c5CIgq
+        uKVpylnDhN13Tfwbx+8sF3cFuxHddwTW4sfegH7VWgZTbI3FlQh0trOMNHvm8ki30lCUyYaGnLCl9
+        MsfPEcsFZXBs3k0ckvvXDZ647AgGZTPg7G83k4yVSoZ97ChO88vK5GMnthTVY5zd0qyih6qBW39zM
+        +J5YSkq2cRdoLxs4Af8aG+/+nZJwGO5OCweoM1adeVpWWaTOk7YX6pdcaCtyhmBG59XLnYknz5mbr
+        PtQs+nWA==;
 Received: from [2001:4bb8:18c:5da7:8164:affc:3c20:853d] (helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jdoYb-0000s4-VW; Wed, 27 May 2020 05:24:50 +0000
+        id 1jdoYq-000141-Dn; Wed, 27 May 2020 05:25:04 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Konstantin Khlebnikov <khlebnikov@yandex-team.ru>,
@@ -47,9 +47,9 @@ Cc:     Konstantin Khlebnikov <khlebnikov@yandex-team.ru>,
         linux-block@vger.kernel.org, drbd-dev@lists.linbit.com,
         linux-bcache@vger.kernel.org, linux-nvdimm@lists.01.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/16] block: move update_io_ticks to blk-core.c
-Date:   Wed, 27 May 2020 07:24:13 +0200
-Message-ID: <20200527052419.403583-11-hch@lst.de>
+Subject: [PATCH 15/16] block: use __this_cpu_add() instead of access by smp_processor_id()
+Date:   Wed, 27 May 2020 07:24:18 +0200
+Message-ID: <20200527052419.403583-16-hch@lst.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200527052419.403583-1-hch@lst.de>
 References: <20200527052419.403583-1-hch@lst.de>
@@ -60,83 +60,33 @@ Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200527052413.5BFuHW52W3rQW9oH2OeXTESgpadxqvpEw9kDzgIR340@z>
+Message-ID: <20200527052418.ExCiJqyOG0Cj8pVulIKYjYdFSb157FkPWveSFqFulMo@z>
 
-All callers are in blk-core.c, so move update_io_ticks over.
+From: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
 
+Most architectures have fast path to access percpu for current cpu.
+The required preempt_disable() is provided by part_stat_lock().
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+[hch: rebased]
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
 ---
- block/bio.c      | 16 ----------------
- block/blk-core.c | 15 +++++++++++++++
- block/blk.h      |  1 -
- 3 files changed, 15 insertions(+), 17 deletions(-)
+ include/linux/part_stat.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/bio.c b/block/bio.c
-index 3e89c7b37855a..5235da6434aab 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -1376,22 +1376,6 @@ void bio_check_pages_dirty(struct bio *bio)
- 	schedule_work(&bio_dirty_work);
- }
+diff --git a/include/linux/part_stat.h b/include/linux/part_stat.h
+index a6b0938ce82e9..24125778ef3ec 100644
+--- a/include/linux/part_stat.h
++++ b/include/linux/part_stat.h
+@@ -54,7 +54,7 @@ static inline void part_stat_set_all(struct hd_struct *part, int value)
+ 	 part_stat_read(part, field[STAT_DISCARD]))
  
--void update_io_ticks(struct hd_struct *part, unsigned long now, bool end)
--{
--	unsigned long stamp;
--again:
--	stamp = READ_ONCE(part->stamp);
--	if (unlikely(stamp != now)) {
--		if (likely(cmpxchg(&part->stamp, stamp, now) == stamp)) {
--			__part_stat_add(part, io_ticks, end ? now - stamp : 1);
--		}
--	}
--	if (part->partno) {
--		part = &part_to_disk(part)->part0;
--		goto again;
--	}
--}
--
- static inline bool bio_remaining_done(struct bio *bio)
- {
- 	/*
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 8973104f88d90..c1675d43c2da0 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1381,6 +1381,21 @@ unsigned int blk_rq_err_bytes(const struct request *rq)
- }
- EXPORT_SYMBOL_GPL(blk_rq_err_bytes);
+ #define __part_stat_add(part, field, addnd)				\
+-	(part_stat_get(part, field) += (addnd))
++	__this_cpu_add((part)->dkstats->field, addnd)
  
-+static void update_io_ticks(struct hd_struct *part, unsigned long now, bool end)
-+{
-+	unsigned long stamp;
-+again:
-+	stamp = READ_ONCE(part->stamp);
-+	if (unlikely(stamp != now)) {
-+		if (likely(cmpxchg(&part->stamp, stamp, now) == stamp))
-+			__part_stat_add(part, io_ticks, end ? now - stamp : 1);
-+	}
-+	if (part->partno) {
-+		part = &part_to_disk(part)->part0;
-+		goto again;
-+	}
-+}
-+
- static void blk_account_io_completion(struct request *req, unsigned int bytes)
- {
- 	if (req->part && blk_do_io_stat(req)) {
-diff --git a/block/blk.h b/block/blk.h
-index 5db4ec1e85f7b..bdf5e94467aa2 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -344,7 +344,6 @@ void blk_queue_free_zone_bitmaps(struct request_queue *q);
- static inline void blk_queue_free_zone_bitmaps(struct request_queue *q) {}
- #endif
- 
--void update_io_ticks(struct hd_struct *part, unsigned long now, bool end);
- struct hd_struct *disk_map_sector_rcu(struct gendisk *disk, sector_t sector);
- 
- int blk_alloc_devt(struct hd_struct *part, dev_t *devt);
+ #define part_stat_add(part, field, addnd)	do {			\
+ 	__part_stat_add((part), field, addnd);				\
 -- 
 2.26.2
 
