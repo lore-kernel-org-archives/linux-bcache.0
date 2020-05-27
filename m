@@ -1,96 +1,44 @@
-From: Christoph Hellwig <hch@lst.de>
-Subject: [PATCH 05/16] bcache: use bio_{start,end}_io_acct
-Date: Wed, 27 May 2020 07:24:08 +0200
-Message-ID: <20200527052419.403583-6-hch@lst.de>
-References: <20200527052419.403583-1-hch@lst.de>
+From: Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v2 0/5] bcache patches for Linux-5.8
+Date: Wed, 27 May 2020 05:20:02 -0600
+Message-ID: <75af2ed6-9dec-a99c-76e1-4708aec30b76@kernel.dk>
+References: <20200527040155.43690-1-colyli@suse.de>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44638 "EHLO
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43180 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1728984AbgE0FYj (ORCPT
+        with ESMTP id S2388192AbgE0LUE (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 May 2020 01:24:39 -0400
-In-Reply-To: <20200527052419.403583-1-hch@lst.de>
+        Wed, 27 May 2020 07:20:04 -0400
+Received: from mail-pj1-x1041.google.com (mail-pj1-x1041.google.com [IPv6:2607:f8b0:4864:20::1041])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CB6F7C061A0F
+        for <linux-bcache@vger.kernel.org>; Wed, 27 May 2020 04:20:04 -0700 (PDT)
+Received: by mail-pj1-x1041.google.com with SMTP id q9so1400070pjm.2
+        for <linux-bcache@vger.kernel.org>; Wed, 27 May 2020 04:20:04 -0700 (PDT)
+In-Reply-To: <20200527040155.43690-1-colyli@suse.de>
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>, Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>, dm-devel@redhat.com, linux-block@vger.kernel.org, drbd-dev@lists.linbit.com, linux-bcache@vger.kernel.org, linux-nvdimm@lists.01.org, linux-kernel@vger.kernel.org, Coly Li <colyli@suse.de>
+To: Coly Li <colyli@suse.de>
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 
-Switch bcache to use the nicer bio accounting helpers, and call the
-routines where we also sample the start time to give coherent accounting
-results.
+On 5/26/20 10:01 PM, Coly Li wrote:
+> Hi Jens,
+> 
+> This is the bcache patches for Linux v5.8.
+> 
+> Patches from Colin Ian King and Joe Perches are sent again for v5.8
+> merge windows. The first patch from me is to fix a refcount underflow
+> issue when stopping a pending backing device without created bcache
+> device. The last two patches from me is for an experiment sysfs
+> interface to register bcache devices in asynchronous way, to avoid
+> the udevd timeout issue which I tried before.
+> 
+> Please take them for v5.8, and thank you in advance.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
-Acked-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/request.c | 18 ++++--------------
- 1 file changed, 4 insertions(+), 14 deletions(-)
+Applied for 5.8, thanks.
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 77d1a26975174..22b483527176b 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -668,9 +668,7 @@ static void backing_request_endio(struct bio *bio)
- static void bio_complete(struct search *s)
- {
- 	if (s->orig_bio) {
--		generic_end_io_acct(s->d->disk->queue, bio_op(s->orig_bio),
--				    &s->d->disk->part0, s->start_time);
--
-+		bio_end_io_acct(s->orig_bio, s->start_time);
- 		trace_bcache_request_end(s->d, s->orig_bio);
- 		s->orig_bio->bi_status = s->iop.status;
- 		bio_endio(s->orig_bio);
-@@ -730,7 +728,7 @@ static inline struct search *search_alloc(struct bio *bio,
- 	s->recoverable		= 1;
- 	s->write		= op_is_write(bio_op(bio));
- 	s->read_dirty_data	= 0;
--	s->start_time		= jiffies;
-+	s->start_time		= bio_start_io_acct(bio);
- 
- 	s->iop.c		= d->c;
- 	s->iop.bio		= NULL;
-@@ -1082,8 +1080,7 @@ static void detached_dev_end_io(struct bio *bio)
- 	bio->bi_end_io = ddip->bi_end_io;
- 	bio->bi_private = ddip->bi_private;
- 
--	generic_end_io_acct(ddip->d->disk->queue, bio_op(bio),
--			    &ddip->d->disk->part0, ddip->start_time);
-+	bio_end_io_acct(bio, ddip->start_time);
- 
- 	if (bio->bi_status) {
- 		struct cached_dev *dc = container_of(ddip->d,
-@@ -1108,7 +1105,7 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
- 	 */
- 	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
- 	ddip->d = d;
--	ddip->start_time = jiffies;
-+	ddip->start_time = bio_start_io_acct(bio);
- 	ddip->bi_end_io = bio->bi_end_io;
- 	ddip->bi_private = bio->bi_private;
- 	bio->bi_end_io = detached_dev_end_io;
-@@ -1190,11 +1187,6 @@ blk_qc_t cached_dev_make_request(struct request_queue *q, struct bio *bio)
- 		}
- 	}
- 
--	generic_start_io_acct(q,
--			      bio_op(bio),
--			      bio_sectors(bio),
--			      &d->disk->part0);
--
- 	bio_set_dev(bio, dc->bdev);
- 	bio->bi_iter.bi_sector += dc->sb.data_offset;
- 
-@@ -1311,8 +1303,6 @@ blk_qc_t flash_dev_make_request(struct request_queue *q, struct bio *bio)
- 		return BLK_QC_T_NONE;
- 	}
- 
--	generic_start_io_acct(q, bio_op(bio), bio_sectors(bio), &d->disk->part0);
--
- 	s = search_alloc(bio, d);
- 	cl = &s->cl;
- 	bio = &s->bio.bio;
 -- 
-2.26.2
+Jens Axboe
