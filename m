@@ -1,64 +1,34 @@
-From: Coly Li <colyli@suse.de>
-Subject: [PATCH v2 5/5] bcache: configure the asynchronous registertion to be experimental
-Date: Wed, 27 May 2020 12:01:55 +0800
-Message-ID: <20200527040155.43690-6-colyli@suse.de>
-References: <20200527040155.43690-1-colyli@suse.de>
+From: Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>
+Subject: Re: [PATCH 01/16] block: add disk/bio-based accounting
+	helpers
+Date: Wed, 27 May 2020 07:23:41 +0200
+Message-ID: <20200527052341.GA17530@lst.de>
+References: <20200525113014.345997-1-hch@lst.de>
+	<20200525113014.345997-2-hch@lst.de>
+	<fafb94a9-cdce-5ea0-e73f-9463766a9f19@yandex-team.ru>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-block-owner@vger.kernel.org>
-In-Reply-To: <20200527040155.43690-1-colyli@suse.de>
-Sender: linux-block-owner@vger.kernel.org
-To: axboe@kernel.dk
-Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Return-path: <drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <fafb94a9-cdce-5ea0-e73f-9463766a9f19-XoJtRXgx1JseBXzfvpsJ4g@public.gmane.org>
+List-Unsubscribe: <https://lists.linbit.com/mailman/options/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://lists.linbit.com/pipermail/drbd-dev>
+List-Post: <mailto:drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+List-Help: <mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=help>
+List-Subscribe: <https://lists.linbit.com/mailman/listinfo/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=subscribe>
+Sender: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+Errors-To: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+To: Konstantin Khlebnikov <khlebnikov-XoJtRXgx1JseBXzfvpsJ4g@public.gmane.org>
+Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-nvdimm-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-block-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, Minchan Kim <minchan-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>, Nitin Gupta <ngupta-KNmc09w0p+Ednm+yROfE0A@public.gmane.org>, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-In order to avoid the experimental async registration interface to
-be treated as new kernel ABI for common users, this patch makes it
-as an experimental kernel configure BCACHE_ASYNC_REGISTRAION.
+On Mon, May 25, 2020 at 03:28:07PM +0300, Konstantin Khlebnikov wrote:
+> I think it would be better to leave this jiffies legacy nonsense in
+> callers and pass here request duration in nanoseconds.
 
-This interface is for extreme large cached data situation, to make sure
-the bcache device can always created without the udev timeout issue. For
-normal users the async or sync registration does not make difference.
-
-In future when we decide to use the asynchronous registration as default
-behavior, this experimental interface may be removed.
-
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/Kconfig | 9 +++++++++
- drivers/md/bcache/super.c | 2 ++
- 2 files changed, 11 insertions(+)
-
-diff --git a/drivers/md/bcache/Kconfig b/drivers/md/bcache/Kconfig
-index 6dfa653d30db..bf7dd96db9b3 100644
---- a/drivers/md/bcache/Kconfig
-+++ b/drivers/md/bcache/Kconfig
-@@ -26,3 +26,12 @@ config BCACHE_CLOSURES_DEBUG
- 	Keeps all active closures in a linked list and provides a debugfs
- 	interface to list them, which makes it possible to see asynchronous
- 	operations that get stuck.
-+
-+config BCACHE_ASYNC_REGISTRAION
-+	bool "Asynchronous device registration (EXPERIMENTAL)"
-+	depends on BCACHE
-+	help
-+	Add a sysfs file /sys/fs/bcache/register_async. Writing registering
-+	device path into this file will returns immediately and the real
-+	registration work is handled in kernel work queue in asynchronous
-+	way.
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b971d8e916d5..f9975c22bf7e 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2765,7 +2765,9 @@ static int __init bcache_init(void)
- 	static const struct attribute *files[] = {
- 		&ksysfs_register.attr,
- 		&ksysfs_register_quiet.attr,
-+#ifdef CONFIG_BCACHE_ASYNC_REGISTRAION
- 		&ksysfs_register_async.attr,
-+#endif
- 		&ksysfs_pendings_cleanup.attr,
- 		NULL
- 	};
--- 
-2.25.0
+jiffies is what the existing interfaces uses.  But now that they come
+from the start helper fixing this will become easier.  I'll do that
+as a follow on, as I'd rather not bloat this series even more.
