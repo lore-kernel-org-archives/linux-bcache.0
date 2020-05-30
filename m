@@ -1,74 +1,245 @@
-Return-Path: <SRS0=TEko=7J=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=CcQ5=7M=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-6.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
-	DKIM_SIGNED,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_GIT autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 74159C433DF
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 May 2020 05:26:07 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9D8B6C433E1
+	for <linux-bcache@archiver.kernel.org>; Sat, 30 May 2020 13:55:11 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5275B207ED
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 May 2020 05:26:07 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="Gx+Qc/da"
+	by mail.kernel.org (Postfix) with ESMTP id 80F4F206A1
+	for <linux-bcache@archiver.kernel.org>; Sat, 30 May 2020 13:55:11 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728323AbgE0F0C (ORCPT
+        id S1727851AbgE3NzJ (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 27 May 2020 01:26:02 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44612 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1728269AbgE0FYa (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 May 2020 01:24:30 -0400
-Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 89E78C061A0F;
-        Tue, 26 May 2020 22:24:30 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=bombadil.20170209; h=Content-Transfer-Encoding:
-        MIME-Version:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:Content-Type:
-        Content-ID:Content-Description:In-Reply-To:References;
-        bh=dJGZntVcW6cIG2lSncQfYFsGYe54mFNTI2kksX7wjkw=; b=Gx+Qc/daipt8RPO+r8id9gztxi
-        Vteb8LMs4zXEDORmD+fyEMjSsBt6uIsIbBcQcQMCHQfx5ZPk130XPqxuL5xoG7ulKVYOEhpHkYHuv
-        5hl1LMsAij9x/e5CnfRgBhxh/kO5GfiHa4AYylNh6rKP/x0SsOQf1sWZn/gOaO6QLBgkTG+JXvCfX
-        8nUyJBg0eUXIjVyli3n2Lq0k1k22bkKOiap1xPNR5nAGhYxfB8RkqLZa43VhL6ewW5QDaIztVrsop
-        rLrrKolV0WGsf2AaRGcZxXm3hNXXjPDL9E+Z8Q4wFj54mCUj31zq4i/8zwKN5vBJiM6dpmRG4CNGA
-        ZYjXVKcQ==;
-Received: from [2001:4bb8:18c:5da7:8164:affc:3c20:853d] (helo=localhost)
-        by bombadil.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jdoY9-0000me-A3; Wed, 27 May 2020 05:24:21 +0000
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jens Axboe <axboe@kernel.dk>
-Cc:     Konstantin Khlebnikov <khlebnikov@yandex-team.ru>,
-        Minchan Kim <minchan@kernel.org>,
-        Nitin Gupta <ngupta@vflare.org>, dm-devel@redhat.com,
-        linux-block@vger.kernel.org, drbd-dev@lists.linbit.com,
-        linux-bcache@vger.kernel.org, linux-nvdimm@lists.01.org,
-        linux-kernel@vger.kernel.org
-Subject: block I/O accounting improvements v2
-Date:   Wed, 27 May 2020 07:24:03 +0200
-Message-ID: <20200527052419.403583-1-hch@lst.de>
-X-Mailer: git-send-email 2.26.2
+        Sat, 30 May 2020 09:55:09 -0400
+Received: from mx2.suse.de ([195.135.220.15]:53506 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1728769AbgE3NzJ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 30 May 2020 09:55:09 -0400
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.220.254])
+        by mx2.suse.de (Postfix) with ESMTP id 1CE54AC22;
+        Sat, 30 May 2020 13:55:07 +0000 (UTC)
+From:   Coly Li <colyli@suse.de>
+To:     linux-block@vger.kernel.org
+Cc:     linux-bcache@vger.kernel.org, Coly Li <colyli@suse.de>,
+        Acshai Manoj <acshai.manoj@microfocus.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Enzo Matsumiya <ematsumiya@suse.com>,
+        Hannes Reinecke <hare@suse.com>, Jens Axboe <axboe@kernel.dk>,
+        Ming Lei <ming.lei@redhat.com>, Xiao Ni <xni@redhat.com>
+Subject: [PATCH v3] block: improve discard bio alignment in __blkdev_issue_discard()
+Date:   Sat, 30 May 2020 21:52:31 +0800
+Message-ID: <20200530135231.122389-1-colyli@suse.de>
+X-Mailer: git-send-email 2.25.0
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200527052403.JKnH1DbhHB0k20ppNoGpiuPr-QoDWSG7cVqNgbsKvLk@z>
+Message-ID: <20200530135231.q1NO-OZnLpdAKkIPFQKR21CP8kB_wSl3lgtvHYEt1Og@z>
 
-Hi Jens,
+This patch improves discard bio split for address and size alignment in
+__blkdev_issue_discard(). The aligned discard bio may help underlying
+device controller to perform better discard and internal garbage
+collection, and avoid unnecessary internal fragment.
 
-they series contains various improvement for block I/O accounting.  The
-first bunch of patches switch the bio based drivers to better accounting
-helpers compared to the current mess.  The end contains a fix and various
-performanc improvements.  Most of this comes from a series Konstantin
-sent a few weeks ago, rebased on changes that landed in your tree since
-and my change to always use the percpu version of the disk stats.
+Current discard bio split algorithm in __blkdev_issue_discard() may have
+non-discarded fregment on device even the discard bio LBA and size are
+both aligned to device's discard granularity size.
 
+Here is the example steps on how to reproduce the above problem.
+- On a VMWare ESXi 6.5 update3 installation, create a 51GB virtual disk
+  with thin mode and give it to a Linux virtual machine.
+- Inside the Linux virtual machine, if the 50GB virtual disk shows up as
+  /dev/sdb, fill data into the first 50GB by,
+        # dd if=/dev/zero of=/dev/sdb bs=4096 count=13107200
+- Discard the 50GB range from offset 0 on /dev/sdb,
+        # blkdiscard /dev/sdb -o 0 -l 53687091200
+- Observe the underlying mapping status of the device
+        # sg_get_lba_status /dev/sdb -m 1048 --lba=0
+  descriptor LBA: 0x0000000000000000  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000000000800  blocks: 16773120  deallocated
+  descriptor LBA: 0x0000000000fff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000001000000  blocks: 8386560  deallocated
+  descriptor LBA: 0x00000000017ff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000001800000  blocks: 8386560  deallocated
+  descriptor LBA: 0x0000000001fff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000002000000  blocks: 8386560  deallocated
+  descriptor LBA: 0x00000000027ff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000002800000  blocks: 8386560  deallocated
+  descriptor LBA: 0x0000000002fff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000003000000  blocks: 8386560  deallocated
+  descriptor LBA: 0x00000000037ff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000003800000  blocks: 8386560  deallocated
+  descriptor LBA: 0x0000000003fff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000004000000  blocks: 8386560  deallocated
+  descriptor LBA: 0x00000000047ff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000004800000  blocks: 8386560  deallocated
+  descriptor LBA: 0x0000000004fff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000005000000  blocks: 8386560  deallocated
+  descriptor LBA: 0x00000000057ff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000005800000  blocks: 8386560  deallocated
+  descriptor LBA: 0x0000000005fff800  blocks: 2048  mapped (or unknown)
+  descriptor LBA: 0x0000000006000000  blocks: 6291456  deallocated
+  descriptor LBA: 0x0000000006600000  blocks: 0  deallocated
 
-Changes since v1:
- - add an ifdef CONFIG_BLOCK to work around the sad state of our headers
- - add reviewed-by tags to all patches
+Although the discard bio starts at LBA 0 and has 50<<30 bytes size which
+are perfect aligned to the discard granularity, from the above list
+these are many 1MB (2048 sectors) internal fragments exist unexpectedly.
+
+The problem is in __blkdev_issue_discard(), an improper algorithm causes
+an improper bio size which is not aligned.
+
+ 25 int __blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 26                 sector_t nr_sects, gfp_t gfp_mask, int flags,
+ 27                 struct bio **biop)
+ 28 {
+ 29         struct request_queue *q = bdev_get_queue(bdev);
+   [snipped]
+ 56
+ 57         while (nr_sects) {
+ 58                 sector_t req_sects = min_t(sector_t, nr_sects,
+ 59                                 bio_allowed_max_sectors(q));
+ 60
+ 61                 WARN_ON_ONCE((req_sects << 9) > UINT_MAX);
+ 62
+ 63                 bio = blk_next_bio(bio, 0, gfp_mask);
+ 64                 bio->bi_iter.bi_sector = sector;
+ 65                 bio_set_dev(bio, bdev);
+ 66                 bio_set_op_attrs(bio, op, 0);
+ 67
+ 68                 bio->bi_iter.bi_size = req_sects << 9;
+ 69                 sector += req_sects;
+ 70                 nr_sects -= req_sects;
+   [snipped]
+ 79         }
+ 80
+ 81         *biop = bio;
+ 82         return 0;
+ 83 }
+ 84 EXPORT_SYMBOL(__blkdev_issue_discard);
+
+At line 58-59, to discard a 50GB range, req_sects is set as return value
+of bio_allowed_max_sectors(q), which is 8388607 sectors. In the above
+case, the discard granularity is 2048 sectors, although the start LBA
+and discard length are aligned to discard granularity, req_sects never
+has chance to be aligned to discard granularity. This is why there are
+some still-mapped 2048 sectors fragment in every 4 or 8 GB range.
+
+If req_sects at line 58 is set to a value aligned to discard_granularity
+and close to UNIT_MAX, then all consequent split bios inside device
+driver are (almostly) aligned to discard_granularity of the device
+queue. The 2048 sectors still-mapped fragment will disappear.
+
+This patch introduces bio_aligned_discard_max_sectors() to return the
+the value which is aligned to q->limits.discard_granularity and closest
+to UINT_MAX. Then this patch replaces bio_allowed_max_sectors() with
+this new routine to decide a more proper split bio length.
+
+But we still need to handle the situation when discard start LBA is not
+aligned to q->limits.discard_granularity, otherwise even the length is
+aligned, current code may still leave 2048 fragment around every 4GB
+range. Therefore, to calculate req_sects, firstly the start LBA of
+discard range is checked, if it is not aligned to discard granularity,
+the first split location should make sure following bio has bi_sector
+aligned to discard granularity. Then there won't be still-mapped
+fragment in the middle of the discard range.
+
+The above is how this patch improves discard bio alignment in
+__blkdev_issue_discard(). Now with this patch, after discard with same
+command line mentiond previously, sg_get_lba_status returns,
+descriptor LBA: 0x0000000000000000  blocks: 106954752  deallocated
+descriptor LBA: 0x0000000006600000  blocks: 0  deallocated
+
+We an see there is no 2048 sectors segment anymore, everything is clean.
+
+Reported-by: Acshai Manoj <acshai.manoj@microfocus.com>
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Bart Van Assche <bvanassche@acm.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Enzo Matsumiya <ematsumiya@suse.com>
+Cc: Hannes Reinecke <hare@suse.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Ming Lei <ming.lei@redhat.com>
+Cc: Xiao Ni <xni@redhat.com>
+---
+Changelog:
+v2, the improved version with inspire from review comments by Bart,
+    Ming and Xiao.
+v1, the initial version.
+
+ block/blk-lib.c | 25 +++++++++++++++++++++++--
+ block/blk.h     | 14 ++++++++++++++
+ 2 files changed, 37 insertions(+), 2 deletions(-)
+
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 5f2c429d4378..7bffdee63a20 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -55,8 +55,29 @@ int __blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 		return -EINVAL;
+ 
+ 	while (nr_sects) {
+-		sector_t req_sects = min_t(sector_t, nr_sects,
+-				bio_allowed_max_sectors(q));
++		sector_t granularity_aligned_lba;
++		sector_t req_sects;
++
++		granularity_aligned_lba = round_up(sector,
++				q->limits.discard_granularity >> SECTOR_SHIFT);
++
++		/*
++		 * Check whether the discard bio starts at a discard_granularity
++		 * aligned LBA,
++		 * - If no: set (granularity_aligned_lba - sector) to bi_size of
++		 *   the first split bio, then the second bio will start at a
++		 *   discard_granularity aligned LBA.
++		 * - If yes: use bio_aligned_discard_max_sectors() as the max
++		 *   possible bi_size of the first split bio. Then when this bio
++		 *   is split in device drive, the split ones are very probably
++		 *   to be aligned to discard_granularity of the device's queue.
++		 */
++		if (granularity_aligned_lba == sector)
++			req_sects = min_t(sector_t, nr_sects,
++					  bio_aligned_discard_max_sectors(q));
++		else
++			req_sects = min_t(sector_t, nr_sects,
++					  granularity_aligned_lba - sector);
+ 
+ 		WARN_ON_ONCE((req_sects << 9) > UINT_MAX);
+ 
+diff --git a/block/blk.h b/block/blk.h
+index 0a94ec68af32..589007ac564e 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -292,6 +292,20 @@ static inline unsigned int bio_allowed_max_sectors(struct request_queue *q)
+ 	return round_down(UINT_MAX, queue_logical_block_size(q)) >> 9;
+ }
+ 
++/*
++ * The max bio size which is aligned to q->limits.discard_granularity. This
++ * is a hint to split large discard bio in generic block layer, then if device
++ * driver needs to split the discard bio into smaller ones, their bi_size can
++ * be very probably and easily aligned to discard_granularity of the device's
++ * queue.
++ */
++static inline unsigned int bio_aligned_discard_max_sectors(
++					struct request_queue *q)
++{
++	return round_down(UINT_MAX, q->limits.discard_granularity) >>
++			SECTOR_SHIFT;
++}
++
+ /*
+  * Internal io_context interface
+  */
+-- 
+2.25.0
+
