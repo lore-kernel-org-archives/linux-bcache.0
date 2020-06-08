@@ -1,20 +1,16 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.7 241/274] bcache: fix refcount underflow in bcache_device_free()
-Date: Mon,  8 Jun 2020 19:05:34 -0400
-Message-ID: <20200608230607.3361041-241-sashal@kernel.org>
-References: <20200608230607.3361041-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.19 091/106] bcache: fix refcount underflow in bcache_device_free()
+Date: Mon,  8 Jun 2020 19:22:23 -0400
+Message-ID: <20200608232238.3368589-91-sashal@kernel.org>
+References: <20200608232238.3368589-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.kernel.org ([198.145.29.99]:58250 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1728902AbgFHXLZ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jun 2020 19:11:25 -0400
-In-Reply-To: <20200608230607.3361041-1-sashal@kernel.org>
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
+Return-path: <stable-owner@vger.kernel.org>
+In-Reply-To: <20200608232238.3368589-1-sashal@kernel.org>
+Sender: stable-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
@@ -76,10 +72,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index d98354fa28e3..4d8bf731b118 100644
+index 5b5cbfadd003..68ebc2759c2e 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -797,7 +797,9 @@ static void bcache_device_free(struct bcache_device *d)
+@@ -775,7 +775,9 @@ static void bcache_device_free(struct bcache_device *d)
  		bcache_device_detach(d);
  
  	if (disk) {
@@ -90,7 +86,7 @@ index d98354fa28e3..4d8bf731b118 100644
  			del_gendisk(disk);
  
  		if (disk->queue)
-@@ -805,7 +807,8 @@ static void bcache_device_free(struct bcache_device *d)
+@@ -783,7 +785,8 @@ static void bcache_device_free(struct bcache_device *d)
  
  		ida_simple_remove(&bcache_device_idx,
  				  first_minor_to_idx(disk->first_minor));
