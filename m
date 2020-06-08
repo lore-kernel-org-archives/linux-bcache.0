@@ -1,13 +1,13 @@
 From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 4.19 091/106] bcache: fix refcount underflow in bcache_device_free()
-Date: Mon,  8 Jun 2020 19:22:23 -0400
-Message-ID: <20200608232238.3368589-91-sashal@kernel.org>
-References: <20200608232238.3368589-1-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 5.4 150/175] bcache: fix refcount underflow in bcache_device_free()
+Date: Mon,  8 Jun 2020 19:18:23 -0400
+Message-ID: <20200608231848.3366970-150-sashal@kernel.org>
+References: <20200608231848.3366970-1-sashal@kernel.org>
 Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Return-path: <stable-owner@vger.kernel.org>
-In-Reply-To: <20200608232238.3368589-1-sashal@kernel.org>
-Sender: stable-owner@vger.kernel.org
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <20200608231848.3366970-1-sashal@kernel.org>
+Sender: linux-kernel-owner@vger.kernel.org
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
@@ -72,10 +72,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 5b5cbfadd003..68ebc2759c2e 100644
+index 658b0f4a01f5..68901745eb20 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -775,7 +775,9 @@ static void bcache_device_free(struct bcache_device *d)
+@@ -789,7 +789,9 @@ static void bcache_device_free(struct bcache_device *d)
  		bcache_device_detach(d);
  
  	if (disk) {
@@ -86,7 +86,7 @@ index 5b5cbfadd003..68ebc2759c2e 100644
  			del_gendisk(disk);
  
  		if (disk->queue)
-@@ -783,7 +785,8 @@ static void bcache_device_free(struct bcache_device *d)
+@@ -797,7 +799,8 @@ static void bcache_device_free(struct bcache_device *d)
  
  		ida_simple_remove(&bcache_device_idx,
  				  first_minor_to_idx(disk->first_minor));
