@@ -1,43 +1,121 @@
-From: Sasha Levin <sashal@kernel.org>
-Subject: [PATCH AUTOSEL 5.7 121/274] bcache: remove a duplicate ->make_request_fn assignment
-Date: Mon,  8 Jun 2020 19:03:34 -0400
-Message-ID: <20200608230607.3361041-121-sashal@kernel.org>
-References: <20200608230607.3361041-1-sashal@kernel.org>
+From: Stefan K <shadow_7@gmx.net>
+Subject: Re: bcachefs status update (it's done cooking; let's get this sucker merged)
+Date: Wed, 10 Jun 2020 13:02:10 +0200
+Message-ID: <3828047.K31vBF4JiT@t460-skr>
+References: <20190610191420.27007-1-kent.overstreet@gmail.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <20200608230607.3361041-1-sashal@kernel.org>
-Sender: linux-kernel-owner@vger.kernel.org
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from mout.gmx.net ([212.227.17.20]:35569 "EHLO mout.gmx.net"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1728304AbgFJLCP (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 10 Jun 2020 07:02:15 -0400
+In-Reply-To: <20190610191420.27007-1-kent.overstreet@gmail.com>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: linux-bcache@vger.kernel.org
+Cc: Kent Overstreet <kent.overstreet@gmail.com>
 
-From: Christoph Hellwig <hch@lst.de>
+... one year later ...
 
-[ Upstream commit a91b2014fc31dc6eaa02ca33aa3b4d1b6e4a0207 ]
+what is the status now? the latest update on patreon is a few month old.
+What are the blockers to merge bcachefs into the kernel?
 
-The make_request_fn pointer should only be assigned by blk_alloc_queue.
-Fix a left over manual initialization.
+I hope that the bcachefs thing will be merged soon.
 
-Fixes: ff27668ce809 ("bcache: pass the make_request methods to blk_queue_make_request")
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
----
- drivers/md/bcache/request.c | 1 -
- 1 file changed, 1 deletion(-)
+best regards
+Stefan
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 71a90fbec314..77d1a2697517 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1372,7 +1372,6 @@ void bch_flash_dev_request_init(struct bcache_device *d)
- {
- 	struct gendisk *g = d->disk;
- 
--	g->queue->make_request_fn		= flash_dev_make_request;
- 	g->queue->backing_dev_info->congested_fn = flash_dev_congested;
- 	d->cache_miss				= flash_dev_cache_miss;
- 	d->ioctl				= flash_dev_ioctl;
--- 
-2.25.1
+
+(I'm shortening the cc-list)
+
+On Monday, June 10, 2019 9:14:08 PM CEST Kent Overstreet wrote:
+> Last status update: https://lkml.org/lkml/2018/12/2/46
+>
+> Current status - I'm pretty much running out of things to polish and exc=
+uses to
+> keep tinkering. The core featureset is _done_ and the list of known outs=
+tanding
+> bugs is getting to be short and unexciting. The next big things on my to=
+do list
+> are finishing erasure coding and reflink, but there's no reason for merg=
+ing to
+> wait on those.
+>
+> So. Here's my bcachefs-for-review branch - this has the minimal set of p=
+atches
+> outside of fs/bcachefs/. My master branch has some performance optimizat=
+ions for
+> the core buffered IO paths, but those are fairly tricky and invasive so =
+I want
+> to hold off on those for now - this branch is intended to be more or les=
+s
+> suitable for merging as is.
+>
+> https://evilpiepirate.org/git/bcachefs.git/log/?h=3Dbcachefs-for-review
+>
+> The list of non bcachefs patches is:
+>
+> closures: fix a race on wakeup from closure_sync
+> closures: closure_wait_event()
+> bcache: move closures to lib/
+> bcache: optimize continue_at_nobarrier()
+> block: Add some exports for bcachefs
+> Propagate gfp_t when allocating pte entries from __vmalloc
+> fs: factor out d_mark_tmpfile()
+> fs: insert_inode_locked2()
+> mm: export find_get_pages()
+> mm: pagecache add lock
+> locking: SIX locks (shared/intent/exclusive)
+> Compiler Attributes: add __flatten
+>
+> Most of the patches are pretty small, of the ones that aren't:
+>
+>  - SIX locks have already been discussed, and seem to be pretty uncontro=
+versial.
+>
+>  - pagecache add lock: it's kind of ugly, but necessary to rigorously pr=
+event
+>    page cache inconsistencies with dio and other operations, in particul=
+ar
+>    racing vs. page faults - honestly, it's criminal that we still don't =
+have a
+>    mechanism in the kernel to address this, other filesystems are suscep=
+tible to
+>    these kinds of bugs too.
+>
+>    My patch is intentionally ugly in the hopes that someone else will co=
+me up
+>    with a magical elegant solution, but in the meantime it's an "it's ug=
+ly but
+>    it works" sort of thing, and I suspect in real world scenarios it's g=
+oing to
+>    beat any kind of range locking performance wise, which is the only
+>    alternative I've heard discussed.
+>
+>  - Propaget gfp_t from __vmalloc() - bcachefs needs __vmalloc() to respe=
+ct
+>    GFP_NOFS, that's all that is.
+>
+>  - and, moving closures out of drivers/md/bcache to lib/.
+>
+> The rest of the tree is 62k lines of code in fs/bcachefs. So, I obviousl=
+y won't
+> be mailing out all of that as patches, but if any code reviewers have
+> suggestions on what would make that go easier go ahead and speak up. The=
+ last
+> time I was mailing things out for review the main thing that came up was=
+ ioctls,
+> but the ioctl interface hasn't really changed since then. I'm pretty con=
+fident
+> in the on disk format stuff, which was the other thing that was mentione=
+d.
+>
+> ----------
+>
+> This has been a monumental effort over a lot of years, and I'm _really_ =
+happy
+> with how it's turned out. I'm excited to finally unleash this upon the w=
+orld.
+>
