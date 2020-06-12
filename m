@@ -1,38 +1,97 @@
 From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
-Subject: Re: [PATCH V2] bcache: fix potential deadlock problem in
+Subject: [PATCH V3] bcache: fix potential deadlock problem in
  btree_gc_coalesce
-Date: Fri, 12 Jun 2020 09:01:03 +0800
-Message-ID: <ae980a3c-f41b-caf6-a384-516656b6fa50@huawei.com>
-References: <80c2a2c6-01b9-8280-34b4-ff6b9cfaf76a@web.de>
+Date: Fri, 12 Jun 2020 09:02:40 +0800
+Message-ID: <ac6f566d-8503-5c4f-eea3-9bfdddaad41e@huawei.com>
 Mime-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-kernel-owner@vger.kernel.org>
-In-Reply-To: <80c2a2c6-01b9-8280-34b4-ff6b9cfaf76a@web.de>
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from szxga07-in.huawei.com ([45.249.212.35]:44454 "EHLO huawei.com"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1726305AbgFLBCv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 11 Jun 2020 21:02:51 -0400
 Content-Language: en-US
-Sender: linux-kernel-owner@vger.kernel.org
-To: Markus Elfring <Markus.Elfring@web.de>, linux-bcache@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org, Coly Li <colyli@suse.de>, Feilong Lin <linfeilong@huawei.com>, Kent Overstreet <kmo@daterainc.com>, mingfangsen@huawei.com, renxudong1@huawei.com, Wu Bo <wubo40@huawei.com>, yanxiaodan@huawei.com
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Coly Li <colyli@suse.de>, Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "wubo (T)" <wubo40@huawei.com>, Mingfangsen <mingfangsen@huawei.com>, Yanxiaodan <yanxiaodan@huawei.com>, linfeilong <linfeilong@huawei.com>, renxudong <renxudong1@huawei.com>
 
-Sorry for late reply. I will improve the commit log as your suggestion in v3 patch.
-Thanks for your suggestion.
 
-On 2020/4/27 2:16, Markus Elfring wrote:
->> --
->> V1->V2: rewrite commit log (suggested by Coly Li) and rename the patch
-> 
-> * The patch version description should be placed behind triple dashes.
-> 
-> * I would find a shorter version identification (without the arrow)
->   also sufficient.
-> 
-> 
->> Fixes: 2a285686c1 ("bcache: btree locking rework")>
-> 
-> Will a longer commit identifier be safer for the final change description?
-> https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/process/submitting-patches.rst?id=b2768df24ec400dd4f7fa79542f797e904812053#n183
-> 
-> Regards,
-> Markus
-> 
+coccicheck reports:
+  drivers/md//bcache/btree.c:1538:1-7: preceding lock on line 1417
+
+In btree_gc_coalesce func, if the coalescing process fails, we will goto
+to out_nocoalesce tag directly without releasing new_nodes[i]->write_lock.
+Then, it will cause a deadlock when trying to acquire new_nodes[i]->write_lock
+for freeing new_nodes[i] before return.
+
+btree_gc_coalesce func details as follows:
+	if alloc new_nodes[i] fails:
+		goto out_nocoalesce;
+	mutex_lock(&new_nodes[i]->write_lock) // obtain new_nodes[i]->write_lock
+	for (i = nodes - 1; i > 0; --i)	      // main coalescing process
+		……
+		if coalescing process fails:
+			goto out_nocoalesce;  // Here, directly goto out_nocoalesce
+					      // tag will cause a deadlock
+		……
+	mutex_unlock(&new_nodes[i]->write_lock)	// release new_nodes[i]->write_lock
+	return;					// coalesing succ, return
+	out_nocoalesce:
+		btree_node_free(new_nodes[i])	// free new_nodes[i]
+			mutex_lock(&new_nodes[i]->write_lock);	// obtain new_nodes[i]->write_lock
+			clear_bit(BTREE_NODE_dirty, &ew_nodes[i]->flags); // set flag for reuse
+			mutex_unlock(&new_nodes[i]->write_lock); // release new_nodes[i]->write_lock
+
+To fix the problem, we add a new tag 'out_unlock_nocoalesce' for releasing
+new_nodes[i]->write_lock before out_nocoalesce tag. If coalescing process fails,
+we will go to out_unlock_nocoalesce tag for releasing new_nodes[i]->write_lock
+before free new_nodes[i] in out_nocoalesce tag.
+
+Fixes: 2a285686c109816 ("bcache: btree locking rework")
+Signed-off-by: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+---
+Changelog:
+	V3: improve commit log again (suggested by Markus and Coly)
+	V2: improve commit log
+	V1: initial version
+
+ drivers/md/bcache/btree.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 72856e5f23a3..fd1f288fd801 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1389,7 +1389,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 			if (__set_blocks(n1, n1->keys + n2->keys,
+ 					 block_bytes(b->c)) >
+ 			    btree_blocks(new_nodes[i]))
+-				goto out_nocoalesce;
++				goto out_unlock_nocoalesce;
+
+ 			keys = n2->keys;
+ 			/* Take the key of the node we're getting rid of */
+@@ -1418,7 +1418,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+
+ 		if (__bch_keylist_realloc(&keylist,
+ 					  bkey_u64s(&new_nodes[i]->key)))
+-			goto out_nocoalesce;
++			goto out_unlock_nocoalesce;
+
+ 		bch_btree_node_write(new_nodes[i], &cl);
+ 		bch_keylist_add(&keylist, &new_nodes[i]->key);
+@@ -1464,6 +1464,10 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 	/* Invalidated our iterator */
+ 	return -EINTR;
+
++out_unlock_nocoalesce:
++	for (i = 0; i < nodes; i++)
++		mutex_unlock(&new_nodes[i]->write_lock);
++
+ out_nocoalesce:
+ 	closure_sync(&cl);
+
+-- 
+2.19.1
