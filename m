@@ -1,91 +1,78 @@
-Return-Path: <SRS0=q/iw=7W=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=0yR0=7Z=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,MENTIONS_GIT_HOSTING,
+	NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9D6CFC433E1
-	for <linux-bcache@archiver.kernel.org>; Tue,  9 Jun 2020 00:57:57 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0086CC433E0
+	for <linux-bcache@archiver.kernel.org>; Fri, 12 Jun 2020 01:01:21 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7CC8320737
-	for <linux-bcache@archiver.kernel.org>; Tue,  9 Jun 2020 00:57:57 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=default; t=1591664277;
-	bh=SWWGoQsVVAyjX/AN81bixPfF8lDzZ/UMYuq0YgzmvUs=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References:List-ID:From;
-	b=tUnL0LZvlRiU7btIUD3NqSnxMXN5oxquzautr03AheqD8brc4hVTkfKCthpI4Xz2w
-	 0rSEE6NPF1rb0xrE7Oo6sF3YzAUaoiFI9MiQIm4TIlDg1PkmwRnV6QejKiUk6AgdJn
-	 lzT94fqW8B1EsUkUn0fol6u7jYTecIfYAZLTZ7o8=
+	by mail.kernel.org (Postfix) with ESMTP id DC85D20801
+	for <linux-bcache@archiver.kernel.org>; Fri, 12 Jun 2020 01:01:20 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1730520AbgFIA5c (ORCPT
+        id S1726321AbgFLBBP (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 8 Jun 2020 20:57:32 -0400
-Received: from mail.kernel.org ([198.145.29.99]:54374 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1728262AbgFHXIu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Jun 2020 19:08:50 -0400
-Received: from sasha-vm.mshome.net (c-73-47-72-35.hsd1.nh.comcast.net [73.47.72.35])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
-        (No client certificate requested)
-        by mail.kernel.org (Postfix) with ESMTPSA id 10950208C7;
-        Mon,  8 Jun 2020 23:08:48 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=default; t=1591657729;
-        bh=SWWGoQsVVAyjX/AN81bixPfF8lDzZ/UMYuq0YgzmvUs=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=AQ6VfoPodepn32on6YldBsZakXGLZ2rsGgt+KUpcALeqGTla3c5h7X27iXe1pRgX9
-         IUAdDgHjyhtv0B7Q/S0VHWx6gNfoaACjo47k9SuR8TE+dK5fT9TtywEPDdCU5x5jkp
-         WHCHsT4To1unWZq44INcFyBVd3Ev/KOIw67IkCB0=
-From:   Sasha Levin <sashal@kernel.org>
-To:     linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
-Subject: [PATCH AUTOSEL 5.7 121/274] bcache: remove a duplicate ->make_request_fn assignment
-Date:   Mon,  8 Jun 2020 19:03:34 -0400
-Message-ID: <20200608230607.3361041-121-sashal@kernel.org>
-X-Mailer: git-send-email 2.25.1
-In-Reply-To: <20200608230607.3361041-1-sashal@kernel.org>
-References: <20200608230607.3361041-1-sashal@kernel.org>
+        Thu, 11 Jun 2020 21:01:15 -0400
+Received: from szxga07-in.huawei.com ([45.249.212.35]:42732 "EHLO huawei.com"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1726305AbgFLBBP (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 11 Jun 2020 21:01:15 -0400
+Received: from DGGEMS411-HUB.china.huawei.com (unknown [172.30.72.59])
+        by Forcepoint Email with ESMTP id E532F75579B3E817CE12;
+        Fri, 12 Jun 2020 09:01:11 +0800 (CST)
+Received: from [127.0.0.1] (10.166.215.235) by DGGEMS411-HUB.china.huawei.com
+ (10.3.19.211) with Microsoft SMTP Server id 14.3.487.0; Fri, 12 Jun 2020
+ 09:01:04 +0800
+Subject: Re: [PATCH V2] bcache: fix potential deadlock problem in
+ btree_gc_coalesce
+To:     Markus Elfring <Markus.Elfring@web.de>,
+        <linux-bcache@vger.kernel.org>
+CC:     <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        Coly Li <colyli@suse.de>, Feilong Lin <linfeilong@huawei.com>,
+        Kent Overstreet <kmo@daterainc.com>, <mingfangsen@huawei.com>,
+        <renxudong1@huawei.com>, Wu Bo <wubo40@huawei.com>,
+        <yanxiaodan@huawei.com>
+References: <80c2a2c6-01b9-8280-34b4-ff6b9cfaf76a@web.de>
+From:   Zhiqiang Liu <liuzhiqiang26@huawei.com>
+Message-ID: <ae980a3c-f41b-caf6-a384-516656b6fa50@huawei.com>
+Date:   Fri, 12 Jun 2020 09:01:03 +0800
+User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101
+ Thunderbird/68.2.2
 MIME-Version: 1.0
-X-stable: review
-X-Patchwork-Hint: Ignore
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <80c2a2c6-01b9-8280-34b4-ff6b9cfaf76a@web.de>
+Content-Type: text/plain; charset="utf-8"
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.166.215.235]
+X-CFilter-Loop: Reflected
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200608230334.goMVdcSB_zzFBPATmJP8zu4iK7AedKDqdwPxis77GhE@z>
+Message-ID: <20200612010103._F3_avftwx734x_ZfkmekUpVzCRAa3aFi_5qjUSr9lg@z>
 
-From: Christoph Hellwig <hch@lst.de>
+Sorry for late reply. I will improve the commit log as your suggestion in v3 patch.
+Thanks for your suggestion.
 
-[ Upstream commit a91b2014fc31dc6eaa02ca33aa3b4d1b6e4a0207 ]
-
-The make_request_fn pointer should only be assigned by blk_alloc_queue.
-Fix a left over manual initialization.
-
-Fixes: ff27668ce809 ("bcache: pass the make_request methods to blk_queue_make_request")
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
----
- drivers/md/bcache/request.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 71a90fbec314..77d1a2697517 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1372,7 +1372,6 @@ void bch_flash_dev_request_init(struct bcache_device *d)
- {
- 	struct gendisk *g = d->disk;
- 
--	g->queue->make_request_fn		= flash_dev_make_request;
- 	g->queue->backing_dev_info->congested_fn = flash_dev_congested;
- 	d->cache_miss				= flash_dev_cache_miss;
- 	d->ioctl				= flash_dev_ioctl;
--- 
-2.25.1
+On 2020/4/27 2:16, Markus Elfring wrote:
+>> --
+>> V1->V2: rewrite commit log (suggested by Coly Li) and rename the patch
+> 
+> * The patch version description should be placed behind triple dashes.
+> 
+> * I would find a shorter version identification (without the arrow)
+>   also sufficient.
+> 
+> 
+>> Fixes: 2a285686c1 ("bcache: btree locking rework")>
+> 
+> Will a longer commit identifier be safer for the final change description?
+> https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/process/submitting-patches.rst?id=b2768df24ec400dd4f7fa79542f797e904812053#n183
+> 
+> Regards,
+> Markus
+> 
 
