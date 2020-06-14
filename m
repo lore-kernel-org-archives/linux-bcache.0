@@ -1,97 +1,51 @@
-From: Zhiqiang Liu <liuzhiqiang26@huawei.com>
-Subject: [PATCH V3] bcache: fix potential deadlock problem in
- btree_gc_coalesce
-Date: Fri, 12 Jun 2020 09:02:40 +0800
-Message-ID: <ac6f566d-8503-5c4f-eea3-9bfdddaad41e@huawei.com>
+From: colyli@suse.de
+Subject: [PATCH 0/4] bcache: more fixes for v5.8-rc1
+Date: Mon, 15 Jun 2020 00:53:29 +0800
+Message-ID: <20200614165333.124999-1-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from szxga07-in.huawei.com ([45.249.212.35]:44454 "EHLO huawei.com"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1726305AbgFLBCv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 11 Jun 2020 21:02:51 -0400
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
+Return-path: <linux-block-owner@vger.kernel.org>
+Sender: linux-block-owner@vger.kernel.org
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 List-Id: linux-bcache@vger.kernel.org
-To: Coly Li <colyli@suse.de>, Kent Overstreet <kmo@daterainc.com>, linux-bcache@vger.kernel.org
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "wubo (T)" <wubo40@huawei.com>, Mingfangsen <mingfangsen@huawei.com>, Yanxiaodan <yanxiaodan@huawei.com>, linfeilong <linfeilong@huawei.com>, renxudong <renxudong1@huawei.com>
 
+From: Coly Li <colyli@suse.de>
 
-coccicheck reports:
-  drivers/md//bcache/btree.c:1538:1-7: preceding lock on line 1417
+Hi Jens,
 
-In btree_gc_coalesce func, if the coalescing process fails, we will goto
-to out_nocoalesce tag directly without releasing new_nodes[i]->write_lock.
-Then, it will cause a deadlock when trying to acquire new_nodes[i]->write_lock
-for freeing new_nodes[i] before return.
+Here are more following up fixes for bcache v5.8-rc1.
 
-btree_gc_coalesce func details as follows:
-	if alloc new_nodes[i] fails:
-		goto out_nocoalesce;
-	mutex_lock(&new_nodes[i]->write_lock) // obtain new_nodes[i]->write_lock
-	for (i = nodes - 1; i > 0; --i)	      // main coalescing process
-		……
-		if coalescing process fails:
-			goto out_nocoalesce;  // Here, directly goto out_nocoalesce
-					      // tag will cause a deadlock
-		……
-	mutex_unlock(&new_nodes[i]->write_lock)	// release new_nodes[i]->write_lock
-	return;					// coalesing succ, return
-	out_nocoalesce:
-		btree_node_free(new_nodes[i])	// free new_nodes[i]
-			mutex_lock(&new_nodes[i]->write_lock);	// obtain new_nodes[i]->write_lock
-			clear_bit(BTREE_NODE_dirty, &ew_nodes[i]->flags); // set flag for reuse
-			mutex_unlock(&new_nodes[i]->write_lock); // release new_nodes[i]->write_lock
+The two patches from me are minor clean up. Rested two patches
+are important.
 
-To fix the problem, we add a new tag 'out_unlock_nocoalesce' for releasing
-new_nodes[i]->write_lock before out_nocoalesce tag. If coalescing process fails,
-we will go to out_unlock_nocoalesce tag for releasing new_nodes[i]->write_lock
-before free new_nodes[i] in out_nocoalesce tag.
+- Mauricio Faria de Oliveira contributes a fix for a potential
+  kernel panic when users configures improper block size value
+  to bcache backing device. This problem should be fixed as soon
+  as possible IMHO.
+- Zhiqiang Liu contributes a fix for a potential deadlock (even quite
+  hard to trigger), which I want to have it as soon as possible.
 
-Fixes: 2a285686c109816 ("bcache: btree locking rework")
-Signed-off-by: Zhiqiang Liu <liuzhiqiang26@huawei.com>
+Please take these patches for v5.8-rc1, or -rc2 if it is late for -rc1.
+
+Thanks you in advance.
+
+Coly Li
 ---
-Changelog:
-	V3: improve commit log again (suggested by Markus and Coly)
-	V2: improve commit log
-	V1: initial version
 
- drivers/md/bcache/btree.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+Coly Li (2):
+  bcache: use delayed kworker fo asynchronous devices registration
+  bcache: pr_info() format clean up in bcache_device_init()
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 72856e5f23a3..fd1f288fd801 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1389,7 +1389,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
- 			if (__set_blocks(n1, n1->keys + n2->keys,
- 					 block_bytes(b->c)) >
- 			    btree_blocks(new_nodes[i]))
--				goto out_nocoalesce;
-+				goto out_unlock_nocoalesce;
+Mauricio Faria de Oliveira (1):
+  bcache: check and adjust logical block size for backing devices
 
- 			keys = n2->keys;
- 			/* Take the key of the node we're getting rid of */
-@@ -1418,7 +1418,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+Zhiqiang Liu (1):
+  bcache: fix potential deadlock problem in btree_gc_coalesce
 
- 		if (__bch_keylist_realloc(&keylist,
- 					  bkey_u64s(&new_nodes[i]->key)))
--			goto out_nocoalesce;
-+			goto out_unlock_nocoalesce;
-
- 		bch_btree_node_write(new_nodes[i], &cl);
- 		bch_keylist_add(&keylist, &new_nodes[i]->key);
-@@ -1464,6 +1464,10 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
- 	/* Invalidated our iterator */
- 	return -EINTR;
-
-+out_unlock_nocoalesce:
-+	for (i = 0; i < nodes; i++)
-+		mutex_unlock(&new_nodes[i]->write_lock);
-+
- out_nocoalesce:
- 	closure_sync(&cl);
+ drivers/md/bcache/btree.c |  8 ++++++--
+ drivers/md/bcache/super.c | 35 ++++++++++++++++++++++++++---------
+ 2 files changed, 32 insertions(+), 11 deletions(-)
 
 -- 
-2.19.1
+2.25.0
