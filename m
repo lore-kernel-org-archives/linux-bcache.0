@@ -1,52 +1,46 @@
-From: Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH 0/4] bcache: more fixes for v5.8-rc1
-Date: Sun, 14 Jun 2020 16:48:53 -0600
-Message-ID: <595e3582-980e-6cac-66d6-9ced628239e6@kernel.dk>
+From: Hannes Reinecke <hare@suse.de>
+Subject: Re: [PATCH 3/4] bcache: use delayed kworker fo asynchronous devices
+ registration
+Date: Mon, 15 Jun 2020 08:12:46 +0200
+Message-ID: <9bd21fc5-2666-e239-3da1-dc51c3ca2e49@suse.de>
 References: <20200614165333.124999-1-colyli@suse.de>
+ <20200614165333.124999-4-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34742 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1727928AbgFNWs5 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 14 Jun 2020 18:48:57 -0400
-Received: from mail-pf1-x441.google.com (mail-pf1-x441.google.com [IPv6:2607:f8b0:4864:20::441])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C6D8EC05BD43
-        for <linux-bcache@vger.kernel.org>; Sun, 14 Jun 2020 15:48:55 -0700 (PDT)
-Received: by mail-pf1-x441.google.com with SMTP id s23so6991164pfh.7
-        for <linux-bcache@vger.kernel.org>; Sun, 14 Jun 2020 15:48:55 -0700 (PDT)
-In-Reply-To: <20200614165333.124999-1-colyli@suse.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+Return-path: <linux-block-owner@vger.kernel.org>
+In-Reply-To: <20200614165333.124999-4-colyli@suse.de>
 Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
-To: colyli@suse.de
+Sender: linux-block-owner@vger.kernel.org
+To: colyli@suse.de, axboe@kernel.dk
 Cc: linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+List-Id: linux-bcache@vger.kernel.org
 
-On 6/14/20 10:53 AM, colyli@suse.de wrote:
+On 6/14/20 6:53 PM, colyli@suse.de wrote:
 > From: Coly Li <colyli@suse.de>
 > 
-> Hi Jens,
+> This patch changes the asynchronous registration kworker to a delayed
+> kworker. There is probability queue_work() queues the async registration
+> kworker to the same CPU (even though very little), then the process
+> which writing sysfs interface to reigster bcache device may won't return
+> immeidately. queue_delayed_work() in this patch will delay 10 jiffies
+> before insert the kworker to run queue, which makes sure the registering
+> process may always returns to user space in time.
 > 
-> Here are more following up fixes for bcache v5.8-rc1.
+> Fixes: 9e23ccf8f0a22 ("bcache: asynchronous devices registration")
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Cc: Hannes Reinecke <hare@suse.de>
+> ---
+>   drivers/md/bcache/super.c | 14 ++++++++------
+>   1 file changed, 8 insertions(+), 6 deletions(-)
 > 
-> The two patches from me are minor clean up. Rested two patches
-> are important.
-> 
-> - Mauricio Faria de Oliveira contributes a fix for a potential
->   kernel panic when users configures improper block size value
->   to bcache backing device. This problem should be fixed as soon
->   as possible IMHO.
-> - Zhiqiang Liu contributes a fix for a potential deadlock (even quite
->   hard to trigger), which I want to have it as soon as possible.
-> 
-> Please take these patches for v5.8-rc1, or -rc2 if it is late for -rc1.
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 
-A few hours before -rc1 release is indeed too late. I'd only queue and
-push anything this late if there was a very compelling reason to do so.
+Cheers,
 
-I've queued them up for -rc2.
-
+Hannes
 -- 
-Jens Axboe
+Dr. Hannes Reinecke            Teamlead Storage & Networking
+hare@suse.de                               +49 911 74053 688
+SUSE Software Solutions GmbH, Maxfeldstr. 5, 90409 Nürnberg
+HRB 36809 (AG Nürnberg), Geschäftsführer: Felix Imendörffer
