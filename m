@@ -1,76 +1,90 @@
-Return-Path: <SRS0=CTMA=74=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=fFEs=76=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-8.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=unavailable
+X-Spam-Status: No, score=-11.6 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EB5C2C433E0
-	for <linux-bcache@archiver.kernel.org>; Mon, 15 Jun 2020 06:12:51 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4B449C433E0
+	for <linux-bcache@archiver.kernel.org>; Wed, 17 Jun 2020 22:22:16 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D2DE3206DB
-	for <linux-bcache@archiver.kernel.org>; Mon, 15 Jun 2020 06:12:51 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2957220882
+	for <linux-bcache@archiver.kernel.org>; Wed, 17 Jun 2020 22:22:16 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=default; t=1592432536;
+	bh=IXfRB1ln79N+EByGvcDZLtyLTc8uIB4owydFsSPvdn4=;
+	h=Date:From:To:Cc:Subject:List-ID:From;
+	b=TtNprYty9h4OTtJ5KY+hL1dWsqzv8PcIPGJnpR9iXPgaH405GIYteTxgGtx33CTym
+	 7j7DTP8+uI+PZiSv+fNNEa4rsqHLwnTQ1o1xNjAOh9W5W6bOGQliIVSl5PwTys/H+K
+	 NF/DPDF7QSL7tg0oZmnFkAqQDGZFJnXKwLT+m8Og=
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728224AbgFOGMu (ORCPT
+        id S1726913AbgFQWWN (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 15 Jun 2020 02:12:50 -0400
-Received: from mx2.suse.de ([195.135.220.15]:49922 "EHLO mx2.suse.de"
+        Wed, 17 Jun 2020 18:22:13 -0400
+Received: from mail.kernel.org ([198.145.29.99]:58544 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1728163AbgFOGMu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 15 Jun 2020 02:12:50 -0400
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.220.254])
-        by mx2.suse.de (Postfix) with ESMTP id 7AA0AAE65;
-        Mon, 15 Jun 2020 06:12:52 +0000 (UTC)
-Subject: Re: [PATCH 3/4] bcache: use delayed kworker fo asynchronous devices
- registration
-To:     colyli@suse.de, axboe@kernel.dk
-Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-References: <20200614165333.124999-1-colyli@suse.de>
- <20200614165333.124999-4-colyli@suse.de>
-From:   Hannes Reinecke <hare@suse.de>
-Message-ID: <9bd21fc5-2666-e239-3da1-dc51c3ca2e49@suse.de>
-Date:   Mon, 15 Jun 2020 08:12:46 +0200
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.8.0
+        id S1726909AbgFQWWN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 17 Jun 2020 18:22:13 -0400
+Received: from embeddedor (unknown [189.207.59.248])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by mail.kernel.org (Postfix) with ESMTPSA id D6DF02083B;
+        Wed, 17 Jun 2020 22:22:12 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=default; t=1592432533;
+        bh=IXfRB1ln79N+EByGvcDZLtyLTc8uIB4owydFsSPvdn4=;
+        h=Date:From:To:Cc:Subject:From;
+        b=uQ/seVr9NqlnoEZpYrrDnKyihLCV1NpDqkPfISGAoZYQOTULsJr86NzD2lqElXJ7T
+         2Zum6blhRm7Y1SwcwF+vGdvbCjkqpQpOnrtSCdSNI5lgm/cCnzT8DhJXg8sI4G9oaN
+         UgcFLJ7dfXMXROnRC88wxorAfsDSYFZELCBNot38=
+Date:   Wed, 17 Jun 2020 17:27:33 -0500
+From:   "Gustavo A. R. Silva" <gustavoars@kernel.org>
+To:     Coly Li <colyli@suse.de>,
+        Kent Overstreet <kent.overstreet@gmail.com>
+Cc:     linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gustavo A. R. Silva" <gustavo@embeddedor.com>
+Subject: [PATCH][next] bcache: Use struct_size() in kzalloc()
+Message-ID: <20200617222733.GA24156@embeddedor>
 MIME-Version: 1.0
-In-Reply-To: <20200614165333.124999-4-colyli@suse.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Language: en-US
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.9.4 (2018-02-28)
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200615061246.rzLcDlLvTGR6ZKtQD18DT5lCXENA54EI4613QTPnkvc@z>
+Message-ID: <20200617222733.T21i78o_hQNE7saFlGIRKooGk6DL6iwZyxo9jiLll10@z>
 
-On 6/14/20 6:53 PM, colyli@suse.de wrote:
-> From: Coly Li <colyli@suse.de>
-> 
-> This patch changes the asynchronous registration kworker to a delayed
-> kworker. There is probability queue_work() queues the async registration
-> kworker to the same CPU (even though very little), then the process
-> which writing sysfs interface to reigster bcache device may won't return
-> immeidately. queue_delayed_work() in this patch will delay 10 jiffies
-> before insert the kworker to run queue, which makes sure the registering
-> process may always returns to user space in time.
-> 
-> Fixes: 9e23ccf8f0a22 ("bcache: asynchronous devices registration")
-> Signed-off-by: Coly Li <colyli@suse.de>
-> Cc: Hannes Reinecke <hare@suse.de>
-> ---
->   drivers/md/bcache/super.c | 14 ++++++++------
->   1 file changed, 8 insertions(+), 6 deletions(-)
-> 
-Reviewed-by: Hannes Reinecke <hare@suse.de>
+Make use of the struct_size() helper instead of an open-coded version
+in order to avoid any potential type mistakes.
 
-Cheers,
+This code was detected with the help of Coccinelle and, audited and
+fixed manually.
 
-Hannes
+Signed-off-by: Gustavo A. R. Silva <gustavoars@kernel.org>
+---
+ drivers/md/bcache/writeback.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 1cf1e5016cb9..c0db3c860179 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -459,10 +459,8 @@ static void read_dirty(struct cached_dev *dc)
+ 		for (i = 0; i < nk; i++) {
+ 			w = keys[i];
+ 
+-			io = kzalloc(sizeof(struct dirty_io) +
+-				     sizeof(struct bio_vec) *
+-				     DIV_ROUND_UP(KEY_SIZE(&w->key),
+-						  PAGE_SECTORS),
++			io = kzalloc(struct_size(io, bio.bi_inline_vecs,
++						DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS)),
+ 				     GFP_KERNEL);
+ 			if (!io)
+ 				goto err;
 -- 
-Dr. Hannes Reinecke            Teamlead Storage & Networking
-hare@suse.de                               +49 911 74053 688
-SUSE Software Solutions GmbH, Maxfeldstr. 5, 90409 Nürnberg
-HRB 36809 (AG Nürnberg), Geschäftsführer: Felix Imendörffer
+2.27.0
+
