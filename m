@@ -1,62 +1,63 @@
-From: Coly Li <colyli@suse.de>
+From: Joe Perches <joe@perches.com>
 Subject: Re: [PATCH][next] bcache: Use struct_size() in kzalloc()
-Date: Thu, 18 Jun 2020 13:38:08 +0800
-Message-ID: <1c6adee3-bbad-dc88-3dd2-af823f279271@suse.de>
+Date: Wed, 17 Jun 2020 22:42:47 -0700
+Message-ID: <48589b2a3ec33a6504d23d166a32e7820d2e0b70.camel@perches.com>
 References: <20200617222733.GA24156@embeddedor>
+         <1c6adee3-bbad-dc88-3dd2-af823f279271@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:38010 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725837AbgFRFi5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 18 Jun 2020 01:38:57 -0400
-In-Reply-To: <20200617222733.GA24156@embeddedor>
-Content-Language: en-US
-Sender: linux-bcache-owner@vger.kernel.org
-List-Id: linux-bcache@vger.kernel.org
-To: "Gustavo A. R. Silva" <gustavoars@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+Return-path: <linux-kernel-owner@vger.kernel.org>
+In-Reply-To: <1c6adee3-bbad-dc88-3dd2-af823f279271@suse.de>
+Sender: linux-kernel-owner@vger.kernel.org
+To: Coly Li <colyli@suse.de>, "Gustavo A. R. Silva" <gustavoars@kernel.org>
 Cc: Kent Overstreet <kent.overstreet@gmail.com>, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, "Gustavo A. R. Silva" <gustavo@embeddedor.com>
+List-Id: linux-bcache@vger.kernel.org
 
-On 2020/6/18 06:27, Gustavo A. R. Silva wrote:
-> Make use of the struct_size() helper instead of an open-coded version
-> in order to avoid any potential type mistakes.
+On Thu, 2020-06-18 at 13:38 +0800, Coly Li wrote:
+> On 2020/6/18 06:27, Gustavo A. R. Silva wrote:
+> > Make use of the struct_size() helper instead of an open-coded version
+> > in order to avoid any potential type mistakes.
+[]
+> > diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+[]
+> > -			io = kzalloc(sizeof(struct dirty_io) +
+> > -				     sizeof(struct bio_vec) *
+> > -				     DIV_ROUND_UP(KEY_SIZE(&w->key),
+> > -						  PAGE_SECTORS),
+> > +			io = kzalloc(struct_size(io, bio.bi_inline_vecs,
+>                                                      ^^^^^^^^^^^^^^^^^^
+>                                                      I like this :-)
 > 
-> This code was detected with the help of Coccinelle and, audited and
-> fixed manually.
+> > +						DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS)),
 > 
-> Signed-off-by: Gustavo A. R. Silva <gustavoars@kernel.org> ---
->  drivers/md/bcache/writeback.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 1cf1e5016cb9..c0db3c860179 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -459,10 +459,8 @@ static void read_dirty(struct cached_dev *dc)
->  		for (i = 0; i < nk; i++) {
->  			w = keys[i];
->  
-> -			io = kzalloc(sizeof(struct dirty_io) +
-> -				     sizeof(struct bio_vec) *
-> -				     DIV_ROUND_UP(KEY_SIZE(&w->key),
-> -						  PAGE_SECTORS),
-> +			io = kzalloc(struct_size(io, bio.bi_inline_vecs,
-                                                     ^^^^^^^^^^^^^^^^^^
-                                                     I like this :-)
+> The above line seems too long for 80 characters limitation. Does
+> checkpatch.pl complain for this ?
 
-> +						DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS)),
+No.  checkpatch has changed:
 
-The above line seems too long for 80 characters limitation. Does
-checkpatch.pl complain for this ?
+From bdc48fa11e46f867ea4d75fa59ee87a7f48be144 Mon Sep 17 00:00:00 2001
+From: Joe Perches <joe@perches.com>
+Date: Fri, 29 May 2020 16:12:21 -0700
+Subject: [PATCH] checkpatch/coding-style: deprecate 80-column warning
 
+Yes, staying withing 80 columns is certainly still _preferred_.  But
+it's not the hard limit that the checkpatch warnings imply, and other
+concerns can most certainly dominate.
 
-Thanks.
+Increase the default limit to 100 characters.  Not because 100
+characters is some hard limit either, but that's certainly a "what are
+you doing" kind of value and less likely to be about the occasional
+slightly longer lines.
 
-Coly Li
+Miscellanea:
 
+ - to avoid unnecessary whitespace changes in files, checkpatch will no
+   longer emit a warning about line length when scanning files unless
+   --strict is also used
 
->  				     GFP_KERNEL);
->  			if (!io)
->  				goto err;
+ - Add a bit to coding-style about alignment to open parenthesis
+
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 > 
