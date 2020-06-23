@@ -1,129 +1,241 @@
-Return-Path: <SRS0=RR6l=AD=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=FeS8=AE=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EF1E9C433E0
-	for <linux-bcache@archiver.kernel.org>; Mon, 22 Jun 2020 14:28:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 56694C433DF
+	for <linux-bcache@archiver.kernel.org>; Tue, 23 Jun 2020 17:44:13 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D78562074D
-	for <linux-bcache@archiver.kernel.org>; Mon, 22 Jun 2020 14:28:40 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2F054206D4
+	for <linux-bcache@archiver.kernel.org>; Tue, 23 Jun 2020 17:44:13 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=default; t=1592934253;
+	bh=S4OBt6uJBfnbnKcJpzwKgOczPbY5w4kwCO+lHH4TmuU=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:List-ID:From;
+	b=jtLRdK3Je0W9ScnhSZ6p1ir3+17m+vxOZR8PTY1U0a4cMhaElgPn2oGCChRctribc
+	 nsrlmU+hUX1k2iEMVry7In+qHuxq5jYYcySENhSkjt0jcOhnYlB6Y7iuB7ob1jY1t/
+	 ESRuktqhWMhgdcHtQTP7eJEBUnYqohy+kRTPZzR0=
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729319AbgFVO0S (ORCPT
+        id S2387798AbgFWRoD (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 22 Jun 2020 10:26:18 -0400
-Received: from mx2.suse.de ([195.135.220.15]:44630 "EHLO mx2.suse.de"
+        Tue, 23 Jun 2020 13:44:03 -0400
+Received: from mail.kernel.org ([198.145.29.99]:60076 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1729303AbgFVO0R (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 22 Jun 2020 10:26:17 -0400
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 79413C1D4;
-        Mon, 22 Jun 2020 14:26:14 +0000 (UTC)
-Subject: Re: [PATCH][next] bcache: movinggc: Use struct_size() helper in
- kzalloc()
-To:     "Gustavo A. R. Silva" <gustavoars@kernel.org>
-Cc:     Kent Overstreet <kent.overstreet@gmail.com>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Gustavo A. R. Silva" <gustavo@embeddedor.com>
-References: <20200617223331.GA25794@embeddedor>
-From:   Coly Li <colyli@suse.de>
-Autocrypt: addr=colyli@suse.de; keydata=
- mQINBFYX6S8BEAC9VSamb2aiMTQREFXK4K/W7nGnAinca7MRuFUD4JqWMJ9FakNRd/E0v30F
- qvZ2YWpidPjaIxHwu3u9tmLKqS+2vnP0k7PRHXBYbtZEMpy3kCzseNfdrNqwJ54A430BHf2S
- GMVRVENiScsnh4SnaYjFVvB8SrlhTsgVEXEBBma5Ktgq9YSoy5miatWmZvHLFTQgFMabCz/P
- j5/xzykrF6yHo0rHZtwzQzF8rriOplAFCECp/t05+OeHHxjSqSI0P/G79Ll+AJYLRRm9til/
- K6yz/1hX5xMToIkYrshDJDrUc8DjEpISQQPhG19PzaUf3vFpmnSVYprcWfJWsa2wZyyjRFkf
- J51S82WfclafNC6N7eRXedpRpG6udUAYOA1YdtlyQRZa84EJvMzW96iSL1Gf+ZGtRuM3k49H
- 1wiWOjlANiJYSIWyzJjxAd/7Xtiy/s3PRKL9u9y25ftMLFa1IljiDG+mdY7LyAGfvdtIkanr
- iBpX4gWXd7lNQFLDJMfShfu+CTMCdRzCAQ9hIHPmBeZDJxKq721CyBiGAhRxDN+TYiaG/UWT
- 7IB7LL4zJrIe/xQ8HhRO+2NvT89o0LxEFKBGg39yjTMIrjbl2ZxY488+56UV4FclubrG+t16
- r2KrandM7P5RjR+cuHhkKseim50Qsw0B+Eu33Hjry7YCihmGswARAQABtBhDb2x5IExpIDxj
- b2x5bGlAc3VzZS5kZT6JAlYEEwEIAEACGyMHCwkIBwMCAQYVCAIJCgsEFgIDAQIeAQIXgBYh
- BOo+RS/0+Uhgjej60Mc5B5Nrffj8BQJcR84dBQkY++fuAAoJEMc5B5Nrffj8ixcP/3KAKg1X
- EcoW4u/0z+Ton5rCyb/NpAww8MuRjNW82UBUac7yCi1y3OW7NtLjuBLw5SaVG5AArb7IF3U0
- qTOobqfl5XHsT0o5wFHZaKUrnHb6y7V3SplsJWfkP3JmOooJsQB3z3K96ZTkFelsNb0ZaBRu
- gV+LA4MomhQ+D3BCDR1it1OX/tpvm2uaDF6s/8uFtcDEM9eQeqATN/QAJ49nvU/I8zDSY9rc
- 0x9mP0x+gH4RccbnoPu/rUG6Fm1ZpLrbb6NpaYBBJ/V1BC4lIOjnd24bsoQrQmnJn9dSr60X
- 1MY60XDszIyzRw7vbJcUn6ZzPNFDxFFT9diIb+wBp+DD8ZlD/hnVpl4f921ZbvfOSsXAJrKB
- 1hGY17FPwelp1sPcK2mDT+pfHEMV+OQdZzD2OCKtza/5IYismJJm3oVUYMogb5vDNAw9X2aP
- XgwUuG+FDEFPamFMUwIfzYHcePfqf0mMsaeSgtA/xTxzx/0MLjUJHl46Bc0uKDhv7QUyGz0j
- Ywgr2mHTvG+NWQ/mDeHNGkcnsnp3IY7koDHnN2xMFXzY4bn9m8ctqKo2roqjCzoxD/njoAhf
- KBzdybLHATqJG/yiZSbCxDA1n/J4FzPyZ0rNHUAJ/QndmmVspE9syFpFCKigvvyrzm016+k+
- FJ59Q6RG4MSy/+J565Xj+DNY3/dCuQINBFYX6S8BEADZP+2cl4DRFaSaBms08W8/smc5T2CO
- YhAoygZn71rB7Djml2ZdvrLRjR8Qbn0Q/2L2gGUVc63pJnbrjlXSx2LfAFE0SlfYIJ11aFdF
- 9w7RvqWByQjDJor3Z0fWvPExplNgMvxpD0U0QrVT5dIGTx9hadejCl/ug09Lr6MPQn+a4+qs
- aRWwgCSHaIuDkH3zI1MJXiqXXFKUzJ/Fyx6R72rqiMPHH2nfwmMu6wOXAXb7+sXjZz5Po9GJ
- g2OcEc+rpUtKUJGyeQsnCDxUcqJXZDBi/GnhPCcraQuqiQ7EGWuJfjk51vaI/rW4bZkA9yEP
- B9rBYngbz7cQymUsfxuTT8OSlhxjP3l4ZIZFKIhDaQeZMj8pumBfEVUyiF6KVSfgfNQ/5PpM
- R4/pmGbRqrAAElhrRPbKQnCkGWDr8zG+AjN1KF6rHaFgAIO7TtZ+F28jq4reLkur0N5tQFww
- wFwxzROdeLHuZjL7eEtcnNnzSkXHczLkV4kQ3+vr/7Gm65mQfnVpg6JpwpVrbDYQeOFlxZ8+
- GERY5Dag4KgKa/4cSZX2x/5+KkQx9wHwackw5gDCvAdZ+Q81nm6tRxEYBBiVDQZYqO73stgT
- ZyrkxykUbQIy8PI+g7XMDCMnPiDncQqgf96KR3cvw4wN8QrgA6xRo8xOc2C3X7jTMQUytCz9
- 0MyV1QARAQABiQI8BBgBCAAmAhsMFiEE6j5FL/T5SGCN6PrQxzkHk2t9+PwFAlxHziAFCRj7
- 5/EACgkQxzkHk2t9+PxgfA//cH5R1DvpJPwraTAl24SUcG9EWe+NXyqveApe05nk15zEuxxd
- e4zFEjo+xYZilSveLqYHrm/amvQhsQ6JLU+8N60DZHVcXbw1Eb8CEjM5oXdbcJpXh1/1BEwl
- 4phsQMkxOTns51bGDhTQkv4lsZKvNByB9NiiMkT43EOx14rjkhHw3rnqoI7ogu8OO7XWfKcL
- CbchjJ8t3c2XK1MUe056yPpNAT2XPNF2EEBPG2Y2F4vLgEbPv1EtpGUS1+JvmK3APxjXUl5z
- 6xrxCQDWM5AAtGfM/IswVjbZYSJYyH4BQKrShzMb0rWUjkpXvvjsjt8rEXpZEYJgX9jvCoxt
- oqjCKiVLpwje9WkEe9O9VxljmPvxAhVqJjX62S+TGp93iD+mvpCoHo3+CcvyRcilz+Ko8lfO
- hS9tYT0HDUiDLvpUyH1AR2xW9RGDevGfwGTpF0K6cLouqyZNdhlmNciX48tFUGjakRFsxRmX
- K0Jx4CEZubakJe+894sX6pvNFiI7qUUdB882i5GR3v9ijVPhaMr8oGuJ3kvwBIA8lvRBGVGn
- 9xvzkQ8Prpbqh30I4NMp8MjFdkwCN6znBKPHdjNTwE5PRZH0S9J0o67IEIvHfH0eAWAsgpTz
- +jwc7VKH7vkvgscUhq/v1/PEWCAqh9UHy7R/jiUxwzw/288OpgO+i+2l11Y=
-Message-ID: <de0eb477-35a5-9849-55c5-1b782fc3cec3@suse.de>
-Date:   Sat, 20 Jun 2020 22:17:20 +0800
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:68.0)
- Gecko/20100101 Thunderbird/68.9.0
+        id S1733192AbgFWRfb (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 23 Jun 2020 13:35:31 -0400
+Received: from sasha-vm.mshome.net (c-73-47-72-35.hsd1.nh.comcast.net [73.47.72.35])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+        (No client certificate requested)
+        by mail.kernel.org (Postfix) with ESMTPSA id 480E72078A;
+        Tue, 23 Jun 2020 17:35:29 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=default; t=1592933730;
+        bh=S4OBt6uJBfnbnKcJpzwKgOczPbY5w4kwCO+lHH4TmuU=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=CBAaz7twN0zNX/0GglqJF1FNbXY3krQKt0T4gFxYMITTlIpxh+lwASC4bp7bCE5gm
+         wMaDiDopjFY9JPPHNq/HnTswh2PKUwKWdnhpRuqaYpIV2rkdq43dd0mDDNahbORkSG
+         SutcuYjCA+jAt3SUxBOnzrH0GX4JYvqYqnEY1pj4=
+From:   Sasha Levin <sashal@kernel.org>
+To:     linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc:     Mauricio Faria de Oliveira <mfo@canonical.com>,
+        Ryan Finnie <ryan@finnie.org>,
+        Sebastian Marsching <sebastian@marsching.com>,
+        Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>,
+        Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
+Subject: [PATCH AUTOSEL 5.7 05/28] bcache: check and adjust logical block size for backing devices
+Date:   Tue, 23 Jun 2020 13:35:00 -0400
+Message-ID: <20200623173523.1355411-5-sashal@kernel.org>
+X-Mailer: git-send-email 2.25.1
+In-Reply-To: <20200623173523.1355411-1-sashal@kernel.org>
+References: <20200623173523.1355411-1-sashal@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20200617223331.GA25794@embeddedor>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+X-stable: review
+X-Patchwork-Hint: Ignore
+Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200620141720.4wlH8i-2_st-Xhq5Unumo_W1VnYHDBDNihoHyxPL8Qc@z>
+Message-ID: <20200623173500.Ej1FMtDNJ-f4ccGS3_dOgmcF7eDDhEUAZQLJg2OfSXg@z>
 
-On 2020/6/18 06:33, Gustavo A. R. Silva wrote:
-> Make use of the struct_size() helper instead of an open-coded version
-> in order to avoid any potential type mistakes.
-> 
-> This code was detected with the help of Coccinelle and, audited and
-> fixed manually.
-> 
-> Signed-off-by: Gustavo A. R. Silva <gustavoars@kernel.org>
+From: Mauricio Faria de Oliveira <mfo@canonical.com>
 
-The patch looks good to me, and I assume you already test and verify the
-change. I will add them in my for-test directory.
+[ Upstream commit dcacbc1242c71e18fa9d2eadc5647e115c9c627d ]
 
-Thanks.
+It's possible for a block driver to set logical block size to
+a value greater than page size incorrectly; e.g. bcache takes
+the value from the superblock, set by the user w/ make-bcache.
 
-Coly Li
+This causes a BUG/NULL pointer dereference in the path:
 
-> ---
->  drivers/md/bcache/movinggc.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/movinggc.c b/drivers/md/bcache/movinggc.c
-> index 7891fb512736..b7dd2d75f58c 100644
-> --- a/drivers/md/bcache/movinggc.c
-> +++ b/drivers/md/bcache/movinggc.c
-> @@ -145,8 +145,8 @@ static void read_moving(struct cache_set *c)
->  			continue;
->  		}
->  
-> -		io = kzalloc(sizeof(struct moving_io) + sizeof(struct bio_vec)
-> -			     * DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS),
-> +		io = kzalloc(struct_size(io, bio.bio.bi_inline_vecs,
-> +					 DIV_ROUND_UP(KEY_SIZE(&w->key), PAGE_SECTORS)),
->  			     GFP_KERNEL);
->  		if (!io)
->  			goto err;
-> 
+  __blkdev_get()
+  -> set_init_blocksize() // set i_blkbits based on ...
+     -> bdev_logical_block_size()
+        -> queue_logical_block_size() // ... this value
+  -> bdev_disk_changed()
+     ...
+     -> blkdev_readpage()
+        -> block_read_full_page()
+           -> create_page_buffers() // size = 1 << i_blkbits
+              -> create_empty_buffers() // give size/take pointer
+                 -> alloc_page_buffers() // return NULL
+                 .. BUG!
+
+Because alloc_page_buffers() is called with size > PAGE_SIZE,
+thus it initializes head = NULL, skips the loop, return head;
+then create_empty_buffers() gets (and uses) the NULL pointer.
+
+This has been around longer than commit ad6bf88a6c19 ("block:
+fix an integer overflow in logical block size"); however, it
+increased the range of values that can trigger the issue.
+
+Previously only 8k/16k/32k (on x86/4k page size) would do it,
+as greater values overflow unsigned short to zero, and queue_
+logical_block_size() would then use the default of 512.
+
+Now the range with unsigned int is much larger, and users w/
+the 512k value, which happened to be zero'ed previously and
+work fine, started to hit this issue -- as the zero is gone,
+and queue_logical_block_size() does return 512k (>PAGE_SIZE.)
+
+Fix this by checking the bcache device's logical block size,
+and if it's greater than page size, fallback to the backing/
+cached device's logical page size.
+
+This doesn't affect cache devices as those are still checked
+for block/page size in read_super(); only the backing/cached
+devices are not.
+
+Apparently it's a regression from commit 2903381fce71 ("bcache:
+Take data offset from the bdev superblock."), moving the check
+into BCACHE_SB_VERSION_CDEV only. Now that we have superblocks
+of backing devices out there with this larger value, we cannot
+refuse to load them (i.e., have a similar check in _BDEV.)
+
+Ideally perhaps bcache should use all values from the backing
+device (physical/logical/io_min block size)? But for now just
+fix the problematic case.
+
+Test-case:
+
+    # IMG=/root/disk.img
+    # dd if=/dev/zero of=$IMG bs=1 count=0 seek=1G
+    # DEV=$(losetup --find --show $IMG)
+    # make-bcache --bdev $DEV --block 8k
+      < see dmesg >
+
+Before:
+
+    # uname -r
+    5.7.0-rc7
+
+    [   55.944046] BUG: kernel NULL pointer dereference, address: 0000000000000000
+    ...
+    [   55.949742] CPU: 3 PID: 610 Comm: bcache-register Not tainted 5.7.0-rc7 #4
+    ...
+    [   55.952281] RIP: 0010:create_empty_buffers+0x1a/0x100
+    ...
+    [   55.966434] Call Trace:
+    [   55.967021]  create_page_buffers+0x48/0x50
+    [   55.967834]  block_read_full_page+0x49/0x380
+    [   55.972181]  do_read_cache_page+0x494/0x610
+    [   55.974780]  read_part_sector+0x2d/0xaa
+    [   55.975558]  read_lba+0x10e/0x1e0
+    [   55.977904]  efi_partition+0x120/0x5a6
+    [   55.980227]  blk_add_partitions+0x161/0x390
+    [   55.982177]  bdev_disk_changed+0x61/0xd0
+    [   55.982961]  __blkdev_get+0x350/0x490
+    [   55.983715]  __device_add_disk+0x318/0x480
+    [   55.984539]  bch_cached_dev_run+0xc5/0x270
+    [   55.986010]  register_bcache.cold+0x122/0x179
+    [   55.987628]  kernfs_fop_write+0xbc/0x1a0
+    [   55.988416]  vfs_write+0xb1/0x1a0
+    [   55.989134]  ksys_write+0x5a/0xd0
+    [   55.989825]  do_syscall_64+0x43/0x140
+    [   55.990563]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
+    [   55.991519] RIP: 0033:0x7f7d60ba3154
+    ...
+
+After:
+
+    # uname -r
+    5.7.0.bcachelbspgsz
+
+    [   31.672460] bcache: bcache_device_init() bcache0: sb/logical block size (8192) greater than page size (4096) falling back to device logical block size (512)
+    [   31.675133] bcache: register_bdev() registered backing device loop0
+
+    # grep ^ /sys/block/bcache0/queue/*_block_size
+    /sys/block/bcache0/queue/logical_block_size:512
+    /sys/block/bcache0/queue/physical_block_size:8192
+
+Reported-by: Ryan Finnie <ryan@finnie.org>
+Reported-by: Sebastian Marsching <sebastian@marsching.com>
+Signed-off-by: Mauricio Faria de Oliveira <mfo@canonical.com>
+Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ drivers/md/bcache/super.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 4d8bf731b118c..a2e5a0fcd7d5c 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -819,7 +819,8 @@ static void bcache_device_free(struct bcache_device *d)
+ }
+ 
+ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+-			      sector_t sectors, make_request_fn make_request_fn)
++			      sector_t sectors, make_request_fn make_request_fn,
++			      struct block_device *cached_bdev)
+ {
+ 	struct request_queue *q;
+ 	const size_t max_stripes = min_t(size_t, INT_MAX,
+@@ -885,6 +886,21 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+ 	q->limits.io_min		= block_size;
+ 	q->limits.logical_block_size	= block_size;
+ 	q->limits.physical_block_size	= block_size;
++
++	if (q->limits.logical_block_size > PAGE_SIZE && cached_bdev) {
++		/*
++		 * This should only happen with BCACHE_SB_VERSION_BDEV.
++		 * Block/page size is checked for BCACHE_SB_VERSION_CDEV.
++		 */
++		pr_info("%s: sb/logical block size (%u) greater than page size "
++			"(%lu) falling back to device logical block size (%u)",
++			d->disk->disk_name, q->limits.logical_block_size,
++			PAGE_SIZE, bdev_logical_block_size(cached_bdev));
++
++		/* This also adjusts physical block size/min io size if needed */
++		blk_queue_logical_block_size(q, bdev_logical_block_size(cached_bdev));
++	}
++
+ 	blk_queue_flag_set(QUEUE_FLAG_NONROT, d->disk->queue);
+ 	blk_queue_flag_clear(QUEUE_FLAG_ADD_RANDOM, d->disk->queue);
+ 	blk_queue_flag_set(QUEUE_FLAG_DISCARD, d->disk->queue);
+@@ -1342,7 +1358,7 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
+ 
+ 	ret = bcache_device_init(&dc->disk, block_size,
+ 			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset,
+-			 cached_dev_make_request);
++			 cached_dev_make_request, dc->bdev);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1455,7 +1471,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+ 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
+ 
+ 	if (bcache_device_init(d, block_bytes(c), u->sectors,
+-			flash_dev_make_request))
++			flash_dev_make_request, NULL))
+ 		goto err;
+ 
+ 	bcache_device_attach(d, c, u - c->uuids);
+-- 
+2.25.1
 
