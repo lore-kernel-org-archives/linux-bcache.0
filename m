@@ -1,241 +1,83 @@
-Return-Path: <SRS0=FeS8=AE=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=4FCb=AF=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 56694C433DF
-	for <linux-bcache@archiver.kernel.org>; Tue, 23 Jun 2020 17:44:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 56A70C433E0
+	for <linux-bcache@archiver.kernel.org>; Wed, 24 Jun 2020 06:59:09 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 2F054206D4
-	for <linux-bcache@archiver.kernel.org>; Tue, 23 Jun 2020 17:44:13 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=default; t=1592934253;
-	bh=S4OBt6uJBfnbnKcJpzwKgOczPbY5w4kwCO+lHH4TmuU=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References:List-ID:From;
-	b=jtLRdK3Je0W9ScnhSZ6p1ir3+17m+vxOZR8PTY1U0a4cMhaElgPn2oGCChRctribc
-	 nsrlmU+hUX1k2iEMVry7In+qHuxq5jYYcySENhSkjt0jcOhnYlB6Y7iuB7ob1jY1t/
-	 ESRuktqhWMhgdcHtQTP7eJEBUnYqohy+kRTPZzR0=
+	by mail.kernel.org (Postfix) with ESMTP id 2A7D12072E
+	for <linux-bcache@archiver.kernel.org>; Wed, 24 Jun 2020 06:59:09 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2387798AbgFWRoD (ORCPT
+        id S2387981AbgFXG7H (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 23 Jun 2020 13:44:03 -0400
-Received: from mail.kernel.org ([198.145.29.99]:60076 "EHLO mail.kernel.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1733192AbgFWRfb (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 23 Jun 2020 13:35:31 -0400
-Received: from sasha-vm.mshome.net (c-73-47-72-35.hsd1.nh.comcast.net [73.47.72.35])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
-        (No client certificate requested)
-        by mail.kernel.org (Postfix) with ESMTPSA id 480E72078A;
-        Tue, 23 Jun 2020 17:35:29 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=default; t=1592933730;
-        bh=S4OBt6uJBfnbnKcJpzwKgOczPbY5w4kwCO+lHH4TmuU=;
-        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=CBAaz7twN0zNX/0GglqJF1FNbXY3krQKt0T4gFxYMITTlIpxh+lwASC4bp7bCE5gm
-         wMaDiDopjFY9JPPHNq/HnTswh2PKUwKWdnhpRuqaYpIV2rkdq43dd0mDDNahbORkSG
-         SutcuYjCA+jAt3SUxBOnzrH0GX4JYvqYqnEY1pj4=
-From:   Sasha Levin <sashal@kernel.org>
-To:     linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc:     Mauricio Faria de Oliveira <mfo@canonical.com>,
-        Ryan Finnie <ryan@finnie.org>,
-        Sebastian Marsching <sebastian@marsching.com>,
-        Coly Li <colyli@suse.de>, Jens Axboe <axboe@kernel.dk>,
-        Sasha Levin <sashal@kernel.org>, linux-bcache@vger.kernel.org
-Subject: [PATCH AUTOSEL 5.7 05/28] bcache: check and adjust logical block size for backing devices
-Date:   Tue, 23 Jun 2020 13:35:00 -0400
-Message-ID: <20200623173523.1355411-5-sashal@kernel.org>
-X-Mailer: git-send-email 2.25.1
-In-Reply-To: <20200623173523.1355411-1-sashal@kernel.org>
-References: <20200623173523.1355411-1-sashal@kernel.org>
-MIME-Version: 1.0
-X-stable: review
-X-Patchwork-Hint: Ignore
-Content-Transfer-Encoding: 8bit
+        Wed, 24 Jun 2020 02:59:07 -0400
+Received: from smtp21.cstnet.cn ([159.226.251.21]:53872 "EHLO cstnet.cn"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S2387606AbgFXG7H (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 24 Jun 2020 02:59:07 -0400
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Jun 2020 02:59:06 EDT
+Received: from ubuntu.localdomain (unknown [124.16.136.99])
+        by APP-01 (Coremail) with SMTP id qwCowAAHwjBJ+PJeTHU5AA--.30479S2;
+        Wed, 24 Jun 2020 14:52:58 +0800 (CST)
+From:   Xu Wang <vulab@iscas.ac.cn>
+To:     colyli@suse.de, kent.overstreet@gmail.com
+Cc:     linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] bcache: journel: use for_each_clear_bit() to simplify the  code
+Date:   Wed, 24 Jun 2020 14:52:57 +0800
+Message-ID: <20200624065257.4051-1-vulab@iscas.ac.cn>
+X-Mailer: git-send-email 2.17.1
+X-CM-TRANSID: qwCowAAHwjBJ+PJeTHU5AA--.30479S2
+X-Coremail-Antispam: 1UD129KBjvdXoW7Jw4kGw18Cr4rKw15AF1DZFb_yoW3trcEkF
+        12qF4Svr43Jr17Zw48Cry8urZIv3sxur1kZF4xt39IkF98Xas3Gr40vryUtr48Zry0yFyD
+        J34UtrWFy3s0yjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+        9fnUUIcSsGvfJTRUUUb7AYjsxI4VWDJwAYFVCjjxCrM7AC8VAFwI0_Jr0_Gr1l1xkIjI8I
+        6I8E6xAIw20EY4v20xvaj40_Wr0E3s1l1IIY67AEw4v_Jr0_Jr4l8cAvFVAK0II2c7xJM2
+        8CjxkF64kEwVA0rcxSw2x7M28EF7xvwVC0I7IYx2IY67AKxVW5JVW7JwA2z4x0Y4vE2Ix0
+        cI8IcVCY1x0267AKxVW8JVWxJwA2z4x0Y4vEx4A2jsIE14v26F4UJVW0owA2z4x0Y4vEx4
+        A2jsIEc7CjxVAFwI0_GcCE3s1le2I262IYc4CY6c8Ij28IcVAaY2xG8wAqx4xG64xvF2IE
+        w4CE5I8CrVC2j2WlYx0E2Ix0cI8IcVAFwI0_Jr0_Jr4lYx0Ex4A2jsIE14v26r1j6r4UMc
+        vjeVCFs4IE7xkEbVWUJVW8JwACjcxG0xvY0x0EwIxGrwCY02Avz4vE14v_GF1l42xK82IY
+        c2Ij64vIr41l4I8I3I0E4IkC6x0Yz7v_Jr0_Gr1lx2IqxVAqx4xG67AKxVWUJVWUGwC20s
+        026x8GjcxK67AKxVWUGVWUWwC2zVAF1VAY17CE14v26r126r1DMIIYrxkI7VAKI48JMIIF
+        0xvE2Ix0cI8IcVAFwI0_Jr0_JF4lIxAIcVC0I7IYx2IY6xkF7I0E14v26r1j6r4UMIIF0x
+        vE42xK8VAvwI8IcIk0rVWrZr1j6s0DMIIF0xvEx4A2jsIE14v26r1j6r4UMIIF0xvEx4A2
+        jsIEc7CjxVAFwI0_Jr0_GrUvcSsGvfC2KfnxnUUI43ZEXa7IU0YXdUUUUUU==
+X-Originating-IP: [124.16.136.99]
+X-CM-SenderInfo: pyxotu46lvutnvoduhdfq/1tbiBwIRA102YjeFPwAAsT
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200623173500.Ej1FMtDNJ-f4ccGS3_dOgmcF7eDDhEUAZQLJg2OfSXg@z>
+Message-ID: <20200624065257.SHmA1NXlqalmDKyTOPJ18_4FAcGwb7Paw7F67QFebLs@z>
 
-From: Mauricio Faria de Oliveira <mfo@canonical.com>
+Using for_each_clear_bit() to simplify the code.
 
-[ Upstream commit dcacbc1242c71e18fa9d2eadc5647e115c9c627d ]
-
-It's possible for a block driver to set logical block size to
-a value greater than page size incorrectly; e.g. bcache takes
-the value from the superblock, set by the user w/ make-bcache.
-
-This causes a BUG/NULL pointer dereference in the path:
-
-  __blkdev_get()
-  -> set_init_blocksize() // set i_blkbits based on ...
-     -> bdev_logical_block_size()
-        -> queue_logical_block_size() // ... this value
-  -> bdev_disk_changed()
-     ...
-     -> blkdev_readpage()
-        -> block_read_full_page()
-           -> create_page_buffers() // size = 1 << i_blkbits
-              -> create_empty_buffers() // give size/take pointer
-                 -> alloc_page_buffers() // return NULL
-                 .. BUG!
-
-Because alloc_page_buffers() is called with size > PAGE_SIZE,
-thus it initializes head = NULL, skips the loop, return head;
-then create_empty_buffers() gets (and uses) the NULL pointer.
-
-This has been around longer than commit ad6bf88a6c19 ("block:
-fix an integer overflow in logical block size"); however, it
-increased the range of values that can trigger the issue.
-
-Previously only 8k/16k/32k (on x86/4k page size) would do it,
-as greater values overflow unsigned short to zero, and queue_
-logical_block_size() would then use the default of 512.
-
-Now the range with unsigned int is much larger, and users w/
-the 512k value, which happened to be zero'ed previously and
-work fine, started to hit this issue -- as the zero is gone,
-and queue_logical_block_size() does return 512k (>PAGE_SIZE.)
-
-Fix this by checking the bcache device's logical block size,
-and if it's greater than page size, fallback to the backing/
-cached device's logical page size.
-
-This doesn't affect cache devices as those are still checked
-for block/page size in read_super(); only the backing/cached
-devices are not.
-
-Apparently it's a regression from commit 2903381fce71 ("bcache:
-Take data offset from the bdev superblock."), moving the check
-into BCACHE_SB_VERSION_CDEV only. Now that we have superblocks
-of backing devices out there with this larger value, we cannot
-refuse to load them (i.e., have a similar check in _BDEV.)
-
-Ideally perhaps bcache should use all values from the backing
-device (physical/logical/io_min block size)? But for now just
-fix the problematic case.
-
-Test-case:
-
-    # IMG=/root/disk.img
-    # dd if=/dev/zero of=$IMG bs=1 count=0 seek=1G
-    # DEV=$(losetup --find --show $IMG)
-    # make-bcache --bdev $DEV --block 8k
-      < see dmesg >
-
-Before:
-
-    # uname -r
-    5.7.0-rc7
-
-    [   55.944046] BUG: kernel NULL pointer dereference, address: 0000000000000000
-    ...
-    [   55.949742] CPU: 3 PID: 610 Comm: bcache-register Not tainted 5.7.0-rc7 #4
-    ...
-    [   55.952281] RIP: 0010:create_empty_buffers+0x1a/0x100
-    ...
-    [   55.966434] Call Trace:
-    [   55.967021]  create_page_buffers+0x48/0x50
-    [   55.967834]  block_read_full_page+0x49/0x380
-    [   55.972181]  do_read_cache_page+0x494/0x610
-    [   55.974780]  read_part_sector+0x2d/0xaa
-    [   55.975558]  read_lba+0x10e/0x1e0
-    [   55.977904]  efi_partition+0x120/0x5a6
-    [   55.980227]  blk_add_partitions+0x161/0x390
-    [   55.982177]  bdev_disk_changed+0x61/0xd0
-    [   55.982961]  __blkdev_get+0x350/0x490
-    [   55.983715]  __device_add_disk+0x318/0x480
-    [   55.984539]  bch_cached_dev_run+0xc5/0x270
-    [   55.986010]  register_bcache.cold+0x122/0x179
-    [   55.987628]  kernfs_fop_write+0xbc/0x1a0
-    [   55.988416]  vfs_write+0xb1/0x1a0
-    [   55.989134]  ksys_write+0x5a/0xd0
-    [   55.989825]  do_syscall_64+0x43/0x140
-    [   55.990563]  entry_SYSCALL_64_after_hwframe+0x44/0xa9
-    [   55.991519] RIP: 0033:0x7f7d60ba3154
-    ...
-
-After:
-
-    # uname -r
-    5.7.0.bcachelbspgsz
-
-    [   31.672460] bcache: bcache_device_init() bcache0: sb/logical block size (8192) greater than page size (4096) falling back to device logical block size (512)
-    [   31.675133] bcache: register_bdev() registered backing device loop0
-
-    # grep ^ /sys/block/bcache0/queue/*_block_size
-    /sys/block/bcache0/queue/logical_block_size:512
-    /sys/block/bcache0/queue/physical_block_size:8192
-
-Reported-by: Ryan Finnie <ryan@finnie.org>
-Reported-by: Sebastian Marsching <sebastian@marsching.com>
-Signed-off-by: Mauricio Faria de Oliveira <mfo@canonical.com>
-Signed-off-by: Coly Li <colyli@suse.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Sasha Levin <sashal@kernel.org>
+Signed-off-by: Xu Wang <vulab@iscas.ac.cn>
 ---
- drivers/md/bcache/super.c | 22 +++++++++++++++++++---
- 1 file changed, 19 insertions(+), 3 deletions(-)
+ drivers/md/bcache/journal.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 4d8bf731b118c..a2e5a0fcd7d5c 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -819,7 +819,8 @@ static void bcache_device_free(struct bcache_device *d)
- }
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 90aac4e2333f..b01c953e214c 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -217,10 +217,7 @@ int bch_journal_read(struct cache_set *c, struct list_head *list)
+ 		 */
+ 		pr_debug("falling back to linear search\n");
  
- static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
--			      sector_t sectors, make_request_fn make_request_fn)
-+			      sector_t sectors, make_request_fn make_request_fn,
-+			      struct block_device *cached_bdev)
- {
- 	struct request_queue *q;
- 	const size_t max_stripes = min_t(size_t, INT_MAX,
-@@ -885,6 +886,21 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
- 	q->limits.io_min		= block_size;
- 	q->limits.logical_block_size	= block_size;
- 	q->limits.physical_block_size	= block_size;
-+
-+	if (q->limits.logical_block_size > PAGE_SIZE && cached_bdev) {
-+		/*
-+		 * This should only happen with BCACHE_SB_VERSION_BDEV.
-+		 * Block/page size is checked for BCACHE_SB_VERSION_CDEV.
-+		 */
-+		pr_info("%s: sb/logical block size (%u) greater than page size "
-+			"(%lu) falling back to device logical block size (%u)",
-+			d->disk->disk_name, q->limits.logical_block_size,
-+			PAGE_SIZE, bdev_logical_block_size(cached_bdev));
-+
-+		/* This also adjusts physical block size/min io size if needed */
-+		blk_queue_logical_block_size(q, bdev_logical_block_size(cached_bdev));
-+	}
-+
- 	blk_queue_flag_set(QUEUE_FLAG_NONROT, d->disk->queue);
- 	blk_queue_flag_clear(QUEUE_FLAG_ADD_RANDOM, d->disk->queue);
- 	blk_queue_flag_set(QUEUE_FLAG_DISCARD, d->disk->queue);
-@@ -1342,7 +1358,7 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
+-		for (l = find_first_zero_bit(bitmap, ca->sb.njournal_buckets);
+-		     l < ca->sb.njournal_buckets;
+-		     l = find_next_zero_bit(bitmap, ca->sb.njournal_buckets,
+-					    l + 1))
++		for_each_clear_bit(l, bitmap, ca->sb.njournal_buckets)
+ 			if (read_bucket(l))
+ 				goto bsearch;
  
- 	ret = bcache_device_init(&dc->disk, block_size,
- 			 dc->bdev->bd_part->nr_sects - dc->sb.data_offset,
--			 cached_dev_make_request);
-+			 cached_dev_make_request, dc->bdev);
- 	if (ret)
- 		return ret;
- 
-@@ -1455,7 +1471,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
- 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
- 
- 	if (bcache_device_init(d, block_bytes(c), u->sectors,
--			flash_dev_make_request))
-+			flash_dev_make_request, NULL))
- 		goto err;
- 
- 	bcache_device_attach(d, c, u - c->uuids);
 -- 
-2.25.1
+2.17.1
 
