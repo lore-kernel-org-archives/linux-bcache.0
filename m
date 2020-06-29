@@ -4,41 +4,41 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
 	DKIM_SIGNED,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B1FAEC433DF
-	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:57:19 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 8578BC433DF
+	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:59:47 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8953F20674
-	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:57:19 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 53903206F1
+	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:59:47 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="GQnyDm2o"
+	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="Z5WuTv+D"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729852AbgF2T5R (ORCPT
+        id S2387588AbgF2TkR (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 29 Jun 2020 15:57:17 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48078 "EHLO
+        Mon, 29 Jun 2020 15:40:17 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48048 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2387625AbgF2TkV (ORCPT
+        with ESMTP id S2387504AbgF2TkP (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 29 Jun 2020 15:40:21 -0400
+        Mon, 29 Jun 2020 15:40:15 -0400
 Received: from casper.infradead.org (unknown [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A1EC7C03E97A;
-        Mon, 29 Jun 2020 12:40:21 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D001DC03E979;
+        Mon, 29 Jun 2020 12:40:13 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=h+zTEp6W7EJyyCCOp/IKx6w4eJjLDZBSmAu+cD30b/M=; b=GQnyDm2o+GV/m44kJo73rQbyyY
-        CS2sHCEwS8wh1STubXfBJkUPk2IZPYLIPi4e9a7KG+UeX25Lp2VRuz11pt+f9FXui6PoRry8OOViP
-        TyoocBmXvvZO1dNjya8W2lzx2yipPGwRF6f+aIdjcFsh351oRVn12ZFIW22Q1ouRbAgydqDTFbxi3
-        LpX57W+IhOy2hIKfepxZQfUT464GV3mQHTx5RNWnbLZLAolO21/hOjbEIXgXxKBYQxecx1ZnkM9Ox
-        6jCOOQxE2EiIYC6kFiqJ5z5lBZ/RVXb9SHmHf+MvPazB/JE2c7CL2/5cU+L4WPR0brqHq4xkPOee0
-        NSPWoETA==;
+        bh=nyRpegl2g2GPLIzpDQmlwzdY5HJ2Dd3E7fu8tgbKXsw=; b=Z5WuTv+Do9WG6OUJCMBSyCZ2b5
+        O1p4C2SSN/f3xWFbYtIwxeNfomJ8ZEq0SyrbzjwwaJ7XajjWQqbg6ne0HqOCf09DYkGBZuLJ26GaA
+        G4PKscydGqFZq4vsVbnE1rTpc8Bo2tVVSK4F1kmA58blASqI3DWTdKKd47m0N+FAS6pL0AtHMv1O6
+        IpIMByc9LvubnMGH0kyT3l4+R6otGS/DYqbaIdQnK858+Ds+y29BSNTq2oK2idVCG0GRGtireJqdx
+        k6us9hxnXU0NJXpEDVxEYAA+aWE9bCfkF1cFo2a5rw/CqXimrtjmiB9oiY72NmNc0pENv/evP4NX4
+        7YEoQNww==;
 Received: from [2001:4bb8:184:76e3:fcca:c8dc:a4bf:12fa] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jpzdK-0004Gw-70; Mon, 29 Jun 2020 19:40:02 +0000
+        id 1jpzdD-0004F6-7d; Mon, 29 Jun 2020 19:39:55 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     dm-devel@redhat.com, linux-kernel@vger.kernel.org,
@@ -47,9 +47,9 @@ Cc:     dm-devel@redhat.com, linux-kernel@vger.kernel.org,
         linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
         linux-nvdimm@lists.01.org, linux-nvme@lists.infradead.org,
         linux-s390@vger.kernel.org
-Subject: [PATCH 07/20] umem: stop using ->queuedata
-Date:   Mon, 29 Jun 2020 21:39:34 +0200
-Message-ID: <20200629193947.2705954-8-hch@lst.de>
+Subject: [PATCH 03/20] drbd: stop using ->queuedata
+Date:   Mon, 29 Jun 2020 21:39:30 +0200
+Message-ID: <20200629193947.2705954-4-hch@lst.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200629193947.2705954-1-hch@lst.de>
 References: <20200629193947.2705954-1-hch@lst.de>
@@ -60,38 +60,42 @@ Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200629193934.yG8F1DmCKTW6zKuO0iKQ25AqFGPFqb-oOIbK7WV6zjI@z>
+Message-ID: <20200629193930.Tv0lEVaoADNvZLY7c3pwQD1Ev2WkpKHwxm8zgOnlNmo@z>
 
 Instead of setting up the queuedata as well just use one private data
 field.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/block/umem.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_main.c | 1 -
+ drivers/block/drbd/drbd_req.c  | 2 +-
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/block/umem.c b/drivers/block/umem.c
-index 1e2aa5ae27963c..5498f1cf36b3fe 100644
---- a/drivers/block/umem.c
-+++ b/drivers/block/umem.c
-@@ -521,7 +521,8 @@ static int mm_check_plugged(struct cardinfo *card)
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 45fbd526c453bc..26f4e0aa7393b4 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -2805,7 +2805,6 @@ enum drbd_ret_code drbd_create_device(struct drbd_config_context *adm_ctx, unsig
+ 	if (!q)
+ 		goto out_no_q;
+ 	device->rq_queue = q;
+-	q->queuedata   = device;
  
- static blk_qc_t mm_make_request(struct request_queue *q, struct bio *bio)
+ 	disk = alloc_disk(1);
+ 	if (!disk)
+diff --git a/drivers/block/drbd/drbd_req.c b/drivers/block/drbd/drbd_req.c
+index c80a2f1c3c2a73..3f09b2ab977822 100644
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1595,7 +1595,7 @@ void do_submit(struct work_struct *ws)
+ 
+ blk_qc_t drbd_make_request(struct request_queue *q, struct bio *bio)
  {
--	struct cardinfo *card = q->queuedata;
-+	struct cardinfo *card = bio->bi_disk->private_data;
-+
- 	pr_debug("mm_make_request %llu %u\n",
- 		 (unsigned long long)bio->bi_iter.bi_sector,
- 		 bio->bi_iter.bi_size);
-@@ -888,7 +889,6 @@ static int mm_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	card->queue = blk_alloc_queue(mm_make_request, NUMA_NO_NODE);
- 	if (!card->queue)
- 		goto failed_alloc;
--	card->queue->queuedata = card;
+-	struct drbd_device *device = (struct drbd_device *) q->queuedata;
++	struct drbd_device *device = bio->bi_disk->private_data;
+ 	unsigned long start_jif;
  
- 	tasklet_init(&card->tasklet, process_page, (unsigned long)card);
- 
+ 	blk_queue_split(q, &bio);
 -- 
 2.26.2
 
