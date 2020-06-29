@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
 	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D04B9C433E1
-	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:54:16 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 22376C433E0
+	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:56:47 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id B23C620702
-	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:54:16 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id EFC8620702
+	for <linux-bcache@archiver.kernel.org>; Mon, 29 Jun 2020 19:56:46 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="nNXRBgZr"
+	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="oq4DxXRy"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1733010AbgF2TyO (ORCPT
+        id S2387969AbgF2T41 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 29 Jun 2020 15:54:14 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48096 "EHLO
+        Mon, 29 Jun 2020 15:56:27 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48088 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2387465AbgF2Tk0 (ORCPT
+        with ESMTP id S2387656AbgF2TkY (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 29 Jun 2020 15:40:26 -0400
+        Mon, 29 Jun 2020 15:40:24 -0400
 Received: from casper.infradead.org (unknown [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 878D3C03E979;
-        Mon, 29 Jun 2020 12:40:26 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5B7EDC03E979;
+        Mon, 29 Jun 2020 12:40:24 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=N4V7c3aeDLuwhXVBAMVeI93XDU7dFLU/PzjjNBBA1go=; b=nNXRBgZrqUkYW06bN7kMVbhKQp
-        BlmpXSCdMbqb/Ht5wWHvxJtfrr6svKWFTv8Tt4Ufg7qxppL3ei3dqO9x299z4vDWrKj32a6zAcqSL
-        c4m4m8EqDQLV0obdwyzZum4rarDYDeASDBA573D5k0a3dJQxVCiz704FT+VKkYMJLXypm1xf73cB3
-        AgGiAVOZh9k2lYQfWMzILfco++St1B3KjzFapwCHMQbwuELGSHYTtoro2+hJ5y8/MWUZ1ZK+LwL5b
-        lBJH3BSbHoqbKdPThJr9UKdZ7VxtYLq5743jYblBgF7pRDOkMgWA5lO9m/s8jN+8qpJjWKBSVdf/p
-        NcNA9Tjw==;
+        bh=KKN2Rzx949H+NoG0kbydbtU4p/7MhBgkwEQu/fGRZVo=; b=oq4DxXRygnkoBpVqu4ShnFx67a
+        pJSZTPl/8bQB6t5SbLzEq7GEtk7yVppnDQoMDkwlIASlkU5Gv3TVvPrB44rfw3eqnI/6/46THwVdz
+        bpj2LW1dF9GjmaqLsSZnWCGOiWCgne+0b3/wk5CW3PxduJhQZcvYQZkZnB44cjXI3RV8EqpdASKu/
+        RkLdLy683AjRfxZt01zPKBwDhf+S1bMB3O91CxDduFf+rpctsL9V3FYWiqw0E6KmkpHgdogcoq/bv
+        FM6mYXGlxSu8Yj3wFLmkB7cMQ6vzzc2fkWPIa1S/y8ELqgdqrW/IuX4PrQsWtaDG8vRqd88y0uRuj
+        7Jl9LgYQ==;
 Received: from [2001:4bb8:184:76e3:fcca:c8dc:a4bf:12fa] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jpzdP-0004KD-Bf; Mon, 29 Jun 2020 19:40:08 +0000
+        id 1jpzdN-0004Ju-WF; Mon, 29 Jun 2020 19:40:06 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     dm-devel@redhat.com, linux-kernel@vger.kernel.org,
@@ -47,9 +47,9 @@ Cc:     dm-devel@redhat.com, linux-kernel@vger.kernel.org,
         linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
         linux-nvdimm@lists.01.org, linux-nvme@lists.infradead.org,
         linux-s390@vger.kernel.org
-Subject: [PATCH 11/20] fs: remove a weird comment in submit_bh_wbc
-Date:   Mon, 29 Jun 2020 21:39:38 +0200
-Message-ID: <20200629193947.2705954-12-hch@lst.de>
+Subject: [PATCH 10/20] dm: stop using ->queuedata
+Date:   Mon, 29 Jun 2020 21:39:37 +0200
+Message-ID: <20200629193947.2705954-11-hch@lst.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200629193947.2705954-1-hch@lst.de>
 References: <20200629193947.2705954-1-hch@lst.de>
@@ -60,33 +60,37 @@ Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200629193938.wQh2PMQI_DURvVz8HkK2EKxEMsDfez7eMy2gRLQZ4qg@z>
+Message-ID: <20200629193937.ATLSJFgdyqgsSn1EN5Lacd4w5gG1oNWiFR31XhFHcQg@z>
 
-All bios can get remapped if submitted to partitions.  No need to
-comment on that.
+Instead of setting up the queuedata as well just use one private data
+field.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/buffer.c | 5 -----
- 1 file changed, 5 deletions(-)
+ drivers/md/dm.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 64fe82ec65ff1f..2725ebbcfdc246 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -3040,12 +3040,7 @@ static int submit_bh_wbc(int op, int op_flags, struct buffer_head *bh,
- 	if (test_set_buffer_req(bh) && (op == REQ_OP_WRITE))
- 		clear_buffer_write_io_error(bh);
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index e44473fe0f4873..c8d91f271c272e 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -1789,7 +1789,7 @@ static blk_qc_t dm_process_bio(struct mapped_device *md,
  
--	/*
--	 * from here on down, it's all bio -- do the initial mapping,
--	 * submit_bio -> generic_make_request may further map this bio around
--	 */
- 	bio = bio_alloc(GFP_NOIO, 1);
--
- 	bio->bi_iter.bi_sector = bh->b_blocknr * (bh->b_size >> 9);
- 	bio_set_dev(bio, bh->b_bdev);
- 	bio->bi_write_hint = write_hint;
+ static blk_qc_t dm_make_request(struct request_queue *q, struct bio *bio)
+ {
+-	struct mapped_device *md = q->queuedata;
++	struct mapped_device *md = bio->bi_disk->private_data;
+ 	blk_qc_t ret = BLK_QC_T_NONE;
+ 	int srcu_idx;
+ 	struct dm_table *map;
+@@ -1995,7 +1995,6 @@ static struct mapped_device *alloc_dev(int minor)
+ 	md->queue = blk_alloc_queue(dm_make_request, numa_node_id);
+ 	if (!md->queue)
+ 		goto bad;
+-	md->queue->queuedata = md;
+ 
+ 	md->disk = alloc_disk_node(1, md->numa_node_id);
+ 	if (!md->disk)
 -- 
 2.26.2
 
