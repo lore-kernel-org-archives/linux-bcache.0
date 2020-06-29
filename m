@@ -1,53 +1,35 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: journel: use for_each_clear_bit() to simplify the
- code
-Date: Wed, 24 Jun 2020 22:51:31 +0800
-Message-ID: <4c266f0d-3d98-da0f-6c31-4afe922a2d0c@suse.de>
-References: <20200624065257.4051-1-vulab@iscas.ac.cn>
+From: "mrs.victoria alexander" <markalexandermilley321@gmail.com>
+Subject: Hello,
+Date: Mon, 29 Jun 2020 12:15:58 -0700
+Message-ID: <CAP7XNCwEGQ+-Q==u4yk4yvJdk1X+gsfSU6pUV_hROjmF=p-DHw__42749.7257058107$1593458260$gmane$org@mail.gmail.com>
+Reply-To: mrs.victoria.alexander2@gmail.com
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:59100 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S2389818AbgFXOvh (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 24 Jun 2020 10:51:37 -0400
-In-Reply-To: <20200624065257.4051-1-vulab@iscas.ac.cn>
-Content-Language: en-US
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43972 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1731870AbgF2TQB (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 29 Jun 2020 15:16:01 -0400
+Received: from mail-io1-xd41.google.com (mail-io1-xd41.google.com [IPv6:2607:f8b0:4864:20::d41])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 77146C03E979
+        for <linux-bcache@vger.kernel.org>; Mon, 29 Jun 2020 12:16:01 -0700 (PDT)
+Received: by mail-io1-xd41.google.com with SMTP id k23so18345322iom.10
+        for <linux-bcache@vger.kernel.org>; Mon, 29 Jun 2020 12:16:01 -0700 (PDT)
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Xu Wang <vulab@iscas.ac.cn>
-Cc: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 
-On 2020/6/24 14:52, Xu Wang wrote:
-> Using for_each_clear_bit() to simplify the code.
-> 
-> Signed-off-by: Xu Wang <vulab@iscas.ac.cn>
+Dear friend,
 
-It looks good to me, I will add it in my testing patches.
 
-Thanks.
+I have a business container transaction what that some of( $13million dollars)
 
-Coly Li
+ I would like to discuss with you. If you are interested, please
+contact my email
 
-> ---
->  drivers/md/bcache/journal.c | 5 +----
->  1 file changed, 1 insertion(+), 4 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-> index 90aac4e2333f..b01c953e214c 100644
-> --- a/drivers/md/bcache/journal.c
-> +++ b/drivers/md/bcache/journal.c
-> @@ -217,10 +217,7 @@ int bch_journal_read(struct cache_set *c, struct list_head *list)
->  		 */
->  		pr_debug("falling back to linear search\n");
->  
-> -		for (l = find_first_zero_bit(bitmap, ca->sb.njournal_buckets);
-> -		     l < ca->sb.njournal_buckets;
-> -		     l = find_next_zero_bit(bitmap, ca->sb.njournal_buckets,
-> -					    l + 1))
-> +		for_each_clear_bit(l, bitmap, ca->sb.njournal_buckets)
->  			if (read_bucket(l))
->  				goto bsearch;
->  
-> 
+address (mrs.victoria.alexander2@gmail.com)
+
+My WhatsApp number but only message (+19293737780)
+
+Please do not reply if you are not ready
+Thanks
