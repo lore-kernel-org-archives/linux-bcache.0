@@ -2,101 +2,100 @@ Return-Path: <SRS0=V1bn=AM=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
+X-Spam-Status: No, score=-7.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=no autolearn_force=no
 	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AC159C433E0
-	for <linux-bcache@archiver.kernel.org>; Wed,  1 Jul 2020 13:43:38 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0A06BC433E1
+	for <linux-bcache@archiver.kernel.org>; Wed,  1 Jul 2020 16:08:34 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8BBF5206BE
-	for <linux-bcache@archiver.kernel.org>; Wed,  1 Jul 2020 13:43:38 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E3700207FB
+	for <linux-bcache@archiver.kernel.org>; Wed,  1 Jul 2020 16:08:33 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel-dk.20150623.gappssmtp.com header.i=@kernel-dk.20150623.gappssmtp.com header.b="dYwQW22j"
+	dkim=pass (2048-bit key) header.d=intel-com.20150623.gappssmtp.com header.i=@intel-com.20150623.gappssmtp.com header.b="sgyWg0od"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731120AbgGANnd (ORCPT
+        id S1732204AbgGAQIa (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 1 Jul 2020 09:43:33 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44080 "EHLO
+        Wed, 1 Jul 2020 12:08:30 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38238 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731101AbgGANnc (ORCPT
+        with ESMTP id S1730645AbgGAQI3 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 1 Jul 2020 09:43:32 -0400
-Received: from mail-pl1-x636.google.com (mail-pl1-x636.google.com [IPv6:2607:f8b0:4864:20::636])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3BF12C08C5DD
-        for <linux-bcache@vger.kernel.org>; Wed,  1 Jul 2020 06:43:32 -0700 (PDT)
-Received: by mail-pl1-x636.google.com with SMTP id h4so3845929plt.9
-        for <linux-bcache@vger.kernel.org>; Wed, 01 Jul 2020 06:43:32 -0700 (PDT)
+        Wed, 1 Jul 2020 12:08:29 -0400
+Received: from mail-ed1-x541.google.com (mail-ed1-x541.google.com [IPv6:2a00:1450:4864:20::541])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1A923C08C5C1
+        for <linux-bcache@vger.kernel.org>; Wed,  1 Jul 2020 09:08:29 -0700 (PDT)
+Received: by mail-ed1-x541.google.com with SMTP id a8so19246989edy.1
+        for <linux-bcache@vger.kernel.org>; Wed, 01 Jul 2020 09:08:29 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kernel-dk.20150623.gappssmtp.com; s=20150623;
-        h=subject:to:cc:references:from:message-id:date:user-agent
-         :mime-version:in-reply-to:content-language:content-transfer-encoding;
-        bh=mp3kZB+WljYlToUgRKHu/jMatrXibHPg1FspuaVdS+E=;
-        b=dYwQW22jG+1U/8wxe99npchEcHOVVxkAEfKn6EBHer8enDnZPRaJ5nzspLL5jxwR7E
-         8c6AvaHExACDpMcSpNKAKYnhHPOqDFAuRaNYxN8Hxrsw/QZbGOrdK0NOggJHl9AxSJgs
-         BdPFufpE696CTqP0ZSQJiMeB/Vf1M790yE0S6UfvzUcW/2LK3Cll1WaQxPF72JBBNiAi
-         uNmww608IStODIzkXWWB+ivDstxmDBFHqxk0XqSa0PCNUdKh4Ts6OZk4XhvUDLi977z9
-         tRq/B+DQOlpjSRZ9yIK6lLqMnhcWWTEtAYB9JXJiCaKrLlWYMNjb0yZxPI5ky8TpWAqd
-         O5RQ==
+        d=intel-com.20150623.gappssmtp.com; s=20150623;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc;
+        bh=NgtGRFNzMUt8UwQnpVLH6Q0lK3Q/pmzbcISwUTSvZp4=;
+        b=sgyWg0odMXUUNA+ymUvc43LaYs2s/aJwbFyXWRoPjxwdAxwM/8NDCnpUaFI4p3liR0
+         gB3SPFv0A/WozVPJacrsy3TT9HIOMMCESTpphsqE92coNdoMTDE/jB5/k99TrA7k0WXT
+         HwfvYQsx393r8hZTsu6RX5RUEhIafmeLpfC5Xxvgan8YQB6lIclWByvvZYmq9DcmZLWN
+         JlL5WK7hHhUXeDny6LC8Ts2exiDWCHCRjEx+DVoYVUZMCGpeUSrXG6yeqYlDTXCkU+hk
+         g1qHbmn4FwKHi5mTo+XYno4GD6wFdoeaM1etI9G0XSOMB6JxPVUPvp1yv+DnjQn7iHAQ
+         vT8w==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
-        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
-         :user-agent:mime-version:in-reply-to:content-language
-         :content-transfer-encoding;
-        bh=mp3kZB+WljYlToUgRKHu/jMatrXibHPg1FspuaVdS+E=;
-        b=KPjBoQr98PC32P3uRDFJcmk/teSsn2RsVKwiviFoQqe1SfWZWXJzIxa1sIIlNSsfyL
-         NIxAm0wf7oKdnWuai4BqYs21ZS4y7YHnn3cmiUP+qekZGergkU13KFi7x+/htEDg8G/S
-         zpUSbhCSZjo8Y3Yvd292QRowmQv4hEN52OEegN4MUBcxfKXZKH5+1phTH8ADRqlk33nJ
-         CgjEYIBccjJ9Ezz/sFconCHyMEjZ3Iy6rV2pEllCeQFknfgM8O96cZcwRzFJM9wJ4+1O
-         PkI7QgHjA/OTQw81whpYDYfLLhYE0b3ZcwkgtGhi6fquHzfZ8Xf7UO3AGY8//creD6dH
-         o0YQ==
-X-Gm-Message-State: AOAM530rlOBSO41+1nAmpfdDnFTxI0e6An1wb5lyc+DJKKNFZ3gWDrM6
-        e79pmSinMIYfNe5KskNetE7olA==
-X-Google-Smtp-Source: ABdhPJwvetMLus+odkxVKs2TAwFJf3HuNkqQjK/vuqbHNuGPdXyOvoQGErv/SGur7kel3VcwfskpPQ==
-X-Received: by 2002:a17:902:690b:: with SMTP id j11mr14712438plk.313.1593611011686;
-        Wed, 01 Jul 2020 06:43:31 -0700 (PDT)
-Received: from ?IPv6:2605:e000:100e:8c61:64c1:67b1:df51:2fa8? ([2605:e000:100e:8c61:64c1:67b1:df51:2fa8])
-        by smtp.gmail.com with ESMTPSA id g4sm5868990pfi.68.2020.07.01.06.43.30
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Wed, 01 Jul 2020 06:43:31 -0700 (PDT)
-Subject: Re: rename ->make_request_fn and move it to the
- block_device_operations v2
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-m68k@lists.linux-m68k.org, linux-xtensa@linux-xtensa.org,
-        drbd-dev@lists.linbit.com, linuxppc-dev@lists.ozlabs.org,
-        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-nvdimm@lists.01.org, linux-nvme@lists.infradead.org,
-        linux-s390@vger.kernel.org
-References: <20200701085947.3354405-1-hch@lst.de>
-From:   Jens Axboe <axboe@kernel.dk>
-Message-ID: <bffb89d5-b51a-5f5a-15f4-b891f1f053ef@kernel.dk>
-Date:   Wed, 1 Jul 2020 07:43:29 -0600
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.8.0
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc;
+        bh=NgtGRFNzMUt8UwQnpVLH6Q0lK3Q/pmzbcISwUTSvZp4=;
+        b=qbNLvJ1T3tjxHE+IE70SwH1W5+7gEpd8YdOWoxZt0xGSavE15iu8UCiHVDA9Njl4yk
+         FF0lfelkI6CgPqgD8D93KRFYEMLaWQy1lXYcWrBs6WnhDVKJkJ38lLNKQTnbk0Dbr5oA
+         QuttQWSsZUmxQkUK4cmOqBfdcGrvlZlTIsWSYBRxtuqHatIaCNDn66HyHozXB36jVVL2
+         2a0bG4kck647vsIn25/twQO850dEqGaktwHCIInDS+WV+0h4BSfLDL4xwfy9n+1ID1uR
+         jcUgGZNLNTGuLikYb2GNqg1NVtc5ECek1hvNsd2pTVdZfmU29k5puoo9ypPUUDa+ArJp
+         ovqA==
+X-Gm-Message-State: AOAM532ewwDqpMQFW9Wvu3r3u91sisdH2JPElhuBS5KntjWjJlD3fdxz
+        qNazmb5xIz3DtvdwyZyXldp6AC2Hj7FR1hbEWYbLeg==
+X-Google-Smtp-Source: ABdhPJwTtEaJeqUJmjVrnga0zb3T87bQXg/qHVHNHjeT7uurwTRSLAeKnsyE6dqNxhAJ1jQ5OrZ9KB+p0GzE9WKAsFg=
+X-Received: by 2002:a05:6402:21c2:: with SMTP id bi2mr29609575edb.296.1593619707927;
+ Wed, 01 Jul 2020 09:08:27 -0700 (PDT)
 MIME-Version: 1.0
-In-Reply-To: <20200701085947.3354405-1-hch@lst.de>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+References: <20200701085947.3354405-1-hch@lst.de> <20200701085947.3354405-17-hch@lst.de>
+In-Reply-To: <20200701085947.3354405-17-hch@lst.de>
+From:   Dan Williams <dan.j.williams@intel.com>
+Date:   Wed, 1 Jul 2020 09:08:17 -0700
+Message-ID: <CAPcyv4hELsX=dnqppbL72Tg2k8xMm-5ZaEsxM98eQ7XPoG5NGg@mail.gmail.com>
+Subject: Re: [PATCH 16/20] block: move ->make_request_fn to struct block_device_operations
+To:     Christoph Hellwig <hch@lst.de>
+Cc:     Jens Axboe <axboe@kernel.dk>,
+        device-mapper development <dm-devel@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-m68k@lists.linux-m68k.org, linux-xtensa@linux-xtensa.org,
+        drbd-dev@lists.linbit.com,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        linux-bcache@vger.kernel.org,
+        linux-raid <linux-raid@vger.kernel.org>,
+        linux-nvdimm <linux-nvdimm@lists.01.org>,
+        linux-nvme@lists.infradead.org,
+        linux-s390 <linux-s390@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200701134329.FjRgz_wC2ITlR2VxJKMzwH0PfpN2B_hHHYTZDt_Dl2w@z>
+Message-ID: <20200701160817.h4eEE6qlIvLHNMjBScY-mny9GqScV5MBDtosGmLl-tE@z>
 
-On 7/1/20 2:59 AM, Christoph Hellwig wrote:
-> Hi Jens,
-> 
-> this series moves the make_request_fn method into block_device_operations
-> with the much more descriptive ->submit_bio name.  It then also gives
-> generic_make_request a more descriptive name, and further optimize the
-> path to issue to blk-mq, removing the need for the direct_make_request
-> bypass.
+On Wed, Jul 1, 2020 at 2:01 AM Christoph Hellwig <hch@lst.de> wrote:
+>
+> The make_request_fn is a little weird in that it sits directly in
+> struct request_queue instead of an operation vector.  Replace it with
+> a block_device_operations method called submit_bio (which describes much
+> better what it does).  Also remove the request_queue argument to it, as
+> the queue can be derived pretty trivially from the bio.
+>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+[..]
+>  drivers/nvdimm/blk.c                          |  5 +-
+>  drivers/nvdimm/btt.c                          |  5 +-
+>  drivers/nvdimm/pmem.c                         |  5 +-
 
-Thanks, I'll try this again.
+For drivers/nvdimm
 
--- 
-Jens Axboe
-
+Acked-by: Dan Williams <dan.j.williams@intel.com>
