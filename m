@@ -1,152 +1,76 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 17/20] block: rename generic_make_request to
- submit_bio_noacct
-Date: Thu, 2 Jul 2020 22:51:29 +0800
-Message-ID: <d8e792a2-1333-6852-6334-a681953f0bdc@suse.de>
-References: <20200701085947.3354405-1-hch@lst.de>
- <20200701085947.3354405-18-hch@lst.de>
+From: Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>
+Subject: Re: [PATCH 18/20] block: refator submit_bio_noacct
+Date: Thu, 2 Jul 2020 17:14:53 +0200
+Message-ID: <20200702151453.GA1799@lst.de>
+References: <20200629193947.2705954-1-hch@lst.de>
+	<20200629193947.2705954-19-hch@lst.de>
+	<20200702141001.GA3834@lca.pw>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Return-path: <linux-m68k-owner@vger.kernel.org>
-In-Reply-To: <20200701085947.3354405-18-hch@lst.de>
-Content-Language: en-US
-Sender: linux-m68k-owner@vger.kernel.org
-To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org, linux-m68k@lists.linux-m68k.org, linux-xtensa@linux-xtensa.org, drbd-dev@lists.linbit.com, linuxppc-dev@lists.ozlabs.org, linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org, linux-nvdimm@lists.01.org, linux-nvme@lists.infradead.org, linux-s390@vger.kernel.org
+Return-path: <drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+Content-Disposition: inline
+In-Reply-To: <20200702141001.GA3834-J5quhbR+WMc@public.gmane.org>
+List-Unsubscribe: <https://lists.linbit.com/mailman/options/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://lists.linbit.com/pipermail/drbd-dev>
+List-Post: <mailto:drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+List-Help: <mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=help>
+List-Subscribe: <https://lists.linbit.com/mailman/listinfo/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=subscribe>
+Sender: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+Errors-To: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+To: Qian Cai <cai-J5quhbR+WMc@public.gmane.org>
+Cc: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>, linux-xtensa-PjhNF2WwrV/0Sa2dR60CXw@public.gmane.org, linux-nvdimm-hn68Rpc1hR1g9hUCZPvPmw@public.gmane.org, linux-s390-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-m68k-cunTk1MwBs8S/qaLPR03pWD2FQJk+8+b@public.gmane.org, linux-nvme-IAPFreCvJWM7uuMidbF8XUB+6BGkLq7r@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Alexander Potapenko <glider-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, kasan-dev-/JYPxA39Uh5TLH3MbocFFw@public.gmane.org, Andrey Ryabinin <aryabinin-5HdwGun5lf+gSpxsJD1C4w@public.gmane.org>, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linuxppc-dev-uLR06cmDAlY/bJ5BZ2RsiQ@public.gmane.org, Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>, Dmitry Vyukov <dvyukov-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org>, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
 
-On 2020/7/1 16:59, Christoph Hellwig wrote:
-> generic_make_request has always been very confusingly misnamed, so rename
-> it to submit_bio_noacct to make it clear that it is submit_bio minus
-> accounting and a few checks.
+On Thu, Jul 02, 2020 at 10:10:10AM -0400, Qian Cai wrote:
+> On Mon, Jun 29, 2020 at 09:39:45PM +0200, Christoph Hellwig wrote:
+> > Split out a __submit_bio_noacct helper for the actual de-recursion
+> > algorithm, and simplify the loop by using a continue when we can't
+> > enter the queue for a bio.
+> > 
+> > Signed-off-by: Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>
 > 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-
-I will miss generic_make_request(). Anyway, if it is decided, for bcache
-part,
-
-Acked-by: Coly Li <colyli@suse.de>
-
-> ---
->  Documentation/block/biodoc.rst                |  2 +-
->  .../fault-injection/fault-injection.rst       |  2 +-
->  Documentation/trace/ftrace.rst                |  4 +--
->  block/bio.c                                   | 14 ++++----
->  block/blk-core.c                              | 32 +++++++++----------
->  block/blk-crypto-fallback.c                   |  2 +-
->  block/blk-crypto.c                            |  2 +-
->  block/blk-merge.c                             |  2 +-
->  block/blk-throttle.c                          |  4 +--
->  block/bounce.c                                |  2 +-
->  drivers/block/drbd/drbd_int.h                 |  6 ++--
->  drivers/block/drbd/drbd_main.c                |  2 +-
->  drivers/block/drbd/drbd_receiver.c            |  2 +-
->  drivers/block/drbd/drbd_req.c                 |  2 +-
->  drivers/block/drbd/drbd_worker.c              |  2 +-
->  drivers/block/pktcdvd.c                       |  2 +-
->  drivers/lightnvm/pblk-read.c                  |  2 +-
->  drivers/md/bcache/bcache.h                    |  2 +-
->  drivers/md/bcache/btree.c                     |  2 +-
->  drivers/md/bcache/request.c                   |  7 ++--
->  drivers/md/dm-cache-target.c                  |  6 ++--
->  drivers/md/dm-clone-target.c                  | 10 +++---
->  drivers/md/dm-crypt.c                         |  6 ++--
->  drivers/md/dm-delay.c                         |  2 +-
->  drivers/md/dm-era-target.c                    |  2 +-
->  drivers/md/dm-integrity.c                     |  4 +--
->  drivers/md/dm-mpath.c                         |  2 +-
->  drivers/md/dm-raid1.c                         |  2 +-
->  drivers/md/dm-snap-persistent.c               |  2 +-
->  drivers/md/dm-snap.c                          |  6 ++--
->  drivers/md/dm-thin.c                          |  4 +--
->  drivers/md/dm-verity-target.c                 |  2 +-
->  drivers/md/dm-writecache.c                    |  2 +-
->  drivers/md/dm-zoned-target.c                  |  2 +-
->  drivers/md/dm.c                               | 10 +++---
->  drivers/md/md-faulty.c                        |  4 +--
->  drivers/md/md-linear.c                        |  4 +--
->  drivers/md/md-multipath.c                     |  4 +--
->  drivers/md/raid0.c                            |  8 ++---
->  drivers/md/raid1.c                            | 14 ++++----
->  drivers/md/raid10.c                           | 28 ++++++++--------
->  drivers/md/raid5.c                            | 10 +++---
->  drivers/nvme/host/multipath.c                 |  2 +-
->  include/linux/blkdev.h                        |  2 +-
->  44 files changed, 115 insertions(+), 118 deletions(-)
+> Reverting this commit and its dependencies,
 > 
+> 5a6c35f9af41 block: remove direct_make_request
+> ff93ea0ce763 block: shortcut __submit_bio_noacct for blk-mq drivers
+> 
+> fixed the stack-out-of-bounds during boot,
+> 
+> https://lore.kernel.org/linux-block/000000000000bcdeaa05a97280e4-hpIqsD4AKlfQT0dZR+AlfA@public.gmane.org/
 
-[snipped]
+Yikes.  bio_alloc_bioset pokes into bio_list[1] in a totally
+undocumented way.  But even with that the problem should only show
+up with "block: shortcut __submit_bio_noacct for blk-mq drivers".
 
-> diff --git a/drivers/lightnvm/pblk-read.c b/drivers/lightnvm/pblk-read.c
-> index 140927ebf41e9a..c28537a489bc10 100644
-> --- a/drivers/lightnvm/pblk-read.c
-> +++ b/drivers/lightnvm/pblk-read.c
-> @@ -320,7 +320,7 @@ void pblk_submit_read(struct pblk *pblk, struct bio *bio)
->  		split_bio = bio_split(bio, nr_secs * NR_PHY_IN_LOG, GFP_KERNEL,
->  					&pblk_bio_set);
->  		bio_chain(split_bio, bio);
-> -		generic_make_request(bio);
-> +		submit_bio_noacct(bio);
->  
->  		/* New bio contains first N sectors of the previous one, so
->  		 * we can continue to use existing rqd, but we need to shrink
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index 221e0191b6870f..3c708e8b5e2d34 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -929,7 +929,7 @@ static inline void closure_bio_submit(struct cache_set *c,
->  		bio_endio(bio);
->  		return;
->  	}
-> -	generic_make_request(bio);
-> +	submit_bio_noacct(bio);
->  }
->  
->  /*
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> index 6548a601edf0e4..d5c51e33204679 100644
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
-> @@ -959,7 +959,7 @@ static struct btree *mca_alloc(struct cache_set *c, struct btree_op *op,
->   * bch_btree_node_get - find a btree node in the cache and lock it, reading it
->   * in from disk if necessary.
->   *
-> - * If IO is necessary and running under generic_make_request, returns -EAGAIN.
-> + * If IO is necessary and running under submit_bio_noacct, returns -EAGAIN.
->   *
->   * The btree node will have either a read or a write lock held, depending on
->   * level and op->lock.
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index fc5702b10074d6..dd012ebface012 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -1115,7 +1115,7 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
->  	    !blk_queue_discard(bdev_get_queue(dc->bdev)))
->  		bio->bi_end_io(bio);
->  	else
-> -		generic_make_request(bio);
-> +		submit_bio_noacct(bio);
->  }
->  
->  static void quit_max_writeback_rate(struct cache_set *c,
-> @@ -1197,7 +1197,7 @@ blk_qc_t cached_dev_submit_bio(struct bio *bio)
->  		if (!bio->bi_iter.bi_size) {
->  			/*
->  			 * can't call bch_journal_meta from under
-> -			 * generic_make_request
-> +			 * submit_bio_noacct
->  			 */
->  			continue_at_nobarrier(&s->cl,
->  					      cached_dev_nodata,
-> @@ -1311,8 +1311,7 @@ blk_qc_t flash_dev_submit_bio(struct bio *bio)
->  
->  	if (!bio->bi_iter.bi_size) {
->  		/*
-> -		 * can't call bch_journal_meta from under
-> -		 * generic_make_request
-> +		 * can't call bch_journal_meta from under submit_bio_noacct
->  		 */
->  		continue_at_nobarrier(&s->cl,
->  				      flash_dev_nodata,
->
+Can you try this patch?
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index bf882b8d84450c..9f1bf8658b611a 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1155,11 +1155,10 @@ static blk_qc_t __submit_bio_noacct(struct bio *bio)
+ static blk_qc_t __submit_bio_noacct_mq(struct bio *bio)
+ {
+ 	struct gendisk *disk = bio->bi_disk;
+-	struct bio_list bio_list;
++	struct bio_list bio_list[2] = { };
+ 	blk_qc_t ret = BLK_QC_T_NONE;
+ 
+-	bio_list_init(&bio_list);
+-	current->bio_list = &bio_list;
++	current->bio_list = bio_list;
+ 
+ 	do {
+ 		WARN_ON_ONCE(bio->bi_disk != disk);
+@@ -1174,7 +1173,7 @@ static blk_qc_t __submit_bio_noacct_mq(struct bio *bio)
+ 		}
+ 
+ 		ret = blk_mq_submit_bio(bio);
+-	} while ((bio = bio_list_pop(&bio_list)));
++	} while ((bio = bio_list_pop(&bio_list[0])));
+ 
+ 	current->bio_list = NULL;
+ 	return ret;
