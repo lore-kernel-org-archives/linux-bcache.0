@@ -1,39 +1,38 @@
-From: Song Liu <song@kernel.org>
-Subject: Re: [PATCH 17/20] block: rename generic_make_request to submit_bio_noacct
-Date: Thu, 2 Jul 2020 11:22:12 -0700
-Message-ID: <CAPhsuW4=eiN2-_cy5vCn_RGwmYRf37jOX4DWTvUCDWAqRzU+pw@mail.gmail.com>
-References: <20200701085947.3354405-1-hch@lst.de> <20200701085947.3354405-18-hch@lst.de>
+From: Coly Li <colyli@suse.de>
+Subject: Input requirement for persistent configuration items in bcache
+Date: Sun, 5 Jul 2020 12:45:41 +0800
+Message-ID: <0fe47cd9-ffa0-b440-44ca-6ed9419dfb01@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mail.kernel.org ([198.145.29.99]:37216 "EHLO mail.kernel.org"
+Received: from mx2.suse.de ([195.135.220.15]:53866 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726980AbgGBSW0 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 2 Jul 2020 14:22:26 -0400
-In-Reply-To: <20200701085947.3354405-18-hch@lst.de>
+        id S1725773AbgGEEpz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 5 Jul 2020 00:45:55 -0400
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id B6D34AAD0
+        for <linux-bcache@vger.kernel.org>; Sun,  5 Jul 2020 04:45:53 +0000 (UTC)
+Content-Language: en-US
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, dm-devel@redhat.com, open list <linux-kernel@vger.kernel.org>, linux-m68k@lists.linux-m68k.org, linux-xtensa@linux-xtensa.org, drbd-dev@lists.linbit.com, linuxppc-dev@lists.ozlabs.org, linux-bcache@vger.kernel.org, linux-raid <linux-raid@vger.kernel.org>, linux-nvdimm@lists.01.org, linux-nvme@lists.infradead.org, linux-s390@vger.kernel.org
+To: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
 
-On Wed, Jul 1, 2020 at 2:01 AM Christoph Hellwig <hch@lst.de> wrote:
->
-> generic_make_request has always been very confusingly misnamed, so rename
-> it to submit_bio_noacct to make it clear that it is submit_bio minus
-> accounting and a few checks.
->
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
-[...]
+Hi folks,
 
->  drivers/md/md-faulty.c                        |  4 +--
->  drivers/md/md-linear.c                        |  4 +--
->  drivers/md/md-multipath.c                     |  4 +--
->  drivers/md/raid0.c                            |  8 ++---
->  drivers/md/raid1.c                            | 14 ++++----
->  drivers/md/raid10.c                           | 28 ++++++++--------
->  drivers/md/raid5.c                            | 10 +++---
+Recently I start to look at the bcache on-disk superblock extension. I
+still remember years ago people discussed adding some persistent
+configuration itesm on disk, to avoid setting them via sysfs interface
+every time after reboot.
 
-For md part:
+While I am thinking about this, I do appreciate your help about the
+input on which configuration item should be stored in the on-disk
+superblock.
 
-Acked-by: Song Liu <song@kernel.org>
+Although I am probably not able to make every required input being
+persistent in the on-disk superblock, I believe your help may help me to
+decide a reasonable option set.
+
+Thank you all in advance.
+
+Coly Li
