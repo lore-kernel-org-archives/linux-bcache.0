@@ -2,85 +2,68 @@ Return-Path: <SRS0=ltqC=AQ=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-7.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	USER_AGENT_GIT autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A1B4EC433DF
-	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:41 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B3AA8C433E0
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 16:04:48 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8751320737
-	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:41 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8AFF920737
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 16:04:48 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727892AbgGEP4l (ORCPT
+        id S1727843AbgGEQEr (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sun, 5 Jul 2020 11:56:41 -0400
-Received: from mx2.suse.de ([195.135.220.15]:38272 "EHLO mx2.suse.de"
+        Sun, 5 Jul 2020 12:04:47 -0400
+Received: from mx2.suse.de ([195.135.220.15]:39480 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727843AbgGEP4k (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 5 Jul 2020 11:56:40 -0400
+        id S1727822AbgGEQEr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 5 Jul 2020 12:04:47 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 736E6AC52;
-        Sun,  5 Jul 2020 15:56:39 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 76ED5ACFE;
+        Sun,  5 Jul 2020 16:04:46 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [RFC PATCH 13/16] bcache: handle btree node memory allocation properly for bucket size > 8MB
-Date:   Sun,  5 Jul 2020 23:55:58 +0800
-Message-ID: <20200705155601.5404-14-colyli@suse.de>
+Subject: [RFC PATCH 0/4] bcache-tools: changes for large bucket size 
+Date:   Mon,  6 Jul 2020 00:04:36 +0800
+Message-ID: <20200705160440.5801-1-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20200705155601.5404-1-colyli@suse.de>
-References: <20200705155601.5404-1-colyli@suse.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200705155558.J59yfSvnxoncVI7tZH1WQRVsBC_DiSwPiqDl-LzpDfU@z>
+Message-ID: <20200705160436.A8AEgJoLxrjsgusncEi-TWhSzuPKn8b0SLtIf2ya-io@z>
 
-Currently the bcache internal btree node occupies a whole bucket. When
-loading the btree node from cache device into memory, mca_data_alloc()
-will call bch_btree_keys_alloc() to allocate memory for the whole bucket
-size, ilog2(b->c->btree_pages) is send to bch_btree_keys_alloc() as the
-parameter 'page_order'.
+These are user space tools changes necessary for bcache large bucket
+size. When setting bucket size with '-u' larger than 16MB for cache
+device, BCACHE_SB_VERSION_CDEV_WITH_FEATURES will be set automatically.
+Otherwise, the new added members in super block won't be touched.
 
-c->btree_pages is set as bucket_pages() in bch_cache_set_alloc(), for
-bucket size > 8MB, ilog2(b->c->btree_pages) is 12 for 4KB page size. By
-default the maximum page order __get_free_pages() accepts is MAX_ORDER
-(11), in this condition bch_btree_keys_alloc() will always fail.
-
-Because of other over-page-order allocation failure fails the cache
-device registration, such btree node allocation failure wasn't observed
-during runtime. After other blocking page allocation failures for bucket
-size > 8MB, this btree node allocation issue may trigger potentical risk
-e.g. infinite dead-loop to retry btree node allocation after failure.
-
-This patch fixes the potential problem by setting c->btree_pages to
-meta_bucket_pages() in bch_cache_set_alloc(). In the condition that
-bucket size > 8MB, meta_bucket_pages() will always return a number which
-won't exceed the maximum page order of the buddy allocator.
-
-Signed-off-by: Coly Li <colyli@suse.de>
+Coly Li
 ---
- drivers/md/bcache/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Coly Li (4):
+  bcache-tools: comments offset for members of struct cache_sb
+  struct_offset: print offset of each member of the on-disk data
+    structure
+  bcache-tools: The new super block version
+    BCACHE_SB_VERSION_BDEV_WITH_FEATURES
+  bcache-tools: add large_bucket incompat feature
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b0e23012d6c1..2da6d5aa8c63 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1860,7 +1860,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 	c->nr_uuids		= meta_bucket_bytes(&c->sb) / sizeof(struct uuid_entry);
- 	c->devices_max_used	= 0;
- 	atomic_set(&c->attached_dev_nr, 0);
--	c->btree_pages		= bucket_pages(c);
-+	c->btree_pages		= meta_bucket_pages(&c->sb);
- 	if (c->btree_pages > BTREE_MAX_PAGES)
- 		c->btree_pages = max_t(int, c->btree_pages / 4,
- 				       BTREE_MAX_PAGES);
+ Makefile        |   6 +-
+ bcache.h        | 153 ++++++++++++++++++++++++++++++++++++++----------
+ features.c      |  24 ++++++++
+ lib.c           |  24 ++++++++
+ lib.h           |   2 +
+ make.c          |  36 ++++++++----
+ struct_offset.c |  63 ++++++++++++++++++++
+ 7 files changed, 265 insertions(+), 43 deletions(-)
+ create mode 100644 features.c
+ create mode 100644 struct_offset.c
+
 -- 
 2.26.2
 
