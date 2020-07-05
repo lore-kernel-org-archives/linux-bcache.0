@@ -1,150 +1,190 @@
-Return-Path: <SRS0=OLKb=AN=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=ltqC=AQ=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.1 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3C90FC433E0
-	for <linux-bcache@archiver.kernel.org>; Thu,  2 Jul 2020 15:53:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id F0029C433E0
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:15 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 1B8F52088E
-	for <linux-bcache@archiver.kernel.org>; Thu,  2 Jul 2020 15:53:04 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=linaro.org header.i=@linaro.org header.b="KwW+/U9f"
+	by mail.kernel.org (Postfix) with ESMTP id D5DCB20737
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726121AbgGBPxA (ORCPT
+        id S1727773AbgGEP4P (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 2 Jul 2020 11:53:00 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60596 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726082AbgGBPw7 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 2 Jul 2020 11:52:59 -0400
-Received: from mail-lj1-x241.google.com (mail-lj1-x241.google.com [IPv6:2a00:1450:4864:20::241])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 18CF7C08C5DF
-        for <linux-bcache@vger.kernel.org>; Thu,  2 Jul 2020 08:52:59 -0700 (PDT)
-Received: by mail-lj1-x241.google.com with SMTP id h22so25693483lji.9
-        for <linux-bcache@vger.kernel.org>; Thu, 02 Jul 2020 08:52:58 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=linaro.org; s=google;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc;
-        bh=X1hZZYHT2jx0soQwDY2Nw4ZNux9TK2TS4ou5sFWlySY=;
-        b=KwW+/U9fkM+srFlFPvkKz4V3jEnKIKH8ygaroNt4YXgCxeue/VrdTKoJwmcn9oXIVs
-         4DY0ZVk34mPlw7u4KLu6rGjhvnrQL6/lofTS76CSIpt1KUwe2M3VISdDz83TvG8iTXSI
-         W47Pw8OTk/hC0zb2MZaQ1r596h7N8T5A23JSQkaU9RWiYgGd5Xav7JwLesO4IqMIFUZL
-         2VuieIxaw/GaR9iMUF6CkG5lHBbOPJgWIfkSCxXHB48wkXOO7uuaIH8G93d6r33rKKeJ
-         p2LG1w2EFwjJvNEP/726kUUAmMNBPXMl5+BvhQTxMO/S6XCBw/1QqIdNdExANIirUL/4
-         +A/w==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc;
-        bh=X1hZZYHT2jx0soQwDY2Nw4ZNux9TK2TS4ou5sFWlySY=;
-        b=eVAGSfSm5Afc+591f6qD3zNJsn54L2sxQDj30UaLZz3RkHb9qLY7ES0nVqEwi9l2Cq
-         QyR79DTQ2nN8Bm/3CuSXg37l4ObdSSVtpdBPmi7+R0UJbv3qN8NZCgj8AIZK1Bg1tFa8
-         BR3NRZ+aSuNJ31znckLCg2OGiIWiLQXEkYlGHk47CHpob9DbJmUOvAp8n6fhOGv/n7yx
-         tzzUASknbGuPNbIzQHGU67qHYo0K+5kZmrd38yMl9ZhKZid7/H12RwmwDz36NdVaJR0n
-         h3A4mgHaOxDB74jazZwK00m8CmwCfQ+gseNawGqX5uKn87NmJm2CQet1FxFyK2rXLHkd
-         x9jw==
-X-Gm-Message-State: AOAM533dB2ALK8X1MX9rGKbBkRwxqL0KZRhNnV1iltmJDS/MblXNu+Zv
-        rK19Ra2xvCKiNRRuI0S7i2Em1Q6JszjqVQmJ6A0y0A==
-X-Google-Smtp-Source: ABdhPJz3ABkPWjkv8L0FIiK+Kjjg6BO4eaaimJnKQo1xzAYZPxzmmzDpXVUF4bLDPypwEcFJ8kmLmaUrHoL1B8Z52PM=
-X-Received: by 2002:a2e:b88c:: with SMTP id r12mr16463205ljp.266.1593705177353;
- Thu, 02 Jul 2020 08:52:57 -0700 (PDT)
+        Sun, 5 Jul 2020 11:56:15 -0400
+Received: from mx2.suse.de ([195.135.220.15]:38024 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1726996AbgGEP4P (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 5 Jul 2020 11:56:15 -0400
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id 85113AC37;
+        Sun,  5 Jul 2020 15:56:13 +0000 (UTC)
+From:   Coly Li <colyli@suse.de>
+To:     linux-bcache@vger.kernel.org
+Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
+Subject: [RFC PATCH 02/16] bcache: add read_super_basic() to read major part of super block
+Date:   Sun,  5 Jul 2020 23:55:47 +0800
+Message-ID: <20200705155601.5404-3-colyli@suse.de>
+X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20200705155601.5404-1-colyli@suse.de>
+References: <20200705155601.5404-1-colyli@suse.de>
 MIME-Version: 1.0
-References: <20200629193947.2705954-1-hch@lst.de> <20200629193947.2705954-19-hch@lst.de>
- <20200702141001.GA3834@lca.pw> <20200702151453.GA1799@lst.de>
-In-Reply-To: <20200702151453.GA1799@lst.de>
-From:   Naresh Kamboju <naresh.kamboju@linaro.org>
-Date:   Thu, 2 Jul 2020 21:22:46 +0530
-Message-ID: <CA+G9fYv6DfJB=DeQFVptAuaVv1Ng-BK0fRHgFZ=DNzymu8LVvw@mail.gmail.com>
-Subject: Re: [PATCH 18/20] block: refator submit_bio_noacct
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     Qian Cai <cai@lca.pw>, Jens Axboe <axboe@kernel.dk>,
-        dm-devel@redhat.com, open list <linux-kernel@vger.kernel.org>,
-        linux-m68k@lists.linux-m68k.org, linux-xtensa@linux-xtensa.org,
-        drbd-dev@lists.linbit.com,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-nvdimm@lists.01.org, linux-nvme@lists.infradead.org,
-        linux-s390@vger.kernel.org,
-        Andrey Ryabinin <aryabinin@virtuozzo.com>,
-        Alexander Potapenko <glider@google.com>,
-        Dmitry Vyukov <dvyukov@google.com>, kasan-dev@googlegroups.com
-Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200702155246.pF9wC0h_DkR2FvJRTzxpd5LrdSGEV8FTgHAKPj9E5sw@z>
+Message-ID: <20200705155547.k7THmSnH_MvBqLh85k7jNIL-nwEMO82iDaXLZrcMLj0@z>
 
-On Thu, 2 Jul 2020 at 20:45, Christoph Hellwig <hch@lst.de> wrote:
->
-> On Thu, Jul 02, 2020 at 10:10:10AM -0400, Qian Cai wrote:
-> > On Mon, Jun 29, 2020 at 09:39:45PM +0200, Christoph Hellwig wrote:
-> > > Split out a __submit_bio_noacct helper for the actual de-recursion
-> > > algorithm, and simplify the loop by using a continue when we can't
-> > > enter the queue for a bio.
-> > >
-> > > Signed-off-by: Christoph Hellwig <hch@lst.de>
-> >
-> > Reverting this commit and its dependencies,
-> >
-> > 5a6c35f9af41 block: remove direct_make_request
-> > ff93ea0ce763 block: shortcut __submit_bio_noacct for blk-mq drivers
-> >
-> > fixed the stack-out-of-bounds during boot,
-> >
-> > https://lore.kernel.org/linux-block/000000000000bcdeaa05a97280e4@google.com/
->
-> Yikes.  bio_alloc_bioset pokes into bio_list[1] in a totally
-> undocumented way.  But even with that the problem should only show
-> up with "block: shortcut __submit_bio_noacct for blk-mq drivers".
->
-> Can you try this patch?
+Later patches will introduce feature set bits to on-disk super block and
+increase super block version. Current code in read_super() which reads
+basic part of super block for version BCACHE_SB_VERSION_CDEV and version
+BCACHE_SB_VERSION_CDEV_WITH_UUID will be shared with the new version.
 
-Applied your patch on top of linux-next 20200702 and tested on
-arm64 and x86_64 devices and the reported BUG fixed.
+Therefore this patch moves the reusable part into read_super_basic(),
+this preparation patch will make later patches more simplier and only
+focus on new feature set bits.
 
-Reported-by: Naresh Kamboju <naresh.kamboju@linaro.org>
-Tested-by: Naresh Kamboju <naresh.kamboju@linaro.org>
+Signed-off-by: Coly Li <colyli@suse.de>
+---
+ drivers/md/bcache/super.c | 111 +++++++++++++++++++++-----------------
+ 1 file changed, 63 insertions(+), 48 deletions(-)
 
->
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index bf882b8d84450c..9f1bf8658b611a 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -1155,11 +1155,10 @@ static blk_qc_t __submit_bio_noacct(struct bio *bio)
->  static blk_qc_t __submit_bio_noacct_mq(struct bio *bio)
->  {
->         struct gendisk *disk = bio->bi_disk;
-> -       struct bio_list bio_list;
-> +       struct bio_list bio_list[2] = { };
->         blk_qc_t ret = BLK_QC_T_NONE;
->
-> -       bio_list_init(&bio_list);
-> -       current->bio_list = &bio_list;
-> +       current->bio_list = bio_list;
->
->         do {
->                 WARN_ON_ONCE(bio->bi_disk != disk);
-> @@ -1174,7 +1173,7 @@ static blk_qc_t __submit_bio_noacct_mq(struct bio *bio)
->                 }
->
->                 ret = blk_mq_submit_bio(bio);
-> -       } while ((bio = bio_list_pop(&bio_list)));
-> +       } while ((bio = bio_list_pop(&bio_list[0])));
->
->         current->bio_list = NULL;
->         return ret;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 2014016f9a60..88523be84887 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -59,6 +59,67 @@ struct workqueue_struct *bch_journal_wq;
+ 
+ /* Superblock */
+ 
++static const char *read_super_basic(struct cache_sb *sb,  struct block_device *bdev,
++				     struct cache_sb_disk *s)
++{
++	const char *err;
++	unsigned int i;
++
++	sb->nbuckets	= le64_to_cpu(s->nbuckets);
++	sb->bucket_size	= le16_to_cpu(s->bucket_size);
++
++	sb->nr_in_set	= le16_to_cpu(s->nr_in_set);
++	sb->nr_this_dev	= le16_to_cpu(s->nr_this_dev);
++
++	err = "Too many buckets";
++	if (sb->nbuckets > LONG_MAX)
++		goto err;
++
++	err = "Not enough buckets";
++	if (sb->nbuckets < 1 << 7)
++		goto err;
++
++	err = "Bad block/bucket size";
++	if (!is_power_of_2(sb->block_size) ||
++	    sb->block_size > PAGE_SECTORS ||
++	    !is_power_of_2(sb->bucket_size) ||
++	    sb->bucket_size < PAGE_SECTORS)
++		goto err;
++
++	err = "Invalid superblock: device too small";
++	if (get_capacity(bdev->bd_disk) <
++	    sb->bucket_size * sb->nbuckets)
++		goto err;
++
++	err = "Bad UUID";
++	if (bch_is_zero(sb->set_uuid, 16))
++		goto err;
++
++	err = "Bad cache device number in set";
++	if (!sb->nr_in_set ||
++	    sb->nr_in_set <= sb->nr_this_dev ||
++	    sb->nr_in_set > MAX_CACHES_PER_SET)
++		goto err;
++
++	err = "Journal buckets not sequential";
++	for (i = 0; i < sb->keys; i++)
++		if (sb->d[i] != sb->first_bucket + i)
++			goto err;
++
++	err = "Too many journal buckets";
++	if (sb->first_bucket + sb->keys > sb->nbuckets)
++		goto err;
++
++	err = "Invalid superblock: first bucket comes before end of super";
++	if (sb->first_bucket * sb->bucket_size < 16)
++		goto err;
++
++	err = NULL;
++err:
++	return err;
++}
++
++
+ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+ 			      struct cache_sb_disk **res)
+ {
+@@ -133,55 +194,9 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
+ 		break;
+ 	case BCACHE_SB_VERSION_CDEV:
+ 	case BCACHE_SB_VERSION_CDEV_WITH_UUID:
+-		sb->nbuckets	= le64_to_cpu(s->nbuckets);
+-		sb->bucket_size	= le16_to_cpu(s->bucket_size);
+-
+-		sb->nr_in_set	= le16_to_cpu(s->nr_in_set);
+-		sb->nr_this_dev	= le16_to_cpu(s->nr_this_dev);
+-
+-		err = "Too many buckets";
+-		if (sb->nbuckets > LONG_MAX)
+-			goto err;
+-
+-		err = "Not enough buckets";
+-		if (sb->nbuckets < 1 << 7)
+-			goto err;
+-
+-		err = "Bad block/bucket size";
+-		if (!is_power_of_2(sb->block_size) ||
+-		    sb->block_size > PAGE_SECTORS ||
+-		    !is_power_of_2(sb->bucket_size) ||
+-		    sb->bucket_size < PAGE_SECTORS)
+-			goto err;
+-
+-		err = "Invalid superblock: device too small";
+-		if (get_capacity(bdev->bd_disk) <
+-		    sb->bucket_size * sb->nbuckets)
+-			goto err;
+-
+-		err = "Bad UUID";
+-		if (bch_is_zero(sb->set_uuid, 16))
+-			goto err;
+-
+-		err = "Bad cache device number in set";
+-		if (!sb->nr_in_set ||
+-		    sb->nr_in_set <= sb->nr_this_dev ||
+-		    sb->nr_in_set > MAX_CACHES_PER_SET)
+-			goto err;
+-
+-		err = "Journal buckets not sequential";
+-		for (i = 0; i < sb->keys; i++)
+-			if (sb->d[i] != sb->first_bucket + i)
+-				goto err;
+-
+-		err = "Too many journal buckets";
+-		if (sb->first_bucket + sb->keys > sb->nbuckets)
+-			goto err;
+-
+-		err = "Invalid superblock: first bucket comes before end of super";
+-		if (sb->first_bucket * sb->bucket_size < 16)
++		err = read_super_basic(sb, bdev, s);
++		if (err)
+ 			goto err;
+-
+ 		break;
+ 	default:
+ 		err = "Unsupported superblock version";
+-- 
+2.26.2
 
-ref:
-https://lkft.validation.linaro.org/scheduler/job/1538359#L288
-https://lkft.validation.linaro.org/scheduler/job/1538360#L572
-
-
-- Naresh
