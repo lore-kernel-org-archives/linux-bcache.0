@@ -4,32 +4,32 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A7BCAC433DF
-	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 95BAAC433E0
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:39 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8BEF320737
-	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:32 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8062820737
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:39 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727871AbgGEP4c (ORCPT
+        id S1727856AbgGEP4j (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sun, 5 Jul 2020 11:56:32 -0400
-Received: from mx2.suse.de ([195.135.220.15]:38174 "EHLO mx2.suse.de"
+        Sun, 5 Jul 2020 11:56:39 -0400
+Received: from mx2.suse.de ([195.135.220.15]:38258 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727848AbgGEP4c (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 5 Jul 2020 11:56:32 -0400
+        id S1727843AbgGEP4i (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 5 Jul 2020 11:56:38 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 0CCC9AC37;
-        Sun,  5 Jul 2020 15:56:30 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 5B40BAC37;
+        Sun,  5 Jul 2020 15:56:37 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [RFC PATCH 09/16] bcache: introduce meta_bucket_pages() related helper routines
-Date:   Sun,  5 Jul 2020 23:55:54 +0800
-Message-ID: <20200705155601.5404-10-colyli@suse.de>
+Subject: [RFC PATCH 12/16] bcache: handle cache set verify_ondisk properly for bucket size > 8MB
+Date:   Sun,  5 Jul 2020 23:55:57 +0800
+Message-ID: <20200705155601.5404-13-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200705155601.5404-1-colyli@suse.de>
 References: <20200705155601.5404-1-colyli@suse.de>
@@ -39,94 +39,64 @@ Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200705155554.2ced-n9wpRUiR2T-ieThEHN2tDKB0EwqPybs1Q2uLZ0@z>
+Message-ID: <20200705155557.0WkJ4XW1VN_bpmpjTwAQ1FhXHq8L6DdLNCXlbRfaawk@z>
 
-Currently the in-memory meta data like c->uuids or c->disk_buckets
-are allocated by alloc_bucket_pages(). The macro alloc_bucket_pages()
-calls __get_free_pages() to allocated continuous pages with order
-indicated by ilog2(bucket_pages(c)),
- #define alloc_bucket_pages(gfp, c)                      \
-     ((void *) __get_free_pages(__GFP_ZERO|gfp, ilog2(bucket_pages(c))))
+In bch_btree_cache_alloc() when CONFIG_BCACHE_DEBUG is configured,
+allocate memory for c->verify_ondisk may fail if the bucket size > 8MB,
+which will require __get_free_pages() to allocate continuous pages
+with order > 11 (the default MAX_ORDER of Linux buddy allocator). Such
+over size allocation will fail, and cause 2 problems,
+- When CONFIG_BCACHE_DEBUG is configured,  bch_btree_verify() does not
+  work, because c->verify_ondisk is NULL and bch_btree_verify() returns
+  immediately.
+- bch_btree_cache_alloc() will fail due to c->verify_ondisk allocation
+  failed, then the whole cache device registration fails. And because of
+  this failure, the first problem of bch_btree_verify() has no chance to
+  be triggered.
 
-The maximum order is defined as MAX_ORDER, the default value is 11 (and
-can be overwritten by CONFIG_FORCE_MAX_ZONEORDER). In bcache code the
-maximum bucket size width is 16bits, this is restricted both by KEY_SIZE
-size and bucket_size size from struct cache_sb_disk. The maximum 16bits
-width and power-of-2 value is (1<<15) in unit of sector (512byte). It
-means the maximum value of bucket size in bytes is (1<<24) bytes a.k.a
-4096 pages.
-
-When the bucket size is set to maximum permitted value, ilog2(4096) is
-12, which exceeds the default maximum order __get_free_pages() can
-accepted, the failed pages allocation will fail cache set registration
-procedure and print a kernel oops message for the exceeded pages order.
-
-This patch introduces meta_bucket_pages(), meta_bucket_bytes(), and
-alloc_bucket_pages() helper routines. meta_bucket_pages() indicates the
-maximum pages can be allocated to meta data bucket, meta_bucket_bytes()
-indicates the according maximum bytes, and alloc_bucket_pages() does
-the pages allocation for meta bucket. Because meta_bucket_pages()
-chooses the smaller value among the bucket size and MAX_ORDER_NR_PAGES,
-it still works when MAX_ORDER overwritten by CONFIG_FORCE_MAX_ZONEORDER.
-
-Following patches will use these helper routines to decide maximum pages
-can be allocated for different meta data buckets. If the bucket size is
-larger than meta_bucket_bytes(), the bcache registration can continue to
-success, just the space more than meta_bucket_bytes() inside the bucket
-is wasted. Comparing bcache failed for large bucket size, wasting some
-space for meta data buckets is acceptable at this moment.
+This patch fixes the above problem by two means,
+1) If pages allocation of c->verify_ondisk fails, set it to NULL and
+   returns bch_btree_cache_alloc() with -ENOMEM.
+2) When calling __get_free_pages() to allocate c->verify_ondisk pages,
+   use ilog2(meta_bucket_pages(&c->sb)) to make sure ilog2() will always
+   generate a pages order <= MAX_ORDER (or CONFIG_FORCE_MAX_ZONEORDER).
+   Then the buddy system won't directly reject the allocation request.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/bcache.h | 20 ++++++++++++++++++++
- drivers/md/bcache/super.c  |  3 +++
- 2 files changed, 23 insertions(+)
+ drivers/md/bcache/btree.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 221e0191b687..2bfbb80841af 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -762,6 +762,26 @@ struct bbio {
- #define bucket_bytes(c)		((c)->sb.bucket_size << 9)
- #define block_bytes(c)		((c)->sb.block_size << 9)
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 6548a601edf0..a9d59b6c7d85 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -738,7 +738,7 @@ void bch_btree_cache_free(struct cache_set *c)
+ 	if (c->verify_data)
+ 		list_move(&c->verify_data->list, &c->btree_cache);
  
-+static inline unsigned int meta_bucket_pages(struct cache_sb *sb)
-+{
-+	unsigned int n, max_pages;
-+
-+	max_pages = min_t(unsigned int,
-+			  __rounddown_pow_of_two(USHRT_MAX) / PAGE_SECTORS,
-+			  MAX_ORDER_NR_PAGES);
-+
-+	n = sb->bucket_size / PAGE_SECTORS;
-+	if (n > max_pages)
-+		n = max_pages;
-+
-+	return n;
-+}
-+
-+static inline unsigned int meta_bucket_bytes(struct cache_sb *sb)
-+{
-+	return meta_bucket_pages(sb) << PAGE_SHIFT;
-+}
-+
- #define prios_per_bucket(c)				\
- 	((bucket_bytes(c) - sizeof(struct prio_set)) /	\
- 	 sizeof(struct bucket_disk))
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b3248a7b0e20..ec60145277c4 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1821,6 +1821,9 @@ void bch_cache_set_unregister(struct cache_set *c)
- #define alloc_bucket_pages(gfp, c)			\
- 	((void *) __get_free_pages(__GFP_ZERO|gfp, ilog2(bucket_pages(c))))
+-	free_pages((unsigned long) c->verify_ondisk, ilog2(bucket_pages(c)));
++	free_pages((unsigned long) c->verify_ondisk, ilog2(meta_bucket_pages(&c->sb)));
+ #endif
  
-+#define alloc_meta_bucket_pages(gfp, sb)		\
-+	((void *) __get_free_pages(__GFP_ZERO|gfp, ilog2(meta_bucket_pages(sb))))
-+
- struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- {
- 	int iter_size;
+ 	list_splice(&c->btree_cache_freeable,
+@@ -785,7 +785,15 @@ int bch_btree_cache_alloc(struct cache_set *c)
+ 	mutex_init(&c->verify_lock);
+ 
+ 	c->verify_ondisk = (void *)
+-		__get_free_pages(GFP_KERNEL, ilog2(bucket_pages(c)));
++		__get_free_pages(GFP_KERNEL, ilog2(meta_bucket_pages(&c->sb)));
++	if (!c->verify_ondisk) {
++		/*
++		 * Don't worry about the mca_rereserve buckets
++		 * allocated in previous for-loop, they will be
++		 * handled properly in bch_cache_set_unregister().
++		 */
++		return -ENOMEM;
++	}
+ 
+ 	c->verify_data = mca_bucket_alloc(c, &ZERO_KEY, GFP_KERNEL);
+ 
 -- 
 2.26.2
 
