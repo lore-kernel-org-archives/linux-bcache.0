@@ -1,62 +1,89 @@
 From: Coly Li <colyli@suse.de>
-Subject: Re: Input requirement for persistent configuration items in bcache
-Date: Sun, 5 Jul 2020 18:23:09 +0800
-Message-ID: <7764e570-e7d7-052a-5a0d-ac028454ab88@suse.de>
-References: <0fe47cd9-ffa0-b440-44ca-6ed9419dfb01@suse.de>
- <20200705091214.GL14425@xoff>
+Subject: [RFC PATCH 00/16] bcache: extend bucket size to 32bit width
+Date: Sun,  5 Jul 2020 23:55:45 +0800
+Message-ID: <20200705155601.5404-1-colyli@suse.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:54922 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:37996 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726558AbgGEKXO (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 5 Jul 2020 06:23:14 -0400
-In-Reply-To: <20200705091214.GL14425@xoff>
-Content-Language: en-US
+        id S1726996AbgGEP4I (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 5 Jul 2020 11:56:08 -0400
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Matthias Ferdinand <bcache@mfedv.net>
-Cc: "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
+To: linux-bcache@vger.kernel.org
+Cc: linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 
-On 2020/7/5 17:12, Matthias Ferdinand wrote:
-> On Sun, Jul 05, 2020 at 12:45:41PM +0800, Coly Li wrote:
->> While I am thinking about this, I do appreciate your help about the
->> input on which configuration item should be stored in the on-disk
->> superblock.
-> 
-> Hi,
+Ths RFC patch series is an effort to extent bucket_size from 16bit to
+32bit width. This is the code base for next step to use zoned device as
+cache device.
 
+In this series, these changes should be noticed,
+- Increase the super block version to
+	BCACHE_SB_VERSION_CDEV_WITH_FEATURES 5
+	BCACHE_SB_VERSION_BDEV_WITH_FEATURES 6
+- The new version adds 3 new members,
+	__le64          feature_compat;
+	__le64          feature_incompat;
+	__le64          feature_ro_compat;
+  If new feature added will change the on-disk format, just setting the
+  feature set bits, no need to upstream super block version.
+- The in-memory struct cache_sb does not exactly map the on-disk struct
+  cache_sb_disk.
+- Add 32bit bucket_size_hi in struct cache_sb_disk,
+	__le32          bucket_size_hi;
+  In theory bucket_size can be extended to 48bit, but now 32bit width is
+  big enough.
+- Other changes to follow the large bucket size.
 
-Hi Matthias,
+The changes are mostly on cache device, except the super block update
+there is no change about the backing device.
 
-Thank you for the input.
+Currently the code survives with basic testing. I post the series a bit
+ealier for comments. More fixes and changes will show up in next version
+RFC patches.
 
-> 
-> my use case is rather limited, all my bcache devices run in writeback
-> mode, and the only parameters I keep playing with are writeback_percent
-> and sequential_cutoff.
-> 
-> My short list of favourites:
-> 
->    - cache_mode
->    - writeback_percent
->    - sequential_cutoff
-> 
-
-Yes I plan to define a very limited minimum configuration set. And
-rested should be configured via user space tool.
-
-> But I vaguely remember that I used rebooting as last resort after too
-> much fiddling with tunables; persisting them in the superblock means
-> losing this reset-to-defaults method. Would be nice to have some other
-> way of resetting.
-> 
-> An alternative to modifying the superblock might be something
-> more out-of-band like iptables does with iptables-save and
-> iptables-restore: convert current settings to text, e.g. on shutdown or
-> at regular intervals, and restore settings on boot from this text file.
-
-Yeah, I think in the same way as yours.
+Thanks in advance.
 
 Coly Li
+---
+
+Coly Li (16):
+  bcache: add comments to mark member offset of struct cache_sb_disk
+  bcache: add read_super_basic() to read major part of super block
+  bcache: add more accurate error information in read_super_basic()
+  bcache: disassemble the big if() checks in bch_cache_set_alloc()
+  bcache: fix super block seq numbers comparision in
+    register_cache_set()
+  bcache: increase super block version for cache device and backing
+    device
+  bcache: move bucket related code into read_super_basic()
+  bcache: struct cache_sb is only for in-memory super block now
+  bcache: introduce meta_bucket_pages() related helper routines
+  bcache: handle c->uuids properly for bucket size > 8MB
+  bcache: handle cache prio_buckets and disk_buckets properly for bucket
+    size > 8MB
+  bcache: handle cache set verify_ondisk properly for bucket size > 8MB
+  bcache: handle btree node memory allocation properly for bucket size >
+    8MB
+  bcache: add bucket_size_hi into struct cache_sb_disk for large bucket
+  bcache: avoid extra memory allocation from mempool c->fill_iter
+  bcache: avoid extra memory consumption in struct bbio for large bucket
+    size
+
+ drivers/md/bcache/alloc.c    |   2 +-
+ drivers/md/bcache/bcache.h   |  29 +++-
+ drivers/md/bcache/btree.c    |  12 +-
+ drivers/md/bcache/features.c |  22 +++
+ drivers/md/bcache/features.h |  82 +++++++++++
+ drivers/md/bcache/io.c       |   2 +-
+ drivers/md/bcache/movinggc.c |   4 +-
+ drivers/md/bcache/super.c    | 254 ++++++++++++++++++++++++-----------
+ drivers/md/bcache/sysfs.c    |   2 +-
+ include/uapi/linux/bcache.h  |  75 +++++++----
+ 10 files changed, 363 insertions(+), 121 deletions(-)
+ create mode 100644 drivers/md/bcache/features.c
+ create mode 100644 drivers/md/bcache/features.h
+
+-- 
+2.26.2
