@@ -7,29 +7,29 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 81D40C433DF
-	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:20 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A7BCAC433DF
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:32 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5EE1620737
-	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:20 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8BEF320737
+	for <linux-bcache@archiver.kernel.org>; Sun,  5 Jul 2020 15:56:32 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727798AbgGEP4T (ORCPT
+        id S1727871AbgGEP4c (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sun, 5 Jul 2020 11:56:19 -0400
-Received: from mx2.suse.de ([195.135.220.15]:38058 "EHLO mx2.suse.de"
+        Sun, 5 Jul 2020 11:56:32 -0400
+Received: from mx2.suse.de ([195.135.220.15]:38174 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727790AbgGEP4T (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 5 Jul 2020 11:56:19 -0400
+        id S1727848AbgGEP4c (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 5 Jul 2020 11:56:32 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 49159AC37;
-        Sun,  5 Jul 2020 15:56:18 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 0CCC9AC37;
+        Sun,  5 Jul 2020 15:56:30 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [RFC PATCH 04/16] bcache: disassemble the big if() checks in bch_cache_set_alloc()
-Date:   Sun,  5 Jul 2020 23:55:49 +0800
-Message-ID: <20200705155601.5404-5-colyli@suse.de>
+Subject: [RFC PATCH 09/16] bcache: introduce meta_bucket_pages() related helper routines
+Date:   Sun,  5 Jul 2020 23:55:54 +0800
+Message-ID: <20200705155601.5404-10-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200705155601.5404-1-colyli@suse.de>
 References: <20200705155601.5404-1-colyli@suse.de>
@@ -39,83 +39,94 @@ Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200705155549.LydmWsFndFyQXRBkXvvMpt4Qtj10VLLgOSOuZUaYUB0@z>
+Message-ID: <20200705155554.2ced-n9wpRUiR2T-ieThEHN2tDKB0EwqPybs1Q2uLZ0@z>
 
-In bch_cache_set_alloc() there is a big if() checks combined by 11 items
-together. When this big if() statement fails, it is difficult to tell
-exactly which item fails indeed.
+Currently the in-memory meta data like c->uuids or c->disk_buckets
+are allocated by alloc_bucket_pages(). The macro alloc_bucket_pages()
+calls __get_free_pages() to allocated continuous pages with order
+indicated by ilog2(bucket_pages(c)),
+ #define alloc_bucket_pages(gfp, c)                      \
+     ((void *) __get_free_pages(__GFP_ZERO|gfp, ilog2(bucket_pages(c))))
 
-This patch disassembles this big if() checks into 11 single if() checks,
-which makes code debug more easier.
+The maximum order is defined as MAX_ORDER, the default value is 11 (and
+can be overwritten by CONFIG_FORCE_MAX_ZONEORDER). In bcache code the
+maximum bucket size width is 16bits, this is restricted both by KEY_SIZE
+size and bucket_size size from struct cache_sb_disk. The maximum 16bits
+width and power-of-2 value is (1<<15) in unit of sector (512byte). It
+means the maximum value of bucket size in bytes is (1<<24) bytes a.k.a
+4096 pages.
+
+When the bucket size is set to maximum permitted value, ilog2(4096) is
+12, which exceeds the default maximum order __get_free_pages() can
+accepted, the failed pages allocation will fail cache set registration
+procedure and print a kernel oops message for the exceeded pages order.
+
+This patch introduces meta_bucket_pages(), meta_bucket_bytes(), and
+alloc_bucket_pages() helper routines. meta_bucket_pages() indicates the
+maximum pages can be allocated to meta data bucket, meta_bucket_bytes()
+indicates the according maximum bytes, and alloc_bucket_pages() does
+the pages allocation for meta bucket. Because meta_bucket_pages()
+chooses the smaller value among the bucket size and MAX_ORDER_NR_PAGES,
+it still works when MAX_ORDER overwritten by CONFIG_FORCE_MAX_ZONEORDER.
+
+Following patches will use these helper routines to decide maximum pages
+can be allocated for different meta data buckets. If the bucket size is
+larger than meta_bucket_bytes(), the bcache registration can continue to
+success, just the space more than meta_bucket_bytes() inside the bucket
+is wasted. Comparing bcache failed for large bucket size, wasting some
+space for meta data buckets is acceptable at this moment.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/super.c | 52 ++++++++++++++++++++++++++++-----------
- 1 file changed, 37 insertions(+), 15 deletions(-)
+ drivers/md/bcache/bcache.h | 20 ++++++++++++++++++++
+ drivers/md/bcache/super.c  |  3 +++
+ 2 files changed, 23 insertions(+)
 
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 221e0191b687..2bfbb80841af 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -762,6 +762,26 @@ struct bbio {
+ #define bucket_bytes(c)		((c)->sb.bucket_size << 9)
+ #define block_bytes(c)		((c)->sb.block_size << 9)
+ 
++static inline unsigned int meta_bucket_pages(struct cache_sb *sb)
++{
++	unsigned int n, max_pages;
++
++	max_pages = min_t(unsigned int,
++			  __rounddown_pow_of_two(USHRT_MAX) / PAGE_SECTORS,
++			  MAX_ORDER_NR_PAGES);
++
++	n = sb->bucket_size / PAGE_SECTORS;
++	if (n > max_pages)
++		n = max_pages;
++
++	return n;
++}
++
++static inline unsigned int meta_bucket_bytes(struct cache_sb *sb)
++{
++	return meta_bucket_pages(sb) << PAGE_SHIFT;
++}
++
+ #define prios_per_bucket(c)				\
+ 	((bucket_bytes(c) - sizeof(struct prio_set)) /	\
+ 	 sizeof(struct bucket_disk))
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index d6082b68aa26..20cfd221c103 100644
+index b3248a7b0e20..ec60145277c4 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1865,21 +1865,43 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 	iter_size = (sb->bucket_size / sb->block_size + 1) *
- 		sizeof(struct btree_iter_set);
+@@ -1821,6 +1821,9 @@ void bch_cache_set_unregister(struct cache_set *c)
+ #define alloc_bucket_pages(gfp, c)			\
+ 	((void *) __get_free_pages(__GFP_ZERO|gfp, ilog2(bucket_pages(c))))
  
--	if (!(c->devices = kcalloc(c->nr_uuids, sizeof(void *), GFP_KERNEL)) ||
--	    mempool_init_slab_pool(&c->search, 32, bch_search_cache) ||
--	    mempool_init_kmalloc_pool(&c->bio_meta, 2,
--				sizeof(struct bbio) + sizeof(struct bio_vec) *
--				bucket_pages(c)) ||
--	    mempool_init_kmalloc_pool(&c->fill_iter, 1, iter_size) ||
--	    bioset_init(&c->bio_split, 4, offsetof(struct bbio, bio),
--			BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER) ||
--	    !(c->uuids = alloc_bucket_pages(GFP_KERNEL, c)) ||
--	    !(c->moving_gc_wq = alloc_workqueue("bcache_gc",
--						WQ_MEM_RECLAIM, 0)) ||
--	    bch_journal_alloc(c) ||
--	    bch_btree_cache_alloc(c) ||
--	    bch_open_buckets_alloc(c) ||
--	    bch_bset_sort_state_init(&c->sort, ilog2(c->btree_pages)))
-+	c->devices = kcalloc(c->nr_uuids, sizeof(void *), GFP_KERNEL);
-+	if (!c->devices)
-+		goto err;
++#define alloc_meta_bucket_pages(gfp, sb)		\
++	((void *) __get_free_pages(__GFP_ZERO|gfp, ilog2(meta_bucket_pages(sb))))
 +
-+	if (mempool_init_slab_pool(&c->search, 32, bch_search_cache))
-+		goto err;
-+
-+	if (mempool_init_kmalloc_pool(&c->bio_meta, 2,
-+			sizeof(struct bbio) +
-+			sizeof(struct bio_vec) * bucket_pages(c)))
-+		goto err;
-+
-+	if (mempool_init_kmalloc_pool(&c->fill_iter, 1, iter_size))
-+		goto err;
-+
-+	if (bioset_init(&c->bio_split, 4, offsetof(struct bbio, bio),
-+			BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
-+		goto err;
-+
-+	c->uuids = alloc_bucket_pages(GFP_KERNEL, c);
-+	if (!c->uuids)
-+		goto err;
-+
-+	c->moving_gc_wq = alloc_workqueue("bcache_gc", WQ_MEM_RECLAIM, 0);
-+	if (!c->moving_gc_wq)
-+		goto err;
-+
-+	if (bch_journal_alloc(c))
-+		goto err;
-+
-+	if (bch_btree_cache_alloc(c))
-+		goto err;
-+
-+	if (bch_open_buckets_alloc(c))
-+		goto err;
-+
-+	if (bch_bset_sort_state_init(&c->sort, ilog2(c->btree_pages)))
- 		goto err;
- 
- 	c->congested_read_threshold_us	= 2000;
+ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ {
+ 	int iter_size;
 -- 
 2.26.2
 
