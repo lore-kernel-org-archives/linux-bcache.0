@@ -1,58 +1,43 @@
-From: kent.overstreet@gmail.com
-Subject: Re: how does the caching works in bcachefs
-Date: Wed, 8 Jul 2020 18:37:29 -0400
-Message-ID: <20200708220220.GA109921@zaphod.evilpiepirate.org>
-References: <2308642.L3yuttUQlX@t460-skr>
+From: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
+Subject: Re: remove dead bdi congestion leftovers
+Date: Wed, 8 Jul 2020 17:14:29 -0600
+Message-ID: <b5d6df17-68af-d535-79e4-f95e16dd5632@kernel.dk>
+References: <20200701090622.3354860-1-hch@lst.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41112 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726291AbgGHWhh (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 8 Jul 2020 18:37:37 -0400
-Content-Disposition: inline
-In-Reply-To: <2308642.L3yuttUQlX@t460-skr>
-Sender: linux-bcache-owner@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+Return-path: <drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+In-Reply-To: <20200701090622.3354860-1-hch-jcswGhMUV9g@public.gmane.org>
+Content-Language: en-US
+List-Unsubscribe: <https://lists.linbit.com/mailman/options/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=unsubscribe>
+List-Archive: <http://lists.linbit.com/pipermail/drbd-dev>
+List-Post: <mailto:drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org>
+List-Help: <mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=help>
+List-Subscribe: <https://lists.linbit.com/mailman/listinfo/drbd-dev>,
+	<mailto:drbd-dev-request-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org?subject=subscribe>
+Sender: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+Errors-To: drbd-dev-bounces-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
+To: Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>
+Cc: linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-block-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-mm-Bw31MaZKKs3YtjvyW6yDsg@public.gmane.org, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, cgroups-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-btrfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org
 List-Id: linux-bcache@vger.kernel.org
-To: Stefan K <shadow_7@gmx.net>
-Cc: linux-bcache@vger.kernel.org, linux-bcachefs@vger.kernel.org
 
-On Wed, Jul 08, 2020 at 11:46:00PM +0200, Stefan K wrote:
-> Hello,
-> 
-> short question: how does the caching works with bcachefs? Is it like  "first
-> in first out" or is it more complex like the ARC system in zfs?
-
-LRU, same as bcache.
-
-> The same with the write-cache,  will be everything written to the SSD/NVMe
-> (Cache) and then to the HDD? When will will the filesystem say "its written to
-> disk"? And what happens with the data on the write cache if we have a
-> powerfail?
-
-Disks that are used as caches are treated no differently from other disks by the
-filesystem. If you want bcachefs to not rely on a specific disk, you can set its
-durability to 0, and then it'll basically only be used as a writethrough cache.
-
-> 
-> And can I say have this file/folder always in the cache, while it works "normal" ?
-
-Yes.
-
-So caching is configured differently, specifically so that it can be configured
-on a per file/directory basis. Instead of having a notion of "cache device",
-there are options for
- - foregroud target: which device or group of devices are used for foreground
-   writes
- - background target: if enabled, the rebalance thread will in the background
-   move data to this target in the background, leaving a cached copy on the
-   foreground target
- - promote target: if enabled, when data is read and it doesn't exist in this
-   target, a cached copy will be added there
-
-So these options can be set to get you writeback mode, by setting foreground
-target and promote target to your SSD and background target to your HDD.
-
-And you can pin specific files/folders to a device, by setting foreground target
-to that device and setting background target and promote target to nothing.
+T24gNy8xLzIwIDM6MDYgQU0sIENocmlzdG9waCBIZWxsd2lnIHdyb3RlOgo+IEhpIEplbnMsCj4g
+Cj4gd2UgaGF2ZSBhIGxvdCBvZiBiZGkgY29uZ2VzdGlvbiByZWxhdGVkIGNvZGUgdGhhdCBpcyBs
+ZWZ0IGFyb3VuZCB3aXRob3V0Cj4gYW55IHVzZS4gIFRoaXMgc2VyaWVzIHJlbW92ZXMgaXQgaW4g
+cHJlcGFyYXRpb24gb2Ygc29ydGluZyBvdXQgdGhlIGJkaQo+IGxpZmV0aW1lIHJ1bGVzIHByb3Bl
+cmx5LgoKUGxlYXNlIHJ1biBzZXJpZXMgbGlrZSB0aGlzIHRocm91Z2ggYSBmdWxsIGNvbXBpbGF0
+aW9uLCBmb3IgYm90aCB0aGlzIG9uZQphbmQgdGhlIHByZXZpb3VzIHNlcmllcyBJIGhhZCB0byBm
+aXggdXAgaXNzdWVzIGxpa2UgdGhpczoKCmRyaXZlcnMvbWQvYmNhY2hlL3JlcXVlc3QuYzogSW4g
+ZnVuY3Rpb24g4oCYYmNoX2NhY2hlZF9kZXZfcmVxdWVzdF9pbml04oCZOgpkcml2ZXJzL21kL2Jj
+YWNoZS9yZXF1ZXN0LmM6MTIzMzoxODogd2FybmluZzogdW51c2VkIHZhcmlhYmxlIOKAmGfigJkg
+Wy1XdW51c2VkLXZhcmlhYmxlXQogMTIzMyB8ICBzdHJ1Y3QgZ2VuZGlzayAqZyA9IGRjLT5kaXNr
+LmRpc2s7CiAgICAgIHwgICAgICAgICAgICAgICAgICBeCmRyaXZlcnMvbWQvYmNhY2hlL3JlcXVl
+c3QuYzogSW4gZnVuY3Rpb24g4oCYYmNoX2ZsYXNoX2Rldl9yZXF1ZXN0X2luaXTigJk6CmRyaXZl
+cnMvbWQvYmNhY2hlL3JlcXVlc3QuYzoxMzIwOjE4OiB3YXJuaW5nOiB1bnVzZWQgdmFyaWFibGUg
+4oCYZ+KAmSBbLVd1bnVzZWQtdmFyaWFibGVdCiAxMzIwIHwgIHN0cnVjdCBnZW5kaXNrICpnID0g
+ZC0+ZGlzazsKICAgICAgfCAgICAgICAgICAgICAgICAgIF4KCkRpZCB0aGUgc2FtZSBoZXJlLCBh
+cHBsaWVkIGl0LgoKLS0gCkplbnMgQXhib2UKCl9fX19fX19fX19fX19fX19fX19fX19fX19fX19f
+X19fX19fX19fX19fX19fX19fCmRyYmQtZGV2IG1haWxpbmcgbGlzdApkcmJkLWRldkBsaXN0cy5s
+aW5iaXQuY29tCmh0dHBzOi8vbGlzdHMubGluYml0LmNvbS9tYWlsbWFuL2xpc3RpbmZvL2RyYmQt
+ZGV2Cg==
