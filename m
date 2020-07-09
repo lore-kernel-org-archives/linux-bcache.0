@@ -1,50 +1,44 @@
-From: Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>
-Subject: Re: remove dead bdi congestion leftovers
-Date: Thu, 9 Jul 2020 16:01:45 +0200
-Message-ID: <20200709140145.GA3068@lst.de>
-References: <20200701090622.3354860-1-hch@lst.de> <b5d6df17-68af-d535-79e4-f95e16dd5632@kernel.dk> <20200709053233.GA3243@lst.de> <82e2785d-2091-1986-0014-3b7cea7cd0d8@kernel.dk>
+From: kent.overstreet@gmail.com
+Subject: Re: how does the caching works in bcachefs
+Date: Thu, 9 Jul 2020 12:08:05 -0400
+Message-ID: <20200709160805.GA158619@zaphod.evilpiepirate.org>
+References: <2308642.L3yuttUQlX@t460-skr>
+ <20200708220220.GA109921@zaphod.evilpiepirate.org>
+ <2900215.XKtEbqh0OK@t460-skr>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Return-path: <cgroups-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org>
+Content-Type: text/plain; charset=us-ascii
+Return-path: <linux-bcache-owner@vger.kernel.org>
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33844 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726357AbgGIQIL (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 9 Jul 2020 12:08:11 -0400
 Content-Disposition: inline
-In-Reply-To: <82e2785d-2091-1986-0014-3b7cea7cd0d8-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-Sender: cgroups-owner-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
-To: Jens Axboe <axboe-tSWWG44O7X1aa/9Udqfwiw@public.gmane.org>
-Cc: Christoph Hellwig <hch-jcswGhMUV9g@public.gmane.org>, Tejun Heo <tj-DgEjT+Ai2ygdnm+yROfE0A@public.gmane.org>, dm-devel-H+wXaHxf7aLQT0dZR+AlfA@public.gmane.org, cgroups-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-block-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, drbd-dev-cunTk1MwBs8qoQakbn7OcQ@public.gmane.org, linux-bcache-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-raid-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-btrfs-u79uwXL29TY76Z2rM5mHXA@public.gmane.org, linux-mm-Bw31MaZKKs3YtjvyW6yDsg@public.gmane.org, linux-kernel-u79uwXL29TY76Z2rM5mHXA@public.gmane.org
+In-Reply-To: <2900215.XKtEbqh0OK@t460-skr>
+Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
+To: Stefan K <shadow_7@gmx.net>
+Cc: linux-bcache@vger.kernel.org, linux-bcachefs@vger.kernel.org
 
-On Thu, Jul 09, 2020 at 07:58:58AM -0600, Jens Axboe wrote:
-> On 7/8/20 11:32 PM, Christoph Hellwig wrote:
-> > On Wed, Jul 08, 2020 at 05:14:29PM -0600, Jens Axboe wrote:
-> >> On 7/1/20 3:06 AM, Christoph Hellwig wrote:
-> >>> Hi Jens,
-> >>>
-> >>> we have a lot of bdi congestion related code that is left around without
-> >>> any use.  This series removes it in preparation of sorting out the bdi
-> >>> lifetime rules properly.
-> >>
-> >> Please run series like this through a full compilation, for both this one
-> >> and the previous series I had to fix up issues like this:
-> >>
-> >> drivers/md/bcache/request.c: In function ‘bch_cached_dev_request_init’:
-> >> drivers/md/bcache/request.c:1233:18: warning: unused variable ‘g’ [-Wunused-variable]
-> >>  1233 |  struct gendisk *g = dc->disk.disk;
-> >>       |                  ^
-> >> drivers/md/bcache/request.c: In function ‘bch_flash_dev_request_init’:
-> >> drivers/md/bcache/request.c:1320:18: warning: unused variable ‘g’ [-Wunused-variable]
-> >>  1320 |  struct gendisk *g = d->disk;
-> >>       |                  ^
-> >>
-> >> Did the same here, applied it.
-> > 
-> > And just like the previous one I did, and the compiler did not complain.
-> > There must be something about certain gcc versions not warning about
-> > variables that are initialized but not otherwise used.
+On Thu, Jul 09, 2020 at 03:20:14PM +0200, Stefan K wrote:
+> Hi and thanks!
 > 
-> Are you using gcc-10? It sucks for that. gcc-9 seems to reliably hit
-> these cases for me, not sure why gcc-10 doesn't. And the ones quoted
-> above are about as trivial as they can get.
+> > LRU, same as bcache.
+> do you plan to change this , since LRU is not very efficient (in comparison to
+> other), maybe 2Q or ARC[1-4]
 
-gcc-9.3 from Debian -testing.  And yes, I'm really surprised it didn't
-find those.
+No, but I'd be happy to help if someone else wanted to implement a new caching
+algorithm :)
+
+In real world mixed workloads LRU is fine, it's not that much of a difference
+vs. the more sophisticated algorithms. More important is the stuff like
+sequential_bypass or some other kind of knob to ensure your backup process
+doesn't blow away the entire cache.
+
+> 
+> > [...]
+> > And you can pin specific files/folders to a device, by setting foreground target
+> > to that device and setting background target and promote target to nothing.
+> ok thank you very much! That must be documented somewhere ;-)
+
+I just write code, not documentation :)
