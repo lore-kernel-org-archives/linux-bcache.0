@@ -2,82 +2,71 @@ Return-Path: <SRS0=5uRq=AU=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.5 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D07F9C433DF
-	for <linux-bcache@archiver.kernel.org>; Thu,  9 Jul 2020 03:41:15 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 35CBFC433E0
+	for <linux-bcache@archiver.kernel.org>; Thu,  9 Jul 2020 05:32:43 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id B8C2920772
-	for <linux-bcache@archiver.kernel.org>; Thu,  9 Jul 2020 03:41:15 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1B52A206A1
+	for <linux-bcache@archiver.kernel.org>; Thu,  9 Jul 2020 05:32:43 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726117AbgGIDlN (ORCPT
+        id S1726542AbgGIFci (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 8 Jul 2020 23:41:13 -0400
-Received: from smtp23.cstnet.cn ([159.226.251.23]:33098 "EHLO cstnet.cn"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1726122AbgGIDlN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 8 Jul 2020 23:41:13 -0400
-Received: from localhost (unknown [159.226.5.99])
-        by APP-03 (Coremail) with SMTP id rQCowABn6fhZkQZfXF2pAw--.36772S2;
-        Thu, 09 Jul 2020 11:39:06 +0800 (CST)
-From:   Xu Wang <vulab@iscas.ac.cn>
-To:     colyli@suse.de, kent.overstreet@gmail.com,
-        linux-bcache@vger.kernel.org
-Cc:     linux-kernel@vger.kernel.org, Xu Wang <vulab@iscas.ac.cn>
-Subject: [PATCH] bcache: writeback: Remove unneeded variable ret
-Date:   Thu,  9 Jul 2020 03:39:04 +0000
-Message-ID: <20200709033904.27391-1-vulab@iscas.ac.cn>
-X-Mailer: git-send-email 2.17.1
-X-CM-TRANSID: rQCowABn6fhZkQZfXF2pAw--.36772S2
-X-Coremail-Antispam: 1UD129KBjvdXoWrCr4fJw18uw4xXrW3uryDWrg_yoWxXrb_ur
-        1Yqa1vkFWFk3WkXw17A3WfZrWj934DZF10q3WSkr9xKF1Fy34xXrW8Zr4kJr1S9Fy8uF4D
-        Gw12qr4UAr1v9jkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
-        9fnUUIcSsGvfJTRUUUb4xFF20E14v26r1j6r4UM7CY07I20VC2zVCF04k26cxKx2IYs7xG
-        6rWj6s0DM7CIcVAFz4kK6r1j6r18M28lY4IEw2IIxxk0rwA2F7IY1VAKz4vEj48ve4kI8w
-        A2z4x0Y4vE2Ix0cI8IcVAFwI0_Gr0_Xr1l84ACjcxK6xIIjxv20xvEc7CjxVAFwI0_Gr0_
-        Cr1l84ACjcxK6I8E87Iv67AKxVW8Jr0_Cr1UM28EF7xvwVC2z280aVCY1x0267AKxVWxJr
-        0_GcWle2I262IYc4CY6c8Ij28IcVAaY2xG8wAqx4xG64xvF2IEw4CE5I8CrVC2j2WlYx0E
-        2Ix0cI8IcVAFwI0_Jr0_Jr4lYx0Ex4A2jsIE14v26r4UJVWxJr1lOx8S6xCaFVCjc4AY6r
-        1j6r4UM4x0Y48IcxkI7VAKI48JM4x0x7Aq67IIx4CEVc8vx2IErcIFxwCY02Avz4vE14v_
-        Gr4l42xK82IYc2Ij64vIr41l4I8I3I0E4IkC6x0Yz7v_Jr0_Gr1lx2IqxVAqx4xG67AKxV
-        WUJVWUGwC20s026x8GjcxK67AKxVWUGVWUWwC2zVAF1VAY17CE14v26r126r1DMIIYrxkI
-        7VAKI48JMIIF0xvE2Ix0cI8IcVAFwI0_Jr0_JF4lIxAIcVC0I7IYx2IY6xkF7I0E14v26r
-        1j6r4UMIIF0xvE42xK8VAvwI8IcIk0rVWrJr0_WFyUJwCI42IY6I8E87Iv67AKxVWUJVW8
-        JwCI42IY6I8E87Iv6xkF7I0E14v26r1j6r4UYxBIdaVFxhVjvjDU0xZFpf9x0JU4MKZUUU
-        UU=
-X-Originating-IP: [159.226.5.99]
-X-CM-SenderInfo: pyxotu46lvutnvoduhdfq/1tbiCAAMA102YRI8CwAAso
+        Thu, 9 Jul 2020 01:32:38 -0400
+Received: from verein.lst.de ([213.95.11.211]:38023 "EHLO verein.lst.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1726091AbgGIFci (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 9 Jul 2020 01:32:38 -0400
+Received: by verein.lst.de (Postfix, from userid 2407)
+        id 2292B68B05; Thu,  9 Jul 2020 07:32:34 +0200 (CEST)
+Date:   Thu, 9 Jul 2020 07:32:33 +0200
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>,
+        dm-devel@redhat.com, cgroups@vger.kernel.org,
+        linux-block@vger.kernel.org, drbd-dev@lists.linbit.com,
+        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: remove dead bdi congestion leftovers
+Message-ID: <20200709053233.GA3243@lst.de>
+References: <20200701090622.3354860-1-hch@lst.de> <b5d6df17-68af-d535-79e4-f95e16dd5632@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <b5d6df17-68af-d535-79e4-f95e16dd5632@kernel.dk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200709033904.mXmrJqusGlTHdC14BenW6_amJDYnaHev5DzUhL6xnl4@z>
+Message-ID: <20200709053233.3UYI-R_inPVAz-rGSVyJ0FXcupI807BmBW2OuusuZMw@z>
 
-Remove unneeded variable ret i.
+On Wed, Jul 08, 2020 at 05:14:29PM -0600, Jens Axboe wrote:
+> On 7/1/20 3:06 AM, Christoph Hellwig wrote:
+> > Hi Jens,
+> > 
+> > we have a lot of bdi congestion related code that is left around without
+> > any use.  This series removes it in preparation of sorting out the bdi
+> > lifetime rules properly.
+> 
+> Please run series like this through a full compilation, for both this one
+> and the previous series I had to fix up issues like this:
+> 
+> drivers/md/bcache/request.c: In function ‘bch_cached_dev_request_init’:
+> drivers/md/bcache/request.c:1233:18: warning: unused variable ‘g’ [-Wunused-variable]
+>  1233 |  struct gendisk *g = dc->disk.disk;
+>       |                  ^
+> drivers/md/bcache/request.c: In function ‘bch_flash_dev_request_init’:
+> drivers/md/bcache/request.c:1320:18: warning: unused variable ‘g’ [-Wunused-variable]
+>  1320 |  struct gendisk *g = d->disk;
+>       |                  ^
+> 
+> Did the same here, applied it.
 
-Signed-off-by: Xu Wang <vulab@iscas.ac.cn>
----
- drivers/md/bcache/writeback.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 1cf1e5016cb9..71801c086b82 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -825,10 +825,8 @@ static int bch_dirty_init_thread(void *arg)
- 	struct btree_iter iter;
- 	struct bkey *k, *p;
- 	int cur_idx, prev_idx, skip_nr;
--	int i;
- 
- 	k = p = NULL;
--	i = 0;
- 	cur_idx = prev_idx = 0;
- 
- 	bch_btree_iter_init(&c->root->keys, &iter, NULL);
--- 
-2.17.1
-
+And just like the previous one I did, and the compiler did not complain.
+There must be something about certain gcc versions not warning about
+variables that are initialized but not otherwise used.
