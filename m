@@ -1,49 +1,95 @@
-From: Coly Li <colyli@suse.de>
-Subject: Re: [PATCH] bcache: writeback: Remove unneeded variable i
-Date: Thu, 9 Jul 2020 14:04:52 +0800
-Message-ID: <b4a983cd-a392-c1c9-85b3-3116d9a4fb73@suse.de>
-References: <20200709055358.30237-1-vulab@iscas.ac.cn>
+From: Stefan K <shadow_7@gmx.net>
+Subject: Re: how does the caching works in bcachefs
+Date: Thu, 09 Jul 2020 15:20:14 +0200
+Message-ID: <2900215.XKtEbqh0OK@t460-skr>
+References: <2308642.L3yuttUQlX@t460-skr> <20200708220220.GA109921@zaphod.evilpiepirate.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 Return-path: <linux-bcache-owner@vger.kernel.org>
-Received: from mx2.suse.de ([195.135.220.15]:54484 "EHLO mx2.suse.de"
+Received: from mout.gmx.net ([212.227.17.21]:43919 "EHLO mout.gmx.net"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726196AbgGIGFB (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 9 Jul 2020 02:05:01 -0400
-In-Reply-To: <20200709055358.30237-1-vulab@iscas.ac.cn>
-Content-Language: en-US
+        id S1726896AbgGINUR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 9 Jul 2020 09:20:17 -0400
+In-Reply-To: <20200708220220.GA109921@zaphod.evilpiepirate.org>
 Sender: linux-bcache-owner@vger.kernel.org
 List-Id: linux-bcache@vger.kernel.org
-To: Xu Wang <vulab@iscas.ac.cn>
-Cc: kent.overstreet@gmail.com, linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+To: kent.overstreet@gmail.com
+Cc: linux-bcache@vger.kernel.org, linux-bcachefs@vger.kernel.org
 
-On 2020/7/9 13:53, Xu Wang wrote:
-> Remove unneeded variable i in bch_dirty_init_thread().
-> 
-> Signed-off-by: Xu Wang <vulab@iscas.ac.cn>
+Hi and thanks!
 
-Add it into my testing queue. Thanks.
+> LRU, same as bcache.
+do you plan to change this , since LRU is not very efficient (in compariso=
+n to other), maybe 2Q or ARC[1-4]
 
-Coly Li
+> [...]
+> And you can pin specific files/folders to a device, by setting foregroun=
+d target
+> to that device and setting background target and promote target to nothi=
+ng.
+ok thank you very much! That must be documented somewhere ;-)
 
-> ---
->  drivers/md/bcache/writeback.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 1cf1e5016cb9..71801c086b82 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -825,10 +825,8 @@ static int bch_dirty_init_thread(void *arg)
->  	struct btree_iter iter;
->  	struct bkey *k, *p;
->  	int cur_idx, prev_idx, skip_nr;
-> -	int i;
->  
->  	k = p = NULL;
-> -	i = 0;
->  	cur_idx = prev_idx = 0;
->  
->  	bch_btree_iter_init(&c->root->keys, &iter, NULL);
-> 
+
+[1] https://en.ru.is/media/skjol-td/cache_comparison.pdf
+[2] https://dbs.uni-leipzig.de/file/ARC.pdf
+[3] http://people.cs.vt.edu/~butta/docs/sigmetrics05_kernelPrefetch.pdf
+[4] http://www.vldb.org/conf/1994/P439.PDF
+
+On Thursday, July 9, 2020 12:37:29 AM CEST kent.overstreet@gmail.com wrote=
+:
+> On Wed, Jul 08, 2020 at 11:46:00PM +0200, Stefan K wrote:
+> > Hello,
+> >
+> > short question: how does the caching works with bcachefs? Is it like  =
+"first
+> > in first out" or is it more complex like the ARC system in zfs?
+>
+> LRU, same as bcache.
+>
+> > The same with the write-cache,  will be everything written to the SSD/=
+NVMe
+> > (Cache) and then to the HDD? When will will the filesystem say "its wr=
+itten to
+> > disk"? And what happens with the data on the write cache if we have a
+> > powerfail?
+>
+> Disks that are used as caches are treated no differently from other disk=
+s by the
+> filesystem. If you want bcachefs to not rely on a specific disk, you can=
+ set its
+> durability to 0, and then it'll basically only be used as a writethrough=
+ cache.
+>
+> >
+> > And can I say have this file/folder always in the cache, while it work=
+s "normal" ?
+>
+> Yes.
+>
+> So caching is configured differently, specifically so that it can be con=
+figured
+> on a per file/directory basis. Instead of having a notion of "cache devi=
+ce",
+> there are options for
+>  - foregroud target: which device or group of devices are used for foreg=
+round
+>    writes
+>  - background target: if enabled, the rebalance thread will in the backg=
+round
+>    move data to this target in the background, leaving a cached copy on =
+the
+>    foreground target
+>  - promote target: if enabled, when data is read and it doesn't exist in=
+ this
+>    target, a cached copy will be added there
+>
+> So these options can be set to get you writeback mode, by setting foregr=
+ound
+> target and promote target to your SSD and background target to your HDD.
+>
+> And you can pin specific files/folders to a device, by setting foregroun=
+d target
+> to that device and setting background target and promote target to nothi=
+ng.
+>
