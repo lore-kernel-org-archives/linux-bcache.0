@@ -2,34 +2,37 @@ Return-Path: <SRS0=SjEI=A2=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-7.0 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	USER_AGENT_GIT autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 1BDDBC433E2
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A32A8C433E1
 	for <linux-bcache@archiver.kernel.org>; Wed, 15 Jul 2020 05:46:21 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 0530F2067D
+	by mail.kernel.org (Postfix) with ESMTP id 8328E2067D
 	for <linux-bcache@archiver.kernel.org>; Wed, 15 Jul 2020 05:46:21 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728657AbgGOFqT (ORCPT
+        id S1728660AbgGOFqV (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 15 Jul 2020 01:46:19 -0400
-Received: from [195.135.220.15] ([195.135.220.15]:38328 "EHLO mx2.suse.de"
+        Wed, 15 Jul 2020 01:46:21 -0400
+Received: from [195.135.220.15] ([195.135.220.15]:38334 "EHLO mx2.suse.de"
         rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-        id S1728650AbgGOFqT (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 15 Jul 2020 01:46:19 -0400
+        id S1728650AbgGOFqU (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 15 Jul 2020 01:46:20 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 3D60AAB7D;
-        Wed, 15 Jul 2020 05:46:20 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 14E8FAC20;
+        Wed, 15 Jul 2020 05:46:22 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH v2 00/17] bcache: extend bucket size to 32bit width
-Date:   Wed, 15 Jul 2020 13:45:55 +0800
-Message-Id: <20200715054612.6349-1-colyli@suse.de>
+Subject: [PATCH v2 01/17] bcache: add comments to mark member offset of struct cache_sb_disk
+Date:   Wed, 15 Jul 2020 13:45:56 +0800
+Message-Id: <20200715054612.6349-2-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20200715054612.6349-1-colyli@suse.de>
+References: <20200715054612.6349-1-colyli@suse.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
@@ -37,80 +40,87 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch series is an effort to extent bucket_size from 16bit to
-32bit width. This is the code base for next step to use zoned device as
-cache device.
+This patch adds comments to mark each member of struct cache_sb_disk,
+it is helpful to understand the bcache superblock on-disk layout.
 
-In this series, these changes should be noticed,
-- Increase the super block version to
-	BCACHE_SB_VERSION_CDEV_WITH_FEATURES 5
-	BCACHE_SB_VERSION_BDEV_WITH_FEATURES 6
-- The new version adds 3 new members,
-	__le64          feature_compat;
-	__le64          feature_incompat;
-	__le64          feature_ro_compat;
-  If new feature added will change the on-disk format, just setting the
-  feature set bits, no need to upstream super block version.
-- The in-memory struct cache_sb does not exactly map the on-disk struct
-  cache_sb_disk.
-- Add 32bit bucket_size_hi in struct cache_sb_disk,
-	__le32          bucket_size_hi;
-  In theory bucket_size can be extended to 48bit, but now 32bit width is
-  big enough.
-- Other changes to follow the large bucket size.
-
-The changes are mostly on cache device, except the super block update
-there is no change about the backing device.
-
-Any code review comments or suggestion is welcome. Thanks in advance.
-
-Coly Li 
+Signed-off-by: Coly Li <colyli@suse.de>
 ---
-Changelog:
-v2: several bug fixes, and add sysfs file to display cache set feature
-    sets information.
-v1: initial RFC version.
+ include/uapi/linux/bcache.h | 39 +++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 19 deletions(-)
 
-Coly Li (17):
-  bcache: add comments to mark member offset of struct cache_sb_disk
-  bcache: add read_super_basic() to read major part of super block
-  bcache: add more accurate error information in read_super_basic()
-  bcache: disassemble the big if() checks in bch_cache_set_alloc()
-  bcache: fix super block seq numbers comparision in
-    register_cache_set()
-  bcache: increase super block version for cache device and backing
-    device
-  bcache: move bucket related code into read_super_basic()
-  bcache: struct cache_sb is only for in-memory super block now
-  bcache: introduce meta_bucket_pages() related helper routines
-  bcache: handle c->uuids properly for bucket size > 8MB
-  bcache: handle cache prio_buckets and disk_buckets properly for bucket
-    size > 8MB
-  bcache: handle cache set verify_ondisk properly for bucket size > 8MB
-  bcache: handle btree node memory allocation properly for bucket size >
-    8MB
-  bcache: add bucket_size_hi into struct cache_sb_disk for large bucket
-  bcache: add sysfs file to display feature sets information of cache
-    set
-  bcache: avoid extra memory allocation from mempool c->fill_iter
-  bcache: avoid extra memory consumption in struct bbio for large bucket
-    size
-
- drivers/md/bcache/Makefile   |   2 +-
- drivers/md/bcache/alloc.c    |   2 +-
- drivers/md/bcache/bcache.h   |  29 +++-
- drivers/md/bcache/btree.c    |  12 +-
- drivers/md/bcache/features.c |  70 ++++++++++
- drivers/md/bcache/features.h |  84 +++++++++++
- drivers/md/bcache/io.c       |   2 +-
- drivers/md/bcache/movinggc.c |   4 +-
- drivers/md/bcache/super.c    | 261 ++++++++++++++++++++++++-----------
- drivers/md/bcache/sysfs.c    |   6 +
- include/uapi/linux/bcache.h  |  75 ++++++----
- 11 files changed, 426 insertions(+), 121 deletions(-)
- create mode 100644 drivers/md/bcache/features.c
- create mode 100644 drivers/md/bcache/features.h
-
+diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
+index 9a1965c6c3d0..afbd1b56a661 100644
+--- a/include/uapi/linux/bcache.h
++++ b/include/uapi/linux/bcache.h
+@@ -158,33 +158,33 @@ static inline struct bkey *bkey_idx(const struct bkey *k, unsigned int nr_keys)
+ #define BDEV_DATA_START_DEFAULT		16	/* sectors */
+ 
+ struct cache_sb_disk {
+-	__le64			csum;
+-	__le64			offset;	/* sector where this sb was written */
+-	__le64			version;
++/*000*/	__le64			csum;
++/*008*/	__le64			offset;	/* sector where this sb was written */
++/*010*/	__le64			version;
+ 
+-	__u8			magic[16];
++/*018*/	__u8			magic[16];
+ 
+-	__u8			uuid[16];
++/*028*/	__u8			uuid[16];
+ 	union {
+-		__u8		set_uuid[16];
++/*038*/		__u8		set_uuid[16];
+ 		__le64		set_magic;
+ 	};
+-	__u8			label[SB_LABEL_SIZE];
++/*048*/	__u8			label[SB_LABEL_SIZE];
+ 
+-	__le64			flags;
+-	__le64			seq;
+-	__le64			pad[8];
++/*068*/	__le64			flags;
++/*070*/	__le64			seq;
++/*078*/	__le64			pad[8];
+ 
+ 	union {
+ 	struct {
+ 		/* Cache devices */
+-		__le64		nbuckets;	/* device size */
++/*0b8*/		__le64		nbuckets;	/* device size */
+ 
+-		__le16		block_size;	/* sectors */
+-		__le16		bucket_size;	/* sectors */
++/*0c0*/		__le16		block_size;	/* sectors */
++/*0c2*/		__le16		bucket_size;	/* sectors */
+ 
+-		__le16		nr_in_set;
+-		__le16		nr_this_dev;
++/*0c4*/		__le16		nr_in_set;
++/*0c6*/		__le16		nr_this_dev;
+ 	};
+ 	struct {
+ 		/* Backing devices */
+@@ -198,14 +198,15 @@ struct cache_sb_disk {
+ 	};
+ 	};
+ 
+-	__le32			last_mount;	/* time overflow in y2106 */
++/*0c8*/	__le32			last_mount;	/* time overflow in y2106 */
+ 
+-	__le16			first_bucket;
++/*0cc*/	__le16			first_bucket;
+ 	union {
+-		__le16		njournal_buckets;
++/*0ce*/		__le16		njournal_buckets;
+ 		__le16		keys;
+ 	};
+-	__le64			d[SB_JOURNAL_BUCKETS];	/* journal buckets */
++/*0d0*/	__le64			d[SB_JOURNAL_BUCKETS];	/* journal buckets */
++/*8d0*/
+ };
+ 
+ struct cache_sb {
 -- 
 2.26.2
 
