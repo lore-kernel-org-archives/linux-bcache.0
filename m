@@ -6,40 +6,40 @@ X-Spam-Status: No, score=-4.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,MAILING_LIST_MULTI,SPF_HELO_NONE,
 	SPF_PASS autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 022B6C433ED
-	for <linux-bcache@archiver.kernel.org>; Fri, 17 Jul 2020 17:08:57 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6027FC433FB
+	for <linux-bcache@archiver.kernel.org>; Fri, 17 Jul 2020 17:09:00 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D1AF720737
-	for <linux-bcache@archiver.kernel.org>; Fri, 17 Jul 2020 17:08:56 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 3C55120775
+	for <linux-bcache@archiver.kernel.org>; Fri, 17 Jul 2020 17:09:00 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=default; t=1595005736;
+	s=default; t=1595005740;
 	bh=n0ZG9OWBzBeO0FIjX02Ig/elKad2KmFT1sUX0+e1HDE=;
 	h=Date:From:To:To:To:Cc:Cc:Cc:Subject:In-Reply-To:References:
 	 List-ID:From;
-	b=nb2DRRJjLWJW12yVxKrqDF0nh9qU7GvCUEArR3/HVtjCD/Jmh+Wy50sTeE12lmIcJ
-	 w5amLC/iUfKTuDv25pP6bmy7OJDAiAJOrbmmCE/D6BjPwz1lmyEwoc7IiB9ASasRnc
-	 u/YfgBQjBhJctideIShdWWE7v7AoXi/Pk6JTDb/Y=
+	b=OdXJGAe4uZtBsIMGJLQVz7FSI4Q18QWBQPLV/mGi4rXYQhOSBZ/wv2EVtfnAvYl85
+	 Eg22kUjMJVF/znqfEvTI9uEPWTQeAqgw0tgyCL8bfVqms5tF7ogXwweP+P3LPQ21NP
+	 6eR9IMK92XrBOnA0wWbAjnDsoCGOgJUk1IdyZlbU=
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727091AbgGQRIy (ORCPT
+        id S1727108AbgGQRI7 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 17 Jul 2020 13:08:54 -0400
-Received: from mail.kernel.org ([198.145.29.99]:46276 "EHLO mail.kernel.org"
+        Fri, 17 Jul 2020 13:08:59 -0400
+Received: from mail.kernel.org ([198.145.29.99]:46096 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727049AbgGQRIv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 17 Jul 2020 13:08:51 -0400
+        id S1726936AbgGQRIr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 17 Jul 2020 13:08:47 -0400
 Received: from localhost (unknown [137.135.114.1])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by mail.kernel.org (Postfix) with ESMTPSA id 07292208C7;
-        Fri, 17 Jul 2020 17:08:49 +0000 (UTC)
+        by mail.kernel.org (Postfix) with ESMTPSA id DA6FF207EA;
+        Fri, 17 Jul 2020 17:08:45 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=default; t=1595005730;
+        s=default; t=1595005726;
         bh=n0ZG9OWBzBeO0FIjX02Ig/elKad2KmFT1sUX0+e1HDE=;
         h=Date:From:To:To:To:Cc:Cc:Cc:Subject:In-Reply-To:References:From;
-        b=cl+h480lW8/obHIE4f5beGoc9o2iNJz5eZjTZwFrFGv6Qxkxt1NSiLSwQzhGe6pvI
-         rPC+pQUGwOFHlyFD7avK+BfQ9Jv2UQ+qHb32Kqbss8QO/KT86MXlfBLPseTwmag5td
-         Q5xymNsDlJEBF0ZtGhAt1lN4HXDOLiqURRnLiSf4=
-Date:   Fri, 17 Jul 2020 17:08:49 +0000
+        b=jjwVRD5c0OokjWiL0P6hRCIWWuBFW7ZS2gi8sTVqiGGyBDtb1HeUE7FRoVtQL+QOP
+         UlSb2hn2ZVMbba/acxYCposQ2r2sutKY0nmyoIFaMNZyguM6ottzk+SNcHzxc+JQMX
+         9ki9yr8FcBjK72Fxj0dquTklTcQ++fFzpHADDSiY=
+Date:   Fri, 17 Jul 2020 17:08:45 +0000
 From:   Sasha Levin <sashal@kernel.org>
 To:     Sasha Levin <sashal@kernel.org>
 To:     Coly Li <colyli@suse.de>
@@ -47,10 +47,10 @@ To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
 Cc:     stable@vger.kernel.org
 Cc:     stable@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] bcache: avoid nr_stripes overflow in bcache_device_init()
-In-Reply-To: <20200713111501.19061-1-colyli@suse.de>
-References: <20200713111501.19061-1-colyli@suse.de>
-Message-Id: <20200717170850.07292208C7@mail.kernel.org>
+Subject: Re: [PATCH 1/2] bcache: avoid nr_stripes overflow in bcache_device_init()
+In-Reply-To: <20200712174736.9840-1-colyli@suse.de>
+References: <20200712174736.9840-1-colyli@suse.de>
+Message-Id: <20200717170845.DA6FF207EA@mail.kernel.org>
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
