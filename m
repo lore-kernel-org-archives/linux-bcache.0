@@ -7,30 +7,30 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B2FA5C4345A
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:05 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 679CDC4345E
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:11 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8E61C206C1
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:05 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 4AFA3206C1
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:11 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727014AbgGYMDF (ORCPT
+        id S1727020AbgGYMDK (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Jul 2020 08:03:05 -0400
-Received: from mx2.suse.de ([195.135.220.15]:52316 "EHLO mx2.suse.de"
+        Sat, 25 Jul 2020 08:03:10 -0400
+Received: from mx2.suse.de ([195.135.220.15]:52382 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726997AbgGYMDE (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Jul 2020 08:03:04 -0400
+        id S1726583AbgGYMDK (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 25 Jul 2020 08:03:10 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 28B9AAB55;
-        Sat, 25 Jul 2020 12:03:12 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id CC295AEAF;
+        Sat, 25 Jul 2020 12:03:17 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 10/25] bcache: add more accurate error information in read_super_common()
-Date:   Sat, 25 Jul 2020 20:00:24 +0800
-Message-Id: <20200725120039.91071-11-colyli@suse.de>
+Subject: [PATCH 12/25] bcache: fix super block seq numbers comparision in register_cache_set()
+Date:   Sat, 25 Jul 2020 20:00:26 +0800
+Message-Id: <20200725120039.91071-13-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200725120039.91071-1-colyli@suse.de>
 References: <20200725120039.91071-1-colyli@suse.de>
@@ -41,50 +41,70 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-The improperly set bucket or block size will trigger error in
-read_super_common(). For large bucket size, a more accurate error message
-for invalid bucket or block size is necessary.
+In register_cache_set(), c is pointer to struct cache_set, and ca is
+pointer to struct cache, if ca->sb.seq > c->sb.seq, it means this
+registering cache has up to date version and other members, the in-
+memory version and other members should be updated to the newer value.
 
-This patch disassembles the combined if() checks into multiple single
-if() check, and provide more accurate error message for each check
-failure condition.
+But current implementation makes a cache set only has a single cache
+device, so the above assumption works well except for a special case.
+The execption is when a cache device new created and both ca->sb.seq and
+c->sb.seq are 0, because the super block is never flushed out yet. In
+the location for the following if() check,
+2156         if (ca->sb.seq > c->sb.seq) {
+2157                 c->sb.version           = ca->sb.version;
+2158                 memcpy(c->sb.set_uuid, ca->sb.set_uuid, 16);
+2159                 c->sb.flags             = ca->sb.flags;
+2160                 c->sb.seq               = ca->sb.seq;
+2161                 pr_debug("set version = %llu\n", c->sb.version);
+2162         }
+c->sb.version is not initialized yet and valued 0. When ca->sb.seq is 0,
+the if() check will fail (because both values are 0), and the cache set
+version, set_uuid, flags and seq won't be updated.
+
+The above problem is hiden for current code, because the bucket size is
+compatible among different super block version. And the next time when
+running cache set again, ca->sb.seq will be larger than 0 and cache set
+super block version will be updated properly.
+
+But if the large bucket feature is enabled,  sb->bucket_size is the low
+16bits of the bucket size. For a power of 2 value, when the actual
+bucket size exceeds 16bit width, sb->bucket_size will always be 0. Then
+read_super_common() will fail because the if() check to
+is_power_of_2(sb->bucket_size) is false. This is how the long time
+hidden bug is triggered.
+
+This patch modifies the if() check to the following way,
+2156         if (ca->sb.seq > c->sb.seq || c->sb.seq == 0) {
+Then cache set's version, set_uuid, flags and seq will always be updated
+corectly including for a new created cache device.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 ---
- drivers/md/bcache/super.c | 19 ++++++++++++++-----
- 1 file changed, 14 insertions(+), 5 deletions(-)
+ drivers/md/bcache/super.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b5b81b92b2ef..fd8c9ee4d4a6 100644
+index 7ad6bbabfc66..d5ed8f31e123 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -79,11 +79,20 @@ static const char *read_super_common(struct cache_sb *sb,  struct block_device *
- 	if (sb->nbuckets < 1 << 7)
+@@ -2146,7 +2146,14 @@ static const char *register_cache_set(struct cache *ca)
+ 	    sysfs_create_link(&c->kobj, &ca->kobj, buf))
  		goto err;
  
--	err = "Bad block/bucket size";
--	if (!is_power_of_2(sb->block_size) ||
--	    sb->block_size > PAGE_SECTORS ||
--	    !is_power_of_2(sb->bucket_size) ||
--	    sb->bucket_size < PAGE_SECTORS)
-+	err = "Bad block size (not power of 2)";
-+	if (!is_power_of_2(sb->block_size))
-+		goto err;
-+
-+	err = "Bad block size (larger than page size)";
-+	if (sb->block_size > PAGE_SECTORS)
-+		goto err;
-+
-+	err = "Bad bucket size (not power of 2)";
-+	if (!is_power_of_2(sb->bucket_size))
-+		goto err;
-+
-+	err = "Bad bucket size (smaller than page size)";
-+	if (sb->bucket_size < PAGE_SECTORS)
- 		goto err;
- 
- 	err = "Invalid superblock: device too small";
+-	if (ca->sb.seq > c->sb.seq) {
++	/*
++	 * A special case is both ca->sb.seq and c->sb.seq are 0,
++	 * such condition happens on a new created cache device whose
++	 * super block is never flushed yet. In this case c->sb.version
++	 * and other members should be updated too, otherwise we will
++	 * have a mistaken super block version in cache set.
++	 */
++	if (ca->sb.seq > c->sb.seq || c->sb.seq == 0) {
+ 		c->sb.version		= ca->sb.version;
+ 		memcpy(c->sb.set_uuid, ca->sb.set_uuid, 16);
+ 		c->sb.flags             = ca->sb.flags;
 -- 
 2.26.2
 
