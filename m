@@ -7,30 +7,30 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 410F1C43464
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:22 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2C3BBC433E5
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:27 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 231BE206C1
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:22 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 09D5C206C1
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727036AbgGYMDV (ORCPT
+        id S1727047AbgGYMD0 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Jul 2020 08:03:21 -0400
-Received: from mx2.suse.de ([195.135.220.15]:52496 "EHLO mx2.suse.de"
+        Sat, 25 Jul 2020 08:03:26 -0400
+Received: from mx2.suse.de ([195.135.220.15]:52538 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727023AbgGYMDV (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Jul 2020 08:03:21 -0400
+        id S1727023AbgGYMD0 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 25 Jul 2020 08:03:26 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 282B9AEAF;
-        Sat, 25 Jul 2020 12:03:28 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 46885AB55;
+        Sat, 25 Jul 2020 12:03:33 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 16/25] bcache: introduce meta_bucket_pages() related helper routines
-Date:   Sat, 25 Jul 2020 20:00:30 +0800
-Message-Id: <20200725120039.91071-17-colyli@suse.de>
+Subject: [PATCH 18/25] bcache: handle cache prio_buckets and disk_buckets properly for bucket size > 8MB
+Date:   Sat, 25 Jul 2020 20:00:32 +0800
+Message-Id: <20200725120039.91071-19-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200725120039.91071-1-colyli@suse.de>
 References: <20200725120039.91071-1-colyli@suse.de>
@@ -41,93 +41,108 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Currently the in-memory meta data like c->uuids or c->disk_buckets
-are allocated by alloc_bucket_pages(). The macro alloc_bucket_pages()
-calls __get_free_pages() to allocated continuous pages with order
-indicated by ilog2(bucket_pages(c)),
- #define alloc_bucket_pages(gfp, c)                      \
-     ((void *) __get_free_pages(__GFP_ZERO|gfp, ilog2(bucket_pages(c))))
+Similar to c->uuids, struct cache's prio_buckets and disk_buckets also
+have the potential memory allocation failure during cache registration
+if the bucket size > 8MB.
 
-The maximum order is defined as MAX_ORDER, the default value is 11 (and
-can be overwritten by CONFIG_FORCE_MAX_ZONEORDER). In bcache code the
-maximum bucket size width is 16bits, this is restricted both by KEY_SIZE
-size and bucket_size size from struct cache_sb_disk. The maximum 16bits
-width and power-of-2 value is (1<<15) in unit of sector (512byte). It
-means the maximum value of bucket size in bytes is (1<<24) bytes a.k.a
-4096 pages.
+ca->prio_buckets can be stored on cache device in multiple buckets, its
+in-memory space is allocated by kzalloc() interface but normally
+allocated by alloc_pages() because the size > KMALLOC_MAX_CACHE_SIZE.
 
-When the bucket size is set to maximum permitted value, ilog2(4096) is
-12, which exceeds the default maximum order __get_free_pages() can
-accepted, the failed pages allocation will fail cache set registration
-procedure and print a kernel oops message for the exceeded pages order.
+So allocation of ca->prio_buckets has the MAX_ORDER restriction too. If
+the bucket size > 8MB, by default the page allocator will fail because
+the page order > 11 (default MAX_ORDER value). ca->prio_buckets should
+also use meta_bucket_bytes(), meta_bucket_pages() to decide its memory
+size and use alloc_meta_bucket_pages() to allocate pages, to avoid the
+allocation failure during cache set registration when bucket size > 8MB.
 
-This patch introduces meta_bucket_pages(), meta_bucket_bytes(), and
-alloc_bucket_pages() helper routines. meta_bucket_pages() indicates the
-maximum pages can be allocated to meta data bucket, meta_bucket_bytes()
-indicates the according maximum bytes, and alloc_bucket_pages() does
-the pages allocation for meta bucket. Because meta_bucket_pages()
-chooses the smaller value among the bucket size and MAX_ORDER_NR_PAGES,
-it still works when MAX_ORDER overwritten by CONFIG_FORCE_MAX_ZONEORDER.
+ca->disk_buckets is a single bucket size memory buffer, it is used to
+iterate each bucket of ca->prio_buckets, and compose the bio based on
+memory of ca->disk_buckets, then write ca->disk_buckets memory to cache
+disk one-by-one for each bucket of ca->prio_buckets. ca->disk_buckets
+should have in-memory size exact to the meta_bucket_pages(), this is the
+size that ca->prio_buckets will be stored into each on-disk bucket.
 
-Following patches will use these helper routines to decide maximum pages
-can be allocated for different meta data buckets. If the bucket size is
-larger than meta_bucket_bytes(), the bcache registration can continue to
-success, just the space more than meta_bucket_bytes() inside the bucket
-is wasted. Comparing bcache failed for large bucket size, wasting some
-space for meta data buckets is acceptable at this moment.
+This patch fixes the above issues and handle cache's prio_buckets and
+disk_buckets properly for bucket size larger than 8MB.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 ---
- drivers/md/bcache/bcache.h | 20 ++++++++++++++++++++
- drivers/md/bcache/super.c  |  3 +++
- 2 files changed, 23 insertions(+)
+ drivers/md/bcache/bcache.h |  9 +++++----
+ drivers/md/bcache/super.c  | 10 +++++-----
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 80e3c4813fb0..972f1aff0f70 100644
+index 972f1aff0f70..0ebfda284866 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -762,6 +762,26 @@ struct bbio {
- #define bucket_bytes(c)		((c)->sb.bucket_size << 9)
- #define block_bytes(c)		((c)->sb.block_size << 9)
+@@ -782,11 +782,12 @@ static inline unsigned int meta_bucket_bytes(struct cache_sb *sb)
+ 	return meta_bucket_pages(sb) << PAGE_SHIFT;
+ }
  
-+static inline unsigned int meta_bucket_pages(struct cache_sb *sb)
-+{
-+	unsigned int n, max_pages;
-+
-+	max_pages = min_t(unsigned int,
-+			  __rounddown_pow_of_two(USHRT_MAX) / PAGE_SECTORS,
-+			  MAX_ORDER_NR_PAGES);
-+
-+	n = sb->bucket_size / PAGE_SECTORS;
-+	if (n > max_pages)
-+		n = max_pages;
-+
-+	return n;
-+}
-+
-+static inline unsigned int meta_bucket_bytes(struct cache_sb *sb)
-+{
-+	return meta_bucket_pages(sb) << PAGE_SHIFT;
-+}
-+
- #define prios_per_bucket(c)				\
- 	((bucket_bytes(c) - sizeof(struct prio_set)) /	\
+-#define prios_per_bucket(c)				\
+-	((bucket_bytes(c) - sizeof(struct prio_set)) /	\
++#define prios_per_bucket(ca)						\
++	((meta_bucket_bytes(&(ca)->sb) - sizeof(struct prio_set)) /	\
  	 sizeof(struct bucket_disk))
+-#define prio_buckets(c)					\
+-	DIV_ROUND_UP((size_t) (c)->sb.nbuckets, prios_per_bucket(c))
++
++#define prio_buckets(ca)						\
++	DIV_ROUND_UP((size_t) (ca)->sb.nbuckets, prios_per_bucket(ca))
+ 
+ static inline size_t sector_to_bucket(struct cache_set *c, sector_t s)
+ {
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 214d50903375..d0bdbbc3ff5c 100644
+index a19f1baa8664..1c4a4c3557f7 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1821,6 +1821,9 @@ void bch_cache_set_unregister(struct cache_set *c)
- #define alloc_bucket_pages(gfp, c)			\
- 	((void *) __get_free_pages(__GFP_ZERO|__GFP_COMP|gfp, ilog2(bucket_pages(c))))
+@@ -563,7 +563,7 @@ static void prio_io(struct cache *ca, uint64_t bucket, int op,
  
-+#define alloc_meta_bucket_pages(gfp, sb)		\
-+	((void *) __get_free_pages(__GFP_ZERO|__GFP_COMP|gfp, ilog2(meta_bucket_pages(sb))))
-+
- struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- {
- 	int iter_size;
+ 	bio->bi_iter.bi_sector	= bucket * ca->sb.bucket_size;
+ 	bio_set_dev(bio, ca->bdev);
+-	bio->bi_iter.bi_size	= bucket_bytes(ca);
++	bio->bi_iter.bi_size	= meta_bucket_bytes(&ca->sb);
+ 
+ 	bio->bi_end_io	= prio_endio;
+ 	bio->bi_private = ca;
+@@ -621,7 +621,7 @@ int bch_prio_write(struct cache *ca, bool wait)
+ 
+ 		p->next_bucket	= ca->prio_buckets[i + 1];
+ 		p->magic	= pset_magic(&ca->sb);
+-		p->csum		= bch_crc64(&p->magic, bucket_bytes(ca) - 8);
++		p->csum		= bch_crc64(&p->magic, meta_bucket_bytes(&ca->sb) - 8);
+ 
+ 		bucket = bch_bucket_alloc(ca, RESERVE_PRIO, wait);
+ 		BUG_ON(bucket == -1);
+@@ -674,7 +674,7 @@ static int prio_read(struct cache *ca, uint64_t bucket)
+ 			prio_io(ca, bucket, REQ_OP_READ, 0);
+ 
+ 			if (p->csum !=
+-			    bch_crc64(&p->magic, bucket_bytes(ca) - 8)) {
++			    bch_crc64(&p->magic, meta_bucket_bytes(&ca->sb) - 8)) {
+ 				pr_warn("bad csum reading priorities\n");
+ 				goto out;
+ 			}
+@@ -2222,7 +2222,7 @@ void bch_cache_release(struct kobject *kobj)
+ 		ca->set->cache[ca->sb.nr_this_dev] = NULL;
+ 	}
+ 
+-	free_pages((unsigned long) ca->disk_buckets, ilog2(bucket_pages(ca)));
++	free_pages((unsigned long) ca->disk_buckets, ilog2(meta_bucket_pages(&ca->sb)));
+ 	kfree(ca->prio_buckets);
+ 	vfree(ca->buckets);
+ 
+@@ -2319,7 +2319,7 @@ static int cache_alloc(struct cache *ca)
+ 		goto err_prio_buckets_alloc;
+ 	}
+ 
+-	ca->disk_buckets = alloc_bucket_pages(GFP_KERNEL, ca);
++	ca->disk_buckets = alloc_meta_bucket_pages(GFP_KERNEL, &ca->sb);
+ 	if (!ca->disk_buckets) {
+ 		err = "ca->disk_buckets alloc failed";
+ 		goto err_disk_buckets_alloc;
 -- 
 2.26.2
 
