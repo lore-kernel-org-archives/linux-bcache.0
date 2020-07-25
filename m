@@ -7,30 +7,30 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C00B3C43462
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 47104C43466
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:24 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 9876C206C1
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:18 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 204D8206C1
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:24 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727033AbgGYMDS (ORCPT
+        id S1727041AbgGYMDX (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Jul 2020 08:03:18 -0400
-Received: from mx2.suse.de ([195.135.220.15]:52462 "EHLO mx2.suse.de"
+        Sat, 25 Jul 2020 08:03:23 -0400
+Received: from mx2.suse.de ([195.135.220.15]:52510 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727023AbgGYMDR (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Jul 2020 08:03:17 -0400
+        id S1727023AbgGYMDX (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 25 Jul 2020 08:03:23 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 94CB2AEAF;
-        Sat, 25 Jul 2020 12:03:25 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id A671FAEAF;
+        Sat, 25 Jul 2020 12:03:30 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 15/25] bcache: struct cache_sb is only for in-memory super block now
-Date:   Sat, 25 Jul 2020 20:00:29 +0800
-Message-Id: <20200725120039.91071-16-colyli@suse.de>
+Subject: [PATCH 17/25] bcache: handle c->uuids properly for bucket size > 8MB
+Date:   Sat, 25 Jul 2020 20:00:31 +0800
+Message-Id: <20200725120039.91071-18-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200725120039.91071-1-colyli@suse.de>
 References: <20200725120039.91071-1-colyli@suse.de>
@@ -41,61 +41,72 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-We have struct cache_sb_disk for on-disk super block already, it is
-unnecessary to keep the in-memory super block format exactly mapping
-to the on-disk struct layout.
+Bcache allocates a whole bucket to store c->uuids on cache device, and
+allocates continuous pages to store it in-memory. When the bucket size
+exceeds maximum allocable continuous pages, bch_cache_set_alloc() will
+fail and cache device registration will fail.
 
-This patch adds code comments to notice that struct cache_sb is not
-exactly mapping to cache_sb_disk, and removes the useless member csum
-and pad[5].
-
-Although struct cache_sb does not belong to uapi, but there are still
-some on-disk format related macros reference it and it is unncessary to
-get rid of such dependency now. So struct cache_sb will continue to stay
-in include/uapi/linux/bache.h for now.
+This patch allocates c->uuids by alloc_meta_bucket_pages(), and uses
+ilog2(meta_bucket_pages(c)) to indicate order of c->uuids pages when
+free it. When writing c->uuids to cache device, its size is decided
+by meta_bucket_pages(c) * PAGE_SECTORS. Now c->uuids is properly handled
+for bucket size > 8MB.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 ---
- include/uapi/linux/bcache.h | 10 ++++++----
+ drivers/md/bcache/super.c | 10 ++++++----
  1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-index 47df2db2e727..0ef984ea515a 100644
---- a/include/uapi/linux/bcache.h
-+++ b/include/uapi/linux/bcache.h
-@@ -215,8 +215,13 @@ struct cache_sb_disk {
- 	__le64			d[SB_JOURNAL_BUCKETS];	/* journal buckets */
- };
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index d0bdbbc3ff5c..a19f1baa8664 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -466,6 +466,7 @@ static int __uuid_write(struct cache_set *c)
+ 	BKEY_PADDED(key) k;
+ 	struct closure cl;
+ 	struct cache *ca;
++	unsigned int size;
  
-+/*
-+ * This is for in-memory bcache super block.
-+ * NOTE: cache_sb is NOT exactly mapping to cache_sb_disk, the member
-+ *       size, ordering and even whole struct size may be different
-+ *       from cache_sb_disk.
-+ */
- struct cache_sb {
--	__u64			csum;
- 	__u64			offset;	/* sector where this sb was written */
- 	__u64			version;
+ 	closure_init_stack(&cl);
+ 	lockdep_assert_held(&bch_register_lock);
+@@ -473,7 +474,8 @@ static int __uuid_write(struct cache_set *c)
+ 	if (bch_bucket_alloc_set(c, RESERVE_BTREE, &k.key, 1, true))
+ 		return 1;
  
-@@ -236,8 +241,6 @@ struct cache_sb {
- 	__u64			feature_incompat;
- 	__u64			feature_ro_compat;
+-	SET_KEY_SIZE(&k.key, c->sb.bucket_size);
++	size =  meta_bucket_pages(&c->sb) * PAGE_SECTORS;
++	SET_KEY_SIZE(&k.key, size);
+ 	uuid_io(c, REQ_OP_WRITE, 0, &k.key, &cl);
+ 	closure_sync(&cl);
  
--	__u64			pad[5];
--
- 	union {
- 	struct {
- 		/* Cache devices */
-@@ -245,7 +248,6 @@ struct cache_sb {
+@@ -1656,7 +1658,7 @@ static void cache_set_free(struct closure *cl)
+ 		}
  
- 		__u16		block_size;	/* sectors */
- 		__u16		bucket_size;	/* sectors */
--
- 		__u16		nr_in_set;
- 		__u16		nr_this_dev;
- 	};
+ 	bch_bset_sort_state_free(&c->sort);
+-	free_pages((unsigned long) c->uuids, ilog2(bucket_pages(c)));
++	free_pages((unsigned long) c->uuids, ilog2(meta_bucket_pages(&c->sb)));
+ 
+ 	if (c->moving_gc_wq)
+ 		destroy_workqueue(c->moving_gc_wq);
+@@ -1862,7 +1864,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 
+ 	c->bucket_bits		= ilog2(sb->bucket_size);
+ 	c->block_bits		= ilog2(sb->block_size);
+-	c->nr_uuids		= bucket_bytes(c) / sizeof(struct uuid_entry);
++	c->nr_uuids		= meta_bucket_bytes(&c->sb) / sizeof(struct uuid_entry);
+ 	c->devices_max_used	= 0;
+ 	atomic_set(&c->attached_dev_nr, 0);
+ 	c->btree_pages		= bucket_pages(c);
+@@ -1913,7 +1915,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 			BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
+ 		goto err;
+ 
+-	c->uuids = alloc_bucket_pages(GFP_KERNEL, c);
++	c->uuids = alloc_meta_bucket_pages(GFP_KERNEL, &c->sb);
+ 	if (!c->uuids)
+ 		goto err;
+ 
 -- 
 2.26.2
 
