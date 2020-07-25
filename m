@@ -7,30 +7,30 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3252BC43461
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 625E6C4345B
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:08 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 0BEE5206C1
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:17 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 3D18F206C1
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:08 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726583AbgGYMDP (ORCPT
+        id S1727019AbgGYMDH (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Jul 2020 08:03:15 -0400
-Received: from mx2.suse.de ([195.135.220.15]:52442 "EHLO mx2.suse.de"
+        Sat, 25 Jul 2020 08:03:07 -0400
+Received: from mx2.suse.de ([195.135.220.15]:52340 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727023AbgGYMDP (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Jul 2020 08:03:15 -0400
+        id S1726583AbgGYMDH (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 25 Jul 2020 08:03:07 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 08845AF17;
-        Sat, 25 Jul 2020 12:03:23 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id AE2E0AEAF;
+        Sat, 25 Jul 2020 12:03:14 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 14/25] bcache: move bucket related code into read_super_common()
-Date:   Sat, 25 Jul 2020 20:00:28 +0800
-Message-Id: <20200725120039.91071-15-colyli@suse.de>
+Subject: [PATCH 11/25] bcache: disassemble the big if() checks in bch_cache_set_alloc()
+Date:   Sat, 25 Jul 2020 20:00:25 +0800
+Message-Id: <20200725120039.91071-12-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200725120039.91071-1-colyli@suse.de>
 References: <20200725120039.91071-1-colyli@suse.de>
@@ -41,60 +41,82 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Setting sb->first_bucket and checking sb->keys indeed are only for cache
-device, it does not make sense to do them in read_super() for backing
-device too.
+In bch_cache_set_alloc() there is a big if() checks combined by 11 items
+together. When this big if() statement fails, it is difficult to tell
+exactly which item fails indeed.
 
-This patch moves the related code piece into read_super_common()
-explicitly for cache device and avoid the confusion.
+This patch disassembles this big if() checks into 11 single if() checks,
+which makes code debug more easier.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 ---
- drivers/md/bcache/super.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/md/bcache/super.c | 52 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 37 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 62534f44c6dc..214d50903375 100644
+index fd8c9ee4d4a6..7ad6bbabfc66 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -66,12 +66,17 @@ static const char *read_super_common(struct cache_sb *sb,  struct block_device *
- 	const char *err;
- 	unsigned int i;
+@@ -1865,21 +1865,43 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 	iter_size = (sb->bucket_size / sb->block_size + 1) *
+ 		sizeof(struct btree_iter_set);
  
-+	sb->first_bucket= le16_to_cpu(s->first_bucket);
- 	sb->nbuckets	= le64_to_cpu(s->nbuckets);
- 	sb->bucket_size	= le16_to_cpu(s->bucket_size);
- 
- 	sb->nr_in_set	= le16_to_cpu(s->nr_in_set);
- 	sb->nr_this_dev	= le16_to_cpu(s->nr_this_dev);
- 
-+	err = "Too many journal buckets";
-+	if (sb->keys > SB_JOURNAL_BUCKETS)
+-	if (!(c->devices = kcalloc(c->nr_uuids, sizeof(void *), GFP_KERNEL)) ||
+-	    mempool_init_slab_pool(&c->search, 32, bch_search_cache) ||
+-	    mempool_init_kmalloc_pool(&c->bio_meta, 2,
+-				sizeof(struct bbio) + sizeof(struct bio_vec) *
+-				bucket_pages(c)) ||
+-	    mempool_init_kmalloc_pool(&c->fill_iter, 1, iter_size) ||
+-	    bioset_init(&c->bio_split, 4, offsetof(struct bbio, bio),
+-			BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER) ||
+-	    !(c->uuids = alloc_bucket_pages(GFP_KERNEL, c)) ||
+-	    !(c->moving_gc_wq = alloc_workqueue("bcache_gc",
+-						WQ_MEM_RECLAIM, 0)) ||
+-	    bch_journal_alloc(c) ||
+-	    bch_btree_cache_alloc(c) ||
+-	    bch_open_buckets_alloc(c) ||
+-	    bch_bset_sort_state_init(&c->sort, ilog2(c->btree_pages)))
++	c->devices = kcalloc(c->nr_uuids, sizeof(void *), GFP_KERNEL);
++	if (!c->devices)
 +		goto err;
 +
- 	err = "Too many buckets";
- 	if (sb->nbuckets > LONG_MAX)
++	if (mempool_init_slab_pool(&c->search, 32, bch_search_cache))
++		goto err;
++
++	if (mempool_init_kmalloc_pool(&c->bio_meta, 2,
++			sizeof(struct bbio) +
++			sizeof(struct bio_vec) * bucket_pages(c)))
++		goto err;
++
++	if (mempool_init_kmalloc_pool(&c->fill_iter, 1, iter_size))
++		goto err;
++
++	if (bioset_init(&c->bio_split, 4, offsetof(struct bbio, bio),
++			BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
++		goto err;
++
++	c->uuids = alloc_bucket_pages(GFP_KERNEL, c);
++	if (!c->uuids)
++		goto err;
++
++	c->moving_gc_wq = alloc_workqueue("bcache_gc", WQ_MEM_RECLAIM, 0);
++	if (!c->moving_gc_wq)
++		goto err;
++
++	if (bch_journal_alloc(c))
++		goto err;
++
++	if (bch_btree_cache_alloc(c))
++		goto err;
++
++	if (bch_open_buckets_alloc(c))
++		goto err;
++
++	if (bch_bset_sort_state_init(&c->sort, ilog2(c->btree_pages)))
  		goto err;
-@@ -155,7 +160,6 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 	sb->flags		= le64_to_cpu(s->flags);
- 	sb->seq			= le64_to_cpu(s->seq);
- 	sb->last_mount		= le32_to_cpu(s->last_mount);
--	sb->first_bucket	= le16_to_cpu(s->first_bucket);
- 	sb->keys		= le16_to_cpu(s->keys);
  
- 	for (i = 0; i < SB_JOURNAL_BUCKETS; i++)
-@@ -172,10 +176,6 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 	if (memcmp(sb->magic, bcache_magic, 16))
- 		goto err;
- 
--	err = "Too many journal buckets";
--	if (sb->keys > SB_JOURNAL_BUCKETS)
--		goto err;
--
- 	err = "Bad checksum";
- 	if (s->csum != csum_set(s))
- 		goto err;
+ 	c->congested_read_threshold_us	= 2000;
 -- 
 2.26.2
 
