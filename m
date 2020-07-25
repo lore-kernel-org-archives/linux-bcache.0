@@ -7,30 +7,30 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 77D45C4346D
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:36 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 84579C43470
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:42 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5D2E6206C1
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:36 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 6D4CB206C1
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:42 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727088AbgGYMDf (ORCPT
+        id S1727094AbgGYMDm (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Jul 2020 08:03:35 -0400
-Received: from mx2.suse.de ([195.135.220.15]:52616 "EHLO mx2.suse.de"
+        Sat, 25 Jul 2020 08:03:42 -0400
+Received: from mx2.suse.de ([195.135.220.15]:52674 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727048AbgGYMDf (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Jul 2020 08:03:35 -0400
+        id S1727086AbgGYMDl (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 25 Jul 2020 08:03:41 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id B056DAEAF;
-        Sat, 25 Jul 2020 12:03:40 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 2E05CAB55;
+        Sat, 25 Jul 2020 12:03:48 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Coly Li <colyli@suse.de>
-Subject: [PATCH 21/25] bcache: add bucket_size_hi into struct cache_sb_disk for large bucket
-Date:   Sat, 25 Jul 2020 20:00:35 +0800
-Message-Id: <20200725120039.91071-22-colyli@suse.de>
+        Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>
+Subject: [PATCH 24/25] bcache: avoid extra memory consumption in struct bbio for large bucket size
+Date:   Sat, 25 Jul 2020 20:00:38 +0800
+Message-Id: <20200725120039.91071-25-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200725120039.91071-1-colyli@suse.de>
 References: <20200725120039.91071-1-colyli@suse.de>
@@ -41,210 +41,88 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-The large bucket feature is to extend bucket_size from 16bit to 32bit.
+Bcache uses struct bbio to do I/Os for meta data pages like uuids,
+disk_buckets, prio_buckets, and btree nodes.
 
-When create cache device on zoned device (e.g. zoned NVMe SSD), making
-a single bucket cover one or more zones of the zoned device is the
-simplest way to support zoned device as cache by bcache.
+Example writing a btree node onto cache device, the process is,
+- Allocate a struct bbio from mempool c->bio_meta.
+- Inside struct bbio embedded a struct bio, initialize bi_inline_vecs
+  for this embedded bio.
+- Call bch_bio_map() to map each meta data page to each bv from the
+  inlined  bi_io_vec table.
+- Call bch_submit_bbio() to submit the bio into underlying block layer.
+- When the I/O completed, only release the struct bbio, don't touch the
+  reference counter of the meta data pages.
 
-But current maximum bucket size is 16MB and a typical zone size of zoned
-device is 256MB, this is the major motiviation to extend bucket size to
-a larger bit width.
+The struct bbio is defined as,
+738 struct bbio {
+739     unsigned int            submit_time_us;
+	[snipped]
+748     struct bio              bio;
+749 };
 
-This patch is the basic and first change to support large bucket size,
-the major changes it makes are,
-- Add BCH_FEATURE_INCOMPAT_LARGE_BUCKET for the large bucket feature,
-  INCOMPAT means it introduces incompatible on-disk format change.
-- Add BCH_FEATURE_INCOMPAT_FUNCS(large_bucket, LARGE_BUCKET) routines.
-- Adds __le16 bucket_size_hi into struct cache_sb_disk at offset 0x8d0
-  for the on-disk super block format.
-- For the in-memory super block struct cache_sb, member bucket_size is
-  extended from __u16 to __32.
-- Add get_bucket_size() to combine the bucket_size and bucket_size_hi
-  from struct cache_sb_disk into an unsigned int value.
+Because struct bio is embedded at the end of struct bbio, therefore the
+actual size of struct bbio is sizeof(struct bio) + size of the embedded
+bio->bi_inline_vecs.
 
-Since we already have large bucket size helpers meta_bucket_pages(),
-meta_bucket_bytes() and alloc_meta_bucket_pages(), they make sure when
-bucket size > 8MB, the memory allocation for bcache meta data bucket
-won't fail no matter how large the bucket size extended. So these meta
-data buckets are handled properly when the bucket size width increase
-from 16bit to 32bit, we don't need to worry about them.
+Now all the meta data bucket size are limited to meta_bucket_pages(), if
+the bucket size is large than meta_bucket_pages()*PAGE_SECTORS, rested
+space in the bucket is unused. Therefore the most used space in meta
+bucket is (1<<MAX_ORDER) pages, or (1<<CONFIG_FORCE_MAX_ZONEORDER) if it
+is configured.
+
+Therefore for large bucket size, it is unnecessary to calculate the
+allocation size of mempool c->bio_meta as,
+	mempool_init_kmalloc_pool(&c->bio_meta, 2,
+			sizeof(struct bbio) +
+			sizeof(struct bio_vec) * bucket_pages(c))
+It is too large, neither the Linux buddy allocator cannot allocate so
+much continuous pages, nor the extra allocated pages are wasted.
+
+This patch replace bucket_pages() to meta_bucket_pages() in two places,
+- In bch_cache_set_alloc(), when initialize mempool c->bio_meta, uses
+  sizeof(struct bbio) + sizeof(struct bio_vec) * bucket_pages(c) to set
+  the allocating object size.
+- In bch_bbio_alloc(), when calling bio_init() to set inline bvec talbe
+  bi_inline_bvecs, uses meta_bucket_pages() to indicate number of the
+  inline bio vencs number.
+
+Now the maximum size of embedded bio inside struct bbio exactly matches
+the limit of meta_bucket_pages(), no extra page wasted.
 
 Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 ---
- drivers/md/bcache/alloc.c    |  2 +-
- drivers/md/bcache/features.c | 22 ++++++++++++++++++++++
- drivers/md/bcache/features.h |  9 ++++++---
- drivers/md/bcache/movinggc.c |  4 ++--
- drivers/md/bcache/super.c    | 23 +++++++++++++++++++----
- include/uapi/linux/bcache.h  |  3 ++-
- 6 files changed, 52 insertions(+), 11 deletions(-)
- create mode 100644 drivers/md/bcache/features.c
+ drivers/md/bcache/io.c    | 2 +-
+ drivers/md/bcache/super.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index a1df0d95151c..52035a78d836 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -87,7 +87,7 @@ void bch_rescale_priorities(struct cache_set *c, int sectors)
- {
- 	struct cache *ca;
- 	struct bucket *b;
--	unsigned int next = c->nbuckets * c->sb.bucket_size / 1024;
-+	unsigned long next = c->nbuckets * c->sb.bucket_size / 1024;
- 	unsigned int i;
- 	int r;
+diff --git a/drivers/md/bcache/io.c b/drivers/md/bcache/io.c
+index b25ee33b0d0b..a14a445618b4 100644
+--- a/drivers/md/bcache/io.c
++++ b/drivers/md/bcache/io.c
+@@ -26,7 +26,7 @@ struct bio *bch_bbio_alloc(struct cache_set *c)
+ 	struct bbio *b = mempool_alloc(&c->bio_meta, GFP_NOIO);
+ 	struct bio *bio = &b->bio;
  
-diff --git a/drivers/md/bcache/features.c b/drivers/md/bcache/features.c
-new file mode 100644
-index 000000000000..ba53944bb390
---- /dev/null
-+++ b/drivers/md/bcache/features.c
-@@ -0,0 +1,22 @@
-+// SPDX-License-Identifier: GPL-2.0
-+/*
-+ * Feature set bits and string conversion.
-+ * Inspired by ext4's features compat/incompat/ro_compat related code.
-+ *
-+ * Copyright 2020 Coly Li <colyli@suse.de>
-+ *
-+ */
-+#include <linux/bcache.h>
-+#include "bcache.h"
-+
-+struct feature {
-+	int		compat;
-+	unsigned int	mask;
-+	const char	*string;
-+};
-+
-+static struct feature feature_list[] = {
-+	{BCH_FEATURE_INCOMPAT, BCH_FEATURE_INCOMPAT_LARGE_BUCKET,
-+		"large_bucket"},
-+	{0, 0, 0 },
-+};
-diff --git a/drivers/md/bcache/features.h b/drivers/md/bcache/features.h
-index ae7df37b9862..dca052cf5203 100644
---- a/drivers/md/bcache/features.h
-+++ b/drivers/md/bcache/features.h
-@@ -11,9 +11,13 @@
- #define BCH_FEATURE_INCOMPAT		2
- #define BCH_FEATURE_TYPE_MASK		0x03
+-	bio_init(bio, bio->bi_inline_vecs, bucket_pages(c));
++	bio_init(bio, bio->bi_inline_vecs, meta_bucket_pages(&c->sb));
  
-+/* Feature set definition */
-+/* Incompat feature set */
-+#define BCH_FEATURE_INCOMPAT_LARGE_BUCKET	0x0001 /* 32bit bucket size */
-+
- #define BCH_FEATURE_COMPAT_SUUP		0
- #define BCH_FEATURE_RO_COMPAT_SUUP	0
--#define BCH_FEATURE_INCOMPAT_SUUP	0
-+#define BCH_FEATURE_INCOMPAT_SUUP	BCH_FEATURE_INCOMPAT_LARGE_BUCKET
- 
- #define BCH_HAS_COMPAT_FEATURE(sb, mask) \
- 		((sb)->feature_compat & (mask))
-@@ -22,8 +26,6 @@
- #define BCH_HAS_INCOMPAT_FEATURE(sb, mask) \
- 		((sb)->feature_incompat & (mask))
- 
--/* Feature set definition */
--
- #define BCH_FEATURE_COMPAT_FUNCS(name, flagname) \
- static inline int bch_has_feature_##name(struct cache_sb *sb) \
- { \
-@@ -75,4 +77,5 @@ static inline void bch_clear_feature_##name(struct cache_sb *sb) \
- 		~BCH##_FEATURE_INCOMPAT_##flagname; \
+ 	return bio;
  }
- 
-+BCH_FEATURE_INCOMPAT_FUNCS(large_bucket, LARGE_BUCKET);
- #endif
-diff --git a/drivers/md/bcache/movinggc.c b/drivers/md/bcache/movinggc.c
-index b7dd2d75f58c..5872d6470470 100644
---- a/drivers/md/bcache/movinggc.c
-+++ b/drivers/md/bcache/movinggc.c
-@@ -206,8 +206,8 @@ void bch_moving_gc(struct cache_set *c)
- 	mutex_lock(&c->bucket_lock);
- 
- 	for_each_cache(ca, c, i) {
--		unsigned int sectors_to_move = 0;
--		unsigned int reserve_sectors = ca->sb.bucket_size *
-+		unsigned long sectors_to_move = 0;
-+		unsigned long reserve_sectors = ca->sb.bucket_size *
- 			     fifo_used(&ca->free[RESERVE_MOVINGGC]);
- 
- 		ca->heap.used = 0;
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 172246ff5ec2..b7ef11da026c 100644
+index d86b31722b41..5eba0b930e27 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -60,6 +60,17 @@ struct workqueue_struct *bch_journal_wq;
+@@ -1920,7 +1920,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
  
- /* Superblock */
+ 	if (mempool_init_kmalloc_pool(&c->bio_meta, 2,
+ 			sizeof(struct bbio) +
+-			sizeof(struct bio_vec) * bucket_pages(c)))
++			sizeof(struct bio_vec) * meta_bucket_pages(&c->sb)))
+ 		goto err;
  
-+static unsigned int get_bucket_size(struct cache_sb *sb, struct cache_sb_disk *s)
-+{
-+	unsigned int bucket_size = le16_to_cpu(s->bucket_size);
-+
-+	if (sb->version >= BCACHE_SB_VERSION_CDEV_WITH_FEATURES &&
-+	     bch_has_feature_large_bucket(sb))
-+		bucket_size |= le16_to_cpu(s->bucket_size_hi) << 16;
-+
-+	return bucket_size;
-+}
-+
- static const char *read_super_common(struct cache_sb *sb,  struct block_device *bdev,
- 				     struct cache_sb_disk *s)
- {
-@@ -68,7 +79,7 @@ static const char *read_super_common(struct cache_sb *sb,  struct block_device *
- 
- 	sb->first_bucket= le16_to_cpu(s->first_bucket);
- 	sb->nbuckets	= le64_to_cpu(s->nbuckets);
--	sb->bucket_size	= le16_to_cpu(s->bucket_size);
-+	sb->bucket_size	= get_bucket_size(sb, s);
- 
- 	sb->nr_in_set	= le16_to_cpu(s->nr_in_set);
- 	sb->nr_this_dev	= le16_to_cpu(s->nr_this_dev);
-@@ -210,12 +221,16 @@ static const char *read_super(struct cache_sb *sb, struct block_device *bdev,
- 			goto err;
- 		break;
- 	case BCACHE_SB_VERSION_CDEV_WITH_FEATURES:
--		err = read_super_common(sb, bdev, s);
--		if (err)
--			goto err;
-+		/*
-+		 * Feature bits are needed in read_super_common(),
-+		 * convert them firstly.
-+		 */
- 		sb->feature_compat = le64_to_cpu(s->feature_compat);
- 		sb->feature_incompat = le64_to_cpu(s->feature_incompat);
- 		sb->feature_ro_compat = le64_to_cpu(s->feature_ro_compat);
-+		err = read_super_common(sb, bdev, s);
-+		if (err)
-+			goto err;
- 		break;
- 	default:
- 		err = "Unsupported superblock version";
-diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-index 0ef984ea515a..52e8bcb33981 100644
---- a/include/uapi/linux/bcache.h
-+++ b/include/uapi/linux/bcache.h
-@@ -213,6 +213,7 @@ struct cache_sb_disk {
- 		__le16		keys;
- 	};
- 	__le64			d[SB_JOURNAL_BUCKETS];	/* journal buckets */
-+	__le16			bucket_size_hi;
- };
- 
- /*
-@@ -247,9 +248,9 @@ struct cache_sb {
- 		__u64		nbuckets;	/* device size */
- 
- 		__u16		block_size;	/* sectors */
--		__u16		bucket_size;	/* sectors */
- 		__u16		nr_in_set;
- 		__u16		nr_this_dev;
-+		__u32		bucket_size;	/* sectors */
- 	};
- 	struct {
- 		/* Backing devices */
+ 	if (mempool_init_kmalloc_pool(&c->fill_iter, 1, iter_size))
 -- 
 2.26.2
 
