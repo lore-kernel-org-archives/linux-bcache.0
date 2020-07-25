@@ -7,30 +7,31 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id F257FC43478
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:38 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 31A27C43616
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:47 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id CEE5D206C1
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:38 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1B8C1206EB
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 12:03:47 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727093AbgGYMDi (ORCPT
+        id S1727086AbgGYMDq (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Jul 2020 08:03:38 -0400
-Received: from mx2.suse.de ([195.135.220.15]:52650 "EHLO mx2.suse.de"
+        Sat, 25 Jul 2020 08:03:46 -0400
+Received: from mx2.suse.de ([195.135.220.15]:52864 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727086AbgGYMDh (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Jul 2020 08:03:37 -0400
+        id S1727085AbgGYMDq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 25 Jul 2020 08:03:46 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 88B2AAB55;
-        Sat, 25 Jul 2020 12:03:45 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 96484AB55;
+        Sat, 25 Jul 2020 12:03:53 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 23/25] bcache: avoid extra memory allocation from mempool c->fill_iter
-Date:   Sat, 25 Jul 2020 20:00:37 +0800
-Message-Id: <20200725120039.91071-24-colyli@suse.de>
+        Coly Li <colyli@suse.de>, Christoph Hellwig <hch@lst.de>,
+        stable@vger.kernel.org
+Subject: [PATCH 25/25] bcache: fix bio_{start,end}_io_acct with proper device
+Date:   Sat, 25 Jul 2020 20:00:39 +0800
+Message-Id: <20200725120039.91071-26-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200725120039.91071-1-colyli@suse.de>
 References: <20200725120039.91071-1-colyli@suse.de>
@@ -41,50 +42,101 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Mempool c->fill_iter is used to allocate memory for struct btree_iter in
-bch_btree_node_read_done() to iterate all keys of a read-in btree node.
+Commit 85750aeb748f ("bcache: use bio_{start,end}_io_acct") moves the
+io account code to the location after bio_set_dev(bio, dc->bdev) in
+cached_dev_make_request(). Then the account is performed incorrectly on
+backing device, indeed the I/O should be counted to bcache device like
+/dev/bcache0.
 
-The allocation size is defined in bch_cache_set_alloc() by,
-  mempool_init_kmalloc_pool(&c->fill_iter, 1, iter_size))
-where iter_size is defined by a calculation,
-  (sb->bucket_size / sb->block_size + 1) * sizeof(struct btree_iter_set)
+With the mistaken I/O account, iostat does not display I/O counts for
+bcache device and all the numbers go to backing device. In writeback
+mode, the hard drive may have 340K+ IOPS which is impossible and wrong
+for spinning disk.
 
-For 16bit width bucket_size the calculation is OK, but now the bucket
-size is extended to 32bit, the bucket size can be 2GB. By the above
-calculation, iter_size can be 2048 pages (order 11 is still accepted by
-buddy allocator).
+This patch introduces bch_bio_start_io_acct() and bch_bio_end_io_acct(),
+which switches bio->bi_disk to bcache device before calling
+bio_start_io_acct() or bio_end_io_acct(). Now the I/Os are counted to
+bcache device, and bcache device, cache device and backing device have
+their correct I/O count information back.
 
-But the actual size holds the bkeys in meta data bucket is limited to
-meta_bucket_pages() already, which is 16MB. By the above calculation,
-if replace sb->bucket_size by meta_bucket_pages() * PAGE_SECTORS, the
-result is 16 pages. This is the size large enough for the mempool
-allocation to struct btree_iter.
-
-Therefore in worst case every time mempool c->fill_iter allocates, at
-most 4080 pages are wasted and won't be used. Therefore this patch uses
-meta_bucket_pages() * PAGE_SECTORS to calculate the iter size in
-bch_cache_set_alloc(), to avoid extra memory allocation from mempool
-c->fill_iter.
-
+Fixes: 85750aeb748f ("bcache: use bio_{start,end}_io_acct")
 Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: stable@vger.kernel.org
 ---
- drivers/md/bcache/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/bcache/request.c | 31 +++++++++++++++++++++++++++----
+ 1 file changed, 27 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b7ef11da026c..d86b31722b41 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1908,7 +1908,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 	INIT_LIST_HEAD(&c->btree_cache_freed);
- 	INIT_LIST_HEAD(&c->data_buckets);
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 7acf024e99f3..8ea0f079c1d0 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -617,6 +617,28 @@ static void cache_lookup(struct closure *cl)
  
--	iter_size = (sb->bucket_size / sb->block_size + 1) *
-+	iter_size = ((meta_bucket_pages(sb) * PAGE_SECTORS) / sb->block_size + 1) *
- 		sizeof(struct btree_iter_set);
+ /* Common code for the make_request functions */
  
- 	c->devices = kcalloc(c->nr_uuids, sizeof(void *), GFP_KERNEL);
++static inline void bch_bio_start_io_acct(struct gendisk *acct_bi_disk,
++					 struct bio *bio,
++					 unsigned long *start_time)
++{
++	struct gendisk *saved_bi_disk = bio->bi_disk;
++
++	bio->bi_disk = acct_bi_disk;
++	*start_time = bio_start_io_acct(bio);
++	bio->bi_disk = saved_bi_disk;
++}
++
++static inline void bch_bio_end_io_acct(struct gendisk *acct_bi_disk,
++				       struct bio *bio,
++				       unsigned long start_time)
++{
++	struct gendisk *saved_bi_disk = bio->bi_disk;
++
++	bio->bi_disk = acct_bi_disk;
++	bio_end_io_acct(bio, start_time);
++	bio->bi_disk = saved_bi_disk;
++}
++
+ static void request_endio(struct bio *bio)
+ {
+ 	struct closure *cl = bio->bi_private;
+@@ -668,7 +690,7 @@ static void backing_request_endio(struct bio *bio)
+ static void bio_complete(struct search *s)
+ {
+ 	if (s->orig_bio) {
+-		bio_end_io_acct(s->orig_bio, s->start_time);
++		bch_bio_end_io_acct(s->d->disk, s->orig_bio, s->start_time);
+ 		trace_bcache_request_end(s->d, s->orig_bio);
+ 		s->orig_bio->bi_status = s->iop.status;
+ 		bio_endio(s->orig_bio);
+@@ -728,7 +750,7 @@ static inline struct search *search_alloc(struct bio *bio,
+ 	s->recoverable		= 1;
+ 	s->write		= op_is_write(bio_op(bio));
+ 	s->read_dirty_data	= 0;
+-	s->start_time		= bio_start_io_acct(bio);
++	bch_bio_start_io_acct(d->disk, bio, &s->start_time);
+ 
+ 	s->iop.c		= d->c;
+ 	s->iop.bio		= NULL;
+@@ -1080,7 +1102,7 @@ static void detached_dev_end_io(struct bio *bio)
+ 	bio->bi_end_io = ddip->bi_end_io;
+ 	bio->bi_private = ddip->bi_private;
+ 
+-	bio_end_io_acct(bio, ddip->start_time);
++	bch_bio_end_io_acct(ddip->d->disk, bio, ddip->start_time);
+ 
+ 	if (bio->bi_status) {
+ 		struct cached_dev *dc = container_of(ddip->d,
+@@ -1105,7 +1127,8 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
+ 	 */
+ 	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
+ 	ddip->d = d;
+-	ddip->start_time = bio_start_io_acct(bio);
++	bch_bio_start_io_acct(d->disk, bio, &ddip->start_time);
++
+ 	ddip->bi_end_io = bio->bi_end_io;
+ 	ddip->bi_private = bio->bi_private;
+ 	bio->bi_end_io = detached_dev_end_io;
 -- 
 2.26.2
 
