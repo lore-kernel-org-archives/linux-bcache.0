@@ -1,110 +1,80 @@
-Return-Path: <SRS0=hDdM=BE=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=l6yX=BF=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 51FA0C433E1
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 13:39:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B11EAC433E5
+	for <linux-bcache@archiver.kernel.org>; Sun, 26 Jul 2020 13:52:37 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3091B20674
-	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jul 2020 13:39:04 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel-dk.20150623.gappssmtp.com header.i=@kernel-dk.20150623.gappssmtp.com header.b="Xd0UQ0Yg"
+	by mail.kernel.org (Postfix) with ESMTP id 917E3206E3
+	for <linux-bcache@archiver.kernel.org>; Sun, 26 Jul 2020 13:52:37 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726728AbgGYNjD (ORCPT
+        id S1727113AbgGZNwh (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 25 Jul 2020 09:39:03 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36846 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726777AbgGYNjD (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 25 Jul 2020 09:39:03 -0400
-Received: from mail-pf1-x441.google.com (mail-pf1-x441.google.com [IPv6:2607:f8b0:4864:20::441])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D7D88C08C5C1
-        for <linux-bcache@vger.kernel.org>; Sat, 25 Jul 2020 06:39:02 -0700 (PDT)
-Received: by mail-pf1-x441.google.com with SMTP id 1so6743029pfn.9
-        for <linux-bcache@vger.kernel.org>; Sat, 25 Jul 2020 06:39:02 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kernel-dk.20150623.gappssmtp.com; s=20150623;
-        h=subject:to:cc:references:from:message-id:date:user-agent
-         :mime-version:in-reply-to:content-language:content-transfer-encoding;
-        bh=TY9S0ksY0gJHg8WOxYnWVFJ79KubheFo7aJATivXmzk=;
-        b=Xd0UQ0YgU7eSeirgLJWGWBxbU+KYNjUAsAm2rTJrtr75LiG0Cn/oOfC5UJ1HxDY13M
-         qUxl5IzZP7C0MNB3vGIfTRY2qt3yXCRqagjINxYa5IBf1LJZXFtIGYueIIdcYai25+ih
-         g6qnK37I0uv+gYlZydlAAq2NUAnW72r/VjCLuSGuMLxL2IXnJmx8p4Vje6KSuUbnsvOa
-         TAN02cduHe5A6WA/qmA5td3OGiRQzT/pDJFQe/K9Ret6wBqz/FzaLMcMitwhl3cO1O1l
-         4nzxIHIPyAExHOV9s1abWfWmj3+ikSmWFx0I47NiCwbNhIE34mGfMcUIVjQKiTFgQ6Fa
-         P+yA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
-         :user-agent:mime-version:in-reply-to:content-language
-         :content-transfer-encoding;
-        bh=TY9S0ksY0gJHg8WOxYnWVFJ79KubheFo7aJATivXmzk=;
-        b=hHo/DWfsngMT4H5qC8i+XPAjLG9vSFihF5vF6yVEyqony4nTINk0ktqfWmKkGD3cUA
-         1TkIXTYZe3SAVdR9CqZ7pMS5Jd6/RrIa3hQ2FYyRkIWQKVi5qU7EDPymHnjcXkLc1QUs
-         ofTbG+Zi1afla6DFrMPwtfsm9QlDj19gnMT4aLhmzPBb7R6NYbVcXDbohxM82CUjJoEk
-         IDqyGarV6+5gXaF9Mb7XBxpeYmSOaopQjbppOxf2DIjgdNKE6U7nM/yqs9s0Vtbp2zWb
-         WN+7QwbilqgNT8wHkVvEI8MPyzW9vnedL7ZF0SIVaIFoD4mcZF45GzPQbh0Ku+3sYkv7
-         3oXg==
-X-Gm-Message-State: AOAM532uTYMZ0ipnK8BDXmqV5fIPOX+D4S7QSVCOxfeeIOkHAYOZHEdf
-        9XYYNpiOqYboiKdu7bvX0AfaOkTVl3k=
-X-Google-Smtp-Source: ABdhPJz2Gx0wKg1a/G6l9hILWNgeCCNZA/azxL2DSPyCDd2OtJQF3fKvbO1YfF39F2jZ4yMgt/TCew==
-X-Received: by 2002:a62:5a45:: with SMTP id o66mr12366758pfb.43.1595684341950;
-        Sat, 25 Jul 2020 06:39:01 -0700 (PDT)
-Received: from [192.168.1.182] ([66.219.217.173])
-        by smtp.gmail.com with ESMTPSA id x7sm9625443pfq.197.2020.07.25.06.39.00
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Sat, 25 Jul 2020 06:39:01 -0700 (PDT)
-Subject: Re: [PATCH 00/25] bcache patches for Linux v5.9
-To:     Coly Li <colyli@suse.de>
-Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
-References: <20200725120039.91071-1-colyli@suse.de>
-From:   Jens Axboe <axboe@kernel.dk>
-Message-ID: <bbc97069-6d8f-d8c5-35b1-d85ccb2566df@kernel.dk>
-Date:   Sat, 25 Jul 2020 07:39:00 -0600
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.10.0
+        Sun, 26 Jul 2020 09:52:37 -0400
+Received: from mx2.suse.de ([195.135.220.15]:40794 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1725848AbgGZNwh (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 26 Jul 2020 09:52:37 -0400
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id D92DDB64B;
+        Sun, 26 Jul 2020 13:52:44 +0000 (UTC)
+From:   Coly Li <colyli@suse.de>
+To:     sagi@grimberg.me, philipp.reisner@linbit.com,
+        linux-nvme@lists.infradead.org, linux-block@vger.kernel.org,
+        linux-bcache@vger.kernel.org, hch@lst.de
+Cc:     Coly Li <colyli@suse.de>
+Subject: [PATCH 2/2] drbd: code cleanup by using sendpage_ok() to check page for kernel_sendpage()
+Date:   Sun, 26 Jul 2020 21:52:24 +0800
+Message-Id: <20200726135224.107516-2-colyli@suse.de>
+X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20200726135224.107516-1-colyli@suse.de>
+References: <20200726135224.107516-1-colyli@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20200725120039.91071-1-colyli@suse.de>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 7/25/20 6:00 AM, Coly Li wrote:
-> Hi Jens,
-> 
-> This is the first wave bcache series for Linux v5.9.
-> 
-> The most part of change is to add large_bucket size support to bcache,
-> which permits user to extend the bucket size from 16bit to 32bit width.
-> This is the initial state of large bucket feature, more improvement will
-> happen in future versions.
-> 
-> Most of the patches from me are for the large_bucket feature, except for,
-> - The fix for stripe size overflow
->    bcache: avoid nr_stripes overflow in bcache_device_init()
->    bcache: fix overflow in offset_to_stripe()
-> - The fix to I/O account on wrong device
->    bcache: fix bio_{start,end}_io_acct with proper device
-> 
-> Also we have Gustavo A. R. Silva to contribute 2 patches to cleanup
-> kzalloc() code by using struct_size(), Jean Delvare to contribute a
-> typo fix in bcache Kconfig file, and Xu Wang to contribute two code
-> cleanup patches.
-> 
-> Please take them for your Linux v5.9 block drivers branch.
+In _drbd_send_page() a page is checked by following code before sending
+it by kernel_sendpage(),
+	(page_count(page) < 1) || PageSlab(page)
+If the check is true, this page won't be send by kernel_sendpage() and
+handled by sock_no_sendpage().
 
-Thanks, applied.
+This kind of check is exactly what macro sendpage_ok() does, which is
+introduced into include/linux/net.h to solve a similar send page issue
+in nvme-tcp code.
 
+This patch uses macro sendpage_ok() to replace the open coded checks to
+page type and refcount in _drbd_send_page(), as a code cleanup.
+
+Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Philipp Reisner <philipp.reisner@linbit.com>
+Cc: Sagi Grimberg <sagi@grimberg.me>
+---
+ drivers/block/drbd/drbd_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
+index 45fbd526c453..567d7e1d9f76 100644
+--- a/drivers/block/drbd/drbd_main.c
++++ b/drivers/block/drbd/drbd_main.c
+@@ -1552,7 +1552,7 @@ static int _drbd_send_page(struct drbd_peer_device *peer_device, struct page *pa
+ 	 * put_page(); and would cause either a VM_BUG directly, or
+ 	 * __page_cache_release a page that would actually still be referenced
+ 	 * by someone, leading to some obscure delayed Oops somewhere else. */
+-	if (drbd_disable_sendpage || (page_count(page) < 1) || PageSlab(page))
++	if (drbd_disable_sendpage || !sendpage_ok(page))
+ 		return _drbd_no_send_page(peer_device, page, offset, size, msg_flags);
+ 
+ 	msg_flags |= MSG_NOSIGNAL;
 -- 
-Jens Axboe
+2.26.2
 
