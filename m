@@ -2,118 +2,126 @@ Return-Path: <SRS0=m+JX=BG=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-4.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-11.6 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CBC07C433FE
-	for <linux-bcache@archiver.kernel.org>; Mon, 27 Jul 2020 21:24:47 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DB4B5C433E0
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Jul 2020 22:58:26 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A3E9A208E4
-	for <linux-bcache@archiver.kernel.org>; Mon, 27 Jul 2020 21:24:47 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id AC57620829
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Jul 2020 22:58:26 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=default; t=1595885087;
-	bh=EWps0S6EbZwduop5kOlhiWEEhgt7u1l+thckoIBrrrk=;
-	h=Date:From:To:To:To:Cc:Cc:Cc:Subject:In-Reply-To:References:
-	 List-ID:From;
-	b=m9f+mJotxlCQP+7WrdrZoZMgVs3zLVsHKyGdJVkLbSUary24XB53fPoRmZCj90ywy
-	 71NVBxzfmkD8lbWt4Buvc0+hsT3NdaJHbnJvRWHBjam8xVGA77pSmiAxt6b+Ja5eHi
-	 3ruE/36C06ZdNtN22uAKZkTHVj97r1w8SxxIDUMg=
+	s=default; t=1595890706;
+	bh=qSmrTtFXENPcWfK3gi2Tfbj7Z60T+4LO1JAiAhLjHLc=;
+	h=Date:From:To:Cc:Subject:List-ID:From;
+	b=s9URQ+a1gPl5mL5j3sC25rKnRKmQA5JUOcLwXG5Gplr+HlNLHPNoUgx6hD9OCneH4
+	 g4L/j1yr9uQxyaqQnCyGn7Iq7aUmGyvyNx/gupZpyI4eTbmTzzT77sHewiW2QqPxd6
+	 hFZ9owab08MzGIjEIMU90eH3FRRdPxSF9MX0mW8s=
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726863AbgG0VYp (ORCPT
+        id S1726731AbgG0W60 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 27 Jul 2020 17:24:45 -0400
-Received: from mail.kernel.org ([198.145.29.99]:49828 "EHLO mail.kernel.org"
+        Mon, 27 Jul 2020 18:58:26 -0400
+Received: from mail.kernel.org ([198.145.29.99]:50690 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726858AbgG0VYn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 27 Jul 2020 17:24:43 -0400
-Received: from localhost (unknown [13.85.75.251])
+        id S1726620AbgG0W60 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 27 Jul 2020 18:58:26 -0400
+Received: from embeddedor (187-162-31-110.static.axtel.net [187.162.31.110])
         (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
         (No client certificate requested)
-        by mail.kernel.org (Postfix) with ESMTPSA id 8E679208E4;
-        Mon, 27 Jul 2020 21:24:42 +0000 (UTC)
+        by mail.kernel.org (Postfix) with ESMTPSA id 14FAA2070B;
+        Mon, 27 Jul 2020 22:58:25 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=default; t=1595885082;
-        bh=EWps0S6EbZwduop5kOlhiWEEhgt7u1l+thckoIBrrrk=;
-        h=Date:From:To:To:To:Cc:Cc:Cc:Subject:In-Reply-To:References:From;
-        b=chJ+hwVwNsw4fSBBc25hTMHJr3eKIznH9wucbcJl2hh1mO4DVVhRDH/11yvg4QV3R
-         B2ymtF1X9O6bb92Y/wS+MX6+rKaBj8AMbrna9jidLsc2VAXEWUe4dn0TsdrnQazd1R
-         RH2byExFuWd66UgD3cENm9AbgtxJ0XyAyxoxTbhM=
-Date:   Mon, 27 Jul 2020 21:24:42 +0000
-From:   Sasha Levin <sashal@kernel.org>
-To:     Sasha Levin <sashal@kernel.org>
-To:     Coly Li <colyli@suse.de>
-To:     axboe@kernel.dk
-Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc:     stable@vger.kernel.org
-Cc:     stable@vger.kernel.org
-Subject: Re: [PATCH 08/25] bcache: fix overflow in offset_to_stripe()
-In-Reply-To: <20200725120039.91071-9-colyli@suse.de>
-References: <20200725120039.91071-9-colyli@suse.de>
-Message-Id: <20200727212442.8E679208E4@mail.kernel.org>
+        s=default; t=1595890705;
+        bh=qSmrTtFXENPcWfK3gi2Tfbj7Z60T+4LO1JAiAhLjHLc=;
+        h=Date:From:To:Cc:Subject:From;
+        b=uHrAkH+etwMd5dOBjtq9zpxyOVgoZJv/lNznqLCuC7MBA+QDWTYW8qkY2Oc2uGaTK
+         uYKVg2XoBNLDIvypGozmBEpNSwXYnCD5t69lVjA2N7r5jFNrTG7H5PsXkUZYE3uhFE
+         LzLE5+QwsHNIKN9zR77fGJzLlg5OoTUan6hv7TZI=
+Date:   Mon, 27 Jul 2020 18:04:18 -0500
+From:   "Gustavo A. R. Silva" <gustavoars@kernel.org>
+To:     Coly Li <colyli@suse.de>,
+        Kent Overstreet <kent.overstreet@gmail.com>
+Cc:     linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gustavo A. R. Silva" <gustavoars@kernel.org>
+Subject: [PATCH v2][next] bcache: Use fallthrough pseudo-keyword
+Message-ID: <20200727230418.GA14028@embeddedor>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.9.4 (2018-02-28)
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hi
+Replace the existing /* fall through */ comments and its variants with
+the new pseudo-keyword macro fallthrough[1].
 
-[This is an automated email]
+[1] https://www.kernel.org/doc/html/v5.7/process/deprecated.html?highlight=fallthrough#implicit-switch-case-fall-through
 
-This commit has been processed because it contains a -stable tag.
-The stable tag indicates that it's relevant for the following trees: all
+Signed-off-by: Gustavo A. R. Silva <gustavoars@kernel.org>
+---
+Changes in v2:
+ - Add missing semicolon.
 
-The bot has tested the following trees: v5.7.10, v5.4.53, v4.19.134, v4.14.189, v4.9.231, v4.4.231.
+ drivers/md/bcache/journal.c |  2 +-
+ drivers/md/bcache/util.c    | 14 +++++++-------
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-v5.7.10: Build OK!
-v5.4.53: Build OK!
-v4.19.134: Build OK!
-v4.14.189: Failed to apply! Possible dependencies:
-    1d316e658374 ("bcache: implement PI controller for writeback rate")
-    25d8be77e192 ("block: move bio_alloc_pages() to bcache")
-    27a40ab9269e ("bcache: add backing_request_endio() for bi_end_io")
-    3b304d24a718 ("bcache: convert cached_dev.count from atomic_t to refcount_t")
-    3fd47bfe55b0 ("bcache: stop dc->writeback_rate_update properly")
-    5138ac6748e3 ("bcache: fix misleading error message in bch_count_io_errors()")
-    539d39eb2708 ("bcache: fix wrong return value in bch_debug_init()")
-    6f10f7d1b02b ("bcache: style fix to replace 'unsigned' by 'unsigned int'")
-    771f393e8ffc ("bcache: add CACHE_SET_IO_DISABLE to struct cache_set flags")
-    804f3c6981f5 ("bcache: fix cached_dev->count usage for bch_cache_set_error()")
-    b1092c9af9ed ("bcache: allow quick writeback when backing idle")
-    d19936a26658 ("bcache: convert to bioset_init()/mempool_init()")
-    d44c2f9e7cc0 ("bcache: update bucket_in_use in real time")
-
-v4.9.231: Failed to apply! Possible dependencies:
-    1d316e658374 ("bcache: implement PI controller for writeback rate")
-    3a83f4677539 ("block: bio: pass bvec table to bio_init()")
-    3b304d24a718 ("bcache: convert cached_dev.count from atomic_t to refcount_t")
-    3fd47bfe55b0 ("bcache: stop dc->writeback_rate_update properly")
-    6f10f7d1b02b ("bcache: style fix to replace 'unsigned' by 'unsigned int'")
-    70fd76140a6c ("block,fs: use REQ_* flags directly")
-    804f3c6981f5 ("bcache: fix cached_dev->count usage for bch_cache_set_error()")
-    d19936a26658 ("bcache: convert to bioset_init()/mempool_init()")
-    e806402130c9 ("block: split out request-only flags into a new namespace")
-    ef295ecf090d ("block: better op and flags encoding")
-
-v4.4.231: Failed to apply! Possible dependencies:
-    1d316e658374 ("bcache: implement PI controller for writeback rate")
-    3a83f4677539 ("block: bio: pass bvec table to bio_init()")
-    3b304d24a718 ("bcache: convert cached_dev.count from atomic_t to refcount_t")
-    3fd47bfe55b0 ("bcache: stop dc->writeback_rate_update properly")
-    4e49ea4a3d27 ("block/fs/drivers: remove rw argument from submit_bio")
-    6f10f7d1b02b ("bcache: style fix to replace 'unsigned' by 'unsigned int'")
-    804f3c6981f5 ("bcache: fix cached_dev->count usage for bch_cache_set_error()")
-    9082e87bfbf8 ("block: remove struct bio_batch")
-    ad0d9e76a412 ("bcache: use bio op accessors")
-    d19936a26658 ("bcache: convert to bioset_init()/mempool_init()")
-    d57d611505d9 ("kernel/fs: fix I/O wait not accounted for RW O_DSYNC")
-    ed996a52c868 ("block: simplify and cleanup bvec pool handling")
-
-
-NOTE: The patch will not be queued to stable trees until it is upstream.
-
-How should we proceed with this patch?
-
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 77fbfd52edcf..c1227bdb57e7 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -608,7 +608,7 @@ static void do_journal_discard(struct cache *ca)
+ 			ca->sb.njournal_buckets;
+ 
+ 		atomic_set(&ja->discard_in_flight, DISCARD_READY);
+-		/* fallthrough */
++		fallthrough;
+ 
+ 	case DISCARD_READY:
+ 		if (ja->discard_idx == ja->last_idx)
+diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
+index 62fb917f7a4f..ae380bc3992e 100644
+--- a/drivers/md/bcache/util.c
++++ b/drivers/md/bcache/util.c
+@@ -33,27 +33,27 @@ int bch_ ## name ## _h(const char *cp, type *res)		\
+ 	case 'y':						\
+ 	case 'z':						\
+ 		u++;						\
+-		/* fall through */				\
++		fallthrough;					\
+ 	case 'e':						\
+ 		u++;						\
+-		/* fall through */				\
++		fallthrough;					\
+ 	case 'p':						\
+ 		u++;						\
+-		/* fall through */				\
++		fallthrough;					\
+ 	case 't':						\
+ 		u++;						\
+-		/* fall through */				\
++		fallthrough;					\
+ 	case 'g':						\
+ 		u++;						\
+-		/* fall through */				\
++		fallthrough;					\
+ 	case 'm':						\
+ 		u++;						\
+-		/* fall through */				\
++		fallthrough;					\
+ 	case 'k':						\
+ 		u++;						\
+ 		if (e++ == cp)					\
+ 			return -EINVAL;				\
+-		/* fall through */				\
++		fallthrough;					\
+ 	case '\n':						\
+ 	case '\0':						\
+ 		if (*e == '\n')					\
 -- 
-Thanks
-Sasha
+2.27.0
+
