@@ -1,245 +1,146 @@
-Return-Path: <SRS0=V1bn=AM=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=m+JX=BG=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,DKIM_INVALID,
-	DKIM_SIGNED,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+X-Spam-Status: No, score=-12.3 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,NICE_REPLY_A,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 786D4C433E0
-	for <linux-bcache@archiver.kernel.org>; Wed,  1 Jul 2020 09:01:01 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id F40B2C433E5
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Jul 2020 17:25:34 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 58ADC2074D
-	for <linux-bcache@archiver.kernel.org>; Wed,  1 Jul 2020 09:01:01 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=fail reason="signature verification failed" (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="RKMWPwGh"
+	by mail.kernel.org (Postfix) with ESMTP id DCA0520672
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Jul 2020 17:25:34 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729335AbgGAJAy (ORCPT
+        id S1730683AbgG0RZd (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 1 Jul 2020 05:00:54 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55948 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1729250AbgGAJAV (ORCPT
+        Mon, 27 Jul 2020 13:25:33 -0400
+Received: from mail-pj1-f67.google.com ([209.85.216.67]:36578 "EHLO
+        mail-pj1-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726617AbgG0RZd (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 1 Jul 2020 05:00:21 -0400
-Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 46439C03E97B;
-        Wed,  1 Jul 2020 02:00:20 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
-        References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
-        Content-Type:Content-ID:Content-Description;
-        bh=yZp3ZhmmnZVm/xMn8H8i+YIbZxG0gRGZfGVMIZjaPzw=; b=RKMWPwGhSFWRqAqKPhX/CZ8Tjr
-        2y9UV+7WeqYw079kzvJhfBLKNUSnR39UjjcWcPFdEXxijNON689BbqBUoAHoa4MINvOmGyGIo8p6D
-        WBJBVcdmy65C0w0U6CrySV4utK7ZZ6HyASSo1xa6KLt62iitIX6XPwRC25GJIHaUvU32tDpJxF/IZ
-        VW63cu8DySq2vkkwy/xd7AUzFnf/7KsER6SY0OiH44xnptYrxnSXEmH3ZsHYzvYnVn7Ql6UghoGbc
-        Rt1XjbpS7dVpsBnv4qKhpvsABOXO94ealDA3iuzJa4NI/JBfp2v9rUYzGuLm+Ykbcfs8xzOsSpYeC
-        ylv9vMYg==;
-Received: from [2001:4bb8:184:76e3:ea38:596b:3e9e:422a] (helo=localhost)
-        by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1jqYbJ-0008HS-16; Wed, 01 Jul 2020 09:00:17 +0000
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jens Axboe <axboe@kernel.dk>
-Cc:     dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-        linux-m68k@lists.linux-m68k.org, linux-xtensa@linux-xtensa.org,
-        drbd-dev@lists.linbit.com, linuxppc-dev@lists.ozlabs.org,
-        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-nvdimm@lists.01.org, linux-nvme@lists.infradead.org,
-        linux-s390@vger.kernel.org
-Subject: [PATCH 18/20] block: refator submit_bio_noacct
-Date:   Wed,  1 Jul 2020 10:59:45 +0200
-Message-ID: <20200701085947.3354405-19-hch@lst.de>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20200701085947.3354405-1-hch@lst.de>
-References: <20200701085947.3354405-1-hch@lst.de>
+        Mon, 27 Jul 2020 13:25:33 -0400
+Received: by mail-pj1-f67.google.com with SMTP id ha11so2631191pjb.1;
+        Mon, 27 Jul 2020 10:25:32 -0700 (PDT)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
+         :user-agent:mime-version:in-reply-to:content-language
+         :content-transfer-encoding;
+        bh=aNt663yDzifzzB0XK1Rn3vQdJUzIbPRGw9BRhlu+BgI=;
+        b=VicB0PepQcwIzEF73B1eE8t73zu7gGSrVgXVDIhjZkiQqCee3/27vUFZLSX59pwPM+
+         O2uzKLAe2RCZfZNIrNF0OlgaXzSJwI+6AyBos0HDPdSHY5UEVwsVtNLASQ2D1Jf/vFW0
+         CQxpRcyN3g0cnd7qKORFS3mFynoFiR/NOMmc88eOWywJxGGzCmKM22RRBWDKBeF5V2YT
+         /jRfRFLhmFW0isrKV/pXKC4VSoV0mTXBs+HhhJA9vy3Mnbs208h58wY0gyj7oRrbov7p
+         ndGt93BtpTWmTFkzb0rBBDP89JgXWW+sRyKa9DOLOuYAaoJC8tb3EpZM5O9ww8lHcygC
+         smCA==
+X-Gm-Message-State: AOAM531jqvMDeX8wdfYrpyVfFZMoB3qTxgczOl2371aa7GDTFtY+GAKF
+        QZcfXcGhHwzeNevzedNhLio7dFHI
+X-Google-Smtp-Source: ABdhPJwUsW0OrmXzZI8dD+BwqaXmVKJG1zwM2eWYgiCDypR1jFOoZNeU280jcxCdzhCI8GCiXVaXyg==
+X-Received: by 2002:a17:902:bc49:: with SMTP id t9mr9726393plz.20.1595870731350;
+        Mon, 27 Jul 2020 10:25:31 -0700 (PDT)
+Received: from ?IPv6:2601:647:4802:9070:5d7d:f206:b163:f30b? ([2601:647:4802:9070:5d7d:f206:b163:f30b])
+        by smtp.gmail.com with ESMTPSA id k23sm15148773pgb.92.2020.07.27.10.25.29
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Mon, 27 Jul 2020 10:25:30 -0700 (PDT)
+Subject: Re: [PATCH 1/2] nvme-tcp: use sendpage_ok() to check page for
+ kernel_sendpage()
+To:     Coly Li <colyli@suse.de>, philipp.reisner@linbit.com,
+        linux-nvme@lists.infradead.org, linux-block@vger.kernel.org,
+        linux-bcache@vger.kernel.org, hch@lst.de
+Cc:     Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>,
+        Hannes Reinecke <hare@suse.de>, Jan Kara <jack@suse.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Mikhail Skorzhinskii <mskorzhinskiy@solarflare.com>,
+        Vlastimil Babka <vbabka@suse.com>, stable@vger.kernel.org
+References: <20200726135224.107516-1-colyli@suse.de>
+From:   Sagi Grimberg <sagi@grimberg.me>
+Message-ID: <f6cf7563-9d8c-baa8-e8e7-e41f9b13e787@grimberg.me>
+Date:   Mon, 27 Jul 2020 10:25:29 -0700
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
+ Thunderbird/68.10.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
+In-Reply-To: <20200726135224.107516-1-colyli@suse.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
-Message-ID: <20200701085945.V66thdG-_eVgvqL6vmqNPT6DszqLQ7rhYwvky7Ct8QA@z>
 
-Split out a __submit_bio_noacct helper for the actual de-recursion
-algorithm, and simplify the loop by using a continue when we can't
-enter the queue for a bio.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/blk-core.c | 143 +++++++++++++++++++++++++----------------------
- 1 file changed, 75 insertions(+), 68 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index ff9a88d2d244cb..57b5dc00d44cb1 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1084,6 +1084,74 @@ static blk_qc_t __submit_bio(struct bio *bio)
- 	return ret;
- }
- 
-+/*
-+ * The loop in this function may be a bit non-obvious, and so deserves some
-+ * explanation:
-+ *
-+ *  - Before entering the loop, bio->bi_next is NULL (as all callers ensure
-+ *    that), so we have a list with a single bio.
-+ *  - We pretend that we have just taken it off a longer list, so we assign
-+ *    bio_list to a pointer to the bio_list_on_stack, thus initialising the
-+ *    bio_list of new bios to be added.  ->submit_bio() may indeed add some more
-+ *    bios through a recursive call to submit_bio_noacct.  If it did, we find a
-+ *    non-NULL value in bio_list and re-enter the loop from the top.
-+ *  - In this case we really did just take the bio of the top of the list (no
-+ *    pretending) and so remove it from bio_list, and call into ->submit_bio()
-+ *    again.
-+ *
-+ * bio_list_on_stack[0] contains bios submitted by the current ->submit_bio.
-+ * bio_list_on_stack[1] contains bios that were submitted before the current
-+ *	->submit_bio_bio, but that haven't been processed yet.
-+ */
-+static blk_qc_t __submit_bio_noacct(struct bio *bio)
-+{
-+	struct bio_list bio_list_on_stack[2];
-+	blk_qc_t ret = BLK_QC_T_NONE;
-+
-+	BUG_ON(bio->bi_next);
-+
-+	bio_list_init(&bio_list_on_stack[0]);
-+	current->bio_list = bio_list_on_stack;
-+
-+	do {
-+		struct request_queue *q = bio->bi_disk->queue;
-+		struct bio_list lower, same;
-+
-+		if (unlikely(bio_queue_enter(bio) != 0))
-+			continue;
-+
-+		/*
-+		 * Create a fresh bio_list for all subordinate requests.
-+		 */
-+		bio_list_on_stack[1] = bio_list_on_stack[0];
-+		bio_list_init(&bio_list_on_stack[0]);
-+
-+		ret = __submit_bio(bio);
-+
-+		/*
-+		 * Sort new bios into those for a lower level and those for the
-+		 * same level.
-+		 */
-+		bio_list_init(&lower);
-+		bio_list_init(&same);
-+		while ((bio = bio_list_pop(&bio_list_on_stack[0])) != NULL)
-+			if (q == bio->bi_disk->queue)
-+				bio_list_add(&same, bio);
-+			else
-+				bio_list_add(&lower, bio);
-+
-+		/*
-+		 * Now assemble so we handle the lowest level first.
-+		 */
-+		bio_list_merge(&bio_list_on_stack[0], &lower);
-+		bio_list_merge(&bio_list_on_stack[0], &same);
-+		bio_list_merge(&bio_list_on_stack[0], &bio_list_on_stack[1]);
-+	} while ((bio = bio_list_pop(&bio_list_on_stack[0])));
-+
-+	current->bio_list = NULL;
-+	return ret;
-+}
-+
- /**
-  * submit_bio_noacct - re-submit a bio to the block device layer for I/O
-  * @bio:  The bio describing the location in memory and on the device.
-@@ -1095,82 +1163,21 @@ static blk_qc_t __submit_bio(struct bio *bio)
-  */
- blk_qc_t submit_bio_noacct(struct bio *bio)
- {
--	/*
--	 * bio_list_on_stack[0] contains bios submitted by the current
--	 * ->submit_bio.
--	 * bio_list_on_stack[1] contains bios that were submitted before the
--	 * current ->submit_bio_bio, but that haven't been processed yet.
--	 */
--	struct bio_list bio_list_on_stack[2];
--	blk_qc_t ret = BLK_QC_T_NONE;
--
- 	if (!submit_bio_checks(bio))
--		goto out;
-+		return BLK_QC_T_NONE;
- 
- 	/*
--	 * We only want one ->submit_bio to be active at a time, else
--	 * stack usage with stacked devices could be a problem.  So use
--	 * current->bio_list to keep a list of requests submited by a
--	 * ->submit_bio method.  current->bio_list is also used as a
--	 * flag to say if submit_bio_noacct is currently active in this
--	 * task or not.  If it is NULL, then no make_request is active.  If
--	 * it is non-NULL, then a make_request is active, and new requests
--	 * should be added at the tail
-+	 * We only want one ->submit_bio to be active at a time, else stack
-+	 * usage with stacked devices could be a problem.  Use current->bio_list
-+	 * to collect a list of requests submited by a ->submit_bio method while
-+	 * it is active, and then process them after it returned.
- 	 */
- 	if (current->bio_list) {
- 		bio_list_add(&current->bio_list[0], bio);
--		goto out;
-+		return BLK_QC_T_NONE;
- 	}
- 
--	/* following loop may be a bit non-obvious, and so deserves some
--	 * explanation.
--	 * Before entering the loop, bio->bi_next is NULL (as all callers
--	 * ensure that) so we have a list with a single bio.
--	 * We pretend that we have just taken it off a longer list, so
--	 * we assign bio_list to a pointer to the bio_list_on_stack,
--	 * thus initialising the bio_list of new bios to be
--	 * added.  ->submit_bio() may indeed add some more bios
--	 * through a recursive call to submit_bio_noacct.  If it
--	 * did, we find a non-NULL value in bio_list and re-enter the loop
--	 * from the top.  In this case we really did just take the bio
--	 * of the top of the list (no pretending) and so remove it from
--	 * bio_list, and call into ->submit_bio() again.
--	 */
--	BUG_ON(bio->bi_next);
--	bio_list_init(&bio_list_on_stack[0]);
--	current->bio_list = bio_list_on_stack;
--	do {
--		struct request_queue *q = bio->bi_disk->queue;
--
--		if (likely(bio_queue_enter(bio) == 0)) {
--			struct bio_list lower, same;
--
--			/* Create a fresh bio_list for all subordinate requests */
--			bio_list_on_stack[1] = bio_list_on_stack[0];
--			bio_list_init(&bio_list_on_stack[0]);
--			ret = __submit_bio(bio);
--
--			/* sort new bios into those for a lower level
--			 * and those for the same level
--			 */
--			bio_list_init(&lower);
--			bio_list_init(&same);
--			while ((bio = bio_list_pop(&bio_list_on_stack[0])) != NULL)
--				if (q == bio->bi_disk->queue)
--					bio_list_add(&same, bio);
--				else
--					bio_list_add(&lower, bio);
--			/* now assemble so we handle the lowest level first */
--			bio_list_merge(&bio_list_on_stack[0], &lower);
--			bio_list_merge(&bio_list_on_stack[0], &same);
--			bio_list_merge(&bio_list_on_stack[0], &bio_list_on_stack[1]);
--		}
--		bio = bio_list_pop(&bio_list_on_stack[0]);
--	} while (bio);
--	current->bio_list = NULL; /* deactivate */
--
--out:
--	return ret;
-+	return __submit_bio_noacct(bio);
- }
- EXPORT_SYMBOL(submit_bio_noacct);
- 
--- 
-2.26.2
+On 7/26/20 6:52 AM, Coly Li wrote:
+> Currently nvme_tcp_try_send_data() doesn't use kernel_sendpage() to
+> send slab pages. But for pages allocated by __get_free_pages() without
+> __GFP_COMP, which also have refcount as 0, they are still sent by
+> kernel_sendpage() to remote end, this is problematic.
+> 
+> When bcache uses a remote NVMe SSD via nvme-over-tcp as its cache
+> device, writing meta data e.g. cache_set->disk_buckets to remote SSD may
+> trigger a kernel panic due to the above problem. Bcause the meta data
+> pages for cache_set->disk_buckets are allocated by __get_free_pages()
+> without __GFP_COMP.
+> 
+> This problem should be fixed both in upper layer driver (bcache) and
+> nvme-over-tcp code. This patch fixes the nvme-over-tcp code by checking
+> whether the page refcount is 0, if yes then don't use kernel_sendpage()
+> and call sock_no_sendpage() to send the page into network stack.
+> 
+> Such check is done by macro sendpage_ok() in this patch, which is defined
+> in include/linux/net.h as,
+> 	(!PageSlab(page) && page_count(page) >= 1)
+> If sendpage_ok() returns false, sock_no_sendpage() will handle the page
+> other than kernel_sendpage().
+> 
+> The code comments in this patch is copied and modified from drbd where
+> the similar problem already gets solved by Philipp Reisner. This is the
+> best code comment including my own version.
+> 
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Cc: Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: Hannes Reinecke <hare@suse.de>
+> Cc: Jan Kara <jack@suse.com>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Mikhail Skorzhinskii <mskorzhinskiy@solarflare.com>
+> Cc: Philipp Reisner <philipp.reisner@linbit.com>
+> Cc: Sagi Grimberg <sagi@grimberg.me>
+> Cc: Vlastimil Babka <vbabka@suse.com>
+> Cc: stable@vger.kernel.org
+> ---
+> Changelog:
+> v3: introduce a more common name sendpage_ok() for the open coded check
+> v2: fix typo in patch subject.
+> v1: the initial version.
+> 
+>   drivers/nvme/host/tcp.c | 13 +++++++++++--
+>   include/linux/net.h     |  2 ++
+>   2 files changed, 13 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/nvme/host/tcp.c b/drivers/nvme/host/tcp.c
+> index 79ef2b8e2b3c..f9952f6d94b9 100644
+> --- a/drivers/nvme/host/tcp.c
+> +++ b/drivers/nvme/host/tcp.c
+> @@ -887,8 +887,17 @@ static int nvme_tcp_try_send_data(struct nvme_tcp_request *req)
+>   		else
+>   			flags |= MSG_MORE | MSG_SENDPAGE_NOTLAST;
+>   
+> -		/* can't zcopy slab pages */
+> -		if (unlikely(PageSlab(page))) {
+> +		/*
+> +		 * e.g. XFS meta- & log-data is in slab pages, or bcache meta
+> +		 * data pages, or other high order pages allocated by
+> +		 * __get_free_pages() without __GFP_COMP, which have a page_count
+> +		 * of 0 and/or have PageSlab() set. We cannot use send_page for
+> +		 * those, as that does get_page(); put_page(); and would cause
+> +		 * either a VM_BUG directly, or __page_cache_release a page that
+> +		 * would actually still be referenced by someone, leading to some
+> +		 * obscure delayed Oops somewhere else.
+> +		 */
 
+I was hoping that this comment would move to the helper as well.
+
+Agree with Christoph comment as well.
