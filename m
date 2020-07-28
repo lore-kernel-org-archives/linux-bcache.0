@@ -2,75 +2,82 @@ Return-Path: <SRS0=y0oE=BH=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-6.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-9.3 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BC7F5C433E3
-	for <linux-bcache@archiver.kernel.org>; Tue, 28 Jul 2020 15:23:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E1196C433E4
+	for <linux-bcache@archiver.kernel.org>; Tue, 28 Jul 2020 15:23:17 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 94764206D4
-	for <linux-bcache@archiver.kernel.org>; Tue, 28 Jul 2020 15:23:37 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel-dk.20150623.gappssmtp.com header.i=@kernel-dk.20150623.gappssmtp.com header.b="pKu+ivn1"
+	by mail.kernel.org (Postfix) with ESMTP id CAB62206D8
+	for <linux-bcache@archiver.kernel.org>; Tue, 28 Jul 2020 15:23:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1730586AbgG1PXh (ORCPT
+        id S1730810AbgG1PXR (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 28 Jul 2020 11:23:37 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44002 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1730670AbgG1PXg (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 28 Jul 2020 11:23:36 -0400
-Received: from mail-il1-x143.google.com (mail-il1-x143.google.com [IPv6:2607:f8b0:4864:20::143])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9BC9AC0619D2
-        for <linux-bcache@vger.kernel.org>; Tue, 28 Jul 2020 08:23:36 -0700 (PDT)
-Received: by mail-il1-x143.google.com with SMTP id t18so16541958ilh.2
-        for <linux-bcache@vger.kernel.org>; Tue, 28 Jul 2020 08:23:36 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kernel-dk.20150623.gappssmtp.com; s=20150623;
-        h=subject:to:cc:references:from:message-id:date:user-agent
-         :mime-version:in-reply-to:content-language:content-transfer-encoding;
-        bh=F4Wsebso6IWC8aSQZbXXH5ooZdFajOtRRLZ4DaokWp4=;
-        b=pKu+ivn1uOpQqNTDIQ1KY6QsdvMa8+DSGEMZGrbKfXulugnqrBwlXPUes12BmXvZq4
-         fgPkcyKJ857iqq/EXdXswQOBbhAONGDc6Z/mwnWUoXPHVIIsOxCe46bCXjqc8pW8Vt6R
-         BHpaJwPA3dpZm5WJme07DuvnBWkqIJIgtmAiGO9QiRx6z3XWuNG4+z4OpAVdfz/dtDYx
-         83rvj+yRBtoLHdiA9eaMPosyaty/X9x8VH6FX58WK18zMkY4x4Mpn8fidJh+5OlCkn0K
-         DWwFK/vx8NdSQ4WVrsLOZLs0/4vrxkO1F3HVVqVQWxazfw18/DYHZcOE8E1bgEcqJDk3
-         CYrQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
-         :user-agent:mime-version:in-reply-to:content-language
-         :content-transfer-encoding;
-        bh=F4Wsebso6IWC8aSQZbXXH5ooZdFajOtRRLZ4DaokWp4=;
-        b=U6z3bjHTXy45wyqGd+wUN7LFUsy1whbYSH3HeSbyNVstux+JQXeI3AFcdy7DOU38EQ
-         0obHoMRn3xMHvthyCONxMVUJ/qVrm/dEsJwITHXWrQGDQP31q8Lz60BIIaIaw0Z/B6EQ
-         J2W0GmBrPyhKsa5A2yz/tIeuXSerdpzsBrBAT94O8zBId1yaoezNBNumNGrpckld+6bD
-         KrHGOTF8HKpeU4pRQwMnN4i7AJcPvADJ2KQfCjOf6wNrjR7XQ/H1uANrdtuvl1T66+SE
-         WLInHL+Lwqrd936fk/ecPdyhhTdNEDb47KgjZf0pY2h1w/IBTqEf9WwWMGMXzOfmA9rk
-         xX+g==
-X-Gm-Message-State: AOAM5321ST4jW6+TbvNxkZ5gDufpV4FYPPLr10OE5ppI/1SXC+MUFSRv
-        XISkzVRD+kKgPUBOVO9HQSgqXg==
-X-Google-Smtp-Source: ABdhPJzUA/rPdjZE+tCi3vy8e9Z6IxJTfTdB3l1PLu8xq3p+qLhCLyEP8K2KM5/a58sm7uQwlDPAng==
-X-Received: by 2002:a92:cc06:: with SMTP id s6mr28424185ilp.8.1595949816045;
-        Tue, 28 Jul 2020 08:23:36 -0700 (PDT)
-Received: from [192.168.1.58] ([65.144.74.34])
-        by smtp.gmail.com with ESMTPSA id l11sm6281065ioh.52.2020.07.28.08.23.35
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Tue, 28 Jul 2020 08:23:35 -0700 (PDT)
+        Tue, 28 Jul 2020 11:23:17 -0400
+Received: from mx2.suse.de ([195.135.220.15]:41320 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1730586AbgG1PXQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 28 Jul 2020 11:23:16 -0400
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id 3E589B6D4;
+        Tue, 28 Jul 2020 15:23:26 +0000 (UTC)
 Subject: Re: [PATCH] bcache: use disk_{start,end}_io_acct() to count I/O for
  bcache device
-To:     colyli@suse.de
+To:     axboe@kernel.dk, Christoph Hellwig <hch@lst.de>
 Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>, stable@vger.kernel.org
+        stable@vger.kernel.org
 References: <20200728135920.4618-1-colyli@suse.de>
-From:   Jens Axboe <axboe@kernel.dk>
-Message-ID: <648c19eb-a718-a49b-37cb-d95ea78e831b@kernel.dk>
-Date:   Tue, 28 Jul 2020 09:23:34 -0600
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.10.0
+From:   Coly Li <colyli@suse.de>
+Autocrypt: addr=colyli@suse.de; keydata=
+ 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
+Message-ID: <cdf2090a-c2ea-8fab-ca47-f27305be77b6@suse.de>
+Date:   Tue, 28 Jul 2020 23:23:09 +0800
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:68.0)
+ Gecko/20100101 Thunderbird/68.10.0
 MIME-Version: 1.0
 In-Reply-To: <20200728135920.4618-1-colyli@suse.de>
 Content-Type: text/plain; charset=utf-8
@@ -81,7 +88,7 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 7/28/20 7:59 AM, colyli@suse.de wrote:
+On 2020/7/28 21:59, colyli@suse.de wrote:
 > From: Coly Li <colyli@suse.de>
 > 
 > This patch is a fix to patch "bcache: fix bio_{start,end}_io_acct with
@@ -90,9 +97,20 @@ On 7/28/20 7:59 AM, colyli@suse.de wrote:
 > 
 > As Christoph suggests, this patch uses disk_{start,end}_io_acct() to
 > count I/O for bcache device in the correct way.
+> 
+> Fixes: 85750aeb748f ("bcache: use bio_{start,end}_io_acct")
+> Signed-off-by: Coly Li <colyli@suse.de>
+> Cc: Christoph Hellwig <hch@lst.de>
+> Cc: stable@vger.kernel.org
 
-Applied, thanks.
 
--- 
-Jens Axboe
+Hi Jens and Christoph,
 
+This patch is tested, the I/O counter behavior is displayed by iostat in
+expected way.
+
+Please consider to take it for Linux v5.9.
+
+Thanks in advance.
+
+Coly Li
