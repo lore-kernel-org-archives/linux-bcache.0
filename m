@@ -2,32 +2,33 @@ Return-Path: <SRS0=PVgi=BP=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-8.5 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-11.5 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,NICE_REPLY_A,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 98677C433E3
-	for <linux-bcache@archiver.kernel.org>; Wed,  5 Aug 2020 09:48:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 93DFBC433DF
+	for <linux-bcache@archiver.kernel.org>; Wed,  5 Aug 2020 16:52:44 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7E459206B6
-	for <linux-bcache@archiver.kernel.org>; Wed,  5 Aug 2020 09:48:40 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 721B222D00
+	for <linux-bcache@archiver.kernel.org>; Wed,  5 Aug 2020 16:52:44 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728416AbgHEJsb (ORCPT
+        id S1728207AbgHEQwI (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 5 Aug 2020 05:48:31 -0400
-Received: from mx2.suse.de ([195.135.220.15]:34946 "EHLO mx2.suse.de"
+        Wed, 5 Aug 2020 12:52:08 -0400
+Received: from mx2.suse.de ([195.135.220.15]:37568 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1728216AbgHEJqW (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 5 Aug 2020 05:46:22 -0400
+        id S1728150AbgHEQtx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 5 Aug 2020 12:49:53 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id A2ACDABEF;
-        Wed,  5 Aug 2020 09:46:32 +0000 (UTC)
-To:     Jinpu Wang <jinpuwang@gmail.com>
+        by mx2.suse.de (Postfix) with ESMTP id 17CC9AC23;
+        Wed,  5 Aug 2020 16:50:06 +0000 (UTC)
+Subject: Re: [PATCH v3] block: check queue's limits.discard_granularity in
+ __blkdev_issue_discard()
+To:     "Darrick J. Wong" <darrick.wong@oracle.com>
 Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ming Lei <ming.lei@redhat.com>,
+        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@redhat.com>,
         Bart Van Assche <bvanassche@acm.org>,
         Christoph Hellwig <hch@lst.de>,
         Enzo Matsumiya <ematsumiya@suse.com>,
@@ -36,7 +37,7 @@ Cc:     linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         "Martin K . Petersen" <martin.petersen@oracle.com>,
         Xiao Ni <xni@redhat.com>
 References: <20200805063150.41037-1-colyli@suse.de>
- <CAD9gYJLDPLiF+-8gjk4cpgXBROLy_Hg5zcx+rU8-Bi+jVRiz=w@mail.gmail.com>
+ <20200805154843.GB191798@magnolia>
 From:   Coly Li <colyli@suse.de>
 Autocrypt: addr=colyli@suse.de; keydata=
  mQINBFYX6S8BEAC9VSamb2aiMTQREFXK4K/W7nGnAinca7MRuFUD4JqWMJ9FakNRd/E0v30F
@@ -81,28 +82,22 @@ Autocrypt: addr=colyli@suse.de; keydata=
  K0Jx4CEZubakJe+894sX6pvNFiI7qUUdB882i5GR3v9ijVPhaMr8oGuJ3kvwBIA8lvRBGVGn
  9xvzkQ8Prpbqh30I4NMp8MjFdkwCN6znBKPHdjNTwE5PRZH0S9J0o67IEIvHfH0eAWAsgpTz
  +jwc7VKH7vkvgscUhq/v1/PEWCAqh9UHy7R/jiUxwzw/288OpgO+i+2l11Y=
-Subject: Re: [PATCH v3] block: check queue's limits.discard_granularity in
- __blkdev_issue_discard()
-Message-ID: <8961f2e7-9b57-5353-92f2-0baee916198f@suse.de>
-Date:   Wed, 5 Aug 2020 17:46:10 +0800
+Message-ID: <f018ad35-9b1c-4a31-1499-3da16cd8001b@suse.de>
+Date:   Thu, 6 Aug 2020 00:49:43 +0800
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:68.0)
  Gecko/20100101 Thunderbird/68.11.0
 MIME-Version: 1.0
-In-Reply-To: <CAD9gYJLDPLiF+-8gjk4cpgXBROLy_Hg5zcx+rU8-Bi+jVRiz=w@mail.gmail.com>
+In-Reply-To: <20200805154843.GB191798@magnolia>
 Content-Type: text/plain; charset=utf-8
 Content-Language: en-US
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 2020/8/5 17:22, Jinpu Wang wrote:
-> Hi Coly,
-> 
-> one question below:
-> Coly Li <colyli@suse.de> 于2020年8月5日周三 上午8:36写道：
->>
+On 2020/8/5 23:48, Darrick J. Wong wrote:
+> On Wed, Aug 05, 2020 at 02:31:50PM +0800, Coly Li wrote:
 >> If create a loop device with a backing NVMe SSD, current loop device
 >> driver doesn't correctly set its  queue's limits.discard_granularity and
 >> leaves it as 0. If a discard request at LBA 0 on this loop device, in
@@ -144,14 +139,6 @@ On 2020/8/5 17:22, Jinpu Wang wrote:
 >>
 >> This is the procedure to reproduce the panic,
 >>   # modprobe scsi_debug delay=0 dev_size_mb=2048 max_queue=1
-> Why do you need scsi_debug here, it's not relevant and not used?
-
-If I don't config SCSI_DEBUG this panic cannot be triggered in my
-environment, I don't know why. Maybe it is unnecessary, but in case
-other people has similar configuration as mine, I add this command line
-in the commit log.
-
-
 >>   # losetup -f /dev/nvme0n1 --direct-io=on
 >>   # blkdiscard /dev/loop0 -o 0 -l 0x200
 >>
@@ -160,7 +147,6 @@ in the commit log.
 >> is 0, then prints a warning oops information and returns -EOPNOTSUPP to
 >> the caller to indicate that this buggy device driver doesn't support
 >> discard request.
-> The patch itself looks correct to me.
 >>
 >> Fixes: 9b15d109a6b2 ("block: improve discard bio alignment in __blkdev_issue_discard()")
 >> Fixes: c52abf563049 ("loop: Better discard support for block devices")
@@ -175,8 +161,44 @@ in the commit log.
 >> Cc: Jens Axboe <axboe@kernel.dk>
 >> Cc: Martin K. Petersen <martin.petersen@oracle.com>
 >> Cc: Xiao Ni <xni@redhat.com>
-> Reviewed-by: Jack Wang <jinpu.wang@cloud.ionos.com>
-[snipped]
+>> ---
+>> Changelog:
+>> v3: print device name assocated with the buggy driver.
+>> v2: fix typo of the wrong return error code.
+>> v1: first version.
+>>
+>>  block/blk-lib.c | 9 +++++++++
+>>  1 file changed, 9 insertions(+)
+>>
+>> diff --git a/block/blk-lib.c b/block/blk-lib.c
+>> index 019e09bb9c0e..d3bbb3d9fac3 100644
+>> --- a/block/blk-lib.c
+>> +++ b/block/blk-lib.c
+>> @@ -47,6 +47,15 @@ int __blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+>>  		op = REQ_OP_DISCARD;
+>>  	}
+>>  
+>> +	/* In case the discard granularity isn't set by buggy device driver */
+>> +	if (WARN_ON_ONCE(!q->limits.discard_granularity)) {
+>> +		char dev_name[BDEVNAME_SIZE];
+>> +
+>> +		bdevname(bdev, dev_name);
+>> +		pr_err("%s: Error: discard_granularity is 0.\n", dev_name);
+> 
+> Hm, you might want to ratelimit this, before some buggy device +
+> careless program flood dmesg.
+> 
+
+Sure, I will use pr_err_ratelimit() in next version.
+
+> Also, why is it necessary to WARN_ON_ONCE /and/ pr_err the same
+> condition?
+> 
+
+The WARN_ON_ONCE() just though the warning message, but does not point
+out which device is buggy. Indeed this is a serious problem, so current
+kernel message is a warning oops info and followed by "loop: Error:
+discard_granularity is 0."
 
 Thanks.
 
