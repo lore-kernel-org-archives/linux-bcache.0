@@ -5,51 +5,51 @@ X-Spam-Level:
 X-Spam-Status: No, score=-13.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
 	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A84F5C433DF
-	for <linux-bcache@archiver.kernel.org>; Mon, 10 Aug 2020 19:16:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C4037C433E1
+	for <linux-bcache@archiver.kernel.org>; Mon, 10 Aug 2020 19:17:46 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 73E88207FF
-	for <linux-bcache@archiver.kernel.org>; Mon, 10 Aug 2020 19:16:32 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id A54AF22BEB
+	for <linux-bcache@archiver.kernel.org>; Mon, 10 Aug 2020 19:17:46 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-	s=default; t=1597086992;
-	bh=sWjWwfjD7flakOy6N68TgJl+qcKvm9h/87QBngaZ2ic=;
+	s=default; t=1597087066;
+	bh=J2Vzlc4yCrjMyL61zX/BZkfCsomgm7E912enXuGztbI=;
 	h=From:To:Cc:Subject:Date:In-Reply-To:References:List-ID:From;
-	b=VXoExTnbte73p/RMWZrFGf4QDI+wcF3VwoYj3wR2OuR/xWWKbDoPTFzUmhMH8F+2f
-	 KEyYmrTc/cIU/r94Hf7Sh3++E5zysQOfGYKv316IDJNaGjtR2i2yG0b7NCgo5EYsCA
-	 RlVr0zmp6nNPNgeJx/bv4fUM9dHyfCLgtmTc6+Pw=
+	b=Pz+6JhjvnoxOdRgl4TpId29L/b3a1J+xkqYD6Yji3tHOa8ZkJ0q6d99x5ReK2O5mq
+	 v/cUOjJvoJj6OHvKq1p9LI8bskfPCQ6sX4qeiskYqHnpdejqmqeFYm6d9kH2Coy4Vo
+	 SRaXrUnnaxSsbzjTWkW0gmLKiyxVkkvSylpVj3Lw=
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1730078AbgHJTOn (ORCPT
+        id S1728703AbgHJTRp (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 10 Aug 2020 15:14:43 -0400
-Received: from mail.kernel.org ([198.145.29.99]:47136 "EHLO mail.kernel.org"
+        Mon, 10 Aug 2020 15:17:45 -0400
+Received: from mail.kernel.org ([198.145.29.99]:46220 "EHLO mail.kernel.org"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1730072AbgHJTOm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 10 Aug 2020 15:14:42 -0400
+        id S1729309AbgHJTOQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 10 Aug 2020 15:14:16 -0400
 Received: from sasha-vm.mshome.net (c-73-47-72-35.hsd1.nh.comcast.net [73.47.72.35])
         (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
         (No client certificate requested)
-        by mail.kernel.org (Postfix) with ESMTPSA id 94D6222B47;
-        Mon, 10 Aug 2020 19:14:40 +0000 (UTC)
+        by mail.kernel.org (Postfix) with ESMTPSA id 6337522BEB;
+        Mon, 10 Aug 2020 19:14:14 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
-        s=default; t=1597086881;
-        bh=sWjWwfjD7flakOy6N68TgJl+qcKvm9h/87QBngaZ2ic=;
+        s=default; t=1597086855;
+        bh=J2Vzlc4yCrjMyL61zX/BZkfCsomgm7E912enXuGztbI=;
         h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
-        b=hKBI9hFqKL52Qz5pz52BdmfKGJfGUuVRk/33BhI30ffL4JBnf5nsbaQo8Ze0ZXteP
-         XmtB00HOUoGU4jYcLf7CEAN0grUMHgl96Ef02UTWALd00ymnTMc3eEBFGvcOAr/L6R
-         qYXSKR1Q8Tosxd/LGzCPTwxZ2Z01c3YXqd3t8OkM=
+        b=digJx6WihX+27n+QV+Y8Z8epFhB9agxDwYqav4H3REdyt2UwsWhiy+Unj3vL2oQQx
+         tKJOH78iiCbhydVA7oGGszqNet5fTt8m+fs1XpSQLwFpEKiD7tXMDm9W6hMT0KQCFL
+         fzOKFO+U1T1WRKEHxCxeUZ3jvOD9imlfQ537UfoA=
 From:   Sasha Levin <sashal@kernel.org>
 To:     linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc:     Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>,
         Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>,
         linux-bcache@vger.kernel.org
-Subject: [PATCH AUTOSEL 4.9 16/17] bcache: fix super block seq numbers comparision in register_cache_set()
-Date:   Mon, 10 Aug 2020 15:14:17 -0400
-Message-Id: <20200810191418.3795394-16-sashal@kernel.org>
+Subject: [PATCH AUTOSEL 4.14 21/22] bcache: fix super block seq numbers comparision in register_cache_set()
+Date:   Mon, 10 Aug 2020 15:13:43 -0400
+Message-Id: <20200810191345.3795166-21-sashal@kernel.org>
 X-Mailer: git-send-email 2.25.1
-In-Reply-To: <20200810191418.3795394-1-sashal@kernel.org>
-References: <20200810191418.3795394-1-sashal@kernel.org>
+In-Reply-To: <20200810191345.3795166-1-sashal@kernel.org>
+References: <20200810191345.3795166-1-sashal@kernel.org>
 MIME-Version: 1.0
 X-stable: review
 X-Patchwork-Hint: Ignore
@@ -110,10 +110,10 @@ Signed-off-by: Sasha Levin <sashal@kernel.org>
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 526e9d5a4fb16..2c976cf361984 100644
+index 690aeb09bbf55..32498b912ce7c 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1778,7 +1778,14 @@ static const char *register_cache_set(struct cache *ca)
+@@ -1780,7 +1780,14 @@ static const char *register_cache_set(struct cache *ca)
  	    sysfs_create_link(&c->kobj, &ca->kobj, buf))
  		goto err;
  
