@@ -7,29 +7,29 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no
 	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6B089C433E1
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:00 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9AB15C433DF
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:01 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 52E2B20657
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:00 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8480C20657
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:01 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729034AbgHOWXv (ORCPT
+        id S1729266AbgHOWYA (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 15 Aug 2020 18:23:51 -0400
-Received: from mx2.suse.de ([195.135.220.15]:37958 "EHLO mx2.suse.de"
+        Sat, 15 Aug 2020 18:24:00 -0400
+Received: from mx2.suse.de ([195.135.220.15]:37944 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726511AbgHOWXr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 15 Aug 2020 18:23:47 -0400
+        id S1729027AbgHOWXu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 15 Aug 2020 18:23:50 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 49AB0B1CF;
-        Sat, 15 Aug 2020 12:48:34 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id CC4D2B1BF;
+        Sat, 15 Aug 2020 12:48:16 +0000 (UTC)
 From:   colyli@suse.de
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH v1 12/14] bcache: check and set sync status on cache's in-memory super block
-Date:   Sat, 15 Aug 2020 20:47:41 +0800
-Message-Id: <20200815124743.115270-13-colyli@suse.de>
+Subject: [PATCH v1 02/14] bcache: explicitly make cache_set only have single cache
+Date:   Sat, 15 Aug 2020 20:47:31 +0800
+Message-Id: <20200815124743.115270-3-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200815124743.115270-1-colyli@suse.de>
 References: <20200815124743.115270-1-colyli@suse.de>
@@ -42,106 +42,125 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-Currently the cache's sync status is checked and set on cache set's in-
-memory partial super block. After removing the embedded struct cache_sb
-from cache set and reference cache's in-memory super block from struct
-cache_set, the sync status can set and check directly on cache's super
-block.
+Currently although the bcache code has a framework for multiple caches
+in a cache set, but indeed the multiple caches never completed and users
+use md raid1 for multiple copies of the cached data.
 
-This patch checks and sets the cache sync status directly on cache's
-in-memory super block. This is a preparation for later removing embedded
-struct cache_sb from struct cache_set.
+This patch does the following change in struct cache_set, to explicitly
+make a cache_set only have single cache,
+- Change pointer array "*cache[MAX_CACHES_PER_SET]" to a single pointer
+  "*cache".
+- Remove pointer array "*cache_by_alloc[MAX_CACHES_PER_SET]".
+- Remove "caches_loaded".
+
+Now the code looks as exactly what it does in practic: only one cache is
+used in the cache set.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/alloc.c   | 2 +-
- drivers/md/bcache/journal.c | 2 +-
- drivers/md/bcache/super.c   | 7 ++-----
- drivers/md/bcache/sysfs.c   | 6 +++---
- 4 files changed, 7 insertions(+), 10 deletions(-)
+ drivers/md/bcache/alloc.c  |  2 +-
+ drivers/md/bcache/bcache.h |  8 +++-----
+ drivers/md/bcache/super.c  | 19 ++++++++-----------
+ 3 files changed, 12 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 1b8310992dd0..65fdbdeb5134 100644
+index 4493ff57476d..3385f6add6df 100644
 --- a/drivers/md/bcache/alloc.c
 +++ b/drivers/md/bcache/alloc.c
-@@ -361,7 +361,7 @@ static int bch_allocator_thread(void *arg)
- 		 * new stuff to them:
- 		 */
- 		allocator_wait(ca, !atomic_read(&ca->set->prio_blocked));
--		if (CACHE_SYNC(&ca->set->sb)) {
-+		if (CACHE_SYNC(&ca->sb)) {
- 			/*
- 			 * This could deadlock if an allocation with a btree
- 			 * node locked ever blocked - having the btree node
-diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index ccd5de0ab0fe..e2810668ede3 100644
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -915,7 +915,7 @@ atomic_t *bch_journal(struct cache_set *c,
- 	if (unlikely(test_bit(CACHE_SET_IO_DISABLE, &c->flags)))
- 		return NULL;
+@@ -501,7 +501,7 @@ int __bch_bucket_alloc_set(struct cache_set *c, unsigned int reserve,
  
--	if (!CACHE_SYNC(&c->sb))
-+	if (!CACHE_SYNC(&c->cache->sb))
- 		return NULL;
+ 	bkey_init(k);
  
- 	w = journal_wait_for_write(c, bch_keylist_nkeys(keys));
+-	ca = c->cache_by_alloc[0];
++	ca = c->cache;
+ 	b = bch_bucket_alloc(ca, reserve, wait);
+ 	if (b == -1)
+ 		goto err;
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 5ff6e9573935..aa112c1adba1 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -519,9 +519,7 @@ struct cache_set {
+ 
+ 	struct cache_sb		sb;
+ 
+-	struct cache		*cache[MAX_CACHES_PER_SET];
+-	struct cache		*cache_by_alloc[MAX_CACHES_PER_SET];
+-	int			caches_loaded;
++	struct cache		*cache;
+ 
+ 	struct bcache_device	**devices;
+ 	unsigned int		devices_max_used;
+@@ -808,7 +806,7 @@ static inline struct cache *PTR_CACHE(struct cache_set *c,
+ 				      const struct bkey *k,
+ 				      unsigned int ptr)
+ {
+-	return c->cache[PTR_DEV(k, ptr)];
++	return c->cache;
+ }
+ 
+ static inline size_t PTR_BUCKET_NR(struct cache_set *c,
+@@ -890,7 +888,7 @@ do {									\
+ /* Looping macros */
+ 
+ #define for_each_cache(ca, cs, iter)					\
+-	for (iter = 0; ca = cs->cache[iter], iter < (cs)->sb.nr_in_set; iter++)
++	for (iter = 0; ca = cs->cache, iter < 1; iter++)
+ 
+ #define for_each_bucket(b, ca)						\
+ 	for (b = (ca)->buckets + (ca)->sb.first_bucket;			\
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 80cfb9dfe93e..6b94b396f9e9 100644
+index 7057ec48f3d1..e9ccfa17beb8 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -1954,7 +1954,7 @@ static int run_cache_set(struct cache_set *c)
- 	c->nbuckets = ca->sb.nbuckets;
- 	set_gc_sectors(c);
+@@ -1675,7 +1675,7 @@ static void cache_set_free(struct closure *cl)
+ 	for_each_cache(ca, c, i)
+ 		if (ca) {
+ 			ca->set = NULL;
+-			c->cache[ca->sb.nr_this_dev] = NULL;
++			c->cache = NULL;
+ 			kobject_put(&ca->kobj);
+ 		}
  
--	if (CACHE_SYNC(&c->sb)) {
-+	if (CACHE_SYNC(&c->cache->sb)) {
- 		struct bkey *k;
- 		struct jset *j;
+@@ -2166,7 +2166,7 @@ static const char *register_cache_set(struct cache *ca)
  
-@@ -2077,7 +2077,7 @@ static int run_cache_set(struct cache_set *c)
- 		 * everything is set up - fortunately journal entries won't be
- 		 * written until the SET_CACHE_SYNC() here:
- 		 */
--		SET_CACHE_SYNC(&c->sb, true);
-+		SET_CACHE_SYNC(&c->cache->sb, true);
- 
- 		bch_journal_next(&c->journal);
- 		bch_journal_meta(c, &cl);
-@@ -2123,9 +2123,6 @@ static const char *register_cache_set(struct cache *ca)
- 			if (c->cache)
+ 	list_for_each_entry(c, &bch_cache_sets, list)
+ 		if (!memcmp(c->sb.set_uuid, ca->sb.set_uuid, 16)) {
+-			if (c->cache[ca->sb.nr_this_dev])
++			if (c->cache)
  				return "duplicate cache set member";
  
--			if (!CACHE_SYNC(&ca->sb))
--				SET_CACHE_SYNC(&c->sb, false);
--
- 			goto found;
- 		}
+ 			if (!can_attach_cache(ca, c))
+@@ -2216,14 +2216,11 @@ static const char *register_cache_set(struct cache *ca)
  
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index 4bfe98faadcc..554e3afc9b68 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -711,7 +711,7 @@ SHOW(__bch_cache_set)
- {
- 	struct cache_set *c = container_of(kobj, struct cache_set, kobj);
+ 	kobject_get(&ca->kobj);
+ 	ca->set = c;
+-	ca->set->cache[ca->sb.nr_this_dev] = ca;
+-	c->cache_by_alloc[c->caches_loaded++] = ca;
++	ca->set->cache = ca;
  
--	sysfs_print(synchronous,		CACHE_SYNC(&c->sb));
-+	sysfs_print(synchronous,		CACHE_SYNC(&c->cache->sb));
- 	sysfs_print(journal_delay_ms,		c->journal_delay_ms);
- 	sysfs_hprint(bucket_size,		bucket_bytes(c->cache));
- 	sysfs_hprint(block_size,		block_bytes(c->cache));
-@@ -812,8 +812,8 @@ STORE(__bch_cache_set)
- 	if (attr == &sysfs_synchronous) {
- 		bool sync = strtoul_or_return(buf);
+-	if (c->caches_loaded == c->sb.nr_in_set) {
+-		err = "failed to run cache set";
+-		if (run_cache_set(c) < 0)
+-			goto err;
+-	}
++	err = "failed to run cache set";
++	if (run_cache_set(c) < 0)
++		goto err;
  
--		if (sync != CACHE_SYNC(&c->sb)) {
--			SET_CACHE_SYNC(&c->sb, sync);
-+		if (sync != CACHE_SYNC(&c->cache->sb)) {
-+			SET_CACHE_SYNC(&c->cache->sb, sync);
- 			bcache_write_super(c);
- 		}
+ 	return NULL;
+ err:
+@@ -2240,8 +2237,8 @@ void bch_cache_release(struct kobject *kobj)
+ 	unsigned int i;
+ 
+ 	if (ca->set) {
+-		BUG_ON(ca->set->cache[ca->sb.nr_this_dev] != ca);
+-		ca->set->cache[ca->sb.nr_this_dev] = NULL;
++		BUG_ON(ca->set->cache != ca);
++		ca->set->cache = NULL;
  	}
+ 
+ 	free_pages((unsigned long) ca->disk_buckets, ilog2(meta_bucket_pages(&ca->sb)));
 -- 
 2.26.2
 
