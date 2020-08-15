@@ -4,32 +4,32 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no
-	version=3.4.0
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 96E3EC433E1
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:21 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2970BC433E8
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:22 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7663B20657
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:21 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 13A5620675
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729149AbgHOWYU (ORCPT
+        id S1728189AbgHOWYU (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
         Sat, 15 Aug 2020 18:24:20 -0400
-Received: from mx2.suse.de ([195.135.220.15]:37794 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:37810 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726598AbgHOWXo (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        id S1728207AbgHOWXo (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
         Sat, 15 Aug 2020 18:23:44 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 7C4D3B1CD;
-        Sat, 15 Aug 2020 12:48:30 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id A91F1B1CB;
+        Sat, 15 Aug 2020 12:48:26 +0000 (UTC)
 From:   colyli@suse.de
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH v1 10/14] bcache: don't check seq numbers in register_cache_set()
-Date:   Sat, 15 Aug 2020 20:47:39 +0800
-Message-Id: <20200815124743.115270-11-colyli@suse.de>
+Subject: [PATCH v1 08/14] bcache: only use bucket_bytes() on struct cache
+Date:   Sat, 15 Aug 2020 20:47:37 +0800
+Message-Id: <20200815124743.115270-9-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200815124743.115270-1-colyli@suse.de>
 References: <20200815124743.115270-1-colyli@suse.de>
@@ -42,49 +42,47 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-In order to update the partial super block of cache set, the seq numbers
-of cache and cache set are checked in register_cache_set(). If cache's
-seq number is larger than cache set's seq number, cache set must update
-its partial super block from cache's super block. It is unncessary when
-the embedded struct cache_sb is removed from struct cache set.
+Because struct cache_set and struct cache both have struct cache_sb,
+macro bucket_bytes() currently are used on both of them. When removing
+the embedded struct cache_sb from struct cache_set, this macro won't be
+used on struct cache_set anymore.
 
-This patch removed the seq numbers checking from register_cache_set(),
-because later there will be no such partial super block in struct cache
-set, the cache set will directly reference in-memory super block from
-struct cache. This is a preparation patch for removing embedded struct
-cache_sb from struct cache_set.
+This patch unifies all bucket_bytes() usage only on struct cache, this is
+one of the preparation to remove the embedded struct cache_sb from
+struct cache_set.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/super.c | 15 ---------------
- 1 file changed, 15 deletions(-)
+ drivers/md/bcache/bcache.h | 2 +-
+ drivers/md/bcache/sysfs.c  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 20de004ab2ef..cdc1ebee5044 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2160,21 +2160,6 @@ static const char *register_cache_set(struct cache *ca)
- 	    sysfs_create_link(&c->kobj, &ca->kobj, buf))
- 		goto err;
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 48a2585b6bbb..94d4baf4c405 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -757,7 +757,7 @@ struct bbio {
+ #define btree_default_blocks(c)						\
+ 	((unsigned int) ((PAGE_SECTORS * (c)->btree_pages) >> (c)->block_bits))
  
--	/*
--	 * A special case is both ca->sb.seq and c->sb.seq are 0,
--	 * such condition happens on a new created cache device whose
--	 * super block is never flushed yet. In this case c->sb.version
--	 * and other members should be updated too, otherwise we will
--	 * have a mistaken super block version in cache set.
--	 */
--	if (ca->sb.seq > c->sb.seq || c->sb.seq == 0) {
--		c->sb.version		= ca->sb.version;
--		memcpy(c->set_uuid, ca->sb.set_uuid, 16);
--		c->sb.flags             = ca->sb.flags;
--		c->sb.seq		= ca->sb.seq;
--		pr_debug("set version = %llu\n", c->sb.version);
--	}
--
- 	kobject_get(&ca->kobj);
- 	ca->set = c;
- 	ca->set->cache = ca;
+-#define bucket_bytes(c)		((c)->sb.bucket_size << 9)
++#define bucket_bytes(ca)	((ca)->sb.bucket_size << 9)
+ #define block_bytes(ca)		((ca)->sb.block_size << 9)
+ 
+ static inline unsigned int meta_bucket_pages(struct cache_sb *sb)
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index b9f524ab5cc8..4bfe98faadcc 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -713,7 +713,7 @@ SHOW(__bch_cache_set)
+ 
+ 	sysfs_print(synchronous,		CACHE_SYNC(&c->sb));
+ 	sysfs_print(journal_delay_ms,		c->journal_delay_ms);
+-	sysfs_hprint(bucket_size,		bucket_bytes(c));
++	sysfs_hprint(bucket_size,		bucket_bytes(c->cache));
+ 	sysfs_hprint(block_size,		block_bytes(c->cache));
+ 	sysfs_print(tree_depth,			c->root->level);
+ 	sysfs_print(root_usage_percent,		bch_root_usage(c));
 -- 
 2.26.2
 
