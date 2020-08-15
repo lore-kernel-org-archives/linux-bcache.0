@@ -2,37 +2,34 @@ Return-Path: <SRS0=BgHr=BZ=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-7.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	USER_AGENT_GIT autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BBD27C433E3
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 21:44:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 78066C433E4
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 21:44:10 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A01EB23B24
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 21:44:09 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 5C19523B24
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 21:44:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726817AbgHOVnt (ORCPT
+        id S1726021AbgHOVoJ (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 15 Aug 2020 17:43:49 -0400
-Received: from mx2.suse.de ([195.135.220.15]:54982 "EHLO mx2.suse.de"
+        Sat, 15 Aug 2020 17:44:09 -0400
+Received: from mx2.suse.de ([195.135.220.15]:55004 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726651AbgHOVnt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 15 Aug 2020 17:43:49 -0400
+        id S1726675AbgHOVnu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 15 Aug 2020 17:43:50 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 6126DB7A0;
-        Sat, 15 Aug 2020 04:11:36 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 35A57AC79;
+        Sat, 15 Aug 2020 04:11:15 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH 10/14] bcache: don't check seq numbers in register_cache_set()
-Date:   Sat, 15 Aug 2020 12:10:39 +0800
-Message-Id: <20200815041043.45116-11-colyli@suse.de>
+Subject: [PATCH 00/14] bcache: remove multiple caches code framework
+Date:   Sat, 15 Aug 2020 12:10:29 +0800
+Message-Id: <20200815041043.45116-1-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20200815041043.45116-1-colyli@suse.de>
-References: <20200815041043.45116-1-colyli@suse.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
@@ -40,49 +37,71 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-In order to update the partial super block of cache set, the seq numbers
-of cache and cache set are checked in register_cache_set(). If cache's
-seq number is larger than cache set's seq number, cache set must update
-its partial super block from cache's super block. It is unncessary when
-the embedded struct cache_sb is removed from struct cache set.
+The multiple caches code framework in bcache is to store multiple
+copies of the cached data among multiple caches of the cache set.
+Current code framework just does simple data write to each cache without
+any extra condition handling (e.g. device failure, slow devices). This
+code framework is not and will never be completed. Considering people
+may use md raid1 for same similar data duplication purpose, the multiple
+caches framework is useless dead code indeed.
 
-This patch removed the seq numbers checking from register_cache_set(),
-because later there will be no such partial super block in struct cache
-set, the cache set will directly reference in-memory super block from
-struct cache. This is a preparation patch for removing embedded struct
-cache_sb from struct cache_set.
+Due to the multiple caches code framework, bcache has two data structure
+struct cache and struct cache_set to manage the cache device. Indeed
+since bcache was merged into mainline kernel in Linux v3.10, a cache set
+only has one cache, the unnecessary two level abstraction makes extra
+effort to maintain redundant information between struct cache and struct
+cache set, for examaple the in-memmory super block struct cache_sb.
 
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/super.c | 15 ---------------
- 1 file changed, 15 deletions(-)
+This is the first wave effort to remove multiple caches framework and
+make the code and data structure relation to be more clear. This series
+explicitly make each cache set only have single cache, and remove the
+embedded partial super block in struct cache_set and directly reference
+cache's in-memory super block, finally move struct cache_sb from
+include/uapi/linux/bcache.h to drivers/md/bcache/bcache.h since it isn't
+part of uapi anymore.
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 05c5a7e867bb..4ba713d0d9b0 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2160,21 +2160,6 @@ static const char *register_cache_set(struct cache *ca)
- 	    sysfs_create_link(&c->kobj, &ca->kobj, buf))
- 		goto err;
- 
--	/*
--	 * A special case is both ca->sb.seq and c->sb.seq are 0,
--	 * such condition happens on a new created cache device whose
--	 * super block is never flushed yet. In this case c->sb.version
--	 * and other members should be updated too, otherwise we will
--	 * have a mistaken super block version in cache set.
--	 */
--	if (ca->sb.seq > c->sb.seq || c->sb.seq == 0) {
--		c->sb.version		= ca->sb.version;
--		memcpy(c->set_uuid, ca->sb.set_uuid, 16);
--		c->sb.flags             = ca->sb.flags;
--		c->sb.seq		= ca->sb.seq;
--		pr_debug("set version = %llu\n", c->sb.version);
--	}
--
- 	kobject_get(&ca->kobj);
- 	ca->set = c;
- 	ca->set->cache = ca;
+The patch set is just compiling passed, I post this series early for
+your review and comments. More fixes after testing will follow up soon.
+
+Thanks in advance.
+
+Coly Li
+----
+
+Coly Li (14):
+  bcache: remove 'int n' from parameter list of bch_bucket_alloc_set()
+  bcache: explicitly make cache_set only have single cache
+  bcache: remove for_each_cache()
+  bcache: add set_uuid in struct cache_set
+  bcache: only use block_bytes() on struct cache
+  bcache: remove useless alloc_bucket_pages()
+  bcache: remove useless bucket_pages()
+  bcache: only use bucket_bytes() on struct cache
+  bcache: avoid data copy between cache_set->sb and cache->sb
+  bcache: don't check seq numbers in register_cache_set()
+  bcache: remove can_attach_cache()
+  bcache: check and set sync status on cache's in-memory super block
+  bcache: remove embedded struct cache_sb from struct cache_set
+  bcache: move struct cache_sb out of uapi bcache.h
+
+ drivers/md/bcache/alloc.c     |  60 ++++-----
+ drivers/md/bcache/bcache.h    | 128 +++++++++++++++---
+ drivers/md/bcache/btree.c     | 144 ++++++++++----------
+ drivers/md/bcache/btree.h     |   2 +-
+ drivers/md/bcache/debug.c     |  10 +-
+ drivers/md/bcache/extents.c   |   6 +-
+ drivers/md/bcache/features.c  |   4 +-
+ drivers/md/bcache/io.c        |   2 +-
+ drivers/md/bcache/journal.c   | 246 ++++++++++++++++------------------
+ drivers/md/bcache/movinggc.c  |  58 ++++----
+ drivers/md/bcache/request.c   |   6 +-
+ drivers/md/bcache/super.c     | 225 +++++++++++--------------------
+ drivers/md/bcache/sysfs.c     |  10 +-
+ drivers/md/bcache/writeback.c |   2 +-
+ include/trace/events/bcache.h |   4 +-
+ include/uapi/linux/bcache.h   |  98 --------------
+ 16 files changed, 445 insertions(+), 560 deletions(-)
+
 -- 
 2.26.2
 
