@@ -4,32 +4,32 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no
-	version=3.4.0
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C16E6C433E4
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:07 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 775EDC433E1
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:13 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id AA41F20657
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:07 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 5D7CE20657
+	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728785AbgHOWYG (ORCPT
+        id S1729352AbgHOWYH (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 15 Aug 2020 18:24:06 -0400
-Received: from mx2.suse.de ([195.135.220.15]:37960 "EHLO mx2.suse.de"
+        Sat, 15 Aug 2020 18:24:07 -0400
+Received: from mx2.suse.de ([195.135.220.15]:37952 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1728823AbgHOWXq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        id S1728755AbgHOWXq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
         Sat, 15 Aug 2020 18:23:46 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 5D937ADC2;
-        Sat, 15 Aug 2020 12:48:15 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 21E4CB1C7;
+        Sat, 15 Aug 2020 12:48:20 +0000 (UTC)
 From:   colyli@suse.de
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH v1 01/14] bcache: remove 'int n' from parameter list of bch_bucket_alloc_set()
-Date:   Sat, 15 Aug 2020 20:47:30 +0800
-Message-Id: <20200815124743.115270-2-colyli@suse.de>
+Subject: [PATCH v1 04/14] bcache: add set_uuid in struct cache_set
+Date:   Sat, 15 Aug 2020 20:47:33 +0800
+Message-Id: <20200815124743.115270-5-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200815124743.115270-1-colyli@suse.de>
 References: <20200815124743.115270-1-colyli@suse.de>
@@ -42,148 +42,170 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: Coly Li <colyli@suse.de>
 
-The parameter 'int n' from bch_bucket_alloc_set() is not cleared
-defined. From the code comments n is the number of buckets to alloc, but
-from the code itself 'n' is the maximum cache to iterate. Indeed all the
-locations where bch_bucket_alloc_set() is called, 'n' is alwasy 1.
-
-This patch removes the confused and unnecessary 'int n' from parameter
-list of  bch_bucket_alloc_set(), and explicitly allocates only 1 bucket
-for its caller.
+This patch adds a separated set_uuid[16] in struct cache_set, to store
+the uuid of the cache set. This is the preparation to remove the
+embedded struct cache_sb from struct cache_set.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/alloc.c  | 35 +++++++++++++++--------------------
- drivers/md/bcache/bcache.h |  4 ++--
- drivers/md/bcache/btree.c  |  2 +-
- drivers/md/bcache/super.c  |  2 +-
- 4 files changed, 19 insertions(+), 24 deletions(-)
+ drivers/md/bcache/bcache.h    |  1 +
+ drivers/md/bcache/debug.c     |  2 +-
+ drivers/md/bcache/super.c     | 24 ++++++++++++------------
+ include/trace/events/bcache.h |  4 ++--
+ 4 files changed, 16 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 52035a78d836..4493ff57476d 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -49,7 +49,7 @@
-  *
-  * bch_bucket_alloc() allocates a single bucket from a specific cache.
-  *
-- * bch_bucket_alloc_set() allocates one or more buckets from different caches
-+ * bch_bucket_alloc_set() allocates one  bucket from different caches
-  * out of a cache set.
-  *
-  * free_some_buckets() drives all the processes described above. It's called
-@@ -488,34 +488,29 @@ void bch_bucket_free(struct cache_set *c, struct bkey *k)
- }
- 
- int __bch_bucket_alloc_set(struct cache_set *c, unsigned int reserve,
--			   struct bkey *k, int n, bool wait)
-+			   struct bkey *k, bool wait)
- {
--	int i;
-+	struct cache *ca;
-+	long b;
- 
- 	/* No allocation if CACHE_SET_IO_DISABLE bit is set */
- 	if (unlikely(test_bit(CACHE_SET_IO_DISABLE, &c->flags)))
- 		return -1;
- 
- 	lockdep_assert_held(&c->bucket_lock);
--	BUG_ON(!n || n > c->caches_loaded || n > MAX_CACHES_PER_SET);
- 
- 	bkey_init(k);
- 
--	/* sort by free space/prio of oldest data in caches */
--
--	for (i = 0; i < n; i++) {
--		struct cache *ca = c->cache_by_alloc[i];
--		long b = bch_bucket_alloc(ca, reserve, wait);
-+	ca = c->cache_by_alloc[0];
-+	b = bch_bucket_alloc(ca, reserve, wait);
-+	if (b == -1)
-+		goto err;
- 
--		if (b == -1)
--			goto err;
-+	k->ptr[0] = MAKE_PTR(ca->buckets[b].gen,
-+			     bucket_to_sector(c, b),
-+			     ca->sb.nr_this_dev);
- 
--		k->ptr[i] = MAKE_PTR(ca->buckets[b].gen,
--				bucket_to_sector(c, b),
--				ca->sb.nr_this_dev);
--
--		SET_KEY_PTRS(k, i + 1);
--	}
-+	SET_KEY_PTRS(k, 1);
- 
- 	return 0;
- err:
-@@ -525,12 +520,12 @@ int __bch_bucket_alloc_set(struct cache_set *c, unsigned int reserve,
- }
- 
- int bch_bucket_alloc_set(struct cache_set *c, unsigned int reserve,
--			 struct bkey *k, int n, bool wait)
-+			 struct bkey *k, bool wait)
- {
- 	int ret;
- 
- 	mutex_lock(&c->bucket_lock);
--	ret = __bch_bucket_alloc_set(c, reserve, k, n, wait);
-+	ret = __bch_bucket_alloc_set(c, reserve, k, wait);
- 	mutex_unlock(&c->bucket_lock);
- 	return ret;
- }
-@@ -638,7 +633,7 @@ bool bch_alloc_sectors(struct cache_set *c,
- 
- 		spin_unlock(&c->data_bucket_lock);
- 
--		if (bch_bucket_alloc_set(c, watermark, &alloc.key, 1, wait))
-+		if (bch_bucket_alloc_set(c, watermark, &alloc.key, wait))
- 			return false;
- 
- 		spin_lock(&c->data_bucket_lock);
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 4fd03d2496d8..5ff6e9573935 100644
+index 7ffe6b2d179b..94a62acac4fc 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -994,9 +994,9 @@ void bch_bucket_free(struct cache_set *c, struct bkey *k);
+@@ -668,6 +668,7 @@ struct cache_set {
+ 	struct mutex		verify_lock;
+ #endif
  
- long bch_bucket_alloc(struct cache *ca, unsigned int reserve, bool wait);
- int __bch_bucket_alloc_set(struct cache_set *c, unsigned int reserve,
--			   struct bkey *k, int n, bool wait);
-+			   struct bkey *k, bool wait);
- int bch_bucket_alloc_set(struct cache_set *c, unsigned int reserve,
--			 struct bkey *k, int n, bool wait);
-+			 struct bkey *k, bool wait);
- bool bch_alloc_sectors(struct cache_set *c, struct bkey *k,
- 		       unsigned int sectors, unsigned int write_point,
- 		       unsigned int write_prio, bool wait);
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 3d8bd0692af3..e2a719fed53b 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1091,7 +1091,7 @@ struct btree *__bch_btree_node_alloc(struct cache_set *c, struct btree_op *op,
++	uint8_t			set_uuid[16];
+ 	unsigned int		nr_uuids;
+ 	struct uuid_entry	*uuids;
+ 	BKEY_PADDED(uuid_bucket);
+diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
+index 336f43910383..0ccc1b0baa42 100644
+--- a/drivers/md/bcache/debug.c
++++ b/drivers/md/bcache/debug.c
+@@ -238,7 +238,7 @@ void bch_debug_init_cache_set(struct cache_set *c)
+ 	if (!IS_ERR_OR_NULL(bcache_debug)) {
+ 		char name[50];
  
- 	mutex_lock(&c->bucket_lock);
- retry:
--	if (__bch_bucket_alloc_set(c, RESERVE_BTREE, &k.key, 1, wait))
-+	if (__bch_bucket_alloc_set(c, RESERVE_BTREE, &k.key, wait))
- 		goto err;
- 
- 	bkey_put(c, &k.key);
+-		snprintf(name, 50, "bcache-%pU", c->sb.set_uuid);
++		snprintf(name, 50, "bcache-%pU", c->set_uuid);
+ 		c->debug = debugfs_create_file(name, 0400, bcache_debug, c,
+ 					       &cache_set_debug_ops);
+ 	}
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 1bbdc410ee3c..7057ec48f3d1 100644
+index 91883d5c4b62..90a419ad6445 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
-@@ -486,7 +486,7 @@ static int __uuid_write(struct cache_set *c)
- 	closure_init_stack(&cl);
- 	lockdep_assert_held(&bch_register_lock);
+@@ -1189,8 +1189,8 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 	struct cached_dev *exist_dc, *t;
+ 	int ret = 0;
  
--	if (bch_bucket_alloc_set(c, RESERVE_BTREE, &k.key, 1, true))
-+	if (bch_bucket_alloc_set(c, RESERVE_BTREE, &k.key, true))
- 		return 1;
+-	if ((set_uuid && memcmp(set_uuid, c->sb.set_uuid, 16)) ||
+-	    (!set_uuid && memcmp(dc->sb.set_uuid, c->sb.set_uuid, 16)))
++	if ((set_uuid && memcmp(set_uuid, c->set_uuid, 16)) ||
++	    (!set_uuid && memcmp(dc->sb.set_uuid, c->set_uuid, 16)))
+ 		return -ENOENT;
  
- 	size =  meta_bucket_pages(&c->sb) * PAGE_SECTORS;
+ 	if (dc->disk.c) {
+@@ -1262,7 +1262,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 		u->first_reg = u->last_reg = rtime;
+ 		bch_uuid_write(c);
+ 
+-		memcpy(dc->sb.set_uuid, c->sb.set_uuid, 16);
++		memcpy(dc->sb.set_uuid, c->set_uuid, 16);
+ 		SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
+ 
+ 		bch_write_bdev_super(dc, &cl);
+@@ -1324,7 +1324,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 	pr_info("Caching %s as %s on set %pU\n",
+ 		dc->backing_dev_name,
+ 		dc->disk.disk->disk_name,
+-		dc->disk.c->sb.set_uuid);
++		dc->disk.c->set_uuid);
+ 	return 0;
+ }
+ 
+@@ -1632,7 +1632,7 @@ bool bch_cache_set_error(struct cache_set *c, const char *fmt, ...)
+ 	vaf.va = &args;
+ 
+ 	pr_err("error on %pU: %pV, disabling caching\n",
+-	       c->sb.set_uuid, &vaf);
++	       c->set_uuid, &vaf);
+ 
+ 	va_end(args);
+ 
+@@ -1685,7 +1685,7 @@ static void cache_set_free(struct closure *cl)
+ 	list_del(&c->list);
+ 	mutex_unlock(&bch_register_lock);
+ 
+-	pr_info("Cache set %pU unregistered\n", c->sb.set_uuid);
++	pr_info("Cache set %pU unregistered\n", c->set_uuid);
+ 	wake_up(&unregister_wait);
+ 
+ 	closure_debug_destroy(&c->cl);
+@@ -1755,7 +1755,7 @@ static void conditional_stop_bcache_device(struct cache_set *c,
+ {
+ 	if (dc->stop_when_cache_set_failed == BCH_CACHED_DEV_STOP_ALWAYS) {
+ 		pr_warn("stop_when_cache_set_failed of %s is \"always\", stop it for failed cache set %pU.\n",
+-			d->disk->disk_name, c->sb.set_uuid);
++			d->disk->disk_name, c->set_uuid);
+ 		bcache_device_stop(d);
+ 	} else if (atomic_read(&dc->has_dirty)) {
+ 		/*
+@@ -1862,7 +1862,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 
+ 	bch_cache_accounting_init(&c->accounting, &c->cl);
+ 
+-	memcpy(c->sb.set_uuid, sb->set_uuid, 16);
++	memcpy(c->set_uuid, sb->set_uuid, 16);
+ 	c->sb.block_size	= sb->block_size;
+ 	c->sb.bucket_size	= sb->bucket_size;
+ 	c->sb.nr_in_set		= sb->nr_in_set;
+@@ -2145,7 +2145,7 @@ static const char *register_cache_set(struct cache *ca)
+ 	struct cache_set *c;
+ 
+ 	list_for_each_entry(c, &bch_cache_sets, list)
+-		if (!memcmp(c->sb.set_uuid, ca->sb.set_uuid, 16)) {
++		if (!memcmp(c->set_uuid, ca->sb.set_uuid, 16)) {
+ 			if (c->cache)
+ 				return "duplicate cache set member";
+ 
+@@ -2163,7 +2163,7 @@ static const char *register_cache_set(struct cache *ca)
+ 		return err;
+ 
+ 	err = "error creating kobject";
+-	if (kobject_add(&c->kobj, bcache_kobj, "%pU", c->sb.set_uuid) ||
++	if (kobject_add(&c->kobj, bcache_kobj, "%pU", c->set_uuid) ||
+ 	    kobject_add(&c->internal, &c->kobj, "internal"))
+ 		goto err;
+ 
+@@ -2188,7 +2188,7 @@ static const char *register_cache_set(struct cache *ca)
+ 	 */
+ 	if (ca->sb.seq > c->sb.seq || c->sb.seq == 0) {
+ 		c->sb.version		= ca->sb.version;
+-		memcpy(c->sb.set_uuid, ca->sb.set_uuid, 16);
++		memcpy(c->set_uuid, ca->sb.set_uuid, 16);
+ 		c->sb.flags             = ca->sb.flags;
+ 		c->sb.seq		= ca->sb.seq;
+ 		pr_debug("set version = %llu\n", c->sb.version);
+@@ -2698,7 +2698,7 @@ static ssize_t bch_pending_bdevs_cleanup(struct kobject *k,
+ 	list_for_each_entry_safe(pdev, tpdev, &pending_devs, list) {
+ 		list_for_each_entry_safe(c, tc, &bch_cache_sets, list) {
+ 			char *pdev_set_uuid = pdev->dc->sb.set_uuid;
+-			char *set_uuid = c->sb.uuid;
++			char *set_uuid = c->set_uuid;
+ 
+ 			if (!memcmp(pdev_set_uuid, set_uuid, 16)) {
+ 				list_del(&pdev->list);
+diff --git a/include/trace/events/bcache.h b/include/trace/events/bcache.h
+index 0bddea663b3b..e41c611d6d3b 100644
+--- a/include/trace/events/bcache.h
++++ b/include/trace/events/bcache.h
+@@ -164,7 +164,7 @@ TRACE_EVENT(bcache_write,
+ 	),
+ 
+ 	TP_fast_assign(
+-		memcpy(__entry->uuid, c->sb.set_uuid, 16);
++		memcpy(__entry->uuid, c->set_uuid, 16);
+ 		__entry->inode		= inode;
+ 		__entry->sector		= bio->bi_iter.bi_sector;
+ 		__entry->nr_sector	= bio->bi_iter.bi_size >> 9;
+@@ -200,7 +200,7 @@ DECLARE_EVENT_CLASS(cache_set,
+ 	),
+ 
+ 	TP_fast_assign(
+-		memcpy(__entry->uuid, c->sb.set_uuid, 16);
++		memcpy(__entry->uuid, c->set_uuid, 16);
+ 	),
+ 
+ 	TP_printk("%pU", __entry->uuid)
 -- 
 2.26.2
 
