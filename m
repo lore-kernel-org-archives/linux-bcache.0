@@ -7,29 +7,29 @@ X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no
 	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 75D0CC433E1
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 90AB0C433DF
 	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 21:43:49 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5865023B24
+	by mail.kernel.org (Postfix) with ESMTP id 73AA823B45
 	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 21:43:49 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726184AbgHOVnq (ORCPT
+        id S1726598AbgHOVnq (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
         Sat, 15 Aug 2020 17:43:46 -0400
-Received: from mx2.suse.de ([195.135.220.15]:54782 "EHLO mx2.suse.de"
+Received: from mx2.suse.de ([195.135.220.15]:54794 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725984AbgHOVnp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        id S1726004AbgHOVnp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
         Sat, 15 Aug 2020 17:43:45 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 272DCB797;
-        Sat, 15 Aug 2020 04:11:23 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 6AD22B7A3;
+        Sat, 15 Aug 2020 04:11:44 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH 04/14] bcache: add set_uuid in struct cache_set
-Date:   Sat, 15 Aug 2020 12:10:33 +0800
-Message-Id: <20200815041043.45116-5-colyli@suse.de>
+Subject: [PATCH 14/14] bcache: move struct cache_sb out of uapi bcache.h
+Date:   Sat, 15 Aug 2020 12:10:43 +0800
+Message-Id: <20200815041043.45116-15-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200815041043.45116-1-colyli@suse.de>
 References: <20200815041043.45116-1-colyli@suse.de>
@@ -40,170 +40,259 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch adds a separated set_uuid[16] in struct cache_set, to store
-the uuid of the cache set. This is the preparation to remove the
-embedded struct cache_sb from struct cache_set.
+struct cache_sb does not exactly map to cache_sb_disk, it is only for
+in-memory super block and dosn't belong to uapi bcache.h.
+
+This patch moves the struct cache_sb definition and other depending
+macros and inline routines from include/uapi/linux/bcache.h to
+drivers/md/bcache/bcache.h, this is the proper location to have them.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/bcache.h    |  1 +
- drivers/md/bcache/debug.c     |  2 +-
- drivers/md/bcache/super.c     | 24 ++++++++++++------------
- include/trace/events/bcache.h |  4 ++--
- 4 files changed, 16 insertions(+), 15 deletions(-)
+ drivers/md/bcache/bcache.h  | 99 +++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/bcache.h | 98 ------------------------------------
+ 2 files changed, 99 insertions(+), 98 deletions(-)
 
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 7ffe6b2d179b..94a62acac4fc 100644
+index 1d57f48307e6..b755bf7832ac 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -668,6 +668,7 @@ struct cache_set {
- 	struct mutex		verify_lock;
- #endif
+@@ -279,6 +279,82 @@ struct bcache_device {
+ 		     unsigned int cmd, unsigned long arg);
+ };
  
-+	uint8_t			set_uuid[16];
- 	unsigned int		nr_uuids;
- 	struct uuid_entry	*uuids;
- 	BKEY_PADDED(uuid_bucket);
-diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
-index 336f43910383..0ccc1b0baa42 100644
---- a/drivers/md/bcache/debug.c
-+++ b/drivers/md/bcache/debug.c
-@@ -238,7 +238,7 @@ void bch_debug_init_cache_set(struct cache_set *c)
- 	if (!IS_ERR_OR_NULL(bcache_debug)) {
- 		char name[50];
- 
--		snprintf(name, 50, "bcache-%pU", c->sb.set_uuid);
-+		snprintf(name, 50, "bcache-%pU", c->set_uuid);
- 		c->debug = debugfs_create_file(name, 0400, bcache_debug, c,
- 					       &cache_set_debug_ops);
- 	}
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 2521be9380d6..77f5673adbbc 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1189,8 +1189,8 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
- 	struct cached_dev *exist_dc, *t;
- 	int ret = 0;
- 
--	if ((set_uuid && memcmp(set_uuid, c->sb.set_uuid, 16)) ||
--	    (!set_uuid && memcmp(dc->sb.set_uuid, c->sb.set_uuid, 16)))
-+	if ((set_uuid && memcmp(set_uuid, c->set_uuid, 16)) ||
-+	    (!set_uuid && memcmp(dc->sb.set_uuid, c->set_uuid, 16)))
- 		return -ENOENT;
- 
- 	if (dc->disk.c) {
-@@ -1262,7 +1262,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
- 		u->first_reg = u->last_reg = rtime;
- 		bch_uuid_write(c);
- 
--		memcpy(dc->sb.set_uuid, c->sb.set_uuid, 16);
-+		memcpy(dc->sb.set_uuid, c->set_uuid, 16);
- 		SET_BDEV_STATE(&dc->sb, BDEV_STATE_CLEAN);
- 
- 		bch_write_bdev_super(dc, &cl);
-@@ -1324,7 +1324,7 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
- 	pr_info("Caching %s as %s on set %pU\n",
- 		dc->backing_dev_name,
- 		dc->disk.disk->disk_name,
--		dc->disk.c->sb.set_uuid);
-+		dc->disk.c->set_uuid);
- 	return 0;
++/*
++ * This is for in-memory bcache super block.
++ * NOTE: cache_sb is NOT exactly mapping to cache_sb_disk, the member
++ *       size, ordering and even whole struct size may be different
++ *       from cache_sb_disk.
++ */
++struct cache_sb {
++	__u64			offset;	/* sector where this sb was written */
++	__u64			version;
++
++	__u8			magic[16];
++
++	__u8			uuid[16];
++	union {
++		__u8		set_uuid[16];
++		__u64		set_magic;
++	};
++	__u8			label[SB_LABEL_SIZE];
++
++	__u64			flags;
++	__u64			seq;
++
++	__u64			feature_compat;
++	__u64			feature_incompat;
++	__u64			feature_ro_compat;
++
++	union {
++	struct {
++		/* Cache devices */
++		__u64		nbuckets;	/* device size */
++
++		__u16		block_size;	/* sectors */
++		__u16		nr_in_set;
++		__u16		nr_this_dev;
++		__u32		bucket_size;	/* sectors */
++	};
++	struct {
++		/* Backing devices */
++		__u64		data_offset;
++
++		/*
++		 * block_size from the cache device section is still used by
++		 * backing devices, so don't add anything here until we fix
++		 * things to not need it for backing devices anymore
++		 */
++	};
++	};
++
++	__u32			last_mount;	/* time overflow in y2106 */
++
++	__u16			first_bucket;
++	union {
++		__u16		njournal_buckets;
++		__u16		keys;
++	};
++	__u64			d[SB_JOURNAL_BUCKETS];	/* journal buckets */
++};
++
++BITMASK(CACHE_SYNC,			struct cache_sb, flags, 0, 1);
++BITMASK(CACHE_DISCARD,			struct cache_sb, flags, 1, 1);
++BITMASK(CACHE_REPLACEMENT,		struct cache_sb, flags, 2, 3);
++#define CACHE_REPLACEMENT_LRU		0U
++#define CACHE_REPLACEMENT_FIFO		1U
++#define CACHE_REPLACEMENT_RANDOM	2U
++
++BITMASK(BDEV_CACHE_MODE,		struct cache_sb, flags, 0, 4);
++#define CACHE_MODE_WRITETHROUGH		0U
++#define CACHE_MODE_WRITEBACK		1U
++#define CACHE_MODE_WRITEAROUND		2U
++#define CACHE_MODE_NONE			3U
++BITMASK(BDEV_STATE,			struct cache_sb, flags, 61, 2);
++#define BDEV_STATE_NONE			0U
++#define BDEV_STATE_CLEAN		1U
++#define BDEV_STATE_DIRTY		2U
++#define BDEV_STATE_STALE		3U
++
+ struct io {
+ 	/* Used to track sequential IO so it can be skipped */
+ 	struct hlist_node	hash;
+@@ -840,6 +916,13 @@ static inline bool ptr_available(struct cache_set *c, const struct bkey *k,
+ 	return (PTR_DEV(k, i) < MAX_CACHES_PER_SET) && PTR_CACHE(c, k, i);
  }
  
-@@ -1632,7 +1632,7 @@ bool bch_cache_set_error(struct cache_set *c, const char *fmt, ...)
- 	vaf.va = &args;
++static inline _Bool SB_IS_BDEV(const struct cache_sb *sb)
++{
++	return sb->version == BCACHE_SB_VERSION_BDEV
++		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_OFFSET
++		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_FEATURES;
++}
++
+ /* Btree key macros */
  
- 	pr_err("error on %pU: %pV, disabling caching\n",
--	       c->sb.set_uuid, &vaf);
-+	       c->set_uuid, &vaf);
+ /*
+@@ -958,6 +1041,22 @@ static inline void wait_for_kthread_stop(void)
+ 	}
+ }
  
- 	va_end(args);
++/* generate magic number */
++static inline __u64 jset_magic(struct cache_sb *sb)
++{
++	return sb->set_magic ^ JSET_MAGIC;
++}
++
++static inline __u64 pset_magic(struct cache_sb *sb)
++{
++	return sb->set_magic ^ PSET_MAGIC;
++}
++
++static inline __u64 bset_magic(struct cache_sb *sb)
++{
++	return sb->set_magic ^ BSET_MAGIC;
++}
++
+ /* Forward declarations */
  
-@@ -1685,7 +1685,7 @@ static void cache_set_free(struct closure *cl)
- 	list_del(&c->list);
- 	mutex_unlock(&bch_register_lock);
+ void bch_count_backing_io_errors(struct cached_dev *dc, struct bio *bio);
+diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
+index 52e8bcb33981..18166a3d8503 100644
+--- a/include/uapi/linux/bcache.h
++++ b/include/uapi/linux/bcache.h
+@@ -216,89 +216,6 @@ struct cache_sb_disk {
+ 	__le16			bucket_size_hi;
+ };
  
--	pr_info("Cache set %pU unregistered\n", c->sb.set_uuid);
-+	pr_info("Cache set %pU unregistered\n", c->set_uuid);
- 	wake_up(&unregister_wait);
+-/*
+- * This is for in-memory bcache super block.
+- * NOTE: cache_sb is NOT exactly mapping to cache_sb_disk, the member
+- *       size, ordering and even whole struct size may be different
+- *       from cache_sb_disk.
+- */
+-struct cache_sb {
+-	__u64			offset;	/* sector where this sb was written */
+-	__u64			version;
+-
+-	__u8			magic[16];
+-
+-	__u8			uuid[16];
+-	union {
+-		__u8		set_uuid[16];
+-		__u64		set_magic;
+-	};
+-	__u8			label[SB_LABEL_SIZE];
+-
+-	__u64			flags;
+-	__u64			seq;
+-
+-	__u64			feature_compat;
+-	__u64			feature_incompat;
+-	__u64			feature_ro_compat;
+-
+-	union {
+-	struct {
+-		/* Cache devices */
+-		__u64		nbuckets;	/* device size */
+-
+-		__u16		block_size;	/* sectors */
+-		__u16		nr_in_set;
+-		__u16		nr_this_dev;
+-		__u32		bucket_size;	/* sectors */
+-	};
+-	struct {
+-		/* Backing devices */
+-		__u64		data_offset;
+-
+-		/*
+-		 * block_size from the cache device section is still used by
+-		 * backing devices, so don't add anything here until we fix
+-		 * things to not need it for backing devices anymore
+-		 */
+-	};
+-	};
+-
+-	__u32			last_mount;	/* time overflow in y2106 */
+-
+-	__u16			first_bucket;
+-	union {
+-		__u16		njournal_buckets;
+-		__u16		keys;
+-	};
+-	__u64			d[SB_JOURNAL_BUCKETS];	/* journal buckets */
+-};
+-
+-static inline _Bool SB_IS_BDEV(const struct cache_sb *sb)
+-{
+-	return sb->version == BCACHE_SB_VERSION_BDEV
+-		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_OFFSET
+-		|| sb->version == BCACHE_SB_VERSION_BDEV_WITH_FEATURES;
+-}
+-
+-BITMASK(CACHE_SYNC,			struct cache_sb, flags, 0, 1);
+-BITMASK(CACHE_DISCARD,			struct cache_sb, flags, 1, 1);
+-BITMASK(CACHE_REPLACEMENT,		struct cache_sb, flags, 2, 3);
+-#define CACHE_REPLACEMENT_LRU		0U
+-#define CACHE_REPLACEMENT_FIFO		1U
+-#define CACHE_REPLACEMENT_RANDOM	2U
+-
+-BITMASK(BDEV_CACHE_MODE,		struct cache_sb, flags, 0, 4);
+-#define CACHE_MODE_WRITETHROUGH		0U
+-#define CACHE_MODE_WRITEBACK		1U
+-#define CACHE_MODE_WRITEAROUND		2U
+-#define CACHE_MODE_NONE			3U
+-BITMASK(BDEV_STATE,			struct cache_sb, flags, 61, 2);
+-#define BDEV_STATE_NONE			0U
+-#define BDEV_STATE_CLEAN		1U
+-#define BDEV_STATE_DIRTY		2U
+-#define BDEV_STATE_STALE		3U
+-
+ /*
+  * Magic numbers
+  *
+@@ -310,21 +227,6 @@ BITMASK(BDEV_STATE,			struct cache_sb, flags, 61, 2);
+ #define PSET_MAGIC			0x6750e15f87337f91ULL
+ #define BSET_MAGIC			0x90135c78b99e07f5ULL
  
- 	closure_debug_destroy(&c->cl);
-@@ -1755,7 +1755,7 @@ static void conditional_stop_bcache_device(struct cache_set *c,
- {
- 	if (dc->stop_when_cache_set_failed == BCH_CACHED_DEV_STOP_ALWAYS) {
- 		pr_warn("stop_when_cache_set_failed of %s is \"always\", stop it for failed cache set %pU.\n",
--			d->disk->disk_name, c->sb.set_uuid);
-+			d->disk->disk_name, c->set_uuid);
- 		bcache_device_stop(d);
- 	} else if (atomic_read(&dc->has_dirty)) {
- 		/*
-@@ -1862,7 +1862,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 
- 	bch_cache_accounting_init(&c->accounting, &c->cl);
- 
--	memcpy(c->sb.set_uuid, sb->set_uuid, 16);
-+	memcpy(c->set_uuid, sb->set_uuid, 16);
- 	c->sb.block_size	= sb->block_size;
- 	c->sb.bucket_size	= sb->bucket_size;
- 	c->sb.nr_in_set		= sb->nr_in_set;
-@@ -2145,7 +2145,7 @@ static const char *register_cache_set(struct cache *ca)
- 	struct cache_set *c;
- 
- 	list_for_each_entry(c, &bch_cache_sets, list)
--		if (!memcmp(c->sb.set_uuid, ca->sb.set_uuid, 16)) {
-+		if (!memcmp(c->set_uuid, ca->sb.set_uuid, 16)) {
- 			if (c->cache)
- 				return "duplicate cache set member";
- 
-@@ -2163,7 +2163,7 @@ static const char *register_cache_set(struct cache *ca)
- 		return err;
- 
- 	err = "error creating kobject";
--	if (kobject_add(&c->kobj, bcache_kobj, "%pU", c->sb.set_uuid) ||
-+	if (kobject_add(&c->kobj, bcache_kobj, "%pU", c->set_uuid) ||
- 	    kobject_add(&c->internal, &c->kobj, "internal"))
- 		goto err;
- 
-@@ -2188,7 +2188,7 @@ static const char *register_cache_set(struct cache *ca)
- 	 */
- 	if (ca->sb.seq > c->sb.seq || c->sb.seq == 0) {
- 		c->sb.version		= ca->sb.version;
--		memcpy(c->sb.set_uuid, ca->sb.set_uuid, 16);
-+		memcpy(c->set_uuid, ca->sb.set_uuid, 16);
- 		c->sb.flags             = ca->sb.flags;
- 		c->sb.seq		= ca->sb.seq;
- 		pr_debug("set version = %llu\n", c->sb.version);
-@@ -2697,7 +2697,7 @@ static ssize_t bch_pending_bdevs_cleanup(struct kobject *k,
- 	list_for_each_entry_safe(pdev, tpdev, &pending_devs, list) {
- 		list_for_each_entry_safe(c, tc, &bch_cache_sets, list) {
- 			char *pdev_set_uuid = pdev->dc->sb.set_uuid;
--			char *set_uuid = c->sb.uuid;
-+			char *set_uuid = c->set_uuid;
- 
- 			if (!memcmp(pdev_set_uuid, set_uuid, 16)) {
- 				list_del(&pdev->list);
-diff --git a/include/trace/events/bcache.h b/include/trace/events/bcache.h
-index 0bddea663b3b..e41c611d6d3b 100644
---- a/include/trace/events/bcache.h
-+++ b/include/trace/events/bcache.h
-@@ -164,7 +164,7 @@ TRACE_EVENT(bcache_write,
- 	),
- 
- 	TP_fast_assign(
--		memcpy(__entry->uuid, c->sb.set_uuid, 16);
-+		memcpy(__entry->uuid, c->set_uuid, 16);
- 		__entry->inode		= inode;
- 		__entry->sector		= bio->bi_iter.bi_sector;
- 		__entry->nr_sector	= bio->bi_iter.bi_size >> 9;
-@@ -200,7 +200,7 @@ DECLARE_EVENT_CLASS(cache_set,
- 	),
- 
- 	TP_fast_assign(
--		memcpy(__entry->uuid, c->sb.set_uuid, 16);
-+		memcpy(__entry->uuid, c->set_uuid, 16);
- 	),
- 
- 	TP_printk("%pU", __entry->uuid)
+-static inline __u64 jset_magic(struct cache_sb *sb)
+-{
+-	return sb->set_magic ^ JSET_MAGIC;
+-}
+-
+-static inline __u64 pset_magic(struct cache_sb *sb)
+-{
+-	return sb->set_magic ^ PSET_MAGIC;
+-}
+-
+-static inline __u64 bset_magic(struct cache_sb *sb)
+-{
+-	return sb->set_magic ^ BSET_MAGIC;
+-}
+-
+ /*
+  * Journal
+  *
 -- 
 2.26.2
 
