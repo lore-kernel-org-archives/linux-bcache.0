@@ -1,88 +1,75 @@
-Return-Path: <SRS0=BgHr=BZ=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=Zhg3=B3=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+X-Spam-Status: No, score=-8.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 2970BC433E8
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:22 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 18179C433DF
+	for <linux-bcache@archiver.kernel.org>; Mon, 17 Aug 2020 06:09:02 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 13A5620675
-	for <linux-bcache@archiver.kernel.org>; Sat, 15 Aug 2020 22:24:22 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id F13A020772
+	for <linux-bcache@archiver.kernel.org>; Mon, 17 Aug 2020 06:09:01 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728189AbgHOWYU (ORCPT
+        id S1726251AbgHQGIx (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 15 Aug 2020 18:24:20 -0400
-Received: from mx2.suse.de ([195.135.220.15]:37810 "EHLO mx2.suse.de"
+        Mon, 17 Aug 2020 02:08:53 -0400
+Received: from mx2.suse.de ([195.135.220.15]:42350 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1728207AbgHOWXo (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 15 Aug 2020 18:23:44 -0400
+        id S1726314AbgHQGIu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 17 Aug 2020 02:08:50 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id A91F1B1CB;
-        Sat, 15 Aug 2020 12:48:26 +0000 (UTC)
-From:   colyli@suse.de
-To:     linux-bcache@vger.kernel.org
-Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH v1 08/14] bcache: only use bucket_bytes() on struct cache
-Date:   Sat, 15 Aug 2020 20:47:37 +0800
-Message-Id: <20200815124743.115270-9-colyli@suse.de>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20200815124743.115270-1-colyli@suse.de>
-References: <20200815124743.115270-1-colyli@suse.de>
+        by mx2.suse.de (Postfix) with ESMTP id 2425BAD7D;
+        Mon, 17 Aug 2020 06:09:13 +0000 (UTC)
+Subject: Re: [PATCH 01/14] bcache: remove 'int n' from parameter list of
+ bch_bucket_alloc_set()
+To:     Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
+Cc:     linux-block@vger.kernel.org
+References: <20200815041043.45116-1-colyli@suse.de>
+ <20200815041043.45116-2-colyli@suse.de>
+From:   Hannes Reinecke <hare@suse.de>
+Message-ID: <30a805bb-d3d6-3501-0f01-0448849e3560@suse.de>
+Date:   Mon, 17 Aug 2020 08:08:46 +0200
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
+ Thunderbird/68.11.0
 MIME-Version: 1.0
+In-Reply-To: <20200815041043.45116-2-colyli@suse.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Language: en-US
 Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-From: Coly Li <colyli@suse.de>
+On 8/15/20 6:10 AM, Coly Li wrote:
+> The parameter 'int n' from bch_bucket_alloc_set() is not cleared
+> defined. From the code comments n is the number of buckets to alloc, but
+> from the code itself 'n' is the maximum cache to iterate. Indeed all the
+> locations where bch_bucket_alloc_set() is called, 'n' is alwasy 1.
+> 
+> This patch removes the confused and unnecessary 'int n' from parameter
+> list of  bch_bucket_alloc_set(), and explicitly allocates only 1 bucket
+> for its caller.
+> 
+> Signed-off-by: Coly Li <colyli@suse.de>
+> ---
+>   drivers/md/bcache/alloc.c  | 35 +++++++++++++++--------------------
+>   drivers/md/bcache/bcache.h |  4 ++--
+>   drivers/md/bcache/btree.c  |  2 +-
+>   drivers/md/bcache/super.c  |  2 +-
+>   4 files changed, 19 insertions(+), 24 deletions(-)
+> 
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 
-Because struct cache_set and struct cache both have struct cache_sb,
-macro bucket_bytes() currently are used on both of them. When removing
-the embedded struct cache_sb from struct cache_set, this macro won't be
-used on struct cache_set anymore.
+Cheers,
 
-This patch unifies all bucket_bytes() usage only on struct cache, this is
-one of the preparation to remove the embedded struct cache_sb from
-struct cache_set.
-
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/bcache.h | 2 +-
- drivers/md/bcache/sysfs.c  | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 48a2585b6bbb..94d4baf4c405 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -757,7 +757,7 @@ struct bbio {
- #define btree_default_blocks(c)						\
- 	((unsigned int) ((PAGE_SECTORS * (c)->btree_pages) >> (c)->block_bits))
- 
--#define bucket_bytes(c)		((c)->sb.bucket_size << 9)
-+#define bucket_bytes(ca)	((ca)->sb.bucket_size << 9)
- #define block_bytes(ca)		((ca)->sb.block_size << 9)
- 
- static inline unsigned int meta_bucket_pages(struct cache_sb *sb)
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index b9f524ab5cc8..4bfe98faadcc 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -713,7 +713,7 @@ SHOW(__bch_cache_set)
- 
- 	sysfs_print(synchronous,		CACHE_SYNC(&c->sb));
- 	sysfs_print(journal_delay_ms,		c->journal_delay_ms);
--	sysfs_hprint(bucket_size,		bucket_bytes(c));
-+	sysfs_hprint(bucket_size,		bucket_bytes(c->cache));
- 	sysfs_hprint(block_size,		block_bytes(c->cache));
- 	sysfs_print(tree_depth,			c->root->level);
- 	sysfs_print(root_usage_percent,		bch_root_usage(c));
+Hannes
 -- 
-2.26.2
-
+Dr. Hannes Reinecke            Teamlead Storage & Networking
+hare@suse.de                               +49 911 74053 688
+SUSE Software Solutions GmbH, Maxfeldstr. 5, 90409 Nürnberg
+HRB 36809 (AG Nürnberg), Geschäftsführer: Felix Imendörffer
