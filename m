@@ -7,36 +7,36 @@ X-Spam-Status: No, score=-8.8 required=3.0 tests=BAYES_00,
 	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=ham autolearn_force=no
 	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9624BC433E1
-	for <linux-bcache@archiver.kernel.org>; Mon, 17 Aug 2020 06:25:30 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 45253C433DF
+	for <linux-bcache@archiver.kernel.org>; Mon, 17 Aug 2020 06:26:38 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7AA562072D
-	for <linux-bcache@archiver.kernel.org>; Mon, 17 Aug 2020 06:25:30 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1998E2072D
+	for <linux-bcache@archiver.kernel.org>; Mon, 17 Aug 2020 06:26:38 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726451AbgHQGZa (ORCPT
+        id S1726496AbgHQG0h (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 17 Aug 2020 02:25:30 -0400
-Received: from mx2.suse.de ([195.135.220.15]:46608 "EHLO mx2.suse.de"
+        Mon, 17 Aug 2020 02:26:37 -0400
+Received: from mx2.suse.de ([195.135.220.15]:46766 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726385AbgHQGZ2 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 17 Aug 2020 02:25:28 -0400
+        id S1726385AbgHQG0h (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 17 Aug 2020 02:26:37 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id E3591AD5F;
-        Mon, 17 Aug 2020 06:25:51 +0000 (UTC)
-Subject: Re: [PATCH 12/14] bcache: check and set sync status on cache's
- in-memory super block
+        by mx2.suse.de (Postfix) with ESMTP id A4346AD5F;
+        Mon, 17 Aug 2020 06:27:00 +0000 (UTC)
+Subject: Re: [PATCH 13/14] bcache: remove embedded struct cache_sb from struct
+ cache_set
 To:     Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org
 References: <20200815041043.45116-1-colyli@suse.de>
- <20200815041043.45116-13-colyli@suse.de>
+ <20200815041043.45116-14-colyli@suse.de>
 From:   Hannes Reinecke <hare@suse.de>
-Message-ID: <13de59de-f9c7-10a0-d358-04334522db1e@suse.de>
-Date:   Mon, 17 Aug 2020 08:25:20 +0200
+Message-ID: <1843e122-7c20-45f4-d46c-84c2d7a22adf@suse.de>
+Date:   Mon, 17 Aug 2020 08:26:32 +0200
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
  Thunderbird/68.11.0
 MIME-Version: 1.0
-In-Reply-To: <20200815041043.45116-13-colyli@suse.de>
+In-Reply-To: <20200815041043.45116-14-colyli@suse.de>
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Language: en-US
 Content-Transfer-Encoding: 8bit
@@ -46,25 +46,37 @@ List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 On 8/15/20 6:10 AM, Coly Li wrote:
-> Currently the cache's sync status is checked and set on cache set's in-
-> memory partial super block. After removing the embedded struct cache_sb
-> from cache set and reference cache's in-memory super block from struct
-> cache_set, the sync status can set and check directly on cache's super
-> block.
+> Since bcache code was merged into mainline kerrnel, each cache set only
+> as one single cache in it. The multiple caches framework is here but the
+> code is far from completed. Considering the multiple copies of cached
+> data can also be stored on e.g. md raid1 devices, it is unnecessary to
+> support multiple caches in one cache set indeed.
 > 
-> This patch checks and sets the cache sync status directly on cache's
-> in-memory super block. This is a preparation for later removing embedded
-> struct cache_sb from struct cache_set.
+> The previous preparation patches fix the dependencies of explicitly
+> making a cache set only have single cache. Now we don't have to maintain
+> an embedded partial super block in struct cache_set, the in-memory super
+> block can be directly referenced from struct cache.
+> 
+> This patch removes the embedded struct cache_sb from struct cache_set,
+> and fixes all locations where the superb lock was referenced from this
+> removed super block by referencing the in-memory super block of struct
+> cache.
 > 
 > Signed-off-by: Coly Li <colyli@suse.de>
 > ---
->   drivers/md/bcache/alloc.c   | 2 +-
->   drivers/md/bcache/journal.c | 2 +-
->   drivers/md/bcache/super.c   | 7 ++-----
->   drivers/md/bcache/sysfs.c   | 6 +++---
->   4 files changed, 7 insertions(+), 10 deletions(-)
-> 
-Reviewed-by: Hannes Reinecke <hare@suse.de>
+>   drivers/md/bcache/alloc.c     |  6 +++---
+>   drivers/md/bcache/bcache.h    |  4 +---
+>   drivers/md/bcache/btree.c     | 17 +++++++++--------
+>   drivers/md/bcache/btree.h     |  2 +-
+>   drivers/md/bcache/extents.c   |  6 +++---
+>   drivers/md/bcache/features.c  |  4 ++--
+>   drivers/md/bcache/io.c        |  2 +-
+>   drivers/md/bcache/journal.c   | 11 ++++++-----
+>   drivers/md/bcache/request.c   |  4 ++--
+>   drivers/md/bcache/super.c     | 19 +++++++++----------
+>   drivers/md/bcache/writeback.c |  2 +-
+>   11 files changed, 38 insertions(+), 39 deletions(-)
+> Reviewed-by: Hannes Reinecke <hare@suse.de>
 
 Cheers,
 
