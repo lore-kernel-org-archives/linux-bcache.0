@@ -8,42 +8,42 @@ X-Spam-Status: No, score=-12.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
 	URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable autolearn_force=no
 	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E1754C433E1
-	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 07:03:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 713B6C433E1
+	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 07:03:37 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id BD2AF20658
-	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 07:03:34 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 46B7820658
+	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 07:03:37 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (1024-bit key) header.d=fb.com header.i=@fb.com header.b="LlgflM9X"
+	dkim=pass (1024-bit key) header.d=fb.com header.i=@fb.com header.b="AoNwg+se"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726568AbgHRHDe (ORCPT
+        id S1726588AbgHRHDg (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 18 Aug 2020 03:03:34 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:11598 "EHLO
+        Tue, 18 Aug 2020 03:03:36 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:27602 "EHLO
         mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1726228AbgHRHDd (ORCPT
+        by vger.kernel.org with ESMTP id S1726365AbgHRHDg (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 18 Aug 2020 03:03:33 -0400
+        Tue, 18 Aug 2020 03:03:36 -0400
 Received: from pps.filterd (m0109331.ppops.net [127.0.0.1])
-        by mx0a-00082601.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 07I73Q0D023501
-        for <linux-bcache@vger.kernel.org>; Tue, 18 Aug 2020 00:03:32 -0700
+        by mx0a-00082601.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 07I73Q0J023501
+        for <linux-bcache@vger.kernel.org>; Tue, 18 Aug 2020 00:03:34 -0700
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=fb.com; h=from : to : cc : subject
  : date : message-id : in-reply-to : references : mime-version :
  content-transfer-encoding : content-type; s=facebook;
- bh=rvea/9K2FjSVrAXUbPe6D5ihbqBBSEoKRQiQoNpsaBc=;
- b=LlgflM9XIjeHpIR44XJTmY5Rzkj5Ch/8rf3dR+csVpuz08pZ45z7kxcjrLvQhTlm6Wyo
- 6HDJHWU8aQJXyoPSmJISR7vXTByaCN2spT+5B3dQmmxToyVAJDq7J1tA3qUjRmwXuTvm
- iPv0U1cxiO5PmWVtZGe8XVIxPDpkf5t+c3w= 
+ bh=Yy34D/NbA5LPKQ3e5rZPbBOItonCgnGr+j0WvmLVOwY=;
+ b=AoNwg+se8uLbny9aeLy4XcddDBFQWfhZCzevuD8ByDTDTwL3hEQCgDV4HYKylE2CemXK
+ Mdri/vIvo1+Fs9I88qkVwtKYZO6sF/ITbgyNkdo7vyfPEcuRACe9lUzMZMCFHTNEk1tN
+ R1HO2PhHgL668Zg8hYb7hibxbY70L0I72WE= 
 Received: from mail.thefacebook.com ([163.114.132.120])
-        by mx0a-00082601.pphosted.com with ESMTP id 3304kph6gw-8
+        by mx0a-00082601.pphosted.com with ESMTP id 3304kph6gw-14
         (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128 verify=NOT)
-        for <linux-bcache@vger.kernel.org>; Tue, 18 Aug 2020 00:03:32 -0700
-Received: from intmgw005.03.ash8.facebook.com (2620:10d:c085:208::11) by
+        for <linux-bcache@vger.kernel.org>; Tue, 18 Aug 2020 00:03:34 -0700
+Received: from intmgw002.03.ash8.facebook.com (2620:10d:c085:208::11) by
  mail.thefacebook.com (2620:10d:c085:11d::6) with Microsoft SMTP Server
  (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.1979.3; Tue, 18 Aug 2020 00:02:53 -0700
+ 15.1.1979.3; Tue, 18 Aug 2020 00:02:57 -0700
 Received: by devbig006.ftw2.facebook.com (Postfix, from userid 4523)
-        id 9194962E54B8; Tue, 18 Aug 2020 00:02:48 -0700 (PDT)
+        id 76D5262E54B8; Tue, 18 Aug 2020 00:02:53 -0700 (PDT)
 Smtp-Origin-Hostprefix: devbig
 From:   Song Liu <songliubraving@fb.com>
 Smtp-Origin-Hostname: devbig006.ftw2.facebook.com
@@ -52,9 +52,9 @@ To:     <linux-block@vger.kernel.org>, <linux-raid@vger.kernel.org>,
 CC:     <colyli@suse.de>, <axboe@kernel.dk>, <kernel-team@fb.com>,
         <song@kernel.org>, Song Liu <songliubraving@fb.com>
 Smtp-Origin-Cluster: ftw2c04
-Subject: [PATCH 1/4] block: expose disk_map_sector_rcu() and hd_struct_put in genhd.h
-Date:   Tue, 18 Aug 2020 00:02:35 -0700
-Message-ID: <20200818070238.1323126-2-songliubraving@fb.com>
+Subject: [PATCH 3/4] md: use part_[begin|end]_io_acct instead of disk_[begin|end]_io_acct
+Date:   Tue, 18 Aug 2020 00:02:37 -0700
+Message-ID: <20200818070238.1323126-4-songliubraving@fb.com>
 X-Mailer: git-send-email 2.24.1
 In-Reply-To: <20200818070238.1323126-1-songliubraving@fb.com>
 References: <20200818070238.1323126-1-songliubraving@fb.com>
@@ -65,8 +65,8 @@ Content-Type: text/plain
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.235,18.0.687
  definitions=2020-08-18_04:2020-08-18,2020-08-18 signatures=0
 X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 clxscore=1015 spamscore=0
- impostorscore=0 mlxscore=0 adultscore=0 malwarescore=0 mlxlogscore=983
- lowpriorityscore=0 suspectscore=2 phishscore=0 bulkscore=0
+ impostorscore=0 mlxscore=0 adultscore=0 malwarescore=0 mlxlogscore=838
+ lowpriorityscore=0 suspectscore=0 phishscore=0 bulkscore=0
  priorityscore=1501 classifier=spam adjust=0 reason=mlx scancount=1
  engine=8.12.0-2006250000 definitions=main-2008180049
 X-FB-Internal: deliver
@@ -75,82 +75,46 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-So they can be used in drivers.
+This enables proper statistics in /proc/diskstats for md partitions.
 
 Signed-off-by: Song Liu <songliubraving@fb.com>
 ---
- block/blk.h           | 8 --------
- block/genhd.c         | 1 +
- include/linux/genhd.h | 8 ++++++++
- 3 files changed, 9 insertions(+), 8 deletions(-)
+ drivers/md/md.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk.h b/block/blk.h
-index 94f7c084f68fc..a6bc909480111 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -332,8 +332,6 @@ void blk_queue_free_zone_bitmaps(struct request_queue=
- *q);
- static inline void blk_queue_free_zone_bitmaps(struct request_queue *q) =
-{}
- #endif
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 6b511c9007d38..00ca65b206d13 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -470,6 +470,7 @@ struct md_io {
+ 	bio_end_io_t *orig_bi_end_io;
+ 	void *orig_bi_private;
+ 	unsigned long start_time;
++	struct hd_struct *part;
+ };
 =20
--struct hd_struct *disk_map_sector_rcu(struct gendisk *disk, sector_t sec=
-tor);
--
- int blk_alloc_devt(struct hd_struct *part, dev_t *devt);
- void blk_free_devt(dev_t devt);
- void blk_invalidate_devt(dev_t devt);
-@@ -358,12 +356,6 @@ static inline int hd_struct_try_get(struct hd_struct=
- *part)
- 	return 1;
- }
+ static void md_end_io(struct bio *bio)
+@@ -477,7 +478,8 @@ static void md_end_io(struct bio *bio)
+ 	struct md_io *md_io =3D bio->bi_private;
+ 	struct mddev *mddev =3D md_io->mddev;
 =20
--static inline void hd_struct_put(struct hd_struct *part)
--{
--	if (part->partno)
--		percpu_ref_put(&part->ref);
--}
--
- static inline void hd_free_part(struct hd_struct *part)
- {
- 	free_percpu(part->dkstats);
-diff --git a/block/genhd.c b/block/genhd.c
-index 60ae4e1b4d387..5b9333317dcb4 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -349,6 +349,7 @@ struct hd_struct *disk_map_sector_rcu(struct gendisk =
-*disk, sector_t sector)
- 	rcu_read_unlock();
- 	return part;
- }
-+EXPORT_SYMBOL_GPL(disk_map_sector_rcu);
+-	disk_end_io_acct(mddev->gendisk, bio_op(bio), md_io->start_time);
++	part_end_io_acct(md_io->part, bio_op(bio), md_io->start_time);
++	hd_struct_put(md_io->part);
 =20
- /**
-  * disk_has_partitions
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 31a54072ffd65..b47c64f9f26b4 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -380,6 +380,14 @@ void bd_set_size(struct block_device *bdev, loff_t s=
-ize);
- int blkdev_ioctl(struct block_device *, fmode_t, unsigned, unsigned long=
-);
- long compat_blkdev_ioctl(struct file *, unsigned, unsigned long);
+ 	bio->bi_end_io =3D md_io->orig_bi_end_io;
+ 	bio->bi_private =3D md_io->orig_bi_private;
+@@ -523,7 +525,9 @@ static blk_qc_t md_submit_bio(struct bio *bio)
+ 		bio->bi_end_io =3D md_end_io;
+ 		bio->bi_private =3D md_io;
 =20
-+struct hd_struct *disk_map_sector_rcu(struct gendisk *disk, sector_t sec=
-tor);
-+
-+static inline void hd_struct_put(struct hd_struct *part)
-+{
-+	if (part->partno)
-+		percpu_ref_put(&part->ref);
-+}
-+
- #ifdef CONFIG_SYSFS
- int bd_link_disk_holder(struct block_device *bdev, struct gendisk *disk)=
-;
- void bd_unlink_disk_holder(struct block_device *bdev, struct gendisk *di=
-sk);
+-		md_io->start_time =3D disk_start_io_acct(mddev->gendisk,
++		md_io->part =3D disk_map_sector_rcu(mddev->gendisk,
++						  bio->bi_iter.bi_sector);
++		md_io->start_time =3D part_start_io_acct(md_io->part,
+ 						       bio_sectors(bio),
+ 						       bio_op(bio));
+ 	}
 --=20
 2.24.1
 
