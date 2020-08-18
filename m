@@ -2,119 +2,172 @@ Return-Path: <SRS0=GRyJ=B4=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-12.9 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
-	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-14.1 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,NICE_REPLY_A,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 713B6C433E1
-	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 07:03:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3F4EBC433E4
+	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 10:31:56 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 46B7820658
-	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 07:03:37 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=pass (1024-bit key) header.d=fb.com header.i=@fb.com header.b="AoNwg+se"
+	by mail.kernel.org (Postfix) with ESMTP id 28B332075E
+	for <linux-bcache@archiver.kernel.org>; Tue, 18 Aug 2020 10:31:56 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726588AbgHRHDg (ORCPT
+        id S1726539AbgHRKby (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 18 Aug 2020 03:03:36 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:27602 "EHLO
-        mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S1726365AbgHRHDg (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 18 Aug 2020 03:03:36 -0400
-Received: from pps.filterd (m0109331.ppops.net [127.0.0.1])
-        by mx0a-00082601.pphosted.com (8.16.0.42/8.16.0.42) with SMTP id 07I73Q0J023501
-        for <linux-bcache@vger.kernel.org>; Tue, 18 Aug 2020 00:03:34 -0700
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=fb.com; h=from : to : cc : subject
- : date : message-id : in-reply-to : references : mime-version :
- content-transfer-encoding : content-type; s=facebook;
- bh=Yy34D/NbA5LPKQ3e5rZPbBOItonCgnGr+j0WvmLVOwY=;
- b=AoNwg+se8uLbny9aeLy4XcddDBFQWfhZCzevuD8ByDTDTwL3hEQCgDV4HYKylE2CemXK
- Mdri/vIvo1+Fs9I88qkVwtKYZO6sF/ITbgyNkdo7vyfPEcuRACe9lUzMZMCFHTNEk1tN
- R1HO2PhHgL668Zg8hYb7hibxbY70L0I72WE= 
-Received: from mail.thefacebook.com ([163.114.132.120])
-        by mx0a-00082601.pphosted.com with ESMTP id 3304kph6gw-14
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES128-GCM-SHA256 bits=128 verify=NOT)
-        for <linux-bcache@vger.kernel.org>; Tue, 18 Aug 2020 00:03:34 -0700
-Received: from intmgw002.03.ash8.facebook.com (2620:10d:c085:208::11) by
- mail.thefacebook.com (2620:10d:c085:11d::6) with Microsoft SMTP Server
- (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256) id
- 15.1.1979.3; Tue, 18 Aug 2020 00:02:57 -0700
-Received: by devbig006.ftw2.facebook.com (Postfix, from userid 4523)
-        id 76D5262E54B8; Tue, 18 Aug 2020 00:02:53 -0700 (PDT)
-Smtp-Origin-Hostprefix: devbig
-From:   Song Liu <songliubraving@fb.com>
-Smtp-Origin-Hostname: devbig006.ftw2.facebook.com
-To:     <linux-block@vger.kernel.org>, <linux-raid@vger.kernel.org>,
-        <linux-bcache@vger.kernel.org>
-CC:     <colyli@suse.de>, <axboe@kernel.dk>, <kernel-team@fb.com>,
-        <song@kernel.org>, Song Liu <songliubraving@fb.com>
-Smtp-Origin-Cluster: ftw2c04
-Subject: [PATCH 3/4] md: use part_[begin|end]_io_acct instead of disk_[begin|end]_io_acct
-Date:   Tue, 18 Aug 2020 00:02:37 -0700
-Message-ID: <20200818070238.1323126-4-songliubraving@fb.com>
-X-Mailer: git-send-email 2.24.1
-In-Reply-To: <20200818070238.1323126-1-songliubraving@fb.com>
+        Tue, 18 Aug 2020 06:31:54 -0400
+Received: from mx2.suse.de ([195.135.220.15]:59882 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1726043AbgHRKby (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 18 Aug 2020 06:31:54 -0400
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id C804FAF8E;
+        Tue, 18 Aug 2020 10:32:17 +0000 (UTC)
+Subject: Re: [PATCH 4/4] bcache: use part_[begin|end]_io_acct instead of
+ disk_[begin|end]_io_acct
+To:     Song Liu <songliubraving@fb.com>
+Cc:     linux-block@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-bcache@vger.kernel.org, axboe@kernel.dk, kernel-team@fb.com,
+        song@kernel.org
 References: <20200818070238.1323126-1-songliubraving@fb.com>
+ <20200818070238.1323126-5-songliubraving@fb.com>
+From:   Coly Li <colyli@suse.de>
+Autocrypt: addr=colyli@suse.de; keydata=
+ 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
+Message-ID: <218caa26-3569-dbe4-de89-8849bd6eeb8f@suse.de>
+Date:   Tue, 18 Aug 2020 18:31:44 +0800
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:68.0)
+ Gecko/20100101 Thunderbird/68.11.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-X-FB-Internal: Safe
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10434:6.0.235,18.0.687
- definitions=2020-08-18_04:2020-08-18,2020-08-18 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 clxscore=1015 spamscore=0
- impostorscore=0 mlxscore=0 adultscore=0 malwarescore=0 mlxlogscore=838
- lowpriorityscore=0 suspectscore=0 phishscore=0 bulkscore=0
- priorityscore=1501 classifier=spam adjust=0 reason=mlx scancount=1
- engine=8.12.0-2006250000 definitions=main-2008180049
-X-FB-Internal: deliver
+In-Reply-To: <20200818070238.1323126-5-songliubraving@fb.com>
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This enables proper statistics in /proc/diskstats for md partitions.
+On 2020/8/18 15:02, Song Liu wrote:
+> This enables proper statistics in /proc/diskstats for bcache partitions.
+> 
+> Cc: Coly Li <colyli@suse.de>
+> Signed-off-by: Song Liu <songliubraving@fb.com>
 
-Signed-off-by: Song Liu <songliubraving@fb.com>
----
- drivers/md/md.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+The code looks good to me. It is fine to submit this bcache patch in
+your submission path.
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 6b511c9007d38..00ca65b206d13 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -470,6 +470,7 @@ struct md_io {
- 	bio_end_io_t *orig_bi_end_io;
- 	void *orig_bi_private;
- 	unsigned long start_time;
-+	struct hd_struct *part;
- };
-=20
- static void md_end_io(struct bio *bio)
-@@ -477,7 +478,8 @@ static void md_end_io(struct bio *bio)
- 	struct md_io *md_io =3D bio->bi_private;
- 	struct mddev *mddev =3D md_io->mddev;
-=20
--	disk_end_io_acct(mddev->gendisk, bio_op(bio), md_io->start_time);
-+	part_end_io_acct(md_io->part, bio_op(bio), md_io->start_time);
-+	hd_struct_put(md_io->part);
-=20
- 	bio->bi_end_io =3D md_io->orig_bi_end_io;
- 	bio->bi_private =3D md_io->orig_bi_private;
-@@ -523,7 +525,9 @@ static blk_qc_t md_submit_bio(struct bio *bio)
- 		bio->bi_end_io =3D md_end_io;
- 		bio->bi_private =3D md_io;
-=20
--		md_io->start_time =3D disk_start_io_acct(mddev->gendisk,
-+		md_io->part =3D disk_map_sector_rcu(mddev->gendisk,
-+						  bio->bi_iter.bi_sector);
-+		md_io->start_time =3D part_start_io_acct(md_io->part,
- 						       bio_sectors(bio),
- 						       bio_op(bio));
- 	}
---=20
-2.24.1
+Reviewed-by: Coly Li <colyli@suse.de>
+
+Thanks.
+
+Coly Li
+
+> ---
+>  drivers/md/bcache/request.c | 14 ++++++++++----
+>  1 file changed, 10 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> index 7de82c67597ce..1d946f601f7eb 100644
+> --- a/drivers/md/bcache/request.c
+> +++ b/drivers/md/bcache/request.c
+> @@ -475,6 +475,7 @@ struct search {
+>  	unsigned int		read_dirty_data:1;
+>  	unsigned int		cache_missed:1;
+>  
+> +	struct hd_struct	*part;
+>  	unsigned long		start_time;
+>  
+>  	struct btree_op		op;
+> @@ -669,7 +670,8 @@ static void bio_complete(struct search *s)
+>  {
+>  	if (s->orig_bio) {
+>  		/* Count on bcache device */
+> -		disk_end_io_acct(s->d->disk, bio_op(s->orig_bio), s->start_time);
+> +		part_end_io_acct(s->part, bio_op(s->orig_bio), s->start_time);
+> +		hd_struct_put(s->part);
+>  
+>  		trace_bcache_request_end(s->d, s->orig_bio);
+>  		s->orig_bio->bi_status = s->iop.status;
+> @@ -731,7 +733,8 @@ static inline struct search *search_alloc(struct bio *bio,
+>  	s->write		= op_is_write(bio_op(bio));
+>  	s->read_dirty_data	= 0;
+>  	/* Count on the bcache device */
+> -	s->start_time		= disk_start_io_acct(d->disk, bio_sectors(bio), bio_op(bio));
+> +	s->part			= disk_map_sector_rcu(d->disk, bio->bi_iter.bi_sector);
+> +	s->start_time		= part_start_io_acct(s->part, bio_sectors(bio), bio_op(bio));
+>  	s->iop.c		= d->c;
+>  	s->iop.bio		= NULL;
+>  	s->iop.inode		= d->id;
+> @@ -1072,6 +1075,7 @@ struct detached_dev_io_private {
+>  	unsigned long		start_time;
+>  	bio_end_io_t		*bi_end_io;
+>  	void			*bi_private;
+> +	struct hd_struct	*part;
+>  };
+>  
+>  static void detached_dev_end_io(struct bio *bio)
+> @@ -1083,7 +1087,8 @@ static void detached_dev_end_io(struct bio *bio)
+>  	bio->bi_private = ddip->bi_private;
+>  
+>  	/* Count on the bcache device */
+> -	disk_end_io_acct(ddip->d->disk, bio_op(bio), ddip->start_time);
+> +	part_end_io_acct(ddip->part, bio_op(bio), ddip->start_time);
+> +	hd_struct_put(ddip->part);
+>  
+>  	if (bio->bi_status) {
+>  		struct cached_dev *dc = container_of(ddip->d,
+> @@ -1109,7 +1114,8 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio)
+>  	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
+>  	ddip->d = d;
+>  	/* Count on the bcache device */
+> -	ddip->start_time = disk_start_io_acct(d->disk, bio_sectors(bio), bio_op(bio));
+> +	ddip->part = disk_map_sector_rcu(d->disk, bio->bi_iter.bi_sector);
+> +	ddip->start_time = part_start_io_acct(ddip->part, bio_sectors(bio), bio_op(bio));
+>  	ddip->bi_end_io = bio->bi_end_io;
+>  	ddip->bi_private = bio->bi_private;
+>  	bio->bi_end_io = detached_dev_end_io;
+> 
 
