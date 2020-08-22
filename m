@@ -2,34 +2,35 @@ Return-Path: <SRS0=/KFD=CA=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,
+X-Spam-Status: No, score=-9.9 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+	SPF_HELO_NONE,SPF_PASS,UNWANTED_LANGUAGE_BODY,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9D7CFC433EA
-	for <linux-bcache@archiver.kernel.org>; Sat, 22 Aug 2020 11:46:00 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C5605C433E3
+	for <linux-bcache@archiver.kernel.org>; Sat, 22 Aug 2020 11:46:03 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8339F2075E
-	for <linux-bcache@archiver.kernel.org>; Sat, 22 Aug 2020 11:46:00 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id A59C32075E
+	for <linux-bcache@archiver.kernel.org>; Sat, 22 Aug 2020 11:46:03 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727872AbgHVLpv (ORCPT
+        id S1727006AbgHVLqC (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 22 Aug 2020 07:45:51 -0400
-Received: from mx2.suse.de ([195.135.220.15]:56676 "EHLO mx2.suse.de"
+        Sat, 22 Aug 2020 07:46:02 -0400
+Received: from mx2.suse.de ([195.135.220.15]:56726 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726920AbgHVLpu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 22 Aug 2020 07:45:50 -0400
+        id S1727894AbgHVLp5 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 22 Aug 2020 07:45:57 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 87459AEFE;
-        Sat, 22 Aug 2020 11:46:16 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 7CA61AEFE;
+        Sat, 22 Aug 2020 11:46:24 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
-Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH v2 02/12] bcache: explicitly make cache_set only have single cache
-Date:   Sat, 22 Aug 2020 19:45:26 +0800
-Message-Id: <20200822114536.23491-3-colyli@suse.de>
+Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>,
+        Hannes Reinecke <hare@suse.de>
+Subject: [PATCH v2 05/12] bcache: only use block_bytes() on struct cache
+Date:   Sat, 22 Aug 2020 19:45:29 +0800
+Message-Id: <20200822114536.23491-6-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20200822114536.23491-1-colyli@suse.de>
 References: <20200822114536.23491-1-colyli@suse.de>
@@ -40,125 +41,256 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Currently although the bcache code has a framework for multiple caches
-in a cache set, but indeed the multiple caches never completed and users
-use md raid1 for multiple copies of the cached data.
+Because struct cache_set and struct cache both have struct cache_sb,
+therefore macro block_bytes() can be used on both of them. When removing
+the embedded struct cache_sb from struct cache_set, this macro won't be
+used on struct cache_set anymore.
 
-This patch does the following change in struct cache_set, to explicitly
-make a cache_set only have single cache,
-- Change pointer array "*cache[MAX_CACHES_PER_SET]" to a single pointer
-  "*cache".
-- Remove pointer array "*cache_by_alloc[MAX_CACHES_PER_SET]".
-- Remove "caches_loaded".
-
-Now the code looks as exactly what it does in practic: only one cache is
-used in the cache set.
+This patch unifies all block_bytes() usage only on struct cache, this is
+one of the preparation to remove the embedded struct cache_sb from
+struct cache_set.
 
 Signed-off-by: Coly Li <colyli@suse.de>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 ---
- drivers/md/bcache/alloc.c  |  2 +-
- drivers/md/bcache/bcache.h |  8 +++-----
- drivers/md/bcache/super.c  | 19 ++++++++-----------
- 3 files changed, 12 insertions(+), 17 deletions(-)
+ drivers/md/bcache/bcache.h  |  2 +-
+ drivers/md/bcache/btree.c   | 24 ++++++++++++------------
+ drivers/md/bcache/debug.c   |  8 ++++----
+ drivers/md/bcache/journal.c |  8 ++++----
+ drivers/md/bcache/request.c |  2 +-
+ drivers/md/bcache/super.c   |  2 +-
+ drivers/md/bcache/sysfs.c   |  2 +-
+ 7 files changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 4493ff57476d..3385f6add6df 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -501,7 +501,7 @@ int __bch_bucket_alloc_set(struct cache_set *c, unsigned int reserve,
- 
- 	bkey_init(k);
- 
--	ca = c->cache_by_alloc[0];
-+	ca = c->cache;
- 	b = bch_bucket_alloc(ca, reserve, wait);
- 	if (b == -1)
- 		goto err;
 diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 5ff6e9573935..aa112c1adba1 100644
+index 94a62acac4fc..29bec61cafbb 100644
 --- a/drivers/md/bcache/bcache.h
 +++ b/drivers/md/bcache/bcache.h
-@@ -519,9 +519,7 @@ struct cache_set {
+@@ -759,7 +759,7 @@ struct bbio {
  
- 	struct cache_sb		sb;
+ #define bucket_pages(c)		((c)->sb.bucket_size / PAGE_SECTORS)
+ #define bucket_bytes(c)		((c)->sb.bucket_size << 9)
+-#define block_bytes(c)		((c)->sb.block_size << 9)
++#define block_bytes(ca)		((ca)->sb.block_size << 9)
  
--	struct cache		*cache[MAX_CACHES_PER_SET];
--	struct cache		*cache_by_alloc[MAX_CACHES_PER_SET];
--	int			caches_loaded;
-+	struct cache		*cache;
- 
- 	struct bcache_device	**devices;
- 	unsigned int		devices_max_used;
-@@ -808,7 +806,7 @@ static inline struct cache *PTR_CACHE(struct cache_set *c,
- 				      const struct bkey *k,
- 				      unsigned int ptr)
+ static inline unsigned int meta_bucket_pages(struct cache_sb *sb)
  {
--	return c->cache[PTR_DEV(k, ptr)];
-+	return c->cache;
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 0817ad510d9f..c91b4d58a5b3 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -104,7 +104,7 @@
+ 
+ static inline struct bset *write_block(struct btree *b)
+ {
+-	return ((void *) btree_bset_first(b)) + b->written * block_bytes(b->c);
++	return ((void *) btree_bset_first(b)) + b->written * block_bytes(b->c->cache);
  }
  
- static inline size_t PTR_BUCKET_NR(struct cache_set *c,
-@@ -890,7 +888,7 @@ do {									\
- /* Looping macros */
+ static void bch_btree_init_next(struct btree *b)
+@@ -173,7 +173,7 @@ void bch_btree_node_read_done(struct btree *b)
+ 			goto err;
  
- #define for_each_cache(ca, cs, iter)					\
--	for (iter = 0; ca = cs->cache[iter], iter < (cs)->sb.nr_in_set; iter++)
-+	for (iter = 0; ca = cs->cache, iter < 1; iter++)
+ 		err = "bad btree header";
+-		if (b->written + set_blocks(i, block_bytes(b->c)) >
++		if (b->written + set_blocks(i, block_bytes(b->c->cache)) >
+ 		    btree_blocks(b))
+ 			goto err;
  
- #define for_each_bucket(b, ca)						\
- 	for (b = (ca)->buckets + (ca)->sb.first_bucket;			\
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 7057ec48f3d1..e9ccfa17beb8 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1675,7 +1675,7 @@ static void cache_set_free(struct closure *cl)
- 	for_each_cache(ca, c, i)
- 		if (ca) {
- 			ca->set = NULL;
--			c->cache[ca->sb.nr_this_dev] = NULL;
-+			c->cache = NULL;
- 			kobject_put(&ca->kobj);
- 		}
+@@ -199,13 +199,13 @@ void bch_btree_node_read_done(struct btree *b)
  
-@@ -2166,7 +2166,7 @@ static const char *register_cache_set(struct cache *ca)
+ 		bch_btree_iter_push(iter, i->start, bset_bkey_last(i));
  
- 	list_for_each_entry(c, &bch_cache_sets, list)
- 		if (!memcmp(c->sb.set_uuid, ca->sb.set_uuid, 16)) {
--			if (c->cache[ca->sb.nr_this_dev])
-+			if (c->cache)
- 				return "duplicate cache set member";
- 
- 			if (!can_attach_cache(ca, c))
-@@ -2216,14 +2216,11 @@ static const char *register_cache_set(struct cache *ca)
- 
- 	kobject_get(&ca->kobj);
- 	ca->set = c;
--	ca->set->cache[ca->sb.nr_this_dev] = ca;
--	c->cache_by_alloc[c->caches_loaded++] = ca;
-+	ca->set->cache = ca;
- 
--	if (c->caches_loaded == c->sb.nr_in_set) {
--		err = "failed to run cache set";
--		if (run_cache_set(c) < 0)
--			goto err;
--	}
-+	err = "failed to run cache set";
-+	if (run_cache_set(c) < 0)
-+		goto err;
- 
- 	return NULL;
- err:
-@@ -2240,8 +2237,8 @@ void bch_cache_release(struct kobject *kobj)
- 	unsigned int i;
- 
- 	if (ca->set) {
--		BUG_ON(ca->set->cache[ca->sb.nr_this_dev] != ca);
--		ca->set->cache[ca->sb.nr_this_dev] = NULL;
-+		BUG_ON(ca->set->cache != ca);
-+		ca->set->cache = NULL;
+-		b->written += set_blocks(i, block_bytes(b->c));
++		b->written += set_blocks(i, block_bytes(b->c->cache));
  	}
  
- 	free_pages((unsigned long) ca->disk_buckets, ilog2(meta_bucket_pages(&ca->sb)));
+ 	err = "corrupted btree";
+ 	for (i = write_block(b);
+ 	     bset_sector_offset(&b->keys, i) < KEY_SIZE(&b->key);
+-	     i = ((void *) i) + block_bytes(b->c))
++	     i = ((void *) i) + block_bytes(b->c->cache))
+ 		if (i->seq == b->keys.set[0].data->seq)
+ 			goto err;
+ 
+@@ -347,7 +347,7 @@ static void do_btree_node_write(struct btree *b)
+ 
+ 	b->bio->bi_end_io	= btree_node_write_endio;
+ 	b->bio->bi_private	= cl;
+-	b->bio->bi_iter.bi_size	= roundup(set_bytes(i), block_bytes(b->c));
++	b->bio->bi_iter.bi_size	= roundup(set_bytes(i), block_bytes(b->c->cache));
+ 	b->bio->bi_opf		= REQ_OP_WRITE | REQ_META | REQ_FUA;
+ 	bch_bio_map(b->bio, i);
+ 
+@@ -423,10 +423,10 @@ void __bch_btree_node_write(struct btree *b, struct closure *parent)
+ 
+ 	do_btree_node_write(b);
+ 
+-	atomic_long_add(set_blocks(i, block_bytes(b->c)) * b->c->sb.block_size,
++	atomic_long_add(set_blocks(i, block_bytes(b->c->cache)) * b->c->sb.block_size,
+ 			&PTR_CACHE(b->c, &b->key, 0)->btree_sectors_written);
+ 
+-	b->written += set_blocks(i, block_bytes(b->c));
++	b->written += set_blocks(i, block_bytes(b->c->cache));
+ }
+ 
+ void bch_btree_node_write(struct btree *b, struct closure *parent)
+@@ -1344,7 +1344,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 
+ 	if (nodes < 2 ||
+ 	    __set_blocks(b->keys.set[0].data, keys,
+-			 block_bytes(b->c)) > blocks * (nodes - 1))
++			 block_bytes(b->c->cache)) > blocks * (nodes - 1))
+ 		return 0;
+ 
+ 	for (i = 0; i < nodes; i++) {
+@@ -1378,7 +1378,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 			     k = bkey_next(k)) {
+ 				if (__set_blocks(n1, n1->keys + keys +
+ 						 bkey_u64s(k),
+-						 block_bytes(b->c)) > blocks)
++						 block_bytes(b->c->cache)) > blocks)
+ 					break;
+ 
+ 				last = k;
+@@ -1394,7 +1394,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 			 * though)
+ 			 */
+ 			if (__set_blocks(n1, n1->keys + n2->keys,
+-					 block_bytes(b->c)) >
++					 block_bytes(b->c->cache)) >
+ 			    btree_blocks(new_nodes[i]))
+ 				goto out_unlock_nocoalesce;
+ 
+@@ -1403,7 +1403,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
+ 			last = &r->b->key;
+ 		}
+ 
+-		BUG_ON(__set_blocks(n1, n1->keys + keys, block_bytes(b->c)) >
++		BUG_ON(__set_blocks(n1, n1->keys + keys, block_bytes(b->c->cache)) >
+ 		       btree_blocks(new_nodes[i]));
+ 
+ 		if (last)
+@@ -2210,7 +2210,7 @@ static int btree_split(struct btree *b, struct btree_op *op,
+ 		goto err;
+ 
+ 	split = set_blocks(btree_bset_first(n1),
+-			   block_bytes(n1->c)) > (btree_blocks(b) * 4) / 5;
++			   block_bytes(n1->c->cache)) > (btree_blocks(b) * 4) / 5;
+ 
+ 	if (split) {
+ 		unsigned int keys = 0;
+diff --git a/drivers/md/bcache/debug.c b/drivers/md/bcache/debug.c
+index 0ccc1b0baa42..b00fd08d696b 100644
+--- a/drivers/md/bcache/debug.c
++++ b/drivers/md/bcache/debug.c
+@@ -25,8 +25,8 @@ struct dentry *bcache_debug;
+ 	for (i = (start);						\
+ 	     (void *) i < (void *) (start) + (KEY_SIZE(&b->key) << 9) &&\
+ 	     i->seq == (start)->seq;					\
+-	     i = (void *) i + set_blocks(i, block_bytes(b->c)) *	\
+-		 block_bytes(b->c))
++	     i = (void *) i + set_blocks(i, block_bytes(b->c->cache)) *	\
++		 block_bytes(b->c->cache))
+ 
+ void bch_btree_verify(struct btree *b)
+ {
+@@ -82,14 +82,14 @@ void bch_btree_verify(struct btree *b)
+ 
+ 		for_each_written_bset(b, ondisk, i) {
+ 			unsigned int block = ((void *) i - (void *) ondisk) /
+-				block_bytes(b->c);
++				block_bytes(b->c->cache);
+ 
+ 			pr_err("*** on disk block %u:\n", block);
+ 			bch_dump_bset(&b->keys, i, block);
+ 		}
+ 
+ 		pr_err("*** block %zu not written\n",
+-		       ((void *) i - (void *) ondisk) / block_bytes(b->c));
++		       ((void *) i - (void *) ondisk) / block_bytes(b->c->cache));
+ 
+ 		for (j = 0; j < inmemory->keys; j++)
+ 			if (inmemory->d[j] != sorted->d[j])
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index 027d0f8c4daf..ccd5de0ab0fe 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -98,7 +98,7 @@ reread:		left = ca->sb.bucket_size - offset;
+ 				return ret;
+ 			}
+ 
+-			blocks = set_blocks(j, block_bytes(ca->set));
++			blocks = set_blocks(j, block_bytes(ca));
+ 
+ 			/*
+ 			 * Nodes in 'list' are in linear increasing order of
+@@ -734,7 +734,7 @@ static void journal_write_unlocked(struct closure *cl)
+ 	struct cache *ca = c->cache;
+ 	struct journal_write *w = c->journal.cur;
+ 	struct bkey *k = &c->journal.key;
+-	unsigned int i, sectors = set_blocks(w->data, block_bytes(c)) *
++	unsigned int i, sectors = set_blocks(w->data, block_bytes(ca)) *
+ 		c->sb.block_size;
+ 
+ 	struct bio *bio;
+@@ -754,7 +754,7 @@ static void journal_write_unlocked(struct closure *cl)
+ 		return;
+ 	}
+ 
+-	c->journal.blocks_free -= set_blocks(w->data, block_bytes(c));
++	c->journal.blocks_free -= set_blocks(w->data, block_bytes(ca));
+ 
+ 	w->data->btree_level = c->root->level;
+ 
+@@ -847,7 +847,7 @@ static struct journal_write *journal_wait_for_write(struct cache_set *c,
+ 		struct journal_write *w = c->journal.cur;
+ 
+ 		sectors = __set_blocks(w->data, w->data->keys + nkeys,
+-				       block_bytes(c)) * c->sb.block_size;
++				       block_bytes(c->cache)) * c->sb.block_size;
+ 
+ 		if (sectors <= min_t(size_t,
+ 				     c->journal.blocks_free * c->sb.block_size,
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index c7cadaafa947..02408fdbf5bb 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -99,7 +99,7 @@ static int bch_keylist_realloc(struct keylist *l, unsigned int u64s,
+ 	 * bch_data_insert_keys() will insert the keys created so far
+ 	 * and finish the rest when the keylist is empty.
+ 	 */
+-	if (newsize * sizeof(uint64_t) > block_bytes(c) - sizeof(struct jset))
++	if (newsize * sizeof(uint64_t) > block_bytes(c->cache) - sizeof(struct jset))
+ 		return -ENOMEM;
+ 
+ 	return __bch_keylist_realloc(l, u64s);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 90a419ad6445..36a538c2e960 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1528,7 +1528,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+ 
+ 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
+ 
+-	if (bcache_device_init(d, block_bytes(c), u->sectors,
++	if (bcache_device_init(d, block_bytes(c->cache), u->sectors,
+ 			NULL, &bcache_flash_ops))
+ 		goto err;
+ 
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index ac06c0bc3c0a..b9f524ab5cc8 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -714,7 +714,7 @@ SHOW(__bch_cache_set)
+ 	sysfs_print(synchronous,		CACHE_SYNC(&c->sb));
+ 	sysfs_print(journal_delay_ms,		c->journal_delay_ms);
+ 	sysfs_hprint(bucket_size,		bucket_bytes(c));
+-	sysfs_hprint(block_size,		block_bytes(c));
++	sysfs_hprint(block_size,		block_bytes(c->cache));
+ 	sysfs_print(tree_depth,			c->root->level);
+ 	sysfs_print(root_usage_percent,		bch_root_usage(c));
+ 
 -- 
 2.26.2
 
