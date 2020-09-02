@@ -2,71 +2,105 @@ Return-Path: <SRS0=5amZ=CL=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-4.0 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
-	autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-13.0 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 77A55C433E7
-	for <linux-bcache@archiver.kernel.org>; Wed,  2 Sep 2020 06:05:44 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1C1B9C433E7
+	for <linux-bcache@archiver.kernel.org>; Wed,  2 Sep 2020 12:15:04 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5BE76206A5
-	for <linux-bcache@archiver.kernel.org>; Wed,  2 Sep 2020 06:05:44 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id F17DF2078B
+	for <linux-bcache@archiver.kernel.org>; Wed,  2 Sep 2020 12:15:03 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726406AbgIBGFn (ORCPT
+        id S1726515AbgIBMPB (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 2 Sep 2020 02:05:43 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47962 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1725774AbgIBGFn (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 2 Sep 2020 02:05:43 -0400
-Received: from smtp.mfedv.net (smtp.mfedv.net [IPv6:2a04:6c0:2::19])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BC050C061244
-        for <linux-bcache@vger.kernel.org>; Tue,  1 Sep 2020 23:05:41 -0700 (PDT)
-Received: from suse92host.mfedv.net (suse92host.mfedv.net [IPv6:2a04:6c0:2:3:0:0:0:ffff])
-        by smtp.mfedv.net (8.15.2/8.15.2/Debian-10) with ESMTP id 08265UtW030280;
-        Wed, 2 Sep 2020 06:05:31 GMT
-Received: from xoff (klappe2.mfedv.net [192.168.71.72])
-        by suse92host.mfedv.net (Postfix) with SMTP id CFF5CC80C7;
-        Wed,  2 Sep 2020 08:05:29 +0200 (CEST)
-        (envelope-from bcache@mfedv.net)
-Date:   Wed, 2 Sep 2020 08:05:29 +0200
-From:   Matthias Ferdinand <bcache@mfedv.net>
-To:     Brendan Boerner <bboerner.biz@gmail.com>
-Cc:     linux-bcache@vger.kernel.org
-Subject: Re: Bcache in Ubuntu 18.04 kernel panic
-Message-ID: <20200902060529.GI10169@xoff>
-References: <CAKkfZL0FR=PX5roCpB9HQe5=F6T70F7+8EFL_yTZPEbqWWHKPA@mail.gmail.com>
+        Wed, 2 Sep 2020 08:15:01 -0400
+Received: from mx2.suse.de ([195.135.220.15]:41896 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1726285AbgIBMOt (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 2 Sep 2020 08:14:49 -0400
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id 98C93ADE0
+        for <linux-bcache@vger.kernel.org>; Wed,  2 Sep 2020 12:14:47 +0000 (UTC)
+From:   Coly Li <colyli@suse.de>
+To:     linux-bcache@vger.kernel.org
+Cc:     Coly Li <colyli@suse.de>
+Subject: [PATCH 2/2] bcache-tools: add man page bcache-status.8
+Date:   Wed,  2 Sep 2020 20:14:35 +0800
+Message-Id: <20200902121435.85166-2-colyli@suse.de>
+X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20200902121435.85166-1-colyli@suse.de>
+References: <20200902121435.85166-1-colyli@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAKkfZL0FR=PX5roCpB9HQe5=F6T70F7+8EFL_yTZPEbqWWHKPA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Tue, Sep 01, 2020 at 03:42:54PM -0500, Brendan Boerner wrote:
-> Hi,
-> 
-> I spent the weekend verifying and isolating a kernel panic in bcache
-> on Ubuntu 18.04 (4.15.0-112-generic #113-Ubuntu SMP Thu Jul 9 23:41:39
-> UTC 2020).
-> 
-> Is this the place to report it? I have kernel crash dumps.
+Add the initial man page for bcache-status.
 
-I'm no bcache developer, but I see there are Ubuntu kernel updates
-available, with bcache fixes.
+Signed-off-by: Coly Li <colyli@suse.de>
+---
+ bcache-status.8 | 47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+ create mode 100644 bcache-status.8
 
-From the changelogs for 4.15.0-113.114:
+diff --git a/bcache-status.8 b/bcache-status.8
+new file mode 100644
+index 0000000..f56cfb6
+--- /dev/null
++++ b/bcache-status.8
+@@ -0,0 +1,47 @@
++.TH bcache-status 8
++.SH NAME
++bcache-status \- Display useful bcache statistics
++
++.SH SYNOPSIS
++.B bcache-status [ --help ] [ -f ] [ -h ] [ -d ] [ -t ] [ -a ] [ -r ] [ -s ] [ -g ]
++
++.SH DESCRIPTION
++This command displays useful bcache statistics in a convenient way.
++
++.SH OPTIONS
++
++.TP
++.BR \-\-help
++Print help message and exit.
++
++.TP
++.BR \-f ", " \-\-five\-minute
++Print the last five minutes of stats.
++
++.TP
++.BR \-h ", " \-\-hour
++Print the last hour of stats.
++
++.TP
++.BR \-d ", " \-\-day
++Print the last day of stats.
++
++.TP
++.BR \-t ", " \-\-total
++Print total stats.
++
++.TP
++.BR \-a ", " \-\-all
++Print all stats.
++
++.TP
++.BR \-r ", " \-\-reset\-stats
++Reset stats after printing them.
++
++.TP
++.BR \-s ", " \-\-sub\-status
++Print subdevice status.
++
++.TP
++.BR \-g ", " \-\-gc
++Invoke GC before printing status (root only).
+-- 
+2.26.2
 
-  * Regression in kernel 4.15.0-91 causes kernel panic with Bcache
-    (LP: #1867916)
-    - bcache: check and adjust logical block size for backing devices
-
-
-Perhaps you used unorthodox (neither 512b nor 4k) block sizes at bcache creation?
-
-
-Regards
-Matthias
