@@ -1,96 +1,82 @@
-Return-Path: <SRS0=ravp=CU=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=wWD1=CZ=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-7.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-3.7 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,MSGID_FROM_MTA_HEADER,
+	SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EE4A6C433E2
-	for <linux-bcache@archiver.kernel.org>; Fri, 11 Sep 2020 21:37:51 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CF71DC433E2
+	for <linux-bcache@archiver.kernel.org>; Wed, 16 Sep 2020 06:20:15 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id AE2C222207
-	for <linux-bcache@archiver.kernel.org>; Fri, 11 Sep 2020 21:37:51 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel-dk.20150623.gappssmtp.com header.i=@kernel-dk.20150623.gappssmtp.com header.b="iQs9Uo+P"
+	by mail.kernel.org (Postfix) with ESMTP id 996EC2065E
+	for <linux-bcache@archiver.kernel.org>; Wed, 16 Sep 2020 06:20:15 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1725844AbgIKVhs (ORCPT
+        id S1726189AbgIPGUM (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 11 Sep 2020 17:37:48 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35262 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1725864AbgIKVhq (ORCPT
+        Wed, 16 Sep 2020 02:20:12 -0400
+Received: from m97141.mail.qiye.163.com ([220.181.97.141]:23342 "EHLO
+        m97141.mail.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726145AbgIPGTu (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 11 Sep 2020 17:37:46 -0400
-Received: from mail-pg1-x544.google.com (mail-pg1-x544.google.com [IPv6:2607:f8b0:4864:20::544])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BA8FDC0613ED
-        for <linux-bcache@vger.kernel.org>; Fri, 11 Sep 2020 14:37:45 -0700 (PDT)
-Received: by mail-pg1-x544.google.com with SMTP id 34so7469741pgo.13
-        for <linux-bcache@vger.kernel.org>; Fri, 11 Sep 2020 14:37:45 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kernel-dk.20150623.gappssmtp.com; s=20150623;
-        h=subject:to:cc:references:from:message-id:date:user-agent
-         :mime-version:in-reply-to:content-language:content-transfer-encoding;
-        bh=r51LP7m4rUbCgwSAKD5/YKIVFU6XhFovTY9ZXd0poEc=;
-        b=iQs9Uo+P1Ikbj8cd9+UMIByGSZfY8FQ0QJZuAvFAdnVHZ6S2VEdIoRsEIeZscDM65u
-         cWa15KtHgLUK7U5stSucP7JiIXMjHWYPHfo1lR8hWVJ6/aQDJ53YEPQAPszjOOWTRjue
-         vYQLm2F2LBglhQqI8jxfy1gGKHwsSFZ7y65MlIi8/JmKo8VTKRcAR9Kj2KpT/CNnGIGk
-         OFrCKVVNRZsg/vFOn/0zcxK4VHq9TRs9RcC2NNXZtADTW2Qczo1PjFs2GK7jHsfPo3Ht
-         rcDRXeblqKoihzU2qqNlKZvOML2ysrpjVU7kPz6TaPT9j0S3gaRJg4Ff7Hk9n/X+ed2D
-         5kbQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
-         :user-agent:mime-version:in-reply-to:content-language
-         :content-transfer-encoding;
-        bh=r51LP7m4rUbCgwSAKD5/YKIVFU6XhFovTY9ZXd0poEc=;
-        b=D2Z7mTlfCcqUwVGoDEo+F/uYRwfq0YKILZfZ5dXuhLGPTQ/EQ8z92RlIW6ZUaHMsvA
-         hngguUR3wRB5itCWhW56GR5uxMnw8krbj6+7OU5S2QLX4p0BRL3DqrwejmIbNOzupYdo
-         uuWDHThT1B/8HC0v3keXxLZ4v5aGDZDjJ1D1bW9YjZ1CyOZVg9AgQ0XxbEQYgs8kI498
-         ZXPktFmQsg2pr5E+gekDYdRljulXnT2Mp9WHkckIwBYKDaN2E0kAK3ujxVRfiZQfpocn
-         xiX9NZD1JJJKjLl0oIDrg9JbCqm0dcLVggzct/qY1Os8nenWRckkZAZYKGHjOjQGfNTV
-         zBeg==
-X-Gm-Message-State: AOAM532lSHcWvWxqMXmqt93XTA9WywAAPcP8FSlGxV1ONY0NZC7lJXCN
-        0s145iMU5YHe8pekpuesScSdzA==
-X-Google-Smtp-Source: ABdhPJxriWuG9UsTdeDt1QvD0oSEycaGqMo0AChaG8ybqdM56zVilrT2CJ0yt8sas2+GjdFcpoUfHA==
-X-Received: by 2002:a63:cd4f:: with SMTP id a15mr3175439pgj.416.1599860265219;
-        Fri, 11 Sep 2020 14:37:45 -0700 (PDT)
-Received: from [192.168.1.182] ([66.219.217.173])
-        by smtp.gmail.com with ESMTPSA id m188sm3275508pfd.56.2020.09.11.14.37.43
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Fri, 11 Sep 2020 14:37:44 -0700 (PDT)
-Subject: Re: [PATCH v3 0/3] block: improve iostat for md/bcache partitions
-To:     Song Liu <songliubraving@fb.com>, linux-block@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc:     colyli@suse.de, kernel-team@fb.com, song@kernel.org,
-        hch@infradead.org
-References: <20200831222725.3860186-1-songliubraving@fb.com>
-From:   Jens Axboe <axboe@kernel.dk>
-Message-ID: <0665df03-41a8-fb06-71d2-a487c31ad610@kernel.dk>
-Date:   Fri, 11 Sep 2020 15:37:43 -0600
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.10.0
+        Wed, 16 Sep 2020 02:19:50 -0400
+Received: from easystack.cn (wm-1.hmbj.internal [127.0.0.1])
+        by m97141.mail.qiye.163.com (Hmail) with ESMTP id 113F7383985;
+        Wed, 16 Sep 2020 14:19:46 +0800 (CST)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: base64
+Message-ID: <AMsATAA4E*Dlrpq6fL0rxqqL.8.1600237186053.Hmail.dongsheng.yang@easystack.cn>
+To:     colyli <colyli@suse.de>
+Cc:     linux-bcache <linux-bcache@vger.kernel.org>
+Subject: =?UTF-8?B?Rnc6QWJvdXQgYmNhY2hlLWNoZWNr?=
+X-Priority: 3
+X-Mailer: HMail Webmail Server V2.0 Copyright (c) 2015-163.com
+X-Originating-IP: 218.94.118.90
 MIME-Version: 1.0
-In-Reply-To: <20200831222725.3860186-1-songliubraving@fb.com>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+Received: from dongsheng.yang@easystack.cn( [218.94.118.90) ] by ajax-webmail ( [127.0.0.1] ) ; Wed, 16 Sep 2020 14:19:46 +0800 (GMT+08:00)
+From:   =?UTF-8?B?5p2o5Lic5Y2H?= <dongsheng.yang@easystack.cn>
+Date:   Wed, 16 Sep 2020 14:19:46 +0800 (GMT+08:00)
+X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgYFAkeWUFZS1VLWVdZKFlBSUI3V1ktWUFJV1kPCR
+        oVCBIfWUFZQhhCGkNKGE1MT0IYVkpNS0tJSExKQ01KS0lVGRETFhoSFyQUDg9ZV1kWGg8SFR0UWU
+        FZT0tIVUpKS0xKSFVKS0tZBg++
+X-HM-Sender-Digest: e1kMHhlZQQ8JDh5XWRIfHhUPWUFZRzo2CDovOjpPPlE*FwkLCk0dN0sJ
+        AwoKN1VDVUpNS0tJSExKQ01ISENVMxYaEhdVHxQVHAgTHhUcVQIaFRw7HhoIAggPGhgQVRgVRVlX
+        WRILWUFZSUpDVUJPVUpKQ1VCS1lXWQgBWUFIQ0JPN1dZHQwfVhYSHwhZQSBDTk9OTUpCTkpNTjcm
+        Bg++
+X-HM-Tid: 0a749591ac1720bfkuqy113f7383985
 Sender: linux-bcache-owner@vger.kernel.org
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 8/31/20 4:27 PM, Song Liu wrote:
-> Currently, devices like md, bcache uses disk_[start|end]_io_acct to report
-> iostat. These functions couldn't get proper iostat for partitions on these
-> devices.
-> 
-> This set resolves this issue by introducing part_[begin|end]_io_acct, and
-> using them in md and bcache code.
-
-Applied, thanks.
-
--- 
-Jens Axboe
-
+UmVzZW5kaW5nIHdpdGggbm8gSFRNTCBmb3JtYXQgIC4uLiAuLi4KCgpIaSBDb2x5IGFuZCBhbGws
+CsKgwqDCoMKgIEkgZm91bmQgdGhlcmUgaXMgYW4gZXJyb3IgbWVzc2FnZSBpbiBvdXIgdGVzdGlu
+ZzoKCgpTZXAgMjcgMTc6NDM6MDAgbm9kZS0xIGtlcm5lbDogYmNhY2hlOiBlcnJvciBvbiAKYzI5
+MTRiN2UtZDY2NS00ZWMxLTgwZTEtMjcyNzU1ZGUxOWVmOiB1bnN1cHBvcnRlZCBic2V0IHZlcnNp
+b24gYXQgYnVja2V0CiA1ODI5MCwgYmxvY2sgMCwgNDA4MTg4MTAga2V5cywgZGlzYWJsaW5nIGNh
+Y2hpbmcKCgpJIGNoZWNrZWQgdGhlIGNvZGUgaW4gYmNoX2J0cmVlX25vZGVfcmVhZF9kb25lKCkg
+YXJvdW5kIHRoaXMgbWVzc2FnZToKCiAyMTQgICAgICAgICBmb3IgKDsKIDIxNSAgICAgICAgICAg
+ICAgYi0+d3JpdHRlbiA8IGJ0cmVlX2Jsb2NrcyhiKSAmJiBpLT5zZXEgPT0gYi0+a2V5cy5zZXRb
+MF0uZGF0YS0+c2VxOwogMjE2ICAgICAgICAgICAgICBpID0gd3JpdGVfYmxvY2soYikpIHsKIDIx
+NyAgICAgICAgICAgICAgICAgZXJyID0gInVuc3VwcG9ydGVkIGJzZXQgdmVyc2lvbiI7CiAyMTgg
+ICAgICAgICAgICAgICAgIGlmIChpLT52ZXJzaW9uID4gQkNBQ0hFX0JTRVRfVkVSU0lPTikKIDIx
+OSAgICAgICAgICAgICAgICAgICAgICAgICBnb3RvIGVycjsKIDIyMCAKVGhlIHByb2JsZW0gaXMg
+d2UgZm91bmQgdGhlIGktPnNlcSBpcyB3aGF0IHdlIGV4cGVjdGVkIGZvciB0aGlzIGJ0cmVlX25v
+ZGUsIGJ1dCB0aGUgdmVyc2lvbiBpcyBub3QgQkNBQ0hFX0JTRVRfVkVSU0lPTiAoMSkKCgoKSSB0
+aGluayB0aGVyZSB3b3VsZCBiZSB0d28gcmVhc29ucyB0byBjYXVzZSB0aGlzIG1lc3NhZ2VzOgoo
+MSkgY2FjaGUgZGlzY2FyZCBpcyBub3QgZW5hYmxlZC4KwqDCoMKgwqDCoCBXaGVuIHdlIGFsbG9j
+YXRlIGEgYnVja2V0LCBpZiB3ZSBkb250IGVuYWJsZSBkaXNjYXJkLCB0aGVyZSBjb3VsZCBiZSBz
+b21lIG91dGRhdGVkIGRhdGEgaW4gdGhpcyBidWNrZXQsIAoKYW5kIHRoZXJlIGlzIHBvc3NpYmls
+aXR5IHRoYXQgdGhlIGxvY2F0aW9uIG9mIGktPnNlcSBpcyBlcXVhbCB0byB3aGF0IHdlIGV4cGVj
+dGVkLAoKYnV0IHRoYXQncyByZWFsbHkgbm90IGFuIGJzZXQgYXQgYWxsLCBzbyB3ZSB3aWxsIGZv
+dW5kIHZlcnNpb24sIG1hZ2ljIGFuZCBic2V0X2NzdW0gYXJlIGFsbCB1bmV4cGVjdGVkLCAKCmN1
+cnJlbnRseSB3ZSB3aWxsIGdvdG8gZXJyIGFuZCBzdG9wIGNhY2hlX3NldC4KCgooMikgcG93ZXIt
+Y3V0LgrCoMKgwqDCoMKgwqAgV2hlbiB3ZSBhcmUgZG9pbmcgYnRyZWVfbm9kZV93cml0ZSwgaWYg
+dGhlcmUgaXMgYSBwb3dlci1jdXQgaGFwcGVuLCB3ZSBjb3VsZCB3cml0ZSBhIHBhcnRpYWwgYnRy
+ZWUuCiAKCkJ1dCB3aGVuIHdlIG1lZXQgdGhpcyBraW5kIG9mIHByb2JsZW1zLCB3ZSBjYW50IHVz
+ZSB0aGlzIGNhY2hlIGRldmljZS4gVGhlcmUgaXMgbm8gdG9vbCB0byByZWNvdmVyeSBmcm9tIHRo
+aXMga2luZCBvZiBwcm9ibGVtLgoKSSB0aGluayBJIGNhbiBjb29rIGEgYmNhY2hlLWNoZWNrIGlu
+IGJjYWNoZS10b29scywgc29tZXRoaW5nIGxpa2UgZnNjay4gdG8gY2hlY2sgdGhpcyBraW5kIG9m
+IHByb2JsZW0KCmFuZCBhbGxvdyB1c2VyIHRvIHJlcGFpciBpdCwgd2FybmluZyBvbiB1c2VyIGZv
+cmNlLXJlcGFpcmUgaXMgcmlza3kuCgoKClBsZWFzZSBoZWxwIHRvIHBvaW50IG91dCBpZiB0aGVy
+ZSBpcyBzb21ldGhpbmcgSSBhbSBtaXNzaW5nLiAKCgoKVGhhbngKRG9uZ3NoZW5nCgoNCg0K
