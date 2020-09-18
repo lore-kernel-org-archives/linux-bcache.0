@@ -1,102 +1,152 @@
-Return-Path: <SRS0=uteO=C2=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=w5nX=C3=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.3 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1
-	autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.1 required=3.0 tests=BAYES_00,DKIMWL_WL_HIGH,
+	DKIM_SIGNED,DKIM_VALID,DKIM_VALID_AU,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7D257C433E2
-	for <linux-bcache@archiver.kernel.org>; Thu, 17 Sep 2020 12:49:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 71CB2C43465
+	for <linux-bcache@archiver.kernel.org>; Fri, 18 Sep 2020 02:23:29 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3BED920678
-	for <linux-bcache@archiver.kernel.org>; Thu, 17 Sep 2020 12:49:45 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 3794E22211
+	for <linux-bcache@archiver.kernel.org>; Fri, 18 Sep 2020 02:23:29 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+	s=default; t=1600395809;
+	bh=5urpLU8oeS6gDR7Jjp/j4LpHwZGRGcr0hFAeFKjIv6g=;
+	h=From:To:Cc:Subject:Date:In-Reply-To:References:List-ID:From;
+	b=xrjoOBMImVOualwl8LkJM2rOwEG/NQcsPpdrDKZciP6IK3fUPsYmMr4kRzErcLaWH
+	 Dr6jXQ9cVzh5OEJqFODepjIFX1FJbimiVwSqZoeCi+MS1gAp/rMOvtOUhgUURjWnst
+	 EnCP4xRyxjiF5zk4DCRm0ZNy/9FEKzxB7FfOkcXM=
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727037AbgIQMtj (ORCPT
+        id S1727185AbgIRCXQ (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 17 Sep 2020 08:49:39 -0400
-Received: from szxga07-in.huawei.com ([45.249.212.35]:57734 "EHLO huawei.com"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1726812AbgIQMtY (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 17 Sep 2020 08:49:24 -0400
-Received: from DGGEMS410-HUB.china.huawei.com (unknown [172.30.72.59])
-        by Forcepoint Email with ESMTP id 551D3E035904526DD661;
-        Thu, 17 Sep 2020 20:48:29 +0800 (CST)
-Received: from [10.174.179.91] (10.174.179.91) by
- DGGEMS410-HUB.china.huawei.com (10.3.19.210) with Microsoft SMTP Server id
- 14.3.487.0; Thu, 17 Sep 2020 20:48:28 +0800
-Subject: Re: [PATCH -next] memory: Convert to DEFINE_SHOW_ATTRIBUTE
-To:     Pavel Machek <pavel@denx.de>
-CC:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Santosh Shilimkar <ssantosh@kernel.org>,
-        <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-References: <20200716090303.13154-1-miaoqinglang@huawei.com>
- <20200717211420.GA4140@amd>
-From:   miaoqinglang <miaoqinglang@huawei.com>
-Message-ID: <9d53ed56-1b64-ffce-5130-36f81b5f892c@huawei.com>
-Date:   Thu, 17 Sep 2020 20:48:28 +0800
-User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101
- Thunderbird/68.7.0
+        Thu, 17 Sep 2020 22:23:16 -0400
+Received: from mail.kernel.org ([198.145.29.99]:47076 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S1729463AbgIRCQ4 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 17 Sep 2020 22:16:56 -0400
+Received: from sasha-vm.mshome.net (c-73-47-72-35.hsd1.nh.comcast.net [73.47.72.35])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+        (No client certificate requested)
+        by mail.kernel.org (Postfix) with ESMTPSA id B826E23772;
+        Fri, 18 Sep 2020 02:16:54 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=default; t=1600395415;
+        bh=5urpLU8oeS6gDR7Jjp/j4LpHwZGRGcr0hFAeFKjIv6g=;
+        h=From:To:Cc:Subject:Date:In-Reply-To:References:From;
+        b=qzvn6Zerh+ih7BZ7R3itpLFtfqywIVEKsn8fKTE4zjwb0Wl8gChvkxwTtmptf54yO
+         ZKUUkIZs4SVfw0WzDs+Ce+YhYK2h2zkQyh5LFCuipJ9f47aXhdAkxL9ngYEpqCFRAM
+         qFZAmGsCpqfbTbPGyP08gEXhVPjS1Irv4cQ1Xlc8=
+From:   Sasha Levin <sashal@kernel.org>
+To:     linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc:     Guoju Fang <fangguoju@gmail.com>, Coly Li <colyli@suse.de>,
+        Jens Axboe <axboe@kernel.dk>, Sasha Levin <sashal@kernel.org>,
+        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+Subject: [PATCH AUTOSEL 4.4 10/64] bcache: fix a lost wake-up problem caused by mca_cannibalize_lock
+Date:   Thu, 17 Sep 2020 22:15:49 -0400
+Message-Id: <20200918021643.2067895-10-sashal@kernel.org>
+X-Mailer: git-send-email 2.25.1
+In-Reply-To: <20200918021643.2067895-1-sashal@kernel.org>
+References: <20200918021643.2067895-1-sashal@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20200717211420.GA4140@amd>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+X-stable: review
+X-Patchwork-Hint: Ignore
 Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.174.179.91]
-X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
+From: Guoju Fang <fangguoju@gmail.com>
 
+[ Upstream commit 34cf78bf34d48dddddfeeadb44f9841d7864997a ]
 
-在 2020/7/18 5:14, Pavel Machek 写道:
-> On Thu 2020-07-16 17:03:03, Qinglang Miao wrote:
->> From: Yongqiang Liu <liuyongqiang13@huawei.com>
->>
->> Use DEFINE_SHOW_ATTRIBUTE macro to simplify the code.
->>
->> Signed-off-by: Yongqiang Liu <liuyongqiang13@huawei.com>
->> ---
->>   drivers/memory/emif.c               | 22 ++--------------------
->>   drivers/memory/tegra/tegra124-emc.c | 14 +-------------
->>   2 files changed, 3 insertions(+), 33 deletions(-)
->>
->> diff --git a/drivers/memory/emif.c b/drivers/memory/emif.c
->> index 58a82eea5..aab8ddad7 100644
->> --- a/drivers/memory/emif.c
->> +++ b/drivers/memory/emif.c
->> @@ -131,16 +131,7 @@ static int emif_regdump_show(struct seq_file *s, void *unused)
->>   	return 0;
->>   }
->>   
->> -static int emif_regdump_open(struct inode *inode, struct file *file)
->> -{
->> -	return single_open(file, emif_regdump_show, inode->i_private);
->> -}
->> -
->> -static const struct file_operations emif_regdump_fops = {
->> -	.open			= emif_regdump_open,
->> -	.read_iter			= seq_read_iter,
->> -	.release		= single_release,
->> -};
->> +DEFINE_SHOW_ATTRIBUTE(emif_regdump);
-> 
-> This is not equivalent (and I guess changelog should mention that).
-> 
-> Along with other changes, we get:
-> 
->          .owner          = THIS_MODULE,
->          .llseek         = seq_lseek,
-> 
-> . Is that okay thing to add?
-> 									Pavel
-> 
-Hi Pavel,
+This patch fix a lost wake-up problem caused by the race between
+mca_cannibalize_lock and bch_cannibalize_unlock.
 
-I've sent a new patch against linux-next(20200917), and it can
-be applied to mainline cleanly now.
+Consider two processes, A and B. Process A is executing
+mca_cannibalize_lock, while process B takes c->btree_cache_alloc_lock
+and is executing bch_cannibalize_unlock. The problem happens that after
+process A executes cmpxchg and will execute prepare_to_wait. In this
+timeslice process B executes wake_up, but after that process A executes
+prepare_to_wait and set the state to TASK_INTERRUPTIBLE. Then process A
+goes to sleep but no one will wake up it. This problem may cause bcache
+device to dead.
 
-And your concerns are explained in commit log.
+Signed-off-by: Guoju Fang <fangguoju@gmail.com>
+Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Sasha Levin <sashal@kernel.org>
+---
+ drivers/md/bcache/bcache.h |  1 +
+ drivers/md/bcache/btree.c  | 12 ++++++++----
+ drivers/md/bcache/super.c  |  1 +
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
-Thanks.
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 7fe7df56fa334..f0939fc1cfe55 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -547,6 +547,7 @@ struct cache_set {
+ 	 */
+ 	wait_queue_head_t	btree_cache_wait;
+ 	struct task_struct	*btree_cache_alloc_lock;
++	spinlock_t		btree_cannibalize_lock;
+ 
+ 	/*
+ 	 * When we free a btree node, we increment the gen of the bucket the
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 122d975220945..bdf6071c1b184 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -841,15 +841,17 @@ out:
+ 
+ static int mca_cannibalize_lock(struct cache_set *c, struct btree_op *op)
+ {
+-	struct task_struct *old;
+-
+-	old = cmpxchg(&c->btree_cache_alloc_lock, NULL, current);
+-	if (old && old != current) {
++	spin_lock(&c->btree_cannibalize_lock);
++	if (likely(c->btree_cache_alloc_lock == NULL)) {
++		c->btree_cache_alloc_lock = current;
++	} else if (c->btree_cache_alloc_lock != current) {
+ 		if (op)
+ 			prepare_to_wait(&c->btree_cache_wait, &op->wait,
+ 					TASK_UNINTERRUPTIBLE);
++		spin_unlock(&c->btree_cannibalize_lock);
+ 		return -EINTR;
+ 	}
++	spin_unlock(&c->btree_cannibalize_lock);
+ 
+ 	return 0;
+ }
+@@ -884,10 +886,12 @@ static struct btree *mca_cannibalize(struct cache_set *c, struct btree_op *op,
+  */
+ static void bch_cannibalize_unlock(struct cache_set *c)
+ {
++	spin_lock(&c->btree_cannibalize_lock);
+ 	if (c->btree_cache_alloc_lock == current) {
+ 		c->btree_cache_alloc_lock = NULL;
+ 		wake_up(&c->btree_cache_wait);
+ 	}
++	spin_unlock(&c->btree_cannibalize_lock);
+ }
+ 
+ static struct btree *mca_alloc(struct cache_set *c, struct btree_op *op,
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index f7f8fb079d2a9..d73f9ea776861 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1511,6 +1511,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 	sema_init(&c->sb_write_mutex, 1);
+ 	mutex_init(&c->bucket_lock);
+ 	init_waitqueue_head(&c->btree_cache_wait);
++	spin_lock_init(&c->btree_cannibalize_lock);
+ 	init_waitqueue_head(&c->bucket_wait);
+ 	init_waitqueue_head(&c->gc_wait);
+ 	sema_init(&c->uuid_write_mutex, 1);
+-- 
+2.25.1
+
