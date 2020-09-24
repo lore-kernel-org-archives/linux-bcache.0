@@ -2,106 +2,131 @@ Return-Path: <SRS0=VPzh=DB=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-6.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_GIT autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.6 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0F37DC4741F
-	for <linux-bcache@archiver.kernel.org>; Thu, 24 Sep 2020 06:53:27 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CB47EC4727E
+	for <linux-bcache@archiver.kernel.org>; Thu, 24 Sep 2020 11:51:16 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id C6B9E23772
-	for <linux-bcache@archiver.kernel.org>; Thu, 24 Sep 2020 06:53:26 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 681232311B
+	for <linux-bcache@archiver.kernel.org>; Thu, 24 Sep 2020 11:51:16 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="r2w8hhD+"
+	dkim=pass (1024-bit key) header.d=126.com header.i=@126.com header.b="jPlq6IfM"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727075AbgIXGxV (ORCPT
+        id S1727505AbgIXLvP (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 24 Sep 2020 02:53:21 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43460 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1727014AbgIXGv7 (ORCPT
+        Thu, 24 Sep 2020 07:51:15 -0400
+Received: from mail-m964.mail.126.com ([123.126.96.4]:42550 "EHLO
+        mail-m964.mail.126.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726406AbgIXLvP (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 24 Sep 2020 02:51:59 -0400
-Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0F282C0613D3;
-        Wed, 23 Sep 2020 23:51:59 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
-        Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:Content-Type:Content-ID:
-        Content-Description:In-Reply-To:References;
-        bh=5cv5XM1WbeIcMKM5m6HEEjDcYpaEJfjGWw9dDjM6nfI=; b=r2w8hhD+ZBoRdDKl0qZXo3vF81
-        hM/13MLXzpPkHMHSdkeatYWtW/3Rk3FztSV6U5y+CbAh6t7JHsfTFWVb3fcVheFT1g+IP1CUvdL/M
-        qf6RvhVVVcfKzIDmXfduJ5W90Ne2Xmv0UFnYt+mp024P858pnetDNMffHtNWZutPuWI481/Ixizft
-        VzlRi+PBja8K/ca/ZHfPdeq8UXLIZ3VY+HnhwsTOu5umASFwHza1/IftOvz3nrDcW8iJ2OvWsxcVr
-        FHnaTnZTbgNXfbL0liL+h4MJ2F/DEq8P/XjVxB+RLUSVk0zwY6gebGFkYLAM8tqFMr4ps3to5Wmm/
-        AERB55ug==;
-Received: from p4fdb0c34.dip0.t-ipconnect.de ([79.219.12.52] helo=localhost)
-        by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kLL6T-00019A-6Y; Thu, 24 Sep 2020 06:51:41 +0000
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jens Axboe <axboe@kernel.dk>
-Cc:     Song Liu <song@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        Coly Li <colyli@suse.de>, Richard Weinberger <richard@nod.at>,
-        Minchan Kim <minchan@kernel.org>,
-        Johannes Thumshirn <Johannes.Thumshirn@wdc.com>,
-        Justin Sanders <justin@coraid.com>,
-        linux-mtd@lists.infradead.org, dm-devel@redhat.com,
-        linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com,
-        linux-raid@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-Subject: bdi cleanups v7
-Date:   Thu, 24 Sep 2020 08:51:27 +0200
-Message-Id: <20200924065140.726436-1-hch@lst.de>
-X-Mailer: git-send-email 2.28.0
+        Thu, 24 Sep 2020 07:51:15 -0400
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=126.com;
+        s=s110527; h=Subject:From:Message-ID:Date:MIME-Version; bh=3TqyY
+        /Xr/nUxMdrccC1nS0zQyMQTxFb5jQkSUN+hTBc=; b=jPlq6IfMoEvth2TJWyslA
+        IkLYTrpjxuPjaROXZy7f/OCc5FGmLxCRyFc2DPaR5PesY0sNtr+lRodlo236xPz2
+        MDDlDLPeAIJevMI016YmAm1NZxO2V7HD5D0ZfaB4ZlFUUIDcA6yu2IHxQvUtc35s
+        atAnTvzKdFCHZIvgcM20Rg=
+Received: from liusdudeMacBook-Pro.local (unknown [114.246.35.136])
+        by smtp9 (Coremail) with SMTP id NeRpCgBXZBUpiGxfPFfmJw--.21544S2;
+        Thu, 24 Sep 2020 19:51:05 +0800 (CST)
+Subject: Re: [PATCH] bcache: insert bkeys without overlap when placeholder
+ missed
+To:     Coly Li <colyli@suse.de>
+Cc:     kent.overstreet@gmail.com, linux-bcache@vger.kernel.org,
+        sdu.liu@huawei.com
+References: <20200922154727.30389-1-liusdu@126.com>
+ <985ee4e6-3eab-741d-59bd-f9fbf615986a@suse.de>
+ <847d3dad-e9be-b79f-da61-41466dc4d6ef@126.com>
+ <4c36992e-6c6c-3931-f1a6-134928c91914@suse.de>
+From:   Liu Hua <liusdu@126.com>
+Message-ID: <cc46324a-6197-de42-5a70-9bd04eaf5bea@126.com>
+Date:   Thu, 24 Sep 2020 19:51:05 +0800
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:78.0)
+ Gecko/20100101 Thunderbird/78.2.2
 MIME-Version: 1.0
+In-Reply-To: <4c36992e-6c6c-3931-f1a6-134928c91914@suse.de>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
+X-CM-TRANSID: NeRpCgBXZBUpiGxfPFfmJw--.21544S2
+X-Coremail-Antispam: 1Uf129KBjvJXoWxXF1rAryxArW5ur4fKw1UGFg_yoW5Jw47pr
+        W3CanrK3W8Zw10v39rAw1xXa1Fq398GFWUXw13WFW3ZF90kr15urWSgw45G3Wjgrnaywsr
+        Xr48J3s8WF4qvFJanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
+        9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x07jQrcfUUUUU=
+X-Originating-IP: [114.246.35.136]
+X-CM-SenderInfo: polx2vbx6rjloofrz/1tbi2wmpNF16IXhcgQAAss
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hi Jens,
+Hope My email client configured correctly this time.
 
-this series contains a bunch of different BDI cleanups.  The biggest item
-is to isolate block drivers from the BDI in preparation of changing the
-lifetime of the block device BDI in a follow up series.
+在 2020/9/23 下午11:26, Coly Li 写道:
+> On 2020/9/23 23:18, Liu Hua wrote:
+>> Hi Coly,
+>>
+>>  Thanks for you reply!
+>>
+>> 在 2020/9/22 下午11:51, Coly Li 写道:
+>>> On 2020/9/22 23:47, Liu Hua wrote:
+>>>> Btree spliting and garbage collection process will drop
+>>>> placeholders, which may cause cache miss collision. We can
+>>>> insert nonoverlapping bkeys with write lock. It is helpful
+>>>> for performance.
+>>>>
+>>> Could you please to explain more detais about,
+>>> - How does "Btree spliting and garbage collection process will drop
+>>> placeholders" happen?
+>>> - And how does the consequence "cache miss collision" happen?
+>> Cache miss process is as following:
+>>
+>> A. Insert placeholder with read lock
+>>   - lookup missed cache
+>>   - insert placeholder bkey
+>> B. Read data from backing disk and write to cache
+>> C. Insert real bkey with write lock
+>>   - check and fixup placeholder in bch_extent_insert_fixup.
+>>   - if bkey to be inserted does not match placeholder bkey. Inserting
+>> will failed.
+>>     Bcache marks this type of failure as cache miss collision.  we can
+>> get this number
+>>     from /sys/block/bcacheX/bcache/cache/stats_total/cache_miss_collision
+>> So a failed "c" process will lead the cache miss process fail, even if
+>> we have data
+>> in place but metadata failed.  There are two types of reasons causing
+>> this failure:
+>>
+>> 1. Two cache miss processes collide as following (two processes names
+>> ABC and A'B'C')
+LBAs of the two process should overlap, otherwise ABC will not fail.
 
-Changes since v6:
- - add a new blk_queue_update_readahead helper and use it in stacking
-   drivers
- - improve another commit log
+>>    A   
+>>    A'
+>>    B
+>>    B'
+>>    C(will fail)
+>>    C'(will succeed)
+>> 2. placeholder bkeys were dropped before "C".  btree_mergesort called
+>> from GC and 
+>> btree_split will drop "bad" bkeys including placeholder bkeys.
+>>
+>> For reason 2，since we hold write lock，if there is no overlaps with
+>> existing bkeys.
+>> we can insert bkeys safely. this is what this patch does.
+>>> - Do you observe performance improvement? If yes, which part is improved
+>>> and what is the performance number?
+>> Can we treat this patch as a bugfix?  We add a prefetch framework in
+>> bcache and find 3% performace
+>> improvement and reduction of collision in an order of one, in spark
+>> word-count test with 1G ram
+>> disk as cache. And I think it is helpful both for our situation and
+>> original bcache. I can add a test based on original bcache.
+> 
+> Copied. Give me some time to understand your change. Maybe more question
+> will follow up. Thank you for the above detailed information :-)
+> 
+> Coly Li
+> 
 
-Changes since v5:
- - improve a commit message
- - improve the stable_writes deprecation printk
- - drop "drbd: remove RB_CONGESTED_REMOTE"
- - drop a few hunks that add a local variable in a otherwise unchanged
-   file due to changes in the previous revisions
- - keep updating ->io_pages in queue_max_sectors_store
- - set an optimal I/O size in aoe
- - inherit the optimal I/O size in bcache
-
-Changes since v4:
- - add a back a prematurely removed assignment in dm-table.c
- - pick up a few reviews from Johannes that got lost
-
-Changes since v3:
- - rebased on the lasted block tree, which has some of the prep
-   changes merged
- - extend the ->ra_pages changes to ->io_pages
- - move initializing ->ra_pages and ->io_pages for block devices to
-   blk_register_queue
-
-Changes since v2:
- - fix a rw_page return value check
- - fix up various changelogs
-
-Changes since v1:
- - rebased to the for-5.9/block-merge branch
- - explicitly set the readahead to 0 for ubifs, vboxsf and mtd
- - split the zram block_device operations
- - let rw_page users fall back to bios in swap_readpage
-
-
-Diffstat:
