@@ -1,101 +1,73 @@
-Return-Path: <SRS0=VPzh=DB=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=XSwy=DG=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.5 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EA92AC4363D
-	for <linux-bcache@archiver.kernel.org>; Thu, 24 Sep 2020 19:44:58 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 5BE6BC4727D
+	for <linux-bcache@archiver.kernel.org>; Tue, 29 Sep 2020 06:46:56 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8D5022399A
-	for <linux-bcache@archiver.kernel.org>; Thu, 24 Sep 2020 19:44:58 +0000 (UTC)
-Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel-dk.20150623.gappssmtp.com header.i=@kernel-dk.20150623.gappssmtp.com header.b="L2Wx7FlL"
+	by mail.kernel.org (Postfix) with ESMTP id 2C00E2083B
+	for <linux-bcache@archiver.kernel.org>; Tue, 29 Sep 2020 06:46:56 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726566AbgIXTo6 (ORCPT
+        id S1727217AbgI2Gqz (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 24 Sep 2020 15:44:58 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50216 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726205AbgIXTo5 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 24 Sep 2020 15:44:57 -0400
-Received: from mail-pg1-x530.google.com (mail-pg1-x530.google.com [IPv6:2607:f8b0:4864:20::530])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C6F0BC0613D3
-        for <linux-bcache@vger.kernel.org>; Thu, 24 Sep 2020 12:44:57 -0700 (PDT)
-Received: by mail-pg1-x530.google.com with SMTP id o25so344975pgm.0
-        for <linux-bcache@vger.kernel.org>; Thu, 24 Sep 2020 12:44:57 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kernel-dk.20150623.gappssmtp.com; s=20150623;
-        h=subject:to:cc:references:from:message-id:date:user-agent
-         :mime-version:in-reply-to:content-language:content-transfer-encoding;
-        bh=ADwlTn9rnJzlHv/xfLefERCgTh/zOY3+dj+IP5LMhIo=;
-        b=L2Wx7FlLw8QHVp62Ne3mt4GV7+MUCO/WLUazgDqXAmYbUX1Et5GwKUZRbOhKWcg1pJ
-         h3F8YG2QH8T53HlhbxkOnKDq7rYr7VYQSpBZ/SrGKbAAN0q9gjlZztvIvkLYWYD2H5p5
-         D5jWhUDJxNaNV9x10hDsgdYsv3+GqUJuih92RXGRYnyEyog4jlWpFA8o+B+sqtqEeysu
-         zXsVFR5QGsEI7lJZ39JHqx1JjZyubGP7QEwNsybW+JHQWulohPcvjDgNlPxNi7sQOhp+
-         YLXR3ph4QhgGStegDp9ue2849D7tWES5wOYPeY73GujeWcYMaP3DsMTgcgakPfQ8C4Iw
-         pmzA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
-         :user-agent:mime-version:in-reply-to:content-language
-         :content-transfer-encoding;
-        bh=ADwlTn9rnJzlHv/xfLefERCgTh/zOY3+dj+IP5LMhIo=;
-        b=RWj+943Jsb0Zjv1NUgrI5acCjkcDSOFH8d19PR4HLZINJfVwusq0mv/k8q93V3QQTU
-         BvQcM0s5sVywRnF4s12x0D4mdSHScFDi3DqK/2GXAsMZjFSoQ7FsjppUOzO/ZMb4ZmbZ
-         JZUFAiJCjgwtEGGbsm3kA44gBQzwGJ6116qQpXeOVhRAs7JbI7BKosuEJ2UBgP2CWubV
-         L5HFmdKdMTss/0GdRmM5oClWFLLEBStvEapKuhMVJi2FRpWqxsMKzJwsPrVk2GekEJik
-         REYc926LXeDC8p0iHzijT0a5YzJoyR4hTHc6T7O6Fadc/yKlZRjGzdgt6ntjgiBzHxL6
-         om0A==
-X-Gm-Message-State: AOAM5327GFppP1/Um1Lez50rZLEWuoQ3z7qmLuB9amJ1kteQzZTiPGyt
-        wrZzplQ1+B5v+KwhhTVWcLSRUg==
-X-Google-Smtp-Source: ABdhPJyn7jUbiC3AGiO/dBfKmKGpcA3VV/JE4LzjEmCUjGJIbrcL8/kmgANM72e+JonEfnG9EJ77rg==
-X-Received: by 2002:a17:902:854b:b029:d1:cbf4:bb43 with SMTP id d11-20020a170902854bb02900d1cbf4bb43mr778274plo.13.1600976697336;
-        Thu, 24 Sep 2020 12:44:57 -0700 (PDT)
-Received: from ?IPv6:2620:10d:c085:21d6::1911? ([2620:10d:c090:400::5:d63d])
-        by smtp.gmail.com with ESMTPSA id u10sm267612pfn.122.2020.09.24.12.44.55
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Thu, 24 Sep 2020 12:44:56 -0700 (PDT)
-Subject: Re: bdi cleanups v7
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     Song Liu <song@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        Coly Li <colyli@suse.de>, Richard Weinberger <richard@nod.at>,
-        Minchan Kim <minchan@kernel.org>,
-        Johannes Thumshirn <Johannes.Thumshirn@wdc.com>,
-        Justin Sanders <justin@coraid.com>,
-        linux-mtd@lists.infradead.org, dm-devel@redhat.com,
-        linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com,
-        linux-raid@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups@vger.kernel.org
-References: <20200924065140.726436-1-hch@lst.de>
-From:   Jens Axboe <axboe@kernel.dk>
-Message-ID: <a9235ba9-95a0-4251-ee7d-e4012775346e@kernel.dk>
-Date:   Thu, 24 Sep 2020 13:44:54 -0600
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.10.0
+        Tue, 29 Sep 2020 02:46:55 -0400
+Received: from szxga05-in.huawei.com ([45.249.212.191]:14701 "EHLO huawei.com"
+        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1725826AbgI2Gqy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 29 Sep 2020 02:46:54 -0400
+Received: from DGGEMS412-HUB.china.huawei.com (unknown [172.30.72.60])
+        by Forcepoint Email with ESMTP id A8B1CDE4CE59BB406201
+        for <linux-bcache@vger.kernel.org>; Tue, 29 Sep 2020 14:46:51 +0800 (CST)
+Received: from huawei.com (10.175.127.227) by DGGEMS412-HUB.china.huawei.com
+ (10.3.19.212) with Microsoft SMTP Server id 14.3.487.0; Tue, 29 Sep 2020
+ 14:46:43 +0800
+From:   Jason Yan <yanaijie@huawei.com>
+To:     <colyli@suse.de>, <kent.overstreet@gmail.com>,
+        <yanaijie@huawei.com>, <linux-bcache@vger.kernel.org>
+Subject: [PATCH] bcache: remove unused function closure_set_ret_ip()
+Date:   Tue, 29 Sep 2020 14:47:41 +0800
+Message-ID: <20200929064741.3604133-1-yanaijie@huawei.com>
+X-Mailer: git-send-email 2.25.4
 MIME-Version: 1.0
-In-Reply-To: <20200924065140.726436-1-hch@lst.de>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Content-Type:   text/plain; charset=US-ASCII
+X-Originating-IP: [10.175.127.227]
+X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 9/24/20 12:51 AM, Christoph Hellwig wrote:
-> Hi Jens,
-> 
-> this series contains a bunch of different BDI cleanups.  The biggest item
-> is to isolate block drivers from the BDI in preparation of changing the
-> lifetime of the block device BDI in a follow up series.
+This function has no caller after commit e4bf791937d8 ("bcache: Fix,
+improve efficiency of closure_sync()").
 
-Applied, thanks.
+Signed-off-by: Jason Yan <yanaijie@huawei.com>
+---
+ drivers/md/bcache/closure.h | 7 -------
+ 1 file changed, 7 deletions(-)
 
+diff --git a/drivers/md/bcache/closure.h b/drivers/md/bcache/closure.h
+index c88cdc4ae4ec..35f3f87f74e4 100644
+--- a/drivers/md/bcache/closure.h
++++ b/drivers/md/bcache/closure.h
+@@ -205,13 +205,6 @@ static inline void closure_set_ip(struct closure *cl)
+ #endif
+ }
+ 
+-static inline void closure_set_ret_ip(struct closure *cl)
+-{
+-#ifdef CONFIG_BCACHE_CLOSURES_DEBUG
+-	cl->ip = _RET_IP_;
+-#endif
+-}
+-
+ static inline void closure_set_waiting(struct closure *cl, unsigned long f)
+ {
+ #ifdef CONFIG_BCACHE_CLOSURES_DEBUG
 -- 
-Jens Axboe
+2.25.4
 
