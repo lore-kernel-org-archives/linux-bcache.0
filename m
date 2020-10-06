@@ -1,180 +1,174 @@
-Return-Path: <SRS0=Akfd=DM=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=ECAV=DN=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,MENTIONS_GIT_HOSTING,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=ham
+X-Spam-Status: No, score=-8.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
+	MENTIONS_GIT_HOSTING,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=ham
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9C9B9C4727D
-	for <linux-bcache@archiver.kernel.org>; Mon,  5 Oct 2020 19:46:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CCD41C4363D
+	for <linux-bcache@archiver.kernel.org>; Tue,  6 Oct 2020 13:10:52 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 57780206CB
-	for <linux-bcache@archiver.kernel.org>; Mon,  5 Oct 2020 19:46:40 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 6932520760
+	for <linux-bcache@archiver.kernel.org>; Tue,  6 Oct 2020 13:10:52 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=pass (1024-bit key) header.d=kaishome.de header.i=@kaishome.de header.b="fs1T0rMz"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729475AbgJETqj (ORCPT
+        id S1725973AbgJFNKv (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 5 Oct 2020 15:46:39 -0400
-Received: from mx.ewheeler.net ([173.205.220.69]:59690 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1727834AbgJETqj (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 5 Oct 2020 15:46:39 -0400
-X-Greylist: delayed 304 seconds by postgrey-1.27 at vger.kernel.org; Mon, 05 Oct 2020 15:46:39 EDT
-Received: from localhost (localhost [127.0.0.1])
-        by mail.ewheeler.net (Postfix) with ESMTP id 3E686A0612;
-        Mon,  5 Oct 2020 19:41:33 +0000 (UTC)
-X-Virus-Scanned: amavisd-new at ewheeler.net
-Received: from mail.ewheeler.net ([127.0.0.1])
-        by localhost (mail.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
-        with LMTP id m2H1ismItTNy; Mon,  5 Oct 2020 19:41:26 +0000 (UTC)
-Received: from mx.ewheeler.net (mx.ewheeler.net [173.205.220.69])
-        (using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mail.ewheeler.net (Postfix) with ESMTPSA id 3094AA0692;
-        Mon,  5 Oct 2020 19:41:23 +0000 (UTC)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mail.ewheeler.net 3094AA0692
-Date:   Mon, 5 Oct 2020 19:41:18 +0000 (UTC)
-From:   Eric Wheeler <bcache@lists.ewheeler.net>
-X-X-Sender: lists@pop.dreamhost.com
-To:     Kai Krakow <kai@kaishome.de>
-cc:     Nix <nix@esperi.org.uk>, linux-bcache@vger.kernel.org,
-        linux-block@vger.kernel.org
-Subject: Re: [PATCH 1/3] bcache: introduce bcache sysfs entries for ioprio-based
- bypass/writeback hints
-In-Reply-To: <CAC2ZOYt+ZMep=PT5FbQKiqZ0EE1f4+JJn=oTJUtQjLwGvy=KfQ@mail.gmail.com>
-Message-ID: <alpine.LRH.2.11.2010051923330.2180@pop.dreamhost.com>
-References: <20201003111056.14635-1-kai@kaishome.de> <20201003111056.14635-2-kai@kaishome.de> <87362ucen3.fsf@esperi.org.uk> <CAC2ZOYt+ZMep=PT5FbQKiqZ0EE1f4+JJn=oTJUtQjLwGvy=KfQ@mail.gmail.com>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+        Tue, 6 Oct 2020 09:10:51 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51808 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725942AbgJFNKv (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 6 Oct 2020 09:10:51 -0400
+Received: from mail-qt1-x843.google.com (mail-qt1-x843.google.com [IPv6:2607:f8b0:4864:20::843])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 061BCC0613D1
+        for <linux-bcache@vger.kernel.org>; Tue,  6 Oct 2020 06:10:51 -0700 (PDT)
+Received: by mail-qt1-x843.google.com with SMTP id 19so12953018qtp.1
+        for <linux-bcache@vger.kernel.org>; Tue, 06 Oct 2020 06:10:50 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=kaishome.de; s=google;
+        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
+         :cc;
+        bh=AbUhUUNI4zeM3nS4/k6XhwyQZ4L7s7xPoEddzecSbmM=;
+        b=fs1T0rMzfHiHp+0QkvdBQfRrR9yAufazbcMprA/zXvF9LAW7nhhug6gvCM7JazsNlK
+         sKjwQSqEh127P2s9b2crM96nLRBhlY/U506zCnQb03k1bIb10DUSH8tXgg1jcR/fH3cS
+         dH9w04F6ff3wE9BWdMkNaxlvnNZp3EuI4e3mE=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc;
+        bh=AbUhUUNI4zeM3nS4/k6XhwyQZ4L7s7xPoEddzecSbmM=;
+        b=cYBkNX0Gn/5KsQdJAZaEv2OjEQgD0qSCFsNiimSQI/MPWLk590ar7dekiocZcfo8Oz
+         RtAtBrfsI98k/3xphVwI0kZ27Ymlms3aadJq7Ma9KQHSeuSdK6nSiTP7u0yXqNGR+OrG
+         HtvCHC9l8pV+3FDY2FPEONcD0kitkM3R9tcX/GkYr37v8Ex/0j50IlVKSfS2JyeynS+7
+         hXxIy+10C7L5WB1BIgLh/6NEq9niF30K5p9ID1gCxl3D8JfumiF+4wefrNRm3lPTopKD
+         wKtf/P7PBK0X5JkR4LHQDES2hIO9Ecy6l/0sXwcpe9OrZdo/ck+Nx1vQlgGje5nIV+MH
+         dolw==
+X-Gm-Message-State: AOAM530AQxBLaGCmoCnBxCgqjuG0aW2plfDGjEu3Jj274SbO6k7A/A5I
+        mLoW0raAfDPmgNt5tArq4TcNjHjK6aX1Cxtg9ZpFNDGz9fAGSiEo
+X-Google-Smtp-Source: ABdhPJzkDe0vlNSFdhQSqP5I4mfR397Rmx3jtq7Stx8cVcMRdRIfUDiHLVvMCOYAloTzTzjRbupOIEnNPiq77mkcrk0=
+X-Received: by 2002:ac8:24b9:: with SMTP id s54mr4984732qts.138.1601989850064;
+ Tue, 06 Oct 2020 06:10:50 -0700 (PDT)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+References: <20201003111056.14635-1-kai@kaishome.de> <20201003111056.14635-2-kai@kaishome.de>
+ <87362ucen3.fsf@esperi.org.uk> <CAC2ZOYt+ZMep=PT5FbQKiqZ0EE1f4+JJn=oTJUtQjLwGvy=KfQ@mail.gmail.com>
+ <alpine.LRH.2.11.2010051923330.2180@pop.dreamhost.com> <87o8lfa692.fsf@esperi.org.uk>
+In-Reply-To: <87o8lfa692.fsf@esperi.org.uk>
+From:   Kai Krakow <kai@kaishome.de>
+Date:   Tue, 6 Oct 2020 15:10:37 +0200
+Message-ID: <CAC2ZOYvA966Jwa1CGepRDUmBn4=-vpZR82YZZQxT8L+f7-HTUQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] bcache: introduce bcache sysfs entries for
+ ioprio-based bypass/writeback hints
+To:     Nix <nix@esperi.org.uk>
+Cc:     Eric Wheeler <bcache@lists.ewheeler.net>,
+        linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-[+cc:bcache and blocklist]
-
-On Sun, 4 Oct 2020, Kai Krakow wrote:
-
-> Hey Nix!
-> 
-> Apparently, `git send-email` probably swallowed the patch 0/3 message for you.
-> 
-> It was about adding one additional patch which reduced boot time for
-> me with idle mode active by a factor of 2.
-> 
-> You can look at it here:
-> https://github.com/kakra/linux/pull/4
-> 
-> It's "bcache: Only skip data request in io_prio bypass mode" just if
-> you're curious.
-> 
-> Regards,
-> Kai
-> 
-> Am So., 4. Okt. 2020 um 15:19 Uhr schrieb Nix <nix@esperi.org.uk>:
+Am Di., 6. Okt. 2020 um 14:28 Uhr schrieb Nix <nix@esperi.org.uk>:
+>
+> On 5 Oct 2020, Eric Wheeler verbalised:
+>
+> > [+cc:bcache and blocklist]
 > >
-> > On 3 Oct 2020, Kai Krakow spake thusly:
-> >
-> > > Having idle IOs bypass the cache can increase performance elsewhere
-> > > since you probably don't care about their performance.  In addition,
-> > > this prevents idle IOs from promoting into (polluting) your cache and
-> > > evicting blocks that are more important elsewhere.
-> >
-> > FYI, stats from 20 days of uptime with this patch live in a stack with
-> > XFS above it and md/RAID-6 below (20 days being the time since the last
-> > reboot: I've been running this patch for years with older kernels
-> > without incident):
-> >
-> > stats_total/bypassed: 282.2G
-> > stats_total/cache_bypass_hits: 123808
-> > stats_total/cache_bypass_misses: 400813
-> > stats_total/cache_hit_ratio: 53
-> > stats_total/cache_hits: 9284282
-> > stats_total/cache_miss_collisions: 51582
-> > stats_total/cache_misses: 8183822
-> > stats_total/cache_readaheads: 0
-> > written: 168.6G
-> >
-> > ... so it's still saving a lot of seeking. This is despite having
-> > backups running every three hours (in idle mode), and the usual updatedb
-> > runs, etc, plus, well, actual work which sometimes involves huge greps
-> > etc: I also tend to do big cp -al's of transient stuff like build dirs
-> > in idle mode to suppress caching, because the build dir will be deleted
-> > long before it expires from the page cache.
-> >
-> > The SSD, which is an Intel DC S3510 and is thus read-biased rather than
-> > write-biased (not ideal for this use-case: whoops, I misread the
-> > datasheet), says
-> >
-> > EnduranceAnalyzer : 506.90 years
-> >
-> > despite also housing all the XFS journals. I am... not worried about the
-> > SSD wearing out. It'll outlast everything else at this rate. It'll
-> > probably outlast the machine's case and the floor the machine sits on.
-> > It'll certainly outlast me (or at least last long enough to be discarded
-> > by reason of being totally obsolete). Given that I really really don't
-> > want to ever have to replace it (and no doubt screw up replacing it and
-> > wreck the machine), this is excellent.
-> >
-> > (When I had to run without the ioprio patch, the expected SSD lifetime
-> > and cache hit rate both plunged. It was still years, but enough years
-> > that it could potentially have worn out before the rest of the machine
-> > did. Using ioprio for this might be a bit of an abuse of ioprio, and
-> > really some other mechanism might be better, but in the absence of such
-> > a mechanism, ioprio *is*, at least for me, fairly tightly correlated
-> > with whether I'm going to want to wait for I/O from the same block in
-> > future.)
-> 
-From Nix on 10/03 at 5:39 AM PST
-> I suppose. I'm not sure we don't want to skip even that for truly
-> idle-time I/Os, though: booting is one thing, but do you want all the
-> metadata associated with random deep directory trees you access once a
-> year to be stored in your SSD's limited space, pushing out data you
-> might actually use, because the idle-time backup traversed those trees?
-> I know I don't. The whole point of idle-time I/O is that you don't care
-> how fast it returns. If backing it up is speeding things up, I'd be
-> interested in knowing why... what this is really saying is that metadata
-> should be considered important even if the user says it isn't!
-> 
-> (I guess this is helping because of metadata that is read by idle I/Os
-> first, but then non-idle ones later, in which case for anyone who runs
-> backups this is just priming the cache with all metadata on the disk.
-> Why not just run a non-idle-time cronjob to do that in the middle of the
-> night if it's beneficial?)
+> > (It did not look like this was being CC'd to the list so I have pasted the
+> > relevant bits of conversation. Kai, please resend your patch set and CC
+> > the list linux-bcache@vger.kernel.org)
+>
+> Oh sorry. I don't know what's been going on with the Cc:s here.
+>
+> > I am glad that people are still making effective use of this patch!
+>
+> :)
+>
+> > It works great unless you are using mq-scsi (or perhaps mq-dm). For the
+> > multi-queue systems out there, ioprio does not seem to pass down through
+> > the stack into bcache, probably because it is passed through a worker
+> > thread for the submission or some other detail that I have not researched.
+>
+> That sounds like a bug in the mq-scsi machinery: it surely should be
+> passing the ioprio off to the worker thread so that the worker thread
+> can reliably mimic the behaviour of the thread it's acting on behalf of.
 
-(It did not look like this was being CC'd to the list so I have pasted the 
-relevant bits of conversation. Kai, please resend your patch set and CC 
-the list linux-bcache@vger.kernel.org)
+Maybe this was only an issue early in mq-scsi before it got more
+schedulers than just iosched-none? It has bfq now, and it should work.
+Depending on the filesystem, tho, that may still not fully apply...
+e.g. btrfs doesn't use ioprio for delayed refs resulting from such io,
+it will simply queue it up at the top of the io queue.
 
-I am glad that people are still making effective use of this patch!
+>
+> > Long ago others had concerns using ioprio as the mechanism for cache
+> > hinting, so what does everyone think about implementing cgroup inside of
+> > bcache? From what I can tell, cgroups have a stronger binding to an IO
+> > than ioprio hints.
+>
+> Nice idea, but...
 
-It works great unless you are using mq-scsi (or perhaps mq-dm). For the 
-multi-queue systems out there, ioprio does not seem to pass down through 
-the stack into bcache, probably because it is passed through a worker 
-thread for the submission or some other detail that I have not researched. 
+Yeah, it would fit my use-case perfectly.
 
-Long ago others had concerns using ioprio as the mechanism for cache 
-hinting, so what does everyone think about implementing cgroup inside of 
-bcache? From what I can tell, cgroups have a stronger binding to an IO 
-than ioprio hints. 
+> using cgroups would make this essentially unusable for
+> me, and probably for most other people, because on a systemd system the
+> cgroup hierarchy is more or less owned in fee simple by systemd, and it
+> won't let you use cgroups for something else,
 
-I think there are several per-cgroup tunables that could be useful. Here 
-are the ones that I can think of, please chime in if anyone can think of 
-others: 
- - should_bypass_write
- - should_bypass_read
- - should_bypass_meta
- - should_bypass_read_ahead
- - should_writeback
- - should_writeback_meta
- - should_cache_read
- - sequential_cutoff
+That's probably not completely true, you can still define slices which
+act as a cgroup container for all services and processes contained in
+it, and you can use "systemctl edit myscope.slice" to change
+scheduler, memory accounting, and IO params at runtime.
 
-Indeed, some of these could be combined into a single multi-valued cgroup 
-option such as:
- - should_bypass = read,write,meta
+> or even make your own
+> underneath the ones it's managing: it sometimes seems to work but they
+> can suddenly go away without warning and all the processes in them get
+> transferred out by systemd or even killed off.
 
- 
---
-Eric Wheeler
+See above, use slices, don't try to sneak around systemd's cgroup
+management - especially not in services.
+
+> (And as for making systemd set up suitable cgroups, that too would make
+> it unusable for me: I tend to run jobs ad-hoc with ionice, use ionice in
+> scripts etc to reduce caching when I know it won't be needed, and that
+> sort of thing is just not mature enough to be reliable in systemd yet.
+
+You can still define a slice for such ad-hoc processes by using
+systemd-run to make your process into a transient one-shot service.
+It's not much different from prepending "ionice ... schedtool ...".
+I'm using that put some desktop programs in a resource jail to avoid
+cache thrashing, e.g. by browsers which tend to dominate the cache:
+https://github.com/kakra/gentoo-cgw (this will integrate with the
+package manager to replace the original executable with a wrapper).
+But that has some flaws, as in when running a browser from a Steam
+container, it starts to act strange... But otherwise I'm using it
+quite successfully.
+
+> It's rare for a systemd --user invocation to get everything so confused
+> that the entire system is reundered unusable, but it has happened to me
+> in the past, so unlike ionice I am now damn wary of using systemd --user
+> invocations for anything. They're a hell of a lot clunkier for ad-hoc
+> use than a simple ionice, too: you can't just say "run this command in a
+> --user", you have to set up a .service file etc.)
+
+Not sure what you did, I never experienced that. Usually that happens
+when processes managed by a systemd service try to escape the current
+session, i.e. by running "su -" or "sudo", so some uses of ionice may
+experience similar results.
+
+So my current situation is: I defined a slice for background jobs
+(backup, maintenance jobs etc), one for games (boosting the CPU/IO/mem
+share), one for browsers (limiting CPU to fight against run-away
+javascripts), and some more. The trick is to define all slices with a
+lower bound of memory below which the kernel won't reclaim memory from
+it - I found that's one of the most important knobs to fight laggy
+desktop usage. I usually look at the memory needed by the processes
+when running, then add some amount of cache I think would be useful
+for the processes, as cgroup memory accounting luckily app allocations
+AND cache memory. Actually, limiting memory with cgroups can have
+quite an opposite effect (as processes tend to swap then, even with
+plenty of RAM available).
+
+Regards,
+Kai
