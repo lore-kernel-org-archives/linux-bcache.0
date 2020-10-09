@@ -1,207 +1,164 @@
-Return-Path: <SRS0=zl1N=DP=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=9+wu=DQ=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,MENTIONS_GIT_HOSTING,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=ham
+X-Spam-Status: No, score=-12.5 required=3.0 tests=BAYES_00,
+	DKIM_ADSP_CUSTOM_MED,DKIM_INVALID,DKIM_SIGNED,FREEMAIL_FORGED_FROMDOMAIN,
+	FREEMAIL_FROM,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
 	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8E096C433DF
-	for <linux-bcache@archiver.kernel.org>; Thu,  8 Oct 2020 20:03:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id F043CC43457
+	for <linux-bcache@archiver.kernel.org>; Fri,  9 Oct 2020 18:36:17 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 46FA422228
-	for <linux-bcache@archiver.kernel.org>; Thu,  8 Oct 2020 20:03:37 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 9BFD022284
+	for <linux-bcache@archiver.kernel.org>; Fri,  9 Oct 2020 18:36:17 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=fail reason="signature verification failed" (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="JhdO6Gz1"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1729903AbgJHUDg (ORCPT
+        id S1731836AbgJISgN (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 8 Oct 2020 16:03:36 -0400
-Received: from mx.ewheeler.net ([173.205.220.69]:56899 "EHLO mail.ewheeler.net"
-        rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1729822AbgJHUDg (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 8 Oct 2020 16:03:36 -0400
-Received: from localhost (localhost [127.0.0.1])
-        by mail.ewheeler.net (Postfix) with ESMTP id 4E3C4A0633;
-        Thu,  8 Oct 2020 20:03:36 +0000 (UTC)
-X-Virus-Scanned: amavisd-new at ewheeler.net
-Received: from mail.ewheeler.net ([127.0.0.1])
-        by localhost (mail.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
-        with LMTP id fILmHGiYJO7I; Thu,  8 Oct 2020 20:03:30 +0000 (UTC)
-Received: from mx.ewheeler.net (mx.ewheeler.net [173.205.220.69])
-        (using TLSv1 with cipher DHE-RSA-AES256-SHA (256/256 bits))
-        (No client certificate requested)
-        by mail.ewheeler.net (Postfix) with ESMTPSA id B4435A0612;
-        Thu,  8 Oct 2020 20:03:30 +0000 (UTC)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mail.ewheeler.net B4435A0612
-Date:   Thu, 8 Oct 2020 20:03:30 +0000 (UTC)
-From:   Eric Wheeler <bcache@lists.ewheeler.net>
-X-X-Sender: lists@pop.dreamhost.com
-To:     linux-bcache@vger.kernel.org
-cc:     Kai Krakow <kai@kaishome.de>, Nix <nix@esperi.org.uk>,
-        linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: bcache cgroups for per-process tuning
-Message-ID: <alpine.LRH.2.11.2010081953490.27518@pop.dreamhost.com>
-User-Agent: Alpine 2.11 (LRH 23 2013-08-11)
+        Fri, 9 Oct 2020 14:36:13 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35242 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S2388163AbgJISfO (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 9 Oct 2020 14:35:14 -0400
+Received: from mail-wr1-x444.google.com (mail-wr1-x444.google.com [IPv6:2a00:1450:4864:20::444])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6D1F5C0613D2;
+        Fri,  9 Oct 2020 11:35:14 -0700 (PDT)
+Received: by mail-wr1-x444.google.com with SMTP id h7so11314454wre.4;
+        Fri, 09 Oct 2020 11:35:14 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=from:to:cc:subject:date:message-id:mime-version
+         :content-transfer-encoding;
+        bh=fp0OZT9MTT7xwcxYblmNa84m9LyRf8G+kscPBy9vgjY=;
+        b=JhdO6Gz1s0VP4ld80HJjKvR5JCmbKHqnpU3QiID9cm5p2CfzIpUj+GUTx13C2x/piP
+         cDtLXlyrft/acE+o2BirtRgXt3SVUyIcN/TEdLesEYW2WyxLTgpnMJvLP5N2k68KEKUY
+         t/3b0ZMlEOM0Fl3d63C+FbwWG3vlQX7tamwWdvji6G0IH4DOoxyeLtRZ1jZ83JU0aglB
+         WIJytBLBh4vct3vu/lBa7oR+rfV/gzLn1EtBbPRJnRTCEBcPYbhLWFq7Ox+hPhPhQvau
+         OXJhTg8pD5ZknOxq7SlQkOb1VremcnLYOlYzUzKXQzaw3mATprQ7lbrq3JV++N5TjL6p
+         w+Kg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:mime-version
+         :content-transfer-encoding;
+        bh=fp0OZT9MTT7xwcxYblmNa84m9LyRf8G+kscPBy9vgjY=;
+        b=Mqm0JG6lV6dfltoDwXbYo/uTFxr+1nupmYfUSGlF6+Hw3QSFyRTKJSAFjYv2QNsbpB
+         m+hAAqqXUn/UVABqgo/yg8jZbMH6DzQATPhtuzXrS4oJmUzlMjYMaYvvZ91qwJqi6arP
+         xOgkypmPvnupUDt3I1Lv2gQX/Ota+qlav0Y9IcV4E23+Ekii/43ksU5xfwXwxO94/NB2
+         Cq7x21ajeWH3mvhzW5BmgjYOK52aEEhp4xHLY554j91NP1B+ZDtfM00Kpq955UsTZzVL
+         k7u6MRSBFGDRKR7kqZuu8D1N/KvMhPQoOzvfFgJk5hD6cu6g5PEZS091IWtgt3hBNNkZ
+         tFeA==
+X-Gm-Message-State: AOAM532Nrkmes/6QFu+v8iwM7PhFardOGI7P90Ejh8V5sIyXWjxomfdJ
+        /NKGZumnvq45AcUA/EFUwZw=
+X-Google-Smtp-Source: ABdhPJymJtXYmPup0xoycV9ek3j2L3bmJ4HvMvUH7lFkmJV3xot97Gqd4S6b1hfh9Ps+gPPGmZcw+A==
+X-Received: by 2002:adf:ec06:: with SMTP id x6mr16231295wrn.404.1602268513078;
+        Fri, 09 Oct 2020 11:35:13 -0700 (PDT)
+Received: from localhost.localdomain (cpc83661-brig20-2-0-cust443.3-3.cable.virginm.net. [82.28.105.188])
+        by smtp.gmail.com with ESMTPSA id i15sm13305918wrb.91.2020.10.09.11.35.11
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Fri, 09 Oct 2020 11:35:12 -0700 (PDT)
+From:   Alex Dewar <alex.dewar90@gmail.com>
+Cc:     Alex Dewar <alex.dewar90@gmail.com>, Coly Li <colyli@suse.de>,
+        Kent Overstreet <kent.overstreet@gmail.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] bcache: Use #ifdef instead of boolean variable
+Date:   Fri,  9 Oct 2020 19:34:47 +0100
+Message-Id: <20201009183447.1611204-1-alex.dewar90@gmail.com>
+X-Mailer: git-send-email 2.28.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
+To:     unlisted-recipients:; (no To-header on input)
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Thu, 8 Oct 2020, Coly Li wrote:
+The variable async_registration is used to indicate whether or not
+CONFIG_BCACHE_ASYNC_REGISTRATION is enabled, triggering a (false)
+warning in Coverity about unreachable code. However, it seems clearer in
+this case just to use an #ifdef, so let's do that instead.
 
-> On 2020/10/8 04:35, Eric Wheeler wrote:
-> > [+cc coly]
-> > 
-> > On Mon, 5 Oct 2020, Eric Wheeler wrote:
-> >> On Sun, 4 Oct 2020, Kai Krakow wrote:
-> >>
-> >>> Hey Nix!
-> >>>
-> >>> Apparently, `git send-email` probably swallowed the patch 0/3 message for you.
-> >>>
-> >>> It was about adding one additional patch which reduced boot time for
-> >>> me with idle mode active by a factor of 2.
-> >>>
-> >>> You can look at it here:
-> >>> https://github.com/kakra/linux/pull/4
-> >>>
-> >>> It's "bcache: Only skip data request in io_prio bypass mode" just if
-> >>> you're curious.
-> >>>
-> >>> Regards,
-> >>> Kai
-> >>>
-> >>> Am So., 4. Okt. 2020 um 15:19 Uhr schrieb Nix <nix@esperi.org.uk>:
-> >>>>
-> >>>> On 3 Oct 2020, Kai Krakow spake thusly:
-> >>>>
-> >>>>> Having idle IOs bypass the cache can increase performance elsewhere
-> >>>>> since you probably don't care about their performance.  In addition,
-> >>>>> this prevents idle IOs from promoting into (polluting) your cache and
-> >>>>> evicting blocks that are more important elsewhere.
-> >>>>
-> >>>> FYI, stats from 20 days of uptime with this patch live in a stack with
-> >>>> XFS above it and md/RAID-6 below (20 days being the time since the last
-> >>>> reboot: I've been running this patch for years with older kernels
-> >>>> without incident):
-> >>>>
-> >>>> stats_total/bypassed: 282.2G
-> >>>> stats_total/cache_bypass_hits: 123808
-> >>>> stats_total/cache_bypass_misses: 400813
-> >>>> stats_total/cache_hit_ratio: 53
-> >>>> stats_total/cache_hits: 9284282
-> >>>> stats_total/cache_miss_collisions: 51582
-> >>>> stats_total/cache_misses: 8183822
-> >>>> stats_total/cache_readaheads: 0
-> >>>> written: 168.6G
-> >>>>
-> >>>> ... so it's still saving a lot of seeking. This is despite having
-> >>>> backups running every three hours (in idle mode), and the usual updatedb
-> >>>> runs, etc, plus, well, actual work which sometimes involves huge greps
-> >>>> etc: I also tend to do big cp -al's of transient stuff like build dirs
-> >>>> in idle mode to suppress caching, because the build dir will be deleted
-> >>>> long before it expires from the page cache.
-> >>>>
-> >>>> The SSD, which is an Intel DC S3510 and is thus read-biased rather than
-> >>>> write-biased (not ideal for this use-case: whoops, I misread the
-> >>>> datasheet), says
-> >>>>
-> >>>> EnduranceAnalyzer : 506.90 years
-> >>>>
-> >>>> despite also housing all the XFS journals. I am... not worried about the
-> >>>> SSD wearing out. It'll outlast everything else at this rate. It'll
-> >>>> probably outlast the machine's case and the floor the machine sits on.
-> >>>> It'll certainly outlast me (or at least last long enough to be discarded
-> >>>> by reason of being totally obsolete). Given that I really really don't
-> >>>> want to ever have to replace it (and no doubt screw up replacing it and
-> >>>> wreck the machine), this is excellent.
-> >>>>
-> >>>> (When I had to run without the ioprio patch, the expected SSD lifetime
-> >>>> and cache hit rate both plunged. It was still years, but enough years
-> >>>> that it could potentially have worn out before the rest of the machine
-> >>>> did. Using ioprio for this might be a bit of an abuse of ioprio, and
-> >>>> really some other mechanism might be better, but in the absence of such
-> >>>> a mechanism, ioprio *is*, at least for me, fairly tightly correlated
-> >>>> with whether I'm going to want to wait for I/O from the same block in
-> >>>> future.)
-> >>>
-> >> From Nix on 10/03 at 5:39 AM PST
-> >>> I suppose. I'm not sure we don't want to skip even that for truly
-> >>> idle-time I/Os, though: booting is one thing, but do you want all the
-> >>> metadata associated with random deep directory trees you access once a
-> >>> year to be stored in your SSD's limited space, pushing out data you
-> >>> might actually use, because the idle-time backup traversed those trees?
-> >>> I know I don't. The whole point of idle-time I/O is that you don't care
-> >>> how fast it returns. If backing it up is speeding things up, I'd be
-> >>> interested in knowing why... what this is really saying is that metadata
-> >>> should be considered important even if the user says it isn't!
-> >>>
-> >>> (I guess this is helping because of metadata that is read by idle I/Os
-> >>> first, but then non-idle ones later, in which case for anyone who runs
-> >>> backups this is just priming the cache with all metadata on the disk.
-> >>> Why not just run a non-idle-time cronjob to do that in the middle of the
-> >>> night if it's beneficial?)
-> >>
-> >> (It did not look like this was being CC'd to the list so I have pasted the 
-> >> relevant bits of conversation. Kai, please resend your patch set and CC 
-> >> the list linux-bcache@vger.kernel.org)
-> >>
-> >> I am glad that people are still making effective use of this patch!
-> >>
-> >> It works great unless you are using mq-scsi (or perhaps mq-dm). For the 
-> >> multi-queue systems out there, ioprio does not seem to pass down through 
-> >> the stack into bcache, probably because it is passed through a worker 
-> >> thread for the submission or some other detail that I have not researched. 
-> >>
-> >> Long ago others had concerns using ioprio as the mechanism for cache 
-> >> hinting, so what does everyone think about implementing cgroup inside of 
-> >> bcache? From what I can tell, cgroups have a stronger binding to an IO 
-> >> than ioprio hints. 
-> >>
-> >> I think there are several per-cgroup tunables that could be useful. Here 
-> >> are the ones that I can think of, please chime in if anyone can think of 
-> >> others: 
-> >>  - should_bypass_write
-> >>  - should_bypass_read
-> >>  - should_bypass_meta
-> >>  - should_bypass_read_ahead
-> >>  - should_writeback
-> >>  - should_writeback_meta
-> >>  - should_cache_read
-> >>  - sequential_cutoff
-> >>
-> >> Indeed, some of these could be combined into a single multi-valued cgroup 
-> >> option such as:
-> >>  - should_bypass = read,write,meta
-> > 
-> > 
-> > Hi Coly,
-> > 
-> > Do you have any comments on the best cgroup implementation for bcache?
-> > 
-> > What other per-process cgroup parameters might be useful for tuning 
-> > bcache behavior to various workloads?
-> 
-> Hi Eric,
-> 
-> This is much better than the magic numbers to control io prio.
-> 
-> I am not familiar with cgroup configuration and implementation, I just
-> wondering because most of I/Os in bcache are done by kworker or kthread,
-> is it possible to do per-process control.
+Addresses-Coverity-ID: 1497746: Control flow issues (DEADCODE)
+Signed-off-by: Alex Dewar <alex.dewar90@gmail.com>
+---
+ drivers/md/bcache/super.c | 40 +++++++++++++++++----------------------
+ 1 file changed, 17 insertions(+), 23 deletions(-)
 
-It should, bio's get associated with processes tied to a cgroup IIRC.  
-Maybe someone can fill in the details here.
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 46a00134a36a..6d4127881c6a 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -2504,11 +2504,6 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 	struct cache_sb_disk *sb_disk;
+ 	struct block_device *bdev;
+ 	ssize_t ret;
+-	bool async_registration = false;
+-
+-#ifdef CONFIG_BCACHE_ASYNC_REGISTRATION
+-	async_registration = true;
+-#endif
+ 
+ 	ret = -EBUSY;
+ 	err = "failed to reference bcache module";
+@@ -2563,26 +2558,25 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 
+ 	err = "failed to register device";
+ 
+-	if (async_registration) {
+-		/* register in asynchronous way */
+-		struct async_reg_args *args =
+-			kzalloc(sizeof(struct async_reg_args), GFP_KERNEL);
+-
+-		if (!args) {
+-			ret = -ENOMEM;
+-			err = "cannot allocate memory";
+-			goto out_put_sb_page;
+-		}
++#ifdef CONFIG_BCACHE_ASYNC_REGISTRATION
++	/* register in asynchronous way */
++	struct async_reg_args *args =
++		kzalloc(sizeof(struct async_reg_args), GFP_KERNEL);
+ 
+-		args->path	= path;
+-		args->sb	= sb;
+-		args->sb_disk	= sb_disk;
+-		args->bdev	= bdev;
+-		register_device_aync(args);
+-		/* No wait and returns to user space */
+-		goto async_done;
++	if (!args) {
++		ret = -ENOMEM;
++		err = "cannot allocate memory";
++		goto out_put_sb_page;
+ 	}
+ 
++	args->path	= path;
++	args->sb	= sb;
++	args->sb_disk	= sb_disk;
++	args->bdev	= bdev;
++	register_device_aync(args);
++	/* No wait and returns to user space */
++	return size;
++#else
+ 	if (SB_IS_BDEV(sb)) {
+ 		struct cached_dev *dc = kzalloc(sizeof(*dc), GFP_KERNEL);
+ 
+@@ -2605,12 +2599,12 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 		if (register_cache(sb, sb_disk, bdev, ca) != 0)
+ 			goto out_free_sb;
+ 	}
++#endif
+ 
+ done:
+ 	kfree(sb);
+ 	kfree(path);
+ 	module_put(THIS_MODULE);
+-async_done:
+ 	return size;
+ 
+ out_put_sb_page:
+-- 
+2.28.0
 
-> Anyway, we may start from the bypass stuffs in your example. If you may
-> help to compose patches and maintain them in long term, I am glad to
-> take them in.
-
-That sounds like a plan.
-
-Nix, Kai, anyone:
-
-Are you up for writing a first draft?
-
--Eric
