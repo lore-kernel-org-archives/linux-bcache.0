@@ -1,107 +1,135 @@
-Return-Path: <SRS0=tuoZ=DU=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=AYJX=DV=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
+	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8EAF8C43457
-	for <linux-bcache@archiver.kernel.org>; Tue, 13 Oct 2020 20:53:39 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D6BC7C43457
+	for <linux-bcache@archiver.kernel.org>; Wed, 14 Oct 2020 07:47:17 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 48BEC208D5
-	for <linux-bcache@archiver.kernel.org>; Tue, 13 Oct 2020 20:53:39 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 6B6D520B1F
+	for <linux-bcache@archiver.kernel.org>; Wed, 14 Oct 2020 07:47:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726768AbgJMUxi (ORCPT
+        id S1725919AbgJNHrR (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 13 Oct 2020 16:53:38 -0400
-Received: from mga17.intel.com ([192.55.52.151]:54071 "EHLO mga17.intel.com"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726186AbgJMUxi (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 13 Oct 2020 16:53:38 -0400
-IronPort-SDR: gI8MkOnOGO61aP07XY6CCWHG9J8FvCUX/dOJGBzQnYJFTP4ej18aKmY+Fn52D+I38Lw4zhRGT9
- RQaSxhwXc52g==
-X-IronPort-AV: E=McAfee;i="6000,8403,9773"; a="145845033"
-X-IronPort-AV: E=Sophos;i="5.77,371,1596524400"; 
-   d="scan'208";a="145845033"
-X-Amp-Result: SKIPPED(no attachment in message)
-X-Amp-File-Uploaded: False
-Received: from orsmga003.jf.intel.com ([10.7.209.27])
-  by fmsmga107.fm.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 13 Oct 2020 13:53:36 -0700
-IronPort-SDR: 6pC5EU5QwoXbsJ9AhSALdpEnefHex0iyEFu7THvX1eaSFNd77CbWePaQQdxa3yUvYDZ6VBgRvg
- Vwn0OOQPMwwA==
-X-IronPort-AV: E=Sophos;i="5.77,371,1596524400"; 
-   d="scan'208";a="313946459"
-Received: from iweiny-desk2.sc.intel.com (HELO localhost) ([10.3.52.147])
-  by orsmga003-auth.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 13 Oct 2020 13:53:35 -0700
-Date:   Tue, 13 Oct 2020 13:52:49 -0700
-From:   Ira Weiny <ira.weiny@intel.com>
-To:     Christoph Hellwig <hch@infradead.org>
-Cc:     Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Andy Lutomirski <luto@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nvdimm@lists.01.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kselftest@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        kvm@vger.kernel.org, netdev@vger.kernel.org, bpf@vger.kernel.org,
-        kexec@lists.infradead.org, linux-bcache@vger.kernel.org,
-        linux-mtd@lists.infradead.org, devel@driverdev.osuosl.org,
-        linux-efi@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, ceph-devel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-aio@kvack.org,
-        io-uring@vger.kernel.org, linux-erofs@lists.ozlabs.org,
-        linux-um@lists.infradead.org, linux-ntfs-dev@lists.sourceforge.net,
-        reiserfs-devel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        linux-nilfs@vger.kernel.org, cluster-devel@redhat.com,
-        ecryptfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-afs@lists.infradead.org,
-        linux-rdma@vger.kernel.org, amd-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
-        drbd-dev@lists.linbit.com, linux-block@vger.kernel.org,
-        xen-devel@lists.xenproject.org, linux-cachefs@redhat.com,
-        samba-technical@lists.samba.org, intel-wired-lan@lists.osuosl.org
-Subject: Re: [PATCH RFC PKS/PMEM 24/58] fs/freevxfs: Utilize new kmap_thread()
-Message-ID: <20201013205248.GJ2046448@iweiny-DESK2.sc.intel.com>
-References: <20201009195033.3208459-1-ira.weiny@intel.com>
- <20201009195033.3208459-25-ira.weiny@intel.com>
- <20201013112544.GA5249@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20201013112544.GA5249@infradead.org>
-User-Agent: Mutt/1.11.1 (2018-12-01)
+        Wed, 14 Oct 2020 03:47:17 -0400
+Received: from m97179.mail.qiye.163.com ([220.181.97.179]:50856 "EHLO
+        m97179.mail.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726823AbgJNHrQ (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 14 Oct 2020 03:47:16 -0400
+Received: from atest-guest.localdomain (unknown [218.94.118.90])
+        by m97179.mail.qiye.163.com (Hmail) with ESMTPA id 03CD9E02D4B;
+        Wed, 14 Oct 2020 15:47:09 +0800 (CST)
+From:   Dongsheng Yang <dongsheng.yang@easystack.cn>
+To:     colyli@suse.de
+Cc:     linux-bcache@vger.kernel.org,
+        Dongsheng Yang <dongsheng.yang@easystack.cn>
+Subject: [PATCH 2/2] bcache: send request to backing when detaching and there is no dirty
+Date:   Wed, 14 Oct 2020 07:46:55 +0000
+Message-Id: <1602661615-9715-2-git-send-email-dongsheng.yang@easystack.cn>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1602661615-9715-1-git-send-email-dongsheng.yang@easystack.cn>
+References: <1602661615-9715-1-git-send-email-dongsheng.yang@easystack.cn>
+X-HM-Spam-Status: e1kfGhgUHx5ZQUtXWQgYFAkeWUFZS1VLWVdZKFlBSUI3V1ktWUFJV1kPCR
+        oVCBIfWUFZGBkfGEsZSxodTUwZVkpNS0lNTUpNSEtJQklVGRETFhoSFyQUDg9ZV1kWGg8SFR0UWU
+        FZT0tIVUpKS0hOT1VLWQY+
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6Ohg6Egw6Mj4MTlEtNAsLIUgM
+        KRpPCipVSlVKTUtJTU1KTUhLTkNDVTMWGhIXVR8UFRwIEx4VHFUCGhUcOx4aCAIIDxoYEFUYFUVZ
+        V1kSC1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBT05KTDcG
+X-HM-Tid: 0a752613c08420bdkuqy03cd9e02d4b
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Tue, Oct 13, 2020 at 12:25:44PM +0100, Christoph Hellwig wrote:
-> > -	kaddr = kmap(pp);
-> > +	kaddr = kmap_thread(pp);
-> >  	memcpy(kaddr, vip->vii_immed.vi_immed + offset, PAGE_SIZE);
-> > -	kunmap(pp);
-> > +	kunmap_thread(pp);
-> 
-> You only Cced me on this particular patch, which means I have absolutely
-> no idea what kmap_thread and kunmap_thread actually do, and thus can't
-> provide an informed review.
+If bcache device is detaching and there is no dirty data in cache,
+we should send request to backing rather than get dc->count to do
+cached_dev_read or cached_dev_write.
 
-Sorry the list was so big I struggled with who to CC and on which patches.
+Otherwise, if there are lots of requests here to call cached_dev_get(dc),
+we could never put dc->count to be 0 where calling schedule_work(&dc->detach) to finish
+detaching, that means this detaching will never finish.
 
-> 
-> That being said I think your life would be a lot easier if you add
-> helpers for the above code sequence and its counterpart that copies
-> to a potential hughmem page first, as that hides the implementation
-> details from most users.
+This commit introduce a new bit in bcache dev flags BCACHE_DEV_DETACHING_WB_DONE, this
+will be set when we finish writeback in detaching and cleared in cached_dev_detach_finish().
+when the request find BCACHE_DEV_DETACHING_WB_DONE is set, that means, this request should
+go into backing device directly.
 
-Matthew Wilcox and Al Viro have suggested similar ideas.
+Signed-off-by: Dongsheng Yang <dongsheng.yang@easystack.cn>
+---
+ drivers/md/bcache/bcache.h    |  1 +
+ drivers/md/bcache/request.c   | 11 ++++++++++-
+ drivers/md/bcache/super.c     |  1 +
+ drivers/md/bcache/writeback.c |  7 +++++++
+ 4 files changed, 19 insertions(+), 1 deletion(-)
 
-https://lore.kernel.org/lkml/20201013205012.GI2046448@iweiny-DESK2.sc.intel.com/
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 870f146..aedf211 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -265,6 +265,7 @@ struct bcache_device {
+ #define BCACHE_DEV_UNLINK_DONE		2
+ #define BCACHE_DEV_WB_RUNNING		3
+ #define BCACHE_DEV_RATE_DW_RUNNING	4
++#define BCACHE_DEV_DETACHING_WB_DONE	5
+ 	int			nr_stripes;
+ 	unsigned int		stripe_size;
+ 	atomic_t		*stripe_sectors_dirty;
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index c7cadaa..94c44f2 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -1194,7 +1194,16 @@ blk_qc_t cached_dev_submit_bio(struct bio *bio)
+ 	bio_set_dev(bio, dc->bdev);
+ 	bio->bi_iter.bi_sector += dc->sb.data_offset;
+ 
+-	if (cached_dev_get(dc)) {
++	/*
++	 * If BCACHE_DEV_DETACHING_WB_DONE is set,
++	 * we should send request to backing rather than get dc->count to do
++	 * cached_dev_read or cached_dev_write. Otherwise, if there are lots
++	 * of requests here to call cached_dev_get(dc), we could never put
++	 * dc->count to be 0 where calling schedule_work(&dc->detach) to finish
++	 * detaching, that means this detaching will never finish.
++	 */
++	if (!test_bit(BCACHE_DEV_DETACHING_WB_DONE, &dc->disk.flags) &&
++	    cached_dev_get(dc)) {
+ 		s = search_alloc(bio, d);
+ 		trace_bcache_request_start(s->d, bio);
+ 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 9298fc7..3c32ddb 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1147,6 +1147,7 @@ static void cached_dev_detach_finish(struct work_struct *w)
+ 	bcache_device_detach(&dc->disk);
+ 	list_move(&dc->list, &uncached_devices);
+ 
++	clear_bit(BCACHE_DEV_DETACHING_WB_DONE, &dc->disk.flags);
+ 	clear_bit(BCACHE_DEV_DETACHING, &dc->disk.flags);
+ 	clear_bit(BCACHE_DEV_UNLINK_DONE, &dc->disk.flags);
+ 
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 2cd0340..6799f99 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -714,6 +714,13 @@ static int bch_writeback_thread(void *arg)
+ 				bch_write_bdev_super(dc, &cl);
+ 				closure_sync(&cl);
+ 
++				/*
++				 * BCACHE_DEV_DETACHING_WB_DONE will tell
++				 * request should be sent directly to backing
++				 * device directly, without getting dc->count.
++				 */
++				set_bit(BCACHE_DEV_DETACHING_WB_DONE,
++					&dc->disk.flags);
+ 				up_write(&dc->writeback_lock);
+ 				break;
+ 			}
+-- 
+1.8.3.1
 
-Ira
