@@ -1,116 +1,47 @@
-Return-Path: <SRS0=AYJX=DV=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=fi+i=D2=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
-X-Spam-Level: 
-X-Spam-Status: No, score=-12.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=ham
-	autolearn_force=no version=3.4.0
+X-Spam-Level: **
+X-Spam-Status: No, score=2.9 required=3.0 tests=BAYES_50,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	UNWANTED_LANGUAGE_BODY autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A15DAC433DF
-	for <linux-bcache@archiver.kernel.org>; Wed, 14 Oct 2020 07:47:16 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 00F6EC433DF
+	for <linux-bcache@archiver.kernel.org>; Mon, 19 Oct 2020 21:56:28 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 48DE320B1F
-	for <linux-bcache@archiver.kernel.org>; Wed, 14 Oct 2020 07:47:16 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id AF26522400
+	for <linux-bcache@archiver.kernel.org>; Mon, 19 Oct 2020 21:56:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726987AbgJNHrP (ORCPT
+        id S1726590AbgJSV41 convert rfc822-to-8bit (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 14 Oct 2020 03:47:15 -0400
-Received: from m97179.mail.qiye.163.com ([220.181.97.179]:50855 "EHLO
-        m97179.mail.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1725919AbgJNHrP (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 14 Oct 2020 03:47:15 -0400
-Received: from atest-guest.localdomain (unknown [218.94.118.90])
-        by m97179.mail.qiye.163.com (Hmail) with ESMTPA id 99934E02C92;
-        Wed, 14 Oct 2020 15:47:09 +0800 (CST)
-From:   Dongsheng Yang <dongsheng.yang@easystack.cn>
-To:     colyli@suse.de
-Cc:     linux-bcache@vger.kernel.org,
-        Dongsheng Yang <dongsheng.yang@easystack.cn>
-Subject: [PATCH 1/2] bcache: fix race between setting bdev state to none and new write request direct to backing
-Date:   Wed, 14 Oct 2020 07:46:54 +0000
-Message-Id: <1602661615-9715-1-git-send-email-dongsheng.yang@easystack.cn>
-X-Mailer: git-send-email 1.8.3.1
-X-HM-Spam-Status: e1kfGhgUHx5ZQUtXWQgYFAkeWUFZS1VLWVdZKFlBSUI3V1ktWUFJV1kPCR
-        oVCBIfWUFZQhhDQx9NT0lCSksdVkpNS0lNTUpNSUJMQktVGRETFhoSFyQUDg9ZV1kWGg8SFR0UWU
-        FZT0tIVUpKS0hOT1VLWQY+
-X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6Pwg6Dhw5TD5PCVECDhQKIUNJ
-        OjlPCzRVSlVKTUtJTU1KTUlCQk5NVTMWGhIXVR8UFRwIEx4VHFUCGhUcOx4aCAIIDxoYEFUYFUVZ
-        V1kSC1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSElJTDcG
-X-HM-Tid: 0a752613bf0820bdkuqy99934e02c92
+        Mon, 19 Oct 2020 17:56:27 -0400
+Received: from host-58103343.fivenetwork.com ([58.146.103.243]:49880 "EHLO
+        waseda.jp" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+        id S1727474AbgJSV41 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 19 Oct 2020 17:56:27 -0400
+X-Greylist: delayed 7275 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Oct 2020 17:56:26 EDT
+Reply-To: info@free221.com
+From:   "FM" <matsuba7@waseda.jp>
+To:     linux-bcache@vger.kernel.org
+Subject: =?UTF-8?B?44Kr44OK44OA44Kq44OV44Kh44O8?=
+Date:   20 Oct 2020 03:24:06 +0530
+Message-ID: <20201020032406.7E95C57546D73310@waseda.jp>
+MIME-Version: 1.0
+Content-Type: text/plain;
+        charset="utf-8"
+Content-Transfer-Encoding: 8BIT
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-There is a race condition in detaching as below:
-A. detaching						B. Write request
-(1) writing back
-(2) write back done, set bdev state to clean.
-(3) cached_dev_put() and schedule_work(&dc->detach);
-							(4) write data [0 - 4K] directly into backing and ack to user.
-(5) power-failure...
-
-When we restart this bcache device, this bdev is clean but not detached, and read [0 - 4K],
-we will get unexpected old data from cache device.
-
-To fix this problem, set the bdev state to none when we writeback done in detaching,
-and then if power-failure happend as above, the data in cache will not be used in next
-bcache device starting, it's detached, we will read the correct data from backing derectly.
-
-Signed-off-by: Dongsheng Yang <dongsheng.yang@easystack.cn>
----
- drivers/md/bcache/super.c     | 9 ---------
- drivers/md/bcache/writeback.c | 9 +++++++++
- 2 files changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 1bbdc41..9298fc7 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1128,9 +1128,6 @@ static void cancel_writeback_rate_update_dwork(struct cached_dev *dc)
- static void cached_dev_detach_finish(struct work_struct *w)
- {
- 	struct cached_dev *dc = container_of(w, struct cached_dev, detach);
--	struct closure cl;
--
--	closure_init_stack(&cl);
+ご挨拶、
  
- 	BUG_ON(!test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags));
- 	BUG_ON(refcount_read(&dc->count));
-@@ -1144,12 +1141,6 @@ static void cached_dev_detach_finish(struct work_struct *w)
- 		dc->writeback_thread = NULL;
- 	}
+私の名前は、カナダ有数の暗号通貨交換プラットフォームの1つである最高コンプライアンス責任者であるFelixです。 
+これは私からあなたへの秘密の秘密のメッセージであり、そのように扱われることを要求します。
  
--	memset(&dc->sb.set_uuid, 0, 16);
--	SET_BDEV_STATE(&dc->sb, BDEV_STATE_NONE);
--
--	bch_write_bdev_super(dc, &cl);
--	closure_sync(&cl);
--
- 	mutex_lock(&bch_register_lock);
+故人の口座保有者が所有する清算されたBTC口座から生じた900万米ドルを超える資金に関する緊急事項（取引）についてご連絡いたします
+。 私の計画と、私があなたの返事を受け取り、あなたの信頼を得た後、私が最初にあなたに連絡することを選んだ理由をあなたに知らせます。
  
- 	calc_cached_dev_sectors(dc->disk.c);
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 4f4ad6b..2cd0340 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -705,6 +705,15 @@ static int bch_writeback_thread(void *arg)
- 			 * bch_cached_dev_detach().
- 			 */
- 			if (test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags)) {
-+				struct closure cl;
-+
-+				closure_init_stack(&cl);
-+				memset(&dc->sb.set_uuid, 0, 16);
-+				SET_BDEV_STATE(&dc->sb, BDEV_STATE_NONE);
-+
-+				bch_write_bdev_super(dc, &cl);
-+				closure_sync(&cl);
-+
- 				up_write(&dc->writeback_lock);
- 				break;
- 			}
--- 
-1.8.3.1
-
+たくさんの感謝とあなたの返事を楽しみにしています。
+ 
+フェリックス。
