@@ -1,31 +1,30 @@
-Return-Path: <SRS0=fi+i=D2=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=roXu=D3=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: **
-X-Spam-Status: No, score=2.9 required=3.0 tests=BAYES_50,
+X-Spam-Status: No, score=2.0 required=3.0 tests=BAYES_20,
 	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
 	UNWANTED_LANGUAGE_BODY autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 00F6EC433DF
-	for <linux-bcache@archiver.kernel.org>; Mon, 19 Oct 2020 21:56:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 853CAC433DF
+	for <linux-bcache@archiver.kernel.org>; Tue, 20 Oct 2020 06:32:35 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id AF26522400
-	for <linux-bcache@archiver.kernel.org>; Mon, 19 Oct 2020 21:56:27 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 45DF822283
+	for <linux-bcache@archiver.kernel.org>; Tue, 20 Oct 2020 06:32:35 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726590AbgJSV41 convert rfc822-to-8bit (ORCPT
+        id S2404339AbgJTGce convert rfc822-to-8bit (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 19 Oct 2020 17:56:27 -0400
-Received: from host-58103343.fivenetwork.com ([58.146.103.243]:49880 "EHLO
+        Tue, 20 Oct 2020 02:32:34 -0400
+Received: from host-58103343.fivenetwork.com ([58.146.103.243]:61931 "EHLO
         waseda.jp" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1727474AbgJSV41 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 19 Oct 2020 17:56:27 -0400
-X-Greylist: delayed 7275 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Oct 2020 17:56:26 EDT
+        id S2404329AbgJTGce (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 20 Oct 2020 02:32:34 -0400
 Reply-To: info@free221.com
 From:   "FM" <matsuba7@waseda.jp>
 To:     linux-bcache@vger.kernel.org
 Subject: =?UTF-8?B?44Kr44OK44OA44Kq44OV44Kh44O8?=
-Date:   20 Oct 2020 03:24:06 +0530
-Message-ID: <20201020032406.7E95C57546D73310@waseda.jp>
+Date:   20 Oct 2020 11:59:12 +0530
+Message-ID: <20201020115912.8036585E92DCC52F@waseda.jp>
 MIME-Version: 1.0
 Content-Type: text/plain;
         charset="utf-8"
