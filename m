@@ -1,31 +1,30 @@
-Return-Path: <SRS0=D4B8=D6=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=4T6M=EA=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: **
-X-Spam-Status: No, score=2.9 required=3.0 tests=BAYES_50,
+X-Spam-Status: No, score=2.0 required=3.0 tests=BAYES_40,
 	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
 	UNWANTED_LANGUAGE_BODY autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4643DC388F9
-	for <linux-bcache@archiver.kernel.org>; Fri, 23 Oct 2020 21:13:52 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1805CC4363A
+	for <linux-bcache@archiver.kernel.org>; Sun, 25 Oct 2020 06:03:53 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D96C221D6C
-	for <linux-bcache@archiver.kernel.org>; Fri, 23 Oct 2020 21:13:51 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id C44B0208A9
+	for <linux-bcache@archiver.kernel.org>; Sun, 25 Oct 2020 06:03:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1755358AbgJWVNu convert rfc822-to-8bit (ORCPT
+        id S1767594AbgJYGDw convert rfc822-to-8bit (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 23 Oct 2020 17:13:50 -0400
-Received: from ws86-195-133-112.rcil.gov.in ([112.133.192.86]:50205 "EHLO
+        Sun, 25 Oct 2020 02:03:52 -0400
+Received: from ws86-195-133-112.rcil.gov.in ([112.133.192.86]:63101 "EHLO
         notokin.jp" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1752905AbgJWVNu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 23 Oct 2020 17:13:50 -0400
-X-Greylist: delayed 82693 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Oct 2020 17:13:48 EDT
+        id S1767595AbgJYGDv (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 25 Oct 2020 02:03:51 -0400
 Reply-To: info@free551.com
 From:   "FM" <info@notokin.jp>
 To:     linux-bcache@vger.kernel.org
 Subject: =?UTF-8?B?44GU5oyo5ou2?=
-Date:   24 Oct 2020 02:43:46 +0530
-Message-ID: <20201024024346.72B88FF501F23B7A@notokin.jp>
+Date:   25 Oct 2020 11:33:48 +0530
+Message-ID: <20201025113348.370A38AB29B39A8E@notokin.jp>
 MIME-Version: 1.0
 Content-Type: text/plain;
         charset="utf-8"
