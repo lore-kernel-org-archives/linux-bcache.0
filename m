@@ -1,149 +1,83 @@
-Return-Path: <SRS0=DbQO=EF=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <SRS0=Sbfm=EG=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-3.6 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
-	autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-6.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_GIT autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B2AB9C00A89
-	for <linux-bcache@archiver.kernel.org>; Fri, 30 Oct 2020 15:16:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9C93AC388F7
+	for <linux-bcache@archiver.kernel.org>; Sat, 31 Oct 2020 09:00:43 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5026C20756
-	for <linux-bcache@archiver.kernel.org>; Fri, 30 Oct 2020 15:16:28 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 4F7E420756
+	for <linux-bcache@archiver.kernel.org>; Sat, 31 Oct 2020 09:00:43 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="tTejEiPa"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="P8zIXf0C"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726713AbgJ3PQ2 (ORCPT
+        id S1726484AbgJaJAm (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 30 Oct 2020 11:16:28 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42026 "EHLO
+        Sat, 31 Oct 2020 05:00:42 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36742 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726178AbgJ3PQ1 (ORCPT
+        with ESMTP id S1726444AbgJaJAm (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 30 Oct 2020 11:16:27 -0400
-Received: from mail-ua1-x944.google.com (mail-ua1-x944.google.com [IPv6:2607:f8b0:4864:20::944])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 40CE2C0613CF
-        for <linux-bcache@vger.kernel.org>; Fri, 30 Oct 2020 08:16:27 -0700 (PDT)
-Received: by mail-ua1-x944.google.com with SMTP id v27so1828895uau.3
-        for <linux-bcache@vger.kernel.org>; Fri, 30 Oct 2020 08:16:27 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20161025;
-        h=mime-version:from:date:message-id:subject:to;
-        bh=XmU3YGLGzTrGENK4eODvNJ92DBiYBDdDJ2HUmRklSzs=;
-        b=tTejEiPaokTzTYtFlDrt/yYmi7BL2MxjWzpWwx0PN1tujS6BSdFEngewLZCVKzsVH7
-         u5zLLkWbwUf3TUk/u7eL6uvHW2BpSs4pUptut9HRLANf0zhjcEBLbHgLXtdSsk1eTuqe
-         sr0J5FBLb/9aesYHwq1U83bbQWA+jZ/vS7trYqwzYj4c/oZL+qyqEi82GicjTL+B2Z+P
-         GTj39KLhzqVLB1HfSo8ZVDleW0qOhloJY21XfZPlVeUGRgOCdTyOrlif1uABgN1MFKmn
-         TIYWT0Zu+4II8wts5wJfWhMMvFEKnv3+5cHRzppnxbUkN0nrX+i8iJ8kvv8WXuBR3vKP
-         j/5Q==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:mime-version:from:date:message-id:subject:to;
-        bh=XmU3YGLGzTrGENK4eODvNJ92DBiYBDdDJ2HUmRklSzs=;
-        b=qf1o5cDfXd6GbnDzoecwSaoS1FUdgqUyTS+hlom7uZOjnDVVPqnVk2+Lr6FnmfZkix
-         /h3YoxzWeZWadNqq+rsPXb5dRJujuQ7dBR1cD0E4zCC0COcsHuGnUS+POJZ6493+GZSW
-         oXvn0tXSOAC08rOf3IavhysttDEFjNR9JYrYAWHZ8ix2t9q7WffwDgdHKhsXQxO+/B87
-         oTmG0vArNoQpY+WQzuG+1fjL6xFtzxuhw2bDw2WSV1Hf+pj1W0aINNqGljMxMbb5tcVy
-         513SJfK/DHbdgFyIWMkDR4bYVaba7g/T8nF7U3uzWaGbwBR/+PFo57aReVe3v7rp9e7c
-         2WcA==
-X-Gm-Message-State: AOAM532gl5I3BvW5QYvw8xZwZfeJYnKjkBGC/sGQSZZJTmfaN6FyAT54
-        HFtJ/GQuTswC7Cv/MrQKQGs8zK88+VwzgdIYZYZdvZBXknqMiw==
-X-Google-Smtp-Source: ABdhPJyoY4ooeE6IIF9sFv9UELSee68h42rneSKLH3+XzwZkd8vFcDxKyuug15tiJc5wWRuhLj4Aa42j65442qo5m4A=
-X-Received: by 2002:ab0:48ed:: with SMTP id y42mr1740094uac.140.1604070986056;
- Fri, 30 Oct 2020 08:16:26 -0700 (PDT)
+        Sat, 31 Oct 2020 05:00:42 -0400
+Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E66EFC0613D5;
+        Sat, 31 Oct 2020 02:00:41 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
+        Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:Content-Type:Content-ID:
+        Content-Description:In-Reply-To:References;
+        bh=m3FemkF6DNOHQ5D48308QA5xeoyXDyaeiceI36E77rM=; b=P8zIXf0ClaVZSlArFCi1K9v3vC
+        gkxA94Uro1RF/+GgDyh9vEPwj3Y72/9SSEANZP02i5TvMe10LymbYkPYG6DMc5IDnGBjgQTalEvkc
+        7TXnyFUT/j8iHkPcOXM8bZe6ReIb5uXby+YJuLwffRMuoJeVVR4je0nhesz/osz/s3vHOrEWnHbJg
+        bhdDx2zoZWldSKltR8JTd7fM6O5mYbGvdN2dy0IKqcHTIM0OnVwHhznWyotA9VltkfkHOEYK1UAzy
+        7nL8Sv4tjRi5d0AaEOTRMJmaYjKsZ84BKBO1I6yshpTLLvLz/fqIiFFddRo3CEr/BUnU26g1h076k
+        j9lwYORg==;
+Received: from 089144193201.atnat0002.highway.a1.net ([89.144.193.201] helo=localhost)
+        by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
+        id 1kYmkI-0006r3-1O; Sat, 31 Oct 2020 09:00:22 +0000
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Ilya Dryomov <idryomov@gmail.com>, Song Liu <song@kernel.org>,
+        Miquel Raynal <miquel.raynal@bootlin.com>,
+        Richard Weinberger <richard@nod.at>,
+        Vignesh Raghavendra <vigneshr@ti.com>,
+        Stefan Haberland <sth@linux.ibm.com>,
+        Jan Hoeppner <hoeppner@linux.ibm.com>,
+        linux-block@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-s390@vger.kernel.org
+Subject: block ioctl cleanups
+Date:   Sat, 31 Oct 2020 09:57:59 +0100
+Message-Id: <20201031085810.450489-1-hch@lst.de>
+X-Mailer: git-send-email 2.28.0
 MIME-Version: 1.0
-From:   Marc Smith <msmith626@gmail.com>
-Date:   Fri, 30 Oct 2020 11:16:15 -0400
-Message-ID: <CAH6h+hexmutQkXUh9+VFrnfTX=XYB6dOw8QJXfRLzEX9KNdZRQ@mail.gmail.com>
-Subject: Kernel Panic on 5.4.69
-To:     linux-bcache@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hi,
+Hi Jens,
 
-I'm using Linux 5.4.69 with the following two patches applied for bcache:
-commit 125d98edd114 ("bcache: remove member accessed from struct btree")
-commit d5c9c470b011 ("bcache: reap c->btree_cache_freeable from the
-tail in bch_mca_scan()")
+this series has a bunch of cleanups for the block layer ioctl code.
 
-I'm using bcache in write-back mode... the cache device is a RAID1
-mirror set using NVMe drives, and several backing devices are
-associated with that cache device. While driving I/O, I experienced
-the following kernel panic:
-  SYSTEM MAP: /home/marc.smith/Downloads/System.map-esos.prod
-DEBUG KERNEL: /home/marc.smith/Downloads/vmlinux-esos.prod (5.4.69-esos.prod)
-    DUMPFILE: /home/marc.smith/Downloads/dumpfile-1604062993
-        CPUS: 8
-        DATE: Fri Oct 30 09:02:56 2020
-      UPTIME: 2 days, 12:38:15
-LOAD AVERAGE: 9.48, 8.89, 7.69
-       TASKS: 980
-    NODENAME: node-10cccd-2
-     RELEASE: 5.4.69-esos.prod
-     VERSION: #1 SMP Thu Oct 22 19:45:11 UTC 2020
-     MACHINE: x86_64  (2799 Mhz)
-      MEMORY: 24 GB
-       PANIC: "Oops: 0002 [#1] SMP NOPTI" (check log for details)
-         PID: 18272
-     COMMAND: "kworker/2:13"
-        TASK: ffff88841d9e8000  [THREAD_INFO: ffff88841d9e8000]
-         CPU: 2
-       STATE: TASK_UNINTERRUPTIBLE (PANIC)
-
-crash> bt
-PID: 18272  TASK: ffff88841d9e8000  CPU: 2   COMMAND: "kworker/2:13"
- #0 [ffffc90000100938] machine_kexec at ffffffff8103d6b5
- #1 [ffffc90000100980] __crash_kexec at ffffffff8110d37b
- #2 [ffffc90000100a48] crash_kexec at ffffffff8110e07d
- #3 [ffffc90000100a58] oops_end at ffffffff8101a9de
- #4 [ffffc90000100a78] no_context at ffffffff81045e99
- #5 [ffffc90000100ae0] async_page_fault at ffffffff81e010cf
-    [exception RIP: atomic_try_cmpxchg+2]
-    RIP: ffffffff810d3e3b  RSP: ffffc90000100b98  RFLAGS: 00010046
-    RAX: 0000000000000000  RBX: 0000000000000003  RCX: 0000000000080006
-    RDX: 0000000000000001  RSI: ffffc90000100ba4  RDI: 0000000000000a6c
-    RBP: 0000000000000010   R8: 0000000000000001   R9: ffffffffa0418d4e
-    R10: ffff88841c8b3000  R11: ffff88841c8b3000  R12: 0000000000000046
-    R13: 0000000000000000  R14: ffff8885a3a0a000  R15: 0000000000000a6c
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #6 [ffffc90000100b98] _raw_spin_lock_irqsave at ffffffff81cf7d7d
- #7 [ffffc90000100bb8] try_to_wake_up at ffffffff810c1624
- #8 [ffffc90000100c08] closure_sync_fn at ffffffffa040fb07 [bcache]
- #9 [ffffc90000100c10] clone_endio at ffffffff81aac48c
-#10 [ffffc90000100c40] call_bio_endio at ffffffff81a78e20
-#11 [ffffc90000100c58] raid_end_bio_io at ffffffff81a78e69
-#12 [ffffc90000100c88] raid1_end_write_request at ffffffff81a79ad9
-#13 [ffffc90000100cf8] blk_update_request at ffffffff814c3ab1
-#14 [ffffc90000100d38] blk_mq_end_request at ffffffff814caaf2
-#15 [ffffc90000100d50] blk_mq_complete_request at ffffffff814c91c1
-#16 [ffffc90000100d78] nvme_complete_cqes at ffffffffa002fb03 [nvme]
-#17 [ffffc90000100db8] nvme_irq at ffffffffa002fb7f [nvme]
-#18 [ffffc90000100de0] __handle_irq_event_percpu at ffffffff810e0d60
-#19 [ffffc90000100e20] handle_irq_event_percpu at ffffffff810e0e65
-#20 [ffffc90000100e48] handle_irq_event at ffffffff810e0ecb
-#21 [ffffc90000100e60] handle_edge_irq at ffffffff810e494d
-#22 [ffffc90000100e78] do_IRQ at ffffffff81e01900
-#23 [ffffc90000100eb0] common_interrupt at ffffffff81e00a0a
-#24 [ffffc90000100f38] __softirqentry_text_start at ffffffff8200006a
-#25 [ffffc90000100fc8] irq_exit at ffffffff810a3f6a
-#26 [ffffc90000100fd0] smp_apic_timer_interrupt at ffffffff81e020b2
-bt: invalid kernel virtual address: ffffc90000101000  type: "pt_regs"
-crash>
-
-I noticed in the call trace that closure_sync_fn() is just before the
-thread is woken; I saw one patch from a year ago for closure_sync_fn()
-but of course this is already applied in 5.4.69:
-https://lore.kernel.org/patchwork/patch/1086698/
-
-I haven't encountered this panic in any prior testing, so it appears
-to be rare so far. Not sure what else could be done to debug?
-
-I'll continue testing with heaving I/O to see if this can be reproduced.
-
-
---Marc
+Diffstat:
+ block/genhd.c                     |    7 ----
+ block/ioctl.c                     |   62 ++++++--------------------------------
+ drivers/block/loop.c              |    2 -
+ drivers/block/mtip32xx/mtip32xx.c |   11 +-----
+ drivers/block/pktcdvd.c           |    6 ++-
+ drivers/block/rbd.c               |   41 ++-----------------------
+ drivers/md/bcache/request.c       |    5 +--
+ drivers/md/dm.c                   |    5 ++-
+ drivers/md/md.c                   |   62 +++++++++++++++++++-------------------
+ drivers/mtd/mtd_blkdevs.c         |   28 -----------------
+ drivers/s390/block/dasd.c         |    1 
+ drivers/s390/block/dasd_int.h     |    3 +
+ drivers/s390/block/dasd_ioctl.c   |   27 +++++-----------
+ include/linux/blkdev.h            |    3 -
+ include/linux/genhd.h             |    1 
+ 15 files changed, 73 insertions(+), 191 deletions(-)
