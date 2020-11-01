@@ -2,32 +2,30 @@ Return-Path: <SRS0=gGT1=EH=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-8.5 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.2 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 31515C4741F
-	for <linux-bcache@archiver.kernel.org>; Sun,  1 Nov 2020 00:35:14 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D6474C2D0A3
+	for <linux-bcache@archiver.kernel.org>; Sun,  1 Nov 2020 10:27:41 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 01BB02087E
-	for <linux-bcache@archiver.kernel.org>; Sun,  1 Nov 2020 00:35:13 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id A2F5720709
+	for <linux-bcache@archiver.kernel.org>; Sun,  1 Nov 2020 10:27:41 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726195AbgKAAfM (ORCPT
+        id S1726159AbgKAK1k (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 31 Oct 2020 20:35:12 -0400
-Received: from smtp.hosts.co.uk ([85.233.160.19]:64548 "EHLO smtp.hosts.co.uk"
+        Sun, 1 Nov 2020 05:27:40 -0500
+Received: from verein.lst.de ([213.95.11.211]:58311 "EHLO verein.lst.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726138AbgKAAfM (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 31 Oct 2020 20:35:12 -0400
-X-Greylist: delayed 2038 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Oct 2020 20:35:11 EDT
-Received: from host86-155-135-88.range86-155.btcentralplus.com ([86.155.135.88] helo=[192.168.1.65])
-        by smtp.hosts.co.uk with esmtpa (Exim)
-        (envelope-from <antlists@youngman.org.uk>)
-        id 1kZ01k-000CBn-3t; Sat, 31 Oct 2020 23:11:16 +0000
-Subject: Re: [PATCH 01/11] mtd_blkdevs: don't override BLKFLSBUF
-To:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
-Cc:     Ilya Dryomov <idryomov@gmail.com>, Song Liu <song@kernel.org>,
+        id S1726138AbgKAK1k (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 1 Nov 2020 05:27:40 -0500
+Received: by verein.lst.de (Postfix, from userid 2407)
+        id 56FF56736F; Sun,  1 Nov 2020 11:27:36 +0100 (CET)
+Date:   Sun, 1 Nov 2020 11:27:35 +0100
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Christoph Hellwig <hch@lst.de>, Ilya Dryomov <idryomov@gmail.com>,
+        Song Liu <song@kernel.org>,
         Miquel Raynal <miquel.raynal@bootlin.com>,
         Richard Weinberger <richard@nod.at>,
         Vignesh Raghavendra <vigneshr@ti.com>,
@@ -36,31 +34,26 @@ Cc:     Ilya Dryomov <idryomov@gmail.com>, Song Liu <song@kernel.org>,
         linux-block@vger.kernel.org, ceph-devel@vger.kernel.org,
         linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-s390@vger.kernel.org
-References: <20201031085810.450489-1-hch@lst.de>
- <20201031085810.450489-2-hch@lst.de>
-From:   antlists <antlists@youngman.org.uk>
-Message-ID: <5170a536-09c1-28a7-c2fb-5381598194db@youngman.org.uk>
-Date:   Sat, 31 Oct 2020 23:11:14 +0000
-User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101
- Thunderbird/68.12.1
+Subject: Re: [PATCH 02/11] mtip32xx: return -ENOTTY for all unhanled ioctls
+Message-ID: <20201101102735.GA26447@lst.de>
+References: <20201031085810.450489-1-hch@lst.de> <20201031085810.450489-3-hch@lst.de> <f128e8bb-7ce4-b8f4-80cb-1afab503887c@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <20201031085810.450489-2-hch@lst.de>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Language: en-GB
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f128e8bb-7ce4-b8f4-80cb-1afab503887c@kernel.dk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 31/10/2020 08:58, Christoph Hellwig wrote:
-> BLKFLSBUF does not actually send a flush command to the device, but
-> teard down buffer cache structures.  Remove the mtd_blkdevs
-   ^^^^^  ?tears?
-
-> implementation and just use the default semantics instead.
+On Sat, Oct 31, 2020 at 08:58:52AM -0600, Jens Axboe wrote:
+> On 10/31/20 2:58 AM, Christoph Hellwig wrote:
+> > -ENOTTY is the convention for "driver does not support this ioctl".
+> > Use it properly in mtip32xx instead of the bogys -EINVAL.
 > 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
+> While that's certainly true, there is a risk in making a change like this
+> years after the fact. Not that I expect there are any mtip32xx users
+> left at this point, but...
 
-Cheers,
-Wol
+-ENOTTY is what most drivers return.  That being said we can keep the
+old behavior, so if you prepfer that I can respin to do that.
