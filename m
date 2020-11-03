@@ -2,92 +2,141 @@ Return-Path: <SRS0=qyoA=EJ=vger.kernel.org=linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-12.7 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SIGNED_OFF_BY,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT autolearn=ham
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-12.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,
+	SIGNED_OFF_BY,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7451CC2D0A3
-	for <linux-bcache@archiver.kernel.org>; Tue,  3 Nov 2020 10:10:10 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6BD23C55178
+	for <linux-bcache@archiver.kernel.org>; Tue,  3 Nov 2020 10:11:23 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 29A5621D91
-	for <linux-bcache@archiver.kernel.org>; Tue,  3 Nov 2020 10:10:10 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 12209206B5
+	for <linux-bcache@archiver.kernel.org>; Tue,  3 Nov 2020 10:11:23 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="dJZlq2TQ"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727068AbgKCKKJ (ORCPT
+        id S1728017AbgKCKLV (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 3 Nov 2020 05:10:09 -0500
-Received: from m97179.mail.qiye.163.com ([220.181.97.179]:12418 "EHLO
-        m97179.mail.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1725988AbgKCKKJ (ORCPT
+        Tue, 3 Nov 2020 05:11:21 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34928 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726312AbgKCKLU (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 3 Nov 2020 05:10:09 -0500
-Received: from atest-guest.localdomain (unknown [218.94.118.90])
-        by m97179.mail.qiye.163.com (Hmail) with ESMTPA id 2B746E02AA2;
-        Tue,  3 Nov 2020 18:10:07 +0800 (CST)
-From:   Dongsheng Yang <dongsheng.yang@easystack.cn>
-To:     colyli@suse.de, linux-bcache@vger.kernel.org
-Cc:     Dongsheng Yang <dongsheng.yang@easystack.cn>
-Subject: [PATCH] bcache: dont set the ret_task again if we already found a bucket with expected write_point
-Date:   Tue,  3 Nov 2020 10:09:54 +0000
-Message-Id: <1604398194-28502-1-git-send-email-dongsheng.yang@easystack.cn>
-X-Mailer: git-send-email 1.8.3.1
-X-HM-Spam-Status: e1kfGhgUHx5ZQUtXWQgYFAkeWUFZS1VLWVdZKFlBSUI3V1ktWUFJV1kPCR
-        oVCBIfWUFZHx5KSkxNTUgdTR0ZVkpNS09IQkNJS0xIT09VGRETFhoSFyQUDg9ZV1kWGg8SFR0UWU
-        FZT0tIVUpKS09ISFVLWQY+
-X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6OCo6Gjo6Lz5CDUMwDhApGjQv
-        OhYaCjRVSlVKTUtPSEJDSUtMT0JOVTMWGhIXVR8UFRwIEx4VHFUCGhUcOx4aCAIIDxoYEFUYFUVZ
-        V1kSC1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSU1LTTcG
-X-HM-Tid: 0a758d95d11b20bdkuqy2b746e02aa2
+        Tue, 3 Nov 2020 05:11:20 -0500
+Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A612AC0613D1;
+        Tue,  3 Nov 2020 02:11:20 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
+        References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
+        Content-Type:Content-ID:Content-Description;
+        bh=d6eXOjuXpEGh4QV0WzAZm1B65GVluoutmLV75dqvSwg=; b=dJZlq2TQbBfbRH7MzgtHND3PrW
+        gQAy+tyQdsTI+RCqnQSfA2sHN7UvV6SpNQPi1ZKCWOyyMkaihDGG7JDVVl1cgOoV+7VhBYajIz9d/
+        XD0fCvpVGpLgqeM1K6zpSXZqe7UZ3xqfej+VG00ntzEeJ2CLIINjitIDN1EasKATrOu4TrWbR8893
+        k6ywySR9quGWeXnrOLSYCdYVs6SksBreoXlJNFolPr9FD+BrD10T4tvCorMrF5BAnG+T7BvsOtNnf
+        JoANNOXvyhhlKJYlIgmpV4aVERKbZzviYmKwzEVPVkxV0pZ6A3tXYgE8ZWT5cBttvemZw8N1uzo4+
+        gu1f+o5Q==;
+Received: from 089144208145.atnat0017.highway.a1.net ([89.144.208.145] helo=localhost)
+        by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
+        id 1kZtHX-0000em-5z; Tue, 03 Nov 2020 10:11:15 +0000
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Ilya Dryomov <idryomov@gmail.com>, Song Liu <song@kernel.org>,
+        Miquel Raynal <miquel.raynal@bootlin.com>,
+        Richard Weinberger <richard@nod.at>,
+        Vignesh Raghavendra <vigneshr@ti.com>,
+        Stefan Haberland <sth@linux.ibm.com>,
+        Jan Hoeppner <hoeppner@linux.ibm.com>,
+        linux-block@vger.kernel.org, ceph-devel@vger.kernel.org,
+        linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-s390@vger.kernel.org
+Subject: [PATCH 04/10] rbd: implement ->set_read_only to hook into BLKROSET processing
+Date:   Tue,  3 Nov 2020 11:00:12 +0100
+Message-Id: <20201103100018.683694-5-hch@lst.de>
+X-Mailer: git-send-email 2.28.0
+In-Reply-To: <20201103100018.683694-1-hch@lst.de>
+References: <20201103100018.683694-1-hch@lst.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-In pick_data_bucket() bcache search the c->data_buckets from the tail to head, if there
-are buckets (e.g b1, b2) with the same write_point, we want to write in b2 until
-it's full and then write into b1. But currently, bcache will pick b1 and b2 one by one.
+Implement the ->set_read_only method instead of parsing the actual
+ioctl command.
 
-E.g, data_buckets shown as below:
-
-	c->data_buckets
-		|->b1->b2
-
-(1) first write will pick b1 from the list.
-(2) and after write, b1 will be moved to the tail.
-(3) then list will be shown as below:
-	c->data_buckets
-		|->b2->b1
-(4) the next write will pick b2 from the list and then move b2 to the tail.
-
-This commit can make sure we put the writes into b2 until b2 is full and then
-pick b1 to continue write.
-
-The remain question is: Why are there buckets with same write point?
-Below is one possible scenario:
-(1) Process-A write [16K - 20K], there is a Bucket-A with write_point(A) and key_off (20K)
-(2) Process-B write [4K - 8K], a new Bucket-B will be added, write_point(B) and key_off (8K)
-(3) Process-A write [8K - 12K], pick_data_bucket() will pick Bucket-B to write, as it's key_off is 8K.
-
-After (3), we got Bucket-A and Bucket-B with the same write_point(A).
-
-Signed-off-by: Dongsheng Yang <dongsheng.yang@easystack.cn>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Acked-by: Ilya Dryomov <idryomov@gmail.com>
 ---
- drivers/md/bcache/alloc.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/block/rbd.c | 40 ++++------------------------------------
+ 1 file changed, 4 insertions(+), 36 deletions(-)
 
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 8f5ef27..45c19b0 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -576,7 +576,8 @@ static struct open_bucket *pick_data_bucket(struct cache_set *c,
- 		else if (!bkey_cmp(&ret->key, search))
- 			goto found;
- 		else if (ret->last_write_point == write_point)
--			ret_task = ret;
-+			if (!ret_task)
-+				ret_task = ret;
+diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+index f84128abade319..671733e459cf47 100644
+--- a/drivers/block/rbd.c
++++ b/drivers/block/rbd.c
+@@ -692,12 +692,9 @@ static void rbd_release(struct gendisk *disk, fmode_t mode)
+ 	put_device(&rbd_dev->dev);
+ }
  
- 	ret = ret_task ?: list_first_entry(&c->data_buckets,
- 					   struct open_bucket, list);
+-static int rbd_ioctl_set_ro(struct rbd_device *rbd_dev, unsigned long arg)
++static int rbd_set_read_only(struct block_device *bdev, bool ro)
+ {
+-	int ro;
+-
+-	if (get_user(ro, (int __user *)arg))
+-		return -EFAULT;
++	struct rbd_device *rbd_dev = bdev->bd_disk->private_data;
+ 
+ 	/*
+ 	 * Both images mapped read-only and snapshots can't be marked
+@@ -710,43 +707,14 @@ static int rbd_ioctl_set_ro(struct rbd_device *rbd_dev, unsigned long arg)
+ 		rbd_assert(!rbd_is_snap(rbd_dev));
+ 	}
+ 
+-	/* Let blkdev_roset() handle it */
+-	return -ENOTTY;
+-}
+-
+-static int rbd_ioctl(struct block_device *bdev, fmode_t mode,
+-			unsigned int cmd, unsigned long arg)
+-{
+-	struct rbd_device *rbd_dev = bdev->bd_disk->private_data;
+-	int ret;
+-
+-	switch (cmd) {
+-	case BLKROSET:
+-		ret = rbd_ioctl_set_ro(rbd_dev, arg);
+-		break;
+-	default:
+-		ret = -ENOTTY;
+-	}
+-
+-	return ret;
+-}
+-
+-#ifdef CONFIG_COMPAT
+-static int rbd_compat_ioctl(struct block_device *bdev, fmode_t mode,
+-				unsigned int cmd, unsigned long arg)
+-{
+-	return rbd_ioctl(bdev, mode, cmd, arg);
++	return 0;
+ }
+-#endif /* CONFIG_COMPAT */
+ 
+ static const struct block_device_operations rbd_bd_ops = {
+ 	.owner			= THIS_MODULE,
+ 	.open			= rbd_open,
+ 	.release		= rbd_release,
+-	.ioctl			= rbd_ioctl,
+-#ifdef CONFIG_COMPAT
+-	.compat_ioctl		= rbd_compat_ioctl,
+-#endif
++	.set_read_only		= rbd_set_read_only,
+ };
+ 
+ /*
 -- 
-1.8.3.1
+2.28.0
 
