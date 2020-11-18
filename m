@@ -5,40 +5,40 @@ X-Spam-Level:
 X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EABE9C64E7B
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:27 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 38C2AC63798
+	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:29 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 9C0A824654
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:27 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id CB22124656
+	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:28 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="Zwjf9/vf"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="Nx+h2rhZ"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727010AbgKRIs0 (ORCPT
+        id S1727047AbgKRIs2 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 18 Nov 2020 03:48:26 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42874 "EHLO
+        Wed, 18 Nov 2020 03:48:28 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42882 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726981AbgKRIsZ (ORCPT
+        with ESMTP id S1726981AbgKRIs1 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 18 Nov 2020 03:48:25 -0500
+        Wed, 18 Nov 2020 03:48:27 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 465B0C061A4D;
-        Wed, 18 Nov 2020 00:48:25 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B524FC0613D4;
+        Wed, 18 Nov 2020 00:48:27 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=9bzANv+VYgNayi3XqYu3+gJSnycumDxTZtqBmtGYeOA=; b=Zwjf9/vfCdFX/wzjudAegg8I9I
-        ne6T0qgttSCBMB4/+qUGaZ0F8oemsXBAjc8MiA01yPrzHlCI+B7NOaQCcgUPiGeeOeRaDRjNOL0TI
-        XTvLoy6KGn3T2Sy/YYIyZfKkz8pr91yZcXqExhyNx6T1JicjMldOTa2ud8J4dvUkqfJXsI2ky1h0j
-        JzrP7PsQ5U3dJXRRu9nPHXIWufdefaoTP45TCu+rSkQhlllaqIRdDC1SU1aU3sN/0323xx3thLATv
-        NBGm1F1GhheaF/vYD/ePxy3W47MdD2OJPtdvqukJRdrxHYP5kAaSKYzKivQrPHlRuOzrRoPRqWhYp
-        zSRofNWw==;
+        bh=AZC0zIud/sy36HL3UqpdhruuJxaP+dAsE+XWl7N2xio=; b=Nx+h2rhZg/HvIdxi/V4Jhb3r0u
+        Ha9RMCfuFy1DcNiHVfggBRgvESO9x7+pxSBvldUugXJje0PXHGlc4RwDDAg7KizNUutdw1Oz6YYyv
+        GW4iMGk2/W7s5u9pbxqjoSdBjJixbVkMGKI4sJ3RWvWoE3K0iOy/pbqDa1e1ML4CIGcPuaXqz2g9g
+        GWC0Sp67FA+/219oiqS3gSXWZE8BQ1pE8WMHKNGls47Mx8ZIwmqDOxT3eb3qNMpqy/o6N2LhYhPo2
+        rajpeTK4bPGzZuMUv7onhX7MqP2bpqaR14FcEdjZKriDz9DBejg943e2dL+oCaa6VfesI9rxujAcy
+        PLSuDG6w==;
 Received: from [2001:4bb8:18c:31ba:32b1:ec66:5459:36a] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kfJ8J-0007ke-8F; Wed, 18 Nov 2020 08:48:07 +0000
+        id 1kfJ8S-0007lc-Hx; Wed, 18 Nov 2020 08:48:16 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -49,9 +49,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 03/20] block: add a bdev_kobj helper
-Date:   Wed, 18 Nov 2020 09:47:43 +0100
-Message-Id: <20201118084800.2339180-4-hch@lst.de>
+Subject: [PATCH 08/20] init: refactor devt_from_partuuid
+Date:   Wed, 18 Nov 2020 09:47:48 +0100
+Message-Id: <20201118084800.2339180-9-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201118084800.2339180-1-hch@lst.de>
 References: <20201118084800.2339180-1-hch@lst.de>
@@ -62,118 +62,116 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Add a little helper to find the kobject for a struct block_device.
+The code in devt_from_partuuid is very convoluted.  Refactor a bit by
+sanitizing the goto and variable name usage.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/md/bcache/super.c |  7 ++-----
- drivers/md/md.c           |  4 +---
- fs/btrfs/sysfs.c          | 15 +++------------
- include/linux/blk_types.h |  3 +++
- 4 files changed, 9 insertions(+), 20 deletions(-)
+ init/do_mounts.c | 68 ++++++++++++++++++++++--------------------------
+ 1 file changed, 31 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 46a00134a36ae1..a6a5e21e4fd136 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1447,8 +1447,7 @@ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
- 		goto err;
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index aef2f24461c7f1..afa26a4028d25e 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -105,13 +105,10 @@ static int match_dev_by_uuid(struct device *dev, const void *data)
+  */
+ static dev_t devt_from_partuuid(const char *uuid_str)
+ {
+-	dev_t res = 0;
+ 	struct uuidcmp cmp;
+ 	struct device *dev = NULL;
+-	struct gendisk *disk;
+-	struct hd_struct *part;
++	dev_t devt = 0;
+ 	int offset = 0;
+-	bool clear_root_wait = false;
+ 	char *slash;
  
- 	err = "error creating kobject";
--	if (kobject_add(&dc->disk.kobj, &part_to_dev(bdev->bd_part)->kobj,
--			"bcache"))
-+	if (kobject_add(&dc->disk.kobj, bdev_kobj(bdev), "bcache"))
- 		goto err;
- 	if (bch_cache_accounting_add_kobjs(&dc->accounting, &dc->disk.kobj))
- 		goto err;
-@@ -2342,9 +2341,7 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
- 		goto err;
+ 	cmp.uuid = uuid_str;
+@@ -120,52 +117,49 @@ static dev_t devt_from_partuuid(const char *uuid_str)
+ 	/* Check for optional partition number offset attributes. */
+ 	if (slash) {
+ 		char c = 0;
++
+ 		/* Explicitly fail on poor PARTUUID syntax. */
+-		if (sscanf(slash + 1,
+-			   "PARTNROFF=%d%c", &offset, &c) != 1) {
+-			clear_root_wait = true;
+-			goto done;
+-		}
++		if (sscanf(slash + 1, "PARTNROFF=%d%c", &offset, &c) != 1)
++			goto clear_root_wait;
+ 		cmp.len = slash - uuid_str;
+ 	} else {
+ 		cmp.len = strlen(uuid_str);
  	}
  
--	if (kobject_add(&ca->kobj,
--			&part_to_dev(bdev->bd_part)->kobj,
--			"bcache")) {
-+	if (kobject_add(&ca->kobj, bdev_kobj(bdev), "bcache")) {
- 		err = "error calling kobject_add";
- 		ret = -ENOMEM;
- 		goto out;
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index b2edf5e0f965b5..7ce6047c856ea2 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -2414,7 +2414,6 @@ EXPORT_SYMBOL(md_integrity_add_rdev);
- static int bind_rdev_to_array(struct md_rdev *rdev, struct mddev *mddev)
- {
- 	char b[BDEVNAME_SIZE];
--	struct kobject *ko;
- 	int err;
- 
- 	/* prevent duplicates */
-@@ -2477,9 +2476,8 @@ static int bind_rdev_to_array(struct md_rdev *rdev, struct mddev *mddev)
- 	if ((err = kobject_add(&rdev->kobj, &mddev->kobj, "dev-%s", b)))
- 		goto fail;
- 
--	ko = &part_to_dev(rdev->bdev->bd_part)->kobj;
- 	/* failure here is OK */
--	err = sysfs_create_link(&rdev->kobj, ko, "block");
-+	err = sysfs_create_link(&rdev->kobj, bdev_kobj(rdev->bdev), "block");
- 	rdev->sysfs_state = sysfs_get_dirent_safe(rdev->kobj.sd, "state");
- 	rdev->sysfs_unack_badblocks =
- 		sysfs_get_dirent_safe(rdev->kobj.sd, "unacknowledged_bad_blocks");
-diff --git a/fs/btrfs/sysfs.c b/fs/btrfs/sysfs.c
-index 279d9262b676d4..24b6c6dc69000a 100644
---- a/fs/btrfs/sysfs.c
-+++ b/fs/btrfs/sysfs.c
-@@ -1232,8 +1232,6 @@ int btrfs_sysfs_add_space_info_type(struct btrfs_fs_info *fs_info,
- 
- void btrfs_sysfs_remove_device(struct btrfs_device *device)
- {
--	struct hd_struct *disk;
--	struct kobject *disk_kobj;
- 	struct kobject *devices_kobj;
- 
- 	/*
-@@ -1243,11 +1241,8 @@ void btrfs_sysfs_remove_device(struct btrfs_device *device)
- 	devices_kobj = device->fs_info->fs_devices->devices_kobj;
- 	ASSERT(devices_kobj);
- 
--	if (device->bdev) {
--		disk = device->bdev->bd_part;
--		disk_kobj = &part_to_dev(disk)->kobj;
--		sysfs_remove_link(devices_kobj, disk_kobj->name);
+-	if (!cmp.len) {
+-		clear_root_wait = true;
+-		goto done;
 -	}
-+	if (device->bdev)
-+		sysfs_remove_link(devices_kobj, bdev_kobj(device->bdev)->name);
++	if (!cmp.len)
++		goto clear_root_wait;
  
- 	if (device->devid_kobj.state_initialized) {
- 		kobject_del(&device->devid_kobj);
-@@ -1353,11 +1348,7 @@ int btrfs_sysfs_add_device(struct btrfs_device *device)
- 	nofs_flag = memalloc_nofs_save();
- 
- 	if (device->bdev) {
--		struct hd_struct *disk;
--		struct kobject *disk_kobj;
+-	dev = class_find_device(&block_class, NULL, &cmp,
+-				&match_dev_by_uuid);
++	dev = class_find_device(&block_class, NULL, &cmp, &match_dev_by_uuid);
+ 	if (!dev)
+-		goto done;
 -
--		disk = device->bdev->bd_part;
--		disk_kobj = &part_to_dev(disk)->kobj;
-+		struct kobject *disk_kobj = bdev_kobj(device->bdev);
+-	res = dev->devt;
++		return 0;
  
- 		ret = sysfs_create_link(devices_kobj, disk_kobj, disk_kobj->name);
- 		if (ret) {
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index d9b69bbde5cc54..0069bee992063e 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -48,6 +48,9 @@ struct block_device {
- 	struct mutex		bd_fsfreeze_mutex;
- } __randomize_layout;
+-	/* Attempt to find the partition by offset. */
+-	if (!offset)
+-		goto no_offset;
++	if (offset) {
++		/*
++		 * Attempt to find the requested partition by adding an offset
++		 * to the partition number found by UUID.
++		 */
++		struct hd_struct *part;
  
-+#define bdev_kobj(_bdev) \
-+	(&part_to_dev((_bdev)->bd_part)->kobj)
+-	res = 0;
+-	disk = part_to_disk(dev_to_part(dev));
+-	part = disk_get_part(disk, dev_to_part(dev)->partno + offset);
+-	if (part) {
+-		res = part_devt(part);
+-		put_device(part_to_dev(part));
++		part = disk_get_part(dev_to_disk(dev),
++				     dev_to_part(dev)->partno + offset);
++		if (part) {
++			devt = part_devt(part);
++			put_device(part_to_dev(part));
++		}
++	} else {
++		devt = dev->devt;
+ 	}
+ 
+-no_offset:
+ 	put_device(dev);
+-done:
+-	if (clear_root_wait) {
+-		pr_err("VFS: PARTUUID= is invalid.\n"
+-		       "Expected PARTUUID=<valid-uuid-id>[/PARTNROFF=%%d]\n");
+-		if (root_wait)
+-			pr_err("Disabling rootwait; root= is invalid.\n");
+-		root_wait = 0;
+-	}
+-	return res;
++	return devt;
 +
- /*
-  * Block error status values.  See block/blk-core:blk_errors for the details.
-  * Alpha cannot write a byte atomically, so we need to use 32-bit value.
++clear_root_wait:
++	pr_err("VFS: PARTUUID= is invalid.\n"
++	       "Expected PARTUUID=<valid-uuid-id>[/PARTNROFF=%%d]\n");
++	if (root_wait)
++		pr_err("Disabling rootwait; root= is invalid.\n");
++	root_wait = 0;
++	return 0;
+ }
+ 
+ /**
 -- 
 2.29.2
 
