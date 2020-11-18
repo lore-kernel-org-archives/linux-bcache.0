@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DEAEFC8300B
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1C44DC83011
+	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:40 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8A9DC24654
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:37 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id AABF424654
+	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 08:48:39 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="NU91cq3T"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="KdghkPK+"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726894AbgKRIsZ (ORCPT
+        id S1726739AbgKRIsY (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 18 Nov 2020 03:48:25 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42860 "EHLO
+        Wed, 18 Nov 2020 03:48:24 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42866 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1726107AbgKRIsY (ORCPT
+        with ESMTP id S1726724AbgKRIsY (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Wed, 18 Nov 2020 03:48:24 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DCEE7C0613D4;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 067A2C061A4F;
         Wed, 18 Nov 2020 00:48:23 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=JcB9e14ZTBoVWi3xdlC8mpSR3JW9dN3IR752p30j0qE=; b=NU91cq3Thn62+S87BXdw/AgTnO
-        9uK6cfXrVF9yEmA7gnhhmrl2MGNUcw9zuMUuI9hT67RLy+rD4GPNSaJHyxowUOAxm138/fc2plNb4
-        XuymtZouAkEWfW9SYiaTL1h8ium+W1M+d0plwtKeHozF9b78iR3IbJAH7THKQ5q9+EOEA67NxaQ+a
-        sRuv7GeCq8Iai/OUyr+UoOseqMpOlQBsZuaoZRCTte5XcJjQ0cWOaWQaAJct5Q6R49nWqcs+mT/qa
-        3mreP00X2BL79i88S4UYKH6hvnklYD2z0TokXDz3qFO3qzztG5kmXwkN8YZHjWH1I0vBdaXznVot0
-        Kok8pY9Q==;
+        bh=HlR8BHDvXv9Sgk92bGXzXu1h5fBqLDHnxGaHmTelGu0=; b=KdghkPK+bK39xYpfOITSgGrMVp
+        BZli70ghNiYun7n+87JdzQVckkFmjA/iVEU1uoAHxbpWKwGwUBpwv8NlGzqCCuztL0lPtEylchCPx
+        X77Zf9jDIFy/H0VRo0NOUt6YvmcSPgxMUC7DF5aAGAQes6WU3Pdt/eM+kILHXyjoQeMLFgGOGqGO2
+        2wQ3zSfil9jGD9rGJGwOm7NLvJIwXJnBSIFtI1p+WPxnBXhtK4tCfAOpvizcMYINpM9jc8zU6z+H6
+        QZvAKdshaOtNqnFRSbHHIEzczFZ/YzEf/GcUelmoGKLkJaXLcQNXVKFdaUzmSzDBrHLYmuWBgWQTb
+        Qy4idlSQ==;
 Received: from [2001:4bb8:18c:31ba:32b1:ec66:5459:36a] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kfJ8G-0007kK-3j; Wed, 18 Nov 2020 08:48:04 +0000
+        id 1kfJ8K-0007ko-U7; Wed, 18 Nov 2020 08:48:09 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -49,9 +49,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 01/20] blk-cgroup: fix a hd_struct leak in blkcg_fill_root_iostats
-Date:   Wed, 18 Nov 2020 09:47:41 +0100
-Message-Id: <20201118084800.2339180-2-hch@lst.de>
+Subject: [PATCH 04/20] block: use disk_part_iter_exit in disk_part_iter_next
+Date:   Wed, 18 Nov 2020 09:47:44 +0100
+Message-Id: <20201118084800.2339180-5-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201118084800.2339180-1-hch@lst.de>
 References: <20201118084800.2339180-1-hch@lst.de>
@@ -62,26 +62,28 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-disk_get_part needs to be paired with a disk_put_part.
+Call disk_part_iter_exit in disk_part_iter_next instead of duplicating
+the functionality.
 
-Fixes: ef45fe470e1 ("blk-cgroup: show global disk stats in root cgroup io.stat")
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- block/blk-cgroup.c | 1 +
- 1 file changed, 1 insertion(+)
+ block/genhd.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index c68bdf58c9a6e1..54fbe1e80cc41a 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -849,6 +849,7 @@ static void blkcg_fill_root_iostats(void)
- 			blkg_iostat_set(&blkg->iostat.cur, &tmp);
- 			u64_stats_update_end(&blkg->iostat.sync);
- 		}
-+		disk_put_part(part);
- 	}
- }
+diff --git a/block/genhd.c b/block/genhd.c
+index 4e039524f92b8f..0bd9c41dd4cb69 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -227,8 +227,7 @@ struct hd_struct *disk_part_iter_next(struct disk_part_iter *piter)
+ 	int inc, end;
  
+ 	/* put the last partition */
+-	disk_put_part(piter->part);
+-	piter->part = NULL;
++	disk_part_iter_exit(piter);
+ 
+ 	/* get part_tbl */
+ 	rcu_read_lock();
 -- 
 2.29.2
 
