@@ -2,82 +2,110 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
-	NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
+	SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7A36DC63697
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 09:55:49 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 8196EC5519F
+	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 12:51:00 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 2B24620738
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 09:55:49 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1DF3A24180
+	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 12:51:00 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="mpIozshx"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726802AbgKRJzs (ORCPT
+        id S1726256AbgKRMu7 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 18 Nov 2020 04:55:48 -0500
-Received: from mx2.suse.de ([195.135.220.15]:52186 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725804AbgKRJzr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 18 Nov 2020 04:55:47 -0500
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 8DCB7ABDE;
-        Wed, 18 Nov 2020 09:55:46 +0000 (UTC)
-To:     Greg KH <gregkh@linuxfoundation.org>
-Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
+        Wed, 18 Nov 2020 07:50:59 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52072 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725767AbgKRMu7 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 18 Nov 2020 07:50:59 -0500
+Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1ACC3C0613D4;
+        Wed, 18 Nov 2020 04:50:59 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=casper.20170209; h=In-Reply-To:Content-Type:MIME-Version:
+        References:Message-ID:Subject:Cc:To:From:Date:Sender:Reply-To:
+        Content-Transfer-Encoding:Content-ID:Content-Description;
+        bh=HSUzUyKTU/QS1kBHnPfjuFObEMrIAG6LjkrRvHzZF6g=; b=mpIozshx6aJo2QoKkj03Sj4lqv
+        eATDwM5+pyAtrhOHDUVD77b65789cHxYoWQANXOTIXt7qV/KGnbJ83izmUrP2MQ/2l3mBwDw4mdoW
+        Y5kbGddaa/QKi7M9RwOUo9SSjzPgbiiV1208faqzs+g6W2VUCPYuQiOn803XJb/o/nettEMMrZhNr
+        200kJLaXlHseKJHdT2eZ+hl3ThDl9guSn9OMId2L1GwrdkO42exGupejK69RQO+t1ajwPpeevqxwt
+        f3XgZhPQ7s2PLOBKSeN45qsCk6Fy+tmNaH6Rrigl3ju4Z9SvL4rjgUhEPeklvtVToHeHs9jg6H9jx
+        JzIvniVg==;
+Received: from willy by casper.infradead.org with local (Exim 4.92.3 #3 (Red Hat Linux))
+        id 1kfMuz-0006LA-DU; Wed, 18 Nov 2020 12:50:37 +0000
+Date:   Wed, 18 Nov 2020 12:50:37 +0000
+From:   Matthew Wilcox <willy@infradead.org>
+To:     Jan Beulich <jbeulich@suse.com>
+Cc:     Greg KH <gregkh@linuxfoundation.org>,
+        Christoph Hellwig <hch@lst.de>, Tejun Heo <tj@kernel.org>,
+        Josef Bacik <josef@toxicpanda.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Mike Snitzer <snitzer@redhat.com>, dm-devel@redhat.com,
-        Richard Weinberger <richard@nod.at>, Jan Kara <jack@suse.com>,
-        linux-block@vger.kernel.org, xen-devel@lists.xenproject.org,
-        linux-bcache@vger.kernel.org, linux-mtd@lists.infradead.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+        Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        dm-devel@redhat.com, Richard Weinberger <richard@nod.at>,
+        Jan Kara <jack@suse.com>, linux-block@vger.kernel.org,
+        xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: merge struct block_device and struct hd_struct
+Message-ID: <20201118125037.GE29991@casper.infradead.org>
 References: <20201118084800.2339180-1-hch@lst.de>
- <20201118084800.2339180-20-hch@lst.de>
- <e7f826fd-cb9c-b4ab-fae8-dad398c14eed@suse.de> <X7TlIzxJPfa2p+Da@kroah.com>
-From:   Coly Li <colyli@suse.de>
-Subject: Re: [PATCH 19/20] bcache: remove a superflous lookup_bdev all
-Message-ID: <24c818c2-6aba-098c-0c73-0a5081175c06@suse.de>
-Date:   Wed, 18 Nov 2020 17:55:38 +0800
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.16; rv:78.0)
- Gecko/20100101 Thunderbird/78.4.3
+ <22ca5396-0253-f286-9eab-d417b2e0b3ad@suse.com>
+ <20201118085804.GA20384@lst.de>
+ <1ded2079-f1be-6d5d-01df-65754447df78@suse.com>
+ <X7Tky/6dDN8+DrU7@kroah.com>
+ <61044f85-cd41-87b5-3f41-36e3dffb6f2a@suse.com>
 MIME-Version: 1.0
-In-Reply-To: <X7TlIzxJPfa2p+Da@kroah.com>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <61044f85-cd41-87b5-3f41-36e3dffb6f2a@suse.com>
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 11/18/20 5:10 PM, Greg KH wrote:
-> On Wed, Nov 18, 2020 at 04:54:51PM +0800, Coly Li wrote:
->> On 11/18/20 4:47 PM, Christoph Hellwig wrote:
->>> Don't bother to call lookup_bdev for just a slightly different error
->>> message without any functional change.
->>>
->>> Signed-off-by: Christoph Hellwig <hch@lst.de>ist
->>
->> Hi Christoph,
->>
->> NACK. This removing error message is frequently triggered and observed,
->> and distinct a busy device and an already registered device is important
->> (the first one is critical error and second one is not).
->>
->> Remove such error message will be a functional regression.
+On Wed, Nov 18, 2020 at 10:23:51AM +0100, Jan Beulich wrote:
+> On 18.11.2020 10:09, Greg KH wrote:
+> > On Wed, Nov 18, 2020 at 10:04:04AM +0100, Jan Beulich wrote:
+> >> On 18.11.2020 09:58, Christoph Hellwig wrote:
+> >>> On Wed, Nov 18, 2020 at 09:56:11AM +0100, Jan Beulich wrote:
+> >>>> since this isn't the first series from you recently spamming
+> >>>> xen-devel, may I ask that you don't Cc entire series to lists
+> >>>> which are involved with perhaps just one out of the many patches?
+> >>>> IMO Cc lists should be compiled on a per-patch basis; the cover
+> >>>> letter may of course be sent to the union of all of them.
+> >>>
+> >>> No way.  Individual CCs are completely broken as they don't provide
+> >>> the reviewer a context.
+> >>
+> >> That's the view of some people, but not all. Context can be easily
+> >> established by those who care going to one of the many archives on
+> >> which the entire series lands. Getting spammed, however, can't be
+> >> avoided by the dozens or hundreds of list subscribers.
+> > 
+> > kernel patches are never "spam", sorry, but for developers to try to
+> > determine which lists/maintainers want to see the whole series and which
+> > do not is impossible.
+> > 
+> > Patches in a series are easily deleted from sane mail clients with a
+> > single click/keystroke all at once, they aren't a problem that needs to
+> > be reduced in volume.
 > 
-> What normal operation causes this error message to be emitted?  And what
-> can a user do with it?
+> This doesn't scale, neither in the dimension of recipients nor in
+> the dimension of possible sources of such series.
+> 
+> While it may seem small, it's also a waste of resources to have mails
+> sent to hundreds of even thousands of people. So while from a
+> technical content perspective I surely agree with you saying 'kernel
+> patches are never "spam"', they still are from the perspective of
+> what "spam mail" originally means: Mail the recipients did not want
+> to receive.
 
-When there was bug and the caching or backing device was not
-unregistered successfully, people could see "device busy"; and if it was
-because the device registered again, it could be "already registered".
-Without the different message, people may think the device is always
-busy but indeed it isn't.
-
-he motivation of the patch is OK to me, but we need to make the logical
-consistent, otherwise we will have similar bug report for bogus warning
-dmesg from bcache users in soon future.
-
-Coly Li
+What doesn't scale is developers who only care about their tiny
+sliver of Linux and don't stick their heads up from time to time and
+look around.  This is an opportunity for people to become more involved
+in the development of Linux as a whole, instead of just worrying about
+their bit.  You're not "a Xen developer".  You're a Linux developer
+whose current focus is on Xen.
