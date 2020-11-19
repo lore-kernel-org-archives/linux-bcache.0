@@ -2,35 +2,30 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.7 required=3.0 tests=BAYES_00,DATE_IN_PAST_06_12,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.2 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3FFF0C8300C
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 21:34:39 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 632BFC2D0E4
+	for <linux-bcache@archiver.kernel.org>; Thu, 19 Nov 2020 07:52:51 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id E1A0920715
-	for <linux-bcache@archiver.kernel.org>; Wed, 18 Nov 2020 21:34:38 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 0E72E246BB
+	for <linux-bcache@archiver.kernel.org>; Thu, 19 Nov 2020 07:52:50 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726375AbgKRVei (ORCPT
+        id S1725931AbgKSHwa (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 18 Nov 2020 16:34:38 -0500
-Received: from mx2.suse.de ([195.135.220.15]:51916 "EHLO mx2.suse.de"
+        Thu, 19 Nov 2020 02:52:30 -0500
+Received: from verein.lst.de ([213.95.11.211]:37875 "EHLO verein.lst.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726085AbgKRVe0 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 18 Nov 2020 16:34:26 -0500
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id EF58DAFFD;
-        Wed, 18 Nov 2020 21:34:23 +0000 (UTC)
-Received: by quack2.suse.cz (Postfix, from userid 1000)
-        id BC1911E1321; Wed, 18 Nov 2020 15:22:37 +0100 (CET)
-Date:   Wed, 18 Nov 2020 15:22:37 +0100
-From:   Jan Kara <jack@suse.cz>
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
-        Josef Bacik <josef@toxicpanda.com>,
+        id S1725813AbgKSHwa (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 19 Nov 2020 02:52:30 -0500
+Received: by verein.lst.de (Postfix, from userid 2407)
+        id E541867373; Thu, 19 Nov 2020 08:52:25 +0100 (CET)
+Date:   Thu, 19 Nov 2020 08:52:25 +0100
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jan Kara <jack@suse.cz>
+Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
         dm-devel@redhat.com, Richard Weinberger <richard@nod.at>,
@@ -38,89 +33,31 @@ Cc:     Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 06/20] block: change the hash used for looking up block
- devices
-Message-ID: <20201118142237.GK1981@quack2.suse.cz>
-References: <20201118084800.2339180-1-hch@lst.de>
- <20201118084800.2339180-7-hch@lst.de>
+Subject: Re: [PATCH 07/20] init: refactor name_to_dev_t
+Message-ID: <20201119075225.GA15815@lst.de>
+References: <20201118084800.2339180-1-hch@lst.de> <20201118084800.2339180-8-hch@lst.de> <20201118143747.GL1981@quack2.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20201118084800.2339180-7-hch@lst.de>
-User-Agent: Mutt/1.10.1 (2018-07-13)
+In-Reply-To: <20201118143747.GL1981@quack2.suse.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Wed 18-11-20 09:47:46, Christoph Hellwig wrote:
-> Adding the minor to the major creates tons of pointless conflicts. Just
-> use the dev_t itself, which is 32-bits and thus is guaranteed to fit
-> into ino_t.
+On Wed, Nov 18, 2020 at 03:37:47PM +0100, Jan Kara wrote:
+> > -static inline dev_t blk_lookup_devt(const char *name, int partno)
+> > -{
+> > -	dev_t devt = MKDEV(0, 0);
+> > -	return devt;
+> > -}
+> >  #endif /* CONFIG_BLOCK */
 > 
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> This hunk looks unrelated to the change? Also why you move the declaration
+> outside the CONFIG_BLOCK ifdef? AFAICS blk_lookup_devt() still exists only
+> when CONFIG_BLOCK is defined? Otherwise the patch looks good to me.
 
-Fair enough. You can add:
-
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-								Honza
-
-> ---
->  fs/block_dev.c | 26 ++------------------------
->  1 file changed, 2 insertions(+), 24 deletions(-)
-> 
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index d8664f5c1ff669..29db12c3bb501c 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -870,35 +870,12 @@ void __init bdev_cache_init(void)
->  	blockdev_superblock = bd_mnt->mnt_sb;   /* For writeback */
->  }
->  
-> -/*
-> - * Most likely _very_ bad one - but then it's hardly critical for small
-> - * /dev and can be fixed when somebody will need really large one.
-> - * Keep in mind that it will be fed through icache hash function too.
-> - */
-> -static inline unsigned long hash(dev_t dev)
-> -{
-> -	return MAJOR(dev)+MINOR(dev);
-> -}
-> -
-> -static int bdev_test(struct inode *inode, void *data)
-> -{
-> -	return BDEV_I(inode)->bdev.bd_dev == *(dev_t *)data;
-> -}
-> -
-> -static int bdev_set(struct inode *inode, void *data)
-> -{
-> -	BDEV_I(inode)->bdev.bd_dev = *(dev_t *)data;
-> -	return 0;
-> -}
-> -
->  static struct block_device *bdget(dev_t dev)
->  {
->  	struct block_device *bdev;
->  	struct inode *inode;
->  
-> -	inode = iget5_locked(blockdev_superblock, hash(dev),
-> -			bdev_test, bdev_set, &dev);
-> -
-> +	inode = iget_locked(blockdev_superblock, dev);
->  	if (!inode)
->  		return NULL;
->  
-> @@ -910,6 +887,7 @@ static struct block_device *bdget(dev_t dev)
->  		bdev->bd_super = NULL;
->  		bdev->bd_inode = inode;
->  		bdev->bd_part_count = 0;
-> +		bdev->bd_dev = dev;
->  		inode->i_mode = S_IFBLK;
->  		inode->i_rdev = dev;
->  		inode->i_bdev = bdev;
-> -- 
-> 2.29.2
-> 
--- 
-Jan Kara <jack@suse.com>
-SUSE Labs, CR
+blk_lookup_devt is a hack only for name_to_dev_t only referenced from
+code under CONFIG_BLOCK now, as it didn't do anything before when
+blk_lookup_devt returned 0.  I guess I'll need to update the commit log
+a little to mention this.
