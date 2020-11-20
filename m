@@ -4,24 +4,25 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-10.3 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_SANE_1 autolearn=ham autolearn_force=no version=3.4.0
+	SPF_PASS,USER_AGENT_SANE_1 autolearn=unavailable autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0E757C63798
-	for <linux-bcache@archiver.kernel.org>; Fri, 20 Nov 2020 08:56:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4FF3BC63798
+	for <linux-bcache@archiver.kernel.org>; Fri, 20 Nov 2020 09:01:48 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id B24E92242A
-	for <linux-bcache@archiver.kernel.org>; Fri, 20 Nov 2020 08:56:33 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 0029822255
+	for <linux-bcache@archiver.kernel.org>; Fri, 20 Nov 2020 09:01:47 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727384AbgKTI4d (ORCPT
+        id S1727311AbgKTJBr (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 20 Nov 2020 03:56:33 -0500
-Received: from verein.lst.de ([213.95.11.211]:41998 "EHLO verein.lst.de"
+        Fri, 20 Nov 2020 04:01:47 -0500
+Received: from verein.lst.de ([213.95.11.211]:42034 "EHLO verein.lst.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727208AbgKTI4d (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 20 Nov 2020 03:56:33 -0500
+        id S1727286AbgKTJBq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 20 Nov 2020 04:01:46 -0500
 Received: by verein.lst.de (Postfix, from userid 2407)
-        id 134F468B05; Fri, 20 Nov 2020 09:56:27 +0100 (CET)
-Date:   Fri, 20 Nov 2020 09:56:26 +0100
+        id 4C98067373; Fri, 20 Nov 2020 10:01:42 +0100 (CET)
+Date:   Fri, 20 Nov 2020 10:01:42 +0100
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jan Kara <jack@suse.cz>
 Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
@@ -33,30 +34,45 @@ Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 11/20] block: reference struct block_device from struct
- hd_struct
-Message-ID: <20201120085626.GB21715@lst.de>
-References: <20201118084800.2339180-1-hch@lst.de> <20201118084800.2339180-12-hch@lst.de> <20201119094157.GT1981@quack2.suse.cz>
+Subject: Re: [PATCH 13/20] block: remove ->bd_contains
+Message-ID: <20201120090142.GC21715@lst.de>
+References: <20201118084800.2339180-1-hch@lst.de> <20201118084800.2339180-14-hch@lst.de> <20201119103253.GV1981@quack2.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20201119094157.GT1981@quack2.suse.cz>
+In-Reply-To: <20201119103253.GV1981@quack2.suse.cz>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Thu, Nov 19, 2020 at 10:41:57AM +0100, Jan Kara wrote:
-> >  	rcu_assign_pointer(ptbl->part[0], &disk->part0);
-> > @@ -1772,8 +1626,10 @@ struct gendisk *__alloc_disk_node(int minors, int node_id)
-> >  	 * converted to make use of bd_mutex and sequence counters.
-> >  	 */
-> >  	hd_sects_seq_init(&disk->part0);
-> > -	if (hd_ref_init(&disk->part0))
-> > -		goto out_free_part0;
-> > +	if (hd_ref_init(&disk->part0)) {
-> > +		hd_free_part(&disk->part0);
+On Thu, Nov 19, 2020 at 11:32:53AM +0100, Jan Kara wrote:
+> > @@ -1521,7 +1510,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, void *holder,
+> >  		if (bdev->bd_bdi == &noop_backing_dev_info)
+> >  			bdev->bd_bdi = bdi_get(disk->queue->backing_dev_info);
+> >  	} else {
+> > -		if (bdev->bd_contains == bdev) {
+> > +		if (!bdev->bd_partno) {
 > 
-> Aren't you missing kfree(disk) here?
+> This should be !bdev_is_partition(bdev) for consistency, right?
 
-This should actually jump to out_free_bdstats, I've fixed it up.
+Yes.  Same for the same check further up for the !bdev->bd_openers
+case.
+
+> > +#define bdev_whole(_bdev) \
+> > +	((_bdev)->bd_disk->part0.bdev)
+> > +
+> >  #define bdev_kobj(_bdev) \
+> >  	(&part_to_dev((_bdev)->bd_part)->kobj)
+> 
+> I'd somewhat prefer if these helpers could actually be inline functions and
+> not macros. I guess they are macros because hd_struct isn't in blk_types.h.
+> But if we moved helpers to blkdev.h, we'd have all definitions we need...
+> Is that a problem for some users?
+
+As you pointed out the reason these are macros is that the obvious
+placement doesn't work.  My plan was to look into cleaning up the block
+headers, which are a complete mess between blk_types.h, bio.h, blkdev.h
+and genhd.h after I'm done making sense of the data structures, so for
+now I didn't want to move too much around.  Hopefully we'll be able to
+convert these helpers to inlines once I'm done.
