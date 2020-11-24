@@ -2,31 +2,67 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.3 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-9.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
+	URIBL_BLOCKED autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E916DC388F9
-	for <linux-bcache@archiver.kernel.org>; Sat, 21 Nov 2020 16:24:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3A5EDC63798
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 12:26:29 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id B474A22206
-	for <linux-bcache@archiver.kernel.org>; Sat, 21 Nov 2020 16:24:37 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id C9BAE206B5
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 12:26:28 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="Q2pmLjkQ"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726398AbgKUQYR (ORCPT
+        id S2387544AbgKXM02 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 21 Nov 2020 11:24:17 -0500
-Received: from verein.lst.de ([213.95.11.211]:46174 "EHLO verein.lst.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725953AbgKUQYQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 21 Nov 2020 11:24:16 -0500
-Received: by verein.lst.de (Postfix, from userid 2407)
-        id 951F467373; Sat, 21 Nov 2020 17:24:11 +0100 (CET)
-Date:   Sat, 21 Nov 2020 17:24:11 +0100
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jan Kara <jack@suse.cz>
-Cc:     Matthew Wilcox <willy@infradead.org>,
-        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
+        Tue, 24 Nov 2020 07:26:28 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52250 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1733231AbgKXM01 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 24 Nov 2020 07:26:27 -0500
+Received: from mail-qt1-x844.google.com (mail-qt1-x844.google.com [IPv6:2607:f8b0:4864:20::844])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B85ACC0613D6;
+        Tue, 24 Nov 2020 04:26:27 -0800 (PST)
+Received: by mail-qt1-x844.google.com with SMTP id d5so6831449qtn.0;
+        Tue, 24 Nov 2020 04:26:27 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-disposition:in-reply-to;
+        bh=3VmFnou2nD4lcYGUPrMqThXCue7L4UhclP4oij42Kbk=;
+        b=Q2pmLjkQax53DfEJqAJ++rfXRuCUfTMdSrNvTnPX432cf0gQiAL3+rv3sWj3pG2My/
+         oRdarF4chfZ/NGCWEsg2aUxLBAr7DM0+LX5j3dmwR37bMrIIw9a2t0+E+kgW+uzsRvYc
+         g8kM86RUe+4+vv//4l1WUE0yyA289I+AFdLve44wNIShUP964g0YZBC6/O2hSjbZ07AU
+         S+AiwdwqWWOpdsi3wwn8TVFeRWE/u7jWG4pRzv/CGg3KS5VD7Ier0L558UzN4+P3vh8c
+         3eIrk+wHnJy7NT29VnOUcXmovGz+97HAGUQWfQatJC0i/4bkcHptLw7Lu0lLat1XLRR0
+         0C4A==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:sender:date:from:to:cc:subject:message-id
+         :references:mime-version:content-disposition:in-reply-to;
+        bh=3VmFnou2nD4lcYGUPrMqThXCue7L4UhclP4oij42Kbk=;
+        b=QOYY+DvKsuE0yZzIGpF/TxiYGY4nSbKE8vc0R3o3dMWP1uONBI5+0FkK2KnLpT8AqO
+         FdeqTtDEvUWSWMyU6b28rYOnoZrV+Ri/oHeQ6M60I1QsaSjALCV3dfEi7saK0fqD44P9
+         Q8m4jC69bL7NuNi9kcowGH1lg9nOynHfa5z3rJQV3vJP/PLWVHvmxhBi/rFA8FbEpFhn
+         /Tvg12vKjlqt8OTo63e6qhrLblkuLItbRa+Og5rxkhRBPWwbHo6ZedIMT+UiXRMajQZf
+         70o/pF5ip9G9ulZnnWhRJwussE1vZmeRb8sjuvQpSG/jGBxKsdVNFSDVvC3pkbCy+xgV
+         ppLg==
+X-Gm-Message-State: AOAM530Bxm/5R8BDUG5TUKrJOFqkJMRCKobL7XADZ0eVl6+UkjZAvw0N
+        SGv/o3sTp5QCGSLjvH4Cqk8=
+X-Google-Smtp-Source: ABdhPJzEc+iLQWYgDMndDYVqthGkMbJAnqvSsODxlzYXE5vX4s2url7RgqZoX9eivJ6nNv6zlRow0w==
+X-Received: by 2002:aed:3c42:: with SMTP id u2mr4081287qte.159.1606220786736;
+        Tue, 24 Nov 2020 04:26:26 -0800 (PST)
+Received: from localhost (dhcp-6c-ae-f6-dc-d8-61.cpe.echoes.net. [72.28.8.195])
+        by smtp.gmail.com with ESMTPSA id t2sm8643187qkb.2.2020.11.24.04.26.25
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 24 Nov 2020 04:26:25 -0800 (PST)
+Sender: Tejun Heo <htejun@gmail.com>
+Date:   Tue, 24 Nov 2020 07:26:03 -0500
+From:   Tejun Heo <tj@kernel.org>
+To:     Christoph Hellwig <hch@lst.de>
+Cc:     Jens Axboe <axboe@kernel.dk>, Josef Bacik <josef@toxicpanda.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
         dm-devel@redhat.com, Richard Weinberger <richard@nod.at>,
@@ -34,29 +70,28 @@ Cc:     Matthew Wilcox <willy@infradead.org>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 14/20] block: remove the nr_sects field in struct
- hd_struct
-Message-ID: <20201121162411.GA18475@lst.de>
-References: <20201118084800.2339180-1-hch@lst.de> <20201118084800.2339180-15-hch@lst.de> <20201119120525.GW1981@quack2.suse.cz> <20201120090820.GD21715@lst.de> <20201120112121.GB15537@quack2.suse.cz> <20201120153253.GA18990@lst.de> <20201120155956.GB4327@casper.infradead.org> <20201120200548.GA27360@quack2.suse.cz>
+Subject: Re: [PATCH 01/20] blk-cgroup: fix a hd_struct leak in
+ blkcg_fill_root_iostats
+Message-ID: <X7z7215hVXzg3FGA@mtj.duckdns.org>
+References: <20201118084800.2339180-1-hch@lst.de>
+ <20201118084800.2339180-2-hch@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20201120200548.GA27360@quack2.suse.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20201118084800.2339180-2-hch@lst.de>
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Fri, Nov 20, 2020 at 09:05:48PM +0100, Jan Kara wrote:
-> The code is already switched to it AFAICT (the lock is really only used in
-> the two places that write i_size). But the problem is that in theory two
-> i_size_write() calls can race in a way that the resulting stored i_size is a
-> mix of two stored sizes. Now I have hard time imagining how this could
-> happen for a block device and if two reconfigurations of a block device
-> could race like that we'd have a large problems anyway...
+On Wed, Nov 18, 2020 at 09:47:41AM +0100, Christoph Hellwig wrote:
+> disk_get_part needs to be paired with a disk_put_part.
+> 
+> Fixes: ef45fe470e1 ("blk-cgroup: show global disk stats in root cgroup io.stat")
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Now that you mention it, yes - i_size_write needs to be under i_rwsem
-or an equivalent lock.  We could look into using i_rwsem also for block
-device, but for now the spinlock seems to be doing fine.  Note that
-in current mainline we only have such a lock protecting i_size of the
-block_device inode, but none for the size in hd_struct.
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
