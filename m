@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9F712C8301B
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 00A23C8301A
 	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:42 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 607ED204EC
-	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:42 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id ABB002083E
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:41 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="KW/HOfgi"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="PBlG+SI1"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2388111AbgKXN2d (ORCPT
+        id S2388071AbgKXN2d (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
         Tue, 24 Nov 2020 08:28:33 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33552 "EHLO
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33558 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2388071AbgKXN2b (ORCPT
+        with ESMTP id S2388014AbgKXN2d (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 24 Nov 2020 08:28:31 -0500
+        Tue, 24 Nov 2020 08:28:33 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8BC72C0613D6;
-        Tue, 24 Nov 2020 05:28:31 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AD830C0613D6;
+        Tue, 24 Nov 2020 05:28:32 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=hNtZTYwDbpxOWnjbdPfEN2LKFTEyc+Xwk1zoPtNIsws=; b=KW/HOfgirUKthyUKuxmIOZ3L14
-        PxmbPRzCYhFzSzd/bHlNMHDBgtk8AWQbuv2Np7A5hD54AbqwLNdvMEGQ9rvRi53KRItg4ljPIXN8j
-        laYZPmVMxu+I+Xr/eXeEt4Z7FsAA/4Gq/OuO4qxhVj8ln7jkMiD5R0gJ/14CVFp4UhgnoRadNe4ZC
-        LOLAMCrHd+WS7Uh/WVbYf7QzV5bd5/j5dX32PzOJPj7fKwxz2QApY0cW15/U90iga5Rj21c9kNtwz
-        L7GmN4Z/GX5QBrx7BRnqDM1JTLj8DfcYMuAUZfQgs4m6RFsv4cza8s4pw2rNS7l2ZS64FnStRTaCh
-        wR4T2pvw==;
+        bh=aYwkX4I6zMx34nzrdb7tYezzW5eC03Czg70BjD05yqI=; b=PBlG+SI1LP3b7gr/lJlKmKFFJd
+        bocVKBuspYZb9+bd6oRwQGEd0L7j3hQYuLx9nBobabPLesfL8HLab1E4KCm/5+LC3aeewsBsrF0Ec
+        hulcbyCIFfsfA8vcNobuzkqbXhMEwxxlSaiC+PbDLVpuj7Vfeb4n/Hc03FWeCTlPALu7BKMacg7VB
+        VdoUIV8XfOoQvjg+7Lpil7jQgfh2pOibzDF+EEKPx14W4pVYNFzWxgoqa5dOjKsd+dX8NOcHTR0xd
+        r+KlCQy9eeFmFLAe7pGrffUSOJRf0kI5rzxEXRSylWdG/EZ+5D3kd5agpzXpiDKm6I3+ieiU+g83C
+        6CbAnNrA==;
 Received: from [2001:4bb8:180:5443:c70:4a89:bc61:3] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1khYMR-0006UP-A2; Tue, 24 Nov 2020 13:27:59 +0000
+        id 1khYMk-0006Xd-Im; Tue, 24 Nov 2020 13:28:19 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -52,9 +52,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 03/45] fs: remove get_super_thawed and get_super_exclusive_thawed
-Date:   Tue, 24 Nov 2020 14:27:09 +0100
-Message-Id: <20201124132751.3747337-4-hch@lst.de>
+Subject: [PATCH 16/45] block: change the hash used for looking up block devices
+Date:   Tue, 24 Nov 2020 14:27:22 +0100
+Message-Id: <20201124132751.3747337-17-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201124132751.3747337-1-hch@lst.de>
 References: <20201124132751.3747337-1-hch@lst.de>
@@ -65,188 +65,66 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Just open code the wait in the only caller of both functions.
+Adding the minor to the major creates tons of pointless conflicts. Just
+use the dev_t itself, which is 32-bits and thus is guaranteed to fit
+into ino_t.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- fs/internal.h      |  2 ++
- fs/quota/quota.c   | 31 +++++++++++++++++++++-------
- fs/super.c         | 51 ++--------------------------------------------
- include/linux/fs.h |  4 +---
- 4 files changed, 29 insertions(+), 59 deletions(-)
+ fs/block_dev.c | 26 ++------------------------
+ 1 file changed, 2 insertions(+), 24 deletions(-)
 
-diff --git a/fs/internal.h b/fs/internal.h
-index a7cd0f64faa4ab..47be21dfeebef5 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -114,7 +114,9 @@ extern struct file *alloc_empty_file_noaccount(int, const struct cred *);
-  */
- extern int reconfigure_super(struct fs_context *);
- extern bool trylock_super(struct super_block *sb);
-+struct super_block *__get_super(struct block_device *bdev, bool excl);
- extern struct super_block *user_get_super(dev_t);
-+void put_super(struct super_block *sb);
- extern bool mount_capable(struct fs_context *);
- 
- /*
-diff --git a/fs/quota/quota.c b/fs/quota/quota.c
-index 9af95c7a0bbe3c..f3d32b0d9008f2 100644
---- a/fs/quota/quota.c
-+++ b/fs/quota/quota.c
-@@ -20,6 +20,7 @@
- #include <linux/writeback.h>
- #include <linux/nospec.h>
- #include "compat.h"
-+#include "../internal.h"
- 
- static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
- 				     qid_t id)
-@@ -868,6 +869,7 @@ static struct super_block *quotactl_block(const char __user *special, int cmd)
- 	struct block_device *bdev;
- 	struct super_block *sb;
- 	struct filename *tmp = getname(special);
-+	bool excl = false, thawed = false;
- 
- 	if (IS_ERR(tmp))
- 		return ERR_CAST(tmp);
-@@ -875,17 +877,32 @@ static struct super_block *quotactl_block(const char __user *special, int cmd)
- 	putname(tmp);
- 	if (IS_ERR(bdev))
- 		return ERR_CAST(bdev);
--	if (quotactl_cmd_onoff(cmd))
--		sb = get_super_exclusive_thawed(bdev);
--	else if (quotactl_cmd_write(cmd))
--		sb = get_super_thawed(bdev);
--	else
--		sb = get_super(bdev);
-+
-+	if (quotactl_cmd_onoff(cmd)) {
-+		excl = true;
-+		thawed = true;
-+	} else if (quotactl_cmd_write(cmd)) {
-+		thawed = true;
-+	}
-+
-+retry:
-+	sb = __get_super(bdev, excl);
-+	if (thawed && sb && sb->s_writers.frozen != SB_UNFROZEN) {
-+		if (excl)
-+			up_write(&sb->s_umount);
-+		else
-+			up_read(&sb->s_umount);
-+		wait_event(sb->s_writers.wait_unfrozen,
-+			   sb->s_writers.frozen == SB_UNFROZEN);
-+		put_super(sb);
-+		goto retry;
-+	}
-+
- 	bdput(bdev);
- 	if (!sb)
- 		return ERR_PTR(-ENODEV);
--
- 	return sb;
-+
- #else
- 	return ERR_PTR(-ENODEV);
- #endif
-diff --git a/fs/super.c b/fs/super.c
-index 98bb0629ee108e..343e5c1e538d2a 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -307,7 +307,7 @@ static void __put_super(struct super_block *s)
-  *	Drops a temporary reference, frees superblock if there's no
-  *	references left.
-  */
--static void put_super(struct super_block *sb)
-+void put_super(struct super_block *sb)
- {
- 	spin_lock(&sb_lock);
- 	__put_super(sb);
-@@ -740,7 +740,7 @@ void iterate_supers_type(struct file_system_type *type,
- 
- EXPORT_SYMBOL(iterate_supers_type);
- 
--static struct super_block *__get_super(struct block_device *bdev, bool excl)
-+struct super_block *__get_super(struct block_device *bdev, bool excl)
- {
- 	struct super_block *sb;
- 
-@@ -789,53 +789,6 @@ struct super_block *get_super(struct block_device *bdev)
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index f6a2a06ad262fa..437f67e12b2838 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -863,35 +863,12 @@ void __init bdev_cache_init(void)
+ 	blockdev_superblock = bd_mnt->mnt_sb;   /* For writeback */
  }
- EXPORT_SYMBOL(get_super);
  
--static struct super_block *__get_super_thawed(struct block_device *bdev,
--					      bool excl)
--{
--	while (1) {
--		struct super_block *s = __get_super(bdev, excl);
--		if (!s || s->s_writers.frozen == SB_UNFROZEN)
--			return s;
--		if (!excl)
--			up_read(&s->s_umount);
--		else
--			up_write(&s->s_umount);
--		wait_event(s->s_writers.wait_unfrozen,
--			   s->s_writers.frozen == SB_UNFROZEN);
--		put_super(s);
--	}
--}
--
--/**
-- *	get_super_thawed - get thawed superblock of a device
-- *	@bdev: device to get the superblock for
-- *
-- *	Scans the superblock list and finds the superblock of the file system
-- *	mounted on the device. The superblock is returned once it is thawed
-- *	(or immediately if it was not frozen). %NULL is returned if no match
-- *	is found.
+-/*
+- * Most likely _very_ bad one - but then it's hardly critical for small
+- * /dev and can be fixed when somebody will need really large one.
+- * Keep in mind that it will be fed through icache hash function too.
 - */
--struct super_block *get_super_thawed(struct block_device *bdev)
+-static inline unsigned long hash(dev_t dev)
 -{
--	return __get_super_thawed(bdev, false);
+-	return MAJOR(dev)+MINOR(dev);
 -}
--EXPORT_SYMBOL(get_super_thawed);
 -
--/**
-- *	get_super_exclusive_thawed - get thawed superblock of a device
-- *	@bdev: device to get the superblock for
-- *
-- *	Scans the superblock list and finds the superblock of the file system
-- *	mounted on the device. The superblock is returned once it is thawed
-- *	(or immediately if it was not frozen) and s_umount semaphore is held
-- *	in exclusive mode. %NULL is returned if no match is found.
-- */
--struct super_block *get_super_exclusive_thawed(struct block_device *bdev)
+-static int bdev_test(struct inode *inode, void *data)
 -{
--	return __get_super_thawed(bdev, true);
+-	return BDEV_I(inode)->bdev.bd_dev == *(dev_t *)data;
 -}
--EXPORT_SYMBOL(get_super_exclusive_thawed);
 -
- /**
-  * get_active_super - get an active reference to the superblock of a device
-  * @bdev: device to get the superblock for
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 8667d0cdc71e76..a61df0dd4f1989 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1409,7 +1409,7 @@ enum {
+-static int bdev_set(struct inode *inode, void *data)
+-{
+-	BDEV_I(inode)->bdev.bd_dev = *(dev_t *)data;
+-	return 0;
+-}
+-
+ static struct block_device *bdget(dev_t dev)
+ {
+ 	struct block_device *bdev;
+ 	struct inode *inode;
  
- struct sb_writers {
- 	int				frozen;		/* Is sb frozen? */
--	wait_queue_head_t		wait_unfrozen;	/* for get_super_thawed() */
-+	wait_queue_head_t		wait_unfrozen;	/* wait for thaw */
- 	struct percpu_rw_semaphore	rw_sem[SB_FREEZE_LEVELS];
- };
+-	inode = iget5_locked(blockdev_superblock, hash(dev),
+-			bdev_test, bdev_set, &dev);
+-
++	inode = iget_locked(blockdev_superblock, dev);
+ 	if (!inode)
+ 		return NULL;
  
-@@ -3132,8 +3132,6 @@ extern struct file_system_type *get_filesystem(struct file_system_type *fs);
- extern void put_filesystem(struct file_system_type *fs);
- extern struct file_system_type *get_fs_type(const char *name);
- extern struct super_block *get_super(struct block_device *);
--extern struct super_block *get_super_thawed(struct block_device *);
--extern struct super_block *get_super_exclusive_thawed(struct block_device *bdev);
- extern struct super_block *get_active_super(struct block_device *bdev);
- extern void drop_super(struct super_block *sb);
- extern void drop_super_exclusive(struct super_block *sb);
+@@ -903,6 +880,7 @@ static struct block_device *bdget(dev_t dev)
+ 		bdev->bd_super = NULL;
+ 		bdev->bd_inode = inode;
+ 		bdev->bd_part_count = 0;
++		bdev->bd_dev = dev;
+ 		inode->i_mode = S_IFBLK;
+ 		inode->i_rdev = dev;
+ 		inode->i_bdev = bdev;
 -- 
 2.29.2
 
