@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 616FEC83016
-	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2B24EC83017
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:41 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 26420208C3
+	by mail.kernel.org (Postfix) with ESMTP id DCEF0206F9
 	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:40 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="cByrnVSU"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="pWcZmhed"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2388101AbgKXN23 (ORCPT
+        id S2388105AbgKXN2a (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 24 Nov 2020 08:28:29 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33530 "EHLO
+        Tue, 24 Nov 2020 08:28:30 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33548 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2388071AbgKXN2Z (ORCPT
+        with ESMTP id S2388071AbgKXN2a (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 24 Nov 2020 08:28:25 -0500
+        Tue, 24 Nov 2020 08:28:30 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1C5F6C0613D6;
-        Tue, 24 Nov 2020 05:28:25 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C7D35C0613D6;
+        Tue, 24 Nov 2020 05:28:29 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=qLuO7hD0TG0p9aylN+kHqBJxf5z3v4FVxxZ2M17hRmY=; b=cByrnVSUwNsV+8vL6OejYZMzYW
-        g8VICMIEorS+0pOBvVioVLf/hyD/zxobeo8PAet5DaDiGdRDYy0L5JNIcM3yD1NCnwpsR6gWUVB5i
-        Lptsh/7GyC3dYE+HryC4wV9CakS+3V2vvPvT4vRhVftfmO4XobgclczjV5yeEVlKRsJvJ9LwjX+8o
-        1vNw6Sl4pqdKC25En8sUougbgcvCNyLxzyGGHsEPu8enWgOfJoKU0RIKHjBkbhK7GxVxYfvwMvJI6
-        Vf9vnnAEkii3NBNG4XOnzwMMzJMYdhpc7IAUijTjrAXJlfebUq3ghdAO/ZeMpsZrhIZUAVgWmW/K4
-        kMYMHe4Q==;
+        bh=Q/MCT6maV/iKaSxRRRnLFBnoEWfPfC40ypgl1Ci8nRk=; b=pWcZmhed1VtM52P3q1JMqqjfxR
+        GWMfkfGGh21/NCT85snknz3WDUM0FCyAbepRt+ZELj82dad4m3br4Sawb66pKbQxSAEUaJxSeL+Ll
+        71lYUsvhjLKgY/YbGp0X++3PkxXh+KrssNfKTT0h2mCWPuefl+mBpjJwTcCV+e1SRjBbrscsDgFCm
+        lMW8Geg/e4WV3fB64E9SDr1XU5cgwgMIdLeq0nWxNCx03aqe1+hiU2wmbmGncWiO1/xxhiOEuXkHa
+        z9KSmzy5zBC51q81wbv9yHNv1xP232XeeVA1TEmOLWeYTbWgkPDrO0cmsehbzSHT+I2DtVpVX0ELT
+        qGUkh4WA==;
 Received: from [2001:4bb8:180:5443:c70:4a89:bc61:3] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1khYMb-0006Vh-99; Tue, 24 Nov 2020 13:28:09 +0000
+        id 1khYMO-0006UA-S8; Tue, 24 Nov 2020 13:27:58 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -52,9 +52,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 10/45] dm: remove the block_device reference in struct mapped_device
-Date:   Tue, 24 Nov 2020 14:27:16 +0100
-Message-Id: <20201124132751.3747337-11-hch@lst.de>
+Subject: [PATCH 02/45] filemap: consistently use ->f_mapping over ->i_mapping
+Date:   Tue, 24 Nov 2020 14:27:08 +0100
+Message-Id: <20201124132751.3747337-3-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201124132751.3747337-1-hch@lst.de>
 References: <20201124132751.3747337-1-hch@lst.de>
@@ -65,94 +65,67 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Get rid of the long-lasting struct block_device reference in
-struct mapped_device.  The only remaining user is the freeze code,
-where we can trivially look up the block device at freeze time
-and release the reference at thaw time.
+Use file->f_mapping in all remaining places that have a struct file
+available to properly handle the case where inode->i_mapping !=
+file_inode(file)->i_mapping.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Acked-by: Mike Snitzer <snitzer@redhat.com>
 ---
- drivers/md/dm-core.h |  2 --
- drivers/md/dm.c      | 25 ++++++++++++++-----------
- 2 files changed, 14 insertions(+), 13 deletions(-)
+ mm/filemap.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/dm-core.h b/drivers/md/dm-core.h
-index aace147effcacb..086d293c2b036c 100644
---- a/drivers/md/dm-core.h
-+++ b/drivers/md/dm-core.h
-@@ -102,8 +102,6 @@ struct mapped_device {
- 	/* kobject and completion */
- 	struct dm_kobject_holder kobj_holder;
+diff --git a/mm/filemap.c b/mm/filemap.c
+index d5e7c2029d16b4..4f583489aa3c2a 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2886,14 +2886,14 @@ EXPORT_SYMBOL(filemap_map_pages);
  
--	struct block_device *bdev;
--
- 	struct dm_stats stats;
- 
- 	/* for blk-mq request-based DM support */
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index ab0a8335f098d9..48051db006f30c 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1744,11 +1744,6 @@ static void cleanup_mapped_device(struct mapped_device *md)
- 
- 	cleanup_srcu_struct(&md->io_barrier);
- 
--	if (md->bdev) {
--		bdput(md->bdev);
--		md->bdev = NULL;
--	}
--
- 	mutex_destroy(&md->suspend_lock);
- 	mutex_destroy(&md->type_lock);
- 	mutex_destroy(&md->table_devices_lock);
-@@ -1840,10 +1835,6 @@ static struct mapped_device *alloc_dev(int minor)
- 	if (!md->wq)
- 		goto bad;
- 
--	md->bdev = bdget_disk(md->disk, 0);
--	if (!md->bdev)
--		goto bad;
--
- 	dm_stats_init(&md->stats);
- 
- 	/* Populate the mapping, nobody knows we exist yet */
-@@ -2384,11 +2375,16 @@ struct dm_table *dm_swap_table(struct mapped_device *md, struct dm_table *table)
-  */
- static int lock_fs(struct mapped_device *md)
+ vm_fault_t filemap_page_mkwrite(struct vm_fault *vmf)
  {
-+	struct block_device *bdev;
- 	int r;
++	struct address_space *mapping = vmf->vma->vm_file->f_mapping;
+ 	struct page *page = vmf->page;
+-	struct inode *inode = file_inode(vmf->vma->vm_file);
+ 	vm_fault_t ret = VM_FAULT_LOCKED;
  
- 	WARN_ON(test_bit(DMF_FROZEN, &md->flags));
- 
--	r = freeze_bdev(md->bdev);
-+	bdev = bdget_disk(md->disk, 0);
-+	if (!bdev)
-+		return -ENOMEM;
-+	r = freeze_bdev(bdev);
-+	bdput(bdev);
- 	if (!r)
- 		set_bit(DMF_FROZEN, &md->flags);
- 	return r;
-@@ -2396,9 +2392,16 @@ static int lock_fs(struct mapped_device *md)
- 
- static void unlock_fs(struct mapped_device *md)
- {
-+	struct block_device *bdev;
-+
- 	if (!test_bit(DMF_FROZEN, &md->flags))
- 		return;
--	thaw_bdev(md->bdev);
-+
-+	bdev = bdget_disk(md->disk, 0);
-+	if (!bdev)
-+		return;
-+	thaw_bdev(bdev);
-+	bdput(bdev);
- 	clear_bit(DMF_FROZEN, &md->flags);
+-	sb_start_pagefault(inode->i_sb);
++	sb_start_pagefault(mapping->host->i_sb);
+ 	file_update_time(vmf->vma->vm_file);
+ 	lock_page(page);
+-	if (page->mapping != inode->i_mapping) {
++	if (page->mapping != mapping) {
+ 		unlock_page(page);
+ 		ret = VM_FAULT_NOPAGE;
+ 		goto out;
+@@ -2906,7 +2906,7 @@ vm_fault_t filemap_page_mkwrite(struct vm_fault *vmf)
+ 	set_page_dirty(page);
+ 	wait_for_stable_page(page);
+ out:
+-	sb_end_pagefault(inode->i_sb);
++	sb_end_pagefault(mapping->host->i_sb);
+ 	return ret;
  }
  
+@@ -3149,10 +3149,9 @@ void dio_warn_stale_pagecache(struct file *filp)
+ {
+ 	static DEFINE_RATELIMIT_STATE(_rs, 86400 * HZ, DEFAULT_RATELIMIT_BURST);
+ 	char pathname[128];
+-	struct inode *inode = file_inode(filp);
+ 	char *path;
+ 
+-	errseq_set(&inode->i_mapping->wb_err, -EIO);
++	errseq_set(&filp->f_mapping->wb_err, -EIO);
+ 	if (__ratelimit(&_rs)) {
+ 		path = file_path(filp, pathname, sizeof(pathname));
+ 		if (IS_ERR(path))
+@@ -3179,7 +3178,7 @@ generic_file_direct_write(struct kiocb *iocb, struct iov_iter *from)
+ 
+ 	if (iocb->ki_flags & IOCB_NOWAIT) {
+ 		/* If there are pages to writeback, return */
+-		if (filemap_range_has_page(inode->i_mapping, pos,
++		if (filemap_range_has_page(file->f_mapping, pos,
+ 					   pos + write_len - 1))
+ 			return -EAGAIN;
+ 	} else {
 -- 
 2.29.2
 
