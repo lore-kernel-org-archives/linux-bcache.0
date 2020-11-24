@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 83ABAC8259A
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 46639C82599
 	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:29:02 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 2B0DA206F9
-	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:29:02 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E9D02204EC
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:29:01 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="X+rA73r6"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="r7g7yDYe"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2388171AbgKXN2s (ORCPT
+        id S2388178AbgKXN2v (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 24 Nov 2020 08:28:48 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33620 "EHLO
+        Tue, 24 Nov 2020 08:28:51 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33628 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2388166AbgKXN2s (ORCPT
+        with ESMTP id S2388169AbgKXN2s (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Tue, 24 Nov 2020 08:28:48 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id ADBD0C0613D6;
-        Tue, 24 Nov 2020 05:28:47 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5592EC061A4E;
+        Tue, 24 Nov 2020 05:28:48 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=X5DUE98moi230PHv1tVgCiHzV+UhCd8lztDnZO9kG5c=; b=X+rA73r6QDOVyee+DSa3rW8b35
-        OeKaTwg4NHeZa8iiOjrhEjDtW7DX4fOMB9c6aebaBDKuxk+IsDdUW0f7EuZlr2Pov3PURxlMx5rSK
-        PBcTmBTO0WyZ7LcgWQ6Xl/0zPJFv0c+ZKh43ZOCIkVopkoFOK48fZGWf8ai+Cj/OoZO3jhvVw5m5Q
-        yaSWPl46Vb8ovXNenLX8KK6YPvBJf1LP9VoLMLET0fF69TiH7hVM4rzUe6WIONjC+Mkq9y1ueE05Y
-        CfQTDXafYdPFj4peFCtKw/0RrMBMz1uLe6nNpgZh858syqReHUhfMsbGLdWOS/inGodpPctzqcSuj
-        FQUx+Tzw==;
+        bh=sq5VpPGxfF2kkzPYx3vsaAUL0wGdgrOW5ZX0PlEgXAM=; b=r7g7yDYegpOMYt6pXHT1n2T/zL
+        b+34jNgNj1tqJxcH7t0JJgm5YSYrAtr0jsN0ntOiFWGVGQBvQLKDCgR5mzzN9SAvsnGUCUSMCZa8p
+        /jNdYw4WlvwYdf5CpUizYYHu/xAYk355tkiXksQmCQGNLHP8ZC2DL3uUNmRLg5pK5X1gsbof/8y6v
+        AlMTcb3SwkfSJQBWsX/dbEB0oVCqGZPCMXGazDcXv2FtJ+wf0ze4J1u5xmJtxpSz/wiePAgP+4AIj
+        7ZsCXN0JNSmkxlPdRln6ziBOqtp786hyG/LrQzjhTGVFCS9+d2vPB0+p0o+KT6w4hV+fkcpCAVEG2
+        itOl4TdQ==;
 Received: from [2001:4bb8:180:5443:c70:4a89:bc61:3] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1khYMo-0006YR-Rc; Tue, 24 Nov 2020 13:28:23 +0000
+        id 1khYMm-0006Xu-0n; Tue, 24 Nov 2020 13:28:20 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -52,9 +52,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 19/45] init: cleanup match_dev_by_uuid and match_dev_by_label
-Date:   Tue, 24 Nov 2020 14:27:25 +0100
-Message-Id: <20201124132751.3747337-20-hch@lst.de>
+Subject: [PATCH 17/45] init: refactor name_to_dev_t
+Date:   Tue, 24 Nov 2020 14:27:23 +0100
+Message-Id: <20201124132751.3747337-18-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201124132751.3747337-1-hch@lst.de>
 References: <20201124132751.3747337-1-hch@lst.de>
@@ -65,54 +65,255 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Avoid a totally pointless goto label, and use the same style of
-comparism for both helpers.
+Split each case into a self-contained helper, and move the block
+dependent code entirely under the pre-existing #ifdef CONFIG_BLOCK.
+This allows to remove the blk_lookup_devt stub in genhd.h.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Reviewed-by: Jan Kara <jack@suse.cz>
 Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>
 ---
- init/do_mounts.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ include/linux/genhd.h |   7 +-
+ init/do_mounts.c      | 183 +++++++++++++++++++++---------------------
+ 2 files changed, 91 insertions(+), 99 deletions(-)
 
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 22f5b9fd96f8bf..ca5e356084c353 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -388,18 +388,13 @@ static inline void bd_unlink_disk_holder(struct block_device *bdev,
+ }
+ #endif /* CONFIG_SYSFS */
+ 
++dev_t blk_lookup_devt(const char *name, int partno);
+ #ifdef CONFIG_BLOCK
+ void printk_all_partitions(void);
+-dev_t blk_lookup_devt(const char *name, int partno);
+ #else /* CONFIG_BLOCK */
+ static inline void printk_all_partitions(void)
+ {
+ }
+-static inline dev_t blk_lookup_devt(const char *name, int partno)
+-{
+-	dev_t devt = MKDEV(0, 0);
+-	return devt;
+-}
+ #endif /* CONFIG_BLOCK */
+ 
+ #endif /* _LINUX_GENHD_H */
 diff --git a/init/do_mounts.c b/init/do_mounts.c
-index afa26a4028d25e..5879edf083b318 100644
+index b5f9604d0c98a2..aef2f24461c7f1 100644
 --- a/init/do_mounts.c
 +++ b/init/do_mounts.c
-@@ -79,15 +79,10 @@ static int match_dev_by_uuid(struct device *dev, const void *data)
- 	const struct uuidcmp *cmp = data;
- 	struct hd_struct *part = dev_to_part(dev);
- 
--	if (!part->info)
--		goto no_match;
--
--	if (strncasecmp(cmp->uuid, part->info->uuid, cmp->len))
--		goto no_match;
--
-+	if (!part->info ||
-+	    strncasecmp(cmp->uuid, part->info->uuid, cmp->len))
-+		return 0;
- 	return 1;
--no_match:
--	return 0;
+@@ -90,7 +90,6 @@ static int match_dev_by_uuid(struct device *dev, const void *data)
+ 	return 0;
  }
  
+-
  /**
-@@ -174,10 +169,9 @@ static int match_dev_by_label(struct device *dev, const void *data)
- 	const char *label = data;
- 	struct hd_struct *part = dev_to_part(dev);
+  * devt_from_partuuid - looks up the dev_t of a partition by its UUID
+  * @uuid_str:	char array containing ascii UUID
+@@ -186,7 +185,83 @@ static int match_dev_by_label(struct device *dev, const void *data)
  
--	if (part->info && !strcmp(label, part->info->volname))
--		return 1;
--
--	return 0;
-+	if (!part->info || strcmp(label, part->info->volname))
-+		return 0;
-+	return 1;
+ 	return 0;
  }
+-#endif
++
++static dev_t devt_from_partlabel(const char *label)
++{
++	struct device *dev;
++	dev_t devt = 0;
++
++	dev = class_find_device(&block_class, NULL, label, &match_dev_by_label);
++	if (dev) {
++		devt = dev->devt;
++		put_device(dev);
++	}
++
++	return devt;
++}
++
++static dev_t devt_from_devname(const char *name)
++{
++	dev_t devt = 0;
++	int part;
++	char s[32];
++	char *p;
++
++	if (strlen(name) > 31)
++		return 0;
++	strcpy(s, name);
++	for (p = s; *p; p++) {
++		if (*p == '/')
++			*p = '!';
++	}
++
++	devt = blk_lookup_devt(s, 0);
++	if (devt)
++		return devt;
++
++	/*
++	 * Try non-existent, but valid partition, which may only exist after
++	 * opening the device, like partitioned md devices.
++	 */
++	while (p > s && isdigit(p[-1]))
++		p--;
++	if (p == s || !*p || *p == '0')
++		return 0;
++
++	/* try disk name without <part number> */
++	part = simple_strtoul(p, NULL, 10);
++	*p = '\0';
++	devt = blk_lookup_devt(s, part);
++	if (devt)
++		return devt;
++
++	/* try disk name without p<part number> */
++	if (p < s + 2 || !isdigit(p[-2]) || p[-1] != 'p')
++		return 0;
++	p[-1] = '\0';
++	return blk_lookup_devt(s, part);
++}
++#endif /* CONFIG_BLOCK */
++
++static dev_t devt_from_devnum(const char *name)
++{
++	unsigned maj, min, offset;
++	dev_t devt = 0;
++	char *p, dummy;
++
++	if (sscanf(name, "%u:%u%c", &maj, &min, &dummy) == 2 ||
++	    sscanf(name, "%u:%u:%u:%c", &maj, &min, &offset, &dummy) == 3) {
++		devt = MKDEV(maj, min);
++		if (maj != MAJOR(devt) || min != MINOR(devt))
++			return 0;
++	} else {
++		devt = new_decode_dev(simple_strtoul(name, &p, 16));
++		if (*p)
++			return 0;
++	}
++
++	return devt;
++}
  
- static dev_t devt_from_partlabel(const char *label)
+ /*
+  *	Convert a name into device number.  We accept the following variants:
+@@ -218,101 +293,23 @@ static int match_dev_by_label(struct device *dev, const void *data)
+  *	name contains slashes, the device name has them replaced with
+  *	bangs.
+  */
+-
+ dev_t name_to_dev_t(const char *name)
+ {
+-	char s[32];
+-	char *p;
+-	dev_t res = 0;
+-	int part;
+-
++	if (strcmp(name, "/dev/nfs") == 0)
++		return Root_NFS;
++	if (strcmp(name, "/dev/cifs") == 0)
++		return Root_CIFS;
++	if (strcmp(name, "/dev/ram") == 0)
++		return Root_RAM0;
+ #ifdef CONFIG_BLOCK
+-	if (strncmp(name, "PARTUUID=", 9) == 0) {
+-		name += 9;
+-		res = devt_from_partuuid(name);
+-		if (!res)
+-			goto fail;
+-		goto done;
+-	} else if (strncmp(name, "PARTLABEL=", 10) == 0) {
+-		struct device *dev;
+-
+-		dev = class_find_device(&block_class, NULL, name + 10,
+-					&match_dev_by_label);
+-		if (!dev)
+-			goto fail;
+-
+-		res = dev->devt;
+-		put_device(dev);
+-		goto done;
+-	}
++	if (strncmp(name, "PARTUUID=", 9) == 0)
++		return devt_from_partuuid(name + 9);
++	if (strncmp(name, "PARTLABEL=", 10) == 0)
++		return devt_from_partlabel(name + 10);
++	if (strncmp(name, "/dev/", 5) == 0)
++		return devt_from_devname(name + 5);
+ #endif
+-
+-	if (strncmp(name, "/dev/", 5) != 0) {
+-		unsigned maj, min, offset;
+-		char dummy;
+-
+-		if ((sscanf(name, "%u:%u%c", &maj, &min, &dummy) == 2) ||
+-		    (sscanf(name, "%u:%u:%u:%c", &maj, &min, &offset, &dummy) == 3)) {
+-			res = MKDEV(maj, min);
+-			if (maj != MAJOR(res) || min != MINOR(res))
+-				goto fail;
+-		} else {
+-			res = new_decode_dev(simple_strtoul(name, &p, 16));
+-			if (*p)
+-				goto fail;
+-		}
+-		goto done;
+-	}
+-
+-	name += 5;
+-	res = Root_NFS;
+-	if (strcmp(name, "nfs") == 0)
+-		goto done;
+-	res = Root_CIFS;
+-	if (strcmp(name, "cifs") == 0)
+-		goto done;
+-	res = Root_RAM0;
+-	if (strcmp(name, "ram") == 0)
+-		goto done;
+-
+-	if (strlen(name) > 31)
+-		goto fail;
+-	strcpy(s, name);
+-	for (p = s; *p; p++)
+-		if (*p == '/')
+-			*p = '!';
+-	res = blk_lookup_devt(s, 0);
+-	if (res)
+-		goto done;
+-
+-	/*
+-	 * try non-existent, but valid partition, which may only exist
+-	 * after revalidating the disk, like partitioned md devices
+-	 */
+-	while (p > s && isdigit(p[-1]))
+-		p--;
+-	if (p == s || !*p || *p == '0')
+-		goto fail;
+-
+-	/* try disk name without <part number> */
+-	part = simple_strtoul(p, NULL, 10);
+-	*p = '\0';
+-	res = blk_lookup_devt(s, part);
+-	if (res)
+-		goto done;
+-
+-	/* try disk name without p<part number> */
+-	if (p < s + 2 || !isdigit(p[-2]) || p[-1] != 'p')
+-		goto fail;
+-	p[-1] = '\0';
+-	res = blk_lookup_devt(s, part);
+-	if (res)
+-		goto done;
+-
+-fail:
+-	return 0;
+-done:
+-	return res;
++	return devt_from_devnum(name);
+ }
+ EXPORT_SYMBOL_GPL(name_to_dev_t);
+ 
 -- 
 2.29.2
 
