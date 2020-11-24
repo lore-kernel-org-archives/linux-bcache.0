@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CA0F6C63798
-	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:35 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4F2A0C64E7B
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:36 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 2F2B8208B8
+	by mail.kernel.org (Postfix) with ESMTP id F11C02083E
 	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:35 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="iay1UgkM"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="REng/ovL"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2388072AbgKXN2X (ORCPT
+        id S2388082AbgKXN2X (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
         Tue, 24 Nov 2020 08:28:23 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33514 "EHLO
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33518 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2387642AbgKXN2W (ORCPT
+        with ESMTP id S2388071AbgKXN2W (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Tue, 24 Nov 2020 08:28:22 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3E280C0613D6;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 58E52C061A4D;
         Tue, 24 Nov 2020 05:28:22 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=Ya7mNl614k8cPEx//1LbBwD1mBTI6q+TUS2d4XeT6DY=; b=iay1UgkMtKfQ94ufwnWzk2T1it
-        c3R7eVYN9ml3Ywzgas/Gd9buHnKumjaigSbyg1fPjmWGpoRxU/Ek5+fXa/aVGF5IwolH6uhPeyqXg
-        DL3BpGdtWlvBlZGgRl6YFd9TchAoOKNQ3CQdeKQsVAHkF4KVJlc5U5b1Es0gwwJlxLXKhao0DIH4f
-        I6Z9XFgDf5i76KLycjVCRbd6nn4p6eFYr5DszA7JqBQnbOk9oqwKjl/u9Cj1QKjlzfSam/1Xl0WBh
-        o3Zpx2Uoye0mnaezi08x9l1pycXROgv4ksjzY0neMwRpaXspy5GWJjavFXe45MHLxT+eJ+V5whCq4
-        kvpN+7fQ==;
+        bh=0e+oH+92GlExM9i4SIPWTJvhHTDsEZRU6nAY6yeduas=; b=REng/ovLixhm4d/5DVr1VL2uxE
+        639N3KIOFrakBFne91QmfkqFXFb98IXLDOJAJjpMFMj6wLqG5p9ivwi/IdkTiYg4UpBWe6eJ1dbQ0
+        HBBalWEc8V1HK853AyKP05+uuRQAG2MYtBlard5dwdv3pfAPnyCU606UPfuqSfkDGROj+x/Jgp80m
+        xgK0Cn++2YT5C/MR23s2fjCN+ORZdOrOQHa/0v4hpeslgE++xWymjVqNfUo2VOJ114NGbFD3umqP5
+        6luT+lKBWO6SNfhge4bMavfuGRB4GvvtxnMy6Fhr3dVO8r0ujYfdajMXqb4qBL494koWxbslNF9Up
+        gR2DYZAw==;
 Received: from [2001:4bb8:180:5443:c70:4a89:bc61:3] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1khYMc-0006W0-RY; Tue, 24 Nov 2020 13:28:11 +0000
+        id 1khYMU-0006Uj-4z; Tue, 24 Nov 2020 13:28:02 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -52,9 +52,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 11/45] block: remove a duplicate __disk_get_part prototype
-Date:   Tue, 24 Nov 2020 14:27:17 +0100
-Message-Id: <20201124132751.3747337-12-hch@lst.de>
+Subject: [PATCH 05/45] mtip32xx: remove the call to fsync_bdev on removal
+Date:   Tue, 24 Nov 2020 14:27:11 +0100
+Message-Id: <20201124132751.3747337-6-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201124132751.3747337-1-hch@lst.de>
 References: <20201124132751.3747337-1-hch@lst.de>
@@ -65,26 +65,75 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>
----
- include/linux/genhd.h | 1 -
- 1 file changed, 1 deletion(-)
+del_gendisk already calls fsync_bdev for every partition, no need
+to do this twice.
 
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 46553d6d602563..22f5b9fd96f8bf 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -250,7 +250,6 @@ static inline dev_t part_devt(struct hd_struct *part)
- 	return part_to_dev(part)->devt;
- }
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ drivers/block/mtip32xx/mtip32xx.c | 15 ---------------
+ drivers/block/mtip32xx/mtip32xx.h |  2 --
+ 2 files changed, 17 deletions(-)
+
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 153e2cdecb4d40..53ac59d19ae530 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -3687,7 +3687,6 @@ static int mtip_block_initialize(struct driver_data *dd)
+ 	/* Enable the block device and add it to /dev */
+ 	device_add_disk(&dd->pdev->dev, dd->disk, NULL);
  
--extern struct hd_struct *__disk_get_part(struct gendisk *disk, int partno);
- extern struct hd_struct *disk_get_part(struct gendisk *disk, int partno);
+-	dd->bdev = bdget_disk(dd->disk, 0);
+ 	/*
+ 	 * Now that the disk is active, initialize any sysfs attributes
+ 	 * managed by the protocol layer.
+@@ -3721,9 +3720,6 @@ static int mtip_block_initialize(struct driver_data *dd)
+ 	return rv;
  
- static inline void disk_put_part(struct hd_struct *part)
+ kthread_run_error:
+-	bdput(dd->bdev);
+-	dd->bdev = NULL;
+-
+ 	/* Delete our gendisk. This also removes the device from /dev */
+ 	del_gendisk(dd->disk);
+ 
+@@ -3804,14 +3800,6 @@ static int mtip_block_remove(struct driver_data *dd)
+ 	blk_mq_tagset_busy_iter(&dd->tags, mtip_no_dev_cleanup, dd);
+ 	blk_mq_unquiesce_queue(dd->queue);
+ 
+-	/*
+-	 * Delete our gendisk structure. This also removes the device
+-	 * from /dev
+-	 */
+-	if (dd->bdev) {
+-		bdput(dd->bdev);
+-		dd->bdev = NULL;
+-	}
+ 	if (dd->disk) {
+ 		if (test_bit(MTIP_DDF_INIT_DONE_BIT, &dd->dd_flag))
+ 			del_gendisk(dd->disk);
+@@ -4206,9 +4194,6 @@ static void mtip_pci_remove(struct pci_dev *pdev)
+ 	} while (atomic_read(&dd->irq_workers_active) != 0 &&
+ 		time_before(jiffies, to));
+ 
+-	if (!dd->sr)
+-		fsync_bdev(dd->bdev);
+-
+ 	if (atomic_read(&dd->irq_workers_active) != 0) {
+ 		dev_warn(&dd->pdev->dev,
+ 			"Completion workers still active!\n");
+diff --git a/drivers/block/mtip32xx/mtip32xx.h b/drivers/block/mtip32xx/mtip32xx.h
+index e22a7f0523bf30..88f4206310e4c8 100644
+--- a/drivers/block/mtip32xx/mtip32xx.h
++++ b/drivers/block/mtip32xx/mtip32xx.h
+@@ -463,8 +463,6 @@ struct driver_data {
+ 
+ 	int isr_binding;
+ 
+-	struct block_device *bdev;
+-
+ 	struct list_head online_list; /* linkage for online list */
+ 
+ 	struct list_head remove_list; /* linkage for removing list */
 -- 
 2.29.2
 
