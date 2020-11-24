@@ -2,96 +2,205 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-9.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	URIBL_BLOCKED autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3A5EDC63798
-	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 12:26:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id BD3FBC2D0E4
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:34 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id C9BAE206B5
-	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 12:26:28 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 6682E2083E
+	for <linux-bcache@archiver.kernel.org>; Tue, 24 Nov 2020 13:28:34 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="Q2pmLjkQ"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="voamq2gI"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2387544AbgKXM02 (ORCPT
+        id S2387889AbgKXN2T (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 24 Nov 2020 07:26:28 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52250 "EHLO
+        Tue, 24 Nov 2020 08:28:19 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:33502 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1733231AbgKXM01 (ORCPT
+        with ESMTP id S2387642AbgKXN2T (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 24 Nov 2020 07:26:27 -0500
-Received: from mail-qt1-x844.google.com (mail-qt1-x844.google.com [IPv6:2607:f8b0:4864:20::844])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B85ACC0613D6;
-        Tue, 24 Nov 2020 04:26:27 -0800 (PST)
-Received: by mail-qt1-x844.google.com with SMTP id d5so6831449qtn.0;
-        Tue, 24 Nov 2020 04:26:27 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20161025;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-disposition:in-reply-to;
-        bh=3VmFnou2nD4lcYGUPrMqThXCue7L4UhclP4oij42Kbk=;
-        b=Q2pmLjkQax53DfEJqAJ++rfXRuCUfTMdSrNvTnPX432cf0gQiAL3+rv3sWj3pG2My/
-         oRdarF4chfZ/NGCWEsg2aUxLBAr7DM0+LX5j3dmwR37bMrIIw9a2t0+E+kgW+uzsRvYc
-         g8kM86RUe+4+vv//4l1WUE0yyA289I+AFdLve44wNIShUP964g0YZBC6/O2hSjbZ07AU
-         S+AiwdwqWWOpdsi3wwn8TVFeRWE/u7jWG4pRzv/CGg3KS5VD7Ier0L558UzN4+P3vh8c
-         3eIrk+wHnJy7NT29VnOUcXmovGz+97HAGUQWfQatJC0i/4bkcHptLw7Lu0lLat1XLRR0
-         0C4A==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:sender:date:from:to:cc:subject:message-id
-         :references:mime-version:content-disposition:in-reply-to;
-        bh=3VmFnou2nD4lcYGUPrMqThXCue7L4UhclP4oij42Kbk=;
-        b=QOYY+DvKsuE0yZzIGpF/TxiYGY4nSbKE8vc0R3o3dMWP1uONBI5+0FkK2KnLpT8AqO
-         FdeqTtDEvUWSWMyU6b28rYOnoZrV+Ri/oHeQ6M60I1QsaSjALCV3dfEi7saK0fqD44P9
-         Q8m4jC69bL7NuNi9kcowGH1lg9nOynHfa5z3rJQV3vJP/PLWVHvmxhBi/rFA8FbEpFhn
-         /Tvg12vKjlqt8OTo63e6qhrLblkuLItbRa+Og5rxkhRBPWwbHo6ZedIMT+UiXRMajQZf
-         70o/pF5ip9G9ulZnnWhRJwussE1vZmeRb8sjuvQpSG/jGBxKsdVNFSDVvC3pkbCy+xgV
-         ppLg==
-X-Gm-Message-State: AOAM530Bxm/5R8BDUG5TUKrJOFqkJMRCKobL7XADZ0eVl6+UkjZAvw0N
-        SGv/o3sTp5QCGSLjvH4Cqk8=
-X-Google-Smtp-Source: ABdhPJzEc+iLQWYgDMndDYVqthGkMbJAnqvSsODxlzYXE5vX4s2url7RgqZoX9eivJ6nNv6zlRow0w==
-X-Received: by 2002:aed:3c42:: with SMTP id u2mr4081287qte.159.1606220786736;
-        Tue, 24 Nov 2020 04:26:26 -0800 (PST)
-Received: from localhost (dhcp-6c-ae-f6-dc-d8-61.cpe.echoes.net. [72.28.8.195])
-        by smtp.gmail.com with ESMTPSA id t2sm8643187qkb.2.2020.11.24.04.26.25
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 24 Nov 2020 04:26:25 -0800 (PST)
-Sender: Tejun Heo <htejun@gmail.com>
-Date:   Tue, 24 Nov 2020 07:26:03 -0500
-From:   Tejun Heo <tj@kernel.org>
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     Jens Axboe <axboe@kernel.dk>, Josef Bacik <josef@toxicpanda.com>,
+        Tue, 24 Nov 2020 08:28:19 -0500
+Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1AEC5C0613D6;
+        Tue, 24 Nov 2020 05:28:19 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
+        References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
+        Content-Type:Content-ID:Content-Description;
+        bh=kUYn0sikpHZNYDnsxFrAwXSb49C5P7DMdxps0LhhPGQ=; b=voamq2gIRabU8afAKL3jTQT86w
+        3voeMXKzWRc968NV3Og6QI7vPIsFgyzT+g3y7G5VN1mzlkrcmMY4Qg7EwhHhprBp2pFWLMjK63ObP
+        R7mWTCNSKQkV5l0bX4rfRh4gKPGZnVeHwjNUcB1zJgqL93wnbxgFlTDmJRPjnCaFhMh+HPucQfU+S
+        uovUuXHghcRdZOgSkakX0fZ9XuPs/BxiQ7jD+ibvnUIkvCuGFLC0BxmxD5xKdEPhugucjYN8I4Xpv
+        WSH12/wojKPamwwzSgge7VqR4tsSr5bVtW0y1gEbh0LGN1fc0aleWXDqaFKriKv0dnauuuFj6BOkD
+        RzQOH7Hw==;
+Received: from [2001:4bb8:180:5443:c70:4a89:bc61:3] (helo=localhost)
+        by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
+        id 1khYMV-0006Ut-HC; Tue, 24 Nov 2020 13:28:03 +0000
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jan Kara <jack@suse.cz>,
+        Johannes Thumshirn <johannes.thumshirn@wdc.com>,
         dm-devel@redhat.com, Richard Weinberger <richard@nod.at>,
         Jan Kara <jack@suse.com>, linux-block@vger.kernel.org,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 01/20] blk-cgroup: fix a hd_struct leak in
- blkcg_fill_root_iostats
-Message-ID: <X7z7215hVXzg3FGA@mtj.duckdns.org>
-References: <20201118084800.2339180-1-hch@lst.de>
- <20201118084800.2339180-2-hch@lst.de>
+Subject: [PATCH 06/45] zram: remove the claim mechanism
+Date:   Tue, 24 Nov 2020 14:27:12 +0100
+Message-Id: <20201124132751.3747337-7-hch@lst.de>
+X-Mailer: git-send-email 2.29.2
+In-Reply-To: <20201124132751.3747337-1-hch@lst.de>
+References: <20201124132751.3747337-1-hch@lst.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20201118084800.2339180-2-hch@lst.de>
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Wed, Nov 18, 2020 at 09:47:41AM +0100, Christoph Hellwig wrote:
-> disk_get_part needs to be paired with a disk_put_part.
-> 
-> Fixes: ef45fe470e1 ("blk-cgroup: show global disk stats in root cgroup io.stat")
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
+The zram claim mechanism was added to ensure no new opens come in
+during teardown.  But the proper way to archive that is to call
+del_gendisk first, which takes care of all that.  Once del_gendisk
+is called in the right place, the reset side can also be simplified
+as no I/O can be outstanding on a block device that is not open.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ drivers/block/zram/zram_drv.c | 72 ++++++++---------------------------
+ 1 file changed, 15 insertions(+), 57 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 6d15d51cee2b7e..2e6d75ec1afddb 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -1756,64 +1756,33 @@ static ssize_t disksize_store(struct device *dev,
+ static ssize_t reset_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t len)
+ {
+-	int ret;
+-	unsigned short do_reset;
+-	struct zram *zram;
++	struct zram *zram = dev_to_zram(dev);
+ 	struct block_device *bdev;
++	unsigned short do_reset;
++	int ret = 0;
+ 
+ 	ret = kstrtou16(buf, 10, &do_reset);
+ 	if (ret)
+ 		return ret;
+-
+ 	if (!do_reset)
+ 		return -EINVAL;
+ 
+-	zram = dev_to_zram(dev);
+ 	bdev = bdget_disk(zram->disk, 0);
+ 	if (!bdev)
+ 		return -ENOMEM;
+ 
+ 	mutex_lock(&bdev->bd_mutex);
+-	/* Do not reset an active device or claimed device */
+-	if (bdev->bd_openers || zram->claim) {
+-		mutex_unlock(&bdev->bd_mutex);
+-		bdput(bdev);
+-		return -EBUSY;
+-	}
+-
+-	/* From now on, anyone can't open /dev/zram[0-9] */
+-	zram->claim = true;
++	if (bdev->bd_openers)
++		ret = -EBUSY;
++	else
++		zram_reset_device(zram);
+ 	mutex_unlock(&bdev->bd_mutex);
+-
+-	/* Make sure all the pending I/O are finished */
+-	fsync_bdev(bdev);
+-	zram_reset_device(zram);
+ 	bdput(bdev);
+ 
+-	mutex_lock(&bdev->bd_mutex);
+-	zram->claim = false;
+-	mutex_unlock(&bdev->bd_mutex);
+-
+-	return len;
+-}
+-
+-static int zram_open(struct block_device *bdev, fmode_t mode)
+-{
+-	int ret = 0;
+-	struct zram *zram;
+-
+-	WARN_ON(!mutex_is_locked(&bdev->bd_mutex));
+-
+-	zram = bdev->bd_disk->private_data;
+-	/* zram was claimed to reset so open request fails */
+-	if (zram->claim)
+-		ret = -EBUSY;
+-
+-	return ret;
++	return ret ? ret : len;
+ }
+ 
+ static const struct block_device_operations zram_devops = {
+-	.open = zram_open,
+ 	.submit_bio = zram_submit_bio,
+ 	.swap_slot_free_notify = zram_slot_free_notify,
+ 	.rw_page = zram_rw_page,
+@@ -1821,7 +1790,6 @@ static const struct block_device_operations zram_devops = {
+ };
+ 
+ static const struct block_device_operations zram_wb_devops = {
+-	.open = zram_open,
+ 	.submit_bio = zram_submit_bio,
+ 	.swap_slot_free_notify = zram_slot_free_notify,
+ 	.owner = THIS_MODULE
+@@ -1974,32 +1942,22 @@ static int zram_add(void)
+ 
+ static int zram_remove(struct zram *zram)
+ {
+-	struct block_device *bdev;
+-
+-	bdev = bdget_disk(zram->disk, 0);
+-	if (!bdev)
+-		return -ENOMEM;
++	struct block_device *bdev = bdget_disk(zram->disk, 0);
+ 
+-	mutex_lock(&bdev->bd_mutex);
+-	if (bdev->bd_openers || zram->claim) {
+-		mutex_unlock(&bdev->bd_mutex);
++	if (bdev) {
++		if (bdev->bd_openers) {
++			bdput(bdev);
++			return -EBUSY;
++		}
+ 		bdput(bdev);
+-		return -EBUSY;
+ 	}
+ 
+-	zram->claim = true;
+-	mutex_unlock(&bdev->bd_mutex);
+-
++	del_gendisk(zram->disk);
+ 	zram_debugfs_unregister(zram);
+-
+-	/* Make sure all the pending I/O are finished */
+-	fsync_bdev(bdev);
+ 	zram_reset_device(zram);
+-	bdput(bdev);
+ 
+ 	pr_info("Removed device: %s\n", zram->disk->disk_name);
+ 
+-	del_gendisk(zram->disk);
+ 	blk_cleanup_queue(zram->disk->queue);
+ 	put_disk(zram->disk);
+ 	kfree(zram);
 -- 
-tejun
+2.29.2
+
