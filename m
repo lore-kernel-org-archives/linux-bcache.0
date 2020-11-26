@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CBF0FC8302B
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:23 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DFD0DC8300F
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:25 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 7DC9A221F9
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:23 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 980C1221FA
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:25 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="JWcPR2Cz"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="tFjT6IkZ"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2389948AbgKZNHS (ORCPT
+        id S2389985AbgKZNHY (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 26 Nov 2020 08:07:18 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53118 "EHLO
+        Thu, 26 Nov 2020 08:07:24 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53144 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2389944AbgKZNHQ (ORCPT
+        with ESMTP id S2389978AbgKZNHX (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 26 Nov 2020 08:07:16 -0500
+        Thu, 26 Nov 2020 08:07:23 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E0A5FC061A04;
-        Thu, 26 Nov 2020 05:07:15 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 85EF3C0613D4;
+        Thu, 26 Nov 2020 05:07:23 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=5gqSfUEPjcqcvSOENSbeIw4Q7nJzcUAFuskTYoCv0hA=; b=JWcPR2Czk6lpE+7kEj6vIMT2+/
-        4nicpsqgBYNWPrgpWKio4K0jeCe98Uc0g0V9XvFN5/UOpUTdPX8bCSz599ECAiNsDa9IJUPuHehU9
-        MwG78A+rwJdIl84DsbRHcZAsiL6DIfCCmgvr8NKINemzjL99+qQIjGMo2ugbnW7FuELEJ/QAJ7922
-        aVEnYZjGfu+QFdUK0bXGpy16LW0SS4/NZuDX+KSRtGaN32GdP7RGL6vQfCLc/lGeMv41tUfghfTD2
-        YLBhFsDW/u+tArfinK1HJR9C1dufWvDt7yaV8HXH5KfxNloQgg9nLcNaHylzqSwgSzK3/n/NPrBf6
-        EnNEM4Ow==;
+        bh=7zJyA1+2dNtOVgFSOqRhBotQ/SGMaZPnGEludQAyDbM=; b=tFjT6IkZrllK1gCvx3sgLP9AIc
+        OTjjaMfxu6Sr78eemKDudzxtJJ4WjsR32/1co/MX6KOHwzotcSZYQYFPChzT/4mkYwOqXV25Bcy+Y
+        F+TiUT40riLcGeEXWkICD1YeOY0nPbUjgMfvQu6e7MfqeIZt3D/MHYQNWnos3sFcB/QTxugA73GvE
+        bOBLPOUzeJ0hUQbECYWpjJijnkOXoRKZ4Sk3RrxllMGrBs7EmljV3+Y/0SAggChY5UdJjfy+oEncL
+        t+l+Fo13Rr6SDL7fUpjTgkjRc/PT6UI1K0Ul/QrCTxzFl5uu22GSDh78VVi27hK/Bagqt9iF6YsoN
+        2JG9EfAQ==;
 Received: from [2001:4bb8:18c:1dd6:27b8:b8a1:c13e:ceb1] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kiGzG-000424-OK; Thu, 26 Nov 2020 13:07:03 +0000
+        id 1kiGzP-000443-4a; Thu, 26 Nov 2020 13:07:11 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 21/44] block: move bdput() to the callers of __blkdev_get
-Date:   Thu, 26 Nov 2020 14:03:59 +0100
-Message-Id: <20201126130422.92945-22-hch@lst.de>
+Subject: [PATCH 27/44] block: simplify part_to_disk
+Date:   Thu, 26 Nov 2020 14:04:05 +0100
+Message-Id: <20201126130422.92945-28-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201126130422.92945-1-hch@lst.de>
 References: <20201126130422.92945-1-hch@lst.de>
@@ -63,46 +63,36 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This will allow for a more symmetric calling convention going forward.
+Now that struct hd_struct has a block_device pointer use that to
+find the disk.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- fs/block_dev.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ include/linux/genhd.h | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 86a61a2141f642..d0783c55a0ce65 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1458,6 +1458,7 @@ static int __blkdev_get(struct block_device *bdev, struct gendisk *disk,
- 			if (!(disk->flags & GENHD_FL_UP) ||
- 			    !bdev->bd_part || !bdev->bd_part->nr_sects) {
- 				__blkdev_put(whole, mode, 1);
-+				bdput(whole);
- 				ret = -ENXIO;
- 				goto out_clear;
- 			}
-@@ -1740,9 +1741,10 @@ static void __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
- 			disk->fops->release(disk, mode);
- 	}
- 	mutex_unlock(&bdev->bd_mutex);
--	bdput(bdev);
--	if (victim)
-+	if (victim) {
- 		__blkdev_put(victim, mode, 1);
-+		bdput(victim);
-+	}
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 42a51653c7303e..6ba91ee54cb2f6 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -218,13 +218,9 @@ struct gendisk {
+ 
+ static inline struct gendisk *part_to_disk(struct hd_struct *part)
+ {
+-	if (likely(part)) {
+-		if (part->partno)
+-			return dev_to_disk(part_to_dev(part)->parent);
+-		else
+-			return dev_to_disk(part_to_dev(part));
+-	}
+-	return NULL;
++	if (unlikely(!part))
++		return NULL;
++	return part->bdev->bd_disk;
  }
  
- void blkdev_put(struct block_device *bdev, fmode_t mode)
-@@ -1792,6 +1794,7 @@ void blkdev_put(struct block_device *bdev, fmode_t mode)
- 	mutex_unlock(&bdev->bd_mutex);
- 
- 	__blkdev_put(bdev, mode, 0);
-+	bdput(bdev);
- 	put_disk_and_module(disk);
- }
- EXPORT_SYMBOL(blkdev_put);
+ static inline int disk_max_parts(struct gendisk *disk)
 -- 
 2.29.2
 
