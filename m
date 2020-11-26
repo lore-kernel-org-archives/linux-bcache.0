@@ -6,22 +6,22 @@ X-Spam-Status: No, score=-5.2 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
 	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A84F5C56202
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 18:02:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 020B7C63697
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 18:02:32 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5EC0F207BC
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 18:02:28 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id CC0F2207BC
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 18:02:31 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2403901AbgKZSC2 (ORCPT
+        id S2404600AbgKZSCb (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 26 Nov 2020 13:02:28 -0500
-Received: from verein.lst.de ([213.95.11.211]:35314 "EHLO verein.lst.de"
+        Thu, 26 Nov 2020 13:02:31 -0500
+Received: from verein.lst.de ([213.95.11.211]:35325 "EHLO verein.lst.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S2391698AbgKZSC1 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 26 Nov 2020 13:02:27 -0500
+        id S2404596AbgKZSCb (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Thu, 26 Nov 2020 13:02:31 -0500
 Received: by verein.lst.de (Postfix, from userid 2407)
-        id B348768B05; Thu, 26 Nov 2020 19:02:23 +0100 (CET)
-Date:   Thu, 26 Nov 2020 19:02:23 +0100
+        id E1E5A68B05; Thu, 26 Nov 2020 19:02:28 +0100 (CET)
+Date:   Thu, 26 Nov 2020 19:02:28 +0100
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jan Kara <jack@suse.cz>
 Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
@@ -33,26 +33,20 @@ Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 36/44] block: allocate struct hd_struct as part of
- struct bdev_inode
-Message-ID: <20201126180223.GA25921@lst.de>
-References: <20201126130422.92945-1-hch@lst.de> <20201126130422.92945-37-hch@lst.de> <20201126173518.GV422@quack2.suse.cz> <20201126180048.GA422@quack2.suse.cz>
+Subject: Re: [PATCH 31/44] block: move the start_sect field to struct
+ block_device
+Message-ID: <20201126180228.GB25921@lst.de>
+References: <20201126130422.92945-1-hch@lst.de> <20201126130422.92945-32-hch@lst.de> <20201126165641.GQ422@quack2.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20201126180048.GA422@quack2.suse.cz>
+In-Reply-To: <20201126165641.GQ422@quack2.suse.cz>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Thu, Nov 26, 2020 at 07:00:48PM +0100, Jan Kara wrote:
-> > I don't think hd_struct holds a reference to block_device, does it?
-> > bdev_alloc() now just assigns bdev->bd_part->bdev = bdev...
-> 
-> Now I understood this is probably correct - each partition (including
-> gendisk as 0 partition) holds the initial bdev reference and only when
-> corresponding kobject is getting destroyed we stop holding onto that
-> reference. Right?
+On Thu, Nov 26, 2020 at 05:56:41PM +0100, Jan Kara wrote:
+> The long long conversion is pointless here, right?
 
 Yes.
