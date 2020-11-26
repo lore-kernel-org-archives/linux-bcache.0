@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3FE13C8301E
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E611BC83020
 	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:05 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id E431A21D7E
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:04 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 90D8E21D46
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:05 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="fCfJvwHP"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="jDIIQC7J"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2389902AbgKZNHA (ORCPT
+        id S2389908AbgKZNHC (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 26 Nov 2020 08:07:00 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53048 "EHLO
+        Thu, 26 Nov 2020 08:07:02 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53058 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2389898AbgKZNG7 (ORCPT
+        with ESMTP id S2389900AbgKZNHB (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 26 Nov 2020 08:06:59 -0500
+        Thu, 26 Nov 2020 08:07:01 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 13AE0C0613D4;
-        Thu, 26 Nov 2020 05:06:59 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9BE0FC0613D4;
+        Thu, 26 Nov 2020 05:07:01 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=hkZ3kL3dtIfOBE0h3NJSBhFvBELjgr4IDAohskoKJQM=; b=fCfJvwHPUDDStYbe0VsGaec1in
-        U0zKXdrWOqg/L2l/BL9qX6NQaal1L3Uusa/6q1hmk1oWjZ7IMFo7XofMZStGwr7WznBF9TBW+s0OS
-        6CulGjI2XcLUdygOsMow8BLNKQCEqU6hm8dk4yrnVZAn4AAjTF/Snw6eK0jhrsfgXJecL9mltL6ki
-        HdYSZLmZaP7ZQ/fA+wo0Uxx0lBvV4iB5Vh9MgcX5/zRausT/1kLE18oDuA4RAkqJRcT1bDJHXNCm5
-        kY7YN0If2gfe4bIItZVrOhw7oqhpXep1bWKV6SsURJ6x4g+QA/OnAEiRvbBTj4jOWagKSP+h389TD
-        DgmdR6Ag==;
+        bh=QGxJ1HD+iQwtllhLyJ4Xwx8w1+7WhF9jztK6ZcNRFkk=; b=jDIIQC7Jb1yVnQy4L2lbIMWIJZ
+        bkckbo8WQyWwVDPc+oXpbNS3IMqCar6g729W2G3rceyXGMuytugZEPLpY3E0W+1/C/ydprBZY1Pi4
+        Avw+fjNfUIXsJrY1Xep71WWWPqeVQso9FdoA6NHhS2z65+CydnqxYdvL2XTMsv8RQx87o9dIt9YOq
+        gRhOyKNn79SNkzIspyPDK9q7PYIVQDXOROMz1lbl+d8g18TGgfKIK4jbzo4ArDcTsez2FmtGtax8t
+        B1bdw31Zt0/8OgVAgLcXcd9stt7E2b7mN719CecQnYMHOHtVE+XiOquYOk/3OHr0STY9A71GKer+M
+        Z/mCFTNA==;
 Received: from [2001:4bb8:18c:1dd6:27b8:b8a1:c13e:ceb1] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kiGz2-0003z9-Fv; Thu, 26 Nov 2020 13:06:48 +0000
+        id 1kiGz5-0003zr-C3; Thu, 26 Nov 2020 13:06:52 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 11/44] block: remove a superflous check in blkpg_do_ioctl
-Date:   Thu, 26 Nov 2020 14:03:49 +0100
-Message-Id: <20201126130422.92945-12-hch@lst.de>
+Subject: [PATCH 13/44] block: use disk_part_iter_exit in disk_part_iter_next
+Date:   Thu, 26 Nov 2020 14:03:51 +0100
+Message-Id: <20201126130422.92945-14-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201126130422.92945-1-hch@lst.de>
 References: <20201126130422.92945-1-hch@lst.de>
@@ -63,35 +63,32 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-sector_t is now always a u64, so this check is not needed.
+Call disk_part_iter_exit in disk_part_iter_next instead of duplicating
+the functionality.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Acked-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- block/ioctl.c | 9 ---------
- 1 file changed, 9 deletions(-)
+ block/genhd.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/block/ioctl.c b/block/ioctl.c
-index 6b785181344fe1..0c09bb7a6ff35f 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -35,15 +35,6 @@ static int blkpg_do_ioctl(struct block_device *bdev,
- 	start = p.start >> SECTOR_SHIFT;
- 	length = p.length >> SECTOR_SHIFT;
+diff --git a/block/genhd.c b/block/genhd.c
+index 4e039524f92b8f..0bd9c41dd4cb69 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -227,8 +227,7 @@ struct hd_struct *disk_part_iter_next(struct disk_part_iter *piter)
+ 	int inc, end;
  
--	/* check for fit in a hd_struct */
--	if (sizeof(sector_t) < sizeof(long long)) {
--		long pstart = start, plength = length;
--
--		if (pstart != start || plength != length || pstart < 0 ||
--		    plength < 0 || p.pno > 65535)
--			return -EINVAL;
--	}
--
- 	switch (op) {
- 	case BLKPG_ADD_PARTITION:
- 		/* check if partition is aligned to blocksize */
+ 	/* put the last partition */
+-	disk_put_part(piter->part);
+-	piter->part = NULL;
++	disk_part_iter_exit(piter);
+ 
+ 	/* get part_tbl */
+ 	rcu_read_lock();
 -- 
 2.29.2
 
