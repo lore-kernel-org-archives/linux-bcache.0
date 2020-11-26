@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 59711C64E7B
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:10 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7A6DEC64E7C
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:14 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 059C821D7E
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:09 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1CB05221F7
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:14 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="KbblidYD"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="pD29czXU"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2389924AbgKZNHJ (ORCPT
+        id S2389929AbgKZNHN (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 26 Nov 2020 08:07:09 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53082 "EHLO
+        Thu, 26 Nov 2020 08:07:13 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53094 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2389917AbgKZNHI (ORCPT
+        with ESMTP id S2389917AbgKZNHL (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 26 Nov 2020 08:07:08 -0500
+        Thu, 26 Nov 2020 08:07:11 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2A105C0617A7;
-        Thu, 26 Nov 2020 05:07:08 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 50EADC0613D4;
+        Thu, 26 Nov 2020 05:07:11 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=ao+1FiqGUQ1AALOAqwHpxEZ0P2YDoki48ylbxSmNHsY=; b=KbblidYDIJgxo0wS7OjZlqpeDo
-        0Gy1P4UcgzMcv0vCApvsQaerxeQlLLPVUH2jH4Qi2bRsQ0pimHQv79C3yuDeOxd3I/4/mRX3iK06D
-        AkolSwHokuJOeqsB/iNpPXS6Cpav/EI66wmN+yfYL50Gopg/i136bEsaDVCt8Pc6zTvdKnlbv4xjx
-        mdpkjRc8JtK8Af+D+WnGKgVyu5Qf5YPmaNi6pe0w3mlERotdlUSyDZyTBCHhWsAfefUdgp/hq2HJs
-        zhuYdvTVf28C84QVzf5RFeq02h/nKPAVFnJU8U6EmdQruKCn9XAMjci010fOnHwlwdbzlYuQaUhHD
-        fIqCCTuQ==;
+        bh=Bme5TLsLFPob464lUA3WbC3cRcGjsnB3bNEoo7Ro4xo=; b=pD29czXUGx7/JOI4aMyEeWQSMv
+        N1pSrnLkpYZ1vq8lC0yj+QgDREYrZk8VsWtw25yH+LOOzsfPs12mfVambko3CQU5GmLhQd+ADpITR
+        NimIO8kPlWXa1Ia40xiB690MR+b5inhHr9jscb7BELxpkGdihO6KSv4PW4H+bkyq/lvvorRsTObAn
+        Z9+1XFVjPvzDzKPe4mnNvFUtdTeoIJI+do7cSsBSktZYaHDBuk98oBX5ks+o27ANd3JuHjqbQ/zPV
+        JT3vxOZ0JJZMxIPsjC2wmWnt/UCdnXQTIIFNjhYzNw52BemG06yiDmkrywPn4RYaymOzpQ9HDY4rz
+        q2zpyhig==;
 Received: from [2001:4bb8:18c:1dd6:27b8:b8a1:c13e:ceb1] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kiGzB-000411-CI; Thu, 26 Nov 2020 13:06:57 +0000
+        id 1kiGzE-00041Y-0x; Thu, 26 Nov 2020 13:07:00 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 17/44] init: refactor devt_from_partuuid
-Date:   Thu, 26 Nov 2020 14:03:55 +0100
-Message-Id: <20201126130422.92945-18-hch@lst.de>
+Subject: [PATCH 19/44] block: refactor __blkdev_put
+Date:   Thu, 26 Nov 2020 14:03:57 +0100
+Message-Id: <20201126130422.92945-20-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201126130422.92945-1-hch@lst.de>
 References: <20201126130422.92945-1-hch@lst.de>
@@ -63,119 +63,51 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-The code in devt_from_partuuid is very convoluted.  Refactor a bit by
-sanitizing the goto and variable name usage.
+Reorder the code to have one big section for the last close, and to use
+bdev_is_partition.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Reviewed-by: Jan Kara <jack@suse.cz>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- init/do_mounts.c | 68 ++++++++++++++++++++++--------------------------
- 1 file changed, 31 insertions(+), 37 deletions(-)
+ fs/block_dev.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index aef2f24461c7f1..afa26a4028d25e 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -105,13 +105,10 @@ static int match_dev_by_uuid(struct device *dev, const void *data)
-  */
- static dev_t devt_from_partuuid(const char *uuid_str)
- {
--	dev_t res = 0;
- 	struct uuidcmp cmp;
- 	struct device *dev = NULL;
--	struct gendisk *disk;
--	struct hd_struct *part;
-+	dev_t devt = 0;
- 	int offset = 0;
--	bool clear_root_wait = false;
- 	char *slash;
- 
- 	cmp.uuid = uuid_str;
-@@ -120,52 +117,49 @@ static dev_t devt_from_partuuid(const char *uuid_str)
- 	/* Check for optional partition number offset attributes. */
- 	if (slash) {
- 		char c = 0;
-+
- 		/* Explicitly fail on poor PARTUUID syntax. */
--		if (sscanf(slash + 1,
--			   "PARTNROFF=%d%c", &offset, &c) != 1) {
--			clear_root_wait = true;
--			goto done;
--		}
-+		if (sscanf(slash + 1, "PARTNROFF=%d%c", &offset, &c) != 1)
-+			goto clear_root_wait;
- 		cmp.len = slash - uuid_str;
- 	} else {
- 		cmp.len = strlen(uuid_str);
- 	}
- 
--	if (!cmp.len) {
--		clear_root_wait = true;
--		goto done;
--	}
-+	if (!cmp.len)
-+		goto clear_root_wait;
- 
--	dev = class_find_device(&block_class, NULL, &cmp,
--				&match_dev_by_uuid);
-+	dev = class_find_device(&block_class, NULL, &cmp, &match_dev_by_uuid);
- 	if (!dev)
--		goto done;
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index d707ab376da86e..41c50cfba864e2 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1738,22 +1738,22 @@ static void __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		WARN_ON_ONCE(bdev->bd_holders);
+ 		sync_blockdev(bdev);
+ 		kill_bdev(bdev);
 -
--	res = dev->devt;
-+		return 0;
- 
--	/* Attempt to find the partition by offset. */
--	if (!offset)
--		goto no_offset;
-+	if (offset) {
-+		/*
-+		 * Attempt to find the requested partition by adding an offset
-+		 * to the partition number found by UUID.
-+		 */
-+		struct hd_struct *part;
- 
--	res = 0;
--	disk = part_to_disk(dev_to_part(dev));
--	part = disk_get_part(disk, dev_to_part(dev)->partno + offset);
--	if (part) {
--		res = part_devt(part);
--		put_device(part_to_dev(part));
-+		part = disk_get_part(dev_to_disk(dev),
-+				     dev_to_part(dev)->partno + offset);
-+		if (part) {
-+			devt = part_devt(part);
-+			put_device(part_to_dev(part));
-+		}
-+	} else {
-+		devt = dev->devt;
- 	}
- 
--no_offset:
- 	put_device(dev);
--done:
--	if (clear_root_wait) {
--		pr_err("VFS: PARTUUID= is invalid.\n"
--		       "Expected PARTUUID=<valid-uuid-id>[/PARTNROFF=%%d]\n");
--		if (root_wait)
--			pr_err("Disabling rootwait; root= is invalid.\n");
--		root_wait = 0;
+ 		bdev_write_inode(bdev);
 -	}
--	return res;
-+	return devt;
+-	if (bdev->bd_contains == bdev) {
+-		if (disk->fops->release)
 +
-+clear_root_wait:
-+	pr_err("VFS: PARTUUID= is invalid.\n"
-+	       "Expected PARTUUID=<valid-uuid-id>[/PARTNROFF=%%d]\n");
-+	if (root_wait)
-+		pr_err("Disabling rootwait; root= is invalid.\n");
-+	root_wait = 0;
-+	return 0;
- }
++		if (!bdev_is_partition(bdev) && disk->fops->release)
+ 			disk->fops->release(disk, mode);
+-	}
+-	if (!bdev->bd_openers) {
++
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+-		if (bdev != bdev->bd_contains)
++		if (bdev_is_partition(bdev))
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
  
- /**
+ 		put_disk_and_module(disk);
++	} else {
++		if (!bdev_is_partition(bdev) && disk->fops->release)
++			disk->fops->release(disk, mode);
+ 	}
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
 -- 
 2.29.2
 
