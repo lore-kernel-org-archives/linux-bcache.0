@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C7DB1C8302F
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6899BC8301F
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:36 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8850F21D46
-	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:34 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1F4A721D46
+	for <linux-bcache@archiver.kernel.org>; Thu, 26 Nov 2020 13:07:36 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="QKuzKEUj"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="Y4k4lRn+"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2389993AbgKZNHb (ORCPT
+        id S2390004AbgKZNHe (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 26 Nov 2020 08:07:31 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53160 "EHLO
+        Thu, 26 Nov 2020 08:07:34 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53182 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2390000AbgKZNH1 (ORCPT
+        with ESMTP id S2389989AbgKZNHd (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 26 Nov 2020 08:07:27 -0500
+        Thu, 26 Nov 2020 08:07:33 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9FEDBC0613D4;
-        Thu, 26 Nov 2020 05:07:27 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 422A9C0613D4;
+        Thu, 26 Nov 2020 05:07:33 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=yJFvOQR8iDUQinUhdUTswtXrz/qdMA/gPk0b9kSJZJs=; b=QKuzKEUj27m1RZDoMeWhcOaD/T
-        wvuINUH6QRpbQmKHOTNoqvZq7NPcfxehq7rQnqMXzbaz5hLZCYfFo1U07SAWs9JqDrSWMDFd1zqJ7
-        f8Pxn4RprGZH6U/UpdCVXCy2bha45KnQbpnleKkB0LzwfiZ4f3XJELjTexvxBtfjSA68M25CR34Ud
-        tZRZbnqhVmkAfOG8US0eFc5qw8t78/EOyyxnt8UBDCDkcbtfIRGReAl26zI4EOaIGnx7BIRFvMBFh
-        cuc3ObzhpLBx52UKkyyi7UY1p4NbM2CRORLylaamyXzYJ8iYVHjkXoC/CliBQsEx5b15xw3hCtMNG
-        aK2J5T0g==;
+        bh=ICghRbLAKGP61jmz95MnV9Lcn2pp7mW8VqqlXSx3DXQ=; b=Y4k4lRn+LNJexgb4M5plOdxokT
+        ZLK/VVMCyi5BmEK2ymf+rsQ8sxvkmW5CJOyq/xjq9zoKYaqT8LffoLUNtz4L7JsPHRKFK3XCnpgT4
+        xxvzJ73Ma0wd39bFQhtKZEgKn0SdGBu+jscDv4JdAEseSezqU2POPHkXXue6xWF6Zvaa03ZvG72L6
+        Qa9/3UagXmOIksvzMy22sVcvDA+hDrY2C8wNtaRWwhAwcSP7iyCrGbdhi4iMooTSd+iXgerVeT6AL
+        aWVGjICKpnugxaR0hKEBWSZqviQMLD/Yrsmy7AS4qIVTtIDXmyj7UIqVYq8xUhXtU7wsazLCL5RWa
+        n/b0zPAw==;
 Received: from [2001:4bb8:18c:1dd6:27b8:b8a1:c13e:ceb1] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kiGzT-00045T-P1; Thu, 26 Nov 2020 13:07:16 +0000
+        id 1kiGzY-00046z-IP; Thu, 26 Nov 2020 13:07:21 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 30/44] block: move disk stat accounting to struct block_device
-Date:   Thu, 26 Nov 2020 14:04:08 +0100
-Message-Id: <20201126130422.92945-31-hch@lst.de>
+Subject: [PATCH 33/44] block: move holder_dir to struct block_device
+Date:   Thu, 26 Nov 2020 14:04:11 +0100
+Message-Id: <20201126130422.92945-34-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201126130422.92945-1-hch@lst.de>
 References: <20201126130422.92945-1-hch@lst.de>
@@ -63,284 +63,140 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Move the dkstats and stamp field to struct block_device in preparation
-of killing struct hd_struct.
+Move the holder_dir field to struct block_device in preparation for
+kill struct hd_struct.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- block/blk-cgroup.c        |  2 +-
- block/blk-core.c          |  4 ++--
- block/blk.h               |  1 -
- block/genhd.c             | 14 ++++----------
- block/partitions/core.c   |  9 +--------
- fs/block_dev.c            | 10 ++++++++++
- include/linux/blk_types.h |  2 ++
- include/linux/genhd.h     |  2 --
- include/linux/part_stat.h | 38 +++++++++++++++++++-------------------
- 9 files changed, 39 insertions(+), 43 deletions(-)
+ block/genhd.c             |  5 +++--
+ block/partitions/core.c   |  8 ++++----
+ fs/block_dev.c            | 11 +++++------
+ include/linux/blk_types.h |  1 +
+ include/linux/genhd.h     |  1 -
+ 5 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 19650eb42b9f00..5c0a9d588e6312 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -830,7 +830,7 @@ static void blkcg_fill_root_iostats(void)
- 		for_each_possible_cpu(cpu) {
- 			struct disk_stats *cpu_dkstats;
- 
--			cpu_dkstats = per_cpu_ptr(part->dkstats, cpu);
-+			cpu_dkstats = per_cpu_ptr(part->bdev->bd_stats, cpu);
- 			tmp.ios[BLKG_IOSTAT_READ] +=
- 				cpu_dkstats->ios[STAT_READ];
- 			tmp.ios[BLKG_IOSTAT_WRITE] +=
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 988f45094a387b..d2c9cb24e087f3 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1264,9 +1264,9 @@ static void update_io_ticks(struct hd_struct *part, unsigned long now, bool end)
- {
- 	unsigned long stamp;
- again:
--	stamp = READ_ONCE(part->stamp);
-+	stamp = READ_ONCE(part->bdev->bd_stamp);
- 	if (unlikely(stamp != now)) {
--		if (likely(cmpxchg(&part->stamp, stamp, now) == stamp))
-+		if (likely(cmpxchg(&part->bdev->bd_stamp, stamp, now) == stamp))
- 			__part_stat_add(part, io_ticks, end ? now - stamp : 1);
- 	}
- 	if (part->partno) {
-diff --git a/block/blk.h b/block/blk.h
-index 09cee7024fb43e..3f801f6e86f8a1 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -381,7 +381,6 @@ static inline void hd_struct_put(struct hd_struct *part)
- 
- static inline void hd_free_part(struct hd_struct *part)
- {
--	free_percpu(part->dkstats);
- 	kfree(part->info);
- 	bdput(part->bdev);
- 	percpu_ref_exit(&part->ref);
 diff --git a/block/genhd.c b/block/genhd.c
-index c6016fde4725b0..9eead2970cb3d4 100644
+index fe202a12eec096..a964e7532fedd5 100644
 --- a/block/genhd.c
 +++ b/block/genhd.c
-@@ -104,7 +104,7 @@ static void part_stat_read_all(struct hd_struct *part, struct disk_stats *stat)
+@@ -673,7 +673,8 @@ static void register_disk(struct device *parent, struct gendisk *disk,
+ 	 */
+ 	pm_runtime_set_memalloc_noio(ddev, true);
  
- 	memset(stat, 0, sizeof(struct disk_stats));
- 	for_each_possible_cpu(cpu) {
--		struct disk_stats *ptr = per_cpu_ptr(part->dkstats, cpu);
-+		struct disk_stats *ptr = per_cpu_ptr(part->bdev->bd_stats, cpu);
- 		int group;
+-	disk->part0.holder_dir = kobject_create_and_add("holders", &ddev->kobj);
++	disk->part0.bdev->bd_holder_dir =
++			kobject_create_and_add("holders", &ddev->kobj);
+ 	disk->slave_dir = kobject_create_and_add("slaves", &ddev->kobj);
  
- 		for (group = 0; group < NR_STAT_GROUPS; group++) {
-@@ -883,7 +883,7 @@ void del_gendisk(struct gendisk *disk)
+ 	if (disk->flags & GENHD_FL_HIDDEN) {
+@@ -879,7 +880,7 @@ void del_gendisk(struct gendisk *disk)
+ 
+ 	blk_unregister_queue(disk);
+ 
+-	kobject_put(disk->part0.holder_dir);
++	kobject_put(disk->part0.bdev->bd_holder_dir);
  	kobject_put(disk->slave_dir);
  
  	part_stat_set_all(&disk->part0, 0);
--	disk->part0.stamp = 0;
-+	disk->part0.bdev->bd_stamp = 0;
- 	if (!sysfs_deprecated)
- 		sysfs_remove_link(block_depr, dev_name(disk_to_dev(disk)));
- 	pm_runtime_set_memalloc_noio(disk_to_dev(disk), false);
-@@ -1620,19 +1620,15 @@ struct gendisk *__alloc_disk_node(int minors, int node_id)
- 	if (!disk->part0.bdev)
- 		goto out_free_disk;
- 
--	disk->part0.dkstats = alloc_percpu(struct disk_stats);
--	if (!disk->part0.dkstats)
--		goto out_bdput;
--
- 	disk->node_id = node_id;
- 	if (disk_expand_part_tbl(disk, 0))
--		goto out_free_bdstats;
-+		goto out_bdput;
- 
- 	ptbl = rcu_dereference_protected(disk->part_tbl, 1);
- 	rcu_assign_pointer(ptbl->part[0], &disk->part0);
- 
- 	if (hd_ref_init(&disk->part0))
--		goto out_free_bdstats;
-+		goto out_bdput;
- 
- 	disk->minors = minors;
- 	rand_initialize_disk(disk);
-@@ -1641,8 +1637,6 @@ struct gendisk *__alloc_disk_node(int minors, int node_id)
- 	device_initialize(disk_to_dev(disk));
- 	return disk;
- 
--out_free_bdstats:
--	free_percpu(disk->part0.dkstats);
- out_bdput:
- 	bdput(disk->part0.bdev);
- out_free_disk:
 diff --git a/block/partitions/core.c b/block/partitions/core.c
-index bcfa8215bd5ef3..8924e1ea8b2ad6 100644
+index 224a22d82fb86f..d1093adf2570e2 100644
 --- a/block/partitions/core.c
 +++ b/block/partitions/core.c
-@@ -409,14 +409,9 @@ static struct hd_struct *add_partition(struct gendisk *disk, int partno,
- 	if (!p)
- 		return ERR_PTR(-EBUSY);
+@@ -344,7 +344,7 @@ void delete_partition(struct hd_struct *part)
+ 	 */
+ 	get_device(disk_to_dev(disk));
+ 	rcu_assign_pointer(ptbl->part[part->partno], NULL);
+-	kobject_put(part->holder_dir);
++	kobject_put(part->bdev->bd_holder_dir);
+ 	device_del(part_to_dev(part));
  
--	err = -ENOMEM;
--	p->dkstats = alloc_percpu(struct disk_stats);
--	if (!p->dkstats)
--		goto out_free;
--
- 	bdev = bdev_alloc(disk, partno);
- 	if (!bdev)
--		goto out_free_stats;
-+		goto out_free;
- 	p->bdev = bdev;
+ 	/*
+@@ -452,8 +452,8 @@ static struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ 		goto out_put;
  
- 	pdev = part_to_dev(p);
-@@ -490,8 +485,6 @@ static struct hd_struct *add_partition(struct gendisk *disk, int partno,
- 	kfree(p->info);
- out_bdput:
- 	bdput(bdev);
--out_free_stats:
--	free_percpu(p->dkstats);
- out_free:
- 	kfree(p);
- 	return ERR_PTR(err);
+ 	err = -ENOMEM;
+-	p->holder_dir = kobject_create_and_add("holders", &pdev->kobj);
+-	if (!p->holder_dir)
++	bdev->bd_holder_dir = kobject_create_and_add("holders", &pdev->kobj);
++	if (!bdev->bd_holder_dir)
+ 		goto out_del;
+ 
+ 	dev_set_uevent_suppress(pdev, 0);
+@@ -487,7 +487,7 @@ static struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ out_remove_file:
+ 	device_remove_file(pdev, &dev_attr_whole_disk);
+ out_del:
+-	kobject_put(p->holder_dir);
++	kobject_put(bdev->bd_holder_dir);
+ 	device_del(pdev);
+ out_put:
+ 	put_device(pdev);
 diff --git a/fs/block_dev.c b/fs/block_dev.c
-index b6ebfb7754d3b7..11e6a9a255845d 100644
+index 62fae6a0e8aa56..2c91c35149787a 100644
 --- a/fs/block_dev.c
 +++ b/fs/block_dev.c
-@@ -32,6 +32,7 @@
- #include <linux/cleancache.h>
- #include <linux/task_io_accounting_ops.h>
- #include <linux/falloc.h>
-+#include <linux/part_stat.h>
- #include <linux/uaccess.h>
- #include <linux/suspend.h>
- #include "internal.h"
-@@ -781,6 +782,10 @@ static struct inode *bdev_alloc_inode(struct super_block *sb)
+@@ -1138,7 +1138,7 @@ int bd_link_disk_holder(struct block_device *bdev, struct gendisk *disk)
+ 	WARN_ON_ONCE(!bdev->bd_holder);
  
- static void bdev_free_inode(struct inode *inode)
- {
-+	struct block_device *bdev = I_BDEV(inode);
-+
-+	free_percpu(bdev->bd_stats);
-+
- 	kmem_cache_free(bdev_cachep, BDEV_I(inode));
- }
+ 	/* FIXME: remove the following once add_disk() handles errors */
+-	if (WARN_ON(!disk->slave_dir || !bdev->bd_part->holder_dir))
++	if (WARN_ON(!disk->slave_dir || !bdev->bd_holder_dir))
+ 		goto out_unlock;
  
-@@ -875,6 +880,11 @@ struct block_device *bdev_alloc(struct gendisk *disk, u8 partno)
- #ifdef CONFIG_SYSFS
- 	INIT_LIST_HEAD(&bdev->bd_holder_disks);
- #endif
-+	bdev->bd_stats = alloc_percpu(struct disk_stats);
-+	if (!bdev->bd_stats) {
-+		iput(inode);
-+		return NULL;
-+	}
- 	return bdev;
- }
+ 	holder = bd_find_holder_disk(bdev, disk);
+@@ -1161,14 +1161,14 @@ int bd_link_disk_holder(struct block_device *bdev, struct gendisk *disk)
+ 	if (ret)
+ 		goto out_free;
  
+-	ret = add_symlink(bdev->bd_part->holder_dir, &disk_to_dev(disk)->kobj);
++	ret = add_symlink(bdev->bd_holder_dir, &disk_to_dev(disk)->kobj);
+ 	if (ret)
+ 		goto out_del;
+ 	/*
+ 	 * bdev could be deleted beneath us which would implicitly destroy
+ 	 * the holder directory.  Hold on to it.
+ 	 */
+-	kobject_get(bdev->bd_part->holder_dir);
++	kobject_get(bdev->bd_holder_dir);
+ 
+ 	list_add(&holder->list, &bdev->bd_holder_disks);
+ 	goto out_unlock;
+@@ -1203,9 +1203,8 @@ void bd_unlink_disk_holder(struct block_device *bdev, struct gendisk *disk)
+ 
+ 	if (!WARN_ON_ONCE(holder == NULL) && !--holder->refcnt) {
+ 		del_symlink(disk->slave_dir, bdev_kobj(bdev));
+-		del_symlink(bdev->bd_part->holder_dir,
+-			    &disk_to_dev(disk)->kobj);
+-		kobject_put(bdev->bd_part->holder_dir);
++		del_symlink(bdev->bd_holder_dir, &disk_to_dev(disk)->kobj);
++		kobject_put(bdev->bd_holder_dir);
+ 		list_del_init(&holder->list);
+ 		kfree(holder);
+ 	}
 diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 2e0a9bd9688d28..520011b95276fb 100644
+index 2f8ede04e5a94c..c0591e52d7d7ce 100644
 --- a/include/linux/blk_types.h
 +++ b/include/linux/blk_types.h
-@@ -20,6 +20,8 @@ typedef void (bio_end_io_t) (struct bio *);
- struct bio_crypt_ctx;
- 
- struct block_device {
-+	struct disk_stats __percpu *bd_stats;
-+	unsigned long		bd_stamp;
- 	dev_t			bd_dev;
- 	int			bd_openers;
- 	struct inode *		bd_inode;	/* will die */
+@@ -35,6 +35,7 @@ struct block_device {
+ #ifdef CONFIG_SYSFS
+ 	struct list_head	bd_holder_disks;
+ #endif
++	struct kobject		*bd_holder_dir;
+ 	u8			bd_partno;
+ 	struct hd_struct *	bd_part;
+ 	/* number of times partitions within this device have been opened. */
 diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 30d4785b7df8bb..804ac45fbfbc53 100644
+index 30d7076155b4d2..b4a5c05593b99c 100644
 --- a/include/linux/genhd.h
 +++ b/include/linux/genhd.h
-@@ -52,8 +52,6 @@ struct partition_meta_info {
- 
- struct hd_struct {
- 	sector_t start_sect;
--	unsigned long stamp;
--	struct disk_stats __percpu *dkstats;
- 	struct percpu_ref ref;
+@@ -55,7 +55,6 @@ struct hd_struct {
  
  	struct block_device *bdev;
-diff --git a/include/linux/part_stat.h b/include/linux/part_stat.h
-index 24125778ef3ec7..87ad60106e1db0 100644
---- a/include/linux/part_stat.h
-+++ b/include/linux/part_stat.h
-@@ -25,17 +25,17 @@ struct disk_stats {
- #define part_stat_unlock()	preempt_enable()
- 
- #define part_stat_get_cpu(part, field, cpu)				\
--	(per_cpu_ptr((part)->dkstats, (cpu))->field)
-+	(per_cpu_ptr((part)->bdev->bd_stats, (cpu))->field)
- 
- #define part_stat_get(part, field)					\
- 	part_stat_get_cpu(part, field, smp_processor_id())
- 
- #define part_stat_read(part, field)					\
- ({									\
--	typeof((part)->dkstats->field) res = 0;				\
-+	typeof((part)->bdev->bd_stats->field) res = 0;			\
- 	unsigned int _cpu;						\
- 	for_each_possible_cpu(_cpu)					\
--		res += per_cpu_ptr((part)->dkstats, _cpu)->field;	\
-+		res += per_cpu_ptr((part)->bdev->bd_stats, _cpu)->field; \
- 	res;								\
- })
- 
-@@ -44,7 +44,7 @@ static inline void part_stat_set_all(struct hd_struct *part, int value)
- 	int i;
- 
- 	for_each_possible_cpu(i)
--		memset(per_cpu_ptr(part->dkstats, i), value,
-+		memset(per_cpu_ptr(part->bdev->bd_stats, i), value,
- 				sizeof(struct disk_stats));
- }
- 
-@@ -54,7 +54,7 @@ static inline void part_stat_set_all(struct hd_struct *part, int value)
- 	 part_stat_read(part, field[STAT_DISCARD]))
- 
- #define __part_stat_add(part, field, addnd)				\
--	__this_cpu_add((part)->dkstats->field, addnd)
-+	__this_cpu_add((part)->bdev->bd_stats->field, addnd)
- 
- #define part_stat_add(part, field, addnd)	do {			\
- 	__part_stat_add((part), field, addnd);				\
-@@ -63,20 +63,20 @@ static inline void part_stat_set_all(struct hd_struct *part, int value)
- 				field, addnd);				\
- } while (0)
- 
--#define part_stat_dec(gendiskp, field)					\
--	part_stat_add(gendiskp, field, -1)
--#define part_stat_inc(gendiskp, field)					\
--	part_stat_add(gendiskp, field, 1)
--#define part_stat_sub(gendiskp, field, subnd)				\
--	part_stat_add(gendiskp, field, -subnd)
-+#define part_stat_dec(part, field)					\
-+	part_stat_add(part, field, -1)
-+#define part_stat_inc(part, field)					\
-+	part_stat_add(part, field, 1)
-+#define part_stat_sub(part, field, subnd)				\
-+	part_stat_add(part, field, -subnd)
- 
--#define part_stat_local_dec(gendiskp, field)				\
--	local_dec(&(part_stat_get(gendiskp, field)))
--#define part_stat_local_inc(gendiskp, field)				\
--	local_inc(&(part_stat_get(gendiskp, field)))
--#define part_stat_local_read(gendiskp, field)				\
--	local_read(&(part_stat_get(gendiskp, field)))
--#define part_stat_local_read_cpu(gendiskp, field, cpu)			\
--	local_read(&(part_stat_get_cpu(gendiskp, field, cpu)))
-+#define part_stat_local_dec(part, field)				\
-+	local_dec(&(part_stat_get(part, field)))
-+#define part_stat_local_inc(part, field)				\
-+	local_inc(&(part_stat_get(part, field)))
-+#define part_stat_local_read(part, field)				\
-+	local_read(&(part_stat_get(part, field)))
-+#define part_stat_local_read_cpu(part, field, cpu)			\
-+	local_read(&(part_stat_get_cpu(part, field, cpu)))
- 
- #endif /* _LINUX_PART_STAT_H */
+ 	struct device __dev;
+-	struct kobject *holder_dir;
+ 	int policy, partno;
+ #ifdef CONFIG_FAIL_MAKE_REQUEST
+ 	int make_it_fail;
 -- 
 2.29.2
 
