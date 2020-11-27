@@ -2,26 +2,26 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,
-	USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.2 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_SANE_1 autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D962AC63798
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 15:36:22 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id BC45FC6379D
+	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 15:47:14 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 9DF2120B80
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 15:36:22 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 88CA721D7A
+	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 15:47:14 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1730537AbgK0PgV (ORCPT
+        id S1731137AbgK0PrO (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 27 Nov 2020 10:36:21 -0500
-Received: from verein.lst.de ([213.95.11.211]:37927 "EHLO verein.lst.de"
+        Fri, 27 Nov 2020 10:47:14 -0500
+Received: from verein.lst.de ([213.95.11.211]:37960 "EHLO verein.lst.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1730487AbgK0PgV (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 27 Nov 2020 10:36:21 -0500
+        id S1730324AbgK0PrN (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Nov 2020 10:47:13 -0500
 Received: by verein.lst.de (Postfix, from userid 2407)
-        id 5CA0168B05; Fri, 27 Nov 2020 16:36:16 +0100 (CET)
-Date:   Fri, 27 Nov 2020 16:36:15 +0100
+        id C6DB768B05; Fri, 27 Nov 2020 16:47:09 +0100 (CET)
+Date:   Fri, 27 Nov 2020 16:47:09 +0100
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jan Kara <jack@suse.cz>
 Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
@@ -32,33 +32,43 @@ Cc:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
         dm-devel@redhat.com, Jan Kara <jack@suse.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Chao Yu <yuchao0@huawei.com>
-Subject: Re: [PATCH 37/44] block: switch partition lookup to use struct
- block_device
-Message-ID: <20201127153615.GA7524@lst.de>
-References: <20201126130422.92945-1-hch@lst.de> <20201126130422.92945-38-hch@lst.de> <20201126182219.GC422@quack2.suse.cz> <20201127094842.GA15984@lst.de> <20201127124537.GC27162@quack2.suse.cz>
+        linux-mm@kvack.org
+Subject: Re: [PATCH 43/44] block: merge struct block_device and struct
+ hd_struct
+Message-ID: <20201127154709.GA8881@lst.de>
+References: <20201126130422.92945-1-hch@lst.de> <20201126130422.92945-44-hch@lst.de> <20201127131901.GE27162@quack2.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20201127124537.GC27162@quack2.suse.cz>
+In-Reply-To: <20201127131901.GE27162@quack2.suse.cz>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Fri, Nov 27, 2020 at 01:45:37PM +0100, Jan Kara wrote:
-> > At this point the hd_struct is already allocated together with the
-> > block_device, and thus only freed after the last block_device reference
-> > goes away plus the inode freeing RCU grace period.  So the device model
-> > ref to part is indeed gone, but that simply does not matter any more.
-> 
-> Well, but once device model ref to part is gone, we're going to free the
-> bdev inode ref as well. Thus there's nothing which pins the bdev containing
-> hd_struct?
-> 
-> But now as I'm thinking about it you later switch the device model reference
-> to just pure inode reference and use igrab() which will reliably return
-> NULL if the inode is on it's way to be destroyed so probably we are safe in
-> the final state.
+On Fri, Nov 27, 2020 at 02:19:01PM +0100, Jan Kara wrote:
+> The percpu refcount is long gone after the series refactoring...
 
-igrab always succeeds.  But we should switch to a tryget.
+True.
+
+> > @@ -939,13 +910,13 @@ void blk_request_module(dev_t devt)
+> >   */
+> >  struct block_device *bdget_disk(struct gendisk *disk, int partno)
+> >  {
+> > -	struct hd_struct *part;
+> >  	struct block_device *bdev = NULL;
+> >  
+> > -	part = disk_get_part(disk, partno);
+> > -	if (part)
+> > -		bdev = bdget_part(part);
+> > -	disk_put_part(part);
+> > +	rcu_read_lock();
+> > +	bdev = __disk_get_part(disk, partno);
+> > +	if (bdev)
+> > +		bdgrab(bdev);
+> 
+> Again I think you need to accommodate for bdgrab() returning NULL here when
+> we race with partition destruction...
+
+For that we need to allow bdgrab to return NULL first, but otherwise
+this seems like the right way.
