@@ -5,26 +5,26 @@ X-Spam-Level:
 X-Spam-Status: No, score=-15.2 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
-	USER_AGENT_SANE_1 autolearn=ham autolearn_force=no version=3.4.0
+	USER_AGENT_SANE_1 autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8FCF9C63777
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 10:37:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 65FA4C64E7B
+	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 12:04:17 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3E88B21D46
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 10:37:17 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1238921D81
+	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 12:04:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727479AbgK0KhQ (ORCPT
+        id S1727736AbgK0MEA (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 27 Nov 2020 05:37:16 -0500
-Received: from mx2.suse.de ([195.135.220.15]:42494 "EHLO mx2.suse.de"
+        Fri, 27 Nov 2020 07:04:00 -0500
+Received: from mx2.suse.de ([195.135.220.15]:45996 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727350AbgK0KhQ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 27 Nov 2020 05:37:16 -0500
+        id S1726442AbgK0MD7 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 27 Nov 2020 07:03:59 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 7E166AF38;
-        Fri, 27 Nov 2020 10:37:14 +0000 (UTC)
-Subject: Re: [PATCH 11/44] block: remove a superflous check in blkpg_do_ioctl
+        by mx2.suse.de (Postfix) with ESMTP id B2543AC2F;
+        Fri, 27 Nov 2020 12:03:57 +0000 (UTC)
+Subject: Re: [PATCH 12/44] block: add a bdev_kobj helper
 To:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
@@ -36,14 +36,14 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
 References: <20201126130422.92945-1-hch@lst.de>
- <20201126130422.92945-12-hch@lst.de>
+ <20201126130422.92945-13-hch@lst.de>
 From:   Hannes Reinecke <hare@suse.de>
-Message-ID: <af25c440-de15-3ba0-9f29-df708106c7d3@suse.de>
-Date:   Fri, 27 Nov 2020 11:37:10 +0100
+Message-ID: <71b7c8b6-937e-e873-5957-872493452886@suse.de>
+Date:   Fri, 27 Nov 2020 13:03:56 +0100
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
  Thunderbird/78.4.0
 MIME-Version: 1.0
-In-Reply-To: <20201126130422.92945-12-hch@lst.de>
+In-Reply-To: <20201126130422.92945-13-hch@lst.de>
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Language: en-US
 Content-Transfer-Encoding: 8bit
@@ -52,35 +52,21 @@ List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 On 11/26/20 2:03 PM, Christoph Hellwig wrote:
-> sector_t is now always a u64, so this check is not needed.
+> Add a little helper to find the kobject for a struct block_device.
 > 
 > Signed-off-by: Christoph Hellwig <hch@lst.de>
-> Acked-by: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > Reviewed-by: Jan Kara <jack@suse.cz>
+> Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>
+> Acked-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Coly Li <colyli@suse.de>		[bcache]
 > ---
->   block/ioctl.c | 9 ---------
->   1 file changed, 9 deletions(-)
-> 
-> diff --git a/block/ioctl.c b/block/ioctl.c
-> index 6b785181344fe1..0c09bb7a6ff35f 100644
-> --- a/block/ioctl.c
-> +++ b/block/ioctl.c
-> @@ -35,15 +35,6 @@ static int blkpg_do_ioctl(struct block_device *bdev,
->   	start = p.start >> SECTOR_SHIFT;
->   	length = p.length >> SECTOR_SHIFT;
->   
-> -	/* check for fit in a hd_struct */
-> -	if (sizeof(sector_t) < sizeof(long long)) {
-> -		long pstart = start, plength = length;
-> -
-> -		if (pstart != start || plength != length || pstart < 0 ||
-> -		    plength < 0 || p.pno > 65535)
-> -			return -EINVAL;
-> -	}
-> -
->   	switch (op) {
->   	case BLKPG_ADD_PARTITION:
->   		/* check if partition is aligned to blocksize */
+>   drivers/md/bcache/super.c |  7 ++-----
+>   drivers/md/md.c           |  4 +---
+>   fs/block_dev.c            |  6 +++---
+>   fs/btrfs/sysfs.c          | 15 +++------------
+>   include/linux/blk_types.h |  3 +++
+>   5 files changed, 12 insertions(+), 23 deletions(-)
 > 
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 
