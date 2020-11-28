@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5BD49C83016
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:03 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 76EC9C83019
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 18E3522470
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:03 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 34DDE2344C
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="wHOomoQX"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="V1zcwqDO"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1732003AbgK1Vud (ORCPT
+        id S1731980AbgK1Vub (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 28 Nov 2020 16:50:33 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41632 "EHLO
+        Sat, 28 Nov 2020 16:50:31 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41634 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731204AbgK1SsT (ORCPT
+        with ESMTP id S1731212AbgK1SsT (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Sat, 28 Nov 2020 13:48:19 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 610FAC025575;
-        Sat, 28 Nov 2020 08:15:42 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7F490C02577F;
+        Sat, 28 Nov 2020 08:15:38 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=DJ6kJbiTjVXxeNwa9VkSuz9tCmW3H5lgPzapxjrtvFA=; b=wHOomoQX84HuKovUSlTT0xRUlQ
-        BeKzKIhMBnoYxx1a78Iuhqt1RF5LBAdCJON/Abu9CsvcN21N1TQcBq6ozlioKMFaKhaPTlvfiK9Yv
-        AEQOKPIezBd+F2yxE2BsB6BeSTosf26Utgx+FDUXUnAx7wrNRgeP78FgJ35V5q828wQ1CJ+jDCGrb
-        DlawWt/2KoxYcvAF/8J0Hq+vQenZVrFN/8Mp0xtToO4+Se0io9algQ2aOHHOAZRKDxzur/YKhj3BN
-        0QJaSqgnGuzL/nR2F4MF5dtZ4ak9q1zH4wjfot9uh11FXw/13bAuWAH5t2MqKiayeypd6QNSUfL3R
-        pq/GC+mQ==;
+        bh=t1jdGd4LGo+1oygYMzm/Eg8jCI9e9FSM1ijVcV8tWNc=; b=V1zcwqDOqbbzLmuquNcpbmPNMC
+        uHfp4rT2tTuNrZzDtVU6FMmVMP6Y3Oi9sB4Anga2JN/nCe6EuzNxUx6pWh1EcmKBtOFNRVc0JFX/d
+        e5NC3fNjm4Sy06Lcbn7rfn5uc1yaQY6YA3mKwANAzSHF1SpW78ZqaSZu4Na4PVphKgKjL99CKZmRB
+        geOVazsPzScrmWNJxZMzGTZwBPb23UdMM612ic4xRTTT/Fe8khLSyfdrAYnkkErrXAtIJpx05M+gd
+        MfCSqcBoFcB8NNZR4ecqzz4kWC2NoNMxPGLwfta2Mbi2q4erZx7aS/5iryDk5sdUGTSVSUM7cilw9
+        rEsd2Piw==;
 Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kj2sn-0000FM-F1; Sat, 28 Nov 2020 16:15:33 +0000
+        id 1kj2si-0000EI-8V; Sat, 28 Nov 2020 16:15:28 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 13/45] block: use disk_part_iter_exit in disk_part_iter_next
-Date:   Sat, 28 Nov 2020 17:14:38 +0100
-Message-Id: <20201128161510.347752-14-hch@lst.de>
+Subject: [PATCH 10/45] block: remove a duplicate __disk_get_part prototype
+Date:   Sat, 28 Nov 2020 17:14:35 +0100
+Message-Id: <20201128161510.347752-11-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201128161510.347752-1-hch@lst.de>
 References: <20201128161510.347752-1-hch@lst.de>
@@ -63,33 +63,28 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Call disk_part_iter_exit in disk_part_iter_next instead of duplicating
-the functionality.
-
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Tejun Heo <tj@kernel.org>
 Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>
-Acked-by: Tejun Heo <tj@kernel.org>
 ---
- block/genhd.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ include/linux/genhd.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 4e039524f92b8f..0bd9c41dd4cb69 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -227,8 +227,7 @@ struct hd_struct *disk_part_iter_next(struct disk_part_iter *piter)
- 	int inc, end;
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 46553d6d602563..22f5b9fd96f8bf 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -250,7 +250,6 @@ static inline dev_t part_devt(struct hd_struct *part)
+ 	return part_to_dev(part)->devt;
+ }
  
- 	/* put the last partition */
--	disk_put_part(piter->part);
--	piter->part = NULL;
-+	disk_part_iter_exit(piter);
+-extern struct hd_struct *__disk_get_part(struct gendisk *disk, int partno);
+ extern struct hd_struct *disk_get_part(struct gendisk *disk, int partno);
  
- 	/* get part_tbl */
- 	rcu_read_lock();
+ static inline void disk_put_part(struct hd_struct *part)
 -- 
 2.29.2
 
