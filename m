@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 291D3C64E7D
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C5164C83018
 	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:03 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id E241424073
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:02 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8C97122470
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:03 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="fgmp24RU"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="P4FlMWBK"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2390029AbgK1Vud (ORCPT
+        id S1731990AbgK1Vuc (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 28 Nov 2020 16:50:33 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41630 "EHLO
+        Sat, 28 Nov 2020 16:50:32 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41638 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731196AbgK1SsT (ORCPT
+        with ESMTP id S1731227AbgK1SsT (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Sat, 28 Nov 2020 13:48:19 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3D56DC025484;
-        Sat, 28 Nov 2020 08:15:54 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5B018C025576;
+        Sat, 28 Nov 2020 08:15:43 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=h5jD3nKoGxX1nrfDFkuFqjmtZeLc4uJpqdz/BICw9t8=; b=fgmp24RUJmNWs5vmYunYdOF9uI
-        7aIptjG0v7E3FCIKtohhpCVQpuVi0CCkMg5e46JiaUInW2L1Pdu1AaaoyP862JHsMWbISr6e9hgYA
-        OGJYYiky1OLBZEvERUX9cbqkIQ1qK/cuMtZCyeEfaYlVpr4lC89ujf9j2Ra/NpNjsn0g/z0vlZn/S
-        P8NcKCWzxHRy6XrfdisHwiijEDSsHH9Kh6pLyV2MgUI583FqqJwrqZSB6tWf/kRJYaAdIyhCruU75
-        PKbLl5YOpRlEfpd7QMPGgxs/XFkDilEGDLbaZnoMOOEb3+/lGK83tY/JEwJesmc0zVX+b4VXJq5/G
-        xQVTjCMA==;
+        bh=cCnViX+7xYhlWEzFMVB617+yZ+N1oSjUspGr9itxVFQ=; b=P4FlMWBKcq0hTWFFgONtUX3R2u
+        gRmA9fresO5woUJfSyA9xdHCHX8BTop5LkddmpHkVj+IEG71SHfjmWasWnIbW+vLpA/zEikX0559/
+        aYLVr3yFLhpG5EPR66Prfn+nAzAReIHHIdKqheYplha3PdGyXCCAwEZEai+t5nddXlLP6lM0H+ABe
+        9KQupdU+tJXa9IvBhi3ilU5QhID2iV+9Tl9DiY4VVtLbKh3UVtWuozoLhsdcKh3kqp2/J9g7Ys+X/
+        4L0jhvnSvLwdws5OlPhclCyrUvUZjrXV2jfJ/ExuE8EAvEOwOMODjCkSiJpSRLAUJi2TvmCYxpyEj
+        4HCnzpbg==;
 Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kj2sw-0000HB-Gj; Sat, 28 Nov 2020 16:15:42 +0000
+        id 1kj2so-0000FZ-Ts; Sat, 28 Nov 2020 16:15:35 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 19/45] init: cleanup match_dev_by_uuid and match_dev_by_label
-Date:   Sat, 28 Nov 2020 17:14:44 +0100
-Message-Id: <20201128161510.347752-20-hch@lst.de>
+Subject: [PATCH 14/45] block: use put_device in put_disk
+Date:   Sat, 28 Nov 2020 17:14:39 +0100
+Message-Id: <20201128161510.347752-15-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201128161510.347752-1-hch@lst.de>
 References: <20201128161510.347752-1-hch@lst.de>
@@ -63,8 +63,8 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Avoid a totally pointless goto label, and use the same style of
-comparism for both helpers.
+Use put_device to put the device instead of poking into the internals
+and using kobject_put.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -72,46 +72,22 @@ Reviewed-by: Jan Kara <jack@suse.cz>
 Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- init/do_mounts.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ block/genhd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index afa26a4028d25e..5879edf083b318 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -79,15 +79,10 @@ static int match_dev_by_uuid(struct device *dev, const void *data)
- 	const struct uuidcmp *cmp = data;
- 	struct hd_struct *part = dev_to_part(dev);
- 
--	if (!part->info)
--		goto no_match;
--
--	if (strncasecmp(cmp->uuid, part->info->uuid, cmp->len))
--		goto no_match;
--
-+	if (!part->info ||
-+	    strncasecmp(cmp->uuid, part->info->uuid, cmp->len))
-+		return 0;
- 	return 1;
--no_match:
--	return 0;
+diff --git a/block/genhd.c b/block/genhd.c
+index 0bd9c41dd4cb69..f46e89226fdf91 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1803,7 +1803,7 @@ EXPORT_SYMBOL(__alloc_disk_node);
+ void put_disk(struct gendisk *disk)
+ {
+ 	if (disk)
+-		kobject_put(&disk_to_dev(disk)->kobj);
++		put_device(disk_to_dev(disk));
  }
+ EXPORT_SYMBOL(put_disk);
  
- /**
-@@ -174,10 +169,9 @@ static int match_dev_by_label(struct device *dev, const void *data)
- 	const char *label = data;
- 	struct hd_struct *part = dev_to_part(dev);
- 
--	if (part->info && !strcmp(label, part->info->volname))
--		return 1;
--
--	return 0;
-+	if (!part->info || strcmp(label, part->info->volname))
-+		return 0;
-+	return 1;
- }
- 
- static dev_t devt_from_partlabel(const char *label)
 -- 
 2.29.2
 
