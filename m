@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 76EC9C83019
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9AAFDC83020
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:05 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 34DDE2344C
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 6AC1224073
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:05 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="V1zcwqDO"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="OD2tKoBY"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731980AbgK1Vub (ORCPT
+        id S1731893AbgK1Vua (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 28 Nov 2020 16:50:31 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41634 "EHLO
+        Sat, 28 Nov 2020 16:50:30 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41214 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731212AbgK1SsT (ORCPT
+        with ESMTP id S1731129AbgK1Sry (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 28 Nov 2020 13:48:19 -0500
+        Sat, 28 Nov 2020 13:47:54 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7F490C02577F;
-        Sat, 28 Nov 2020 08:15:38 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3EE96C02548E;
+        Sat, 28 Nov 2020 08:16:13 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=t1jdGd4LGo+1oygYMzm/Eg8jCI9e9FSM1ijVcV8tWNc=; b=V1zcwqDOqbbzLmuquNcpbmPNMC
-        uHfp4rT2tTuNrZzDtVU6FMmVMP6Y3Oi9sB4Anga2JN/nCe6EuzNxUx6pWh1EcmKBtOFNRVc0JFX/d
-        e5NC3fNjm4Sy06Lcbn7rfn5uc1yaQY6YA3mKwANAzSHF1SpW78ZqaSZu4Na4PVphKgKjL99CKZmRB
-        geOVazsPzScrmWNJxZMzGTZwBPb23UdMM612ic4xRTTT/Fe8khLSyfdrAYnkkErrXAtIJpx05M+gd
-        MfCSqcBoFcB8NNZR4ecqzz4kWC2NoNMxPGLwfta2Mbi2q4erZx7aS/5iryDk5sdUGTSVSUM7cilw9
-        rEsd2Piw==;
+        bh=6IeFZ7Uy1DrTY5BQeLQW1xD1ZXA1ZVFBmMwhjYs91c8=; b=OD2tKoBYgG+uVtFPZskR+VCfm6
+        Dn1cDNzPYU2IFPF7UFNrmWzFfssUxw/T5V10mv/YAX6prclF9SMQoF0dwbAqxrIxZtYavvNn63LHF
+        dwWFmTULY5nOu/3qJ5F/8QijjB9pHmYvJQEtPpFVzpRqPD2FCrTJLcCw+jgmoF01ta39QLHeaHTKI
+        WQcC8eZAJVI+hWRryL/UBzWTfiRDb1djDySZ/i1z3YbKAAjg7aXmA94oUJeNVLVzXtt1ObrBAbE6F
+        BWD5a9V8AmTbf9mafWd9EuFXxazbtbwbXFUt9AdYpOLDhF1c1XhHD6lMLfEEonkIBN5HjshCv2iug
+        W/lTMuJg==;
 Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kj2si-0000EI-8V; Sat, 28 Nov 2020 16:15:28 +0000
+        id 1kj2tG-0000Ma-DB; Sat, 28 Nov 2020 16:16:03 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -49,10 +49,10 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         dm-devel@redhat.com, Jan Kara <jack@suse.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Hannes Reinecke <hare@suse.de>
-Subject: [PATCH 10/45] block: remove a duplicate __disk_get_part prototype
-Date:   Sat, 28 Nov 2020 17:14:35 +0100
-Message-Id: <20201128161510.347752-11-hch@lst.de>
+        linux-mm@kvack.org
+Subject: [PATCH 29/45] block: initialize struct block_device in bdev_alloc
+Date:   Sat, 28 Nov 2020 17:14:54 +0100
+Message-Id: <20201128161510.347752-30-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201128161510.347752-1-hch@lst.de>
 References: <20201128161510.347752-1-hch@lst.de>
@@ -63,28 +63,63 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Acked-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Reviewed-by: Johannes Thumshirn <johannes.thumshirn@wdc.com>
----
- include/linux/genhd.h | 1 -
- 1 file changed, 1 deletion(-)
+Don't play tricks with slab constructors as bdev structures tends to not
+get reused very much, and this makes the code a lot less error prone.
 
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 46553d6d602563..22f5b9fd96f8bf 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -250,7 +250,6 @@ static inline dev_t part_devt(struct hd_struct *part)
- 	return part_to_dev(part)->devt;
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ fs/block_dev.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 0569f5ebeb6fd0..a5b6955a841f18 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -784,20 +784,11 @@ static void bdev_free_inode(struct inode *inode)
+ 	kmem_cache_free(bdev_cachep, BDEV_I(inode));
  }
  
--extern struct hd_struct *__disk_get_part(struct gendisk *disk, int partno);
- extern struct hd_struct *disk_get_part(struct gendisk *disk, int partno);
+-static void init_once(void *foo)
++static void init_once(void *data)
+ {
+-	struct bdev_inode *ei = (struct bdev_inode *) foo;
+-	struct block_device *bdev = &ei->bdev;
++	struct bdev_inode *ei = data;
  
- static inline void disk_put_part(struct hd_struct *part)
+-	memset(bdev, 0, sizeof(*bdev));
+-	mutex_init(&bdev->bd_mutex);
+-#ifdef CONFIG_SYSFS
+-	INIT_LIST_HEAD(&bdev->bd_holder_disks);
+-#endif
+-	bdev->bd_bdi = &noop_backing_dev_info;
+ 	inode_init_once(&ei->vfs_inode);
+-	/* Initialize mutex for freeze. */
+-	mutex_init(&bdev->bd_fsfreeze_mutex);
+ }
+ 
+ static void bdev_evict_inode(struct inode *inode)
+@@ -873,12 +864,17 @@ struct block_device *bdev_alloc(struct gendisk *disk, u8 partno)
+ 	mapping_set_gfp_mask(&inode->i_data, GFP_USER);
+ 
+ 	bdev = I_BDEV(inode);
++	memset(bdev, 0, sizeof(*bdev));
++	mutex_init(&bdev->bd_mutex);
++	mutex_init(&bdev->bd_fsfreeze_mutex);
+ 	spin_lock_init(&bdev->bd_size_lock);
+ 	bdev->bd_disk = disk;
+ 	bdev->bd_partno = partno;
+-	bdev->bd_super = NULL;
+ 	bdev->bd_inode = inode;
+-	bdev->bd_part_count = 0;
++	bdev->bd_bdi = &noop_backing_dev_info;
++#ifdef CONFIG_SYSFS
++	INIT_LIST_HEAD(&bdev->bd_holder_disks);
++#endif
+ 	return bdev;
+ }
+ 
 -- 
 2.29.2
 
