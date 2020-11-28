@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 29634C63777
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:04:59 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 026EAC64E90
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:00 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id BDDD22344C
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:04:58 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id C083B22470
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:04:59 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="Pzr1nja0"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="jmRRoEvN"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2390042AbgK1Vue (ORCPT
+        id S2390052AbgK1Vug (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 28 Nov 2020 16:50:34 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41218 "EHLO
+        Sat, 28 Nov 2020 16:50:36 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41208 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731306AbgK1SuJ (ORCPT
+        with ESMTP id S1730459AbgK1SuJ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Sat, 28 Nov 2020 13:50:09 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BF163C025494;
-        Sat, 28 Nov 2020 08:20:45 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F22DCC025778;
+        Sat, 28 Nov 2020 08:15:29 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=coxIlFm7FcSMnYoHU+VRJv+WNmt8/1D9LTOeQ77ktrM=; b=Pzr1nja0AE7hr3st3239LMciL+
-        t4cyDfRDhOoe4r2y8ZHb353ytAggEVHWwAwi/ZlnPjwj4FL+gDM++fXMGZbMJNrErgC7xreA8ubIe
-        ceCoaJD5BcQz7KRYF1fwdUolUqwKhaTZAO8tB3TvKD3Yp1N3xfqnVjlPD6uwDIYM2QOB44Rj8gn+n
-        EHMQLrTzqM15pCHqLBb00ZtS2/NcYv2/JFTbpYE6g+tsqYbNRtSLkHbi5geaHiRxp6qLHtPYPBxWC
-        r1TuNrOW/6dxw2cgc4pat3wfudMxZQP/Ycjz7oXXMs7Gy3Dsf627oC3lTm9xA9kIw1k1vXGUsvUad
-        Env84xzQ==;
-Received: from 089144198196.atnat0007.highway.a1.net ([89.144.198.196] helo=localhost)
+        bh=Lt23dvr/EePId5z235Ac/5RuSuqAjNhom33xSrBSmHc=; b=jmRRoEvNgWLNCiJ+xEmxIoLzRQ
+        0x+66Fb7MZmgLhKP7YNithpUEcXj+nnQY8QUlmr5Ho31w5UmK9SgxL3n8aQfsedsezQKnP7OVlqle
+        INIymBX4RzptltKBOVlkW2MCCeteSb7mtVmWxyAvSSG9DNY2bqfKTPnPfX/ph5T41aIYqYL9f365s
+        eHryEqbqcvpA4Ee07VuIlVCSuSXHtF280exwHYFNEMZvnJLzLId2c1D+ySFdVGwjwheUSem33Za1W
+        vVqurkqFSK0h83kjpeonarUgTGkwnHE0gb4KxHmD45keiTbNur1Kb5U9KTidX6TpMQAwYdt/UHQkb
+        4X/wR2kg==;
+Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kj2xe-0000jX-Sg; Sat, 28 Nov 2020 16:20:35 +0000
+        id 1kj2sU-0000Bt-Ql; Sat, 28 Nov 2020 16:15:15 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -49,10 +49,11 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         dm-devel@redhat.com, Jan Kara <jack@suse.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 35/45] block: move make_it_fail to struct block_device
-Date:   Sat, 28 Nov 2020 17:15:00 +0100
-Message-Id: <20201128161510.347752-36-hch@lst.de>
+        linux-mm@kvack.org, Hannes Reinecke <hare@suse.de>,
+        Matthew Wilcox <willy@infradead.org>
+Subject: [PATCH 02/45] filemap: consistently use ->f_mapping over ->i_mapping
+Date:   Sat, 28 Nov 2020 17:14:27 +0100
+Message-Id: <20201128161510.347752-3-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201128161510.347752-1-hch@lst.de>
 References: <20201128161510.347752-1-hch@lst.de>
@@ -63,82 +64,70 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Move the make_it_fail flag to struct block_device an turn it into a bool
-in preparation of killing struct hd_struct.
+Use file->f_mapping in all remaining places that have a struct file
+available to properly handle the case where inode->i_mapping !=
+file_inode(file)->i_mapping.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Reviewed-by: Matthew Wilcox (Oracle) <willy@infradead.org>
 ---
- block/blk-core.c          | 3 ++-
- block/genhd.c             | 4 ++--
- include/linux/blk_types.h | 3 +++
- include/linux/genhd.h     | 3 ---
- 4 files changed, 7 insertions(+), 6 deletions(-)
+ mm/filemap.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 9a3793d5ce38d4..9121390be97a76 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -668,7 +668,8 @@ __setup("fail_make_request=", setup_fail_make_request);
+diff --git a/mm/filemap.c b/mm/filemap.c
+index d5e7c2029d16b4..4f583489aa3c2a 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -2886,14 +2886,14 @@ EXPORT_SYMBOL(filemap_map_pages);
  
- static bool should_fail_request(struct hd_struct *part, unsigned int bytes)
+ vm_fault_t filemap_page_mkwrite(struct vm_fault *vmf)
  {
--	return part->make_it_fail && should_fail(&fail_make_request, bytes);
-+	return part->bdev->bd_make_it_fail &&
-+		should_fail(&fail_make_request, bytes);
++	struct address_space *mapping = vmf->vma->vm_file->f_mapping;
+ 	struct page *page = vmf->page;
+-	struct inode *inode = file_inode(vmf->vma->vm_file);
+ 	vm_fault_t ret = VM_FAULT_LOCKED;
+ 
+-	sb_start_pagefault(inode->i_sb);
++	sb_start_pagefault(mapping->host->i_sb);
+ 	file_update_time(vmf->vma->vm_file);
+ 	lock_page(page);
+-	if (page->mapping != inode->i_mapping) {
++	if (page->mapping != mapping) {
+ 		unlock_page(page);
+ 		ret = VM_FAULT_NOPAGE;
+ 		goto out;
+@@ -2906,7 +2906,7 @@ vm_fault_t filemap_page_mkwrite(struct vm_fault *vmf)
+ 	set_page_dirty(page);
+ 	wait_for_stable_page(page);
+ out:
+-	sb_end_pagefault(inode->i_sb);
++	sb_end_pagefault(mapping->host->i_sb);
+ 	return ret;
  }
  
- static int __init fail_make_request_debugfs(void)
-diff --git a/block/genhd.c b/block/genhd.c
-index a964e7532fedd5..0371558ccde14c 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1284,7 +1284,7 @@ ssize_t part_fail_show(struct device *dev,
+@@ -3149,10 +3149,9 @@ void dio_warn_stale_pagecache(struct file *filp)
  {
- 	struct hd_struct *p = dev_to_part(dev);
+ 	static DEFINE_RATELIMIT_STATE(_rs, 86400 * HZ, DEFAULT_RATELIMIT_BURST);
+ 	char pathname[128];
+-	struct inode *inode = file_inode(filp);
+ 	char *path;
  
--	return sprintf(buf, "%d\n", p->make_it_fail);
-+	return sprintf(buf, "%d\n", p->bdev->bd_make_it_fail);
- }
+-	errseq_set(&inode->i_mapping->wb_err, -EIO);
++	errseq_set(&filp->f_mapping->wb_err, -EIO);
+ 	if (__ratelimit(&_rs)) {
+ 		path = file_path(filp, pathname, sizeof(pathname));
+ 		if (IS_ERR(path))
+@@ -3179,7 +3178,7 @@ generic_file_direct_write(struct kiocb *iocb, struct iov_iter *from)
  
- ssize_t part_fail_store(struct device *dev,
-@@ -1295,7 +1295,7 @@ ssize_t part_fail_store(struct device *dev,
- 	int i;
- 
- 	if (count > 0 && sscanf(buf, "%d", &i) > 0)
--		p->make_it_fail = (i == 0) ? 0 : 1;
-+		p->pdev->bd_make_it_fail = (i == 0) ? 0 : 1;
- 
- 	return count;
- }
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index c0591e52d7d7ce..b237f1e4081405 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -52,6 +52,9 @@ struct block_device {
- 	struct super_block	*bd_fsfreeze_sb;
- 
- 	struct partition_meta_info *bd_meta_info;
-+#ifdef CONFIG_FAIL_MAKE_REQUEST
-+	bool			bd_make_it_fail;
-+#endif
- } __randomize_layout;
- 
- #define bdev_whole(_bdev) \
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index b4a5c05593b99c..349cf6403ccddc 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -56,9 +56,6 @@ struct hd_struct {
- 	struct block_device *bdev;
- 	struct device __dev;
- 	int policy, partno;
--#ifdef CONFIG_FAIL_MAKE_REQUEST
--	int make_it_fail;
--#endif
- 	struct rcu_work rcu_work;
- };
- 
+ 	if (iocb->ki_flags & IOCB_NOWAIT) {
+ 		/* If there are pages to writeback, return */
+-		if (filemap_range_has_page(inode->i_mapping, pos,
++		if (filemap_range_has_page(file->f_mapping, pos,
+ 					   pos + write_len - 1))
+ 			return -EAGAIN;
+ 	} else {
 -- 
 2.29.2
 
