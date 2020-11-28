@@ -7,38 +7,38 @@ X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 62557C8301F
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:05 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A03E3C8301C
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 18A6122470
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:05 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 62CB522470
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="I3jCuyW0"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="Liq2Br79"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2389998AbgK1Vua (ORCPT
+        id S1731951AbgK1Vub (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 28 Nov 2020 16:50:30 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41216 "EHLO
+        Sat, 28 Nov 2020 16:50:31 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41640 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731150AbgK1Sry (ORCPT
+        with ESMTP id S1731229AbgK1SsT (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 28 Nov 2020 13:47:54 -0500
+        Sat, 28 Nov 2020 13:48:19 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 634CBC02548D;
-        Sat, 28 Nov 2020 08:16:11 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1FBD1C0254C4;
+        Sat, 28 Nov 2020 08:15:47 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=GIjN25CHDvXn0PUDT3xHPXMPnhcG28R4lRKj+byEQtQ=; b=I3jCuyW0xpEhM8f46M3RSoE9ZN
-        KVOxycRTfDmYw44tAeGrpSIvjc3hfQQjDmDMWsVXlyXi1bmABY1szY6DHRpakuePWJtBcCmjhdBnd
-        xJ4/djR9iJSq7agAU4wE+Y4mR5xYh/vujEzqko4aSOqDtDhpz8YeT2jWNPMdOFbYPvoFAas5QhKJv
-        mAXloQLzPoZWTYD9yHjuwDu/Pt3H0I/jqsQrLpm6UrSQ564ffDVuj81x+idaWVhmP2dDsq74f9fJz
-        gO6LKtDMjRArN59Ll9Rd1VnLJ/yj9GC+l3xu8TLh7ri54mtZk9AC5kpVttNDM8yZpupLrS74J6+jd
-        daSpBbhw==;
+        bh=SW7QB0PrcKUZMioCTHfjVYRSAQJETlEvEJA7mQw1f90=; b=Liq2Br79DFqa2vd+70cG75jOmg
+        tvj3esv3hGVVDVq5ZbQ09HyyotTrQ7PqdSz0muZ3JC+uSftEJ5MLS8Z5hwTt1UjtJPUKDECMZZkox
+        YKw0ZHqvZ5La4ZjR9q2nfFlI0Or5Bnn1+EuXTpHmQGULXLsYV47Hy9/6Y0iCoS2OO2xlRIT0Ya/kK
+        33kc1fKow74U3yoUz2MMlQpIgCfaWXJRkAPz1VFwF3GFICdBg3dPFPkOFsBhCzKHYdkbFgAI6HkMG
+        f0lsix3hzGCJcwa8aJJH1ViFln19VrRn+NlBfCI5iLbmyTlXo9gfLpTM3RdJD9jE+KMK7zyvJ9PpX
+        QboQwlRA==;
 Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kj2tE-0000Lg-GH; Sat, 28 Nov 2020 16:16:01 +0000
+        id 1kj2sq-0000Fn-8T; Sat, 28 Nov 2020 16:15:36 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 28/45] block: simplify part_to_disk
-Date:   Sat, 28 Nov 2020 17:14:53 +0100
-Message-Id: <20201128161510.347752-29-hch@lst.de>
+Subject: [PATCH 15/45] block: change the hash used for looking up block devices
+Date:   Sat, 28 Nov 2020 17:14:40 +0100
+Message-Id: <20201128161510.347752-16-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201128161510.347752-1-hch@lst.de>
 References: <20201128161510.347752-1-hch@lst.de>
@@ -63,37 +63,67 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Now that struct hd_struct has a block_device pointer use that to
-find the disk.
+Adding the minor to the major creates tons of pointless conflicts. Just
+use the dev_t itself, which is 32-bits and thus is guaranteed to fit
+into ino_t.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Reviewed-by: Jan Kara <jack@suse.cz>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/genhd.h | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ fs/block_dev.c | 26 ++------------------------
+ 1 file changed, 2 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index 42a51653c7303e..6ba91ee54cb2f6 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -218,13 +218,9 @@ struct gendisk {
- 
- static inline struct gendisk *part_to_disk(struct hd_struct *part)
- {
--	if (likely(part)) {
--		if (part->partno)
--			return dev_to_disk(part_to_dev(part)->parent);
--		else
--			return dev_to_disk(part_to_dev(part));
--	}
--	return NULL;
-+	if (unlikely(!part))
-+		return NULL;
-+	return part->bdev->bd_disk;
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index c5755150c6be62..d707ab376da86e 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -863,35 +863,12 @@ void __init bdev_cache_init(void)
+ 	blockdev_superblock = bd_mnt->mnt_sb;   /* For writeback */
  }
  
- static inline int disk_max_parts(struct gendisk *disk)
+-/*
+- * Most likely _very_ bad one - but then it's hardly critical for small
+- * /dev and can be fixed when somebody will need really large one.
+- * Keep in mind that it will be fed through icache hash function too.
+- */
+-static inline unsigned long hash(dev_t dev)
+-{
+-	return MAJOR(dev)+MINOR(dev);
+-}
+-
+-static int bdev_test(struct inode *inode, void *data)
+-{
+-	return BDEV_I(inode)->bdev.bd_dev == *(dev_t *)data;
+-}
+-
+-static int bdev_set(struct inode *inode, void *data)
+-{
+-	BDEV_I(inode)->bdev.bd_dev = *(dev_t *)data;
+-	return 0;
+-}
+-
+ static struct block_device *bdget(dev_t dev)
+ {
+ 	struct block_device *bdev;
+ 	struct inode *inode;
+ 
+-	inode = iget5_locked(blockdev_superblock, hash(dev),
+-			bdev_test, bdev_set, &dev);
+-
++	inode = iget_locked(blockdev_superblock, dev);
+ 	if (!inode)
+ 		return NULL;
+ 
+@@ -903,6 +880,7 @@ static struct block_device *bdget(dev_t dev)
+ 		bdev->bd_super = NULL;
+ 		bdev->bd_inode = inode;
+ 		bdev->bd_part_count = 0;
++		bdev->bd_dev = dev;
+ 		inode->i_mode = S_IFBLK;
+ 		inode->i_rdev = dev;
+ 		inode->i_bdev = bdev;
 -- 
 2.29.2
 
