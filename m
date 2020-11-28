@@ -2,43 +2,43 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
-	autolearn_force=no version=3.4.0
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E39A2C63798
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 21:50:55 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 42ABAC64E7B
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 21:50:56 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5A2C7221FF
+	by mail.kernel.org (Postfix) with ESMTP id C4FF220857
 	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 21:50:55 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="shpiisUA"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="v2FM1GuZ"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731606AbgK1Vu3 (ORCPT
+        id S2390060AbgK1Vuj (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 28 Nov 2020 16:50:29 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41212 "EHLO
+        Sat, 28 Nov 2020 16:50:39 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43982 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731100AbgK1Sry (ORCPT
+        with ESMTP id S1733110AbgK1TFW (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 28 Nov 2020 13:47:54 -0500
+        Sat, 28 Nov 2020 14:05:22 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4DADFC02577D;
-        Sat, 28 Nov 2020 08:15:36 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8EA30C02549B;
+        Sat, 28 Nov 2020 08:31:42 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=2uWDeQgsBeIc9r8ohTt9OrV40AdHP0SZhV+7+E52opA=; b=shpiisUAhts82WFLQNhdzcv7gf
-        cVXdTqnjKFz6zzbQfWDVeyUWw5ZitA4C1KMpmS00s5jdL1Tl5dH/EJAgvASHZak5i+LPVhjxY70m9
-        hWE2iHpA6jngvi/UzdCraCOzf6O2BGU5xGNAzeAVONtlffl2qaRwK677uBtkU+NRx/fx6Y+8YnogM
-        hEuHXUziGVxxk6pZ5ZKe6tSPOYqqoLGuyOo3PQuS/pzr9RxgfNVrjR5q+7/M/xgtcITAbcfpLu0jJ
-        Yla6VRt48cUuPRK/EfdZ/nz0mD+7eNkKyZmm0XBWVj5T4VdNG7s6tYmt/d2n+b0Mat81gCz7MOBq6
-        Euy92KgA==;
-Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
+        bh=kkcMqf6QgKmfF7sy7te2yYBRFOpAGBtPlQPbcimyrvI=; b=v2FM1GuZ9EjJBHBo9RSaqFZioe
+        6oGhIB+FG+pupTfIYOX9HbvGrZR+Z7w6UC/9nIEKWz6TeVEgtAf5KvqJ8yxTmj95xDsxFYclMR+CD
+        j5RsLRmTxESFkj7aiI68vkGYw3XnacNYyaOanE/IquQqT420ruVqO88nkuVU/R1zgZsH7PvVRRjMe
+        YVHWhCvVcPkJt5yrQQzxCINqjn2msj1MGj4gLSxbbU1AhVVhaEfr+6gIvkoYS1GA7J3vLJjBrQDHE
+        Z1iF1IAxl3jSAx+rwccf0cdeq88YsV8CqSyeJs0aCdfBxZt9kB/PP+2J2SKM5Kt4YJdDN1OdEbmho
+        pKGbYmeA==;
+Received: from 089144198196.atnat0007.highway.a1.net ([89.144.198.196] helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kj2sd-0000DU-6A; Sat, 28 Nov 2020 16:15:23 +0000
+        id 1kj38I-0001U0-Eo; Sat, 28 Nov 2020 16:31:34 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -50,9 +50,9 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: [PATCH 07/45] loop: do not call set_blocksize
-Date:   Sat, 28 Nov 2020 17:14:32 +0100
-Message-Id: <20201128161510.347752-8-hch@lst.de>
+Subject: [PATCH 40/45] block: pass a block_device to blk_alloc_devt
+Date:   Sat, 28 Nov 2020 17:15:05 +0100
+Message-Id: <20201128161510.347752-41-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201128161510.347752-1-hch@lst.de>
 References: <20201128161510.347752-1-hch@lst.de>
@@ -63,29 +63,85 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-set_blocksize is used by file systems to use their preferred buffer cache
-block size.  Block drivers should not set it.
+Pass the block_device actually needed instead of the hd_struct.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- drivers/block/loop.c | 3 ---
- 1 file changed, 3 deletions(-)
+ block/blk.h             |  2 +-
+ block/genhd.c           | 14 +++++++-------
+ block/partitions/core.c |  2 +-
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 9a27d4f1c08aac..b42c728620c9e4 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1164,9 +1164,6 @@ static int loop_configure(struct loop_device *lo, fmode_t mode,
- 	size = get_loop_size(lo, file);
- 	loop_set_size(lo, size);
+diff --git a/block/blk.h b/block/blk.h
+index d5bf8f3a078186..9657c6da7c770c 100644
+--- a/block/blk.h
++++ b/block/blk.h
+@@ -350,7 +350,7 @@ static inline void blk_queue_free_zone_bitmaps(struct request_queue *q) {}
  
--	set_blocksize(bdev, S_ISBLK(inode->i_mode) ?
--		      block_size(inode->i_bdev) : PAGE_SIZE);
--
- 	lo->lo_state = Lo_bound;
- 	if (part_shift)
- 		lo->lo_flags |= LO_FLAGS_PARTSCAN;
+ struct block_device *disk_map_sector_rcu(struct gendisk *disk, sector_t sector);
+ 
+-int blk_alloc_devt(struct hd_struct *part, dev_t *devt);
++int blk_alloc_devt(struct block_device *part, dev_t *devt);
+ void blk_free_devt(dev_t devt);
+ char *disk_name(struct gendisk *hd, int partno, char *buf);
+ #define ADDPART_FLAG_NONE	0
+diff --git a/block/genhd.c b/block/genhd.c
+index f4e5a892fc8208..835393b7101ace 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -562,8 +562,8 @@ static int blk_mangle_minor(int minor)
+ }
+ 
+ /**
+- * blk_alloc_devt - allocate a dev_t for a partition
+- * @part: partition to allocate dev_t for
++ * blk_alloc_devt - allocate a dev_t for a block device
++ * @bdev: block device to allocate dev_t for
+  * @devt: out parameter for resulting dev_t
+  *
+  * Allocate a dev_t for block device.
+@@ -575,14 +575,14 @@ static int blk_mangle_minor(int minor)
+  * CONTEXT:
+  * Might sleep.
+  */
+-int blk_alloc_devt(struct hd_struct *part, dev_t *devt)
++int blk_alloc_devt(struct block_device *bdev, dev_t *devt)
+ {
+-	struct gendisk *disk = part_to_disk(part);
++	struct gendisk *disk = bdev->bd_disk;
+ 	int idx;
+ 
+ 	/* in consecutive minor range? */
+-	if (part->bdev->bd_partno < disk->minors) {
+-		*devt = MKDEV(disk->major, disk->first_minor + part->bdev->bd_partno);
++	if (bdev->bd_partno < disk->minors) {
++		*devt = MKDEV(disk->major, disk->first_minor + bdev->bd_partno);
+ 		return 0;
+ 	}
+ 
+@@ -738,7 +738,7 @@ static void __device_add_disk(struct device *parent, struct gendisk *disk,
+ 
+ 	disk->flags |= GENHD_FL_UP;
+ 
+-	retval = blk_alloc_devt(disk->part0->bd_part, &devt);
++	retval = blk_alloc_devt(disk->part0, &devt);
+ 	if (retval) {
+ 		WARN_ON(1);
+ 		return;
+diff --git a/block/partitions/core.c b/block/partitions/core.c
+index 6db9ca8b722d66..3d8243334c7cb4 100644
+--- a/block/partitions/core.c
++++ b/block/partitions/core.c
+@@ -392,7 +392,7 @@ static struct hd_struct *add_partition(struct gendisk *disk, int partno,
+ 	pdev->type = &part_type;
+ 	pdev->parent = ddev;
+ 
+-	err = blk_alloc_devt(p, &devt);
++	err = blk_alloc_devt(bdev, &devt);
+ 	if (err)
+ 		goto out_bdput;
+ 	pdev->devt = devt;
 -- 
 2.29.2
 
