@@ -5,40 +5,40 @@ X-Spam-Level:
 X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C87EAC64E8A
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2A057C83024
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:06 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 884EB2344C
-	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:04 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E741E24073
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 22:05:05 +0000 (UTC)
 Authentication-Results: mail.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="M2g6tz31"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="jdMRMFgy"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2390003AbgK1Vua (ORCPT
+        id S1731658AbgK1Vu3 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 28 Nov 2020 16:50:30 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41222 "EHLO
+        Sat, 28 Nov 2020 16:50:29 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41226 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731185AbgK1Srz (ORCPT
+        with ESMTP id S1731169AbgK1Sry (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 28 Nov 2020 13:47:55 -0500
+        Sat, 28 Nov 2020 13:47:54 -0500
 Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B0411C02548C;
-        Sat, 28 Nov 2020 08:16:10 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A34F5C025597;
+        Sat, 28 Nov 2020 08:15:38 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
         References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
         Content-Type:Content-ID:Content-Description;
-        bh=7uXerCHB6aSYeRVOmpW3+FvIW2+Jb0Cz0RvY49RAcoU=; b=M2g6tz31JNLCCrGTJYFzJiW+Ft
-        OwvXoI4Vwnq4nDhY9H8grOkdPI/x6b1ccCv8RLM9znBNqe7muYbrDZDozp2XXP7b1FB1JbeVV5yNp
-        7zIOMVc5SbhiHDCMHU//dUKkQhYCg5sBPniNSBjJRSQmDAZTgNt9xgfuH0hSn4JUoKvgPzQI5Sph3
-        nqoGRyClMJjgi6JC5O5ng7r442WMhSws/fiVscAFY2FnfOBmY5z7gs98h5E4kjNGtWPozT9nO/siy
-        W7Fyk11k2z5C70AsPegFeCyCKhM4/VDeNxh9WR9A8g6UKPvldoTMuMKEFkt6XTXh4VYmrmr+Lw4qp
-        1PHwoXnA==;
+        bh=6YDwceZWXpj1NQcHFGXJHKjMSWHoc1O1qwpXMktypjQ=; b=jdMRMFgyWv7mA57t3vj2lq5WPc
+        LawQuf0tT/ceNr1l/EmSJzNWijN+Z4DImOblq/pvKOmEcs8Ud8nQf3OJndw1yVzcKD32F+/rCTE4n
+        70bC16j+pvePlhvBTS7MYPzzX9HlTkrnwiVzXdh8mrVNang6zP7iyTq6Bh3xmfd8mCGJZLBrlb2Sx
+        eA1tAJ1UPoQ4LpLtYfNUCIBIFypEMZbj50zQycyJ5AZMzPCuz/Cib8Uwrw5h9mUGxQgJNR8R0UCbA
+        EdCU/7SLbDDycvc3HxnNiqbfMeFzMANYBBfaMFrCw19KU4L1oggxypy+WyZ/2z2I1/VjGl4lOUj7t
+        O8gaW80Q==;
 Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
         by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1kj2tB-0000LJ-HP; Sat, 28 Nov 2020 16:15:58 +0000
+        id 1kj2sj-0000EZ-PR; Sat, 28 Nov 2020 16:15:30 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -49,10 +49,10 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         dm-devel@redhat.com, Jan Kara <jack@suse.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 27/45] block: simplify the block device claiming interface
-Date:   Sat, 28 Nov 2020 17:14:52 +0100
-Message-Id: <20201128161510.347752-28-hch@lst.de>
+        linux-mm@kvack.org, Hannes Reinecke <hare@suse.de>
+Subject: [PATCH 11/45] block: remove a superflous check in blkpg_do_ioctl
+Date:   Sat, 28 Nov 2020 17:14:36 +0100
+Message-Id: <20201128161510.347752-12-hch@lst.de>
 X-Mailer: git-send-email 2.29.2
 In-Reply-To: <20201128161510.347752-1-hch@lst.de>
 References: <20201128161510.347752-1-hch@lst.de>
@@ -63,222 +63,36 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Stop passing the whole device as a separate argument given that it
-can be trivially deducted and cleanup the !holder debug check.
+sector_t is now always a u64, so this check is not needed.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Reviewed-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- drivers/block/loop.c   | 12 +++++-----
- fs/block_dev.c         | 51 +++++++++++++++---------------------------
- include/linux/blkdev.h |  6 ++---
- 3 files changed, 25 insertions(+), 44 deletions(-)
+ block/ioctl.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index c0df88b3300c41..d643c67be6acea 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -1069,7 +1069,6 @@ static int loop_configure(struct loop_device *lo, fmode_t mode,
- 	struct file	*file;
- 	struct inode	*inode;
- 	struct address_space *mapping;
--	struct block_device *claimed_bdev = NULL;
- 	int		error;
- 	loff_t		size;
- 	bool		partscan;
-@@ -1088,8 +1087,7 @@ static int loop_configure(struct loop_device *lo, fmode_t mode,
- 	 * here to avoid changing device under exclusive owner.
- 	 */
- 	if (!(mode & FMODE_EXCL)) {
--		claimed_bdev = bdev_whole(bdev);
--		error = bd_prepare_to_claim(bdev, claimed_bdev, loop_configure);
-+		error = bd_prepare_to_claim(bdev, loop_configure);
- 		if (error)
- 			goto out_putf;
- 	}
-@@ -1176,15 +1174,15 @@ static int loop_configure(struct loop_device *lo, fmode_t mode,
- 	mutex_unlock(&loop_ctl_mutex);
- 	if (partscan)
- 		loop_reread_partitions(lo, bdev);
--	if (claimed_bdev)
--		bd_abort_claiming(bdev, claimed_bdev, loop_configure);
-+	if (!(mode & FMODE_EXCL))
-+		bd_abort_claiming(bdev, loop_configure);
- 	return 0;
+diff --git a/block/ioctl.c b/block/ioctl.c
+index 6b785181344fe1..0c09bb7a6ff35f 100644
+--- a/block/ioctl.c
++++ b/block/ioctl.c
+@@ -35,15 +35,6 @@ static int blkpg_do_ioctl(struct block_device *bdev,
+ 	start = p.start >> SECTOR_SHIFT;
+ 	length = p.length >> SECTOR_SHIFT;
  
- out_unlock:
- 	mutex_unlock(&loop_ctl_mutex);
- out_bdev:
--	if (claimed_bdev)
--		bd_abort_claiming(bdev, claimed_bdev, loop_configure);
-+	if (!(mode & FMODE_EXCL))
-+		bd_abort_claiming(bdev, loop_configure);
- out_putf:
- 	fput(file);
- out:
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 94baee369d26e5..0569f5ebeb6fd0 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -110,24 +110,20 @@ EXPORT_SYMBOL(invalidate_bdev);
- int truncate_bdev_range(struct block_device *bdev, fmode_t mode,
- 			loff_t lstart, loff_t lend)
- {
--	struct block_device *claimed_bdev = NULL;
--	int err;
+-	/* check for fit in a hd_struct */
+-	if (sizeof(sector_t) < sizeof(long long)) {
+-		long pstart = start, plength = length;
 -
- 	/*
- 	 * If we don't hold exclusive handle for the device, upgrade to it
- 	 * while we discard the buffer cache to avoid discarding buffers
- 	 * under live filesystem.
- 	 */
- 	if (!(mode & FMODE_EXCL)) {
--		claimed_bdev = bdev_whole(bdev);
--		err = bd_prepare_to_claim(bdev, claimed_bdev,
--					  truncate_bdev_range);
-+		int err = bd_prepare_to_claim(bdev, truncate_bdev_range);
- 		if (err)
- 			return err;
- 	}
-+
- 	truncate_inode_pages_range(bdev->bd_inode->i_mapping, lstart, lend);
--	if (claimed_bdev)
--		bd_abort_claiming(bdev, claimed_bdev, truncate_bdev_range);
-+	if (!(mode & FMODE_EXCL))
-+		bd_abort_claiming(bdev, truncate_bdev_range);
- 	return 0;
- }
- EXPORT_SYMBOL(truncate_bdev_range);
-@@ -978,7 +974,6 @@ static bool bd_may_claim(struct block_device *bdev, struct block_device *whole,
- /**
-  * bd_prepare_to_claim - claim a block device
-  * @bdev: block device of interest
-- * @whole: the whole device containing @bdev, may equal @bdev
-  * @holder: holder trying to claim @bdev
-  *
-  * Claim @bdev.  This function fails if @bdev is already claimed by another
-@@ -988,9 +983,12 @@ static bool bd_may_claim(struct block_device *bdev, struct block_device *whole,
-  * RETURNS:
-  * 0 if @bdev can be claimed, -EBUSY otherwise.
-  */
--int bd_prepare_to_claim(struct block_device *bdev, struct block_device *whole,
--		void *holder)
-+int bd_prepare_to_claim(struct block_device *bdev, void *holder)
- {
-+	struct block_device *whole = bdev_whole(bdev);
-+
-+	if (WARN_ON_ONCE(!holder))
-+		return -EINVAL;
- retry:
- 	spin_lock(&bdev_lock);
- 	/* if someone else claimed, fail */
-@@ -1030,15 +1028,15 @@ static void bd_clear_claiming(struct block_device *whole, void *holder)
- /**
-  * bd_finish_claiming - finish claiming of a block device
-  * @bdev: block device of interest
-- * @whole: whole block device
-  * @holder: holder that has claimed @bdev
-  *
-  * Finish exclusive open of a block device. Mark the device as exlusively
-  * open by the holder and wake up all waiters for exclusive open to finish.
-  */
--static void bd_finish_claiming(struct block_device *bdev,
--		struct block_device *whole, void *holder)
-+static void bd_finish_claiming(struct block_device *bdev, void *holder)
- {
-+	struct block_device *whole = bdev_whole(bdev);
-+
- 	spin_lock(&bdev_lock);
- 	BUG_ON(!bd_may_claim(bdev, whole, holder));
- 	/*
-@@ -1063,11 +1061,10 @@ static void bd_finish_claiming(struct block_device *bdev,
-  * also used when exclusive open is not actually desired and we just needed
-  * to block other exclusive openers for a while.
-  */
--void bd_abort_claiming(struct block_device *bdev, struct block_device *whole,
--		       void *holder)
-+void bd_abort_claiming(struct block_device *bdev, void *holder)
- {
- 	spin_lock(&bdev_lock);
--	bd_clear_claiming(whole, holder);
-+	bd_clear_claiming(bdev_whole(bdev), holder);
- 	spin_unlock(&bdev_lock);
- }
- EXPORT_SYMBOL(bd_abort_claiming);
-@@ -1487,7 +1484,6 @@ void blkdev_put_no_open(struct block_device *bdev)
-  */
- struct block_device *blkdev_get_by_dev(dev_t dev, fmode_t mode, void *holder)
- {
--	struct block_device *claiming;
- 	bool unblock_events = true;
- 	struct block_device *bdev;
- 	struct gendisk *disk;
-@@ -1510,15 +1506,9 @@ struct block_device *blkdev_get_by_dev(dev_t dev, fmode_t mode, void *holder)
- 	disk = bdev->bd_disk;
- 
- 	if (mode & FMODE_EXCL) {
--		WARN_ON_ONCE(!holder);
--	
--		ret = -ENOMEM;
--		claiming = bdget_disk(disk, 0);
--		if (!claiming)
--			goto put_blkdev;
--		ret = bd_prepare_to_claim(bdev, claiming, holder);
-+		ret = bd_prepare_to_claim(bdev, holder);
- 		if (ret)
--			goto put_claiming;
-+			goto put_blkdev;
- 	}
- 
- 	disk_block_events(disk);
-@@ -1528,7 +1518,7 @@ struct block_device *blkdev_get_by_dev(dev_t dev, fmode_t mode, void *holder)
- 	if (ret)
- 		goto abort_claiming;
- 	if (mode & FMODE_EXCL) {
--		bd_finish_claiming(bdev, claiming, holder);
-+		bd_finish_claiming(bdev, holder);
- 
- 		/*
- 		 * Block event polling for write claims if requested.  Any write
-@@ -1547,18 +1537,13 @@ struct block_device *blkdev_get_by_dev(dev_t dev, fmode_t mode, void *holder)
- 
- 	if (unblock_events)
- 		disk_unblock_events(disk);
--	if (mode & FMODE_EXCL)
--		bdput(claiming);
- 	return bdev;
- 
- abort_claiming:
- 	if (mode & FMODE_EXCL)
--		bd_abort_claiming(bdev, claiming, holder);
-+		bd_abort_claiming(bdev, holder);
- 	mutex_unlock(&bdev->bd_mutex);
- 	disk_unblock_events(disk);
--put_claiming:
--	if (mode & FMODE_EXCL)
--		bdput(claiming);
- put_blkdev:
- 	blkdev_put_no_open(bdev);
- 	if (ret == -ERESTARTSYS)
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 5d48b92f5e4348..43a25d855e049a 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1988,10 +1988,8 @@ void blkdev_show(struct seq_file *seqf, off_t offset);
- struct block_device *blkdev_get_by_path(const char *path, fmode_t mode,
- 		void *holder);
- struct block_device *blkdev_get_by_dev(dev_t dev, fmode_t mode, void *holder);
--int bd_prepare_to_claim(struct block_device *bdev, struct block_device *whole,
--		void *holder);
--void bd_abort_claiming(struct block_device *bdev, struct block_device *whole,
--		void *holder);
-+int bd_prepare_to_claim(struct block_device *bdev, void *holder);
-+void bd_abort_claiming(struct block_device *bdev, void *holder);
- void blkdev_put(struct block_device *bdev, fmode_t mode);
- 
- /* just for blk-cgroup, don't use elsewhere */
+-		if (pstart != start || plength != length || pstart < 0 ||
+-		    plength < 0 || p.pno > 65535)
+-			return -EINVAL;
+-	}
+-
+ 	switch (op) {
+ 	case BLKPG_ADD_PARTITION:
+ 		/* check if partition is aligned to blocksize */
 -- 
 2.29.2
 
