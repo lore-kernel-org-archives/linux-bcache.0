@@ -2,95 +2,112 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=ham autolearn_force=no
-	version=3.4.0
+X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C3AFEC3E8C5
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 17:30:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 73F37C63777
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 21:50:55 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 8AB4922253
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Nov 2020 17:30:17 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 0E5AA20857
+	for <linux-bcache@archiver.kernel.org>; Sat, 28 Nov 2020 21:50:54 +0000 (UTC)
+Authentication-Results: mail.kernel.org;
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="YCL5FH8M"
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731364AbgK0RaM (ORCPT
+        id S1730967AbgK1Vu2 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 27 Nov 2020 12:30:12 -0500
-Received: from mx2.suse.de ([195.135.220.15]:58830 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1731337AbgK0RaL (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 27 Nov 2020 12:30:11 -0500
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 5DF80ABD7;
-        Fri, 27 Nov 2020 17:30:10 +0000 (UTC)
-Received: by quack2.suse.cz (Postfix, from userid 1000)
-        id 1DA451E1319; Fri, 27 Nov 2020 18:30:10 +0100 (CET)
-Date:   Fri, 27 Nov 2020 18:30:10 +0100
-From:   Jan Kara <jack@suse.cz>
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
+        Sat, 28 Nov 2020 16:50:28 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41212 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1730837AbgK1Spj (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 28 Nov 2020 13:45:39 -0500
+Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 289A2C025483;
+        Sat, 28 Nov 2020 08:15:54 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
+        References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
+        Content-Type:Content-ID:Content-Description;
+        bh=vZ+otfYsHp/5sXLwka7CjsX7ANnZwDehRGIR4ErlsRo=; b=YCL5FH8MEXmod6g3jd1iMhvYAp
+        r+bAbhViZpySQ0LZ/4JWGmSi9cw+X5fkO6HG9IeN5Nviz2tqj2MtFnQUpczX1hjQln47u+pCl1W/o
+        r8Wl7DeAHeHOTcBCxvqF6ux0ARYgITzWcjIlR1flsFzf6uYZ2HKWMcU9FIYUDN5XdFlefe0Pkq9rD
+        V5IPZryzeFJg416Ba+u4n1dnP/CQ6nTtjDsG7DTRYjJAi/4zyRJgYFOH+udtU0EKVQlAvrcXzv+Pw
+        +Gpp8a8dnYj2O0GN5CbPdwHF5rbNpeCR9b6Ggu7ZoPyWMrWOn3wIODIRZGPtaNnoPm/zh1C80d+5c
+        vJn6pwGA==;
+Received: from [2001:4bb8:18c:1dd6:48f3:741a:602e:7fdd] (helo=localhost)
+        by casper.infradead.org with esmtpsa (Exim 4.92.3 #3 (Red Hat Linux))
+        id 1kj2sy-0000Hf-23; Sat, 28 Nov 2020 16:15:44 +0000
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jan Kara <jack@suse.cz>,
         Johannes Thumshirn <johannes.thumshirn@wdc.com>,
         dm-devel@redhat.com, Jan Kara <jack@suse.com>,
         linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
-Subject: Re: [PATCH 41/44] block: switch disk_part_iter_* to use a struct
- block_device
-Message-ID: <20201127173010.GB4276@quack2.suse.cz>
-References: <20201126130422.92945-1-hch@lst.de>
- <20201126130422.92945-42-hch@lst.de>
- <20201127125341.GD27162@quack2.suse.cz>
- <20201127152407.GA7115@lst.de>
+Subject: [PATCH 20/45] block: refactor __blkdev_put
+Date:   Sat, 28 Nov 2020 17:14:45 +0100
+Message-Id: <20201128161510.347752-21-hch@lst.de>
+X-Mailer: git-send-email 2.29.2
+In-Reply-To: <20201128161510.347752-1-hch@lst.de>
+References: <20201128161510.347752-1-hch@lst.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20201127152407.GA7115@lst.de>
-User-Agent: Mutt/1.10.1 (2018-07-13)
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Fri 27-11-20 16:24:07, Christoph Hellwig wrote:
-> On Fri, Nov 27, 2020 at 01:53:41PM +0100, Jan Kara wrote:
-> > On Thu 26-11-20 14:04:19, Christoph Hellwig wrote:
-> > 
-> > There's:
-> > 
-> >         /* put the last partition */
-> >         disk_put_part(piter->part);
-> >         piter->part = NULL;
-> > 
-> > at the beginning of disk_part_iter_next() which also needs switching to
-> > bdput(), doesn't it?
-> 
-> That is switched to call disk_part_iter_exit in patch 13.
+Reorder the code to have one big section for the last close, and to use
+bdev_is_partition.
 
-I see, sorry for the noise.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Acked-by: Tejun Heo <tj@kernel.org>
+---
+ fs/block_dev.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-> > > @@ -271,8 +271,7 @@ struct hd_struct *disk_part_iter_next(struct disk_part_iter *piter)
-> > >  		      piter->idx == 0))
-> > >  			continue;
-> > >  
-> > > -		get_device(part_to_dev(part->bd_part));
-> > > -		piter->part = part->bd_part;
-> > > +		piter->part = bdgrab(part);
-> > 
-> > bdgrab() could return NULL if we are racing with delete_partition() so I
-> > think we need to take care of that.
-> 
-> bdgrab never retuns NULL..
-
-Ah, that's what I misunderstood. I was confusing bdgrab() with igrab().
-igrab() can return NULL but bdgrab() uses ihold() and thus cannot return
-NULL. But for the lifetime rules to be safe, we should be indeed using
-igrab() and check for NULL return...
-
-								Honza
-
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 962fabe8a67b83..6016777b648336 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1742,22 +1742,22 @@ static void __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		WARN_ON_ONCE(bdev->bd_holders);
+ 		sync_blockdev(bdev);
+ 		kill_bdev(bdev);
+-
+ 		bdev_write_inode(bdev);
+-	}
+-	if (bdev->bd_contains == bdev) {
+-		if (disk->fops->release)
++
++		if (!bdev_is_partition(bdev) && disk->fops->release)
+ 			disk->fops->release(disk, mode);
+-	}
+-	if (!bdev->bd_openers) {
++
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+-		if (bdev != bdev->bd_contains)
++		if (bdev_is_partition(bdev))
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
+ 
+ 		put_disk_and_module(disk);
++	} else {
++		if (!bdev_is_partition(bdev) && disk->fops->release)
++			disk->fops->release(disk, mode);
+ 	}
+ 	mutex_unlock(&bdev->bd_mutex);
+ 	bdput(bdev);
 -- 
-Jan Kara <jack@suse.com>
-SUSE Labs, CR
+2.29.2
+
