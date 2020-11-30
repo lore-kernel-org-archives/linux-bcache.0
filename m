@@ -7,24 +7,24 @@ X-Spam-Status: No, score=-15.3 required=3.0 tests=BAYES_00,
 	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
 	USER_AGENT_SANE_1 autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7DD3FC5519F
-	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:41:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DD3F2C64E8A
+	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:41:49 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3BC962074A
-	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:41:09 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8EA3520709
+	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:41:49 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727151AbgK3HlD (ORCPT
+        id S1726929AbgK3Hls (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 30 Nov 2020 02:41:03 -0500
-Received: from mx2.suse.de ([195.135.220.15]:53130 "EHLO mx2.suse.de"
+        Mon, 30 Nov 2020 02:41:48 -0500
+Received: from mx2.suse.de ([195.135.220.15]:53468 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726137AbgK3HlD (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 30 Nov 2020 02:41:03 -0500
+        id S1726452AbgK3Hls (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 30 Nov 2020 02:41:48 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 3E777AC6A;
-        Mon, 30 Nov 2020 07:40:22 +0000 (UTC)
-Subject: Re: [PATCH 31/45] block: move disk stat accounting to struct
+        by mx2.suse.de (Postfix) with ESMTP id 8EA48AD09;
+        Mon, 30 Nov 2020 07:41:06 +0000 (UTC)
+Subject: Re: [PATCH 32/45] block: move the start_sect field to struct
  block_device
 To:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
@@ -37,14 +37,14 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
 References: <20201128161510.347752-1-hch@lst.de>
- <20201128161510.347752-32-hch@lst.de>
+ <20201128161510.347752-33-hch@lst.de>
 From:   Hannes Reinecke <hare@suse.de>
-Message-ID: <eaea37b1-8e2d-218b-aa8a-e419c5f486a1@suse.de>
-Date:   Mon, 30 Nov 2020 08:40:21 +0100
+Message-ID: <9289273f-eba0-1f67-e1fa-09ba035ee624@suse.de>
+Date:   Mon, 30 Nov 2020 08:41:05 +0100
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
  Thunderbird/78.4.0
 MIME-Version: 1.0
-In-Reply-To: <20201128161510.347752-32-hch@lst.de>
+In-Reply-To: <20201128161510.347752-33-hch@lst.de>
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Language: en-US
 Content-Transfer-Encoding: 8bit
@@ -53,22 +53,21 @@ List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 On 11/28/20 5:14 PM, Christoph Hellwig wrote:
-> Move the dkstats and stamp field to struct block_device in preparation
+> Move the start_sect field to struct block_device in preparation
 > of killing struct hd_struct.
 > 
 > Signed-off-by: Christoph Hellwig <hch@lst.de>
 > Reviewed-by: Jan Kara <jack@suse.cz>
 > ---
->   block/blk-cgroup.c        |  2 +-
->   block/blk-core.c          |  4 ++--
->   block/blk.h               |  1 -
->   block/genhd.c             | 14 ++++----------
->   block/partitions/core.c   |  9 +--------
->   fs/block_dev.c            | 10 ++++++++++
->   include/linux/blk_types.h |  2 ++
->   include/linux/genhd.h     |  2 --
->   include/linux/part_stat.h | 38 +++++++++++++++++++-------------------
->   9 files changed, 39 insertions(+), 43 deletions(-)
+>   block/blk-core.c          |  5 +++--
+>   block/blk-lib.c           |  2 +-
+>   block/genhd.c             |  4 ++--
+>   block/partitions/core.c   | 17 +++++++++--------
+>   include/linux/blk_types.h |  1 +
+>   include/linux/blkdev.h    |  4 ++--
+>   include/linux/genhd.h     |  3 +--
+>   kernel/trace/blktrace.c   | 11 +++--------
+>   8 files changed, 22 insertions(+), 25 deletions(-)
 > 
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 
