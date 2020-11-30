@@ -7,25 +7,24 @@ X-Spam-Status: No, score=-15.3 required=3.0 tests=BAYES_00,
 	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
 	USER_AGENT_SANE_1 autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 52E7CC5519F
-	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:48:39 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9D01DC63777
+	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:49:09 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 0930120857
-	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:48:38 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 5AE4820709
+	for <linux-bcache@archiver.kernel.org>; Mon, 30 Nov 2020 07:49:09 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727189AbgK3Hsi (ORCPT
+        id S1726884AbgK3HtI (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 30 Nov 2020 02:48:38 -0500
-Received: from mx2.suse.de ([195.135.220.15]:59412 "EHLO mx2.suse.de"
+        Mon, 30 Nov 2020 02:49:08 -0500
+Received: from mx2.suse.de ([195.135.220.15]:59722 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1727012AbgK3Hsh (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 30 Nov 2020 02:48:37 -0500
+        id S1725965AbgK3HtI (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 30 Nov 2020 02:49:08 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 661B7AD09;
-        Mon, 30 Nov 2020 07:47:56 +0000 (UTC)
-Subject: Re: [PATCH 39/45] block: remove the partno field from struct
- hd_struct
+        by mx2.suse.de (Postfix) with ESMTP id D0D75AC55;
+        Mon, 30 Nov 2020 07:48:26 +0000 (UTC)
+Subject: Re: [PATCH 40/45] block: pass a block_device to blk_alloc_devt
 To:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>
 Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
@@ -37,14 +36,14 @@ Cc:     Tejun Heo <tj@kernel.org>, Josef Bacik <josef@toxicpanda.com>,
         linux-mtd@lists.infradead.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
 References: <20201128161510.347752-1-hch@lst.de>
- <20201128161510.347752-40-hch@lst.de>
+ <20201128161510.347752-41-hch@lst.de>
 From:   Hannes Reinecke <hare@suse.de>
-Message-ID: <501f6f5b-64af-8254-0c25-d4a2614b0039@suse.de>
-Date:   Mon, 30 Nov 2020 08:47:54 +0100
+Message-ID: <c4141ae5-adb8-2376-b845-3f0860efc80a@suse.de>
+Date:   Mon, 30 Nov 2020 08:48:25 +0100
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
  Thunderbird/78.4.0
 MIME-Version: 1.0
-In-Reply-To: <20201128161510.347752-40-hch@lst.de>
+In-Reply-To: <20201128161510.347752-41-hch@lst.de>
 Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Language: en-US
 Content-Transfer-Encoding: 8bit
@@ -53,16 +52,15 @@ List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 On 11/28/20 5:15 PM, Christoph Hellwig wrote:
-> Just use the bd_partno field in struct block_device everywhere.
+> Pass the block_device actually needed instead of the hd_struct.
 > 
 > Signed-off-by: Christoph Hellwig <hch@lst.de>
 > Reviewed-by: Jan Kara <jack@suse.cz>
 > ---
->   block/genhd.c           | 12 ++++++------
->   block/partitions/core.c |  9 ++++-----
->   include/linux/genhd.h   |  1 -
->   init/do_mounts.c        |  2 +-
->   4 files changed, 11 insertions(+), 13 deletions(-)
+>   block/blk.h             |  2 +-
+>   block/genhd.c           | 14 +++++++-------
+>   block/partitions/core.c |  2 +-
+>   3 files changed, 9 insertions(+), 9 deletions(-)
 > 
 Reviewed-by: Hannes Reinecke <hare@suse.de>
 
