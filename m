@@ -2,59 +2,74 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 82CF9C433E0
-	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 08:59:27 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9D16FC4332B
+	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 14:13:12 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3F93122482
-	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 08:59:27 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 808C823159
+	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 14:13:12 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727805AbgLWI7L (ORCPT
+        id S1728964AbgLWOMc (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 23 Dec 2020 03:59:11 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40762 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1727050AbgLWI7K (ORCPT
+        Wed, 23 Dec 2020 09:12:32 -0500
+Received: from szxga07-in.huawei.com ([45.249.212.35]:9914 "EHLO
+        szxga07-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1728742AbgLWOMb (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 23 Dec 2020 03:59:10 -0500
-Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6BDE8C0613D3;
-        Wed, 23 Dec 2020 00:58:30 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=casper.20170209; h=In-Reply-To:Content-Type:MIME-Version:
-        References:Message-ID:Subject:Cc:To:From:Date:Sender:Reply-To:
-        Content-Transfer-Encoding:Content-ID:Content-Description;
-        bh=l2WBiCb5duYJRA9nKpihqrJOH1Qjg6utSrFiu8qAdtc=; b=Drt9kxZ7Ac6Ujibm0wEYpL40lB
-        EcPYeOcKOk/1TziuRPUOh1XjMOtq0ZK99mb6UE9rQea2uOBiNnWZxkltSzrZbFnybIuuqgmaMgEZY
-        nydyAaR/RIS9ORtbDpS0uzJKIUhTxAWYQae20oTfkBQw4wy0vlF07racTpx4VDUt4SjM8PL9aFCuy
-        /iLeE8hV3n08vqClJ7M4Bm2lZrGLAAIivw1URX5+auQSNPzEKvgXCv6i7uO/vIB7S610XqSTP/Qn9
-        1d+9Z+0dPrt0iEpUI/FfsLrgY2TwpDHxdATMD8bcJwpBJRfwl2HE4qPPYkQsc1whhRJKibXxswmrK
-        6Qdm0KPA==;
-Received: from hch by casper.infradead.org with local (Exim 4.92.3 #3 (Red Hat Linux))
-        id 1krzyP-0000Rj-Pr; Wed, 23 Dec 2020 08:58:21 +0000
-Date:   Wed, 23 Dec 2020 08:58:21 +0000
-From:   Christoph Hellwig <hch@infradead.org>
-To:     Yi Li <yili@winhong.com>
-Cc:     colyli@suse.de, yilikernel@gmail.com, kent.overstreet@gmail.com,
-        hch@lst.de, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] bcache:remove a superfluous check in register_bcache
-Message-ID: <20201223085821.GA1313@infradead.org>
-References: <4891349b-2136-eb8b-758d-f937b558b1c0@suse.de>
- <20201221094943.1712589-1-yili@winhong.com>
+        Wed, 23 Dec 2020 09:12:31 -0500
+Received: from DGGEMS402-HUB.china.huawei.com (unknown [172.30.72.58])
+        by szxga07-in.huawei.com (SkyGuard) with ESMTP id 4D1FVZ2fmhz7K95;
+        Wed, 23 Dec 2020 22:11:02 +0800 (CST)
+Received: from ubuntu.network (10.175.138.68) by
+ DGGEMS402-HUB.china.huawei.com (10.3.19.202) with Microsoft SMTP Server id
+ 14.3.498.0; Wed, 23 Dec 2020 22:11:38 +0800
+From:   Zheng Yongjun <zhengyongjun3@huawei.com>
+To:     <colyli@suse.de>, <kent.overstreet@gmail.com>,
+        <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC:     Zheng Yongjun <zhengyongjun3@huawei.com>
+Subject: [PATCH -next] md: bcache: use DEFINE_MUTEX (and mutex_init() had been too late)
+Date:   Wed, 23 Dec 2020 22:12:15 +0800
+Message-ID: <20201223141215.32727-1-zhengyongjun3@huawei.com>
+X-Mailer: git-send-email 2.22.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20201221094943.1712589-1-yili@winhong.com>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 7BIT
+Content-Type:   text/plain; charset=US-ASCII
+X-Originating-IP: [10.175.138.68]
+X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Looks good,
+Signed-off-by: Zheng Yongjun <zhengyongjun3@huawei.com>
+---
+ drivers/md/bcache/super.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 46a00134a36a..963d62a15f37 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -40,7 +40,7 @@ static const char invalid_uuid[] = {
+ };
+ 
+ static struct kobject *bcache_kobj;
+-struct mutex bch_register_lock;
++DEFINE_MUTEX(bch_register_lock);
+ bool bcache_is_reboot;
+ LIST_HEAD(bch_cache_sets);
+ static LIST_HEAD(uncached_devices);
+@@ -2832,7 +2832,6 @@ static int __init bcache_init(void)
+ 
+ 	check_module_parameters();
+ 
+-	mutex_init(&bch_register_lock);
+ 	init_waitqueue_head(&unregister_wait);
+ 	register_reboot_notifier(&reboot);
+ 
+-- 
+2.22.0
+
