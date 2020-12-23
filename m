@@ -2,83 +2,88 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-7.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A1388C4332B
-	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 15:06:28 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4AFEEC433E0
+	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 16:26:44 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 81BEC23137
-	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 15:06:28 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 1962922BF3
+	for <linux-bcache@archiver.kernel.org>; Wed, 23 Dec 2020 16:26:44 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1727363AbgLWPGS (ORCPT
+        id S1726140AbgLWQ01 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 23 Dec 2020 10:06:18 -0500
-Received: from mx2.suse.de ([195.135.220.15]:58158 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726664AbgLWPGS (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 23 Dec 2020 10:06:18 -0500
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id C7B1AAE12;
-        Wed, 23 Dec 2020 15:05:36 +0000 (UTC)
-From:   Coly Li <colyli@suse.de>
-To:     axboe@kernel.dk
-Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
-        Yi Li <yili@winhong.com>, Christoph Hellwig <hch@lst.de>,
-        Coly Li <colyli@suse.de>
-Subject: [PATCH 1/2] bcache:remove a superfluous check in register_bcache
-Date:   Wed, 23 Dec 2020 23:04:21 +0800
-Message-Id: <20201223150422.3966-2-colyli@suse.de>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20201223150422.3966-1-colyli@suse.de>
+        Wed, 23 Dec 2020 11:26:27 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52836 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1726072AbgLWQ01 (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 23 Dec 2020 11:26:27 -0500
+Received: from mail-pf1-x429.google.com (mail-pf1-x429.google.com [IPv6:2607:f8b0:4864:20::429])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6ABCBC061794
+        for <linux-bcache@vger.kernel.org>; Wed, 23 Dec 2020 08:25:47 -0800 (PST)
+Received: by mail-pf1-x429.google.com with SMTP id c12so10624919pfo.10
+        for <linux-bcache@vger.kernel.org>; Wed, 23 Dec 2020 08:25:47 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=kernel-dk.20150623.gappssmtp.com; s=20150623;
+        h=subject:to:cc:references:from:message-id:date:user-agent
+         :mime-version:in-reply-to:content-language:content-transfer-encoding;
+        bh=FCNtsZYBFLDT8cP1bh+6isWEIlEdtCc9b+ja9RvHmTE=;
+        b=PJAYCnEwqVQvC1oI3hhQpDH9apfycos6rpUuLunhJzxN0h2SvtM51UBhsD8V4PLCBs
+         rDGxoPVyo/rA3WFHIwWoLbfD8UwmwOQE5uoZ8Ntx6YGLCvQxLxpH4boqLtWJ3zjQtmy/
+         Qky+LtpGthhFPHywz3m/yYeXLolQjIfQ1LPvDNdEYO3CInEaYPoX/5uan+00i5x4Nb3t
+         GBdGzBfkDyMGxtF6KYgByQW6j/tVziGi2ibr2qE2HIsZDaHEvckUgU/GPKjW3YQMkam6
+         1L5KuBr4lhjVVtBmVQbFg+5z9tnYgIz3x/fmlLVYtD2/Jmnqn9foprfzhbyChc+oFF4C
+         LaUA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
+         :user-agent:mime-version:in-reply-to:content-language
+         :content-transfer-encoding;
+        bh=FCNtsZYBFLDT8cP1bh+6isWEIlEdtCc9b+ja9RvHmTE=;
+        b=Oj5j+jIrJ5F+50jWh1LKhZKBYybl5glEnOq/f+hXDmBirqDynQCA/TzePI61lhV+Y5
+         Hi5bv1qSQza0BlX0Ww2eTuAUgvv5mk1o3CDvW5lLXNWuNaqO5vxqoUAYt/3hiHUQW8+J
+         ZZKY/0bFAzOMH+ccYx9OZUZDbN/coA3FqLBI1ocHchH9B5Ek72I6CMFONR7yI9jlKnJa
+         smPVOhoxinBHKICHM9a412FSbMCvRuxDsdFDEO8acdGE4eGHEBecoiLzqpy7BXKMpbHY
+         pzP6+/gTc7NcE0sBhrHhMTuBvc4eVOLyORwwxKqZ1zHXLhvTg6Q/KuKOCwbCDmOFo3hq
+         Eziw==
+X-Gm-Message-State: AOAM533ownnIJ5bO/8BqQtGtsf7eiXTx1gv/qUd1HkFrS9XrtqPHgZp2
+        6e1rfIaEbVyZObHmGqBMqDZ2t1MVcO7lxg==
+X-Google-Smtp-Source: ABdhPJwTdNDn7R/hReho8BPBuUGavwmnVredKSMtoQo4DQXNkNRCEm9L73NLyFIYuRXNHF7qiU2IuQ==
+X-Received: by 2002:a63:f512:: with SMTP id w18mr25104185pgh.154.1608740746859;
+        Wed, 23 Dec 2020 08:25:46 -0800 (PST)
+Received: from [192.168.1.134] ([66.219.217.173])
+        by smtp.gmail.com with ESMTPSA id z2sm13717758pgl.49.2020.12.23.08.25.45
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Wed, 23 Dec 2020 08:25:46 -0800 (PST)
+Subject: Re: [PATCH 0/2] bcache second wave patches for Linux v5.11
+To:     Coly Li <colyli@suse.de>
+Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
 References: <20201223150422.3966-1-colyli@suse.de>
+From:   Jens Axboe <axboe@kernel.dk>
+Message-ID: <566237e3-2086-e143-f9dc-c29edc6e8aba@kernel.dk>
+Date:   Wed, 23 Dec 2020 09:25:45 -0700
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
+ Thunderbird/68.10.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20201223150422.3966-1-colyli@suse.de>
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-From: Yi Li <yili@winhong.com>
+On 12/23/20 8:04 AM, Coly Li wrote:
+> Hi Jens,
+> 
+> Here are the second wave patches for Linux v5.11. Especially the patch
+> from Yi Li is a fix of a regression in this merge window.
 
-There have no reassign the bdev after check It is IS_ERR.
-the double check !IS_ERR(bdev) is superfluous.
+Applied, thanks.
 
-After commit 4e7b5671c6a8 ("block: remove i_bdev"),
-"Switch the block device lookup interfaces to directly work with a dev_t
-so that struct block_device references are only acquired by the
-blkdev_get variants (and the blk-cgroup special case).  This means that
-we now don't need an extra reference in the inode and can generally
-simplify handling of struct block_device to keep the lookups contained
-in the core block layer code."
-
-so after lookup_bdev call, there no need to do bdput.
-
-remove a superfluous check the bdev & don't call bdput after lookup_bdev.
-
-Fixes: 4e7b5671c6a8("block: remove i_bdev")
-Signed-off-by: Yi Li <yili@winhong.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Coly Li <colyli@suse.de>
----
- drivers/md/bcache/super.c | 2 --
- 1 file changed, 2 deletions(-)
-
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 0e06d721cd8e..a4752ac410dc 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2535,8 +2535,6 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 			else
- 				err = "device busy";
- 			mutex_unlock(&bch_register_lock);
--			if (!IS_ERR(bdev))
--				bdput(bdev);
- 			if (attr == &ksysfs_register_quiet)
- 				goto done;
- 		}
 -- 
-2.26.2
+Jens Axboe
 
