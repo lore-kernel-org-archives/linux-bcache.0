@@ -2,83 +2,198 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-17.1 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1
-	autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-2.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS
+	autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4D236C433E0
-	for <linux-bcache@archiver.kernel.org>; Thu, 24 Dec 2020 14:48:10 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 8238CC433DB
+	for <linux-bcache@archiver.kernel.org>; Sun, 27 Dec 2020 06:26:08 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 1EDE322288
-	for <linux-bcache@archiver.kernel.org>; Thu, 24 Dec 2020 14:48:10 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 3F0B620867
+	for <linux-bcache@archiver.kernel.org>; Sun, 27 Dec 2020 06:26:08 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1728230AbgLXOrr (ORCPT
+        id S1725989AbgL0GZr (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 24 Dec 2020 09:47:47 -0500
-Received: from mx2.suse.de ([195.135.220.15]:50646 "EHLO mx2.suse.de"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726609AbgLXOrr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 24 Dec 2020 09:47:47 -0500
-X-Virus-Scanned: by amavisd-new at test-mx.suse.de
-Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 1C817ACC4;
-        Thu, 24 Dec 2020 14:47:06 +0000 (UTC)
-Subject: Re: [PATCH v2 -next] md: bcache: use DEFINE_MUTEX() for mutex lock
-To:     Zheng Yongjun <zhengyongjun3@huawei.com>,
-        kent.overstreet@gmail.com, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20201224132431.31180-1-zhengyongjun3@huawei.com>
-From:   Coly Li <colyli@suse.de>
-Message-ID: <2cef0ad9-b179-ece0-8787-368b21a427f1@suse.de>
-Date:   Thu, 24 Dec 2020 22:47:00 +0800
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.16; rv:78.0)
- Gecko/20100101 Thunderbird/78.6.0
+        Sun, 27 Dec 2020 01:25:47 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49886 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725963AbgL0GZq (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Sun, 27 Dec 2020 01:25:46 -0500
+Received: from mail-lf1-x130.google.com (mail-lf1-x130.google.com [IPv6:2a00:1450:4864:20::130])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5EA8FC061794
+        for <linux-bcache@vger.kernel.org>; Sat, 26 Dec 2020 22:25:06 -0800 (PST)
+Received: by mail-lf1-x130.google.com with SMTP id o13so17344026lfr.3
+        for <linux-bcache@vger.kernel.org>; Sat, 26 Dec 2020 22:25:06 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=mime-version:from:date:message-id:subject:to
+         :content-transfer-encoding;
+        bh=oBV91PDrHhlg7ed6DGhj0Hk8y7OXlaZtYQH9qz2VyIE=;
+        b=m2x74FWHq22bUNL46a74+TpYka6zRdlgtz4KKDfk+giUc/s+f8Xz1DbNnQ1nCyLux3
+         lXgEDz+9ryE1m18tHrjPK4BEVm5FOkgsoCNfb+JQq6f8iLgx5/XyKHqoTw6EpBrO8gDp
+         Dr/IPardIa/iSsM/zI2N1//lACX9GIqzHQFXfj6musszGp7qwkT3imU23WItA5iRg60I
+         GVxT4wRSyOdhJNyeKhlyHPaMlpUZKOYzfnUR0+fuu7FGFmdlr5tSi3W101bi3Pw3DXTP
+         cTUB/RX00yWsH8qKr0qKJRCQz41tZYvhbwK2A+jm8HdZLFbqo11hhVSLJMzV07ibwo92
+         Co5g==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:mime-version:from:date:message-id:subject:to
+         :content-transfer-encoding;
+        bh=oBV91PDrHhlg7ed6DGhj0Hk8y7OXlaZtYQH9qz2VyIE=;
+        b=WDJVxw7KpnJgCycDml0Vr11mKQr3QGNtJqeK6rUdgkwKcUb2aL9ZbNTqw+T/camdja
+         GVwS8AH1CoUe4nsI4fvrdll83s7FheqP4tS8vqg1qfMoUBcNUI8LiTdgVsL11PlHsS8Y
+         dvPhGYD4fn1tds2wOn3kC+xKYV1SE8/LiAcJIiMnlD+wjZVhmpxk3h1aT5IAXB/FB6vA
+         cBzjUS18VytJZjtAALawEtRWgS+3cRiN4NzKlyednsDv5HD+uXDWVrkxLMJsDLxKlcMP
+         dBPGy7w/EP2LjLg2jWHpopvwB4dk/cSsimZXjjdGfsoHs7t9GKQmYjf1aJiGwNc1LLbe
+         Wq3Q==
+X-Gm-Message-State: AOAM530X7vuwgLXHA2A4yipIzTr8aN8vjbHP42E3B5dzwWLAnHwJwBh7
+        obD+VXpgZ0TARC1KBmNKWtH2C8/nqo7LDwFC23agpz8kDjSeiQ==
+X-Google-Smtp-Source: ABdhPJz4+66K7a+MCbckiW3rpj8StdjmGeZfk38i6Etlp0sxEeh9tniC1wLIwWFiV+w17hqs1Y0KtbyEqspEz82p2UA=
+X-Received: by 2002:a2e:2417:: with SMTP id k23mr19228884ljk.373.1609050304370;
+ Sat, 26 Dec 2020 22:25:04 -0800 (PST)
 MIME-Version: 1.0
-In-Reply-To: <20201224132431.31180-1-zhengyongjun3@huawei.com>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+From:   Nathan Dehnel <ncdehnel@gmail.com>
+Date:   Sun, 27 Dec 2020 00:24:53 -0600
+Message-ID: <CAEEhgEsdeEAzxw9F2jbAFiFhjdvQbRyqjbVg1L6Y0pN1Go4ceg@mail.gmail.com>
+Subject: How to deal with with backing device dropping out
+To:     linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 12/24/20 9:24 PM, Zheng Yongjun wrote:
-> mutex lock can be initialized automatically with DEFINE_MUTEX()
-> rather than explicitly calling mutex_init().
-> 
-> Signed-off-by: Zheng Yongjun <zhengyongjun3@huawei.com>
+I have a btrfs raid10 array, and occasionally a drive will disconnect
+temporarily. After it reconnects though, it is no longer listed by
+lsblk with a /dev/bcache* device under it, and it usually has a
+different /dev/sd* drive letter as well, and "btrfs fi show"
+subsequently reports the device as missing.
 
-NACK. For this case, it is unnecessary to initialize a global variable
-so early in declaration, this change makes bcache.ko bigger and I don't
-see any benefit.
+I have tried "echo  /dev/sd* > /sys/fs/bcache/register" but it does
+not make the /dev/bcache* device reappear (not while the filesystem is
+mounted, at least).
 
-Coly Li
+Is there any way to deal with this, short of rebooting?
 
-> ---
->  drivers/md/bcache/super.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index 46a00134a36a..963d62a15f37 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -40,7 +40,7 @@ static const char invalid_uuid[] = {
->  };
->  
->  static struct kobject *bcache_kobj;
-> -struct mutex bch_register_lock;
-> +DEFINE_MUTEX(bch_register_lock);
->  bool bcache_is_reboot;
->  LIST_HEAD(bch_cache_sets);
->  static LIST_HEAD(uncached_devices);
-> @@ -2832,7 +2832,6 @@ static int __init bcache_init(void)
->  
->  	check_module_parameters();
->  
-> -	mutex_init(&bch_register_lock);
->  	init_waitqueue_head(&unregister_wait);
->  	register_reboot_notifier(&reboot);
->  
-> 
+NAME          MAJ:MIN  RM   SIZE RO TYPE  MOUNTPOINT
+sdb             8:16    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdb1          8:17    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache0   251:0     0 931.5G  0 disk  /
+sdc             8:32    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdc1          8:33    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache1   251:128   0 931.5G  0 disk
+sdd             8:48    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdd1          8:49    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache2   251:256   0 931.5G  0 disk
+sde             8:64    0 931.5G  0 disk
+=E2=94=94=E2=94=80sde1          8:65    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache3   251:384   0 931.5G  0 disk
+sdf             8:80    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdf1          8:81    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache4   251:512   0 931.5G  0 disk
+sdg             8:96    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdg1          8:97    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache5   251:640   0 931.5G  0 disk
+sdh             8:112   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdh1          8:113   0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache6   251:768   0 931.5G  0 disk
+sdi             8:128   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdi1          8:129   0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache7   251:896   0 931.5G  0 disk
+sdj             8:144   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdj1          8:145   0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache8   251:1024  0 931.5G  0 disk
+sdk             8:160   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdk1          8:161   0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache9   251:1152  0 931.5G  0 disk
+nvme0n1       259:0     0  13.4G  0 disk
+=E2=94=9C=E2=94=80nvme0n1p1   259:1     0     2M  0 part
+=E2=94=9C=E2=94=80nvme0n1p2   259:2     0   128M  0 part
+=E2=94=94=E2=94=80nvme0n1p3   259:3     0  13.3G  0 part
+  =E2=94=94=E2=94=80md0         9:0     0  13.3G  0 raid1
+    =E2=94=9C=E2=94=80bcache0 251:0     0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache1 251:128   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache2 251:256   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache3 251:384   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache4 251:512   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache5 251:640   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache6 251:768   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache7 251:896   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache8 251:1024  0 931.5G  0 disk
+    =E2=94=94=E2=94=80bcache9 251:1152  0 931.5G  0 disk
+nvme1n1       259:4     0  13.4G  0 disk
+=E2=94=9C=E2=94=80nvme1n1p1   259:5     0     2M  0 part
+=E2=94=9C=E2=94=80nvme1n1p2   259:6     0   128M  0 part
+=E2=94=94=E2=94=80nvme1n1p3   259:7     0  13.3G  0 part
+  =E2=94=94=E2=94=80md0         9:0     0  13.3G  0 raid1
+    =E2=94=9C=E2=94=80bcache0 251:0     0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache1 251:128   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache2 251:256   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache3 251:384   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache4 251:512   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache5 251:640   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache6 251:768   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache7 251:896   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache8 251:1024  0 931.5G  0 disk
+    =E2=94=94=E2=94=80bcache9 251:1152  0 931.5G  0 disk
 
+NAME          MAJ:MIN  RM   SIZE RO TYPE  MOUNTPOINT
+sdb             8:16    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdb1          8:17    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache0   251:0     0 931.5G  0 disk  /
+sdc             8:32    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdc1          8:33    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache1   251:128   0 931.5G  0 disk
+sdd             8:48    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdd1          8:49    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache2   251:256   0 931.5G  0 disk
+sde             8:64    0 931.5G  0 disk
+=E2=94=94=E2=94=80sde1          8:65    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache3   251:384   0 931.5G  0 disk
+sdf             8:80    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdf1          8:81    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache4   251:512   0 931.5G  0 disk
+sdg             8:96    0 931.5G  0 disk
+=E2=94=94=E2=94=80sdg1          8:97    0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache5   251:640   0 931.5G  0 disk
+sdh             8:112   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdh1          8:113   0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache6   251:768   0 931.5G  0 disk
+sdi             8:128   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdi1          8:129   0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache7   251:896   0 931.5G  0 disk
+sdj             8:144   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdj1          8:145   0 931.5G  0 part
+  =E2=94=94=E2=94=80bcache8   251:1024  0 931.5G  0 disk
+sdk             8:160   0 931.5G  0 disk
+=E2=94=94=E2=94=80sdk1          8:161   0 931.5G  0 part
+nvme0n1       259:0     0  13.4G  0 disk
+=E2=94=9C=E2=94=80nvme0n1p1   259:1     0     2M  0 part
+=E2=94=9C=E2=94=80nvme0n1p2   259:2     0   128M  0 part
+=E2=94=94=E2=94=80nvme0n1p3   259:3     0  13.3G  0 part
+  =E2=94=94=E2=94=80md0         9:0     0  13.3G  0 raid1
+    =E2=94=9C=E2=94=80bcache0 251:0     0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache1 251:128   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache2 251:256   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache3 251:384   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache4 251:512   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache5 251:640   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache6 251:768   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache7 251:896   0 931.5G  0 disk
+    =E2=94=94=E2=94=80bcache8 251:1024  0 931.5G  0 disk
+nvme1n1       259:4     0  13.4G  0 disk
+=E2=94=9C=E2=94=80nvme1n1p1   259:5     0     2M  0 part
+=E2=94=9C=E2=94=80nvme1n1p2   259:6     0   128M  0 part
+=E2=94=94=E2=94=80nvme1n1p3   259:7     0  13.3G  0 part
+  =E2=94=94=E2=94=80md0         9:0     0  13.3G  0 raid1
+    =E2=94=9C=E2=94=80bcache0 251:0     0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache1 251:128   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache2 251:256   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache3 251:384   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache4 251:512   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache5 251:640   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache6 251:768   0 931.5G  0 disk
+    =E2=94=9C=E2=94=80bcache7 251:896   0 931.5G  0 disk
+    =E2=94=94=E2=94=80bcache8 251:1024  0 931.5G  0 disk
