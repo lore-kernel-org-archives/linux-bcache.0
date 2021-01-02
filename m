@@ -2,92 +2,72 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-11.8 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_GIT autolearn=unavailable autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 95CD2C433E6
+	by smtp.lore.kernel.org (Postfix) with ESMTP id EFAC7C4332B
 	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:09 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 6A76821E92
+	by mail.kernel.org (Postfix) with ESMTP id CE6DC22475
 	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:09 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726517AbhABHNx (ORCPT
+        id S1726561AbhABHNz (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 2 Jan 2021 02:13:53 -0500
-Received: from mx2.suse.de ([195.135.220.15]:47724 "EHLO mx2.suse.de"
+        Sat, 2 Jan 2021 02:13:55 -0500
+Received: from mx2.suse.de ([195.135.220.15]:47730 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726080AbhABHNw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 2 Jan 2021 02:13:52 -0500
+        id S1726524AbhABHNy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 2 Jan 2021 02:13:54 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id E1F6AAD6A;
-        Sat,  2 Jan 2021 07:12:49 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id F1509ADCD;
+        Sat,  2 Jan 2021 07:12:53 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH 0/6] bcache-tools: improve large bucket on-disk layout
-Date:   Sat,  2 Jan 2021 15:12:38 +0800
-Message-Id: <20210102071244.58353-1-colyli@suse.de>
+Subject: [PATCH 2/6] bcache-tools: only call set_bucket_size() for cache device
+Date:   Sat,  2 Jan 2021 15:12:40 +0800
+Message-Id: <20210102071244.58353-3-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20210102071244.58353-1-colyli@suse.de>
+References: <20210102071244.58353-1-colyli@suse.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Current large bucket layout is a preparation for the future zoned cache
-device, by which the cache device bucket can be aligned to zone size and
-boundary of the zoned SSD.
+It doesn't make sense to set bucket size for backing device, this patch
+moves set_bucket_size() into the code block for cache device only.
 
-Original patch introduces bucket_size_hi in struct cache_sb_disk, this
-is problematic and can be improved,
-- The bucket size is always power-of-2 value, it is unnecessary to add
-  extra space in struct cache_sb_disk to store the real size value. Just
-  using existing bucket_size to store the order of power-of-2 value is
-  enough.
-- The added bucket_size_hi is behind d[SB_JOURNAL_BUCKETS] in struct
-  cache_sb_disk, which breaks a very implicit restriction from macro
-  csum_set(). This restriction requires member d[] must be the last
-  member in data structure to calculate the checksum.
-
-This series is to improve the above issue from user space tools. Basic
-ideas of this series are,
-- Add BCH_FEATURE_INCOMPAT_LOG_LARGE_BUCKET_SIZE incompat feature bit.
-  When it is set, for bucket size >16MB, bucket_size stores the order
-  of power-of-2 bucket size value. Then no extra space introduced and
-  csum_set() has all data to calculate super block checksum.
-- Rename struct cache_sb_disk's bucket_size_hi to obso_bucket_size_hi,
-  and rename the incompat feature bit BCH_FEATURE_INCOMPAT_LARGE_BUCKET
-  to BCH_FEATURE_INCOMPAT_OBSO_LARGE_BUCKET, to indicate they are not
-  used anymore and obsoleted.
-- If a cache device was created for bucket size >16MB with obsoleted
-  layout, "bcache show" command still display the expected bucket size
-  value for legacy compatibility purpose.
-
-Although there almost no one else uses bucket size >16MB except me (the
-btree node usage code is not optimized yet), it is still necessary to
-fix and improve the layout usage as soon as possible.
-
-Coly Li
+Signed-off-by: Coly Li <colyli@suse.de>
 ---
-Coly Li (6):
-  bcache.h: fix typo from SUUP to SUPP
-  bcache-tools: only call set_bucket_size() for cache device
-  bcache.h: add BCH_FEATURE_INCOMPAT_LARGE_BUCKET to
-    BCH_FEATURE_INCOMPAT_SUPP
-  bcache-tools: check incompatible feature set
-  bcache-tools: introduce BCH_FEATURE_INCOMPAT_LOG_LARGE_BUCKET_SIZE for
-    large bucket
-  bcache-tools: display obsoleted bucket size configuration
+ make.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
- bcache.h   | 17 +++++++++++------
- features.c |  4 +++-
- lib.c      | 52 ++++++++++++++++++++++++++++++++++++++++++++++++----
- lib.h      |  2 +-
- make.c     |  3 ++-
- 5 files changed, 65 insertions(+), 13 deletions(-)
-
+diff --git a/make.c b/make.c
+index ad89377..a3f97f6 100644
+--- a/make.c
++++ b/make.c
+@@ -340,7 +340,6 @@ static void write_sb(char *dev, unsigned int block_size,
+ 	uuid_generate(sb.uuid);
+ 	memcpy(sb.set_uuid, set_uuid, sizeof(sb.set_uuid));
+ 
+-	set_bucket_size(&sb, bucket_size);
+ 	sb.block_size	= block_size;
+ 
+ 	uuid_unparse(sb.uuid, uuid_str);
+@@ -383,6 +382,8 @@ static void write_sb(char *dev, unsigned int block_size,
+ 		       data_offset);
+ 		putchar('\n');
+ 	} else {
++		set_bucket_size(&sb, bucket_size);
++
+ 		sb.nbuckets		= getblocks(fd) / sb.bucket_size;
+ 		sb.nr_in_set		= 1;
+ 		/* 23 is (SB_SECTOR + SB_SIZE) - 1 sectors */
 -- 
 2.26.2
 
