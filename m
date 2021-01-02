@@ -7,29 +7,29 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EFAC7C4332B
-	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 29E64C4332E
+	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:10 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id CE6DC22475
-	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:09 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 078D222283
+	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726561AbhABHNz (ORCPT
+        id S1726567AbhABHN4 (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 2 Jan 2021 02:13:55 -0500
-Received: from mx2.suse.de ([195.135.220.15]:47730 "EHLO mx2.suse.de"
+        Sat, 2 Jan 2021 02:13:56 -0500
+Received: from mx2.suse.de ([195.135.220.15]:47732 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726524AbhABHNy (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 2 Jan 2021 02:13:54 -0500
+        id S1726560AbhABHN4 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 2 Jan 2021 02:13:56 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id F1509ADCD;
-        Sat,  2 Jan 2021 07:12:53 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 443BDADE1;
+        Sat,  2 Jan 2021 07:12:58 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH 2/6] bcache-tools: only call set_bucket_size() for cache device
-Date:   Sat,  2 Jan 2021 15:12:40 +0800
-Message-Id: <20210102071244.58353-3-colyli@suse.de>
+Subject: [PATCH 4/6] bcache-tools: check incompatible feature set
+Date:   Sat,  2 Jan 2021 15:12:42 +0800
+Message-Id: <20210102071244.58353-5-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20210102071244.58353-1-colyli@suse.de>
 References: <20210102071244.58353-1-colyli@suse.de>
@@ -39,35 +39,57 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-It doesn't make sense to set bucket size for backing device, this patch
-moves set_bucket_size() into the code block for cache device only.
+When bcache-tools is not updated with kernel driver (or on the versus),
+we need to make sure the feature set conflict can be detected to avoid
+unexpected data operation.
+
+This patch checks whether there is unsupported {compatc, ro_compat,
+incompat} features detected in detail_dev(). If there is, prints out
+error message and return error to its caller.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- make.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ lib.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/make.c b/make.c
-index ad89377..a3f97f6 100644
---- a/make.c
-+++ b/make.c
-@@ -340,7 +340,6 @@ static void write_sb(char *dev, unsigned int block_size,
- 	uuid_generate(sb.uuid);
- 	memcpy(sb.set_uuid, set_uuid, sizeof(sb.set_uuid));
+diff --git a/lib.c b/lib.c
+index 29172f5..a529ad3 100644
+--- a/lib.c
++++ b/lib.c
+@@ -442,6 +442,33 @@ int detail_dev(char *devname, struct bdev *bd, struct cdev *cd, int *type)
+ 		goto Fail;
+ 	}
  
--	set_bucket_size(&sb, bucket_size);
- 	sb.block_size	= block_size;
- 
- 	uuid_unparse(sb.uuid, uuid_str);
-@@ -383,6 +382,8 @@ static void write_sb(char *dev, unsigned int block_size,
- 		       data_offset);
- 		putchar('\n');
- 	} else {
-+		set_bucket_size(&sb, bucket_size);
++	/* Check for incompat feature set */
++	if (sb.version >= BCACHE_SB_VERSION_BDEV_WITH_FEATURES ||
++	    sb.version >= BCACHE_SB_VERSION_CDEV_WITH_FEATURES) {
++		uint64_t features;
 +
- 		sb.nbuckets		= getblocks(fd) / sb.bucket_size;
- 		sb.nr_in_set		= 1;
- 		/* 23 is (SB_SECTOR + SB_SIZE) - 1 sectors */
++		features = sb.feature_compat & ~BCH_FEATURE_COMPAT_SUPP;
++		if (features) {
++			fprintf(stderr,
++				"Unsupported compatible feature found\n");
++			goto Fail;
++		}
++
++		features = sb.feature_ro_compat & ~BCH_FEATURE_RO_COMPAT_SUPP;
++		if (features) {
++			fprintf(stderr,
++				"Unsupported read-only compatible feature found\n");
++			goto Fail;
++		}
++
++		features = sb.feature_incompat & ~BCH_FEATURE_INCOMPAT_SUPP;
++		if (features) {
++			fprintf(stderr,
++				"Unsupported incompatible feature found\n");
++			goto Fail;
++		}
++	}
++
+ 	*type = sb.version;
+ 	if (sb.version == BCACHE_SB_VERSION_BDEV ||
+ 	    sb.version == BCACHE_SB_VERSION_BDEV_WITH_OFFSET ||
 -- 
 2.26.2
 
