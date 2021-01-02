@@ -7,29 +7,29 @@ X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 58E9EC433E0
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C9F95C433E9
 	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:09 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3375B21E92
+	by mail.kernel.org (Postfix) with ESMTP id A204122285
 	for <linux-bcache@archiver.kernel.org>; Sat,  2 Jan 2021 07:14:09 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726530AbhABHNx (ORCPT
+        id S1726551AbhABHNy (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 2 Jan 2021 02:13:53 -0500
-Received: from mx2.suse.de ([195.135.220.15]:47726 "EHLO mx2.suse.de"
+        Sat, 2 Jan 2021 02:13:54 -0500
+Received: from mx2.suse.de ([195.135.220.15]:47728 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726517AbhABHNw (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 2 Jan 2021 02:13:52 -0500
+        id S1726523AbhABHNx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Sat, 2 Jan 2021 02:13:53 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id D5545ADCA;
-        Sat,  2 Jan 2021 07:12:51 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 5F770ADD6;
+        Sat,  2 Jan 2021 07:12:56 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH 1/6] bcache.h: fix typo from SUUP to SUPP
-Date:   Sat,  2 Jan 2021 15:12:39 +0800
-Message-Id: <20210102071244.58353-2-colyli@suse.de>
+Subject: [PATCH 3/6] bcache.h: add BCH_FEATURE_INCOMPAT_LARGE_BUCKET to BCH_FEATURE_INCOMPAT_SUPP
+Date:   Sat,  2 Jan 2021 15:12:41 +0800
+Message-Id: <20210102071244.58353-4-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20210102071244.58353-1-colyli@suse.de>
 References: <20210102071244.58353-1-colyli@suse.de>
@@ -39,30 +39,26 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch fixes the following typos,
-from BCH_FEATURE_COMPAT_SUUP to BCH_FEATURE_COMPAT_SUPP
-from BCH_FEATURE_INCOMPAT_SUUP to BCH_FEATURE_INCOMPAT_SUPP
-from BCH_FEATURE_INCOMPAT_SUUP to BCH_FEATURE_RO_COMPAT_SUPP
+BCH_FEATURE_INCOMPAT_LARGE_BUCKET is a feature to support 32bits bucket
+size, which is incompatible feature for existing on-disk layout. This
+patch adds this feature bit to BCH_FEATURE_INCOMPAT_SUPP feature set.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- bcache.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ bcache.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/bcache.h b/bcache.h
-index 6aef9c4..50dd2b5 100644
+index 50dd2b5..58e973c 100644
 --- a/bcache.h
 +++ b/bcache.h
-@@ -200,9 +200,9 @@ uint64_t crc64(const void *data, size_t len);
- #define BCH_FEATURE_INCOMPAT	2
+@@ -201,8 +201,8 @@ uint64_t crc64(const void *data, size_t len);
  #define BCH_FEATURE_TYPE_MASK	0x03
  
--#define BCH_FEATURE_COMPAT_SUUP		0
--#define BCH_FEATURE_INCOMPAT_SUUP	0
--#define BCH_FEATURE_RO_COMPAT_SUUP	0
-+#define BCH_FEATURE_COMPAT_SUPP		0
-+#define BCH_FEATURE_INCOMPAT_SUPP	0
-+#define BCH_FEATURE_RO_COMPAT_SUPP	0
+ #define BCH_FEATURE_COMPAT_SUPP		0
+-#define BCH_FEATURE_INCOMPAT_SUPP	0
+ #define BCH_FEATURE_RO_COMPAT_SUPP	0
++#define BCH_FEATURE_INCOMPAT_SUPP	BCH_FEATURE_INCOMPAT_LARGE_BUCKET
  
  #define BCH_HAS_COMPAT_FEATURE(sb, mask) \
  		((sb)->feature_compat & (mask))
