@@ -7,40 +7,40 @@ X-Spam-Status: No, score=-14.8 required=3.0 tests=BAYES_00,
 	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
 	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 76A72C433E0
-	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 06:43:40 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E6C9BC433E9
+	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 06:43:43 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 2B9B122286
-	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 06:43:40 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id A65FD22838
+	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 06:43:43 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1725855AbhAEGnj (ORCPT
+        id S1725948AbhAEGnn (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 5 Jan 2021 01:43:39 -0500
-Received: from mga03.intel.com ([134.134.136.65]:20313 "EHLO mga03.intel.com"
+        Tue, 5 Jan 2021 01:43:43 -0500
+Received: from mga03.intel.com ([134.134.136.65]:20318 "EHLO mga03.intel.com"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1726525AbhAEGnj (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 5 Jan 2021 01:43:39 -0500
-IronPort-SDR: Gaddi30T7bG7pqQME53G8c8mzpm3CXDPJWBgpOVtsVKV2rbgxlj/8LpL+HrMZaxqB2/ukSzIVI
- QMgsa3KoA0Ww==
-X-IronPort-AV: E=McAfee;i="6000,8403,9854"; a="177161900"
+        id S1726076AbhAEGnn (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 5 Jan 2021 01:43:43 -0500
+IronPort-SDR: gbiD889PyIHDEfjD3wtwgq2WgqtMGP/5BKrn2/ZhPmnoF0mO60j501KmYqmGwGVA+zGpjn/IEF
+ S9jj8+jQ+d5A==
+X-IronPort-AV: E=McAfee;i="6000,8403,9854"; a="177161911"
 X-IronPort-AV: E=Sophos;i="5.78,476,1599548400"; 
-   d="scan'208";a="177161900"
+   d="scan'208";a="177161911"
 Received: from fmsmga008.fm.intel.com ([10.253.24.58])
-  by orsmga103.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 04 Jan 2021 22:42:35 -0800
-IronPort-SDR: yTb9zfhAMeTnWcn6JVZgPDzZGDNdlDgGhLZqj0dEfH3utaBSPukeZLRpaAsTldJuOiELtTd8Nl
- 51rJAtVeRHZw==
+  by orsmga103.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 04 Jan 2021 22:42:37 -0800
+IronPort-SDR: eIBChnsl1mIPC+jWeRWpkUF5UzbVzMZBUVX/oqzS5OT+okS9sKJu6YUJ5rQDFoJBc7pEGF1wIF
+ EtVzYvsq6tcw==
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.78,476,1599548400"; 
-   d="scan'208";a="350250084"
+   d="scan'208";a="350250094"
 Received: from ceph.sh.intel.com ([10.239.241.176])
-  by fmsmga008.fm.intel.com with ESMTP; 04 Jan 2021 22:42:34 -0800
+  by fmsmga008.fm.intel.com with ESMTP; 04 Jan 2021 22:42:36 -0800
 From:   Qiaowei Ren <qiaowei.ren@intel.com>
 To:     Coly Li <colyli@suse.de>
 Cc:     Jianpeng Ma <jianpeng.ma@intel.com>, linux-bcache@vger.kernel.org,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [RFC PATCH v3 6/8] bcache: get allocated pages from specific owner
-Date:   Tue,  5 Jan 2021 09:22:16 -0500
-Message-Id: <20210105142218.56508-7-qiaowei.ren@intel.com>
+Subject: [RFC PATCH v3 8/8] bcache: testing module for nvm pages allocator
+Date:   Tue,  5 Jan 2021 09:22:18 -0500
+Message-Id: <20210105142218.56508-9-qiaowei.ren@intel.com>
 X-Mailer: git-send-email 2.17.1
 In-Reply-To: <20210105142218.56508-1-qiaowei.ren@intel.com>
 References: <20210105142218.56508-1-qiaowei.ren@intel.com>
@@ -48,89 +48,166 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch implements bch_get_allocated_pages() of the buddy to be used to
-get allocated pages from specific owner.
+This patch creates the testing module for nvm pages allocator.
+Before this module is loaded, the super block needs to be writen
+into nvdimm device (like /dev/pmemX).
 
 Signed-off-by: Jianpeng Ma <jianpeng.ma@intel.com>
 Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- drivers/md/bcache/nvm-pages.c | 38 +++++++++++++++++++++++++++++++++++
- drivers/md/bcache/nvm-pages.h |  6 ++++++
- 2 files changed, 44 insertions(+)
+ drivers/md/bcache/Kconfig    |   6 ++
+ drivers/md/bcache/Makefile   |   2 +
+ drivers/md/bcache/test-nvm.c | 117 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 125 insertions(+)
+ create mode 100644 drivers/md/bcache/test-nvm.c
 
-diff --git a/drivers/md/bcache/nvm-pages.c b/drivers/md/bcache/nvm-pages.c
-index e7d948a40662..b095882d3a2b 100644
---- a/drivers/md/bcache/nvm-pages.c
-+++ b/drivers/md/bcache/nvm-pages.c
-@@ -382,6 +382,44 @@ void *bch_nvm_alloc_pages(int order, const char *owner_uuid)
- }
- EXPORT_SYMBOL_GPL(bch_nvm_alloc_pages);
- 
-+struct bch_extent *bch_get_allocated_pages(const char *owner_uuid)
+diff --git a/drivers/md/bcache/Kconfig b/drivers/md/bcache/Kconfig
+index fdec9905ef40..68302a9cd476 100644
+--- a/drivers/md/bcache/Kconfig
++++ b/drivers/md/bcache/Kconfig
+@@ -41,3 +41,9 @@ config BCACHE_NVM_PAGES
+ 	depends on BCACHE
+ 	help
+ 	nvm pages allocator for bcache.
++
++config BCACHE_NVM_PAGES_TEST
++       tristate "Testing for NVM pages"
++       depends on BCACHE_NVM_PAGES
++       help
++       Testing module for NVM pages allocator.
+diff --git a/drivers/md/bcache/Makefile b/drivers/md/bcache/Makefile
+index 948e5ed2ca66..7b7d3535f4ef 100644
+--- a/drivers/md/bcache/Makefile
++++ b/drivers/md/bcache/Makefile
+@@ -5,3 +5,5 @@ obj-$(CONFIG_BCACHE)	+= bcache.o
+ bcache-y		:= alloc.o bset.o btree.o closure.o debug.o extents.o\
+ 	io.o journal.o movinggc.o request.o stats.o super.o sysfs.o trace.o\
+ 	util.o writeback.o features.o nvm-pages.o
++
++obj-$(CONFIG_BCACHE_NVM_PAGES_TEST) += test-nvm.o
+diff --git a/drivers/md/bcache/test-nvm.c b/drivers/md/bcache/test-nvm.c
+new file mode 100644
+index 000000000000..8b9f2c1e7825
+--- /dev/null
++++ b/drivers/md/bcache/test-nvm.c
+@@ -0,0 +1,117 @@
++// SPDX-License-Identifier: GPL-2.0
++
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/crc32.h>
++#include <linux/uuid.h>
++#include <linux/prandom.h>
++#include <linux/pagemap.h>
++#include <linux/pfn_t.h>
++#include "nvm-pages.h"
++
++static char *host = "NVDIMM device name";
++module_param(host, charp, 0444);
++
++#define MAX_OWNER 10
++
++static pgoff_t vaddr_to_nvm_pgoff(struct bch_nvm_namespace *ns, void *kaddr)
 +{
-+	struct bch_owner_list *owner_list = find_owner_list(owner_uuid, false);
-+	struct bch_nvm_alloced_recs *alloced_recs;
-+	struct bch_extent *head = NULL, *e, *tmp;
-+	int i;
++	return (kaddr - ns->kaddr - ns->pages_offset) / PAGE_SIZE;
++}
 +
-+	if (!owner_list)
-+		return NULL;
++static void print_nvm_extent(struct bch_nvm_alloced_recs *extents)
++{
++	struct list_head *list = extents->extent_head.next;
++	struct bch_nvm_namespace *ns = extents->ns;
++	struct bch_extent *e;
++	pgoff_t pgoff;
 +
-+	for (i = 0; i < only_set->total_namespaces_nr; i++) {
-+		struct list_head *l;
++	while (list != &extents->extent_head) {
++		e = container_of(list, struct bch_extent, list);
++		pgoff = vaddr_to_nvm_pgoff(ns, e->kaddr);
++		pr_info(" [%ld ~ %u)", pgoff, e->nr);
++		list = list->next;
++	}
++	pr_info("\n");
++}
 +
-+		alloced_recs = owner_list->alloced_recs[i];
++static void print_owner_list_info(struct bch_nvm_set *nvm_set, bool print_extent)
++{
++	struct bch_owner_list *owner_list;
++	struct bch_nvm_alloced_recs *extents;
++	int i, j;
 +
-+		if (!alloced_recs || alloced_recs->size == 0)
-+			continue;
-+
-+		l = alloced_recs->extent_head.next;
-+		while (l != &alloced_recs->extent_head) {
-+			e = container_of(l, struct bch_extent, list);
-+			tmp = kzalloc(sizeof(*tmp), GFP_KERNEL|__GFP_NOFAIL);
-+
-+			tmp->kaddr = e->kaddr;
-+			tmp->nr = e->nr;
-+
-+			if (head)
-+				list_add_tail(&tmp->list, &head->list);
-+			else
-+				head = tmp;
-+
-+			l = l->next;
++	for (i = 0; i < nvm_set->owner_list_size; i++) {
++		owner_list = nvm_set->owner_lists[i];
++		pr_info("owner uuid=%pU\n", owner_list->owner_uuid);
++		for (j = 0; j < nvm_set->total_namespaces_nr; j++) {
++			if (owner_list->alloced_recs[j]) {
++				extents = owner_list->alloced_recs[j];
++				pr_info("\t nvm uuid=%pU, allocated extents=%u\n",
++					extents->ns->uuid, extents->size);
++				if (print_extent)
++					print_nvm_extent(extents);
++			}
 +		}
 +	}
-+	return head;
 +}
-+EXPORT_SYMBOL_GPL(bch_get_allocated_pages);
 +
- static int init_owner_info(struct bch_nvm_namespace *ns)
- {
- 	struct bch_owner_list_head *owner_list_head;
-diff --git a/drivers/md/bcache/nvm-pages.h b/drivers/md/bcache/nvm-pages.h
-index 05673d129797..27528d146358 100644
---- a/drivers/md/bcache/nvm-pages.h
-+++ b/drivers/md/bcache/nvm-pages.h
-@@ -79,6 +79,7 @@ int bch_nvm_init(void);
- void bch_nvm_exit(void);
- void *bch_nvm_alloc_pages(int order, const char *owner_uuid);
- void bch_nvm_free_pages(void *addr, int order, const char *owner_uuid);
-+struct bch_extent *bch_get_allocated_pages(const char *owner_uuid);
- #else
- 
- static inline struct bch_nvm_namespace *bch_register_namespace(const char *dev_path)
-@@ -98,6 +99,11 @@ static inline void *bch_nvm_alloc_pages(int order, const char *owner_uuid)
- 
- static inline void bch_nvm_free_pages(void *addr, int order, const char *owner_uuid) { }
- 
-+static inline struct bch_extent *bch_get_allocated_pages(const char *owner_uuid)
++static void test_case(struct bch_nvm_set *nvm_set, char **owner_uuids)
 +{
-+	return NULL;
++	int i, order;
++	void *addr[MAX_OWNER];
++
++	for (i = 0; i < MAX_OWNER; i++) {
++		order = prandom_u32() % MAX_ORDER;
++		addr[i] = bch_nvm_alloc_pages(order, owner_uuids[i]);
++	}
++	print_owner_list_info(nvm_set, true);
++	for (i = 0; i < MAX_OWNER; i++) {
++		struct page *page = virt_to_page(addr[i]);
++
++		bch_nvm_free_pages(addr[i], page->private, owner_uuids[i]);
++	}
++	print_owner_list_info(nvm_set, true);
 +}
 +
- #endif /* CONFIG_BCACHE_NVM_PAGES */
- 
- #endif /* _BCACHE_NVM_PAGES_H */
++static int __init test_nvm_init(void)
++{
++	char **owner_uuids;
++	struct bch_nvm_set *nvm_set;
++	struct bch_nvm_namespace *ns = bch_register_namespace(host);
++	int i, r = 0;
++
++	pr_info("nvm pages test enter: %s\n", host);
++	if (IS_ERR(ns)) {
++		pr_info("failed to register namespace: %s\n", host);
++		r = -EINVAL;
++		goto err;
++	}
++
++	owner_uuids = kcalloc(MAX_OWNER, sizeof(char *), GFP_KERNEL);
++	for (i = 0; i < MAX_OWNER; i++) {
++		owner_uuids[i] = kmalloc(16, GFP_KERNEL);
++		generate_random_uuid(owner_uuids[i]);
++	}
++
++	nvm_set = ns->nvm_set;
++	test_case(nvm_set, owner_uuids);
++
++	for (i = 0; i < MAX_OWNER; i++)
++		kfree(owner_uuids[i]);
++	kfree(owner_uuids);
++
++err:
++	return r;
++}
++module_init(test_nvm_init);
++
++static void __exit test_nvm_exit(void)
++{
++	pr_info("nvm pages test exit\n");
++}
++module_exit(test_nvm_exit);
++
++MODULE_LICENSE("GPL v2");
 -- 
 2.17.1
 
