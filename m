@@ -2,185 +2,139 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-14.8 required=3.0 tests=BAYES_00,
-	DATE_IN_FUTURE_06_12,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.5 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C4EA4C433DB
-	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 06:43:43 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E0B7AC433E0
+	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 08:39:48 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 79C2022286
-	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 06:43:43 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 90E1122525
+	for <linux-bcache@archiver.kernel.org>; Tue,  5 Jan 2021 08:39:48 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1726273AbhAEGnn (ORCPT
+        id S1725776AbhAEIjn (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 5 Jan 2021 01:43:43 -0500
-Received: from mga03.intel.com ([134.134.136.65]:20320 "EHLO mga03.intel.com"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1725948AbhAEGnm (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 5 Jan 2021 01:43:42 -0500
-IronPort-SDR: lvjrMTpaLpX8RVx4qZucO/NMl/jmSgfuW6hV8ssHzhJc9VcryF8bndJlr0c4vdZKdyPK2bO4if
- uWWtfQV5sBOw==
-X-IronPort-AV: E=McAfee;i="6000,8403,9854"; a="177161904"
-X-IronPort-AV: E=Sophos;i="5.78,476,1599548400"; 
-   d="scan'208";a="177161904"
-Received: from fmsmga008.fm.intel.com ([10.253.24.58])
-  by orsmga103.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 04 Jan 2021 22:42:36 -0800
-IronPort-SDR: FWGWwPgOh/vd6C1wdCUjARx9mICVEYR5gu5EQVYBg/X1wgzX0I9IEmB2448afRj/nVrJ4GQ0lV
- Rvi22p3ml8Lw==
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.78,476,1599548400"; 
-   d="scan'208";a="350250088"
-Received: from ceph.sh.intel.com ([10.239.241.176])
-  by fmsmga008.fm.intel.com with ESMTP; 04 Jan 2021 22:42:35 -0800
-From:   Qiaowei Ren <qiaowei.ren@intel.com>
-To:     Coly Li <colyli@suse.de>
-Cc:     Jianpeng Ma <jianpeng.ma@intel.com>, linux-bcache@vger.kernel.org,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [RFC PATCH v3 7/8] bcache: persist owner info when alloc/free pages.
-Date:   Tue,  5 Jan 2021 09:22:17 -0500
-Message-Id: <20210105142218.56508-8-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 2.17.1
-In-Reply-To: <20210105142218.56508-1-qiaowei.ren@intel.com>
-References: <20210105142218.56508-1-qiaowei.ren@intel.com>
+        Tue, 5 Jan 2021 03:39:43 -0500
+Received: from m97179.mail.qiye.163.com ([220.181.97.179]:64139 "EHLO
+        m97179.mail.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1725768AbhAEIjm (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 5 Jan 2021 03:39:42 -0500
+Received: from [192.168.122.37] (unknown [218.94.118.90])
+        by m97179.mail.qiye.163.com (Hmail) with ESMTPA id 4EB4CE024E1;
+        Tue,  5 Jan 2021 16:28:57 +0800 (CST)
+Subject: Re: Defects about bcache GC
+To:     Lin Feng <linf@wangsu.com>, linux-bcache@vger.kernel.org
+References: <5768fb38-743a-42e7-a6b6-a12d7ea9f3f0@wangsu.com>
+From:   Dongsheng Yang <dongsheng.yang@easystack.cn>
+Message-ID: <ec826f2c-d0de-157f-c4d2-fa9325c83014@easystack.cn>
+Date:   Tue, 5 Jan 2021 16:29:45 +0800
+User-Agent: Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:78.0) Gecko/20100101
+ Thunderbird/78.6.0
+MIME-Version: 1.0
+In-Reply-To: <5768fb38-743a-42e7-a6b6-a12d7ea9f3f0@wangsu.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-HM-Spam-Status: e1kfGhgUHx5ZQUtXWQgYFAkeWUFZS1VLWVdZKFlBSUI3V1ktWUFJV1kPCR
+        oVCBIfWUFZGhpJS04YSx0aHkJOVkpNS0JDSE5ISExOSUpVGRETFhoSFyQUDg9ZV1kWGg8SFR0UWU
+        FZT0tIVUpKS0hKQ1VLWQY+
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6MCo6Mxw*Kj0wNh1CIhE6GR8q
+        CBMaCgpVSlVKTUtCQ0hOSEhMTEhPVTMWGhIXVR8UFRwIEx4VHFUCGhUcOx4aCAIIDxoYEFUYFUVZ
+        V1kSC1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBT0JPQzcG
+X-HM-Tid: 0a76d1a9d6c120bdkuqy4eb4ce024e1
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch implement persist owner info on nvdimm device
-when alloc/free pages.
+Hi Lin,
 
-Signed-off-by: Jianpeng Ma <jianpeng.ma@intel.com>
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- drivers/md/bcache/nvm-pages.c | 92 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 91 insertions(+), 1 deletion(-)
+     There is a patch for this situation: 
+https://www.spinics.net/lists/linux-bcache/msg08870.html
 
-diff --git a/drivers/md/bcache/nvm-pages.c b/drivers/md/bcache/nvm-pages.c
-index b095882d3a2b..7a536c14a5ac 100644
---- a/drivers/md/bcache/nvm-pages.c
-+++ b/drivers/md/bcache/nvm-pages.c
-@@ -206,6 +206,17 @@ static struct bch_nvm_namespace *find_nvm_by_addr(void *addr, int order)
- 	return NULL;
- }
- 
-+static void init_pgalloc_recs(struct bch_nvm_pgalloc_recs *recs, const char *owner_uuid)
-+{
-+	memset(recs, 0, sizeof(struct bch_nvm_pgalloc_recs));
-+	memcpy(recs->owner_uuid, owner_uuid, 16);
-+}
-+
-+static pgoff_t vaddr_to_nvm_pgoff(struct bch_nvm_namespace *ns, void *kaddr)
-+{
-+	return (kaddr - ns->kaddr - ns->pages_offset) / PAGE_SIZE;
-+}
-+
- static int remove_extent(struct bch_nvm_alloced_recs *alloced_recs, void *addr, int order)
- {
- 	struct list_head *list = alloced_recs->extent_head.next;
-@@ -245,6 +256,83 @@ static int remove_extent(struct bch_nvm_alloced_recs *alloced_recs, void *addr,
- 	return (list == &alloced_recs->extent_head) ? -ENOENT : 0;
- }
- 
-+#define BCH_RECS_LEN (sizeof(struct bch_nvm_pgalloc_recs))
-+
-+static void write_owner_info(void)
-+{
-+	struct bch_owner_list *owner_list;
-+	struct bch_nvm_pgalloc_recs *recs;
-+	struct bch_extent *extent;
-+	struct bch_nvm_namespace *ns = only_set->nss[0];
-+	struct bch_owner_list_head *owner_list_head;
-+	struct bch_nvm_pages_owner_head *owner_head;
-+	bool update_owner = false;
-+	u64 recs_pos = BCH_NVM_PAGES_SYS_RECS_HEAD_OFFSET;
-+	struct list_head *list;
-+	int i, j;
-+
-+	owner_list_head = kzalloc(sizeof(*owner_list_head), GFP_KERNEL);
-+	recs = kmalloc(sizeof(*recs), GFP_KERNEL);
-+	if (!owner_list_head || !recs) {
-+		pr_info("can't alloc memory\n");
-+		kfree(owner_list_head);
-+		kfree(recs);
-+		return;
-+	}
-+
-+	// in-memory owner maybe not contain alloced-pages.
-+	for (i = 0; i < only_set->owner_list_size; i++) {
-+		owner_head = &owner_list_head->heads[owner_list_head->size];
-+		owner_list = only_set->owner_lists[i];
-+
-+		for (j = 0; j < only_set->total_namespaces_nr; j++) {
-+			struct bch_nvm_alloced_recs *extents = owner_list->alloced_recs[j];
-+
-+			if (!extents || !extents->size)
-+				continue;
-+
-+			init_pgalloc_recs(recs, owner_list->owner_uuid);
-+
-+			BUG_ON(recs_pos >= BCH_NVM_PAGES_OFFSET);
-+			owner_head->recs[j] = (struct bch_nvm_pgalloc_recs *)recs_pos;
-+
-+			for (list = extents->extent_head.next;
-+				list != &extents->extent_head;
-+				list = list->next) {
-+				extent = container_of(list, struct bch_extent, list);
-+
-+				if (recs->size == BCH_MAX_RECS) {
-+					BUG_ON(recs_pos >= BCH_NVM_PAGES_OFFSET);
-+					recs->next = (struct bch_nvm_pgalloc_recs *)
-+							(recs_pos + BCH_RECS_LEN);
-+					memcpy_flushcache(ns->kaddr + recs_pos, recs, BCH_RECS_LEN);
-+					init_pgalloc_recs(recs, owner_list->owner_uuid);
-+					recs_pos += BCH_RECS_LEN;
-+				}
-+
-+				recs->recs[recs->size].pgoff =
-+					vaddr_to_nvm_pgoff(only_set->nss[j], extent->kaddr);
-+				recs->recs[recs->size].nr = extent->nr;
-+				recs->size++;
-+			}
-+
-+			update_owner = true;
-+			memcpy_flushcache(ns->kaddr + recs_pos, recs, BCH_RECS_LEN);
-+			recs_pos += sizeof(struct bch_nvm_pgalloc_recs);
-+		}
-+
-+		if (update_owner) {
-+			memcpy(owner_head->uuid, owner_list->owner_uuid, 16);
-+			owner_list_head->size++;
-+			update_owner = false;
-+		}
-+	}
-+
-+	memcpy_flushcache(ns->kaddr + BCH_NVM_PAGES_OWNER_LIST_HEAD_OFFSET,
-+			 (void *)owner_list_head, sizeof(struct bch_owner_list_head));
-+	kfree(owner_list_head);
-+}
-+
- static void __free_space(struct bch_nvm_namespace *ns, void *addr, int order)
- {
- 	unsigned int add_pages = (1 << order);
-@@ -318,6 +406,7 @@ void bch_nvm_free_pages(void *addr, int order, const char *owner_uuid)
- 	}
- 
- 	__free_space(ns, addr, order);
-+	write_owner_info();
- 
- unlock:
- 	mutex_unlock(&only_set->lock);
-@@ -376,7 +465,8 @@ void *bch_nvm_alloc_pages(int order, const char *owner_uuid)
- 			break;
- 		}
- 	}
--
-+	if (kaddr)
-+		write_owner_info();
- 	mutex_unlock(&only_set->lock);
- 	return kaddr;
- }
--- 
-2.17.1
+     That's not in mainline yet, and not tested widely. You can give it 
+a try if you are interested in.
 
+
+Thanx
+
+在 2020/12/18 星期五 下午 6:35, Lin Feng 写道:
+> Hi all,
+>
+> I googled a lot but only finding this, my question is if this issue 
+> have been fixed or
+> if there are ways to work around?
+>
+> > On Wed, 28 Jun 2017, Coly Li wrote:
+> >
+> > > On 2017/6/27 下午8:04, tang.junhui@xxxxxxxxxx wrote:
+> > > > Hello Eric, Coly,
+> > > >
+> > > > I use a 1400G SSD device a bcache cache device,
+> > > > and attach with 10 back-end devices,
+> > > > and run random small write IOs,
+> > > > when gc works, It takes about 15 seconds,
+> > > > and the up layer application IOs was suspended at this time,
+> > > > How could we bear such a long time IO stopping?
+> > > > Is there any way we can avoid this problem?
+> > > >
+> > > > I am very anxious about this question, any comment would be 
+> valuable.
+> > >
+> > > I encounter same situation too.
+> > > Hmm, I assume there are some locking issue here, to prevent 
+> application
+> > > to send request and insert keys in LSM tree, no matter in 
+> writeback or
+> > > writethrough mode. This is a lazy and fast response, I need to 
+> check the
+> > > code then provide an accurate reply :-)
+> >
+>
+> I encoutered even worse situation(8TB ssd cached for 4*10 TB disks) as 
+> mail extracted above,
+> all usrer IOs are hung during bcache GC runs, my kernel is 4.18, while 
+> I tested it with kernel 5.10,
+> it seems that situation is unchaged.
+>
+> Below are some logs for reference.
+> GC trace events:
+> [Wed Dec 16 15:08:40 2020]   ##48735 [046] .... 1632697.784097: 
+> bcache_gc_start: 4ab63029-0c4a-42a8-8f54-e638358c2c6c
+> [Wed Dec 16 15:09:01 2020]   ##48735 [034] .... 1632718.828510: 
+> bcache_gc_end: 4ab63029-0c4a-42a8-8f54-e638358c2c6c
+>
+> and during which iostat shows like:
+> 12/16/2020 03:08:48 PM
+> Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s 
+> avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+> sdb               0.00     0.50 1325.00   27.00 169600.00 122.00   
+> 251.07     0.32    0.24    0.24    0.02   0.13  17.90
+> sdc               0.00     0.00    0.00    0.00     0.00 0.00     
+> 0.00     0.00    0.00    0.00    0.00   0.00   0.00
+> sdd               0.00     0.00    0.00    0.00     0.00 0.00     
+> 0.00     0.00    0.00    0.00    0.00   0.00   0.00
+> sde               0.00     0.00    0.00    0.00     0.00 0.00     
+> 0.00     0.00    0.00    0.00    0.00   0.00   0.00
+> sdf               0.00     0.00    0.00    0.00     0.00 0.00     
+> 0.00     0.00    0.00    0.00    0.00   0.00   0.00
+> bcache0           0.00     0.00    1.00    0.00     4.00 0.00     
+> 8.00    39.54    0.00    0.00    0.00 1000.00 100.00
+>
+> # grep . 
+> /sys/fs/bcache/4ab63029-0c4a-42a8-8f54-e638358c2c6c/internal/*gc*
+> /sys/fs/bcache/4ab63029-0c4a-42a8-8f54-e638358c2c6c/internal/btree_gc_average_duration_ms:26539 
+>
+> /sys/fs/bcache/4ab63029-0c4a-42a8-8f54-e638358c2c6c/internal/btree_gc_average_frequency_sec:8692 
+>
+> /sys/fs/bcache/4ab63029-0c4a-42a8-8f54-e638358c2c6c/internal/btree_gc_last_sec:6328 
+>
+> /sys/fs/bcache/4ab63029-0c4a-42a8-8f54-e638358c2c6c/internal/btree_gc_max_duration_ms:283405 
+>
+> /sys/fs/bcache/4ab63029-0c4a-42a8-8f54-e638358c2c6c/internal/copy_gc_enabled:1 
+>
+> /sys/fs/bcache/4ab63029-0c4a-42a8-8f54-e638358c2c6c/internal/gc_always_rewrite:1 
+>
+>
+> Thanks and Best wishes!
+> linfeng
+>
