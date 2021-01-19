@@ -7,18 +7,18 @@ X-Spam-Status: No, score=-16.6 required=3.0 tests=BAYES_00,DKIM_INVALID,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
 	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DF4F8C433DB
-	for <linux-bcache@archiver.kernel.org>; Tue, 19 Jan 2021 08:27:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1840DC433E6
+	for <linux-bcache@archiver.kernel.org>; Tue, 19 Jan 2021 08:27:35 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 97FC72312D
+	by mail.kernel.org (Postfix) with ESMTP id C6E4B23131
 	for <linux-bcache@archiver.kernel.org>; Tue, 19 Jan 2021 08:27:34 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2389581AbhASFY4 (ORCPT
+        id S2389484AbhASFYn (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 19 Jan 2021 00:24:56 -0500
-Received: from esa3.hgst.iphmx.com ([216.71.153.141]:63871 "EHLO
-        esa3.hgst.iphmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1727219AbhASFJH (ORCPT
+        Tue, 19 Jan 2021 00:24:43 -0500
+Received: from esa5.hgst.iphmx.com ([216.71.153.144]:40916 "EHLO
+        esa5.hgst.iphmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1727140AbhASFJH (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Tue, 19 Jan 2021 00:09:07 -0500
 DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple;
@@ -26,38 +26,38 @@ DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple;
   t=1611032947; x=1642568947;
   h=from:to:cc:subject:date:message-id:in-reply-to:
    references:mime-version:content-transfer-encoding;
-  bh=jmrSa8deAEe1LJieS4GwadhMznrvItaU1cHEcGf0nvk=;
-  b=AJ+kLfsSJ4s07yDnlseG1ISGGXpWVyUnFL49c/GKPrU9mkELI+wPkQgM
-   k0Sr307YGaCRfbszrgkwae6u4u5+PF2WExHyAS4niMtdGlrMpa96wgYxX
-   3B0iiRd5Lc60P2FsQOBYgGRYjZm9V9hMjqd4Te2OvXkHRwWVSZtNQJOJB
-   JNXadhODsrLaKmZNKUfkCxPlcFBeFKDpkdXVEYsoMyhMUgE5f+rz/FEOZ
-   QrrGa3U4KHbx5KQn9l7nbpESN4LFl80EcDp8IwgB9ACrppt+nwnD/2f8Q
-   3T2DuSkwQOUY4qLxFZUMpfozg94uu1qvD1VFpy0wfzT+/1zw6lapxdyl6
-   A==;
-IronPort-SDR: 9IH0QRgyJGceub+HSw+OAYsR5g1UCjXvkRmOE7pb+OJfE20FELHvx3qtZPekjvtw1i86u9sDa3
- Wd0vMOjW/VERMIeI5SKgiRawxhPaPi/nZJw5T3lIfIG+Vk3Auy9ROAiUG3v+gA4sqD+fkQ5+ue
- JEhP0wVRB4xHIpobUtJZSI3/HPc9vV3NoBDJQ/aTDYgMjsXV1LJFK1j+d917YlZJLeZVrdT5zd
- 1sCjSjLnqohrvTxj99NK/iKEHCJgpMxZIsRb021sQpVIGrQQSIKFfY+Lw/VPCAO9vMjo96CS2G
- 1dA=
+  bh=xUOVrFleGb+eYEs5Yq2ctnwrCXH8hkiRL46tj+d0DVI=;
+  b=SgerIOQY1u4ZuHb3hrgXlm89lRSCpe4nyZChcPEhOVKfq07WeYDpFdHI
+   dFqoTs5v9ZVyRx/y5NMqcnO4qSFcEZpS9vja2r9nmrWVvD62Otqwsst0d
+   s3X+01h0/O+62uvplmznRYDkDgVzSgevu609gQWB9AC14WFvPsRQbdBYj
+   jglpYpcR43Bi5g+WAFxkrEhOUC4RX99dnUhe2UerabUp/RIKhje0Du17P
+   nbduwlIc7HO/aY8NHl51ZLZvsRySueJYoDwXS1gpdNqT3fjF4U1GCDqE1
+   E3VTD0HIrCJZbIyHz5O3Tk9A2T6MC78K0ejT7sGwbTMdW9geuc6WHvS2L
+   w==;
+IronPort-SDR: n4OZNf/d9ls/PledLjKpOa1ItGyRx/+Cs3F2IzQV/e413ntRum4xgIf5gV2kpTve3o6zxr2E4N
+ o6fDNHVDoOdEnqe5acXJZ7UfRzfN58aZ7eDJh0tCjYeFGYK+KlN+sI8aQgnPhk5uoS9UEZiM0a
+ c4kWW1cLimsojsw8uxd9qMILsVL6yv1QsAWr3SeXbRwRBHTowZdck8JfsVSuW7OxSz7XKQqyBd
+ w78h0s9aMT+wv0tylvjObPfjA/pZIUKwVzGGOu7atffk1kpkUQzhe26DgnWUmvBjzpLb6DBSvQ
+ zBA=
 X-IronPort-AV: E=Sophos;i="5.79,357,1602518400"; 
-   d="scan'208";a="162200901"
-Received: from uls-op-cesaip01.wdc.com (HELO uls-op-cesaep01.wdc.com) ([199.255.45.14])
-  by ob1.hgst.iphmx.com with ESMTP; 19 Jan 2021 13:06:57 +0800
-IronPort-SDR: kcItOcwBlllKPIE0vRa1+mRTFZtJJbvDNuhgcrhd9IY4m04UCBUhtKuaMVVVeVxRMd6HO5zug3
- NgoC8qBAlLOMdyKTOOvvsgp3JuNwOZ07vKUS8lQ6idDPGzTYsTX+PSMu7GqHzaa4R1uPAE8ACO
- Ps/fy9eWrwsAhY7/XR2JujFhlqthtEncw9UDL1Tq1zwcd2Mpn9k9H7jHVp7VmhTh+3iq2/8/+D
- rf8Ne1JB2PAWp7CI29odNbqyNjraTVnhvazDXd+z11HyHdIIDMYRdWDlzm8FelWaFQITFdCccg
- pwvzAfSCO3v9OcNpwX+7iJEC
+   d="scan'208";a="157758552"
+Received: from h199-255-45-15.hgst.com (HELO uls-op-cesaep02.wdc.com) ([199.255.45.15])
+  by ob1.hgst.iphmx.com with ESMTP; 19 Jan 2021 13:07:40 +0800
+IronPort-SDR: kv9JJ63tZBM+0AnBjYhE2/cqh45kPVjnBFND+rTGrXRd5b1PD/gjKHbTAv5xI/BccPnpZj6SZJ
+ sTliytzWisL1tnXx9uFEqUhx98fR7P/UDK6px90mBtN2ZqeBdFHn651vC4vusLgHtWbiUD8Uhu
+ JN0w9fS2n46H4KAe7JzdHD7xIYr8f+zJmipMIDuL7kqIkzOpGlRCyNxOSHDXSPiq2Buma2dYqP
+ /vZIUHSOrTH4dqrl8bFOIi0mhBJe2reqgmoKTevNsyWekbJu/m37n8U7MFnyyrt9Dx6GpN8ovK
+ ud+naIy58NZiUYfz5YtowXfI
 Received: from uls-op-cesaip02.wdc.com ([10.248.3.37])
-  by uls-op-cesaep01.wdc.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 18 Jan 2021 20:51:35 -0800
-IronPort-SDR: 2QvgFwKv1l58qACx1LkMFx25aQa2SIK+nja25KW+g1fGCIsFCI2aDBEoSVRt5vd+mstvmW96a+
- 737tI66XYa3YGuNZc7mhzaBx90mzE+7INtx21d/7HVJL8Fs4lXsY46xoeP6qPWvnDZ3ihPj4yc
- 0PHxNbwk5lPXU8GKWjmU1O8sK8W4HyOAc9WnAAEnbKb4wGAIm+2gNrXPeVygtgzGsA4DXXJ+Yd
- mrqI036gzbWwtshapKuKgeKERGx47y7vTXELUquL2fc2urlWZF3SUiFLdWMNhtGfvEB6B//WSB
- xEk=
+  by uls-op-cesaep02.wdc.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 18 Jan 2021 20:50:15 -0800
+IronPort-SDR: TM9dpxhc1bBjOypQU+TCA1+JHS3X6tbyUfX7CLJp8sH85tB99xJFscHBDCLFq2/sTR23LiC3TM
+ J8KKwbkNN7jjvKISe7zzGqpFWELclGi38nUt/LvFQapcIN9YFp8DZRQ2izF3uYGZWxHnRIgtO2
+ WhlQFVHRjq0w2Sygnwa63xoEK9fTLJNmudOASmzr+o1zZ38TO1TOJzzBzvspEDTXWPVaZigUus
+ O1/x342A0NXQzCNMPt4Ly8HseHr0drZDIxn0r08WsOUedcj3h8TiQqY/1oiIV4nQx5hppaJXgU
+ 55M=
 WDCIronportException: Internal
 Received: from vm.labspan.wdc.com (HELO vm.sc.wdc.com) ([10.6.137.102])
-  by uls-op-cesaip02.wdc.com with ESMTP; 18 Jan 2021 21:06:57 -0800
+  by uls-op-cesaip02.wdc.com with ESMTP; 18 Jan 2021 21:07:40 -0800
 From:   Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
 To:     linux-block@vger.kernel.org, linux-xfs@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -79,9 +79,9 @@ Cc:     jfs-discussion@lists.sourceforge.net, dm-devel@redhat.com,
         osandov@fb.com, bvanassche@acm.org, gustavo@embeddedor.com,
         asml.silence@gmail.com, jefflexu@linux.alibaba.com,
         Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
-Subject: [RFC PATCH 03/37] btrfs: use bio_init_fields in disk-io
-Date:   Mon, 18 Jan 2021 21:05:57 -0800
-Message-Id: <20210119050631.57073-4-chaitanya.kulkarni@wdc.com>
+Subject: [RFC PATCH 09/37] iomap: use bio_init_fields in buffered-io
+Date:   Mon, 18 Jan 2021 21:06:03 -0800
+Message-Id: <20210119050631.57073-10-chaitanya.kulkarni@wdc.com>
 X-Mailer: git-send-email 2.22.1
 In-Reply-To: <20210119050631.57073-1-chaitanya.kulkarni@wdc.com>
 References: <20210119050631.57073-1-chaitanya.kulkarni@wdc.com>
@@ -93,40 +93,26 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 Signed-off-by: Chaitanya Kulkarni <chaitanya.kulkarni@wdc.com>
 ---
- fs/btrfs/disk-io.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ fs/iomap/buffered-io.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 765deefda92b..9a65432fc5e9 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3637,10 +3637,8 @@ static int write_dev_supers(struct btrfs_device *device,
- 		 * checking.
- 		 */
- 		bio = bio_alloc(GFP_NOFS, 1);
--		bio_set_dev(bio, device->bdev);
--		bio->bi_iter.bi_sector = bytenr >> SECTOR_SHIFT;
--		bio->bi_private = device;
--		bio->bi_end_io = btrfs_end_super_write;
-+		bio_init_fields(bio, device->bdev, bytenr >> SECTOR_SHIFT,
-+				device, btrfs_end_super_write, 0, 0);
- 		__bio_add_page(bio, page, BTRFS_SUPER_INFO_SIZE,
- 			       offset_in_page(bytenr));
+diff --git a/fs/iomap/buffered-io.c b/fs/iomap/buffered-io.c
+index 16a1e82e3aeb..d256799569cf 100644
+--- a/fs/iomap/buffered-io.c
++++ b/fs/iomap/buffered-io.c
+@@ -1222,10 +1222,9 @@ iomap_alloc_ioend(struct inode *inode, struct iomap_writepage_ctx *wpc,
+ 	struct bio *bio;
  
-@@ -3748,11 +3746,10 @@ static void write_dev_flush(struct btrfs_device *device)
- 		return;
+ 	bio = bio_alloc_bioset(GFP_NOFS, BIO_MAX_PAGES, &iomap_ioend_bioset);
+-	bio_set_dev(bio, wpc->iomap.bdev);
+-	bio->bi_iter.bi_sector = sector;
++	bio_init_fields(bio, wpc->iomap.bdev, sector, NULL, NULL, 0,
++			inode->i_write_hint);
+ 	bio->bi_opf = REQ_OP_WRITE | wbc_to_write_flags(wbc);
+-	bio->bi_write_hint = inode->i_write_hint;
+ 	wbc_init_bio(wbc, bio);
  
- 	bio_reset(bio);
--	bio->bi_end_io = btrfs_end_empty_barrier;
--	bio_set_dev(bio, device->bdev);
- 	bio->bi_opf = REQ_OP_WRITE | REQ_SYNC | REQ_PREFLUSH;
- 	init_completion(&device->flush_wait);
--	bio->bi_private = &device->flush_wait;
-+	bio_init_fields(bio, device->bdev, 0, &device->flush_wait,
-+			btrfs_end_empty_barrier, 0, 0);
- 
- 	btrfsic_submit_bio(bio);
- 	set_bit(BTRFS_DEV_STATE_FLUSH_SENT, &device->dev_state);
+ 	ioend = container_of(bio, struct iomap_ioend, io_inline_bio);
 -- 
 2.22.1
 
