@@ -4,61 +4,60 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-5.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,
-	SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_SANE_1 autolearn=no
-	autolearn_force=no version=3.4.0
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B31F0C433E9
-	for <linux-bcache@archiver.kernel.org>; Mon, 25 Jan 2021 18:15:08 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C9EA7C433DB
+	for <linux-bcache@archiver.kernel.org>; Mon, 25 Jan 2021 18:16:26 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 641C022583
-	for <linux-bcache@archiver.kernel.org>; Mon, 25 Jan 2021 18:15:08 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8C6C022B3F
+	for <linux-bcache@archiver.kernel.org>; Mon, 25 Jan 2021 18:16:26 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1731286AbhAYSOz (ORCPT
+        id S1730928AbhAYSPy (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 25 Jan 2021 13:14:55 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:32848 "EHLO
+        Mon, 25 Jan 2021 13:15:54 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37590 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1731285AbhAYRyU (ORCPT
+        with ESMTP id S1731368AbhAYSPs (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 25 Jan 2021 12:54:20 -0500
-Received: from mail-pg1-x530.google.com (mail-pg1-x530.google.com [IPv6:2607:f8b0:4864:20::530])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 25F4BC06178A
-        for <linux-bcache@vger.kernel.org>; Mon, 25 Jan 2021 09:53:40 -0800 (PST)
-Received: by mail-pg1-x530.google.com with SMTP id g15so9407002pgu.9
-        for <linux-bcache@vger.kernel.org>; Mon, 25 Jan 2021 09:53:40 -0800 (PST)
+        Mon, 25 Jan 2021 13:15:48 -0500
+Received: from mail-pl1-x630.google.com (mail-pl1-x630.google.com [IPv6:2607:f8b0:4864:20::630])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4CB77C061574
+        for <linux-bcache@vger.kernel.org>; Mon, 25 Jan 2021 10:15:08 -0800 (PST)
+Received: by mail-pl1-x630.google.com with SMTP id u11so8135790plg.13
+        for <linux-bcache@vger.kernel.org>; Mon, 25 Jan 2021 10:15:08 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=kernel-dk.20150623.gappssmtp.com; s=20150623;
-        h=from:subject:to:cc:references:message-id:date:user-agent
+        h=subject:to:cc:references:from:message-id:date:user-agent
          :mime-version:in-reply-to:content-language:content-transfer-encoding;
-        bh=s6C9gJtxVOS7uf+wB+GNYwlfWiptrVoeydv0VcfghHQ=;
-        b=paXkl2zbKyHjc4GGkMjIRUdrHcPgKFNqCjQej+n1ZYOsCLguWtckSXACfUnZAkz0lD
-         CcBdj+u28BfpSbhJ5e9gUHsu13jzfEj0RETbQhz6jh3dWIEy5FOWWVAQCdGvHjuysg2N
-         aIAzmR84BWEHOE0buQQ5QVGCMrdjymYRkPk4CoCE3j4TRfCwe+jRqPh3FhmGXsv4T3Vb
-         o0UHdnIyM1suQIVTObBDpeIbdx3kDgNAvM5Gy9MQWu0162mnI+4uuJiJZP51miHQ7K6r
-         R5kL5Oyd+EDATnWW79f6/C0MXnBZe7p1rr2JggnemUDszgSyZxvBj5dEn1YG/icOR0dO
-         5P2Q==
+        bh=iLTv01uXk/wv0jk2KXYxjzAWyCAaqM7QWnaj23VL+4A=;
+        b=N3FFRAlRD/9nw0aEhT0IQO/81yQJl6pBnnKfFiRnZMDXbK8bn6gjnIZXv+hqFsM9vh
+         UBhGMDmJKHn7nDSSJFU2x+31ngWFqsGcPGfYc8jwDkq/SSy/nVAxR8fsF1YgtzhZA4WM
+         KhGnVIhc7rNyO02j744t7bpmCa7sQ9+7YRWgV+VPGbc/d79DcYfiDRZAEPPAgCUCjejF
+         v7iS/voN07Mzu3Dx0qcSh4bbCHr+k9o/uFOAx5Vi2TqqfkXRGUQH5u3vHYncvfjBBOiO
+         QVg06lL8Pr06ku0smZoPJOEXr2tJh2aZUvCV3jwbc32dG5ftzbmAzr2k6i7B9ObE+pQo
+         6xLg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
-        h=x-gm-message-state:from:subject:to:cc:references:message-id:date
+        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
          :user-agent:mime-version:in-reply-to:content-language
          :content-transfer-encoding;
-        bh=s6C9gJtxVOS7uf+wB+GNYwlfWiptrVoeydv0VcfghHQ=;
-        b=fcffx2JPFeMH9IzyLT08QU1UaZqakiVuFvXjsK6r3TBMHEu9Id4k8ptpWsOtVwS80x
-         yEDZcDvRCe6Jnp4s/XGvoDv8cxwvJboDJGhkfz55gtF3aobytnD6XYmn915GgZQEapcU
-         o9QV3TIkUarM484z/Fng4pIBDd1euzfWS5xjE5TYC0cdUXs+56cRE6XlQoA7g+I8N/mM
-         ibVYWx9oVm/Shbhox78xYgXPlh6DXHMN2eZ8myheKoOiFaWdoR3SJEoNnAbwdS5n7VYc
-         egIroKaggDYeIAFzsu7BqzRO8bgIfnIjNKs5GQ06X8P0xWLu3G5cLclH5jQB7W4zY176
-         yNdQ==
-X-Gm-Message-State: AOAM533yKbke2S2TGSuT9GAZoLBqmTw3jw0dGWW9NhqayUGlLgAFifmJ
-        Q7ub6nGyA/bRxqckddCDmqjNwRKYUKqe2w==
-X-Google-Smtp-Source: ABdhPJz+3LqFBlzn1c2vwQXmjnqICAm1FJDtAAzq4zb0CLdcKLr0vlHa6YNJJKFSu/hugPFO9HX2QA==
-X-Received: by 2002:aa7:80c6:0:b029:1b6:92ae:a199 with SMTP id a6-20020aa780c60000b02901b692aea199mr1363354pfn.71.1611597219540;
-        Mon, 25 Jan 2021 09:53:39 -0800 (PST)
+        bh=iLTv01uXk/wv0jk2KXYxjzAWyCAaqM7QWnaj23VL+4A=;
+        b=Qm/RuOWkh4W1ngpH6F5EEQHZO2haDuzekVslWMnPebmX/sqOebe0ArgdwCJdWY1sB4
+         93O1TFUppBaIoN4w/FMpiPJOv5CYKlrOfv3g7/3VC1FnsSvuRPig9VgoeZU+fdBaZN3w
+         bh/Uu+HtR9K3qLC+mp8XoTGDVtOtyriShCaE9fXGq75B2uc6/0em7peJttPl0Jk9hp3x
+         eMBZ1+70JoMVbrnwWlJ7E37Gr+kldAEuUAZfjPSL+6k3o6PoChZhZAOGgV7AL9xj8iw2
+         wjP19GWpmVGFdJ7KefnGkWdw3eYN/eC+5x+qiBCINH1qeFMuDIrr/NnBC0mZWzYO50vm
+         mLyw==
+X-Gm-Message-State: AOAM533Y/IoKjScwqmfF5w/xY7XqoiE+PxUNXrMisNtcg32gZ3BMTSjc
+        DSV9d7YtbYRCGegjkoO80ZvIUw==
+X-Google-Smtp-Source: ABdhPJz8SyBo1RX92xF49AhFTV3BqR0FC5DwFrUN23IIQ1Vim/H9NC7K0PDXzYiDOKSkvVh6fA2QIg==
+X-Received: by 2002:a17:90a:9912:: with SMTP id b18mr1531400pjp.120.1611598507845;
+        Mon, 25 Jan 2021 10:15:07 -0800 (PST)
 Received: from [192.168.4.41] (cpe-72-132-29-68.dc.res.rr.com. [72.132.29.68])
-        by smtp.gmail.com with ESMTPSA id n2sm17364646pfu.129.2021.01.25.09.53.37
+        by smtp.gmail.com with ESMTPSA id o13sm16813902pfg.124.2021.01.25.10.15.05
         (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Mon, 25 Jan 2021 09:53:38 -0800 (PST)
-From:   Jens Axboe <axboe@kernel.dk>
+        Mon, 25 Jan 2021 10:15:07 -0800 (PST)
 Subject: Re: [PATCH 05/10] block: do not reassig ->bi_bdev when partition
  remapping
 To:     Christoph Hellwig <hch@lst.de>
@@ -72,12 +71,18 @@ Cc:     Tejun Heo <tj@kernel.org>, Coly Li <colyli@suse.de>,
         linux-block <linux-block@vger.kernel.org>
 References: <20210124100241.1167849-1-hch@lst.de>
  <20210124100241.1167849-6-hch@lst.de>
-Message-ID: <dfdff48c-c263-8e7c-cb52-28e7bee00c45@kernel.dk>
-Date:   Mon, 25 Jan 2021 10:53:36 -0700
+ <dfdff48c-c263-8e7c-cb52-28e7bee00c45@kernel.dk>
+ <20210125175528.GA13451@lst.de>
+ <2b600368-96fa-7caf-f05b-321de616f7c9@kernel.dk>
+ <13667b22-029b-d7be-02da-96fce22cfd8f@kernel.dk>
+ <20210125181349.GA14432@lst.de>
+From:   Jens Axboe <axboe@kernel.dk>
+Message-ID: <1c0fabdc-9b73-dfd7-f49d-c211d58cbf12@kernel.dk>
+Date:   Mon, 25 Jan 2021 11:15:04 -0700
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
  Thunderbird/68.10.0
 MIME-Version: 1.0
-In-Reply-To: <20210124100241.1167849-6-hch@lst.de>
+In-Reply-To: <20210125181349.GA14432@lst.de>
 Content-Type: text/plain; charset=utf-8
 Content-Language: en-US
 Content-Transfer-Encoding: 7bit
@@ -85,16 +90,16 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Sun, Jan 24, 2021 at 3:05 AM Christoph Hellwig <hch@lst.de> wrote:
->
-> There is no good reason to reassign ->bi_bdev when remapping the
-> partition-relative block number to the device wide one, as all the
-> information required by the drivers comes from the gendisk anyway.
->
-> Keeping the original ->bi_bdev alive will allow to greatly simplify
-> the partition-away I/O accounting.
+On 1/25/21 11:13 AM, Christoph Hellwig wrote:
+> On Mon, Jan 25, 2021 at 11:03:24AM -0700, Jens Axboe wrote:
+>> Partition table entries are not in disk order.
+> 
+> And the issue shows up with the series just up to the this patch,
+> without any later patches?
 
-This one causes boot failures for me on my laptop...
+At that patch specifically. I bisected it, and then I double checked
+by running the previous commit (boots fine), then apply this one, and
+then I run into that error. So it should be 100% reliable.
 
 -- 
 Jens Axboe
