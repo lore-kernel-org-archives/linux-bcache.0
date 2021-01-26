@@ -2,48 +2,69 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
+	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
+	USER_AGENT_SANE_1 autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A6333C433E0
-	for <linux-bcache@archiver.kernel.org>; Tue, 26 Jan 2021 15:01:14 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 761D6C433E0
+	for <linux-bcache@archiver.kernel.org>; Tue, 26 Jan 2021 15:04:57 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 77E7D230FC
-	for <linux-bcache@archiver.kernel.org>; Tue, 26 Jan 2021 15:01:14 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 43D9923101
+	for <linux-bcache@archiver.kernel.org>; Tue, 26 Jan 2021 15:04:57 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S2391573AbhAZPAo (ORCPT
+        id S2391081AbhAZPEB (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 26 Jan 2021 10:00:44 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52150 "EHLO
+        Tue, 26 Jan 2021 10:04:01 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52572 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S2391197AbhAZPAf (ORCPT
+        with ESMTP id S2406065AbhAZPCT (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 26 Jan 2021 10:00:35 -0500
-Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BA17BC061A31;
-        Tue, 26 Jan 2021 06:59:54 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
-        References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:
-        Content-Type:Content-ID:Content-Description;
-        bh=nvbz5iYtrf14To4xrwKMIwRiNRZctL670kk4gnUD88w=; b=JoPiLXDSpvjKkodegpd/9Ki4eY
-        +Xdf/GZ8NV/UcLDXZzZtEKsp27c7jZGL9XRkRoIjfSyaWrDECY/eM9d9EbW3hXiTfEZtMMSfbBElv
-        gxIVvRv7JpUfBVu5HVmbC3V6jeIbpcuVLSOs+QAFB4JLCdJmf6UjhHo8cMfMWB6QtuEojK2aE4Zs4
-        0EGwmh02yAfrn/3WhiiWW7P8cSoEUgeZK/uRN5Lli1a73a/4gQNDmMn9/nUDRCLyehO8q38TrrVt2
-        Zp6tMS6WW0vuepmGDzOzrMfYXxlrsWqTSndYRyd8M3WUvaX0Wj1qAjSBNOpkRcDMl8FKs9wfJKhsN
-        NNqeQ+0g==;
-Received: from [2001:4bb8:191:e347:5918:ac86:61cb:8801] (helo=localhost)
-        by casper.infradead.org with esmtpsa (Exim 4.94 #2 (Red Hat Linux))
-        id 1l4PjX-005m4E-5t; Tue, 26 Jan 2021 14:54:48 +0000
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jens Axboe <axboe@kernel.dk>, Song Liu <song@kernel.org>
+        Tue, 26 Jan 2021 10:02:19 -0500
+Received: from mail-qv1-xf36.google.com (mail-qv1-xf36.google.com [IPv6:2607:f8b0:4864:20::f36])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 190F9C0698C5
+        for <linux-bcache@vger.kernel.org>; Tue, 26 Jan 2021 07:01:39 -0800 (PST)
+Received: by mail-qv1-xf36.google.com with SMTP id n3so4425086qvf.11
+        for <linux-bcache@vger.kernel.org>; Tue, 26 Jan 2021 07:01:38 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=toxicpanda-com.20150623.gappssmtp.com; s=20150623;
+        h=subject:to:cc:references:from:message-id:date:user-agent
+         :mime-version:in-reply-to:content-language:content-transfer-encoding;
+        bh=dHYhIJF3/5XU6YJf87js06xMy71uM3p96Vow3DtEX9o=;
+        b=WdWUmiJC+8UYJRTvh/5UIitEcjh/T2145UmBmoaEWnGQ/iLavq64t6tRlvb//BGAQq
+         3VCUG37Nar51k+dPiNF3CzPvHK3JYiJMW85otOgYWbeCX8vxizRUbZSXeXuWWIFycBGr
+         fjqPj8+dHcL6KrbrlAi0FZAluWAKHuAaVSWDnScYSZ0p7yKyiHcHTUW3cqp+KZfgaCw9
+         l/BFmjP/bpcNjnwBO+KhBHjChy/Tbk4sRM98bPFs+rrmeqOQ8iSzM6+HYZ1M0z/ww7C4
+         WfRtB8FMyXiifrNQasVAdg6AbxCHsU54Unw0rZbDzO556nGQA5ZP7DBCURAC4mHWVVQI
+         +Uxw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
+         :user-agent:mime-version:in-reply-to:content-language
+         :content-transfer-encoding;
+        bh=dHYhIJF3/5XU6YJf87js06xMy71uM3p96Vow3DtEX9o=;
+        b=g4OwbJvbx+Hu70oH+ntHP8C9vPO8h3N76oI3suWCtfaL8IPQCPFctx0oGYPNUA3DH+
+         F6LxPZyRK5HqVnwTvficsn79ilWejQyB088M2IyvyrHMtxNQ8fj0KqvEmeAjVoDIDMx6
+         ki5bSyfd7IWsCi4uNxS70uXLc80MUafTUnMQT9QHcmg7b1hZ7JiCTKtIzaMxJ4h5EfGg
+         30C2rC6ydfcfXjKC2D8ocqr9mng/Nthl9fTMH8P30woeBMzVi0GExv605VZt9rayx1R/
+         LyNdCLgX4/oxRUVc1UnV7KFHJqFjjZyR1WM/srh5U+yKkGVL5fLoMPXRCXREJ5DrlyN1
+         2vhA==
+X-Gm-Message-State: AOAM532d+d40zEAa3BlxyVBUGOW/r7TNPUMgKEtoOA6Ygoxr3qIKVhYO
+        8Hez49Ps2z7USYbcaA9JqfhwXQ==
+X-Google-Smtp-Source: ABdhPJy3NpFp+R6tlPWp0jY9EiL4vU+Cs/B3eEjfsSBgMM797jtRUTY+hlBsCIlFeHp5zjWk+0XbYg==
+X-Received: by 2002:a0c:fdc4:: with SMTP id g4mr5783824qvs.18.1611673298035;
+        Tue, 26 Jan 2021 07:01:38 -0800 (PST)
+Received: from [192.168.1.45] (cpe-174-109-172-136.nc.res.rr.com. [174.109.172.136])
+        by smtp.gmail.com with ESMTPSA id m190sm14220105qkb.42.2021.01.26.07.01.35
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Tue, 26 Jan 2021 07:01:36 -0800 (PST)
+Subject: Re: [PATCH 02/17] btrfs: use bio_kmalloc in __alloc_device
+To:     Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Song Liu <song@kernel.org>
 Cc:     Jaegeuk Kim <jaegeuk@kernel.org>, Chao Yu <chao@kernel.org>,
         Philipp Reisner <philipp.reisner@linbit.com>,
         Lars Ellenberg <lars.ellenberg@linbit.com>,
         Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
-        Josef Bacik <josef@toxicpanda.com>,
         David Sterba <dsterba@suse.com>,
         Damien Le Moal <damien.lemoal@wdc.com>,
         Naohiro Aota <naohiro.aota@wdc.com>,
@@ -55,39 +76,29 @@ Cc:     Jaegeuk Kim <jaegeuk@kernel.org>, Chao Yu <chao@kernel.org>,
         linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 01/17] zonefs: use bio_alloc in zonefs_file_dio_append
-Date:   Tue, 26 Jan 2021 15:52:31 +0100
-Message-Id: <20210126145247.1964410-2-hch@lst.de>
-X-Mailer: git-send-email 2.29.2
-In-Reply-To: <20210126145247.1964410-1-hch@lst.de>
 References: <20210126145247.1964410-1-hch@lst.de>
+ <20210126145247.1964410-3-hch@lst.de>
+From:   Josef Bacik <josef@toxicpanda.com>
+Message-ID: <d3717e48-9e42-fa7a-12c2-a6c97eaf4a7b@toxicpanda.com>
+Date:   Tue, 26 Jan 2021 10:01:34 -0500
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0)
+ Gecko/20100101 Thunderbird/78.6.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
+In-Reply-To: <20210126145247.1964410-3-hch@lst.de>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Use bio_alloc instead of open coding it.
+On 1/26/21 9:52 AM, Christoph Hellwig wrote:
+> Use bio_kmalloc instead of open coding it.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- fs/zonefs/super.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Reviewed-by: Josef Bacik <josef@toxicpanda.com>
 
-diff --git a/fs/zonefs/super.c b/fs/zonefs/super.c
-index bec47f2d074beb..faea2ed34b4a37 100644
---- a/fs/zonefs/super.c
-+++ b/fs/zonefs/super.c
-@@ -678,7 +678,7 @@ static ssize_t zonefs_file_dio_append(struct kiocb *iocb, struct iov_iter *from)
- 	if (!nr_pages)
- 		return 0;
- 
--	bio = bio_alloc_bioset(GFP_NOFS, nr_pages, &fs_bio_set);
-+	bio = bio_alloc(GFP_NOFS, nr_pages);
- 	if (!bio)
- 		return -ENOMEM;
- 
--- 
-2.29.2
+yay I contributed,
 
+Josef
