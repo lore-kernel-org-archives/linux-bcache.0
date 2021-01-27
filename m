@@ -5,42 +5,41 @@ X-Spam-Level:
 X-Spam-Status: No, score=-16.7 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=unavailable autolearn_force=no version=3.4.0
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A1D2AC433DB
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 06:03:24 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id F3015C433E0
+	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 06:33:22 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 6F3952070A
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 06:03:24 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 9A46D20679
+	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 06:33:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232813AbhA0GC4 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 27 Jan 2021 01:02:56 -0500
-Received: from m97179.mail.qiye.163.com ([220.181.97.179]:51822 "EHLO
+        id S232034AbhA0Gcm (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 27 Jan 2021 01:32:42 -0500
+Received: from m97179.mail.qiye.163.com ([220.181.97.179]:41140 "EHLO
         m97179.mail.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235334AbhA0DQr (ORCPT
+        with ESMTP id S233793AbhA0DMj (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 26 Jan 2021 22:16:47 -0500
+        Tue, 26 Jan 2021 22:12:39 -0500
 Received: from localhost.localdomain (unknown [218.94.118.90])
-        by m97179.mail.qiye.163.com (Hmail) with ESMTPA id 69032E026F4;
-        Wed, 27 Jan 2021 11:15:52 +0800 (CST)
+        by m97179.mail.qiye.163.com (Hmail) with ESMTPA id 926D7E02834;
+        Wed, 27 Jan 2021 11:11:14 +0800 (CST)
 From:   Dongsheng Yang <dongsheng.yang@easystack.cn>
 To:     colyli@suse.de, linux-bcache@vger.kernel.org,
         linux-kernel@vger.kernel.org, mchristi@redhat.com
 Cc:     Dongsheng Yang <dongsheng.yang@easystack.cn>
-Subject: [PATCH V3] bcache: dont reset bio opf in bch_data_insert_start
-Date:   Wed, 27 Jan 2021 11:15:50 +0800
-Message-Id: <20210127031550.3605-1-dongsheng.yang@easystack.cn>
+Subject: [PATCH V2] bcache: dont reset bio opf in bch_data_insert_start
+Date:   Wed, 27 Jan 2021 11:11:11 +0800
+Message-Id: <20210127031111.3493-1-dongsheng.yang@easystack.cn>
 X-Mailer: git-send-email 2.25.1
-Reply-To: 20210127031111.3493-1-dongsheng.yang@easystack.cn
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-HM-Spam-Status: e1kfGhgUHx5ZQUtXWQgYFAkeWUFZS1VLWVdZKFlBSUI3V1ktWUFJV1kPCR
-        oVCBIfWUFZHhkaTR1ISk4eSE5KVkpNSkpMSkxITklMQ0pVGRETFhoSFyQUDg9ZV1kWGg8SFR0UWU
+        oVCBIfWUFZGkgZGExDSR1KHkkaVkpNSkpMSkxLTE9DT05VGRETFhoSFyQUDg9ZV1kWGg8SFR0UWU
         FZT0tIVUpKS0hNSlVLWQY+
-X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6Pio6Mxw6ED0xOggiMEoxE0sK
-        PD0aCUpVSlVKTUpKTEpMSE5JQk5JVTMWGhIXVR8UFRwIEx4VHFUCGhUcOx4aCAIIDxoYEFUYFUVZ
-        V1kSC1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSE1NQzcG
-X-HM-Tid: 0a7741d71c7620bdkuqy69032e026f4
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6MAg6Sjo6HD0zNghMGgIxHigq
+        Pi4aCh5VSlVKTUpKTEpMS0xOS0hNVTMWGhIXVR8UFRwIEx4VHFUCGhUcOx4aCAIIDxoYEFUYFUVZ
+        V1kSC1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSE5KTDcG
+X-HM-Tid: 0a7741d2df4320bdkuqy926d7e02834
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
@@ -96,12 +95,10 @@ After this fix, bio to nvme will flaged as (REQ_SYNC | REQ_IDLE),
 then fio for writing will get about 1000M/s bandwidth.
 
 Fixes: ad0d9e76a412 ("bcache: use bio op accessors")
+Close: EAS-60259
 CC: Mike Christie <mchristi@redhat.com>
 Signed-off-by: Dongsheng Yang <dongsheng.yang@easystack.cn>
 ---
-V3-V2:
-	remove an unused close-line in commit message.
-
  drivers/md/bcache/request.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
