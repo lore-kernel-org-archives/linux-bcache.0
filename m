@@ -2,168 +2,137 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-13.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-5.3 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7694EC433E0
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 13:27:12 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4F83CC433E0
+	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 15:31:11 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3B8D4207A0
-	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 13:27:12 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 054E1206C2
+	for <linux-bcache@archiver.kernel.org>; Wed, 27 Jan 2021 15:31:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237769AbhA0N07 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 27 Jan 2021 08:26:59 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58678 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S238180AbhA0NYq (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 27 Jan 2021 08:24:46 -0500
-Received: from mail-ed1-x532.google.com (mail-ed1-x532.google.com [IPv6:2a00:1450:4864:20::532])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 786B7C061756
-        for <linux-bcache@vger.kernel.org>; Wed, 27 Jan 2021 05:24:06 -0800 (PST)
-Received: by mail-ed1-x532.google.com with SMTP id c6so2445520ede.0
-        for <linux-bcache@vger.kernel.org>; Wed, 27 Jan 2021 05:24:06 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kaishome.de; s=google;
-        h=from:to:cc:subject:date:message-id:in-reply-to:references
-         :mime-version:content-transfer-encoding;
-        bh=R+fQ3FwcKK3adtik+kRXhCj15FIYlpCRgATurezHC/c=;
-        b=SZ8T4G4z+ttOecp83G4rCI5QMkMOD05wcePPt8LdK841entGxopD5uRicQwuGvHFrH
-         KZk0jDm2XZgeSw+3AVgmIYrCe6Tbq7yLNWrkKu+7T8l/2ex/mmTG0z7+FY9DThOk19du
-         YELLRL3ecJ4O7OXZSrpKlwSaSpcu4/4v+20Jc=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20161025;
-        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
-         :references:mime-version:content-transfer-encoding;
-        bh=R+fQ3FwcKK3adtik+kRXhCj15FIYlpCRgATurezHC/c=;
-        b=XKvpHAAmObeioZ3F8JZoGsb7s/rM1HbnZuC8DLXbzLBGx0x+vMwfMBabvLyfeftGXe
-         1KJIifk5Z9VfgaTL0I1fjpwPhFdh2iKMlYO3KSb6zTsM88+6jrTENPEVl/wDVTQY+qSE
-         TPpAcJj5H+vL/Z/pVrwV3M/t2s+nj+/RVMEnLd0LWR4B9/JVcoOGSNCYV5EAdw249jDY
-         1qGoGDl90Ww0vy5oOmCr1lONgw2pFUwe7dY9V4RtaFLpw/2GS3j7PsngiLK1qaphmIBP
-         x+4wG8KuIL/J0Dd04PWZmdFCOqs9gKVhRaeQ2PZz7M4kVO6OsYIsRzQL9ULKa8jkVqwY
-         FuUw==
-X-Gm-Message-State: AOAM533jWq+GAbOmHk4dpWOSgZ0BR1qYzRBt93bYIevvtif5jomPIhxw
-        X5a0NsF5YZxrBG0sYDy2KlypAjnIX05Ycw==
-X-Google-Smtp-Source: ABdhPJxQbF7xDbF21/v3y3aKEH+tbG9Od5XiOFNwr6O0PHt3R+IitmuwftVVH7ShBD7gPgt6Jp3ZiA==
-X-Received: by 2002:a50:fd83:: with SMTP id o3mr8818017edt.359.1611753844865;
-        Wed, 27 Jan 2021 05:24:04 -0800 (PST)
-Received: from jupiter.sol.kaishome.de ([2a02:8109:c40:9200::1a2])
-        by smtp.gmail.com with ESMTPSA id g10sm825685ejp.37.2021.01.27.05.24.03
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 27 Jan 2021 05:24:04 -0800 (PST)
-Received: (nullmailer pid 558037 invoked by uid 500);
-        Wed, 27 Jan 2021 13:24:02 -0000
-From:   Kai Krakow <kai@kaishome.de>
-To:     linux-bcache@vger.kernel.org
-Cc:     Kai Krakow <kai@kaishome.de>
-Subject: [PATCH 1/2] Revert "bcache: Kill btree_io_wq"
-Date:   Wed, 27 Jan 2021 14:23:49 +0100
-Message-Id: <20210127132350.557935-2-kai@kaishome.de>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20210127132350.557935-1-kai@kaishome.de>
+        id S1343879AbhA0Pan (ORCPT
+        <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 27 Jan 2021 10:30:43 -0500
+Received: from mx2.suse.de ([195.135.220.15]:35370 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S235800AbhA0P2c (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 27 Jan 2021 10:28:32 -0500
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id BEA3FB72C;
+        Wed, 27 Jan 2021 15:27:50 +0000 (UTC)
+Subject: Re: Fix degraded system performance due to workqueue overload
+To:     Kai Krakow <kai@kaishome.de>
 References: <20210127132350.557935-1-kai@kaishome.de>
+Cc:     linux-bcache@vger.kernel.org
+From:   Coly Li <colyli@suse.de>
+Message-ID: <3f252d42-e057-54b7-d54e-cced88659ff7@suse.de>
+Date:   Wed, 27 Jan 2021 23:27:48 +0800
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.16; rv:78.0)
+ Gecko/20100101 Thunderbird/78.6.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20210127132350.557935-1-kai@kaishome.de>
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This reverts commit 56b30770b27d54d68ad51eccc6d888282b568cee.
+On 1/27/21 9:23 PM, Kai Krakow wrote:
+> In the past months (and looking back, even years), I was seeing system
+> performance and latency degrading vastly when bcache is active.
+> 
+> Finally, with kernel 5.10, I was able to locate the problem:
+> 
+> [250336.887598] BUG: workqueue lockup - pool cpus=2 node=0 flags=0x0 nice=0 stuck for 72s!
+> [250336.887606] Showing busy workqueues and worker pools:
+> [250336.887607] workqueue events: flags=0x0
+> [250336.887608]   pwq 10: cpus=5 node=0 flags=0x0 nice=0 active=3/256 refcnt=4
+> [250336.887611]     pending: psi_avgs_work, psi_avgs_work, psi_avgs_work
+> [250336.887619]   pwq 4: cpus=2 node=0 flags=0x0 nice=0 active=15/256 refcnt=16
+> [250336.887621]     in-flight: 3760137:psi_avgs_work
+> [250336.887624]     pending: psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work, psi_avgs_work
+> [250336.887637]   pwq 0: cpus=0 node=0 flags=0x0 nice=0 active=1/256 refcnt=2
+> [250336.887639]     pending: psi_avgs_work
+> [250336.887643] workqueue events_power_efficient: flags=0x80
+> [250336.887644]   pwq 4: cpus=2 node=0 flags=0x0 nice=0 active=1/256 refcnt=2
+> [250336.887646]     pending: do_cache_clean
+> [250336.887651] workqueue mm_percpu_wq: flags=0x8
+> [250336.887651]   pwq 4: cpus=2 node=0 flags=0x0 nice=0 active=2/256 refcnt=4
+> [250336.887653]     pending: lru_add_drain_per_cpu BAR(60), vmstat_update
+> [250336.887666] workqueue bcache: flags=0x8
+> [250336.887667]   pwq 4: cpus=2 node=0 flags=0x0 nice=0 active=1/256 refcnt=2
+> [250336.887668]     pending: cached_dev_nodata
+> [250336.887681] pool 4: cpus=2 node=0 flags=0x0 nice=0 hung=72s workers=2 idle: 3760136
+> 
+> I was able to track that back to the following commit:
+> 56b30770b27d54d68ad51eccc6d888282b568cee ("bcache: Kill btree_io_wq")
+> 
+> Reverting that commit (with some adjustments due to later code changes)
+> improved my desktop latency a lot, I mean really a lot. The system was
+> finally able to handle somewhat higher loads without stalling for
+> several seconds and without spiking load into the hundreds while doing a
+> lot of write IO.
+> 
+> So I dug a little deeper and found that the assumption of this old
+> commit may no longer be true and bcache simply overwhelms the system_wq
+> with too many or too long running workers. This should really only be
+> used for workers that can do their work almost instantly, and it should
+> not be spammed with a lot of workers which bcache seems to do (look at
+> how many kthreads it creates from workers):
+> 
+> # ps aux | grep 'kworker/.*bc' | wc -l
+> 131
+> 
+> And this is with a mostly idle system, it may easily reach 700+. Also,
+> with my patches in place, that number seems to be overall lower.
+> 
+> So I added another commit (patch 2) to move another worker queue over
+> to a dedicated worker queue ("bcache: Move journal work to new
+> background wq").
+> 
+> I tested this by overloading my desktop system with the following
+> parallel load:
+> 
+>   * A big download at 1 Gbit/s, resulting in 60+ MB/s write
+>   * Active IPFS daemon
+>   * Watching a YouTube video
+>   * Fully syncing 4 IMAP accounts with MailSpring
+>   * Running a Gentoo system update (compiling packages)
+>   * Browsing the web
+>   * Running a Windows VM (Qemu) with Outlook and defragmentation
+>   * Starting and closing several applications and clicking in them
+> 
+> IO setup: 4x HDD (2+2+4+4 TB) btrfs RAID-0 with 850 GB SSD bcache
+> Kernel 5.10.10
+> 
+> Without the patches, the system would have come to a stop, probably not
+> recovering from it (last time I tried, a clean shutdown took 1+ hour).
+> With the patches, the system easily survives and feels overall smooth
+> with only a small perceivable lag.
+> 
+> Boot times are more consistent, too, and faster when bcache is mostly
+> cold due to a previous system update.
+> 
+> Write rates of the system are more smooth now, and can easily sustain a
+> constant load of 200-300 MB/s while previously I would see long stalls
+> followed by vastly reduces write performance (down to 5-20 MB/s).
+> 
+> I'm not sure if there are side-effects of my patches that I cannot know
+> of but it works great for me: All write-related desktop stalling is
+> gone.
+> 
 
-With the btree using the system_wq, I seem to see a lot more desktop
-latency than I should. So let's revert this.
----
- drivers/md/bcache/bcache.h |  2 ++
- drivers/md/bcache/btree.c  | 21 +++++++++++++++++++--
- drivers/md/bcache/super.c  |  4 ++++
- 3 files changed, 25 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 1d57f48307e6..b1ed16c7a534 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -1042,5 +1042,7 @@ void bch_debug_exit(void);
- void bch_debug_init(void);
- void bch_request_exit(void);
- int bch_request_init(void);
-+void bch_btree_exit(void);
-+int bch_btree_init(void);
- 
- #endif /* _BCACHE_H */
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 910df242c83d..952f022db5a5 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -99,6 +99,8 @@
- #define PTR_HASH(c, k)							\
- 	(((k)->ptr[0] >> c->bucket_bits) | PTR_GEN(k, 0))
- 
-+static struct workqueue_struct *btree_io_wq;
-+
- #define insert_lock(s, b)	((b)->level <= (s)->lock)
- 
- 
-@@ -308,7 +310,7 @@ static void __btree_node_write_done(struct closure *cl)
- 	btree_complete_write(b, w);
- 
- 	if (btree_node_dirty(b))
--		schedule_delayed_work(&b->work, 30 * HZ);
-+		queue_delayed_work(btree_io_wq, &b->work, 30 * HZ);
- 
- 	closure_return_with_destructor(cl, btree_node_write_unlock);
- }
-@@ -481,7 +483,7 @@ static void bch_btree_leaf_dirty(struct btree *b, atomic_t *journal_ref)
- 	BUG_ON(!i->keys);
- 
- 	if (!btree_node_dirty(b))
--		schedule_delayed_work(&b->work, 30 * HZ);
-+		queue_delayed_work(btree_io_wq, &b->work, 30 * HZ);
- 
- 	set_btree_node_dirty(b);
- 
-@@ -2764,3 +2766,18 @@ void bch_keybuf_init(struct keybuf *buf)
- 	spin_lock_init(&buf->lock);
- 	array_allocator_init(&buf->freelist);
- }
-+
-+void bch_btree_exit(void)
-+{
-+	if (btree_io_wq)
-+		destroy_workqueue(btree_io_wq);
-+}
-+
-+int __init bch_btree_init(void)
-+{
-+	btree_io_wq = create_singlethread_workqueue("bch_btree_io");
-+	if (!btree_io_wq)
-+		return -ENOMEM;
-+
-+	return 0;
-+}
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 2047a9cccdb5..dc4fe7eeda81 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2815,6 +2815,7 @@ static void bcache_exit(void)
- {
- 	bch_debug_exit();
- 	bch_request_exit();
-+	bch_btree_exit();
- 	if (bcache_kobj)
- 		kobject_put(bcache_kobj);
- 	if (bcache_wq)
-@@ -2880,6 +2881,9 @@ static int __init bcache_init(void)
- 	if (!bcache_wq)
- 		goto err;
- 
-+	if (bch_btree_init())
-+		goto err;
-+
- 	bch_journal_wq = alloc_workqueue("bch_journal", WQ_MEM_RECLAIM, 0);
- 	if (!bch_journal_wq)
- 		goto err;
--- 
-2.26.2
+Hi Kai,
 
+Overall I am OK with this series, it makes sense IMHO. Let's wait for
+response from Kent, if there is no comment from him, I will add these
+two patches in my v5.12 for-next series.
+
+Thanks for the fix up.
+
+Coly Li
