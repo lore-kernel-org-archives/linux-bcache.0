@@ -2,160 +2,102 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+X-Spam-Status: No, score=-18.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED
-	autolearn=ham autolearn_force=no version=3.4.0
+	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
+	USER_AGENT_GIT autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A7C00C433DB
-	for <linux-bcache@archiver.kernel.org>; Fri, 29 Jan 2021 16:38:49 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 77D44C433E0
+	for <linux-bcache@archiver.kernel.org>; Fri, 29 Jan 2021 16:43:13 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5F81C64DFB
-	for <linux-bcache@archiver.kernel.org>; Fri, 29 Jan 2021 16:38:49 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 4482F64DFB
+	for <linux-bcache@archiver.kernel.org>; Fri, 29 Jan 2021 16:43:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231316AbhA2Qir (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 29 Jan 2021 11:38:47 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40250 "EHLO
+        id S231448AbhA2QnM (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 29 Jan 2021 11:43:12 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40704 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231426AbhA2Qid (ORCPT
+        with ESMTP id S231642AbhA2Qmc (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 29 Jan 2021 11:38:33 -0500
-Received: from mail-qv1-xf36.google.com (mail-qv1-xf36.google.com [IPv6:2607:f8b0:4864:20::f36])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CF1F9C061573
-        for <linux-bcache@vger.kernel.org>; Fri, 29 Jan 2021 08:37:51 -0800 (PST)
-Received: by mail-qv1-xf36.google.com with SMTP id j13so4698527qvu.10
-        for <linux-bcache@vger.kernel.org>; Fri, 29 Jan 2021 08:37:51 -0800 (PST)
+        Fri, 29 Jan 2021 11:42:32 -0500
+Received: from mail-ej1-x62d.google.com (mail-ej1-x62d.google.com [IPv6:2a00:1450:4864:20::62d])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 91A7EC061573
+        for <linux-bcache@vger.kernel.org>; Fri, 29 Jan 2021 08:40:51 -0800 (PST)
+Received: by mail-ej1-x62d.google.com with SMTP id gx5so13918289ejb.7
+        for <linux-bcache@vger.kernel.org>; Fri, 29 Jan 2021 08:40:51 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=kaishome.de; s=google;
-        h=mime-version:references:in-reply-to:from:date:message-id:subject:to
-         :cc;
-        bh=eAJ+G00y1VXMGnbLxyOTEUmlv2RmSiWuFo4JzPpAKiA=;
-        b=mLkwROCez1xg3O3EArPdjpykIij61lt5Za2SFIXjq2OIupqxaCcv9PeGs2M5Z4n6+S
-         cKzWC0F+kmHbH2KoaAp+b6QrWXtiQAwNK2s98+3XfJSd2u5phM6qnQnMy3aR8o6A8tuE
-         qbUbtq5tCGx/KGPihbiY0P7MO/TTx/iamw3t4=
+        h=from:to:cc:subject:date:message-id:in-reply-to:references
+         :mime-version:content-transfer-encoding;
+        bh=VqRzbc4jSqVPxe24a+NdSB/v4f4p6uzKcOSkU+dz/zg=;
+        b=V5kAlwWigtWIl+9Px+fhRjmF+WeWu2adnnTwrsApYDxYqWdAv7dSccS5TXMPhJzF/6
+         fWyoTR6Yr5Mi7yCZQp5E4RvGflhKkYM/nqIYVjTuCdGLtDesNow/+VdxO8NVQILqyL4c
+         YbpKj06yDd2GLeWfDHaSZX9dmxEy5/N69oTX0=
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
-        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
-         :message-id:subject:to:cc;
-        bh=eAJ+G00y1VXMGnbLxyOTEUmlv2RmSiWuFo4JzPpAKiA=;
-        b=UciNjuMHJUkP953lhHJeOuzXjxJsIERKTWebCK1l1/noxVDdHF1241mNt+k5B+yQ+3
-         xuDlvZjAEWmHVkScuvJ5Bs8hkNaA7T4cNI8cggN/yqyTjcKsw2uwDeF3cQztesiqUHpe
-         e7CMIFu0HVMpeKwsfim/L4cENXqZ445jGsnN1S+FeKO1Y2CBbYS8BNM8gyK+uRgggTCd
-         BwyTFV1NxHM9Q7IUvR7bJpa0O46N4/sDv6o+LKgOTkik6/xC7WxlbnkTrPHPuwQ1c2u4
-         JRcg6+xoWYkQUwn+Mvdq4k+CE1WfLdy/MngYth1xZwB5SQeLvCrct/gxC4n03YlBx1Rg
-         +ytQ==
-X-Gm-Message-State: AOAM53229ET7ycH10bdNh4y/RdDe4PwLW3Csz8l0OJGyziOBILuzT8mH
-        tQNKCL4R2aMhnb2JlGxKRw2tMI62S5bgnet4jhTDOA==
-X-Google-Smtp-Source: ABdhPJykO1ErTg0ovYYZbE2D4f15wV/to8ph6vRnZ2wniuaWD+YxrAv35Jk2zs42vI2lI7gobrGqVYSUXXff58i5oW8=
-X-Received: by 2002:a05:6214:14f4:: with SMTP id k20mr4503572qvw.27.1611938271038;
- Fri, 29 Jan 2021 08:37:51 -0800 (PST)
-MIME-Version: 1.0
-References: <20210127132350.557935-1-kai@kaishome.de> <20210128232825.18719-1-kai@kaishome.de>
- <20210128232825.18719-3-kai@kaishome.de> <a52b9107-7e84-0fea-6095-84a9576d7cc4@suse.de>
-In-Reply-To: <a52b9107-7e84-0fea-6095-84a9576d7cc4@suse.de>
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:in-reply-to
+         :references:mime-version:content-transfer-encoding;
+        bh=VqRzbc4jSqVPxe24a+NdSB/v4f4p6uzKcOSkU+dz/zg=;
+        b=GMyISFODFHHQhaEI4Wo5UJv+DTNmhhj4xgisEIr83fI+ZmcYFpU+wLbyWBXI3uxRjc
+         OW8Liw/3ByNTOnVGav/lH5vW0xvdzyXGrMqX5SChsfBGiPJsfdFP4OFF/fF2slFfvdm7
+         z8uM1F7fJwiNjxvfdtQuMhv7lxeyZvGdkjUlAzwoScL0yt1lU++ELcwaGCIPggTmTboX
+         N9euddbAyISYCizkhC4tA+WUwk0lVVguhl5nLHEttbTuxTO/a8phyu2EVzAo0x9QAFU8
+         m393i202M6h1md8KOVI3p2eMuoYCezKTRXAZh4GVNKK4XxCXhIA6T+fU69yCBj+6g+4x
+         k2MQ==
+X-Gm-Message-State: AOAM530dLlDTATGe/sx0l+v3pGUXSPEq/4Ui9SeAIWJEQjKC+Zqz7EpA
+        GPBE0rBeRrwWfe3inAl7Q5EykQqyAL/VLw==
+X-Google-Smtp-Source: ABdhPJwpazWEp+0XGiM7EmQoUs68ZwF+19Of2lLXe0cCwAEfADiaZQuaku0hySw0HmpWgCrQSKIsmQ==
+X-Received: by 2002:a17:906:2315:: with SMTP id l21mr5576366eja.183.1611938450005;
+        Fri, 29 Jan 2021 08:40:50 -0800 (PST)
+Received: from jupiter.sol.kaishome.de ([2a02:8109:c40:9200::1a2])
+        by smtp.gmail.com with ESMTPSA id w17sm4084187ejk.124.2021.01.29.08.40.49
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Fri, 29 Jan 2021 08:40:49 -0800 (PST)
+Received: (nullmailer pid 188538 invoked by uid 500);
+        Fri, 29 Jan 2021 16:40:38 -0000
 From:   Kai Krakow <kai@kaishome.de>
-Date:   Fri, 29 Jan 2021 17:37:39 +0100
-Message-ID: <CAC2ZOYt3pZ4c-qd-9J3nbp4z_Jrw=Kv=9GxdaDOmi7Hu1w2q0w@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] bcache: Move journal work to new background wq
-To:     Coly Li <colyli@suse.de>
-Cc:     linux-bcache@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
+To:     linux-bcache@vger.kernel.org
+Cc:     Kai Krakow <kai@kaishome.de>, Coly Li <colyli@suse.de>
+Subject: [PATCH v4 2/3] bcache: Give btree_io_wq correct semantics again
+Date:   Fri, 29 Jan 2021 17:40:06 +0100
+Message-Id: <20210129164007.188468-2-kai@kaishome.de>
+X-Mailer: git-send-email 2.26.2
+In-Reply-To: <20210129164007.188468-1-kai@kaishome.de>
+References: <20210127132350.557935-1-kai@kaishome.de>
+ <20210129164007.188468-1-kai@kaishome.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Am Fr., 29. Jan. 2021 um 17:06 Uhr schrieb Coly Li <colyli@suse.de>:
->
-> On 1/29/21 7:28 AM, Kai Krakow wrote:
-> > This is potentially long running and not latency sensitive, let's get
-> > it out of the way of other latency sensitive events.
-> >
-> > As observed in the previous commit, the `system_wq` comes easily
-> > congested by bcache, and this fixes a few more stalls I was observing
-> > every once in a while.
-> >
-> > Let's not make this `WQ_MEM_RECLAIM` as it showed to reduce performance
-> > of boot and file system operations in my tests. Also, without
-> > `WQ_MEM_RECLAIM`, I no longer see desktop stalls. This matches the
-> > previous behavior as `system_wq` also does no memory reclaim:
-> >
-> >> // workqueue.c:
-> >> system_wq = alloc_workqueue("events", 0, 0);
-> >
->
-> Your text is convinced. I am OK with this patch. One more request, could
-> you please add a comment at alloc_workqueue() to explain why setting
-> flags as 0 and no WQ_MEM_RECLAIM. It should be helpful to others who
-> don't read our discussion.
+Before killing `btree_io_wq`, the queue was allocated using
+`create_singlethread_workqueue()` which has `WQ_MEM_RECLAIM`. After
+killing it, it no longer had this property but `system_wq` is not
+single threaded.
 
-I'll post a v4.
+Let's combine both worlds and make it multi threaded but able to
+reclaim memory.
 
-> > Cc: Coly Li <colyli@suse.de>
-> > Signed-off-by: Kai Krakow <kai@kaishome.de>
-> > ---
-> >  drivers/md/bcache/bcache.h  | 1 +
-> >  drivers/md/bcache/journal.c | 4 ++--
-> >  drivers/md/bcache/super.c   | 7 +++++++
-> >  3 files changed, 10 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> > index b1ed16c7a5341..e8bf4f752e8be 100644
-> > --- a/drivers/md/bcache/bcache.h
-> > +++ b/drivers/md/bcache/bcache.h
-> > @@ -1001,6 +1001,7 @@ void bch_write_bdev_super(struct cached_dev *dc, struct closure *parent);
-> >
-> >  extern struct workqueue_struct *bcache_wq;
-> >  extern struct workqueue_struct *bch_journal_wq;
-> > +extern struct workqueue_struct *bch_flush_wq;
-> >  extern struct mutex bch_register_lock;
-> >  extern struct list_head bch_cache_sets;
-> >
-> > diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-> > index aefbdb7e003bc..c6613e8173337 100644
-> > --- a/drivers/md/bcache/journal.c
-> > +++ b/drivers/md/bcache/journal.c
-> > @@ -932,8 +932,8 @@ atomic_t *bch_journal(struct cache_set *c,
-> >               journal_try_write(c);
-> >       } else if (!w->dirty) {
-> >               w->dirty = true;
-> > -             schedule_delayed_work(&c->journal.work,
-> > -                                   msecs_to_jiffies(c->journal_delay_ms));
-> > +             queue_delayed_work(bch_flush_wq, &c->journal.work,
-> > +                                msecs_to_jiffies(c->journal_delay_ms));
-> >               spin_unlock(&c->journal.lock);
-> >       } else {
-> >               spin_unlock(&c->journal.lock);
-> > diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> > index 77c5d8b6d4316..817b36c39b4fc 100644
-> > --- a/drivers/md/bcache/super.c
-> > +++ b/drivers/md/bcache/super.c
-> > @@ -49,6 +49,7 @@ static int bcache_major;
-> >  static DEFINE_IDA(bcache_device_idx);
-> >  static wait_queue_head_t unregister_wait;
-> >  struct workqueue_struct *bcache_wq;
-> > +struct workqueue_struct *bch_flush_wq;
-> >  struct workqueue_struct *bch_journal_wq;
-> >
-> >
-> > @@ -2821,6 +2822,8 @@ static void bcache_exit(void)
-> >               destroy_workqueue(bcache_wq);
-> >       if (bch_journal_wq)
-> >               destroy_workqueue(bch_journal_wq);
-> > +     if (bch_flush_wq)
-> > +             destroy_workqueue(bch_flush_wq);
-> >       bch_btree_exit();
-> >
-> >       if (bcache_major)
-> > @@ -2884,6 +2887,10 @@ static int __init bcache_init(void)
-> >       if (!bcache_wq)
-> >               goto err;
-> >
-> > +     bch_flush_wq = alloc_workqueue("bch_flush", 0, 0);
-> > +     if (!bch_flush_wq)
-> > +             goto err;
-> > +
-> >       bch_journal_wq = alloc_workqueue("bch_journal", WQ_MEM_RECLAIM, 0);
-> >       if (!bch_journal_wq)
-> >               goto err;
-> >
->
+Cc: Coly Li <colyli@suse.de>
+Signed-off-by: Kai Krakow <kai@kaishome.de>
+---
+ drivers/md/bcache/btree.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 952f022db5a5f..fe6dce125aba2 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -2775,7 +2775,7 @@ void bch_btree_exit(void)
+ 
+ int __init bch_btree_init(void)
+ {
+-	btree_io_wq = create_singlethread_workqueue("bch_btree_io");
++	btree_io_wq = alloc_workqueue("bch_btree_io", WQ_MEM_RECLAIM, 0);
+ 	if (!btree_io_wq)
+ 		return -ENOMEM;
+ 
+-- 
+2.26.2
+
