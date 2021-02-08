@@ -2,186 +2,94 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-14.8 required=3.0 tests=BAYES_00,
-	DATE_IN_FUTURE_06_12,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
-	USER_AGENT_GIT autolearn=ham autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.5 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,MAILING_LIST_MULTI,
+	NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=ham
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 704FDC433E0
-	for <linux-bcache@archiver.kernel.org>; Mon,  8 Feb 2021 06:46:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 699DDC433DB
+	for <linux-bcache@archiver.kernel.org>; Mon,  8 Feb 2021 13:50:54 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3571B64DA8
-	for <linux-bcache@archiver.kernel.org>; Mon,  8 Feb 2021 06:46:32 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2534464E60
+	for <linux-bcache@archiver.kernel.org>; Mon,  8 Feb 2021 13:50:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229621AbhBHGqb (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 8 Feb 2021 01:46:31 -0500
-Received: from mga07.intel.com ([134.134.136.100]:44130 "EHLO mga07.intel.com"
+        id S230495AbhBHNuq (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 8 Feb 2021 08:50:46 -0500
+Received: from mx2.suse.de ([195.135.220.15]:51434 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S229908AbhBHGqb (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Feb 2021 01:46:31 -0500
-IronPort-SDR: 0QxBAEYSt+U+S4OLbP53KAmXlk6BRyJCU+8/hFFGnVVniQxpZ6FjVEs/xtuOEq4sCqzebyuZ0X
- A1nxz1MHPFRQ==
-X-IronPort-AV: E=McAfee;i="6000,8403,9888"; a="245738717"
-X-IronPort-AV: E=Sophos;i="5.81,161,1610438400"; 
-   d="scan'208";a="245738717"
-Received: from fmsmga003.fm.intel.com ([10.253.24.29])
-  by orsmga105.jf.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 07 Feb 2021 22:45:26 -0800
-IronPort-SDR: D4YxQGqLcpgq+mXwsKLh3kM9b3CLEEJuZw6MwPL4O7+YbFsn3zsMzZt+jjZ+wzcwPMfWmjcRPA
- HtFuO+Fi201A==
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.81,161,1610438400"; 
-   d="scan'208";a="418127600"
-Received: from ceph.sh.intel.com ([10.239.241.176])
-  by FMSMGA003.fm.intel.com with ESMTP; 07 Feb 2021 22:45:25 -0800
-From:   Qiaowei Ren <qiaowei.ren@intel.com>
-To:     Coly Li <colyli@suse.de>
-Cc:     Qiaowei Ren <qiaowei.ren@intel.com>,
-        Jianpeng Ma <jianpeng.ma@intel.com>,
-        linux-bcache@vger.kernel.org
-Subject: [RFC PATCH v6 7/7] bcache: persist owner info when alloc/free pages.
-Date:   Mon,  8 Feb 2021 09:26:21 -0500
-Message-Id: <20210208142621.76815-8-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 2.17.1
-In-Reply-To: <20210208142621.76815-1-qiaowei.ren@intel.com>
+        id S230310AbhBHNun (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 8 Feb 2021 08:50:43 -0500
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id 686FEACF4;
+        Mon,  8 Feb 2021 13:50:01 +0000 (UTC)
+To:     Qiaowei Ren <qiaowei.ren@intel.com>,
+        Jianpeng Ma <jianpeng.ma@intel.com>
+Cc:     linux-bcache@vger.kernel.org
 References: <20210208142621.76815-1-qiaowei.ren@intel.com>
+From:   Coly Li <colyli@suse.de>
+Subject: Re: [RFC PATCH v6 0/7] nvm page allocator for bcache
+Message-ID: <0c4ba429-9697-be06-e5a4-4bd3a07c6275@suse.de>
+Date:   Mon, 8 Feb 2021 21:49:58 +0800
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.16; rv:78.0)
+ Gecko/20100101 Thunderbird/78.7.0
+MIME-Version: 1.0
+In-Reply-To: <20210208142621.76815-1-qiaowei.ren@intel.com>
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch implement persist owner info on nvdimm device
-when alloc/free pages.
+On 2/8/21 10:26 PM, Qiaowei Ren wrote:
+> This series implements nvm pages allocator for bcache. This idea is from
+> one discussion about nvdimm use case in kernel together with Coly. Coly
+> sent the following email about this idea to give some introduction on what
+> we will do before:
+> 
+> https://lore.kernel.org/linux-bcache/bc7e71ec-97eb-b226-d4fc-d8b64c1ef41a@suse.de/
+> 
+> Here this series focus on the first step in above email, that is to say,
+> this patch set implements a generic framework in bcache to allocate/release
+> NV-memory pages, and provide allocated pages for each requestor after reboot.
+> In order to do this, one simple buddy system is implemented to manage NV-memory
+> pages.
+> 
+> This set includes one testing module which can be used for simple test cases.
+> Next need to stroe bcache log or internal btree nodes into nvdimm based on
+> these buddy apis to do more testing.
+> 
+> Qiaowei Ren (7):
+>   bcache: add initial data structures for nvm pages
+>   bcache: initialize the nvm pages allocator
+>   bcache: initialization of the buddy
+>   bcache: bch_nvm_alloc_pages() of the buddy
+>   bcache: bch_nvm_free_pages() of the buddy
+>   bcache: get allocated pages from specific owner
+>   bcache: persist owner info when alloc/free pages.
 
-Signed-off-by: Jianpeng Ma <jianpeng.ma@intel.com>
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- drivers/md/bcache/nvm-pages.c | 93 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 92 insertions(+), 1 deletion(-)
+I test the V6 patch set, it works with current bcache part change. Sorry
+for not response for the previous series in time on list, but thank you
+all to fix the known issues in previous version.
 
-diff --git a/drivers/md/bcache/nvm-pages.c b/drivers/md/bcache/nvm-pages.c
-index 2b079a277e88..c350dcd696dd 100644
---- a/drivers/md/bcache/nvm-pages.c
-+++ b/drivers/md/bcache/nvm-pages.c
-@@ -210,6 +210,19 @@ static struct bch_nvm_namespace *find_nvm_by_addr(void *addr, int order)
- 	return NULL;
- }
- 
-+static void init_pgalloc_recs(struct bch_nvm_pgalloc_recs *recs, const char *owner_uuid)
-+{
-+	memset(recs, 0, sizeof(struct bch_nvm_pgalloc_recs));
-+	memcpy(recs->magic, bch_nvm_pages_pgalloc_magic, 16);
-+	memcpy(recs->owner_uuid, owner_uuid, 16);
-+	recs->size = BCH_MAX_RECS;
-+}
-+
-+static pgoff_t vaddr_to_nvm_pgoff(struct bch_nvm_namespace *ns, void *kaddr)
-+{
-+	return (kaddr - ns->kaddr) / PAGE_SIZE;
-+}
-+
- static int remove_extent(struct bch_nvm_alloced_recs *alloced_recs, void *addr, int order)
- {
- 	struct list_head *list = alloced_recs->extent_head.next;
-@@ -234,6 +247,82 @@ static int remove_extent(struct bch_nvm_alloced_recs *alloced_recs, void *addr,
- 	return (list == &alloced_recs->extent_head) ? -ENOENT : 0;
- }
- 
-+#define BCH_RECS_LEN (sizeof(struct bch_nvm_pgalloc_recs))
-+
-+static void write_owner_info(void)
-+{
-+	struct bch_owner_list *owner_list;
-+	struct bch_nvm_pgalloc_recs *recs;
-+	struct bch_nvm_namespace *ns = only_set->nss[0];
-+	struct bch_owner_list_head *owner_list_head;
-+	struct bch_nvm_pages_owner_head *owner_head;
-+	u64 recs_pos = BCH_NVM_PAGES_SYS_RECS_HEAD_OFFSET;
-+	struct list_head *list;
-+	int i, j;
-+
-+	owner_list_head = kzalloc(sizeof(*owner_list_head), GFP_KERNEL);
-+	recs = kmalloc(sizeof(*recs), GFP_KERNEL);
-+	if (!owner_list_head || !recs) {
-+		pr_info("can't alloc memory\n");
-+		goto free_resouce;
-+	}
-+
-+	owner_list_head->size = BCH_MAX_OWNER_LIST;
-+	WARN_ON(only_set->owner_list_used > owner_list_head->size);
-+
-+	// in-memory owner maybe not contain alloced-pages.
-+	for (i = 0; i < only_set->owner_list_used; i++) {
-+		owner_head = &owner_list_head->heads[i];
-+		owner_list = only_set->owner_lists[i];
-+
-+		memcpy(owner_head->uuid, owner_list->owner_uuid, 16);
-+
-+		for (j = 0; j < only_set->total_namespaces_nr; j++) {
-+			struct bch_nvm_alloced_recs *extents = owner_list->alloced_recs[j];
-+
-+			if (!extents || !extents->nr)
-+				continue;
-+
-+			init_pgalloc_recs(recs, owner_list->owner_uuid);
-+
-+			BUG_ON(recs_pos >= BCH_NVM_PAGES_OFFSET);
-+			owner_head->recs[j] = (struct bch_nvm_pgalloc_recs *)(uintptr_t)recs_pos;
-+
-+			for (list = extents->extent_head.next;
-+				list != &extents->extent_head;
-+				list = list->next) {
-+				struct bch_extent *extent;
-+
-+				extent = container_of(list, struct bch_extent, list);
-+
-+				if (recs->used == recs->size) {
-+					BUG_ON(recs_pos >= BCH_NVM_PAGES_OFFSET);
-+					recs->next = (struct bch_nvm_pgalloc_recs *)
-+							(uintptr_t)(recs_pos + BCH_RECS_LEN);
-+					memcpy_flushcache(ns->kaddr + recs_pos, recs, BCH_RECS_LEN);
-+					init_pgalloc_recs(recs, owner_list->owner_uuid);
-+					recs_pos += BCH_RECS_LEN;
-+				}
-+
-+				recs->recs[recs->used].pgoff =
-+					vaddr_to_nvm_pgoff(only_set->nss[j], extent->kaddr);
-+				recs->recs[recs->used].nr = extent->nr;
-+				recs->used++;
-+			}
-+
-+			memcpy_flushcache(ns->kaddr + recs_pos, recs, BCH_RECS_LEN);
-+			recs_pos += sizeof(struct bch_nvm_pgalloc_recs);
-+		}
-+	}
-+
-+	owner_list_head->used = only_set->owner_list_used;
-+	memcpy_flushcache(ns->kaddr + BCH_NVM_PAGES_OWNER_LIST_HEAD_OFFSET,
-+			 (void *)owner_list_head, sizeof(struct bch_owner_list_head));
-+free_resouce:
-+	kfree(owner_list_head);
-+	kfree(recs);
-+}
-+
- static void __free_space(struct bch_nvm_namespace *ns, void *addr, int order)
- {
- 	unsigned int add_pages = (1 << order);
-@@ -309,6 +398,7 @@ void bch_nvm_free_pages(void *addr, int order, const char *owner_uuid)
- 	}
- 
- 	__free_space(ns, addr, order);
-+	write_owner_info();
- 
- unlock:
- 	mutex_unlock(&only_set->lock);
-@@ -368,7 +458,8 @@ void *bch_nvm_alloc_pages(int order, const char *owner_uuid)
- 			break;
- 		}
- 	}
--
-+	if (kaddr)
-+		write_owner_info();
- 	mutex_unlock(&only_set->lock);
- 	return kaddr;
- }
--- 
-2.17.1
+Although the series is still marked as RFC patches, but IMHO they are in
+good shape for an EXPERIMENTAL series.
 
+I will have them with my other bcache changes in the v5.12 for-next, and
+it is so far so good in my smoking testing.
+
+There is one thing I feel should be clarified from you, I see some
+patches the author and the first signed-off-by person is not identical.
+Please make the first SOB people to be the same one in the From/Author
+field. And I guess maybe most of the work are done by both of you, if
+this is true, the second author can use a Co-authored-by: tag after the
+first Signed-off-by: person.
+
+The v6 series is under testing now, so it is unnecessary to post one
+more version for the above changes. I'd like to change them from my side
+if you may provide me some hints.
+
+Thanks for the contribution, the tiny NVDIMM pages allcoator works.
+
+Coly Li
