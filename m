@@ -5,32 +5,32 @@ X-Spam-Level:
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 6BD3AC433E6
-	for <linux-bcache@archiver.kernel.org>; Wed, 10 Feb 2021 05:09:38 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 50C2BC43381
+	for <linux-bcache@archiver.kernel.org>; Wed, 10 Feb 2021 05:09:40 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 4388C64E45
-	for <linux-bcache@archiver.kernel.org>; Wed, 10 Feb 2021 05:09:38 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2993864E4B
+	for <linux-bcache@archiver.kernel.org>; Wed, 10 Feb 2021 05:09:40 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230499AbhBJFJe (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 10 Feb 2021 00:09:34 -0500
-Received: from mx2.suse.de ([195.135.220.15]:40750 "EHLO mx2.suse.de"
+        id S230517AbhBJFJg (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 10 Feb 2021 00:09:36 -0500
+Received: from mx2.suse.de ([195.135.220.15]:40746 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S230418AbhBJFJ3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        id S230412AbhBJFJ3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
         Wed, 10 Feb 2021 00:09:29 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 53C16B08C;
-        Wed, 10 Feb 2021 05:08:18 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 0F47AB07B;
+        Wed, 10 Feb 2021 05:08:14 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
-        Jianpeng Ma <jianpeng.ma@intel.com>,
-        Qiaowei Ren <qiaowei.ren@intel.com>, Coly Li <colyli@suse.de>
-Subject: [PATCH 09/20] bcache: initialization of the buddy
-Date:   Wed, 10 Feb 2021 13:07:31 +0800
-Message-Id: <20210210050742.31237-10-colyli@suse.de>
+        Coly Li <colyli@suse.de>, Jianpeng Ma <jianpeng.ma@intel.com>,
+        Qiaowei Ren <qiaowei.ren@intel.com>
+Subject: [PATCH 07/20] bcache: add initial data structures for nvm pages
+Date:   Wed, 10 Feb 2021 13:07:29 +0800
+Message-Id: <20210210050742.31237-8-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20210210050742.31237-1-colyli@suse.de>
 References: <20210210050742.31237-1-colyli@suse.de>
@@ -40,216 +40,250 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-From: Jianpeng Ma <jianpeng.ma@intel.com>
+This patch initializes the prototype data structures for nvm pages
+allocator,
 
-This nvm pages allocator will implement the simple buddy to manage the
-nvm address space. This patch initializes this buddy for new namespace.
+- struct bch_nvm_pages_sb
+This is the super block allocated on each nvdimm namespace. A nvdimm
+set may have multiple namespaces, bch_nvm_pages_sb->set_uuid is used
+to mark which nvdimm set this name space belongs to. Normally we will
+use the bcache's cache set UUID to initialize this uuid, to connect this
+nvdimm set to a specified bcache cache set.
 
-the unit of alloc/free of the buddy is page. DAX device has their
-struct page(in dram or PMEM).
+- struct bch_owner_list_head
+This is a table for all heads of all owner lists. A owner list records
+which page(s) allocated to which owner. After reboot from power failure,
+the ownwer may find all its requested and allocated pages from the owner
+list by a handler which is converted by a UUID.
 
-	struct {        /* ZONE_DEVICE pages */
-		/** @pgmap: Points to the hosting device page map. */
-		struct dev_pagemap *pgmap;
-		void *zone_device_data;
-		/*
-		 * ZONE_DEVICE private pages are counted as being
-		 * mapped so the next 3 words hold the mapping, index,
-		 * and private fields from the source anonymous or
-		 * page cache page while the page is migrated to device
-		 * private memory.
-		 * ZONE_DEVICE MEMORY_DEVICE_FS_DAX pages also
-		 * use the mapping, index, and private fields when
-		 * pmem backed DAX files are mapped.
-		 */
-	};
+- struct bch_nvm_pages_owner_head
+This is a head of an owner list. Each owner only has one owner list,
+and a nvm page only belongs to an specific owner. uuid[] will be set to
+owner's uuid, for bcache it is the bcache's cache set uuid. label is not
+mandatory, it is a human-readable string for debug purpose. The pointer
+*recs references to separated nvm page which hold the table of struct
+bch_nvm_pgalloc_rec.
 
-ZONE_DEVICE pages only use pgmap. Other 4 words[16/32 bytes] don't use.
-So the second/third word will be used as 'struct list_head ' which list
-in buddy. The fourth word(that is normal struct page::index) store pgoff
-which the page-offset in the dax device. And the fifth word (that is
-normal struct page::private) store order of buddy. page_type will be used
-to store buddy flags.
+- struct bch_nvm_pgalloc_recs
+This struct occupies a whole page, owner_uuid should match the uuid
+in struct bch_nvm_pages_owner_head. recs[] is the real table contains all
+allocated records.
 
-Signed-off-by: Jianpeng Ma <jianpeng.ma@intel.com>
-Co-authored-by: Qiaowei Ren <qiaowei.ren@intel.com>
+- struct bch_nvm_pgalloc_rec
+Each structure records a range of allocated nvm pages. pgoff is offset
+in unit of page size of this allocated nvm page range. The adjoint page
+ranges of same owner can be merged into a larger one, therefore pages_nr
+is NOT always power of 2.
+
 Signed-off-by: Coly Li <colyli@suse.de>
+Cc: Jianpeng Ma <jianpeng.ma@intel.com>
+Cc: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- drivers/md/bcache/nvm-pages.c | 75 ++++++++++++++++++++++++++++++++++-
- drivers/md/bcache/nvm-pages.h |  5 +++
- 2 files changed, 78 insertions(+), 2 deletions(-)
+ include/uapi/linux/bcache-nvm.h | 195 ++++++++++++++++++++++++++++++++
+ 1 file changed, 195 insertions(+)
+ create mode 100644 include/uapi/linux/bcache-nvm.h
 
-diff --git a/drivers/md/bcache/nvm-pages.c b/drivers/md/bcache/nvm-pages.c
-index 4fa8e2764773..7efb99c0fc07 100644
---- a/drivers/md/bcache/nvm-pages.c
-+++ b/drivers/md/bcache/nvm-pages.c
-@@ -93,6 +93,7 @@ static void release_nvm_namespaces(struct bch_nvm_set *nvm_set)
- 	int i;
- 
- 	for (i = 0; i < nvm_set->total_namespaces_nr; i++) {
-+		kvfree(nvm_set->nss[i]->pages_bitmap);
- 		blkdev_put(nvm_set->nss[i]->bdev, FMODE_READ|FMODE_WRITE|FMODE_EXEC);
- 		kfree(nvm_set->nss[i]);
- 	}
-@@ -112,6 +113,17 @@ static void *nvm_pgoff_to_vaddr(struct bch_nvm_namespace *ns, pgoff_t pgoff)
- 	return ns->kaddr + (pgoff << PAGE_SHIFT);
- }
- 
-+static struct page *nvm_vaddr_to_page(struct bch_nvm_namespace *ns, void *addr)
-+{
-+	return virt_to_page(addr);
-+}
+diff --git a/include/uapi/linux/bcache-nvm.h b/include/uapi/linux/bcache-nvm.h
+new file mode 100644
+index 000000000000..61108bf2a63e
+--- /dev/null
++++ b/include/uapi/linux/bcache-nvm.h
+@@ -0,0 +1,195 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 +
-+static inline void remove_owner_space(struct bch_nvm_namespace *ns,
-+					pgoff_t pgoff, u32 nr)
-+{
-+	bitmap_set(ns->pages_bitmap, pgoff, nr);
-+}
++#ifndef _UAPI_BCACHE_NVM_H
++#define _UAPI_BCACHE_NVM_H
 +
- static int init_owner_info(struct bch_nvm_namespace *ns)
- {
- 	struct bch_owner_list_head *owner_list_head;
-@@ -129,6 +141,8 @@ static int init_owner_info(struct bch_nvm_namespace *ns)
- 	only_set->owner_list_size = owner_list_head->size;
- 	only_set->owner_list_used = owner_list_head->used;
- 
-+	remove_owner_space(ns, 0, ns->pages_offset/ns->page_size);
++/*
++ * Bcache on NVDIMM data structures
++ */
 +
- 	for (i = 0; i < owner_list_head->used; i++) {
- 		owner_head = &owner_list_head->heads[i];
- 		owner_list = alloc_owner_list(owner_head->uuid, owner_head->label,
-@@ -162,6 +176,8 @@ static int init_owner_info(struct bch_nvm_namespace *ns)
- 
- 			do {
- 				struct bch_pgalloc_rec *rec;
-+				int order;
-+				struct page *page;
- 
- 				for (k = 0; k < nvm_pgalloc_recs->used; k++) {
- 					rec = &nvm_pgalloc_recs->recs[k];
-@@ -172,7 +188,17 @@ static int init_owner_info(struct bch_nvm_namespace *ns)
- 					}
- 					extent->kaddr = nvm_pgoff_to_vaddr(extents->ns, rec->pgoff);
- 					extent->nr = rec->nr;
-+					WARN_ON(!is_power_of_2(extent->nr));
++/*
++ * - struct bch_nvm_pages_sb
++ *   This is the super block allocated on each nvdimm namespace. A nvdimm
++ * set may have multiple namespaces, bch_nvm_pages_sb->set_uuid is used to mark
++ * which nvdimm set this name space belongs to. Normally we will use the
++ * bcache's cache set UUID to initialize this uuid, to connect this nvdimm
++ * set to a specified bcache cache set.
++ *
++ * - struct bch_owner_list_head
++ *   This is a table for all heads of all owner lists. A owner list records
++ * which page(s) allocated to which owner. After reboot from power failure,
++ * the ownwer may find all its requested and allocated pages from the owner
++ * list by a handler which is converted by a UUID.
++ *
++ * - struct bch_nvm_pages_owner_head
++ *   This is a head of an owner list. Each owner only has one owner list,
++ * and a nvm page only belongs to an specific owner. uuid[] will be set to
++ * owner's uuid, for bcache it is the bcache's cache set uuid. label is not
++ * mandatory, it is a human-readable string for debug purpose. The pointer
++ * recs references to separated nvm page which hold the table of struct
++ * bch_pgalloc_rec.
++ *
++ *- struct bch_nvm_pgalloc_recs
++ *  This structure occupies a whole page, owner_uuid should match the uuid
++ * in struct bch_nvm_pages_owner_head. recs[] is the real table contains all
++ * allocated records.
++ *
++ * - struct bch_pgalloc_rec
++ *   Each structure records a range of allocated nvm pages. pgoff is offset
++ * in unit of page size of this allocated nvm page range. The adjoint page
++ * ranges of same owner can be merged into a larger one, therefore pages_nr
++ * is NOT always power of 2.
++ *
++ *
++ * Memory layout on nvdimm namespace 0
++ *
++ *    0 +---------------------------------+
++ *      |                                 |
++ *  4KB +---------------------------------+
++ *      |         bch_nvm_pages_sb        |
++ *  8KB +---------------------------------+ <--- bch_nvm_pages_sb.bch_owner_list_head
++ *      |       bch_owner_list_head       |
++ *      |                                 |
++ * 16KB +---------------------------------+ <--- bch_owner_list_head.heads[0].recs[0]
++ *      |       bch_nvm_pgalloc_recs      |
++ *      |  (nvm pages internal usage)     |
++ * 24KB +---------------------------------+
++ *      |                                 |
++ *      |                                 |
++ * 16MB  +---------------------------------+
++ *      |      allocable nvm pages        |
++ *      |      for buddy allocator        |
++ * end  +---------------------------------+
++ *
++ *
++ *
++ * Memory layout on nvdimm namespace N
++ * (doesn't have owner list)
++ *
++ *    0 +---------------------------------+
++ *      |                                 |
++ *  4KB +---------------------------------+
++ *      |         bch_nvm_pages_sb        |
++ *  8KB +---------------------------------+
++ *      |                                 |
++ *      |                                 |
++ *      |                                 |
++ *      |                                 |
++ *      |                                 |
++ *      |                                 |
++ * 16MB  +---------------------------------+
++ *      |      allocable nvm pages        |
++ *      |      for buddy allocator        |
++ * end  +---------------------------------+
++ *
++ */
 +
-+					/*init struct page: index/private */
-+					order = ilog2(extent->nr);
-+					page = nvm_vaddr_to_page(ns, extent->kaddr);
-+					set_page_private(page, order);
-+					page->index = rec->pgoff;
++#include <linux/types.h>
 +
- 					list_add_tail(&extent->list, &extents->extent_head);
-+					/*remove already alloced space*/
-+					remove_owner_space(extents->ns, rec->pgoff, rec->nr);
- 				}
- 				extents->nr += nvm_pgalloc_recs->used;
- 
-@@ -197,6 +223,36 @@ static int init_owner_info(struct bch_nvm_namespace *ns)
- 	return 0;
- }
- 
-+static void init_nvm_free_space(struct bch_nvm_namespace *ns)
-+{
-+	unsigned int start, end, i;
-+	struct page *page;
-+	long long pages;
-+	pgoff_t pgoff_start;
++/* In sectors */
++#define BCH_NVM_PAGES_SB_OFFSET			4096
++#define BCH_NVM_PAGES_OFFSET			(16 << 20)
 +
-+	bitmap_for_each_clear_region(ns->pages_bitmap, start, end, 0, ns->pages_total) {
-+		pgoff_start = start;
-+		pages = end - start;
++#define BCH_NVM_PAGES_LABEL_SIZE		32
++#define BCH_NVM_PAGES_NAMESPACES_MAX		8
 +
-+		while (pages) {
-+			for (i = BCH_MAX_ORDER - 1; i >= 0 ; i--) {
-+				if ((pgoff_start % (1 << i) == 0) && (pages >= (1 << i)))
-+					break;
-+			}
++#define BCH_NVM_PAGES_OWNER_LIST_HEAD_OFFSET	(8<<10)
++#define BCH_NVM_PAGES_SYS_RECS_HEAD_OFFSET	(16<<10)
 +
-+			page = nvm_vaddr_to_page(ns, nvm_pgoff_to_vaddr(ns, pgoff_start));
-+			page->index = pgoff_start;
-+			set_page_private(page, i);
-+			__SetPageBuddy(page);
-+			list_add((struct list_head *)&page->zone_device_data, &ns->free_area[i]);
++#define BCH_NVM_PAGES_SB_VERSION		0
++#define BCH_NVM_PAGES_SB_VERSION_MAX		0
 +
-+			pgoff_start += 1 << i;
-+			pages -= 1 << i;
-+		}
-+	}
++static const char bch_nvm_pages_magic[] = {
++	0x17, 0xbd, 0x53, 0x7f, 0x1b, 0x23, 0xd6, 0x83,
++	0x46, 0xa4, 0xf8, 0x28, 0x17, 0xda, 0xec, 0xa9 };
++static const char bch_nvm_pages_pgalloc_magic[] = {
++	0x39, 0x25, 0x3f, 0xf7, 0x27, 0x17, 0xd0, 0xb9,
++	0x10, 0xe6, 0xd2, 0xda, 0x38, 0x68, 0x26, 0xae };
 +
-+}
++struct bch_pgalloc_rec {
++	__u32			pgoff;
++	__u32			nr;
++};
 +
- static bool attach_nvm_set(struct bch_nvm_namespace *ns)
- {
- 	bool rc = true;
-@@ -261,7 +317,7 @@ static int read_nvdimm_meta_super(struct block_device *bdev,
- struct bch_nvm_namespace *bch_register_namespace(const char *dev_path)
- {
- 	struct bch_nvm_namespace *ns;
--	int err;
-+	int i, err;
- 	pgoff_t pgoff;
- 	char buf[BDEVNAME_SIZE];
- 	struct block_device *bdev;
-@@ -357,6 +413,16 @@ struct bch_nvm_namespace *bch_register_namespace(const char *dev_path)
- 	ns->bdev = bdev;
- 	ns->nvm_set = only_set;
- 
-+	ns->pages_bitmap = kvcalloc(BITS_TO_LONGS(ns->pages_total),
-+					sizeof(unsigned long), GFP_KERNEL);
-+	if (!ns->pages_bitmap) {
-+		err = -ENOMEM;
-+		goto free_ns;
-+	}
++struct bch_nvm_pgalloc_recs {
++union {
++	struct {
++		struct bch_nvm_pages_owner_head	*owner;
++		struct bch_nvm_pgalloc_recs	*next;
++		__u8				magic[16];
++		__u8				owner_uuid[16];
++		__u32				size;
++		__u32				used;
++		__u64				_pad[4];
++		struct bch_pgalloc_rec		recs[];
++	};
++	__u8	pad[8192];
++};
++};
++#define BCH_MAX_RECS					\
++	((sizeof(struct bch_nvm_pgalloc_recs) -		\
++	 offsetof(struct bch_nvm_pgalloc_recs, recs)) /	\
++	 sizeof(struct bch_pgalloc_rec))
 +
-+	for (i = 0; i < BCH_MAX_ORDER; i++)
-+		INIT_LIST_HEAD(&ns->free_area[i]);
++struct bch_nvm_pages_owner_head {
++	__u8			uuid[16];
++	char			label[BCH_NVM_PAGES_LABEL_SIZE];
++	/* Per-namespace own lists */
++	struct bch_nvm_pgalloc_recs	*recs[BCH_NVM_PAGES_NAMESPACES_MAX];
++};
 +
- 	mutex_init(&ns->lock);
- 
- 	if (ns->sb.this_namespace_nr == 0) {
-@@ -364,12 +430,17 @@ struct bch_nvm_namespace *bch_register_namespace(const char *dev_path)
- 		err = init_owner_info(ns);
- 		if (err < 0) {
- 			pr_info("init_owner_info met error %d\n", err);
--			goto free_ns;
-+			goto free_bitmap;
- 		}
-+		/* init buddy allocator */
-+		init_nvm_free_space(ns);
- 	}
- 
- 	kfree(path);
- 	return ns;
++/* heads[0] is always for nvm_pages internal usage */
++struct bch_owner_list_head {
++union {
++	struct {
++		__u32				size;
++		__u32				used;
++		__u64				_pad[4];
++		struct bch_nvm_pages_owner_head	heads[];
++	};
++	__u8	pad[8192];
++};
++};
++#define BCH_MAX_OWNER_LIST				\
++	((sizeof(struct bch_owner_list_head) -		\
++	 offsetof(struct bch_owner_list_head, heads)) /	\
++	 sizeof(struct bch_nvm_pages_owner_head))
 +
-+free_bitmap:
-+	kvfree(ns->pages_bitmap);
- free_ns:
- 	kfree(ns);
- bdput:
-diff --git a/drivers/md/bcache/nvm-pages.h b/drivers/md/bcache/nvm-pages.h
-index 1b10b4b6db0f..ed3431daae06 100644
---- a/drivers/md/bcache/nvm-pages.h
-+++ b/drivers/md/bcache/nvm-pages.h
-@@ -34,6 +34,7 @@ struct bch_owner_list {
- 	struct bch_nvm_alloced_recs **alloced_recs;
- };
- 
-+#define BCH_MAX_ORDER 20
- struct bch_nvm_namespace {
- 	struct bch_nvm_pages_sb sb;
- 	void *kaddr;
-@@ -45,6 +46,10 @@ struct bch_nvm_namespace {
- 	u64 pages_total;
- 	pfn_t start_pfn;
- 
-+	unsigned long *pages_bitmap;
-+	struct list_head free_area[BCH_MAX_ORDER];
++/* The on-media bit order is local CPU order */
++struct bch_nvm_pages_sb {
++	__u64			csum;
++	__u64			ns_start;
++	__u64			sb_offset;
++	__u64			version;
++	__u8			magic[16];
++	__u8			uuid[16];
++	__u32			page_size;
++	__u32			total_namespaces_nr;
++	__u32			this_namespace_nr;
++	union {
++		__u8		set_uuid[16];
++		__u64		set_magic;
++	};
 +
++	__u64			flags;
++	__u64			seq;
 +
- 	struct dax_device *dax_dev;
- 	struct block_device *bdev;
- 	struct bch_nvm_set *nvm_set;
++	__u64			feature_compat;
++	__u64			feature_incompat;
++	__u64			feature_ro_compat;
++
++	/* For allocable nvm pages from buddy systems */
++	__u64			pages_offset;
++	__u64			pages_total;
++
++	__u64			pad[8];
++
++	/* Only on the first name space */
++	struct bch_owner_list_head	*owner_list_head;
++
++	/* Just for csum_set() */
++	__u32			keys;
++	__u64			d[0];
++};
++
++#endif /* _UAPI_BCACHE_NVM_H */
 -- 
 2.26.2
 
