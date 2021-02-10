@@ -5,32 +5,32 @@ X-Spam-Level:
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
 	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E69DCC433DB
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CBAFCC433E0
 	for <linux-bcache@archiver.kernel.org>; Wed, 10 Feb 2021 05:09:57 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id B661364E45
+	by mail.kernel.org (Postfix) with ESMTP id 9D1C864E42
 	for <linux-bcache@archiver.kernel.org>; Wed, 10 Feb 2021 05:09:57 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230352AbhBJFJv (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 10 Feb 2021 00:09:51 -0500
-Received: from mx2.suse.de ([195.135.220.15]:40750 "EHLO mx2.suse.de"
+        id S230486AbhBJFJu (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 10 Feb 2021 00:09:50 -0500
+Received: from mx2.suse.de ([195.135.220.15]:40716 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S231126AbhBJFJq (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 10 Feb 2021 00:09:46 -0500
+        id S230352AbhBJFJp (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 10 Feb 2021 00:09:45 -0500
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id B2647B0D0;
-        Wed, 10 Feb 2021 05:08:40 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id 891D2B0B8;
+        Wed, 10 Feb 2021 05:08:30 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
 To:     axboe@kernel.dk
 Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
         Coly Li <colyli@suse.de>, Jianpeng Ma <jianpeng.ma@intel.com>,
         Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH 20/20] bcache: only initialize nvm-pages allocator when CONFIG_BCACHE_NVM_PAGES configured
-Date:   Wed, 10 Feb 2021 13:07:42 +0800
-Message-Id: <20210210050742.31237-21-colyli@suse.de>
+Subject: [PATCH 15/20] bcache: add BCH_FEATURE_INCOMPAT_NVDIMM_META into incompat feature set
+Date:   Wed, 10 Feb 2021 13:07:37 +0800
+Message-Id: <20210210050742.31237-16-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 In-Reply-To: <20210210050742.31237-1-colyli@suse.de>
 References: <20210210050742.31237-1-colyli@suse.de>
@@ -40,42 +40,53 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-It is unnecessary to initialize the EXPERIMENTAL nvm-pages allocator
-when CONFIG_BCACHE_NVM_PAGES is not configured. This patch uses
-"#ifdef CONFIG_BCACHE_NVM_PAGES" to wrap bch_nvm_init() and
-bch_nvm_exit(), and only calls them when bch_nvm_exit is configured.
+This patch adds BCH_FEATURE_INCOMPAT_NVDIMM_META (value 0x0004) into the
+incompat feature set. When this bit is set by bcache-tools, it indicates
+bcache meta data should be stored on specific NVDIMM meta device.
+
+The bcache meta data mainly includes journal and btree nodes, when this
+bit is set in incompat feature set, bcache will ask the nvm-pages
+allocator for NVDIMM space to store the meta data.
 
 Signed-off-by: Coly Li <colyli@suse.de>
 Cc: Jianpeng Ma <jianpeng.ma@intel.com>
 Cc: Qiaowei Ren <qiaowei.ren@intel.com>
 ---
- drivers/md/bcache/super.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/md/bcache/features.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 61fd5802a627..c273eeef0d38 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2845,7 +2845,9 @@ static void bcache_exit(void)
+diff --git a/drivers/md/bcache/features.h b/drivers/md/bcache/features.h
+index d1c8fd3977fc..333fb5efb6bd 100644
+--- a/drivers/md/bcache/features.h
++++ b/drivers/md/bcache/features.h
+@@ -17,11 +17,19 @@
+ #define BCH_FEATURE_INCOMPAT_OBSO_LARGE_BUCKET		0x0001
+ /* real bucket size is (1 << bucket_size) */
+ #define BCH_FEATURE_INCOMPAT_LOG_LARGE_BUCKET_SIZE	0x0002
++/* store bcache meta data on nvdimm */
++#define BCH_FEATURE_INCOMPAT_NVDIMM_META		0x0004
+ 
+ #define BCH_FEATURE_COMPAT_SUPP		0
+ #define BCH_FEATURE_RO_COMPAT_SUPP	0
++#ifdef CONFIG_BCACHE_NVM_PAGES
++#define BCH_FEATURE_INCOMPAT_SUPP	(BCH_FEATURE_INCOMPAT_OBSO_LARGE_BUCKET| \
++					 BCH_FEATURE_INCOMPAT_LOG_LARGE_BUCKET_SIZE| \
++					 BCH_FEATURE_INCOMPAT_NVDIMM_META)
++#else
+ #define BCH_FEATURE_INCOMPAT_SUPP	(BCH_FEATURE_INCOMPAT_OBSO_LARGE_BUCKET| \
+ 					 BCH_FEATURE_INCOMPAT_LOG_LARGE_BUCKET_SIZE)
++#endif
+ 
+ #define BCH_HAS_COMPAT_FEATURE(sb, mask) \
+ 		((sb)->feature_compat & (mask))
+@@ -89,6 +97,7 @@ static inline void bch_clear_feature_##name(struct cache_sb *sb) \
+ 
+ BCH_FEATURE_INCOMPAT_FUNCS(obso_large_bucket, OBSO_LARGE_BUCKET);
+ BCH_FEATURE_INCOMPAT_FUNCS(large_bucket, LOG_LARGE_BUCKET_SIZE);
++BCH_FEATURE_INCOMPAT_FUNCS(nvdimm_meta, NVDIMM_META);
+ 
+ static inline bool bch_has_unknown_compat_features(struct cache_sb *sb)
  {
- 	bch_debug_exit();
- 	bch_request_exit();
-+#ifdef CONFIG_BCACHE_NVM_PAGES
- 	bch_nvm_exit();
-+#endif
- 	if (bcache_kobj)
- 		kobject_put(bcache_kobj);
- 	if (bcache_wq)
-@@ -2947,7 +2949,9 @@ static int __init bcache_init(void)
- 
- 	bch_debug_init();
- 	closure_debug_init();
-+#ifdef CONFIG_BCACHE_NVM_PAGES
- 	bch_nvm_init();
-+#endif
- 
- 	bcache_is_reboot = false;
- 
 -- 
 2.26.2
 
