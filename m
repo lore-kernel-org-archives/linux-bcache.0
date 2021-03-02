@@ -2,122 +2,141 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-15.2 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=ham
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-2.2 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 19A5AC433DB
-	for <linux-bcache@archiver.kernel.org>; Sat, 27 Feb 2021 02:39:06 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B8ACAC43381
+	for <linux-bcache@archiver.kernel.org>; Wed,  3 Mar 2021 00:20:36 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id DC8CA64DAF
-	for <linux-bcache@archiver.kernel.org>; Sat, 27 Feb 2021 02:39:05 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 8491D64F48
+	for <linux-bcache@archiver.kernel.org>; Wed,  3 Mar 2021 00:20:36 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229795AbhB0CjF (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 26 Feb 2021 21:39:05 -0500
-Received: from szxga06-in.huawei.com ([45.249.212.32]:12956 "EHLO
-        szxga06-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229707AbhB0CjE (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 26 Feb 2021 21:39:04 -0500
-Received: from DGGEMS404-HUB.china.huawei.com (unknown [172.30.72.60])
-        by szxga06-in.huawei.com (SkyGuard) with ESMTP id 4DnVzL0qjTzjS0X
-        for <linux-bcache@vger.kernel.org>; Sat, 27 Feb 2021 10:37:02 +0800 (CST)
-Received: from [127.0.0.1] (10.174.176.117) by DGGEMS404-HUB.china.huawei.com
- (10.3.19.204) with Microsoft SMTP Server id 14.3.498.0; Sat, 27 Feb 2021
- 10:38:12 +0800
-To:     <linux-bcache@vger.kernel.org>, <colyli@suse.de>
-CC:     <liuzhiqiang26@huawei.com>, linfeilong <linfeilong@huawei.com>,
-        lixiaokeng <lixiaokeng@huawei.com>
-From:   Zhiqiang Liu <liuzhiqiang26@huawei.com>
-Subject: [PATCH] bcache-tools: fix potential memoryleak problem in,
- may_add_item()
-Message-ID: <c475bf5f-d284-aea9-5898-6ef3581138fb@huawei.com>
-Date:   Sat, 27 Feb 2021 10:38:11 +0800
-User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101
- Thunderbird/68.2.2
+        id S232214AbhCCALy (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 2 Mar 2021 19:11:54 -0500
+Received: from mout.gmx.net ([212.227.15.19]:45213 "EHLO mout.gmx.net"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S240706AbhCBCFx (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 1 Mar 2021 21:05:53 -0500
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=gmx.net;
+        s=badeba3b8450; t=1614650635;
+        bh=vuF4asm5oftnr0ailpx2QxWzLruw3F+JLEa0u6Q/iz0=;
+        h=X-UI-Sender-Class:Subject:To:Cc:References:From:Date:In-Reply-To;
+        b=J3vMVIkQhE2CS6WsVY2LesmwrUrxzKoNhn8dzZ4QG+mS5iIG8zDVnuHmZPfcCJQoR
+         2invWuX8AcP/UjqswIVL/oAsvEA0/ggmTGRm8HcP34r6EMh+XSyQAXM9yZUFyjhvPr
+         50E3fxLkjnVu+Z14J2H3sDlerd8QVYiMueaQDctw=
+X-UI-Sender-Class: 01bb95c1-4bf8-414a-932a-4f6e2808ef9c
+Received: from [10.10.213.91] ([103.52.188.137]) by mail.gmx.net (mrgmx005
+ [212.227.17.184]) with ESMTPSA (Nemesis) id 1Mel3n-1loaa73Hcb-00anph; Tue, 02
+ Mar 2021 03:03:55 +0100
+Subject: Re: Large latency with bcache for Ceph OSD
+To:     Coly Li <colyli@suse.de>
+Cc:     linux-block@vger.kernel.org, axboe@kernel.dk,
+        linux-bcache@vger.kernel.org
+References: <3f3e20a3-c165-1de1-7fdd-f0bd4da598fe@gmx.com>
+ <632258f7-b138-3fba-456b-9da37c1de710@gmx.com>
+ <5867daf1-0960-39aa-1843-1a76c1e9a28d@suse.de>
+ <07bcb6c8-21e1-11de-d1f0-ffd417bd36ff@gmx.com>
+ <cfe2746f-18a7-a768-ea72-901793a3133e@gmx.com>
+ <96daa0bf-c8e1-a334-14cb-2d260aed5115@suse.de>
+ <b808dde3-cb58-907b-4df0-e0eb2938b51e@gmx.com>
+ <04770825-b1d2-8ec0-2345-77d49d99631a@suse.de>
+From:   "Norman.Kern" <norman.kern@gmx.com>
+Message-ID: <8eb6739c-090d-f925-333e-df34a6d05101@gmx.com>
+Date:   Tue, 2 Mar 2021 10:03:50 +0800
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
+ Thunderbird/78.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <04770825-b1d2-8ec0-2345-77d49d99631a@suse.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 Content-Language: en-US
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.174.176.117]
-X-CFilter-Loop: Reflected
+X-Provags-ID: V03:K1:zcUrsm3jMU5IwCt0k0hA8Cjb5TdcuCwoIFrRQMq33on95yaWdf1
+ FKjkrI5Z8xufqT1DiDc2eUtRB9HpekTxQu+vjV46gw31LL7UrnqSoS5xJB/k3MMOZ8zJCmP
+ JsgiGCaURW6jvyMWgRT/zL4hlGCW/ET6K59LpWPY0QE3C1tHtGeg6CCll61fjZKVKHGtBBn
+ A9BV+t47sie7WBTA9z3UA==
+X-UI-Out-Filterresults: notjunk:1;V03:K0:Mv90uQif5z0=:mkPZnt/wAzgCji6VgOJveB
+ 1f4EKQWxRHBiHrPiJxSu/+LY9k9C7xeeY3CRh69qmwh/t9NjjFjJm63vKx42nej7TjZN9GJh7
+ OjeuL0QxP7YUDb7/uuatHAJFNRE+Qa09O/szoUK99lGojTqxSxZO4UMdpc8Fv8GaDxGLrymhk
+ rENMJWZ4ZHom2LibiDweuPgZ9tBY8NfOg6pza4DxSVw5W/p2++yYwUtH/9AKkJIcBBT8iR6gR
+ Up0dVsWBxMHtKqQp3LhgHXL7DZMigxJkW9fRgOAqsjjfTRhXjOKxzdUHMz368Pgd5ZBn5dKvX
+ p7o8Ltb0h6X/Kp6GAXBNbjy58gfwBEQjsxsJZP3f862ttw+XrWwoR+swBknlPKpa43kMtwBwu
+ St4YJAGElaG/D2345KpU5qqPHu2V19AkHtpy2gdMEKYQaKg6FxInZY8HjRaVKhYr+DeVu8LV1
+ QyYb+OyLOoKL1s+Q9oLFzmqeCOxJkBcLv3P6r9y6rDptMLxCfkeXKK45EkJnaT/c4rMCVLmKp
+ NeGdihft1aDpLCfnq557u/eEJHRIu9gBNbs7epPjK5QHvOCgheY+RfeHja0iepkogG3n5BfxY
+ rIgy9CjsgLgqHH/3I2adhWPGyRfKQFaAz9m4rhQLxVpZxqb5GfD+lN63lDwpH3pFfq/6BLu9d
+ QzqXjCfkCgD/rx1t7vwwRJ/GU05wveQ6gxMiPwtVIOMBrGqOP+T4F8PMw39+i4hRnMoFJhDFo
+ zXXt+lfdZleTUXz1UfzFkxFEZCpRc6XFBUei1jiMveVeHnlqhGgcltC1m/UCaQWLqES74qZf9
+ X8eaBqPK5WE8Mpu5AvIIOAe3Y/59oC6BKg5B1D8BUoiOgcjN9wa4H6TCuT0sKkGOmfbFgshAO
+ nFI8b+r4uqhXmppGpGVg==
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 
-In may_add_item(), it will directly return 1 without freeing
-variable tmp and closing fd, when the return value of detail_base()
-is not equal to 0. In addition, we do not check whether
-allocating memory for tmp is successful.
+On 2021/2/26 =E4=B8=8B=E5=8D=885:54, Coly Li wrote:
+> On 2/26/21 4:57 PM, Norman.Kern wrote:
+> [snipped]
+>>> You may try to trigger a gc by writing to
+>>> sys/fs/bcache/<cache-set-uuid>/internal/trigger_gc
+>>>
+>> When all cache had written back, I triggered gc, it recalled.
+>>
+>> root@WXS0106:~# cat /sys/block/bcache0/bcache/cache/cache_available_per=
+cent
+>> 30
+>>
+>> root@WXS0106:~# echo 1 > /sys/block/bcache0/bcache/cache/internal/trigg=
+er_gc
+>> root@WXS0106:~# cat /sys/block/bcache0/bcache/cache/cache_available_per=
+cent
+>> 97
+>>
+>> Why must I trigger gc manually? Is not a default action of bcache-gc th=
+read? And I found it can only work when all dirty data written back.
+>>
+> 1, GC is automatically triggered after some mount of data consumed. I
+> guess it is just not about time in your situation.
+>
+> 2, Because the gc will shrink all cached clean data, which is very
+> unfriendly for read-intend workload. Therefore gc_after_writeback is
+> defaulted as 0, when this sysfs file content set to 1, a gc will trigger
+> after the writeback accomplished.
 
-Here, we will check whether malloc() returns NULL, and
-will free tmp and close fd when detail_base() fails.
+I made a test again and get more infomation:
 
-Signed-off-by: ZhiqiangLiu <lzhq28@mail.ustc.edu.cn>
----
- lib.c | 28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+root@WXS0089:~# cat /sys/block/bcache0/bcache/dirty_data
+0.0k
+root@WXS0089:~# lsblk /dev/sda
+NAME=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 MAJ:MIN RM=C2=A0=C2=A0 SIZE RO TYPE MOU=
+NTPOINT
+sda=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 8:0=C2=A0=C2=A0=C2=A0 =
+0 447.1G=C2=A0 0 disk
+`-bcache0 252:0=C2=A0=C2=A0=C2=A0 0=C2=A0 10.9T=C2=A0 0 disk
+root@WXS0089:~# cat /sys/block/sda/bcache/priority_stats
+Unused:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 1%
+Clean:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 29%
+Dirty:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 70%
+Metadata:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 0%
+Average:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 49
+Sectors per Q:=C2=A0 29184768
+Quantiles:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 [1 2 3 5 6 8 9 11 13 14 16 19 21 =
+23 26 29 32 36 39 43 48 53 59 65 73 83 94 109 129 156 203]
+root@WXS0089:~# cat /sys/fs/bcache/066319e1-8680-4b5b-adb8-49596319154b/in=
+ternal/gc_after_writeback
+1
+You have new mail in /var/mail/root
+root@WXS0089:~# cat /sys/fs/bcache/066319e1-8680-4b5b-adb8-49596319154b/ca=
+che_available_percent
+28
 
-diff --git a/lib.c b/lib.c
-index 6341c61..745dab6 100644
---- a/lib.c
-+++ b/lib.c
-@@ -382,7 +382,7 @@ int may_add_item(char *devname, struct list_head *head)
- 	struct cache_sb sb;
- 	char dev[512];
- 	struct dev *tmp;
--	int ret;
-+	int ret = 0;
+I read the source codes and found if cache_available_percent > 50, it shou=
+ld wakeup gc while doing writeback, but it seemed not work right.
 
- 	if (strcmp(devname, ".") == 0 || strcmp(devname, "..") == 0)
- 		return 0;
-@@ -392,27 +392,33 @@ int may_add_item(char *devname, struct list_head *head)
- 	if (fd == -1)
- 		return 0;
-
--	if (pread(fd, &sb_disk, sizeof(sb_disk), SB_START) != sizeof(sb_disk)) {
--		close(fd);
--		return 0;
--	}
-+	if (pread(fd, &sb_disk, sizeof(sb_disk), SB_START) != sizeof(sb_disk))
-+		goto out;
-
--	if (memcmp(sb_disk.magic, bcache_magic, 16)) {
--		close(fd);
--		return 0;
--	}
-+	if (memcmp(sb_disk.magic, bcache_magic, 16))
-+		goto out;
-
- 	to_cache_sb(&sb, &sb_disk);
-
- 	tmp = (struct dev *) malloc(DEVLEN);
-+	if (tmp == NULL) {
-+		fprintf(stderr, "Error: fail to allocate memory buffer\n");
-+		ret = 1;
-+		goto out;
-+	}
-+
- 	tmp->csum = le64_to_cpu(sb_disk.csum);
- 	ret = detail_base(dev, sb, tmp);
- 	if (ret != 0) {
- 		fprintf(stderr, "Failed to get information for %s\n", dev);
--		return 1;
-+		free(tmp);
-+		goto out;
- 	}
- 	list_add_tail(&tmp->dev_list, head);
--	return 0;
-+
-+out:
-+	close(fd);
-+	return ret;
- }
-
- int list_bdevs(struct list_head *head)
--- 
-2.30.0
-
-
+>
+> Coly Li
+>
+>
+>
+>
