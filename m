@@ -1,150 +1,171 @@
-Return-Path: <SRS0=6+a2=IG=vger.kernel.org=linux-bcache-owner@kernel.org>
+Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-2.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-18.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
+	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0B17EC433E6
-	for <linux-bcache@archiver.kernel.org>; Mon,  8 Mar 2021 05:48:16 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 268D5C433E0
+	for <linux-bcache@archiver.kernel.org>; Tue,  9 Mar 2021 18:17:00 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id D11F660C3D
-	for <linux-bcache@archiver.kernel.org>; Mon,  8 Mar 2021 05:48:15 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id DA4546523F
+	for <linux-bcache@archiver.kernel.org>; Tue,  9 Mar 2021 18:16:59 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232577AbhCHFrn (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 8 Mar 2021 00:47:43 -0500
-Received: from mout.gmx.net ([212.227.15.15]:37897 "EHLO mout.gmx.net"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S232529AbhCHFrZ (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 8 Mar 2021 00:47:25 -0500
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=gmx.net;
-        s=badeba3b8450; t=1615182443;
-        bh=UOHZ/Q+z+H+Fugbbs4CkrrGZ7FVUIY7CDDYvvepZJhc=;
-        h=X-UI-Sender-Class:Subject:To:Cc:References:From:Date:In-Reply-To;
-        b=Lnoh89jsCX5M08ibf1iGHElcySgplc+wbXLPlRRrJ8KqT7MYx8O7lP8IBQceJ4J3c
-         fdztVcaZ95z3VgBBTOIgf0ybdn9YpCUiydjv6bOuea1IkRqmL6Uj7K8BpFUXPhvxk2
-         cv+2GLgICOK8nZYrvBCRTcaHmgCLw1V4VQ4JZ7q8=
-X-UI-Sender-Class: 01bb95c1-4bf8-414a-932a-4f6e2808ef9c
-Received: from [10.10.213.91] ([103.52.188.137]) by mail.gmx.net (mrgmx004
- [212.227.17.184]) with ESMTPSA (Nemesis) id 1MEUzA-1lZ1hg1xcY-00G1TB; Mon, 08
- Mar 2021 06:47:23 +0100
-Subject: Re: Large latency with bcache for Ceph OSD(new mail thread)
-To:     Coly Li <colyli@suse.de>
-Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-References: <9b7dfd49-67b0-53b1-96e1-3b90c2d9d09a@gmx.com>
- <f6755b89-4d13-92a5-df1a-343602dec957@suse.de>
- <91cf3980-ed9d-a5f8-4f2d-d9a79b1cbed0@gmx.com>
- <1fa52fcb-1886-148f-2d55-02060dce7f93@suse.de>
-From:   "Norman.Kern" <norman.kern@gmx.com>
-Message-ID: <e6b0eea4-2624-26f0-6f6d-11e900eb3f0b@gmx.com>
-Date:   Mon, 8 Mar 2021 13:47:18 +0800
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:78.0) Gecko/20100101
- Thunderbird/78.5.0
+        id S229875AbhCISQ1 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 9 Mar 2021 13:16:27 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51578 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S230173AbhCISQQ (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 9 Mar 2021 13:16:16 -0500
+Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 45EFBC06174A;
+        Tue,  9 Mar 2021 10:16:16 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=casper.20170209; h=Content-Transfer-Encoding:MIME-Version:
+        Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:Content-Type:Content-ID:
+        Content-Description:In-Reply-To:References;
+        bh=XdGJ5kzEXYEUTooxvYRqtOD5xqgKG+m7RxWZI3pq+Rw=; b=vcmKGSKlvxaMXixGFUlwwFeFjc
+        fpjEokShbODNBExnl0L27tD2RSUEFjDIkXQu2h02ZiWxRLUs7OLi17J3UbU4QfQomjFeEj1Xsh1Fs
+        ajdAVuMVjO1t7k2VeeFxA1HYYLkQEI8R51xsvUQQRlYrnctQqmK3DLFq5d3SOT6KB1v8o9YWGLHN3
+        pgCA+O3aiNnKPCqgDJCVFGkD+sQ9Cspl+DuyM2vSn8nfflPrGKwm9ESMQ/nZpun5Lkn9ejZ9KdSUf
+        FkfZdRbk4QFFg1o43Ae+bnCNc9Z+yGiQlwxDfzZzOp6TW+6iDFxA8GbpKoxjLqOfdyCKJE4iLyOWM
+        sgKP2HZQ==;
+Received: from willy by casper.infradead.org with local (Exim 4.94 #2 (Red Hat Linux))
+        id 1lJgtL-000yOb-Mf; Tue, 09 Mar 2021 18:15:47 +0000
+From:   "Matthew Wilcox (Oracle)" <willy@infradead.org>
+To:     Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-block@vger.kernel.org, linux-bcache@vger.kernel.org,
+        linux-nvdimm@lists.01.org, linux-scsi@vger.kernel.org
+Cc:     "Matthew Wilcox (Oracle)" <willy@infradead.org>
+Subject: [PATCH] include: Remove pagemap.h from blkdev.h
+Date:   Tue,  9 Mar 2021 18:15:33 +0000
+Message-Id: <20210309181533.231573-1-willy@infradead.org>
+X-Mailer: git-send-email 2.29.2
 MIME-Version: 1.0
-In-Reply-To: <1fa52fcb-1886-148f-2d55-02060dce7f93@suse.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
-Content-Language: en-US
-X-Provags-ID: V03:K1:BqkQ9Nb8/MAKELkqjw5LIDAFif8b7fzC7zD8feYK8Rdz5/5G1s2
- gwyWHMkopRAX+ygQT9frIZCl9Hrx7pbFBSwEBPOEEF1UwhVAM/pbUeopJpyK4qvQb5ZP5lj
- Mk6i9zkRap58DFIVJO74Wbh7ZmYHWxzG4R0ZUpM16UxYEdFpwMx70IyzRzjclQARt0Vnw8G
- RXoJIyAFuQ0pEFLe+AG4Q==
-X-UI-Out-Filterresults: notjunk:1;V03:K0:hn2yBUJ1NlQ=:42LU6PRwfifDpqpfloe6G7
- iU5mEAts3v1A8ysEkkqmmP+WFrOuwjYZNIpVkDP5HIAUFDh7KHZVvL1J2EbxLpUXtKtnvQfa5
- UMLegs/jloNolJJjoi8AVmJcMC8lpZWbzroOcJ4HF4HqFLGHY8Im3ltaeYqZVSejFNzUcLWyH
- Y9yP5XEKMnm0k7SRy+FwYYgID9P08/Nw8mI/qg9kis7Opm8ZqWMuoj1uYAbhhak+Q8spCUYHY
- IrDCSCZKIpZx/59b0ooR3g8ZtMPRgcDVwkQHfjFtMwCDVVNqe5/3PpiiOhAmO2zpUVIwi5Fxo
- H+7nzSZVjgnnLjUaoZWzE4EX2ttNitnuCoIJxr/HiRtutXo3ezS0qUfBpf4Zf3+pDwCwNYcIQ
- HSVXCX09XqRGN9BbdSjRInDoe0dDvast76/fSQ/p9uZrnS7gI9NryDRGt1RQN8M+DluiGAtCB
- Gnsnb6RDRbYjshgoDMbXqXta2jITLr0mV7PlAYpjRCtf+8IdtT9GU/KCWX179wwxfh+ehiuz+
- ujO3aV3g6tCW02SKIN/8yczHQKAw+WEEC2eJwsSl+j9aeVthAVBP1CKh6OOHkJQxpyXBmGTER
- 5Tu77a0JEW6U3gHjvJDQdRb2luPohUdn16pjL3rqklGfN4wvQndmLJSE0nYqx7ufjJGUksmb9
- 0bzq6zNa6nKcmwKm4nQBMOFUNs3uj6v5kvm2ByZlUAsYGAWIl+3XhajxTjVrAa8x51HKGoSWc
- 5tVlXV1eQMLCifN4i/XqNBxvDRs5ys0jTM0Feo5epFdX08s4EhI5h2Mp/jhSNHxkT2x6YMk7z
- sIPI15neE23IMitfnfGZhWGKA4pvVW/FfEbZjOJW+SRI+NScmrSY5OKlLK8n6RlU1dqGFlsDL
- RRVmbrRNkd6+PmmP1F3w==
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
+My UEK-derived config has 1030 files depending on pagemap.h before
+this change.  Afterwards, just 240 files need to be rebuilt when I
+touch pagemap.h.  I think blkdev.h is probably included too widely,
+but untangling that dependency is harder and this solves my problem.
+x86 allmodconfig builds, but there may be implicit include problems
+on other architectures.
 
-On 2021/3/5 =E4=B8=8B=E5=8D=886:03, Coly Li wrote:
-> On 3/5/21 5:00 PM, Norman.Kern wrote:
->> On 2021/3/2 =E4=B8=8B=E5=8D=889:20, Coly Li wrote:
->>> On 3/2/21 6:20 PM, Norman.Kern wrote:
->>>> Sorry for creating a new mail thread(the origin is so long...)
->>>>
->>>>
->>>> I made a test again and get more infomation:
->>>>
->>>> root@WXS0089:~# cat /sys/block/bcache0/bcache/dirty_data
->>>> 0.0k
->>>> root@WXS0089:~# lsblk /dev/sda
->>>> NAME=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 MAJ:MIN RM=C2=A0=C2=A0 SIZE RO TYP=
-E MOUNTPOINT
->>>> sda=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 8:0=C2=A0=C2=A0=
-=C2=A0 0 447.1G=C2=A0 0 disk
->>>> `-bcache0 252:0=C2=A0=C2=A0=C2=A0 0=C2=A0 10.9T=C2=A0 0 disk
->>>> root@WXS0089:~# cat /sys/block/sda/bcache/priority_stats
->>>> Unused:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 1%
->>>> Clean:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 29%
->>>> Dirty:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 70%
->>>> Metadata:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 0%
->>>> Average:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 49
->>>> Sectors per Q:=C2=A0 29184768
->>>> Quantiles:=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 [1 2 3 5 6 8 9 11 13 14 16 1=
-9 21 23 26 29 32 36 39 43 48 53 59 65 73 83 94 109 129 156 203]
->>>> root@WXS0089:~# cat /sys/fs/bcache/066319e1-8680-4b5b-adb8-4959631915=
-4b/internal/gc_after_writeback
->>>> 1
->>>> You have new mail in /var/mail/root
->>>> root@WXS0089:~# cat /sys/fs/bcache/066319e1-8680-4b5b-adb8-4959631915=
-4b/cache_available_percent
->>>> 28
->>>>
->>>> I read the source codes and found if cache_available_percent > 50, it=
- should wakeup gc while doing writeback, but it seemed not work right.
->>>>
->>> If gc_after_writeback is enabled, and after it is enabled and the cach=
-e
->>> usage > 50%, a tag BCH_DO_AUTO_GC will be set to c->gc_after_writeback=
-.
->>> Then when the writeback completed the gc thread will wake up in force.
->>>
->>> so the auto gc after writeback will be triggered when,
->>> 1, the bcache device is in writeback mode
->>> 2, gc_after_writeback set to 1
->>> 3, After 2) done, the cache usage exceeds 50% threshold.
->>> 4, writeback rate set to maximum rate when the bcache device is idle (=
-no
->>> regular I/O request)
->>> 5, after the writeback accomplished, the gc thread will be waken up.
->>>
->>> But /sys/block/bcache0/bcache/dirty_data is 0.0k doesn't mean the
->>> writeback is accomplished. It is possible the writeback thread still
->>> goes through all btree keys for the last try even all the dirty data a=
-re
->>> flushed. Therefore you should check whether the writeback thread is
->>> still active before a conclusion is made that the writeback is complet=
-ed.
->>>
->>> BTW, do you try a Linux v5.8+ kernel and see how things are ?
->> I have test on 5.8.X,=C2=A0 but it doesn't help. I test on the same con=
-fig on another server(480G SSD + 8T HDD),
->>
-> What do you mean on "doesn't help" ?  Do you mean the force gc does not
-> trigger, or something else.
-The=C2=A0 cache_available_percent didn't reset to 100 automatically after =
-all I/O done for a very long time. I must echo 1 to trigger_gc to help it =
-recovered.
->
->> it can't reproduce, this really made me confused. I will compare the co=
-nfigs and try to find out the diffs.
-> For which behavior that it don't reproduce ?
-The problem of cache_available_percent not being recovered automatically.
->
-> Thanks.
->
-> Coly Li
+Signed-off-by: Matthew Wilcox (Oracle) <willy@infradead.org>
+---
+ block/blk-settings.c      | 1 +
+ drivers/block/brd.c       | 1 +
+ drivers/block/loop.c      | 1 +
+ drivers/md/bcache/super.c | 1 +
+ drivers/nvdimm/btt.c      | 1 +
+ drivers/nvdimm/pmem.c     | 1 +
+ drivers/scsi/scsicam.c    | 1 +
+ include/linux/blkdev.h    | 1 -
+ 8 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/block/blk-settings.c b/block/blk-settings.c
+index b4aa2f37fab6..976085a44fb8 100644
+--- a/block/blk-settings.c
++++ b/block/blk-settings.c
+@@ -7,6 +7,7 @@
+ #include <linux/init.h>
+ #include <linux/bio.h>
+ #include <linux/blkdev.h>
++#include <linux/pagemap.h>
+ #include <linux/memblock.h>	/* for max_pfn/max_low_pfn */
+ #include <linux/gcd.h>
+ #include <linux/lcm.h>
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 18bf99906662..2a5a1933826b 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -18,6 +18,7 @@
+ #include <linux/bio.h>
+ #include <linux/highmem.h>
+ #include <linux/mutex.h>
++#include <linux/pagemap.h>
+ #include <linux/radix-tree.h>
+ #include <linux/fs.h>
+ #include <linux/slab.h>
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index a370cde3ddd4..d58d68f3c7cd 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -53,6 +53,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/sched.h>
+ #include <linux/fs.h>
++#include <linux/pagemap.h>
+ #include <linux/file.h>
+ #include <linux/stat.h>
+ #include <linux/errno.h>
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 71691f32959b..f154c89d1326 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -16,6 +16,7 @@
+ #include "features.h"
+ 
+ #include <linux/blkdev.h>
++#include <linux/pagemap.h>
+ #include <linux/debugfs.h>
+ #include <linux/genhd.h>
+ #include <linux/idr.h>
+diff --git a/drivers/nvdimm/btt.c b/drivers/nvdimm/btt.c
+index 41aa1f01fc07..18a267d5073f 100644
+--- a/drivers/nvdimm/btt.c
++++ b/drivers/nvdimm/btt.c
+@@ -6,6 +6,7 @@
+ #include <linux/highmem.h>
+ #include <linux/debugfs.h>
+ #include <linux/blkdev.h>
++#include <linux/pagemap.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/mutex.h>
+diff --git a/drivers/nvdimm/pmem.c b/drivers/nvdimm/pmem.c
+index b8a85bfb2e95..16760b237229 100644
+--- a/drivers/nvdimm/pmem.c
++++ b/drivers/nvdimm/pmem.c
+@@ -8,6 +8,7 @@
+  */
+ 
+ #include <linux/blkdev.h>
++#include <linux/pagemap.h>
+ #include <linux/hdreg.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+diff --git a/drivers/scsi/scsicam.c b/drivers/scsi/scsicam.c
+index f1553a453616..0ffdb8f2995f 100644
+--- a/drivers/scsi/scsicam.c
++++ b/drivers/scsi/scsicam.c
+@@ -17,6 +17,7 @@
+ #include <linux/genhd.h>
+ #include <linux/kernel.h>
+ #include <linux/blkdev.h>
++#include <linux/pagemap.h>
+ #include <linux/msdos_partition.h>
+ #include <asm/unaligned.h>
+ 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index c032cfe133c7..1e2a95599390 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -11,7 +11,6 @@
+ #include <linux/minmax.h>
+ #include <linux/timer.h>
+ #include <linux/workqueue.h>
+-#include <linux/pagemap.h>
+ #include <linux/backing-dev-defs.h>
+ #include <linux/wait.h>
+ #include <linux/mempool.h>
+-- 
+2.30.0
+
