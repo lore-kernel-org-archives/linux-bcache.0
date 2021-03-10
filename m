@@ -2,59 +2,49 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-10.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED autolearn=unavailable
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-15.3 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
+	MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
+	USER_AGENT_SANE_1 autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3FF90C43603
-	for <linux-bcache@archiver.kernel.org>; Wed, 10 Mar 2021 08:45:03 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6F5B0C433E6
+	for <linux-bcache@archiver.kernel.org>; Wed, 10 Mar 2021 10:29:56 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 15DF664FFC
-	for <linux-bcache@archiver.kernel.org>; Wed, 10 Mar 2021 08:45:03 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 2B6BF64F72
+	for <linux-bcache@archiver.kernel.org>; Wed, 10 Mar 2021 10:29:56 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232336AbhCJIo2 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 10 Mar 2021 03:44:28 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40948 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231278AbhCJIn6 (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 10 Mar 2021 03:43:58 -0500
-Received: from casper.infradead.org (casper.infradead.org [IPv6:2001:8b0:10b:1236::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 36DBBC06174A;
-        Wed, 10 Mar 2021 00:43:35 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=casper.20170209; h=In-Reply-To:Content-Type:MIME-Version:
-        References:Message-ID:Subject:Cc:To:From:Date:Sender:Reply-To:
-        Content-Transfer-Encoding:Content-ID:Content-Description;
-        bh=vuo0YO0EmNV+mXqkprYzB4nCqf8LGaGX/f4JDhgk+/c=; b=p5AuWvLaCuU/C/3qq+kaSkAvEX
-        vKtvFB/7Pp0l8OQ3Hjlgt+Gdlmojl2GcVfJbK4oNDb9uSkjuuv+5a031m7RPru5IcZ4nDfGvAcPLP
-        /o4zZS1IoPw8SJiu9OZJ0Faw4XwOc/+hE7aaJPNXsN38Rncqkt3JkXuCv1yFBvP3t3Fnwn8PMRTSb
-        fOURb9Y8kLuFYaShP/FZCe6WHdluCvBaxzGooPslnZlVQyZzqVgJTgt6AMwprhJyZWlwvJYkLMIMC
-        d2+KDFOGqNEsTMq2HRRaKT0CRvQEdZ3/Z/YXqWFBshlfHqLYe81+af++AJslw0/Tk8BFBQVLYj/+a
-        FrK7yhRA==;
-Received: from hch by casper.infradead.org with local (Exim 4.94 #2 (Red Hat Linux))
-        id 1lJuR7-002uDa-4t; Wed, 10 Mar 2021 08:43:24 +0000
-Date:   Wed, 10 Mar 2021 08:43:21 +0000
-From:   Christoph Hellwig <hch@infradead.org>
+        id S231790AbhCJK3V (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 10 Mar 2021 05:29:21 -0500
+Received: from mx2.suse.de ([195.135.220.15]:60318 "EHLO mx2.suse.de"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S231228AbhCJK3M (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 10 Mar 2021 05:29:12 -0500
+X-Virus-Scanned: by amavisd-new at test-mx.suse.de
+Received: from relay2.suse.de (unknown [195.135.221.27])
+        by mx2.suse.de (Postfix) with ESMTP id B81D1AE42;
+        Wed, 10 Mar 2021 10:29:10 +0000 (UTC)
+Subject: Re: [PATCH v2] include: Remove pagemap.h from blkdev.h
 To:     "Matthew Wilcox (Oracle)" <willy@infradead.org>
-Cc:     Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc:     linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
         linux-bcache@vger.kernel.org, linux-nvdimm@lists.01.org,
         linux-scsi@vger.kernel.org
-Subject: Re: [PATCH v2] include: Remove pagemap.h from blkdev.h
-Message-ID: <20210310084321.GA682482@infradead.org>
 References: <20210309195747.283796-1-willy@infradead.org>
+From:   Coly Li <colyli@suse.de>
+Message-ID: <4d6e3281-98e5-e161-3883-00ccc88e1682@suse.de>
+Date:   Wed, 10 Mar 2021 18:29:06 +0800
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.16; rv:78.0)
+ Gecko/20100101 Thunderbird/78.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <20210309195747.283796-1-willy@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org. See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=utf-8
+Content-Language: en-US
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Tue, Mar 09, 2021 at 07:57:47PM +0000, Matthew Wilcox (Oracle) wrote:
+On 3/10/21 3:57 AM, Matthew Wilcox (Oracle) wrote:
 > My UEK-derived config has 1030 files depending on pagemap.h before
 > this change.  Afterwards, just 326 files need to be rebuilt when I
 > touch pagemap.h.  I think blkdev.h is probably included too widely,
@@ -67,9 +57,35 @@ On Tue, Mar 09, 2021 at 07:57:47PM +0000, Matthew Wilcox (Oracle) wrote:
 > v2: Fix CONFIG_SWAP=n implicit use of pagemap.h by swap.h.  Increases
 >     the number of files from 240, but that's still a big win -- 68%
 >     reduction instead of 77%.
+> 
+>  block/blk-settings.c      | 1 +
+>  drivers/block/brd.c       | 1 +
+>  drivers/block/loop.c      | 1 +
+>  drivers/md/bcache/super.c | 1 +
+>  drivers/nvdimm/btt.c      | 1 +
+>  drivers/nvdimm/pmem.c     | 1 +
+>  drivers/scsi/scsicam.c    | 1 +
+>  include/linux/blkdev.h    | 1 -
+>  include/linux/swap.h      | 1 +
+>  9 files changed, 8 insertions(+), 1 deletion(-)
+> 
+[snipped]
 
-Looks good.  I suspect blkdev.h also has penty of other includes that
-aren't needed either..
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index 71691f32959b..f154c89d1326 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -16,6 +16,7 @@
+>  #include "features.h"
+>  
+>  #include <linux/blkdev.h>
+> +#include <linux/pagemap.h>
+>  #include <linux/debugfs.h>
+>  #include <linux/genhd.h>
+>  #include <linux/idr.h>[snipped]
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+For bcache part, Acked-by: Coly Li <colyli@suse.de>
 
+Thanks.
+
+Coly Li
