@@ -2,99 +2,60 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.3 required=3.0 tests=BAYES_00,
-	HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,NICE_REPLY_A,SPF_HELO_NONE,
-	SPF_PASS,USER_AGENT_SANE_1 autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-11.8 required=3.0 tests=BAYES_00,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_GIT autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0B637C43461
-	for <linux-bcache@archiver.kernel.org>; Tue, 20 Apr 2021 04:24:19 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id F0108C433B4
+	for <linux-bcache@archiver.kernel.org>; Tue, 20 Apr 2021 04:45:21 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id CEC14613BC
-	for <linux-bcache@archiver.kernel.org>; Tue, 20 Apr 2021 04:24:18 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 9B4BE613AB
+	for <linux-bcache@archiver.kernel.org>; Tue, 20 Apr 2021 04:45:21 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229598AbhDTEYs (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 20 Apr 2021 00:24:48 -0400
-Received: from mx2.suse.de ([195.135.220.15]:37850 "EHLO mx2.suse.de"
+        id S229507AbhDTEpu (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 20 Apr 2021 00:45:50 -0400
+Received: from mx2.suse.de ([195.135.220.15]:40724 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S229508AbhDTEYr (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 20 Apr 2021 00:24:47 -0400
+        id S229485AbhDTEpu (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 20 Apr 2021 00:45:50 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 0829EB15E;
-        Tue, 20 Apr 2021 04:24:15 +0000 (UTC)
-Subject: Re: linux-next: Tree for Apr 19 (bcache)
-To:     Jens Axboe <axboe@kernel.dk>
-Cc:     Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>,
-        linux-bcache@vger.kernel.org,
-        Kent Overstreet <kent.overstreet@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux Next Mailing List <linux-next@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>
-References: <20210419202309.0575ad77@canb.auug.org.au>
- <66d41349-60ba-f27f-5c56-3520a40dd83f@infradead.org>
- <f4ca485d-614b-6924-63bc-0948d087bdc3@suse.de>
- <76e63e74-2237-f672-eb10-edde017bc76e@kernel.dk>
+        by mx2.suse.de (Postfix) with ESMTP id 99111B15E;
+        Tue, 20 Apr 2021 04:45:18 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
-Message-ID: <061cd630-2740-2da9-cfbe-fd18adb22fdc@suse.de>
-Date:   Tue, 20 Apr 2021 12:24:11 +0800
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0)
- Gecko/20100101 Thunderbird/78.9.1
+To:     axboe@kernel.dk
+Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
+        Coly Li <colyli@suse.de>
+Subject: [PATCH 0/2] bcache patches for Linux v5.13 - 3rd wave 
+Date:   Tue, 20 Apr 2021 12:44:50 +0800
+Message-Id: <20210420044452.88267-1-colyli@suse.de>
+X-Mailer: git-send-email 2.26.2
 MIME-Version: 1.0
-In-Reply-To: <76e63e74-2237-f672-eb10-edde017bc76e@kernel.dk>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 4/20/21 1:50 AM, Jens Axboe wrote:
-> On 4/19/21 10:26 AM, Coly Li wrote:
->> On 4/19/21 11:40 PM, Randy Dunlap wrote:
->>> On 4/19/21 3:23 AM, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> Changes since 20210416:
->>>>
->>>
->>> on x86_64:
->>>
->>> when
->>> # CONFIG_BLK_DEV is not set
->>>
->>>
->>> WARNING: unmet direct dependencies detected for LIBNVDIMM
->>>   Depends on [n]: PHYS_ADDR_T_64BIT [=y] && HAS_IOMEM [=y] && BLK_DEV [=n]
->>>   Selected by [y]:
->>>   - BCACHE_NVM_PAGES [=y] && MD [=y] && BCACHE [=y] && PHYS_ADDR_T_64BIT [=y]
->>>
->>>
->>> Full randconfig file is attached.
->>>
->>
->> I need hint from kbuild expert.
->>
->> My original idea to use "select LIBNVDIMM" is to avoid the
->> BCACHE_NVM_PAGES option to disappear if LIBNVDIMM is not enabled.
->> Otherwise if nvdimm driver is not configure, users won't know there is a
->> BCACHE_NVM_PAGES option unless they read bcache Kconfig file.
-> 
-> But why? That's exactly how it should work. Just use depends to set the
-> dependency.
-> 
->> But I see nvdimm's Kconfig, it uses "depends on BLK_DEV", I understand
->> it is acceptable that LIBNVDIMM option to disappear from "make
->> menuconfig" if BLK_DEV is not enabled.
->>
->> For such condition, which one is the proper way to set the dependence ?
->> - Change "select LIBNVDIMM" and "select DAX" to "depends on LIBNVDIMM"
->> and "depends on DAX" in bcache Kconfig
->> - Or change "depends on BLK_DEV" to "select BLK_DEV" in nvdimm Kconfig.
-> 
-> The former.
-> 
+HI Jens,
 
-Copied. Thanks for the hint. I will post a fix soon.
+Here are the current bcache fixes for already merged patches in
+linux-next for Linux v5.13. 
+
+Thank you in advance for taking them.
 
 Coly Li
+---
+
+Colin Ian King (1):
+  bcache: Set error return err to -ENOMEM on allocation failure
+
+Coly Li (1):
+  bcache: Kconfig dependence fix for NVDIMM support
+
+ drivers/md/bcache/Kconfig     | 4 ++--
+ drivers/md/bcache/nvm-pages.c | 1 +
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+-- 
+2.26.2
+
