@@ -2,152 +2,262 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-5.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS autolearn=no autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-7.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS autolearn=no autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 1B9B0C43460
-	for <linux-bcache@archiver.kernel.org>; Fri,  7 May 2021 14:56:42 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E0EC1C433ED
+	for <linux-bcache@archiver.kernel.org>; Mon, 10 May 2021 21:06:16 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id E86A36135F
-	for <linux-bcache@archiver.kernel.org>; Fri,  7 May 2021 14:56:41 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id A3B48610F7
+	for <linux-bcache@archiver.kernel.org>; Mon, 10 May 2021 21:06:16 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S236366AbhEGO5k (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 7 May 2021 10:57:40 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34404 "EHLO
+        id S230165AbhEJVHU (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 10 May 2021 17:07:20 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40312 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S234601AbhEGO5k (ORCPT
+        with ESMTP id S229566AbhEJVHU (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 7 May 2021 10:57:40 -0400
-Received: from mail-qk1-x732.google.com (mail-qk1-x732.google.com [IPv6:2607:f8b0:4864:20::732])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4051AC061574
-        for <linux-bcache@vger.kernel.org>; Fri,  7 May 2021 07:56:39 -0700 (PDT)
-Received: by mail-qk1-x732.google.com with SMTP id k127so8680714qkc.6
-        for <linux-bcache@vger.kernel.org>; Fri, 07 May 2021 07:56:39 -0700 (PDT)
+        Mon, 10 May 2021 17:07:20 -0400
+Received: from mail-ua1-x936.google.com (mail-ua1-x936.google.com [IPv6:2607:f8b0:4864:20::936])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id BEB8FC061574
+        for <linux-bcache@vger.kernel.org>; Mon, 10 May 2021 14:06:13 -0700 (PDT)
+Received: by mail-ua1-x936.google.com with SMTP id v8so5643675uau.12
+        for <linux-bcache@vger.kernel.org>; Mon, 10 May 2021 14:06:13 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kaishome.de; s=google;
+        d=gmail.com; s=20161025;
         h=mime-version:references:in-reply-to:from:date:message-id:subject:to
          :cc;
-        bh=CNwS0W/JFFuzSa0gBJNxcWZaTa+oXWHUZo15hurqYj4=;
-        b=K4+zw2ImqCmzfLlNHf8AAM0TA6lQIJ39/vE+NNPbzHfqYFI/FNmpo4l4rfZczVVBBU
-         vuN8wGc2A510Kxw8klgZ92wZWpI/rfgVAYIyQssQILMOBmZWvJJkH6qYu7ToRy5A35Oi
-         qtIM4qkJmyt3K8xtf2OQJ0JP09PDnCufs/JXw=
+        bh=ZYNRko0xqhmCOFLFgKPjTdv7koAtC9ON50H/HhEf/MQ=;
+        b=JAi1tMGV2SSVB/3IWUfAT6VFUTpt29PcQ/VZdp5b38Q/eqeha0XOcHFuU77Oq/cDjf
+         Hxp57xlPYlXc5X7tCcxe6+FG5WMskDRJJPVEoBPN+NXw7smmDzktsPIlYzUxUm1fm1gH
+         DfOr1OZ/aRlmWb9ZAQb8dKKRLv6MYehCdUbPI52nUK2zdjmKxYjvAayf0I46udMB4kMH
+         8fE7y1GLFaFjWMUHx3cAkBakuLrzoJGFs1rBTTNLPiZkAvkUjAwVShZcsYSD9dDqYZjV
+         8Q4NEredfNEbwEOQgy0uES/tz3FXw3HGAakIKZrp8O2LStXjNioyZj/QIzBOs+QVkE8b
+         joWw==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20161025;
         h=x-gm-message-state:mime-version:references:in-reply-to:from:date
          :message-id:subject:to:cc;
-        bh=CNwS0W/JFFuzSa0gBJNxcWZaTa+oXWHUZo15hurqYj4=;
-        b=HDJgpxgMi+2d/jAXLciXMnGXZfabvW6SYMYiemfoomgsEzAbrRuz74lzB/bDgfu6PU
-         Td0xJM2v81uN9L2RC5j67D1m5ZPEOlCjv6ma5pWmyIEfs5AvgWVTZgoGCN+LI4wDs0Wz
-         PlSkO51WYRrxVbVEl4fU5Ldr+6NYRra4lKqKzW7tzTzMdAFoNMdAZEhRs7PpbR8bccEh
-         KvVcF3abWAiDD7g0v+cvYLduvf/k4yCQ2U/30MI1D6RhoUMhsU7FGZwHavunKTWVWNiT
-         aqH2eMOJ6ztzW9o+CpxAWngTypgiLVhhH4/M7tfA4TS55jWpsympYYV5NSWx3PUZIx5Y
-         ZiTw==
-X-Gm-Message-State: AOAM532iWO4EQnUH7f/t8m35+0VM0VlIwfwbZVfqeYiul8ECNC/CCmKd
-        TnP7vMhgYvNMiF4mdn4MZuM994tFs6T1EOAfbwnnYA==
-X-Google-Smtp-Source: ABdhPJyRlsu5KxzAZNNAyd+EXxEdhmdOrY850xo/RMGassbb2kEIlJR+Nt1TzWmD0SlNhI2uXdD8ti++SCb1RZRX+pw=
-X-Received: by 2002:a37:a042:: with SMTP id j63mr10009683qke.477.1620399398389;
- Fri, 07 May 2021 07:56:38 -0700 (PDT)
+        bh=ZYNRko0xqhmCOFLFgKPjTdv7koAtC9ON50H/HhEf/MQ=;
+        b=HlnWFbX52qGx13c3IeNm24qzmhi62il70dggJMi+yD7w22KV/Jnlzilj3acD8WjkIk
+         N8e2Q3RzwPuS+T9Hndr+saVr3mLM2wuEg0qBVxsC76XcJqdsGGPkxCa9eShbHwgubEdq
+         Ar4ZLDSTKlw5Ke/DG9mn1URfpdorZZ6xZgdVqBDn3pmqSNhJRERL0/jpTkCaa46YiBJB
+         rhw6lgtyHnoIYdre4l8BnAzPl4Lekylo9RpKFq9q7fu28Gtks67LMtdeEw8FFq81bfHn
+         NbbXRQ4AyxEv9xns+4MAiHBv+gUeGr9+er3nH7mUEe8AeAJB1mDirMtKDNT7A37+1hFt
+         usfA==
+X-Gm-Message-State: AOAM53085mctLbCzdJv6V7dzH32OmAi8S95CPnOdt4UpU1ApxTse0R1d
+        bNNDzxRmmR3hGt5SU3JXz0z9nGscpzqvwLQKPfXwGij14A/sQw==
+X-Google-Smtp-Source: ABdhPJzKJd6PAYHn66CGFuTmUJxUKQVQ//rRdjXUeC/DQQRz+7D5rdvvW8Zoyz8yMImpM9RnIUxcL8wPdQzkuYAEXT0=
+X-Received: by 2002:ab0:5a61:: with SMTP id m30mr21468530uad.125.1620680772855;
+ Mon, 10 May 2021 14:06:12 -0700 (PDT)
 MIME-Version: 1.0
-References: <82A10A71B70FF2449A8AD233969A45A101CCE29C5B@FZEX5.ruijie.com.cn>
- <CAC2ZOYugQAw9NbMk_oo_2iC5GsZUN=uTO5FuvdRTMy9M6ASNEg@mail.gmail.com>
- <CAC2ZOYtg4P_CYrTH6kQM1vCuU4Bai7v8K3Nmu3Yz7fNuHfEnRw@mail.gmail.com>
- <CAC2ZOYuBhFbpZeRnnc-1-Vt-tV_3iwkf3i21+YjVukYkx7J7YQ@mail.gmail.com> <70b9cdd0-ace9-9ee7-19c7-5c47a4d2fce9@suse.de>
-In-Reply-To: <70b9cdd0-ace9-9ee7-19c7-5c47a4d2fce9@suse.de>
-From:   Kai Krakow <kai@kaishome.de>
-Date:   Fri, 7 May 2021 16:56:27 +0200
-Message-ID: <CAC2ZOYuCLQpD___YBua7yEuuG85+OQ+HiRGDy=FRLS9cgMg4rA@mail.gmail.com>
-Subject: Re: Dirty data loss after cache disk error recovery
+References: <CAH6h+hc2quJhhBindQwQdK5pfsJRZWk5tX95RT3U_shuN1D=eQ@mail.gmail.com>
+ <d616e7c1-2406-472f-0653-39612250c2f0@suse.de>
+In-Reply-To: <d616e7c1-2406-472f-0653-39612250c2f0@suse.de>
+From:   Marc Smith <msmith626@gmail.com>
+Date:   Mon, 10 May 2021 17:06:01 -0400
+Message-ID: <CAH6h+hfXoRdsTQZJ-y2zAkCwcQiBN_fZtEuZdy3yCKoXRzpeVA@mail.gmail.com>
+Subject: Re: [PATCH v2] RFC - Write Bypass Race Bug
 To:     Coly Li <colyli@suse.de>
-Cc:     "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        =?UTF-8?B?5ZC05pys5Y2/KOS6keahjOmdoiDnpo/lt54p?= 
-        <wubenqing@ruijie.com.cn>
+Cc:     linux-bcache <linux-bcache@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hi!
+On Thu, May 6, 2021 at 12:09 AM Coly Li <colyli@suse.de> wrote:
+>
+> On 4/30/21 10:44 PM, Marc Smith wrote:
+> > The problem:
+> > If an inflight backing WRITE operation for a block is performed that
+> > meets the criteria for bypassing the cache and that takes a long time
+> > to complete, a READ operation for the same block may be fully
+> > processed in the interim that populates the cache with the device
+> > content from before the inflight WRITE. When the inflight WRITE
+> > finally completes, since it was marked for bypass, the cache is not
+> > subsequently updated, and the stale data populated by the READ request
+> > remains in cache. While there is code in bcache for invalidating the
+> > cache when a bypassed WRITE is performed, this is done prior to
+> > issuing the backing I/O so it does not help.
+> >
+> > The proposed fix:
+> > Add two new lists to the cached_dev structure to track inflight
+> > "bypass" write requests and inflight read requests that have have
+> > missed cache. These are called "inflight_bypass_write_list" and
+> > "inflight_read_list", respectively, and are protected by a spinlock
+> > called the "inflight_lock"
+> >
+> > When a WRITE is bypassing the cache, check whether there is an
+> > overlapping inflight read. If so, set bypass = false to essentially
+> > convert the bypass write into a writethrough write. Otherwise, if
+> > there is no overlapping inflight read, then add the "search" structure
+> > to the inflight bypass write list.
+>
+> Hi Marc,
+>
+> Could you please explain a bit more why the above thing is necessary ?
+> Please help me to understand your idea more clear :-)
+>
 
-> There is an option to panic the system when cache device failed. It is
-> in errors file with available options as "unregister" and "panic". This
-> option is default set to "unregister", if you set it to "panic" then
-> panic() will be called.
+As stated previously, the race condition involves two requests attempting
+I/O on the same block. One is a bypass write and the other is a normal
+read that misses the cache.
 
-Hmm, okay, I didn't find "panic" documented somewhere. I'll take a
-look at it again. If it's missing, I'll create a patch to improve
-documentation.
+The simplest form of the race is the following:
 
-> If the cache set is attached, read-only the bcache device does not
-> prevent the meta data I/O on cache device (when try to cache the reading
-> data), if the cache device is really disconnected that will be
-> problematic too.
+1.  BYPASS WRITER starts processing bcache request
+2.  BYPASS WRITER invalidates block in the cache
+3.  NORMAL READER starts processing bcache request
+4.  NORMAL READER misses cache, issues READ request to backing device
+5.  NORMAL READER processes completion of backing dev request
+6.  NORMAL READER populates cache with stale data
+7.  NORMAL READER completes
+8.  BYPASS WRITER issues WRITE request to backing device
+9.  BYPASS WRITER processes completion of backing dev request
+10. BYPASS WRITER completes
 
-I didn't completely understand the sentence, it seems to miss a word.
-But whatever it is, it's probably true. ;-)
+An approach to avoiding the race is to add the following steps:
 
-> The "auto" and "always" options are for "unregister" error action. When
-> I enhance the device failure handling, I don't add new error action, all
-> my work was to make the "unregister" action work better.
+1.5 BYPASS WRITER adds the sector range to a data structure that holds
+    inflight writes. (As currently coded, this data structure is an
+    interval tree.)
 
-But isn't the failure case here that it hits both code paths: The one
-that unregisters the device, and the one that then retires the cache?
+5.5 NORMAL READER checks the data structure to see if there are any
+    inflight bypass writers having overlapping sectors. If so, skip
+    step 6.
 
-> Adding a new "stop" error action IMHO doesn't make things better. When
-> the cache device is disconnected, it is always risky that some caching
-> data or meta data is not updated onto cache device. Permit the cache
-> device to be re-attached to the backing device may introduce "silent
-> data loss" which might be worse....  It was the reason why I didn't add
-> new error action for the device failure handling patch set.
+9.5 BYPASS WRITER removes sector range added in step 1.5
 
-But we are actually now seeing silent data loss: The system f'ed up
-somehow, needed a hard reset, and after reboot the bcache device was
-accessible in cache mode "none" (because they have been unregistered
-before, and because udev just detected it and you can use bcache
-without an attached cache in "none" mode), completely hiding the fact
-that we lost dirty write-back data, it's even not quite obvious that
-/dev/bcache0 now is detached, cache mode none, but accessible
-nevertheless. To me, this is quite clearly "silent data loss",
-especially since the unregister action threw the dirty data away.
+If this were the only order of operations for the race, then the 3 added
+steps would be sufficient and only inflight BYPASS WRITES would need
+to be tracked.
 
-So this:
+However, consider the following ordering with new steps above added:
 
-> Permit the cache
-> device to be re-attached to the backing device may introduce "silent
-> data loss" which might be worse....
+1.  NORMAL READER starts processing bcache request
+2.  NORMAL READER misses cache, issues READ request to backing device
+3.  NORMAL READER processes completion of backing dev request
+4.  NORMAL READER checks the data structure to see if there are any
+    inflight bypass writers having overlapping sectors. None are found.
+5.  BYPASS WRITER starts processing bcache request
+6.  BYPASS WRITER adds the sector range to a data structure that holds
+    inflight writes.
+7.  BYPASS WRITER invalidates block in the cache
+8.  BYPASS WRITER issues WRITE request to backing device
+9 . NORMAL READER populates cache with stale data
+10. NORMAL READER completes
+11. BYPASS WRITER processes completion of backing dev request
+12. BYPASS WRITER removes sector range added in step 6.
+13. BYPASS WRITER completes
 
-is actually the situation we are facing currently: Device has been
-unregistered, after reboot, udev detects it has clean backing device
-without cache association, using cache mode none, and it is readable
-and writable just fine: It essentially permitted access to the stale
-backing device (tho, it didn't re-attach as you outlined, but that's
-more or less the same situation).
+With this order of operations, the added steps don't solve the problem
+as stale data is added in step #9 and never corrected.
 
-Maybe devices that become disassociated from a cache due to IO errors
-but have dirty data should go to a caching mode "stale", and bcache
-should refuse to access such devices or throw away their dirty data
-until I decide to force them back online into the cache set or force
-discard the dirty data. Then at least I would discover that something
-went badly wrong. Otherwise, I may not detect that dirty data wasn't
-written. In the best case, that makes my FS unmountable, in the worst
-case, some file data is simply lost (aka silent data loss), besides
-both situations are the worst-case scenario anyways.
+So to cover both scenarios (and potentially others), both inflight bypass
+WRITEs and normal READs are tracked. If a BYPASS WRITE is being performed,
+it checks for an inflight overlapping read. If one exists, the BYPASS
+WRITE coverts itself to a WRITETHROUGH, which essentially "neutralizes" it
+from the race. If, however, there are no overlapping READs, it adds itself
+to a tracking data structure. When a normal read is issued that misses
+the cache, a check is made for an inflight overlapping BYPASS WRITE. If
+one exists, the READ sets the "do_not_cache" flag which neutralizes it
+from the race. If, however, there are no inflight overlapping BYPASS
+WRITEs, the sector range is added to the data structure holding
+inflight reads.
 
-The whole situation probably comes from udev auto-registering bcache
-backing devices again, and bcache has no record of why the device was
-unregistered - it looks clean after such a situation.
+This effectively adds/modifies the following steps:
 
-> Sorry I just find this thread from my INBOX. Hope it is not too late.
+1.5 NORMAL READER adds its sector range to a data structure that holds
+    inflight writes.
 
-No worries. ;-)
+5.5 BYPASS WRITER checks for the data structure to see if there is an
+    inflight overlapping READ. There is one! So it coverts itself to
+    a WRITETHROUGH write.
 
-It was already too late when the dirty cache was discarded but I have
-daily backups. My system is up and running again, but it's probably
-not a question of IF it happens again but WHEN it does. So I'd like to
-discuss how we can get a cleaner fail situation because currently it's
-just unclean because every status is lost after reboot, and devices
-look clean, and caching mode is simply "none", which is completely
-fine for the boot process.
+8.  [WRITETHROUGH] WRITER issues WRITE request to BOTH the cache
+    and the backing device. A writethrough racing with a reader (step 9)
+    is already correctly handled by bcache (I think.)
 
-Thanks,
-Kai
+9.5 NORMAL READER removes the sector range added in step 1.5
+
+In summary, when a BYPASS WRITE is racing with a normal READ,
+one of them needs to take evasive maneuvers to avoid corruption. The
+BYPASS WRITE can convert itself to a WRITETHROUGH WRITE or the READ
+can skip populating the cache. To handle all order of operations, it
+appears that support for both are needed depending on whether the
+BYPASS WRITE or normal READ arrives first. Therefore, both BYPASS WRITES
+and normal READS need to be tracked.
+
+
+> >
+> > When a READ misses cache, check whether there is an overlapping
+> > inflight write. If so, set a new flag in the search structure called
+> > "do_not_cache" which causes cache population to be skipped after the
+> > backing I/O completes. Otherwise, if there is no overlapping inflight
+> > write, then add the "search" structure to the inflight read list.
+> >
+> > The rest of the changes are to add a new stat called
+> > "bypass_cache_insert_races" to track how many times the race was
+> > encountered. Example:
+> > cat /sys/fs/bcache/0c9b7a62-b431-4328-9dcb-a81e322238af/bdev0/stats_total/cache_bypass_races
+> > 16577
+> >
+>
+> The stat counters make sense.
+>
+> > Assuming this is the correct approach, areas to look at:
+> > 1) Searching linked lists doesn't scale. Can something like an
+> > interval tree be used here instead?
+>
+> Tree is not good. Heavy I/O may add and delete many nodes in and from
+> the tree, the operation is heavy and congested, especially this is a
+> balanced tree.
+>
+>
+> > 2) Can this be restructured so that the inflight_lock doesn't have to
+> > be accessed with interrupts disabled? Note that search_free() can be
+> > called in interrupt context.
+>
+> Yes it is possible, with a lockless approach. What is needed is an array
+> to atomic counter. Each element of the array covers a range of LBA, if a
+> bypass write hits a range of LBA, increases the atomic counter from
+> corresponding element(s). For the cache miss read, just do an atomic
+> read without tree iteration and any lock protection.
+>
+> An array of atomic counters should work but not space efficient, memory
+> should be allocated for all LBA ranges even most of the counters not
+> touched during the whole system up time.
+>
+> Maybe xarray works, but I don't look into the xarray api carefully yet.
+
+Okay, we'll look into using this data structure, thanks.
+
+
+>
+> > 3) Can do_not_cache just be another (1-bit) flag in the search
+> > structure instead of occupying its own "int" ?
+>
+> At this moment, taking an int space is OK.
+>
+>
+> Thanks for the patch.
+>
+> Coly Li
+>
+> >
+> > v1 -> v2 changes:
+> > - Use interval trees instead of linked lists to track inflight requests.
+> > - Change code order to avoid acquiring lock in search_free().
+> > ---
+> >  drivers/md/bcache/bcache.h  |  4 ++
+> >  drivers/md/bcache/request.c | 88 ++++++++++++++++++++++++++++++++++++-
+> >  drivers/md/bcache/stats.c   | 14 ++++++
+> >  drivers/md/bcache/stats.h   |  4 ++
+> >  drivers/md/bcache/super.c   |  4 ++
+> >  5 files changed, 113 insertions(+), 1 deletion(-)
+> >
+>
+> [snipped]
+>
