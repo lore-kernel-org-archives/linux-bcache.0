@@ -4,25 +4,26 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-16.8 required=3.0 tests=BAYES_00,
 	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,INCLUDES_PATCH,
-	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham
-	autolearn_force=no version=3.4.0
+	MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
+	autolearn=unavailable autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 944BEC433ED
-	for <linux-bcache@archiver.kernel.org>; Tue, 18 May 2021 10:55:36 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DEEF9C43460
+	for <linux-bcache@archiver.kernel.org>; Tue, 18 May 2021 11:00:22 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 6F0776135D
-	for <linux-bcache@archiver.kernel.org>; Tue, 18 May 2021 10:55:36 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id C07986124C
+	for <linux-bcache@archiver.kernel.org>; Tue, 18 May 2021 11:00:22 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S241393AbhERK4w (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 18 May 2021 06:56:52 -0400
-Received: from mx2.suse.de ([195.135.220.15]:41434 "EHLO mx2.suse.de"
+        id S1348187AbhERLBi (ORCPT
+        <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 18 May 2021 07:01:38 -0400
+Received: from mx2.suse.de ([195.135.220.15]:47286 "EHLO mx2.suse.de"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S231917AbhERK4w (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 18 May 2021 06:56:52 -0400
+        id S239147AbhERLBh (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Tue, 18 May 2021 07:01:37 -0400
 X-Virus-Scanned: by amavisd-new at test-mx.suse.de
 Received: from relay2.suse.de (unknown [195.135.221.27])
-        by mx2.suse.de (Postfix) with ESMTP id 5EA8DAFF6;
-        Tue, 18 May 2021 10:55:33 +0000 (UTC)
+        by mx2.suse.de (Postfix) with ESMTP id E2134AF19;
+        Tue, 18 May 2021 11:00:17 +0000 (UTC)
 From:   colyli@suse.de
 To:     linux-bcache@vger.kernel.org
 Cc:     linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -36,9 +37,9 @@ Cc:     linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
         Vojtech Pavlik <vojtech@suse.cz>, stable@vger.kernel.org,
         Takashi Iwai <tiwai@suse.com>,
         Kent Overstreet <kent.overstreet@gmail.com>
-Subject: [PATCH v2] bcache: avoid oversized read request in cache missing code path
-Date:   Tue, 18 May 2021 18:55:14 +0800
-Message-Id: <20210518105514.3376-1-colyli@suse.de>
+Subject: [PATCH v3] bcache: avoid oversized read request in cache missing code path
+Date:   Tue, 18 May 2021 19:00:09 +0800
+Message-Id: <20210518110009.11413-1-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
@@ -160,11 +161,11 @@ limitation of 'sectors' should be the smaller one of the values
 
 In this patch, a local variable inside cached_dev_cache_miss() is added
 as,
-     max_cache_miss_size =  min_t(uint32_t,
+     max_miss_size =  min_t(uint32_t,
              (1 << KEY_SIZE_BITS) - 1, BIO_MAX_VECS * PAGE_SECTORS);
 Then the following code check and fix parameter 'sectors' as,
-     if (sectors > max_cache_miss_size)
-             sectors = max_cache_miss_size;
+     if (sectors > max_miss_size)
+             sectors = max_miss_size;
 
 Now inside cached_dev_cache_miss(), the calculated 'sectors' value sent
 into code block 5 and 6 will not trigger neither of the above kernel
@@ -185,7 +186,8 @@ Cc: stable@vger.kernel.org
 Cc: Takashi Iwai <tiwai@suse.com>
 Cc: Kent Overstreet <kent.overstreet@gmail.com>
 ---
-Changlog
+Changlog:
+v3, fix typo in v2.
 v2, fix the bypass bio size calculation in v1.
 v1, the initial version
 
@@ -222,10 +224,10 @@ index 29c231758293..ba1612b00b9f 100644
 +	 * Then we are sure there is no overflow for key size of
 +	 * s->iop.replace_key and bio io vecs number of cache_bio.
 +	 */
-+	max_cache_miss_size =  min_t(uint32_t,
++	max_miss_size =  min_t(uint32_t,
 +		(1 << KEY_SIZE_BITS) - 1, BIO_MAX_VECS * PAGE_SECTORS);
-+	if (sectors > max_cache_miss_size)
-+		sectors = max_cache_miss_size;
++	if (sectors > max_miss_size)
++		sectors = max_miss_size;
 +
  	s->insert_bio_sectors = min(sectors, bio_sectors(bio) + reada);
  
