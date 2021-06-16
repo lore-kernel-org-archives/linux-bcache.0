@@ -4,134 +4,82 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-18.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT
-	autolearn=ham autolearn_force=no version=3.4.0
+	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
+	USER_AGENT_GIT autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 55319C48BE5
-	for <linux-bcache@archiver.kernel.org>; Tue, 15 Jun 2021 05:50:05 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 48F70C48BE6
+	for <linux-bcache@archiver.kernel.org>; Wed, 16 Jun 2021 15:13:06 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3BB3C6140C
-	for <linux-bcache@archiver.kernel.org>; Tue, 15 Jun 2021 05:50:05 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 265D360FDB
+	for <linux-bcache@archiver.kernel.org>; Wed, 16 Jun 2021 15:13:06 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230236AbhFOFwI (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 15 Jun 2021 01:52:08 -0400
-Received: from smtp-out1.suse.de ([195.135.220.28]:57394 "EHLO
-        smtp-out1.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230331AbhFOFwG (ORCPT
+        id S234499AbhFPPPL (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 16 Jun 2021 11:15:11 -0400
+Received: from smtp-out2.suse.de ([195.135.220.29]:38028 "EHLO
+        smtp-out2.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S234498AbhFPPPL (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 15 Jun 2021 01:52:06 -0400
+        Wed, 16 Jun 2021 11:15:11 -0400
 Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-        by smtp-out1.suse.de (Postfix) with ESMTP id C9BE8219C5;
-        Tue, 15 Jun 2021 05:50:01 +0000 (UTC)
+        by smtp-out2.suse.de (Postfix) with ESMTP id 566981FD47;
+        Wed, 16 Jun 2021 15:13:04 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1623736201; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=C3Np6UpmqYzZ4kH5SUJzYj4UbsK192DUNvW0ehDEFvc=;
-        b=0sdVN7Hz8iMI0Vf1UUB6ZRDa1Y58PjjZ2+7kehlOoG7SmjWCDwtmagBk14T+27yIVM4wpQ
-        ltLn00X3kKRnNDA4p1bYMWpTgise7tFN6HLgcYWI1ahXzk6sKlArSAXQtgMf6I/c/cxj5W
-        wO29l5Fd7ldSiSQFCQudC8iMg14/uTk=
+        t=1623856384; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=RAkhWSADyaoHLpylPeq+igwC/iINB5l6eElYHNFu8Zc=;
+        b=d91Ph8y197lXG8M3CRmR1X5W7YVWzdy7Aq7ecUYMRN2vLU7dJOy1846p2DNj0/o8U589Ud
+        sMhEufqs5wSpNzB75r8OdHG92vUGDvBCkyRcrVKZaT4LCZoADTX97x2TtG96xSFK493EO8
+        0QQHjJsBv5x/VwpNiQCahNpU/1HlfdA=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1623736201;
+        s=susede2_ed25519; t=1623856384;
         h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=C3Np6UpmqYzZ4kH5SUJzYj4UbsK192DUNvW0ehDEFvc=;
-        b=WZ1JcYJie3OGdDArDpcqNs6cfA64enkm+26hb8dGdbuVnLImafTmQ6V+FA5fqNXyKTw/s5
-        hjuekLxXWrKuy5Ag==
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=RAkhWSADyaoHLpylPeq+igwC/iINB5l6eElYHNFu8Zc=;
+        b=kD3OEcqJrQqJW8xIFzfL1DQxurK4K23as+AxRB+jzyuJfWv7Tzk6eY708qP9Pw1bkQizyn
+        IrSHvemsfvK/WvBg==
 Received: from localhost.localdomain (unknown [10.163.16.22])
-        by relay2.suse.de (Postfix) with ESMTP id 0B026A3BB7;
-        Tue, 15 Jun 2021 05:49:59 +0000 (UTC)
+        by relay2.suse.de (Postfix) with ESMTP id 7240AA3BB3;
+        Wed, 16 Jun 2021 15:13:02 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
-To:     axboe@kernel.dk
-Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
-        Coly Li <colyli@suse.de>, Jianpeng Ma <jianpeng.ma@intel.com>,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH 14/14] bcache: add sysfs interface register_nvdimm_meta to register NVDIMM meta device
-Date:   Tue, 15 Jun 2021 13:49:21 +0800
-Message-Id: <20210615054921.101421-15-colyli@suse.de>
+To:     linux-bcache@vger.kernel.org
+Cc:     Coly Li <colyli@suse.de>, Shaoxiong Li <dahefanteng@gmail.com>
+Subject: [PATCH] bcache-tools: only discard cache device during making when discard is enabled
+Date:   Wed, 16 Jun 2021 23:12:49 +0800
+Message-Id: <20210616151249.123773-1-colyli@suse.de>
 X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20210615054921.101421-1-colyli@suse.de>
-References: <20210615054921.101421-1-colyli@suse.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch adds a sysfs interface register_nvdimm_meta to register
-NVDIMM meta device. The sysfs interface file only shows up when
-CONFIG_BCACHE_NVM_PAGES=y. Then a NVDIMM name space formatted by
-bcache-tools can be registered into bcache by e.g.,
-  echo /dev/pmem0 > /sys/fs/bcache/register_nvdimm_meta
+Currently in cache device making time, discard is always issued onto the
+cache device. It is unncessary and might be slow if the cache device is
+combined by md raid device (e.g. raid10).
+
+Therefore when making a new cache device, this patch only issue discard
+when it is explicitly enabled by --discard option.
 
 Signed-off-by: Coly Li <colyli@suse.de>
-Cc: Jianpeng Ma <jianpeng.ma@intel.com>
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>
+Cc: Shaoxiong Li <dahefanteng@gmail.com>
 ---
- drivers/md/bcache/super.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ make.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 4d6666d03aa7..9d506d053548 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2439,10 +2439,18 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- static ssize_t bch_pending_bdevs_cleanup(struct kobject *k,
- 					 struct kobj_attribute *attr,
- 					 const char *buffer, size_t size);
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+static ssize_t register_nvdimm_meta(struct kobject *k,
-+				    struct kobj_attribute *attr,
-+				    const char *buffer, size_t size);
-+#endif
+diff --git a/make.c b/make.c
+index 4ca7734..34d8011 100644
+--- a/make.c
++++ b/make.c
+@@ -446,7 +446,8 @@ static void write_sb(char *dev, struct sb_context *sbc, bool bdev, bool force)
  
- kobj_attribute_write(register,		register_bcache);
- kobj_attribute_write(register_quiet,	register_bcache);
- kobj_attribute_write(pendings_cleanup,	bch_pending_bdevs_cleanup);
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+kobj_attribute_write(register_nvdimm_meta, register_nvdimm_meta);
-+#endif
+ 		/* Attempting to discard cache device
+ 		 */
+-		blkdiscard_all(dev, fd);
++		if (discard)
++			blkdiscard_all(dev, fd);
+ 		putchar('\n');
+ 	}
  
- static bool bch_is_open_backing(dev_t dev)
- {
-@@ -2556,6 +2564,24 @@ static void register_device_async(struct async_reg_args *args)
- 	queue_delayed_work(system_wq, &args->reg_work, 10);
- }
- 
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+static ssize_t register_nvdimm_meta(struct kobject *k, struct kobj_attribute *attr,
-+				    const char *buffer, size_t size)
-+{
-+	ssize_t ret = size;
-+
-+	struct bch_nvm_namespace *ns = bch_register_namespace(buffer);
-+
-+	if (IS_ERR(ns)) {
-+		pr_err("register nvdimm namespace %s for meta device failed.\n",
-+			buffer);
-+		ret = -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+#endif
-+
- static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 			       const char *buffer, size_t size)
- {
-@@ -2898,6 +2924,9 @@ static int __init bcache_init(void)
- 	static const struct attribute *files[] = {
- 		&ksysfs_register.attr,
- 		&ksysfs_register_quiet.attr,
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+		&ksysfs_register_nvdimm_meta.attr,
-+#endif
- 		&ksysfs_pendings_cleanup.attr,
- 		NULL
- 	};
 -- 
 2.26.2
 
