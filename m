@@ -2,124 +2,224 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-7.3 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,MAILING_LIST_MULTI,
-	NICE_REPLY_A,SPF_HELO_NONE,SPF_PASS,USER_AGENT_SANE_1 autolearn=no
-	autolearn_force=no version=3.4.0
+X-Spam-Status: No, score=-10.7 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+	DKIM_VALID,DKIM_VALID_AU,FREEMAIL_FORGED_FROMDOMAIN,FREEMAIL_FROM,
+	HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,
+	SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DB451C4743C
-	for <linux-bcache@archiver.kernel.org>; Wed, 23 Jun 2021 12:09:43 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 62AA9C49EA6
+	for <linux-bcache@archiver.kernel.org>; Fri, 25 Jun 2021 01:31:32 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id BA26460FE5
-	for <linux-bcache@archiver.kernel.org>; Wed, 23 Jun 2021 12:09:43 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 33E3C613B9
+	for <linux-bcache@archiver.kernel.org>; Fri, 25 Jun 2021 01:31:32 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230189AbhFWMMA (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 23 Jun 2021 08:12:00 -0400
-Received: from smtp-out2.suse.de ([195.135.220.29]:39010 "EHLO
-        smtp-out2.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230157AbhFWML7 (ORCPT
+        id S232906AbhFYBdv (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Thu, 24 Jun 2021 21:33:51 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52606 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S229712AbhFYBdq (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 23 Jun 2021 08:11:59 -0400
-Received: from imap.suse.de (imap-alt.suse-dmz.suse.de [192.168.254.47])
-        (using TLSv1.2 with cipher ECDHE-ECDSA-AES128-GCM-SHA256 (128/128 bits))
-        (No client certificate requested)
-        by smtp-out2.suse.de (Postfix) with ESMTPS id BBC201FD36;
-        Wed, 23 Jun 2021 12:09:41 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1624450181; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=Shj2SE8niP5WvMXjun7ikIAkYYmoq/GAPEpKa0VAbKw=;
-        b=V6zOpxwZ3ibpNomE4ANU88oKCgVPTKMgpkOrt/3kF2XYMasevOWE4rl/jqrfrqOem+tNlM
-        pIOD97FZ04RURUyFojM60Ljqmt2xhcSNDYYy5ItAHtZwI9VsWOXIsMuWNibiCR/yxW6E4o
-        1F4vSu5sUbVf8bBQK9KYlMqzqbarT18=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1624450181;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=Shj2SE8niP5WvMXjun7ikIAkYYmoq/GAPEpKa0VAbKw=;
-        b=IFkPNpq/JVrj//USk0ZjtbAYNn/8J5Hfx9xjSwCeWfFtbI9AZf34t+cKRqFZLiqfsJDQcZ
-        iV8e1SKZ8bJ9aYAw==
-Received: from imap3-int (imap-alt.suse-dmz.suse.de [192.168.254.47])
-        by imap.suse.de (Postfix) with ESMTP id 9633911A97;
-        Wed, 23 Jun 2021 12:09:39 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1624450181; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=Shj2SE8niP5WvMXjun7ikIAkYYmoq/GAPEpKa0VAbKw=;
-        b=V6zOpxwZ3ibpNomE4ANU88oKCgVPTKMgpkOrt/3kF2XYMasevOWE4rl/jqrfrqOem+tNlM
-        pIOD97FZ04RURUyFojM60Ljqmt2xhcSNDYYy5ItAHtZwI9VsWOXIsMuWNibiCR/yxW6E4o
-        1F4vSu5sUbVf8bBQK9KYlMqzqbarT18=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1624450181;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=Shj2SE8niP5WvMXjun7ikIAkYYmoq/GAPEpKa0VAbKw=;
-        b=IFkPNpq/JVrj//USk0ZjtbAYNn/8J5Hfx9xjSwCeWfFtbI9AZf34t+cKRqFZLiqfsJDQcZ
-        iV8e1SKZ8bJ9aYAw==
-Received: from director2.suse.de ([192.168.254.72])
-        by imap3-int with ESMTPSA
-        id IgYZGYMk02AEEwAALh3uQQ
-        (envelope-from <colyli@suse.de>); Wed, 23 Jun 2021 12:09:39 +0000
-Subject: Re: Ask help for code review (was Re: [PATCH 03/14] bcache: add
- initial data structures for nvm pages)
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     "Huang, Ying" <ying.huang@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Jan Kara <jack@suse.com>, Hannes Reinecke <hare@suse.com>,
-        linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
-        Jianpeng Ma <jianpeng.ma@intel.com>,
-        Qiaowei Ren <qiaowei.ren@intel.com>, axboe@kernel.dk
-References: <20210615054921.101421-1-colyli@suse.de>
- <20210615054921.101421-4-colyli@suse.de>
- <24ad3795-813c-b50b-e983-56dccef1b0db@suse.de>
- <875yy6l2a1.fsf@yhuang6-desk2.ccr.corp.intel.com>
- <b1597c54-16ea-c943-8af7-25c8eab342e9@suse.de>
- <87czsdhy0u.fsf@yhuang6-desk2.ccr.corp.intel.com>
- <20210623070405.GA537@lst.de> <f150a8a6-26ee-8fdd-2964-be1254835bc1@suse.de>
- <20210623072140.GA837@lst.de> <466c1678-8cdc-7240-1422-b435a599cad3@suse.de>
- <20210623114954.GA20363@lst.de>
-From:   Coly Li <colyli@suse.de>
-Message-ID: <3d84ecc3-4ebf-3ef4-e4e3-df39e661f854@suse.de>
-Date:   Wed, 23 Jun 2021 20:09:37 +0800
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0)
- Gecko/20100101 Thunderbird/78.11.0
-MIME-Version: 1.0
-In-Reply-To: <20210623114954.GA20363@lst.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-Content-Language: en-US
+        Thu, 24 Jun 2021 21:33:46 -0400
+Received: from mail-pj1-x102f.google.com (mail-pj1-x102f.google.com [IPv6:2607:f8b0:4864:20::102f])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CBFAEC061574
+        for <linux-bcache@vger.kernel.org>; Thu, 24 Jun 2021 18:31:25 -0700 (PDT)
+Received: by mail-pj1-x102f.google.com with SMTP id pf4-20020a17090b1d84b029016f6699c3f2so7028200pjb.0
+        for <linux-bcache@vger.kernel.org>; Thu, 24 Jun 2021 18:31:25 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20161025;
+        h=from:to:cc:subject:date:message-id;
+        bh=sjCNTcqNmvlSVfPI4HQi7RzVQGP2vgCOKaUVCr3Crwo=;
+        b=tqHemavXV2l4kxa3mdC6OIWELy0/K8s9qfUAdUmk1CM9lrXlj1frm+HnZBPpIIfhIS
+         38vXp7O9J/Jdb7BFBB5B7PVm8BvjPwY2EAvRZfh3VLL5VprkcOBv5B2WXq2U7yVHDqdN
+         /1Q8OuOe16uP2M7cvZJAsPv7dSQ8ny7CUIBn9TansCduQpgvW+onArU/S/j8K1ZVXhrG
+         MP+yh0JuMkX3293g8uK3c6YjOLFMZaRnOxUZjVoQwAJRiJ6QluM+CdeC2pF+3KMO1Bbj
+         gNzs3b5ZuDPFVFrgNXmNcibpZC7fkhbUGERg8YkXOaQiJ5I52VJFDIWBwQ1ZHzWZy58b
+         ATBw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:from:to:cc:subject:date:message-id;
+        bh=sjCNTcqNmvlSVfPI4HQi7RzVQGP2vgCOKaUVCr3Crwo=;
+        b=gBDNygwNBfgOBIW2m4IptdhWMbzGBV3meCIeCB0rgB3ZIa7Ittz0tsawlc8ljWtlbY
+         eXzMsL1dgtqY7m/gTtCk7ySFYXxRIxrZK2apclLAKs68sEraaeATo9v9EiqqWi6OJL2q
+         mOau8ZZ2HzLrkN+vyBD+CEVPnVcD/+K0WHUtEruRC2X9npIkwlWEFMQ1eVfyiLGHxW7T
+         9x+BAbia5IyHfz9d65chyc6meGk9jV7OH0ykORUxG2VRBhPOjSvAtRrJyLbTsKTrDfbj
+         tKneFo60Fv8EW8hdF3voc1Luhgt/ogWDKhIgneG6DhLdyzEZ8BM96q6PGwDosIvnPbsB
+         wmng==
+X-Gm-Message-State: AOAM5306UYoefndajjD/PDxV/sGM/fkAaolIAIxvWlItfYWianR4qo5P
+        o/cF7lq+w1+ZS9fKmN39U71A0Qf1gnCmB2zJ
+X-Google-Smtp-Source: ABdhPJyiGsIHP4yglihy4TgmDm8itrhdFd8DWqNLp93tSCngdLrJaZ4H3+q+2Pk86f+a9IEbRzHozQ==
+X-Received: by 2002:a17:90b:810:: with SMTP id bk16mr8454119pjb.2.1624584684947;
+        Thu, 24 Jun 2021 18:31:24 -0700 (PDT)
+Received: from instance-1.asia-east2-b.c.zippy-catwalk-317715.internal (2.31.92.34.bc.googleusercontent.com. [34.92.31.2])
+        by smtp.gmail.com with ESMTPSA id y8sm4168612pfe.162.2021.06.24.18.31.23
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Thu, 24 Jun 2021 18:31:24 -0700 (PDT)
+From:   yanhuan916@gmail.com
+To:     linux-bcache@vger.kernel.org
+Cc:     colyli@suse.de, dahefanteng@gmail.com,
+        Huan Yan <yanhuan916@gmail.com>
+Subject: [PATCH 1/2] bcache-tools: make --discard a per device option
+Date:   Fri, 25 Jun 2021 09:30:29 +0800
+Message-Id: <1624584630-9283-1-git-send-email-yanhuan916@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 6/23/21 7:49 PM, Christoph Hellwig wrote:
-> On Wed, Jun 23, 2021 at 06:05:51PM +0800, Coly Li wrote:
->> The cache device (typically SSD) of bcache is designed to dedicate to a
->> single local machine. Any
->> storage migration between machines with different endians should firstly
->> flush the dirty data to
->> backing hard drive.
-> Now my G5 died and I need to recover the data using my x86 laptop,
-> what am I going to do?
->
->>>> If not, it won't be a problem here for this specific use case.
->>> It could change between one use and another.
->> Hmm, I don't understand the implicit meaning of the above line.
->> Could you please offer a detail example ?
-> There is no guarantee you nvdimm or CXL memory device will show up
-> at the same address.
+From: Huan Yan <yanhuan916@gmail.com>
 
-Copied, I fully understand. Now I am working on the full pointer to
-[base + offset] convert.
+This patch make --discard option more flexible, it can be indicated after each
+backing or cache device.
+---
+ make.c | 62 ++++++++++++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 48 insertions(+), 14 deletions(-)
 
-Thanks for your patient explanation :-)
+diff --git a/make.c b/make.c
+index 34d8011..39b381a 100644
+--- a/make.c
++++ b/make.c
+@@ -402,6 +402,18 @@ static void write_sb(char *dev, struct sb_context *sbc, bool bdev, bool force)
+ 		       (unsigned int) sb.version,
+ 		       sb.block_size,
+ 		       data_offset);
++
++		/* Attempting to discard backing device
++		 */
++		if (discard) {
++			if (blkdiscard_all(dev, fd) < 0) {
++				fprintf(stderr,
++					"Failed to discard device %s, %s\n",
++					dev, strerror(errno));
++				exit(EXIT_FAILURE);
++			}
++		}
++
+ 		putchar('\n');
+ 	} else {
+ 		if (nvdimm_meta)
+@@ -446,8 +458,15 @@ static void write_sb(char *dev, struct sb_context *sbc, bool bdev, bool force)
+ 
+ 		/* Attempting to discard cache device
+ 		 */
+-		if (discard)
+-			blkdiscard_all(dev, fd);
++		if (discard) {
++			if (blkdiscard_all(dev, fd) < 0) {
++				fprintf(stderr,
++					"Failed to discard device %s, %s\n",
++					dev, strerror(errno));
++				exit(EXIT_FAILURE);
++			}
++		}
++
+ 		putchar('\n');
+ 	}
+ 
+@@ -660,21 +679,27 @@ static unsigned int get_blocksize(const char *path)
+ int make_bcache(int argc, char **argv)
+ {
+ 	int c;
+-	unsigned int i;
++	unsigned int i, n;
+ 	int cdev = -1, bdev = -1, mdev = -1;
+ 	unsigned int ncache_devices = 0, ncache_nvm_devices = 0;
+ 	unsigned int nbacking_devices = 0;
+ 	char *cache_devices[argc];
+ 	char *cache_nvm_devices[argc];
+ 	char *backing_devices[argc];
++	bool cache_devices_discard[argc];
++	bool backing_devices_discard[argc];
++	bool *device_discard = NULL;
+ 	char label[SB_LABEL_SIZE] = { 0 };
+ 	unsigned int block_size = 0, bucket_size = 1024;
+-	int writeback = 0, discard = 0, wipe_bcache = 0, force = 0;
++	int writeback = 0, wipe_bcache = 0, force = 0;
+ 	unsigned int cache_replacement_policy = 0;
+ 	uint64_t data_offset = BDEV_DATA_START_DEFAULT;
+ 	uuid_t set_uuid;
+ 	struct sb_context sbc;
+ 
++	memset(cache_devices_discard, 0, sizeof(cache_devices_discard));
++	memset(backing_devices_discard, 0, sizeof(backing_devices_discard));
++
+ 	uuid_generate(set_uuid);
+ 
+ 	struct option opts[] = {
+@@ -685,10 +710,8 @@ int make_bcache(int argc, char **argv)
+ 		{ "block",		1, NULL,	'w' },
+ 		{ "writeback",		0, &writeback,	1 },
+ 		{ "wipe-bcache",	0, &wipe_bcache,	1 },
+-		{ "discard",		0, &discard,	1 },
+-		{ "cache_replacement_policy", 1, NULL, 'p' },
++		{ "discard",		0, NULL,	'd' },
+ 		{ "cache-replacement-policy", 1, NULL, 'p' },
+-		{ "data_offset",	1, NULL,	'o' },
+ 		{ "data-offset",	1, NULL,	'o' },
+ 		{ "cset-uuid",		1, NULL,	'u' },
+ 		{ "help",		0, NULL,	'h' },
+@@ -710,6 +733,10 @@ int make_bcache(int argc, char **argv)
+ 		case 'M':
+ 			mdev = 1;
+ 			break;
++		case 'd':
++			if (device_discard)
++				*device_discard = true;
++			break;
+ 		case 'b':
+ 			bucket_size =
+ 				hatoi_validate(optarg, "bucket size", UINT_MAX);
+@@ -762,15 +789,20 @@ int make_bcache(int argc, char **argv)
+ 			}
+ 
+ 			if (bdev > 0) {
+-				backing_devices[nbacking_devices++] = optarg;
+-				printf("backing_devices[%d]: %s\n", nbacking_devices - 1, optarg);
++				n = nbacking_devices++;
++				backing_devices[n] = optarg;
++				printf("backing_devices[%d]: %s\n", n, optarg);
++				device_discard = &backing_devices_discard[n];
+ 				bdev = -1;
+ 			} else if (cdev > 0) {
+-				cache_devices[ncache_devices++] = optarg;
+-				printf("cache_devices[%d]: %s\n", ncache_devices - 1, optarg);
++				n = ncache_devices++;
++				cache_devices[n] = optarg;
++				printf("cache_devices[%d]: %s\n", n, optarg);
++				device_discard = &cache_devices_discard[n];
+ 				cdev = -1;
+ 			} else if (mdev > 0) {
+-				cache_nvm_devices[ncache_nvm_devices++] = optarg;
++				n = ncache_nvm_devices++;
++				cache_nvm_devices[n] = optarg;
+ 				mdev = -1;
+ 			}
+ 			break;
+@@ -806,7 +838,6 @@ int make_bcache(int argc, char **argv)
+ 	sbc.block_size = block_size;
+ 	sbc.bucket_size = bucket_size;
+ 	sbc.writeback = writeback;
+-	sbc.discard = discard;
+ 	sbc.wipe_bcache = wipe_bcache;
+ 	sbc.cache_replacement_policy = cache_replacement_policy;
+ 	sbc.data_offset = data_offset;
+@@ -814,13 +845,16 @@ int make_bcache(int argc, char **argv)
+ 	sbc.label = label;
+ 	sbc.nvdimm_meta = (ncache_nvm_devices > 0) ? true : false;
+ 
+-	for (i = 0; i < ncache_devices; i++)
++	for (i = 0; i < ncache_devices; i++) {
++		sbc.discard = cache_devices_discard[i];
+ 		write_sb(cache_devices[i], &sbc, false, force);
++	}
+ 
+ 	for (i = 0; i < nbacking_devices; i++) {
+ 		check_data_offset_for_zoned_device(backing_devices[i],
+ 						   &sbc.data_offset);
+ 
++		sbc.discard = backing_devices_discard[i];
+ 		write_sb(backing_devices[i], &sbc, true, force);
+ 	}
+ 
+-- 
+1.8.3.1
 
-Coly Li
