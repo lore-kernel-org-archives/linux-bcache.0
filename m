@@ -2,143 +2,138 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 X-Spam-Level: 
-X-Spam-Status: No, score=-18.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
+X-Spam-Status: No, score=-15.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
-	USER_AGENT_GIT autolearn=ham autolearn_force=no version=3.4.0
+	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED
+	autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AB3B8C4338F
-	for <linux-bcache@archiver.kernel.org>; Wed, 11 Aug 2021 17:05:24 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4065DC4338F
+	for <linux-bcache@archiver.kernel.org>; Thu, 12 Aug 2021 00:44:07 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 68BF960E78
-	for <linux-bcache@archiver.kernel.org>; Wed, 11 Aug 2021 17:05:24 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 0F04C60F35
+	for <linux-bcache@archiver.kernel.org>; Thu, 12 Aug 2021 00:44:06 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230394AbhHKRFr (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 11 Aug 2021 13:05:47 -0400
-Received: from smtp-out2.suse.de ([195.135.220.29]:58684 "EHLO
-        smtp-out2.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229530AbhHKRFr (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 11 Aug 2021 13:05:47 -0400
-Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-        by smtp-out2.suse.de (Postfix) with ESMTP id A3A4E20195;
-        Wed, 11 Aug 2021 17:05:21 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1628701521; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
+        id S233159AbhHLAo3 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 11 Aug 2021 20:44:29 -0400
+Received: from out0.migadu.com ([94.23.1.103]:27945 "EHLO out0.migadu.com"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S233065AbhHLAo3 (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Wed, 11 Aug 2021 20:44:29 -0400
+Subject: Re: [PATCH] block: move some macros to blkdev.h
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
+        t=1628729043;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:content-type:content-type:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=efsOw98AEBFshxhhH9/n3GRQdv2ksVkqaTCb57JSsqU=;
-        b=FRR4OFK3s6fk7teQ4WATZ3QEJHo5och1ZjfgFXygxnp8Rc/ube6zMpRQGu2Go5USA+MmjH
-        Utk0j9944xnayK9aiIeVUCxOLL1RHlsbT8KKcuJ1jdIazbWH4LiMgfw+Q8EV4uq45Z2KdZ
-        S3K9brjiqqkxdvENy5sG7fkVDCve07Q=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1628701521;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=efsOw98AEBFshxhhH9/n3GRQdv2ksVkqaTCb57JSsqU=;
-        b=tZa4CLdOvovYtOXexaq9cWlVntxJgOGmy71E79JNPrcVmpTagz5+uNMhYuXlOlJ+eej4Ta
-        LVmrvUAu1ZQY9xBQ==
-Received: from localhost.localdomain (colyli.tcp.ovpn1.nue.suse.de [10.163.16.22])
-        by relay2.suse.de (Postfix) with ESMTP id 9AC0AA3D61;
-        Wed, 11 Aug 2021 17:05:16 +0000 (UTC)
-From:   Coly Li <colyli@suse.de>
-To:     linux-bcache@vger.kernel.org
-Cc:     linux-block@vger.kernel.org, linux-nvdimm@lists.linux.dev,
-        axboe@kernel.dk, hare@suse.com, jack@suse.cz,
-        dan.j.williams@intel.com, hch@lst.de, ying.huang@intel.com,
-        Coly Li <colyli@suse.de>, Hannes Reinecke <hare@suse.de>,
-        Jianpeng Ma <jianpeng.ma@intel.com>,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH v12 12/12] bcache: add sysfs interface register_nvdimm_meta to register NVDIMM meta device
-Date:   Thu, 12 Aug 2021 01:02:24 +0800
-Message-Id: <20210811170224.42837-13-colyli@suse.de>
-X-Mailer: git-send-email 2.26.2
-In-Reply-To: <20210811170224.42837-1-colyli@suse.de>
-References: <20210811170224.42837-1-colyli@suse.de>
+        bh=LTvInOe+77jTgYT6AUCc9vroZVFQjq9sVUHRwZ4VN+s=;
+        b=FzN/xYM/O+AciSnpg4lP7oaFLNtlGzXTECaSjr82vovdaVa8/6bhNiHq4EB6g+BupVc8kD
+        Ea/hKlPVkcHQhLXMjtyeq7C5R9YwXwl61wZAx4ytK6bdWm8v9pv26k4hwuoj4HisAqWAa/
+        jq2cRx7DRDPI9n3JXNrUhHvwi04nOgo=
+X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
+From:   Guoqing Jiang <guoqing.jiang@linux.dev>
+To:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
+        agk@redhat.com, snitzer@redhat.com
+Cc:     dm-devel@redhat.com, linux-block@vger.kernel.org,
+        linux-bcache@vger.kernel.org
+References: <20210721025315.1729118-1-guoqing.jiang@linux.dev>
+Message-ID: <318fe9e7-1136-5716-f600-709f1fe321d8@linux.dev>
+Date:   Thu, 12 Aug 2021 08:43:54 +0800
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20210721025315.1729118-1-guoqing.jiang@linux.dev>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Content-Language: en-US
+X-Migadu-Flow: FLOW_OUT
+X-Migadu-Auth-User: guoqing.jiang@linux.dev
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This patch adds a sysfs interface register_nvdimm_meta to register
-NVDIMM meta device. The sysfs interface file only shows up when
-CONFIG_BCACHE_NVM_PAGES=y. Then a NVDIMM name space formatted by
-bcache-tools can be registered into bcache by e.g.,
-  echo /dev/pmem0 > /sys/fs/bcache/register_nvdimm_meta
+Gentle ping ...
 
-Signed-off-by: Coly Li <colyli@suse.de>
-Reviewed-by: Hannes Reinecke <hare@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Dan Williams <dan.j.williams@intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Jianpeng Ma <jianpeng.ma@intel.com>
-Cc: Qiaowei Ren <qiaowei.ren@intel.com>
----
- drivers/md/bcache/super.c | 29 +++++++++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
-
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 24734250d005..434739594baf 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2403,10 +2403,18 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- static ssize_t bch_pending_bdevs_cleanup(struct kobject *k,
- 					 struct kobj_attribute *attr,
- 					 const char *buffer, size_t size);
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+static ssize_t register_nvdimm_meta(struct kobject *k,
-+				    struct kobj_attribute *attr,
-+				    const char *buffer, size_t size);
-+#endif
- 
- kobj_attribute_write(register,		register_bcache);
- kobj_attribute_write(register_quiet,	register_bcache);
- kobj_attribute_write(pendings_cleanup,	bch_pending_bdevs_cleanup);
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+kobj_attribute_write(register_nvdimm_meta, register_nvdimm_meta);
-+#endif
- 
- static bool bch_is_open_backing(dev_t dev)
- {
-@@ -2520,6 +2528,24 @@ static void register_device_async(struct async_reg_args *args)
- 	queue_delayed_work(system_wq, &args->reg_work, 10);
- }
- 
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+static ssize_t register_nvdimm_meta(struct kobject *k, struct kobj_attribute *attr,
-+				    const char *buffer, size_t size)
-+{
-+	ssize_t ret = size;
-+
-+	struct bch_nvmpg_ns *ns = bch_register_namespace(buffer);
-+
-+	if (IS_ERR(ns)) {
-+		pr_err("register nvdimm namespace %s for meta device failed.\n",
-+			buffer);
-+		ret = -EINVAL;
-+	}
-+
-+	return ret;
-+}
-+#endif
-+
- static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 			       const char *buffer, size_t size)
- {
-@@ -2855,6 +2881,9 @@ static int __init bcache_init(void)
- 	static const struct attribute *files[] = {
- 		&ksysfs_register.attr,
- 		&ksysfs_register_quiet.attr,
-+#if defined(CONFIG_BCACHE_NVM_PAGES)
-+		&ksysfs_register_nvdimm_meta.attr,
-+#endif
- 		&ksysfs_pendings_cleanup.attr,
- 		NULL
- 	};
--- 
-2.26.2
+On 7/21/21 10:53 AM, Guoqing Jiang wrote:
+> From: Guoqing Jiang <jiangguoqing@kylinos.cn>
+>
+> Move them (PAGE_SECTORS_SHIFT, PAGE_SECTORS and SECTOR_MASK) to the
+> generic header file to remove redundancy.
+>
+> Signed-off-by: Guoqing Jiang <jiangguoqing@kylinos.cn>
+> ---
+>   drivers/block/brd.c           | 3 ---
+>   drivers/block/null_blk/main.c | 4 ----
+>   drivers/md/bcache/util.h      | 2 --
+>   include/linux/blkdev.h        | 4 ++++
+>   include/linux/device-mapper.h | 1 -
+>   5 files changed, 4 insertions(+), 10 deletions(-)
+>
+> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+> index 95694113e38e..58ec167aa018 100644
+> --- a/drivers/block/brd.c
+> +++ b/drivers/block/brd.c
+> @@ -27,9 +27,6 @@
+>   
+>   #include <linux/uaccess.h>
+>   
+> -#define PAGE_SECTORS_SHIFT	(PAGE_SHIFT - SECTOR_SHIFT)
+> -#define PAGE_SECTORS		(1 << PAGE_SECTORS_SHIFT)
+> -
+>   /*
+>    * Each block ramdisk device has a radix_tree brd_pages of pages that stores
+>    * the pages containing the block device's contents. A brd page's ->index is
+> diff --git a/drivers/block/null_blk/main.c b/drivers/block/null_blk/main.c
+> index d734e9ee1546..f128242d1170 100644
+> --- a/drivers/block/null_blk/main.c
+> +++ b/drivers/block/null_blk/main.c
+> @@ -11,10 +11,6 @@
+>   #include <linux/init.h>
+>   #include "null_blk.h"
+>   
+> -#define PAGE_SECTORS_SHIFT	(PAGE_SHIFT - SECTOR_SHIFT)
+> -#define PAGE_SECTORS		(1 << PAGE_SECTORS_SHIFT)
+> -#define SECTOR_MASK		(PAGE_SECTORS - 1)
+> -
+>   #define FREE_BATCH		16
+>   
+>   #define TICKS_PER_SEC		50ULL
+> diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
+> index bca4a7c97da7..b64460a76267 100644
+> --- a/drivers/md/bcache/util.h
+> +++ b/drivers/md/bcache/util.h
+> @@ -15,8 +15,6 @@
+>   
+>   #include "closure.h"
+>   
+> -#define PAGE_SECTORS		(PAGE_SIZE / 512)
+> -
+>   struct closure;
+>   
+>   #ifdef CONFIG_BCACHE_DEBUG
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 3177181c4326..0d0b6967c954 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -941,6 +941,10 @@ static inline struct request_queue *bdev_get_queue(struct block_device *bdev)
+>   #define SECTOR_SIZE (1 << SECTOR_SHIFT)
+>   #endif
+>   
+> +#define PAGE_SECTORS_SHIFT	(PAGE_SHIFT - SECTOR_SHIFT)
+> +#define PAGE_SECTORS		(1 << PAGE_SECTORS_SHIFT)
+> +#define SECTOR_MASK		(PAGE_SECTORS - 1)
+> +
+>   /*
+>    * blk_rq_pos()			: the current sector
+>    * blk_rq_bytes()		: bytes left in the entire request
+> diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
+> index 7457d49acf9a..94f2cd6a8e83 100644
+> --- a/include/linux/device-mapper.h
+> +++ b/include/linux/device-mapper.h
+> @@ -151,7 +151,6 @@ typedef size_t (*dm_dax_copy_iter_fn)(struct dm_target *ti, pgoff_t pgoff,
+>   		void *addr, size_t bytes, struct iov_iter *i);
+>   typedef int (*dm_dax_zero_page_range_fn)(struct dm_target *ti, pgoff_t pgoff,
+>   		size_t nr_pages);
+> -#define PAGE_SECTORS (PAGE_SIZE / 512)
+>   
+>   void dm_error(const char *message);
+>   
 
