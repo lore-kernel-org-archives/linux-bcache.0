@@ -4,37 +4,37 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-17.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
-	autolearn_force=no version=3.4.0
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no
+	version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 14F44C43216
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Aug 2021 19:18:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 41694C25AEB
+	for <linux-bcache@archiver.kernel.org>; Fri, 27 Aug 2021 19:18:33 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 005AA6101C
-	for <linux-bcache@archiver.kernel.org>; Fri, 27 Aug 2021 19:18:31 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 21B0760F58
+	for <linux-bcache@archiver.kernel.org>; Fri, 27 Aug 2021 19:18:33 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231263AbhH0TTU (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 27 Aug 2021 15:19:20 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59566 "EHLO
+        id S231319AbhH0TTV (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 27 Aug 2021 15:19:21 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59576 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231162AbhH0TTP (ORCPT
+        with ESMTP id S231224AbhH0TTP (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Fri, 27 Aug 2021 15:19:15 -0400
 Received: from bombadil.infradead.org (unknown [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F2BBCC061757;
-        Fri, 27 Aug 2021 12:18:25 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CBF14C061757;
+        Fri, 27 Aug 2021 12:18:26 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Sender:Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:
         Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=vLYLL0oFZhxGylgSJPWXsGjPK2psQoUWyxkb9au47Xw=; b=O3AoZlZnbbHQwfvGAtYvirog88
-        EON0OdRqJ6ZNzUhguT3+31CMn99Dygty5KuFC7VLotkku9ilfuOy06Oc7/54lv5yP7YxlxivOMJuF
-        hD2YhvsrCtHG51gDcXamrBh68I6Ogwu0ifCKgUDsQBoyWwXuMLFKxdlQcc+TFIr84VKkggf/t61i6
-        e5dMcioA6KN+rhWZTtIsd8fu8k/YXGPA6Qfjktzpj0VLdY+6m1toijsuQeqiSXIcBBQSLwvDBDi+v
-        lgKdIIRbsqr8QoIXbG3zrVctqdrqvShN+LA602q9Y7/vv5WNzB+RE7I1AQx/cTOh147AgEQchMFg2
-        vWX3qxJg==;
+        bh=vzfFGe77MiDtDAcsNEd4FFV6XUqpkLp7v2/+XiGswys=; b=isst7bA45MsJEBHCIhkJx6Kczq
+        YrMi78bLRt5qELgdWgY6H9Mgp+37YNSRQsfgXi4VM1MADrofBM9ydqTVaHxK/Mb9PPst7iuahgypW
+        86DjV+a3MdG1nqOFP2e9R/7/LoExU5RNSDgYWGFgZgOsn7cQGQmZmFVdsFt4b04RdjQi64HPxJC2Y
+        TblDGK95B8LHVKYy5XjvUnNc7qRElN1IbsJ8V/4QSvZhz1Hefy4ZsPtYLUyEbJYVsV0jlytxSkfZi
+        zdJLho+9svAaFsXC7A1pCEYiKEfCX1LVke+8CZuMNuC9thfpCFfwoMaHUOqgBZMY2OR0ZgHbFRARA
+        7BULMVAA==;
 Received: from mcgrof by bombadil.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1mJhMh-00D5B9-Dv; Fri, 27 Aug 2021 19:18:11 +0000
+        id 1mJhMg-00D5Aq-W4; Fri, 27 Aug 2021 19:18:11 +0000
 From:   Luis Chamberlain <mcgrof@kernel.org>
 To:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
         kbusch@kernel.org, sagi@grimberg.me, vishal.l.verma@intel.com,
@@ -47,9 +47,9 @@ Cc:     xen-devel@lists.xenproject.org, nvdimm@lists.linux.dev,
         linux-nvme@lists.infradead.org, linux-bcache@vger.kernel.org,
         linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
         Luis Chamberlain <mcgrof@kernel.org>
-Subject: [PATCH 08/10] nvdimm/blk: add error handling support for add_disk()
-Date:   Fri, 27 Aug 2021 12:18:07 -0700
-Message-Id: <20210827191809.3118103-9-mcgrof@kernel.org>
+Subject: [PATCH 01/10] block/brd: add error handling support for add_disk()
+Date:   Fri, 27 Aug 2021 12:18:00 -0700
+Message-Id: <20210827191809.3118103-2-mcgrof@kernel.org>
 X-Mailer: git-send-email 2.31.1
 In-Reply-To: <20210827191809.3118103-1-mcgrof@kernel.org>
 References: <20210827191809.3118103-1-mcgrof@kernel.org>
@@ -64,36 +64,45 @@ We never checked for errors on add_disk() as this function
 returned void. Now that this is fixed, use the shiny new
 error handling.
 
-Since nvdimm/blk uses devm we just need to move the devm
-registration towards the end. And in hindsight, that seems
-to also provide a fix given del_gendisk() should not be
-called unless the disk was already added via add_disk().
-The probably of that issue happening is low though, like
-OOM while calling devm_add_action(), so the fix is minor.
-
-We manually unwind in case of add_disk() failure prior
-to the devm registration.
-
 Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
 ---
- drivers/nvdimm/blk.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/block/brd.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/nvdimm/blk.c b/drivers/nvdimm/blk.c
-index 591fa1f86f1e..9f1eb41404ac 100644
---- a/drivers/nvdimm/blk.c
-+++ b/drivers/nvdimm/blk.c
-@@ -265,7 +265,9 @@ static int nsblk_attach_disk(struct nd_namespace_blk *nsblk)
- 	}
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 58ec167aa018..c2bf4946f4e3 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -372,6 +372,7 @@ static int brd_alloc(int i)
+ 	struct brd_device *brd;
+ 	struct gendisk *disk;
+ 	char buf[DISK_NAME_LEN];
++	int err = -ENOMEM;
  
- 	set_capacity(disk, available_disk_size >> SECTOR_SHIFT);
--	device_add_disk(dev, disk, NULL);
-+	rc = device_add_disk(dev, disk, NULL);
-+	if (rc)
-+		goto out_before_devm_err;
+ 	brd = kzalloc(sizeof(*brd), GFP_KERNEL);
+ 	if (!brd)
+@@ -410,14 +411,19 @@ static int brd_alloc(int i)
+ 	/* Tell the block layer that this is not a rotational device */
+ 	blk_queue_flag_set(QUEUE_FLAG_NONROT, disk->queue);
+ 	blk_queue_flag_clear(QUEUE_FLAG_ADD_RANDOM, disk->queue);
+-	add_disk(disk);
++	err = add_disk(disk);
++	if (err)
++		goto out_cleanup_disk;
++
+ 	list_add_tail(&brd->brd_list, &brd_devices);
  
- 	/* nd_blk_release_disk() is called if this fails */
- 	if (devm_add_action_or_reset(dev, nd_blk_release_disk, disk))
+ 	return 0;
+ 
++out_cleanup_disk:
++	blk_cleanup_disk(disk);
+ out_free_dev:
+ 	kfree(brd);
+-	return -ENOMEM;
++	return err;
+ }
+ 
+ static void brd_probe(dev_t dev)
 -- 
 2.30.2
 
