@@ -4,37 +4,37 @@ X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 X-Spam-Level: 
 X-Spam-Status: No, score=-17.0 required=3.0 tests=BAYES_00,DKIM_SIGNED,
 	DKIM_VALID,INCLUDES_CR_TRAILER,INCLUDES_PATCH,MAILING_LIST_MULTI,
-	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=ham autolearn_force=no
-	version=3.4.0
+	SPF_HELO_NONE,SPF_PASS,USER_AGENT_GIT autolearn=unavailable
+	autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5AC25C19F35
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D6A7EC4320E
 	for <linux-bcache@archiver.kernel.org>; Fri, 27 Aug 2021 19:18:31 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 3F58260F58
+	by mail.kernel.org (Postfix) with ESMTP id C0D4360F58
 	for <linux-bcache@archiver.kernel.org>; Fri, 27 Aug 2021 19:18:31 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231255AbhH0TTS (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        id S231247AbhH0TTS (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
         Fri, 27 Aug 2021 15:19:18 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59556 "EHLO
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59558 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230412AbhH0TTO (ORCPT
+        with ESMTP id S230493AbhH0TTO (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Fri, 27 Aug 2021 15:19:14 -0400
 Received: from bombadil.infradead.org (unknown [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 18048C061757;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4DA6BC0613CF;
         Fri, 27 Aug 2021 12:18:25 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Sender:Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:
         Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=hsYRy5mW2eSZFEqOw8JTWcpX/S1jq2Dljgzx3k3VBB0=; b=ag2MWG9JRPRl7v1Wm4knifBuDH
-        x/k7sA6IMtBfImriQpfdYn9OfQrmhh704BYOZ1efraWf6MvZLkuIu8ui3RaFGt2h0JGEnJbE/mzGG
-        UMpYztDhF4uGbNZV/BKzqSXSAymUMxJHuUsN0AeDORBz3rq0NtTKCdwuHZFTV3ylWbjUQPELSZJnJ
-        Uv8SvIfFCz+zqm8iSInPS4MX23d9OwRSOPydfEoraAzMapqy1iXSYJRU/ysyMRbUQvaeuY0q2kbAF
-        WsvxN6a8SYo3ajPRyxlChb/HXfw9y48GMnLlBgH5jr3PXLLMmtQlkt0jpuLPPGCKR46h3vY8cdWgw
-        KUC5BgwQ==;
+        bh=27odH5nuWhozi1ECDZZ4goiUsLRrmSNLiICgWw9rj94=; b=RoVROwonXgehtqGc+uNEhBcWcZ
+        R5TCqcCZrOdRGr9HUPwtMi32e/ae/EkxCUSAPtRc6M2LeT6rdituE92p30lXXWNaVFoW1e/c2e6Jb
+        kraEvvyQ0M5bcOebJtmKBzhn/SKTI3nIuCgdJLTg8IUxMR9sn5GxY4zSbxxEz0K4wwzTyI0DP5qL4
+        2x+bE9BxAJsWm1ucxECHkU1A/iGQVGxBjvTqucWQarpvTa/rJT4JydPtEf/YgYxRjQJlkZQbeG6KC
+        TpQ8GMDtI1KQRlMQi4ArGei1Q6BvaQQHz0c7jbbmvYnpnnYjjiZOxdHBsmeZG072BsLXL5mGH59Kg
+        DQxVvblQ==;
 Received: from mcgrof by bombadil.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1mJhMh-00D5B6-CX; Fri, 27 Aug 2021 19:18:11 +0000
+        id 1mJhMh-00D5B1-9r; Fri, 27 Aug 2021 19:18:11 +0000
 From:   Luis Chamberlain <mcgrof@kernel.org>
 To:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
         kbusch@kernel.org, sagi@grimberg.me, vishal.l.verma@intel.com,
@@ -47,9 +47,9 @@ Cc:     xen-devel@lists.xenproject.org, nvdimm@lists.linux.dev,
         linux-nvme@lists.infradead.org, linux-bcache@vger.kernel.org,
         linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
         Luis Chamberlain <mcgrof@kernel.org>
-Subject: [PATCH 07/10] nvdimm/blk: avoid calling del_gendisk() on early failures
-Date:   Fri, 27 Aug 2021 12:18:06 -0700
-Message-Id: <20210827191809.3118103-8-mcgrof@kernel.org>
+Subject: [PATCH 05/10] nvdimm/btt: use goto error labels on btt_blk_init()
+Date:   Fri, 27 Aug 2021 12:18:04 -0700
+Message-Id: <20210827191809.3118103-6-mcgrof@kernel.org>
 X-Mailer: git-send-email 2.31.1
 In-Reply-To: <20210827191809.3118103-1-mcgrof@kernel.org>
 References: <20210827191809.3118103-1-mcgrof@kernel.org>
@@ -60,65 +60,60 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-If nd_integrity_init() fails we'd get del_gendisk() called,
-but that's not correct as we should only call that if we're
-done with device_add_disk(). Fix this by providing unwinding
-prior to the devm call being registered and moving the devm
-registration to the very end.
-
-This should fix calling del_gendisk() if nd_integrity_init()
-fails. I only spotted this issue through code inspection. It
-does not fix any real world bug.
+This will make it easier to share common error paths.
 
 Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
 ---
- drivers/nvdimm/blk.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ drivers/nvdimm/btt.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/nvdimm/blk.c b/drivers/nvdimm/blk.c
-index 088d3dd6f6fa..591fa1f86f1e 100644
---- a/drivers/nvdimm/blk.c
-+++ b/drivers/nvdimm/blk.c
-@@ -240,6 +240,7 @@ static int nsblk_attach_disk(struct nd_namespace_blk *nsblk)
- 	resource_size_t available_disk_size;
- 	struct gendisk *disk;
- 	u64 internal_nlba;
-+	int rc;
+diff --git a/drivers/nvdimm/btt.c b/drivers/nvdimm/btt.c
+index 3fd1bdb9fc05..275704d80109 100644
+--- a/drivers/nvdimm/btt.c
++++ b/drivers/nvdimm/btt.c
+@@ -1520,10 +1520,11 @@ static int btt_blk_init(struct btt *btt)
+ {
+ 	struct nd_btt *nd_btt = btt->nd_btt;
+ 	struct nd_namespace_common *ndns = nd_btt->ndns;
++	int rc = -ENOMEM;
  
- 	internal_nlba = div_u64(nsblk->size, nsblk_internal_lbasize(nsblk));
- 	available_disk_size = internal_nlba * nsblk_sector_size(nsblk);
-@@ -256,20 +257,26 @@ static int nsblk_attach_disk(struct nd_namespace_blk *nsblk)
- 	blk_queue_logical_block_size(disk->queue, nsblk_sector_size(nsblk));
- 	blk_queue_flag_set(QUEUE_FLAG_NONROT, disk->queue);
- 
--	if (devm_add_action_or_reset(dev, nd_blk_release_disk, disk))
+ 	btt->btt_disk = blk_alloc_disk(NUMA_NO_NODE);
+ 	if (!btt->btt_disk)
 -		return -ENOMEM;
++		goto out;
+ 
+ 	nvdimm_namespace_disk_name(ndns, btt->btt_disk->disk_name);
+ 	btt->btt_disk->first_minor = 0;
+@@ -1535,19 +1536,23 @@ static int btt_blk_init(struct btt *btt)
+ 	blk_queue_flag_set(QUEUE_FLAG_NONROT, btt->btt_disk->queue);
+ 
+ 	if (btt_meta_size(btt)) {
+-		int rc = nd_integrity_init(btt->btt_disk, btt_meta_size(btt));
 -
- 	if (nsblk_meta_size(nsblk)) {
--		int rc = nd_integrity_init(disk, nsblk_meta_size(nsblk));
-+		rc = nd_integrity_init(disk, nsblk_meta_size(nsblk));
- 
- 		if (rc)
+-		if (rc) {
+-			blk_cleanup_disk(btt->btt_disk);
 -			return rc;
-+			goto out_before_devm_err;
+-		}
++		rc = nd_integrity_init(btt->btt_disk, btt_meta_size(btt));
++		if (rc)
++			goto out_cleanup_disk;
  	}
++
+ 	set_capacity(btt->btt_disk, btt->nlba * btt->sector_size >> 9);
+ 	device_add_disk(&btt->nd_btt->dev, btt->btt_disk, NULL);
++
+ 	btt->nd_btt->size = btt->nlba * (u64)btt->sector_size;
+ 	nvdimm_check_and_set_ro(btt->btt_disk);
  
- 	set_capacity(disk, available_disk_size >> SECTOR_SHIFT);
- 	device_add_disk(dev, disk, NULL);
-+
-+	/* nd_blk_release_disk() is called if this fails */
-+	if (devm_add_action_or_reset(dev, nd_blk_release_disk, disk))
-+		return -ENOMEM;
-+
- 	nvdimm_check_and_set_ro(disk);
  	return 0;
 +
-+out_before_devm_err:
-+	blk_cleanup_disk(disk);
++out_cleanup_disk:
++	blk_cleanup_disk(btt->btt_disk);
++out:
 +	return rc;
  }
  
- static int nd_blk_probe(struct device *dev)
+ static void btt_blk_cleanup(struct btt *btt)
 -- 
 2.30.2
 
