@@ -2,34 +2,34 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5F9B4C433EF
-	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 78895C433F5
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:10 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 435B6611EE
-	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:09 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 6683E60EE9
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:10 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237869AbhI0WCp (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 27 Sep 2021 18:02:45 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50822 "EHLO
+        id S237604AbhI0WCq (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 27 Sep 2021 18:02:46 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50832 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S237805AbhI0WCc (ORCPT
+        with ESMTP id S237546AbhI0WCe (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 27 Sep 2021 18:02:32 -0400
+        Mon, 27 Sep 2021 18:02:34 -0400
 Received: from bombadil.infradead.org (unknown [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 698EEC06177D;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C31EEC0613EB;
         Mon, 27 Sep 2021 15:00:53 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Sender:Content-Transfer-Encoding:
-        MIME-Version:Message-Id:Date:Subject:Cc:To:From:Reply-To:Content-Type:
-        Content-ID:Content-Description:In-Reply-To:References;
-        bh=f1z5HgkOwmjFBk4lUYxpkBwDgNqINDcFoZThfyywwx8=; b=eQhJDUwgI2a4kvwwC1LW4Grcbe
-        Afldl7Y/5P+CtLt6Bf7Y9ytxFLTlAL7DQ1mrwOtj6+6Pnddn8Wp4NkxVuxqvoNw0Tyz5tv3XvMzt/
-        95ad2a+T3zdPfY1HqSNzUwK9FALGPXQfHChw080YZLrustezGq9sWxl4CDGODiD+GUg6c3Ya2VpOL
-        Lz+0XMYtVA7Q3XN0iSeVnjb/6bCKu9f0aIxF7V2Oxq68qH0zcltU5tGD/tQ+xGADbb+jbit4yqFIv
-        EQ6Wyv4G24Wl6sIzPggmISuK4WSugRZrguNrS2KSbhhqFI7oFTnyVJEEiHe4GjAGQLWYlZNDx3Kcq
-        wpi9PwkQ==;
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:
+        Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=Zp3peWChzsLwJZgR1i8Dtyh3FOO544lFeJzlWbkfyco=; b=xyicbK2H0CR7mxWgNNAbZZVOoG
+        f/TY+aOtnMS/uoVtMXqtPXis+vbZhtpiS/ndUP0AdX9IDRGIobYET1+iWMgf0eic3hI0JSLbAulKG
+        8wvXxEzmhDvXeOmmj8TPh+HGQ0Q2wvHySLXwxFAgsiQ0IWl+sk40LXHXcOXOHWUbo3breLF9OOmtC
+        aU5QvqBV5mC+pgxhFyfAWSzB39tzj8teDlNoEJNNKk8zoulQfqxsIBVBuYTJraMMbw8Z6hDN9ZQpa
+        LM244ocJ/fpPGEyLZkxh+GCiIuoIMgqFitcviGyRgvFztoaDWVexx1nlLNy/oEUY4relGyOFoN2oa
+        SP4Bj1fA==;
 Received: from mcgrof by bombadil.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1mUyfw-004SuN-7t; Mon, 27 Sep 2021 22:00:40 +0000
+        id 1mUyfw-004SvY-Q6; Mon, 27 Sep 2021 22:00:40 +0000
 From:   Luis Chamberlain <mcgrof@kernel.org>
 To:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
         kbusch@kernel.org, sagi@grimberg.me, vishal.l.verma@intel.com,
@@ -42,10 +42,12 @@ Cc:     xen-devel@lists.xenproject.org, nvdimm@lists.linux.dev,
         linux-nvme@lists.infradead.org, linux-bcache@vger.kernel.org,
         linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
         Luis Chamberlain <mcgrof@kernel.org>
-Subject: [PATCH v2 00/10] block: second batch of add_disk() error handling conversions
-Date:   Mon, 27 Sep 2021 15:00:29 -0700
-Message-Id: <20210927220039.1064193-1-mcgrof@kernel.org>
+Subject: [PATCH v2 10/10] zram: add error handling support for add_disk()
+Date:   Mon, 27 Sep 2021 15:00:39 -0700
+Message-Id: <20210927220039.1064193-11-mcgrof@kernel.org>
 X-Mailer: git-send-email 2.31.1
+In-Reply-To: <20210927220039.1064193-1-mcgrof@kernel.org>
+References: <20210927220039.1064193-1-mcgrof@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Sender: Luis Chamberlain <mcgrof@infradead.org>
@@ -53,43 +55,39 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-This is the second series of driver conversions for add_disk()
-error handling. You can find this set and the rest of the 7th set of
-driver conversions on my 20210927-for-axboe-add-disk-error-handling
-branch [0].
+We never checked for errors on add_disk() as this function
+returned void. Now that this is fixed, use the shiny new
+error handling.
 
-Changes on this v2 since the last first version of this
-patch series:
+Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
+---
+ drivers/block/zram/zram_drv.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-  - rebased onto linux-next tag 20210927
-  - nvme-multipath: used test_and_set_bit() as suggested by Keith Busch,         
-    and justified this in the code with a comment as this race was not
-    obvious
-  - Added reviewed-by / Acked-by tags where one was provided 
-
-[0] https://git.kernel.org/pub/scm/linux/kernel/git/mcgrof/linux-next.git/log/?h=20210927-for-axboe-add-disk-error-handling
-
-Luis Chamberlain (10):
-  block/brd: add error handling support for add_disk()
-  bcache: add error handling support for add_disk()
-  nvme-multipath: add error handling support for add_disk()
-  nvdimm/btt: do not call del_gendisk() if not needed
-  nvdimm/btt: use goto error labels on btt_blk_init()
-  nvdimm/btt: add error handling support for add_disk()
-  nvdimm/blk: avoid calling del_gendisk() on early failures
-  nvdimm/blk: add error handling support for add_disk()
-  xen-blkfront: add error handling support for add_disk()
-  zram: add error handling support for add_disk()
-
- drivers/block/brd.c           | 10 ++++++++--
- drivers/block/xen-blkfront.c  |  8 +++++++-
- drivers/block/zram/zram_drv.c |  6 +++++-
- drivers/md/bcache/super.c     | 17 ++++++++++++-----
- drivers/nvdimm/blk.c          | 21 +++++++++++++++------
- drivers/nvdimm/btt.c          | 24 +++++++++++++++---------
- drivers/nvme/host/multipath.c | 13 +++++++++++--
- 7 files changed, 73 insertions(+), 26 deletions(-)
-
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index f61910c65f0f..59086e178fbd 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -1953,7 +1953,9 @@ static int zram_add(void)
+ 		blk_queue_max_write_zeroes_sectors(zram->disk->queue, UINT_MAX);
+ 
+ 	blk_queue_flag_set(QUEUE_FLAG_STABLE_WRITES, zram->disk->queue);
+-	device_add_disk(NULL, zram->disk, zram_disk_attr_groups);
++	ret = device_add_disk(NULL, zram->disk, zram_disk_attr_groups);
++	if (ret)
++		goto out_cleanup_disk;
+ 
+ 	strlcpy(zram->compressor, default_compressor, sizeof(zram->compressor));
+ 
+@@ -1961,6 +1963,8 @@ static int zram_add(void)
+ 	pr_info("Added device: %s\n", zram->disk->disk_name);
+ 	return device_id;
+ 
++out_cleanup_disk:
++	blk_cleanup_disk(zram->disk);
+ out_free_idr:
+ 	idr_remove(&zram_index_idr, device_id);
+ out_free_dev:
 -- 
 2.30.2
 
