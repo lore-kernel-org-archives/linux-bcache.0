@@ -2,102 +2,70 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B845DC433F5
-	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 81226C433F5
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:13:19 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A2257610A2
-	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:17 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 5915061178
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:13:19 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237929AbhI0WCw (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 27 Sep 2021 18:02:52 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50810 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S237763AbhI0WCg (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 27 Sep 2021 18:02:36 -0400
-Received: from bombadil.infradead.org (unknown [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 74CE5C061774;
-        Mon, 27 Sep 2021 15:00:55 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=bombadil.20210309; h=Sender:Content-Transfer-Encoding:
-        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:
-        Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=vzfFGe77MiDtDAcsNEd4FFV6XUqpkLp7v2/+XiGswys=; b=1IjRffMWToIuI5hlT0QDQQle10
-        h2cmW94BFoi6hungxxRyemGHngj6jAyo6qgzCDtNwyoUIWdx8yZsIACgBw+d6Nd4692A4UqE77TGE
-        FCZRmyjQTpFaOofQoJtOcS2Pkb2YvtxiwdI6lkhFHGjLfTo7fvE2zEi7m6m4dPHjKrCOvij4KUPWH
-        DSYAexzPrZhtGZMXRAVrRoXp4+plHqrbeuTjWRI7g5ndnkdAFIDfDHEv6r0wdbAfWet/1/8nTrT68
-        8nOiI5xCjxlwlC2oda7p9NvctMKAA8h8pcRZ7GYw/ktOiSjdKEDnnDoQuyC514ICPIyH9sAgE7omc
-        UHhUFlIg==;
-Received: from mcgrof by bombadil.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1mUyfw-004Sua-BV; Mon, 27 Sep 2021 22:00:40 +0000
-From:   Luis Chamberlain <mcgrof@kernel.org>
-To:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
-        kbusch@kernel.org, sagi@grimberg.me, vishal.l.verma@intel.com,
+        id S237613AbhI0WO4 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 27 Sep 2021 18:14:56 -0400
+Received: from mail.kernel.org ([198.145.29.99]:44926 "EHLO mail.kernel.org"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S237237AbhI0WOz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 27 Sep 2021 18:14:55 -0400
+Received: by mail.kernel.org (Postfix) with ESMTPSA id 014C460F94;
+        Mon, 27 Sep 2021 22:13:14 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kernel.org;
+        s=k20201202; t=1632780797;
+        bh=aUkvMSo84Ts+2hyfPmGVIgM4abSwV67b0JY7DU1pVzk=;
+        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
+        b=CR3ThJMTzNN7IxGCoQ9SihnqkQkkv3F41YJaAr67klqD8ay7cRcSeppUUhh/8+7PQ
+         DFxOyaBzoI962F2usbjfziq1easTinlTyXoLnTwCKEIgdylqvj9h8QEVuaeDIXyhCf
+         8pRA7I8t7831enPRtpE/358VVKwNsUwrPG5b/lRH5qyH1IXU821Yn+C1LYzW65TQiM
+         Kr2pNyLsYwmCCd+A88QwrYslEh5QjuzWUx1TBVYz6/tBtiRBBMVllLOKUI3Il17WX7
+         FhuTQ1Q9A8S1JL3ILSV0TNBfSOS3l81jmsFCnMM1Pvg1VT7bDaBh2KmwsWKeTC3U9m
+         OIVZBum14ZcHw==
+Date:   Mon, 27 Sep 2021 15:13:12 -0700
+From:   Keith Busch <kbusch@kernel.org>
+To:     Luis Chamberlain <mcgrof@kernel.org>
+Cc:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
+        sagi@grimberg.me, vishal.l.verma@intel.com,
         dan.j.williams@intel.com, dave.jiang@intel.com,
         ira.weiny@intel.com, konrad.wilk@oracle.com, roger.pau@citrix.com,
         boris.ostrovsky@oracle.com, jgross@suse.com,
         sstabellini@kernel.org, minchan@kernel.org, ngupta@vflare.org,
-        senozhatsky@chromium.org
-Cc:     xen-devel@lists.xenproject.org, nvdimm@lists.linux.dev,
-        linux-nvme@lists.infradead.org, linux-bcache@vger.kernel.org,
-        linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Luis Chamberlain <mcgrof@kernel.org>
-Subject: [PATCH v2 01/10] block/brd: add error handling support for add_disk()
-Date:   Mon, 27 Sep 2021 15:00:30 -0700
-Message-Id: <20210927220039.1064193-2-mcgrof@kernel.org>
-X-Mailer: git-send-email 2.31.1
-In-Reply-To: <20210927220039.1064193-1-mcgrof@kernel.org>
+        senozhatsky@chromium.org, xen-devel@lists.xenproject.org,
+        nvdimm@lists.linux.dev, linux-nvme@lists.infradead.org,
+        linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/10] nvme-multipath: add error handling support for
+ add_disk()
+Message-ID: <20210927221312.GD387558@dhcp-10-100-145-180.wdc.com>
 References: <20210927220039.1064193-1-mcgrof@kernel.org>
+ <20210927220039.1064193-4-mcgrof@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Sender: Luis Chamberlain <mcgrof@infradead.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20210927220039.1064193-4-mcgrof@kernel.org>
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-We never checked for errors on add_disk() as this function
-returned void. Now that this is fixed, use the shiny new
-error handling.
+On Mon, Sep 27, 2021 at 03:00:32PM -0700, Luis Chamberlain wrote:
+> +	/*
+> +	 * test_and_set_bit() is used because it is protecting against two nvme
+> +	 * paths simultaneously calling device_add_disk() on the same namespace
+> +	 * head.
+> +	 */
+>  	if (!test_and_set_bit(NVME_NSHEAD_DISK_LIVE, &head->flags)) {
+> -		device_add_disk(&head->subsys->dev, head->disk,
+> -				nvme_ns_id_attr_groups);
+> +		rc = device_add_disk(&head->subsys->dev, head->disk,
+> +				     nvme_ns_id_attr_groups);
+> +		if (rc)
+> +			return;
+> +		set_bit(NVME_NSHEAD_DISK_LIVE, &head->flags);
 
-Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
----
- drivers/block/brd.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/block/brd.c b/drivers/block/brd.c
-index 58ec167aa018..c2bf4946f4e3 100644
---- a/drivers/block/brd.c
-+++ b/drivers/block/brd.c
-@@ -372,6 +372,7 @@ static int brd_alloc(int i)
- 	struct brd_device *brd;
- 	struct gendisk *disk;
- 	char buf[DISK_NAME_LEN];
-+	int err = -ENOMEM;
- 
- 	brd = kzalloc(sizeof(*brd), GFP_KERNEL);
- 	if (!brd)
-@@ -410,14 +411,19 @@ static int brd_alloc(int i)
- 	/* Tell the block layer that this is not a rotational device */
- 	blk_queue_flag_set(QUEUE_FLAG_NONROT, disk->queue);
- 	blk_queue_flag_clear(QUEUE_FLAG_ADD_RANDOM, disk->queue);
--	add_disk(disk);
-+	err = add_disk(disk);
-+	if (err)
-+		goto out_cleanup_disk;
-+
- 	list_add_tail(&brd->brd_list, &brd_devices);
- 
- 	return 0;
- 
-+out_cleanup_disk:
-+	blk_cleanup_disk(disk);
- out_free_dev:
- 	kfree(brd);
--	return -ENOMEM;
-+	return err;
- }
- 
- static void brd_probe(dev_t dev)
--- 
-2.30.2
-
+No need to set_bit() here since the test_and_set_bit() already took care
+of that.
