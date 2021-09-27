@@ -2,34 +2,34 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 5C3F5C4332F
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D6137C43217
 	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:05 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 41B0E61058
+	by mail.kernel.org (Postfix) with ESMTP id C114B610A2
 	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:01:05 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237684AbhI0WCm (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        id S237833AbhI0WCm (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
         Mon, 27 Sep 2021 18:02:42 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50814 "EHLO
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50770 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S237735AbhI0WCa (ORCPT
+        with ESMTP id S237734AbhI0WCb (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 27 Sep 2021 18:02:30 -0400
+        Mon, 27 Sep 2021 18:02:31 -0400
 Received: from bombadil.infradead.org (unknown [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B370FC061770;
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CD3C2C061771;
         Mon, 27 Sep 2021 15:00:52 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Sender:Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:
         Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=7F58wxD/dEQonKrzNoWM7DkNk/UH9ZF8NZLJCFZZJo4=; b=ZnlFI8fLEZC+pXL09OaLsKjdn8
-        sG2hdDcnkdd7ZQAAOmWguGc7OnVMevoBr9Iei6cSMyXAQixEc8APBeN/A8M4gCqUCYojYyBiRia7O
-        7wDEec/aFp7xuN5F775zNLNzsTp/rSR3Ay3VTbK1PNHfZokfRNvqNAX9BvqfJMUKuSdi3rm3MuWeX
-        L6a8Q4FjRtkn9UeJ4Lhp3Lt/jbaePXbm+u8tO6lhIOBWl8Zvgdk3hjBymTruCXrQy+1R0u429f+a4
-        B0bkzO9hXCn6QDiaV77uGrK+Hfqt+kENvWzGuFAfXSbunwOgQu1cHy4uiqeb5kU5vGXxTPlHBSNa9
-        7+WGTsLw==;
+        bh=n0t709e+/n6TLkwKfO+OryH6p8FtdPpV7nSeauOqbbE=; b=TLHZvka2DfAcoJlgj2gIUo2wwQ
+        kBYYzdPNPYZC/AnRdkDO1kXKwqIG4rX1TuRVaeYtm8g8FZZLnXZznHA97zWn40Cv+a49q1z7q0fZa
+        slzU1wKKIiAjk3kitEZmW44QvUwxkBOqzr/j2l5uAv8zMAnIa38hcxTP2ODG/t5RHM9iNanZDHu/7
+        ZE0n1Z2FLyslzo/QQ7+mSDhGkk2EDFgc4z39HCJ9EZKnv11bxOqtIBEY2UOuJM8Cw3/2GicMyHVGG
+        QLkdR4EXXZuimuvP3kbLVXuTIVA1Zlt1Xfds0uWdLzXPM0UJNwE3jIdqAPP3/+yI4lDSsg6Ur4uif
+        adlVMKew==;
 Received: from mcgrof by bombadil.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1mUyfw-004Suk-EY; Mon, 27 Sep 2021 22:00:40 +0000
+        id 1mUyfw-004SvT-Oa; Mon, 27 Sep 2021 22:00:40 +0000
 From:   Luis Chamberlain <mcgrof@kernel.org>
 To:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
         kbusch@kernel.org, sagi@grimberg.me, vishal.l.verma@intel.com,
@@ -42,9 +42,9 @@ Cc:     xen-devel@lists.xenproject.org, nvdimm@lists.linux.dev,
         linux-nvme@lists.infradead.org, linux-bcache@vger.kernel.org,
         linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
         Luis Chamberlain <mcgrof@kernel.org>
-Subject: [PATCH v2 03/10] nvme-multipath: add error handling support for add_disk()
-Date:   Mon, 27 Sep 2021 15:00:32 -0700
-Message-Id: <20210927220039.1064193-4-mcgrof@kernel.org>
+Subject: [PATCH v2 09/10] xen-blkfront: add error handling support for add_disk()
+Date:   Mon, 27 Sep 2021 15:00:38 -0700
+Message-Id: <20210927220039.1064193-10-mcgrof@kernel.org>
 X-Mailer: git-send-email 2.31.1
 In-Reply-To: <20210927220039.1064193-1-mcgrof@kernel.org>
 References: <20210927220039.1064193-1-mcgrof@kernel.org>
@@ -55,53 +55,41 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-We never checked for errors on add_disk() as this function
-returned void. Now that this is fixed, use the shiny new
-error handling.
+We never checked for errors on device_add_disk() as this function
+returned void. Now that this is fixed, use the shiny new error
+handling. The function xlvbd_alloc_gendisk() typically does the
+unwinding on error on allocating the disk and creating the tag,
+but since all that error handling was stuffed inside
+xlvbd_alloc_gendisk() we must repeat the tag free'ing as well.
 
-Since we now can tell for sure when a disk was added, move
-setting the bit NVME_NSHEAD_DISK_LIVE only when we did
-add the disk successfully.
-
-Nothing to do here as the cleanup is done elsewhere. We take
-care and use test_and_set_bit() because it is protects against
-two nvme paths simultaneously calling device_add_disk() on the
-same namespace head.
+We set the info->rq to NULL to ensure blkif_free() doesn't crash
+on blk_mq_stop_hw_queues() on device_add_disk() error as the queue
+will be long gone by then.
 
 Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
 ---
- drivers/nvme/host/multipath.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+ drivers/block/xen-blkfront.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/nvme/host/multipath.c b/drivers/nvme/host/multipath.c
-index e8ccdd398f78..35cace4f3f5f 100644
---- a/drivers/nvme/host/multipath.c
-+++ b/drivers/nvme/host/multipath.c
-@@ -496,13 +496,22 @@ int nvme_mpath_alloc_disk(struct nvme_ctrl *ctrl, struct nvme_ns_head *head)
- static void nvme_mpath_set_live(struct nvme_ns *ns)
- {
- 	struct nvme_ns_head *head = ns->head;
-+	int rc;
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 72902104f111..86440b051766 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -2385,7 +2385,13 @@ static void blkfront_connect(struct blkfront_info *info)
+ 	for_each_rinfo(info, rinfo, i)
+ 		kick_pending_request_queues(rinfo);
  
- 	if (!head->disk)
- 		return;
+-	device_add_disk(&info->xbdev->dev, info->gd, NULL);
++	err = device_add_disk(&info->xbdev->dev, info->gd, NULL);
++	if (err) {
++		blk_cleanup_disk(info->gd);
++		blk_mq_free_tag_set(&info->tag_set);
++		info->rq = NULL;
++		goto fail;
++	}
  
-+	/*
-+	 * test_and_set_bit() is used because it is protecting against two nvme
-+	 * paths simultaneously calling device_add_disk() on the same namespace
-+	 * head.
-+	 */
- 	if (!test_and_set_bit(NVME_NSHEAD_DISK_LIVE, &head->flags)) {
--		device_add_disk(&head->subsys->dev, head->disk,
--				nvme_ns_id_attr_groups);
-+		rc = device_add_disk(&head->subsys->dev, head->disk,
-+				     nvme_ns_id_attr_groups);
-+		if (rc)
-+			return;
-+		set_bit(NVME_NSHEAD_DISK_LIVE, &head->flags);
- 		nvme_add_ns_head_cdev(head);
- 	}
- 
+ 	info->is_ready = 1;
+ 	return;
 -- 
 2.30.2
 
