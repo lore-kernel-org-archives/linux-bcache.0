@@ -1,88 +1,114 @@
 Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
-X-Spam-Level: 
-X-Spam-Status: No, score=-18.8 required=3.0 tests=BAYES_00,DKIM_SIGNED,
-	DKIM_VALID,DKIM_VALID_AU,HEADER_FROM_DIFFERENT_DOMAINS,INCLUDES_CR_TRAILER,
-	INCLUDES_PATCH,MAILING_LIST_MULTI,SPF_HELO_NONE,SPF_PASS,URIBL_BLOCKED,
-	USER_AGENT_GIT autolearn=ham autolearn_force=no version=3.4.0
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CBB20C433EF
-	for <linux-bcache@archiver.kernel.org>; Thu, 23 Sep 2021 06:19:26 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id F2DB8C4332F
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:00:58 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A6BEC610D1
-	for <linux-bcache@archiver.kernel.org>; Thu, 23 Sep 2021 06:19:26 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id E07E661058
+	for <linux-bcache@archiver.kernel.org>; Mon, 27 Sep 2021 22:00:58 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S239266AbhIWGUz (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 23 Sep 2021 02:20:55 -0400
-Received: from smtp-out1.suse.de ([195.135.220.28]:48210 "EHLO
-        smtp-out1.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S239226AbhIWGUz (ORCPT
+        id S237558AbhI0WCf (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 27 Sep 2021 18:02:35 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50760 "EHLO
+        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S237684AbhI0WC3 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 23 Sep 2021 02:20:55 -0400
-Received: from relay1.suse.de (relay1.suse.de [149.44.160.133])
-        by smtp-out1.suse.de (Postfix) with ESMTP id 1CD0F2234A;
-        Thu, 23 Sep 2021 06:19:23 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1632377963; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
-        bh=ySO0NWtZIUIpUWMuie7uHAGLlZagMHeoDLXHhNX1Xe0=;
-        b=IgmhpfMOIlwbiMIzDE+0NO3pPQtoh935FGMzmeUWAjx7FdhMJi6wyeyJMjFPMrCPvluqBq
-        lk+8MhhUqVaAb2JOEWgI+7wHE5w253kll1iqBgMSdp3tJqAhNjaOCzMG+jYQJ+R4ju0b4/
-        jWzfOLvhO5jSKPOFNcbjVPwig0e2G8k=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1632377963;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
-        bh=ySO0NWtZIUIpUWMuie7uHAGLlZagMHeoDLXHhNX1Xe0=;
-        b=bCSEMyLiFwTKcYtMGiBwacNLOyhJAafE/KspGKLR6zHx0NfmiLzBKnwuRaGHuwpvxqzrvD
-        tXJNsMIvklqZTJAg==
-Received: from localhost.localdomain (unknown [10.163.16.22])
-        by relay1.suse.de (Postfix) with ESMTP id 6EBF825CEB;
-        Thu, 23 Sep 2021 06:19:21 +0000 (UTC)
-From:   Coly Li <colyli@suse.de>
-To:     linux-bcache@vger.kernel.org
-Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>
-Subject: [PATCH] bcache: reserve never used bits from bkey.high
-Date:   Thu, 23 Sep 2021 14:19:13 +0800
-Message-Id: <20210923061913.25421-1-colyli@suse.de>
+        Mon, 27 Sep 2021 18:02:29 -0400
+Received: from bombadil.infradead.org (unknown [IPv6:2607:7c80:54:e::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A266EC06176E;
+        Mon, 27 Sep 2021 15:00:51 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Sender:Content-Transfer-Encoding:
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:
+        Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=vmoV/2yvLiwBFQQklXCjpC+/vAkb2GZd/kil2P+K9LY=; b=1N4JPqGLhLSNsS1Cgb2YIwsly7
+        +aW4YwpCslJYpkXAks9L5PAknlJFJXGDyS2ZEpaD2M0hKp7uuxemDnq0kmn0PiKNEhZfT3xU5OE2B
+        NEIidZ82kagd9xiTvY4QBVhmfjUldvqMwEvJy3GCCTADP8JJLfZaVXaqvSZjYvDbf4jwE6N+/UCCO
+        nFCZarCbKs9WvILUUJzj8n4GKX9IADqiqMHNghfdRfc0+glrPy84n7AImXEvFcu5sIum2O+W4K3/v
+        voAp9xetJTWmWSHjJcDRqvnSUKtPXEmI0SsH4et/rU0BJwVZAwXRe6CxRMvzIZNqW955VNmdGfG+F
+        VLf4/Vkw==;
+Received: from mcgrof by bombadil.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1mUyfw-004Sv0-HC; Mon, 27 Sep 2021 22:00:40 +0000
+From:   Luis Chamberlain <mcgrof@kernel.org>
+To:     axboe@kernel.dk, colyli@suse.de, kent.overstreet@gmail.com,
+        kbusch@kernel.org, sagi@grimberg.me, vishal.l.verma@intel.com,
+        dan.j.williams@intel.com, dave.jiang@intel.com,
+        ira.weiny@intel.com, konrad.wilk@oracle.com, roger.pau@citrix.com,
+        boris.ostrovsky@oracle.com, jgross@suse.com,
+        sstabellini@kernel.org, minchan@kernel.org, ngupta@vflare.org,
+        senozhatsky@chromium.org
+Cc:     xen-devel@lists.xenproject.org, nvdimm@lists.linux.dev,
+        linux-nvme@lists.infradead.org, linux-bcache@vger.kernel.org,
+        linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Luis Chamberlain <mcgrof@kernel.org>
+Subject: [PATCH v2 05/10] nvdimm/btt: use goto error labels on btt_blk_init()
+Date:   Mon, 27 Sep 2021 15:00:34 -0700
+Message-Id: <20210927220039.1064193-6-mcgrof@kernel.org>
 X-Mailer: git-send-email 2.31.1
+In-Reply-To: <20210927220039.1064193-1-mcgrof@kernel.org>
+References: <20210927220039.1064193-1-mcgrof@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
+Sender: Luis Chamberlain <mcgrof@infradead.org>
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-There sre 3 bits in member high of struct bkey are never used, and no
-plan to support them in future,
-- HEADER_SIZE, start at bit 58, length 2 bits
-- KEY_PINNED,  start at bit 55, length 1 bit
+This will make it easier to share common error paths.
 
-No any kernel code, or user space tool references or accesses the three
-bits. Therefore it is possible and feasible to reserve the valuable bits
-from bkey.high. They can be used in future for other purpose.
-
-Signed-off-by: Coly Li <colyli@suse.de>
+Signed-off-by: Luis Chamberlain <mcgrof@kernel.org>
 ---
- include/uapi/linux/bcache.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/nvdimm/btt.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-index cf7399f03b71..97413586195b 100644
---- a/include/uapi/linux/bcache.h
-+++ b/include/uapi/linux/bcache.h
-@@ -43,9 +43,9 @@ static inline void SET_##name(struct bkey *k, unsigned int i, __u64 v)	\
- #define KEY_MAX_U64S		8
+diff --git a/drivers/nvdimm/btt.c b/drivers/nvdimm/btt.c
+index 29cc7325e890..23ee8c005db5 100644
+--- a/drivers/nvdimm/btt.c
++++ b/drivers/nvdimm/btt.c
+@@ -1520,10 +1520,11 @@ static int btt_blk_init(struct btt *btt)
+ {
+ 	struct nd_btt *nd_btt = btt->nd_btt;
+ 	struct nd_namespace_common *ndns = nd_btt->ndns;
++	int rc = -ENOMEM;
  
- KEY_FIELD(KEY_PTRS,	high, 60, 3)
--KEY_FIELD(HEADER_SIZE,	high, 58, 2)
-+KEY_FIELD(__PAD0,	high, 58, 2)
- KEY_FIELD(KEY_CSUM,	high, 56, 2)
--KEY_FIELD(KEY_PINNED,	high, 55, 1)
-+KEY_FIELD(__PAD1,	high, 55, 1)
- KEY_FIELD(KEY_DIRTY,	high, 36, 1)
+ 	btt->btt_disk = blk_alloc_disk(NUMA_NO_NODE);
+ 	if (!btt->btt_disk)
+-		return -ENOMEM;
++		goto out;
  
- KEY_FIELD(KEY_SIZE,	high, 20, KEY_SIZE_BITS)
+ 	nvdimm_namespace_disk_name(ndns, btt->btt_disk->disk_name);
+ 	btt->btt_disk->first_minor = 0;
+@@ -1535,19 +1536,23 @@ static int btt_blk_init(struct btt *btt)
+ 	blk_queue_flag_set(QUEUE_FLAG_NONROT, btt->btt_disk->queue);
+ 
+ 	if (btt_meta_size(btt)) {
+-		int rc = nd_integrity_init(btt->btt_disk, btt_meta_size(btt));
+-
+-		if (rc) {
+-			blk_cleanup_disk(btt->btt_disk);
+-			return rc;
+-		}
++		rc = nd_integrity_init(btt->btt_disk, btt_meta_size(btt));
++		if (rc)
++			goto out_cleanup_disk;
+ 	}
++
+ 	set_capacity(btt->btt_disk, btt->nlba * btt->sector_size >> 9);
+ 	device_add_disk(&btt->nd_btt->dev, btt->btt_disk, NULL);
++
+ 	btt->nd_btt->size = btt->nlba * (u64)btt->sector_size;
+ 	nvdimm_check_and_set_ro(btt->btt_disk);
+ 
+ 	return 0;
++
++out_cleanup_disk:
++	blk_cleanup_disk(btt->btt_disk);
++out:
++	return rc;
+ }
+ 
+ static void btt_blk_cleanup(struct btt *btt)
 -- 
-2.31.1
+2.30.2
 
