@@ -2,35 +2,35 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BD0B8C4321E
-	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:31:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id C7756C15504
+	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:31:27 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A57BD611C8
-	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:31:25 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id AC9CC611C8
+	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:31:27 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S239451AbhJONda (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 15 Oct 2021 09:33:30 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40780 "EHLO
+        id S239914AbhJONdb (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 15 Oct 2021 09:33:31 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40812 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S236418AbhJONb4 (ORCPT
+        with ESMTP id S239577AbhJONb7 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 15 Oct 2021 09:31:56 -0400
+        Fri, 15 Oct 2021 09:31:59 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 84E1FC061782;
-        Fri, 15 Oct 2021 06:28:09 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6E659C061787;
+        Fri, 15 Oct 2021 06:28:15 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=GSq2C7pgVoGuR+Arylph0pMkFwVZUJHKN+FvKz1CARs=; b=qlzziWpRLzPlcQ8+KrbJ1klG8P
-        tEb+7jaXNB4pXHBlQr+oBUv/PSIXRu0c7AYzHRdaYCbENng4sYsqCxDHJ1GM+aCIHXV9tICBrpDMI
-        +fIfBUif1MVIPskFqWKR2mEJ5l4AfrzCUfiAgGPrgyCcaP5JSAF1+LyVweTjlqIvOgo5R5mZswdCw
-        lvNpmeqkoxbn0mhzobmasSs5zM8KL/UVuoJqfIZRsUj6+I7dLoBLpNZlBnrTZ90CrsN3i/3ASfVSo
-        u3TsKbP0JkJJTk7Y3koBdaJK3BJ7DHPHPte9e3MwQS9jKSyFyY+TjH/SOkz5cTB2HhwoCcNJDjAd9
-        WJhhks/w==;
+        bh=JRUJFkyjxq71rT2gSHQzVSwiRN9DYj/nxSJqzQ3gbXo=; b=Qt2JgAPMIcJMAN08YLOAsPbhDL
+        6VI4280QggU9fJPESvP8XcSf9NIcQA2u4Xw51zLzzRU/d+NhMr91T73K6eGIUSK4DcTfZDbYK5Rpf
+        COTMiQWHoQVIxmu/Qn9PJ3e5r1L0mtfuV8+DTtaEYYWL4yV8t80LsuCNe7y0WNFkRHYT+2a7IfkHU
+        y4H0YXF6Npgk6qD7GyMUG9ZDhz9fbKejrI5oYmn6tTSYJvOsN0c1O6kNkMRC7/el5i/8o94ZmUwYX
+        PFlLB6lb1i0bjwPkPl4aBseVskhTVg4O9ezpKhhFIPL+3XsxoaErfd/IhpLlIwa+I69YWsyDTg/5I
+        WloUo/1g==;
 Received: from [2001:4bb8:199:73c5:ddfe:9587:819b:83b0] (helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1mbNFc-007Dll-0k; Fri, 15 Oct 2021 13:27:56 +0000
+        id 1mbNFh-007Ds0-3f; Fri, 15 Oct 2021 13:28:01 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
@@ -52,10 +52,11 @@ Cc:     Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
         linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
         jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org,
         linux-nilfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        ntfs3@lists.linux.dev, reiserfs-devel@vger.kernel.org
-Subject: [PATCH 27/30] jfs: use sb_bdev_nr_blocks
-Date:   Fri, 15 Oct 2021 15:26:40 +0200
-Message-Id: <20211015132643.1621913-28-hch@lst.de>
+        ntfs3@lists.linux.dev, reiserfs-devel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: [PATCH 29/30] reiserfs: use sb_bdev_nr_blocks
+Date:   Fri, 15 Oct 2021 15:26:42 +0200
+Message-Id: <20211015132643.1621913-30-hch@lst.de>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <20211015132643.1621913-1-hch@lst.de>
 References: <20211015132643.1621913-1-hch@lst.de>
@@ -70,39 +71,26 @@ Use the sb_bdev_nr_blocks helper instead of open coding it.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 Reviewed-by: Kees Cook <keescook@chromium.org>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
- fs/jfs/resize.c | 3 +--
- fs/jfs/super.c  | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ fs/reiserfs/super.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/fs/jfs/resize.c b/fs/jfs/resize.c
-index a42dbb0d3d28a..8b9a72ae5efa7 100644
---- a/fs/jfs/resize.c
-+++ b/fs/jfs/resize.c
-@@ -86,8 +86,7 @@ int jfs_extendfs(struct super_block *sb, s64 newLVSize, int newLogSize)
- 		goto out;
- 	}
+diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+index 8647a00434ea4..076f9ab943060 100644
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -1199,9 +1199,7 @@ static int reiserfs_parse_options(struct super_block *s,
  
--	VolumeSize = i_size_read(sb->s_bdev->bd_inode) >> sb->s_blocksize_bits;
--
-+	VolumeSize = sb_bdev_nr_blocks(sb);
- 	if (VolumeSize) {
- 		if (newLVSize > VolumeSize) {
- 			printk(KERN_WARNING "jfs_extendfs: invalid size\n");
-diff --git a/fs/jfs/super.c b/fs/jfs/super.c
-index 9241caa161163..24cbc9946e01c 100644
---- a/fs/jfs/super.c
-+++ b/fs/jfs/super.c
-@@ -284,8 +284,7 @@ static int parse_options(char *options, struct super_block *sb, s64 *newLVSize,
- 		}
- 		case Opt_resize_nosize:
- 		{
--			*newLVSize = i_size_read(sb->s_bdev->bd_inode) >>
--				sb->s_blocksize_bits;
-+			*newLVSize = sb_bdev_nr_blocks(sb);
- 			if (*newLVSize == 0)
- 				pr_err("JFS: Cannot determine volume size\n");
- 			break;
+ 			if (!strcmp(arg, "auto")) {
+ 				/* From JFS code, to auto-get the size. */
+-				*blocks =
+-				    i_size_read(s->s_bdev->bd_inode) >> s->
+-				    s_blocksize_bits;
++				*blocks = sb_bdev_nr_blocks(s);
+ 			} else {
+ 				*blocks = simple_strtoul(arg, &p, 0);
+ 				if (*p != '\0') {
 -- 
 2.30.2
 
