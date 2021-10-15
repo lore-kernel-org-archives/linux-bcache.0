@@ -2,35 +2,35 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7264CC433EF
-	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:27:55 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AD140C43219
+	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:28:44 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id 5BBFE60FE3
-	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:27:55 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 97C3F611C3
+	for <linux-bcache@archiver.kernel.org>; Fri, 15 Oct 2021 13:28:44 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S239623AbhJON37 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 15 Oct 2021 09:29:59 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40670 "EHLO
+        id S239680AbhJONat (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 15 Oct 2021 09:30:49 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40774 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S239489AbhJON3b (ORCPT
+        with ESMTP id S239606AbhJON34 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 15 Oct 2021 09:29:31 -0400
+        Fri, 15 Oct 2021 09:29:56 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A5B0AC061765;
-        Fri, 15 Oct 2021 06:27:24 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 290B9C06176E;
+        Fri, 15 Oct 2021 06:27:30 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=7Fvhf+wKhm10vM9vEVCTx/h8dtxUHLOhLGNjS8UETqk=; b=AItQqhQ2XYGJN/WD9MrBjK/cyH
-        NBfGMeNQXzuVKCKq+HEtT52BLeFO+VVtGB8MwZeRc2X2Rrqd/K+aFpvHt31ONgdCDVir4TkOxdztH
-        QvXyi6xJqZdD034tBVu/eGya417QgO2eVjLhdic2HeUfOsMgzs0OVvwLtnDbznHvGY/uXXfIGPLXd
-        y7rwERgkJXHWgBgN7zzvcKHePSeuLtWLs+Gsm/tquhDTsHwlU7JXmSwImQa7IqD0GSjNLKTQK12oc
-        TSp1daWgtYYlrTmndy1c6EBPwst5ch8mIBTMKLTxBfe67o+Z1jOJZEuK/7I20TUpVfhvhWZckt/B2
-        7e5tzDUA==;
+        bh=4+4aho7Od7CaYcuq9D5nzrbKD6dBz8xE3WUEnLiAMa8=; b=njF1lec5ToI1mF57nm85IhKdj0
+        R4hMIfun9fY3BAXnq2O3pwjWa9Yt+TLx9N+CKb+hbwwZsb7BmEGSKJ+y+JTe0PuviO7YsVgzHDBMq
+        P+X5kEL75/uDtXbzZ9PYeumMpGPAXVPmL/a9Mk4lggk1lRinjRoJOvH4G1BQkSuxqrKWXzzb0vuee
+        vkFF60DWx0p4PiABO9m18Mk+Wmr08nwkEtbxYJmdqxY8PBsUn4OfwqpSFFwThqis0kY8xJmmNWq9s
+        LrfzgH4Wt8+bIkiFrGPQNv8u0vdWAxRq5WmN2xGi+vF1lijX5TkCen4UBOXbvs7MGTvHtep/9pzQ9
+        ZQXXo4MA==;
 Received: from [2001:4bb8:199:73c5:ddfe:9587:819b:83b0] (helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1mbNEo-007Cqt-S8; Fri, 15 Oct 2021 13:27:07 +0000
+        id 1mbNEw-007Cyg-LO; Fri, 15 Oct 2021 13:27:15 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
@@ -52,11 +52,10 @@ Cc:     Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
         linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
         jfs-discussion@lists.sourceforge.net, linux-nfs@vger.kernel.org,
         linux-nilfs@vger.kernel.org, linux-ntfs-dev@lists.sourceforge.net,
-        ntfs3@lists.linux.dev, reiserfs-devel@vger.kernel.org,
-        Chaitanya Kulkarni <kch@nvidia.com>
-Subject: [PATCH 08/30] target/iblock: use bdev_nr_bytes instead of open coding it
-Date:   Fri, 15 Oct 2021 15:26:21 +0200
-Message-Id: <20211015132643.1621913-9-hch@lst.de>
+        ntfs3@lists.linux.dev, reiserfs-devel@vger.kernel.org
+Subject: [PATCH 11/30] affs: use bdev_nr_sectors instead of open coding it
+Date:   Fri, 15 Oct 2021 15:26:24 +0200
+Message-Id: <20211015132643.1621913-12-hch@lst.de>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <20211015132643.1621913-1-hch@lst.de>
 References: <20211015132643.1621913-1-hch@lst.de>
@@ -70,27 +69,24 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 Use the proper helper to read the block device size.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Chaitanya Kulkarni <kch@nvidia.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/target/target_core_iblock.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/affs/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index 31df20abe141f..b1ef041cacd81 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -232,9 +232,9 @@ static unsigned long long iblock_emulate_read_cap_with_block_size(
- 	struct block_device *bd,
- 	struct request_queue *q)
- {
--	unsigned long long blocks_long = (div_u64(i_size_read(bd->bd_inode),
--					bdev_logical_block_size(bd)) - 1);
- 	u32 block_size = bdev_logical_block_size(bd);
-+	unsigned long long blocks_long =
-+		div_u64(bdev_nr_bytes(bd), block_size) - 1;
+diff --git a/fs/affs/super.c b/fs/affs/super.c
+index c6c2a513ec92d..c609005a9eaaa 100644
+--- a/fs/affs/super.c
++++ b/fs/affs/super.c
+@@ -389,7 +389,7 @@ static int affs_fill_super(struct super_block *sb, void *data, int silent)
+ 	 * blocks, we will have to change it.
+ 	 */
  
- 	if (block_size == dev->dev_attrib.block_size)
- 		return blocks_long;
+-	size = i_size_read(sb->s_bdev->bd_inode) >> 9;
++	size = bdev_nr_sectors(sb->s_bdev);
+ 	pr_debug("initial blocksize=%d, #blocks=%d\n", 512, size);
+ 
+ 	affs_set_blocksize(sb, PAGE_SIZE);
 -- 
 2.30.2
 
