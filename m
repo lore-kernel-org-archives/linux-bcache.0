@@ -2,54 +2,86 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B8515C433EF
-	for <linux-bcache@archiver.kernel.org>; Mon, 25 Oct 2021 19:02:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D6B98C433F5
+	for <linux-bcache@archiver.kernel.org>; Fri, 29 Oct 2021 06:09:04 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A234160FE8
-	for <linux-bcache@archiver.kernel.org>; Mon, 25 Oct 2021 19:02:34 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id AA9A46113B
+	for <linux-bcache@archiver.kernel.org>; Fri, 29 Oct 2021 06:09:04 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233575AbhJYTE4 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 25 Oct 2021 15:04:56 -0400
-Received: from vps.thesusis.net ([34.202.238.73]:54428 "EHLO vps.thesusis.net"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S233588AbhJYTEz (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 25 Oct 2021 15:04:55 -0400
-Received: by vps.thesusis.net (Postfix, from userid 1000)
-        id 0C83861FD2; Mon, 25 Oct 2021 15:02:27 -0400 (EDT)
-References: <YXHK5HrQpJu9oy8w@casper.infradead.org>
- <87tuh9n9w2.fsf@vps.thesusis.net> <20211022084127.GA1026@quack2.suse.cz>
-User-agent: mu4e 1.7.0; emacs 27.1
-From:   Phillip Susi <phill@thesusis.net>
-To:     Jan Kara <jack@suse.cz>
-Cc:     Matthew Wilcox <willy@infradead.org>,
-        linux-fsdevel@vger.kernel.org,
-        Phillip Lougher <phillip@squashfs.org.uk>,
-        linux-erofs@lists.ozlabs.org, linux-btrfs@vger.kernel.org,
-        linux-ntfs-dev@lists.sourceforge.net, ntfs3@lists.linux.dev,
-        linux-bcache@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Hsin-Yi Wang <hsinyi@chromium.org>
-Subject: Re: Readahead for compressed data
-Date:   Mon, 25 Oct 2021 14:59:45 -0400
-In-reply-to: <20211022084127.GA1026@quack2.suse.cz>
-Message-ID: <87fssprkql.fsf@vps.thesusis.net>
+        id S231876AbhJ2GLb (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 29 Oct 2021 02:11:31 -0400
+Received: from smtp-out1.suse.de ([195.135.220.28]:38756 "EHLO
+        smtp-out1.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S231774AbhJ2GLb (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Fri, 29 Oct 2021 02:11:31 -0400
+Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
+        by smtp-out1.suse.de (Postfix) with ESMTP id 1F6F52197B;
+        Fri, 29 Oct 2021 06:09:02 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+        t=1635487742; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=WhzDd96nzOHiE2906ADz7sOy5TbCepmSxuDcsXYmAyQ=;
+        b=sOZHNlBGjrGH4KVepCjZdmtLF2Rz4Mrk6Kqc02cqibmooweS+izsCVhNj4b/zuqV9ht1IZ
+        c94N8iiQDljKSDqaCbSihaBQaL9ApaDnNplYwTUF8EbOdCFsZee/BPvNRP7DksJFCNKj3S
+        u6sNTElyq5hekqGuQ5IpVD8ZLlWNex8=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+        s=susede2_ed25519; t=1635487742;
+        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=WhzDd96nzOHiE2906ADz7sOy5TbCepmSxuDcsXYmAyQ=;
+        b=I0dgfy3xbiLjUdd7QUYSXh0NcSZRyuWTtiDkv+lHjUiK3HvAmKlvuca37JzizFrKlzIxRz
+        RvLZof9pevGBP1BA==
+Received: from suse.localdomain (unknown [10.163.16.22])
+        by relay2.suse.de (Postfix) with ESMTP id A9494A3B81;
+        Fri, 29 Oct 2021 06:09:00 +0000 (UTC)
+From:   Coly Li <colyli@suse.de>
+To:     axbeo@kernel.dk
+Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
+        Coly Li <colyli@suse.de>
+Subject: [PATCH 0/2] bcache paches for Linux v5.16 (2nd wave)
+Date:   Fri, 29 Oct 2021 14:08:49 +0800
+Message-Id: <20211029060851.119872-1-colyli@suse.de>
+X-Mailer: git-send-email 2.31.1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
+Hi Jens,
 
-Jan Kara <jack@suse.cz> writes:
+This is the second wave of bcache patches for Linux v5.16.
 
-> Well, one of the problems with keeping compressed data is that for mmap(2)
-> you have to have pages decompressed so that CPU can access them. So keeping
-> compressed data in the page cache would add a bunch of complexity. That
-> being said keeping compressed data cached somewhere else than in the page
-> cache may certainly me worth it and then just filling page cache on demand
-> from this data...
+The first patch is suggested by Arnd Bergmann and Christoph
+Hellwig that the bcache.h should not belong to include/uapi/
+directory, and I compose the change.
 
-True... Did that multi generational LRU cache ever get merged?  I was
-thinking you could use that to make sure that the kernel prefers to
-reclaim the decompressed pages in favor of keeping the compressed ones
-around.
+The second patch is code cleanup to remove coccicheck warning
+which suggests to use scnprintf to replace snprintf(), Qing
+Wang posts the change to remove the warning by using sysfs_emit().
+
+Please take them for Linux v5.16 and thanks in advance.
+
+Coly Li 
+---
+
+Coly Li (1):
+  bcache: move uapi header bcache.h to bcache code directory
+
+Qing Wang (1):
+  bcache: replace snprintf in show functions with sysfs_emit
+
+ drivers/md/bcache/bcache.h                     |  2 +-
+ .../md/bcache/bcache_ondisk.h                  |  0
+ drivers/md/bcache/bset.h                       |  2 +-
+ drivers/md/bcache/features.c                   |  2 +-
+ drivers/md/bcache/features.h                   |  3 ++-
+ drivers/md/bcache/sysfs.h                      | 18 ++++++++++++++++--
+ drivers/md/bcache/util.h                       | 17 -----------------
+ 7 files changed, 21 insertions(+), 23 deletions(-)
+ rename include/uapi/linux/bcache.h => drivers/md/bcache/bcache_ondisk.h (100%)
+
+-- 
+2.31.1
 
