@@ -2,111 +2,97 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D8CF3C433F5
-	for <linux-bcache@archiver.kernel.org>; Fri, 29 Oct 2021 13:00:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0C131C433F5
+	for <linux-bcache@archiver.kernel.org>; Sat, 30 Oct 2021 14:58:55 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id BAF0A60F23
-	for <linux-bcache@archiver.kernel.org>; Fri, 29 Oct 2021 13:00:18 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id D9CC460FC4
+	for <linux-bcache@archiver.kernel.org>; Sat, 30 Oct 2021 14:58:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231527AbhJ2NCq (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 29 Oct 2021 09:02:46 -0400
-Received: from zg8tmty1ljiyny4xntqumjca.icoremail.net ([165.227.154.27]:45069
-        "HELO zg8tmty1ljiyny4xntqumjca.icoremail.net" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with SMTP id S231523AbhJ2NCp (ORCPT
+        id S230285AbhJ3PBX (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Sat, 30 Oct 2021 11:01:23 -0400
+Received: from smtp-out2.suse.de ([195.135.220.29]:39976 "EHLO
+        smtp-out2.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S229633AbhJ3PBX (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 29 Oct 2021 09:02:45 -0400
-Received: from fedora33.wangsu.com (unknown [59.61.78.138])
-        by app2 (Coremail) with SMTP id 4zNnewA3Pi5R8Hth1QsDAA--.3404S2;
-        Fri, 29 Oct 2021 21:00:06 +0800 (CST)
-From:   Lin Feng <linf@wangsu.com>
-To:     colyli@suse.de, kent.overstreet@gmail.com
-Cc:     linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linf@wangsu.com
-Subject: [PATCH] bcache: kill macro MAX_CACHES_PER_SET
-Date:   Fri, 29 Oct 2021 20:59:58 +0800
-Message-Id: <20211029125958.95298-1-linf@wangsu.com>
-X-Mailer: git-send-email 2.31.1
+        Sat, 30 Oct 2021 11:01:23 -0400
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by smtp-out2.suse.de (Postfix) with ESMTPS id 16FDA1FD36;
+        Sat, 30 Oct 2021 14:58:52 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+        t=1635605932; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=jDNP1uU1T2HsrR6XxIFIF9oPRNn3dUAQ9/C5zYbJjGk=;
+        b=U2I72QVEtDEhCp9io7XtmwcKflZnz1hESRmp7UTgGqtd7ND5gsBsKCmwCylAcr7BuZCG8x
+        eC/3Pm4vmCvymfPj7wBpN0Hb6dREc82IA4zim08vTUPRTwmPM0DZYGujGaUaioWD07fqOH
+        9iWTQyIdd5Q9QeqQUge2ZW5DxyReykA=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+        s=susede2_ed25519; t=1635605932;
+        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=jDNP1uU1T2HsrR6XxIFIF9oPRNn3dUAQ9/C5zYbJjGk=;
+        b=TiC1BWcgHMIhMshyz91bkKVLeWarnQGyK+ATEm1YDpSRHHo6DRgtD081oCgEB89W1cLYNJ
+        GIBMsRcVse+hO0CA==
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 3A785139CF;
+        Sat, 30 Oct 2021 14:58:51 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([192.168.254.65])
+        by imap2.suse-dmz.suse.de with ESMTPSA
+        id B4aZAatdfWGgUgAAMHmgww
+        (envelope-from <colyli@suse.de>); Sat, 30 Oct 2021 14:58:51 +0000
+Message-ID: <abf21c4f-5bbb-a0bb-534a-3d2758b4a8d6@suse.de>
+Date:   Sat, 30 Oct 2021 22:58:47 +0800
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-CM-TRANSID: 4zNnewA3Pi5R8Hth1QsDAA--.3404S2
-X-Coremail-Antispam: 1UD129KBjvJXoWxCw1UCFyktFW3tF17Jw4DCFg_yoW5Gr4fpF
-        ZrZrySyr48XF4UZ34kAr1ruFyrt34YkFW5Ja93Z34Fva42ya48ZFWUKa45Ar1rWryfJF47
-        tr4UtryDWa4UJFJanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-        9KBjDU0xBIdaVrnUUvcSsGvfC2KfnxnUUI43ZEXa7xR_UUUUUUUUU==
-X-CM-SenderInfo: holqwq5zdqw23xof0z/
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0)
+ Gecko/20100101 Thunderbird/91.2.1
+Subject: Re: [PATCH] bcache: remove unused struct member in cache_stats
+Content-Language: en-US
+To:     Lin Feng <linf@wangsu.com>
+Cc:     linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20211029115939.92309-1-linf@wangsu.com>
+From:   Coly Li <colyli@suse.de>
+In-Reply-To: <20211029115939.92309-1-linf@wangsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Commit 697e23495c94f0380c1ed8b11f830b92b64c99ea
-("bcache: explicitly make cache_set only have single cache")
-explicitly makes a cache_set only have single cache and based on the
-fact that historily only one cache is ever used in the cache set, so
-macro defination for MAX_CACHES_PER_SET as 8 is misleading now.
+On 10/29/21 7:59 PM, Lin Feng wrote:
+> Commit 1616a4c2ab1a80893b6890ae93da40a2b1d0c691
+> ("bcache: remove bcache device self-defined readahead")
+> remove stuffs for bcache self-defined readahead, but
+> cache_readaheads field in cache_stats is leftout, remove it.
+>
+> Signed-off-by: Lin Feng <linf@wangsu.com>
 
-In fact it should be redefined to 1 and valid number fo sb.nr_in_set
-should be 1 and sb.nr_this_dev should always be 0.
+Nice catch. I add it into my testing queue. Thanks.
 
-But jset's disk layout replies on MAX_CACHES_PER_SET(8), so replace it
-with a hardcoded number 8.
+Coly Li
 
-Signed-off-by: Lin Feng <linf@wangsu.com>
----
- drivers/md/bcache/bcache.h  | 2 +-
- drivers/md/bcache/super.c   | 4 +---
- include/uapi/linux/bcache.h | 4 ++--
- 3 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 5fc989a6d452..a4a410a178c0 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -833,7 +833,7 @@ static inline uint8_t ptr_stale(struct cache_set *c, const struct bkey *k,
- static inline bool ptr_available(struct cache_set *c, const struct bkey *k,
- 				 unsigned int i)
- {
--	return (PTR_DEV(k, i) < MAX_CACHES_PER_SET) && c->cache;
-+	return (PTR_DEV(k, i) == 0) && c->cache;
- }
- 
- /* Btree key macros */
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index f2874c77ff79..2253044c9289 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -140,9 +140,7 @@ static const char *read_super_common(struct cache_sb *sb,  struct block_device *
- 		goto err;
- 
- 	err = "Bad cache device number in set";
--	if (!sb->nr_in_set ||
--	    sb->nr_in_set <= sb->nr_this_dev ||
--	    sb->nr_in_set > MAX_CACHES_PER_SET)
-+	if (sb->nr_in_set != 1 || sb->nr_this_dev != 0)
- 		goto err;
- 
- 	err = "Journal buckets not sequential";
-diff --git a/include/uapi/linux/bcache.h b/include/uapi/linux/bcache.h
-index cf7399f03b71..4beb3e7826ca 100644
---- a/include/uapi/linux/bcache.h
-+++ b/include/uapi/linux/bcache.h
-@@ -155,7 +155,6 @@ static inline struct bkey *bkey_idx(const struct bkey *k, unsigned int nr_keys)
- #define SB_LABEL_SIZE			32
- #define SB_JOURNAL_BUCKETS		256U
- /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
--#define MAX_CACHES_PER_SET		8
- 
- #define BDEV_DATA_START_DEFAULT		16	/* sectors */
- 
-@@ -356,7 +355,8 @@ struct jset {
- 	__u16			btree_level;
- 	__u16			pad[3];
- 
--	__u64			prio_bucket[MAX_CACHES_PER_SET];
-+	/* only a single cache is available */
-+	__u64			prio_bucket[8];
- 
- 	union {
- 		struct bkey	start[0];
--- 
-2.31.1
+> ---
+>   drivers/md/bcache/stats.h | 1 -
+>   1 file changed, 1 deletion(-)
+>
+> diff --git a/drivers/md/bcache/stats.h b/drivers/md/bcache/stats.h
+> index ca4f435f7216..b6bfea66c01f 100644
+> --- a/drivers/md/bcache/stats.h
+> +++ b/drivers/md/bcache/stats.h
+> @@ -18,7 +18,6 @@ struct cache_stats {
+>   	unsigned long cache_misses;
+>   	unsigned long cache_bypass_hits;
+>   	unsigned long cache_bypass_misses;
+> -	unsigned long cache_readaheads;
+>   	unsigned long cache_miss_collisions;
+>   	unsigned long sectors_bypassed;
+>   
 
