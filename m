@@ -2,89 +2,118 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from mail.kernel.org (mail.kernel.org [198.145.29.99])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C93A3C433EF
-	for <linux-bcache@archiver.kernel.org>; Wed, 10 Nov 2021 20:13:15 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7FBA2C433EF
+	for <linux-bcache@archiver.kernel.org>; Thu, 11 Nov 2021 20:54:37 +0000 (UTC)
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by mail.kernel.org (Postfix) with ESMTP id A54C66109F
-	for <linux-bcache@archiver.kernel.org>; Wed, 10 Nov 2021 20:13:15 +0000 (UTC)
+	by mail.kernel.org (Postfix) with ESMTP id 62BBC61054
+	for <linux-bcache@archiver.kernel.org>; Thu, 11 Nov 2021 20:54:37 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231472AbhKJUQC (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 10 Nov 2021 15:16:02 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36184 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231854AbhKJUQC (ORCPT
+        id S233482AbhKKU50 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Thu, 11 Nov 2021 15:57:26 -0500
+Received: from smtp-relay-internal-1.canonical.com ([185.125.188.123]:58260
+        "EHLO smtp-relay-internal-1.canonical.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S233346AbhKKU5Z (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 10 Nov 2021 15:16:02 -0500
-Received: from mail-qk1-x734.google.com (mail-qk1-x734.google.com [IPv6:2607:f8b0:4864:20::734])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 68433C061764
-        for <linux-bcache@vger.kernel.org>; Wed, 10 Nov 2021 12:13:14 -0800 (PST)
-Received: by mail-qk1-x734.google.com with SMTP id az8so3700243qkb.2
-        for <linux-bcache@vger.kernel.org>; Wed, 10 Nov 2021 12:13:14 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20210112;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-disposition:in-reply-to;
-        bh=XTOQPFNntGkXmoSsXX+YZRRze6SY7GDGFf1pb8c/g4M=;
-        b=MJJYTSpVZn/Dn1Bq6FZ7/HniJmJ2/GG7KqMvIsnf8aibYDfizltp4Si3opzFOWTHPP
-         Y5Q3cRs4DEk0H8xR9b/mpDfC1EDzKDO+9BZCnseZ8zeaai8wES1l4awbb1mOXPjk/ILf
-         qAdbEGMw4ZsIradY6iIGl/VucEuY7jPjtB2fCC3gCoGwDu9atPPB12uDB16ddG0KgR41
-         B5qc0tU6On/LBqy9teFAGPkSjo3UXoVrrVNYcau364aEDLk/hoNMACyYbPKkraZ3z8og
-         eeSmID5m1KL1kaNER+dkoTgTGI6en38w+RnLeUGx88wzpueotpqhu4a1fJJxmRmcJ4Zh
-         i39g==
+        Thu, 11 Nov 2021 15:57:25 -0500
+Received: from mail-pj1-f72.google.com (mail-pj1-f72.google.com [209.85.216.72])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+        (No client certificate requested)
+        by smtp-relay-internal-1.canonical.com (Postfix) with ESMTPS id B90CE3F177
+        for <linux-bcache@vger.kernel.org>; Thu, 11 Nov 2021 20:54:32 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=canonical.com;
+        s=20210705; t=1636664072;
+        bh=MFWszAlHR0LE5x407yW/wjKLlzN6mIIh9U/r4hjx/Tg=;
+        h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+         To:Cc:Content-Type;
+        b=UxL44P8J5+RxPLP6ylgWtqJ6O0Amn8P7Wqsorucv9ECxIgU2zZuPBnyXkzVjRdjaZ
+         ZBt7cMa2emxxMYXXUHCSzODpmfAdEuFHJI+3X8+Ra7baT0adKIIKa34ivFVwrViVpd
+         N+TyJgEsLk0yuTXujKpoioZLZuyP5vfcoN2rm74YiEnWnjFht5iiJZkijRhVxGgi4d
+         Zw1QjNKpe6/PHoeXbkoT8lCMACNz+X/InYP++jcr/6BQ57o/SBMaA0phULlYYGcxZs
+         9cVjL/QR5RlltBsNQAPJyNMScKCHd0P7q3Z5Wie5wbeXclFDImecYTAvLCwHsXLk8J
+         Y+Utf0g5ClETw==
+Received: by mail-pj1-f72.google.com with SMTP id x6-20020a17090a6c0600b001a724a5696cso3373632pjj.6
+        for <linux-bcache@vger.kernel.org>; Thu, 11 Nov 2021 12:54:32 -0800 (PST)
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
-        h=x-gm-message-state:date:from:to:cc:subject:message-id:references
-         :mime-version:content-disposition:in-reply-to;
-        bh=XTOQPFNntGkXmoSsXX+YZRRze6SY7GDGFf1pb8c/g4M=;
-        b=z4lSFNRge0TqBw7Xp2frwcCbOSXiLs+G/bm+99xgvHTA/T3eek2wURA7QXPdSJdAAi
-         em5HCXTHOGm2iZdL16616l30JFsBigVE0PpS52lXeF9G6GorrhT5AW0A/pc1Y/qmryrH
-         Icb2MHCHBdl5E0aLtiXdI0B79Ek4Ia+HOG1hrscq0421/cR3Le+Wm6FHuqIe5gsthw6D
-         55GpmqAwXPviDEiw0aQodKr/wZLEamZ2o7zfICaSOSc+jOdzBB7cZZEn0n9anWW5578d
-         r520j7QlMqL7MBlkBV6GJVN4Yfsg730iGgB3k5jbr7xSCRNjV/KyoqY8ecxL5x7BvM8T
-         7PWg==
-X-Gm-Message-State: AOAM530Gr/6FgJg7UdIFqK0h6TcpjP6SHCn6EZiGkh3APLVLbwd+HNeZ
-        0Gex2lyQnXqxv4tCU8L2Bg==
-X-Google-Smtp-Source: ABdhPJxvD6UvMt6L0aZWEU5yK2hVr33ExU/ZO30ApyW32RX8FwL9Y4jtVBocy9eUgoPUEQtOvxCfmw==
-X-Received: by 2002:a05:620a:113b:: with SMTP id p27mr1789105qkk.33.1636575193529;
-        Wed, 10 Nov 2021 12:13:13 -0800 (PST)
-Received: from moria.home.lan (c-73-219-103-14.hsd1.vt.comcast.net. [73.219.103.14])
-        by smtp.gmail.com with ESMTPSA id e10sm488392qtx.66.2021.11.10.12.13.12
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Wed, 10 Nov 2021 12:13:12 -0800 (PST)
-Date:   Wed, 10 Nov 2021 15:13:09 -0500
-From:   Kent Overstreet <kent.overstreet@gmail.com>
-To:     Nikhil Kshirsagar <nkshirsagar@gmail.com>
-Cc:     linux-bcache@vger.kernel.org
-Subject: Re: bcache-register hang after reboot
-Message-ID: <YYwn1eT86dvSRfeA@moria.home.lan>
-References: <CAC6jXv0mw4eOzFSzzm0acBJFM5whhC=hTFG6_8H__rfA6zq5Cg@mail.gmail.com>
+        h=x-gm-message-state:mime-version:references:in-reply-to:from:date
+         :message-id:subject:to:cc;
+        bh=MFWszAlHR0LE5x407yW/wjKLlzN6mIIh9U/r4hjx/Tg=;
+        b=QMf9IbLDU22O8vNkjFhT6egkA/ELlg4sAbAfgBNo/JjqppcytmPZfqvHzGdkT8vwFk
+         0gknAdOsBKSI84yAwaMW5WkkeH9Urum64R3qRVLPVAxxADsGDZLVWkYTtU+E26rDTIJQ
+         SpaMTa/YuXJkyCYTZka0GfzuV1spzZpRyHTI8lwd4tSZE/5s/URJgKoTrlcNNCYTxACd
+         dLn4MFMzkiXLFUaG0S/B+mQl21QtJUKE0zlIPJK1OEtF55JSOwz9e6xguJaXC4mXHKBt
+         bifMzZEsd/B+Fm+Fr4xmwFExWpM+6tGqFt6+pz1FgfrQx0YjKdeIPP0pz/0cXt97Qrmt
+         8mTA==
+X-Gm-Message-State: AOAM532yjGfgsQ6eHGEfXcielK8eD/oa/OKqKYPRtEA0szAekm5Cb+x2
+        DGuHU3o3cSDfFsveyJUf4jef4AhAbgQUvOsHdHDTBLMpAD2kaqoYZS3bAE0fvv85Xilbf2DRVop
+        Iq5GSJo9uTe9lgZ2uK5AdjWdV9hzUOAG1DOojEz8I/ICxirdKhPTwfP3VJA==
+X-Received: by 2002:aa7:9628:0:b0:494:6dc8:66de with SMTP id r8-20020aa79628000000b004946dc866demr9230133pfg.73.1636664070673;
+        Thu, 11 Nov 2021 12:54:30 -0800 (PST)
+X-Google-Smtp-Source: ABdhPJwy2qonneyBRBqUxRUgfkxNpga9ozOGvZLMzXquiU8AucG0x3kbrGnS6uel1TDBbN3hXd4+08Q2MT9qcJArOfc=
+X-Received: by 2002:aa7:9628:0:b0:494:6dc8:66de with SMTP id
+ r8-20020aa79628000000b004946dc866demr9230099pfg.73.1636664070336; Thu, 11 Nov
+ 2021 12:54:30 -0800 (PST)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAC6jXv0mw4eOzFSzzm0acBJFM5whhC=hTFG6_8H__rfA6zq5Cg@mail.gmail.com>
+References: <CAC6jXv0mw4eOzFSzzm0acBJFM5whhC=hTFG6_8H__rfA6zq5Cg@mail.gmail.com>
+ <YYwn1eT86dvSRfeA@moria.home.lan>
+In-Reply-To: <YYwn1eT86dvSRfeA@moria.home.lan>
+From:   Mauricio Oliveira <mauricio.oliveira@canonical.com>
+Date:   Thu, 11 Nov 2021 17:54:18 -0300
+Message-ID: <CAO9xwp006wLDLVAoCPFgp_ogLiCunB8F8rHh9UitXqSmtNqLoQ@mail.gmail.com>
+Subject: Re: bcache-register hang after reboot
+To:     Kent Overstreet <kent.overstreet@gmail.com>
+Cc:     Nikhil Kshirsagar <nkshirsagar@gmail.com>,
+        linux-bcache@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Wed, Nov 10, 2021 at 11:14:41AM +0530, Nikhil Kshirsagar wrote:
-> Hello,
-> 
-> After a reboot of an Ubuntu server running 4.15.0-143-generic kernel,
-> the storage devices using bcache do not come back up and the following
-> stack traces are seen in kern.log. Please could someone help me
-> understand if this is due to a full bcache journal? Is there any
-> workaround, or fix?
+Hi Kent,
 
-Your journal is completely full, so persisting the new btree root while doing
-journal replay is hanging.
+On Wed, Nov 10, 2021 at 5:13 PM Kent Overstreet
+<kent.overstreet@gmail.com> wrote:
+> Your journal is completely full, so persisting the new btree root while doing
+> journal replay is hanging.
+>
+> There isn't a _good_ solution for this journal deadlock in bcache (it's fixed in
+> bcachefs), but there is a hack:
+>
+> edit drivers/md/bcache/btree.c line 2493
+>
+> delete the call to bch_journal_meta(), and build a new kernel. Once you've
+> gotten it to register, do a clean shutdown and then go back to a stock kernel.
+>
+> Running the kernel with that call deleted won't be safe if you crash, but it'll
+> get you going again.
 
-There isn't a _good_ solution for this journal deadlock in bcache (it's fixed in
-bcachefs), but there is a hack:
+Thanks for the clarification and suggestions.
 
-edit drivers/md/bcache/btree.c line 2493
+Would it be OK to implement that workaround if requested by a sysadmin ?
+(say, to ack the data safety / crash risk)
 
-delete the call to bch_journal_meta(), and build a new kernel. Once you've
-gotten it to register, do a clean shutdown and then go back to a stock kernel.
+Right now the issue is known, reproduces with v5.15, has no good solution,
+remains after reboot, prints hung task warnings continuously, and prevents
+using the device at all; and this workaround requires kernel dev/build skills.
 
-Running the kernel with that call deleted won't be safe if you crash, but it'll
-get you going again.
+Since its effects seem bad enough, it would seem fair enough to provide a
+way out even if it's not a _good_ one.
+
+Say, we could try and detect the journal full during journal replay, and handle
+it by failing the device registration. This would unblock the tasks, and provide
+a more intuitive error message. (maybe leading to the next paragraph.)
+
+We could also add a sysfs tunable to skip the call to bch_journal_meta(),
+and allow the registration to proceed, but fail it unconditionally in the end
+so the device isn't used with data safety / crash risk
+(or force an automatic unregister + register again w/ bch_journal_meta(),
+and disable the sysfs tunable).
+
+This would help with the full journal, and allow a sysadmin to perform the
+workaround without kernel rebuild and reboots.
+
+Thanks!
+
+-- 
+Mauricio Faria de Oliveira
