@@ -2,96 +2,133 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BBD99C433EF
-	for <linux-bcache@archiver.kernel.org>; Sun, 28 Nov 2021 14:52:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E4D48C433F5
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Nov 2021 08:58:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1357974AbhK1Oz5 (ORCPT
-        <rfc822;linux-bcache@archiver.kernel.org>);
-        Sun, 28 Nov 2021 09:55:57 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41494 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1353858AbhK1Ox5 (ORCPT
+        id S234200AbhK3JBb (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Nov 2021 04:01:31 -0500
+Received: from mta-p6.oit.umn.edu ([134.84.196.206]:57442 "EHLO
+        mta-p6.oit.umn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S235089AbhK3JBb (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 28 Nov 2021 09:53:57 -0500
-Received: from mail-io1-xd2a.google.com (mail-io1-xd2a.google.com [IPv6:2607:f8b0:4864:20::d2a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4BA17C061748
-        for <linux-bcache@vger.kernel.org>; Sun, 28 Nov 2021 06:50:41 -0800 (PST)
-Received: by mail-io1-xd2a.google.com with SMTP id m9so17865379iop.0
-        for <linux-bcache@vger.kernel.org>; Sun, 28 Nov 2021 06:50:41 -0800 (PST)
+        Tue, 30 Nov 2021 04:01:31 -0500
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2021 04:01:31 EST
+Received: from localhost (unknown [127.0.0.1])
+        by mta-p6.oit.umn.edu (Postfix) with ESMTP id 4J3GDv1vwhz9vC8C
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Nov 2021 08:52:15 +0000 (UTC)
+X-Virus-Scanned: amavisd-new at umn.edu
+Received: from mta-p6.oit.umn.edu ([127.0.0.1])
+        by localhost (mta-p6.oit.umn.edu [127.0.0.1]) (amavisd-new, port 10024)
+        with ESMTP id wdwUbI3nSnzm for <linux-bcache@vger.kernel.org>;
+        Tue, 30 Nov 2021 02:52:15 -0600 (CST)
+Received: from mail-pj1-f69.google.com (mail-pj1-f69.google.com [209.85.216.69])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+        (No client certificate requested)
+        by mta-p6.oit.umn.edu (Postfix) with ESMTPS id 4J3GDt6ZVsz9vC7k
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Nov 2021 02:52:14 -0600 (CST)
+DMARC-Filter: OpenDMARC Filter v1.3.2 mta-p6.oit.umn.edu 4J3GDt6ZVsz9vC7k
+DKIM-Filter: OpenDKIM Filter v2.11.0 mta-p6.oit.umn.edu 4J3GDt6ZVsz9vC7k
+Received: by mail-pj1-f69.google.com with SMTP id r23-20020a17090a941700b001a74be6cf80so6589361pjo.2
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Nov 2021 00:52:14 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kernel-dk.20210112.gappssmtp.com; s=20210112;
-        h=subject:to:cc:references:from:message-id:date:user-agent
-         :mime-version:in-reply-to:content-language:content-transfer-encoding;
-        bh=Txps8BV5KXXLE5Z8Dj4HtwZJIjHx8LsUHB2vb03furM=;
-        b=RiTzv1xSgdvwqnqWp1SXVPrTRBpb6DAg2TnKPceezDniBL2S1NlsonFMXDz+45YHO1
-         BFIMKqdBc445J8nJfMwWjBLKzbxvlekQBNG+/tLTBdUs9dOXF8l06CLOeehBcYDkSjFg
-         lPNfFvxzd7Uhkq6B67VDg0SJSb3gZ94qDT+srk+nHBI8z5oGgs5f+Th6ZGOCdv9DUqCQ
-         E3p2Fu8+sIqRXqw/bSOGqX7vi4/JKRGEw1kLcDvUbcVRoBLDvU5us2mBfCOHTa6Q+L6F
-         tF9CY4KfFjx5LR/uTlm1vqtnZTSmuzl40A2UTPxF9XmouhSBeqVajze+KY76eljOjjCI
-         mTbA==
+        d=umn.edu; s=google;
+        h=from:to:cc:subject:date:message-id:mime-version
+         :content-transfer-encoding;
+        bh=B9fMCH0NKWt3molLrHA4oJZ0OiPJH79kluyM8NW1Juo=;
+        b=cFFfjaZFN1GoVY96cCbHXCCcPpXrRofrjx9REKmLinJwH6Jdd7yVbD9Rsf1STazZua
+         z8Yg+iscarQMfvNuc4TAG+psZURIDxZpaXXW4YG4Xp9om0OUh38bgJun/za43QKqcky8
+         5bybTB5CZm25g6FhrXZwzDFmQHr5i0jYRh/846nSVnfV0XlWyR4UylZefiVRv9dxywsD
+         UtziPp8cwHrXhjavRoaN1esnyL0MIwrD7a9o5rsk+znkQoXRTxoxVWtjVPUHE4k3IdiV
+         +8ZDHFukr9hwTWUtIdh8A712lX1Wr9wtAXSEBNuFXTp12EBHJzJV/MwEzq5UY3sJigDw
+         uieg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
-        h=x-gm-message-state:subject:to:cc:references:from:message-id:date
-         :user-agent:mime-version:in-reply-to:content-language
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:mime-version
          :content-transfer-encoding;
-        bh=Txps8BV5KXXLE5Z8Dj4HtwZJIjHx8LsUHB2vb03furM=;
-        b=M5yLiIh6SsdyKMSspeCRIUlg50FaflRetwS14hRkPktE+RcIg1HbOs5ETJkPiOTEaK
-         LZdhR1Lt49qExB6JrWAL4LYmpLq7WamngG3BCxcn0YQlRQIl8MOG3u84MKVOuK5YpHNI
-         hJBmrRk3wLk0RBHmpzPQRrQod1mSljjm6wKtZRrdhw2K21FztdoAxMEbp+3nlAn3CEzA
-         gkCujzEuQb50YBN5lUjw9EvlSw+hLYM6Rr6gmBHStQT0b+OP9hJkHc3jd5bkV5GFX048
-         iB7kp9LFD/63jbgoykQQhwDZmts6RuuSPgYuG10Jb5W7dWhqGa6ublbVNwEZ20vuWci8
-         TyDQ==
-X-Gm-Message-State: AOAM531p1qfYJ6FrOWhjoBLR8M5UhE3klbsJYEFCw0Zr2lU2aCsSvyyt
-        e5VM3MiyZYqLAXXHRQe7HVPmyg==
-X-Google-Smtp-Source: ABdhPJyLSvA0K16M7WTbsvdBpW4pLzudrSbFlFJc6kW9I+0NBLSERL16NBvWVxYaC6PS327/5+okjw==
-X-Received: by 2002:a02:9609:: with SMTP id c9mr62298537jai.118.1638111040447;
-        Sun, 28 Nov 2021 06:50:40 -0800 (PST)
-Received: from [192.168.1.116] ([66.219.217.159])
-        by smtp.gmail.com with ESMTPSA id s9sm6817343iow.48.2021.11.28.06.50.39
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Sun, 28 Nov 2021 06:50:39 -0800 (PST)
-Subject: Re: Write I/O queue hangup at random on recent Linus' kernels
-To:     "Kenneth R. Crudup" <kenny@panix.com>
-Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-nvme@lists.infradead.org,
-        Shinichiro Kawasaki <shinichiro.kawasaki@wdc.com>
-References: <b3ba57a7-d363-9c17-c4be-9dbe86875@panix.com>
- <b9c2681f-e63a-4d3b-913d-d8a75e2c2ea0@kernel.dk>
- <be6a783-97db-c3bf-b16f-e8c62b14755d@panix.com>
- <17206ea6-506d-b1de-09e8-c935ff308bd6@kernel.dk>
- <903be817-4118-f34e-1b35-a0108045590f@kernel.dk>
- <986e942b-d430-783b-5b1c-4525d4a94e48@panix.com>
- <ddc41b84-c414-006a-0840-250281caf1e5@kernel.dk>
- <1ff86d55-f39d-f88b-b8d-b6dfbd2f1b19@panix.com>
- <a4d728c2-703d-66be-bffd-3bfde0fddf41@kernel.dk>
- <b549b4ce-4156-eaab-a146-1fa52f51b642@panix.com>
-From:   Jens Axboe <axboe@kernel.dk>
-Message-ID: <838c86fa-bb3d-6794-64fd-35b81c62bbb6@kernel.dk>
-Date:   Sun, 28 Nov 2021 07:50:36 -0700
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:68.0) Gecko/20100101
- Thunderbird/68.10.0
+        bh=B9fMCH0NKWt3molLrHA4oJZ0OiPJH79kluyM8NW1Juo=;
+        b=Z/aaX57Kkv1TCEtTkj0DHRXTHA+zBM4YMpdYWWMbrbpbGwYJtOduNhzx+4SmQPrrqd
+         5f4bHCsIenGEhvsylM5s1Mob3e4MmLAoioH7A0t3IQqFMmVx5GU3AaboC1clbb/Vdg/a
+         W5aEBe2X+bcPas1OZGzrTkTp9EstnGwo1hWnOfAmzv5l01fHvF+gJjZaZkRkqv2zkFUr
+         5F/NoZKD/fvc50wL83CrmT5mB/Gu2VGOsLtwFWP9gSF5lKJ4AlQLTEKR2uXmPVDUX7Ts
+         Q5hXauEMq5hdOTdGJnltKy+9AnZzzJ2EiQMRXgEkjJT67IxdzmBgmqGKqyQxXaUVenuY
+         CaOQ==
+X-Gm-Message-State: AOAM533QxSzxBfmsvVTZlbi+7tmj5RrTPEcDcABQWuS3QH9uN4kgL0nQ
+        KKPD0VK3GVoyrSFHD91VkTy5FNk+ToqTgvovM8sX5roIcn28ABncPK5M2vc42igaOit7i9AO+nk
+        zRlHkvoERF2bXx96st6OY0f9zI6K+
+X-Received: by 2002:a05:6a00:1a04:b0:4a6:4384:2e5f with SMTP id g4-20020a056a001a0400b004a643842e5fmr43962070pfv.36.1638262334260;
+        Tue, 30 Nov 2021 00:52:14 -0800 (PST)
+X-Google-Smtp-Source: ABdhPJzc/xABQRyGcSc35TzwobPSt4/vjPNihBOIqmq1/ibTgf7iYbomHvroaZ+E2hqCKqlaTZyIoQ==
+X-Received: by 2002:a05:6a00:1a04:b0:4a6:4384:2e5f with SMTP id g4-20020a056a001a0400b004a643842e5fmr43962051pfv.36.1638262334041;
+        Tue, 30 Nov 2021 00:52:14 -0800 (PST)
+Received: from zqy787-GE5S.lan ([36.7.42.137])
+        by smtp.gmail.com with ESMTPSA id j1sm20305982pfu.47.2021.11.30.00.52.11
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 30 Nov 2021 00:52:13 -0800 (PST)
+From:   Zhou Qingyang <zhou1615@umn.edu>
+To:     zhou1615@umn.edu
+Cc:     kjlu@umn.edu, Coly Li <colyli@suse.de>,
+        Kent Overstreet <kent.overstreet@gmail.com>,
+        Hannes Reinecke <hare@suse.com>, Michael Lyle <mlyle@lyle.org>,
+        Tang Junhui <tang.junhui@zte.com.cn>,
+        Jens Axboe <axboe@kernel.dk>, linux-bcache@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] bcache: Fix a NULL pointer dereference in detached_dev_do_request()
+Date:   Tue, 30 Nov 2021 16:51:39 +0800
+Message-Id: <20211130085139.74175-1-zhou1615@umn.edu>
+X-Mailer: git-send-email 2.25.1
 MIME-Version: 1.0
-In-Reply-To: <b549b4ce-4156-eaab-a146-1fa52f51b642@panix.com>
-Content-Type: text/plain; charset=utf-8
-Content-Language: en-US
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 11/27/21 5:11 PM, Kenneth R. Crudup wrote:
-> 
-> On Fri, 26 Nov 2021, Jens Axboe wrote:
-> 
->>>> That said, I'm pretty confident in the fix,
-> 
-> Moot point kinda, as I see the fix in Linus' master, but yeah, it's
-> working here.
+In detached_dev_do_request(), the return value of kzalloc() is
+assigned to ddip, and there is a dereference of it in
+detached_dev_do_request(), which could lead to a NULL pointer
+dereference on failure of kzalloc().
 
-Thanks for testing! I had a high level of confidence in that fix, and
-wanted to flush it out before -rc3. But testing is always appreciated,
-and thanks for the initial report as well.
+Fix this bug by adding a check of ddip. This patch imitates the
+failure-handling logic in cached_dev_submit_bio().
 
+Note that we found the fixing of the bug hard, as the return value of
+the callers is void and we cannot pass an error status upstream.
+Please adivce if there is a better way for fixing.
+
+This bug was found by a static analyzer. The analysis employs
+differential checking to identify inconsistent security operations
+(e.g., checks or kfrees) between two code paths and confirms that the
+inconsistent operations are not recovered in the current function or
+the callers, so they constitute bugs.
+
+Note that, as a bug found by static analysis, it might be a false
+positive or hard to trigger. Multiple researchers have cross-reviewed
+the bug.
+
+Builds with CONFIG_BCACHE=m show no new warnings, and our static
+analyzer no longer warns about this code.
+
+Fixes:  bc082a55d25c ("bcache: fix inaccurate io state for detached bcache devices")
+Signed-off-by: Zhou Qingyang <zhou1615@umn.edu>
+---
+ drivers/md/bcache/request.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index d15aae6c51c1..3a17925c734b 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -1107,6 +1107,11 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio,
+ 	 * which would call closure_get(&dc->disk.cl)
+ 	 */
+ 	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
++	if (!ddip) {
++		bio->bi_status = BLK_STS_RESOURCE;
++		bio_endio(bio);
++		return;
++	}
+ 	ddip->d = d;
+ 	/* Count on the bcache device */
+ 	ddip->orig_bdev = orig_bdev;
 -- 
-Jens Axboe
+2.25.1
 
