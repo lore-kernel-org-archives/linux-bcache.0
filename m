@@ -2,133 +2,82 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E4D48C433F5
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Nov 2021 08:58:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0B7C1C433F5
+	for <linux-bcache@archiver.kernel.org>; Thu,  2 Dec 2021 15:13:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234200AbhK3JBb (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Nov 2021 04:01:31 -0500
-Received: from mta-p6.oit.umn.edu ([134.84.196.206]:57442 "EHLO
-        mta-p6.oit.umn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235089AbhK3JBb (ORCPT
+        id S1347525AbhLBPQh (ORCPT
+        <rfc822;linux-bcache@archiver.kernel.org>);
+        Thu, 2 Dec 2021 10:16:37 -0500
+Received: from mailbackend.panix.com ([166.84.1.89]:50000 "EHLO
+        mailbackend.panix.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S236157AbhLBPQh (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Nov 2021 04:01:31 -0500
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Nov 2021 04:01:31 EST
-Received: from localhost (unknown [127.0.0.1])
-        by mta-p6.oit.umn.edu (Postfix) with ESMTP id 4J3GDv1vwhz9vC8C
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Nov 2021 08:52:15 +0000 (UTC)
-X-Virus-Scanned: amavisd-new at umn.edu
-Received: from mta-p6.oit.umn.edu ([127.0.0.1])
-        by localhost (mta-p6.oit.umn.edu [127.0.0.1]) (amavisd-new, port 10024)
-        with ESMTP id wdwUbI3nSnzm for <linux-bcache@vger.kernel.org>;
-        Tue, 30 Nov 2021 02:52:15 -0600 (CST)
-Received: from mail-pj1-f69.google.com (mail-pj1-f69.google.com [209.85.216.69])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
-        (No client certificate requested)
-        by mta-p6.oit.umn.edu (Postfix) with ESMTPS id 4J3GDt6ZVsz9vC7k
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Nov 2021 02:52:14 -0600 (CST)
-DMARC-Filter: OpenDMARC Filter v1.3.2 mta-p6.oit.umn.edu 4J3GDt6ZVsz9vC7k
-DKIM-Filter: OpenDKIM Filter v2.11.0 mta-p6.oit.umn.edu 4J3GDt6ZVsz9vC7k
-Received: by mail-pj1-f69.google.com with SMTP id r23-20020a17090a941700b001a74be6cf80so6589361pjo.2
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Nov 2021 00:52:14 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=umn.edu; s=google;
-        h=from:to:cc:subject:date:message-id:mime-version
-         :content-transfer-encoding;
-        bh=B9fMCH0NKWt3molLrHA4oJZ0OiPJH79kluyM8NW1Juo=;
-        b=cFFfjaZFN1GoVY96cCbHXCCcPpXrRofrjx9REKmLinJwH6Jdd7yVbD9Rsf1STazZua
-         z8Yg+iscarQMfvNuc4TAG+psZURIDxZpaXXW4YG4Xp9om0OUh38bgJun/za43QKqcky8
-         5bybTB5CZm25g6FhrXZwzDFmQHr5i0jYRh/846nSVnfV0XlWyR4UylZefiVRv9dxywsD
-         UtziPp8cwHrXhjavRoaN1esnyL0MIwrD7a9o5rsk+znkQoXRTxoxVWtjVPUHE4k3IdiV
-         +8ZDHFukr9hwTWUtIdh8A712lX1Wr9wtAXSEBNuFXTp12EBHJzJV/MwEzq5UY3sJigDw
-         uieg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=x-gm-message-state:from:to:cc:subject:date:message-id:mime-version
-         :content-transfer-encoding;
-        bh=B9fMCH0NKWt3molLrHA4oJZ0OiPJH79kluyM8NW1Juo=;
-        b=Z/aaX57Kkv1TCEtTkj0DHRXTHA+zBM4YMpdYWWMbrbpbGwYJtOduNhzx+4SmQPrrqd
-         5f4bHCsIenGEhvsylM5s1Mob3e4MmLAoioH7A0t3IQqFMmVx5GU3AaboC1clbb/Vdg/a
-         W5aEBe2X+bcPas1OZGzrTkTp9EstnGwo1hWnOfAmzv5l01fHvF+gJjZaZkRkqv2zkFUr
-         5F/NoZKD/fvc50wL83CrmT5mB/Gu2VGOsLtwFWP9gSF5lKJ4AlQLTEKR2uXmPVDUX7Ts
-         Q5hXauEMq5hdOTdGJnltKy+9AnZzzJ2EiQMRXgEkjJT67IxdzmBgmqGKqyQxXaUVenuY
-         CaOQ==
-X-Gm-Message-State: AOAM533QxSzxBfmsvVTZlbi+7tmj5RrTPEcDcABQWuS3QH9uN4kgL0nQ
-        KKPD0VK3GVoyrSFHD91VkTy5FNk+ToqTgvovM8sX5roIcn28ABncPK5M2vc42igaOit7i9AO+nk
-        zRlHkvoERF2bXx96st6OY0f9zI6K+
-X-Received: by 2002:a05:6a00:1a04:b0:4a6:4384:2e5f with SMTP id g4-20020a056a001a0400b004a643842e5fmr43962070pfv.36.1638262334260;
-        Tue, 30 Nov 2021 00:52:14 -0800 (PST)
-X-Google-Smtp-Source: ABdhPJzc/xABQRyGcSc35TzwobPSt4/vjPNihBOIqmq1/ibTgf7iYbomHvroaZ+E2hqCKqlaTZyIoQ==
-X-Received: by 2002:a05:6a00:1a04:b0:4a6:4384:2e5f with SMTP id g4-20020a056a001a0400b004a643842e5fmr43962051pfv.36.1638262334041;
-        Tue, 30 Nov 2021 00:52:14 -0800 (PST)
-Received: from zqy787-GE5S.lan ([36.7.42.137])
-        by smtp.gmail.com with ESMTPSA id j1sm20305982pfu.47.2021.11.30.00.52.11
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 30 Nov 2021 00:52:13 -0800 (PST)
-From:   Zhou Qingyang <zhou1615@umn.edu>
-To:     zhou1615@umn.edu
-Cc:     kjlu@umn.edu, Coly Li <colyli@suse.de>,
-        Kent Overstreet <kent.overstreet@gmail.com>,
-        Hannes Reinecke <hare@suse.com>, Michael Lyle <mlyle@lyle.org>,
-        Tang Junhui <tang.junhui@zte.com.cn>,
-        Jens Axboe <axboe@kernel.dk>, linux-bcache@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] bcache: Fix a NULL pointer dereference in detached_dev_do_request()
-Date:   Tue, 30 Nov 2021 16:51:39 +0800
-Message-Id: <20211130085139.74175-1-zhou1615@umn.edu>
-X-Mailer: git-send-email 2.25.1
+        Thu, 2 Dec 2021 10:16:37 -0500
+Received: from xps-7390.lan (50-233-66-25-static.hfc.comcastbusiness.net [50.233.66.25])
+        by mailbackend.panix.com (Postfix) with ESMTPSA id 4J4fbX4wgSzRyK;
+        Thu,  2 Dec 2021 10:13:12 -0500 (EST)
+DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; d=panix.com; s=panix;
+        t=1638457993; bh=toNejAxkj+yP8ltzlp9a3STqZnD7jU0oVwaijQEJlZU=;
+        h=Date:From:Reply-To:To:cc:Subject:In-Reply-To:References;
+        b=iQWI9zs4cbEE27OPkZUNGunlqbBji7LPHblAro+/jkZcNX24HasiX5UC30tsS+Ese
+         pPZ502MW72NrVzRpV70RpLot5KWFaFQS5/mSzJ3Rv12dJPF/NtSLrrtAyySPvjJTJU
+         HL0nQA00QggMvQiD4jwuQqwy6YAByTPWSR92+T7c=
+Date:   Thu, 2 Dec 2021 07:13:11 -0800 (PST)
+From:   "Kenneth R. Crudup" <kenny@panix.com>
+Reply-To: "Kenneth R. Crudup" <kenny@panix.com>
+To:     Jens Axboe <axboe@kernel.dk>
+cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-nvme@lists.infradead.org,
+        "Kenneth R. Crudup" <kenny@panix.com>, shinichiro.kawasaki@wdc.com
+Subject: Re: Write I/O queue hangup at random on recent Linus' kernels
+In-Reply-To: <be6a783-97db-c3bf-b16f-e8c62b14755d@panix.com>
+Message-ID: <4429eed8-b9b9-6943-f76-6ea38d695248@panix.com>
+References: <b3ba57a7-d363-9c17-c4be-9dbe86875@panix.com> <b9c2681f-e63a-4d3b-913d-d8a75e2c2ea0@kernel.dk> <be6a783-97db-c3bf-b16f-e8c62b14755d@panix.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-In detached_dev_do_request(), the return value of kzalloc() is
-assigned to ddip, and there is a dereference of it in
-detached_dev_do_request(), which could lead to a NULL pointer
-dereference on failure of kzalloc().
 
-Fix this bug by adding a check of ddip. This patch imitates the
-failure-handling logic in cached_dev_submit_bio().
+On Thu, 25 Nov 2021, Kenneth R. Crudup wrote:
 
-Note that we found the fixing of the bug hard, as the return value of
-the callers is void and we cannot pass an error status upstream.
-Please adivce if there is a better way for fixing.
+> > echo 0 > /sys/block/nvme0n1/queue/wbt_lat_usec
+> > and that will disable writeback throttling on that device.
 
-This bug was found by a static analyzer. The analysis employs
-differential checking to identify inconsistent security operations
-(e.g., checks or kfrees) between two code paths and confirms that the
-inconsistent operations are not recovered in the current function or
-the callers, so they constitute bugs.
+> It's been about 48 hours and haven't seen the issue since doing this.
 
-Note that, as a bug found by static analysis, it might be a false
-positive or hard to trigger. Multiple researchers have cross-reviewed
-the bug.
+I'm now back to running Linus' master (which includes your fix for this, and
+I'm not disabling WBT any longer).
 
-Builds with CONFIG_BCACHE=m show no new warnings, and our static
-analyzer no longer warns about this code.
+We may still have issues, it appears. Everything was going OK until yesterday,
+when I had an SD-Card with an image of an SSD with a dm volume group on it,
+that I'd had mounted as a loopback image and activated (... was that clear)?
 
-Fixes:  bc082a55d25c ("bcache: fix inaccurate io state for detached bcache devices")
-Signed-off-by: Zhou Qingyang <zhou1615@umn.edu>
----
- drivers/md/bcache/request.c | 5 +++++
- 1 file changed, 5 insertions(+)
+While I'm not seeing any kernel messages related to my NVMe (root) device, I'm
+also seeing the same UI issues as before- the KDE toolbar is unresponsive, and
+I don't have full interaction with my desktop UI (i.e., can't click on the
+bottom button bar to switch to the active window). I'm pretty sure this is a
+symptom of another I/O problem, however.
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index d15aae6c51c1..3a17925c734b 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -1107,6 +1107,11 @@ static void detached_dev_do_request(struct bcache_device *d, struct bio *bio,
- 	 * which would call closure_get(&dc->disk.cl)
- 	 */
- 	ddip = kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO);
-+	if (!ddip) {
-+		bio->bi_status = BLK_STS_RESOURCE;
-+		bio_endio(bio);
-+		return;
-+	}
- 	ddip->d = d;
- 	/* Count on the bcache device */
- 	ddip->orig_bdev = orig_bdev;
+I tried to unfreeze it by:
+
+  $ echo 0 | sudo tee -a /sys/block/mmcblk0/queue/wbt_lat_usec /sys/block/loop?/queue/wbt_lat_usec
+
+... and a couple of seconds after that, it looked as if some queued-up toolbar
+actions spit out (but was then unresponsive), so I'd tried this to see if it
+would tell me if I had any throttled/stalled IOs:
+
+  $ egrep -r . $(sudo find /sys/block/*/ -name inflight )
+
+... but they were all zeros.
+
+Does this make sense? Your patch seemed to be block-device-agnostic, but is there
+a chance there's a similar path in the "dm" that also needs to be fixed?
+
+Thanks,
+
+	-Kenny
+
 -- 
-2.25.1
-
+Kenneth R. Crudup / Sr. SW Engineer, Scott County Consulting, Orange County CA
