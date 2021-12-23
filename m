@@ -2,58 +2,53 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 14C3EC433F5
-	for <linux-bcache@archiver.kernel.org>; Thu, 16 Dec 2021 17:47:30 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 1C38BC433EF
+	for <linux-bcache@archiver.kernel.org>; Thu, 23 Dec 2021 08:01:07 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230155AbhLPRr3 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 16 Dec 2021 12:47:29 -0500
-Received: from std002.phy.lolipop.jp ([163.44.185.65]:48626 "EHLO
-        std002.phy.lolipop.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S240444AbhLPRrY (ORCPT
+        id S242782AbhLWIBF (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Thu, 23 Dec 2021 03:01:05 -0500
+Received: from mail.BETTERBIZ.PL ([45.86.209.138]:59616 "EHLO
+        mail.betterbiz.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S242794AbhLWIBD (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 16 Dec 2021 12:47:24 -0500
-X-Greylist: delayed 417 seconds by postgrey-1.27 at vger.kernel.org; Thu, 16 Dec 2021 12:47:24 EST
-Received: by std002.phy.lolipop.jp (Postfix, from userid 995)
-        id A3B3D1C087CA0; Fri, 17 Dec 2021 02:40:23 +0900 (JST)
-To:     linux-bcache@vger.kernel.org
-Subject: =?UTF-8?B?44CQ44Oh44Ks44ON44Gu5LiJ5oSb44CR44GK5ZWP44GE5ZCI44KP44Gb44GE?=  =?UTF-8?B?44Gf44Gg44GN44GC44KK44GM44Go44GG44GU44GW44GE44G+44GZ44CC?=
-X-PHP-Originating-Script: 1594535:PHPMailer.php
-Date:   Thu, 16 Dec 2021 17:40:23 +0000
-From:   =?UTF-8?B?44Oh44Ks44ON44Gu5LiJ5oSb?= <yamasaki@suneye-yamasaki.com>
-Message-ID: <8R694KqwYcdhumvpY0ZAaaUVCeJfLYUCPC4mDnYs@suneye-yamasaki.com>
-X-Mailer: PHPMailer 6.5.0 (https://github.com/PHPMailer/PHPMailer)
+        Thu, 23 Dec 2021 03:01:03 -0500
+X-Greylist: delayed 556 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Dec 2021 03:01:03 EST
+Received: by mail.betterbiz.pl (Postfix, from userid 1001)
+        id 4F7648286A; Thu, 23 Dec 2021 02:45:51 -0500 (EST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=betterbiz.pl; s=mail;
+        t=1640245905; bh=07NAgW1e0WiNB9zqagiM2BnwZfWBCpNa2E4+ccxBPgw=;
+        h=Date:From:To:Subject:From;
+        b=UCrSeQhDnmIOae2koRNIy3CamZVqryzQqIjTMT2YV5C0U+naMp903AgEtbBPL0LHs
+         3VK2YErJbHmcOe0GS7CoPZTAegAWCF3TwIIL7Ylubf57nlTtwyWZN2EiFMoO2dFsom
+         rUIfxw0yl+RjR4sSTF3jYF9UViuxyVJIaDKl8Ju4QFgeV8T/NmqYIze+dJnV/TU0Cq
+         3f3kR0ZUG96uQwN9XEzpuaNCaSUWIMb+7O2d6BClmQHf9kwGY6AQMxtK9d6UsQgEwu
+         3EAXC37emDyRFIJQBXidtMLAz7MCkGFl0WUfUtloz0Bm6h5gik7sTGE/fGQUy8viW4
+         1UWbr9VgMzcQg==
+Received: by mail.betterbiz.pl for <linux-bcache@vger.kernel.org>; Thu, 23 Dec 2021 07:45:46 GMT
+Message-ID: <20211223024500-0.1.f.zwd.0.krd31mrqet@betterbiz.pl>
+Date:   Thu, 23 Dec 2021 07:45:46 GMT
+From:   "Jakub Daroch" <jakub.daroch@betterbiz.pl>
+To:     <linux-bcache@vger.kernel.org>
+Subject: Wycena paneli fotowoltaicznych
+X-Mailer: mail.betterbiz.pl
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-❤️ You have unread messages from Regina (2)! Click Here: http://bit.do/fSTHz?u3r0 ❤️様
+Dzie=C5=84 dobry,
 
-この度はメガネの三愛にお問い合わせいただき、誠にありがとうございます。
-お問い合わせいただいた内容へは、3営業日中にお返事いたしますので、今しばらくお待ちください。
+dostrzegam mo=C5=BCliwo=C5=9B=C4=87 wsp=C3=B3=C5=82pracy z Pa=C5=84stwa f=
+irm=C4=85.
 
-お問い合わせ内容は以下の通りです。
-内容に間違い等ありましたら、お手数ですが、今一度、問い合わせフォームよりお問い合わせください。
+=C5=9Awiadczymy kompleksow=C4=85 obs=C5=82ug=C4=99 inwestycji w fotowolta=
+ik=C4=99, kt=C3=B3ra obni=C5=BCa koszty energii elektrycznej nawet o 90%.
 
-※ こちらのメールアドレスには返信できませんので、ご注意ください。
+Czy s=C4=85 Pa=C5=84stwo zainteresowani weryfikacj=C4=85 wst=C4=99pnych p=
+ropozycji?
 
-お問い合わせ内容をご確認ください。
 
-お名前：❤️ You have unread messages from Regina (2)! Click Here: http://bit.do/fSTHz?u3r0 ❤️
-ご住所：35n2z5g
-電話番号：277741459171
-メールアドレス：linux-bcache@vger.kernel.org
-当サイトを知ったきっかけ：その他
-
-メッセージ本文:
-z4tj7c8
-
--- 
-メガネの三愛
-https://suneye-yamasaki.com
-〒804-0012 福岡県北九州市戸畑区中原東2-6-16
-tel / 093-982-0780
-営業時間 / 平日10:00〜17:00（完全ご予約制です）
-
+Pozdrawiam,
+Jakub Daroch
