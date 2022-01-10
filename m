@@ -2,130 +2,96 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DB6DBC433FE
-	for <linux-bcache@archiver.kernel.org>; Sat,  8 Jan 2022 21:51:31 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7FC02C433F5
+	for <linux-bcache@archiver.kernel.org>; Mon, 10 Jan 2022 15:53:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233084AbiAHVva (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 8 Jan 2022 16:51:30 -0500
-Received: from mx.ewheeler.net ([173.205.220.69]:34602 "EHLO mx.ewheeler.net"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S233083AbiAHVva (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 8 Jan 2022 16:51:30 -0500
-Received: from localhost (localhost [127.0.0.1])
-        by mx.ewheeler.net (Postfix) with ESMTP id DCF9645;
-        Sat,  8 Jan 2022 13:51:29 -0800 (PST)
-X-Virus-Scanned: amavisd-new at ewheeler.net
-Received: from mx.ewheeler.net ([127.0.0.1])
-        by localhost (mx.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
-        with LMTP id tEEkCLizf5QF; Sat,  8 Jan 2022 13:51:25 -0800 (PST)
-Received: from localhost (localhost [127.0.0.1])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        id S236729AbiAJPxR (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 10 Jan 2022 10:53:17 -0500
+Received: from smtp-out2.suse.de ([195.135.220.29]:50124 "EHLO
+        smtp-out2.suse.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S236509AbiAJPxQ (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 10 Jan 2022 10:53:16 -0500
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
         (No client certificate requested)
-        by mx.ewheeler.net (Postfix) with ESMTPSA id EAB4439;
-        Sat,  8 Jan 2022 13:51:24 -0800 (PST)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mx.ewheeler.net EAB4439
-Date:   Sat, 8 Jan 2022 13:51:22 -0800 (PST)
-From:   Eric Wheeler <bcache@lists.ewheeler.net>
-To:     Kent Overstreet <kent.overstreet@gmail.com>
-cc:     "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Coly Li <colyli@suse.de>, linux-block@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>
-Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent
- for hardware raid5/6
-In-Reply-To: <c9abd220-6b7f-9299-48a1-a16d64981734@ewheeler.net>
-Message-ID: <98aa1886-859-abb9-164f-c9eb9be38a91@ewheeler.net>
-References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de> <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net> <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de> <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net> <8a9131dc-9bf7-a24a-f7b8-35e0c019e905@suse.de>
- <fdb85dc1-eee6-e55e-8e9c-fa1f36b4a37@ewheeler.net> <yq15yqvw1f0.fsf@ca-mkp.ca.oracle.com> <c9abd220-6b7f-9299-48a1-a16d64981734@ewheeler.net>
+        by smtp-out2.suse.de (Postfix) with ESMTPS id D76FD1F393;
+        Mon, 10 Jan 2022 15:53:14 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+        t=1641829994; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=FRM4BcmD9hfO5nbXPqn+DFkr64sSUqkyCYTzumTkKhk=;
+        b=HxSwhujHM56DgA0t1Mwoxptc4JAuP4ieSwDdElwSgSCdMLHrANAYh+Xq2Mz89veNpEywRh
+        xLKRVnKxWvT/r2wGY67JhgHwgZj5V/Ln80UK8nl4ZCmswxU5dczof6z6yjZB1q9FK5ouje
+        SH9vAhHd6H5gSmaX0MJBAV+TPWYj6Fc=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+        s=susede2_ed25519; t=1641829994;
+        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=FRM4BcmD9hfO5nbXPqn+DFkr64sSUqkyCYTzumTkKhk=;
+        b=C8T0d+w3VB+duw4c77N2MUtc/ZZeUErPQL5VoR4JCQ+vDD7zefO7e7wtelRDxU1+MjVEoK
+        mipfN5KN4heFkVDA==
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 5629513D88;
+        Mon, 10 Jan 2022 15:53:13 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([192.168.254.65])
+        by imap2.suse-dmz.suse.de with ESMTPSA
+        id Y+eyAmlW3GEWDgAAMHmgww
+        (envelope-from <colyli@suse.de>); Mon, 10 Jan 2022 15:53:13 +0000
+Message-ID: <97e5c59a-ac8e-ffee-b5d5-55883932b8df@suse.de>
+Date:   Mon, 10 Jan 2022 23:53:10 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0)
+ Gecko/20100101 Thunderbird/91.4.1
+Subject: Re: [PATCH] bcache: use default_groups in kobj_type
+Content-Language: en-US
+To:     Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc:     Kent Overstreet <kent.overstreet@gmail.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20220106100004.3277439-1-gregkh@linuxfoundation.org>
+ <7cbca83d-bcac-464e-d2e4-c54b2d53eead@suse.de> <YdlL4YAScYp9XxkI@kroah.com>
+From:   Coly Li <colyli@suse.de>
+In-Reply-To: <YdlL4YAScYp9XxkI@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Fri, 7 Jan 2022, Eric Wheeler wrote:
-> On Fri, 7 Jan 2022, Martin K. Petersen wrote:
-> > Eric,
-> > 
-> > > Even new new RAID controlers that _do_ provide `io_opt` still do _not_ 
-> > > indicate partial_stripes_expensive (which is an mdraid feature, but Martin 
-> > > please correct me if I'm wrong here).
-> > 
-> > partial_stripes_expensive is a bcache thing, I am not sure why it needs
-> > a separate flag. It is implied, although I guess one could argue that
-> > RAID0 is a special case since partial writes are not as painful as with
-> > parity RAID.
-> 
-> I'm guessing bcache used did some optimization for 
-> queue->limits.raid_partial_stripes_expensive because md raid5 code sets 
-> this flag.  At least when using Linux md as the RAID5 implementation it 
-> gets configured automatically:
->    raid5.c:       mddev->queue->limits.raid_partial_stripes_expensive = 1;
-> 
-> https://elixir.bootlin.com/linux/latest/source/drivers/md/raid5.c#L7729
-> 
-> Interestingly only bcache uses it, but md does set it.
+On 1/8/22 4:31 PM, Greg Kroah-Hartman wrote:
+> On Sat, Jan 08, 2022 at 02:16:28PM +0800, Coly Li wrote:
+>> On 1/6/22 6:00 PM, Greg Kroah-Hartman wrote:
+>>> There are currently 2 ways to create a set of sysfs files for a
+>>> kobj_type, through the default_attrs field, and the default_groups
+>>> field.  Move the bcache sysfs code to use default_groups field which has
+>>> been the preferred way since aa30f47cf666 ("kobject: Add support for
+>>> default attribute groups to kobj_type") so that we can soon get rid of
+>>> the obsolete default_attrs field.
+>>>
+>>> Cc: Coly Li <colyli@suse.de>
+>>> Cc: Kent Overstreet <kent.overstreet@gmail.com>
+>>> Cc: linux-bcache@vger.kernel.org
+>>> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> It looks good to me.
+>>
+>> Acked-by: Coly Li <colyli@suse.de>
+>>
+>> I assume you may take this patch directly in your maintenance path, but if
+>> you want me to take this, just let me know. Thanks.
+> I can take it myself, or you can, which ever is easiest for you, just
+> let me know which you prefer.  Thanks for the review!
 
-Ok so `git blame` shows that Kent added this to md/raid5.c in 
-c78afc6261b (Kent Overstreet 2013-07-11 22:39:53 -0700 7526)
-	mddev->queue->limits.raid_partial_stripes_expensive = 1;
+It will be faster for this patch goes into mainline in your path, I am 
+on vacation now and will have a latency...
 
-    bcache/md: Use raid stripe size
-    
-    Now that we've got code for raid5/6 stripe awareness, bcache just needs
-    to know about the stripes and when writing partial stripes is expensive
-    - we probably don't want to enable this optimization for raid1 or 10,
-    even though they have stripes. So add a flag to queue_limits.
+Thank you.
 
-Kent, Martin:
-
-Do you think we should leave the md-specific 
-raid_partial_stripes_expensive setting and require users of RAID 
-controllers to set the bit themselves in bcache---or---remove all 
-raid_partial_stripes_expensive code and always treat writes as "expensive" 
-when `opt_io` is defined?
-
---
-Eric Wheeler
-
-
-> 
-> > The SCSI spec states that submitting an I/O that is smaller than io_min
-> > "may incur delays in processing the command". And similarly, submitting
-> > a command larger than io_opt "may incur delays in processing the
-> > command".
-> > 
-> > IOW, the spec says "don't write less than an aligned multiple of the
-> > stripe chunk size" and "don't write more than an aligned full
-> > stripe". That leaves "aligned multiples of the stripe chunk size but
-> > less than the full stripe width" unaccounted for. And I guess that's
-> > what the bcache flag is trying to capture.
-> 
-> Maybe any time io_opt is provided then partial_stripes_expensive should be 
-> flagged too and any code to the contrary should be removed?
-> 
-> Question: Does anyone have a reason to keep partial_stripes_expensive in 
-> the kernel at all?
-> 
-> > SCSI doesn't go into details about RAID levels and other implementation
-> > details which is why the wording is deliberately vague. But obviously
-> > the expectation is that partial stripe writes are slower than full.
-> > 
-> > In my book any component in the stack that sees either io_min or io_opt
-> > should try very hard to send I/Os that are aligned multiples of those
-> > values. I am not opposed to letting users manually twiddle the
-> > settings. But I do think that we should aim for the stack doing the
-> > right thing when it sees io_opt reported on a device.
-> 
-> Agreed, thanks for the feedback!
-> 
-> -Eric
-> 
-> 
-> > 
-> > -- 
-> > Martin K. Petersen	Oracle Linux Engineering
-> > 
-> 
+Coly Li
