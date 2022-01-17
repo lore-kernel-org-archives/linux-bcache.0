@@ -2,171 +2,144 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4388EC433EF
-	for <linux-bcache@archiver.kernel.org>; Tue, 11 Jan 2022 02:55:36 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 7EE29C433EF
+	for <linux-bcache@archiver.kernel.org>; Mon, 17 Jan 2022 21:16:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233070AbiAKCzf (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 10 Jan 2022 21:55:35 -0500
-Received: from mx0b-00069f02.pphosted.com ([205.220.177.32]:28366 "EHLO
-        mx0b-00069f02.pphosted.com" rhost-flags-OK-OK-OK-OK)
-        by vger.kernel.org with ESMTP id S231590AbiAKCze (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 10 Jan 2022 21:55:34 -0500
-Received: from pps.filterd (m0246631.ppops.net [127.0.0.1])
-        by mx0b-00069f02.pphosted.com (8.16.1.2/8.16.1.2) with SMTP id 20B03NJI026231;
-        Tue, 11 Jan 2022 02:55:28 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=oracle.com; h=to : cc : subject :
- from : message-id : references : date : in-reply-to : content-type :
- mime-version; s=corp-2021-07-09;
- bh=0MTnY7A8lWe9DT/pHy7gzNFCA3VzSOdjr5VP8KMY4zU=;
- b=uvg4RU/7AvbDthqaWMi2aQfwUdYDwbRbIhWvZAMktSKKnXhIy+RFDXZ+9KMYspVYomEA
- UIZeJLdPxq9/j43kH5hKAemOzbQdYLe37nLVg1l6vFO4ATWJDuS/8LI0rrNy1bB/kLiB
- 5cUpZr3AAAgoxIlL1ruIrW17BYS8N3nEheWUxcbEJ0RFwcLS24HWTeBDhNN5pdeNvKEj
- EnxGMQwG9LDVXYEn5VFfJePLJklEiWlyTGGTv41cAV/MixpgpHvyMlG+91oG9k7Ivnkq
- cnJIjnr3OfVMh+PaWLXCwLQvhzYr1aYbLZYEFF5+eoMqTznClACHbb296RZAHBGPE2iS 1Q== 
-Received: from userp3030.oracle.com (userp3030.oracle.com [156.151.31.80])
-        by mx0b-00069f02.pphosted.com with ESMTP id 3dgjtga75c-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Tue, 11 Jan 2022 02:55:28 +0000
-Received: from pps.filterd (userp3030.oracle.com [127.0.0.1])
-        by userp3030.oracle.com (8.16.1.2/8.16.1.2) with SMTP id 20B2g72A096920;
-        Tue, 11 Jan 2022 02:55:27 GMT
-Received: from nam11-co1-obe.outbound.protection.outlook.com (mail-co1nam11lp2174.outbound.protection.outlook.com [104.47.56.174])
-        by userp3030.oracle.com with ESMTP id 3deyqwdywv-1
-        (version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-        Tue, 11 Jan 2022 02:55:27 +0000
-ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
- b=lnfLxSGHT/AK8OgBYhOs3qzkGJYaE4FP8J14iBnalPNIiRVQbJDQxgtkL4kpyTOE9nfx3PNGSu46DQlJCEqHrsdRZYfFPjXrgSm25iZJWZktMe9Oty1MC+BvT73PPh1crSHgAVlZ0k6btTy/eOAJw7FMqm7WXoAa5lHT5PKDN5GbATslbB17GUMmLhx98YL0OH9dYBtCjDcHlI/WL8UTec7NdKqLUBcn5SuEo/v7fiGVU9ADsJMdSmgRmOPQ62uA6tsMJOTB7j9We0SQ7oIl8WxeTRx6Idf6ZZdvYDAOxBjj+AoUB/qaj6U9eGg5keN8ey06rgysxEJGNAw4SrzTfA==
-ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
- s=arcselector9901;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
- bh=0MTnY7A8lWe9DT/pHy7gzNFCA3VzSOdjr5VP8KMY4zU=;
- b=OKbuv3+fAYX0GtFUYJXIi90vdzksEGXFS3tAt+I7E/OmCCUa1t2mHT+PoEd0oH7GD2uRZ96FsNWWaejvEFx5zwl2dJrLSeP4B0OqZZBqsPoVeqmxWh/M4vUyuQkBT6D18bkxK1bTb+gVPy49qZ8p9MytjFAa/uXcVCjMQIX+mK/QHu/de1+IiBUtp+TMkjy2L34yUpIu7eEZri+YO7C3mjrswKRbvnhJ75f320H4bE+VjwP5Ki59aCb3FexSDquHSt5GXtPCUYkGk5ZoJpXvTr/icZVMy/MD01rIPHeJNRc6EbvjAmGt/Ygv9i1jO+8LpiAwZi19pFq/eJ9F0TGFiQ==
-ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass
- smtp.mailfrom=oracle.com; dmarc=pass action=none header.from=oracle.com;
- dkim=pass header.d=oracle.com; arc=none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
- d=oracle.onmicrosoft.com; s=selector2-oracle-onmicrosoft-com;
- h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=0MTnY7A8lWe9DT/pHy7gzNFCA3VzSOdjr5VP8KMY4zU=;
- b=bOcpJ9skQEVkDNcXcA8NSbnVGJprbfSGrTxFAzdf/atWQxqkx1EbIGCqSRa/0wsY3IE3agmhQcN4bQXxYcJQ9YXQev0UWUGZAUwKVaL++P+CBqdOQvhVN4jKwnbmj5oseFIbwYTmRzzcMJdmlLQ6QFCRH8b/Vhlcnr/S7JS96KY=
-Received: from PH0PR10MB4759.namprd10.prod.outlook.com (2603:10b6:510:3d::12)
- by PH0PR10MB5514.namprd10.prod.outlook.com (2603:10b6:510:106::17) with
- Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.4867.9; Tue, 11 Jan
- 2022 02:55:24 +0000
-Received: from PH0PR10MB4759.namprd10.prod.outlook.com
- ([fe80::1053:7ae3:932b:f166]) by PH0PR10MB4759.namprd10.prod.outlook.com
- ([fe80::1053:7ae3:932b:f166%7]) with mapi id 15.20.4867.012; Tue, 11 Jan 2022
- 02:55:24 +0000
-To:     Eric Wheeler <bcache@lists.ewheeler.net>
-Cc:     "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Kent Overstreet <kent.overstreet@gmail.com>,
-        Coly Li <colyli@suse.de>, linux-block@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "open list:BCACHE (BLOCK LAYER CACHE)" <linux-bcache@vger.kernel.org>
-Subject: Re: [PATCH] bcache: make stripe_size configurable and persistent
- for hardware raid5/6
-From:   "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-Message-ID: <yq1fspvq99j.fsf@ca-mkp.ca.oracle.com>
-References: <d3f7fd44-9287-c7fa-ee95-c3b8a4d56c93@suse.de>
-        <1561245371-10235-1-git-send-email-bcache@lists.ewheeler.net>
-        <200638b0-7cba-38b4-20c4-b325f3cfe862@suse.de>
-        <alpine.LRH.2.11.1906241800350.1114@mx.ewheeler.net>
-        <8a9131dc-9bf7-a24a-f7b8-35e0c019e905@suse.de>
-        <fdb85dc1-eee6-e55e-8e9c-fa1f36b4a37@ewheeler.net>
-        <yq15yqvw1f0.fsf@ca-mkp.ca.oracle.com>
-        <c9abd220-6b7f-9299-48a1-a16d64981734@ewheeler.net>
-        <98aa1886-859-abb9-164f-c9eb9be38a91@ewheeler.net>
-        <yq1fspvshbw.fsf@ca-mkp.ca.oracle.com>
-        <611f98fc-222-8dd2-6b81-d570fb91fc@ewheeler.net>
-Date:   Mon, 10 Jan 2022 21:55:21 -0500
-In-Reply-To: <611f98fc-222-8dd2-6b81-d570fb91fc@ewheeler.net> (Eric Wheeler's
-        message of "Mon, 10 Jan 2022 15:30:24 -0800 (PST)")
-Content-Type: text/plain
-X-ClientProxiedBy: SJ0PR13CA0043.namprd13.prod.outlook.com
- (2603:10b6:a03:2c2::18) To PH0PR10MB4759.namprd10.prod.outlook.com
- (2603:10b6:510:3d::12)
+        id S231152AbiAQVQM (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 17 Jan 2022 16:16:12 -0500
+Received: from mx.ewheeler.net ([173.205.220.69]:52974 "EHLO mx.ewheeler.net"
+        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+        id S229695AbiAQVQM (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 17 Jan 2022 16:16:12 -0500
+Received: from localhost (localhost [127.0.0.1])
+        by mx.ewheeler.net (Postfix) with ESMTP id B05234A;
+        Mon, 17 Jan 2022 13:16:11 -0800 (PST)
+X-Virus-Scanned: amavisd-new at ewheeler.net
+Received: from mx.ewheeler.net ([127.0.0.1])
+        by localhost (mx.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
+        with LMTP id hBliTfses6IN; Mon, 17 Jan 2022 13:16:07 -0800 (PST)
+Received: from localhost (localhost [127.0.0.1])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        (No client certificate requested)
+        by mx.ewheeler.net (Postfix) with ESMTPSA id 425F039;
+        Mon, 17 Jan 2022 13:16:07 -0800 (PST)
+DKIM-Filter: OpenDKIM Filter v2.11.0 mx.ewheeler.net 425F039
+Date:   Mon, 17 Jan 2022 13:16:00 -0800 (PST)
+From:   bcache@lists.ewheeler.net
+To:     Zou Mingzhe <mingzhe.zou@easystack.cn>
+cc:     Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org,
+        axboe@kernel.dk
+Subject: Re: [PATCH] bcache: fixup bcache_dev_sectors_dirty_add() multithreaded
+ CPU false sharing
+In-Reply-To: <73a82135-2162-fff7-138c-051c8d1001d2@easystack.cn>
+Message-ID: <3dafe10-a21b-e262-5ccd-efd1eba75345@ewheeler.net>
+References: <20220107082113.18480-1-mingzhe.zou@easystack.cn> <fa05fa29-076a-4d33-a578-abf5c2b5c78f@suse.de> <c0ac712e-c9f-825-c2f6-aad0e648ebe6@ewheeler.net> <73a82135-2162-fff7-138c-051c8d1001d2@easystack.cn>
 MIME-Version: 1.0
-X-MS-PublicTrafficType: Email
-X-MS-Office365-Filtering-Correlation-Id: 34cf42ec-0d91-4ab1-b90b-08d9d4add0b2
-X-MS-TrafficTypeDiagnostic: PH0PR10MB5514:EE_
-X-Microsoft-Antispam-PRVS: <PH0PR10MB5514DBDC458E009998580E598E519@PH0PR10MB5514.namprd10.prod.outlook.com>
-X-MS-Oob-TLC-OOBClassifiers: OLM:10000;
-X-MS-Exchange-SenderADCheck: 1
-X-MS-Exchange-AntiSpam-Relay: 0
-X-Microsoft-Antispam: BCL:0;
-X-Microsoft-Antispam-Message-Info: u+92oGTdBCh2GklUW0WyCbWToJqrZpw9hbiebbTzuvut1Zm222AmfL8xaHdOOgb36QXF30ToHYnC+HiFERKO/RFNiW3vHpRteNCn+V0RPVamtbToowSxe5HWKsdA1UbnIFg7mlRDbXRG+6mkHgLoGDmPdALmoKsbUMjBTIYcxTXWxLYfhsYKy2iDj/GzZIA3Yt0jSRxJn3EXu2AvlvkVQKZxR6v6+cjlPCEP0QMkdZERNbWryDMiB+cdcZTjqOsDn7al0kk9rE0anjtMXb3M/NpoVhAFR82b9tZ3T/Gh6YTS5ZnMl/YySp33xfkxR5PaGwgX3486Wu51dPccvO9Oy4B0pKPx6f5T+iV0rchxtdAAw+0h0BjehiMwyB3WbsnKKHzA5EwrS5Br+KYLUGyL63VN6XHPqWomcgw51usFCq8TfIodspd2hE4vZfktexxgvd+p+AjyChm1o1gP0PBROfqLacX4qqxwwlynJ3t0qbUH3f19qnqcCQ93zqJhF/Xf0KeS6VLXBtXq1xMdFdjTONvQmT3uyh392dH7TGdzXHyfSQRHG4Dh68rnGowiBZ3fYXwqFg1VwuyV+xhNo1NV5EL29DgG60Q0dukjNSj2WdLqWd2+M0p8OQPI2mwFMcHg7LbHGGZwgyvIQGmxeJtiGys/0YQC22QkHJGWViOPoORIEvCaorATm7FJrC4p3LOr4Lrbjrj1HBfQupXGwnknHg==
-X-Forefront-Antispam-Report: CIP:255.255.255.255;CTRY:;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:PH0PR10MB4759.namprd10.prod.outlook.com;PTR:;CAT:NONE;SFS:(366004)(6666004)(186003)(508600001)(52116002)(36916002)(26005)(6916009)(6506007)(4744005)(8676002)(6512007)(38100700002)(38350700002)(54906003)(316002)(86362001)(8936002)(66476007)(66946007)(6486002)(66556008)(5660300002)(2906002)(4326008)(83380400001);DIR:OUT;SFP:1101;
-X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
-X-MS-Exchange-AntiSpam-MessageData-0: =?us-ascii?Q?3arON2cnG64ibW9fFhnA8aOre0p5iEJz5V5XZwR1SeWNR1X1HLLGwbWoGdtG?=
- =?us-ascii?Q?KvX2AcFtjjfBJ+WMtBJwLcEYQcWFLKdvK3KAWIrh4KF9TLFAe+M400k12D8i?=
- =?us-ascii?Q?nMlv3SaH4hW0BjgJDDJ+UPLFrYAHqMjPkWTj8KiYAhnulKR4CeCfTs6/pby7?=
- =?us-ascii?Q?Ihs6tpkvzcp4M+q056j1/Qt9RFYWbQfeVrOxYMsrzfZRtMlNA+ERuwiyhB5f?=
- =?us-ascii?Q?yabRtxsMmWHpd9Ab6YYRoKCxAb1osKn8HXDlPR1s3E8twNAJSJk+XERx+PLz?=
- =?us-ascii?Q?5lxSQUGvB/rxZVGpgbI8rDlTwc/PhXY/0fd1VzH9p3GRFpL9uEcnRtmmLA8h?=
- =?us-ascii?Q?6V8JuC9Cu0PD/eQs+IkQWSBuoqX9Hn6I+hmrJwQo/Pt1lldoxTFe/C4MF0ER?=
- =?us-ascii?Q?WTHFQhM7yPqhRJsHC3RxvH+guumVVK0V2TR6Z8jsDT7tpRGj4dlV2mR81ErT?=
- =?us-ascii?Q?IYPnl2FumYZIvGeNCV3XH7kwc05DlmcM3LDk3nRthEPf6/tsQg0j+bxhh2cB?=
- =?us-ascii?Q?ndVS9Iz4hbDqPP7H/guXezckGhHg5r0yELxQjOi0vfJ6a37n3/ucM6ZVbnrH?=
- =?us-ascii?Q?Yv1+p4KcW0Knys2lxfb39fvgBXOVRZASLZ422ArmtDtj6UzzuPokQPZbehm2?=
- =?us-ascii?Q?QEc3oO4Mm40JSke33VxIRyVSMP4EsTged4TXFLH9A8iszArugEBOYdp6GXjA?=
- =?us-ascii?Q?cwEvblbTM8BH+/7p0EaskEkmiuzWDtEMjqlRCAFP1OEpHNcRlzMDiaP/cR8Q?=
- =?us-ascii?Q?omNfGHWWf/nur/y9gMeKTFNSsNAgShKBV41oisDNsQPdSrYMU3hQH4ofoH1x?=
- =?us-ascii?Q?2qJtIPYWPMdkPb/TBiPANP594o7d9tSHMYZAyx6NXterhfztouhcFnmSTl1v?=
- =?us-ascii?Q?gHr+U0sTZV4gOGqY69bKhUm/S1Kj9ADv8JxKfwVi803Lo/atl4S0AZq/X6sJ?=
- =?us-ascii?Q?ihUR+sdVlVmk7h/2XBeWR8JcPszgIi4wV7QKu67RIAJad8q3uC/l2/bbC6a7?=
- =?us-ascii?Q?34/+wl7n81gclVzcFTLMFNAk+FlyCaFinq2RJ+XU+4dU/pquPRCYjdJuvtln?=
- =?us-ascii?Q?SnBWy7Ns8JmkArZND/pGdUBjPJ1G1k7gsy38ymq7W6Yei4XthLDGNv//KS65?=
- =?us-ascii?Q?ygIpKGSVEYEfqdx2OHrW6a9kp+QmsoyevDe1AfNPJmx6I+DfCkpt/BDEB0Mw?=
- =?us-ascii?Q?+ei6vnsrRgSThVDKs3mCprnOIs5npUUDut6ZcLuVYXVhQfQUDyctWWfjMRdv?=
- =?us-ascii?Q?jOoA+6C3e+VJ86Emr+nTDTlHhg4mOl5m57lOmPwYviucQ607xIiXK+jNr5IL?=
- =?us-ascii?Q?QQhE8/vSDL4OXVPujIvzDms3FoqwPiGJsZnwVzg2PctPBQ+H0fBoOOv/nc2s?=
- =?us-ascii?Q?Wl/e3km1xpFGb7HJRzjsKPF7+L1GrtK3uS2EZlsvF4yqmJSk6U46H+q49tZZ?=
- =?us-ascii?Q?PcFHZ9FGhcxkdjW5bMMu0ul2BefMVcoIIUwOP9DlDAX5+j5T/8psg3qabuSr?=
- =?us-ascii?Q?BuVQyCKClfeT7UiEPvXuKrNQDRKbohGwPvy88DnncIxEY8newOy/LtebFOoK?=
- =?us-ascii?Q?aPU2ypyCmKj6rHx+nZ7WpoXFitOYBLCJSZCElJ5yMuFHTUC8I04saSb5irnb?=
- =?us-ascii?Q?rph7TZM4nmMo/0KgAzS/C6HWHmXjkSMimtyoKr2OHZAeauIzhDx71zBaFgol?=
- =?us-ascii?Q?BH3Amw=3D=3D?=
-X-OriginatorOrg: oracle.com
-X-MS-Exchange-CrossTenant-Network-Message-Id: 34cf42ec-0d91-4ab1-b90b-08d9d4add0b2
-X-MS-Exchange-CrossTenant-AuthSource: PH0PR10MB4759.namprd10.prod.outlook.com
-X-MS-Exchange-CrossTenant-AuthAs: Internal
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 11 Jan 2022 02:55:24.8721
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-CrossTenant-Id: 4e2c6054-71cb-48f1-bd6c-3a9705aca71b
-X-MS-Exchange-CrossTenant-MailboxType: HOSTED
-X-MS-Exchange-CrossTenant-UserPrincipalName: Q5u0GbPgOf1cRHrNSGR4hj2dD1ouW8fo2pDSsKrbNcWYsWOoFqN09IlTsK8FaJSDpjCECyGdnPian/DS51250VDjWi1dbHOY180BSRUUtzg=
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: PH0PR10MB5514
-X-Proofpoint-Virus-Version: vendor=nai engine=6300 definitions=10223 signatures=668683
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 mlxscore=0 suspectscore=0 spamscore=0
- mlxlogscore=999 adultscore=0 phishscore=0 malwarescore=0 bulkscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=8.12.0-2110150000
- definitions=main-2201110007
-X-Proofpoint-GUID: 9lgJo23f1iPBbKuNpNyVpR4-BRWCE9tB
-X-Proofpoint-ORIG-GUID: 9lgJo23f1iPBbKuNpNyVpR4-BRWCE9tB
+Content-Type: multipart/mixed; BOUNDARY="8323328-1488026911-1642454014=:23707"
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Eric,
+--8323328-1488026911-1642454014=:23707
+Content-Type: text/plain; CHARSET=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-> Do you know if io_opt can be configured on scsi devices that do not
-> have io_opt provided by the controller?  If so, or if it would be easy
-> to add, then configuring io_opt at the scsi layer is probably a better
-> option so subsystems besides bcache would benefit.
+On Mon, 17 Jan 2022, Zou Mingzhe wrote:
+> 在 2022/1/8 上午4:20, bcache@lists.ewheeler.net 写道:
+> 
+> On Fri, 7 Jan 2022, Coly Li wrote:
+> 
+> On 1/7/22 4:21 PM, mingzhe.zou@easystack.cn wrote:
+> 
+> From: Zou Mingzhe <mingzhe.zou@easystack.cn>
+> 
+> When attaching a cached device (a.k.a backing device) to a cache
+> device, bch_sectors_dirty_init() is called to count dirty sectors
+> and stripes (see what bcache_dev_sectors_dirty_add() does) on the
+> cache device.
+> 
+> When bcache_dev_sectors_dirty_add() is called, set_bit(stripe,
+> d->full_dirty_stripes) or clear_bit(stripe, d->full_dirty_stripes)
+> operation will always be performed. In full_dirty_stripes, each 1bit
+> represents stripe_size (8192) sectors (512B), so 1bit=4MB (8192*512),
+> and each CPU cache line=64B=512bit=2048MB. When 20 threads process
+> a cached disk with 100G dirty data, a single thread processes about
+> 23M at a time, and 20 threads total 460M. These full_dirty_stripes
+> bits corresponding to the 460M data is likely to fall in the same CPU
+> cache line. When one of these threads performs a set_bit or clear_bit
+> operation, the same CPU cache line of other threads will become invalid
+> and must read the full_dirty_stripes from the main memory again. Compared
+> with single thread, the time of a bcache_dev_sectors_dirty_add()
+> call is increased by about 50 times in our test (100G dirty data,
+> 20 threads, bcache_dev_sectors_dirty_add() is called more than
+> 20 million times).
+> 
+> This patch tries to test_bit before set_bit or clear_bit operation.
+> Therefore, a lot of force set and clear operations will be avoided,
+> and most of bcache_dev_sectors_dirty_add() calls will only read CPU
+> cache line.
+> 
+> Hi Mingzhe, good catch on this.  I'm curious: how much time does it save 
+> attaching a cache?
+> 
+> Our test, 100G dirty data:
+> 
+>                                  register caching      register backing
+> before coly multithread patch    about 11 seconds      about 3 seconds
+> after coly multithread patch     about 0.8 seconds     about 2 seconds
+>   (0-39 online cpus, so 20 threads work)
+> this patch                       about 0.8 seconds     about 0.3 seconds
+>   (0-39 online cpus, so 20 threads work)
 
-There is currently no way to do this in the SCSI sysfs interface.
-However, io_opt is a queue_limits parameter. The appropriate location
-for modification is blk-sysfs.c. We already allow overriding other block
-device properties such as rotational, stable_writes, discards, max I/O
-size, etc. I don't see any particular reason why we couldn't also permit
-overriding the optimal I/O size.
+Wow, almost 10x faster registering the backing device!
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+--
+Eric Wheeler
+
+
+> 
+> Mingzhe
+> 
+> 
+> Signed-off-by: Mingzhe Zou <mingzhe.zou@easystack.cn>
+> 
+> Added into my testing queue. Thanks.
+> 
+> Coly Li
+> 
+> ---
+>   drivers/md/bcache/writeback.c | 11 +++++++----
+>   1 file changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> index 68e75c692dd4..4afe22875d4f 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -596,10 +596,13 @@ void bcache_dev_sectors_dirty_add(struct cache_set *c,
+> unsigned int inode,
+>   
+>     sectors_dirty = atomic_add_return(s,
+>   					d->stripe_sectors_dirty + stripe);
+> -		if (sectors_dirty == d->stripe_size)
+> -			set_bit(stripe, d->full_dirty_stripes);
+> -		else
+> -			clear_bit(stripe, d->full_dirty_stripes);
+> +		if (sectors_dirty == d->stripe_size) {
+> +			if (!test_bit(stripe, d->full_dirty_stripes))
+> +				set_bit(stripe, d->full_dirty_stripes);
+> +		} else {
+> +			if (test_bit(stripe, d->full_dirty_stripes))
+> +				clear_bit(stripe, d->full_dirty_stripes);
+> +		}
+>   
+>     nr_sectors -= s;
+>     stripe_offset = 0;
+> 
+> 
+> 
+> 
+> 
+--8323328-1488026911-1642454014=:23707--
