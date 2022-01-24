@@ -2,144 +2,124 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 7EE29C433EF
-	for <linux-bcache@archiver.kernel.org>; Mon, 17 Jan 2022 21:16:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B6994C4332F
+	for <linux-bcache@archiver.kernel.org>; Mon, 24 Jan 2022 16:55:50 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231152AbiAQVQM (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 17 Jan 2022 16:16:12 -0500
-Received: from mx.ewheeler.net ([173.205.220.69]:52974 "EHLO mx.ewheeler.net"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S229695AbiAQVQM (ORCPT <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 17 Jan 2022 16:16:12 -0500
-Received: from localhost (localhost [127.0.0.1])
-        by mx.ewheeler.net (Postfix) with ESMTP id B05234A;
-        Mon, 17 Jan 2022 13:16:11 -0800 (PST)
-X-Virus-Scanned: amavisd-new at ewheeler.net
-Received: from mx.ewheeler.net ([127.0.0.1])
-        by localhost (mx.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
-        with LMTP id hBliTfses6IN; Mon, 17 Jan 2022 13:16:07 -0800 (PST)
-Received: from localhost (localhost [127.0.0.1])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        id S243988AbiAXQzu (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 24 Jan 2022 11:55:50 -0500
+Received: from mta-p7.oit.umn.edu ([134.84.196.207]:59240 "EHLO
+        mta-p7.oit.umn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S243983AbiAXQzt (ORCPT
+        <rfc822;linux-bcache@vger.kernel.org>);
+        Mon, 24 Jan 2022 11:55:49 -0500
+X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Jan 2022 11:55:49 EST
+Received: from localhost (unknown [127.0.0.1])
+        by mta-p7.oit.umn.edu (Postfix) with ESMTP id 4JjG9W00Rxz9vK4N
+        for <linux-bcache@vger.kernel.org>; Mon, 24 Jan 2022 16:47:11 +0000 (UTC)
+X-Virus-Scanned: amavisd-new at umn.edu
+Received: from mta-p7.oit.umn.edu ([127.0.0.1])
+        by localhost (mta-p7.oit.umn.edu [127.0.0.1]) (amavisd-new, port 10024)
+        with ESMTP id 0IuW2zvJ44uP for <linux-bcache@vger.kernel.org>;
+        Mon, 24 Jan 2022 10:47:10 -0600 (CST)
+Received: from mail-pl1-f199.google.com (mail-pl1-f199.google.com [209.85.214.199])
+        (using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
         (No client certificate requested)
-        by mx.ewheeler.net (Postfix) with ESMTPSA id 425F039;
-        Mon, 17 Jan 2022 13:16:07 -0800 (PST)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mx.ewheeler.net 425F039
-Date:   Mon, 17 Jan 2022 13:16:00 -0800 (PST)
-From:   bcache@lists.ewheeler.net
-To:     Zou Mingzhe <mingzhe.zou@easystack.cn>
-cc:     Coly Li <colyli@suse.de>, linux-bcache@vger.kernel.org,
-        axboe@kernel.dk
-Subject: Re: [PATCH] bcache: fixup bcache_dev_sectors_dirty_add() multithreaded
- CPU false sharing
-In-Reply-To: <73a82135-2162-fff7-138c-051c8d1001d2@easystack.cn>
-Message-ID: <3dafe10-a21b-e262-5ccd-efd1eba75345@ewheeler.net>
-References: <20220107082113.18480-1-mingzhe.zou@easystack.cn> <fa05fa29-076a-4d33-a578-abf5c2b5c78f@suse.de> <c0ac712e-c9f-825-c2f6-aad0e648ebe6@ewheeler.net> <73a82135-2162-fff7-138c-051c8d1001d2@easystack.cn>
+        by mta-p7.oit.umn.edu (Postfix) with ESMTPS id 4JjG9V4vsfz9vK4M
+        for <linux-bcache@vger.kernel.org>; Mon, 24 Jan 2022 10:47:10 -0600 (CST)
+DMARC-Filter: OpenDMARC Filter v1.3.2 mta-p7.oit.umn.edu 4JjG9V4vsfz9vK4M
+DKIM-Filter: OpenDKIM Filter v2.11.0 mta-p7.oit.umn.edu 4JjG9V4vsfz9vK4M
+Received: by mail-pl1-f199.google.com with SMTP id f4-20020a170902684400b0014b42a20a16so1165661pln.3
+        for <linux-bcache@vger.kernel.org>; Mon, 24 Jan 2022 08:47:10 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=umn.edu; s=google;
+        h=from:to:cc:subject:date:message-id:mime-version
+         :content-transfer-encoding;
+        bh=i98tmVoJeC0eQ+zcA+l102zpTFZNjsWcE56+L4IvPRA=;
+        b=fmEmp2AnDhlqnBVhNNKp9HUrLlvl1EbxSJADCJj75bll08ktE0omUjKSWchdDP4xEh
+         NN2ik9BpXLqOliky5cWJYNkbQ+MdJmOS/xplHosHCbNynThNZ9NMguspHPm7fakUOZjD
+         bNw9idxBOnFpRxGVJKi3ItlCd7FioMDaWjBR8srPVEgywtJhclcx9bn/aspHKqyX+lTG
+         KLyjvWqpeqieQoMzJJOZxNEyXNOru0nADVQlQbWb7PARam/+GswW/YKpmMihSWfPlmk1
+         NiRa8Vnaqqh+7ZG0sNwA/oiv0sTdycNkVNqGAlqjp87Zp5ovqcnuurw4/OnJi8vrkGY4
+         4/Vg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:from:to:cc:subject:date:message-id:mime-version
+         :content-transfer-encoding;
+        bh=i98tmVoJeC0eQ+zcA+l102zpTFZNjsWcE56+L4IvPRA=;
+        b=aCUApapscGIpa8CF0TrIlN1/yRhkEvE7jHeU0S2jNKjrOfib1miBH3va1I46sel0b6
+         +3F0Y3GizRV01PEBPQYA0hYm3Vmu4lHPhngMfpi1AtW6ileqkpGjC390KXlfjMsU8K9s
+         RWFm+E+yPXNL2/xpkuMJ4sgOETK7iQuNx47A1qYcAygXqWzMHZf7Ks1dRuzOwujVZ/Ff
+         Vg6/xsjKd8LkzCwjjKSAbwOHWnzvszIZ9qOYSVfpCV8ZCWyignvb+ZLTnQuzll6SJ2Rg
+         5U7vLguxtkEo7X7Qs/7Dfs8PdSNxsQBerxfiEwkRSt616Tye+awPMNqGahJmjKIqEmHc
+         yL+w==
+X-Gm-Message-State: AOAM531tqpMBYtxav30DInCR9ll79bEcLTcBFH5KnyCyhJ3mTtB9kmqO
+        VHRb1rR5moZCEhJPegmKrjtDuD3h2Nrtb6JSbhmSz0tMNZg/f72QJcIBZTkVQ1eJ0JPo5TsNeBL
+        d1wynSlC7LcYCgmBJECQeQxyGovff
+X-Received: by 2002:a63:f1a:: with SMTP id e26mr12360919pgl.590.1643042829925;
+        Mon, 24 Jan 2022 08:47:09 -0800 (PST)
+X-Google-Smtp-Source: ABdhPJwVq1C+Exiwxl9jXMBaOLgynVMpFUBZOce4a/NW+k1SaZHArswlEPpljjEMZV5gHQIkBg5/dA==
+X-Received: by 2002:a63:f1a:: with SMTP id e26mr12360906pgl.590.1643042829728;
+        Mon, 24 Jan 2022 08:47:09 -0800 (PST)
+Received: from zqy787-GE5S.lan ([36.4.61.248])
+        by smtp.gmail.com with ESMTPSA id y8sm12833578pgs.31.2022.01.24.08.47.06
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 24 Jan 2022 08:47:09 -0800 (PST)
+From:   Zhou Qingyang <zhou1615@umn.edu>
+To:     zhou1615@umn.edu
+Cc:     kjlu@umn.edu, Coly Li <colyli@suse.de>,
+        Kent Overstreet <kent.overstreet@gmail.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] bcache: Fix a NULL or wild pointer dereference in btree_gc_rewrite_node()
+Date:   Tue, 25 Jan 2022 00:47:01 +0800
+Message-Id: <20220124164701.53525-1-zhou1615@umn.edu>
+X-Mailer: git-send-email 2.25.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; BOUNDARY="8323328-1488026911-1642454014=:23707"
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+In btree_gc_rewrite_node(), btree_node_alloc_replacement() is assigned to
+n and return error code or NULL on failure. n is passed to
+bch_btree_node_write_sync() and there is a dereference of it in
+bch_btree_node_write_sync() without checks, which may lead to wild
+pointer dereference or NULL pointer dereference depending on n.
 
---8323328-1488026911-1642454014=:23707
-Content-Type: text/plain; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
+Fix this bug by adding IS_ERR_OR_NULL check of n.
 
-On Mon, 17 Jan 2022, Zou Mingzhe wrote:
-> 在 2022/1/8 上午4:20, bcache@lists.ewheeler.net 写道:
-> 
-> On Fri, 7 Jan 2022, Coly Li wrote:
-> 
-> On 1/7/22 4:21 PM, mingzhe.zou@easystack.cn wrote:
-> 
-> From: Zou Mingzhe <mingzhe.zou@easystack.cn>
-> 
-> When attaching a cached device (a.k.a backing device) to a cache
-> device, bch_sectors_dirty_init() is called to count dirty sectors
-> and stripes (see what bcache_dev_sectors_dirty_add() does) on the
-> cache device.
-> 
-> When bcache_dev_sectors_dirty_add() is called, set_bit(stripe,
-> d->full_dirty_stripes) or clear_bit(stripe, d->full_dirty_stripes)
-> operation will always be performed. In full_dirty_stripes, each 1bit
-> represents stripe_size (8192) sectors (512B), so 1bit=4MB (8192*512),
-> and each CPU cache line=64B=512bit=2048MB. When 20 threads process
-> a cached disk with 100G dirty data, a single thread processes about
-> 23M at a time, and 20 threads total 460M. These full_dirty_stripes
-> bits corresponding to the 460M data is likely to fall in the same CPU
-> cache line. When one of these threads performs a set_bit or clear_bit
-> operation, the same CPU cache line of other threads will become invalid
-> and must read the full_dirty_stripes from the main memory again. Compared
-> with single thread, the time of a bcache_dev_sectors_dirty_add()
-> call is increased by about 50 times in our test (100G dirty data,
-> 20 threads, bcache_dev_sectors_dirty_add() is called more than
-> 20 million times).
-> 
-> This patch tries to test_bit before set_bit or clear_bit operation.
-> Therefore, a lot of force set and clear operations will be avoided,
-> and most of bcache_dev_sectors_dirty_add() calls will only read CPU
-> cache line.
-> 
-> Hi Mingzhe, good catch on this.  I'm curious: how much time does it save 
-> attaching a cache?
-> 
-> Our test, 100G dirty data:
-> 
->                                  register caching      register backing
-> before coly multithread patch    about 11 seconds      about 3 seconds
-> after coly multithread patch     about 0.8 seconds     about 2 seconds
->   (0-39 online cpus, so 20 threads work)
-> this patch                       about 0.8 seconds     about 0.3 seconds
->   (0-39 online cpus, so 20 threads work)
+This bug was found by a static analyzer.
 
-Wow, almost 10x faster registering the backing device!
+Builds with 'make allyesconfig' show no new warnings,
+and our static analyzer no longer warns about this code.
 
---
-Eric Wheeler
+Fixes: ("bcache: Rework btree cache reserve handling")
+Signed-off-by: Zhou Qingyang <zhou1615@umn.edu>
+---
+The analysis employs differential checking to identify inconsistent 
+security operations (e.g., checks or kfrees) between two code paths 
+and confirms that the inconsistent operations are not recovered in the
+current function or the callers, so they constitute bugs. 
 
+Note that, as a bug found by static analysis, it can be a false
+positive or hard to trigger. Multiple researchers have cross-reviewed
+the bug.
 
-> 
-> Mingzhe
-> 
-> 
-> Signed-off-by: Mingzhe Zou <mingzhe.zou@easystack.cn>
-> 
-> Added into my testing queue. Thanks.
-> 
-> Coly Li
-> 
-> ---
->   drivers/md/bcache/writeback.c | 11 +++++++----
->   1 file changed, 7 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-> index 68e75c692dd4..4afe22875d4f 100644
-> --- a/drivers/md/bcache/writeback.c
-> +++ b/drivers/md/bcache/writeback.c
-> @@ -596,10 +596,13 @@ void bcache_dev_sectors_dirty_add(struct cache_set *c,
-> unsigned int inode,
->   
->     sectors_dirty = atomic_add_return(s,
->   					d->stripe_sectors_dirty + stripe);
-> -		if (sectors_dirty == d->stripe_size)
-> -			set_bit(stripe, d->full_dirty_stripes);
-> -		else
-> -			clear_bit(stripe, d->full_dirty_stripes);
-> +		if (sectors_dirty == d->stripe_size) {
-> +			if (!test_bit(stripe, d->full_dirty_stripes))
-> +				set_bit(stripe, d->full_dirty_stripes);
-> +		} else {
-> +			if (test_bit(stripe, d->full_dirty_stripes))
-> +				clear_bit(stripe, d->full_dirty_stripes);
-> +		}
->   
->     nr_sectors -= s;
->     stripe_offset = 0;
-> 
-> 
-> 
-> 
-> 
---8323328-1488026911-1642454014=:23707--
+ drivers/md/bcache/btree.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 88c573eeb598..06d42292e86c 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1504,6 +1504,8 @@ static int btree_gc_rewrite_node(struct btree *b, struct btree_op *op,
+ 		return 0;
+ 
+ 	n = btree_node_alloc_replacement(replace, NULL);
++	if (IS_ERR_OR_NULL(n))
++		return 0;
+ 
+ 	/* recheck reserve after allocating replacement node */
+ 	if (btree_check_reserve(b, NULL)) {
+-- 
+2.25.1
+
