@@ -2,32 +2,32 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C8EE7C433F5
-	for <linux-bcache@archiver.kernel.org>; Tue, 22 Feb 2022 15:52:51 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D0C02C4332F
+	for <linux-bcache@archiver.kernel.org>; Tue, 22 Feb 2022 15:52:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233149AbiBVPxO (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 22 Feb 2022 10:53:14 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45322 "EHLO
+        id S233213AbiBVPxQ (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 22 Feb 2022 10:53:16 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45320 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S233786AbiBVPwn (ORCPT
+        with ESMTP id S233857AbiBVPwx (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 22 Feb 2022 10:52:43 -0500
+        Tue, 22 Feb 2022 10:52:53 -0500
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6B1BD5D65E;
-        Tue, 22 Feb 2022 07:52:15 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 739DD66AFD;
+        Tue, 22 Feb 2022 07:52:26 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=dGQhQIoPlJnqAUJc5vnifIiGA4K4POjXLxE/uOxiIoI=; b=sbIZXXAIiSWc4J9AC0uUzCEZgE
-        GMG40sphecLF+zJ9TgZC7QpQWNY4X6SKTT3/+29Z/ojTMZ2XeRjBVCxNEkRku2/IbDzEydM9dsIhH
-        sZvZdW8mNY2eNTK9+4ZCzcuaiiXomF6TeNmJ4sC0k3/xsHt8Gnn8LUmG8Tzc0BVk28t7TJlhYXHAm
-        UP3xQNnjfaOrs2ZSA6D6BZoAevyaOBvW/WgRJsI/QUi6LxsWuudhuYVVUNmc3ln0RcEIWOS5yGuWY
-        qwUGdF3jRwL4KUK09Nqn0sMjjOK8RWXwkpOWiEY8v0eHQbGQk1jqpzR9iYbwBSixXPZHqNkteV/ao
-        6uai2Qaw==;
+        bh=mYLMoZDjZs4nM2uUMfs8K8R/bltMADz1cEKMxm4yh5Y=; b=1PC9OGoQwio4cczU8Znx9JB5Lw
+        AwZGoW2JW6FOgsQBp+725OShdlfzReuSImK8HEAbPk2SG1yravIE5BYsf4k4loJIDh0HM2WZ2ZDRe
+        s0x5Rpy7gN+6mCsRNMGwWg8kZS8TP+fugbTKzetPDCfgotIQmcpNlD581e+ID3SPmH58i7wmXSO6e
+        5hcDcvllwk7mwtt6Xcyt2lzF5aKF3+In45wNomLDcbEgxX7a0XDo69VO6gL+eoR8FAcWAs2uD5R/H
+        sRbg6VzQbd8GSVpI+iz+FpdxcJ7kZ9mJyLQyAKrKIKDDo3PVlnZLZ1npQAfBe1sPdEtTbtB9mcGk6
+        2IEUFwpw==;
 Received: from [2001:4bb8:198:f8fc:c22a:ebfc:be8d:63c2] (helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1nMXSR-00APrX-8g; Tue, 22 Feb 2022 15:52:07 +0000
+        id 1nMXSc-00APxY-Jx; Tue, 22 Feb 2022 15:52:19 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
@@ -42,9 +42,9 @@ Cc:     Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
         linux-xtensa@linux-xtensa.org, linux-block@vger.kernel.org,
         drbd-dev@lists.linbit.com, linux-bcache@vger.kernel.org,
         nvdimm@lists.linux.dev
-Subject: [PATCH 03/10] zram: use memcpy_to_bvec in zram_bvec_read
-Date:   Tue, 22 Feb 2022 16:51:49 +0100
-Message-Id: <20220222155156.597597-4-hch@lst.de>
+Subject: [PATCH 07/10] bcache: use bvec_kmap_local in bio_csum
+Date:   Tue, 22 Feb 2022 16:51:53 +0100
+Message-Id: <20220222155156.597597-8-hch@lst.de>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <20220222155156.597597-1-hch@lst.de>
 References: <20220222155156.597597-1-hch@lst.de>
@@ -55,31 +55,31 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Use the proper helper instead of open coding the copy.
+Using local kmaps slightly reduces the chances to stray writes, and
+the bvec interface cleans up the code a little bit.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/block/zram/zram_drv.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/md/bcache/request.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index a3a5e1e713268..14becdf2815df 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -1331,12 +1331,10 @@ static int zram_bvec_read(struct zram *zram, struct bio_vec *bvec,
- 		goto out;
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 6869e010475a3..4e55ca8ca67ff 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -44,10 +44,10 @@ static void bio_csum(struct bio *bio, struct bkey *k)
+ 	uint64_t csum = 0;
  
- 	if (is_partial_io(bvec)) {
--		void *dst = kmap_atomic(bvec->bv_page);
- 		void *src = kmap_atomic(page);
+ 	bio_for_each_segment(bv, bio, iter) {
+-		void *d = kmap(bv.bv_page) + bv.bv_offset;
++		void *d = bvec_kmap_local(&bv);
  
--		memcpy(dst + bvec->bv_offset, src + offset, bvec->bv_len);
-+		memcpy_to_bvec(bvec, src + offset);
- 		kunmap_atomic(src);
--		kunmap_atomic(dst);
+ 		csum = crc64_be(csum, d, bv.bv_len);
+-		kunmap(bv.bv_page);
++		kunmap(d);
  	}
- out:
- 	if (is_partial_io(bvec))
+ 
+ 	k->ptr[KEY_PTRS(k)] = csum & (~0ULL >> 1);
 -- 
 2.30.2
 
