@@ -2,32 +2,32 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 51991C433F5
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B53C3C4167D
 	for <linux-bcache@archiver.kernel.org>; Tue, 22 Feb 2022 15:52:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233823AbiBVPxR (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 22 Feb 2022 10:53:17 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45656 "EHLO
+        id S233821AbiBVPxS (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 22 Feb 2022 10:53:18 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45850 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S233831AbiBVPww (ORCPT
+        with ESMTP id S233899AbiBVPw6 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 22 Feb 2022 10:52:52 -0500
+        Tue, 22 Feb 2022 10:52:58 -0500
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 299105FF3D;
-        Tue, 22 Feb 2022 07:52:21 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 70EEB54BCF;
+        Tue, 22 Feb 2022 07:52:32 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=S8+4S3H0UDzuRr7Ri+YrsH/T52KS45+3M/mJXJ1lDz4=; b=u6BHbjkrjI9nVGrOchcq76/SSQ
-        je48CtuVFE3/xb8Ni2UAW//vQ5vcj6gIWiRaOkjwy7XBxtOqepLlCzveme9E/3UETUyFIRgaTKwlY
-        /WlyIlIQvqaNXwxZvvFWlfP9lTuTfCbGs66YZo50d2MeersSpvzkv/eD0Dk2TukzekCDR1LhmQLiS
-        dl9KPrlw+/NzFsgfaV/fXP0REElbMOTDkplElq9yaFieHC2qMNyXYF43ykp+jZm0xjzN45WYRyJaN
-        acOnoXVl0PeKl8BON27DJ93h3t8sjblsvfBrELXJ3lfN6+joud3zPH0vH3Q6t0YotP1iRAxjFUv0W
-        KvSOPW1g==;
+        bh=PMHViAJhEEv7jlvdbpFwU2YaZRdIC4g9mzG7ynUcv90=; b=wxABwN0ujck+tDQz82qITDMWOE
+        6vVGG/pJNlX68EPkavkRShaHap7ajnipbIeG8oEgmOp1SZVHxB22EWHfYotsB0yPpaBK2ahW5GW+S
+        8kzRGNNrOY11nvQqgiLNriwVitBtd8uzT0JMvcE41H5PSjci6aphpvknzw35Cx+hlhNDN1ZUx6DDU
+        xSR8xlHPN9Fga+jfQTBEObFGdOtokX4iZgsSBa3+/oXytAveNQIir8hIJjYF5VsYUA06b1BxysoPk
+        pX+cgXqME+0qSMx+zXD6Ohjhqpk2PuhzcbhrNQrhQui/bqnruaKtwABNcY2noAg2JjOqigijr4wgx
+        +LtsvjUw==;
 Received: from [2001:4bb8:198:f8fc:c22a:ebfc:be8d:63c2] (helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1nMXSW-00APue-Ss; Tue, 22 Feb 2022 15:52:13 +0000
+        id 1nMXSi-00AQ1t-CM; Tue, 22 Feb 2022 15:52:24 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
@@ -42,9 +42,9 @@ Cc:     Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
         linux-xtensa@linux-xtensa.org, linux-block@vger.kernel.org,
         drbd-dev@lists.linbit.com, linux-bcache@vger.kernel.org,
         nvdimm@lists.linux.dev
-Subject: [PATCH 05/10] nvdimm-blk: use bvec_kmap_local in nd_blk_rw_integrity
-Date:   Tue, 22 Feb 2022 16:51:51 +0100
-Message-Id: <20220222155156.597597-6-hch@lst.de>
+Subject: [PATCH 09/10] drbd: use bvec_kmap_local in recv_dless_read
+Date:   Tue, 22 Feb 2022 16:51:55 +0100
+Message-Id: <20220222155156.597597-10-hch@lst.de>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <20220222155156.597597-1-hch@lst.de>
 References: <20220222155156.597597-1-hch@lst.de>
@@ -60,27 +60,26 @@ the bvec interface cleans up the code a little bit.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/nvdimm/blk.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/block/drbd/drbd_receiver.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/nvdimm/blk.c b/drivers/nvdimm/blk.c
-index c1db43524d755..0a38738335941 100644
---- a/drivers/nvdimm/blk.c
-+++ b/drivers/nvdimm/blk.c
-@@ -88,10 +88,9 @@ static int nd_blk_rw_integrity(struct nd_namespace_blk *nsblk,
- 		 */
+diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
+index 04e3ec12d8b49..fa00cf2ea9529 100644
+--- a/drivers/block/drbd/drbd_receiver.c
++++ b/drivers/block/drbd/drbd_receiver.c
+@@ -2017,10 +2017,10 @@ static int recv_dless_read(struct drbd_peer_device *peer_device, struct drbd_req
+ 	D_ASSERT(peer_device->device, sector == bio->bi_iter.bi_sector);
  
- 		cur_len = min(len, bv.bv_len);
--		iobuf = kmap_atomic(bv.bv_page);
--		err = ndbr->do_io(ndbr, dev_offset, iobuf + bv.bv_offset,
--				cur_len, rw);
--		kunmap_atomic(iobuf);
-+		iobuf = bvec_kmap_local(&bv);
-+		err = ndbr->do_io(ndbr, dev_offset, iobuf, cur_len, rw);
-+		kunmap_local(iobuf);
+ 	bio_for_each_segment(bvec, bio, iter) {
+-		void *mapped = kmap(bvec.bv_page) + bvec.bv_offset;
++		void *mapped = bvec_kmap_local(&bvec);
+ 		expect = min_t(int, data_size, bvec.bv_len);
+ 		err = drbd_recv_all_warn(peer_device->connection, mapped, expect);
+-		kunmap(bvec.bv_page);
++		kunmap_local(mapped);
  		if (err)
  			return err;
- 
+ 		data_size -= expect;
 -- 
 2.30.2
 
