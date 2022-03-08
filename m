@@ -2,158 +2,153 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0AFC7C433EF
-	for <linux-bcache@archiver.kernel.org>; Mon,  7 Mar 2022 09:16:26 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CFC75C433F5
+	for <linux-bcache@archiver.kernel.org>; Tue,  8 Mar 2022 06:16:13 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S233442AbiCGJRS (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 7 Mar 2022 04:17:18 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39600 "EHLO
+        id S1344111AbiCHGRH (ORCPT
+        <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 8 Mar 2022 01:17:07 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44954 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S236296AbiCGJRS (ORCPT
+        with ESMTP id S233516AbiCHGRG (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 7 Mar 2022 04:17:18 -0500
-Received: from mail-pg1-x531.google.com (mail-pg1-x531.google.com [IPv6:2607:f8b0:4864:20::531])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 77DEA6515F
-        for <linux-bcache@vger.kernel.org>; Mon,  7 Mar 2022 01:16:24 -0800 (PST)
-Received: by mail-pg1-x531.google.com with SMTP id t14so13053414pgr.3
-        for <linux-bcache@vger.kernel.org>; Mon, 07 Mar 2022 01:16:24 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20210112;
-        h=from:to:subject:date:message-id:in-reply-to:references:mime-version
-         :content-transfer-encoding;
-        bh=NslC4UVWa9E1BgIugTrzYOtMXelMoIw4vldVpREAiCM=;
-        b=Bq96/1RkI/JzVdsw//ITzJufioRrw/lNdcUYwiXRT/Bp183S/4h8IFVohcEpDLFlzu
-         adHoI973aXy+VMo9iM79+/F/EiZPOu7zmDKy+96DpQCQn4O6ob6YYsG6qffhttInypxx
-         QgwDBhBj3y6sf2RVGHMYaCAzkB87IgfAK2MPpZWjZEln5+Phzk4Ir4Ylt2jIeB9H9wak
-         6U1sgz1idzZWRfdGo5J2ieY2/k54imSVbpU/ffO9T+HbySLw1TJvqraEpMvAzfVOpJWX
-         Lsi6aYIxFOCHU3T/NCJAXlfZDJtEQz4P0AFKjwfFhdaIcSKE9sCVPAkji7teqKzVycwa
-         J6oQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=x-gm-message-state:from:to:subject:date:message-id:in-reply-to
-         :references:mime-version:content-transfer-encoding;
-        bh=NslC4UVWa9E1BgIugTrzYOtMXelMoIw4vldVpREAiCM=;
-        b=cz+1KzHgDuVeXG/dXf2PtCHjSpc0dd+NTBDKLzURrEzR3Ef/BuIaI9FiPtSKTbugl7
-         resGIYxK59Ge/rciBgd6A5UBDTBWhljU6Ng8gYe6nzn5g+akJpeM7vtDEQslaJ9PKGAn
-         Weg805picEdaxouD/WqHIjW4auvkIi3KK0zEuBRc7glxabStS92D5NbY32KGEfzGuid3
-         +z4qgTEI9Ev2meVhyiKhgW2uQxSNb7hZENOwE2ku/LDPxNeQLprxMBCEujgkbwAnRgoq
-         E/HWyQFtilzwN1lZmQRmZFa5ikwrzvOfLEMdywd9a3iZwgn6ZLn5J56/yTFEj70nlnYg
-         9T9A==
-X-Gm-Message-State: AOAM533q559i6Q5LGONZE2S6GNCmKYh9VRFPRNEy7xRziMbUfBfHfW2C
-        j/eSlYVdvIi/yYinhDPoQ6SJ2ZPTQ1Y+zIi2
-X-Google-Smtp-Source: ABdhPJwN/JxiA8KoCWYUzYa/glLdqDQ8OsHBNerTPv2AXhF+jcw62E4RWG2TNSM0BNjDxCN3p0Vgzw==
-X-Received: by 2002:a63:384e:0:b0:374:ae28:71fc with SMTP id h14-20020a63384e000000b00374ae2871fcmr9020809pgn.159.1646644583697;
-        Mon, 07 Mar 2022 01:16:23 -0800 (PST)
-Received: from localhost.localdomain ([162.219.34.248])
-        by smtp.gmail.com with ESMTPSA id ge19-20020a17090b0e1300b001bcade154d6sm18346703pjb.48.2022.03.07.01.16.22
-        for <linux-bcache@vger.kernel.org>
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 07 Mar 2022 01:16:23 -0800 (PST)
-From:   Zhen Zhang <zhangzhen.email@gmail.com>
-To:     linux-bcache@vger.kernel.org
-Subject: [PATCH] Bcache: don't return BLK_STS_IOERR during cache detach
-Date:   Mon,  7 Mar 2022 01:16:15 -0800
-Message-Id: <20220307091615.3329-1-zhangzhen.email@gmail.com>
-X-Mailer: git-send-email 2.25.1
-In-Reply-To: <2c6244b9-249a-3379-31b5-f16b3d0cb162@suse.de>
-References: <2c6244b9-249a-3379-31b5-f16b3d0cb162@suse.de>
+        Tue, 8 Mar 2022 01:17:06 -0500
+Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5AE3B2983E;
+        Mon,  7 Mar 2022 22:16:07 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
+        :Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=65M9RGvfTEdoESGQ8HI9llwe00//SU6OqRRRlO7q3zI=; b=1Vc1SLRvx8/ljDdsRvqK3U+S9Y
+        wRONMlig+Lc7Yk1OJ10VRqGCr2rVpUel8Av6Ab6tKn/b2qgoBswruCpt6QtYvL0vax+sMT5NiZR0+
+        ssXhtLh1MIr0nBivEcg8YXSO/sFwv3aIa+CyJL3CkzktoM3HCuYH+tnVQ+R5tJT5kaLI0bAjWuvOa
+        YfKJy3lY1/IbIsF5A2aLYl5HLnu6Zdf0RBMQ3HGrTXocKiYGXoPrmZ3f3nYBQj4M2NJ586X0H7g4q
+        6eY3hfsaeoVBT4WViNB2LbwHWOdsPSCZ/LF9CzUCN+M9st+9yBrUqdqgiFgxvVJ2wqgckRn57Ngi2
+        Y5p4paGA==;
+Received: from [2001:4bb8:184:7746:6f50:7a98:3141:c37b] (helo=localhost)
+        by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1nRT8W-002lVU-KM; Tue, 08 Mar 2022 06:15:57 +0000
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        Song Liu <song@kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Josef Bacik <josef@toxicpanda.com>,
+        David Sterba <dsterba@suse.com>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        linux-block@vger.kernel.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        linux-raid@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: [PATCH 1/5] btrfs: simplify ->flush_bio handling
+Date:   Tue,  8 Mar 2022 07:15:47 +0100
+Message-Id: <20220308061551.737853-2-hch@lst.de>
+X-Mailer: git-send-email 2.30.2
+In-Reply-To: <20220308061551.737853-1-hch@lst.de>
+References: <20220308061551.737853-1-hch@lst.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Before this patch, if cache device missing, cached_dev_submit_bio return io err
-to fs during cache detach, randomly lead to xfs do force shutdown.
+Use and embedded bios that is initialized when used instead of
+bio_kmalloc plus bio_reset.
 
-This patch delay the cache io submit in cached_dev_submit_bio
-and wait for cache set detach finish.
-So if the cache device become missing, bcache detach cache set automatically,
-and the io will sumbit normally.
-
-Feb  2 20:59:23  kernel: bcache: bch_count_io_errors() nvme0n1p56: IO error on writing btree.
-Feb  2 20:59:23  kernel: bcache: bch_count_io_errors() nvme0n1p57: IO error on writing btree.
-Feb  2 20:59:23  kernel: bcache: bch_count_io_errors() nvme0n1p56: IO error on writing btree.
-Feb  2 20:59:23  kernel: bcache: bch_btree_insert() error -5
-Feb  2 20:59:23  kernel: XFS (bcache43): metadata I/O error in "xfs_buf_iodone_callback_error" at daddr 0x80034658 len 32 error 12
-Feb  2 20:59:23  kernel: bcache: bch_btree_insert() error -5
-Feb  2 20:59:23  kernel: bcache: bch_btree_insert() error -5
-Feb  2 20:59:23  kernel: bcache: bch_btree_insert() error -5
-Feb  2 20:59:23  kernel: bcache: bch_btree_insert() error -5
-Feb  2 20:59:23  kernel: bcache: bch_cache_set_error() bcache: error on 004f8aa7-561a-4ba7-bf7b-292e461d3f18:
-Feb  2 20:59:23  kernel: journal io error
-Feb  2 20:59:23  kernel: bcache: bch_cache_set_error() , disabling caching
-Feb  2 20:59:23  kernel: bcache: bch_btree_insert() error -5
-Feb  2 20:59:23  kernel: bcache: conditional_stop_bcache_device() stop_when_cache_set_failed of bcache43 is "auto" and cache is clean, keep it alive.
-Feb  2 20:59:23  kernel: XFS (bcache43): metadata I/O error in "xlog_iodone" at daddr 0x400123e60 len 64 error 12
-Feb  2 20:59:23  kernel: XFS (bcache43): xfs_do_force_shutdown(0x2) called from line 1298 of file fs/xfs/xfs_log.c. Return address = 00000000c1c8077f
-Feb  2 20:59:23  kernel: XFS (bcache43): Log I/O Error Detected. Shutting down filesystem
-Feb  2 20:59:23  kernel: XFS (bcache43): Please unmount the filesystem and rectify the problem(s)
-
-Signed-off-by: Zhen Zhang <zhangzhen.email@gmail.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: David Sterba <dsterba@suse.com>
 ---
- drivers/md/bcache/bcache.h  | 5 -----
- drivers/md/bcache/request.c | 8 ++++----
- drivers/md/bcache/super.c   | 3 ++-
- 3 files changed, 6 insertions(+), 10 deletions(-)
+ fs/btrfs/disk-io.c |  8 +++++---
+ fs/btrfs/volumes.c | 11 -----------
+ fs/btrfs/volumes.h |  4 ++--
+ 3 files changed, 7 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 9ed9c955add7..e5227dd08e3a 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -928,11 +928,6 @@ static inline void closure_bio_submit(struct cache_set *c,
- 				      struct closure *cl)
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 505ba21230b1f..7d4229c769ac6 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -4127,6 +4127,7 @@ static int wait_dev_supers(struct btrfs_device *device, int max_mirrors)
+  */
+ static void btrfs_end_empty_barrier(struct bio *bio)
  {
- 	closure_get(cl);
--	if (unlikely(test_bit(CACHE_SET_IO_DISABLE, &c->flags))) {
--		bio->bi_status = BLK_STS_IOERR;
--		bio_endio(bio);
--		return;
--	}
- 	submit_bio_noacct(bio);
++	bio_uninit(bio);
+ 	complete(bio->bi_private);
  }
  
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index d15aae6c51c1..36f0ee95b51f 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -13,6 +13,7 @@
- #include "request.h"
- #include "writeback.h"
+@@ -4136,7 +4137,7 @@ static void btrfs_end_empty_barrier(struct bio *bio)
+  */
+ static void write_dev_flush(struct btrfs_device *device)
+ {
+-	struct bio *bio = device->flush_bio;
++	struct bio *bio = &device->flush_bio;
  
-+#include <linux/delay.h>
- #include <linux/module.h>
- #include <linux/hash.h>
- #include <linux/random.h>
-@@ -1172,11 +1173,10 @@ void cached_dev_submit_bio(struct bio *bio)
- 	unsigned long start_time;
- 	int rw = bio_data_dir(bio);
+ #ifndef CONFIG_BTRFS_FS_CHECK_INTEGRITY
+ 	/*
+@@ -4154,7 +4155,8 @@ static void write_dev_flush(struct btrfs_device *device)
+ 		return;
+ #endif
  
--	if (unlikely((d->c && test_bit(CACHE_SET_IO_DISABLE, &d->c->flags)) ||
-+	while (unlikely((d->c && test_bit(CACHE_SET_IO_DISABLE, &d->c->flags)) ||
- 		     dc->io_disable)) {
--		bio->bi_status = BLK_STS_IOERR;
--		bio_endio(bio);
--		return;
-+		/* wait for detach finish and d->c == NULL. */
-+		msleep(2);
- 	}
+-	bio_reset(bio, device->bdev, REQ_OP_WRITE | REQ_SYNC | REQ_PREFLUSH);
++	bio_init(bio, device->bdev, NULL, 0,
++		 REQ_OP_WRITE | REQ_SYNC | REQ_PREFLUSH);
+ 	bio->bi_end_io = btrfs_end_empty_barrier;
+ 	init_completion(&device->flush_wait);
+ 	bio->bi_private = &device->flush_wait;
+@@ -4168,7 +4170,7 @@ static void write_dev_flush(struct btrfs_device *device)
+  */
+ static blk_status_t wait_dev_flush(struct btrfs_device *device)
+ {
+-	struct bio *bio = device->flush_bio;
++	struct bio *bio = &device->flush_bio;
  
- 	if (likely(d->c)) {
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 140f35dc0c45..8d9a5e937bc8 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -661,7 +661,8 @@ int bch_prio_write(struct cache *ca, bool wait)
- 		p->csum		= bch_crc64(&p->magic, meta_bucket_bytes(&ca->sb) - 8);
+ 	if (!test_bit(BTRFS_DEV_STATE_FLUSH_SENT, &device->dev_state))
+ 		return BLK_STS_OK;
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index b07d382d53a86..7015b3096f724 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -405,7 +405,6 @@ void btrfs_free_device(struct btrfs_device *device)
+ 	WARN_ON(!list_empty(&device->post_commit_list));
+ 	rcu_string_free(device->name);
+ 	extent_io_tree_release(&device->alloc_state);
+-	bio_put(device->flush_bio);
+ 	btrfs_destroy_dev_zone_info(device);
+ 	kfree(device);
+ }
+@@ -6962,16 +6961,6 @@ struct btrfs_device *btrfs_alloc_device(struct btrfs_fs_info *fs_info,
+ 	if (!dev)
+ 		return ERR_PTR(-ENOMEM);
  
- 		bucket = bch_bucket_alloc(ca, RESERVE_PRIO, wait);
--		BUG_ON(bucket == -1);
-+		if (bucket == -1)
-+			return -1;
+-	/*
+-	 * Preallocate a bio that's always going to be used for flushing device
+-	 * barriers and matches the device lifespan
+-	 */
+-	dev->flush_bio = bio_kmalloc(GFP_KERNEL, 0);
+-	if (!dev->flush_bio) {
+-		kfree(dev);
+-		return ERR_PTR(-ENOMEM);
+-	}
+-
+ 	INIT_LIST_HEAD(&dev->dev_list);
+ 	INIT_LIST_HEAD(&dev->dev_alloc_list);
+ 	INIT_LIST_HEAD(&dev->post_commit_list);
+diff --git a/fs/btrfs/volumes.h b/fs/btrfs/volumes.h
+index 005c9e2a491a1..dbd6cc5e5cd3b 100644
+--- a/fs/btrfs/volumes.h
++++ b/fs/btrfs/volumes.h
+@@ -116,8 +116,8 @@ struct btrfs_device {
+ 	/* bytes used on the current transaction */
+ 	u64 commit_bytes_used;
  
- 		mutex_unlock(&ca->set->bucket_lock);
- 		prio_io(ca, bucket, REQ_OP_WRITE, 0);
+-	/* for sending down flush barriers */
+-	struct bio *flush_bio;
++	/* Bio used for flushing device barriers */
++	struct bio flush_bio;
+ 	struct completion flush_wait;
+ 
+ 	/* per-device scrub information */
 -- 
-2.25.1
+2.30.2
 
