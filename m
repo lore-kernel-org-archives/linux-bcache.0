@@ -2,33 +2,33 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E5F2CC4167D
-	for <linux-bcache@archiver.kernel.org>; Wed,  6 Apr 2022 09:11:01 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 3C34BC3525B
+	for <linux-bcache@archiver.kernel.org>; Wed,  6 Apr 2022 09:11:02 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1351354AbiDFJIH (ORCPT
+        id S1351571AbiDFJIN (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 6 Apr 2022 05:08:07 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46706 "EHLO
+        Wed, 6 Apr 2022 05:08:13 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52890 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1349398AbiDFJCq (ORCPT
+        with ESMTP id S1357027AbiDFJDL (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 6 Apr 2022 05:02:46 -0400
+        Wed, 6 Apr 2022 05:03:11 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6EDFB48EC7E;
-        Tue,  5 Apr 2022 23:05:26 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CCB2C48F718;
+        Tue,  5 Apr 2022 23:06:20 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=sINtR+pRAAWqBCMZRslKVJyakyubEJXVW4tI3wGLsb0=; b=gBrZsvegbTHoIEG5qdijcHzNWW
-        PfzclL3zzl2tB5xhm8Sj7w6skVV8SvvJytC4EH0RoMlbB62c3vMVvjooDHTIWQ3smYKaAuMQ4cOli
-        spZhkrdfcyNNrOGeIUuTpGtX63bYCgqfiIr52xJMA9AGK42nQUGH/2eHVQ3foGEH/zFa8lWfGs7Pp
-        Ay5KyAHLP9DhsOCOpCtbHRVbRjzyQdYUTq4TkVLaYR9+Sga+ljLLLtQo5Hukpu2Q5UAw6RMQTfLQg
-        vt8zwwfekDfQOHpKLK7/INfKF40CQ8temfgKOOdrhB506dWycfStoRSbi1wi6owABwmVkNNzYqcsL
-        kVwVOMFA==;
+        bh=Z466ZFUUKBaH6hbYD0HK+8FHR1O7bsGB8sNIWBFJhOk=; b=nZyFe69pq6eqf1/kF5nMPTOAne
+        TDtMwcoIcF1YVH8vK4pZn8SWXmvAy4dj0YLO+u7/f/B2HIjYkBtn4UJ8NiskaBRp3fwS47roOcVRe
+        vLIrpgEvmwBi0TgLuCY4ho1EAziykjm9zmNebUkK6neSzMI32Ao85X2VP0v0J3+9ko5w3milUn2Og
+        nHnr9afoa38HHNP14nGQNi1dlupB12CTU0omTrFBjKA0bBmskFyATPVPaofHC89rc0iWDgo4hGjmw
+        mUDsTYktHm80+vK4Z5OqBaEmEbibKoSEKtnP9u44j73GVKdSFe+O7hLNHxfOqHQlf6RzKBjJvj/fx
+        be/fnxdQ==;
 Received: from 213-225-3-188.nat.highway.a1.net ([213.225.3.188] helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1nbynD-003ul3-Rn; Wed, 06 Apr 2022 06:05:24 +0000
+        id 1nbyo5-003vNP-I4; Wed, 06 Apr 2022 06:06:18 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     dm-devel@redhat.com, linux-xfs@vger.kernel.org,
@@ -45,9 +45,9 @@ Cc:     dm-devel@redhat.com, linux-xfs@vger.kernel.org,
         cluster-devel@redhat.com, jfs-discussion@lists.sourceforge.net,
         linux-nilfs@vger.kernel.org, ntfs3@lists.linux.dev,
         ocfs2-devel@oss.oracle.com, linux-mm@kvack.org
-Subject: [PATCH 01/27] target: remove an incorrect unmap zeroes data deduction
-Date:   Wed,  6 Apr 2022 08:04:50 +0200
-Message-Id: <20220406060516.409838-2-hch@lst.de>
+Subject: [PATCH 15/27] block: use bdev_alignment_offset in part_alignment_offset_show
+Date:   Wed,  6 Apr 2022 08:05:04 +0200
+Message-Id: <20220406060516.409838-16-hch@lst.de>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <20220406060516.409838-1-hch@lst.de>
 References: <20220406060516.409838-1-hch@lst.de>
@@ -58,31 +58,33 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-For block devices the target code implements UNMAP as calls to
-blkdev_issue_discard, which does not guarantee zeroing just because
-Write Zeroes is supported.
+Replace the open coded offset calculation with the proper helper.
+This is an ABI change in that the -1 for a misaligned partition is
+properly propagated, which can be considered a bug fix and maches
+what is done on the whole device.
 
-Note that this does not affect the file backed path which uses
-fallocate to punch holes.
-
-Fixes: 2237498f0b5c ("target/iblock: Convert WRITE_SAME to blkdev_issue_zeroout")
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/target/target_core_device.c | 1 -
- 1 file changed, 1 deletion(-)
+ block/partitions/core.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/target/target_core_device.c b/drivers/target/target_core_device.c
-index 44bb380e7390c..fa866acef5bb2 100644
---- a/drivers/target/target_core_device.c
-+++ b/drivers/target/target_core_device.c
-@@ -850,7 +850,6 @@ bool target_configure_unmap_from_queue(struct se_dev_attrib *attrib,
- 	attrib->unmap_granularity = q->limits.discard_granularity / block_size;
- 	attrib->unmap_granularity_alignment = q->limits.discard_alignment /
- 								block_size;
--	attrib->unmap_zeroes_data = !!(q->limits.max_write_zeroes_sectors);
- 	return true;
+diff --git a/block/partitions/core.c b/block/partitions/core.c
+index 2ef8dfa1e5c85..240b3fff521e4 100644
+--- a/block/partitions/core.c
++++ b/block/partitions/core.c
+@@ -200,11 +200,7 @@ static ssize_t part_ro_show(struct device *dev,
+ static ssize_t part_alignment_offset_show(struct device *dev,
+ 					  struct device_attribute *attr, char *buf)
+ {
+-	struct block_device *bdev = dev_to_bdev(dev);
+-
+-	return sprintf(buf, "%u\n",
+-		queue_limit_alignment_offset(&bdev_get_queue(bdev)->limits,
+-				bdev->bd_start_sect));
++	return sprintf(buf, "%u\n", bdev_alignment_offset(dev_to_bdev(dev)));
  }
- EXPORT_SYMBOL(target_configure_unmap_from_queue);
+ 
+ static ssize_t part_discard_alignment_show(struct device *dev,
 -- 
 2.30.2
 
