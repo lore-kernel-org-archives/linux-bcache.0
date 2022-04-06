@@ -2,32 +2,32 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 07723C433EF
-	for <linux-bcache@archiver.kernel.org>; Wed,  6 Apr 2022 09:05:06 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D59A3C433F5
+	for <linux-bcache@archiver.kernel.org>; Wed,  6 Apr 2022 09:05:05 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S243610AbiDFJGz (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 6 Apr 2022 05:06:55 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52480 "EHLO
+        id S241969AbiDFJGv (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 6 Apr 2022 05:06:51 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53170 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1354378AbiDFJCu (ORCPT
+        with ESMTP id S1377068AbiDFJDb (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 6 Apr 2022 05:02:50 -0400
+        Wed, 6 Apr 2022 05:03:31 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4878B45C21D;
-        Tue,  5 Apr 2022 23:05:58 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 78B2748F731;
+        Tue,  5 Apr 2022 23:06:38 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=OGJvHxXgCvw9/l2/0Y6T0ivupEa5/VICLVgDi4pj6zk=; b=SGjGHiHxXhTBb30pFVsmtYoofW
-        AXRkPwj9L+IToaoBSWN/RSxSSuBK+pJDBU/ojpwlgCD+rUR4zw9pN8EFDE29pkKOW63auHTvvxwCA
-        PC6e0Da7Eiu1hFS/uIysLLSexy3aaIErbCMYeQH3HFSJ8bABmb6owDVYICpwPc9JKy6Ef8YTyDd/h
-        SpNQxuUWxQhBUfv6Iv5iH1SH6hdeTIk5hPArvSrbVe9a1T+UDbpIkKauh2JPDG7p1MdAcg6ES2qNP
-        pANlA2vT9XhPzqH+DYD3Rh3z9Pdg8L6xQ3HlNdFcmLcX+EpDCJ45aTaIIck6oVGd/w30i6T7ad6VR
-        N9+UdC5Q==;
+        bh=d3sJ7l3Ux9SIWrKAiUmyBkG0qOnuM50cLv7WOo5iKv8=; b=U2k/JlDotMbinK7/JDeqSo6/XP
+        Bs6ySJFC9su858GHk30OJaJoPB8rDR3fvqdgMURXO1OQquTgsv4KE+byWZoWhPXIJrPHFRYb57htY
+        5kZ+Tj1EaeX24yHzNVPsnH8vK+56pifogbah/qUjzUOJyGboKhFS3X1qob8eCfNE75hF6DRia35U9
+        qUd69uVjtYbl+AqrDw3m1Y45lEPmXYcMS6cMXqiqEpwL10Cir9JTLmDF/dQj22I6ypwBu1ciZGVg0
+        rsksxrk+RgNjFNzHV8WMNg8RMAo9CfrbuDS6Y2JIjcM3aNVVcHFf8/GoINpy91AK7PBW/D671mulY
+        8/TSMjOw==;
 Received: from 213-225-3-188.nat.highway.a1.net ([213.225.3.188] helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1nbyni-003v3I-Ik; Wed, 06 Apr 2022 06:05:55 +0000
+        id 1nbyoK-003vcM-Lw; Wed, 06 Apr 2022 06:06:33 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
 Cc:     dm-devel@redhat.com, linux-xfs@vger.kernel.org,
@@ -44,9 +44,9 @@ Cc:     dm-devel@redhat.com, linux-xfs@vger.kernel.org,
         cluster-devel@redhat.com, jfs-discussion@lists.sourceforge.net,
         linux-nilfs@vger.kernel.org, ntfs3@lists.linux.dev,
         ocfs2-devel@oss.oracle.com, linux-mm@kvack.org
-Subject: [PATCH 09/27] mm: use bdev_is_zoned in claim_swapfile
-Date:   Wed,  6 Apr 2022 08:04:58 +0200
-Message-Id: <20220406060516.409838-10-hch@lst.de>
+Subject: [PATCH 19/27] block: remove queue_discard_alignment
+Date:   Wed,  6 Apr 2022 08:05:08 +0200
+Message-Id: <20220406060516.409838-20-hch@lst.de>
 X-Mailer: git-send-email 2.30.2
 In-Reply-To: <20220406060516.409838-1-hch@lst.de>
 References: <20220406060516.409838-1-hch@lst.de>
@@ -57,26 +57,48 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Use the bdev based helper instead of poking into the queue.
+Just use bdev_alignment_offset in disk_discard_alignment_show instead.
+That helpers is the same except for an always false branch that doesn't
+matter in this slow path.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- mm/swapfile.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ block/genhd.c          | 2 +-
+ include/linux/blkdev.h | 8 --------
+ 2 files changed, 1 insertion(+), 9 deletions(-)
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index 63c61f8b26118..4c7537162af5e 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2761,7 +2761,7 @@ static int claim_swapfile(struct swap_info_struct *p, struct inode *inode)
- 		 * write only restriction.  Hence zoned block devices are not
- 		 * suitable for swapping.  Disallow them here.
- 		 */
--		if (blk_queue_is_zoned(p->bdev->bd_disk->queue))
-+		if (bdev_is_zoned(p->bdev))
- 			return -EINVAL;
- 		p->flags |= SWP_BLKDEV;
- 	} else if (S_ISREG(inode->i_mode)) {
+diff --git a/block/genhd.c b/block/genhd.c
+index 712031ce19070..36532b9318419 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1019,7 +1019,7 @@ static ssize_t disk_discard_alignment_show(struct device *dev,
+ {
+ 	struct gendisk *disk = dev_to_disk(dev);
+ 
+-	return sprintf(buf, "%d\n", queue_discard_alignment(disk->queue));
++	return sprintf(buf, "%d\n", bdev_alignment_offset(disk->part0));
+ }
+ 
+ static ssize_t diskseq_show(struct device *dev,
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 0a1795ac26275..5a9b7aeda010b 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1253,14 +1253,6 @@ bdev_zone_write_granularity(struct block_device *bdev)
+ 
+ int bdev_alignment_offset(struct block_device *bdev);
+ 
+-static inline int queue_discard_alignment(const struct request_queue *q)
+-{
+-	if (q->limits.discard_misaligned)
+-		return -1;
+-
+-	return q->limits.discard_alignment;
+-}
+-
+ static inline int queue_limit_discard_alignment(struct queue_limits *lim, sector_t sector)
+ {
+ 	unsigned int alignment, granularity, offset;
 -- 
 2.30.2
 
