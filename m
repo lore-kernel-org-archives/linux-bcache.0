@@ -2,55 +2,50 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id ACEFAC433EF
-	for <linux-bcache@archiver.kernel.org>; Wed,  6 Apr 2022 09:11:16 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9FF0DC433EF
+	for <linux-bcache@archiver.kernel.org>; Wed,  6 Apr 2022 09:28:55 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1357160AbiDFJIu (ORCPT
-        <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 6 Apr 2022 05:08:50 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39786 "EHLO
+        id S244431AbiDFJau (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 6 Apr 2022 05:30:50 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57850 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1353400AbiDFJCt (ORCPT
+        with ESMTP id S1580556AbiDFJVA (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 6 Apr 2022 05:02:49 -0400
+        Wed, 6 Apr 2022 05:21:00 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 03F8A43F1CB;
-        Tue,  5 Apr 2022 23:05:46 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9F70E4BEF33;
+        Tue,  5 Apr 2022 23:12:59 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
         d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
         MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
         :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=8b7He7jKWHmQh3KokdF/PRePZ9Zk3nvKntDAn0vRB+A=; b=0omtD+HQtA616dFivyqA97DclF
-        5MCkQ36VFGZAUVgFUJvq7ULB9RxmAnnJK9Ru4GgkOHXwFqXqRHMXQ9LCogkUlyoM9wN6+7J7DekaY
-        q43/dVC7g/6yyYP+I8eJgSyycd7IVsGmMYkR1Clskvv1tDsGCaTWuQ8Rrf8sU79R1v0lw2bQt/AWB
-        OsOPsydboiChznz0eGpngaPA8w2OVY6Jf3YdqyKDFL16zctVHp5+n0d+GDis8Omgb+WFkLhPwAzdn
-        EsF+yQBNP9+37ibHq8jy0MV7lNP50mXC+UwgCTvOjOUrw+1nocIz3QcImLpc9EsYaF5HR/HZej/jt
-        LdNiWxFQ==;
+        bh=WNO6sTXUX6Lx7qkV5Fa2+br/k0Bo8EgFlPApwDJnToY=; b=xn6wfwtVXlctp/6je7N/z3ay9E
+        vGgbs23+aruJ8Ua5VzorhXNI4nQMolw+5pKtcwBtlsPC54vTW3zS5Q3vVEOmi7hKNAeRnjCP5S2oc
+        MdDvUsYPr0xq+wTKucFCjIxAE2E0ovjCPpwm1eh2GygBnaD4y9og20yZkzsGTMXU5HfLXABk971aR
+        Hdpb4uVi+dtKTlTRcn2LAafiR1urZ/VfKUkW7R7a6J/8GstZI5Jz5EZ5CIp2kNLxmJRI4H15ddcHA
+        0hOoIrQx8+/15ngTv3AMezRv8D04WX+GJCeB5To1CSL5+vtqbrpg3UdV9n/ChPELmDeYtNeQueOc4
+        OCzyTuew==;
 Received: from 213-225-3-188.nat.highway.a1.net ([213.225.3.188] helo=localhost)
         by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1nbynX-003uuj-EB; Wed, 06 Apr 2022 06:05:44 +0000
+        id 1nbyuQ-003zQR-Ag; Wed, 06 Apr 2022 06:12:51 +0000
 From:   Christoph Hellwig <hch@lst.de>
 To:     Jens Axboe <axboe@kernel.dk>
-Cc:     dm-devel@redhat.com, linux-xfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-um@lists.infradead.org,
-        linux-block@vger.kernel.org, drbd-dev@lists.linbit.com,
-        nbd@other.debian.org, ceph-devel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
-        linux-raid@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-nvme@lists.infradead.org,
-        linux-s390@vger.kernel.org, linux-scsi@vger.kernel.org,
-        target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        cluster-devel@redhat.com, jfs-discussion@lists.sourceforge.net,
-        linux-nilfs@vger.kernel.org, ntfs3@lists.linux.dev,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org
-Subject: [PATCH 06/27] drbd: cleanup decide_on_discard_support
-Date:   Wed,  6 Apr 2022 08:04:55 +0200
-Message-Id: <20220406060516.409838-7-hch@lst.de>
+Cc:     Coly Li <colyli@suse.de>, Mike Snitzer <snitzer@redhat.com>,
+        Song Liu <song@kernel.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Josef Bacik <josef@toxicpanda.com>,
+        David Sterba <dsterba@suse.com>,
+        Phillip Lougher <phillip@squashfs.org.uk>,
+        linux-block@vger.kernel.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, linux-bcache@vger.kernel.org,
+        linux-raid@vger.kernel.org, target-devel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org
+Subject: [PATCH 5/5] pktcdvd: stop using bio_reset
+Date:   Wed,  6 Apr 2022 08:12:28 +0200
+Message-Id: <20220406061228.410163-6-hch@lst.de>
 X-Mailer: git-send-email 2.30.2
-In-Reply-To: <20220406060516.409838-1-hch@lst.de>
-References: <20220406060516.409838-1-hch@lst.de>
+In-Reply-To: <20220406061228.410163-1-hch@lst.de>
+References: <20220406061228.410163-1-hch@lst.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
@@ -58,116 +53,105 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Sanitize the calling conventions and use a goto label to cleanup the
-code flow.
+Just initialize the bios on-demand.
 
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/block/drbd/drbd_nl.c | 68 +++++++++++++++++++-----------------
- 1 file changed, 35 insertions(+), 33 deletions(-)
+ drivers/block/pktcdvd.c | 25 +++++++++----------------
+ 1 file changed, 9 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 02030c9c4d3b1..40bb0b356a6d6 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1204,38 +1204,42 @@ static unsigned int drbd_max_discard_sectors(struct drbd_connection *connection)
- }
+diff --git a/drivers/block/pktcdvd.c b/drivers/block/pktcdvd.c
+index 4a5b8730133c5..f270080f14786 100644
+--- a/drivers/block/pktcdvd.c
++++ b/drivers/block/pktcdvd.c
+@@ -525,7 +525,6 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 	pkt->w_bio = bio_kmalloc(frames, GFP_KERNEL);
+ 	if (!pkt->w_bio)
+ 		goto no_bio;
+-	bio_init(pkt->w_bio, NULL, pkt->w_bio->bi_inline_vecs, frames, 0);
  
- static void decide_on_discard_support(struct drbd_device *device,
--			struct request_queue *q,
--			struct request_queue *b,
--			bool discard_zeroes_if_aligned)
-+		struct drbd_backing_dev *bdev)
- {
--	/* q = drbd device queue (device->rq_queue)
--	 * b = backing device queue (device->ldev->backing_bdev->bd_disk->queue),
--	 *     or NULL if diskless
--	 */
--	struct drbd_connection *connection = first_peer_device(device)->connection;
--	bool can_do = b ? blk_queue_discard(b) : true;
--
--	if (can_do && connection->cstate >= C_CONNECTED && !(connection->agreed_features & DRBD_FF_TRIM)) {
--		can_do = false;
--		drbd_info(connection, "peer DRBD too old, does not support TRIM: disabling discards\n");
--	}
--	if (can_do) {
--		/* We don't care for the granularity, really.
--		 * Stacking limits below should fix it for the local
--		 * device.  Whether or not it is a suitable granularity
--		 * on the remote device is not our problem, really. If
--		 * you care, you need to use devices with similar
--		 * topology on all peers. */
--		blk_queue_discard_granularity(q, 512);
--		q->limits.max_discard_sectors = drbd_max_discard_sectors(connection);
--		blk_queue_flag_set(QUEUE_FLAG_DISCARD, q);
--		q->limits.max_write_zeroes_sectors = drbd_max_discard_sectors(connection);
--	} else {
--		blk_queue_flag_clear(QUEUE_FLAG_DISCARD, q);
--		blk_queue_discard_granularity(q, 0);
--		q->limits.max_discard_sectors = 0;
--		q->limits.max_write_zeroes_sectors = 0;
-+	struct drbd_connection *connection =
-+		first_peer_device(device)->connection;
-+	struct request_queue *q = device->rq_queue;
-+
-+	if (bdev && !blk_queue_discard(bdev->backing_bdev->bd_disk->queue))
-+		goto not_supported;
-+
-+	if (connection->cstate >= C_CONNECTED &&
-+	    !(connection->agreed_features & DRBD_FF_TRIM)) {
-+		drbd_info(connection,
-+			"peer DRBD too old, does not support TRIM: disabling discards\n");
-+		goto not_supported;
+ 	for (i = 0; i < frames / FRAMES_PER_PAGE; i++) {
+ 		pkt->pages[i] = alloc_page(GFP_KERNEL|__GFP_ZERO);
+@@ -537,26 +536,20 @@ static struct packet_data *pkt_alloc_packet_data(int frames)
+ 	bio_list_init(&pkt->orig_bios);
+ 
+ 	for (i = 0; i < frames; i++) {
+-		struct bio *bio = bio_kmalloc(1, GFP_KERNEL);
+-		if (!bio)
++		pkt->r_bios[i] = bio_kmalloc(1, GFP_KERNEL);
++		if (!pkt->r_bios[i])
+ 			goto no_rd_bio;
+-		bio_init(bio, NULL, bio->bi_inline_vecs, 1, 0);
+-		pkt->r_bios[i] = bio;
  	}
-+
-+	/*
-+	 * We don't care for the granularity, really.
-+	 *
-+	 * Stacking limits below should fix it for the local device.  Whether or
-+	 * not it is a suitable granularity on the remote device is not our
-+	 * problem, really. If you care, you need to use devices with similar
-+	 * topology on all peers.
-+	 */
-+	blk_queue_discard_granularity(q, 512);
-+	q->limits.max_discard_sectors = drbd_max_discard_sectors(connection);
-+	blk_queue_flag_set(QUEUE_FLAG_DISCARD, q);
-+	q->limits.max_write_zeroes_sectors =
-+		drbd_max_discard_sectors(connection);
-+	return;
-+
-+not_supported:
-+	blk_queue_flag_clear(QUEUE_FLAG_DISCARD, q);
-+	blk_queue_discard_granularity(q, 0);
-+	q->limits.max_discard_sectors = 0;
-+	q->limits.max_write_zeroes_sectors = 0;
+ 
+ 	return pkt;
+ 
+ no_rd_bio:
+-	for (i = 0; i < frames; i++) {
+-		if (pkt->r_bios[i])
+-			bio_uninit(pkt->r_bios[i]);
++	for (i = 0; i < frames; i++)
+ 		kfree(pkt->r_bios[i]);
+-	}
+ no_page:
+ 	for (i = 0; i < frames / FRAMES_PER_PAGE; i++)
+ 		if (pkt->pages[i])
+ 			__free_page(pkt->pages[i]);
+-	bio_uninit(pkt->w_bio);
+ 	kfree(pkt->w_bio);
+ no_bio:
+ 	kfree(pkt);
+@@ -571,13 +564,10 @@ static void pkt_free_packet_data(struct packet_data *pkt)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < pkt->frames; i++) {
+-		bio_uninit(pkt->r_bios[i]);
++	for (i = 0; i < pkt->frames; i++)
+ 		kfree(pkt->r_bios[i]);
+-	}
+ 	for (i = 0; i < pkt->frames / FRAMES_PER_PAGE; i++)
+ 		__free_page(pkt->pages[i]);
+-	bio_uninit(pkt->w_bio);
+ 	kfree(pkt->w_bio);
+ 	kfree(pkt);
  }
+@@ -952,6 +942,7 @@ static void pkt_end_io_read(struct bio *bio)
  
- static void fixup_discard_if_not_supported(struct request_queue *q)
-@@ -1273,7 +1277,6 @@ static void drbd_setup_queue_param(struct drbd_device *device, struct drbd_backi
- 	unsigned int max_segments = 0;
- 	struct request_queue *b = NULL;
- 	struct disk_conf *dc;
--	bool discard_zeroes_if_aligned = true;
+ 	if (bio->bi_status)
+ 		atomic_inc(&pkt->io_errors);
++	bio_uninit(bio);
+ 	if (atomic_dec_and_test(&pkt->io_wait)) {
+ 		atomic_inc(&pkt->run_sm);
+ 		wake_up(&pd->wqueue);
+@@ -969,6 +960,7 @@ static void pkt_end_io_packet_write(struct bio *bio)
  
- 	if (bdev) {
- 		b = bdev->backing_bdev->bd_disk->queue;
-@@ -1282,7 +1285,6 @@ static void drbd_setup_queue_param(struct drbd_device *device, struct drbd_backi
- 		rcu_read_lock();
- 		dc = rcu_dereference(device->ldev->disk_conf);
- 		max_segments = dc->max_bio_bvecs;
--		discard_zeroes_if_aligned = dc->discard_zeroes_if_aligned;
- 		rcu_read_unlock();
+ 	pd->stats.pkt_ended++;
  
- 		blk_set_stacking_limits(&q->limits);
-@@ -1292,7 +1294,7 @@ static void drbd_setup_queue_param(struct drbd_device *device, struct drbd_backi
- 	/* This is the workaround for "bio would need to, but cannot, be split" */
- 	blk_queue_max_segments(q, max_segments ? max_segments : BLK_MAX_SEGMENTS);
- 	blk_queue_segment_boundary(q, PAGE_SIZE-1);
--	decide_on_discard_support(device, q, b, discard_zeroes_if_aligned);
-+	decide_on_discard_support(device, bdev);
++	bio_uninit(bio);
+ 	pkt_bio_finished(pd);
+ 	atomic_dec(&pkt->io_wait);
+ 	atomic_inc(&pkt->run_sm);
+@@ -1023,7 +1015,7 @@ static void pkt_gather_data(struct pktcdvd_device *pd, struct packet_data *pkt)
+ 			continue;
  
- 	if (b) {
- 		blk_stack_limits(&q->limits, &b->limits, 0);
+ 		bio = pkt->r_bios[f];
+-		bio_reset(bio, pd->bdev, REQ_OP_READ);
++		bio_init(bio, pd->bdev, bio->bi_inline_vecs, 1, REQ_OP_READ);
+ 		bio->bi_iter.bi_sector = pkt->sector + f * (CD_FRAMESIZE >> 9);
+ 		bio->bi_end_io = pkt_end_io_read;
+ 		bio->bi_private = pkt;
+@@ -1236,7 +1228,8 @@ static void pkt_start_write(struct pktcdvd_device *pd, struct packet_data *pkt)
+ {
+ 	int f;
+ 
+-	bio_reset(pkt->w_bio, pd->bdev, REQ_OP_WRITE);
++	bio_init(pkt->w_bio, pd->bdev, pkt->w_bio->bi_inline_vecs, pkt->frames,
++		 REQ_OP_WRITE);
+ 	pkt->w_bio->bi_iter.bi_sector = pkt->sector;
+ 	pkt->w_bio->bi_end_io = pkt_end_io_packet_write;
+ 	pkt->w_bio->bi_private = pkt;
 -- 
 2.30.2
 
