@@ -2,398 +2,151 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D134DC433EF
-	for <linux-bcache@archiver.kernel.org>; Fri,  1 Apr 2022 12:27:34 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A00DAC433EF
+	for <linux-bcache@archiver.kernel.org>; Wed,  6 Apr 2022 09:04:50 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1345875AbiDAM3W (ORCPT
-        <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 1 Apr 2022 08:29:22 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41120 "EHLO
+        id S236310AbiDFJGi (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 6 Apr 2022 05:06:38 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52778 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1345877AbiDAM3W (ORCPT
+        with ESMTP id S1355626AbiDFJDD (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 1 Apr 2022 08:29:22 -0400
-Received: from mail-m2835.qiye.163.com (mail-m2835.qiye.163.com [103.74.28.35])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 366DA278C4B
-        for <linux-bcache@vger.kernel.org>; Fri,  1 Apr 2022 05:27:32 -0700 (PDT)
-Received: from localhost.localdomain (unknown [218.94.118.90])
-        by mail-m2835.qiye.163.com (Hmail) with ESMTPA id 88C198A07ED;
-        Fri,  1 Apr 2022 20:27:28 +0800 (CST)
-From:   mingzhe.zou@easystack.cn
-To:     colyli@suse.de, linux-bcache@vger.kernel.org
-Cc:     zoumingzhe@qq.com, ZouMingzhe <mingzhe.zou@easystack.cn>
-Subject: [PATCH 2/2] bcache: check return in the register process and handle error
-Date:   Fri,  1 Apr 2022 20:27:25 +0800
-Message-Id: <20220401122725.17725-2-mingzhe.zou@easystack.cn>
-X-Mailer: git-send-email 2.17.1
-In-Reply-To: <20220401122725.17725-1-mingzhe.zou@easystack.cn>
-References: <20220401122725.17725-1-mingzhe.zou@easystack.cn>
-X-HM-Spam-Status: e1kfGhgUHx5ZQUtXWQgPGg8OCBgUHx5ZQUlOS1dZCBgUCR5ZQVlLVUtZV1
-        kWDxoPAgseWUFZKDYvK1lXWShZQUlCN1dZLVlBSVdZDwkaFQgSH1lBWUMeGUtWSE1DTExCTRgfSk
-        pOVRkRExYaEhckFA4PWVdZFhoPEhUdFFlBWU9LSFVKSktISkxVS1kG
-X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6PyI6Dxw*ODIhLkw6GDRODhMu
-        LykKCxlVSlVKTU9DQ0pNS09DQkJNVTMWGhIXVRYSFRwBEx5VARQOOx4aCAIIDxoYEFUYFUVZV1kS
-        C1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSkpPQkw3Bg++
-X-HM-Tid: 0a7fe5184a3e841dkuqw88c198a07ed
+        Wed, 6 Apr 2022 05:03:03 -0400
+Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:e::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3FCE048F715;
+        Tue,  5 Apr 2022 23:06:09 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
+        :Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=UWJPN++goBB2S+aW9/6zkPpXCdwY+K+VcYv7Ktvkfgc=; b=r7vqzyPF8OAIKrfwdstfJOZ0E+
+        NrSwiWyP+OCKGERhggpZl3eLSIp1ezZV3owY2YgUbT2MqBLPKKPqazNwF/WySNneFOMtrMiJKqIwS
+        YOpivmF2MJLLAxiyxiCcSe3YGzEFIwalQib8kRZ3Rs8iwVOk55mFMFbKBpJ3635zdXzm/D+JSfu8z
+        hkoyTHinNvYKAcGn2VvZY81Wn2BHVklFMsZnSpmixTRzyE4iqX9oX5R7uWiHg/kwQKj2h3DzO+BJa
+        cvvlsj0uxa6VAs8LGSXjpg79IAGE4kwOzHPkaLOZ7SUHbyY8IU8wdGJULO/yvYRkNePSgYT1lbVfU
+        WoV7XmvA==;
+Received: from 213-225-3-188.nat.highway.a1.net ([213.225.3.188] helo=localhost)
+        by bombadil.infradead.org with esmtpsa (Exim 4.94.2 #2 (Red Hat Linux))
+        id 1nbynu-003vCw-1w; Wed, 06 Apr 2022 06:06:06 +0000
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     dm-devel@redhat.com, linux-xfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-um@lists.infradead.org,
+        linux-block@vger.kernel.org, drbd-dev@lists.linbit.com,
+        nbd@other.debian.org, ceph-devel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
+        linux-raid@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-nvme@lists.infradead.org,
+        linux-s390@vger.kernel.org, linux-scsi@vger.kernel.org,
+        target-devel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        cluster-devel@redhat.com, jfs-discussion@lists.sourceforge.net,
+        linux-nilfs@vger.kernel.org, ntfs3@lists.linux.dev,
+        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org
+Subject: [PATCH 12/27] block: add a bdev_fua helper
+Date:   Wed,  6 Apr 2022 08:05:01 +0200
+Message-Id: <20220406060516.409838-13-hch@lst.de>
+X-Mailer: git-send-email 2.30.2
+In-Reply-To: <20220406060516.409838-1-hch@lst.de>
+References: <20220406060516.409838-1-hch@lst.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-From: ZouMingzhe <mingzhe.zou@easystack.cn>
+Add a helper to check the FUA flag based on the block_device instead of
+having to poke into the block layer internal request_queue.
 
-Register bcache device process maybe return error. However,
-some functions miss return value or unchecked. This allows
-the problem device to be successfully registered.
-
-We must to check for these errors and handle them properly.
-
-Signed-off-by: Mingzhe Zou <mingzhe.zou@easystack.cn>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- drivers/md/bcache/btree.c     | 30 ++++++++++-----
- drivers/md/bcache/super.c     | 69 +++++++++++++++++++++++------------
- drivers/md/bcache/writeback.c | 27 +++++++++++---
- drivers/md/bcache/writeback.h |  3 +-
- 4 files changed, 91 insertions(+), 38 deletions(-)
+ drivers/block/rnbd/rnbd-srv.c       | 3 +--
+ drivers/target/target_core_iblock.c | 3 +--
+ fs/iomap/direct-io.c                | 3 +--
+ include/linux/blkdev.h              | 6 +++++-
+ 4 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index f8e6f5c7c736..7525d8c2406c 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1032,7 +1032,7 @@ struct btree *bch_btree_node_get(struct cache_set *c, struct btree_op *op,
- 	return b;
- }
- 
--static void btree_node_prefetch(struct btree *parent, struct bkey *k)
-+static int btree_node_prefetch(struct btree *parent, struct bkey *k)
+diff --git a/drivers/block/rnbd/rnbd-srv.c b/drivers/block/rnbd/rnbd-srv.c
+index f8cc3c5fecb4b..beaef43a67b9d 100644
+--- a/drivers/block/rnbd/rnbd-srv.c
++++ b/drivers/block/rnbd/rnbd-srv.c
+@@ -533,7 +533,6 @@ static void rnbd_srv_fill_msg_open_rsp(struct rnbd_msg_open_rsp *rsp,
+ 					struct rnbd_srv_sess_dev *sess_dev)
  {
- 	struct btree *b;
+ 	struct rnbd_dev *rnbd_dev = sess_dev->rnbd_dev;
+-	struct request_queue *q = bdev_get_queue(rnbd_dev->bdev);
  
-@@ -1040,11 +1040,16 @@ static void btree_node_prefetch(struct btree *parent, struct bkey *k)
- 	b = mca_alloc(parent->c, NULL, k, parent->level - 1);
- 	mutex_unlock(&parent->c->bucket_lock);
- 
--	if (!IS_ERR_OR_NULL(b)) {
--		b->parent = parent;
--		bch_btree_node_read(b);
--		rw_unlock(true, b);
--	}
-+	if (IS_ERR(b))
-+		return PTR_ERR(b);
-+
-+	if (!b)
-+		return -ENOMEM;
-+
-+	b->parent = parent;
-+	bch_btree_node_read(b);
-+	rw_unlock(true, b);
-+	return 0;
+ 	rsp->hdr.type = cpu_to_le16(RNBD_MSG_OPEN_RSP);
+ 	rsp->device_id =
+@@ -560,7 +559,7 @@ static void rnbd_srv_fill_msg_open_rsp(struct rnbd_msg_open_rsp *rsp,
+ 	rsp->cache_policy = 0;
+ 	if (bdev_write_cache(rnbd_dev->bdev))
+ 		rsp->cache_policy |= RNBD_WRITEBACK;
+-	if (blk_queue_fua(q))
++	if (bdev_fua(rnbd_dev->bdev))
+ 		rsp->cache_policy |= RNBD_FUA;
  }
  
- /* Btree alloc */
-@@ -1888,7 +1893,7 @@ static int bch_btree_check_recurse(struct btree *b, struct btree_op *op)
- 			k = bch_btree_iter_next_filter(&iter, &b->keys,
- 						       bch_ptr_bad);
- 			if (k) {
--				btree_node_prefetch(b, k);
-+				ret = btree_node_prefetch(b, k);
- 				/*
- 				 * initiallize c->gc_stats.nodes
- 				 * for incremental GC
-@@ -1896,7 +1901,7 @@ static int bch_btree_check_recurse(struct btree *b, struct btree_op *op)
- 				b->c->gc_stats.nodes++;
- 			}
+diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+index 03013e85ffc03..c4a903b8a47fc 100644
+--- a/drivers/target/target_core_iblock.c
++++ b/drivers/target/target_core_iblock.c
+@@ -727,14 +727,13 @@ iblock_execute_rw(struct se_cmd *cmd, struct scatterlist *sgl, u32 sgl_nents,
  
--			if (p)
-+			if (p && !ret)
- 				ret = bcache_btree(check_recurse, p, b, op);
- 
- 			p = k;
-@@ -1965,6 +1970,9 @@ static int bch_btree_check_thread(void *arg)
- 			struct btree_op op;
- 
- 			btree_node_prefetch(c->root, p);
-+			ret = btree_node_prefetch(c->root, p);
-+			if (ret)
-+				goto out;
- 			c->gc_stats.nodes++;
- 			bch_btree_op_init(&op, 0);
- 			ret = bcache_btree(check_recurse, p, c->root, &op);
-@@ -2064,16 +2072,20 @@ int bch_btree_check(struct cache_set *c)
- 			for (--i; i >= 0; i--)
- 				kthread_stop(check_state->infos[i].thread);
- 			ret = -ENOMEM;
--			goto out;
-+			goto out_wait;
- 		}
+ 	if (data_direction == DMA_TO_DEVICE) {
+ 		struct iblock_dev *ib_dev = IBLOCK_DEV(dev);
+-		struct request_queue *q = bdev_get_queue(ib_dev->ibd_bd);
+ 		/*
+ 		 * Force writethrough using REQ_FUA if a volatile write cache
+ 		 * is not enabled, or if initiator set the Force Unit Access bit.
+ 		 */
+ 		opf = REQ_OP_WRITE;
+ 		miter_dir = SG_MITER_TO_SG;
+-		if (test_bit(QUEUE_FLAG_FUA, &q->queue_flags)) {
++		if (bdev_fua(ib_dev->ibd_bd)) {
+ 			if (cmd->se_cmd_flags & SCF_FUA)
+ 				opf |= REQ_FUA;
+ 			else if (!bdev_write_cache(ib_dev->ibd_bd))
+diff --git a/fs/iomap/direct-io.c b/fs/iomap/direct-io.c
+index b08f5dc31780d..62da020d02a11 100644
+--- a/fs/iomap/direct-io.c
++++ b/fs/iomap/direct-io.c
+@@ -265,8 +265,7 @@ static loff_t iomap_dio_bio_iter(const struct iomap_iter *iter,
+ 		 * cache flushes on IO completion.
+ 		 */
+ 		if (!(iomap->flags & (IOMAP_F_SHARED|IOMAP_F_DIRTY)) &&
+-		    (dio->flags & IOMAP_DIO_WRITE_FUA) &&
+-		    blk_queue_fua(bdev_get_queue(iomap->bdev)))
++		    (dio->flags & IOMAP_DIO_WRITE_FUA) && bdev_fua(iomap->bdev))
+ 			use_fua = true;
  	}
  
- 	/*
- 	 * Must wait for all threads to stop.
- 	 */
-+out_wait:
- 	wait_event_interruptible(check_state->wait,
- 				 atomic_read(&check_state->started) == 0);
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 807a49aa5a27a..075b16d4560e7 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -602,7 +602,6 @@ bool blk_queue_flag_test_and_set(unsigned int flag, struct request_queue *q);
+ 			     REQ_FAILFAST_DRIVER))
+ #define blk_queue_quiesced(q)	test_bit(QUEUE_FLAG_QUIESCED, &(q)->queue_flags)
+ #define blk_queue_pm_only(q)	atomic_read(&(q)->pm_only)
+-#define blk_queue_fua(q)	test_bit(QUEUE_FLAG_FUA, &(q)->queue_flags)
+ #define blk_queue_registered(q)	test_bit(QUEUE_FLAG_REGISTERED, &(q)->queue_flags)
+ #define blk_queue_nowait(q)	test_bit(QUEUE_FLAG_NOWAIT, &(q)->queue_flags)
  
-+	if (ret)
-+		goto out;
-+
- 	for (i = 0; i < check_state->total_threads; i++) {
- 		if (check_state->infos[i].result) {
- 			ret = check_state->infos[i].result;
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index bf3de149d3c9..a6b062a87acc 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1300,21 +1300,17 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
- 		bch_writeback_queue(dc);
- 	}
- 
--	bch_sectors_dirty_init(&dc->disk);
-+	ret = bch_sectors_dirty_init(&dc->disk);
-+	if (ret) {
-+		pr_err("Fails in sectors dirty init for %s\n",
-+		       dc->disk.disk->disk_name);
-+		goto err;
-+	}
- 
- 	ret = bch_cached_dev_run(dc);
- 	if (ret && (ret != -EBUSY)) {
--		up_write(&dc->writeback_lock);
--		/*
--		 * bch_register_lock is held, bcache_device_stop() is not
--		 * able to be directly called. The kthread and kworker
--		 * created previously in bch_cached_dev_writeback_start()
--		 * have to be stopped manually here.
--		 */
--		kthread_stop(dc->writeback_thread);
--		cancel_writeback_rate_update_dwork(dc);
- 		pr_err("Couldn't run cached device %pg\n", dc->bdev);
--		return ret;
-+		goto err;
- 	}
- 
- 	bcache_device_link(&dc->disk, c, "bdev");
-@@ -1334,6 +1330,18 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
- 		dc->disk.disk->disk_name,
- 		dc->disk.c->set_uuid);
- 	return 0;
-+
-+err:
-+	up_write(&dc->writeback_lock);
-+	/*
-+	 * bch_register_lock is held, bcache_device_stop() is not
-+	 * able to be directly called. The kthread and kworker
-+	 * created previously in bch_cached_dev_writeback_start()
-+	 * have to be stopped manually here.
-+	 */
-+	kthread_stop(dc->writeback_thread);
-+	cancel_writeback_rate_update_dwork(dc);
-+	return ret;
+@@ -1336,6 +1335,11 @@ static inline bool bdev_write_cache(struct block_device *bdev)
+ 	return test_bit(QUEUE_FLAG_WC, &bdev_get_queue(bdev)->queue_flags);
  }
  
- /* when dc->disk.kobj released */
-@@ -1472,8 +1480,12 @@ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
- 
- 	list_add(&dc->list, &uncached_devices);
- 	/* attach to a matched cache set if it exists */
--	list_for_each_entry(c, &bch_cache_sets, list)
--		bch_cached_dev_attach(dc, c, NULL);
-+	err = "failed to attach cached device";
-+	list_for_each_entry(c, &bch_cache_sets, list) {
-+		ret = bch_cached_dev_attach(dc, c, NULL);
-+		if (ret)
-+			goto err;
-+	}
- 
- 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_NONE ||
- 	    BDEV_STATE(&dc->sb) == BDEV_STATE_STALE) {
-@@ -1526,7 +1538,7 @@ static void flash_dev_flush(struct closure *cl)
- 
- static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
++static inline bool bdev_fua(struct block_device *bdev)
++{
++	return test_bit(QUEUE_FLAG_FUA, &bdev_get_queue(bdev)->queue_flags);
++}
++
+ static inline enum blk_zoned_model bdev_zoned_model(struct block_device *bdev)
  {
--	int err = -ENOMEM;
-+	int ret = -ENOMEM;
- 	struct bcache_device *d = kzalloc(sizeof(struct bcache_device),
- 					  GFP_KERNEL);
- 	if (!d)
-@@ -1542,14 +1554,19 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
- 		goto err;
- 
- 	bcache_device_attach(d, c, u - c->uuids);
--	bch_sectors_dirty_init(d);
-+
-+	ret = bch_sectors_dirty_init(d);
-+	if (ret)
-+		goto err;
-+
- 	bch_flash_dev_request_init(d);
--	err = add_disk(d->disk);
--	if (err)
-+
-+	ret = add_disk(d->disk);
-+	if (ret)
- 		goto err;
- 
--	err = kobject_add(&d->kobj, &disk_to_dev(d->disk)->kobj, "bcache");
--	if (err)
-+	ret = kobject_add(&d->kobj, &disk_to_dev(d->disk)->kobj, "bcache");
-+	if (ret)
- 		goto err;
- 
- 	bcache_device_link(d, c, "volume");
-@@ -1564,7 +1581,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
- err:
- 	kobject_put(&d->kobj);
- err_ret:
--	return err;
-+	return ret;
- }
- 
- static int flash_devs_run(struct cache_set *c)
-@@ -1971,6 +1988,8 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- 
- static int run_cache_set(struct cache_set *c)
- {
-+	int ret = -EIO;
-+
- 	const char *err = "cannot allocate memory";
- 	struct cached_dev *dc, *t;
- 	struct cache *ca = c->cache;
-@@ -2123,8 +2142,12 @@ static int run_cache_set(struct cache_set *c)
- 	if (bch_has_feature_obso_large_bucket(&c->cache->sb))
- 		pr_err("Detect obsoleted large bucket layout, all attached bcache device will be read-only\n");
- 
--	list_for_each_entry_safe(dc, t, &uncached_devices, list)
--		bch_cached_dev_attach(dc, c, NULL);
-+	err = "failed to attach cached device";
-+	list_for_each_entry_safe(dc, t, &uncached_devices, list) {
-+		ret = bch_cached_dev_attach(dc, c, NULL);
-+		if (ret)
-+			goto err;
-+	}
- 
- 	flash_devs_run(c);
- 
-@@ -2141,7 +2164,7 @@ static int run_cache_set(struct cache_set *c)
- 
- 	bch_cache_set_error(c, "%s", err);
- 
--	return -EIO;
-+	return ret;
- }
- 
- static const char *register_cache_set(struct cache *ca)
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 5b828555bca8..f61cb71ca0c7 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -878,6 +878,7 @@ static int bch_root_node_dirty_init(struct cache_set *c,
- 
- static int bch_dirty_init_thread(void *arg)
- {
-+	int ret = 0;
- 	struct dirty_init_thrd_info *info = arg;
- 	struct bch_dirty_init_state *state = info->state;
- 	struct cache_set *c = state->c;
-@@ -919,7 +920,8 @@ static int bch_dirty_init_thread(void *arg)
- 		}
- 
- 		if (p) {
--			if (bch_root_node_dirty_init(c, state->d, p) < 0)
-+			ret = bch_root_node_dirty_init(c, state->d, p);
-+			if (ret < 0)
- 				goto out;
- 		}
- 
-@@ -929,6 +931,7 @@ static int bch_dirty_init_thread(void *arg)
- 	}
- 
- out:
-+	info->result = ret;
- 	/* In order to wake up state->wait in time */
- 	smp_mb__before_atomic();
- 	if (atomic_dec_and_test(&state->started))
-@@ -949,8 +952,9 @@ static int bch_btre_dirty_init_thread_nr(void)
- 	return n;
- }
- 
--void bch_sectors_dirty_init(struct bcache_device *d)
-+int bch_sectors_dirty_init(struct bcache_device *d)
- {
-+	int ret = 0;
- 	int i;
- 	struct bkey *k = NULL;
- 	struct btree_iter iter;
-@@ -969,13 +973,13 @@ void bch_sectors_dirty_init(struct bcache_device *d)
- 		for_each_key_filter(&c->root->keys,
- 				    k, &iter, bch_ptr_invalid)
- 			sectors_dirty_init_fn(&op.op, c->root, k);
--		return;
-+		return 0;
- 	}
- 
- 	state = kzalloc(sizeof(struct bch_dirty_init_state), GFP_KERNEL);
- 	if (!state) {
- 		pr_warn("sectors dirty init failed: cannot allocate memory\n");
--		return;
-+		return -ENOMEM;
- 	}
- 
- 	state->c = c;
-@@ -1005,18 +1009,31 @@ void bch_sectors_dirty_init(struct bcache_device *d)
- 			pr_err("fails to run thread bch_dirty_init[%d]\n", i);
- 			for (--i; i >= 0; i--)
- 				kthread_stop(state->infos[i].thread);
--			goto out;
-+			ret = -ENOMEM;
-+			goto out_wait;
- 		}
- 	}
- 
- 	/*
- 	 * Must wait for all threads to stop.
- 	 */
-+out_wait:
- 	wait_event_interruptible(state->wait,
- 		 atomic_read(&state->started) == 0);
- 
-+	if (ret)
-+		goto out;
-+
-+	for (i = 0; i < state->total_threads; i++) {
-+		if (state->infos[i].result) {
-+			ret = state->infos[i].result;
-+			goto out;
-+		}
-+	}
-+
- out:
- 	kfree(state);
-+	return ret;
- }
- 
- void bch_cached_dev_writeback_init(struct cached_dev *dc)
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 02b2f9df73f6..0e42b3de5be6 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -32,6 +32,7 @@ struct bch_dirty_init_state;
- struct dirty_init_thrd_info {
- 	struct bch_dirty_init_state	*state;
- 	struct task_struct		*thread;
-+	int				result;
- };
- 
- struct bch_dirty_init_state {
-@@ -148,7 +149,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
- void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
- 				  uint64_t offset, int nr_sectors);
- 
--void bch_sectors_dirty_init(struct bcache_device *d);
-+int bch_sectors_dirty_init(struct bcache_device *d);
- void bch_cached_dev_writeback_init(struct cached_dev *dc);
- int bch_cached_dev_writeback_start(struct cached_dev *dc);
- 
+ 	struct request_queue *q = bdev_get_queue(bdev);
 -- 
-2.17.1
+2.30.2
 
