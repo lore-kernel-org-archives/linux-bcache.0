@@ -2,200 +2,91 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id C3CF9C433FE
-	for <linux-bcache@archiver.kernel.org>; Sat, 21 May 2022 17:05:19 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 16A5AC433EF
+	for <linux-bcache@archiver.kernel.org>; Sun, 22 May 2022 17:07:50 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1343916AbiEURFS (ORCPT
+        id S1349525AbiEVRHs (ORCPT
         <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 21 May 2022 13:05:18 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48164 "EHLO
+        Sun, 22 May 2022 13:07:48 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:38448 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1343827AbiEURFS (ORCPT
+        with ESMTP id S229436AbiEVRHr (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 21 May 2022 13:05:18 -0400
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.220.28])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2C6DD3BA6C;
-        Sat, 21 May 2022 10:05:17 -0700 (PDT)
+        Sun, 22 May 2022 13:07:47 -0400
+Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.220.29])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 09B6B3A73F;
+        Sun, 22 May 2022 10:07:45 -0700 (PDT)
 Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-        by smtp-out1.suse.de (Postfix) with ESMTP id DE8D721906;
-        Sat, 21 May 2022 17:05:15 +0000 (UTC)
+        by smtp-out2.suse.de (Postfix) with ESMTP id 73D9B1F381;
+        Sun, 22 May 2022 17:07:44 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1653152715; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=wmJpe9/Kua8zJtz04nyJuieA4qrmKJ7yZERYmqpEk9U=;
-        b=oHQiJSiJEVocFfhy2xcCHFcBG91Wk094UL5UNKocexe6T0GOGWtyHIaJXVTZiGBUcQmTF2
-        bmTf5p/SWgpnwMQYIXmPy+jUI7udZF2OQuz2P/J+QldQSW/8pjwdDhLixdS/srtw0/9QgI
-        52xNQnQGg3pLEIO7oL/a6Ysvx+dbyGw=
+        t=1653239264; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=LLwJie0sQStofLUGTrQvWu/Wt0gqhr7qS8+rcV8iY7g=;
+        b=cTDzUnf7bOce6XPlpj/vMbFuIRNOde4WPFvUmuXVvCrbD1O9x33jUfNf9rKiu1hk92eQrf
+        jWn3ALoSkTYyN/1aRxDsYtSpCAzBTTemu2aOiZN4akHTQkZDqgFYEjRBY0RxXRAi14BajB
+        TxdMSMNLHcXIu2+P6sJTPexomfrt4gg=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1653152715;
+        s=susede2_ed25519; t=1653239264;
         h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=wmJpe9/Kua8zJtz04nyJuieA4qrmKJ7yZERYmqpEk9U=;
-        b=4zlsZ/aLs6m3i2Wc9rHtYae5NRuMFcWp6eNN0mB3GDMVWPBrhDu+N2urABsgqG2isYTIm5
-        KpX8tWDFXmga9IBw==
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=LLwJie0sQStofLUGTrQvWu/Wt0gqhr7qS8+rcV8iY7g=;
+        b=Wbu3kYaQGdLc90+e+N3f24CsNMVk1+eHgvzzGmZOqruxneOZ+doZfIiPGkf8Xw8OsVg+Fa
+        GrDbFP2bmTgN9rDQ==
 Received: from localhost.localdomain (colyli.tcp.ovpn1.nue.suse.de [10.163.16.22])
-        by relay2.suse.de (Postfix) with ESMTP id 189B72C141;
-        Sat, 21 May 2022 17:05:13 +0000 (UTC)
+        by relay2.suse.de (Postfix) with ESMTP id B95222C141;
+        Sun, 22 May 2022 17:07:42 +0000 (UTC)
 From:   Coly Li <colyli@suse.de>
-To:     linux-bcache@vger.kernel.org
-Cc:     linux-block@vger.kernel.org, Coly Li <colyli@suse.de>,
-        Nikhil Kshirsagar <nkshirsagar@gmail.com>,
-        stable@vger.kernel.org
-Subject: [PATCH 4/4] bcache: avoid journal no-space deadlock by reserving 1 journal bucket
-Date:   Sun, 22 May 2022 01:05:02 +0800
-Message-Id: <20220521170502.20026-4-colyli@suse.de>
+To:     axboe@kernel.dk
+Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org,
+        Coly Li <colyli@suse.de>
+Subject: [PATCH 0/4] bcache patches for Linux v5.19 (1st wave)
+Date:   Mon, 23 May 2022 01:07:32 +0800
+Message-Id: <20220522170736.6582-1-colyli@suse.de>
 X-Mailer: git-send-email 2.35.3
-In-Reply-To: <20220521170502.20026-1-colyli@suse.de>
-References: <20220521170502.20026-1-colyli@suse.de>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-The journal no-space deadlock was reported time to time. Such deadlock
-can happen in the following situation.
+Hi Jens,
 
-When all journal buckets are fully filled by active jset with heavy
-write I/O load, the cache set registration (after a reboot) will load
-all active jsets and inserting them into the btree again (which is
-called journal replay). If a journaled bkey is inserted into a btree
-node and results btree node split, new journal request might be
-triggered. For example, the btree grows one more level after the node
-split, then the root node record in cache device super block will be
-upgrade by bch_journal_meta() from bch_btree_set_root(). But there is no
-space in journal buckets, the journal replay has to wait for new journal
-bucket to be reclaimed after at least one journal bucket replayed. This
-is one example that how the journal no-space deadlock happens.
+The bcache has 4 patches for Linux v5.19 merge window, all from me.
+- The first 2 patches are code clean up and potential bug fixes for
+multi- threaded btree nodes check (for cache device) and dirty sectors
+counting (for backing device), although no report from mailing list for
+them, it is good to have the fixes.
+- The 3rd patch removes incremental dirty sectors counting because it
+is conflicted with multithreaded dirty sectors counting and the latter
+one is 10x times faster.
+- The last patch fixes a journal no-space deadlock during cache device
+registration, it always reserves one journal bucket and only uses it
+in registration time, so the no-spance condition won't happen anymore.
 
-The solution to avoid the deadlock is to reserve 1 journal bucket in
-run time, and only permit the reserved journal bucket to be used during
-cache set registration procedure for things like journal replay. Then
-the journal space will never be fully filled, there is no chance for
-journal no-space deadlock to happen anymore.
+There are still 2 fixes are still under the long time I/O pressure
+testing, once they are accomplished, I will submit to you in later
+RC cycles.
 
-This patch adds a new member "bool do_reserve" in struct journal, it is
-inititalized to 0 (false) when struct journal is allocated, and set to
-1 (true) by bch_journal_space_reserve() when all initialization done in
-run_cache_set(). In the run time when journal_reclaim() tries to
-allocate a new journal bucket, free_journal_buckets() is called to check
-whether there are enough free journal buckets to use. If there is only
-1 free journal bucket and journal->do_reserve is 1 (true), the last
-bucket is reserved and free_journal_buckets() will return 0 to indicate
-no free journal bucket. Then journal_reclaim() will give up, and try
-next time to see whetheer there is free journal bucket to allocate. By
-this method, there is always 1 jouranl bucket reserved in run time.
+Please take them, and thanks in advance.
 
-During the cache set registration, journal->do_reserve is 0 (false), so
-the reserved journal bucket can be used to avoid the no-space deadlock.
-
-Reported-by: Nikhil Kshirsagar <nkshirsagar@gmail.com>
-Signed-off-by: Coly Li <colyli@suse.de>
-Cc: stable@vger.kernel.org
+Coly Li
 ---
- drivers/md/bcache/journal.c | 31 ++++++++++++++++++++++++++-----
- drivers/md/bcache/journal.h |  2 ++
- drivers/md/bcache/super.c   |  1 +
- 3 files changed, 29 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
-index df5347ea450b..e5da469a4235 100644
---- a/drivers/md/bcache/journal.c
-+++ b/drivers/md/bcache/journal.c
-@@ -405,6 +405,11 @@ int bch_journal_replay(struct cache_set *s, struct list_head *list)
- 	return ret;
- }
- 
-+void bch_journal_space_reserve(struct journal *j)
-+{
-+	j->do_reserve = true;
-+}
-+
- /* Journalling */
- 
- static void btree_flush_write(struct cache_set *c)
-@@ -621,12 +626,30 @@ static void do_journal_discard(struct cache *ca)
- 	}
- }
- 
-+static unsigned int free_journal_buckets(struct cache_set *c)
-+{
-+	struct journal *j = &c->journal;
-+	struct cache *ca = c->cache;
-+	struct journal_device *ja = &c->cache->journal;
-+	unsigned int n;
-+
-+	/* In case njournal_buckets is not power of 2 */
-+	if (ja->cur_idx >= ja->discard_idx)
-+		n = ca->sb.njournal_buckets +  ja->discard_idx - ja->cur_idx;
-+	else
-+		n = ja->discard_idx - ja->cur_idx;
-+
-+	if (n > (1 + j->do_reserve))
-+		return n - (1 + j->do_reserve);
-+
-+	return 0;
-+}
-+
- static void journal_reclaim(struct cache_set *c)
- {
- 	struct bkey *k = &c->journal.key;
- 	struct cache *ca = c->cache;
- 	uint64_t last_seq;
--	unsigned int next;
- 	struct journal_device *ja = &ca->journal;
- 	atomic_t p __maybe_unused;
- 
-@@ -649,12 +672,10 @@ static void journal_reclaim(struct cache_set *c)
- 	if (c->journal.blocks_free)
- 		goto out;
- 
--	next = (ja->cur_idx + 1) % ca->sb.njournal_buckets;
--	/* No space available on this device */
--	if (next == ja->discard_idx)
-+	if (!free_journal_buckets(c))
- 		goto out;
- 
--	ja->cur_idx = next;
-+	ja->cur_idx = (ja->cur_idx + 1) % ca->sb.njournal_buckets;
- 	k->ptr[0] = MAKE_PTR(0,
- 			     bucket_to_sector(c, ca->sb.d[ja->cur_idx]),
- 			     ca->sb.nr_this_dev);
-diff --git a/drivers/md/bcache/journal.h b/drivers/md/bcache/journal.h
-index f2ea34d5f431..cd316b4a1e95 100644
---- a/drivers/md/bcache/journal.h
-+++ b/drivers/md/bcache/journal.h
-@@ -105,6 +105,7 @@ struct journal {
- 	spinlock_t		lock;
- 	spinlock_t		flush_write_lock;
- 	bool			btree_flushing;
-+	bool			do_reserve;
- 	/* used when waiting because the journal was full */
- 	struct closure_waitlist	wait;
- 	struct closure		io;
-@@ -182,5 +183,6 @@ int bch_journal_replay(struct cache_set *c, struct list_head *list);
- 
- void bch_journal_free(struct cache_set *c);
- int bch_journal_alloc(struct cache_set *c);
-+void bch_journal_space_reserve(struct journal *j);
- 
- #endif /* _BCACHE_JOURNAL_H */
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index bf3de149d3c9..2bb55278d22d 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -2128,6 +2128,7 @@ static int run_cache_set(struct cache_set *c)
- 
- 	flash_devs_run(c);
- 
-+	bch_journal_space_reserve(&c->journal);
- 	set_bit(CACHE_SET_RUNNING, &c->flags);
- 	return 0;
- err:
+Coly Li (4):
+  bcache: improve multithreaded bch_btree_check()
+  bcache: improve multithreaded bch_sectors_dirty_init()
+  bcache: remove incremental dirty sector counting for
+    bch_sectors_dirty_init()
+  bcache: avoid journal no-space deadlock by reserving 1 journal bucket
+
+ drivers/md/bcache/btree.c     |  58 +++++++++----------
+ drivers/md/bcache/journal.c   |  31 +++++++++--
+ drivers/md/bcache/journal.h   |   2 +
+ drivers/md/bcache/super.c     |   1 +
+ drivers/md/bcache/writeback.c | 101 +++++++++++++---------------------
+ 5 files changed, 92 insertions(+), 101 deletions(-)
+
 -- 
 2.35.3
 
