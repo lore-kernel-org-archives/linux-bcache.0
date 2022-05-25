@@ -2,88 +2,85 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4C2EFC433EF
-	for <linux-bcache@archiver.kernel.org>; Wed, 25 May 2022 05:17:31 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DAB96C433EF
+	for <linux-bcache@archiver.kernel.org>; Wed, 25 May 2022 05:20:26 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S243228AbiEYFR3 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 25 May 2022 01:17:29 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:41016 "EHLO
+        id S230475AbiEYFUZ (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 25 May 2022 01:20:25 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42260 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S237251AbiEYFR2 (ORCPT
+        with ESMTP id S236574AbiEYFUY (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 25 May 2022 01:17:28 -0400
+        Wed, 25 May 2022 01:20:24 -0400
 Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:3::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 18ADF1D337;
-        Tue, 24 May 2022 22:17:27 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B85471DA64;
+        Tue, 24 May 2022 22:20:22 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=bombadil.20210309; h=In-Reply-To:Content-Type:MIME-Version
-        :References:Message-ID:Subject:Cc:To:From:Date:Sender:Reply-To:
-        Content-Transfer-Encoding:Content-ID:Content-Description;
-        bh=ORCevp/tRYR+5ie3gSlKpqnAjhYaXXhYx2a0A9SefGU=; b=jdUNCx/lsHofSSntrwGLVasMKx
-        ChRvM30294qE5sohPXp4MkqBi87vQqwCXVea6KdTjBNQYrOi6iulgUwOavj8ufjMiqR29mpKoypSH
-        Vc7k3tcFlo1uPDQkYEip6VBBqeG1KY3STmpTwUrymhZ+ajieSqCNvn4ndsRwyjw8wMGOf9xov42M0
-        aCl9Gu6rKX/jqemXQESX5pb82QAGjkpym6w/3KKWZ3Pl02JuJZK3ThUHrQd+rPWxGyR1JUZbVwAbT
-        Q3U512pxexkehL2yGaguAx1ZHdiexjYVLDmv3mIxasMoEyRNr/Wq2soBnmXSNevax3t//2gWyG5uT
-        4V9vR75w==;
+        d=infradead.org; s=bombadil.20210309; h=In-Reply-To:Content-Transfer-Encoding
+        :Content-Type:MIME-Version:References:Message-ID:Subject:Cc:To:From:Date:
+        Sender:Reply-To:Content-ID:Content-Description;
+        bh=YbBZJecasFJChD0Qx766ygv34+7CE3nsA11f44Yl+UI=; b=OPYvc+r5yRmAXpLvPMiOYs/E8G
+        mcFb7ZPfMh5tPcXBZXIy2Tw//q2WNL/BnmHUJeRnqvYIGqlQGhaeJBNUvzVR/qcUmvtE3GquNOu7J
+        qE/5nd70uqkfnkgb3+MI0cZxe6qRi0fLP9nolxFOeNLS9TVZybFjampx5UxLYGc1pnC4G8h0jo1lS
+        wglmXsdJtVM625U+esHSCVFJ5QXyx8MzYdwFJAlBfQo9xzN6zCaHmAl1JyqVdjW5UyDgKuC7imgeD
+        f5XXJjZxFVhFBjytgKzA/v11J2EQKlIxiFY/AVDdmrNLVHqCxpfaK3YS1OdKMSv0quwNNSRWkcIDC
+        en+FWfhA==;
 Received: from hch by bombadil.infradead.org with local (Exim 4.94.2 #2 (Red Hat Linux))
-        id 1ntjOZ-009xyi-AN; Wed, 25 May 2022 05:17:19 +0000
-Date:   Tue, 24 May 2022 22:17:19 -0700
+        id 1ntjRQ-009yDS-6p; Wed, 25 May 2022 05:20:16 +0000
+Date:   Tue, 24 May 2022 22:20:16 -0700
 From:   Christoph Hellwig <hch@infradead.org>
 To:     Eric Wheeler <bcache@lists.ewheeler.net>
-Cc:     Christoph Hellwig <hch@infradead.org>, Coly Li <colyli@suse.de>,
+Cc:     Keith Busch <kbusch@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Coly Li <colyli@suse.de>,
         Adriano Silva <adriano_da_silva@yahoo.com.br>,
         Bcache Linux <linux-bcache@vger.kernel.org>,
         Matthias Ferdinand <bcache@mfedv.net>,
         linux-block@vger.kernel.org
 Subject: Re: [RFC] Add sysctl option to drop disk flushes in bcache? (was:
  Bcache in writes direct with fsync)
-Message-ID: <Yo273y/q8P6+tUJq@infradead.org>
+Message-ID: <Yo28kDw8rZgFWpHu@infradead.org>
 References: <958894243.922478.1652201375900.ref@mail.yahoo.com>
  <958894243.922478.1652201375900@mail.yahoo.com>
  <9d59af25-d648-4777-a5c0-c38c246a9610@ewheeler.net>
  <27ef674d-67e-5739-d5d8-f4aa2887e9c2@ewheeler.net>
  <YoxuYU4tze9DYqHy@infradead.org>
  <5486e421-b8d0-3063-4cb9-84e69c41b7a3@ewheeler.net>
+ <Yo1BRxG3nvGkQoyG@kbusch-mbp.dhcp.thefacebook.com>
+ <7759781b-dac-7f84-ff42-86f4b1983ca1@ewheeler.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <5486e421-b8d0-3063-4cb9-84e69c41b7a3@ewheeler.net>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7759781b-dac-7f84-ff42-86f4b1983ca1@ewheeler.net>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Tue, May 24, 2022 at 01:14:18PM -0700, Eric Wheeler wrote:
-> Adriano was getting 1.5ms sync-write ioping's to an NVMe through bcache 
-> (instead of the expected ~70us), so perhaps the NVMe flushes were killing 
-> performance if every write was also forcing an erase cycle.
+On Tue, May 24, 2022 at 02:34:23PM -0700, Eric Wheeler wrote:
+> Is this flag influced at all when /sys/block/sdX/queue/scheduler is set 
+> to "none", or does the write_cache flag operate independently of the 
+> selected scheduler?
 
-This sounds very typical of a low end consumer grade NVMe SSD, yes.
+This in completely independent from ﬆhe scheduler.
 
-> The suggestion was to disable flushes in bcache as a troubleshooting step 
-> to see if that solved the problem, but with the warning that it could be 
-> unsafe.
+> Does the block layer stop sending flushes at the first device in the stack 
+> that is set to "write back"?  For example, if a device mapper target is 
+> writeback will it strip flushes on the way to the backing device?
 
-If you want to disable the cache (despite this being unsafe!) you can
-do this for every block device:
+This is up to the stacking driver.  dm and tend to pass through flushes
+where needed.
 
-	echo "write through" > /sys/block/XXX/queue/write_cache
-
-> Questions:
+> This confirms what I have suspected all along: We have an LSI MegaRAID 
+> SAS-3516 where the write policy is "write back" in the LUN, but the cache 
+> is flagged in Linux as write-through:
 > 
-> 1. If a user knows their disks have a non-volatile cache then is it safe 
->    to drop flushes?
+> 	]# cat /sys/block/sdb/queue/write_cache 
+> 	write through
+> 
+> I guess this is the correct place to adjust that behavior!
 
-It is, but in that case the disk will not advertise a write cache, and
-the flushes will not make it past the submit_bio and never reach the
-driver.
-
-> 3. Since the block layer wont send flushes when the hardware reports that 
->    the cache is non-volatile, then how do you query the device to make 
->    sure it is reporting correctly?  For NVMe you can get VWC as:
-> 	nvme id-ctrl -H /dev/nvme0 |grep -A1 vwc
->    
->    ...but how do you query a block device (like a RAID LUN) to make sure 
->    it is reporting a non-volatile cache correctly?
-
-cat /sys/block/XXX/queue/write_cache
+MegaRAID has had all kinds of unsafe policies in the past unfortunately.
+I'm not even sure all of them could pass through flushes properly if we
+asked them to :(
