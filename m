@@ -2,237 +2,97 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D036CC43334
-	for <linux-bcache@archiver.kernel.org>; Tue, 21 Jun 2022 13:43:08 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 50306CCA47E
+	for <linux-bcache@archiver.kernel.org>; Sat, 25 Jun 2022 06:29:31 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1349766AbiFUNnI (ORCPT
-        <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 21 Jun 2022 09:43:08 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39868 "EHLO
+        id S231936AbiFYG33 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Sat, 25 Jun 2022 02:29:29 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42428 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230177AbiFUNnH (ORCPT
+        with ESMTP id S229529AbiFYG33 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 21 Jun 2022 09:43:07 -0400
-Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.220.29])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9F0B4240A8
-        for <linux-bcache@vger.kernel.org>; Tue, 21 Jun 2022 06:43:05 -0700 (PDT)
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by smtp-out2.suse.de (Postfix) with ESMTPS id 5F3831F8A3;
-        Tue, 21 Jun 2022 13:43:04 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1655818984; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=5KQvaol6BT1uqLRtFHcuqS0ji9YrWFytLTgrA8IyYUQ=;
-        b=XKCniIKP2lptJ8As10BG6WdyHwvw0lNpLbKULrT4FpUbJ447tF5YpW2TS0jZNUB3dGDCLD
-        4T9QaJatfB/cOJfanN6qxOtbIW9uKdkea4V31HKxTEJVxGVswHQr0SbCE1cin1c1rVEnm2
-        uCqj6FBkNdP4kxD6iLWNYdbrHFzWg8s=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1655818984;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=5KQvaol6BT1uqLRtFHcuqS0ji9YrWFytLTgrA8IyYUQ=;
-        b=Dr0XhRu77C7b7tRxFbrsj2yMdTg4xbE3BanO3VkJBh47G9h5HnoLnsW7eyRIw/QiD68GYs
-        +IMjBGBA7Bz8iOAA==
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 6AF5713A88;
-        Tue, 21 Jun 2022 13:43:03 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([192.168.254.65])
-        by imap2.suse-dmz.suse.de with ESMTPSA
-        id GhCODOfKsWIiNQAAMHmgww
-        (envelope-from <colyli@suse.de>); Tue, 21 Jun 2022 13:43:03 +0000
-Content-Type: text/plain;
-        charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3696.100.31\))
-Subject: Re: trying to reproduce bcache journal deadlock
- https://www.spinics.net/lists/kernel/msg4386275.html
-From:   Coly Li <colyli@suse.de>
-In-Reply-To: <CAC6jXv0FkOzyRk5aObkCWwWuwyEbDWNY2qvU=VQNrCr9jPx2EA@mail.gmail.com>
-Date:   Tue, 21 Jun 2022 21:43:00 +0800
-Cc:     Kent Overstreet <kent.overstreet@gmail.com>,
-        linux-bcache@vger.kernel.org
-Content-Transfer-Encoding: quoted-printable
-Message-Id: <983E0EB0-0628-4874-B992-FC7D351D4853@suse.de>
-References: <CAC6jXv1hTHhPdZNOhbSOzQTW+pBfAXfpGkxJfjjBmS8bYaHfZw@mail.gmail.com>
- <20220621043543.zvxgekvcs34abim6@moria.home.lan>
- <CAC6jXv27xfHQVFTX_U944qSStY=k9WLzPENh-tpBimcA7kms-w@mail.gmail.com>
- <CAC6jXv3Ar-Xb-tGOMQX4PsPc5GSu=7zf_37yWvGkss=HqYfBmw@mail.gmail.com>
- <44F3206D-9807-4416-9183-A613BEB4A1E2@suse.de>
- <CAC6jXv0FkOzyRk5aObkCWwWuwyEbDWNY2qvU=VQNrCr9jPx2EA@mail.gmail.com>
-To:     Nikhil Kshirsagar <nkshirsagar@gmail.com>
-X-Mailer: Apple Mail (2.3696.100.31)
+        Sat, 25 Jun 2022 02:29:29 -0400
+Received: from mail-lf1-x12e.google.com (mail-lf1-x12e.google.com [IPv6:2a00:1450:4864:20::12e])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3A1C049262
+        for <linux-bcache@vger.kernel.org>; Fri, 24 Jun 2022 23:29:28 -0700 (PDT)
+Received: by mail-lf1-x12e.google.com with SMTP id x3so7987837lfd.2
+        for <linux-bcache@vger.kernel.org>; Fri, 24 Jun 2022 23:29:28 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20210112;
+        h=mime-version:from:date:message-id:subject:to:cc;
+        bh=NIfQtqzeiHr1Bx/wI31cgthQtxe3wj/holKaMR/m9zM=;
+        b=Da78iQBFQ0j5UZFZNq0UDIyvDfLl1sl1+ECWTo6iMYA2wwtr6o9aSWCeHAEYvNB802
+         cGeK2knmCulZLM28E5oGcP6T6V5m9msb7isZR3bc+jQAIj+gHhV5aZD1zFK1F76/zjnV
+         vtF0FSPIE26B1wr7WB01ynmce5Nrle9hCau/kRYsj54webfVIzYcwm5UFcnCp/2xatHf
+         25WO33+iaobAVhFP33WT+wgqv1JpH2YhS0EBuKadJ5Io1pnaJhdBTA68RaKRXoBx54WE
+         p/WosK6sc9HVHWXv311pR0BAf9O7SjZRunLi0mJCszuCDLld3/hox3ruv+tkscZEsL/C
+         wrgg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=x-gm-message-state:mime-version:from:date:message-id:subject:to:cc;
+        bh=NIfQtqzeiHr1Bx/wI31cgthQtxe3wj/holKaMR/m9zM=;
+        b=x3EpqJKMhA0Yp37HcP0rvxWSWvKqEBnqfTJ28K/6KmcomF8IlxM2sLzBR9s8jXQRhE
+         gTsdPrCGNGz7xgIky2jbuVYBQP28hrNGrOuK0rH5Uzga7cdjR+KD0lUIiMEI+2WAZBiS
+         aq1IVYVnbb9TpRevwMftp7tsZyHRrqBFYR6nykgF2NpeLtgevWx7TP6RKWW4HU4pQxpO
+         le3DnOutDxuGHc7hkIKCAz+dh0areRedtOwAliXytaXRERjnyy3HikR1JvwvQWvBZbin
+         e/jnCt7u0wOnihpONaFliTtbzmnGrQnUyBgCOqahzuucHkibnaDvMqm4GXB3YVOrci+d
+         UJ0g==
+X-Gm-Message-State: AJIora9PdcCnmf8YEK0j3F3SnQncz9pzdJ49KTxxWTIyFxnUy5PrxQNg
+        8h9D++ECbwen9BkejXQzGsMqPhcos1yOPZj1iaAbroarxXeFHQ==
+X-Google-Smtp-Source: AGRyM1soR5L8f+XQOVF7UbIqENEjCdFxWNONgems60J5m+ZRw2ciUMk87o2bon5K/9zNyOa5BcItvg/cCdLcRfQKSJI=
+X-Received: by 2002:a05:6512:793:b0:47f:82d0:fadb with SMTP id
+ x19-20020a056512079300b0047f82d0fadbmr1575156lfr.545.1656138565484; Fri, 24
+ Jun 2022 23:29:25 -0700 (PDT)
+MIME-Version: 1.0
+From:   Nikhil Kshirsagar <nkshirsagar@gmail.com>
+Date:   Sat, 25 Jun 2022 11:59:13 +0530
+Message-ID: <CAC6jXv0FoE60HEuc7tDMXEA27hkoMkZm5d6gt4NCRkAh2w3WvA@mail.gmail.com>
+Subject: bcache I/O performance tests on 5.15.0-40-generic
+To:     linux-bcache@vger.kernel.org
+Cc:     Coly Li <colyli@suse.de>
+Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
+Hello,
 
+I've been doing some performance tests of bcache on 5.15.0-40-generic.
 
-> 2022=E5=B9=B46=E6=9C=8821=E6=97=A5 21:35=EF=BC=8CNikhil Kshirsagar =
-<nkshirsagar@gmail.com> =E5=86=99=E9=81=93=EF=BC=9A
->=20
-> Hi Coly,
->=20
-> thanks, so , I will also change uapi/linux/bcache.h SB_JOURNAL_BUCKETS
-> to 8 but I noted the note in the kernel header file, which said "/*
-> SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */" which I
-> think is 32..
+The baseline figures for the fast and slow disk for random writes are
+consistent at around 225MiB/s and 3046KiB/s.
 
-Hi Nikhil,
+But the bcache results inexplicably drop sometimes to 10Mib/s, for
+random write test using fio like this -
 
-It=E2=80=99s fine, for me I modify it to 16, and 8 should work as well.
+fio --rw=randwrite --size=1G --ioengine=libaio --direct=1
+--gtod_reduce=1 --iodepth=128 --bs=4k --name=MY_TEST1
 
->=20
-> As of now I have not built the backported patch into the kernel
-> (Ubuntu-4.15.0-183.192) which I am simply using to reproduce the
-> issue. Then I will build the patch into the kernel and verify that the
-> deadlock isn't ever seen. My problem is simply reproducing it for now
-> (without the fix compiled in). What I'm trying is (modify
-> SB_JOURNAL_BUCKETS to 8 both in bcache-tools and kernel, and then
-> created the bcache device and then filled it up by fio random writes
-> of about 250 gb data, and then run constantly.. -
-> https://pastebin.com/Sh3q6fXv .. not a reboot. Do you think in fact a
-> reboot is needed to reproduce it, and this approach of
-> de-register/register would not work to see the deadlock?)
+  WRITE: bw=168MiB/s (176MB/s), 168MiB/s-168MiB/s (176MB/s-176MB/s),
+io=1024MiB (1074MB), run=6104-6104msec
+  WRITE: bw=283MiB/s (297MB/s), 283MiB/s-283MiB/s (297MB/s-297MB/s),
+io=1024MiB (1074MB), run=3621-3621msec
+  WRITE: bw=10.3MiB/s (10.9MB/s), 10.3MiB/s-10.3MiB/s
+(10.9MB/s-10.9MB/s), io=1024MiB (1074MB), run=98945-98945msec
+  WRITE: bw=8236KiB/s (8434kB/s), 8236KiB/s-8236KiB/s
+(8434kB/s-8434kB/s), io=1024MiB (1074MB), run=127317-127317msec
+  WRITE: bw=9657KiB/s (9888kB/s), 9657KiB/s-9657KiB/s
+(9888kB/s-9888kB/s), io=1024MiB (1074MB), run=108587-108587msec
+  WRITE: bw=4543KiB/s (4652kB/s), 4543KiB/s-4543KiB/s
+(4652kB/s-4652kB/s), io=1024MiB (1074MB), run=230819-230819msec
 
-Reboot is not necessary. You can also try to stop all the cache and =
-backing devices and removed the bcache kernel module, and reload =
-bcache.ko and re-register cache and backing device.
+This seems to happen after 2 runs of 1gb writes (cache disk is 4gb size)
 
-It is not easy to reproduce the deadlock, last time when I tried to do =
-it, indeed I triggered another deadlock in journal code. This was why I =
-stopped fixing the journal no-space deadlock because I though it would =
-not happen in practice. This time I am not able to trigger the no-space =
-deadlock, what I do is to observe whether there is enough space always =
-reserved. If there is space reserved, then it won=E2=80=99t deadlock.
+Some details are here - https://pastebin.com/V9mpLCbY , I will share
+the full testing results soon, but just was wondering about this
+performance drop for no apparent reason once the cache gets about 50%
+full.
 
+I've tested in writeback mode, and also set
+congested_read_threshold_us and congested_write_threshold_us to 0
 
->=20
-> Once I reproduce it successfully a few times, I'll compile in the
-> backported patch and then verify I never see the deadlock again,
-> that's the best I can do I guess in the circumstances.
->=20
-> Thank you (and to Kent++ for helping me with the backport patch) for
-> all the help with this! I am very grateful for your help and
-> responses.
->=20
+I did not notice this issue while testing on an older kernel -
+4.15.0-188-generic
 
-Indeed, I am not sure whether what you triggered is the journal no-space =
-deadlock or other deadlock which was not fixed in 4.15 kernel. So I am =
-not able to provide advice. For me, if I see there is always reserved =
-journal space which can be used in registration time, then I believe the =
-no-space deadlock won=E2=80=99t happen.
-
-
-Coly Li
-
-
-
-
->=20
-> On Tue, 21 Jun 2022 at 18:53, Coly Li <colyli@suse.de> wrote:
->>=20
->>=20
->>=20
->>> 2022=E5=B9=B46=E6=9C=8821=E6=97=A5 13:40=EF=BC=8CNikhil Kshirsagar =
-<nkshirsagar@gmail.com> =E5=86=99=E9=81=93=EF=BC=9A
->>>=20
->>> I figured later that you probably meant for me to change the
->>> SB_JOURNAL_BUCKETS to 8 in bcache-tools and not the kernel?
->>>=20
->>> Regards,
->>> Nikhil.
->>=20
->>=20
->> Hi Nikhil,
->>=20
->> As I said in previous offline email, you should modify both =
-bcache-tool and kernel code for SB_JOURNAL_BUCKETS, to 8 or 16, and =
-recompile both.
->> With the patch it is very hard to reproduce the deadlock (because it =
-is fixed by this patch), you may observe the free journal space in run =
-time and reboot time. If there is alway at least 1 journal bucket =
-reserved during run time, then you won=E2=80=99t observe the journal =
-no-space deadlock in boot time.
->>=20
->> But 4.15 kernel is not robust enough for bcache (5.4+ is good and =
-5.10+ is better), if you are stucked by other bugs during this testing, =
-it is possible.
->>=20
->> Coly Li
->>=20
->>=20
->>>=20
->>> On Tue, 21 Jun 2022 at 11:06, Nikhil Kshirsagar =
-<nkshirsagar@gmail.com> wrote:
->>>>=20
->>>> Thank you Kent,
->>>>=20
->>>> I've made this change, in include/uapi/linux/bcache.h and will =
-build
->>>> the kernel with it to attempt to reproduce the issue, and create a =
-new
->>>> bcache device. Just wondering if the note about it being divisible =
-by
->>>> BITS_PER_LONG may restrict it to a minimum value of 32?
->>>>=20
->>>> #define SB_JOURNAL_BUCKETS              8
->>>> /* SB_JOURNAL_BUCKETS must be divisible by BITS_PER_LONG */
->>>>=20
->>>> I have a "cache" nvme disk of about 350 tb and some slow disks, =
-each
->>>> approx 300tb  which I will use to create the bcache device once the
->>>> kernel is installed. My bcache setup typically would look like,
->>>>=20
->>>> NAME      MAJ:MIN RM   SIZE RO TYPE MOUNTPOINT
->>>> sdb         8:16   0 279.4G  0 disk
->>>> =E2=94=94=E2=94=80bcache0 252:0    0 279.4G  0 disk
->>>> sdc         8:32   0 279.4G  0 disk
->>>> =E2=94=94=E2=94=80bcache2 252:256  0 279.4G  0 disk
->>>> sdd         8:48   0 279.4G  0 disk
->>>> =E2=94=94=E2=94=80bcache1 252:128  0 279.4G  0 disk
->>>> nvme0n1   259:0    0 372.6G  0 disk
->>>> =E2=94=9C=E2=94=80bcache0 252:0    0 279.4G  0 disk
->>>> =E2=94=9C=E2=94=80bcache1 252:128  0 279.4G  0 disk
->>>> =E2=94=94=E2=94=80bcache2 252:256  0 279.4G  0 disk
->>>>=20
->>>> Regards,
->>>> Nikhil.
->>>>=20
->>>> On Tue, 21 Jun 2022 at 10:05, Kent Overstreet =
-<kent.overstreet@gmail.com> wrote:
->>>>>=20
->>>>> On Tue, Jun 21, 2022 at 09:11:10AM +0530, Nikhil Kshirsagar wrote:
->>>>>> Hello all,
->>>>>>=20
->>>>>> I am trying to reproduce the problem that
->>>>>> 32feee36c30ea06e38ccb8ae6e5c44c6eec790a6 fixes, but I am not sure =
-how.
->>>>>> This is to verify and test its backport
->>>>>> (https://pastebin.com/fEYmPZqC) onto kernel 4.15 (Thanks Kent for =
-the
->>>>>> help with that backport!)
->>>>>>=20
->>>>>> Could this be reproduced by creating a bcache device with a =
-smaller
->>>>>> journal size? And if so, is there some way to pass the journal =
-size
->>>>>> argument during the creation of the bcache device?
->>>>>=20
->>>>> Change SB_JOURNAL_BUCKETS to 8 and make a new cache, it's used in =
-the
->>>>> initialization path.
->>>>>=20
->>>>> Bonus points would be to tweak journal reclaim so that we're =
-slower to reclaim
->>>>> to makes sure the journal stays full, and then test recovery.
->>=20
-
+Regards,
+Nikhil.
