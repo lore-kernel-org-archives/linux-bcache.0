@@ -2,111 +2,95 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id BD465C00140
-	for <linux-bcache@archiver.kernel.org>; Fri,  5 Aug 2022 19:38:39 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id CC294ECAAD8
+	for <linux-bcache@archiver.kernel.org>; Fri, 26 Aug 2022 10:07:25 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230437AbiHETii (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 5 Aug 2022 15:38:38 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49118 "EHLO
+        id S1343595AbiHZKHX (ORCPT
+        <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 26 Aug 2022 06:07:23 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:32844 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S238283AbiHETii (ORCPT
+        with ESMTP id S245405AbiHZKGt (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 5 Aug 2022 15:38:38 -0400
-Received: from mx.ewheeler.net (mx.ewheeler.net [173.205.220.69])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2F8DF2F029
-        for <linux-bcache@vger.kernel.org>; Fri,  5 Aug 2022 12:38:37 -0700 (PDT)
+        Fri, 26 Aug 2022 06:06:49 -0400
+X-Greylist: delayed 235 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Fri, 26 Aug 2022 03:05:27 PDT
+Received: from mxout.security-mail.net (mxout.security-mail.net [85.31.212.46])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id B4D52DAA08
+        for <linux-bcache@vger.kernel.org>; Fri, 26 Aug 2022 03:05:27 -0700 (PDT)
 Received: from localhost (localhost [127.0.0.1])
-        by mx.ewheeler.net (Postfix) with ESMTP id C06E046;
-        Fri,  5 Aug 2022 12:38:36 -0700 (PDT)
-X-Virus-Scanned: amavisd-new at ewheeler.net
-Received: from mx.ewheeler.net ([127.0.0.1])
-        by localhost (mx.ewheeler.net [127.0.0.1]) (amavisd-new, port 10024)
-        with LMTP id hABVS95fQJLp; Fri,  5 Aug 2022 12:38:36 -0700 (PDT)
+        by fx303.security-mail.net (Postfix) with ESMTP id 447A23237FF
+        for <linux-bcache@vger.kernel.org>; Fri, 26 Aug 2022 12:01:31 +0200 (CEST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=kalray.eu;
+        s=sec-sig-email; t=1661508091;
+        bh=uqvZnxQBV/rcNEj03e7Bo6OwdF47XDjBXAdquMG3k+I=;
+        h=From:To:Cc:Subject:Date;
+        b=iw8sJ7Tt23KHAA4RE4PHgUBB7FPytVAsxa6KtPrIJsMrXzaGaAIePMkXCe4pwk10/
+         x4IeLf7YJedfe6Z/vENpuc8WeZ2kLVdEci2ExO1wzgOW5Pghfw+3GYCjRMa1MxEeJ6
+         uK9q7qsnI0+24ojXcASQ6Ie/H6vA6oX0EkCy/ENU=
+Received: from fx303 (localhost [127.0.0.1])
+        by fx303.security-mail.net (Postfix) with ESMTP id 848E93237E2;
+        Fri, 26 Aug 2022 12:01:30 +0200 (CEST)
+X-Virus-Scanned: E-securemail
+Secumail-id: <1362c.630899f9.e66f9.0>
+Received: from zimbra2.kalray.eu (unknown [217.181.231.53])
+        by fx303.security-mail.net (Postfix) with ESMTPS id E894D323819;
+        Fri, 26 Aug 2022 12:01:29 +0200 (CEST)
+Received: from zimbra2.kalray.eu (localhost [127.0.0.1])
+        by zimbra2.kalray.eu (Postfix) with ESMTPS id CBBDD27E02FA;
+        Fri, 26 Aug 2022 12:01:29 +0200 (CEST)
 Received: from localhost (localhost [127.0.0.1])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by mx.ewheeler.net (Postfix) with ESMTPSA id C08DFB;
-        Fri,  5 Aug 2022 12:38:35 -0700 (PDT)
-DKIM-Filter: OpenDKIM Filter v2.11.0 mx.ewheeler.net C08DFB
-Date:   Fri, 5 Aug 2022 12:38:33 -0700 (PDT)
-From:   Eric Wheeler <bcache@lists.ewheeler.net>
-To:     Andrea Tomassetti <andrea.tomassetti-opensource@devo.com>
-cc:     Coly Li <colyli@suse.de>,
+        by zimbra2.kalray.eu (Postfix) with ESMTP id B559327E0392;
+        Fri, 26 Aug 2022 12:01:29 +0200 (CEST)
+DKIM-Filter: OpenDKIM Filter v2.10.3 zimbra2.kalray.eu B559327E0392
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kalray.eu;
+        s=32AE1B44-9502-11E5-BA35-3734643DEF29; t=1661508089;
+        bh=4HEYLEVgKpymk4SBrx8DGY44NHvVKzCZiJtvzBXd/6k=;
+        h=From:To:Date:Message-Id;
+        b=mmG6vCL1wrlNy9YazrAR5V2Q9A3z0cC0x6Zt1w5F8npTM8NEmZQJRelUyF9OOA9gg
+         ibnwlBEt5rkjtueW5ImispqmR3+cM++mf3p+ebjagkVbD3iEFwgNN7WfX5CdFYbKPK
+         cRXrqFKHScskxav+oqdfQBKTIGlRQeatwbruwH8c=
+Received: from zimbra2.kalray.eu ([127.0.0.1])
+        by localhost (zimbra2.kalray.eu [127.0.0.1]) (amavisd-new, port 10026)
+        with ESMTP id sQtvS_Hls00e; Fri, 26 Aug 2022 12:01:29 +0200 (CEST)
+Received: from tellis.lin.mbt.kalray.eu (unknown [192.168.36.206])
+        by zimbra2.kalray.eu (Postfix) with ESMTPSA id A446E27E02FA;
+        Fri, 26 Aug 2022 12:01:29 +0200 (CEST)
+From:   Jules Maselbas <jmaselbas@kalray.eu>
+To:     linux-kernel@vger.kernel.org
+Cc:     Jules Maselbas <jmaselbas@kalray.eu>,
         Kent Overstreet <kent.overstreet@gmail.com>,
         linux-bcache@vger.kernel.org
-Subject: Re: [RFC] Live resize of backing device
-In-Reply-To: <CAHykVA5sgGooeRjM1EepCCpZqkvtQJ_=cY8hmjqe0oQ3FLDFnQ@mail.gmail.com>
-Message-ID: <9474c19e-56f0-cb4d-68c-405c55aef281@ewheeler.net>
-References: <CAHykVA5sgGooeRjM1EepCCpZqkvtQJ_=cY8hmjqe0oQ3FLDFnQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; BOUNDARY="8323328-1424852501-1659728088=:4200"
+Subject: [PATCH] bcache: bset: Fix comment typos
+Date:   Fri, 26 Aug 2022 12:00:52 +0200
+Message-Id: <20220826100052.22945-24-jmaselbas@kalray.eu>
+X-Mailer: git-send-email 2.17.1
+X-Virus-Scanned: by Secumail
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Remove the redundant word `by`, correct the typo `creaated`.
 
---8323328-1424852501-1659728088=:4200
-Content-Type: text/plain; CHARSET=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+CC: Kent Overstreet <kent.overstreet@gmail.com>
+CC: linux-bcache@vger.kernel.org
+Signed-off-by: Jules Maselbas <jmaselbas@kalray.eu>
+---
+ drivers/md/bcache/bset.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Wed, 3 Aug 2022, Andrea Tomassetti wrote:
-> Hi Coly,
-> In one of our previous emails you said that
-> > Currently bcache doesn¢t support cache or backing device resize
-> 
-> I was investigating this point and I actually found a solution. I
-> briefly tested it and it seems to work fine.
-> Basically what I'm doing is:
->   1. Check if there's any discrepancy between the nr of sectors
-> reported by the bcache backing device (holder) and the nr of sectors
-> reported by its parent (slave).
->   2. If the number of sectors of the two devices are not the same,
-> then call set_capacity_and_notify on the bcache device.
->   3. From user space, depending on the fs used, grow the fs with some
-> utility (e.g. xfs_growfs)
-> 
-> This works without any need of unmounting the mounted fs nor stopping
-> the bcache backing device.
+diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
+index 94d38e8a59b3..2bba4d6aaaa2 100644
+--- a/drivers/md/bcache/bset.c
++++ b/drivers/md/bcache/bset.c
+@@ -1264,7 +1264,7 @@ static void __btree_sort(struct btree_keys *b, struct btree_iter *iter,
+ 		 *
+ 		 * Don't worry event 'out' is allocated from mempool, it can
+ 		 * still be swapped here. Because state->pool is a page mempool
+-		 * creaated by by mempool_init_page_pool(), which allocates
++		 * created by mempool_init_page_pool(), which allocates
+ 		 * pages by alloc_pages() indeed.
+ 		 */
  
-Well done! +1, would love to see a patch for this!
+-- 
+2.17.1
 
- 
-> So my question is: am I missing something? Can this live resize cause 
-> some problems (e.g. data loss)? Would it be useful if I send a patch on 
-> this?
-
-A while a go we looked into doing this.  Here is the summary of our 
-findings, not sure if there are any other considerations:
-
-  1. Create a sysfs file like /sys/block/bcache0/bcache/resize to trigger 
-     resize on echo 1 >.
-  2. Refactor the set_capacity() bits from  bcache_device_init() into its 
-     own function.
-  3. Put locks around bcache_device.full_dirty_stripes and 
-     bcache_device.stripe_sectors_dirty.  Re-alloc+copy+free and zero the 
-     new bytes at the end.  Grep where bcache_device.full_dirty_stripes is 
-     used and make sure it is locked appropriately, probably in the 
-     writeback thread, maybe other places too.
-
-The cachedev's don't know anything about the bdev size, so (according to 
-Kent) they will "just work" by referencing new offsets that were 
-previously beyond the disk. (This is basically the same as resizing the 
-bdev and then unregister/re-register which is how we resize bdevs now.)
-
-As for resizing a cachedev, I've not looked at all---not sure about that 
-one.  We always detach, resize, make-bcache and re-attach the new cache.  
-Maybe it is similarly simple, but haven't looked.
-
-
---
-Eric Wheeler
-
-
-
-> 
-> Kind regards,
-> Andrea
-> 
---8323328-1424852501-1659728088=:4200--
