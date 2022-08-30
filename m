@@ -2,57 +2,58 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8ED7DECAAD4
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:52:48 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id BB7CFECAAA1
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:52:50 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231458AbiH3Vwq (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:52:46 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57916 "EHLO
+        id S231952AbiH3Vws (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:52:48 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60160 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231741AbiH3Vvw (ORCPT
+        with ESMTP id S232101AbiH3Vvx (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:51:52 -0400
+        Tue, 30 Aug 2022 17:51:53 -0400
 Received: from mail-yb1-xb4a.google.com (mail-yb1-xb4a.google.com [IPv6:2607:f8b0:4864:20::b4a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8783B2CCA9
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:07 -0700 (PDT)
-Received: by mail-yb1-xb4a.google.com with SMTP id v8-20020a258488000000b00695847496a4so718362ybk.19
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:07 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 10FE380B56
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:15 -0700 (PDT)
+Received: by mail-yb1-xb4a.google.com with SMTP id 63-20020a250d42000000b00696588a0e87so712432ybn.3
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:15 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=DVDWc4n0OUELi9+TR5vEerYUeoJhmwr6oegHq8VoMPY=;
-        b=bM/4HTwD/5NvD2z1e/m/chKOx8M+k/cup4NHKUTyLbSRW7GSEIiXXrcH3cV9SZ1SAI
-         L09ba1CkrtuU8u1GNYrpa4iH8Pf6SJhzN8yZiOz8fjB8X6SKmg6EcT8m4ikT2VrNvIZC
-         fcEJcUtC8cuaOScZm4W400OnCT8oTeDu69+FoT8U0Z8bPUbNNtUMn8N9gtPxsRiO1Jkp
-         yHen1YuPdi7I2iwNEDue9JoiosDrnFDYBeVHrjJCFkXdPVyn9cYkcijvjT6kVZJ46mfx
-         8WNJGPhwmcInAt8+4wUEyRhB6jGCNZ+WfXvMftBjOymVBGsg95WkR7Uw2/KIXsL46tgh
-         o0Kg==
+        bh=vjjGk6pymrjMSyrfbdxQ3/p6O8Kus1ISFMk96O5o39I=;
+        b=OXRgptnZ7i+ICNigJkBWT2cSYFZtaNbBth28h0zoZMO0yy1KlhLJWbOL/agYd17Ge+
+         H8eygOzvmZZ/skvQrD81gmRZiypc2lcG0QHZKUmUE/ni+JmGucTrUU1yExVGKLt9MJij
+         ftmKNsJcjdyi4dhaD13stFQzNJ1xbGRin4GkFtVHsn7nMBn5wS02jls3bfzzV07WlYsq
+         mi9CGSRXCSnkh+sEnyExpA/okvKqytcPBHSo0PnRH7aCU5Q1xfzVqiAqvHEkIxcqVnHs
+         2oBNbQXE+ro549f5zm45uHNrO1sona3NzY/FqJ45DQDnvKS22ifnzF7B5XwlNd/5xlfX
+         M9KQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=DVDWc4n0OUELi9+TR5vEerYUeoJhmwr6oegHq8VoMPY=;
-        b=KYU8s4T4asv5v3YQUyGSYVtpP3VHkP98zS7G0+iqVJgSdH09pTNYQE3xzhlfVRkX16
-         DaeMBFftuHgD7pbKFzG27rG7xnfAz8M3fZbypNIFNzQ5nswNuca32sHkNyu7EVXqXv4s
-         lIWNX3HOVh2Ha+eqcWWqtnK+4FjLlGUNeKrVefJooadBeNBD82qHHvIngGFZ+YLD+L1+
-         ASkM1ALd21hGo52eguMCbYZXjFCyqMLuMblSu7pdgZrMc0tVYUxPNj8WzYfca4cCmLyB
-         cgKuMqB4zofo/lNAVj639ZcAF6GEUj9f3OWagrXngHBDpwdN6aCV5hTiQk+wGVldLRNL
-         vR9w==
-X-Gm-Message-State: ACgBeo3zMARv8b/QB9LqO8QLTJrpB0c/Pne/EJAFUEEABkAimS5HJUJe
-        /62pCbbeEJ5XNiFXz0cJwpziSoB1z9g=
-X-Google-Smtp-Source: AA6agR7T4bKeuJlf9DAoJiFE4v7Q2R/MdDJESlGt7ahUFYj3Wmkn9a6qQs7FkiNluCNw2Wq41YrDjpcXKsY=
+        bh=vjjGk6pymrjMSyrfbdxQ3/p6O8Kus1ISFMk96O5o39I=;
+        b=6sybeHffV9W+Phz8F5/LmuVw56GtvZjJYhd78y4FqoerB5JtNiTRK2OWhOQBTXxtmR
+         l70+jDmTOv1AkdXf9s20BJdB96h1/Xf4xStqO5pS2C5CahoAspcArwHrAYIe+82xJpcm
+         BHSzV5Q7QELeRR8srtW5SsWKKerAXZr24s9NX+jBFpez/kyFxoHmrY4SvpHKyt0QfDN8
+         E3jneU/7syJQqNy9T3lzKpFAst1/6/xQ000kKLoVXTVg8nAG7hdbOc0NAicO/kQyKO5m
+         GBdSyge7hT7UHDuD1yR6yrG0p3wbWa87RFr81QiGIvMTCGRZlsCteYwtfIpHfEEVgT7P
+         KdUA==
+X-Gm-Message-State: ACgBeo2HhCm/ZKSTpAcppXIuF2gnX5lQhAH8qXrA0Q1DTjztahhkiatq
+        AjS9HGuaV3Ft3FFHo47j75bHAtk8lac=
+X-Google-Smtp-Source: AA6agR4vIoEARtwRV51vchZbtFRCbo5XPnJmQ5jWl1WbEyyresfSAVBl15tPztqHAfgzavikcDXhMgmO3BY=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a25:9f85:0:b0:693:614:cb2a with SMTP id
- u5-20020a259f85000000b006930614cb2amr13240649ybq.143.1661896206375; Tue, 30
- Aug 2022 14:50:06 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:49:05 -0700
+ (user=surenb job=sendgmr) by 2002:a81:f47:0:b0:31f:434b:5ee with SMTP id
+ 68-20020a810f47000000b0031f434b05eemr15734874ywp.383.1661896214287; Tue, 30
+ Aug 2022 14:50:14 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:08 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-17-surenb@google.com>
-Subject: [RFC PATCH 16/30] mm: enable slab allocation tagging for kmalloc and friends
+Message-ID: <20220830214919.53220-20-surenb@google.com>
+Subject: [RFC PATCH 19/30] move stack capture functionality into a separate
+ function for reuse
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -79,392 +80,227 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Redefine kmalloc, krealloc, kzalloc, kcalloc, etc. to record allocations
-and deallocations done by these functions.
+Make save_stack() function part of stackdepot API to be used outside of
+page_owner. Also rename task_struct's in_page_owner to in_capture_stack
+flag to better convey the wider use of this flag.
 
 Signed-off-by: Suren Baghdasaryan <surenb@google.com>
-Co-developed-by: Kent Overstreet <kent.overstreet@linux.dev>
-Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
 ---
- include/linux/slab.h | 103 +++++++++++++++++++++++++------------------
- mm/slab.c            |   2 +
- mm/slab_common.c     |  16 +++----
- mm/slob.c            |   2 +
- mm/slub.c            |   2 +
- 5 files changed, 75 insertions(+), 50 deletions(-)
+ include/linux/sched.h      |  6 ++--
+ include/linux/stackdepot.h |  3 ++
+ lib/stackdepot.c           | 68 ++++++++++++++++++++++++++++++++++++++
+ mm/page_owner.c            | 52 ++---------------------------
+ 4 files changed, 77 insertions(+), 52 deletions(-)
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 5a198aa02a08..89273be35743 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -191,7 +191,10 @@ int kmem_cache_shrink(struct kmem_cache *s);
- /*
-  * Common kmalloc functions provided by all allocators
-  */
--void * __must_check krealloc(const void *objp, size_t new_size, gfp_t flags) __alloc_size(2);
-+void * __must_check _krealloc(const void *objp, size_t new_size, gfp_t flags) __alloc_size(2);
-+#define krealloc(_p, _size, _flags)					\
-+	krealloc_hooks(_p, _krealloc(_p, _size, _flags))
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index e7b2f8a5c711..d06cad6c14bd 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -930,9 +930,9 @@ struct task_struct {
+ 	/* Stalled due to lack of memory */
+ 	unsigned			in_memstall:1;
+ #endif
+-#ifdef CONFIG_PAGE_OWNER
+-	/* Used by page_owner=on to detect recursion in page tracking. */
+-	unsigned			in_page_owner:1;
++#ifdef CONFIG_STACKDEPOT
++	/* Used by stack_depot_capture_stack to detect recursion. */
++	unsigned			in_capture_stack:1;
+ #endif
+ #ifdef CONFIG_EVENTFD
+ 	/* Recursion prevention for eventfd_signal() */
+diff --git a/include/linux/stackdepot.h b/include/linux/stackdepot.h
+index bc2797955de9..8dc9fdb2c4dd 100644
+--- a/include/linux/stackdepot.h
++++ b/include/linux/stackdepot.h
+@@ -64,4 +64,7 @@ int stack_depot_snprint(depot_stack_handle_t handle, char *buf, size_t size,
+ 
+ void stack_depot_print(depot_stack_handle_t stack);
+ 
++bool stack_depot_capture_init(void);
++depot_stack_handle_t stack_depot_capture_stack(gfp_t flags);
 +
- void kfree(const void *objp);
- void kfree_sensitive(const void *objp);
- size_t __ksize(const void *objp);
-@@ -463,6 +466,15 @@ static inline void slab_tag_dec(const void *ptr) {}
- 
  #endif
- 
-+#define krealloc_hooks(_p, _do_alloc)					\
-+({									\
-+	void *_res = _do_alloc;						\
-+	slab_tag_add(_p, _res);						\
-+	_res;								\
-+})
+diff --git a/lib/stackdepot.c b/lib/stackdepot.c
+index e73fda23388d..c8615bd6dc25 100644
+--- a/lib/stackdepot.c
++++ b/lib/stackdepot.c
+@@ -514,3 +514,71 @@ depot_stack_handle_t stack_depot_save(unsigned long *entries,
+ 	return __stack_depot_save(entries, nr_entries, alloc_flags, true);
+ }
+ EXPORT_SYMBOL_GPL(stack_depot_save);
 +
-+#define kmalloc_hooks(_do_alloc)	krealloc_hooks(NULL, _do_alloc)
++static depot_stack_handle_t recursion_handle;
++static depot_stack_handle_t failure_handle;
 +
- void *__kmalloc(size_t size, gfp_t flags) __assume_kmalloc_alignment __alloc_size(1);
- void *kmem_cache_alloc(struct kmem_cache *s, gfp_t flags) __assume_slab_alignment __malloc;
- void *kmem_cache_alloc_lru(struct kmem_cache *s, struct list_lru *lru,
-@@ -541,25 +553,31 @@ static __always_inline void *kmem_cache_alloc_node_trace(struct kmem_cache *s, g
++static __always_inline depot_stack_handle_t create_custom_stack(void)
++{
++	unsigned long entries[4];
++	unsigned int nr_entries;
++
++	nr_entries = stack_trace_save(entries, ARRAY_SIZE(entries), 0);
++	return stack_depot_save(entries, nr_entries, GFP_KERNEL);
++}
++
++static noinline void register_recursion_stack(void)
++{
++	recursion_handle = create_custom_stack();
++}
++
++static noinline void register_failure_stack(void)
++{
++	failure_handle = create_custom_stack();
++}
++
++bool stack_depot_capture_init(void)
++{
++	static DEFINE_MUTEX(stack_depot_capture_init_mutex);
++	static bool utility_stacks_ready;
++
++	mutex_lock(&stack_depot_capture_init_mutex);
++	if (!utility_stacks_ready) {
++		register_recursion_stack();
++		register_failure_stack();
++		utility_stacks_ready = true;
++	}
++	mutex_unlock(&stack_depot_capture_init_mutex);
++
++	return utility_stacks_ready;
++}
++
++/* TODO: teach stack_depot_capture_stack to use off stack temporal storage */
++#define CAPTURE_STACK_DEPTH (16)
++
++depot_stack_handle_t stack_depot_capture_stack(gfp_t flags)
++{
++	unsigned long entries[CAPTURE_STACK_DEPTH];
++	depot_stack_handle_t handle;
++	unsigned int nr_entries;
++
++	/*
++	 * Avoid recursion.
++	 *
++	 * Sometimes page metadata allocation tracking requires more
++	 * memory to be allocated:
++	 * - when new stack trace is saved to stack depot
++	 * - when backtrace itself is calculated (ia64)
++	 */
++	if (current->in_capture_stack)
++		return recursion_handle;
++	current->in_capture_stack = 1;
++
++	nr_entries = stack_trace_save(entries, ARRAY_SIZE(entries), 2);
++	handle = stack_depot_save(entries, nr_entries, flags);
++	if (!handle)
++		handle = failure_handle;
++
++	current->in_capture_stack = 0;
++	return handle;
++}
+diff --git a/mm/page_owner.c b/mm/page_owner.c
+index fd4af1ad34b8..c3173e34a779 100644
+--- a/mm/page_owner.c
++++ b/mm/page_owner.c
+@@ -15,12 +15,6 @@
+ 
+ #include "internal.h"
+ 
+-/*
+- * TODO: teach PAGE_OWNER_STACK_DEPTH (__dump_page_owner and save_stack)
+- * to use off stack temporal storage
+- */
+-#define PAGE_OWNER_STACK_DEPTH (16)
+-
+ struct page_owner {
+ 	unsigned short order;
+ 	short last_migrate_reason;
+@@ -37,8 +31,6 @@ struct page_owner {
+ static bool page_owner_enabled __initdata;
+ DEFINE_STATIC_KEY_FALSE(page_owner_inited);
+ 
+-static depot_stack_handle_t dummy_handle;
+-static depot_stack_handle_t failure_handle;
+ static depot_stack_handle_t early_handle;
+ 
+ static void init_early_allocated_pages(void);
+@@ -68,16 +60,6 @@ static __always_inline depot_stack_handle_t create_dummy_stack(void)
+ 	return stack_depot_save(entries, nr_entries, GFP_KERNEL);
  }
- #endif /* CONFIG_TRACING */
  
--extern void *kmalloc_order(size_t size, gfp_t flags, unsigned int order) __assume_page_alignment
-+extern void *_kmalloc_order(size_t size, gfp_t flags, unsigned int order) __assume_page_alignment
- 									 __alloc_size(1);
-+#define kmalloc_order(_size, _flags, _order)              \
-+	kmalloc_hooks(_kmalloc_order(_size, _flags, _order))
- 
- #ifdef CONFIG_TRACING
--extern void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
-+extern void *_kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
- 				__assume_page_alignment __alloc_size(1);
- #else
--static __always_inline __alloc_size(1) void *kmalloc_order_trace(size_t size, gfp_t flags,
-+static __always_inline __alloc_size(1) void *_kmalloc_order_trace(size_t size, gfp_t flags,
- 								 unsigned int order)
- {
--	return kmalloc_order(size, flags, order);
-+	return _kmalloc_order(size, flags, order);
- }
- #endif
-+#define kmalloc_order_trace(_size, _flags, _order)      \
-+	kmalloc_hooks(_kmalloc_order_trace(_size, _flags, _order))
- 
--static __always_inline __alloc_size(1) void *kmalloc_large(size_t size, gfp_t flags)
-+static __always_inline __alloc_size(1) void *_kmalloc_large(size_t size, gfp_t flags)
- {
- 	unsigned int order = get_order(size);
--	return kmalloc_order_trace(size, flags, order);
-+	return _kmalloc_order_trace(size, flags, order);
- }
-+#define kmalloc_large(_size, _flags)                    \
-+	kmalloc_hooks(_kmalloc_large(_size, _flags))
- 
- /**
-  * kmalloc - allocate memory
-@@ -615,14 +633,14 @@ static __always_inline __alloc_size(1) void *kmalloc_large(size_t size, gfp_t fl
-  *	Try really hard to succeed the allocation but fail
-  *	eventually.
-  */
--static __always_inline __alloc_size(1) void *kmalloc(size_t size, gfp_t flags)
-+static __always_inline __alloc_size(1) void *_kmalloc(size_t size, gfp_t flags)
- {
- 	if (__builtin_constant_p(size)) {
- #ifndef CONFIG_SLOB
- 		unsigned int index;
- #endif
- 		if (size > KMALLOC_MAX_CACHE_SIZE)
--			return kmalloc_large(size, flags);
-+			return _kmalloc_large(size, flags);
- #ifndef CONFIG_SLOB
- 		index = kmalloc_index(size);
- 
-@@ -636,8 +654,9 @@ static __always_inline __alloc_size(1) void *kmalloc(size_t size, gfp_t flags)
- 	}
- 	return __kmalloc(size, flags);
- }
-+#define kmalloc(_size, _flags)			kmalloc_hooks(_kmalloc(_size, _flags))
- 
--static __always_inline __alloc_size(1) void *kmalloc_node(size_t size, gfp_t flags, int node)
-+static __always_inline __alloc_size(1) void *_kmalloc_node(size_t size, gfp_t flags, int node)
- {
- #ifndef CONFIG_SLOB
- 	if (__builtin_constant_p(size) &&
-@@ -654,6 +673,8 @@ static __always_inline __alloc_size(1) void *kmalloc_node(size_t size, gfp_t fla
- #endif
- 	return __kmalloc_node(size, flags, node);
- }
-+#define kmalloc_node(_size, _flags, _node)		\
-+	kmalloc_hooks(_kmalloc_node(_size, _flags, _node))
- 
- /**
-  * kmalloc_array - allocate memory for an array.
-@@ -661,16 +682,18 @@ static __always_inline __alloc_size(1) void *kmalloc_node(size_t size, gfp_t fla
-  * @size: element size.
-  * @flags: the type of memory to allocate (see kmalloc).
-  */
--static inline __alloc_size(1, 2) void *kmalloc_array(size_t n, size_t size, gfp_t flags)
-+static inline __alloc_size(1, 2) void *_kmalloc_array(size_t n, size_t size, gfp_t flags)
- {
- 	size_t bytes;
- 
- 	if (unlikely(check_mul_overflow(n, size, &bytes)))
- 		return NULL;
- 	if (__builtin_constant_p(n) && __builtin_constant_p(size))
--		return kmalloc(bytes, flags);
--	return __kmalloc(bytes, flags);
-+		return _kmalloc(bytes, flags);
-+	return _kmalloc(bytes, flags);
- }
-+#define kmalloc_array(_n, _size, _flags)		\
-+	kmalloc_hooks(_kmalloc_array(_n, _size, _flags))
- 
- /**
-  * krealloc_array - reallocate memory for an array.
-@@ -679,7 +702,7 @@ static inline __alloc_size(1, 2) void *kmalloc_array(size_t n, size_t size, gfp_
-  * @new_size: new size of a single member of the array
-  * @flags: the type of memory to allocate (see kmalloc)
-  */
--static inline __alloc_size(2, 3) void * __must_check krealloc_array(void *p,
-+static inline __alloc_size(2, 3) void * __must_check _krealloc_array(void *p,
- 								    size_t new_n,
- 								    size_t new_size,
- 								    gfp_t flags)
-@@ -689,8 +712,10 @@ static inline __alloc_size(2, 3) void * __must_check krealloc_array(void *p,
- 	if (unlikely(check_mul_overflow(new_n, new_size, &bytes)))
- 		return NULL;
- 
--	return krealloc(p, bytes, flags);
-+	return _krealloc(p, bytes, flags);
- }
-+#define krealloc_array(_p, _n, _size, _flags)		\
-+	krealloc_hooks(_p, _krealloc_array(_p, _n, _size, _flags))
- 
- /**
-  * kcalloc - allocate memory for an array. The memory is set to zero.
-@@ -698,10 +723,8 @@ static inline __alloc_size(2, 3) void * __must_check krealloc_array(void *p,
-  * @size: element size.
-  * @flags: the type of memory to allocate (see kmalloc).
-  */
--static inline __alloc_size(1, 2) void *kcalloc(size_t n, size_t size, gfp_t flags)
+-static noinline void register_dummy_stack(void)
 -{
--	return kmalloc_array(n, size, flags | __GFP_ZERO);
--}
-+#define kcalloc(_n, _size, _flags)			\
-+	kmalloc_array(_n, _size, (_flags)|__GFP_ZERO)
- 
- /*
-  * kmalloc_track_caller is a special version of kmalloc that records the
-@@ -712,10 +735,10 @@ static inline __alloc_size(1, 2) void *kcalloc(size_t n, size_t size, gfp_t flag
-  * request comes from.
-  */
- extern void *__kmalloc_track_caller(size_t size, gfp_t flags, unsigned long caller);
--#define kmalloc_track_caller(size, flags) \
--	__kmalloc_track_caller(size, flags, _RET_IP_)
-+#define kmalloc_track_caller(size, flags)		\
-+	kmalloc_hooks(__kmalloc_track_caller(size, flags, _RET_IP_))
- 
--static inline __alloc_size(1, 2) void *kmalloc_array_node(size_t n, size_t size, gfp_t flags,
-+static inline __alloc_size(1, 2) void *_kmalloc_array_node(size_t n, size_t size, gfp_t flags,
- 							  int node)
- {
- 	size_t bytes;
-@@ -723,26 +746,24 @@ static inline __alloc_size(1, 2) void *kmalloc_array_node(size_t n, size_t size,
- 	if (unlikely(check_mul_overflow(n, size, &bytes)))
- 		return NULL;
- 	if (__builtin_constant_p(n) && __builtin_constant_p(size))
--		return kmalloc_node(bytes, flags, node);
-+		return _kmalloc_node(bytes, flags, node);
- 	return __kmalloc_node(bytes, flags, node);
- }
-+#define kmalloc_array_node(_n, _size, _flags, _node)	\
-+	kmalloc_hooks(_kmalloc_array_node(_n, _size, _flags, _node))
- 
--static inline __alloc_size(1, 2) void *kcalloc_node(size_t n, size_t size, gfp_t flags, int node)
--{
--	return kmalloc_array_node(n, size, flags | __GFP_ZERO, node);
+-	dummy_handle = create_dummy_stack();
 -}
 -
-+#define kcalloc_node(_n, _size, _flags, _node)	\
-+	kmalloc_array_node(_n, _size, (_flags)|__GFP_ZERO, _node)
- 
- #ifdef CONFIG_NUMA
- extern void *__kmalloc_node_track_caller(size_t size, gfp_t flags, int node,
- 					 unsigned long caller) __alloc_size(1);
--#define kmalloc_node_track_caller(size, flags, node) \
--	__kmalloc_node_track_caller(size, flags, node, \
--			_RET_IP_)
-+#define kmalloc_node_track_caller(size, flags, node)	\
-+	kmalloc_hooks(__kmalloc_node_track_caller(size, flags, node, _RET_IP_))
- 
- #else /* CONFIG_NUMA */
- 
--#define kmalloc_node_track_caller(size, flags, node) \
-+#define kmalloc_node_track_caller(size, flags, node)	\
- 	kmalloc_track_caller(size, flags)
- 
- #endif /* CONFIG_NUMA */
-@@ -750,20 +771,16 @@ extern void *__kmalloc_node_track_caller(size_t size, gfp_t flags, int node,
- /*
-  * Shortcuts
-  */
--static inline void *kmem_cache_zalloc(struct kmem_cache *k, gfp_t flags)
+-static noinline void register_failure_stack(void)
 -{
--	return kmem_cache_alloc(k, flags | __GFP_ZERO);
+-	failure_handle = create_dummy_stack();
 -}
-+#define kmem_cache_zalloc(_k, _flags)			\
-+	kmem_cache_alloc(_k, (_flags)|__GFP_ZERO)
+-
+ static noinline void register_early_stack(void)
+ {
+ 	early_handle = create_dummy_stack();
+@@ -88,8 +70,7 @@ static __init void init_page_owner(void)
+ 	if (!page_owner_enabled)
+ 		return;
  
- /**
-  * kzalloc - allocate memory. The memory is set to zero.
-  * @size: how many bytes of memory are required.
-  * @flags: the type of memory to allocate (see kmalloc).
-  */
--static inline __alloc_size(1) void *kzalloc(size_t size, gfp_t flags)
+-	register_dummy_stack();
+-	register_failure_stack();
++	stack_depot_capture_init();
+ 	register_early_stack();
+ 	static_branch_enable(&page_owner_inited);
+ 	init_early_allocated_pages();
+@@ -106,33 +87,6 @@ static inline struct page_owner *get_page_owner(struct page_ext *page_ext)
+ 	return (void *)page_ext + page_owner_ops.offset;
+ }
+ 
+-static noinline depot_stack_handle_t save_stack(gfp_t flags)
 -{
--	return kmalloc(size, flags | __GFP_ZERO);
+-	unsigned long entries[PAGE_OWNER_STACK_DEPTH];
+-	depot_stack_handle_t handle;
+-	unsigned int nr_entries;
+-
+-	/*
+-	 * Avoid recursion.
+-	 *
+-	 * Sometimes page metadata allocation tracking requires more
+-	 * memory to be allocated:
+-	 * - when new stack trace is saved to stack depot
+-	 * - when backtrace itself is calculated (ia64)
+-	 */
+-	if (current->in_page_owner)
+-		return dummy_handle;
+-	current->in_page_owner = 1;
+-
+-	nr_entries = stack_trace_save(entries, ARRAY_SIZE(entries), 2);
+-	handle = stack_depot_save(entries, nr_entries, flags);
+-	if (!handle)
+-		handle = failure_handle;
+-
+-	current->in_page_owner = 0;
+-	return handle;
 -}
-+#define kzalloc(_size, _flags)				\
-+	kmalloc(_size, (_flags)|__GFP_ZERO)
- 
- /**
-  * kzalloc_node - allocate zeroed memory from a particular memory node.
-@@ -771,10 +788,12 @@ static inline __alloc_size(1) void *kzalloc(size_t size, gfp_t flags)
-  * @flags: the type of memory to allocate (see kmalloc).
-  * @node: memory node from which to allocate
-  */
--static inline __alloc_size(1) void *kzalloc_node(size_t size, gfp_t flags, int node)
-+static inline __alloc_size(1) void *_kzalloc_node(size_t size, gfp_t flags, int node)
+-
+ void __reset_page_owner(struct page *page, unsigned short order)
  {
--	return kmalloc_node(size, flags | __GFP_ZERO, node);
-+	return _kmalloc_node(size, flags | __GFP_ZERO, node);
- }
-+#define kzalloc_node(_size, _flags, _node)              \
-+	kmalloc_hooks(_kzalloc_node(_size, _flags, _node))
- 
- extern void *kvmalloc_node(size_t size, gfp_t flags, int node) __alloc_size(1);
- static inline __alloc_size(1) void *kvmalloc(size_t size, gfp_t flags)
-diff --git a/mm/slab.c b/mm/slab.c
-index ba97aeef7ec1..db344de3b260 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3402,6 +3402,7 @@ static __always_inline void __cache_free(struct kmem_cache *cachep, void *objp,
- 
- 	if (is_kfence_address(objp)) {
- 		kmemleak_free_recursive(objp, cachep->flags);
-+		slab_tag_dec(objp);
- 		__kfence_free(objp);
+ 	int i;
+@@ -145,7 +99,7 @@ void __reset_page_owner(struct page *page, unsigned short order)
+ 	if (unlikely(!page_ext))
  		return;
- 	}
-@@ -3433,6 +3434,7 @@ void ___cache_free(struct kmem_cache *cachep, void *objp,
  
- 	check_irq_off();
- 	kmemleak_free_recursive(objp, cachep->flags);
-+	slab_tag_dec(objp);
- 	objp = cache_free_debugcheck(cachep, objp, caller);
- 
- 	/*
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 272eda62ecaa..7b6473db5ab4 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -938,7 +938,7 @@ gfp_t kmalloc_fix_flags(gfp_t flags)
-  * directly to the page allocator. We use __GFP_COMP, because we will need to
-  * know the allocation order to free the pages properly in kfree.
-  */
--void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
-+void *_kmalloc_order(size_t size, gfp_t flags, unsigned int order)
- {
- 	void *ret = NULL;
- 	struct page *page;
-@@ -958,16 +958,16 @@ void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
- 	kmemleak_alloc(ret, size, 1, flags);
- 	return ret;
- }
--EXPORT_SYMBOL(kmalloc_order);
-+EXPORT_SYMBOL(_kmalloc_order);
- 
- #ifdef CONFIG_TRACING
--void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
-+void *_kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
- {
--	void *ret = kmalloc_order(size, flags, order);
-+	void *ret = _kmalloc_order(size, flags, order);
- 	trace_kmalloc(_RET_IP_, ret, NULL, size, PAGE_SIZE << order, flags);
- 	return ret;
- }
--EXPORT_SYMBOL(kmalloc_order_trace);
-+EXPORT_SYMBOL(_kmalloc_order_trace);
- #endif
- 
- #ifdef CONFIG_SLAB_FREELIST_RANDOM
-@@ -1187,7 +1187,7 @@ static __always_inline void *__do_krealloc(const void *p, size_t new_size,
- 		return (void *)p;
- 	}
- 
--	ret = kmalloc_track_caller(new_size, flags);
-+	ret = __kmalloc_track_caller(new_size, flags, _RET_IP_);
- 	if (ret && p) {
- 		/* Disable KASAN checks as the object's redzone is accessed. */
- 		kasan_disable_current();
-@@ -1211,7 +1211,7 @@ static __always_inline void *__do_krealloc(const void *p, size_t new_size,
-  *
-  * Return: pointer to the allocated memory or %NULL in case of error
-  */
--void *krealloc(const void *p, size_t new_size, gfp_t flags)
-+void *_krealloc(const void *p, size_t new_size, gfp_t flags)
- {
- 	void *ret;
- 
-@@ -1226,7 +1226,7 @@ void *krealloc(const void *p, size_t new_size, gfp_t flags)
- 
- 	return ret;
- }
--EXPORT_SYMBOL(krealloc);
-+EXPORT_SYMBOL(_krealloc);
- 
- /**
-  * kfree_sensitive - Clear sensitive information in memory before freeing
-diff --git a/mm/slob.c b/mm/slob.c
-index 2bd4f476c340..23b49f6c9c8f 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -554,6 +554,7 @@ void kfree(const void *block)
- 	if (unlikely(ZERO_OR_NULL_PTR(block)))
+-	handle = save_stack(GFP_NOWAIT | __GFP_NOWARN);
++	handle = stack_depot_capture_stack(GFP_NOWAIT | __GFP_NOWARN);
+ 	for (i = 0; i < (1 << order); i++) {
+ 		__clear_bit(PAGE_EXT_OWNER_ALLOCATED, &page_ext->flags);
+ 		page_owner = get_page_owner(page_ext);
+@@ -189,7 +143,7 @@ noinline void __set_page_owner(struct page *page, unsigned short order,
+ 	if (unlikely(!page_ext))
  		return;
- 	kmemleak_free(block);
-+	slab_tag_dec(block);
  
- 	sp = virt_to_folio(block);
- 	if (folio_test_slab(sp)) {
-@@ -680,6 +681,7 @@ static void kmem_rcu_free(struct rcu_head *head)
- void kmem_cache_free(struct kmem_cache *c, void *b)
- {
- 	kmemleak_free_recursive(b, c->flags);
-+	slab_tag_dec(b);
- 	trace_kmem_cache_free(_RET_IP_, b, c->name);
- 	if (unlikely(c->flags & SLAB_TYPESAFE_BY_RCU)) {
- 		struct slob_rcu *slob_rcu;
-diff --git a/mm/slub.c b/mm/slub.c
-index 80199d5ac7c9..caf752087ad6 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -1715,6 +1715,7 @@ static inline void *kmalloc_large_node_hook(void *ptr, size_t size, gfp_t flags)
- static __always_inline void kfree_hook(void *x)
- {
- 	kmemleak_free(x);
-+	slab_tag_dec(x);
- 	kasan_kfree_large(x);
+-	handle = save_stack(gfp_mask);
++	handle = stack_depot_capture_stack(gfp_mask);
+ 	__set_page_owner_handle(page_ext, handle, order, gfp_mask);
  }
- 
-@@ -1722,6 +1723,7 @@ static __always_inline bool slab_free_hook(struct kmem_cache *s,
- 						void *x, bool init)
- {
- 	kmemleak_free_recursive(x, s->flags);
-+	slab_tag_dec(x);
- 
- 	debug_check_no_locks_freed(x, s->object_size);
  
 -- 
 2.37.2.672.g94769d06f0-goog
