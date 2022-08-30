@@ -2,57 +2,57 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 127C3C54EE9
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:53:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 0DBD0ECAAD4
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:54:51 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232085AbiH3Vxv (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:53:51 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60894 "EHLO
+        id S232118AbiH3Vyt (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:54:49 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60152 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232179AbiH3VxI (ORCPT
+        with ESMTP id S232079AbiH3Vxa (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:53:08 -0400
+        Tue, 30 Aug 2022 17:53:30 -0400
 Received: from mail-yb1-xb49.google.com (mail-yb1-xb49.google.com [IPv6:2607:f8b0:4864:20::b49])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D7D879083D
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:34 -0700 (PDT)
-Received: by mail-yb1-xb49.google.com with SMTP id v8-20020a258488000000b00695847496a4so719019ybk.19
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:34 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 83B509753E
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:39 -0700 (PDT)
+Received: by mail-yb1-xb49.google.com with SMTP id f12-20020a25b6cc000000b0069a9e36de26so717701ybm.16
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:39 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=q8clZUHCVXNR9yzPtPwGAp/8c18i/nqvvNYb9V5EY+0=;
-        b=nwraOOA8rbsDfrvp5gBz8rYLe0NDJnSuxfKXWTc3i5fQmEeQNcPETe8KaY9Mt9/+1r
-         ov+Vf6KkAdui0Rmw1+5xSKYNrSBv2kWObfOZUmmiPaKz9kQgQUwPGyNfu/DYb4bPK42K
-         36D96qfHlnHXTqqxaW28I0UFsAs+LSQcoibyPA3rdTyOgd8YqbSgEUdft4zOlN2gaNbw
-         dVh3tFK6UzGRc+MjeMOQD3ATSE//iPHaMa+xktBjpyqEQSekSHvIyA0BP3Rq7kUAJkb0
-         tRcC/6q0Z5Rvm1vf/73MAHgozRrLOYJlaS49+Ebjg2YexCVtD/Vs4zwcF2pG9WHANRAT
-         ZYUQ==
+        bh=ZStBKMvqZf5cf9FAaMePhJpKdJzTFBwr6u3tFotg8hA=;
+        b=VTVsraZqevmRCaObBRFMsjzBHvekcfce8MtBSaZZ5Crg1seH0CtSm9c29RKCC59TBN
+         19FBNPHC8dpOcblrHciXVuHQoofaiZfBwdvimHRJsLndFImNdH+eu+YtfXaacByCuPex
+         4skGzTc23jNuehJZ1slH7Ll/8rph1Z+dZIGkIrmDgscRY7RIgNnfOz1AT6ADLF2JebGP
+         ImyuFSTfbcS7qk97+Srdow1KJqFKbaNXoPDO2ySg/qcfR6YEVvxMJcvJ5RrVZoonHGUz
+         PLJ9fn0z6uZxXsmBY3YesylZ0YvtVFfBxK+5t+T1HyPEAGObb07elO3lsln5Hg+z0Hea
+         kK4g==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=q8clZUHCVXNR9yzPtPwGAp/8c18i/nqvvNYb9V5EY+0=;
-        b=XMs490Xb2EvFWUWKxAVPO6b1cZrx5lk2FjNXYblGSMXJQ8NgWOs0YxG3d6NacmUAmv
-         YezatR4EGkdf4RedMLKP+aMhGRQ0G0MxW/YrOP0M5tLm5NyQC2BpYm+lLzvdILLes8X3
-         lbrUb02zUFq0EHNui8T+xiwR/cq506rEX9yF3/spWDEVkp7Js+1cefuAgoCTYXY0EDEh
-         xPc2yuuqinjFM3QOWoMZ8D6cheebjMbxXNRPbbxTVwb9ZySbNtbxu7Idzr1SINVhsX2R
-         2LTru1F0HYQjME77TIjITSy+zvs9WZ04/Nsymll8/xeqykd5F4HtUFISzGVcqP9gGG2K
-         NZ/Q==
-X-Gm-Message-State: ACgBeo3bxauRWR3I2B2n4s/NPUntE6c5jQ2o2UrCaUjTsU6N5AU2er/Q
-        vPVHKXrOTuVPQhbwSg+fWl2KwCXvebQ=
-X-Google-Smtp-Source: AA6agR6QQvnvy8mDyUDzzIm8p3bCu8QCjthbfoOD2oTtJsYiGZpiHSGB1TzI0H74pXNHM3rxRxKb4sF+hq0=
+        bh=ZStBKMvqZf5cf9FAaMePhJpKdJzTFBwr6u3tFotg8hA=;
+        b=onNf+5LCbMc2XVuo6l/K/IYS5162nxvwiveOpt6SJI+Yk+1L8FVfn13qBgBkUZWE52
+         m5UZ7OH/8Y69s66biEGlR6vsOFe4UVTi4WJp5NMlcI6JJEQNIYcpX/Ir4EFLIFCbZj0O
+         x2SxSPNwp3JFbK+85JrG7M0b7QQrfGpWt3kRsd3lX1K5v4ITJl+DAr3b3xZBnPaGMHGA
+         8wEzA+YzPr7sdPbl35O4KrtVdbYEeTlTbHFMU+57pHExsqfNhFluNsrX4OQSm0sMRPde
+         VbhcC+8Pji0bvMltz0ChoLjD26kCt2I2NMlZ6c66dWo/xXVHPXQDEP32wy2yZnwLM1BA
+         igaQ==
+X-Gm-Message-State: ACgBeo3Y/apUyW4UXj0lwAABbxQejt8675ywXlefCnLjN6zJUOJgSYi1
+        uKPqNxRBnw/eemKYKOc789uwAcfUvFY=
+X-Google-Smtp-Source: AA6agR5ZJaVBuvkDlBerd8g/D0cXVNCnXViOohqfD6wf3W0FPvTvaQusAJxcQ2WbQWopoioqQ9vnkekcbVo=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a5b:2ce:0:b0:67a:6054:9eb0 with SMTP id
- h14-20020a5b02ce000000b0067a60549eb0mr13092972ybp.15.1661896232608; Tue, 30
- Aug 2022 14:50:32 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:49:15 -0700
+ (user=surenb job=sendgmr) by 2002:a05:6902:15cf:b0:67c:1ee7:149 with SMTP id
+ l15-20020a05690215cf00b0067c1ee70149mr13333139ybu.594.1661896238275; Tue, 30
+ Aug 2022 14:50:38 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:17 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-27-surenb@google.com>
-Subject: [RFC PATCH 26/30] bcache: Convert to lib/time_stats
+Message-ID: <20220830214919.53220-29-surenb@google.com>
+Subject: [RFC PATCH 28/30] Improved symbolic error names
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -73,8 +73,7 @@ Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
         iommu@lists.linux.dev, kasan-dev@googlegroups.com,
         io-uring@vger.kernel.org, linux-arch@vger.kernel.org,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
-        linux-modules@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Coly Li <colyli@suse.de>
+        linux-modules@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
@@ -82,383 +81,274 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: Kent Overstreet <kent.overstreet@linux.dev>
 
-This patch converts bcache to the new generic time_stats code
-lib/time_stats.c. The new code is from bcachefs, and has some changes
-from the version in bcache:
+This patch adds per-error-site error codes, with error strings that
+include their file and line number.
 
- - we now use ktime_get_ns(), not local_clock(). When the code was
-   originally written multi processor systems that lacked synchronized
-   TSCs were still common, and so local_clock() was much cheaper than
-   sched_clock() (though not necessarily fully accurate, due to TSC
-   drift). ktime_get_ns() should be cheap enough on all common hardware
-   now, and more standard/correct.
+To use, change code that returns an error, e.g.
+    return -ENOMEM;
+to
+    return -ERR(ENOMEM);
 
- - time_stats are now exported in a single file in sysfs, which means we
-   can improve the statistics we keep track of without changing all
-   users. This also means we don't have to manually specify which units
-   (ms, us, ns) a given time_stats should be printed in; that's handled
-   dynamically.
+Then, errname() will return a string that includes the file and line
+number of the ERR() call, for example
+    printk("Got error %s!\n", errname(err));
+will result in
+    Got error ENOMEM at foo.c:1234
 
- - There's a lazily-allocated percpu buffer, which now needs to be freed
-   with time_stats_exit().
+To convert back to the original error code (before returning it to
+outside code that does not understand dynamic error codes), use
+    return error_class(err);
+
+To test if an error is of some type, replace
+    if (err == -ENOMEM)
+with
+    if (error_matches(err, ENOMEM))
+
+Implementation notes:
+
+Error codes are allocated dynamically on module load and deallocated on
+module unload. On memory allocation failure (i.e. the data structures
+for indexing error strings and error parents), ERR() will fall back to
+returning the error code that it was passed.
+
+MAX_ERRNO has been raised from 4096 to 1 million, which should be
+sufficient given the number of lines of code and the fraction that throw
+errors in the kernel codebase.
+
+This has implications for ERR_PTR(), since the range of the address
+space reserved for errors is unavailable for other purposes. Since
+ERR_PTR() ptrs are at the top of the address space there should not be
+any major difficulties.
 
 Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
-Cc: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/Kconfig  |  1 +
- drivers/md/bcache/bcache.h |  1 +
- drivers/md/bcache/bset.c   |  8 +++---
- drivers/md/bcache/bset.h   |  1 +
- drivers/md/bcache/btree.c  | 12 ++++----
- drivers/md/bcache/super.c  |  3 ++
- drivers/md/bcache/sysfs.c  | 43 ++++++++++++++++++++--------
- drivers/md/bcache/util.c   | 30 --------------------
- drivers/md/bcache/util.h   | 57 --------------------------------------
- 9 files changed, 47 insertions(+), 109 deletions(-)
+ include/asm-generic/codetag.lds.h |   3 +-
+ include/linux/err.h               |   2 +-
+ include/linux/errname.h           |  50 +++++++++++++++
+ lib/errname.c                     | 103 ++++++++++++++++++++++++++++++
+ 4 files changed, 156 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/md/bcache/Kconfig b/drivers/md/bcache/Kconfig
-index 529c9d04e9a4..8d165052e508 100644
---- a/drivers/md/bcache/Kconfig
-+++ b/drivers/md/bcache/Kconfig
-@@ -4,6 +4,7 @@ config BCACHE
- 	tristate "Block device as cache"
- 	select BLOCK_HOLDER_DEPRECATED if SYSFS
- 	select CRC64
-+	select TIME_STATS
- 	help
- 	Allows a block device to be used as cache for other devices; uses
- 	a btree for indexing and the layout is optimized for SSDs.
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 2acda9cea0f9..5100010a3897 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -185,6 +185,7 @@
- #include <linux/rbtree.h>
- #include <linux/rwsem.h>
- #include <linux/refcount.h>
-+#include <linux/time_stats.h>
- #include <linux/types.h>
- #include <linux/workqueue.h>
- #include <linux/kthread.h>
-diff --git a/drivers/md/bcache/bset.c b/drivers/md/bcache/bset.c
-index 94d38e8a59b3..727e9b7aead4 100644
---- a/drivers/md/bcache/bset.c
-+++ b/drivers/md/bcache/bset.c
-@@ -1251,7 +1251,7 @@ static void __btree_sort(struct btree_keys *b, struct btree_iter *iter,
- 		order = state->page_order;
- 	}
+diff --git a/include/asm-generic/codetag.lds.h b/include/asm-generic/codetag.lds.h
+index d799f4aced82..b087cf1874a9 100644
+--- a/include/asm-generic/codetag.lds.h
++++ b/include/asm-generic/codetag.lds.h
+@@ -11,6 +11,7 @@
+ #define CODETAG_SECTIONS()		\
+ 	SECTION_WITH_BOUNDARIES(alloc_tags)		\
+ 	SECTION_WITH_BOUNDARIES(dynamic_fault_tags)	\
+-	SECTION_WITH_BOUNDARIES(time_stats_tags)
++	SECTION_WITH_BOUNDARIES(time_stats_tags)	\
++	SECTION_WITH_BOUNDARIES(error_code_tags)
  
--	start_time = local_clock();
-+	start_time = ktime_get_ns();
+ #endif /* __ASM_GENERIC_CODETAG_LDS_H */
+diff --git a/include/linux/err.h b/include/linux/err.h
+index a139c64aef2a..1d8d6c46ab9c 100644
+--- a/include/linux/err.h
++++ b/include/linux/err.h
+@@ -15,7 +15,7 @@
+  * This should be a per-architecture thing, to allow different
+  * error and pointer decisions.
+  */
+-#define MAX_ERRNO	4095
++#define MAX_ERRNO	((1 << 20) - 1)
  
- 	btree_mergesort(b, out, iter, fixup, false);
- 	b->nsets = start;
-@@ -1286,7 +1286,7 @@ static void __btree_sort(struct btree_keys *b, struct btree_iter *iter,
- 	bch_bset_build_written_tree(b);
+ #ifndef __ASSEMBLY__
  
- 	if (!start)
--		bch_time_stats_update(&state->time, start_time);
-+		time_stats_update(&state->time, start_time);
- }
+diff --git a/include/linux/errname.h b/include/linux/errname.h
+index e8576ad90cb7..dd39fe7120bb 100644
+--- a/include/linux/errname.h
++++ b/include/linux/errname.h
+@@ -5,12 +5,62 @@
+ #include <linux/stddef.h>
  
- void bch_btree_sort_partial(struct btree_keys *b, unsigned int start,
-@@ -1322,14 +1322,14 @@ void bch_btree_sort_and_fix_extents(struct btree_keys *b,
- void bch_btree_sort_into(struct btree_keys *b, struct btree_keys *new,
- 			 struct bset_sort_state *state)
+ #ifdef CONFIG_SYMBOLIC_ERRNAME
++
+ const char *errname(int err);
++
++#include <linux/codetag.h>
++
++struct codetag_error_code {
++	const char		*str;
++	int			err;
++};
++
++/**
++ * ERR - return an error code that records the error site
++ *
++ * E.g., instead of
++ *   return -ENOMEM;
++ * Use
++ *   return -ERR(ENOMEM);
++ *
++ * Then, when a caller prints out the error with errname(), the error string
++ * will include the file and line number.
++ */
++#define ERR(_err)							\
++({									\
++	static struct codetag_error_code				\
++	__used								\
++	__section("error_code_tags")					\
++	__aligned(8) e = {						\
++		.str	= #_err " at " __FILE__ ":" __stringify(__LINE__),\
++		.err	= _err,						\
++	};								\
++									\
++	e.err;								\
++})
++
++int error_class(int err);
++bool error_matches(int err, int class);
++
+ #else
++
++static inline int error_class(int err)
++{
++	return err;
++}
++
++static inline bool error_matches(int err, int class)
++{
++	return err == class;
++}
++
++#define ERR(_err)	_err
++
+ static inline const char *errname(int err)
  {
--	uint64_t start_time = local_clock();
-+	uint64_t start_time = ktime_get_ns();
- 	struct btree_iter iter;
- 
- 	bch_btree_iter_init(b, &iter, NULL);
- 
- 	btree_mergesort(b, new->set->data, &iter, false, true);
- 
--	bch_time_stats_update(&state->time, start_time);
-+	time_stats_update(&state->time, start_time);
- 
- 	new->set->size = 0; // XXX: why?
+ 	return NULL;
  }
-diff --git a/drivers/md/bcache/bset.h b/drivers/md/bcache/bset.h
-index d795c84246b0..13e524ad7783 100644
---- a/drivers/md/bcache/bset.h
-+++ b/drivers/md/bcache/bset.h
-@@ -3,6 +3,7 @@
- #define _BCACHE_BSET_H
++
+ #endif
  
+ #endif /* _LINUX_ERRNAME_H */
+diff --git a/lib/errname.c b/lib/errname.c
+index 05cbf731545f..2db8f5301ba0 100644
+--- a/lib/errname.c
++++ b/lib/errname.c
+@@ -1,9 +1,20 @@
+ // SPDX-License-Identifier: GPL-2.0
+ #include <linux/build_bug.h>
++#include <linux/codetag.h>
+ #include <linux/errno.h>
+ #include <linux/errname.h>
++#include <linux/idr.h>
  #include <linux/kernel.h>
-+#include <linux/time_stats.h>
- #include <linux/types.h>
+ #include <linux/math.h>
++#include <linux/module.h>
++#include <linux/xarray.h>
++
++#define DYNAMIC_ERRCODE_START	4096
++
++static DEFINE_IDR(dynamic_error_strings);
++static DEFINE_XARRAY(error_classes);
++
++static struct codetag_type *cttype;
  
- #include "bcache_ondisk.h"
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 147c493a989a..abf543bc7551 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -242,7 +242,7 @@ static void btree_node_read_endio(struct bio *bio)
+ /*
+  * Ensure these tables do not accidentally become gigantic if some
+@@ -200,6 +211,9 @@ static const char *names_512[] = {
  
- static void bch_btree_node_read(struct btree *b)
+ static const char *__errname(unsigned err)
  {
--	uint64_t start_time = local_clock();
-+	uint64_t start_time = ktime_get_ns();
- 	struct closure cl;
- 	struct bio *bio;
- 
-@@ -270,7 +270,7 @@ static void bch_btree_node_read(struct btree *b)
- 		goto err;
- 
- 	bch_btree_node_read_done(b);
--	bch_time_stats_update(&b->c->btree_read_time, start_time);
-+	time_stats_update(&b->c->btree_read_time, start_time);
- 
- 	return;
- err:
-@@ -1789,7 +1789,7 @@ static void bch_btree_gc(struct cache_set *c)
- 	struct gc_stat stats;
- 	struct closure writes;
- 	struct btree_op op;
--	uint64_t start_time = local_clock();
-+	uint64_t start_time = ktime_get_ns();
- 
- 	trace_bcache_gc_start(c);
- 
-@@ -1815,7 +1815,7 @@ static void bch_btree_gc(struct cache_set *c)
- 	bch_btree_gc_finish(c);
- 	wake_up_allocators(c);
- 
--	bch_time_stats_update(&c->btree_gc_time, start_time);
-+	time_stats_update(&c->btree_gc_time, start_time);
- 
- 	stats.key_bytes *= sizeof(uint64_t);
- 	stats.data	<<= 9;
-@@ -2191,7 +2191,7 @@ static int btree_split(struct btree *b, struct btree_op *op,
- {
- 	bool split;
- 	struct btree *n1, *n2 = NULL, *n3 = NULL;
--	uint64_t start_time = local_clock();
-+	uint64_t start_time = ktime_get_ns();
- 	struct closure cl;
- 	struct keylist parent_keys;
- 
-@@ -2297,7 +2297,7 @@ static int btree_split(struct btree *b, struct btree_op *op,
- 	btree_node_free(b);
- 	rw_unlock(true, n1);
- 
--	bch_time_stats_update(&b->c->btree_split_time, start_time);
-+	time_stats_update(&b->c->btree_split_time, start_time);
- 
- 	return 0;
- err_free2:
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index ba3909bb6bea..26c8fa93b55d 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1691,6 +1691,9 @@ static void cache_set_free(struct closure *cl)
- 		kobject_put(&ca->kobj);
- 	}
- 
-+	time_stats_exit(&c->btree_gc_time);
-+	time_stats_exit(&c->btree_split_time);
-+	time_stats_exit(&c->sort.time);
- 
- 	if (c->moving_gc_wq)
- 		destroy_workqueue(c->moving_gc_wq);
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index c6f677059214..01eec5877cd7 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -16,6 +16,7 @@
- #include <linux/blkdev.h>
- #include <linux/sort.h>
- #include <linux/sched/clock.h>
-+#include <linux/seq_buf.h>
- 
- extern bool bcache_is_reboot;
- 
-@@ -79,10 +80,10 @@ read_attribute(active_journal_entries);
- read_attribute(backing_dev_name);
- read_attribute(backing_dev_uuid);
- 
--sysfs_time_stats_attribute(btree_gc,	sec, ms);
--sysfs_time_stats_attribute(btree_split, sec, us);
--sysfs_time_stats_attribute(btree_sort,	ms,  us);
--sysfs_time_stats_attribute(btree_read,	ms,  us);
-+read_attribute(btree_gc_time);
-+read_attribute(btree_split_time);
-+read_attribute(btree_sort_time);
-+read_attribute(btree_read_time);
- 
- read_attribute(btree_nodes);
- read_attribute(btree_used_percent);
-@@ -731,6 +732,9 @@ static unsigned int bch_average_key_size(struct cache_set *c)
- SHOW(__bch_cache_set)
- {
- 	struct cache_set *c = container_of(kobj, struct cache_set, kobj);
-+	struct seq_buf s;
++	if (err >= DYNAMIC_ERRCODE_START)
++		return idr_find(&dynamic_error_strings, err);
 +
-+	seq_buf_init(&s, buf, PAGE_SIZE);
+ 	if (err < ARRAY_SIZE(names_0))
+ 		return names_0[err];
+ 	if (err >= 512 && err - 512 < ARRAY_SIZE(names_512))
+@@ -222,3 +236,92 @@ const char *errname(int err)
  
- 	sysfs_print(synchronous,		CACHE_SYNC(&c->cache->sb));
- 	sysfs_print(journal_delay_ms,		c->journal_delay_ms);
-@@ -743,10 +747,25 @@ SHOW(__bch_cache_set)
- 	sysfs_print(btree_cache_max_chain,	bch_cache_max_chain(c));
- 	sysfs_print(cache_available_percent,	100 - c->gc_stats.in_use);
- 
--	sysfs_print_time_stats(&c->btree_gc_time,	btree_gc, sec, ms);
--	sysfs_print_time_stats(&c->btree_split_time,	btree_split, sec, us);
--	sysfs_print_time_stats(&c->sort.time,		btree_sort, ms, us);
--	sysfs_print_time_stats(&c->btree_read_time,	btree_read, ms, us);
-+	if (attr == &sysfs_btree_gc_time) {
-+		time_stats_to_text(&s, &c->btree_gc_time);
-+		return s.len;
-+	}
-+
-+	if (attr == &sysfs_btree_split_time) {
-+		time_stats_to_text(&s, &c->btree_split_time);
-+		return s.len;
-+	}
-+
-+	if (attr == &sysfs_btree_sort_time) {
-+		time_stats_to_text(&s, &c->sort.time);
-+		return s.len;
-+	}
-+
-+	if (attr == &sysfs_btree_read_time) {
-+		time_stats_to_text(&s, &c->btree_read_time);
-+		return s.len;
-+	}
- 
- 	sysfs_print(btree_used_percent,	bch_btree_used(c));
- 	sysfs_print(btree_nodes,	c->gc_stats.nodes);
-@@ -988,10 +1007,10 @@ KTYPE(bch_cache_set);
- static struct attribute *bch_cache_set_internal_attrs[] = {
- 	&sysfs_active_journal_entries,
- 
--	sysfs_time_stats_attribute_list(btree_gc, sec, ms)
--	sysfs_time_stats_attribute_list(btree_split, sec, us)
--	sysfs_time_stats_attribute_list(btree_sort, ms, us)
--	sysfs_time_stats_attribute_list(btree_read, ms, us)
-+	&sysfs_btree_gc_time,
-+	&sysfs_btree_split_time,
-+	&sysfs_btree_sort_time,
-+	&sysfs_btree_read_time,
- 
- 	&sysfs_btree_nodes,
- 	&sysfs_btree_used_percent,
-diff --git a/drivers/md/bcache/util.c b/drivers/md/bcache/util.c
-index ae380bc3992e..95282bf0f9a7 100644
---- a/drivers/md/bcache/util.c
-+++ b/drivers/md/bcache/util.c
-@@ -160,36 +160,6 @@ int bch_parse_uuid(const char *s, char *uuid)
- 	return i;
+ 	return err > 0 ? name + 1 : name;
  }
- 
--void bch_time_stats_update(struct time_stats *stats, uint64_t start_time)
--{
--	uint64_t now, duration, last;
--
--	spin_lock(&stats->lock);
--
--	now		= local_clock();
--	duration	= time_after64(now, start_time)
--		? now - start_time : 0;
--	last		= time_after64(now, stats->last)
--		? now - stats->last : 0;
--
--	stats->max_duration = max(stats->max_duration, duration);
--
--	if (stats->last) {
--		ewma_add(stats->average_duration, duration, 8, 8);
--
--		if (stats->average_frequency)
--			ewma_add(stats->average_frequency, last, 8, 8);
--		else
--			stats->average_frequency  = last << 8;
--	} else {
--		stats->average_duration  = duration << 8;
--	}
--
--	stats->last = now ?: 1;
--
--	spin_unlock(&stats->lock);
--}
--
- /**
-  * bch_next_delay() - update ratelimiting statistics and calculate next delay
-  * @d: the struct bch_ratelimit to update
-diff --git a/drivers/md/bcache/util.h b/drivers/md/bcache/util.h
-index 6f3cb7c92130..1e1bdbae9593 100644
---- a/drivers/md/bcache/util.h
-+++ b/drivers/md/bcache/util.h
-@@ -345,68 +345,11 @@ ssize_t bch_hprint(char *buf, int64_t v);
- bool bch_is_zero(const char *p, size_t n);
- int bch_parse_uuid(const char *s, char *uuid);
- 
--struct time_stats {
--	spinlock_t	lock;
--	/*
--	 * all fields are in nanoseconds, averages are ewmas stored left shifted
--	 * by 8
--	 */
--	uint64_t	max_duration;
--	uint64_t	average_duration;
--	uint64_t	average_frequency;
--	uint64_t	last;
--};
--
--void bch_time_stats_update(struct time_stats *stats, uint64_t time);
--
- static inline unsigned int local_clock_us(void)
- {
- 	return local_clock() >> 10;
- }
- 
--#define NSEC_PER_ns			1L
--#define NSEC_PER_us			NSEC_PER_USEC
--#define NSEC_PER_ms			NSEC_PER_MSEC
--#define NSEC_PER_sec			NSEC_PER_SEC
--
--#define __print_time_stat(stats, name, stat, units)			\
--	sysfs_print(name ## _ ## stat ## _ ## units,			\
--		    div_u64((stats)->stat >> 8, NSEC_PER_ ## units))
--
--#define sysfs_print_time_stats(stats, name,				\
--			       frequency_units,				\
--			       duration_units)				\
--do {									\
--	__print_time_stat(stats, name,					\
--			  average_frequency,	frequency_units);	\
--	__print_time_stat(stats, name,					\
--			  average_duration,	duration_units);	\
--	sysfs_print(name ## _ ##max_duration ## _ ## duration_units,	\
--			div_u64((stats)->max_duration,			\
--				NSEC_PER_ ## duration_units));		\
--									\
--	sysfs_print(name ## _last_ ## frequency_units, (stats)->last	\
--		    ? div_s64(local_clock() - (stats)->last,		\
--			      NSEC_PER_ ## frequency_units)		\
--		    : -1LL);						\
--} while (0)
--
--#define sysfs_time_stats_attribute(name,				\
--				   frequency_units,			\
--				   duration_units)			\
--read_attribute(name ## _average_frequency_ ## frequency_units);		\
--read_attribute(name ## _average_duration_ ## duration_units);		\
--read_attribute(name ## _max_duration_ ## duration_units);		\
--read_attribute(name ## _last_ ## frequency_units)
--
--#define sysfs_time_stats_attribute_list(name,				\
--					frequency_units,		\
--					duration_units)			\
--&sysfs_ ## name ## _average_frequency_ ## frequency_units,		\
--&sysfs_ ## name ## _average_duration_ ## duration_units,		\
--&sysfs_ ## name ## _max_duration_ ## duration_units,			\
--&sysfs_ ## name ## _last_ ## frequency_units,
--
- #define ewma_add(ewma, val, weight, factor)				\
- ({									\
- 	(ewma) *= (weight) - 1;						\
++
++/**
++ * error_class - return standard/parent error (of a dynamic error code)
++ *
++ * When using dynamic error codes returned by ERR(), error_class() will return
++ * the original errorcode that was passed to ERR().
++ */
++int error_class(int err)
++{
++	int class = abs(err);
++
++	if (class > DYNAMIC_ERRCODE_START)
++		class = (unsigned long) xa_load(&error_classes,
++					      class - DYNAMIC_ERRCODE_START);
++	if (err < 0)
++		class = -class;
++	return class;
++}
++EXPORT_SYMBOL(error_class);
++
++/**
++ * error_matches - test if error is of some type
++ *
++ * When using dynamic error codes, instead of checking for errors with e.g.
++ *   if (err == -ENOMEM)
++ * Instead use
++ *   if (error_matches(err, ENOMEM))
++ */
++bool error_matches(int err, int class)
++{
++	err	= abs(err);
++	class	= abs(class);
++
++	BUG_ON(err	>= MAX_ERRNO);
++	BUG_ON(class	>= MAX_ERRNO);
++
++	if (err != class)
++		err = error_class(err);
++
++	return err == class;
++}
++EXPORT_SYMBOL(error_matches);
++
++static void errcode_module_load(struct codetag_type *cttype, struct codetag_module *mod)
++{
++	struct codetag_error_code *i, *start = (void *) mod->range.start;
++	struct codetag_error_code *end = (void *) mod->range.stop;
++
++	for (i = start; i != end; i++) {
++		int err = idr_alloc(&dynamic_error_strings,
++				    (char *) i->str,
++				    DYNAMIC_ERRCODE_START,
++				    MAX_ERRNO,
++				    GFP_KERNEL);
++		if (err < 0)
++			continue;
++
++		xa_store(&error_classes,
++			 err - DYNAMIC_ERRCODE_START,
++			 (void *)(unsigned long) abs(i->err),
++			 GFP_KERNEL);
++
++		i->err = i->err < 0 ? -err : err;
++	}
++}
++
++static void errcode_module_unload(struct codetag_type *cttype, struct codetag_module *mod)
++{
++	struct codetag_error_code *i, *start = (void *) mod->range.start;
++	struct codetag_error_code *end = (void *) mod->range.stop;
++
++	for (i = start; i != end; i++)
++		idr_remove(&dynamic_error_strings, abs(i->err));
++}
++
++static int __init errname_init(void)
++{
++	const struct codetag_type_desc desc = {
++		.section	= "error_code_tags",
++		.tag_size	= sizeof(struct codetag_error_code),
++		.module_load	= errcode_module_load,
++		.module_unload	= errcode_module_unload,
++	};
++
++	cttype = codetag_register_type(&desc);
++
++	return PTR_ERR_OR_ZERO(cttype);
++}
++module_init(errname_init);
 -- 
 2.37.2.672.g94769d06f0-goog
 
