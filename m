@@ -2,58 +2,57 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 395C7ECAAD5
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:52:09 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 607D6ECAAD4
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:52:28 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231993AbiH3VwI (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:52:08 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60412 "EHLO
+        id S232142AbiH3Vw0 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:52:26 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60008 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231996AbiH3VvZ (ORCPT
+        with ESMTP id S232087AbiH3Vvl (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:51:25 -0400
+        Tue, 30 Aug 2022 17:51:41 -0400
 Received: from mail-yw1-x1149.google.com (mail-yw1-x1149.google.com [IPv6:2607:f8b0:4864:20::1149])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9ABB61EAC9
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:02 -0700 (PDT)
-Received: by mail-yw1-x1149.google.com with SMTP id 00721157ae682-33f8988daecso180742487b3.12
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:02 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0613E7B7AD
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:14 -0700 (PDT)
+Received: by mail-yw1-x1149.google.com with SMTP id 00721157ae682-3363b1dffa0so189718887b3.23
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:13 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=gY+PdoFf3bNnEB0W9Vd0woPoFdt9hhtegjhiPtTj+AE=;
-        b=pP4c3oP+YdesowZgNPs4eE1Xp1hWxAr9Ov2IDGBfglQ7uK9BWLrmzhDJ/utRpkPDJK
-         tLMoERW1+3/smlLhO5G46VfqVywVDMABKHAv9jnhzz9ZshpBvX9ODCL7lsQaaZS0MLOk
-         moKmQwwsOGjNod+M4t/tjA/+LNyP1VXOc5752+/a3Um/WwaPBzNEpe5l2cE7BDo787CF
-         /PWmu6igP2xWBoiVtEHlimVT5AWdWMQxPlHvsqYO1szpGDqcGUPThIrLg/hGXqOCKmhM
-         XRoOlsQx66oUshjUnxZWYY0qi/lYffvprIXZMUGryr7KjlXRCtsueZ1FZIWTKefulhTk
-         stEQ==
+        bh=ofrC1PqNoYIKnyKYWjHD7inVuacSGBJJLHypr0RookE=;
+        b=VGRf/84iZ1p67fJnvZ/X1xcCS67elVIPk9IGJJ+bUuWMMIF3sRy7RxzaFdrO+WG7dH
+         d/TlbooTEmNgUOWOqFkIyFyAhgj636EU+aMGf3bhfUhI9LPGF0x0v39+rp3COSYRpICF
+         emKVXtjPhIhzNDYojpJwNosafP0nhIDkwMZkM1SszHz/jzoceNfVxm+3TZcljgHgvL8y
+         TVQxs/Koc6RZpeES3hIup/YjX0wdMTaa96AxFv1wg+iYYTwvZ7GGZBg+tBO+knqi5Juw
+         fEBz0idUpafaOWyAi5+6IN+BrsO4tEn9FOM/qV9RCHSE0DEDO6hWPkFyyM8anxAPc5xB
+         lw8A==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=gY+PdoFf3bNnEB0W9Vd0woPoFdt9hhtegjhiPtTj+AE=;
-        b=mdgl5bW/zNsgV/s6SB7MrhNr11gpyVu6cwPoFC+xqGoeJ1XBJcExagn7PJSEIOsR+O
-         fL7ovsE8F9WJw9SMihpVlOuxpQDkhrALTn2mNy7I2XW7KG0Xd72ZmFKDo3zWzOCsG02+
-         uIFz5xvTxXRJSI6H/000Nm3YDG1wupdpfcgOLYHb4YUbl8zpcr4igfqLNDoftvi4lThb
-         AIVa6X+TZeol55KiFn8EyGf+vK+sAw9yZ9ldDbqX2CDCULjmmkVlKBrGVNG9MaPPa9lv
-         jNy9rZVrtwOonsLkD3iUGXL/z/f9NIkrAAbTq+q5nI54+/TwBd7yIOHfSy62QXuFy5f5
-         8RBQ==
-X-Gm-Message-State: ACgBeo33nBRxXZN5tzdrJJIlR8Y19yhFOQFvYsUmzVDkeTCeSSEtsN1Q
-        58PExaz3LTim3zRDgkzhvAIMEVAYzqA=
-X-Google-Smtp-Source: AA6agR7WLdIMrAR0FWfuROzkHWzqEUxzLPyMUzXzjD/46yfJpgch8NK3VM+VyOZeNwYsSnGIQ5TrqCRxJvQ=
+        bh=ofrC1PqNoYIKnyKYWjHD7inVuacSGBJJLHypr0RookE=;
+        b=DSYnKJj+OW79FAg8EBfE305+/VWAXTpVX6/TyG/5sl7/lQuJA+QRXN5nxZMONCnSSK
+         gqFjQPA5G3WGvJIkFHuAgSzUi+MnH3lvvYJn0B2S5YRZCteatvQq2s/SXhnM8SFt7TW5
+         PGJ+lfumVNiw5WKPNDM5yhUaUJYBmx6cO9sVaP2fFXnWb68YLzmIu2/GOsB45YmPEwwC
+         k7/MUH0kPFz/+VGlqQEA+I7AqRkz13X22RxvM7ZNqu6O/C10NT6J7BzIgw+ZQpOEADAj
+         RcTa1uXsxYh3ank+3nOC5sEri7Pceqk/m8501v1dhzXhWnRRMMRyN2BRphuyvV3NzFZe
+         L9Mw==
+X-Gm-Message-State: ACgBeo21vThUM6dtH1yAR8j1VVnztrsyLM2n3X242e1J9EMYky9iwbMX
+        H6zqZy5+yGDWfErV0jMbxfcFQG8LIxM=
+X-Google-Smtp-Source: AA6agR5S9pMWRwrdqx3FNbA74RB4ArEfkNsuNbxmIMNnFeUvwj+w6zosapneZCdX4VxzXX80wAu2gx5OQhs=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a25:ba91:0:b0:683:ebc2:7114 with SMTP id
- s17-20020a25ba91000000b00683ebc27114mr13866830ybg.319.1661896200808; Tue, 30
- Aug 2022 14:50:00 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:49:03 -0700
+ (user=surenb job=sendgmr) by 2002:a0d:cd43:0:b0:329:febf:8c25 with SMTP id
+ p64-20020a0dcd43000000b00329febf8c25mr15393402ywd.90.1661896211649; Tue, 30
+ Aug 2022 14:50:11 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:07 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-15-surenb@google.com>
-Subject: [RFC PATCH 14/30] mm: prevent slabobj_ext allocations for slabobj_ext
- and kmem_cache objects
+Message-ID: <20220830214919.53220-19-surenb@google.com>
+Subject: [RFC PATCH 18/30] codetag: add codetag query helper functions
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -80,45 +79,196 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Use __GFP_NO_OBJ_EXT to prevent recursions when allocating slabobj_ext
-objects. Also prevent slabobj_ext allocations for kmem_cache objects.
+From: Kent Overstreet <kent.overstreet@linux.dev>
 
-Signed-off-by: Suren Baghdasaryan <surenb@google.com>
+Provide codetag_query_parse() to parse codetag queries and
+codetag_matches_query() to check if the query affects a given codetag.
+
+Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
 ---
- mm/memcontrol.c | 2 ++
- mm/slab.h       | 6 ++++++
- 2 files changed, 8 insertions(+)
+ include/linux/codetag.h |  27 ++++++++
+ lib/codetag.c           | 135 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 162 insertions(+)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3f407ef2f3f1..dabb451dc364 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2809,6 +2809,8 @@ int alloc_slab_obj_exts(struct slab *slab, struct kmem_cache *s,
- 	void *vec;
+diff --git a/include/linux/codetag.h b/include/linux/codetag.h
+index 386733e89b31..0c605417ebbe 100644
+--- a/include/linux/codetag.h
++++ b/include/linux/codetag.h
+@@ -80,4 +80,31 @@ static inline void codetag_load_module(struct module *mod) {}
+ static inline void codetag_unload_module(struct module *mod) {}
+ #endif
  
- 	gfp &= ~OBJCGS_CLEAR_MASK;
-+	/* Prevent recursive extension vector allocation */
-+	gfp |= __GFP_NO_OBJ_EXT;
- 	vec = kcalloc_node(objects, sizeof(struct slabobj_ext), gfp,
- 			   slab_nid(slab));
- 	if (!vec)
-diff --git a/mm/slab.h b/mm/slab.h
-index c767ce3f0fe2..d93b22b8bbe2 100644
---- a/mm/slab.h
-+++ b/mm/slab.h
-@@ -475,6 +475,12 @@ static inline void prepare_slab_obj_exts_hook(struct kmem_cache *s, gfp_t flags,
- 	if (is_kmem_only_obj_ext())
- 		return;
- 
-+	if (s->flags & SLAB_NO_OBJ_EXT)
-+		return;
++/* Codetag query parsing */
 +
-+	if (flags & __GFP_NO_OBJ_EXT)
-+		return;
++struct codetag_query {
++	const char	*filename;
++	const char	*module;
++	const char	*function;
++	const char	*class;
++	unsigned int	first_line, last_line;
++	unsigned int	first_index, last_index;
++	unsigned int	cur_index;
 +
- 	slab = virt_to_slab(p);
- 	if (!slab_obj_exts(slab))
- 		WARN(alloc_slab_obj_exts(slab, s, flags, false),
++	bool		match_line:1;
++	bool		match_index:1;
++
++	unsigned int	set_enabled:1;
++	unsigned int	enabled:2;
++
++	unsigned int	set_frequency:1;
++	unsigned int	frequency;
++};
++
++char *codetag_query_parse(struct codetag_query *q, char *buf);
++bool codetag_matches_query(struct codetag_query *q,
++			   const struct codetag *ct,
++			   const struct codetag_module *mod,
++			   const char *class);
++
+ #endif /* _LINUX_CODETAG_H */
+diff --git a/lib/codetag.c b/lib/codetag.c
+index f0a3174f9b71..288ccfd5cbd0 100644
+--- a/lib/codetag.c
++++ b/lib/codetag.c
+@@ -246,3 +246,138 @@ void codetag_unload_module(struct module *mod)
+ 	}
+ 	mutex_unlock(&codetag_lock);
+ }
++
++/* Codetag query parsing */
++
++#define CODETAG_QUERY_TOKENS()	\
++	x(func)			\
++	x(file)			\
++	x(line)			\
++	x(module)		\
++	x(class)		\
++	x(index)
++
++enum tokens {
++#define x(name)		TOK_##name,
++	CODETAG_QUERY_TOKENS()
++#undef x
++};
++
++static const char * const token_strs[] = {
++#define x(name)		#name,
++	CODETAG_QUERY_TOKENS()
++#undef x
++	NULL
++};
++
++static int parse_range(char *str, unsigned int *first, unsigned int *last)
++{
++	char *first_str = str;
++	char *last_str = strchr(first_str, '-');
++
++	if (last_str)
++		*last_str++ = '\0';
++
++	if (kstrtouint(first_str, 10, first))
++		return -EINVAL;
++
++	if (!last_str)
++		*last = *first;
++	else if (kstrtouint(last_str, 10, last))
++		return -EINVAL;
++
++	return 0;
++}
++
++char *codetag_query_parse(struct codetag_query *q, char *buf)
++{
++	while (1) {
++		char *p = buf;
++		char *str1 = strsep_no_empty(&p, " \t\r\n");
++		char *str2 = strsep_no_empty(&p, " \t\r\n");
++		int ret, token;
++
++		if (!str1 || !str2)
++			break;
++
++		token = match_string(token_strs, ARRAY_SIZE(token_strs), str1);
++		if (token < 0)
++			break;
++
++		switch (token) {
++		case TOK_func:
++			q->function = str2;
++			break;
++		case TOK_file:
++			q->filename = str2;
++			break;
++		case TOK_line:
++			ret = parse_range(str2, &q->first_line, &q->last_line);
++			if (ret)
++				return ERR_PTR(ret);
++			q->match_line = true;
++			break;
++		case TOK_module:
++			q->module = str2;
++			break;
++		case TOK_class:
++			q->class = str2;
++			break;
++		case TOK_index:
++			ret = parse_range(str2, &q->first_index, &q->last_index);
++			if (ret)
++				return ERR_PTR(ret);
++			q->match_index = true;
++			break;
++		}
++
++		buf = p;
++	}
++
++	return buf;
++}
++
++bool codetag_matches_query(struct codetag_query *q,
++			   const struct codetag *ct,
++			   const struct codetag_module *mod,
++			   const char *class)
++{
++	size_t classlen = q->class ? strlen(q->class) : 0;
++
++	if (q->module &&
++	    (!mod->mod ||
++	     strcmp(q->module, ct->modname)))
++		return false;
++
++	if (q->filename &&
++	    strcmp(q->filename, ct->filename) &&
++	    strcmp(q->filename, kbasename(ct->filename)))
++		return false;
++
++	if (q->function &&
++	    strcmp(q->function, ct->function))
++		return false;
++
++	/* match against the line number range */
++	if (q->match_line &&
++	    (ct->lineno < q->first_line ||
++	     ct->lineno > q->last_line))
++		return false;
++
++	/* match against the class */
++	if (classlen &&
++	    (strncmp(q->class, class, classlen) ||
++	     (class[classlen] && class[classlen] != ':')))
++		return false;
++
++	/* match against the fault index */
++	if (q->match_index &&
++	    (q->cur_index < q->first_index ||
++	     q->cur_index > q->last_index)) {
++		q->cur_index++;
++		return false;
++	}
++
++	q->cur_index++;
++	return true;
++}
 -- 
 2.37.2.672.g94769d06f0-goog
 
