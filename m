@@ -2,57 +2,57 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id EB5C0C67868
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:53:48 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 11458ECAAA1
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:53:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231989AbiH3Vxq (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:53:46 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60410 "EHLO
+        id S231830AbiH3Vxs (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:53:48 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57322 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232173AbiH3Vwy (ORCPT
+        with ESMTP id S232069AbiH3VxX (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:52:54 -0400
-Received: from mail-yb1-xb49.google.com (mail-yb1-xb49.google.com [IPv6:2607:f8b0:4864:20::b49])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A2FC895E46
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:31 -0700 (PDT)
-Received: by mail-yb1-xb49.google.com with SMTP id i6-20020a259786000000b0069648392979so716206ybo.11
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:31 -0700 (PDT)
+        Tue, 30 Aug 2022 17:53:23 -0400
+Received: from mail-pf1-x44a.google.com (mail-pf1-x44a.google.com [IPv6:2607:f8b0:4864:20::44a])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 46D3E90822
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:37 -0700 (PDT)
+Received: by mail-pf1-x44a.google.com with SMTP id i3-20020aa78b43000000b005320ac5b724so5090802pfd.4
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:37 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=QqkrsGdR9RIQpztjH+HKE2iaQK76d4alLlYGvP5mtuk=;
-        b=EmELHff//JPLhVllZqIpmS0Yi/n4CYn1PpFo5D7aAgY/mGxsMtS6XD/+ioRS2qZY8C
-         no10ngIVmFAT46GJYUJjGDNqdY92DoHLQ9QbhAJVsBRmHbrR9QbwqsDn7oDd7mF57S+J
-         MK/ad/Fah7kdPasA545qk8VUbJu+zxO3x46X50P0T+NbpE7jyYjWPsZQ5vgUXGysvUe/
-         W1W5uPUmm7KhCwcWdijNNG0C+OJlqBBAZwgyEyHf6FDcQet7W8l2Nexpz36zNi+sAkKv
-         CMElZPZokU2RO03oq7FRoEcd/C8olIjRx4EsriXjGCc7C59ySMMLL8R3CCw5o8VWV3mF
-         SxkQ==
+        bh=kZY1PfnIfhpzKe2fg2QNhEi4K+n6/AZeM4PXPDl+jSs=;
+        b=dJIIXMoaDfo4LS1xQQsLOYvOSR0hfxqszIVBrvS11cTWnTWgSYoHleGkgC0i1RcvEW
+         g0FnB2GyEmZdNHr6qvVjCkD5o8oUCDsQN6hIW7/R52HXnnZeYixGTmPmUjkl/HVYK9gL
+         Qo4/LFsvJ+0cR9rmUutD4WN2/z4CAitg0y36m7N9M2fZq2hfBbMNxbfvmd6aQgPqHqkG
+         6a9S9xFeeaCoHjkHXbbF/J0YPQDSPpwSprLRWHG9c2lJ3QzYjp2lWoTEqHtd8FJ9BudO
+         moRv5nbs15u8zEsMhSNn0aeOd2zru1Uacoknhz067J3h2b0D6a3WPhHKe4+8QHPv/dBd
+         t9OA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=QqkrsGdR9RIQpztjH+HKE2iaQK76d4alLlYGvP5mtuk=;
-        b=RhB2TL5WcicRj+MzvxYwkuJ9+V4wKr/oKYoiiZWxqnat2nG0ovHOlgRKbtKJBzXR1e
-         bowdTkf6Seym5jm7XHIsMn91fIZp3MZk5pqbnK4YUskokawO07Me5Pupo54/RqaGmBm+
-         uPNpNoHL/yAwfXSGzptPQ3he0GH3ejQEO3Ktk8m/P2kNUdOGfQBYH3guOee7HoObA2IO
-         Rpn24SgkVSMu8SXJRTZW1CZOmQwOmMn9NPT1YANvN7E9wAqyjNUyTmP27BCA9WsG1jkd
-         4Lyvk1b7WUvNyh1kukEuib9Sz5Q7bXNY4sa/egDIz4ikfRTfEb2NOFhmmvKT06QZkaRK
-         AdAw==
-X-Gm-Message-State: ACgBeo3LqipjBvISdawfUSFwr8FH3SuiQJc4jqljZSzFm9cQAOIf4iRY
-        DgL1hWjPlaXl3m7n5v0FXMYpQBKQt9A=
-X-Google-Smtp-Source: AA6agR5ND+Bk6d/UBSONHhQ297Nqdm//CwhSmMh2PEZtOl62aMkc4xfTQyNu/uBDVWhdtd26Z8NBy2Q9NdY=
+        bh=kZY1PfnIfhpzKe2fg2QNhEi4K+n6/AZeM4PXPDl+jSs=;
+        b=zxZ/hWdJrkfIjL9MJ9wAqTXm8UT7l4fV0qzzp1zfcDvxjBmlBIT2DnVHF+RFdlDSgr
+         NITwguYLOqJAXu2+DceloRyw+nxpfFkbmlUt2Fd02UD+UGU8PCfizracHriZF5sEbyUL
+         Elwfn9dTyQtyKol7RTtLlCOZg+OPihTGiJhA5nCWtodVv1Q9HQhowGqHqj2M7oJsHtFm
+         JlsfBNp8JOiqwWlPhaOZEjjM/u/xCjuTTsQfZaSiGzGPif6iE1PcaZDtrzng6l+5NhTk
+         Hf8supiKmewOSlHoZt9EZavx/3Rg7d6Hdy1TZyVWx5Kl+OziLhI6M3uEoJVRgFyVYXO3
+         36gg==
+X-Gm-Message-State: ACgBeo0L6M3avuSeobHTkZzZKL9NE+Na1yWGxfLc8uNK7yTYgWSPWrpP
+        sZYkfgcwTb29AJ6A67vr+IcD3rnYXKA=
+X-Google-Smtp-Source: AA6agR6gjE9iFWchZ4YdJrumvkghNHAZU6MHZC3qdslJX2rUX6yUkswTTbpzQbuhO2vfdv4e8k6IHGZMB7I=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a25:4246:0:b0:699:186f:76ca with SMTP id
- p67-20020a254246000000b00699186f76camr13282039yba.272.1661896229901; Tue, 30
- Aug 2022 14:50:29 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:49:14 -0700
+ (user=surenb job=sendgmr) by 2002:a63:5c4a:0:b0:41d:bd7d:6084 with SMTP id
+ n10-20020a635c4a000000b0041dbd7d6084mr19548657pgm.411.1661896235530; Tue, 30
+ Aug 2022 14:50:35 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:16 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-26-surenb@google.com>
-Subject: [RFC PATCH 25/30] lib/time_stats: New library for statistics on events
+Message-ID: <20220830214919.53220-28-surenb@google.com>
+Subject: [RFC PATCH 27/30] Code tagging based latency tracking
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -81,345 +81,426 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: Kent Overstreet <kent.overstreet@linux.dev>
 
-This adds a small new library for tracking statistics on events that
-have a duration, i.e. a start and end time.
+This adds the ability to easily instrument code for measuring latency.
+To use, add the following to calls to your code, at the start and end of
+the event you wish to measure:
 
- - number of events
- - rate/frequency
- - average duration
- - max duration
- - duration quantiles
+  code_tag_time_stats_start(start_time);
+  code_tag_time_stats_finish(start_time);
 
-This code comes from bcachefs, and originally bcache: the next patch
-will be converting bcache to use this version, and a subsequent patch
-will be using code_tagging to instrument all wait_event() calls in the
-kernel.
+Stastistics will then show up in debugfs under
+/sys/kernel/debug/time_stats, listed by file and line number.
+
+Stastics measured include weighted averages of frequency, duration, max
+duration, as well as quantiles.
+
+This patch also instruments all calls to init_wait and finish_wait,
+which includes all calls to wait_event. Example debugfs output:
+
+fs/xfs/xfs_trans_ail.c:746 module:xfs func:xfs_ail_push_all_sync
+count:          17
+rate:           0/sec
+frequency:      2 sec
+avg duration:   10 us
+max duration:   232 us
+quantiles (ns): 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128
+
+lib/sbitmap.c:813 module:sbitmap func:sbitmap_finish_wait
+count:          3
+rate:           0/sec
+frequency:      4 sec
+avg duration:   4 sec
+max duration:   4 sec
+quantiles (ns): 0 4288669120 4288669120 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048
+
+net/core/datagram.c:122 module:datagram func:__skb_wait_for_more_packets
+count:          10
+rate:           1/sec
+frequency:      859 ms
+avg duration:   472 ms
+max duration:   30 sec
+quantiles (ns): 0 12279 12279 15669 15669 15669 15669 17217 17217 17217 17217 17217 17217 17217 17217
 
 Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
 ---
- include/linux/time_stats.h |  44 +++++++
- lib/Kconfig                |   3 +
- lib/Makefile               |   1 +
- lib/time_stats.c           | 236 +++++++++++++++++++++++++++++++++++++
- 4 files changed, 284 insertions(+)
- create mode 100644 include/linux/time_stats.h
- create mode 100644 lib/time_stats.c
+ include/asm-generic/codetag.lds.h  |   3 +-
+ include/linux/codetag_time_stats.h |  54 +++++++++++
+ include/linux/io_uring_types.h     |   2 +-
+ include/linux/wait.h               |  22 ++++-
+ kernel/sched/wait.c                |   6 +-
+ lib/Kconfig.debug                  |   8 ++
+ lib/Makefile                       |   1 +
+ lib/codetag_time_stats.c           | 143 +++++++++++++++++++++++++++++
+ 8 files changed, 233 insertions(+), 6 deletions(-)
+ create mode 100644 include/linux/codetag_time_stats.h
+ create mode 100644 lib/codetag_time_stats.c
 
-diff --git a/include/linux/time_stats.h b/include/linux/time_stats.h
+diff --git a/include/asm-generic/codetag.lds.h b/include/asm-generic/codetag.lds.h
+index 16fbf74edc3d..d799f4aced82 100644
+--- a/include/asm-generic/codetag.lds.h
++++ b/include/asm-generic/codetag.lds.h
+@@ -10,6 +10,7 @@
+ 
+ #define CODETAG_SECTIONS()		\
+ 	SECTION_WITH_BOUNDARIES(alloc_tags)		\
+-	SECTION_WITH_BOUNDARIES(dynamic_fault_tags)
++	SECTION_WITH_BOUNDARIES(dynamic_fault_tags)	\
++	SECTION_WITH_BOUNDARIES(time_stats_tags)
+ 
+ #endif /* __ASM_GENERIC_CODETAG_LDS_H */
+diff --git a/include/linux/codetag_time_stats.h b/include/linux/codetag_time_stats.h
 new file mode 100644
-index 000000000000..7ae929e6f836
+index 000000000000..7e44c7ee9e9b
 --- /dev/null
-+++ b/include/linux/time_stats.h
-@@ -0,0 +1,44 @@
++++ b/include/linux/codetag_time_stats.h
+@@ -0,0 +1,54 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _LINUX_CODETAG_TIMESTATS_H
++#define _LINUX_CODETAG_TIMESTATS_H
 +
-+#ifndef _LINUX_TIMESTATS_H
-+#define _LINUX_TIMESTATS_H
++/*
++ * Code tagging based latency tracking:
++ * (C) 2022 Kent Overstreet
++ *
++ * This allows you to easily instrument code to track latency, and have the
++ * results show up in debugfs. To use, add the following two calls to your code
++ * at the beginning and end of the event you wish to instrument:
++ *
++ * code_tag_time_stats_start(start_time);
++ * code_tag_time_stats_finish(start_time);
++ *
++ * Statistics will then show up in debugfs under /sys/kernel/debug/time_stats,
++ * listed by file and line number.
++ */
 +
-+#include <linux/spinlock_types.h>
-+#include <linux/types.h>
++#ifdef CONFIG_CODETAG_TIME_STATS
 +
-+#define NR_QUANTILES	15
-+
-+struct quantiles {
-+	struct quantile_entry {
-+		u64	m;
-+		u64	step;
-+	}		entries[NR_QUANTILES];
-+};
-+
-+struct time_stat_buffer {
-+	unsigned int	nr;
-+	struct time_stat_buffer_entry {
-+		u64	start;
-+		u64	end;
-+	}		entries[32];
-+};
-+
-+struct time_stats {
-+	spinlock_t	lock;
-+	u64		count;
-+	/* all fields are in nanoseconds */
-+	u64		average_duration;
-+	u64		average_frequency;
-+	u64		max_duration;
-+	u64		last_event;
-+	struct quantiles quantiles;
-+
-+	struct time_stat_buffer __percpu *buffer;
-+};
-+
-+struct seq_buf;
-+void time_stats_update(struct time_stats *stats, u64 start);
-+void time_stats_to_text(struct seq_buf *out, struct time_stats *stats);
-+void time_stats_exit(struct time_stats *stats);
-+
-+#endif /* _LINUX_TIMESTATS_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index fc6dbc425728..884fd9f2f06d 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -744,3 +744,6 @@ config ASN1_ENCODER
- 
- config POLYNOMIAL
-        tristate
-+
-+config TIME_STATS
-+	bool
-diff --git a/lib/Makefile b/lib/Makefile
-index 489ea000c528..e54392011f5e 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -232,6 +232,7 @@ obj-$(CONFIG_ALLOC_TAGGING) += alloc_tag.o
- obj-$(CONFIG_PAGE_ALLOC_TAGGING) += pgalloc_tag.o
- 
- obj-$(CONFIG_CODETAG_FAULT_INJECTION) += dynamic_fault.o
-+obj-$(CONFIG_TIME_STATS) += time_stats.o
- 
- lib-$(CONFIG_GENERIC_BUG) += bug.o
- 
-diff --git a/lib/time_stats.c b/lib/time_stats.c
-new file mode 100644
-index 000000000000..30362364fdd2
---- /dev/null
-+++ b/lib/time_stats.c
-@@ -0,0 +1,236 @@
-+// SPDX-License-Identifier: GPL-2.0-only
-+
-+#include <linux/gfp.h>
-+#include <linux/jiffies.h>
-+#include <linux/kernel.h>
-+#include <linux/ktime.h>
-+#include <linux/percpu.h>
-+#include <linux/seq_buf.h>
-+#include <linux/spinlock.h>
++#include <linux/codetag.h>
 +#include <linux/time_stats.h>
 +#include <linux/timekeeping.h>
 +
-+static inline unsigned int eytzinger1_child(unsigned int i, unsigned int child)
-+{
-+	return (i << 1) + child;
-+}
-+
-+static inline unsigned int eytzinger1_right_child(unsigned int i)
-+{
-+	return eytzinger1_child(i, 1);
-+}
-+
-+static inline unsigned int eytzinger1_next(unsigned int i, unsigned int size)
-+{
-+	if (eytzinger1_right_child(i) <= size) {
-+		i = eytzinger1_right_child(i);
-+
-+		i <<= __fls(size + 1) - __fls(i);
-+		i >>= i > size;
-+	} else {
-+		i >>= ffz(i) + 1;
-+	}
-+
-+	return i;
-+}
-+
-+static inline unsigned int eytzinger0_child(unsigned int i, unsigned int child)
-+{
-+	return (i << 1) + 1 + child;
-+}
-+
-+static inline unsigned int eytzinger0_first(unsigned int size)
-+{
-+	return rounddown_pow_of_two(size) - 1;
-+}
-+
-+static inline unsigned int eytzinger0_next(unsigned int i, unsigned int size)
-+{
-+	return eytzinger1_next(i + 1, size) - 1;
-+}
-+
-+#define eytzinger0_for_each(_i, _size)			\
-+	for ((_i) = eytzinger0_first((_size));		\
-+	     (_i) != -1;				\
-+	     (_i) = eytzinger0_next((_i), (_size)))
-+
-+#define ewma_add(ewma, val, weight)					\
-+({									\
-+	typeof(ewma) _ewma = (ewma);					\
-+	typeof(weight) _weight = (weight);				\
-+									\
-+	(((_ewma << _weight) - _ewma) + (val)) >> _weight;		\
-+})
-+
-+static void quantiles_update(struct quantiles *q, u64 v)
-+{
-+	unsigned int i = 0;
-+
-+	while (i < ARRAY_SIZE(q->entries)) {
-+		struct quantile_entry *e = q->entries + i;
-+
-+		if (unlikely(!e->step)) {
-+			e->m = v;
-+			e->step = max_t(unsigned int, v / 2, 1024);
-+		} else if (e->m > v) {
-+			e->m = e->m >= e->step
-+				? e->m - e->step
-+				: 0;
-+		} else if (e->m < v) {
-+			e->m = e->m + e->step > e->m
-+				? e->m + e->step
-+				: U32_MAX;
-+		}
-+
-+		if ((e->m > v ? e->m - v : v - e->m) < e->step)
-+			e->step = max_t(unsigned int, e->step / 2, 1);
-+
-+		if (v >= e->m)
-+			break;
-+
-+		i = eytzinger0_child(i, v > e->m);
-+	}
-+}
-+
-+static void time_stats_update_one(struct time_stats *stats,
-+				  u64 start, u64 end)
-+{
-+	u64 duration, freq;
-+
-+	duration	= time_after64(end, start)
-+		? end - start : 0;
-+	freq		= time_after64(end, stats->last_event)
-+		? end - stats->last_event : 0;
-+
-+	stats->count++;
-+
-+	stats->average_duration = stats->average_duration
-+		? ewma_add(stats->average_duration, duration, 6)
-+		: duration;
-+
-+	stats->average_frequency = stats->average_frequency
-+		? ewma_add(stats->average_frequency, freq, 6)
-+		: freq;
-+
-+	stats->max_duration = max(stats->max_duration, duration);
-+
-+	stats->last_event = end;
-+
-+	quantiles_update(&stats->quantiles, duration);
-+}
-+
-+void time_stats_update(struct time_stats *stats, u64 start)
-+{
-+	u64 end = ktime_get_ns();
-+	unsigned long flags;
-+
-+	if (!stats->buffer) {
-+		spin_lock_irqsave(&stats->lock, flags);
-+		time_stats_update_one(stats, start, end);
-+
-+		if (stats->average_frequency < 32 &&
-+		    stats->count > 1024)
-+			stats->buffer =
-+				alloc_percpu_gfp(struct time_stat_buffer,
-+						 GFP_ATOMIC);
-+		spin_unlock_irqrestore(&stats->lock, flags);
-+	} else {
-+		struct time_stat_buffer_entry *i;
-+		struct time_stat_buffer *b;
-+
-+		preempt_disable();
-+		b = this_cpu_ptr(stats->buffer);
-+
-+		BUG_ON(b->nr >= ARRAY_SIZE(b->entries));
-+		b->entries[b->nr++] = (struct time_stat_buffer_entry) {
-+			.start = start,
-+			.end = end
-+		};
-+
-+		if (b->nr == ARRAY_SIZE(b->entries)) {
-+			spin_lock_irqsave(&stats->lock, flags);
-+			for (i = b->entries;
-+			     i < b->entries + ARRAY_SIZE(b->entries);
-+			     i++)
-+				time_stats_update_one(stats, i->start, i->end);
-+			spin_unlock_irqrestore(&stats->lock, flags);
-+
-+			b->nr = 0;
-+		}
-+
-+		preempt_enable();
-+	}
-+}
-+EXPORT_SYMBOL(time_stats_update);
-+
-+static const struct time_unit {
-+	const char	*name;
-+	u32		nsecs;
-+} time_units[] = {
-+	{ "ns",		1		},
-+	{ "us",		NSEC_PER_USEC	},
-+	{ "ms",		NSEC_PER_MSEC	},
-+	{ "sec",	NSEC_PER_SEC	},
++struct codetag_time_stats {
++	struct codetag		tag;
++	struct time_stats	stats;
 +};
 +
-+static const struct time_unit *pick_time_units(u64 ns)
++#define codetag_time_stats_start(_start_time)	u64 _start_time = ktime_get_ns()
++
++#define codetag_time_stats_finish(_start_time)			\
++do {								\
++	static struct codetag_time_stats			\
++	__used							\
++	__section("time_stats_tags")				\
++	__aligned(8) s = {					\
++		.tag	= CODE_TAG_INIT,			\
++		.stats.lock = __SPIN_LOCK_UNLOCKED(_lock)	\
++	};							\
++								\
++	WARN_ONCE(!(_start_time), "codetag_time_stats_start() not called");\
++	time_stats_update(&s.stats, _start_time);		\
++} while (0)
++
++#else
++
++#define codetag_time_stats_finish(_start_time)	do {} while (0)
++#define codetag_time_stats_start(_start_time)	do {} while (0)
++
++#endif /* CODETAG_CODETAG_TIME_STATS */
++
++#endif
+diff --git a/include/linux/io_uring_types.h b/include/linux/io_uring_types.h
+index 677a25d44d7f..3bcef85eacd8 100644
+--- a/include/linux/io_uring_types.h
++++ b/include/linux/io_uring_types.h
+@@ -488,7 +488,7 @@ struct io_cqe {
+ struct io_cmd_data {
+ 	struct file		*file;
+ 	/* each command gets 56 bytes of data */
+-	__u8			data[56];
++	__u8			data[64];
+ };
+ 
+ static inline void io_kiocb_cmd_sz_check(size_t cmd_sz)
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 91ced6a118bc..bab11b7ef19a 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -4,6 +4,7 @@
+ /*
+  * Linux wait queue related types and methods
+  */
++#include <linux/codetag_time_stats.h>
+ #include <linux/list.h>
+ #include <linux/stddef.h>
+ #include <linux/spinlock.h>
+@@ -32,6 +33,9 @@ struct wait_queue_entry {
+ 	void			*private;
+ 	wait_queue_func_t	func;
+ 	struct list_head	entry;
++#ifdef CONFIG_CODETAG_TIME_STATS
++	u64			start_time;
++#endif
+ };
+ 
+ struct wait_queue_head {
+@@ -79,10 +83,17 @@ extern void __init_waitqueue_head(struct wait_queue_head *wq_head, const char *n
+ # define DECLARE_WAIT_QUEUE_HEAD_ONSTACK(name) DECLARE_WAIT_QUEUE_HEAD(name)
+ #endif
+ 
++#ifdef CONFIG_CODETAG_TIME_STATS
++#define WAIT_QUEUE_ENTRY_START_TIME_INITIALIZER	.start_time = ktime_get_ns(),
++#else
++#define WAIT_QUEUE_ENTRY_START_TIME_INITIALIZER
++#endif
++
+ #define WAIT_FUNC_INITIALIZER(name, function) {					\
+ 	.private	= current,						\
+ 	.func		= function,						\
+ 	.entry		= LIST_HEAD_INIT((name).entry),				\
++	WAIT_QUEUE_ENTRY_START_TIME_INITIALIZER					\
+ }
+ 
+ #define DEFINE_WAIT_FUNC(name, function)					\
+@@ -98,6 +109,9 @@ __init_waitqueue_entry(struct wait_queue_entry *wq_entry, unsigned int flags,
+ 	wq_entry->private	= private;
+ 	wq_entry->func		= func;
+ 	INIT_LIST_HEAD(&wq_entry->entry);
++#ifdef CONFIG_CODETAG_TIME_STATS
++	wq_entry->start_time	= ktime_get_ns();
++#endif
+ }
+ 
+ #define init_waitqueue_func_entry(_wq_entry, _func)			\
+@@ -1180,11 +1194,17 @@ do {										\
+ void prepare_to_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state);
+ bool prepare_to_wait_exclusive(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state);
+ long prepare_to_wait_event(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state);
+-void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
++void __finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
+ long wait_woken(struct wait_queue_entry *wq_entry, unsigned mode, long timeout);
+ int woken_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync, void *key);
+ int autoremove_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync, void *key);
+ 
++#define finish_wait(_wq_head, _wq_entry)					\
++do {										\
++	codetag_time_stats_finish((_wq_entry)->start_time);			\
++	__finish_wait(_wq_head, _wq_entry);					\
++} while (0)
++
+ typedef int (*task_call_f)(struct task_struct *p, void *arg);
+ extern int task_call_func(struct task_struct *p, task_call_f func, void *arg);
+ 
+diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+index b9922346077d..e88de3f0c3ad 100644
+--- a/kernel/sched/wait.c
++++ b/kernel/sched/wait.c
+@@ -367,7 +367,7 @@ int do_wait_intr_irq(wait_queue_head_t *wq, wait_queue_entry_t *wait)
+ EXPORT_SYMBOL(do_wait_intr_irq);
+ 
+ /**
+- * finish_wait - clean up after waiting in a queue
++ * __finish_wait - clean up after waiting in a queue
+  * @wq_head: waitqueue waited on
+  * @wq_entry: wait descriptor
+  *
+@@ -375,7 +375,7 @@ EXPORT_SYMBOL(do_wait_intr_irq);
+  * the wait descriptor from the given waitqueue if still
+  * queued.
+  */
+-void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
++void __finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
+ {
+ 	unsigned long flags;
+ 
+@@ -399,7 +399,7 @@ void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_en
+ 		spin_unlock_irqrestore(&wq_head->lock, flags);
+ 	}
+ }
+-EXPORT_SYMBOL(finish_wait);
++EXPORT_SYMBOL(__finish_wait);
+ 
+ int autoremove_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync, void *key)
+ {
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index b7d03afbc808..b0f86643b8f0 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1728,6 +1728,14 @@ config LATENCYTOP
+ 	  Enable this option if you want to use the LatencyTOP tool
+ 	  to find out which userspace is blocking on what kernel operations.
+ 
++config CODETAG_TIME_STATS
++	bool "Code tagging based latency measuring"
++	depends on DEBUG_FS
++	select TIME_STATS
++	select CODE_TAGGING
++	help
++	  Enabling this option makes latency statistics available in debugfs
++
+ source "kernel/trace/Kconfig"
+ 
+ config PROVIDE_OHCI1394_DMA_INIT
+diff --git a/lib/Makefile b/lib/Makefile
+index e54392011f5e..d4067973805b 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -233,6 +233,7 @@ obj-$(CONFIG_PAGE_ALLOC_TAGGING) += pgalloc_tag.o
+ 
+ obj-$(CONFIG_CODETAG_FAULT_INJECTION) += dynamic_fault.o
+ obj-$(CONFIG_TIME_STATS) += time_stats.o
++obj-$(CONFIG_CODETAG_TIME_STATS) += codetag_time_stats.o
+ 
+ lib-$(CONFIG_GENERIC_BUG) += bug.o
+ 
+diff --git a/lib/codetag_time_stats.c b/lib/codetag_time_stats.c
+new file mode 100644
+index 000000000000..b0e9a08308a2
+--- /dev/null
++++ b/lib/codetag_time_stats.c
+@@ -0,0 +1,143 @@
++// SPDX-License-Identifier: GPL-2.0-only
++
++#include <linux/codetag_time_stats.h>
++#include <linux/ctype.h>
++#include <linux/debugfs.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/seq_buf.h>
++
++static struct codetag_type *cttype;
++
++struct user_buf {
++	char __user		*buf;	/* destination user buffer */
++	size_t			size;	/* size of requested read */
++	ssize_t			ret;	/* bytes read so far */
++};
++
++static int flush_ubuf(struct user_buf *dst, struct seq_buf *src)
 +{
-+	const struct time_unit *u;
++	if (src->len) {
++		size_t bytes = min_t(size_t, src->len, dst->size);
++		int err = copy_to_user(dst->buf, src->buffer, bytes);
 +
-+	for (u = time_units;
-+	     u + 1 < time_units + ARRAY_SIZE(time_units) &&
-+	     ns >= u[1].nsecs << 1;
-+	     u++)
-+		;
++		if (err)
++			return err;
 +
-+	return u;
-+}
-+
-+static void pr_time_units(struct seq_buf *out, u64 ns)
-+{
-+	const struct time_unit *u = pick_time_units(ns);
-+
-+	seq_buf_printf(out, "%llu %s", div_u64(ns, u->nsecs), u->name);
-+}
-+
-+void time_stats_to_text(struct seq_buf *out, struct time_stats *stats)
-+{
-+	const struct time_unit *u;
-+	u64 freq = READ_ONCE(stats->average_frequency);
-+	u64 q, last_q = 0;
-+	int i;
-+
-+	seq_buf_printf(out, "count:          %llu\n", stats->count);
-+	seq_buf_printf(out, "rate:           %llu/sec\n",
-+		       freq ? div64_u64(NSEC_PER_SEC, freq) : 0);
-+	seq_buf_printf(out, "frequency:      ");
-+	pr_time_units(out, freq);
-+	seq_buf_putc(out, '\n');
-+
-+	seq_buf_printf(out, "avg duration:   ");
-+	pr_time_units(out, stats->average_duration);
-+	seq_buf_putc(out, '\n');
-+
-+	seq_buf_printf(out, "max duration:   ");
-+	pr_time_units(out, stats->max_duration);
-+	seq_buf_putc(out, '\n');
-+
-+	i = eytzinger0_first(NR_QUANTILES);
-+	u = pick_time_units(stats->quantiles.entries[i].m);
-+	seq_buf_printf(out, "quantiles (%s): ", u->name);
-+	eytzinger0_for_each(i, NR_QUANTILES) {
-+		q = max(stats->quantiles.entries[i].m, last_q);
-+		seq_buf_printf(out, "%llu ", div_u64(q, u->nsecs));
-+		last_q = q;
++		dst->ret	+= bytes;
++		dst->buf	+= bytes;
++		dst->size	-= bytes;
++		src->len	-= bytes;
++		memmove(src->buffer, src->buffer + bytes, src->len);
 +	}
 +
-+	seq_buf_putc(out, '\n');
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(time_stats_to_text);
 +
-+void time_stats_exit(struct time_stats *stats)
++struct time_stats_iter {
++	struct codetag_iterator ct_iter;
++	struct seq_buf		buf;
++	char			rawbuf[4096];
++	bool			first;
++};
++
++static int time_stats_open(struct inode *inode, struct file *file)
 +{
-+	free_percpu(stats->buffer);
-+	stats->buffer = NULL;
++	struct time_stats_iter *iter;
++
++	pr_debug("called");
++
++	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
++	if (!iter)
++		return -ENOMEM;
++
++	codetag_lock_module_list(cttype, true);
++	codetag_init_iter(&iter->ct_iter, cttype);
++	codetag_lock_module_list(cttype, false);
++
++	file->private_data = iter;
++	seq_buf_init(&iter->buf, iter->rawbuf, sizeof(iter->rawbuf));
++	iter->first = true;
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(time_stats_exit);
++
++static int time_stats_release(struct inode *inode, struct file *file)
++{
++	struct time_stats_iter *i = file->private_data;
++
++	kfree(i);
++	return 0;
++}
++
++static ssize_t time_stats_read(struct file *file, char __user *ubuf,
++			       size_t size, loff_t *ppos)
++{
++	struct time_stats_iter *iter = file->private_data;
++	struct user_buf	buf = { .buf = ubuf, .size = size };
++	struct codetag_time_stats *s;
++	struct codetag *ct;
++	int err;
++
++	codetag_lock_module_list(iter->ct_iter.cttype, true);
++	while (1) {
++		err = flush_ubuf(&buf, &iter->buf);
++		if (err || !buf.size)
++			break;
++
++		ct = codetag_next_ct(&iter->ct_iter);
++		if (!ct)
++			break;
++
++		s = container_of(ct, struct codetag_time_stats, tag);
++		if (s->stats.count) {
++			if (!iter->first) {
++				seq_buf_putc(&iter->buf, '\n');
++				iter->first = true;
++			}
++
++			codetag_to_text(&iter->buf, &s->tag);
++			seq_buf_putc(&iter->buf, '\n');
++			time_stats_to_text(&iter->buf, &s->stats);
++		}
++	}
++	codetag_lock_module_list(iter->ct_iter.cttype, false);
++
++	return err ?: buf.ret;
++}
++
++static const struct file_operations time_stats_ops = {
++	.owner	= THIS_MODULE,
++	.open	= time_stats_open,
++	.release = time_stats_release,
++	.read	= time_stats_read,
++};
++
++static void time_stats_module_unload(struct codetag_type *cttype, struct codetag_module *mod)
++{
++	struct codetag_time_stats *i, *start = (void *) mod->range.start;
++	struct codetag_time_stats *end = (void *) mod->range.stop;
++
++	for (i = start; i != end; i++)
++		time_stats_exit(&i->stats);
++}
++
++static int __init codetag_time_stats_init(void)
++{
++	const struct codetag_type_desc desc = {
++		.section	= "time_stats_tags",
++		.tag_size	= sizeof(struct codetag_time_stats),
++		.module_unload	= time_stats_module_unload,
++	};
++	struct dentry *debugfs_file;
++
++	cttype = codetag_register_type(&desc);
++	if (IS_ERR_OR_NULL(cttype))
++		return PTR_ERR(cttype);
++
++	debugfs_file = debugfs_create_file("time_stats", 0666, NULL, NULL, &time_stats_ops);
++	if (IS_ERR(debugfs_file))
++		return PTR_ERR(debugfs_file);
++
++	return 0;
++}
++module_init(codetag_time_stats_init);
 -- 
 2.37.2.672.g94769d06f0-goog
 
