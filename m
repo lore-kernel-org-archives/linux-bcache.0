@@ -2,57 +2,57 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 11458ECAAA1
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:53:52 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D816DECAAD5
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:53:53 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231830AbiH3Vxs (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:53:48 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57322 "EHLO
+        id S231907AbiH3Vxt (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:53:49 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55724 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232069AbiH3VxX (ORCPT
+        with ESMTP id S232105AbiH3Vwu (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:53:23 -0400
-Received: from mail-pf1-x44a.google.com (mail-pf1-x44a.google.com [IPv6:2607:f8b0:4864:20::44a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 46D3E90822
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:37 -0700 (PDT)
-Received: by mail-pf1-x44a.google.com with SMTP id i3-20020aa78b43000000b005320ac5b724so5090802pfd.4
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:37 -0700 (PDT)
+        Tue, 30 Aug 2022 17:52:50 -0400
+Received: from mail-yw1-x114a.google.com (mail-yw1-x114a.google.com [IPv6:2607:f8b0:4864:20::114a])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 32D561ADBB
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:28 -0700 (PDT)
+Received: by mail-yw1-x114a.google.com with SMTP id 00721157ae682-33ef3e5faeeso183147607b3.0
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:28 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=kZY1PfnIfhpzKe2fg2QNhEi4K+n6/AZeM4PXPDl+jSs=;
-        b=dJIIXMoaDfo4LS1xQQsLOYvOSR0hfxqszIVBrvS11cTWnTWgSYoHleGkgC0i1RcvEW
-         g0FnB2GyEmZdNHr6qvVjCkD5o8oUCDsQN6hIW7/R52HXnnZeYixGTmPmUjkl/HVYK9gL
-         Qo4/LFsvJ+0cR9rmUutD4WN2/z4CAitg0y36m7N9M2fZq2hfBbMNxbfvmd6aQgPqHqkG
-         6a9S9xFeeaCoHjkHXbbF/J0YPQDSPpwSprLRWHG9c2lJ3QzYjp2lWoTEqHtd8FJ9BudO
-         moRv5nbs15u8zEsMhSNn0aeOd2zru1Uacoknhz067J3h2b0D6a3WPhHKe4+8QHPv/dBd
-         t9OA==
+        bh=PJDqdE16VQFkhBtAZQdE7ryguEFDkMx7mMptHwdJxIQ=;
+        b=Ij75nFrUrPvJu2bumKHw5qB/wQ6gVxiA7JiR459fjyWwf8bAM7esU+z26b2Gs2wm+2
+         GJco7Z59pIbk7lAYzIUjBLlbgij5WieJsWdNVz1juJkVh+sa9UWATRgrEBqBGRWkiIgS
+         e9fE2xkYV7tYVniZBisXLNcLv1T2Qe2o0c8hnbKmgjEZ4CuxPiv3aHRBgJXL1TW2FAU/
+         xTP0HeMc1J5XCTMzbl6MriSnvFIhWbWVUtAJ/9V96DnOp2vk9Hc7k6iFLgNru+svATI5
+         qjP0FOpFl9sx7TmiI9c+PBZgc2FqjExNp+v4DIbowFGQu7f8+ZLj1VsmDoNwIg4tHpwc
+         B9Cg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=kZY1PfnIfhpzKe2fg2QNhEi4K+n6/AZeM4PXPDl+jSs=;
-        b=zxZ/hWdJrkfIjL9MJ9wAqTXm8UT7l4fV0qzzp1zfcDvxjBmlBIT2DnVHF+RFdlDSgr
-         NITwguYLOqJAXu2+DceloRyw+nxpfFkbmlUt2Fd02UD+UGU8PCfizracHriZF5sEbyUL
-         Elwfn9dTyQtyKol7RTtLlCOZg+OPihTGiJhA5nCWtodVv1Q9HQhowGqHqj2M7oJsHtFm
-         JlsfBNp8JOiqwWlPhaOZEjjM/u/xCjuTTsQfZaSiGzGPif6iE1PcaZDtrzng6l+5NhTk
-         Hf8supiKmewOSlHoZt9EZavx/3Rg7d6Hdy1TZyVWx5Kl+OziLhI6M3uEoJVRgFyVYXO3
-         36gg==
-X-Gm-Message-State: ACgBeo0L6M3avuSeobHTkZzZKL9NE+Na1yWGxfLc8uNK7yTYgWSPWrpP
-        sZYkfgcwTb29AJ6A67vr+IcD3rnYXKA=
-X-Google-Smtp-Source: AA6agR6gjE9iFWchZ4YdJrumvkghNHAZU6MHZC3qdslJX2rUX6yUkswTTbpzQbuhO2vfdv4e8k6IHGZMB7I=
+        bh=PJDqdE16VQFkhBtAZQdE7ryguEFDkMx7mMptHwdJxIQ=;
+        b=lvTheyrs+b7zMx3qYtGERBlhNxUA5B76SfmbuJ7to6gSNxz1A+XwCtN4EH4gAk0GC/
+         7+Y3JQ+nhP/4ayMPI9QP/AyWyzzKAVUzjXwU5nFeRyxcYm5y5D4nOSQv9plqq88VgoVu
+         nikRKKLkgA5C8J/pOHQR/96XqyM1yESiMQJgY8mz/JNLeUzx3Wv4lFmj5dz5PQtTODt1
+         wPtnUGqAIu2iJNKgZqPR8wpidi8enR2OThF3N5daBaaUC35Lb/cp2BZdu6dJi9NUuVdK
+         Nfuzg2k6enD68kzWT5P4nciS8lwPF/KRllW+mwggRDRudE61Z2cXDbQx0P68TlgNka6R
+         W+Sg==
+X-Gm-Message-State: ACgBeo1ROlX60qSl3XFEyF9FAGDYi0k8apc/ztSDmTAZW/SDALLrSYM7
+        jMWicGFXrXetLXJWjGjFniFE3rdrnus=
+X-Google-Smtp-Source: AA6agR6avTM18XP2y4CdHSCV3FE6n/efM5TdzJAiOApCx+OJvVOl1HBVpl97MaszhlrgGlpdRen0jumUZ8U=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a63:5c4a:0:b0:41d:bd7d:6084 with SMTP id
- n10-20020a635c4a000000b0041dbd7d6084mr19548657pgm.411.1661896235530; Tue, 30
- Aug 2022 14:50:35 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:49:16 -0700
+ (user=surenb job=sendgmr) by 2002:a81:54c4:0:b0:329:d0e1:cfcf with SMTP id
+ i187-20020a8154c4000000b00329d0e1cfcfmr15741208ywb.451.1661896227243; Tue, 30
+ Aug 2022 14:50:27 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:13 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-28-surenb@google.com>
-Subject: [RFC PATCH 27/30] Code tagging based latency tracking
+Message-ID: <20220830214919.53220-25-surenb@google.com>
+Subject: [RFC PATCH 24/30] wait: Clean up waitqueue_entry initialization
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -73,7 +73,8 @@ Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
         iommu@lists.linux.dev, kasan-dev@googlegroups.com,
         io-uring@vger.kernel.org, linux-arch@vger.kernel.org,
         xen-devel@lists.xenproject.org, linux-bcache@vger.kernel.org,
-        linux-modules@vger.kernel.org, linux-kernel@vger.kernel.org
+        linux-modules@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
@@ -81,426 +82,163 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: Kent Overstreet <kent.overstreet@linux.dev>
 
-This adds the ability to easily instrument code for measuring latency.
-To use, add the following to calls to your code, at the start and end of
-the event you wish to measure:
+Cleanup for code tagging latency tracking:
 
-  code_tag_time_stats_start(start_time);
-  code_tag_time_stats_finish(start_time);
+Add an initializer, WAIT_FUNC_INITIALIZER(), to be used by initializers
+for structs that include wait_queue_entries.
 
-Stastistics will then show up in debugfs under
-/sys/kernel/debug/time_stats, listed by file and line number.
-
-Stastics measured include weighted averages of frequency, duration, max
-duration, as well as quantiles.
-
-This patch also instruments all calls to init_wait and finish_wait,
-which includes all calls to wait_event. Example debugfs output:
-
-fs/xfs/xfs_trans_ail.c:746 module:xfs func:xfs_ail_push_all_sync
-count:          17
-rate:           0/sec
-frequency:      2 sec
-avg duration:   10 us
-max duration:   232 us
-quantiles (ns): 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128
-
-lib/sbitmap.c:813 module:sbitmap func:sbitmap_finish_wait
-count:          3
-rate:           0/sec
-frequency:      4 sec
-avg duration:   4 sec
-max duration:   4 sec
-quantiles (ns): 0 4288669120 4288669120 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048 5360836048
-
-net/core/datagram.c:122 module:datagram func:__skb_wait_for_more_packets
-count:          10
-rate:           1/sec
-frequency:      859 ms
-avg duration:   472 ms
-max duration:   30 sec
-quantiles (ns): 0 12279 12279 15669 15669 15669 15669 17217 17217 17217 17217 17217 17217 17217 17217
+Also, change init_wait(), init_wait_entry etc.  to be a wrapper around
+the new __init_waitqueue_entry(); more de-duplication prep work.
 
 Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 ---
- include/asm-generic/codetag.lds.h  |   3 +-
- include/linux/codetag_time_stats.h |  54 +++++++++++
- include/linux/io_uring_types.h     |   2 +-
- include/linux/wait.h               |  22 ++++-
- kernel/sched/wait.c                |   6 +-
- lib/Kconfig.debug                  |   8 ++
- lib/Makefile                       |   1 +
- lib/codetag_time_stats.c           | 143 +++++++++++++++++++++++++++++
- 8 files changed, 233 insertions(+), 6 deletions(-)
- create mode 100644 include/linux/codetag_time_stats.h
- create mode 100644 lib/codetag_time_stats.c
+ include/linux/sbitmap.h  |  6 +----
+ include/linux/wait.h     | 52 +++++++++++++++++++---------------------
+ include/linux/wait_bit.h |  7 +-----
+ kernel/sched/wait.c      |  9 -------
+ 4 files changed, 27 insertions(+), 47 deletions(-)
 
-diff --git a/include/asm-generic/codetag.lds.h b/include/asm-generic/codetag.lds.h
-index 16fbf74edc3d..d799f4aced82 100644
---- a/include/asm-generic/codetag.lds.h
-+++ b/include/asm-generic/codetag.lds.h
-@@ -10,6 +10,7 @@
+diff --git a/include/linux/sbitmap.h b/include/linux/sbitmap.h
+index 8f5a86e210b9..f696c29d9ab3 100644
+--- a/include/linux/sbitmap.h
++++ b/include/linux/sbitmap.h
+@@ -596,11 +596,7 @@ struct sbq_wait {
+ #define DEFINE_SBQ_WAIT(name)							\
+ 	struct sbq_wait name = {						\
+ 		.sbq = NULL,							\
+-		.wait = {							\
+-			.private	= current,				\
+-			.func		= autoremove_wake_function,		\
+-			.entry		= LIST_HEAD_INIT((name).wait.entry),	\
+-		}								\
++		.wait = WAIT_FUNC_INITIALIZER((name).wait, autoremove_wake_function),\
+ 	}
  
- #define CODETAG_SECTIONS()		\
- 	SECTION_WITH_BOUNDARIES(alloc_tags)		\
--	SECTION_WITH_BOUNDARIES(dynamic_fault_tags)
-+	SECTION_WITH_BOUNDARIES(dynamic_fault_tags)	\
-+	SECTION_WITH_BOUNDARIES(time_stats_tags)
- 
- #endif /* __ASM_GENERIC_CODETAG_LDS_H */
-diff --git a/include/linux/codetag_time_stats.h b/include/linux/codetag_time_stats.h
-new file mode 100644
-index 000000000000..7e44c7ee9e9b
---- /dev/null
-+++ b/include/linux/codetag_time_stats.h
-@@ -0,0 +1,54 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+#ifndef _LINUX_CODETAG_TIMESTATS_H
-+#define _LINUX_CODETAG_TIMESTATS_H
-+
-+/*
-+ * Code tagging based latency tracking:
-+ * (C) 2022 Kent Overstreet
-+ *
-+ * This allows you to easily instrument code to track latency, and have the
-+ * results show up in debugfs. To use, add the following two calls to your code
-+ * at the beginning and end of the event you wish to instrument:
-+ *
-+ * code_tag_time_stats_start(start_time);
-+ * code_tag_time_stats_finish(start_time);
-+ *
-+ * Statistics will then show up in debugfs under /sys/kernel/debug/time_stats,
-+ * listed by file and line number.
-+ */
-+
-+#ifdef CONFIG_CODETAG_TIME_STATS
-+
-+#include <linux/codetag.h>
-+#include <linux/time_stats.h>
-+#include <linux/timekeeping.h>
-+
-+struct codetag_time_stats {
-+	struct codetag		tag;
-+	struct time_stats	stats;
-+};
-+
-+#define codetag_time_stats_start(_start_time)	u64 _start_time = ktime_get_ns()
-+
-+#define codetag_time_stats_finish(_start_time)			\
-+do {								\
-+	static struct codetag_time_stats			\
-+	__used							\
-+	__section("time_stats_tags")				\
-+	__aligned(8) s = {					\
-+		.tag	= CODE_TAG_INIT,			\
-+		.stats.lock = __SPIN_LOCK_UNLOCKED(_lock)	\
-+	};							\
-+								\
-+	WARN_ONCE(!(_start_time), "codetag_time_stats_start() not called");\
-+	time_stats_update(&s.stats, _start_time);		\
-+} while (0)
-+
-+#else
-+
-+#define codetag_time_stats_finish(_start_time)	do {} while (0)
-+#define codetag_time_stats_start(_start_time)	do {} while (0)
-+
-+#endif /* CODETAG_CODETAG_TIME_STATS */
-+
-+#endif
-diff --git a/include/linux/io_uring_types.h b/include/linux/io_uring_types.h
-index 677a25d44d7f..3bcef85eacd8 100644
---- a/include/linux/io_uring_types.h
-+++ b/include/linux/io_uring_types.h
-@@ -488,7 +488,7 @@ struct io_cqe {
- struct io_cmd_data {
- 	struct file		*file;
- 	/* each command gets 56 bytes of data */
--	__u8			data[56];
-+	__u8			data[64];
- };
- 
- static inline void io_kiocb_cmd_sz_check(size_t cmd_sz)
+ /*
 diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 91ced6a118bc..bab11b7ef19a 100644
+index 58cfbf81447c..91ced6a118bc 100644
 --- a/include/linux/wait.h
 +++ b/include/linux/wait.h
-@@ -4,6 +4,7 @@
- /*
-  * Linux wait queue related types and methods
-  */
-+#include <linux/codetag_time_stats.h>
- #include <linux/list.h>
- #include <linux/stddef.h>
- #include <linux/spinlock.h>
-@@ -32,6 +33,9 @@ struct wait_queue_entry {
- 	void			*private;
- 	wait_queue_func_t	func;
- 	struct list_head	entry;
-+#ifdef CONFIG_CODETAG_TIME_STATS
-+	u64			start_time;
-+#endif
- };
- 
- struct wait_queue_head {
-@@ -79,10 +83,17 @@ extern void __init_waitqueue_head(struct wait_queue_head *wq_head, const char *n
+@@ -79,21 +79,38 @@ extern void __init_waitqueue_head(struct wait_queue_head *wq_head, const char *n
  # define DECLARE_WAIT_QUEUE_HEAD_ONSTACK(name) DECLARE_WAIT_QUEUE_HEAD(name)
  #endif
  
-+#ifdef CONFIG_CODETAG_TIME_STATS
-+#define WAIT_QUEUE_ENTRY_START_TIME_INITIALIZER	.start_time = ktime_get_ns(),
-+#else
-+#define WAIT_QUEUE_ENTRY_START_TIME_INITIALIZER
-+#endif
+-static inline void init_waitqueue_entry(struct wait_queue_entry *wq_entry, struct task_struct *p)
+-{
+-	wq_entry->flags		= 0;
+-	wq_entry->private	= p;
+-	wq_entry->func		= default_wake_function;
++#define WAIT_FUNC_INITIALIZER(name, function) {					\
++	.private	= current,						\
++	.func		= function,						\
++	.entry		= LIST_HEAD_INIT((name).entry),				\
+ }
+ 
++#define DEFINE_WAIT_FUNC(name, function)					\
++	struct wait_queue_entry name = WAIT_FUNC_INITIALIZER(name, function)
 +
- #define WAIT_FUNC_INITIALIZER(name, function) {					\
- 	.private	= current,						\
- 	.func		= function,						\
- 	.entry		= LIST_HEAD_INIT((name).entry),				\
-+	WAIT_QUEUE_ENTRY_START_TIME_INITIALIZER					\
- }
- 
- #define DEFINE_WAIT_FUNC(name, function)					\
-@@ -98,6 +109,9 @@ __init_waitqueue_entry(struct wait_queue_entry *wq_entry, unsigned int flags,
- 	wq_entry->private	= private;
++#define DEFINE_WAIT(name) DEFINE_WAIT_FUNC(name, autoremove_wake_function)
++
+ static inline void
+-init_waitqueue_func_entry(struct wait_queue_entry *wq_entry, wait_queue_func_t func)
++__init_waitqueue_entry(struct wait_queue_entry *wq_entry, unsigned int flags,
++		       void *private, wait_queue_func_t func)
+ {
+-	wq_entry->flags		= 0;
+-	wq_entry->private	= NULL;
++	wq_entry->flags		= flags;
++	wq_entry->private	= private;
  	wq_entry->func		= func;
- 	INIT_LIST_HEAD(&wq_entry->entry);
-+#ifdef CONFIG_CODETAG_TIME_STATS
-+	wq_entry->start_time	= ktime_get_ns();
-+#endif
++	INIT_LIST_HEAD(&wq_entry->entry);
  }
  
- #define init_waitqueue_func_entry(_wq_entry, _func)			\
-@@ -1180,11 +1194,17 @@ do {										\
- void prepare_to_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state);
- bool prepare_to_wait_exclusive(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state);
- long prepare_to_wait_event(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state);
--void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
-+void __finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry);
- long wait_woken(struct wait_queue_entry *wq_entry, unsigned mode, long timeout);
++#define init_waitqueue_func_entry(_wq_entry, _func)			\
++	__init_waitqueue_entry(_wq_entry, 0, NULL, _func)
++
++#define init_waitqueue_entry(_wq_entry, _task)				\
++	__init_waitqueue_entry(_wq_entry, 0, _task, default_wake_function)
++
++#define init_wait_entry(_wq_entry, _flags)				\
++	__init_waitqueue_entry(_wq_entry, _flags, current, autoremove_wake_function)
++
++#define init_wait(wait)		init_wait_entry(wait, 0)
++
+ /**
+  * waitqueue_active -- locklessly test for waiters on the queue
+  * @wq_head: the waitqueue to test for waiters
+@@ -283,8 +300,6 @@ static inline void wake_up_pollfree(struct wait_queue_head *wq_head)
+ 	(!__builtin_constant_p(state) ||					\
+ 		state == TASK_INTERRUPTIBLE || state == TASK_KILLABLE)		\
+ 
+-extern void init_wait_entry(struct wait_queue_entry *wq_entry, int flags);
+-
+ /*
+  * The below macro ___wait_event() has an explicit shadow of the __ret
+  * variable when used from the wait_event_*() macros.
+@@ -1170,23 +1185,6 @@ long wait_woken(struct wait_queue_entry *wq_entry, unsigned mode, long timeout);
  int woken_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync, void *key);
  int autoremove_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync, void *key);
  
-+#define finish_wait(_wq_head, _wq_entry)					\
-+do {										\
-+	codetag_time_stats_finish((_wq_entry)->start_time);			\
-+	__finish_wait(_wq_head, _wq_entry);					\
-+} while (0)
-+
+-#define DEFINE_WAIT_FUNC(name, function)					\
+-	struct wait_queue_entry name = {					\
+-		.private	= current,					\
+-		.func		= function,					\
+-		.entry		= LIST_HEAD_INIT((name).entry),			\
+-	}
+-
+-#define DEFINE_WAIT(name) DEFINE_WAIT_FUNC(name, autoremove_wake_function)
+-
+-#define init_wait(wait)								\
+-	do {									\
+-		(wait)->private = current;					\
+-		(wait)->func = autoremove_wake_function;			\
+-		INIT_LIST_HEAD(&(wait)->entry);					\
+-		(wait)->flags = 0;						\
+-	} while (0)
+-
  typedef int (*task_call_f)(struct task_struct *p, void *arg);
  extern int task_call_func(struct task_struct *p, task_call_f func, void *arg);
  
+diff --git a/include/linux/wait_bit.h b/include/linux/wait_bit.h
+index 7725b7579b78..267ca0fe9fd9 100644
+--- a/include/linux/wait_bit.h
++++ b/include/linux/wait_bit.h
+@@ -38,12 +38,7 @@ int wake_bit_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync
+ #define DEFINE_WAIT_BIT(name, word, bit)					\
+ 	struct wait_bit_queue_entry name = {					\
+ 		.key = __WAIT_BIT_KEY_INITIALIZER(word, bit),			\
+-		.wq_entry = {							\
+-			.private	= current,				\
+-			.func		= wake_bit_function,			\
+-			.entry		=					\
+-				LIST_HEAD_INIT((name).wq_entry.entry),		\
+-		},								\
++		.wq_entry = WAIT_FUNC_INITIALIZER((name).wq_entry, wake_bit_function),\
+ 	}
+ 
+ extern int bit_wait(struct wait_bit_key *key, int mode);
 diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index b9922346077d..e88de3f0c3ad 100644
+index 9860bb9a847c..b9922346077d 100644
 --- a/kernel/sched/wait.c
 +++ b/kernel/sched/wait.c
-@@ -367,7 +367,7 @@ int do_wait_intr_irq(wait_queue_head_t *wq, wait_queue_entry_t *wait)
- EXPORT_SYMBOL(do_wait_intr_irq);
+@@ -289,15 +289,6 @@ prepare_to_wait_exclusive(struct wait_queue_head *wq_head, struct wait_queue_ent
+ }
+ EXPORT_SYMBOL(prepare_to_wait_exclusive);
  
- /**
-- * finish_wait - clean up after waiting in a queue
-+ * __finish_wait - clean up after waiting in a queue
-  * @wq_head: waitqueue waited on
-  * @wq_entry: wait descriptor
-  *
-@@ -375,7 +375,7 @@ EXPORT_SYMBOL(do_wait_intr_irq);
-  * the wait descriptor from the given waitqueue if still
-  * queued.
-  */
--void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
-+void __finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry)
+-void init_wait_entry(struct wait_queue_entry *wq_entry, int flags)
+-{
+-	wq_entry->flags = flags;
+-	wq_entry->private = current;
+-	wq_entry->func = autoremove_wake_function;
+-	INIT_LIST_HEAD(&wq_entry->entry);
+-}
+-EXPORT_SYMBOL(init_wait_entry);
+-
+ long prepare_to_wait_event(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_entry, int state)
  {
  	unsigned long flags;
- 
-@@ -399,7 +399,7 @@ void finish_wait(struct wait_queue_head *wq_head, struct wait_queue_entry *wq_en
- 		spin_unlock_irqrestore(&wq_head->lock, flags);
- 	}
- }
--EXPORT_SYMBOL(finish_wait);
-+EXPORT_SYMBOL(__finish_wait);
- 
- int autoremove_wake_function(struct wait_queue_entry *wq_entry, unsigned mode, int sync, void *key)
- {
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index b7d03afbc808..b0f86643b8f0 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1728,6 +1728,14 @@ config LATENCYTOP
- 	  Enable this option if you want to use the LatencyTOP tool
- 	  to find out which userspace is blocking on what kernel operations.
- 
-+config CODETAG_TIME_STATS
-+	bool "Code tagging based latency measuring"
-+	depends on DEBUG_FS
-+	select TIME_STATS
-+	select CODE_TAGGING
-+	help
-+	  Enabling this option makes latency statistics available in debugfs
-+
- source "kernel/trace/Kconfig"
- 
- config PROVIDE_OHCI1394_DMA_INIT
-diff --git a/lib/Makefile b/lib/Makefile
-index e54392011f5e..d4067973805b 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -233,6 +233,7 @@ obj-$(CONFIG_PAGE_ALLOC_TAGGING) += pgalloc_tag.o
- 
- obj-$(CONFIG_CODETAG_FAULT_INJECTION) += dynamic_fault.o
- obj-$(CONFIG_TIME_STATS) += time_stats.o
-+obj-$(CONFIG_CODETAG_TIME_STATS) += codetag_time_stats.o
- 
- lib-$(CONFIG_GENERIC_BUG) += bug.o
- 
-diff --git a/lib/codetag_time_stats.c b/lib/codetag_time_stats.c
-new file mode 100644
-index 000000000000..b0e9a08308a2
---- /dev/null
-+++ b/lib/codetag_time_stats.c
-@@ -0,0 +1,143 @@
-+// SPDX-License-Identifier: GPL-2.0-only
-+
-+#include <linux/codetag_time_stats.h>
-+#include <linux/ctype.h>
-+#include <linux/debugfs.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/seq_buf.h>
-+
-+static struct codetag_type *cttype;
-+
-+struct user_buf {
-+	char __user		*buf;	/* destination user buffer */
-+	size_t			size;	/* size of requested read */
-+	ssize_t			ret;	/* bytes read so far */
-+};
-+
-+static int flush_ubuf(struct user_buf *dst, struct seq_buf *src)
-+{
-+	if (src->len) {
-+		size_t bytes = min_t(size_t, src->len, dst->size);
-+		int err = copy_to_user(dst->buf, src->buffer, bytes);
-+
-+		if (err)
-+			return err;
-+
-+		dst->ret	+= bytes;
-+		dst->buf	+= bytes;
-+		dst->size	-= bytes;
-+		src->len	-= bytes;
-+		memmove(src->buffer, src->buffer + bytes, src->len);
-+	}
-+
-+	return 0;
-+}
-+
-+struct time_stats_iter {
-+	struct codetag_iterator ct_iter;
-+	struct seq_buf		buf;
-+	char			rawbuf[4096];
-+	bool			first;
-+};
-+
-+static int time_stats_open(struct inode *inode, struct file *file)
-+{
-+	struct time_stats_iter *iter;
-+
-+	pr_debug("called");
-+
-+	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
-+	if (!iter)
-+		return -ENOMEM;
-+
-+	codetag_lock_module_list(cttype, true);
-+	codetag_init_iter(&iter->ct_iter, cttype);
-+	codetag_lock_module_list(cttype, false);
-+
-+	file->private_data = iter;
-+	seq_buf_init(&iter->buf, iter->rawbuf, sizeof(iter->rawbuf));
-+	iter->first = true;
-+	return 0;
-+}
-+
-+static int time_stats_release(struct inode *inode, struct file *file)
-+{
-+	struct time_stats_iter *i = file->private_data;
-+
-+	kfree(i);
-+	return 0;
-+}
-+
-+static ssize_t time_stats_read(struct file *file, char __user *ubuf,
-+			       size_t size, loff_t *ppos)
-+{
-+	struct time_stats_iter *iter = file->private_data;
-+	struct user_buf	buf = { .buf = ubuf, .size = size };
-+	struct codetag_time_stats *s;
-+	struct codetag *ct;
-+	int err;
-+
-+	codetag_lock_module_list(iter->ct_iter.cttype, true);
-+	while (1) {
-+		err = flush_ubuf(&buf, &iter->buf);
-+		if (err || !buf.size)
-+			break;
-+
-+		ct = codetag_next_ct(&iter->ct_iter);
-+		if (!ct)
-+			break;
-+
-+		s = container_of(ct, struct codetag_time_stats, tag);
-+		if (s->stats.count) {
-+			if (!iter->first) {
-+				seq_buf_putc(&iter->buf, '\n');
-+				iter->first = true;
-+			}
-+
-+			codetag_to_text(&iter->buf, &s->tag);
-+			seq_buf_putc(&iter->buf, '\n');
-+			time_stats_to_text(&iter->buf, &s->stats);
-+		}
-+	}
-+	codetag_lock_module_list(iter->ct_iter.cttype, false);
-+
-+	return err ?: buf.ret;
-+}
-+
-+static const struct file_operations time_stats_ops = {
-+	.owner	= THIS_MODULE,
-+	.open	= time_stats_open,
-+	.release = time_stats_release,
-+	.read	= time_stats_read,
-+};
-+
-+static void time_stats_module_unload(struct codetag_type *cttype, struct codetag_module *mod)
-+{
-+	struct codetag_time_stats *i, *start = (void *) mod->range.start;
-+	struct codetag_time_stats *end = (void *) mod->range.stop;
-+
-+	for (i = start; i != end; i++)
-+		time_stats_exit(&i->stats);
-+}
-+
-+static int __init codetag_time_stats_init(void)
-+{
-+	const struct codetag_type_desc desc = {
-+		.section	= "time_stats_tags",
-+		.tag_size	= sizeof(struct codetag_time_stats),
-+		.module_unload	= time_stats_module_unload,
-+	};
-+	struct dentry *debugfs_file;
-+
-+	cttype = codetag_register_type(&desc);
-+	if (IS_ERR_OR_NULL(cttype))
-+		return PTR_ERR(cttype);
-+
-+	debugfs_file = debugfs_create_file("time_stats", 0666, NULL, NULL, &time_stats_ops);
-+	if (IS_ERR(debugfs_file))
-+		return PTR_ERR(debugfs_file);
-+
-+	return 0;
-+}
-+module_init(codetag_time_stats_init);
 -- 
 2.37.2.672.g94769d06f0-goog
 
