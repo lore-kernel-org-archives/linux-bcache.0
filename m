@@ -2,58 +2,58 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 82DDFC0502A
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:51:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A3474ECAAA1
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:51:43 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231909AbiH3Vv2 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:51:28 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60864 "EHLO
+        id S232029AbiH3Vvm (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:51:42 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55674 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231908AbiH3Vus (ORCPT
+        with ESMTP id S232027AbiH3Vuw (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:50:48 -0400
+        Tue, 30 Aug 2022 17:50:52 -0400
 Received: from mail-yb1-xb49.google.com (mail-yb1-xb49.google.com [IPv6:2607:f8b0:4864:20::b49])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EF8D3F1A
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:48 -0700 (PDT)
-Received: by mail-yb1-xb49.google.com with SMTP id bu13-20020a056902090d00b00671743601f1so708933ybb.0
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:48 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AD138140C6
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:57 -0700 (PDT)
+Received: by mail-yb1-xb49.google.com with SMTP id d135-20020a25688d000000b0069578d248abso726301ybc.21
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:56 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=p8/y/nLBQm6IGi3iJX5wV5NMUkycPfOY4OR1rTeRfxQ=;
-        b=eh/OQULFmIACthv18cWUl4oX11okytVSai6q8VzR+NAQKjUe//Iyb+nFKGGFut6bnz
-         U9vNve6H/h3V8KtV1wUMGWZN/R3y/KwtIJWlz0MYZTJiIV/PhXncLGaXcxmIWasd49k4
-         MzAfZ3MmPE/GrPk0xGglkpLQ6vp+JNN34VaaKbWMkI6l0blrObop9acuYIFl58Z8BCzL
-         5fC4JT76yIwf+mLDK1SPTy1QXCq8FwZe3KmkNaoWIFZ0MNlEC2nHkf9R6kzo++VpnZeN
-         5Whn6DE0IEl1BMPRxgM5XkxVMj4js15JxMerWLMdHXpHMsiFoGiwHoKTk4A6B15t/TFb
-         q+Gg==
+        bh=+dBCH/ZYeXKPl1XZC0y8jtwH0hgKGXE3JjJWq8gRM44=;
+        b=AFaSMy8jXac7TuC+3zPxWUGJEoV6Xwt0zQp9MqDmFFlT9mWJtIdF7dkyLAZ2dlc2YA
+         b9Gf5k0v2Zvts/DmzzZ5pyBGK4PvMyQtpd/jCDUfU7pbPfnKneDUuVfIqoh8xzC2EEXM
+         ggO+9/ET/L3N7vFPV9TWkym8O3GXfgaPKOHQOvjujiuqNd9k0qGNIcoGl/dBIZk4zlFa
+         QTsb0Fx654oBfwlYyCvPgpIbUnjCokKwOPL7A775wrhi+ShDtrR1D6bLCXYg9BBaYtDw
+         bc4QILCqScR/90fRkJQtLt8mPydrXHAQRmui3zER0ZDrlUBSto4jKF/epnVV4Tt3A9sc
+         lVzg==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=p8/y/nLBQm6IGi3iJX5wV5NMUkycPfOY4OR1rTeRfxQ=;
-        b=TqlsmK4rcBqxMzHmnqwxaHSz59wyWXxIRvREWOdGcSWN5Y2bi5csdhLuMeigS38Pmf
-         66dG6S43ifdLy5kCJ1097BKyrxqmgYb+Dn5CxZX/t6msPaIz6xWdgqlaJgXMnN39Lb3X
-         n+Q8rAJSw1QJyTduhuccdv+8q1Ib+I/2Xk/D+jGtndl1HM0oW/KF0+Rrgo1QnTePoRYU
-         UoU+ify0K2pGkCvTwKCNDXNmC2fG9cUQeJWKzedwO+Kl0eCZ5cHqN+Oe1XsTa4cvtjKx
-         eifYPvWs9ph2+D+47F5sj5F4eUN8Pf9VqvaJCSEVU4bNddB1fVkaizOrK5D80gHzs6j/
-         5PsA==
-X-Gm-Message-State: ACgBeo1tLXEgOTphBtoOnra3N5QxzQIKXerWNhOS9Wllvlnw0IbMM4O2
-        4Y0tNEn5Va0Q0sloh6fS/MRTG/czbnE=
-X-Google-Smtp-Source: AA6agR5jbCGe1MArd8G7FNCgOj77g3iLznXqPzYSPJ0w7ptPLXk4tjPHYPeR1rNV3a/cmH1L2NtV8LKD3is=
+        bh=+dBCH/ZYeXKPl1XZC0y8jtwH0hgKGXE3JjJWq8gRM44=;
+        b=PZtqttpYRGWUUlZWruWtl+DDr8czQ7NKevQIWlGVmb3eAdElwTX9AlVeKQLga78YDr
+         Yi0mPlHZJDIs0CByjmwvai7je/K2iheR5bOukRfzRKEGvV5E9gHfC/PlPTE6hYwRvKGf
+         +JovMAwZ7qnetwqh5PU91BTl8V3lPeIhfiMjD8s+qN3Xn6Do5+SPvpdiCrIKJm1IXKx4
+         G74cZX+TvfbtcjJRuEqlyOlEimCdDtIEHfUc751Wybkc/Mf/Lm6J30P5aHPwcfDnPkr4
+         3zkkcHkyyDGDn9wYVY/Nw+zBFKvJQxPqsUyaKo++kaKzBwMb0RmNTDWnqCuhp5x+GXCR
+         IhnQ==
+X-Gm-Message-State: ACgBeo16mego9+tof4ztAf7w/l/e808B10KAjqBuvc0fJiQsDIbIysT6
+        5z1y2CrzBPIKbMdbs64wCibs6OrRYzY=
+X-Google-Smtp-Source: AA6agR5IHyLOVpCYPsGCTl1WAh1PLHzSkOgAmQAkkvI/LDvSxkU9pCXJyMghFPF7B9PD/jn9WBQElFJpekI=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a25:4d56:0:b0:69c:3d80:bb51 with SMTP id
- a83-20020a254d56000000b0069c3d80bb51mr6383765ybb.124.1661896187249; Tue, 30
- Aug 2022 14:49:47 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:48:58 -0700
+ (user=surenb job=sendgmr) by 2002:a25:94b:0:b0:68f:4e05:e8f0 with SMTP id
+ u11-20020a25094b000000b0068f4e05e8f0mr13319593ybm.115.1661896195289; Tue, 30
+ Aug 2022 14:49:55 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:01 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-10-surenb@google.com>
-Subject: [RFC PATCH 09/30] change alloc_pages name in dma_map_ops to avoid
- name conflicts
+Message-ID: <20220830214919.53220-13-surenb@google.com>
+Subject: [RFC PATCH 12/30] mm: introduce __GFP_NO_OBJ_EXT flag to selectively
+ prevent slabobj_ext creation
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -80,100 +80,58 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-After redefining alloc_pages, all uses of that name are being replaced.
-Change the conflicting names to prevent preprocessor from replacing them
-when it's not intended.
+Introduce __GFP_NO_OBJ_EXT flag in order to prevent recursive allocations
+when allocating slabobj_ext on a slab.
 
 Signed-off-by: Suren Baghdasaryan <surenb@google.com>
 ---
- arch/x86/kernel/amd_gart_64.c | 2 +-
- drivers/iommu/dma-iommu.c     | 2 +-
- drivers/xen/grant-dma-ops.c   | 2 +-
- drivers/xen/swiotlb-xen.c     | 2 +-
- include/linux/dma-map-ops.h   | 2 +-
- kernel/dma/mapping.c          | 4 ++--
- 6 files changed, 7 insertions(+), 7 deletions(-)
+ include/linux/gfp_types.h | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
-index 194d54eed537..5e83a387bfef 100644
---- a/arch/x86/kernel/amd_gart_64.c
-+++ b/arch/x86/kernel/amd_gart_64.c
-@@ -676,7 +676,7 @@ static const struct dma_map_ops gart_dma_ops = {
- 	.get_sgtable			= dma_common_get_sgtable,
- 	.dma_supported			= dma_direct_supported,
- 	.get_required_mask		= dma_direct_get_required_mask,
--	.alloc_pages			= dma_direct_alloc_pages,
-+	.alloc_pages_op			= dma_direct_alloc_pages,
- 	.free_pages			= dma_direct_free_pages,
- };
+diff --git a/include/linux/gfp_types.h b/include/linux/gfp_types.h
+index d88c46ca82e1..a2cba1d20b86 100644
+--- a/include/linux/gfp_types.h
++++ b/include/linux/gfp_types.h
+@@ -55,8 +55,13 @@ typedef unsigned int __bitwise gfp_t;
+ #define ___GFP_SKIP_KASAN_UNPOISON	0
+ #define ___GFP_SKIP_KASAN_POISON	0
+ #endif
++#ifdef CONFIG_SLAB_OBJ_EXT
++#define ___GFP_NO_OBJ_EXT       0x8000000u
++#else
++#define ___GFP_NO_OBJ_EXT       0
++#endif
+ #ifdef CONFIG_LOCKDEP
+-#define ___GFP_NOLOCKDEP	0x8000000u
++#define ___GFP_NOLOCKDEP	0x10000000u
+ #else
+ #define ___GFP_NOLOCKDEP	0
+ #endif
+@@ -101,12 +106,15 @@ typedef unsigned int __bitwise gfp_t;
+  * node with no fallbacks or placement policy enforcements.
+  *
+  * %__GFP_ACCOUNT causes the allocation to be accounted to kmemcg.
++ *
++ * %__GFP_NO_OBJ_EXT causes slab allocation to have no object extension.
+  */
+ #define __GFP_RECLAIMABLE ((__force gfp_t)___GFP_RECLAIMABLE)
+ #define __GFP_WRITE	((__force gfp_t)___GFP_WRITE)
+ #define __GFP_HARDWALL   ((__force gfp_t)___GFP_HARDWALL)
+ #define __GFP_THISNODE	((__force gfp_t)___GFP_THISNODE)
+ #define __GFP_ACCOUNT	((__force gfp_t)___GFP_ACCOUNT)
++#define __GFP_NO_OBJ_EXT   ((__force gfp_t)___GFP_NO_OBJ_EXT)
  
-diff --git a/drivers/iommu/dma-iommu.c b/drivers/iommu/dma-iommu.c
-index 17dd683b2fce..58b4878ef930 100644
---- a/drivers/iommu/dma-iommu.c
-+++ b/drivers/iommu/dma-iommu.c
-@@ -1547,7 +1547,7 @@ static const struct dma_map_ops iommu_dma_ops = {
- 	.flags			= DMA_F_PCI_P2PDMA_SUPPORTED,
- 	.alloc			= iommu_dma_alloc,
- 	.free			= iommu_dma_free,
--	.alloc_pages		= dma_common_alloc_pages,
-+	.alloc_pages_op		= dma_common_alloc_pages,
- 	.free_pages		= dma_common_free_pages,
- 	.alloc_noncontiguous	= iommu_dma_alloc_noncontiguous,
- 	.free_noncontiguous	= iommu_dma_free_noncontiguous,
-diff --git a/drivers/xen/grant-dma-ops.c b/drivers/xen/grant-dma-ops.c
-index 8973fc1e9ccc..0e26d066036e 100644
---- a/drivers/xen/grant-dma-ops.c
-+++ b/drivers/xen/grant-dma-ops.c
-@@ -262,7 +262,7 @@ static int xen_grant_dma_supported(struct device *dev, u64 mask)
- static const struct dma_map_ops xen_grant_dma_ops = {
- 	.alloc = xen_grant_dma_alloc,
- 	.free = xen_grant_dma_free,
--	.alloc_pages = xen_grant_dma_alloc_pages,
-+	.alloc_pages_op = xen_grant_dma_alloc_pages,
- 	.free_pages = xen_grant_dma_free_pages,
- 	.mmap = dma_common_mmap,
- 	.get_sgtable = dma_common_get_sgtable,
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 67aa74d20162..5ab2616153f0 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -403,6 +403,6 @@ const struct dma_map_ops xen_swiotlb_dma_ops = {
- 	.dma_supported = xen_swiotlb_dma_supported,
- 	.mmap = dma_common_mmap,
- 	.get_sgtable = dma_common_get_sgtable,
--	.alloc_pages = dma_common_alloc_pages,
-+	.alloc_pages_op = dma_common_alloc_pages,
- 	.free_pages = dma_common_free_pages,
- };
-diff --git a/include/linux/dma-map-ops.h b/include/linux/dma-map-ops.h
-index d678afeb8a13..e8e2d210ba68 100644
---- a/include/linux/dma-map-ops.h
-+++ b/include/linux/dma-map-ops.h
-@@ -27,7 +27,7 @@ struct dma_map_ops {
- 			unsigned long attrs);
- 	void (*free)(struct device *dev, size_t size, void *vaddr,
- 			dma_addr_t dma_handle, unsigned long attrs);
--	struct page *(*alloc_pages)(struct device *dev, size_t size,
-+	struct page *(*alloc_pages_op)(struct device *dev, size_t size,
- 			dma_addr_t *dma_handle, enum dma_data_direction dir,
- 			gfp_t gfp);
- 	void (*free_pages)(struct device *dev, size_t size, struct page *vaddr,
-diff --git a/kernel/dma/mapping.c b/kernel/dma/mapping.c
-index 49cbf3e33de7..80a2bfeed8d0 100644
---- a/kernel/dma/mapping.c
-+++ b/kernel/dma/mapping.c
-@@ -552,9 +552,9 @@ static struct page *__dma_alloc_pages(struct device *dev, size_t size,
- 	size = PAGE_ALIGN(size);
- 	if (dma_alloc_direct(dev, ops))
- 		return dma_direct_alloc_pages(dev, size, dma_handle, dir, gfp);
--	if (!ops->alloc_pages)
-+	if (!ops->alloc_pages_op)
- 		return NULL;
--	return ops->alloc_pages(dev, size, dma_handle, dir, gfp);
-+	return ops->alloc_pages_op(dev, size, dma_handle, dir, gfp);
- }
+ /**
+  * DOC: Watermark modifiers
+@@ -256,7 +264,7 @@ typedef unsigned int __bitwise gfp_t;
+ #define __GFP_NOLOCKDEP ((__force gfp_t)___GFP_NOLOCKDEP)
  
- struct page *dma_alloc_pages(struct device *dev, size_t size,
+ /* Room for N __GFP_FOO bits */
+-#define __GFP_BITS_SHIFT (27 + IS_ENABLED(CONFIG_LOCKDEP))
++#define __GFP_BITS_SHIFT (28 + IS_ENABLED(CONFIG_LOCKDEP))
+ #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
+ 
+ /**
 -- 
 2.37.2.672.g94769d06f0-goog
 
