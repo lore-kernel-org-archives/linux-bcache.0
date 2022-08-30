@@ -2,57 +2,57 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 4DA2AC0502A
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:53:29 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id EB5C0C67868
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:53:48 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231925AbiH3Vx1 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:53:27 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:32844 "EHLO
+        id S231989AbiH3Vxq (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:53:46 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60410 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231913AbiH3VwX (ORCPT
+        with ESMTP id S232173AbiH3Vwy (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:52:23 -0400
+        Tue, 30 Aug 2022 17:52:54 -0400
 Received: from mail-yb1-xb49.google.com (mail-yb1-xb49.google.com [IPv6:2607:f8b0:4864:20::b49])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id DB64A91D28
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:23 -0700 (PDT)
-Received: by mail-yb1-xb49.google.com with SMTP id 63-20020a250d42000000b00696588a0e87so712572ybn.3
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:23 -0700 (PDT)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A2FC895E46
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:31 -0700 (PDT)
+Received: by mail-yb1-xb49.google.com with SMTP id i6-20020a259786000000b0069648392979so716206ybo.11
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:31 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=OQ1/DMahF4uWAfLYh5vc64TkQSOW6G8gA0sp/Oew5U4=;
-        b=E6n8RLBDvVdKTt99wS7gonDHgXGyFD48wANdOMf152JDQ5KdmSOWFLIpRW6kDDjotY
-         x+AW587u5EK6tbc6fvifCLn56BbbsozOj5hKUEn6M41P4UEgc9OABsv5SIiQi/8oKY8R
-         SnWivvj44LyiP0dXPWoI7mNyRDo/YzIUrD8I5hoMt+oKP1+hGTBP83QKTjsDABUbkjlp
-         2WTgmE2oNacaN0/b3glSakcpEMlPWkX8Cq7584LeI9wCjV+07nZN/bVKQwFVm5Mw8GwD
-         nmAvgbFTWQSM9f9o0sF35PvZg/TjRD7dQ6ibTq+wNYKM6OcUMOKofnZUPQGzw4DuByNO
-         8QdA==
+        bh=QqkrsGdR9RIQpztjH+HKE2iaQK76d4alLlYGvP5mtuk=;
+        b=EmELHff//JPLhVllZqIpmS0Yi/n4CYn1PpFo5D7aAgY/mGxsMtS6XD/+ioRS2qZY8C
+         no10ngIVmFAT46GJYUJjGDNqdY92DoHLQ9QbhAJVsBRmHbrR9QbwqsDn7oDd7mF57S+J
+         MK/ad/Fah7kdPasA545qk8VUbJu+zxO3x46X50P0T+NbpE7jyYjWPsZQ5vgUXGysvUe/
+         W1W5uPUmm7KhCwcWdijNNG0C+OJlqBBAZwgyEyHf6FDcQet7W8l2Nexpz36zNi+sAkKv
+         CMElZPZokU2RO03oq7FRoEcd/C8olIjRx4EsriXjGCc7C59ySMMLL8R3CCw5o8VWV3mF
+         SxkQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=OQ1/DMahF4uWAfLYh5vc64TkQSOW6G8gA0sp/Oew5U4=;
-        b=BTygqNw5Z7NlSA4sXarSreFrkINyWNuFEX/dpqcksviZ1/mtcYzwxM7FgwwXXipNTb
-         jn8V1koaby0VakizE+RTbXxUoXuqx0Q/i4XVNcpV1OlANpQG4mDtqj4ChpIxd64o1Ls+
-         C3tdZDVZx9eV1tzUVtwh5hd0vI/bFx/Ph32U4/mrFxjzxFwapym6uFwJaPrPhJuR/T5H
-         jOgGsI7JOpvQnkJAKRwwU5vWMSVs8zitWI7jtoltFrsTP2NO+iwjA6XJLxsNd96j5iiR
-         ygA+iJgGNTPuD2bT4n9F6N6hNzLABk9Utvu7B4UODyXLbAb0/SyXHzKg2Ik+WvdZfN36
-         Iopw==
-X-Gm-Message-State: ACgBeo3OgCHb+C1a66ccHo8sBEmOFTcD88IPmQbwQpgzoCINMRVRi2Hm
-        xERHuaoV8ixocpSqxjOhNN1Ln2p5EJQ=
-X-Google-Smtp-Source: AA6agR6JKAe3T4R70KWhBqCZIGWOR7vlkyzPVmWfqRUYHsRdrPe/NdFlMgKrQ6XnjzPBCyOacXIPh+/j+IY=
+        bh=QqkrsGdR9RIQpztjH+HKE2iaQK76d4alLlYGvP5mtuk=;
+        b=RhB2TL5WcicRj+MzvxYwkuJ9+V4wKr/oKYoiiZWxqnat2nG0ovHOlgRKbtKJBzXR1e
+         bowdTkf6Seym5jm7XHIsMn91fIZp3MZk5pqbnK4YUskokawO07Me5Pupo54/RqaGmBm+
+         uPNpNoHL/yAwfXSGzptPQ3he0GH3ejQEO3Ktk8m/P2kNUdOGfQBYH3guOee7HoObA2IO
+         Rpn24SgkVSMu8SXJRTZW1CZOmQwOmMn9NPT1YANvN7E9wAqyjNUyTmP27BCA9WsG1jkd
+         4Lyvk1b7WUvNyh1kukEuib9Sz5Q7bXNY4sa/egDIz4ikfRTfEb2NOFhmmvKT06QZkaRK
+         AdAw==
+X-Gm-Message-State: ACgBeo3LqipjBvISdawfUSFwr8FH3SuiQJc4jqljZSzFm9cQAOIf4iRY
+        DgL1hWjPlaXl3m7n5v0FXMYpQBKQt9A=
+X-Google-Smtp-Source: AA6agR5ND+Bk6d/UBSONHhQ297Nqdm//CwhSmMh2PEZtOl62aMkc4xfTQyNu/uBDVWhdtd26Z8NBy2Q9NdY=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a25:6985:0:b0:695:8355:f894 with SMTP id
- e127-20020a256985000000b006958355f894mr13667557ybc.648.1661896221989; Tue, 30
- Aug 2022 14:50:21 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:49:11 -0700
+ (user=surenb job=sendgmr) by 2002:a25:4246:0:b0:699:186f:76ca with SMTP id
+ p67-20020a254246000000b00699186f76camr13282039yba.272.1661896229901; Tue, 30
+ Aug 2022 14:50:29 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:14 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-23-surenb@google.com>
-Subject: [RFC PATCH 22/30] Code tagging based fault injection
+Message-ID: <20220830214919.53220-26-surenb@google.com>
+Subject: [RFC PATCH 25/30] lib/time_stats: New library for statistics on events
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -81,563 +81,345 @@ X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: Kent Overstreet <kent.overstreet@linux.dev>
 
-This adds a new fault injection capability, based on code tagging.
+This adds a small new library for tracking statistics on events that
+have a duration, i.e. a start and end time.
 
-To use, simply insert somewhere in your code
+ - number of events
+ - rate/frequency
+ - average duration
+ - max duration
+ - duration quantiles
 
-  dynamic_fault("fault_class_name")
-
-and check whether it returns true - if so, inject the error.
-For example
-
-  if (dynamic_fault("init"))
-      return -EINVAL;
-
-There's no need to define faults elsewhere, as with
-include/linux/fault-injection.h. Faults show up in debugfs, under
-/sys/kernel/debug/dynamic_faults, and can be selected based on
-file/module/function/line number/class, and enabled permanently, or in
-oneshot mode, or with a specified frequency.
+This code comes from bcachefs, and originally bcache: the next patch
+will be converting bcache to use this version, and a subsequent patch
+will be using code_tagging to instrument all wait_event() calls in the
+kernel.
 
 Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
 ---
- include/asm-generic/codetag.lds.h |   3 +-
- include/linux/dynamic_fault.h     |  79 +++++++
- include/linux/slab.h              |   3 +-
- lib/Kconfig.debug                 |   6 +
- lib/Makefile                      |   2 +
- lib/dynamic_fault.c               | 372 ++++++++++++++++++++++++++++++
- 6 files changed, 463 insertions(+), 2 deletions(-)
- create mode 100644 include/linux/dynamic_fault.h
- create mode 100644 lib/dynamic_fault.c
+ include/linux/time_stats.h |  44 +++++++
+ lib/Kconfig                |   3 +
+ lib/Makefile               |   1 +
+ lib/time_stats.c           | 236 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 284 insertions(+)
+ create mode 100644 include/linux/time_stats.h
+ create mode 100644 lib/time_stats.c
 
-diff --git a/include/asm-generic/codetag.lds.h b/include/asm-generic/codetag.lds.h
-index 64f536b80380..16fbf74edc3d 100644
---- a/include/asm-generic/codetag.lds.h
-+++ b/include/asm-generic/codetag.lds.h
-@@ -9,6 +9,7 @@
- 	__stop_##_name = .;
- 
- #define CODETAG_SECTIONS()		\
--	SECTION_WITH_BOUNDARIES(alloc_tags)
-+	SECTION_WITH_BOUNDARIES(alloc_tags)		\
-+	SECTION_WITH_BOUNDARIES(dynamic_fault_tags)
- 
- #endif /* __ASM_GENERIC_CODETAG_LDS_H */
-diff --git a/include/linux/dynamic_fault.h b/include/linux/dynamic_fault.h
+diff --git a/include/linux/time_stats.h b/include/linux/time_stats.h
 new file mode 100644
-index 000000000000..526a33209e94
+index 000000000000..7ae929e6f836
 --- /dev/null
-+++ b/include/linux/dynamic_fault.h
-@@ -0,0 +1,79 @@
++++ b/include/linux/time_stats.h
+@@ -0,0 +1,44 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +
-+#ifndef _LINUX_DYNAMIC_FAULT_H
-+#define _LINUX_DYNAMIC_FAULT_H
++#ifndef _LINUX_TIMESTATS_H
++#define _LINUX_TIMESTATS_H
 +
-+/*
-+ * Dynamic/code tagging fault injection:
-+ *
-+ * Originally based on the dynamic debug trick of putting types in a special elf
-+ * section, then rewritten using code tagging:
-+ *
-+ * To use, simply insert a call to dynamic_fault("fault_class"), which will
-+ * return true if an error should be injected.
-+ *
-+ * Fault injection sites may be listed and enabled via debugfs, under
-+ * /sys/kernel/debug/dynamic_faults.
-+ */
++#include <linux/spinlock_types.h>
++#include <linux/types.h>
 +
-+#ifdef CONFIG_CODETAG_FAULT_INJECTION
++#define NR_QUANTILES	15
 +
-+#include <linux/codetag.h>
-+#include <linux/jump_label.h>
-+
-+#define DFAULT_STATES()		\
-+	x(disabled)		\
-+	x(enabled)		\
-+	x(oneshot)
-+
-+enum dfault_enabled {
-+#define x(n)	DFAULT_##n,
-+	DFAULT_STATES()
-+#undef x
++struct quantiles {
++	struct quantile_entry {
++		u64	m;
++		u64	step;
++	}		entries[NR_QUANTILES];
 +};
 +
-+union dfault_state {
-+	struct {
-+		unsigned int		enabled:2;
-+		unsigned int		count:30;
-+	};
-+
-+	struct {
-+		unsigned int		v;
-+	};
++struct time_stat_buffer {
++	unsigned int	nr;
++	struct time_stat_buffer_entry {
++		u64	start;
++		u64	end;
++	}		entries[32];
 +};
 +
-+struct dfault {
-+	struct codetag		tag;
-+	const char		*class;
-+	unsigned int		frequency;
-+	union dfault_state	state;
-+	struct static_key_false	enabled;
++struct time_stats {
++	spinlock_t	lock;
++	u64		count;
++	/* all fields are in nanoseconds */
++	u64		average_duration;
++	u64		average_frequency;
++	u64		max_duration;
++	u64		last_event;
++	struct quantiles quantiles;
++
++	struct time_stat_buffer __percpu *buffer;
 +};
 +
-+bool __dynamic_fault_enabled(struct dfault *df);
++struct seq_buf;
++void time_stats_update(struct time_stats *stats, u64 start);
++void time_stats_to_text(struct seq_buf *out, struct time_stats *stats);
++void time_stats_exit(struct time_stats *stats);
 +
-+#define dynamic_fault(_class)				\
-+({							\
-+	static struct dfault				\
-+	__used						\
-+	__section("dynamic_fault_tags")			\
-+	__aligned(8) df = {				\
-+		.tag	= CODE_TAG_INIT,		\
-+		.class	= _class,			\
-+		.enabled = STATIC_KEY_FALSE_INIT,	\
-+	};						\
-+							\
-+	static_key_false(&df.enabled.key) &&		\
-+		__dynamic_fault_enabled(&df);		\
-+})
-+
-+#else
-+
-+#define dynamic_fault(_class)	false
-+
-+#endif /* CODETAG_FAULT_INJECTION */
-+
-+#define memory_fault()		dynamic_fault("memory")
-+
-+#endif /* _LINUX_DYNAMIC_FAULT_H */
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 89273be35743..4be5a93ed15a 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -17,6 +17,7 @@
- #include <linux/types.h>
- #include <linux/workqueue.h>
- #include <linux/percpu-refcount.h>
-+#include <linux/dynamic_fault.h>
++#endif /* _LINUX_TIMESTATS_H */
+diff --git a/lib/Kconfig b/lib/Kconfig
+index fc6dbc425728..884fd9f2f06d 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -744,3 +744,6 @@ config ASN1_ENCODER
  
- 
- /*
-@@ -468,7 +469,7 @@ static inline void slab_tag_dec(const void *ptr) {}
- 
- #define krealloc_hooks(_p, _do_alloc)					\
- ({									\
--	void *_res = _do_alloc;						\
-+	void *_res = !memory_fault() ? _do_alloc : NULL;		\
- 	slab_tag_add(_p, _res);						\
- 	_res;								\
- })
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 2790848464f1..b7d03afbc808 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1982,6 +1982,12 @@ config FAULT_INJECTION_STACKTRACE_FILTER
- 	help
- 	  Provide stacktrace filter for fault-injection capabilities
- 
-+config CODETAG_FAULT_INJECTION
-+	bool "Code tagging based fault injection"
-+	select CODE_TAGGING
-+	help
-+	  Dynamic fault injection based on code tagging
+ config POLYNOMIAL
+        tristate
 +
- config ARCH_HAS_KCOV
- 	bool
- 	help
++config TIME_STATS
++	bool
 diff --git a/lib/Makefile b/lib/Makefile
-index 99f732156673..489ea000c528 100644
+index 489ea000c528..e54392011f5e 100644
 --- a/lib/Makefile
 +++ b/lib/Makefile
-@@ -231,6 +231,8 @@ obj-$(CONFIG_CODE_TAGGING) += codetag.o
- obj-$(CONFIG_ALLOC_TAGGING) += alloc_tag.o
+@@ -232,6 +232,7 @@ obj-$(CONFIG_ALLOC_TAGGING) += alloc_tag.o
  obj-$(CONFIG_PAGE_ALLOC_TAGGING) += pgalloc_tag.o
  
-+obj-$(CONFIG_CODETAG_FAULT_INJECTION) += dynamic_fault.o
-+
+ obj-$(CONFIG_CODETAG_FAULT_INJECTION) += dynamic_fault.o
++obj-$(CONFIG_TIME_STATS) += time_stats.o
+ 
  lib-$(CONFIG_GENERIC_BUG) += bug.o
  
- obj-$(CONFIG_HAVE_ARCH_TRACEHOOK) += syscall.o
-diff --git a/lib/dynamic_fault.c b/lib/dynamic_fault.c
+diff --git a/lib/time_stats.c b/lib/time_stats.c
 new file mode 100644
-index 000000000000..4c9cd18686be
+index 000000000000..30362364fdd2
 --- /dev/null
-+++ b/lib/dynamic_fault.c
-@@ -0,0 +1,372 @@
++++ b/lib/time_stats.c
+@@ -0,0 +1,236 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +
-+#include <linux/ctype.h>
-+#include <linux/debugfs.h>
-+#include <linux/dynamic_fault.h>
++#include <linux/gfp.h>
++#include <linux/jiffies.h>
 +#include <linux/kernel.h>
-+#include <linux/module.h>
++#include <linux/ktime.h>
++#include <linux/percpu.h>
 +#include <linux/seq_buf.h>
++#include <linux/spinlock.h>
++#include <linux/time_stats.h>
++#include <linux/timekeeping.h>
 +
-+static struct codetag_type *cttype;
-+
-+bool __dynamic_fault_enabled(struct dfault *df)
++static inline unsigned int eytzinger1_child(unsigned int i, unsigned int child)
 +{
-+	union dfault_state old, new;
-+	unsigned int v = df->state.v;
-+	bool ret;
-+
-+	do {
-+		old.v = new.v = v;
-+
-+		if (new.enabled == DFAULT_disabled)
-+			return false;
-+
-+		ret = df->frequency
-+			? ++new.count >= df->frequency
-+			: true;
-+		if (ret)
-+			new.count = 0;
-+		if (ret && new.enabled == DFAULT_oneshot)
-+			new.enabled = DFAULT_disabled;
-+	} while ((v = cmpxchg(&df->state.v, old.v, new.v)) != old.v);
-+
-+	if (ret)
-+		pr_debug("returned true for %s:%u", df->tag.filename, df->tag.lineno);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(__dynamic_fault_enabled);
-+
-+static const char * const dfault_state_strs[] = {
-+#define x(n)	#n,
-+	DFAULT_STATES()
-+#undef x
-+	NULL
-+};
-+
-+static void dynamic_fault_to_text(struct seq_buf *out, struct dfault *df)
-+{
-+	codetag_to_text(out, &df->tag);
-+	seq_buf_printf(out, "class:%s %s \"", df->class,
-+		       dfault_state_strs[df->state.enabled]);
++	return (i << 1) + child;
 +}
 +
-+struct dfault_query {
-+	struct codetag_query q;
-+
-+	bool		set_enabled:1;
-+	unsigned int	enabled:2;
-+
-+	bool		set_frequency:1;
-+	unsigned int	frequency;
-+};
-+
-+/*
-+ * Search the tables for _dfault's which match the given
-+ * `query' and apply the `flags' and `mask' to them.  Tells
-+ * the user which dfault's were changed, or whether none
-+ * were matched.
-+ */
-+static int dfault_change(struct dfault_query *query)
++static inline unsigned int eytzinger1_right_child(unsigned int i)
 +{
-+	struct codetag_iterator ct_iter;
-+	struct codetag *ct;
-+	unsigned int nfound = 0;
-+
-+	codetag_lock_module_list(cttype, true);
-+	codetag_init_iter(&ct_iter, cttype);
-+
-+	while ((ct = codetag_next_ct(&ct_iter))) {
-+		struct dfault *df = container_of(ct, struct dfault, tag);
-+
-+		if (!codetag_matches_query(&query->q, ct, ct_iter.cmod, df->class))
-+			continue;
-+
-+		if (query->set_enabled &&
-+		    query->enabled != df->state.enabled) {
-+			if (query->enabled != DFAULT_disabled)
-+				static_key_slow_inc(&df->enabled.key);
-+			else if (df->state.enabled != DFAULT_disabled)
-+				static_key_slow_dec(&df->enabled.key);
-+
-+			df->state.enabled = query->enabled;
-+		}
-+
-+		if (query->set_frequency)
-+			df->frequency = query->frequency;
-+
-+		pr_debug("changed %s:%d [%s]%s #%d %s",
-+			 df->tag.filename, df->tag.lineno, df->tag.modname,
-+			 df->tag.function, query->q.cur_index,
-+			 dfault_state_strs[df->state.enabled]);
-+
-+		nfound++;
-+	}
-+
-+	pr_debug("dfault: %u matches", nfound);
-+
-+	codetag_lock_module_list(cttype, false);
-+
-+	return nfound ? 0 : -ENOENT;
++	return eytzinger1_child(i, 1);
 +}
 +
-+#define DFAULT_TOKENS()		\
-+	x(disable,	0)	\
-+	x(enable,	0)	\
-+	x(oneshot,	0)	\
-+	x(frequency,	1)
-+
-+enum dfault_token {
-+#define x(name, nr_args)	TOK_##name,
-+	DFAULT_TOKENS()
-+#undef x
-+};
-+
-+static const char * const dfault_token_strs[] = {
-+#define x(name, nr_args)	#name,
-+	DFAULT_TOKENS()
-+#undef x
-+	NULL
-+};
-+
-+static unsigned int dfault_token_nr_args[] = {
-+#define x(name, nr_args)	nr_args,
-+	DFAULT_TOKENS()
-+#undef x
-+};
-+
-+static enum dfault_token str_to_token(const char *word, unsigned int nr_words)
++static inline unsigned int eytzinger1_next(unsigned int i, unsigned int size)
 +{
-+	int tok = match_string(dfault_token_strs, ARRAY_SIZE(dfault_token_strs), word);
++	if (eytzinger1_right_child(i) <= size) {
++		i = eytzinger1_right_child(i);
 +
-+	if (tok < 0) {
-+		pr_debug("unknown keyword \"%s\"", word);
-+		return tok;
-+	}
-+
-+	if (nr_words < dfault_token_nr_args[tok]) {
-+		pr_debug("insufficient arguments to \"%s\"", word);
-+		return -EINVAL;
-+	}
-+
-+	return tok;
-+}
-+
-+static int dfault_parse_command(struct dfault_query *query,
-+				enum dfault_token tok,
-+				char *words[], size_t nr_words)
-+{
-+	unsigned int i = 0;
-+	int ret;
-+
-+	switch (tok) {
-+	case TOK_disable:
-+		query->set_enabled = true;
-+		query->enabled = DFAULT_disabled;
-+		break;
-+	case TOK_enable:
-+		query->set_enabled = true;
-+		query->enabled = DFAULT_enabled;
-+		break;
-+	case TOK_oneshot:
-+		query->set_enabled = true;
-+		query->enabled = DFAULT_oneshot;
-+		break;
-+	case TOK_frequency:
-+		query->set_frequency = 1;
-+		ret = kstrtouint(words[i++], 10, &query->frequency);
-+		if (ret)
-+			return ret;
-+
-+		if (!query->set_enabled) {
-+			query->set_enabled = 1;
-+			query->enabled = DFAULT_enabled;
-+		}
-+		break;
++		i <<= __fls(size + 1) - __fls(i);
++		i >>= i > size;
++	} else {
++		i >>= ffz(i) + 1;
 +	}
 +
 +	return i;
 +}
 +
-+static int dynamic_fault_store(char *buf)
++static inline unsigned int eytzinger0_child(unsigned int i, unsigned int child)
 +{
-+	struct dfault_query query = { NULL };
-+#define MAXWORDS 9
-+	char *tok, *words[MAXWORDS];
-+	int ret, nr_words, i = 0;
-+
-+	buf = codetag_query_parse(&query.q, buf);
-+	if (IS_ERR(buf))
-+		return PTR_ERR(buf);
-+
-+	while ((tok = strsep_no_empty(&buf, " \t\r\n"))) {
-+		if (nr_words == ARRAY_SIZE(words))
-+			return -EINVAL;	/* ran out of words[] before bytes */
-+		words[nr_words++] = tok;
-+	}
-+
-+	while (i < nr_words) {
-+		const char *tok_str = words[i++];
-+		enum dfault_token tok = str_to_token(tok_str, nr_words - i);
-+
-+		if (tok < 0)
-+			return tok;
-+
-+		ret = dfault_parse_command(&query, tok, words + i, nr_words - i);
-+		if (ret < 0)
-+			return ret;
-+
-+		i += ret;
-+		BUG_ON(i > nr_words);
-+	}
-+
-+	pr_debug("q->function=\"%s\" q->filename=\"%s\" "
-+		 "q->module=\"%s\" q->line=%u-%u\n q->index=%u-%u",
-+		 query.q.function, query.q.filename, query.q.module,
-+		 query.q.first_line, query.q.last_line,
-+		 query.q.first_index, query.q.last_index);
-+
-+	ret = dfault_change(&query);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
++	return (i << 1) + 1 + child;
 +}
 +
-+struct dfault_iter {
-+	struct codetag_iterator ct_iter;
-+
-+	struct seq_buf		buf;
-+	char			rawbuf[4096];
-+};
-+
-+static int dfault_open(struct inode *inode, struct file *file)
++static inline unsigned int eytzinger0_first(unsigned int size)
 +{
-+	struct dfault_iter *iter;
-+
-+	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
-+	if (!iter)
-+		return -ENOMEM;
-+
-+	codetag_lock_module_list(cttype, true);
-+	codetag_init_iter(&iter->ct_iter, cttype);
-+	codetag_lock_module_list(cttype, false);
-+
-+	file->private_data = iter;
-+	seq_buf_init(&iter->buf, iter->rawbuf, sizeof(iter->rawbuf));
-+	return 0;
++	return rounddown_pow_of_two(size) - 1;
 +}
 +
-+static int dfault_release(struct inode *inode, struct file *file)
++static inline unsigned int eytzinger0_next(unsigned int i, unsigned int size)
 +{
-+	struct dfault_iter *iter = file->private_data;
-+
-+	kfree(iter);
-+	return 0;
++	return eytzinger1_next(i + 1, size) - 1;
 +}
 +
-+struct user_buf {
-+	char __user		*buf;	/* destination user buffer */
-+	size_t			size;	/* size of requested read */
-+	ssize_t			ret;	/* bytes read so far */
-+};
++#define eytzinger0_for_each(_i, _size)			\
++	for ((_i) = eytzinger0_first((_size));		\
++	     (_i) != -1;				\
++	     (_i) = eytzinger0_next((_i), (_size)))
 +
-+static int flush_ubuf(struct user_buf *dst, struct seq_buf *src)
++#define ewma_add(ewma, val, weight)					\
++({									\
++	typeof(ewma) _ewma = (ewma);					\
++	typeof(weight) _weight = (weight);				\
++									\
++	(((_ewma << _weight) - _ewma) + (val)) >> _weight;		\
++})
++
++static void quantiles_update(struct quantiles *q, u64 v)
 +{
-+	if (src->len) {
-+		size_t bytes = min_t(size_t, src->len, dst->size);
-+		int err = copy_to_user(dst->buf, src->buffer, bytes);
++	unsigned int i = 0;
 +
-+		if (err)
-+			return err;
++	while (i < ARRAY_SIZE(q->entries)) {
++		struct quantile_entry *e = q->entries + i;
 +
-+		dst->ret	+= bytes;
-+		dst->buf	+= bytes;
-+		dst->size	-= bytes;
-+		src->len	-= bytes;
-+		memmove(src->buffer, src->buffer + bytes, src->len);
-+	}
++		if (unlikely(!e->step)) {
++			e->m = v;
++			e->step = max_t(unsigned int, v / 2, 1024);
++		} else if (e->m > v) {
++			e->m = e->m >= e->step
++				? e->m - e->step
++				: 0;
++		} else if (e->m < v) {
++			e->m = e->m + e->step > e->m
++				? e->m + e->step
++				: U32_MAX;
++		}
 +
-+	return 0;
-+}
++		if ((e->m > v ? e->m - v : v - e->m) < e->step)
++			e->step = max_t(unsigned int, e->step / 2, 1);
 +
-+static ssize_t dfault_read(struct file *file, char __user *ubuf,
-+			   size_t size, loff_t *ppos)
-+{
-+	struct dfault_iter *iter = file->private_data;
-+	struct user_buf	buf = { .buf = ubuf, .size = size };
-+	struct codetag *ct;
-+	struct dfault *df;
-+	int err;
-+
-+	codetag_lock_module_list(iter->ct_iter.cttype, true);
-+	while (1) {
-+		err = flush_ubuf(&buf, &iter->buf);
-+		if (err || !buf.size)
++		if (v >= e->m)
 +			break;
 +
-+		ct = codetag_next_ct(&iter->ct_iter);
-+		if (!ct)
-+			break;
-+
-+		df = container_of(ct, struct dfault, tag);
-+		dynamic_fault_to_text(&iter->buf, df);
-+		seq_buf_putc(&iter->buf, '\n');
++		i = eytzinger0_child(i, v > e->m);
 +	}
-+	codetag_lock_module_list(iter->ct_iter.cttype, false);
-+
-+	return err ?: buf.ret;
 +}
 +
-+/*
-+ * File_ops->write method for <debugfs>/dynamic_fault/conrol.  Gathers the
-+ * command text from userspace, parses and executes it.
-+ */
-+static ssize_t dfault_write(struct file *file, const char __user *ubuf,
-+			    size_t len, loff_t *offp)
++static void time_stats_update_one(struct time_stats *stats,
++				  u64 start, u64 end)
 +{
-+	char tmpbuf[256];
++	u64 duration, freq;
 +
-+	if (len == 0)
-+		return 0;
-+	/* we don't check *offp -- multiple writes() are allowed */
-+	if (len > sizeof(tmpbuf)-1)
-+		return -E2BIG;
-+	if (copy_from_user(tmpbuf, ubuf, len))
-+		return -EFAULT;
-+	tmpbuf[len] = '\0';
-+	pr_debug("read %zu bytes from userspace", len);
++	duration	= time_after64(end, start)
++		? end - start : 0;
++	freq		= time_after64(end, stats->last_event)
++		? end - stats->last_event : 0;
 +
-+	dynamic_fault_store(tmpbuf);
++	stats->count++;
 +
-+	*offp += len;
-+	return len;
++	stats->average_duration = stats->average_duration
++		? ewma_add(stats->average_duration, duration, 6)
++		: duration;
++
++	stats->average_frequency = stats->average_frequency
++		? ewma_add(stats->average_frequency, freq, 6)
++		: freq;
++
++	stats->max_duration = max(stats->max_duration, duration);
++
++	stats->last_event = end;
++
++	quantiles_update(&stats->quantiles, duration);
 +}
 +
-+static const struct file_operations dfault_ops = {
-+	.owner	= THIS_MODULE,
-+	.open	= dfault_open,
-+	.release = dfault_release,
-+	.read	= dfault_read,
-+	.write	= dfault_write
++void time_stats_update(struct time_stats *stats, u64 start)
++{
++	u64 end = ktime_get_ns();
++	unsigned long flags;
++
++	if (!stats->buffer) {
++		spin_lock_irqsave(&stats->lock, flags);
++		time_stats_update_one(stats, start, end);
++
++		if (stats->average_frequency < 32 &&
++		    stats->count > 1024)
++			stats->buffer =
++				alloc_percpu_gfp(struct time_stat_buffer,
++						 GFP_ATOMIC);
++		spin_unlock_irqrestore(&stats->lock, flags);
++	} else {
++		struct time_stat_buffer_entry *i;
++		struct time_stat_buffer *b;
++
++		preempt_disable();
++		b = this_cpu_ptr(stats->buffer);
++
++		BUG_ON(b->nr >= ARRAY_SIZE(b->entries));
++		b->entries[b->nr++] = (struct time_stat_buffer_entry) {
++			.start = start,
++			.end = end
++		};
++
++		if (b->nr == ARRAY_SIZE(b->entries)) {
++			spin_lock_irqsave(&stats->lock, flags);
++			for (i = b->entries;
++			     i < b->entries + ARRAY_SIZE(b->entries);
++			     i++)
++				time_stats_update_one(stats, i->start, i->end);
++			spin_unlock_irqrestore(&stats->lock, flags);
++
++			b->nr = 0;
++		}
++
++		preempt_enable();
++	}
++}
++EXPORT_SYMBOL(time_stats_update);
++
++static const struct time_unit {
++	const char	*name;
++	u32		nsecs;
++} time_units[] = {
++	{ "ns",		1		},
++	{ "us",		NSEC_PER_USEC	},
++	{ "ms",		NSEC_PER_MSEC	},
++	{ "sec",	NSEC_PER_SEC	},
 +};
 +
-+static int __init dynamic_fault_init(void)
++static const struct time_unit *pick_time_units(u64 ns)
 +{
-+	const struct codetag_type_desc desc = {
-+		.section = "dynamic_fault_tags",
-+		.tag_size = sizeof(struct dfault),
-+	};
-+	struct dentry *debugfs_file;
++	const struct time_unit *u;
 +
-+	cttype = codetag_register_type(&desc);
-+	if (IS_ERR_OR_NULL(cttype))
-+		return PTR_ERR(cttype);
++	for (u = time_units;
++	     u + 1 < time_units + ARRAY_SIZE(time_units) &&
++	     ns >= u[1].nsecs << 1;
++	     u++)
++		;
 +
-+	debugfs_file = debugfs_create_file("dynamic_faults", 0666, NULL, NULL, &dfault_ops);
-+	if (IS_ERR(debugfs_file))
-+		return PTR_ERR(debugfs_file);
-+
-+	return 0;
++	return u;
 +}
-+module_init(dynamic_fault_init);
++
++static void pr_time_units(struct seq_buf *out, u64 ns)
++{
++	const struct time_unit *u = pick_time_units(ns);
++
++	seq_buf_printf(out, "%llu %s", div_u64(ns, u->nsecs), u->name);
++}
++
++void time_stats_to_text(struct seq_buf *out, struct time_stats *stats)
++{
++	const struct time_unit *u;
++	u64 freq = READ_ONCE(stats->average_frequency);
++	u64 q, last_q = 0;
++	int i;
++
++	seq_buf_printf(out, "count:          %llu\n", stats->count);
++	seq_buf_printf(out, "rate:           %llu/sec\n",
++		       freq ? div64_u64(NSEC_PER_SEC, freq) : 0);
++	seq_buf_printf(out, "frequency:      ");
++	pr_time_units(out, freq);
++	seq_buf_putc(out, '\n');
++
++	seq_buf_printf(out, "avg duration:   ");
++	pr_time_units(out, stats->average_duration);
++	seq_buf_putc(out, '\n');
++
++	seq_buf_printf(out, "max duration:   ");
++	pr_time_units(out, stats->max_duration);
++	seq_buf_putc(out, '\n');
++
++	i = eytzinger0_first(NR_QUANTILES);
++	u = pick_time_units(stats->quantiles.entries[i].m);
++	seq_buf_printf(out, "quantiles (%s): ", u->name);
++	eytzinger0_for_each(i, NR_QUANTILES) {
++		q = max(stats->quantiles.entries[i].m, last_q);
++		seq_buf_printf(out, "%llu ", div_u64(q, u->nsecs));
++		last_q = q;
++	}
++
++	seq_buf_putc(out, '\n');
++}
++EXPORT_SYMBOL_GPL(time_stats_to_text);
++
++void time_stats_exit(struct time_stats *stats)
++{
++	free_percpu(stats->buffer);
++	stats->buffer = NULL;
++}
++EXPORT_SYMBOL_GPL(time_stats_exit);
 -- 
 2.37.2.672.g94769d06f0-goog
 
