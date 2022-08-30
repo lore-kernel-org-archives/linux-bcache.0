@@ -2,57 +2,57 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id A2465ECAAD4
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:51:55 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B569BECAAA1
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:52:08 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232108AbiH3Vvy (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:51:54 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55796 "EHLO
+        id S232056AbiH3VwH (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:52:07 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58566 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232042AbiH3VvI (ORCPT
+        with ESMTP id S231993AbiH3VvY (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:51:08 -0400
-Received: from mail-yw1-x114a.google.com (mail-yw1-x114a.google.com [IPv6:2607:f8b0:4864:20::114a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id ED55218B36
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:00 -0700 (PDT)
-Received: by mail-yw1-x114a.google.com with SMTP id 00721157ae682-340a4dcb403so168764157b3.22
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:00 -0700 (PDT)
+        Tue, 30 Aug 2022 17:51:24 -0400
+Received: from mail-yb1-xb49.google.com (mail-yb1-xb49.google.com [IPv6:2607:f8b0:4864:20::b49])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C472D22B27
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:04 -0700 (PDT)
+Received: by mail-yb1-xb49.google.com with SMTP id x27-20020a25ac9b000000b0069140cfbbd9so713651ybi.8
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:50:04 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=lEzLHp5EUALGBDR080eL/ZTXye/B6ScLofp8WoGZutw=;
-        b=b1R/0Nzef/8svLYP03pWrgs7vVHFpmq4XPsUT6SPRcEERNTFUBKXL3gF3rV3lAxbCu
-         zXGaLab/bgugeQVtB6fQn7BhC15GHiYy8yfVXRL4GYXQsnil0/qsZR4erD7n1daSxUT/
-         hbKk1xyU9Ykc1njB28pQzjTGt5yf81XdbMvnJj3jJrZZVKL0FDy5ZPsMSVZCq6qj2GNq
-         5xqR3jFoEpuD7VZT5PIkQzsQQ7XeVpMK6yxsDE98VmdfDUzKzdP+i7iVBsy7CZO0ECYl
-         ds6ZVkTkDhj6OOx/cOiCWsxrgV2NyVoWxYPRsclO00W2nRWfmYoOg0iJH72Y79yCTeat
-         6jXg==
+        bh=w9gVcgQRdZitDZxjqrDoJq6Gs/0aEjUQjbVWDU06BvI=;
+        b=Q1PzL2bThBJ4iiSWL0d7IheB5VfLNxWH1gqUohex8OE2QSiGR/fpg9gqy0yixW+Isb
+         pxJFdeTMvRwdBwAcg7flVNtX1j9eJ9C9tS/tDg05AImXSgWHVN2GUlakKwYKuvgZhIEZ
+         53DiKTHKeM16TZHvnMmCYNdJyP0y2AnTT97Oi3Zv6WKFja6rmmzzL6Teq1ArHTNPI2TC
+         NVjO3wFAVKlA4rp9aDdNwzT8IVNC+AXM7IGd6mywh1LPpaNIM2cA8K+l/DF+pItxSR+n
+         jG8tcEuC2nhcd/7nioVG87S+Xo+Y8ZaGYAgx8HTdNWhJ4JbCh9BURQy523rvt+lhf5xu
+         HCDw==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=lEzLHp5EUALGBDR080eL/ZTXye/B6ScLofp8WoGZutw=;
-        b=E+Ql6zS6QyQzwISludZ7B1UEJbQtmSbJDKVUSR9Mk8tZeXFG2KUKrDjXGqJFDvh5mB
-         hfbAuYPAwjyZcynkxpph7uQlPyN1upvgqTxN/nqGPRwRQk3xrGkOJPt2T/t/WfZt5PE9
-         XKPgz9wZ7K4BZfgwguPdM+1qlQdXBJPgQVOvOg7UIaMZxdCkua5CYQ1IF1leLhMkpXbP
-         tOmHoCSzhN3yn30jzj4izbwT4oOhGpVn6/cB1uLlCKZn/zn5UewGg1kj3PeA6pXh5LJ1
-         ZwQUk2leuPnJkDSwtLXa7h4+iQAOWNjJ6wNZv0tXHM3zo30CZ87j8pPbS/Xt4ymTk+rm
-         SDaw==
-X-Gm-Message-State: ACgBeo3H22RNNaXVGAMdNsUSVqvjy+NqdkQM5MUXiz2mTVKzLIwm/GrI
-        EdOWkw/FgW+/Ef2OdYvbBto2Nfgtj7A=
-X-Google-Smtp-Source: AA6agR5aFDFTV93gABXVtI6sO2HuTqIfM7XjbTB1z4Gt/hzYUN7LO58jr4g2RITDfY5OEI/Zy7OiK9gpPj0=
+        bh=w9gVcgQRdZitDZxjqrDoJq6Gs/0aEjUQjbVWDU06BvI=;
+        b=N2lgxNBD6G0BBI5ITL9As+/pWTbVvBqsfxUwlPVzv8iQuSgUD6nPXB+AUHN99UtAtG
+         yhX2J66ETcdC3MnncGN58U7DXVsRmLrmD/1e+GMyKo7XwWL8/icKdy4BMbpG2omDGlLj
+         erXvi7Tlk4xzRVWXGtMAL1eZKjooOlMop8lTXnJrpZBwaFiheLJiWeOLpeKznE51mCME
+         595fuYPm30DnFPFwQ8C+rcsDue90yH2vVW8M7ntTfUU5o1PL0gV7gJ35OEb7UEO1j+x8
+         Cuknae3fFGOC9BdIXnDMHvbQWryvIMCENsidi0TiplH1UovlogO371G5tj9RzNDChWHD
+         tOEw==
+X-Gm-Message-State: ACgBeo2pZMfsnXj/7bjPLuo0HgWwSr918YHG1xFak0b2x4NyR/Ksna6q
+        WpgvixYBaLciyeAb1bdOnN2j41BSqBk=
+X-Google-Smtp-Source: AA6agR4vG82TMLNZbe9b42TzeXUrvZHL0ChO+lv1LMjTJEyr7xCSEiF1DQ2YaYAniXhteJjohj+5Rf5pvb8=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a05:6902:89:b0:695:7ed0:d8cb with SMTP id
- h9-20020a056902008900b006957ed0d8cbmr13360099ybs.77.1661896198026; Tue, 30
- Aug 2022 14:49:58 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:49:02 -0700
+ (user=surenb job=sendgmr) by 2002:a25:e6c6:0:b0:695:f4dc:8c4f with SMTP id
+ d189-20020a25e6c6000000b00695f4dc8c4fmr13235724ybh.329.1661896203524; Tue, 30
+ Aug 2022 14:50:03 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:49:04 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-14-surenb@google.com>
-Subject: [RFC PATCH 13/30] mm/slab: introduce SLAB_NO_OBJ_EXT to avoid obj_ext creation
+Message-ID: <20220830214919.53220-16-surenb@google.com>
+Subject: [RFC PATCH 15/30] lib: introduce slab allocation tagging
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -79,74 +79,176 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Slab extension objects can't be allocated before slab infrastructure is
-initialized. Some caches, like kmem_cache and kmem_cache_node, are created
-before slab infrastructure is initialized. Objects from these caches can't
-have extension objects. Introduce SLAB_NO_OBJ_EXT slab flag to mark these
-caches and avoid creating extensions for objects allocated from these
-slabs.
+Introduce CONFIG_SLAB_ALLOC_TAGGING which provides helper functions
+to easily instrument slab allocators and adds a codetag_ref field into
+slabobj_ext to store a pointer to the allocation tag associated with
+the code that allocated the slab object.
 
 Signed-off-by: Suren Baghdasaryan <surenb@google.com>
+Co-developed-by: Kent Overstreet <kent.overstreet@linux.dev>
+Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
 ---
- include/linux/slab.h | 7 +++++++
- mm/slab.c            | 2 +-
- mm/slub.c            | 5 +++--
- 3 files changed, 11 insertions(+), 3 deletions(-)
+ include/linux/memcontrol.h |  5 +++++
+ include/linux/slab.h       | 25 +++++++++++++++++++++++++
+ include/linux/slab_def.h   |  2 +-
+ include/linux/slub_def.h   |  4 ++--
+ lib/Kconfig.debug          | 11 +++++++++++
+ mm/slab_common.c           | 33 +++++++++++++++++++++++++++++++++
+ 6 files changed, 77 insertions(+), 3 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 315399f77173..97c0153f0247 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -232,7 +232,12 @@ struct obj_cgroup {
+  * if MEMCG_DATA_OBJEXTS is set.
+  */
+ struct slabobj_ext {
++#ifdef CONFIG_MEMCG_KMEM
+ 	struct obj_cgroup *objcg;
++#endif
++#ifdef CONFIG_SLAB_ALLOC_TAGGING
++	union codetag_ref ref;
++#endif
+ } __aligned(8);
+ 
+ /*
 diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 0fefdf528e0d..55ae3ea864a4 100644
+index 55ae3ea864a4..5a198aa02a08 100644
 --- a/include/linux/slab.h
 +++ b/include/linux/slab.h
-@@ -124,6 +124,13 @@
- #define SLAB_RECLAIM_ACCOUNT	((slab_flags_t __force)0x00020000U)
- #define SLAB_TEMPORARY		SLAB_RECLAIM_ACCOUNT	/* Objects are short-lived */
+@@ -438,6 +438,31 @@ static __always_inline unsigned int __kmalloc_index(size_t size,
+ #define kmalloc_index(s) __kmalloc_index(s, true)
+ #endif /* !CONFIG_SLOB */
  
-+#ifdef CONFIG_SLAB_OBJ_EXT
-+/* Slab created using create_boot_cache */
-+#define SLAB_NO_OBJ_EXT         ((slab_flags_t __force)0x20000000U)
++#ifdef CONFIG_SLAB_ALLOC_TAGGING
++
++#include <linux/alloc_tag.h>
++
++union codetag_ref *get_slab_tag_ref(const void *objp);
++
++#define slab_tag_add(_old, _new)					\
++do {									\
++	if (!ZERO_OR_NULL_PTR(_new) && _old != _new)			\
++		alloc_tag_add(get_slab_tag_ref(_new), __ksize(_new));	\
++} while (0)
++
++static inline void slab_tag_dec(const void *ptr)
++{
++	if (!ZERO_OR_NULL_PTR(ptr))
++		alloc_tag_sub(get_slab_tag_ref(ptr), __ksize(ptr));
++}
++
 +#else
-+#define SLAB_NO_OBJ_EXT         0
++
++#define slab_tag_add(_old, _new) do {} while (0)
++static inline void slab_tag_dec(const void *ptr) {}
++
 +#endif
 +
- /*
-  * ZERO_SIZE_PTR will be returned for zero sized kmalloc requests.
-  *
-diff --git a/mm/slab.c b/mm/slab.c
-index 10e96137b44f..ba97aeef7ec1 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -1233,7 +1233,7 @@ void __init kmem_cache_init(void)
- 	create_boot_cache(kmem_cache, "kmem_cache",
- 		offsetof(struct kmem_cache, node) +
- 				  nr_node_ids * sizeof(struct kmem_cache_node *),
--				  SLAB_HWCACHE_ALIGN, 0, 0);
-+				  SLAB_HWCACHE_ALIGN | SLAB_NO_OBJ_EXT, 0, 0);
- 	list_add(&kmem_cache->list, &slab_caches);
- 	slab_state = PARTIAL;
+ void *__kmalloc(size_t size, gfp_t flags) __assume_kmalloc_alignment __alloc_size(1);
+ void *kmem_cache_alloc(struct kmem_cache *s, gfp_t flags) __assume_slab_alignment __malloc;
+ void *kmem_cache_alloc_lru(struct kmem_cache *s, struct list_lru *lru,
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index e24c9aff6fed..25feb5f7dc32 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -106,7 +106,7 @@ static inline void *nearest_obj(struct kmem_cache *cache, const struct slab *sla
+  *   reciprocal_divide(offset, cache->reciprocal_buffer_size)
+  */
+ static inline unsigned int obj_to_index(const struct kmem_cache *cache,
+-					const struct slab *slab, void *obj)
++					const struct slab *slab, const void *obj)
+ {
+ 	u32 offset = (obj - slab->s_mem);
+ 	return reciprocal_divide(offset, cache->reciprocal_buffer_size);
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index f9c68a9dac04..940c146768d4 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -170,14 +170,14 @@ static inline void *nearest_obj(struct kmem_cache *cache, const struct slab *sla
  
-diff --git a/mm/slub.c b/mm/slub.c
-index 862dbd9af4f5..80199d5ac7c9 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4825,7 +4825,8 @@ void __init kmem_cache_init(void)
- 		node_set(node, slab_nodes);
+ /* Determine object index from a given position */
+ static inline unsigned int __obj_to_index(const struct kmem_cache *cache,
+-					  void *addr, void *obj)
++					  void *addr, const void *obj)
+ {
+ 	return reciprocal_divide(kasan_reset_tag(obj) - addr,
+ 				 cache->reciprocal_size);
+ }
  
- 	create_boot_cache(kmem_cache_node, "kmem_cache_node",
--		sizeof(struct kmem_cache_node), SLAB_HWCACHE_ALIGN, 0, 0);
-+			sizeof(struct kmem_cache_node),
-+			SLAB_HWCACHE_ALIGN | SLAB_NO_OBJ_EXT, 0, 0);
+ static inline unsigned int obj_to_index(const struct kmem_cache *cache,
+-					const struct slab *slab, void *obj)
++					const struct slab *slab, const void *obj)
+ {
+ 	if (is_kfence_address(obj))
+ 		return 0;
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 6686648843b3..08c97a978906 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -989,6 +989,17 @@ config PAGE_ALLOC_TAGGING
+ 	  initiated at that code location. The mechanism can be used to track
+ 	  memory leaks with a low performance impact.
  
- 	register_hotmemory_notifier(&slab_memory_callback_nb);
++config SLAB_ALLOC_TAGGING
++	bool "Enable slab allocation tagging"
++	default n
++	select ALLOC_TAGGING
++	select SLAB_OBJ_EXT
++	help
++	  Instrument slab allocators to track allocation source code and
++	  collect statistics on the number of allocations and their total size
++	  initiated at that code location. The mechanism can be used to track
++	  memory leaks with a low performance impact.
++
+ source "lib/Kconfig.kasan"
+ source "lib/Kconfig.kfence"
  
-@@ -4835,7 +4836,7 @@ void __init kmem_cache_init(void)
- 	create_boot_cache(kmem_cache, "kmem_cache",
- 			offsetof(struct kmem_cache, node) +
- 				nr_node_ids * sizeof(struct kmem_cache_node *),
--		       SLAB_HWCACHE_ALIGN, 0, 0);
-+			SLAB_HWCACHE_ALIGN | SLAB_NO_OBJ_EXT, 0, 0);
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index 17996649cfe3..272eda62ecaa 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -202,6 +202,39 @@ struct kmem_cache *find_mergeable(unsigned int size, unsigned int align,
+ 	return NULL;
+ }
  
- 	kmem_cache = bootstrap(&boot_kmem_cache);
- 	kmem_cache_node = bootstrap(&boot_kmem_cache_node);
++#ifdef CONFIG_SLAB_ALLOC_TAGGING
++
++union codetag_ref *get_slab_tag_ref(const void *objp)
++{
++	struct slabobj_ext *obj_exts;
++	union codetag_ref *res = NULL;
++	struct slab *slab;
++	unsigned int off;
++
++	slab = virt_to_slab(objp);
++	/*
++	 * We could be given a kmalloc_large() object, skip those. They use
++	 * alloc_pages and can be tracked by page allocation tracking.
++	 */
++	if (!slab)
++		goto out;
++
++	obj_exts = slab_obj_exts(slab);
++	if (!obj_exts)
++		goto out;
++
++	if (!slab->slab_cache)
++		goto out;
++
++	off = obj_to_index(slab->slab_cache, slab, objp);
++	res = &obj_exts[off].ref;
++out:
++	return res;
++}
++EXPORT_SYMBOL(get_slab_tag_ref);
++
++#endif /* CONFIG_SLAB_ALLOC_TAGGING */
++
+ static struct kmem_cache *create_cache(const char *name,
+ 		unsigned int object_size, unsigned int align,
+ 		slab_flags_t flags, unsigned int useroffset,
 -- 
 2.37.2.672.g94769d06f0-goog
 
