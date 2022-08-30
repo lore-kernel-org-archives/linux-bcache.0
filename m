@@ -2,57 +2,58 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 3A00AECAAA1
-	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:50:56 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 77B3EC0502A
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 Aug 2022 21:51:16 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232033AbiH3Vuy (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 30 Aug 2022 17:50:54 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60034 "EHLO
+        id S232057AbiH3VvP (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 Aug 2022 17:51:15 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57290 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231947AbiH3Vud (ORCPT
+        with ESMTP id S231981AbiH3Vug (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 30 Aug 2022 17:50:33 -0400
-Received: from mail-yb1-xb4a.google.com (mail-yb1-xb4a.google.com [IPv6:2607:f8b0:4864:20::b4a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 3D4E1D8F
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:46 -0700 (PDT)
-Received: by mail-yb1-xb4a.google.com with SMTP id v5-20020a2583c5000000b006964324be8cso714334ybm.14
-        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:45 -0700 (PDT)
+        Tue, 30 Aug 2022 17:50:36 -0400
+Received: from mail-yb1-xb49.google.com (mail-yb1-xb49.google.com [IPv6:2607:f8b0:4864:20::b49])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 65919626F
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:51 -0700 (PDT)
+Received: by mail-yb1-xb49.google.com with SMTP id j11-20020a05690212cb00b006454988d225so722959ybu.10
+        for <linux-bcache@vger.kernel.org>; Tue, 30 Aug 2022 14:49:51 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=google.com; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:from:to:cc;
-        bh=6wmSIFSfHrn7NaG14r3E9vE6XZmoNzeOL4K0xpw9Sss=;
-        b=U5dHm0ISPIOLMTxnmdJQWXA78Rd17S+5/1lv6jv1jaCvgl2EQMbJ9rsmgDNdrDNInX
-         r6k/9wVO8+G1D9fLXaRbQ+fgsHGPVnRmhDau0Jf/al55Nd9kk7GQ20qWjTwu8vglhLE+
-         3PiRhO95cWm0bgNaWlaQf68qN6Xl56a4Ea06ODeuAoBkBLBVNj2p2wKR1fVJamPhQROd
-         m/J25psoHq4bGP+9+2UOdK5IJRKeT6PJER8/+rdWAJbYTakEyRla+xNdK6dgdf+KYmis
-         CkIEz6UMG+Lc5WuSZw5HpKbNBdk17ykSRPGJ6mFMzPJalO+24uoHVv3eVDTzjtfYfPny
-         H4fA==
+        bh=hT6Mz/zinVpRQBPKe7V7vUNm2EL+nNA0Rd6lje133es=;
+        b=dfpyzvwd4Cc++xCQWq35JB0wJm+WrSSoxMENLy9aDfaWxkxM1OaMmDnm/vqeqmhqwU
+         gZ74ppSfTAgF7SE3SqSoTv2aIM58r+Pz/1W9uwrKdGiDv7ewg2BuxbdnPUGh3CuiOCkA
+         14w+GGgADDYFbMYHNlMxcXneiC4QjBwI/pjC3GHz1ttLv+1YSdBbrybMdEtkcC5CZ2yG
+         0v6U9Ssq49CU9MEssaTVF8mmd1yQf+A9weRhrB49GBJc7iyJ1ibIQDHVBUxMDTeBzNZT
+         89GZsPPyB1nT7HTWg+BylmuFWY1bglVPePrUwBMLPZc7q+nvTNhi0s23dmExUdbXdR5Y
+         Cwww==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
          :date:x-gm-message-state:from:to:cc;
-        bh=6wmSIFSfHrn7NaG14r3E9vE6XZmoNzeOL4K0xpw9Sss=;
-        b=hdh8QD8z9vCvNsUpskcYC+N+i0tRaI1pREsX1Be5Azxhegwyt27gmWUvy4Pwu/HA05
-         1CkP/yIEEr88RYXjml0xIjKOMR7Xhy3WrO3gROvJvlURPHLt5hB+XHiRcrlmuU1cIjfc
-         L3qIW6u1t/GJGXcfJqXTLENPkyUiamgv3zRCJNEt8kmnFKDQ6qNdSw6hDnAQsQMrepx5
-         G+zlwE4FLE9ofFPcH24lejspXQb2evaOtuC13vvFV8X+6LN5CNEE5n7zlXFwrIQYhr71
-         reK7xEmtX7/4GDHMHJOD5NsfUTaQimiq6RyyEwbrWLDPEj1jMKBR8nEMFZ3CGs3kLNh8
-         lQ6A==
-X-Gm-Message-State: ACgBeo2qEglUGQf4Uf0EshTgayDOH/ryqoGZVh3LXWfFOZ0MjdtnWlET
-        XnPgJl36tvgoOefqNu/wsiyUhYezSGs=
-X-Google-Smtp-Source: AA6agR7ZicVg+8FFu5BCSLxIsHS/72reGV/Sx3q1E28zgHvzeDh99UkhDovyJoKjdHzkG5X9TjhbL9HgAEQ=
+        bh=hT6Mz/zinVpRQBPKe7V7vUNm2EL+nNA0Rd6lje133es=;
+        b=qHgpj+FONdAsrp8se/oJfdbvMT/bbmnTxQlit6nC2RhqEm6ZoPWNp02yUF51lXoeXv
+         /nmkDKd/jRa3xhY/ZLJKslbtd2kikwRIZWC3Ge+a6dmEX6cfHX00J2TCeQfWcav/WlQj
+         SivLX/+pV1kgrF0yZLU1I+JVfmRh5tOX96hFZBOsFuav4REj83TXco/SluDhs/63K6S8
+         zmDm/6xWg8f+K7B8SDomqEYoKX8Khm+O5MPkewC04f8InUvwn53PxNkb5KR9z7OfZSxB
+         WXNdStU/NsJZTqVVXY17r2rtsiLUOzkYz4zsl6x0M8DsWr+WCPtNejSAFV/vw6Qnf9h4
+         VvSQ==
+X-Gm-Message-State: ACgBeo0qB998Y4YEnPZ/HcnHE1yPeueV94ESPcl6nQZPHtvMGrXMRJIq
+        KtEerwsvX7uk3LoPE5RENBusO3gkJlU=
+X-Google-Smtp-Source: AA6agR6wiYlgc1y+Ddz6GZjAkBSlMmUIZ6hPk3nzcjnnuhPA77BDamNwQUPuwNWjTzLGCV8DDV21TdlLdak=
 X-Received: from surenb-desktop.mtv.corp.google.com ([2620:15c:211:200:a005:55b3:6c26:b3e4])
- (user=surenb job=sendgmr) by 2002:a81:47c4:0:b0:341:2cab:a63c with SMTP id
- u187-20020a8147c4000000b003412caba63cmr8994715ywa.58.1661896184744; Tue, 30
- Aug 2022 14:49:44 -0700 (PDT)
-Date:   Tue, 30 Aug 2022 14:48:57 -0700
+ (user=surenb job=sendgmr) by 2002:a25:cf0e:0:b0:696:42f1:3889 with SMTP id
+ f14-20020a25cf0e000000b0069642f13889mr13000431ybg.175.1661896189937; Tue, 30
+ Aug 2022 14:49:49 -0700 (PDT)
+Date:   Tue, 30 Aug 2022 14:48:59 -0700
 In-Reply-To: <20220830214919.53220-1-surenb@google.com>
 Mime-Version: 1.0
 References: <20220830214919.53220-1-surenb@google.com>
 X-Mailer: git-send-email 2.37.2.672.g94769d06f0-goog
-Message-ID: <20220830214919.53220-9-surenb@google.com>
-Subject: [RFC PATCH 08/30] lib: introduce page allocation tagging
+Message-ID: <20220830214919.53220-11-surenb@google.com>
+Subject: [RFC PATCH 10/30] mm: enable page allocation tagging for
+ __get_free_pages and alloc_pages
 From:   Suren Baghdasaryan <surenb@google.com>
 To:     akpm@linux-foundation.org
 Cc:     kent.overstreet@linux.dev, mhocko@suse.com, vbabka@suse.cz,
@@ -79,157 +80,209 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Introduce CONFIG_PAGE_ALLOC_TAGGING which provides helper functions to
-easily instrument page allocators and adds a page_ext field to store a
-pointer to the allocation tag associated with the code that allocated
-the page.
+Redefine alloc_pages, __get_free_pages to record allocations done by
+these functions. Instrument deallocation hooks to record object freeing.
 
 Signed-off-by: Suren Baghdasaryan <surenb@google.com>
-Co-developed-by: Kent Overstreet <kent.overstreet@linux.dev>
-Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
 ---
- include/linux/pgalloc_tag.h | 28 ++++++++++++++++++++++++++++
- lib/Kconfig.debug           | 11 +++++++++++
- lib/Makefile                |  1 +
- lib/pgalloc_tag.c           | 22 ++++++++++++++++++++++
- mm/page_ext.c               |  6 ++++++
- 5 files changed, 68 insertions(+)
- create mode 100644 include/linux/pgalloc_tag.h
- create mode 100644 lib/pgalloc_tag.c
+ include/linux/gfp.h         | 10 +++++++---
+ include/linux/page_ext.h    |  3 ++-
+ include/linux/pgalloc_tag.h | 35 +++++++++++++++++++++++++++++++++++
+ mm/mempolicy.c              |  4 ++--
+ mm/page_alloc.c             | 13 ++++++++++---
+ 5 files changed, 56 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/pgalloc_tag.h b/include/linux/pgalloc_tag.h
-new file mode 100644
-index 000000000000..f525abfe51d4
---- /dev/null
-+++ b/include/linux/pgalloc_tag.h
-@@ -0,0 +1,28 @@
-+/* SPDX-License-Identifier: GPL-2.0 */
-+/*
-+ * page allocation tagging
-+ */
-+#ifndef _LINUX_PGALLOC_TAG_H
-+#define _LINUX_PGALLOC_TAG_H
-+
-+#include <linux/alloc_tag.h>
-+#include <linux/page_ext.h>
-+
-+extern struct page_ext_operations page_alloc_tagging_ops;
-+struct page_ext *lookup_page_ext(const struct page *page);
-+
-+static inline union codetag_ref *get_page_tag_ref(struct page *page)
-+{
-+	struct page_ext *page_ext = lookup_page_ext(page);
-+
-+	return page_ext ? (void *)page_ext + page_alloc_tagging_ops.offset
-+			: NULL;
-+}
-+
-+static inline void pgalloc_tag_dec(struct page *page, unsigned int order)
-+{
-+	if (page)
-+		alloc_tag_sub(get_page_tag_ref(page), PAGE_SIZE << order);
-+}
-+
-+#endif /* _LINUX_PGALLOC_TAG_H */
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 795bf6993f8a..6686648843b3 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -978,6 +978,17 @@ config ALLOC_TAGGING
- 	select CODE_TAGGING
- 	select LAZY_PERCPU_COUNTER
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index f314be58fa77..5cb950a49d40 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -6,6 +6,7 @@
  
-+config PAGE_ALLOC_TAGGING
-+	bool "Enable page allocation tagging"
-+	default n
-+	select ALLOC_TAGGING
-+	select PAGE_EXTENSION
-+	help
-+	  Instrument page allocators to track allocation source code and
-+	  collect statistics on the number of allocations and their total size
-+	  initiated at that code location. The mechanism can be used to track
-+	  memory leaks with a low performance impact.
-+
- source "lib/Kconfig.kasan"
- source "lib/Kconfig.kfence"
- 
-diff --git a/lib/Makefile b/lib/Makefile
-index dc00533fc5c8..99f732156673 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -229,6 +229,7 @@ obj-$(CONFIG_FUNCTION_ERROR_INJECTION) += error-inject.o
- 
- obj-$(CONFIG_CODE_TAGGING) += codetag.o
- obj-$(CONFIG_ALLOC_TAGGING) += alloc_tag.o
-+obj-$(CONFIG_PAGE_ALLOC_TAGGING) += pgalloc_tag.o
- 
- lib-$(CONFIG_GENERIC_BUG) += bug.o
- 
-diff --git a/lib/pgalloc_tag.c b/lib/pgalloc_tag.c
-new file mode 100644
-index 000000000000..7d97372ca0df
---- /dev/null
-+++ b/lib/pgalloc_tag.c
-@@ -0,0 +1,22 @@
-+// SPDX-License-Identifier: GPL-2.0-only
-+#include <linux/mm.h>
-+#include <linux/module.h>
-+#include <linux/pgalloc_tag.h>
-+#include <linux/seq_file.h>
-+
-+static __init bool need_page_alloc_tagging(void)
-+{
-+	return true;
-+}
-+
-+static __init void init_page_alloc_tagging(void)
-+{
-+}
-+
-+struct page_ext_operations page_alloc_tagging_ops = {
-+	.size = sizeof(union codetag_ref),
-+	.need = need_page_alloc_tagging,
-+	.init = init_page_alloc_tagging,
-+};
-+EXPORT_SYMBOL(page_alloc_tagging_ops);
-+
-diff --git a/mm/page_ext.c b/mm/page_ext.c
-index 3dc715d7ac29..a22f514ff4da 100644
---- a/mm/page_ext.c
-+++ b/mm/page_ext.c
-@@ -9,6 +9,7 @@
- #include <linux/page_owner.h>
- #include <linux/page_idle.h>
- #include <linux/page_table_check.h>
+ #include <linux/mmzone.h>
+ #include <linux/topology.h>
 +#include <linux/pgalloc_tag.h>
  
- /*
-  * struct page extension
-@@ -76,6 +77,9 @@ static struct page_ext_operations *page_ext_ops[] __initdata = {
- #if defined(CONFIG_PAGE_IDLE_FLAG) && !defined(CONFIG_64BIT)
- 	&page_idle_ops,
- #endif
-+#ifdef CONFIG_PAGE_ALLOC_TAGGING
-+	&page_alloc_tagging_ops,
-+#endif
- #ifdef CONFIG_PAGE_TABLE_CHECK
- 	&page_table_check_ops,
- #endif
-@@ -152,6 +156,7 @@ struct page_ext *lookup_page_ext(const struct page *page)
- 					MAX_ORDER_NR_PAGES);
- 	return get_entry(base, index);
+ struct vm_area_struct;
+ 
+@@ -267,12 +268,12 @@ static inline struct page *alloc_pages_node(int nid, gfp_t gfp_mask,
  }
-+EXPORT_SYMBOL(lookup_page_ext);
  
- static int __init alloc_node_page_ext(int nid)
+ #ifdef CONFIG_NUMA
+-struct page *alloc_pages(gfp_t gfp, unsigned int order);
++struct page *_alloc_pages(gfp_t gfp, unsigned int order);
+ struct folio *folio_alloc(gfp_t gfp, unsigned order);
+ struct folio *vma_alloc_folio(gfp_t gfp, int order, struct vm_area_struct *vma,
+ 		unsigned long addr, bool hugepage);
+ #else
+-static inline struct page *alloc_pages(gfp_t gfp_mask, unsigned int order)
++static inline struct page *_alloc_pages(gfp_t gfp_mask, unsigned int order)
  {
-@@ -221,6 +226,7 @@ struct page_ext *lookup_page_ext(const struct page *page)
- 		return NULL;
- 	return get_entry(section->page_ext, pfn);
+ 	return alloc_pages_node(numa_node_id(), gfp_mask, order);
  }
-+EXPORT_SYMBOL(lookup_page_ext);
+@@ -283,6 +284,7 @@ static inline struct folio *folio_alloc(gfp_t gfp, unsigned int order)
+ #define vma_alloc_folio(gfp, order, vma, addr, hugepage)		\
+ 	folio_alloc(gfp, order)
+ #endif
++#define alloc_pages(gfp, order) pgtag_alloc_pages(gfp, order)
+ #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
+ static inline struct page *alloc_page_vma(gfp_t gfp,
+ 		struct vm_area_struct *vma, unsigned long addr)
+@@ -292,7 +294,9 @@ static inline struct page *alloc_page_vma(gfp_t gfp,
+ 	return &folio->page;
+ }
  
- static void *__meminit alloc_page_ext(size_t size, int nid)
+-extern unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order);
++extern unsigned long _get_free_pages(gfp_t gfp_mask, unsigned int order,
++				     struct page **ppage);
++#define __get_free_pages(gfp_mask, order) pgtag_get_free_pages(gfp_mask, order)
+ extern unsigned long get_zeroed_page(gfp_t gfp_mask);
+ 
+ void *alloc_pages_exact(size_t size, gfp_t gfp_mask) __alloc_size(1);
+diff --git a/include/linux/page_ext.h b/include/linux/page_ext.h
+index fabb2e1e087f..b26077110fb3 100644
+--- a/include/linux/page_ext.h
++++ b/include/linux/page_ext.h
+@@ -4,7 +4,6 @@
+ 
+ #include <linux/types.h>
+ #include <linux/stacktrace.h>
+-#include <linux/stackdepot.h>
+ 
+ struct pglist_data;
+ struct page_ext_operations {
+@@ -14,6 +13,8 @@ struct page_ext_operations {
+ 	void (*init)(void);
+ };
+ 
++#include <linux/stackdepot.h>
++
+ #ifdef CONFIG_PAGE_EXTENSION
+ 
+ enum page_ext_flags {
+diff --git a/include/linux/pgalloc_tag.h b/include/linux/pgalloc_tag.h
+index f525abfe51d4..154ea7436fec 100644
+--- a/include/linux/pgalloc_tag.h
++++ b/include/linux/pgalloc_tag.h
+@@ -5,6 +5,8 @@
+ #ifndef _LINUX_PGALLOC_TAG_H
+ #define _LINUX_PGALLOC_TAG_H
+ 
++#ifdef CONFIG_PAGE_ALLOC_TAGGING
++
+ #include <linux/alloc_tag.h>
+ #include <linux/page_ext.h>
+ 
+@@ -25,4 +27,37 @@ static inline void pgalloc_tag_dec(struct page *page, unsigned int order)
+ 		alloc_tag_sub(get_page_tag_ref(page), PAGE_SIZE << order);
+ }
+ 
++/*
++ * Redefinitions of the common page allocators/destructors
++ */
++#define pgtag_alloc_pages(gfp, order)					\
++({									\
++	struct page *_page = _alloc_pages((gfp), (order));		\
++									\
++	if (_page)							\
++		alloc_tag_add(get_page_tag_ref(_page), PAGE_SIZE << (order));\
++	_page;								\
++})
++
++#define pgtag_get_free_pages(gfp_mask, order)				\
++({									\
++	struct page *_page;						\
++	unsigned long _res = _get_free_pages((gfp_mask), (order), &_page);\
++									\
++	if (_res)							\
++		alloc_tag_add(get_page_tag_ref(_page), PAGE_SIZE << (order));\
++	_res;								\
++})
++
++#else /* CONFIG_PAGE_ALLOC_TAGGING */
++
++#define pgtag_alloc_pages(gfp, order) _alloc_pages(gfp, order)
++
++#define pgtag_get_free_pages(gfp_mask, order) \
++	_get_free_pages((gfp_mask), (order), NULL)
++
++#define pgalloc_tag_dec(__page, __size)		do {} while (0)
++
++#endif /* CONFIG_PAGE_ALLOC_TAGGING */
++
+ #endif /* _LINUX_PGALLOC_TAG_H */
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index b73d3248d976..f7e6d9564a49 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2249,7 +2249,7 @@ EXPORT_SYMBOL(vma_alloc_folio);
+  * flags are used.
+  * Return: The page on success or NULL if allocation fails.
+  */
+-struct page *alloc_pages(gfp_t gfp, unsigned order)
++struct page *_alloc_pages(gfp_t gfp, unsigned int order)
+ {
+ 	struct mempolicy *pol = &default_policy;
+ 	struct page *page;
+@@ -2273,7 +2273,7 @@ struct page *alloc_pages(gfp_t gfp, unsigned order)
+ 
+ 	return page;
+ }
+-EXPORT_SYMBOL(alloc_pages);
++EXPORT_SYMBOL(_alloc_pages);
+ 
+ struct folio *folio_alloc(gfp_t gfp, unsigned order)
+ {
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e5486d47406e..165daba19e2a 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -763,6 +763,7 @@ static inline bool pcp_allowed_order(unsigned int order)
+ 
+ static inline void free_the_page(struct page *page, unsigned int order)
+ {
++
+ 	if (pcp_allowed_order(order))		/* Via pcp? */
+ 		free_unref_page(page, order);
+ 	else
+@@ -1120,6 +1121,8 @@ static inline void __free_one_page(struct page *page,
+ 	VM_BUG_ON_PAGE(pfn & ((1 << order) - 1), page);
+ 	VM_BUG_ON_PAGE(bad_range(zone, page), page);
+ 
++	pgalloc_tag_dec(page, order);
++
+ 	while (order < MAX_ORDER - 1) {
+ 		if (compaction_capture(capc, page, order, migratetype)) {
+ 			__mod_zone_freepage_state(zone, -(1 << order),
+@@ -3440,6 +3443,7 @@ static void free_unref_page_commit(struct zone *zone, struct per_cpu_pages *pcp,
+ 	int pindex;
+ 	bool free_high;
+ 
++	pgalloc_tag_dec(page, order);
+ 	__count_vm_event(PGFREE);
+ 	pindex = order_to_pindex(migratetype, order);
+ 	list_add(&page->pcp_list, &pcp->lists[pindex]);
+@@ -5557,16 +5561,19 @@ EXPORT_SYMBOL(__folio_alloc);
+  * address cannot represent highmem pages. Use alloc_pages and then kmap if
+  * you need to access high mem.
+  */
+-unsigned long __get_free_pages(gfp_t gfp_mask, unsigned int order)
++unsigned long _get_free_pages(gfp_t gfp_mask, unsigned int order,
++			      struct page **ppage)
+ {
+ 	struct page *page;
+ 
+-	page = alloc_pages(gfp_mask & ~__GFP_HIGHMEM, order);
++	page = _alloc_pages(gfp_mask & ~__GFP_HIGHMEM, order);
++	if (ppage)
++		*ppage = page;
+ 	if (!page)
+ 		return 0;
+ 	return (unsigned long) page_address(page);
+ }
+-EXPORT_SYMBOL(__get_free_pages);
++EXPORT_SYMBOL(_get_free_pages);
+ 
+ unsigned long get_zeroed_page(gfp_t gfp_mask)
  {
 -- 
 2.37.2.672.g94769d06f0-goog
