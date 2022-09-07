@@ -2,109 +2,181 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 31B53C6FA89
-	for <linux-bcache@archiver.kernel.org>; Wed,  7 Sep 2022 13:45:55 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id B8C17C38145
+	for <linux-bcache@archiver.kernel.org>; Wed,  7 Sep 2022 17:16:05 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229844AbiIGNpx (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 7 Sep 2022 09:45:53 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45782 "EHLO
+        id S229804AbiIGRQE (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 7 Sep 2022 13:16:04 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34478 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229734AbiIGNpi (ORCPT
+        with ESMTP id S229723AbiIGRQD (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 7 Sep 2022 09:45:38 -0400
-Received: from sin.source.kernel.org (sin.source.kernel.org [IPv6:2604:1380:40e1:4800::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E398E43603;
-        Wed,  7 Sep 2022 06:44:48 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+        Wed, 7 Sep 2022 13:16:03 -0400
+Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.220.28])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 96967BC82F
+        for <linux-bcache@vger.kernel.org>; Wed,  7 Sep 2022 10:15:59 -0700 (PDT)
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
         (No client certificate requested)
-        by sin.source.kernel.org (Postfix) with ESMTPS id 3811CCE1BC3;
-        Wed,  7 Sep 2022 13:44:45 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3E8F1C433C1;
-        Wed,  7 Sep 2022 13:44:38 +0000 (UTC)
-Date:   Wed, 7 Sep 2022 09:45:18 -0400
-From:   Steven Rostedt <rostedt@goodmis.org>
-To:     Kent Overstreet <kent.overstreet@linux.dev>
-Cc:     Michal Hocko <mhocko@suse.com>,
-        Suren Baghdasaryan <surenb@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Roman Gushchin <roman.gushchin@linux.dev>,
-        Davidlohr Bueso <dave@stgolabs.net>,
-        Matthew Wilcox <willy@infradead.org>,
-        "Liam R. Howlett" <liam.howlett@oracle.com>,
-        David Vernet <void@manifault.com>,
-        Juri Lelli <juri.lelli@redhat.com>,
-        Laurent Dufour <ldufour@linux.ibm.com>,
-        Peter Xu <peterx@redhat.com>,
-        David Hildenbrand <david@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, mcgrof@kernel.org,
-        masahiroy@kernel.org, nathan@kernel.org, changbin.du@intel.com,
-        ytcoode@gmail.com, Vincent Guittot <vincent.guittot@linaro.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Benjamin Segall <bsegall@google.com>,
-        Daniel Bristot de Oliveira <bristot@redhat.com>,
-        Valentin Schneider <vschneid@redhat.com>,
-        Christopher Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, 42.hyeyoo@gmail.com,
-        Alexander Potapenko <glider@google.com>,
-        Marco Elver <elver@google.com>,
-        Dmitry Vyukov <dvyukov@google.com>,
-        Shakeel Butt <shakeelb@google.com>,
-        Muchun Song <songmuchun@bytedance.com>, arnd@arndb.de,
-        jbaron@akamai.com, David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan@google.com>,
-        Kalesh Singh <kaleshsingh@google.com>,
-        kernel-team <kernel-team@android.com>,
-        linux-mm <linux-mm@kvack.org>, iommu@lists.linux.dev,
-        kasan-dev@googlegroups.com, io-uring@vger.kernel.org,
-        linux-arch@vger.kernel.org, xen-devel@lists.xenproject.org,
-        linux-bcache@vger.kernel.org, linux-modules@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 00/30] Code tagging framework and applications
-Message-ID: <20220907094306.3383dac2@gandalf.local.home>
-In-Reply-To: <20220907130323.rwycrntnckc6h43n@kmo-framework>
-References: <YxBc1xuGbB36f8zC@dhcp22.suse.cz>
-        <CAJuCfpGhwPFYdkOLjwwD4ra9JxPqq1T5d1jd41Jy3LJnVnhNdg@mail.gmail.com>
-        <YxEE1vOwRPdzKxoq@dhcp22.suse.cz>
-        <CAJuCfpHuzJGTA_-m0Jfawc7LgJLt4GztUUY4K9N9-7bFqJuXnw@mail.gmail.com>
-        <20220901201502.sn6223bayzwferxv@moria.home.lan>
-        <YxW4Ig338d2vQAz3@dhcp22.suse.cz>
-        <20220905234649.525vorzx27ybypsn@kmo-framework>
-        <Yxb1cxDSyte1Ut/F@dhcp22.suse.cz>
-        <20220906182058.iijmpzu4rtxowy37@kmo-framework>
-        <Yxh5ueDTAOcwEmCQ@dhcp22.suse.cz>
-        <20220907130323.rwycrntnckc6h43n@kmo-framework>
-X-Mailer: Claws Mail 3.17.8 (GTK+ 2.24.33; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        by smtp-out1.suse.de (Postfix) with ESMTPS id 2359233F79;
+        Wed,  7 Sep 2022 17:15:58 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+        t=1662570958; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=/gpCjnHHMyPm2Q9RayhETH3k91oxiLXLcCn8QMwAtls=;
+        b=08avm11FAwNTz8fniFYFfLPuKbC7Al421JDuFno8Ky4cN6l1mrK+wmIO/k3zPi80U0A1Y2
+        tfJON1o9xRdqPBirWAEp6U9X2BnLg5wQskyb05Hc2USv7MH9Uqpn0G0EVBxeRK8Z8oEenn
+        561EINI3ShxnIkFo5/E57drQeCuxirU=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+        s=susede2_ed25519; t=1662570958;
+        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:content-type:content-type:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=/gpCjnHHMyPm2Q9RayhETH3k91oxiLXLcCn8QMwAtls=;
+        b=03OlJmj8oHmkbTwMtKdKweMgCnoDNQv8ngg+3P03nSRPCJ0K3ynVfVMLLefzRlQ9LSzyap
+        A8fHVNOySGflCXBQ==
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 4F31313A66;
+        Wed,  7 Sep 2022 17:15:57 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([192.168.254.65])
+        by imap2.suse-dmz.suse.de with ESMTPSA
+        id 7u8MB83RGGNNBQAAMHmgww
+        (envelope-from <colyli@suse.de>); Wed, 07 Sep 2022 17:15:57 +0000
+Content-Type: text/plain;
+        charset=utf-8
+Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3696.120.41.1.1\))
+Subject: Re: [PATCH] bcache: limit create flash device size
+From:   Coly Li <colyli@suse.de>
+In-Reply-To: <20220907112913.16488-1-mingzhe.zou@easystack.cn>
+Date:   Thu, 8 Sep 2022 01:15:52 +0800
+Cc:     linux-bcache@vger.kernel.org, zoumingzhe@qq.com
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <AA4299A9-337A-4710-89DA-5C1E3520DA91@suse.de>
+References: <20220907112913.16488-1-mingzhe.zou@easystack.cn>
+To:     Mingzhe Zou <mingzhe.zou@easystack.cn>
+X-Mailer: Apple Mail (2.3696.120.41.1.1)
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Wed, 7 Sep 2022 09:04:28 -0400
-Kent Overstreet <kent.overstreet@linux.dev> wrote:
 
-> On Wed, Sep 07, 2022 at 01:00:09PM +0200, Michal Hocko wrote:
-> > Hmm, it seems that further discussion doesn't really make much sense
-> > here. I know how to use my time better.  
-> 
-> Just a thought, but I generally find it more productive to propose ideas than to
-> just be disparaging.
-> 
 
-But it's not Michal's job to do so. He's just telling you that the given
-feature is not worth the burden. He's telling you the issues that he has
-with the patch set. It's the submitter's job to address those concerns and
-not the maintainer's to tell you how to make it better.
+> 2022=E5=B9=B49=E6=9C=887=E6=97=A5 19:29=EF=BC=8Cmingzhe.zou@easystack.cn=
+ =E5=86=99=E9=81=93=EF=BC=9A
+>=20
+> From: mingzhe <mingzhe.zou@easystack.cn>
+>=20
+> Currently, size is specified and not checked when creating a flash =
+device.
+> This will cause a problem, IO maybe hang when creating a flash device =
+with
+> the actual size of the device.
+>=20
+> ```
+> 	if (attr =3D=3D &sysfs_flash_vol_create) {
+> 		int r;
+> 		uint64_t v;
+>=20
+> 		strtoi_h_or_return(buf, v);
+>=20
+> 		r =3D bch_flash_dev_create(c, v);
+> 		if (r)
+> 			return r;
+> 	}
+> ```
+>=20
+> Because the flash device needs some space for superblock, journal and =
+btree.
+> If the size of data reaches the available size, the new IO cannot =
+allocate
+> space and will hang. At this time, the gc thread will be started =
+frequently.
+>=20
+> Even more unreasonable, we can create flash devices larger than actual =
+size.
+>=20
+> ```
+> [root@zou ~]# echo 2G > /sys/block/vdb/bcache/set/flash_vol_create
+> [root@zou ~]# lsblk /dev/vdb
+> NAME       MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+> vdb        252:16   0   1G  0 disk
+> =E2=94=94=E2=94=80bcache0  251:0    0   2G  0 disk
+> ```
+>=20
+> This patch will limit the size of flash device, reserving at least 5% =
+of
+> available size for the btree.
+>=20
+> ```
+> [root@zou ~]# echo 2G > /sys/block/vdb/bcache/set/flash_vol_create
+> [root@zou ~]# lsblk /dev/vdb
+> NAME       MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+> vdb        252:16   0    1G  0 disk
+> =E2=94=94=E2=94=80bcache0  251:0    0  950M  0 disk
+> ```
+>=20
+> Signed-off-by: mingzhe <mingzhe.zou@easystack.cn>
+> ---
+> drivers/md/bcache/super.c | 13 ++++++++++++-
+> 1 file changed, 12 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index ba3909bb6bea..f41e09e0e8ee 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -1579,6 +1579,17 @@ static int flash_devs_run(struct cache_set *c)
+> 	return ret;
+> }
+>=20
 
-When Linus tells us that a submission is crap, we don't ask him how to make
-it less crap, we listen to why he called it crap, and then rewrite to be
-not so crappy. If we cannot figure it out, it doesn't get in.
 
--- Steve
+Hi Mingzhe,
+
+> +static inline sector_t flash_dev_max_sectors(struct cache_set *c)
+> +{
+> +	size_t avail_nbuckets;
+> +	struct cache *ca =3D c->cache;
+> +	size_t first_bucket =3D ca->sb.first_bucket;
+> +	size_t njournal_buckets =3D ca->sb.njournal_buckets;
+> +
+> +	avail_nbuckets =3D c->nbuckets - first_bucket - =
+njournal_buckets;
+> +	return bucket_to_sector(c, avail_nbuckets / 100 * 95);
+> +}
+
+Overall I like this idea. This is really something I didn=E2=80=99t =
+realize to fix, nice catch!
+
+BTW, I feel 95% is still quite high rate, how about using 90%? And you =
+may define the rate as a macro in bcache.h.
+
+Thanks for this patch.
+
+Coly Li
+
+> +
+> int bch_flash_dev_create(struct cache_set *c, uint64_t size)
+> {
+> 	struct uuid_entry *u;
+> @@ -1600,7 +1611,7 @@ int bch_flash_dev_create(struct cache_set *c, =
+uint64_t size)
+> 	u->first_reg =3D u->last_reg =3D =
+cpu_to_le32((u32)ktime_get_real_seconds());
+>=20
+> 	SET_UUID_FLASH_ONLY(u, 1);
+> -	u->sectors =3D size >> 9;
+> +	u->sectors =3D min(flash_dev_max_sectors(c), size >> 9);
+>=20
+> 	bch_uuid_write(c);
+>=20
+> --=20
+> 2.17.1
+>=20
+
