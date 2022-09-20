@@ -2,182 +2,115 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 2874CC54EE9
-	for <linux-bcache@archiver.kernel.org>; Tue, 20 Sep 2022 11:28:56 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2EB03ECAAD8
+	for <linux-bcache@archiver.kernel.org>; Tue, 20 Sep 2022 11:28:57 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229629AbiITL2z (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 20 Sep 2022 07:28:55 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45048 "EHLO
+        id S229850AbiITL24 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 20 Sep 2022 07:28:56 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45050 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229652AbiITL2y (ORCPT
+        with ESMTP id S229950AbiITL2y (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Tue, 20 Sep 2022 07:28:54 -0400
 Received: from mail-m31114.qiye.163.com (mail-m31114.qiye.163.com [103.74.31.114])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 152C46C108
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C26F46BD76
         for <linux-bcache@vger.kernel.org>; Tue, 20 Sep 2022 04:28:53 -0700 (PDT)
 Received: from localhost.localdomain (unknown [218.94.118.90])
-        by mail-m31114.qiye.163.com (Hmail) with ESMTPA id 988795C01A4;
-        Tue, 20 Sep 2022 19:28:50 +0800 (CST)
+        by mail-m31114.qiye.163.com (Hmail) with ESMTPA id CCED85C01AC;
+        Tue, 20 Sep 2022 19:28:51 +0800 (CST)
 From:   mingzhe.zou@easystack.cn
 To:     colyli@suse.de, linux-bcache@vger.kernel.org
 Cc:     zoumingzhe@qq.com
-Subject: [PATCH v3 1/3] bcache: bch_sectors_dirty_init() check each thread result and return error
-Date:   Tue, 20 Sep 2022 19:28:48 +0800
-Message-Id: <20220920112850.13157-1-mingzhe.zou@easystack.cn>
+Subject: [PATCH v3 3/3] bcache: check bch_cached_dev_attach() return value
+Date:   Tue, 20 Sep 2022 19:28:50 +0800
+Message-Id: <20220920112850.13157-3-mingzhe.zou@easystack.cn>
 X-Mailer: git-send-email 2.17.1
+In-Reply-To: <20220920112850.13157-1-mingzhe.zou@easystack.cn>
+References: <20220920112850.13157-1-mingzhe.zou@easystack.cn>
 X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
-        tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVkaT05LVkkfTkwYT0MfQk5IS1UZERMWGhIXJBQOD1
+        tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVlCTkhOVkNPQ0xMTkhNQhkfSlUZERMWGhIXJBQOD1
         lXWRgSC1lBWUlKQ1VCT1VKSkNVQktZV1kWGg8SFR0UWUFZT0tIVUpKS0hKTFVKS0tVS1kG
-X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6Oj46Sxw4ETILIygVCgkrFB4w
-        HyMwCkxVSlVKTU1ITUxISEhKS01NVTMWGhIXVRYSFRwBEx5VARQOOx4aCAIIDxoYEFUYFUVZV1kS
-        C1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBTktDTzcG
-X-HM-Tid: 0a835aa86c1700c3kurm988795c01a4
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6K1E6TRw5DjITMygXGhQJFC5L
+        E00KCzlVSlVKTU1ITUxISEhJSUxMVTMWGhIXVRYSFRwBEx5VARQOOx4aCAIIDxoYEFUYFUVZV1kS
+        C1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSElJTTcG
+X-HM-Tid: 0a835aa870df00c3kurmcced85c01ac
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 From: ZouMingzhe <mingzhe.zou@easystack.cn>
 
-1. bch_dirty_init_thread() dont check bch_root_node_dirty_init() error
-   and return it, add result in struct dirty_init_thrd_info.
-2. bch_sectors_dirty_init() dont check each thread result and return void,
-   we should check each thread and return error.
-3. bch_btree_check() and bch_sectors_dirty_init() must wait all threads stop,
-   cannot return error immediately.
+handle error when call bch_cached_dev_attach() function
 
 Signed-off-by: mingzhe <mingzhe.zou@easystack.cn>
 ---
- drivers/md/bcache/btree.c     |  6 +++++-
- drivers/md/bcache/writeback.c | 26 ++++++++++++++++++++++----
- drivers/md/bcache/writeback.h |  3 ++-
- 3 files changed, 29 insertions(+), 6 deletions(-)
+ drivers/md/bcache/super.c | 25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 147c493a989a..a76a77764b2c 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -2051,7 +2051,7 @@ int bch_btree_check(struct cache_set *c)
- 			for (--i; i >= 0; i--)
- 				kthread_stop(check_state.infos[i].thread);
- 			ret = -ENOMEM;
--			goto out;
-+			goto out_wait;
- 		}
- 		atomic_inc(&check_state.started);
- 	}
-@@ -2059,8 +2059,12 @@ int bch_btree_check(struct cache_set *c)
- 	/*
- 	 * Must wait for all threads to stop.
- 	 */
-+out_wait:
- 	wait_event(check_state.wait, atomic_read(&check_state.started) == 0);
- 
-+	if (ret)
-+		goto out;
-+
- 	for (i = 0; i < check_state.total_threads; i++) {
- 		if (check_state.infos[i].result) {
- 			ret = check_state.infos[i].result;
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 3f0ff3aab6f2..77db056cd97a 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -865,6 +865,7 @@ static int bch_root_node_dirty_init(struct cache_set *c,
- 
- static int bch_dirty_init_thread(void *arg)
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 9dcffeb4c182..14cd5e5dc65b 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1458,7 +1458,7 @@ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
  {
-+	int ret = 0;
- 	struct dirty_init_thrd_info *info = arg;
- 	struct bch_dirty_init_state *state = info->state;
- 	struct cache_set *c = state->c;
-@@ -905,7 +906,8 @@ static int bch_dirty_init_thread(void *arg)
- 		}
+ 	const char *err = "cannot allocate memory";
+ 	struct cache_set *c;
+-	int ret = -ENOMEM;
++	int ret = -ENOMEM, ret_tmp;
  
- 		if (p) {
--			if (bch_root_node_dirty_init(c, state->d, p) < 0)
-+			ret = bch_root_node_dirty_init(c, state->d, p);
-+			if (ret < 0)
- 				goto out;
- 		}
+ 	memcpy(&dc->sb, sb, sizeof(struct cache_sb));
+ 	dc->bdev = bdev;
+@@ -1478,8 +1478,14 @@ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
  
-@@ -914,6 +916,7 @@ static int bch_dirty_init_thread(void *arg)
- 	}
- 
- out:
-+	info->result = ret;
- 	/* In order to wake up state->wait in time */
- 	smp_mb__before_atomic();
- 	if (atomic_dec_and_test(&state->started))
-@@ -937,6 +940,7 @@ static int bch_btre_dirty_init_thread_nr(void)
- void bch_sectors_dirty_init(struct bcache_device *d)
- {
- 	int i;
-+	int ret = 0;
- 	struct bkey *k = NULL;
- 	struct btree_iter iter;
- 	struct sectors_dirty_init op;
-@@ -955,7 +959,7 @@ void bch_sectors_dirty_init(struct bcache_device *d)
- 			sectors_dirty_init_fn(&op.op, c->root, k);
- 
- 		rw_unlock(0, c->root);
--		return;
-+		return 0;
- 	}
- 
- 	memset(&state, 0, sizeof(struct bch_dirty_init_state));
-@@ -982,15 +986,29 @@ void bch_sectors_dirty_init(struct bcache_device *d)
- 			pr_err("fails to run thread bch_dirty_init[%d]\n", i);
- 			for (--i; i >= 0; i--)
- 				kthread_stop(state.infos[i].thread);
--			goto out;
-+			ret = -ENOMEM;
-+			goto out_wait;
- 		}
- 		atomic_inc(&state.started);
- 	}
- 
--out:
-+out_wait:
- 	/* Must wait for all threads to stop. */
- 	wait_event(state.wait, atomic_read(&state.started) == 0);
-+
-+	if (ret)
-+		goto out;
-+
-+	for (i = 0; i < state.total_threads; i++) {
-+		if (state.infos[i].result) {
-+			ret = state.infos[i].result;
-+			goto out;
-+		}
+ 	list_add(&dc->list, &uncached_devices);
+ 	/* attach to a matched cache set if it exists */
+-	list_for_each_entry(c, &bch_cache_sets, list)
+-		bch_cached_dev_attach(dc, c, NULL);
++	err = "failed to attach cached device";
++	list_for_each_entry(c, &bch_cache_sets, list) {
++		ret_tmp = bch_cached_dev_attach(dc, c, NULL);
++		if (ret_tmp)
++			ret = ret_tmp;
 +	}
-+
-+out:
- 	rw_unlock(0, c->root);
++	if (ret)
++		goto err;
+ 
+ 	if (BDEV_STATE(&dc->sb) == BDEV_STATE_NONE ||
+ 	    BDEV_STATE(&dc->sb) == BDEV_STATE_STALE) {
+@@ -1979,6 +1985,7 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
+ 
+ static int run_cache_set(struct cache_set *c)
+ {
++	int ret = -EIO, ret_tmp;
+ 	const char *err = "cannot allocate memory";
+ 	struct cached_dev *dc, *t;
+ 	struct cache *ca = c->cache;
+@@ -2131,8 +2138,14 @@ static int run_cache_set(struct cache_set *c)
+ 	if (bch_has_feature_obso_large_bucket(&c->cache->sb))
+ 		pr_err("Detect obsoleted large bucket layout, all attached bcache device will be read-only\n");
+ 
+-	list_for_each_entry_safe(dc, t, &uncached_devices, list)
+-		bch_cached_dev_attach(dc, c, NULL);
++	err = "failed to attach cached device";
++	list_for_each_entry_safe(dc, t, &uncached_devices, list) {
++		ret_tmp = bch_cached_dev_attach(dc, c, NULL);
++		if (ret_tmp)
++			ret = ret_tmp;
++	}
++	if (ret)
++		goto err;
+ 
+ 	flash_devs_run(c);
+ 
+@@ -2150,7 +2163,7 @@ static int run_cache_set(struct cache_set *c)
+ 
+ 	bch_cache_set_error(c, "%s", err);
+ 
+-	return -EIO;
 +	return ret;
  }
  
- void bch_cached_dev_writeback_init(struct cached_dev *dc)
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 31df716951f6..bb5372a14adc 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -32,6 +32,7 @@ struct bch_dirty_init_state;
- struct dirty_init_thrd_info {
- 	struct bch_dirty_init_state	*state;
- 	struct task_struct		*thread;
-+	int				result;
- };
- 
- struct bch_dirty_init_state {
-@@ -148,7 +149,7 @@ static inline void bch_writeback_add(struct cached_dev *dc)
- void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
- 				  uint64_t offset, int nr_sectors);
- 
--void bch_sectors_dirty_init(struct bcache_device *d);
-+int bch_sectors_dirty_init(struct bcache_device *d);
- void bch_cached_dev_writeback_init(struct cached_dev *dc);
- int bch_cached_dev_writeback_start(struct cached_dev *dc);
- 
+ static const char *register_cache_set(struct cache *ca)
 -- 
 2.17.1
 
