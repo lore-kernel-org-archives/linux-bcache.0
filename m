@@ -2,51 +2,51 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 89E70C433FE
-	for <linux-bcache@archiver.kernel.org>; Tue,  1 Nov 2022 20:20:52 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id DB726C4332F
+	for <linux-bcache@archiver.kernel.org>; Sun,  6 Nov 2022 19:11:45 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229930AbiKAUUv (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 1 Nov 2022 16:20:51 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57990 "EHLO
+        id S229641AbiKFTLn (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Sun, 6 Nov 2022 14:11:43 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36332 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229875AbiKAUUu (ORCPT
+        with ESMTP id S229919AbiKFTLn (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 1 Nov 2022 16:20:50 -0400
-Received: from mail-wm1-x32f.google.com (mail-wm1-x32f.google.com [IPv6:2a00:1450:4864:20::32f])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4C9A41C102
-        for <linux-bcache@vger.kernel.org>; Tue,  1 Nov 2022 13:20:48 -0700 (PDT)
-Received: by mail-wm1-x32f.google.com with SMTP id r186-20020a1c44c3000000b003cf4d389c41so21868wma.3
-        for <linux-bcache@vger.kernel.org>; Tue, 01 Nov 2022 13:20:48 -0700 (PDT)
+        Sun, 6 Nov 2022 14:11:43 -0500
+Received: from mail-ej1-x630.google.com (mail-ej1-x630.google.com [IPv6:2a00:1450:4864:20::630])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7530B64C0
+        for <linux-bcache@vger.kernel.org>; Sun,  6 Nov 2022 11:11:41 -0800 (PST)
+Received: by mail-ej1-x630.google.com with SMTP id 13so25152589ejn.3
+        for <linux-bcache@vger.kernel.org>; Sun, 06 Nov 2022 11:11:41 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=jazalyn.art; s=google;
         h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
          :date:message-id:reply-to;
-        bh=OhBOxjBbs6f8h2djX5Z6K82EHmDv1+X64P92gv8riY4=;
-        b=QZKe3kdTR0PI8dZj0ZRhfTpBzoUuvBz9VAGhhlekdRU407DZbdkWyyaDZvH2cVvPbB
-         KPBTafUR/4+PuEYBn6eU1NnzKZyWTRc3y2yJlUxuAsBHhQHqDN0kGuAELySPVYsy0l+u
-         GZJ4jkKV8NPSkVBupl37uFnkvPie/1dDicXmM=
+        bh=Z5OO2QlZdIKebXiykrFspzwqmuWt73xAdFhSgfWqkQ0=;
+        b=lGoad/9pi4hAN/fV9WCJaZXmZ1XjCVgEllns46BEF3Dp3+4pOiTccIalRmTZlkZuXb
+         tz94/xepTfjE9+dC+kuJ9dSx/6cCJNP5oHq5doS7lTYeuJ3wGvoMBy/rM00zIvAEUlqE
+         MN3TG48NsO/q3G+zR7Z5YiO9hFBpahAFCzGJQ=
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
         d=1e100.net; s=20210112;
         h=to:subject:message-id:date:from:mime-version:x-gm-message-state
          :from:to:cc:subject:date:message-id:reply-to;
-        bh=OhBOxjBbs6f8h2djX5Z6K82EHmDv1+X64P92gv8riY4=;
-        b=3xzNvSRnMM4NdDtr8U+Ioj5616TSU6miv4zZ/ALMcQDT+lXXGECsB45HymkWtCM0qn
-         J2Gc1mDr+qlGYu+CRqWMOoQRv3ZpkUnlM0UuQAJ5prJ3XdEXK9I7n8cc0V28hmf3Kvn0
-         trAk0ijfZmREVKL+khKt9mT3TlJHpgUvRou08nIKiRNUQOwWkk3AQlyWH28fSk7XxDev
-         kwf3Tjj53z2gwNwXV4fQteqT4HdGEynkP7jJlemdnQoRlX5K87kAimLlYFiAIxuAWEjP
-         xowinJUgfKJMI6Q1SmQ0zNmWg72gIfbw4g6rC5OaR7aARo4mCUrgJMqU+IQcyE8o0wjV
-         zDkg==
-X-Gm-Message-State: ACrzQf2wNyyF+8m56dllpjfSewNc/zS88vPEX6BXVqW8C7Cq9NxZ80ug
-        gW0v7XDj30TffqGgmQ5xDnFLxQXZcbMBF06N59byqYvCot84NKDAUAOIPQ==
-X-Google-Smtp-Source: AMsMyM7v9eGsIVmyo2TF9Cs1QFJm+DpbEgLMd7xm8Ne2uaMeQBbwFEKKxfMePMPgDzrWFSOBTSnO6ZfBWdcTyuFp/YFaZyQwU0k=
-X-Received: by 2002:a1c:cc0e:0:b0:3cf:71f9:6048 with SMTP id
- h14-20020a1ccc0e000000b003cf71f96048mr7788359wmb.124.1667334046617; Tue, 01
- Nov 2022 13:20:46 -0700 (PDT)
+        bh=Z5OO2QlZdIKebXiykrFspzwqmuWt73xAdFhSgfWqkQ0=;
+        b=rE759aP7P9DX4Vn6ucY3txROMcTyadwKoEHgR2oonB5YzxZYrs0Gu9EoUrlVBzWx84
+         yleMlhBjrHx/sUR6Vdfy9fL2RjDocbJzV/dWj7MgCByR9ZDjk3OwyQJf/95aPokWtnzC
+         6+TmdNG82BJh8GmpNvowmyVhWE2Mx5HjWRM8kvXVCMWbi606JNmVWUzr/WpodgxSVWnA
+         KfggcWlkc+gHbQij9Rdkg6VSV5yo9Ok3cI/EuXwI9+0Ej3vvnOQRvbJOJhvxZBwDeJF6
+         ScKH0CsHECtcz628PlqkDwdx3rmsDLwNk1MbSX6+pQP5NPOqOUBxuOLCyp0L/TsdRQcv
+         MSVg==
+X-Gm-Message-State: ANoB5pmfRlpDn0N9JuiQuhZ1h01MHfpqWdaS2dIEvuP2wTkxth8R9iFV
+        +ceFj147Sbqvfh0OM8uLpLMXNP2zdWwrrbU+I9MjidjahtWycmTkW1CfkrNe
+X-Google-Smtp-Source: AMsMyM51VhAaQKJDBQA8LD1sP5cMkG6E5YfHjv+tuhrpFm1yX4PFB1oy4T/qj6l7fyR2xwje6dHbZKONtpXkBRyUZTkNgug2ip8=
+X-Received: by 2002:a17:906:c14f:b0:793:30e1:96be with SMTP id
+ dp15-20020a170906c14f00b0079330e196bemr12066135ejc.447.1667761899803; Sun, 06
+ Nov 2022 11:11:39 -0800 (PST)
 MIME-Version: 1.0
-From:   J Jazalyn <j@jazalyn.art>
-Date:   Tue, 1 Nov 2022 13:06:47 -0700
-Message-ID: <CAL89Uq=UQFvZKc4b-=aYZFuLKBeaGCvogN0XwJU5oO9sHMkTOA@mail.gmail.com>
-Subject: Reviews for Jazalyn's Novels
+From:   Authoress Jazalyn <authoress@jazalyn.art>
+Date:   Sun, 6 Nov 2022 14:09:20 -0500
+Message-ID: <CAPSgrJO-_nSV8Sw9pj_DK5qZgu5zTcpFT334q45FDUtHzxWLxg@mail.gmail.com>
+Subject: Reviews For Jazalyn's Novels
 To:     linux-bcache@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Precedence: bulk
@@ -58,9 +58,15 @@ review from you for one/two orall three of my current books of your
 choice. They are light poetry novels: short read poems with a premise.
 It's abstract fiction written in lyrical verse.
 
+In general, you can expect abstract narrative poetry,
+psychophilosophical mystery, supernatural science fantasy etc.
+
+I'm interested notonly for expertise but also impressions from a
+simple point of view. Even a few words would suffice.
+
 Brief Introduction:
 
-vViIrRuUsS: INever Forget, dystopian apocalyptic science fiction
+vViIrRuUsS: INever Forget, dystopian apocalyptic science fantasy
 mystery of crime fiction
 Premise: A dangerous world where everyone can become a criminal.
 
