@@ -2,106 +2,71 @@ Return-Path: <linux-bcache-owner@kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DB726C4332F
-	for <linux-bcache@archiver.kernel.org>; Sun,  6 Nov 2022 19:11:45 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id E1225C4332F
+	for <linux-bcache@archiver.kernel.org>; Thu, 17 Nov 2022 10:30:18 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229641AbiKFTLn (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Sun, 6 Nov 2022 14:11:43 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:36332 "EHLO
+        id S232395AbiKQKaQ (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Thu, 17 Nov 2022 05:30:16 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59672 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229919AbiKFTLn (ORCPT
+        with ESMTP id S233899AbiKQKaQ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 6 Nov 2022 14:11:43 -0500
-Received: from mail-ej1-x630.google.com (mail-ej1-x630.google.com [IPv6:2a00:1450:4864:20::630])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7530B64C0
-        for <linux-bcache@vger.kernel.org>; Sun,  6 Nov 2022 11:11:41 -0800 (PST)
-Received: by mail-ej1-x630.google.com with SMTP id 13so25152589ejn.3
-        for <linux-bcache@vger.kernel.org>; Sun, 06 Nov 2022 11:11:41 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=jazalyn.art; s=google;
-        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
-         :date:message-id:reply-to;
-        bh=Z5OO2QlZdIKebXiykrFspzwqmuWt73xAdFhSgfWqkQ0=;
-        b=lGoad/9pi4hAN/fV9WCJaZXmZ1XjCVgEllns46BEF3Dp3+4pOiTccIalRmTZlkZuXb
-         tz94/xepTfjE9+dC+kuJ9dSx/6cCJNP5oHq5doS7lTYeuJ3wGvoMBy/rM00zIvAEUlqE
-         MN3TG48NsO/q3G+zR7Z5YiO9hFBpahAFCzGJQ=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=to:subject:message-id:date:from:mime-version:x-gm-message-state
-         :from:to:cc:subject:date:message-id:reply-to;
-        bh=Z5OO2QlZdIKebXiykrFspzwqmuWt73xAdFhSgfWqkQ0=;
-        b=rE759aP7P9DX4Vn6ucY3txROMcTyadwKoEHgR2oonB5YzxZYrs0Gu9EoUrlVBzWx84
-         yleMlhBjrHx/sUR6Vdfy9fL2RjDocbJzV/dWj7MgCByR9ZDjk3OwyQJf/95aPokWtnzC
-         6+TmdNG82BJh8GmpNvowmyVhWE2Mx5HjWRM8kvXVCMWbi606JNmVWUzr/WpodgxSVWnA
-         KfggcWlkc+gHbQij9Rdkg6VSV5yo9Ok3cI/EuXwI9+0Ej3vvnOQRvbJOJhvxZBwDeJF6
-         ScKH0CsHECtcz628PlqkDwdx3rmsDLwNk1MbSX6+pQP5NPOqOUBxuOLCyp0L/TsdRQcv
-         MSVg==
-X-Gm-Message-State: ANoB5pmfRlpDn0N9JuiQuhZ1h01MHfpqWdaS2dIEvuP2wTkxth8R9iFV
-        +ceFj147Sbqvfh0OM8uLpLMXNP2zdWwrrbU+I9MjidjahtWycmTkW1CfkrNe
-X-Google-Smtp-Source: AMsMyM51VhAaQKJDBQA8LD1sP5cMkG6E5YfHjv+tuhrpFm1yX4PFB1oy4T/qj6l7fyR2xwje6dHbZKONtpXkBRyUZTkNgug2ip8=
-X-Received: by 2002:a17:906:c14f:b0:793:30e1:96be with SMTP id
- dp15-20020a170906c14f00b0079330e196bemr12066135ejc.447.1667761899803; Sun, 06
- Nov 2022 11:11:39 -0800 (PST)
-MIME-Version: 1.0
-From:   Authoress Jazalyn <authoress@jazalyn.art>
-Date:   Sun, 6 Nov 2022 14:09:20 -0500
-Message-ID: <CAPSgrJO-_nSV8Sw9pj_DK5qZgu5zTcpFT334q45FDUtHzxWLxg@mail.gmail.com>
-Subject: Reviews For Jazalyn's Novels
+        Thu, 17 Nov 2022 05:30:16 -0500
+Received: from FML-ESSALUD.essalud.gob.pe (fml-essalud.essalud.gob.pe [190.81.44.152])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E3E5059173
+        for <linux-bcache@vger.kernel.org>; Thu, 17 Nov 2022 02:30:13 -0800 (PST)
+Received: from mail.essalud.gob.pe ([172.20.0.227])
+        by FML-ESSALUD.essalud.gob.pe  with ESMTP id 2AHAU6LB032424-2AHAU6LK032424
+        for <linux-bcache@vger.kernel.org>; Thu, 17 Nov 2022 05:30:11 -0500
+Received: from correo.essalud.gob.pe (mail.essaludperu.pe [10.0.1.43])
+        by mail.essalud.gob.pe (Postfix on SuSE Linux 7.2 (i386)) with ESMTP id EBF7766CC84
+        for <linux-bcache@vger.kernel.org>; Thu, 17 Nov 2022 05:35:40 -0500 (PET)
+Received: from localhost (localhost [127.0.0.1])
+        by correo.essalud.gob.pe (Postfix) with ESMTP id 2F24E6741E5C9
+        for <linux-bcache@vger.kernel.org>; Thu, 17 Nov 2022 05:24:16 -0500 (-05)
+Received: from correo.essalud.gob.pe ([127.0.0.1])
+        by localhost (correo.essalud.gob.pe [127.0.0.1]) (amavisd-new, port 10032)
+        with ESMTP id M94xriVV1wmy for <linux-bcache@vger.kernel.org>;
+        Thu, 17 Nov 2022 05:24:16 -0500 (-05)
+Received: from localhost (localhost [127.0.0.1])
+        by correo.essalud.gob.pe (Postfix) with ESMTP id E793E6741E5F8
+        for <linux-bcache@vger.kernel.org>; Thu, 17 Nov 2022 05:24:15 -0500 (-05)
+DKIM-Filter: OpenDKIM Filter v2.10.3 correo.essalud.gob.pe E793E6741E5F8
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=essalud.gob.pe;
+        s=0C7340B8-402B-11ED-89C3-99F5FC01023F; t=1668680655;
+        bh=uY+KPOQWlDhrVS4T9GmWZxPLHRTXQCu8TOIV7Ic88Ug=;
+        h=To:Date:Message-ID:MIME-Version:From;
+        b=vp3BuPlDIugxz5Af0XgticlA5P+tartjRGeu+sAXoYJEgQh6M44EQnZVNP6ZaBQUU
+         Uez3LCnhINZca9QKLaUrmT/HYKwGkAnB1loeM3gjAA88yRLRnDaYhsY6Hi5T40gXux
+         zS2T7gi2c8MbRkcLu0jg5ab3RxolKudv+sNDgGgOOIUQw8mYD5hPNUbbbkG+wAsrPS
+         35IWbT/23inqXU4NX+Ec6t6sLBH0VUbDbDFI4UYeJAFexZD7/2w4mMsFQHvN7MX70i
+         NZsJMBIHfM2OYGyKcPAnXWJ0WKTc4sG8O3bZLWT9/OsEZZysL3WQir1vOxTXIjMre7
+         VSNsiSEx5LmaA==
+X-Virus-Scanned: amavisd-new at essalud.gob.pe
+Received: from correo.essalud.gob.pe ([127.0.0.1])
+        by localhost (correo.essalud.gob.pe [127.0.0.1]) (amavisd-new, port 10026)
+        with ESMTP id Nm0PDJ1VpE88 for <linux-bcache@vger.kernel.org>;
+        Thu, 17 Nov 2022 05:24:15 -0500 (-05)
+Received: from [200.25.45.234] (unknown [200.25.45.232])
+        by correo.essalud.gob.pe (Postfix) with ESMTPSA id 3EAF76741E5FE
+        for <linux-bcache@vger.kernel.org>; Thu, 17 Nov 2022 05:24:15 -0500 (-05)
+Reply-To: sergei.lai58@gmail.com
 To:     linux-bcache@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
+Subject: =?UTF-8?B?ZGllIEluZm8gLTM1ICUgZ2Vow7ZyZW4gSWhuZW4=?=
+Date:   17 Nov 2022 10:30:10 +0000
+Message-ID: <20221117103009.37B0928A47EDBB7F@from.header.has.no.domain>
+MIME-Version: 1.0
+Content-Type: text/plain;
+        charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+From:   juan.aguilarve@essalud.gob.pe
+X-FEAS-DKIM: Invalid Public Key
+Authentication-Results: fml-essalud.essalud.gob.pe;
+        dkim=neutral (Could not retrieve key) header.i=@essalud.gob.pe
+X-FE-Policy-ID: 2:2:2:essalud.gob.pe
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hello, I'm an emerging global author-poet and I would like to have a
-review from you for one/two orall three of my current books of your
-choice. They are light poetry novels: short read poems with a premise.
-It's abstract fiction written in lyrical verse.
-
-In general, you can expect abstract narrative poetry,
-psychophilosophical mystery, supernatural science fantasy etc.
-
-I'm interested notonly for expertise but also impressions from a
-simple point of view. Even a few words would suffice.
-
-Brief Introduction:
-
-vViIrRuUsS: INever Forget, dystopian apocalyptic science fantasy
-mystery of crime fiction
-Premise: A dangerous world where everyone can become a criminal.
-
-Rose: Future Heart, dark fantasy cozy mystery of
-empowerment/healing/self-love
-Premise: A rare rose strives to turn a blurry past into a bright future.
-
-Hollow: A Love Like ALife, supernatural romantic suspense of
-spiritual/mystical fantasy romance
-Premise: A spiritual wind makes an impossible romance possible.
-
-Wide Publication: 2020, 2021, 2022 Independently Published
-
-Word count: Around 10.000 words each
-
-I could send to you the book/s through Book Funnel, you'll have a wide
-variety of options how to download the book/s. *Note: you don't have
-to have Bookfunnel account.
-
-Main Links to my books:
-
-jazalyn.art/poetic-novels
-amazon.com/Jazalyn/e/B08R27QGLC/
-goodreads.com/jazalyn
-BookBub.com/author/jazalyn
-play.google.com/store/books/author?id=Jazalyn
-books.apple.com/us/author/jazalyn/id1478665962
-kobo.com/us/en/search?fcsearchfield=Author&query=jazalyn
-barnesandnoble.com/s/jazalyn
-
-Main Social Media:
-
-twitter.com/justjazalyn
-instagram.com/justjazalyn
-TikTok.com/jjaazzaall
-
-
-Thank you
+Bitte ich brauche Ihre Hilfe, um $50 000 000.00 aus einem=20
+sicheren Safe zu bewegen.
