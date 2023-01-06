@@ -2,254 +2,118 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9EE66C10F1B
-	for <linux-bcache@archiver.kernel.org>; Fri, 30 Dec 2022 10:41:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 18033C54EBD
+	for <linux-bcache@archiver.kernel.org>; Fri,  6 Jan 2023 06:02:41 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234693AbiL3KlR (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 30 Dec 2022 05:41:17 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55388 "EHLO
+        id S231616AbjAFGCj (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 6 Jan 2023 01:02:39 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49508 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229485AbiL3KlQ (ORCPT
+        with ESMTP id S231602AbjAFGCi (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 30 Dec 2022 05:41:16 -0500
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [IPv6:2001:67c:2178:6::1c])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 2E732BF74
-        for <linux-bcache@vger.kernel.org>; Fri, 30 Dec 2022 02:41:15 -0800 (PST)
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by smtp-out1.suse.de (Postfix) with ESMTPS id C1F6B22567;
-        Fri, 30 Dec 2022 10:41:13 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1672396873; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=Cvh40b00ZLQKvXxhLoKiVwfdJ2zagGWgrfdas39XDXE=;
-        b=ojcSBJxyd6hlUsuiJK4ZvwIvWtTE+YvcoVO0Vzit9b189nQ+57HSCZhDkH9MeXX3ZUfZZB
-        Q0/gSMQfO+B9gnFUGmT2zodQTvD7D2MSLtkauKHE8yqmAZ79CdjbDD81FgA2BSoR4ZdX6f
-        4LtTD6zk47bU/hTxbt39lgaE9cn/XpM=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1672396873;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=Cvh40b00ZLQKvXxhLoKiVwfdJ2zagGWgrfdas39XDXE=;
-        b=FlwG5knnGUviw6G3seWftBoMWf5u2+4fGItTUjeGV6xCpS30sZQWSO+2YFmI/W5n+PIZ2S
-        HZNu1bWcDh1z9GAg==
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 53A19138FA;
-        Fri, 30 Dec 2022 10:41:06 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([192.168.254.65])
-        by imap2.suse-dmz.suse.de with ESMTPSA
-        id Oi22NELArmNAVAAAMHmgww
-        (envelope-from <colyli@suse.de>); Fri, 30 Dec 2022 10:41:06 +0000
-Message-ID: <107e8ceb-748e-b296-ae60-c2155d68352d@suse.de>
-Date:   Fri, 30 Dec 2022 18:40:47 +0800
-MIME-Version: 1.0
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:91.0)
- Gecko/20100101 Thunderbird/91.13.1
-Subject: Re: [RFC] Live resize of backing device
-Content-Language: en-US
-To:     Andrea Tomassetti <andrea.tomassetti-opensource@devo.com>
-Cc:     Eric Wheeler <bcache@lists.ewheeler.net>,
+        Fri, 6 Jan 2023 01:02:38 -0500
+Received: from mail-pj1-x1033.google.com (mail-pj1-x1033.google.com [IPv6:2607:f8b0:4864:20::1033])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5B26F6C7DD
+        for <linux-bcache@vger.kernel.org>; Thu,  5 Jan 2023 22:02:36 -0800 (PST)
+Received: by mail-pj1-x1033.google.com with SMTP id o1-20020a17090a678100b00219cf69e5f0so4286801pjj.2
+        for <linux-bcache@vger.kernel.org>; Thu, 05 Jan 2023 22:02:36 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=chromium.org; s=google;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to;
+        bh=Y+anX43Mu+MJERuRlu4YWa+yMoYVv49RcDXznbQT8og=;
+        b=TQWkY0oklPgt/5r5cwlVo9/0J0Iztw/r7ZwqqWCfiaJ3MzTS223U360dspIUhp/6Ov
+         W2ryG5VksV19en1B01GCNx5Blp8tkuWN9+Hcv2CBH1NjfIurxS3d/qRO6lVnW4xNySFi
+         uEYY1OecqFbDKQA3D7PxeZ4NX0XKm5qooreVE=
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20210112;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-message-state:from:to:cc:subject:date:message-id
+         :reply-to;
+        bh=Y+anX43Mu+MJERuRlu4YWa+yMoYVv49RcDXznbQT8og=;
+        b=3i42DevoeBIbwMkAI1qiO18UCFwMgPfv6QwfCiFS6kAd0RclZt6f/TqE9nBhZwfBeP
+         BZ0W10oZCFl8IQRXlvAUyYbHsQIy9x5hkRvAJ+ImcGfg2mpUQxAB05WZipX5c48u6kmm
+         TaJ7VKmNcYH28er/EzXst/UnvsiILT4nHjnx6LKGq2qFiuSfGlz7xVZTSsDPgbkL7/Yo
+         icZ6zFLYZC9aVa5U+44UBTfbHxX4ynQA0B1N6Oup5H86usDmZswXBBilTsfWjlGERZy/
+         RdT4ClM+jQy112se6mrPj6p9fDtidZ0rDU5QYkbNLObP3n0VZWHKo5mh0+oCyxSinwKP
+         ts0A==
+X-Gm-Message-State: AFqh2kqegi3LQPBMJZPnFbDm+66c1TDvL/HvKHFP9OZKhTVn6VoGo3Vo
+        pmgRuQf6yj8ue+S490ryNPpwUg==
+X-Google-Smtp-Source: AMrXdXuPxHZEHMiDTLNVSwPBxfOyDu7WzK+fS6EAV8dn+kJPPDy/gc9tidjrLkicbgJmXHKj2Yx3pA==
+X-Received: by 2002:a05:6a20:8b89:b0:a7:a591:4fca with SMTP id m9-20020a056a208b8900b000a7a5914fcamr57145215pzh.61.1672984956350;
+        Thu, 05 Jan 2023 22:02:36 -0800 (PST)
+Received: from www.outflux.net (smtp.outflux.net. [198.145.64.163])
+        by smtp.gmail.com with ESMTPSA id q15-20020aa7842f000000b00580e3917af7sm263876pfn.117.2023.01.05.22.02.35
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 05 Jan 2023 22:02:35 -0800 (PST)
+From:   Kees Cook <keescook@chromium.org>
+To:     Coly Li <colyli@suse.de>
+Cc:     Kees Cook <keescook@chromium.org>,
+        Thorsten Leemhuis <linux@leemhuis.info>,
         Kent Overstreet <kent.overstreet@gmail.com>,
-        linux-bcache@vger.kernel.org
-References: <CAHykVA5sgGooeRjM1EepCCpZqkvtQJ_=cY8hmjqe0oQ3FLDFnQ@mail.gmail.com>
- <9474c19e-56f0-cb4d-68c-405c55aef281@ewheeler.net>
- <CAHykVA4zGN=WA4A3njQ3VdX4age2-AXq3EcW1qRTFbf=o1=yDw@mail.gmail.com>
- <4ddb082f-cefc-644e-2ccf-56d41207ecd3@devo.com>
-From:   Coly Li <colyli@suse.de>
-In-Reply-To: <4ddb082f-cefc-644e-2ccf-56d41207ecd3@devo.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-hardening@vger.kernel.org
+Subject: [PATCH] bcache: Silence memcpy() run-time false positive warnings
+Date:   Thu,  5 Jan 2023 22:02:33 -0800
+Message-Id: <20230106060229.never.047-kees@kernel.org>
+X-Mailer: git-send-email 2.34.1
+MIME-Version: 1.0
+X-Developer-Signature: v=1; a=openpgp-sha256; l=2294; h=from:subject:message-id; bh=hTGH6NubMvHnfos0JgY0W0bCNHZlDQ5kCsJbr0ADcY0=; b=owEBbQKS/ZANAwAKAYly9N/cbcAmAcsmYgBjt7l5Xn8LxEcT24jMoUZlJV8VEac0DCWD7svpNFHI yMy3+VaJAjMEAAEKAB0WIQSlw/aPIp3WD3I+bhOJcvTf3G3AJgUCY7e5eQAKCRCJcvTf3G3AJjHiD/ 4giyGiIV4i/gX19THV5iQPRflDiE5uFQ4U5i4aNgMO4xSRe0h7fdAAd9H2hbcvQ5QMcC5Fp9x5XiYW 1d76Qh1qODHd6Xqh0TZf0nWjemG0WVgp6e1J9ELcMzOt5b6Vx6clehvCmD+ZWT94mFIiN3Lj9E1prN /H+LxGCQWt8gDOY+jJmoecUftIBPFP5EBY9nLqv8IVzNyNZUKAE+0C1psgsWC/UWyNbM2VWCxZIGr8 lbHRbNCUm/l4YNxmkrL5jRFtcnn+9LOMrJB3DGl3OdhjATJDNHMXR0i35XwwXFc8V82AC9xl/MKyGQ 8AX3wkEcq7IkJxiGfgF68iIglGoO5Q8x9HX1RScGBi9CP/abFFjI22dSqt7meoxDw+HZc+UuGvYLg9 QvxJwODOjWzl6l+Hposek0iHpSFubiB39TU2sTa+Z5UAQry2mQNBrUOh9ngYrjEXLJKo2JH4q+rCbB fzcW3YfR13fg3J+Fq7voE4mxuYzLQiG31IFiaO6W0xwL1L+ypmVouBwJ16zBiW1uH27KO909OFs9Z/ ThkVd/H8u5E1d1k6T/OP4TNRxHV1/1ljFiu6t+BpU1UtGliAIgkarWRvGdiApxpjbZmpfBUP+FWVJn bJDIE9UCb4EpRBlZAmbBuUvw6MlaZP5NWpRDumhgpLSbZhz8y8rb35MTiHog==
+X-Developer-Key: i=keescook@chromium.org; a=openpgp; fpr=A5C3F68F229DD60F723E6E138972F4DFDC6DC026
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On 9/8/22 4:32 PM, Andrea Tomassetti wrote:
-> From 59787372cf21af0b79e895578ae05b6586dfeb09 Mon Sep 17 00:00:00 2001
-> From: Andrea Tomassetti <andrea.tomassetti-opensource@devo.com>
-> Date: Thu, 8 Sep 2022 09:47:55 +0200
-> Subject: [PATCH] bcache: Add support for live resize of backing devices
->
-> Signed-off-by: Andrea Tomassetti <andrea.tomassetti-opensource@devo.com>
+struct bkey has internal padding in a union, but it isn't always named
+the same (e.g. key ## _pad, key_p, etc). This makes it extremely hard
+for the compiler to reason about the available size of copies done
+against such keys. Use unsafe_memcpy() for now, to silence the many
+run-time false positive warnings:
 
-Hi Andrea,
+  memcpy: detected field-spanning write (size 264) of single field "&i->j" at drivers/md/bcache/journal.c:152 (size 240)
+  memcpy: detected field-spanning write (size 24) of single field "&b->key" at drivers/md/bcache/btree.c:939 (size 16)
+  emcpy: detected field-spanning write (size 24) of single field "&temp.key" at drivers/md/bcache/extents.c:428 (size 16)
 
-I am just recovered from Omicron, and able to reply email. Let me place 
-my comments inline.
+Reported-by: Thorsten Leemhuis <linux@leemhuis.info>
+Link: https://lore.kernel.org/all/19200730-a3ba-6f4f-bb81-71339bdbbf73@leemhuis.info/
+Cc: Coly Li <colyli@suse.de>
+Cc: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-bcache@vger.kernel.org
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ drivers/md/bcache/bcache_ondisk.h | 3 ++-
+ drivers/md/bcache/journal.c       | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-
-> ---
-> Hi Coly,
-> Here is the first version of the patch. There are some points I noted 
-> down
-> that I would like to discuss with you:
->  - I found it pretty convenient to hook the call of the new added 
-> function
->    inside the `register_bcache`. In fact, every time (at least from my
->    understandings) a disk changes size, it will trigger a new probe and,
->    thus, `register_bcache` will be triggered. The only inconvenient
->    is that, in case of success, the function will output
-
-The resize should be triggered manually, and not to do it automatically.
-
-You may create a sysfs file under the cached device's directory, name it 
-as "extend_size" or something else you think better.
-
-Then the sysadmin may extend the cached device size explicitly on a 
-predictable time.
-
-> `error: capacity changed` even if it's not really an error.
->  - I'm using `kvrealloc`, introduced in kernel version 5.15, to resize
->    `stripe_sectors_dirty` and `full_dirty_stripes`. It shouldn't be a
->    problem, right?
->  - There is some reused code between this new function and
->    `bcache_device_init`. Maybe I can move `const size_t max_stripes` to
->    a broader scope or make it a macro, what do you think?
->
-> Thank you very much,
-> Andrea
->
->  drivers/md/bcache/super.c | 75 ++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 74 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index ba3909bb6bea..9a77caf2a18f 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -2443,6 +2443,76 @@ static bool bch_is_open(dev_t dev)
->      return bch_is_open_cache(dev) || bch_is_open_backing(dev);
->  }
->
-> +static bool bch_update_capacity(dev_t dev)
-> +{
-> +    const size_t max_stripes = min_t(size_t, INT_MAX,
-> +                     SIZE_MAX / sizeof(atomic_t));
-> +
-> +    uint64_t n, n_old;
-> +    int nr_stripes_old;
-> +    bool res = false;
-> +
-> +    struct bcache_device *d;
-> +    struct cache_set *c, *tc;
-> +    struct cached_dev *dcp, *t, *dc = NULL;
-> +
-> +    uint64_t parent_nr_sectors;
-> +
-> +    list_for_each_entry_safe(c, tc, &bch_cache_sets, list)
-> +        list_for_each_entry_safe(dcp, t, &c->cached_devs, list)
-> +            if (dcp->bdev->bd_dev == dev) {
-> +                dc = dcp;
-> +                goto dc_found;
-> +            }
-> +
-> +dc_found:
-> +    if (!dc)
-> +        return false;
-> +
-> +    parent_nr_sectors = bdev_nr_sectors(dc->bdev) - dc->sb.data_offset;
-> +
-> +    if (parent_nr_sectors == bdev_nr_sectors(dc->disk.disk->part0))
-> +        return false;
-> +
-
-The above code only handles whole disk using as cached device. If a 
-partition of a hard drive is used as cache device, and there are other 
-data after this partition, such condition should be handled as well. So 
-far I am fine to only extend size when using the whole hard drive as 
-cached device, but more code is necessary to check and only permits 
-size-extend for such condition.
-
-> +    if (!set_capacity_and_notify(dc->disk.disk, parent_nr_sectors))
-> +        return false;
-
-The above code should be done when all rested are set.
-
-
-> +
-> +    d = &dc->disk;
-> +
-> +    /* Force cached device sectors re-calc */
-> +    calc_cached_dev_sectors(d->c);
-
-Here c->cached_dev_sectors might be changed, if any of the following 
-steps fails, it should be restored to previous value.
-
-
-> +
-> +    /* Block writeback thread */
-> +    down_write(&dc->writeback_lock);
-> +    nr_stripes_old = d->nr_stripes;
-> +    n = DIV_ROUND_UP_ULL(parent_nr_sectors, d->stripe_size);
-> +    if (!n || n > max_stripes) {
-> +        pr_err("nr_stripes too large or invalid: %llu (start sector 
-> beyond end of disk?)\n",
-> +            n);
-> +        goto unblock_and_exit;
-> +    }
-> +    d->nr_stripes = n;
-> +
-> +    n = d->nr_stripes * sizeof(atomic_t);
-> +    n_old = nr_stripes_old * sizeof(atomic_t);
-> +    d->stripe_sectors_dirty = kvrealloc(d->stripe_sectors_dirty, n_old,
-> +        n, GFP_KERNEL);
-> +    if (!d->stripe_sectors_dirty)
-> +        goto unblock_and_exit;
-> +
-> +    n = BITS_TO_LONGS(d->nr_stripes) * sizeof(unsigned long);
-> +    n_old = BITS_TO_LONGS(nr_stripes_old) * sizeof(unsigned long);
-> +    d->full_dirty_stripes = kvrealloc(d->full_dirty_stripes, n_old, 
-> n, GFP_KERNEL);
-> +    if (!d->full_dirty_stripes)
-> +        goto unblock_and_exit;
-
-If kvrealloc() fails and NULL set to d->full_dirty_sripes, the previous 
-array should be restored.
-
-> +
-> +    res = true;
-> +
-> +unblock_and_exit:
-> +    up_write(&dc->writeback_lock);
-> +    return res;
-> +}
-> +
-
-I didn't test the patch, from the first glance, I feel the failure 
-handling should restore all previous values, otherwise the cache device 
-may be in a non-consistent state when extend size fails.
-
-
->  struct async_reg_args {
->      struct delayed_work reg_work;
->      char *path;
-> @@ -2569,7 +2639,10 @@ static ssize_t register_bcache(struct kobject 
-> *k, struct kobj_attribute *attr,
->              mutex_lock(&bch_register_lock);
->              if (lookup_bdev(strim(path), &dev) == 0 &&
->                  bch_is_open(dev))
-> -                err = "device already registered";
-> +                if (bch_update_capacity(dev))
-> +                    err = "capacity changed";
-> +                else
-> +                    err = "device already registered";
-
-
-As I said, it should be a separated write-only sysfile under the cache 
-device's directory.
-
-
-> else
->                  err = "device busy";
->              mutex_unlock(&bch_register_lock);
-> -- 
-> 2.37.3
->
+diff --git a/drivers/md/bcache/bcache_ondisk.h b/drivers/md/bcache/bcache_ondisk.h
+index d086a0ce4bc2..6620a7f8fffc 100644
+--- a/drivers/md/bcache/bcache_ondisk.h
++++ b/drivers/md/bcache/bcache_ondisk.h
+@@ -106,7 +106,8 @@ static inline unsigned long bkey_bytes(const struct bkey *k)
+ 	return bkey_u64s(k) * sizeof(__u64);
+ }
+ 
+-#define bkey_copy(_dest, _src)	memcpy(_dest, _src, bkey_bytes(_src))
++#define bkey_copy(_dest, _src)	unsafe_memcpy(_dest, _src, bkey_bytes(_src), \
++					/* bkey is always padded */)
+ 
+ static inline void bkey_copy_key(struct bkey *dest, const struct bkey *src)
+ {
+diff --git a/drivers/md/bcache/journal.c b/drivers/md/bcache/journal.c
+index e5da469a4235..c182c21de2e8 100644
+--- a/drivers/md/bcache/journal.c
++++ b/drivers/md/bcache/journal.c
+@@ -149,7 +149,8 @@ reread:		left = ca->sb.bucket_size - offset;
+ 				    bytes, GFP_KERNEL);
+ 			if (!i)
+ 				return -ENOMEM;
+-			memcpy(&i->j, j, bytes);
++			unsafe_memcpy(&i->j, j, bytes,
++				/* "bytes" was calculated by set_bytes() above */);
+ 			/* Add to the location after 'where' points to */
+ 			list_add(&i->list, where);
+ 			ret = 1;
+-- 
+2.34.1
 
