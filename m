@@ -2,108 +2,66 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id B5A1EC3DA7A
-	for <linux-bcache@archiver.kernel.org>; Fri,  6 Jan 2023 06:22:07 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 69DC5C54E76
+	for <linux-bcache@archiver.kernel.org>; Fri,  6 Jan 2023 10:01:11 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231834AbjAFGWG (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 6 Jan 2023 01:22:06 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60252 "EHLO
+        id S232716AbjAFKBJ (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 6 Jan 2023 05:01:09 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50336 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231377AbjAFGWG (ORCPT
+        with ESMTP id S232212AbjAFKBI (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 6 Jan 2023 01:22:06 -0500
-Received: from mail-pj1-x1030.google.com (mail-pj1-x1030.google.com [IPv6:2607:f8b0:4864:20::1030])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4228E43A18
-        for <linux-bcache@vger.kernel.org>; Thu,  5 Jan 2023 22:22:05 -0800 (PST)
-Received: by mail-pj1-x1030.google.com with SMTP id o21so644655pjw.0
-        for <linux-bcache@vger.kernel.org>; Thu, 05 Jan 2023 22:22:05 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=chromium.org; s=google;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:from:to:cc:subject:date:message-id:reply-to;
-        bh=P3P39B3+R/DWnUo27dj0CuajbLtQj508AlEFbLQeeco=;
-        b=gFfwNN2cBsPVNqo5NLC1hz0fbBDjCCVekPUQUzDXQiNrz3vaAbuoC2l2Rcv5KDD1BR
-         GGUDQU1BU/ZGDR7W9+LH+2DU1RDh1tJ3gm2EJRk9EzScNFktUgzFV4suePITtV+8chsg
-         2hXm3VHigwfCzIzwicjfr2JbSL9rgoJAREUDI=
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20210112;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=P3P39B3+R/DWnUo27dj0CuajbLtQj508AlEFbLQeeco=;
-        b=F/jgO+RFo4kwlLgDp74I9Ntmnc1raNGKN50grfD6AoRzTmjKi0H1tHs2WYpAVclCdv
-         ZAMfKS2y8PYRJYmfCUrAKG8ZeoAWnthEVoM8pMUPhMryZH24i9uz9UEHzufMAtLkaoaT
-         LhnOYxu+tVP1EDTk9LQaNWQQRavWaFCjjAaGzjW9GkHzDJo+/nfp9Jh5yZfQnU0SrZX2
-         yjX/Bka+5ZpiHLn3pTH4ivYcHIyar+6UOxk+fP2MnyF7Ui0dNSrATjvZ9YY6wqpRNCur
-         7nvmoP1kBF3ApGiZnk3pCX3mM6LM/D7J5T82RApLPYNhOm/A2bFyxrKAjHVxrzNusAAL
-         j0vg==
-X-Gm-Message-State: AFqh2kpvcC2wlhwyeC5Ha+35QDELWmJQ8Nj3IZEPVn5ODbLRdnExBeqv
-        Ci9cmRBw45ccN9LUluGYQ8kiQw==
-X-Google-Smtp-Source: AMrXdXtM1vP5dcgTHPDfmr3om3PPOARVroyAjqYZI9GdQBO0YB4PrzpyQj622REF2D7RDm2EKP3p1w==
-X-Received: by 2002:a17:90a:d78b:b0:219:34cb:477e with SMTP id z11-20020a17090ad78b00b0021934cb477emr57605129pju.44.1672986124780;
-        Thu, 05 Jan 2023 22:22:04 -0800 (PST)
-Received: from www.outflux.net (smtp.outflux.net. [198.145.64.163])
-        by smtp.gmail.com with ESMTPSA id y128-20020a633286000000b004768ce9e4fasm257954pgy.59.2023.01.05.22.22.04
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 05 Jan 2023 22:22:04 -0800 (PST)
-Date:   Thu, 5 Jan 2023 22:22:03 -0800
-From:   Kees Cook <keescook@chromium.org>
-To:     Thorsten Leemhuis <regressions@leemhuis.info>
-Cc:     "regressions@lists.linux.dev" <regressions@lists.linux.dev>,
-        linux-bcache@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [regression] =?iso-8859-1?Q?Bug=A02167?=
- =?iso-8859-1?Q?85_-_=22memcpy=3A_detected_field-spannin?= =?iso-8859-1?Q?g?=
- write..." warnings with bcache #forregzbot
-Message-ID: <202301052218.042D2BFE@keescook>
-References: <19200730-a3ba-6f4f-bb81-71339bdbbf73@leemhuis.info>
- <2e4e65a8-87b4-fac6-ef89-76b118b0cec4@leemhuis.info>
+        Fri, 6 Jan 2023 05:01:08 -0500
+Received: from wp530.webpack.hosteurope.de (wp530.webpack.hosteurope.de [80.237.130.52])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F091C4164C;
+        Fri,  6 Jan 2023 02:01:06 -0800 (PST)
+Received: from [2a02:8108:963f:de38:eca4:7d19:f9a2:22c5]; authenticated
+        by wp530.webpack.hosteurope.de running ExIM with esmtpsa (TLS1.3:ECDHE_RSA_AES_128_GCM_SHA256:128)
+        id 1pDjX7-0000wO-Gx; Fri, 06 Jan 2023 11:01:05 +0100
+Message-ID: <132043f4-d19a-911d-04c4-a24fdf89153f@leemhuis.info>
+Date:   Fri, 6 Jan 2023 11:01:05 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2e4e65a8-87b4-fac6-ef89-76b118b0cec4@leemhuis.info>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101
+ Thunderbird/102.6.0
+Subject: Re: [PATCH] bcache: Silence memcpy() run-time false positive warnings
+Content-Language: en-US, de-DE
+To:     Kees Cook <keescook@chromium.org>, Coly Li <colyli@suse.de>
+Cc:     Kent Overstreet <kent.overstreet@gmail.com>,
+        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-hardening@vger.kernel.org
+References: <20230106060229.never.047-kees@kernel.org>
+From:   Thorsten Leemhuis <linux@leemhuis.info>
+In-Reply-To: <20230106060229.never.047-kees@kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-bounce-key: webpack.hosteurope.de;linux@leemhuis.info;1672999267;823a9b22;
+X-HE-SMSGID: 1pDjX7-0000wO-Gx
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Thu, Dec 15, 2022 at 08:11:06AM +0100, Thorsten Leemhuis wrote:
-> [Note: this mail contains only information for Linux kernel regression
-> tracking. Mails like these contain '#forregzbot' in the subject to make
-> then easy to spot and filter out. The author also tried to remove most
-> or all individuals from the list of recipients to spare them the hassle.]
+On 06.01.23 07:02, Kees Cook wrote:
+> struct bkey has internal padding in a union, but it isn't always named
+> the same (e.g. key ## _pad, key_p, etc). This makes it extremely hard
+> for the compiler to reason about the available size of copies done
+> against such keys. Use unsafe_memcpy() for now, to silence the many
+> run-time false positive warnings:
 > 
-> On 08.12.22 15:53, Thorsten Leemhuis wrote:
-> > https://bugzilla.kernel.org/show_bug.cgi?id=216785 :
-> > 
-> >>  Alexandre Pereira 2022-12-07 18:51:55 UTC
-> >>
-> >> Testing linux kernel 6.1-rc8, I have several kernel erros regarding bcache.
-> >>
-> >> For context, I have a bcache configuration that is working without issues on 6.0.x and previous versions.
-> >>
-> >> The errors:
-> >>
-> >> dez 07 18:33:45 stormtrooper kernel: ------------[ cut here ]------------
-> >> dez 07 18:33:45 stormtrooper kernel: memcpy: detected field-spanning write (size 264) of single field "&i->j" at drivers/md/bcache/journal.c:152 (size 240)
-> 
-> #regzbot inconclusive: stop tracking field-spanning write warnings, they
-> come from a new security feature
-> 
-> https://lore.kernel.org/all/20210727205855.411487-1-keescook@chromium.org/
-> 
-> Tracking them would cost time I better spend on more important things
-> for now
+>   memcpy: detected field-spanning write (size 264) of single field "&i->j" at drivers/md/bcache/journal.c:152 (size 240)
+>   memcpy: detected field-spanning write (size 24) of single field "&b->key" at drivers/md/bcache/btree.c:939 (size 16)
+>   emcpy: detected field-spanning write (size 24) of single field "&temp.key" at drivers/md/bcache/extents.c:428 (size 16)
 
-FWIW, I'd find it handy to see these. I've been trying to track and fix
-them. To that end, I've just sent out the following patches:
+Thx for looking into this.
 
-https://lore.kernel.org/lkml/20230106045327.never.413-kees@kernel.org/
-https://lore.kernel.org/lkml/20230106053153.never.999-kees@kernel.org/
-https://lore.kernel.org/lkml/20230106060229.never.047-kees@kernel.org/
-https://lore.kernel.org/lkml/20230106061659.never.817-kees@kernel.org/
+> Reported-by: Thorsten Leemhuis <linux@leemhuis.info>
+> Link: https://lore.kernel.org/all/19200730-a3ba-6f4f-bb81-71339bdbbf73@leemhuis.info/
 
-Thanks!
+Credit where credit is due, this should be:
 
--Kees
+Reported-by: Alexandre Pereira <alexpereira@disroot.org>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=216785
 
--- 
-Kees Cook
+> Cc: Coly Li <colyli@suse.de>
+> […]
+
+Ciao, Thorsten
