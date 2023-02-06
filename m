@@ -2,139 +2,57 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9212FC636CC
-	for <linux-bcache@archiver.kernel.org>; Fri,  3 Feb 2023 04:12:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 69E50C61DA4
+	for <linux-bcache@archiver.kernel.org>; Mon,  6 Feb 2023 09:59:57 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232277AbjBCEMR (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 2 Feb 2023 23:12:17 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45234 "EHLO
+        id S229448AbjBFJ7z (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 6 Feb 2023 04:59:55 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52578 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232392AbjBCEMI (ORCPT
+        with ESMTP id S230129AbjBFJ7e (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 2 Feb 2023 23:12:08 -0500
-Received: from m12.mail.163.com (m12.mail.163.com [220.181.12.199])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTP id E37C289F98;
-        Thu,  2 Feb 2023 20:12:02 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=163.com;
-        s=s110527; h=From:Subject:Date:Message-Id:MIME-Version; bh=WrR//
-        zva4ZesymP/eKoj5KyCPnat+CUvA7ZEtVA4JNA=; b=nxOlHKommfrlibSizMmPx
-        DutsLeIDJQP8sGT9cquP1vr2436CwSUO2ewBsF8J9eyOmRVFaX/+GzZ0SLHJmkRg
-        petgKK4VnkZIGuJixy0LkGcz/CIAB5liAGPMhNhdCi5de9Ovf2ReMYnpfTLVicSU
-        jrj2cbuxWjEyNVPO8GL75U=
-Received: from leanderwang-LC2.localdomain (unknown [111.206.145.21])
-        by zwqz-smtp-mta-g2-2 (Coremail) with SMTP id _____wBnbNCFidxj79KlCg--.56852S2;
-        Fri, 03 Feb 2023 12:11:49 +0800 (CST)
-From:   Zheng Wang <zyytlz.wz@163.com>
-To:     colyli@suse.de
-Cc:     hackerzheng666@gmail.com, kent.overstreet@gmail.com,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alex000young@gmail.com, Zheng Wang <zyytlz.wz@163.com>,
-        stable@vger.kernel.org
-Subject: [PATCH v3] bcache: Remove some unnecessary NULL point check for the  return value of __bch_btree_node_alloc-related pointer
-Date:   Fri,  3 Feb 2023 12:11:47 +0800
-Message-Id: <20230203041147.581389-1-zyytlz.wz@163.com>
-X-Mailer: git-send-email 2.25.1
+        Mon, 6 Feb 2023 04:59:34 -0500
+X-Greylist: delayed 311 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Mon, 06 Feb 2023 01:59:24 PST
+Received: from mail.render-wahnsinn.de (unknown [IPv6:2a01:4f9:3b:4ea6::2])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 777848692
+        for <linux-bcache@vger.kernel.org>; Mon,  6 Feb 2023 01:59:24 -0800 (PST)
+Received: from [127.0.0.1] (localhost [127.0.0.1]) by localhost (Mailerdaemon) with ESMTPSA id 6933F1B4A11
+        for <linux-bcache@vger.kernel.org>; Mon,  6 Feb 2023 10:54:11 +0100 (CET)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=render-wahnsinn.de;
+        s=dkim; t=1675677251; h=from:subject:date:message-id:to:mime-version:content-type:
+         content-transfer-encoding:content-language;
+        bh=21Gf12/tG7XJHAY6PLrc+O6AW7swme/IjEdbqGfjQy8=;
+        b=KaGZpXSpicPG1sJmBYi5MvvS0/ILyj+n/5I+4tjRCS5u5zAkACHLkibz0GLagTOOE8qZqA
+        wFah4Ffs6gmjMZ1gAcUIUMPYagNmDsag/SxhwTVH/oXv6rkmonVjKsjQL1zb3K808mk9iO
+        RMqPQ0E3DVJrIwTDXnXirBT/FL6Y7y3fQgKZw1tm9/q3Un5cc70iHJB1Wy8Be6yhwqcN9H
+        JVmL6pSJnYTprO7pNmBPrVIh+aVuzM0DxuuxxOClSV1Luz6YMc2UHMheq6agvtYKGXdntk
+        KXJUNrqhmfN068NqIPTUAbMaK0cs90ni2d0S8vmUvjtXEzonmqlEuEnWOilogg==
+Message-ID: <92a2df4d-3631-b669-c275-1f067ad72bd1@render-wahnsinn.de>
+Date:   Mon, 6 Feb 2023 10:54:09 +0100
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-CM-TRANSID: _____wBnbNCFidxj79KlCg--.56852S2
-X-Coremail-Antispam: 1Uf129KBjvJXoWxAr48WF4xXrW3Aw4ktFWxtFb_yoW5CF1Dpr
-        W29ryayr97Xr4UCr9Yg3WvvFyfXw12vFWUWr93u3WfZry7AFyrCay0934jvrWUuFWxuF4U
-        Zr40yw1UXr4UtF7anT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-        9KBjDUYxBIdaVFxhVjvjDU0xZFpf9x0ziIPfLUUUUU=
-X-Originating-IP: [111.206.145.21]
-X-CM-SenderInfo: h2113zf2oz6qqrwthudrp/xtbBzgwLU2I0XNypJwAAsC
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101
+ Thunderbird/102.6.0
+To:     linux-bcache@vger.kernel.org
+Content-Language: en-US
+From:   Robert Krig <robert.krig@render-wahnsinn.de>
+Subject: Can you switch caching modes on the fly during use?
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Last-TLS-Session-Version: TLSv1.3
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Due to the previously fix of __bch_btree_node_alloc, the return value will
-never be a NULL pointer. So IS_ERR is enough to handle the failure
- situation. Fix it by replacing IS_ERR_OR_NULL check to IS_ERR check.
+Hi. I was just wondering.
 
-Fixes: cafe56359144 ("bcache: A block layer cache")
-Cc: stable@vger.kernel.org
-Signed-off-by: Zheng Wang <zyytlz.wz@163.com>
----
-v3:
-- Add Cc: stable@vger.kernel.org suggested by Eric
-v2:
-- Replace more checks
----
- drivers/md/bcache/btree.c | 10 +++++-----
- drivers/md/bcache/super.c |  4 ++--
- 2 files changed, 7 insertions(+), 7 deletions(-)
+My cache device is a MD Raid1 SSD.
+My backing device is a BTRFS Raid10 on 8 Spinning disks.
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 147c493a989a..7c21e54468bf 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1138,7 +1138,7 @@ static struct btree *btree_node_alloc_replacement(struct btree *b,
- {
- 	struct btree *n = bch_btree_node_alloc(b->c, op, b->level, b->parent);
- 
--	if (!IS_ERR_OR_NULL(n)) {
-+	if (!IS_ERR(n)) {
- 		mutex_lock(&n->write_lock);
- 		bch_btree_sort_into(&b->keys, &n->keys, &b->c->sort);
- 		bkey_copy_key(&n->key, &b->key);
-@@ -1340,7 +1340,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
- 	memset(new_nodes, 0, sizeof(new_nodes));
- 	closure_init_stack(&cl);
- 
--	while (nodes < GC_MERGE_NODES && !IS_ERR_OR_NULL(r[nodes].b))
-+	while (nodes < GC_MERGE_NODES && !IS_ERR(r[nodes].b))
- 		keys += r[nodes++].keys;
- 
- 	blocks = btree_default_blocks(b->c) * 2 / 3;
-@@ -1352,7 +1352,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
- 
- 	for (i = 0; i < nodes; i++) {
- 		new_nodes[i] = btree_node_alloc_replacement(r[i].b, NULL);
--		if (IS_ERR_OR_NULL(new_nodes[i]))
-+		if (IS_ERR(new_nodes[i]))
- 			goto out_nocoalesce;
- 	}
- 
-@@ -1487,7 +1487,7 @@ static int btree_gc_coalesce(struct btree *b, struct btree_op *op,
- 	bch_keylist_free(&keylist);
- 
- 	for (i = 0; i < nodes; i++)
--		if (!IS_ERR_OR_NULL(new_nodes[i])) {
-+		if (!IS_ERR(new_nodes[i])) {
- 			btree_node_free(new_nodes[i]);
- 			rw_unlock(true, new_nodes[i]);
- 		}
-@@ -1669,7 +1669,7 @@ static int bch_btree_gc_root(struct btree *b, struct btree_op *op,
- 	if (should_rewrite) {
- 		n = btree_node_alloc_replacement(b, NULL);
- 
--		if (!IS_ERR_OR_NULL(n)) {
-+		if (!IS_ERR(n)) {
- 			bch_btree_node_write_sync(n);
- 
- 			bch_btree_set_root(n);
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index ba3909bb6bea..7660962e7b8b 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1724,7 +1724,7 @@ static void cache_set_flush(struct closure *cl)
- 	if (!IS_ERR_OR_NULL(c->gc_thread))
- 		kthread_stop(c->gc_thread);
- 
--	if (!IS_ERR_OR_NULL(c->root))
-+	if (!IS_ERR(c->root))
- 		list_add(&c->root->list, &c->btree_cache);
- 
- 	/*
-@@ -2088,7 +2088,7 @@ static int run_cache_set(struct cache_set *c)
- 
- 		err = "cannot allocate new btree root";
- 		c->root = __bch_btree_node_alloc(c, NULL, 0, true, NULL);
--		if (IS_ERR_OR_NULL(c->root))
-+		if (IS_ERR(c->root))
- 			goto err;
- 
- 		mutex_lock(&c->root->write_lock);
--- 
-2.25.1
+
+Everything is setup as default. Which, as far as I recall means 
+writethrough caching.
+
+Can I just switch the caching mode on the fly while the filesystem is in 
+use, without any risks of corruption, or do I need to detach the cache, 
+unmount the FS, etc...?
 
