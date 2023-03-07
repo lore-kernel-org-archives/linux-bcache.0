@@ -2,70 +2,300 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 06E46C6FA99
-	for <linux-bcache@archiver.kernel.org>; Sat,  4 Mar 2023 06:46:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A5E9BC678D4
+	for <linux-bcache@archiver.kernel.org>; Tue,  7 Mar 2023 10:19:02 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229476AbjCDGqM (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Sat, 4 Mar 2023 01:46:12 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46568 "EHLO
+        id S229723AbjCGKTB (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 7 Mar 2023 05:19:01 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:57114 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229447AbjCDGqL (ORCPT
+        with ESMTP id S229671AbjCGKTA (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sat, 4 Mar 2023 01:46:11 -0500
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [IPv6:2604:1380:4641:c500::1])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A013B1A678;
-        Fri,  3 Mar 2023 22:46:10 -0800 (PST)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 258B860C16;
-        Sat,  4 Mar 2023 06:46:10 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 21A1BC4339C;
-        Sat,  4 Mar 2023 06:46:08 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=linuxfoundation.org;
-        s=korg; t=1677912369;
-        bh=luuUmF31JLBAn14SDtDxN5t4wt1kEB0qUtWNkvD36tI=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=JdcTdmZ9vvThlQTzfhs3J+Xays4UKXMEMfB+Fej3iahsZCaTboHLC++qCyIzVwJew
-         4fdnJWQbPTuquBHruP+vnXE8KXAeWXYklvDCZQX0m7QVePlw41nerOOiXgo5DK2VRs
-         0c/cWtFfxfpu6rwAPuSzzHR4kqWbE9Apshl2mNP8=
-Date:   Sat, 4 Mar 2023 07:46:07 +0100
-From:   Greg KH <gregkh@linuxfoundation.org>
-To:     Eric Wheeler <stable@lists.ewheeler.net>
-Cc:     stable@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Coly Li <colyli@suse.de>
-Subject: Re: [CHERRY-PICK] bcache: fixes that missed a Cc:
- stable@vger.kernel.org
-Message-ID: <ZALpL/xVJHFwuCIL@kroah.com>
-References: <81201ca-5263-1b20-8e21-8c88edb552c9@ewheeler.net>
+        Tue, 7 Mar 2023 05:19:00 -0500
+Received: from mail-m3164.qiye.163.com (mail-m3164.qiye.163.com [103.74.31.64])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 125CB31E17
+        for <linux-bcache@vger.kernel.org>; Tue,  7 Mar 2023 02:18:57 -0800 (PST)
+Received: from localhost.localdomain (unknown [218.94.118.90])
+        by mail-m3164.qiye.163.com (Hmail) with ESMTPA id 9F4D66202C8;
+        Tue,  7 Mar 2023 18:18:55 +0800 (CST)
+From:   mingzhe <mingzhe.zou@easystack.cn>
+To:     colyli@suse.de, bcache@lists.ewheeler.net,
+        andrea.tomassetti-opensource@devo.com
+Cc:     linux-bcache@vger.kernel.org, zoumingzhe@qq.com
+Subject: [PATCH v6 3/3] bcache: support online resizing of cached_dev
+Date:   Tue,  7 Mar 2023 18:18:42 +0800
+Message-Id: <20230307101842.2450-3-mingzhe.zou@easystack.cn>
+X-Mailer: git-send-email 2.39.2.windows.1
+In-Reply-To: <20230307101842.2450-1-mingzhe.zou@easystack.cn>
+References: <20230307101842.2450-1-mingzhe.zou@easystack.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <81201ca-5263-1b20-8e21-8c88edb552c9@ewheeler.net>
+Content-Transfer-Encoding: 8bit
+X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
+        tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVkaH08eVhhCH08fHhgaSEhLTlUZERMWGhIXJBQOD1
+        lXWRgSC1lBWUlKQ1VCT1VKSkNVQktZV1kWGg8SFR0UWUFZT0tIVUpKS0hKQ1VKS0tVS1kG
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6PE06ERw5FTJPCjcZNDgTFA0a
+        Fx4aChJVSlVKTUxDSkNPSEhNSEtLVTMWGhIXVRYSFRwBEx5VARQOOx4aCAIIDxoYEFUYFUVZV1kS
+        C1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBQktOSTcG
+X-HM-Tid: 0a86bb94c9be00a4kurm9f4d66202c8
+X-HM-MType: 1
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Fri, Mar 03, 2023 at 01:26:53PM -0800, Eric Wheeler wrote:
-> Dear stable tree maintainers: 
-> 
-> Please pick the following commits that should be pulled into stable but 
-> missed the `Cc` tag to make it happen automatically.
-> 
-> I have checked with Coly, the bcache maintainer, and he agrees that they 
-> should go into stable:
-> 
-> 
-> d55f7cb2e5c0 bcache: fix error info in register_bcache()
-> 7b1002f7cfe5 bcache: fixup bcache_dev_sectors_dirty_add() multithreaded CPU false sharing
-> a1a2d8f0162b bcache: avoid unnecessary soft lockup in kworker update_writeback_rate()
-> 
-> # NOTICE: These two depend on each other, so apply both or neither!
-> 0259d4498ba4 bcache: move calc_cached_dev_sectors to proper place on backing device detach
-> aa97f6cdb7e9 bcache: fix NULL pointer reference in cached_dev_detach_finish
+When partial_stripes_expensive is false, resizing causes nr_stripes to change.
+So, stripe_sectors_dirty and full_dirty_stripes memory must be reallocated.
+If the device is smaller, only nr_stripes need to be modified.
 
-What stable tree(s) should these all go to?
+Signed-off-by: mingzhe <mingzhe.zou@easystack.cn>
 
-thanks,
+---
+Changelog:
+v6: Add resize in sysfs
+v5: Update api calls.
+v4: Fix up overflow and null pointer
+v3: Fix up errors.
+v2: Fix up errors.
+v1: Original verison.
+---
+ drivers/md/bcache/bcache.h |  1 +
+ drivers/md/bcache/btree.c  | 31 ++++++++++++++
+ drivers/md/bcache/btree.h  |  2 +
+ drivers/md/bcache/super.c  | 86 ++++++++++++++++++++++++++++++++++++++
+ drivers/md/bcache/sysfs.c  | 22 +++++++++-
+ 5 files changed, 140 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index db3439d65582..74498cd53e2c 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -1021,6 +1021,7 @@ void bcache_write_super(struct cache_set *c);
+ 
+ int bch_flash_dev_create(struct cache_set *c, uint64_t size);
+ 
++int bch_cached_dev_resize(struct cached_dev *dc, sector_t sectors);
+ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 			  uint8_t *set_uuid);
+ void bch_cached_dev_detach(struct cached_dev *dc);
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 147c493a989a..07388e51ff9c 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -2467,6 +2467,37 @@ int bch_btree_insert(struct cache_set *c, struct keylist *keys,
+ 	return ret;
+ }
+ 
++int bch_btree_insert_invalidate(struct cache_set *c, unsigned int inode,
++				sector_t offset, sector_t length)
++{
++	int ret = 0;
++	sector_t num;
++	struct keylist insert_keys;
++
++	bch_keylist_init(&insert_keys);
++	while (!ret && length) {
++		num = min_t(sector_t, length, 1U << (KEY_SIZE_BITS - 1));
++
++		if ((ret = __bch_keylist_realloc(&insert_keys, 2))) {
++			pr_err("cannot allocate memory");
++			break;
++		}
++
++		offset += num;
++		length -= num;
++
++		bch_keylist_add(&insert_keys, &KEY(inode, offset, num));
++		if ((ret = bch_btree_insert(c, &insert_keys, NULL, NULL))) {
++			pr_err("invalidating %llu sectors from %llu error %d",
++				num, offset - num, ret);
++			break;
++		}
++	}
++	bch_keylist_free(&insert_keys);
++
++	return ret;
++}
++
+ void bch_btree_set_root(struct btree *b)
+ {
+ 	unsigned int i;
+diff --git a/drivers/md/bcache/btree.h b/drivers/md/bcache/btree.h
+index 1b5fdbc0d83e..28c8885ecea1 100644
+--- a/drivers/md/bcache/btree.h
++++ b/drivers/md/bcache/btree.h
+@@ -276,6 +276,8 @@ int bch_btree_insert_check_key(struct btree *b, struct btree_op *op,
+ 			       struct bkey *check_key);
+ int bch_btree_insert(struct cache_set *c, struct keylist *keys,
+ 		     atomic_t *journal_ref, struct bkey *replace_key);
++int bch_btree_insert_invalidate(struct cache_set *c, unsigned int inode,
++				sector_t offset, sector_t length);
+ 
+ int bch_gc_thread_start(struct cache_set *c);
+ void bch_initial_gc_finish(struct cache_set *c);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 6be02d6e0ba1..56535d79648d 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1345,6 +1345,92 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
+ 	return 0;
+ }
+ 
++int bch_cached_dev_resize(struct cached_dev *dc, sector_t sectors)
++{
++	struct cache_set *c = dc->disk.c;
++	uint64_t nr_stripes, n, i;
++	sector_t length, sectors_dirty;
++	atomic_t *stripe_sectors_dirty;
++	unsigned long *full_dirty_stripes;
++	const size_t max_stripes = min_t(size_t, INT_MAX,
++					 SIZE_MAX / sizeof(atomic_t));
++
++	/* Block writeback thread and all requests */
++	down_write(&dc->writeback_lock);
++
++	if (!dc->partial_stripes_expensive)
++		goto set_capacity;
++
++	nr_stripes = DIV_ROUND_UP_ULL(sectors, dc->disk.stripe_size);
++	if (!nr_stripes || nr_stripes > max_stripes) {
++		pr_err("nr_stripes too large or invalid: %llu", nr_stripes);
++		up_write(&dc->writeback_lock);
++		return -ENOMEM;
++	}
++
++	if (nr_stripes > dc->disk.nr_stripes)
++		goto realloc;
++
++	for (i = nr_stripes; i < dc->disk.nr_stripes; i++) {
++		sectors_dirty = atomic_read(dc->disk.stripe_sectors_dirty + i);
++		atomic_long_sub(sectors_dirty, &dc->disk.dirty_sectors);
++	}
++	goto nr_stripes;
++
++realloc:
++	n = nr_stripes * sizeof(atomic_t);
++	stripe_sectors_dirty = kvzalloc(n, GFP_KERNEL);
++	if (!stripe_sectors_dirty) {
++		up_write(&dc->writeback_lock);
++		return -ENOMEM;
++	}
++
++	n = BITS_TO_LONGS(nr_stripes) * sizeof(unsigned long);
++	full_dirty_stripes = kvzalloc(n, GFP_KERNEL);
++	if (!full_dirty_stripes) {
++		kvfree(stripe_sectors_dirty);
++		up_write(&dc->writeback_lock);
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < dc->disk.nr_stripes; i++) {
++		sectors_dirty = atomic_read(dc->disk.stripe_sectors_dirty + i);
++		atomic_set(stripe_sectors_dirty + i, sectors_dirty);
++		if (sectors_dirty == dc->disk.stripe_size)
++			set_bit(i, full_dirty_stripes);
++	}
++
++	kvfree(dc->disk.full_dirty_stripes);
++	kvfree(dc->disk.stripe_sectors_dirty);
++	dc->disk.stripe_sectors_dirty = stripe_sectors_dirty;
++	dc->disk.full_dirty_stripes = full_dirty_stripes;
++
++nr_stripes:
++	dc->disk.nr_stripes = nr_stripes;
++
++set_capacity:
++	length = get_capacity(dc->disk.disk);
++	set_capacity_and_notify(dc->disk.disk, sectors);
++
++	if (!c || length <= sectors)
++		goto skip_invalidate;
++	length -= sectors;
++
++	/* invalidate dirty data not used */
++	pr_info("invalidating %llu sectors from %llu", length, sectors);
++	bch_btree_insert_invalidate(c, dc->disk.id, sectors, length);
++
++	/* recount dirty sectors */
++	if (!dc->partial_stripes_expensive) {
++		atomic_long_set(&dc->disk.dirty_sectors, 0);
++		bch_sectors_dirty_init(&dc->disk);
++	}
++
++skip_invalidate:
++	up_write(&dc->writeback_lock);
++	return 0;
++}
++
+ /* when dc->disk.kobj released */
+ void bch_cached_dev_release(struct kobject *kobj)
+ {
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index c6f677059214..ee31b873ab2a 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -150,7 +150,9 @@ rw_attribute(btree_shrinker_disabled);
+ rw_attribute(copy_gc_enabled);
+ rw_attribute(idle_max_writeback_rate);
+ rw_attribute(gc_after_writeback);
+-rw_attribute(size);
++
++read_attribute(size);
++write_attribute(resize);
+ 
+ static ssize_t bch_snprint_string_list(char *buf,
+ 				       size_t size,
+@@ -194,6 +196,7 @@ SHOW(__bch_cached_dev)
+ 
+ 
+ 	sysfs_printf(data_csum,		"%i", dc->disk.data_csum);
++	sysfs_hprint(size,		get_capacity(dc->disk.disk) << 9);
+ 	var_printf(verify,		"%i");
+ 	var_printf(bypass_torture_test,	"%i");
+ 	var_printf(writeback_metadata,	"%i");
+@@ -305,6 +308,18 @@ STORE(__cached_dev)
+ #define d_strtoi_h(var)		sysfs_hatoi(var, dc->var)
+ 
+ 	sysfs_strtoul(data_csum,	dc->disk.data_csum);
++
++	if (attr == &sysfs_resize) {
++		ssize_t ret;
++		sector_t v, max, sectors;
++
++		strtoi_h_or_return(buf, v);
++		max = bdev_nr_sectors(dc->bdev) - dc->sb.data_offset;
++		sectors = clamp_t(sector_t, v >> 9, 0, max);
++		ret = bch_cached_dev_resize(dc, sectors);
++		return ret ? ret : size;
++	}
++
+ 	d_strtoul(verify);
+ 	sysfs_strtoul_bool(bypass_torture_test, dc->bypass_torture_test);
+ 	sysfs_strtoul_bool(writeback_metadata, dc->writeback_metadata);
+@@ -535,6 +550,8 @@ static struct attribute *bch_cached_dev_attrs[] = {
+ 	&sysfs_running,
+ 	&sysfs_state,
+ 	&sysfs_label,
++	&sysfs_size,
++	&sysfs_resize,
+ #ifdef CONFIG_BCACHE_DEBUG
+ 	&sysfs_verify,
+ 	&sysfs_bypass_torture_test,
+@@ -577,7 +594,7 @@ STORE(__bch_flash_dev)
+ 
+ 	sysfs_strtoul(data_csum,	d->data_csum);
+ 
+-	if (attr == &sysfs_size) {
++	if (attr == &sysfs_resize) {
+ 		uint64_t v;
+ 
+ 		strtoi_h_or_return(buf, v);
+@@ -608,6 +625,7 @@ static struct attribute *bch_flash_dev_attrs[] = {
+ #endif
+ 	&sysfs_label,
+ 	&sysfs_size,
++	&sysfs_resize,
+ 	NULL
+ };
+ ATTRIBUTE_GROUPS(bch_flash_dev);
+-- 
+2.39.2.windows.1
+
