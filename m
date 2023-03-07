@@ -2,122 +2,199 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D1AD4C6FA99
-	for <linux-bcache@archiver.kernel.org>; Tue,  7 Mar 2023 12:03:10 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D3983C678D4
+	for <linux-bcache@archiver.kernel.org>; Tue,  7 Mar 2023 13:51:36 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230127AbjCGMDJ (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 7 Mar 2023 07:03:09 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45338 "EHLO
+        id S231247AbjCGNvf (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 7 Mar 2023 08:51:35 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:53192 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231187AbjCGMDI (ORCPT
+        with ESMTP id S231262AbjCGNvM (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 7 Mar 2023 07:03:08 -0500
-Received: from mga12.intel.com (mga12.intel.com [192.55.52.136])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1F0291589E
-        for <linux-bcache@vger.kernel.org>; Tue,  7 Mar 2023 04:03:05 -0800 (PST)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple;
-  d=intel.com; i=@intel.com; q=dns/txt; s=Intel;
-  t=1678190586; x=1709726586;
-  h=date:from:to:cc:subject:message-id:references:
-   mime-version:in-reply-to;
-  bh=l1clGx5jIFXWTjr0l7YZHDdAwr7fHjYS3AtzNmceqmM=;
-  b=cadxGpv6+xHPD458A6Izg8WJ66fzPY4z1VmsiJh7dtuswusYWp0fhpT5
-   HvA7UIgQeh5VIGWGXS0sIvmYoAP3lgaqHvpeWUxbGcNCB8DDAeApXlyCo
-   8wCAEjypj6ACri0YCEwcd29A4LQxeP2h7ijB1wwY7FUAeMl8/BXMqjAo8
-   9Vc5V0179kEhZ/gJLeF///SxmnssbJ6He6lIaDYebkcOLc9eH5D5XQgQx
-   VImZqjei4O6LLAiqc/lsmVKTYoXusuS6XG7hqISG6yRAcdFdvGQSSnwCC
-   L6yiG84XPnMEhzVQazmrJCp/iqaLB8w8vghDtO0l0hXCrXONuAXLCWOml
-   Q==;
-X-IronPort-AV: E=McAfee;i="6500,9779,10641"; a="315487119"
-X-IronPort-AV: E=Sophos;i="5.98,240,1673942400"; 
-   d="scan'208";a="315487119"
-Received: from fmsmga004.fm.intel.com ([10.253.24.48])
-  by fmsmga106.fm.intel.com with ESMTP/TLS/ECDHE-RSA-AES256-GCM-SHA384; 07 Mar 2023 04:03:05 -0800
-X-ExtLoop1: 1
-X-IronPort-AV: E=McAfee;i="6500,9779,10641"; a="745438490"
-X-IronPort-AV: E=Sophos;i="5.98,240,1673942400"; 
-   d="scan'208";a="745438490"
-Received: from lkp-server01.sh.intel.com (HELO b613635ddfff) ([10.239.97.150])
-  by fmsmga004.fm.intel.com with ESMTP; 07 Mar 2023 04:03:03 -0800
-Received: from kbuild by b613635ddfff with local (Exim 4.96)
-        (envelope-from <lkp@intel.com>)
-        id 1pZW22-0001H9-2h;
-        Tue, 07 Mar 2023 12:03:02 +0000
-Date:   Tue, 7 Mar 2023 20:02:41 +0800
-From:   kernel test robot <lkp@intel.com>
-To:     mingzhe <mingzhe.zou@easystack.cn>, colyli@suse.de,
-        bcache@lists.ewheeler.net, andrea.tomassetti-opensource@devo.com
-Cc:     oe-kbuild-all@lists.linux.dev, linux-bcache@vger.kernel.org,
-        zoumingzhe@qq.com
-Subject: Re: [PATCH v6 1/3] bcache: add dirty_data in struct bcache_device
-Message-ID: <202303071948.FdodHBjj-lkp@intel.com>
-References: <20230307101842.2450-1-mingzhe.zou@easystack.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20230307101842.2450-1-mingzhe.zou@easystack.cn>
+        Tue, 7 Mar 2023 08:51:12 -0500
+Received: from mail-m3164.qiye.163.com (mail-m3164.qiye.163.com [103.74.31.64])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CFB119EEE
+        for <linux-bcache@vger.kernel.org>; Tue,  7 Mar 2023 05:50:23 -0800 (PST)
+Received: from localhost.localdomain (unknown [218.94.118.90])
+        by mail-m3164.qiye.163.com (Hmail) with ESMTPA id B866B62037F;
+        Tue,  7 Mar 2023 21:49:03 +0800 (CST)
+From:   mingzhe <mingzhe.zou@easystack.cn>
+To:     colyli@suse.de, bcache@lists.ewheeler.net,
+        andrea.tomassetti-opensource@devo.com
+Cc:     linux-bcache@vger.kernel.org, zoumingzhe@qq.com
+Subject: [PATCH v7 2/3] bcache: allocate stripe memory when partial_stripes_expensive is true
+Date:   Tue,  7 Mar 2023 21:48:51 +0800
+Message-Id: <20230307134852.8288-2-mingzhe.zou@easystack.cn>
+X-Mailer: git-send-email 2.17.1.windows.2
+In-Reply-To: <20230307134852.8288-1-mingzhe.zou@easystack.cn>
+References: <20230307134852.8288-1-mingzhe.zou@easystack.cn>
+X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
+        tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVkaT0hLVhhIQx9LH0JLTh1JTVUZERMWGhIXJBQOD1
+        lXWRgSC1lBWUlKQ1VCT1VKSkNVQktZV1kWGg8SFR0UWUFZT0tIVUpKS0hKTFVKS0tVS1kG
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6OC46TBw*GDJRQzYZOi4#CkMc
+        MTlPCzlVSlVKTUxDSkJNQk9PSUJMVTMWGhIXVRYSFRwBEx5VARQOOx4aCAIIDxoYEFUYFUVZV1kS
+        C1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBTU5KSjcG
+X-HM-Tid: 0a86bc552c2000a4kurmb866b62037f
+X-HM-MType: 1
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hi mingzhe,
+Currently, bcache_device (cached_dev and flash_dev) always allocate
+memory for stripe_sectors_dirty and full_dirty_stripes, regardless of
+whether partial_stripes_expensive is true or not. When the device's
+partial_stripes_expensive is false, only bcache_dev_sectors_dirty_add()
+will use stripe_sectors_dirty.
 
-Thank you for the patch! Yet something to improve:
+When stripe_size is 0, it is forced to 2^31, which is about 1T (2^31*512).
+However, some non-raid devices (such as rbd) will provide non-zero io_opt.
+In https://bugzilla.redhat.com/show_bug.cgi?id=1783075, some block devices
+which large capacity (e.g. 8TB) but small io_opt size (e.g. 8 sectors), the
+nr_stripes will be very large. Even though the overflow bug is fixed in
+65f0f017e7be and 7a1481267999, it still returns an error when register.
 
-[auto build test ERROR on linus/master]
-[also build test ERROR on v6.3-rc1 next-20230307]
-[cannot apply to song-md/md-next device-mapper-dm/for-next]
-[If your patch is applied to the wrong git tree, kindly drop us a note.
-And when submitting patch, we suggest to use '--base' as documented in
-https://git-scm.com/docs/git-format-patch#_base_tree_information]
+I don't think it's necessary to allocate stripe memory for devices where
+partial_stripes_expensive is false. This patch will allocate stripe memory
+when partial_stripes_expensive is true.
 
-url:    https://github.com/intel-lab-lkp/linux/commits/mingzhe/bcache-allocate-stripe-memory-when-partial_stripes_expensive-is-true/20230307-181923
-patch link:    https://lore.kernel.org/r/20230307101842.2450-1-mingzhe.zou%40easystack.cn
-patch subject: [PATCH v6 1/3] bcache: add dirty_data in struct bcache_device
-config: m68k-allyesconfig (attached as .config)
-compiler: m68k-linux-gcc (GCC) 12.1.0
-reproduce (this is a W=1 build):
-        wget https://raw.githubusercontent.com/intel/lkp-tests/master/sbin/make.cross -O ~/bin/make.cross
-        chmod +x ~/bin/make.cross
-        # https://github.com/intel-lab-lkp/linux/commit/9c7354d0ffcbc41178540901315f22fb0a16b11a
-        git remote add linux-review https://github.com/intel-lab-lkp/linux
-        git fetch --no-tags linux-review mingzhe/bcache-allocate-stripe-memory-when-partial_stripes_expensive-is-true/20230307-181923
-        git checkout 9c7354d0ffcbc41178540901315f22fb0a16b11a
-        # save the config file
-        COMPILER_INSTALL_PATH=$HOME/0day COMPILER=gcc-12.1.0 make.cross W=1 ARCH=m68k olddefconfig
-        COMPILER_INSTALL_PATH=$HOME/0day COMPILER=gcc-12.1.0 make.cross W=1 ARCH=m68k 
+Signed-off-by: mingzhe <mingzhe.zou@easystack.cn>
 
-If you fix the issue, kindly add following tag where applicable
-| Reported-by: kernel test robot <lkp@intel.com>
-| Link: https://lore.kernel.org/oe-kbuild-all/202303071948.FdodHBjj-lkp@intel.com/
+---
+Changelog:
+v2: Fix up errors.
+v1: Original verison.
+---
+ drivers/md/bcache/super.c     | 32 ++++++++++++++++++++++----------
+ drivers/md/bcache/writeback.c | 14 ++++++++++----
+ 2 files changed, 32 insertions(+), 14 deletions(-)
 
-All errors (new ones prefixed by >>):
-
->> drivers/Kconfig:42: can't open file "drivers/md/Kconfig"
-   make[2]: *** [scripts/kconfig/Makefile:77: allyesconfig] Error 1
-   make[1]: *** [Makefile:693: allyesconfig] Error 2
-   make: *** [Makefile:226: __sub-make] Error 2
-   make: Target 'allyesconfig' not remade because of errors.
---
->> drivers/Kconfig:42: can't open file "drivers/md/Kconfig"
-   make[2]: *** [scripts/kconfig/Makefile:77: oldconfig] Error 1
-   make[1]: *** [Makefile:693: oldconfig] Error 2
-   make: *** [Makefile:226: __sub-make] Error 2
-   make: Target 'oldconfig' not remade because of errors.
---
->> drivers/Kconfig:42: can't open file "drivers/md/Kconfig"
-   make[2]: *** [scripts/kconfig/Makefile:77: olddefconfig] Error 1
-   make[1]: *** [Makefile:693: olddefconfig] Error 2
-   make: *** [Makefile:226: __sub-make] Error 2
-   make: Target 'olddefconfig' not remade because of errors.
-
-
-vim +42 drivers/Kconfig
-
-c6fd280766a050 Jeff Garzik    2006-08-10  41  
-^1da177e4c3f41 Linus Torvalds 2005-04-16 @42  source "drivers/md/Kconfig"
-^1da177e4c3f41 Linus Torvalds 2005-04-16  43  
-
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index ba3909bb6bea..6be02d6e0ba1 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -887,15 +887,20 @@ static void bcache_device_free(struct bcache_device *d)
+ 	}
+ 
+ 	bioset_exit(&d->bio_split);
+-	kvfree(d->full_dirty_stripes);
+-	kvfree(d->stripe_sectors_dirty);
++
++	if (d->full_dirty_stripes)
++		kvfree(d->full_dirty_stripes);
++
++	if (d->stripe_sectors_dirty)
++		kvfree(d->stripe_sectors_dirty);
+ 
+ 	closure_debug_destroy(&d->cl);
+ }
+ 
+ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+-		sector_t sectors, struct block_device *cached_bdev,
+-		const struct block_device_operations *ops)
++			      sector_t sectors, bool enable_stripe,
++			      struct block_device *cached_bdev,
++			      const struct block_device_operations *ops)
+ {
+ 	struct request_queue *q;
+ 	const size_t max_stripes = min_t(size_t, INT_MAX,
+@@ -903,6 +908,9 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+ 	uint64_t n;
+ 	int idx;
+ 
++	if (!enable_stripe)
++		goto skip_stripe;
++
+ 	if (!d->stripe_size)
+ 		d->stripe_size = 1 << 31;
+ 
+@@ -924,6 +932,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+ 	if (!d->full_dirty_stripes)
+ 		goto out_free_stripe_sectors_dirty;
+ 
++skip_stripe:
+ 	idx = ida_simple_get(&bcache_device_idx, 0,
+ 				BCACHE_DEVICE_IDX_MAX, GFP_KERNEL);
+ 	if (idx < 0)
+@@ -982,9 +991,11 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+ out_ida_remove:
+ 	ida_simple_remove(&bcache_device_idx, idx);
+ out_free_full_dirty_stripes:
+-	kvfree(d->full_dirty_stripes);
++	if (d->full_dirty_stripes)
++		kvfree(d->full_dirty_stripes);
+ out_free_stripe_sectors_dirty:
+-	kvfree(d->stripe_sectors_dirty);
++	if (d->stripe_sectors_dirty)
++		kvfree(d->stripe_sectors_dirty);
+ 	return -ENOMEM;
+ 
+ }
+@@ -1397,6 +1408,7 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
+ 	int ret;
+ 	struct io *io;
+ 	struct request_queue *q = bdev_get_queue(dc->bdev);
++	sector_t sectors = bdev_nr_sectors(dc->bdev) - dc->sb.data_offset;
+ 
+ 	__module_get(THIS_MODULE);
+ 	INIT_LIST_HEAD(&dc->list);
+@@ -1422,9 +1434,9 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
+ 		dc->partial_stripes_expensive =
+ 			q->limits.raid_partial_stripes_expensive;
+ 
+-	ret = bcache_device_init(&dc->disk, block_size,
+-			 bdev_nr_sectors(dc->bdev) - dc->sb.data_offset,
+-			 dc->bdev, &bcache_cached_ops);
++	ret = bcache_device_init(&dc->disk, block_size, sectors,
++				 dc->partial_stripes_expensive,
++				 dc->bdev, &bcache_cached_ops);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1535,7 +1547,7 @@ static int flash_dev_run(struct cache_set *c, struct uuid_entry *u)
+ 
+ 	kobject_init(&d->kobj, &bch_flash_dev_ktype);
+ 
+-	if (bcache_device_init(d, block_bytes(c->cache), u->sectors,
++	if (bcache_device_init(d, block_bytes(c->cache), u->sectors, false,
+ 			NULL, &bcache_flash_ops))
+ 		goto err;
+ 
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 65c997b25cca..e2ac1a863fee 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -596,6 +596,7 @@ static void read_dirty(struct cached_dev *dc)
+ void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
+ 				  uint64_t offset, int nr_sectors)
+ {
++	struct cached_dev *dc = NULL;
+ 	struct bcache_device *d = c->devices[inode];
+ 	unsigned int stripe_offset, sectors_dirty;
+ 	int stripe;
+@@ -603,14 +604,19 @@ void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
+ 	if (!d)
+ 		return;
+ 
+-	stripe = offset_to_stripe(d, offset);
+-	if (stripe < 0)
+-		return;
+-
+ 	atomic_long_add(nr_sectors, &d->dirty_sectors);
+ 
+ 	if (UUID_FLASH_ONLY(&c->uuids[inode]))
+ 		atomic_long_add(nr_sectors, &c->flash_dev_dirty_sectors);
++	else
++		dc = container_of(d, struct cached_dev, disk);
++
++	if (!dc || !dc->partial_stripes_expensive)
++		return;
++
++	stripe = offset_to_stripe(d, offset);
++	if (stripe < 0)
++		return;
+ 
+ 	stripe_offset = offset & (d->stripe_size - 1);
+ 
 -- 
-0-DAY CI Kernel Test Service
-https://github.com/intel/lkp-tests
+2.17.1.windows.2
+
