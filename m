@@ -2,105 +2,114 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 312C7C6FD1B
-	for <linux-bcache@archiver.kernel.org>; Tue,  7 Mar 2023 13:52:08 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 4CC3BC678D5
+	for <linux-bcache@archiver.kernel.org>; Wed,  8 Mar 2023 09:21:00 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231160AbjCGNwG (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 7 Mar 2023 08:52:06 -0500
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55554 "EHLO
+        id S229832AbjCHJU7 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 8 Mar 2023 04:20:59 -0500
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:50380 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S231140AbjCGNvu (ORCPT
+        with ESMTP id S230218AbjCHJU5 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 7 Mar 2023 08:51:50 -0500
+        Wed, 8 Mar 2023 04:20:57 -0500
 Received: from mail-m3164.qiye.163.com (mail-m3164.qiye.163.com [103.74.31.64])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0F8D121972
-        for <linux-bcache@vger.kernel.org>; Tue,  7 Mar 2023 05:51:07 -0800 (PST)
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8C40395BE6
+        for <linux-bcache@vger.kernel.org>; Wed,  8 Mar 2023 01:20:55 -0800 (PST)
 Received: from localhost.localdomain (unknown [218.94.118.90])
-        by mail-m3164.qiye.163.com (Hmail) with ESMTPA id 2E9AD620356;
-        Tue,  7 Mar 2023 21:49:03 +0800 (CST)
+        by mail-m3164.qiye.163.com (Hmail) with ESMTPA id 3D6266202B1;
+        Wed,  8 Mar 2023 17:20:48 +0800 (CST)
 From:   mingzhe <mingzhe.zou@easystack.cn>
-To:     colyli@suse.de, bcache@lists.ewheeler.net,
-        andrea.tomassetti-opensource@devo.com
+To:     colyli@suse.de, bcache@lists.ewheeler.net
 Cc:     linux-bcache@vger.kernel.org, zoumingzhe@qq.com
-Subject: [PATCH v7 1/3] bcache: add dirty_data in struct bcache_device
-Date:   Tue,  7 Mar 2023 21:48:50 +0800
-Message-Id: <20230307134852.8288-1-mingzhe.zou@easystack.cn>
+Subject: [PATCH] bcache: set io_disable to true when stop bcache device
+Date:   Wed,  8 Mar 2023 17:20:36 +0800
+Message-Id: <20230308092036.11024-1-mingzhe.zou@easystack.cn>
 X-Mailer: git-send-email 2.17.1.windows.2
 X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
-        tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVlCGRgeVkgYGkhCTBkaQktKH1UZERMWGhIXJBQOD1
+        tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVkaTh5IVk1PGkxKQktOHkJKHlUZERMWGhIXJBQOD1
         lXWRgSC1lBWUlKQ1VCT1VKSkNVQktZV1kWGg8SFR0UWUFZT0tIVUpKS0hKTFVKS0tVS1kG
-X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6Ok06MDo4GTJINDZODCMpCkoq
-        MzIaCQpVSlVKTUxDSkJNQk9ITUNMVTMWGhIXVRYSFRwBEx5VARQOOx4aCAIIDxoYEFUYFUVZV1kS
-        C1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSUNMSTcG
-X-HM-Tid: 0a86bc5529f700a4kurm2e9ad620356
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6MEk6Igw4FTJMFjUQLw04L0k8
+        NjYKFCJVSlVKTUxDSU1MSU9DQ01DVTMWGhIXVRYSFRwBEx5VARQOOx4aCAIIDxoYEFUYFUVZV1kS
+        C1lBWUlKQ1VCT1VKSkNVQktZV1kIAVlBSElDQjcG
+X-HM-Tid: 0a86c085ef2b00a4kurm3d6266202b1
 X-HM-MType: 1
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Currently, the dirty_data of cached_dev and flash_dev depend on the stripe.
-
-Since the flash device supports resize, it may cause a bug (resize the flash
-from 1T to 2T, and nr_stripes from 1 to 2).
-
-The patch add dirty_data in struct bcache_device, we can get the value of
-dirty_data quickly and fixes the bug of resize flash device.
+Stop is an operation that cannot be aborted. If there are still
+IO requests being processed, we can never stop the device.
+So, all new IO requests should fail when we set io_disable to true.
+However, sysfs has been unlinked at this time, user cannot modify
+io_disable via sysfs.
 
 Signed-off-by: mingzhe <mingzhe.zou@easystack.cn>
-
 ---
-Changelog:
-v7: Fix up the bug abort git am patch.
-v1: Original verison.
----
- drivers/md/bcache/bcache.h    | 1 +
- drivers/md/bcache/writeback.c | 2 ++
- drivers/md/bcache/writeback.h | 7 +------
- 3 files changed, 4 insertions(+), 6 deletions(-)
+ drivers/md/bcache/request.c | 16 ++++++++++++++++
+ drivers/md/bcache/super.c   |  9 +++++++++
+ 2 files changed, 25 insertions(+)
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index aebb7ef10e63..db3439d65582 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -268,6 +268,7 @@ struct bcache_device {
- 	unsigned int		stripe_size;
- 	atomic_t		*stripe_sectors_dirty;
- 	unsigned long		*full_dirty_stripes;
-+	atomic_long_t		dirty_sectors;
- 
- 	struct bio_set		bio_split;
- 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index d4a5fc0650bb..65c997b25cca 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -607,6 +607,8 @@ void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
- 	if (stripe < 0)
- 		return;
- 
-+	atomic_long_add(nr_sectors, &d->dirty_sectors);
-+
- 	if (UUID_FLASH_ONLY(&c->uuids[inode]))
- 		atomic_long_add(nr_sectors, &c->flash_dev_dirty_sectors);
- 
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 31df716951f6..a5bb1caa6c6e 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -48,12 +48,7 @@ struct bch_dirty_init_state {
- 
- static inline uint64_t bcache_dev_sectors_dirty(struct bcache_device *d)
- {
--	uint64_t i, ret = 0;
--
--	for (i = 0; i < d->nr_stripes; i++)
--		ret += atomic_read(d->stripe_sectors_dirty + i);
--
--	return ret;
-+	return atomic_long_read(&d->dirty_sectors);
+diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+index 67a2e29e0b40..9b85aad20022 100644
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -758,6 +758,15 @@ static void cached_dev_bio_complete(struct closure *cl)
+ 	search_free(cl);
  }
  
- static inline int offset_to_stripe(struct bcache_device *d,
++static void cached_dev_bio_fail(struct closure *cl)
++{
++	struct search *s = container_of(cl, struct search, cl);
++	struct cached_dev *dc = container_of(s->d, struct cached_dev, disk);
++
++	s->iop.status = BLK_STS_IOERR;
++	cached_dev_bio_complete(cl);
++}
++
+ /* Process reads */
+ 
+ static void cached_dev_read_error_done(struct closure *cl)
+@@ -971,6 +980,9 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+ 	struct bkey start = KEY(dc->disk.id, bio->bi_iter.bi_sector, 0);
+ 	struct bkey end = KEY(dc->disk.id, bio_end_sector(bio), 0);
+ 
++	if (unlikely((dc->io_disable)))
++		goto fail_bio;
++
+ 	bch_keybuf_check_overlapping(&s->iop.c->moving_gc_keys, &start, &end);
+ 
+ 	down_read_non_owner(&dc->writeback_lock);
+@@ -1046,6 +1058,10 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
+ insert_data:
+ 	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
+ 	continue_at(cl, cached_dev_write_complete, NULL);
++	return;
++
++fail_bio:
++	continue_at(cl, cached_dev_bio_fail, NULL);
+ }
+ 
+ static void cached_dev_nodata(struct closure *cl)
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index ba3909bb6bea..a2a82942f85b 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1389,6 +1389,15 @@ static void cached_dev_flush(struct closure *cl)
+ 	bch_cache_accounting_destroy(&dc->accounting);
+ 	kobject_del(&d->kobj);
+ 
++	/*
++	 * Stop is an operation that cannot be aborted. If there are still
++	 * IO requests being processed, we can never stop the device.
++	 * So, all new IO requests should fail when we set io_disable to true.
++	 * However, sysfs has been unlinked at this time, user cannot modify
++	 * io_disable via sysfs.
++	 */
++	dc->io_disable = true;
++
+ 	continue_at(cl, cached_dev_free, system_wq);
+ }
+ 
 -- 
 2.17.1.windows.2
 
