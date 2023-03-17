@@ -2,70 +2,115 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 597D8C61DA4
-	for <linux-bcache@archiver.kernel.org>; Wed, 15 Mar 2023 08:06:05 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id D0DA2C6FD1D
+	for <linux-bcache@archiver.kernel.org>; Fri, 17 Mar 2023 10:56:38 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S230376AbjCOIGE (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 15 Mar 2023 04:06:04 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51912 "EHLO
+        id S229556AbjCQK4i (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 17 Mar 2023 06:56:38 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52808 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230348AbjCOIGD (ORCPT
+        with ESMTP id S229494AbjCQK4h (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 15 Mar 2023 04:06:03 -0400
-Received: from dfw.source.kernel.org (dfw.source.kernel.org [139.178.84.217])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id EDA4C22113;
-        Wed, 15 Mar 2023 01:06:00 -0700 (PDT)
-Received: from smtp.kernel.org (relay.kernel.org [52.25.139.140])
-        (using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
-        (No client certificate requested)
-        by dfw.source.kernel.org (Postfix) with ESMTPS id 4506761BE6;
-        Wed, 15 Mar 2023 08:06:00 +0000 (UTC)
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 56FF2C433D2;
-        Wed, 15 Mar 2023 08:05:59 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=linuxfoundation.org;
-        s=korg; t=1678867559;
-        bh=QoCkV91dLU3WdHeO9GZXCr4B6ThMlsaAQLPzVTot7m4=;
-        h=Date:From:To:Cc:Subject:References:In-Reply-To:From;
-        b=fDsPpmTCNSsGF5lsh1aWR5FL/47tgALDQ/WeBflRXG1zeZ/XBvcCVaoDUteBl24U+
-         olCp0YVHxDniZLdyI2r4QArAjhy101qk+LrB72cfJBuLXCukakHbxwiFW1FDpMwnRu
-         xMzTggI61fQJSKPYhEq5IeazJtcGPA7AXWpssu1w=
-Date:   Wed, 15 Mar 2023 09:05:57 +0100
-From:   Greg KH <gregkh@linuxfoundation.org>
-To:     Eric Wheeler <stable@lists.ewheeler.net>
-Cc:     stable@vger.kernel.org, linux-bcache@vger.kernel.org,
-        Coly Li <colyli@suse.de>
-Subject: Re: [CHERRY-PICK] bcache: fixes that missed a Cc:
- stable@vger.kernel.org
-Message-ID: <ZBF8ZcxFggKt6FAq@kroah.com>
-References: <81201ca-5263-1b20-8e21-8c88edb552c9@ewheeler.net>
- <ZALpL/xVJHFwuCIL@kroah.com>
+        Fri, 17 Mar 2023 06:56:37 -0400
+Received: from mail-m11879.qiye.163.com (mail-m11879.qiye.163.com [115.236.118.79])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 63C91E918C
+        for <linux-bcache@vger.kernel.org>; Fri, 17 Mar 2023 03:56:35 -0700 (PDT)
+Received: from localhost.localdomain (unknown [183.6.116.60])
+        by mail-m11879.qiye.163.com (Hmail) with ESMTPA id 949DB680C6D;
+        Fri, 17 Mar 2023 18:49:35 +0800 (CST)
+From:   Yi Li <yili@winhong.com>
+To:     linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc:     yilikernel@gmail.com, yili@winhong.com, guochao@winhong.com,
+        colyli@suse.de, kent.overstreet@gmail.com
+Subject: [PATCH] bcache: fix wild pointer dereference in btree_gc_rewrite_node
+Date:   Fri, 17 Mar 2023 18:49:19 +0800
+Message-Id: <20230317104919.118125-1-yili@winhong.com>
+X-Mailer: git-send-email 2.25.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ZALpL/xVJHFwuCIL@kroah.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
+        tZV1koWUFITzdXWS1ZQUlXWQ8JGhUIEh9ZQVlDTklLVhkYQxlPTx1MGE5OSFUTARMWGhIXJBQOD1
+        lXWRgSC1lBWUpDSFVNVUpKTVVNS1lXWRYaDxIVHRRZQVlPS0hVSkpLSEpDVUpLS1VLWQY+
+X-HM-Sender-Digest: e1kMHhlZQR0aFwgeV1kSHx4VD1lBWUc6Nj46Sww4PT0XOR0PAisPCB46
+        LDIaFCFVSlVKTUxCS05LSkxNSE5CVTMWGhIXVQISFxI7DBIVExQVHFUYFBZFWVdZEgtZQVlKQ0hV
+        TVVKSk1VTUtZV1kIAVlBSEJNSjcG
+X-HM-Tid: 0a86ef3075812eb5kusn949db680c6d
+X-HM-MType: 1
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Sat, Mar 04, 2023 at 07:46:07AM +0100, Greg KH wrote:
-> On Fri, Mar 03, 2023 at 01:26:53PM -0800, Eric Wheeler wrote:
-> > Dear stable tree maintainers: 
-> > 
-> > Please pick the following commits that should be pulled into stable but 
-> > missed the `Cc` tag to make it happen automatically.
-> > 
-> > I have checked with Coly, the bcache maintainer, and he agrees that they 
-> > should go into stable:
-> > 
-> > 
-> > d55f7cb2e5c0 bcache: fix error info in register_bcache()
-> > 7b1002f7cfe5 bcache: fixup bcache_dev_sectors_dirty_add() multithreaded CPU false sharing
-> > a1a2d8f0162b bcache: avoid unnecessary soft lockup in kworker update_writeback_rate()
-> > 
-> > # NOTICE: These two depend on each other, so apply both or neither!
-> > 0259d4498ba4 bcache: move calc_cached_dev_sectors to proper place on backing device detach
-> > aa97f6cdb7e9 bcache: fix NULL pointer reference in cached_dev_detach_finish
-> 
-> What stable tree(s) should these all go to?
+This causes a wild pointer dereference in the path:
 
-Dropped from my queue due to lack of response :(
+  btree_gc_rewrite_node()
+  -> btree_node_alloc_replacement() // will return -EAGIN(-11)
+  -> bch_btree_node_write_sync(-EAGIN)
+     ...
+     -> mutex_lock(&b->write_lock)
+     ..write_lock Offset of structure btree is 152
+     ..b->write_lock addr is 000000000000008d (-11 + 152)
+     .. BUG!
+
+  BUG: unable to handle kernel NULL pointer dereference at 000000000000008d
+  Caching disabled for sde2
+  PGD 0 P4D 0
+  Oops: 0002 [#1] SMP NOPTI
+  CPU: 32 PID: 5050 Comm: bcache_gc Kdump: loaded Tainted: G        W
+       4.19.90-22.0401.87d4c7a.ckv.x86_64 #1 Hardware name: XFUSION 2288H
+  V5/BC11SPSCB10, BIOS 8.27 03/08/2022
+  RIP: 0010:mutex_lock+0x19/0x30
+  Code: 90 0f 1f 44 00 00 be 02 00 00 00 e9 51 fb ff ff 90 0f 1f 44 00 00 53 48 89 fb e8
+   02 e4 ff ff 65 48 8b 14 25 80 5c 01 00 31 c0 <f0> 48 0f b1 13 75 02 5b c3 48
+   89 df 5b eb c8 0f 1f 84 00 00 00 00
+  RSP: 0018:ffffab1b0aba3b70 EFLAGS:
+  00010246 RAX: 0000000000000000 RBX: 000000000000008d RCX: 0000000000000000
+  RDX: ffff89d3a7060000 RSI: 0000000000000000 RDI: 000000000000008d RBP:
+  fffffffffffffff5 R08: ffff89e3a6860d70 R09: ffff89e3bcc32000 R10:
+  0000000000000001 R11: 000007ffffffffff R12: 000000000000008d R13:
+  ffff89e3bb2a8c00 R14: ffffab1b0aba3e08 R15: 0000000000000000 FS:
+  0000000000000000(0000) GS:ffff89d3bff00000(0000) knlGS:0000000000000000 CS:
+  0010 DS: 0000 ES: 0000 CR0: 0000000080050033 CR2: 000000000000008d CR3:
+  0000001bd1e0a001 CR4: 00000000007606e0 DR0: 0000000000000000 DR1:
+  0000000000000000 DR2: 0000000000000000 DR3: 0000000000000000 DR6:
+  00000000fffe0ff0 DR7: 0000000000000400 PKRU: 55555554
+  Call Trace:
+  bch_btree_node_write_sync+0x45/0xa0 [bcache]
+  btree_gc_rewrite_node+0x8f/0x160 [bcache]
+  ? btree_gc_mark_node+0x64/0x220 [bcache]
+  btree_gc_recurse+0x30a/0x3c0 [bcache]
+  ? call_rwsem_down_write_failed+0x13/0x20
+  ? bch_btree_gc+0x3e5/0x660 [bcache]
+  bch_btree_gc+0x3e5/0x660 [bcache]
+  ? finish_wait+0x80/0x80  ?
+  bch_btree_gc+0x660/0x660 [bcache]
+  Buffer I/O error on dev bcache1, logical block 468885310, lost async page write
+  bch_gc_thread+0x30/0x1e0 [bcache]
+  ? finish_wait+0x80/0x80
+  Buffer I/O error on dev bcache1, logical block 468885311, lost async page write
+  kthread+0x113/0x130  ?
+  kthread_create_worker_on_cpu+0x70/0x70
+  ret_from_fork+0x1f/0x4
+
+Signed-off-by: Yi Li <yili@winhong.com>
+Signed-off-by: Guo Chao  <guochao@winhong.com>
+---
+ drivers/md/bcache/btree.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 147c493a989a..5d41331e96f2 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1505,6 +1505,8 @@ static int btree_gc_rewrite_node(struct btree *b, struct btree_op *op,
+ 
+ 	n = btree_node_alloc_replacement(replace, NULL);
+ 
++	if (IS_ERR_OR_NULL(n))
++		return -EINTR;
+ 	/* recheck reserve after allocating replacement node */
+ 	if (btree_check_reserve(b, NULL)) {
+ 		btree_node_free(n);
+-- 
+2.25.4
+
