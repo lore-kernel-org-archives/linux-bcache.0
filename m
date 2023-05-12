@@ -2,45 +2,45 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 73F80C77B7C
-	for <linux-bcache@archiver.kernel.org>; Fri, 12 May 2023 08:10:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 2103BC77B7F
+	for <linux-bcache@archiver.kernel.org>; Fri, 12 May 2023 09:55:01 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S239625AbjELIKM (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Fri, 12 May 2023 04:10:12 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37104 "EHLO
+        id S240517AbjELJy7 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 12 May 2023 05:54:59 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48958 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S239902AbjELIJa (ORCPT
+        with ESMTP id S240507AbjELJy6 (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Fri, 12 May 2023 04:09:30 -0400
-Received: from NAM12-BN8-obe.outbound.protection.outlook.com (mail-bn8nam12on2061e.outbound.protection.outlook.com [IPv6:2a01:111:f400:fe5b::61e])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6F2DA10E52;
-        Fri, 12 May 2023 01:08:28 -0700 (PDT)
+        Fri, 12 May 2023 05:54:58 -0400
+Received: from NAM12-DM6-obe.outbound.protection.outlook.com (mail-dm6nam12on2065.outbound.protection.outlook.com [40.107.243.65])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D905410E49
+        for <linux-bcache@vger.kernel.org>; Fri, 12 May 2023 02:54:51 -0700 (PDT)
 ARC-Seal: i=1; a=rsa-sha256; s=arcselector9901; d=microsoft.com; cv=none;
- b=f+HTBXeObu0fOJ4k4+LK61g18sUsL7H9H3YU7YDfipM1lL+VKRQ5cDMAaAuup3FElg7m0WpdD3iw6VtV+6jZM4dDWRAVLZntWmRSINOaGdL1R2c+o58zCEXZY9gRbXlF+ULfbG1Lsa2fa75svRLErSO+wGBp3/z8Y+5f+35CJ8YskNsDEB1VqcVc6CxWZrA6pG5TMJ+rWaUY6b3PIfZg91+xKdja8NRbGOLzIKXHlhZUCxMxtdYhFOQ9RYyjPuhKKsVfBoHWdKoHsb80MrqK3l7FQyhfG/C+zcHvqXOnJytpmyhrHqWTAUkSwUQTV8WJYyvv71kIfZbyjzZqh7tGbA==
+ b=ifLXisJ5kYnAiZsh1ULZkJvNa7jKBfgTITA2maz4yuYp/xwX76EW0xxFmnWSD0+hxHQVPBNWBQqAV8dd4JiN6FvdemjuKz+Tr8JdWNadH7D5Af4pumAZUIV0OZZh8dlU72QqEwgcyN8dJda7YBNIJEkBbbpqpzIujas5tHZmPBA+QNwmKgiQMAMyQv3rd0BPXHdw55OXsAvusmY8Zdt3wMoQpiCocSNzQtGUhqAWzPpbuK600FW6eF4Ru4vd+BrpJ/aJiJUijSRVAC/RE805Vg7kM/4qp9oHHivujHwDvZZaxmry1ykzZZPdISbTFygAwCqtuAyVOV+C83TbHEWWzA==
 ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
  s=arcselector9901;
  h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
- bh=BWZon/QtQeQxIm2xALI9b/xp6IIc8xxX26Bp46PTpAY=;
- b=aKS/+wLYequvB4Nuj+9uY9Y1KKjWMOKQ8raz+t1GA/+nadzhs43Pq1mJBIf1vmt18MpS8FWSUbHMralnlk8sT3BBT+jaRwgNcg4Qs+9+AshFMn+6pMYp7LdjKSBLhvmPjfO3e37eab9wmJjEo/4TV3jEUbI9HJfbm5C13bnjt1xIDUfP9hbmzTuTUaLdqUbIXdGSkeTbOg1wHkpBND7akG77nDtMNBXjCQEqP3pDD5bYbKt2UiXmnPRtXKe7aa20dbAQzJsOf3ikzlYnWZJ+BqRET/9DTfRRywRIQvWvj2BnKPAb2x0u2bkzZH2U1c4vDAWoecbZ+v1ORVPtTkgu2A==
+ bh=K/HRhgFxTpuAHYd4wuZTrPyuUT6gVSgnpPksUUXVxms=;
+ b=CtiBWI494gZF8yHcO1TUmAq1fhGF7sFAHYkXPs3gM70y8H3rh9/4RLfYbvlAqga9rXspfFs6JOg6cKMmAaepyMIGjZsticMAsDgrYVhQ6zlaBRS0XmCVgxbg52NBfazJMeCc4TR9PLyfVRNiGdG6F7aHLefmxbueXMj7x6Le49jhHp5Fh1hdFYfCi7f+zrvNZqeSTDQmGYJjwxnEfkz2cTQb55fbCb1Jt0Yvuzva4HrxK8DoUb+EdLwNR2WT7a1gtYGzENZtJ4qxTcXBaoO85MigJw9rXIDv1VXOmNE2kw86pOwqm6eqqOxiFiHDQt+3HzNKQH0kLdtNfavQrlwpEg==
 ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=pass (sender ip is
- 216.228.117.161) smtp.rcpttodomain=vger.kernel.org smtp.mailfrom=nvidia.com;
+ 216.228.117.161) smtp.rcpttodomain=suse.de smtp.mailfrom=nvidia.com;
  dmarc=pass (p=reject sp=reject pct=100) action=none header.from=nvidia.com;
  dkim=none (message not signed); arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=Nvidia.com;
  s=selector2;
  h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
- bh=BWZon/QtQeQxIm2xALI9b/xp6IIc8xxX26Bp46PTpAY=;
- b=lFGsvvnK4QEDEs55VOfXEvJ0HWXJT4f5xOYxYEMqaJiqbCGt9EoQRN+xjbCXl8gIqYRhvf62uldrYQJDzt62NI/PjE59gMC2iy02J+mk3sjJZJh2oBc37RxGkFFyh5bRUOCOs6J+xxY2BVJQ9ZJ2Wb7zpsTYiJoMkld41ypvKVlQGr53ZSYNusw/4vNNhMB5Y9upJStWSk1s7yjfxkKGjatbvCWBqP+VXSDEuQ95uUtr29Mw9PvlQXVT3h0HYmXqeTZIocz/xOTxwxGjIrehD5ysGcrVxfR+b6gr+5G8FZSSNpVdVh19Ou3B3pb7bUTnRoei7Ns4/t0PQXU2FA1+qw==
-Received: from BN9PR03CA0427.namprd03.prod.outlook.com (2603:10b6:408:113::12)
- by IA1PR12MB8264.namprd12.prod.outlook.com (2603:10b6:208:3f5::21) with
+ bh=K/HRhgFxTpuAHYd4wuZTrPyuUT6gVSgnpPksUUXVxms=;
+ b=HuX8/C88xcFt/aDuog/VlAGJEUg1DdbXbdTziEgU4b7YvN9rvpFkUXBRlPnYKJOMTWK+2rwhcyEmAUBFjZZA0WrYT60W0srbrU7/VUEg9C3Xwd1cxYuRjlCUSTCv/EVVEdDNsFFNisjgbgcottr31IrvsvMEksisRNNQkxiUmA0F3IbqsNQ6J4qjboug7y0Zod0Wcqne5u73lEjPUV4MqpTOG5fdD0eExMAJRaOQ9ysEnVeXZsBnKWANXOC8cZKaisNIgBh2gwoRawh6L/i17ZyCMgqFkWri4qGadFumU17oZTUl+xFlDB3hnRcZNEF48R4cei9ezd4hKuVwZCrkAg==
+Received: from BN9P220CA0028.NAMP220.PROD.OUTLOOK.COM (2603:10b6:408:13e::33)
+ by CH3PR12MB7594.namprd12.prod.outlook.com (2603:10b6:610:140::22) with
  Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.6387.22; Fri, 12 May
- 2023 08:08:25 +0000
-Received: from BN8NAM11FT038.eop-nam11.prod.protection.outlook.com
- (2603:10b6:408:113:cafe::32) by BN9PR03CA0427.outlook.office365.com
- (2603:10b6:408:113::12) with Microsoft SMTP Server (version=TLS1_2,
- cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.6387.25 via Frontend
- Transport; Fri, 12 May 2023 08:08:25 +0000
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.6387.24; Fri, 12 May
+ 2023 09:54:49 +0000
+Received: from BN8NAM11FT044.eop-nam11.prod.protection.outlook.com
+ (2603:10b6:408:13e:cafe::9c) by BN9P220CA0028.outlook.office365.com
+ (2603:10b6:408:13e::33) with Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.6387.24 via Frontend
+ Transport; Fri, 12 May 2023 09:54:49 +0000
 X-MS-Exchange-Authentication-Results: spf=pass (sender IP is 216.228.117.161)
  smtp.mailfrom=nvidia.com; dkim=none (message not signed)
  header.d=none;dmarc=pass action=none header.from=nvidia.com;
@@ -48,305 +48,145 @@ Received-SPF: Pass (protection.outlook.com: domain of nvidia.com designates
  216.228.117.161 as permitted sender) receiver=protection.outlook.com;
  client-ip=216.228.117.161; helo=mail.nvidia.com; pr=C
 Received: from mail.nvidia.com (216.228.117.161) by
- BN8NAM11FT038.mail.protection.outlook.com (10.13.176.246) with Microsoft SMTP
+ BN8NAM11FT044.mail.protection.outlook.com (10.13.177.219) with Microsoft SMTP
  Server (version=TLS1_2, cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id
- 15.20.6387.24 via Frontend Transport; Fri, 12 May 2023 08:08:25 +0000
+ 15.20.6387.24 via Frontend Transport; Fri, 12 May 2023 09:54:49 +0000
 Received: from rnnvmail201.nvidia.com (10.129.68.8) by mail.nvidia.com
  (10.129.200.67) with Microsoft SMTP Server (version=TLS1_2,
  cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.986.5; Fri, 12 May 2023
- 01:08:13 -0700
-Received: from dev.nvidia.com (10.126.230.37) by rnnvmail201.nvidia.com
+ 02:54:38 -0700
+Received: from dev.nvidia.com (10.126.231.37) by rnnvmail201.nvidia.com
  (10.129.68.8) with Microsoft SMTP Server (version=TLS1_2,
  cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.2.986.37; Fri, 12 May
- 2023 01:08:12 -0700
+ 2023 02:54:37 -0700
 From:   Chaitanya Kulkarni <kch@nvidia.com>
-To:     <linux-block@vger.kernel.org>, <linux-bcache@vger.kernel.org>,
-        <linux-raid@vger.kernel.org>, <linux-nvme@lists.infradead.org>,
-        <linux-scsi@vger.kernel.org>, <target-devel@vger.kernel.org>
-CC:     <axboe@kernel.dk>, <colyli@suse.de>, <kent.overstreet@gmail.com>,
-        <agk@redhat.com>, <snitzer@kernel.org>, <dm-devel@redhat.com>,
-        <song@kernel.org>, <hch@lst.de>, <sagi@grimberg.me>,
-        <kch@nvidia.com>, <martin.petersen@oracle.com>
-Subject: [RFC PATCH] block: add meaningful macro for flush op flags
-Date:   Fri, 12 May 2023 01:07:57 -0700
-Message-ID: <20230512080757.387523-1-kch@nvidia.com>
+To:     <colyli@suse.de>, <kent.overstreet@gmail.com>
+CC:     <linux-bcache@vger.kernel.org>, Chaitanya Kulkarni <kch@nvidia.com>
+Subject: [PATCH 1/1] bcache: allow user to set QUEUE_FLAG_NOWAIT
+Date:   Fri, 12 May 2023 02:54:20 -0700
+Message-ID: <20230512095420.12578-2-kch@nvidia.com>
 X-Mailer: git-send-email 2.40.0
+In-Reply-To: <20230512095420.12578-1-kch@nvidia.com>
+References: <20230512095420.12578-1-kch@nvidia.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain
-X-Originating-IP: [10.126.230.37]
-X-ClientProxiedBy: rnnvmail201.nvidia.com (10.129.68.8) To
+X-Originating-IP: [10.126.231.37]
+X-ClientProxiedBy: rnnvmail202.nvidia.com (10.129.68.7) To
  rnnvmail201.nvidia.com (10.129.68.8)
 X-EOPAttributedMessage: 0
 X-MS-PublicTrafficType: Email
-X-MS-TrafficTypeDiagnostic: BN8NAM11FT038:EE_|IA1PR12MB8264:EE_
-X-MS-Office365-Filtering-Correlation-Id: 22f4c5b9-c067-4230-9145-08db52c00fb8
+X-MS-TrafficTypeDiagnostic: BN8NAM11FT044:EE_|CH3PR12MB7594:EE_
+X-MS-Office365-Filtering-Correlation-Id: 8003ce0b-29e2-4202-7704-08db52ceed02
 X-MS-Exchange-SenderADCheck: 1
 X-MS-Exchange-AntiSpam-Relay: 0
 X-Microsoft-Antispam: BCL:0;
-X-Microsoft-Antispam-Message-Info: tGr7I95rCI7umabVb/j9/7l3jrhXJyPIOk2/fYjACFX0msZcOHs47HpuscArmNecGBfG78CWJIpHhtqWA0+aPK3rO7TC79zw0Lt5xKmFJwmcMid4QOsRsdN9DijvlDmP3BgrWWqYzzR1YgQb303j4tbnBCNkFi9lll65NF4rfeKirXaBiOrR7o6qW6eXKH8m0m5/VfM47E6fjBig4XetgAYNGY5M30MuDsDe0FyhXVHH5JTRkwLaqQ5AL055kCNwAN+stgYFnJlp7CB612EPHRjBVXLx0Gfkw+l9EL87tpEgy1JCtVnXw7MRz+3IJlImEopxbgeT0lH7ib1wzYxB9tanSGMKjtSniOiFAJum9M8AutwhZwLuWlG65HHp4xcLUQMXqunRckNsVsjVExX9p95N623oR1R7d603yvoSLPKr+f6y5H04Y+/wfsplNfiXTd6uo9EhdNz0DJVFY7aapsA4PAmYOJG6JMRlu4Lel805oRHmi0GhgiKORuqk9EEtpj+oMq0JOGknziP6ectxJ0Evkh12hhcNY6GxBOPjSuWdSP/XERk5pNzVVa2Ydh8FA7kHu4ucGX7W3N6GzRYagDMR1u3nk5a5En0r9xbQbfKS0mBAFF2kIzX1VC7s+DgcEw3iVbQ2SQQc8NuSDAuuUCVaP0tKSd+WzSriltq3iVd+YPcSuVy616ivBKkwnz8So+X/busG9d70bdq/EvCdcNPBsRKbLY5liSFN664yUXfwvYfllHWW22/MLgbZPDgHlCqlzqyuc3A/YGIqevPdPJOTainzo5L9hOf1UMTbhHA=
-X-Forefront-Antispam-Report: CIP:216.228.117.161;CTRY:US;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:mail.nvidia.com;PTR:dc6edge2.nvidia.com;CAT:NONE;SFS:(13230028)(4636009)(346002)(396003)(136003)(376002)(39860400002)(451199021)(40470700004)(36840700001)(46966006)(70586007)(82310400005)(2906002)(7416002)(8936002)(5660300002)(8676002)(316002)(478600001)(41300700001)(70206006)(4326008)(110136005)(47076005)(54906003)(40460700003)(7696005)(966005)(6666004)(1076003)(26005)(356005)(7636003)(82740400003)(186003)(16526019)(336012)(426003)(2616005)(36756003)(40480700001)(83380400001)(36860700001)(2101003);DIR:OUT;SFP:1101;
+X-Microsoft-Antispam-Message-Info: x5bA0bicI1KIrY83qSrUMWRWJcjvN3SHXmQczGX/SV2XUnIJsH+Zp1BMek8F7FWaHpl5Yc+TZePEexa9if43CdbMqvHydVSe06TfV+cHUQHH1X3gYZvUgYlYyFltY9+OamAfFLLuW2Vnyk8V4PcEMmV38E6mHSyusdECPOz3Ch+cYtgXViSBuDlddllZlOIm+SKleVkj8cmZLWwrLeZ/VEc61hKFn0fk9Yy6fNBLNmWXaj9JQc2u9V4/Rp6Rzod8aVYakyJFOEXUP6MxjiNc3WUdi8+P+amhIjA0fgtPtgB5pXJ2H02D8nPfeIJlYr494q9R0p49dwRAysl7dnLjVUS2bRGotvg2Tr5vlBMmshIsB+aqYNEAWsT4jEF5/4p43O5/IuuQyxJmBKAbAILDV1pD2xC1DrLTq1AYEADUPbKmqpECEQ6VvvpzA3aVquCAmK2rEOvbxskVSLJNuFWXgAcVZjsCycqrc0W/zqha5kqgWlbUKbI9UCpvbE17ksNPfm14jyp2wPy7iZcLULJx7QDiziPDLg2ZF7jXA2neItrOAULRNKT2Wma5VLVCfCg0vAfc985+reTEEcz93DW5Jgf/kupCDS5jwOVGAOSbL8FNbryB/7eQsNkYEprAGIfoTAnAlzJQNoi15h7LFLcLVSbEFz2IT3y5QerA7HJQmdM35Eu7mouog4HKRl4HZJcs45aWSWS77rqIrLNfRwNNOaYs733YXvTRLP8q/xPuz3radq2p6RNMQPe+GfAXjxyW
+X-Forefront-Antispam-Report: CIP:216.228.117.161;CTRY:US;LANG:en;SCL:1;SRV:;IPV:NLI;SFV:NSPM;H:mail.nvidia.com;PTR:dc6edge2.nvidia.com;CAT:NONE;SFS:(13230028)(4636009)(376002)(39860400002)(136003)(396003)(346002)(451199021)(46966006)(36840700001)(40470700004)(82310400005)(40460700003)(7696005)(54906003)(110136005)(316002)(41300700001)(6666004)(36756003)(478600001)(70206006)(70586007)(40480700001)(1076003)(83380400001)(26005)(2616005)(186003)(16526019)(82740400003)(426003)(336012)(7636003)(356005)(5660300002)(8676002)(8936002)(47076005)(2906002)(4326008)(36860700001)(107886003);DIR:OUT;SFP:1101;
 X-OriginatorOrg: Nvidia.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 12 May 2023 08:08:25.2134
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 12 May 2023 09:54:49.4440
  (UTC)
-X-MS-Exchange-CrossTenant-Network-Message-Id: 22f4c5b9-c067-4230-9145-08db52c00fb8
+X-MS-Exchange-CrossTenant-Network-Message-Id: 8003ce0b-29e2-4202-7704-08db52ceed02
 X-MS-Exchange-CrossTenant-Id: 43083d15-7273-40c1-b7db-39efd9ccc17a
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=43083d15-7273-40c1-b7db-39efd9ccc17a;Ip=[216.228.117.161];Helo=[mail.nvidia.com]
-X-MS-Exchange-CrossTenant-AuthSource: BN8NAM11FT038.eop-nam11.prod.protection.outlook.com
+X-MS-Exchange-CrossTenant-AuthSource: BN8NAM11FT044.eop-nam11.prod.protection.outlook.com
 X-MS-Exchange-CrossTenant-AuthAs: Anonymous
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: IA1PR12MB8264
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CH3PR12MB7594
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Flush requests are implemented as REQ_OP_WRITE + REQ_OP_PREFLUSH
-combination and not REQ_OP_FLUSH + REQ_PREFLUSH combination.
+Allow user to set the QUEUE_FLAG_NOWAIT optionally using module
+parameter to retain the default behaviour. Also, update respective
+allocation flags in the write path. Following are the performance
+numbers with io_uring fio engine for random read, note that device has
+been populated fully with randwrite workload before taking these
+numbers :-
 
-This unclear nature has lead to the confusion and bugs in the code for
-block drivers causing more work for testing, reviews and fixes :-
+* linux-block (for-next) # grep IOPS  bc-*fio | column -t
 
-1. https://lore.kernel.org/all/ZFHgefWofVt24tRl@infradead.org/
-2. https://marc.info/?l=linux-block&m=168386364026498&w=2
+nowait-off-1.fio:  read:  IOPS=482k,  BW=1885MiB/s
+nowait-off-2.fio:  read:  IOPS=484k,  BW=1889MiB/s
+nowait-off-3.fio:  read:  IOPS=483k,  BW=1886MiB/s
 
-Add a macro (name can me more meaningful) with a meaningful comment
-clearing the confusion and replace the REQ_OP_WRITE | REQ_PREFLUSH with
-the new macro name that also saves code repetation.
+nowait-on-1.fio:   read:  IOPS=544k,  BW=2125MiB/s
+nowait-on-2.fio:   read:  IOPS=547k,  BW=2137MiB/s
+nowait-on-3.fio:   read:  IOPS=546k,  BW=2132MiB/s
+
+* linux-block (for-next) # grep slat  bc-*fio | column -t
+
+nowait-off-1.fio: slat (nsec):  min=430, max=5488.5k, avg=2797.52
+nowait-off-2.fio: slat (nsec):  min=431, max=8252.4k, avg=2805.33
+nowait-off-3.fio: slat (nsec):  min=431, max=6846.6k, avg=2814.57
+
+nowait-on-1.fio:  slat (usec):  min=2,   max=39086,   avg=87.48
+nowait-on-2.fio:  slat (usec):  min=3,   max=39519,   avg=86.98
+nowait-on-3.fio:  slat (usec):  min=3,   max=38880,   avg=87.17
+
+* linux-block (for-next) # grep cpu  bc-*fio | column -t
+
+nowait-off-1.fio:  cpu  :  usr=2.77%,  sys=6.57%,   ctx=22015526
+nowait-off-2.fio:  cpu  :  usr=2.75%,  sys=6.59%,   ctx=22003700
+nowait-off-3.fio:  cpu  :  usr=2.81%,  sys=6.57%,   ctx=21938309
+
+nowait-on-1.fio:   cpu  :  usr=1.08%,  sys=78.39%,  ctx=2744092
+nowait-on-2.fio:   cpu  :  usr=1.10%,  sys=79.76%,  ctx=2537466
+nowait-on-3.fio:   cpu  :  usr=1.10%,  sys=79.88%,  ctx=2528092
 
 Signed-off-by: Chaitanya Kulkarni <kch@nvidia.com>
 ---
- block/blk-flush.c                   | 2 +-
- drivers/md/bcache/request.c         | 3 +--
- drivers/md/dm-bufio.c               | 2 +-
- drivers/md/dm-integrity.c           | 2 +-
- drivers/md/dm-log.c                 | 2 +-
- drivers/md/dm-raid1.c               | 2 +-
- drivers/md/dm-snap-persistent.c     | 5 ++---
- drivers/md/dm-writecache.c          | 2 +-
- drivers/md/dm.c                     | 2 +-
- drivers/md/md.c                     | 3 +--
- drivers/md/raid5-cache.c            | 3 +--
- drivers/md/raid5-ppl.c              | 3 +--
- drivers/nvme/target/io-cmd-bdev.c   | 2 +-
- drivers/target/target_core_iblock.c | 3 +--
- include/linux/blk_types.h           | 7 +++++++
- 15 files changed, 22 insertions(+), 21 deletions(-)
+ drivers/md/bcache/request.c | 3 ++-
+ drivers/md/bcache/super.c   | 6 ++++++
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index 04698ed9bcd4..376f00257100 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -460,7 +460,7 @@ int blkdev_issue_flush(struct block_device *bdev)
- {
- 	struct bio bio;
- 
--	bio_init(&bio, bdev, NULL, 0, REQ_OP_WRITE | REQ_PREFLUSH);
-+	bio_init(&bio, bdev, NULL, 0, REQ_FLUSH_OPF);
- 	return submit_bio_wait(&bio);
- }
- EXPORT_SYMBOL(blkdev_issue_flush);
 diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index 67a2e29e0b40..ab89897a36a2 100644
+index 67a2e29e0b40..2055a23eb4b7 100644
 --- a/drivers/md/bcache/request.c
 +++ b/drivers/md/bcache/request.c
-@@ -1023,8 +1023,7 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 			 */
- 			struct bio *flush;
- 
--			flush = bio_alloc_bioset(bio->bi_bdev, 0,
--						 REQ_OP_WRITE | REQ_PREFLUSH,
-+			flush = bio_alloc_bioset(bio->bi_bdev, 0, REQ_FLUSH_OPF,
- 						 GFP_NOIO, &dc->disk.bio_split);
- 			if (!flush) {
- 				s->iop.status = BLK_STS_RESOURCE;
-diff --git a/drivers/md/dm-bufio.c b/drivers/md/dm-bufio.c
-index eea977662e81..da815325842b 100644
---- a/drivers/md/dm-bufio.c
-+++ b/drivers/md/dm-bufio.c
-@@ -2133,7 +2133,7 @@ EXPORT_SYMBOL_GPL(dm_bufio_write_dirty_buffers);
- int dm_bufio_issue_flush(struct dm_bufio_client *c)
+@@ -716,9 +716,10 @@ static inline struct search *search_alloc(struct bio *bio,
+ 		struct bcache_device *d, struct block_device *orig_bdev,
+ 		unsigned long start_time)
  {
- 	struct dm_io_request io_req = {
--		.bi_opf = REQ_OP_WRITE | REQ_PREFLUSH | REQ_SYNC,
-+		.bi_opf = REQ_FLUSH_OPF | REQ_SYNC,
- 		.mem.type = DM_IO_KMEM,
- 		.mem.ptr.addr = NULL,
- 		.client = c->dm_io,
-diff --git a/drivers/md/dm-integrity.c b/drivers/md/dm-integrity.c
-index 31838b13ea54..2d90f8ad1ae5 100644
---- a/drivers/md/dm-integrity.c
-+++ b/drivers/md/dm-integrity.c
-@@ -1533,7 +1533,7 @@ static void dm_integrity_flush_buffers(struct dm_integrity_c *ic, bool flush_dat
- 	if (!ic->meta_dev)
- 		flush_data = false;
- 	if (flush_data) {
--		fr.io_req.bi_opf = REQ_OP_WRITE | REQ_PREFLUSH | REQ_SYNC,
-+		fr.io_req.bi_opf = REQ_FLUSH_OPF | REQ_SYNC,
- 		fr.io_req.mem.type = DM_IO_KMEM,
- 		fr.io_req.mem.ptr.addr = NULL,
- 		fr.io_req.notify.fn = flush_notify,
-diff --git a/drivers/md/dm-log.c b/drivers/md/dm-log.c
-index f9f84236dfcd..2c40f865ef16 100644
---- a/drivers/md/dm-log.c
-+++ b/drivers/md/dm-log.c
-@@ -311,7 +311,7 @@ static int flush_header(struct log_c *lc)
- 		.count = 0,
- 	};
++	gfp_t gfp = bio->bi_opf & REQ_NOWAIT ? GFP_NOWAIT : GFP_NOIO;
+ 	struct search *s;
  
--	lc->io_req.bi_opf = REQ_OP_WRITE | REQ_PREFLUSH;
-+	lc->io_req.bi_opf = REQ_FLUSH_OPF;
+-	s = mempool_alloc(&d->c->search, GFP_NOIO);
++	s = mempool_alloc(&d->c->search, gfp);
  
- 	return dm_io(&lc->io_req, 1, &null_location, NULL);
- }
-diff --git a/drivers/md/dm-raid1.c b/drivers/md/dm-raid1.c
-index ddcb2bc4a617..7acb9a390b38 100644
---- a/drivers/md/dm-raid1.c
-+++ b/drivers/md/dm-raid1.c
-@@ -265,7 +265,7 @@ static int mirror_flush(struct dm_target *ti)
- 	struct dm_io_region io[MAX_NR_MIRRORS];
- 	struct mirror *m;
- 	struct dm_io_request io_req = {
--		.bi_opf = REQ_OP_WRITE | REQ_PREFLUSH | REQ_SYNC,
-+		.bi_opf = REQ_FLUSH_OPF | REQ_SYNC,
- 		.mem.type = DM_IO_KMEM,
- 		.mem.ptr.addr = NULL,
- 		.client = ms->io_client,
-diff --git a/drivers/md/dm-snap-persistent.c b/drivers/md/dm-snap-persistent.c
-index 15649921f2a9..cfb7f1b92c5e 100644
---- a/drivers/md/dm-snap-persistent.c
-+++ b/drivers/md/dm-snap-persistent.c
-@@ -739,8 +739,7 @@ static void persistent_commit_exception(struct dm_exception_store *store,
- 	/*
- 	 * Commit exceptions to disk.
- 	 */
--	if (ps->valid && area_io(ps, REQ_OP_WRITE | REQ_PREFLUSH | REQ_FUA |
--				 REQ_SYNC))
-+	if (ps->valid && area_io(ps, REQ_FLUSH_OPF | REQ_FUA | REQ_SYNC))
- 		ps->valid = 0;
+ 	closure_init(&s->cl, NULL);
+ 	do_bio_hook(s, bio, request_endio);
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 7e9d19fd21dd..f76822bece26 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -28,6 +28,7 @@
  
- 	/*
-@@ -817,7 +816,7 @@ static int persistent_commit_merge(struct dm_exception_store *store,
- 	for (i = 0; i < nr_merged; i++)
- 		clear_exception(ps, ps->current_committed - 1 - i);
+ unsigned int bch_cutoff_writeback;
+ unsigned int bch_cutoff_writeback_sync;
++bool bch_nowait;
  
--	r = area_io(ps, REQ_OP_WRITE | REQ_PREFLUSH | REQ_FUA);
-+	r = area_io(ps, REQ_FLUSH_OPF | REQ_FUA);
- 	if (r < 0)
- 		return r;
+ static const char bcache_magic[] = {
+ 	0xc6, 0x85, 0x73, 0xf6, 0x4e, 0x1a, 0x45, 0xca,
+@@ -971,6 +972,8 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+ 	}
  
-diff --git a/drivers/md/dm-writecache.c b/drivers/md/dm-writecache.c
-index 074cb785eafc..538f74114d13 100644
---- a/drivers/md/dm-writecache.c
-+++ b/drivers/md/dm-writecache.c
-@@ -590,7 +590,7 @@ static void writecache_disk_flush(struct dm_writecache *wc, struct dm_dev *dev)
- 	region.bdev = dev->bdev;
- 	region.sector = 0;
- 	region.count = 0;
--	req.bi_opf = REQ_OP_WRITE | REQ_PREFLUSH;
-+	req.bi_opf = REQ_FLUSH_OPF;
- 	req.mem.type = DM_IO_KMEM;
- 	req.mem.ptr.addr = NULL;
- 	req.client = wc->dm_io;
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 3b694ba3a106..a570024a747d 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1555,7 +1555,7 @@ static void __send_empty_flush(struct clone_info *ci)
- 	 * the basis for the clone(s).
- 	 */
- 	bio_init(&flush_bio, ci->io->md->disk->part0, NULL, 0,
--		 REQ_OP_WRITE | REQ_PREFLUSH | REQ_SYNC);
-+		 REQ_FLUSH_OPF | REQ_SYNC);
+ 	blk_queue_flag_set(QUEUE_FLAG_NONROT, d->disk->queue);
++	if (bch_nowait)
++		blk_queue_flag_set(QUEUE_FLAG_NOWAIT, d->disk->queue);
  
- 	ci->bio = &flush_bio;
- 	ci->sector_count = 0;
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 8e344b4b3444..5f72a693dc1c 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -533,8 +533,7 @@ static void submit_flushes(struct work_struct *ws)
- 			atomic_inc(&rdev->nr_pending);
- 			atomic_inc(&rdev->nr_pending);
- 			rcu_read_unlock();
--			bi = bio_alloc_bioset(rdev->bdev, 0,
--					      REQ_OP_WRITE | REQ_PREFLUSH,
-+			bi = bio_alloc_bioset(rdev->bdev, 0, REQ_FLUSH_OPF,
- 					      GFP_NOIO, &mddev->bio_set);
- 			bi->bi_end_io = md_end_flush;
- 			bi->bi_private = rdev;
-diff --git a/drivers/md/raid5-cache.c b/drivers/md/raid5-cache.c
-index 46182b955aef..692c3ed33b1f 100644
---- a/drivers/md/raid5-cache.c
-+++ b/drivers/md/raid5-cache.c
-@@ -1303,8 +1303,7 @@ void r5l_flush_stripe_to_raid(struct r5l_log *log)
+ 	blk_queue_write_cache(q, true, true);
  
- 	if (!do_flush)
- 		return;
--	bio_init(&log->flush_bio, log->rdev->bdev, NULL, 0,
--		  REQ_OP_WRITE | REQ_PREFLUSH);
-+	bio_init(&log->flush_bio, log->rdev->bdev, NULL, 0, REQ_FLUSH_OPF);
- 	log->flush_bio.bi_end_io = r5l_log_flush_endio;
- 	submit_bio(&log->flush_bio);
- }
-diff --git a/drivers/md/raid5-ppl.c b/drivers/md/raid5-ppl.c
-index e495939bb3e0..da2012744b0d 100644
---- a/drivers/md/raid5-ppl.c
-+++ b/drivers/md/raid5-ppl.c
-@@ -629,8 +629,7 @@ static void ppl_do_flush(struct ppl_io_unit *io)
- 		if (bdev) {
- 			struct bio *bio;
+@@ -2933,6 +2936,9 @@ MODULE_PARM_DESC(bch_cutoff_writeback, "threshold to cutoff writeback");
+ module_param(bch_cutoff_writeback_sync, uint, 0);
+ MODULE_PARM_DESC(bch_cutoff_writeback_sync, "hard threshold to cutoff writeback");
  
--			bio = bio_alloc_bioset(bdev, 0,
--					       REQ_OP_WRITE | REQ_PREFLUSH,
-+			bio = bio_alloc_bioset(bdev, 0, REQ_FLUSH_OPF,
- 					       GFP_NOIO, &ppl_conf->flush_bs);
- 			bio->bi_private = io;
- 			bio->bi_end_io = ppl_flush_endio;
-diff --git a/drivers/nvme/target/io-cmd-bdev.c b/drivers/nvme/target/io-cmd-bdev.c
-index c2d6cea0236b..2717b64cb02f 100644
---- a/drivers/nvme/target/io-cmd-bdev.c
-+++ b/drivers/nvme/target/io-cmd-bdev.c
-@@ -342,7 +342,7 @@ static void nvmet_bdev_execute_flush(struct nvmet_req *req)
- 		return;
- 
- 	bio_init(bio, req->ns->bdev, req->inline_bvec,
--		 ARRAY_SIZE(req->inline_bvec), REQ_OP_WRITE | REQ_PREFLUSH);
-+		 ARRAY_SIZE(req->inline_bvec), REQ_FLUSH_OPF);
- 	bio->bi_private = req;
- 	bio->bi_end_io = nvmet_bio_done;
- 
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index cc838ffd1294..01984d07ff9c 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -419,8 +419,7 @@ iblock_execute_sync_cache(struct se_cmd *cmd)
- 	if (immed)
- 		target_complete_cmd(cmd, SAM_STAT_GOOD);
- 
--	bio = bio_alloc(ib_dev->ibd_bd, 0, REQ_OP_WRITE | REQ_PREFLUSH,
--			GFP_KERNEL);
-+	bio = bio_alloc(ib_dev->ibd_bd, 0, REQ_FLUSH_OPF, GFP_KERNEL);
- 	bio->bi_end_io = iblock_end_io_flush;
- 	if (!immed)
- 		bio->bi_private = cmd;
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 740afe80f297..f3afdbb3f239 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -455,6 +455,13 @@ enum req_flag_bits {
- #define REQ_NOMERGE_FLAGS \
- 	(REQ_NOMERGE | REQ_PREFLUSH | REQ_FUA)
- 
-+/*
-+ * Flush requests are implemented as REQ_OP_WRITE + REQ_OP_PREFLUSH combination
-+ * and not REQ_OP_FLUSH + REQ_PREFLUSH combination.
-+ */
++module_param(bch_nowait, bool, 0);
++MODULE_PARM_DESC(bch_nowait, "set QUEUE_FLAG_NOWAIT");
 +
-+#define REQ_FLUSH_OPF (REQ_OP_WRITE | REQ_PREFLUSH)
-+
- enum stat_group {
- 	STAT_READ,
- 	STAT_WRITE,
+ MODULE_DESCRIPTION("Bcache: a Linux block layer cache");
+ MODULE_AUTHOR("Kent Overstreet <kent.overstreet@gmail.com>");
+ MODULE_LICENSE("GPL");
 -- 
 2.40.0
 
