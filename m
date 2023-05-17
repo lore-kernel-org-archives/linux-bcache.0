@@ -2,97 +2,74 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 1EC52C7EE2A
-	for <linux-bcache@archiver.kernel.org>; Mon, 15 May 2023 01:43:36 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 8AFF8C77B75
+	for <linux-bcache@archiver.kernel.org>; Wed, 17 May 2023 05:29:47 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237979AbjEOBnc (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Sun, 14 May 2023 21:43:32 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:45676 "EHLO
+        id S232262AbjEQF3o (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 17 May 2023 01:29:44 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:43474 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229708AbjEOBnb (ORCPT
+        with ESMTP id S231898AbjEQF3n (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Sun, 14 May 2023 21:43:31 -0400
-Received: from dggsgout12.his.huawei.com (dggsgout12.his.huawei.com [45.249.212.56])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5EABA10E9;
-        Sun, 14 May 2023 18:43:30 -0700 (PDT)
-Received: from mail02.huawei.com (unknown [172.30.67.169])
-        by dggsgout12.his.huawei.com (SkyGuard) with ESMTP id 4QKMb13jWdz4f3mJ8;
-        Mon, 15 May 2023 09:43:25 +0800 (CST)
-Received: from [10.174.176.73] (unknown [10.174.176.73])
-        by APP3 (Coremail) with SMTP id _Ch0CgBH9CE9jmFkXtnYIg--.28848S3;
-        Mon, 15 May 2023 09:43:27 +0800 (CST)
-Subject: Re: [RFC PATCH] block: add meaningful macro for flush op flags
-To:     Chaitanya Kulkarni <chaitanyak@nvidia.com>,
-        Christoph Hellwig <hch@lst.de>
-Cc:     "linux-block@vger.kernel.org" <linux-block@vger.kernel.org>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        "linux-raid@vger.kernel.org" <linux-raid@vger.kernel.org>,
-        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "target-devel@vger.kernel.org" <target-devel@vger.kernel.org>,
-        "axboe@kernel.dk" <axboe@kernel.dk>,
-        "colyli@suse.de" <colyli@suse.de>,
-        "kent.overstreet@gmail.com" <kent.overstreet@gmail.com>,
-        "agk@redhat.com" <agk@redhat.com>,
-        "snitzer@kernel.org" <snitzer@kernel.org>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "song@kernel.org" <song@kernel.org>,
-        "sagi@grimberg.me" <sagi@grimberg.me>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "yukuai (C)" <yukuai3@huawei.com>
-References: <20230512080757.387523-1-kch@nvidia.com>
- <20230512130042.GA29078@lst.de>
- <67376534-ac4a-3cd9-fab6-fd3a062f5e48@nvidia.com>
-From:   Yu Kuai <yukuai1@huaweicloud.com>
-Message-ID: <2ca38f24-6c6f-4975-fcc8-e700c67029ee@huaweicloud.com>
-Date:   Mon, 15 May 2023 09:43:25 +0800
-User-Agent: Mozilla/5.0 (Windows NT 10.0; WOW64; rv:60.0) Gecko/20100101
- Thunderbird/60.8.0
+        Wed, 17 May 2023 01:29:43 -0400
+Received: from mail-pf1-x432.google.com (mail-pf1-x432.google.com [IPv6:2607:f8b0:4864:20::432])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6B73240CC
+        for <linux-bcache@vger.kernel.org>; Tue, 16 May 2023 22:29:42 -0700 (PDT)
+Received: by mail-pf1-x432.google.com with SMTP id d2e1a72fcca58-6439b410679so218391b3a.0
+        for <linux-bcache@vger.kernel.org>; Tue, 16 May 2023 22:29:42 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20221208; t=1684301382; x=1686893382;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=aEByPUbWzEge4Iky1e5iUg2L1hJZ/fHa9xQCoH3WVIg=;
+        b=Y357R0X3sX4A14QNgJYWLnQBq43XKMYFAIoxmhvf6Vz/WyojR1F60pCzCkXBvHwnb+
+         6Eha3TkslnfcaMGchrLPGC6f5rd6RouAsOB/wn6uJBGloQ97D3oPCRXD0UqW4JxxSEH0
+         yKKiiBzt52jDFbkD+l1a6cYXFY/Yi13zZ3NroNHMcrsklv/g8WoADHcbP9E0QClNomxj
+         YuxibqQ9ZBoHrQcP8+0MV7NDcf+GIY5mFw7pJXyqOdW9O5uHw9pJyag2X3hdp3GcbPlg
+         G9S3os3ND4Svl+2SY6UQ+a5rQRFQxK6rujViyYe/tdzv1v8QkRs9lVIwWa0tt/Jyp71i
+         U3Gg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20221208; t=1684301382; x=1686893382;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=aEByPUbWzEge4Iky1e5iUg2L1hJZ/fHa9xQCoH3WVIg=;
+        b=CkZYjAGOcz1c2aOZk79v0f0MkD+RHv8hK0nqOnAWmUBGqlDh13MHJ9VHnYqBg6vBcv
+         xFH1GCMvTmTiqXDfWkXCgf7/2pDdox4qanPPWeXvfqIoX+X6BTjXk5blKQQVgCc8RVdQ
+         5rkLfJX2SjVqb+z1wSFtfSjcaOhWztfWCcTWplen9fV713yTgKv+MJOICAfwRDpyFWZQ
+         yEN9Iix7h1fyuFnwx0z7m5HxIJiZlFjtCB2SJN963c41gSeLJICqUfnYJ9Ofkb34Ttbi
+         mB+BG9m9XeKNu36Z0+DXehXPlRLO8Y8t+NxlHxPiztNDju8+giCwK3E75a0a++y4RFMP
+         HXag==
+X-Gm-Message-State: AC+VfDzN+9YQc2/X4VR6R3jwErlUFZuvqJMwoM041u+5E3mI+oNzEMKd
+        Lku5jrG5ZzwceqaTdZTk2lU=
+X-Google-Smtp-Source: ACHHUZ4HOjr6WQ9MZfkq7oKvnUosOaMmcS0mAiiHHPTCzd2/oW3wQNEmyX6zuxUwrud+09TRf6d0QQ==
+X-Received: by 2002:a05:6a00:c82:b0:64a:a1ba:50fd with SMTP id a2-20020a056a000c8200b0064aa1ba50fdmr23242094pfv.22.1684301381795;
+        Tue, 16 May 2023 22:29:41 -0700 (PDT)
+Received: from maverick.. (59-102-46-11.tpgi.com.au. [59.102.46.11])
+        by smtp.gmail.com with ESMTPSA id v12-20020a62a50c000000b006437c0edf9csm10064691pfm.16.2023.05.16.22.29.38
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 16 May 2023 22:29:41 -0700 (PDT)
+From:   Rafael Lopez <raflopez1@gmail.com>
+X-Google-Original-From: Rafael Lopez <rafael.lopez@canonical.com>
+To:     mingzhe.zou@easystack.cn
+Cc:     andrea.tomassetti-opensource@devo.com, bcache@lists.ewheeler.net,
+        colyli@suse.de, linux-bcache@vger.kernel.org, zoumingzhe@qq.com
+Subject: Re: [PATCH v7 2/3] bcache: allocate stripe memory when partial_stripes_expensive is true
+Date:   Wed, 17 May 2023 15:29:27 +1000
+Message-Id: <20230517052927.20478-1-rafael.lopez@canonical.com>
+X-Mailer: git-send-email 2.34.1
+In-Reply-To: <20230307134852.8288-2-mingzhe.zou@easystack.cn>
+References: <20230307134852.8288-2-mingzhe.zou@easystack.cn>
 MIME-Version: 1.0
-In-Reply-To: <67376534-ac4a-3cd9-fab6-fd3a062f5e48@nvidia.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-CM-TRANSID: _Ch0CgBH9CE9jmFkXtnYIg--.28848S3
-X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
-        VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUYI7kC6x804xWl14x267AKxVW5JVWrJwAF
-        c2x0x2IEx4CE42xK8VAvwI8IcIk0rVWrJVCq3wAFIxvE14AKwVWUJVWUGwA2ocxC64kIII
-        0Yj41l84x0c7CEw4AK67xGY2AK021l84ACjcxK6xIIjxv20xvE14v26w1j6s0DM28EF7xv
-        wVC0I7IYx2IY6xkF7I0E14v26r4UJVWxJr1l84ACjcxK6I8E87Iv67AKxVW0oVCq3wA2z4
-        x0Y4vEx4A2jsIEc7CjxVAFwI0_GcCE3s1le2I262IYc4CY6c8Ij28IcVAaY2xG8wAqx4xG
-        64xvF2IEw4CE5I8CrVC2j2WlYx0E2Ix0cI8IcVAFwI0_Jr0_Jr4lYx0Ex4A2jsIE14v26r
-        1j6r4UMcvjeVCFs4IE7xkEbVWUJVW8JwACjcxG0xvEwIxGrwACI402YVCY1x02628vn2kI
-        c2xKxwCYjI0SjxkI62AI1cAE67vIY487MxAIw28IcxkI7VAKI48JMxC20s026xCaFVCjc4
-        AY6r1j6r4UMI8I3I0E5I8CrVAFwI0_Jr0_Jr4lx2IqxVCjr7xvwVAFwI0_JrI_JrWlx4CE
-        17CEb7AF67AKxVW8ZVWrXwCIc40Y0x0EwIxGrwCI42IY6xIIjxv20xvE14v26r1j6r1xMI
-        IF0xvE2Ix0cI8IcVCY1x0267AKxVW8JVWxJwCI42IY6xAIw20EY4v20xvaj40_WFyUJVCq
-        3wCI42IY6I8E87Iv67AKxVWUJVW8JwCI42IY6I8E87Iv6xkF7I0E14v26r4j6r4UJbIYCT
-        nIWIevJa73UjIFyTuYvjxUFDGOUUUUU
-X-CM-SenderInfo: 51xn3trlr6x35dzhxuhorxvhhfrp/
-X-CFilter-Loop: Reflected
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hi,
+Hi Mingzhe, thanks for these patches. They resolve a specific bug we have open for a large NVME devices with non-zero optimal io size failing to register: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/2016040.
+I have tested patches applied to mainline and some ubuntu kernels successfully, but only with regards to resolving the bug mentioned (have not tested online resizing).
 
-在 2023/05/13 9:09, Chaitanya Kulkarni 写道:
-> On 5/12/23 06:00, Christoph Hellwig wrote:
->> Hell no.  This is just obsfucation.  We can look into actually exposing
->> REQ_OP_FLUSH at the bio level, but not something like this.
->>
-> 
-> and that's why I made it RFC, thanks for the can you please elaborate
-> on "exposing REQ_OP_FLUSH at the bio level" ?
+Are you planning further work or can this be merged soon?
 
-I think Christoph means that use this flag directly for bio, it's only
-used for reqeust for now.
-
-Thanks,
-Kuai
-> 
-> I'd really like work that ...
-> 
-> -ck
-> 
-> 
-
+Rafael
