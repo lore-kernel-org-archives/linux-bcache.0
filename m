@@ -2,118 +2,112 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 9B0A1C77B7A
-	for <linux-bcache@archiver.kernel.org>; Thu, 18 May 2023 00:57:53 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 421E2C77B7A
+	for <linux-bcache@archiver.kernel.org>; Tue, 30 May 2023 09:17:17 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229578AbjERA5w (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 17 May 2023 20:57:52 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55476 "EHLO
+        id S229578AbjE3JRQ (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 30 May 2023 05:17:16 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37432 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229456AbjERA5v (ORCPT
+        with ESMTP id S229446AbjE3JRP (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 17 May 2023 20:57:51 -0400
-X-Greylist: delayed 54395 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Wed, 17 May 2023 17:57:48 PDT
-Received: from zg8tmja2lje4os4yms4ymjma.icoremail.net (zg8tmja2lje4os4yms4ymjma.icoremail.net [206.189.21.223])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTP id C4D22F9
-        for <linux-bcache@vger.kernel.org>; Wed, 17 May 2023 17:57:48 -0700 (PDT)
-Received: from [10.8.148.37] (unknown [59.61.78.234])
-        by app2 (Coremail) with SMTP id SyJltABnaxEGeGVkbTYCAA--.1284S2;
-        Thu, 18 May 2023 08:57:42 +0800 (CST)
-Message-ID: <f87c6930-c9a1-cccc-47a8-942eb2b4dbe2@wangsu.com>
-Date:   Thu, 18 May 2023 08:57:42 +0800
+        Tue, 30 May 2023 05:17:15 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Tue, 30 May 2023 02:17:12 PDT
+Received: from mail.eclipso.de (mail.eclipso.de [217.69.254.104])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 864CECD
+        for <linux-bcache@vger.kernel.org>; Tue, 30 May 2023 02:17:12 -0700 (PDT)
+X-ESMTP-Authenticated-User: 000500FD
+Message-ID: <5e538ece-4197-55ad-6631-771b1dab28d9@eclipso.eu>
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=eclipso.de; s=mail;
+        t=1685437926; bh=J0ZUCBrNGXIRMqTlebV2FmDGp2LPR+AFXGTyTBIgSFA=;
+        h=Date:Cc:Subject:To:References:From:In-Reply-To:From;
+        b=Ti8Kb2McBvDsKCGegWKD8I0IwCT5qjbvx+Kcx6319x5GohkKMZOmOcb+YnDX2JzXL
+         Oyo+sNtLJajbYbd4ugyo3Eo1NVDuh41eEU82+xBXVUtqZ2K2zi4OLYyMktrwbM+d1x
+         sE6VRPZtKYsdFFrEZbb82Nm+3h7N9njDMZn/ErH6Ccpb03lhrOJykdgU3ILRi89iuW
+         Xzp/IorQj57sTPuOM2NNOIFSoMRokCLax+5PnmCfHvmKHjwdi6c88FMzuER3nWG8Lo
+         5ECUPyEOaRd0u8Gts7N0Ix7H4FH4XHhhHsqWcRsdBEboN2Lh8gKQQpYtsX7IYSJOiL
+         HUB9v3hwDW9Rw==
+Date:   Tue, 30 May 2023 11:12:06 +0200
 MIME-Version: 1.0
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101
- Thunderbird/102.10.0
-Subject: Re: [PATCH] bcache: fix nbuckets lower limit checking in
- read_super_common
-Content-Language: en-US
-To:     Coly Li <colyli@suse.de>
-Cc:     Bcache Linux <linux-bcache@vger.kernel.org>
-References: <84456adb-2933-49a4-cf40-b58b19ddd178@wangsu.com>
- <DE163AE2-BC0A-4DFC-9987-24E5FFFAFCB0@suse.de>
-From:   Lin Feng <linf@wangsu.com>
-In-Reply-To: <DE163AE2-BC0A-4DFC-9987-24E5FFFAFCB0@suse.de>
-Content-Type: text/plain; charset=UTF-8
+ Thunderbird/102.11.1
+Cc:     cedric.dewijs@eclipso.eu, colyli@suse.de,
+        andrea.tomassetti-opensource@devo.com, kent.overstreet@gmail.com,
+        linux-bcache@vger.kernel.org, zoumingzhe@qq.com,
+        Dongsheng Yang <dongsheng.yang@easystack.cn>
+Subject: Re: [PATCH 3/3] bcache: support overlay bcache
+To:     mingzhe <mingzhe.zou@easystack.cn>,
+        Eric Wheeler <bcache@lists.ewheeler.net>
+References: <20230201065202.17610-1-mingzhe.zou@easystack.cn>
+ <20230201065202.17610-3-mingzhe.zou@easystack.cn>
+ <e4a4362e-85d9-285d-726d-3b1df73329f8@ewheeler.net>
+ <994cd286-1929-60e2-8be9-71efd825ae84@easystack.cn>
+Content-Language: nl-NL, en-US-large
+From:   Cedric de Wijs <cedric.dewijs@eclipso.eu>
+In-Reply-To: <994cd286-1929-60e2-8be9-71efd825ae84@easystack.cn>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-CM-TRANSID: SyJltABnaxEGeGVkbTYCAA--.1284S2
-X-Coremail-Antispam: 1UD129KBjvJXoW7Cw4rWFWxWFyDGry5uw4UArb_yoW8WF4kpF
-        ZxKFy0yrW8Xr1UAFyqqF1F9a4Fvw42va1fW34UA3WxZrnIqFyavrWrKry3Wr1xXr1UXFs3
-        tFWUuayfWF1fCFJanT9S1TB71UUUUUUqnTZGkaVYY2UrUUUUjbIjqfuFe4nvWSU5nxnvy2
-        9KBjDU0xBIdaVrnRJUUUkSb7Iv0xC_Kw4lb4IE77IF4wAFc2x0x2IEx4CE42xK8VAvwI8I
-        cIk0rVWrJVCq3wA2ocxC64kIII0Yj41l84x0c7CEw4AK67xGY2AK021l84ACjcxK6xIIjx
-        v20xvE14v26w1j6s0DM28EF7xvwVC0I7IYx2IY6xkF7I0E14v26r4UJVWxJr1l84ACjcxK
-        6I8E87Iv67AKxVW0oVCq3wA2z4x0Y4vEx4A2jsIEc7CjxVAFwI0_GcCE3s1le2I262IYc4
-        CY6c8Ij28IcVAaY2xG8wAqx4xG64xvF2IEw4CE5I8CrVC2j2WlYx0E74AGY7Cv6cx26r48
-        McIj6xkF7I0En7xvr7AKxVW8JVWxJwAm72CE4IkC6x0Yz7v_Jr0_Gr1lF7xvr2IY64vIr4
-        1lc7I2V7IY0VAS07AlzVAYIcxG8wCY02Avz4vE14v_twCF04k20xvY0x0EwIxGrwCF04k2
-        0xvE74AGY7Cv6cx26r48MxC20s026xCaFVCjc4AY6r1j6r4UMI8I3I0E5I8CrVAFwI0_Jr
-        0_Jr4lx2IqxVCjr7xvwVAFwI0_JrI_JrWlx4CE17CEb7AF67AKxVWUXVWUAwCIc40Y0x0E
-        wIxGrwCI42IY6xIIjxv20xvE14v26r1j6r1xMIIF0xvE2Ix0cI8IcVCY1x0267AKxVWUJV
-        W8JwCI42IY6xAIw20EY4v20xvaj40_Jr0_JF4lIxAIcVC2z280aVAFwI0_Jr0_Gr1lIxAI
-        cVC2z280aVCY1x0267AKxVWUJVW8JbIYCTnIWIevJa73UjIFyTuYvjxU6SdyUUUUU
-X-CM-SenderInfo: holqwq5zdqw23xof0z/
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-
-
-On 5/17/23 21:56, Coly Li wrote:
-> 
-> 
->> 2023年5月17日 11:51，Lin Feng <linf@wangsu.com> 写道：
+<snip>
+>>>
+>>> Then we can create a cached_dev with bcache1 (flash dev) as backing dev.
+>>> $ make-bcache -B /dev/bcache1
+>>> $ lsblk
+>>> NAME                       MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+>>> vdf                        252:80   0   50G  0 disk
+>>> ├─bcache0                  251:0    0  100G  0 disk
+>>> └─bcache1                  251:128  0  100G  0 disk
+>>>    └─bcache2                251:256  0  100G  0 disk
+>>>
+>>> As a result there is a cached device bcache2 with backing device of a 
+>>> flash device bcache1.
+>>>          ----------------------------
+>>>          | bcache2 (cached_dev)     |
+>>>          | ------------------------ |
+>>>          | |   sdb (cache_dev)    | |
+>>>          | ------------------------ |
+>>>          | ------------------------ |
+>>>          | |   bcache1 (flash_dev)| |
+>>>          | ------------------------ |
+>>>          ----------------------------
 >>
->> In fact due to this check in cache_alloc:
->>    free = roundup_pow_of_two(ca->sb.nbuckets) >> 10;
-> 
-> This was introduced from commit 78365411b344d (“bcache: Rework allocator reserves”).
-> -       free = roundup_pow_of_two(ca->sb.nbuckets) >> 9;
-> -       free = max_t(size_t, free, (prio_buckets(ca) + 8) * 2);
-> +       free = roundup_pow_of_two(ca->sb.nbuckets) >> 10;
-> 
->>    if (!free) {
->>        ret = -EPERM;
->>        err = "ca->sb.nbuckets is too small";
->>        goto err_free;
->>    }
->> we can only create bcache device with nbuckets greater than 512,
->> so this patch is to make the codes logic consistent.
+>> Does this allow an arbitrary depth of bcache stacking?
 >>
->> Signed-off-by: Lin Feng <linf@wangsu.com>
->> ---
->> drivers/md/bcache/super.c | 2 +-
->> 1 file changed, 1 insertion(+), 1 deletion(-)
+>> -Eric
 >>
->> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
->> index 7e9d19fd21dd..681a7ea442b9 100644
->> --- a/drivers/md/bcache/super.c
->> +++ b/drivers/md/bcache/super.c
->> @@ -110,7 +110,7 @@ static const char *read_super_common(struct cache_sb *sb,  struct block_device *
->> goto err;
->>
->> err = "Not enough buckets";
->> - if (sb->nbuckets < 1 << 7)
->> + if (sb->nbuckets <= 1 << 9)
+> More than 2 layers we did not test, but should be allowed.
 > 
-> if (roundup_pow_of_two(ca->sb.nbuckets) < 1<< 10)
-> 
-> Might be more clear?
+> mingzhe
+>>>
+>>> Signed-off-by: Dongsheng Yang <dongsheng.yang@easystack.cn>
+>>> Signed-off-by: mingzhe <mingzhe.zou@easystack.cn>
+>>> ---
+>>>   drivers/md/bcache/super.c | 40 +++++++++++++++++++++++++++++++++++----
+>>>   1 file changed, 36 insertions(+), 4 deletions(-)
+>>>
+>>> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+>>> index ba3909bb6bea..0ca8c05831c9 100644
+>>> --- a/drivers/md/bcache/super.c
+>>> +++ b/drivers/md/bcache/super.c
+<snip>
 
-Yes, I also prefer your change :)
+Hi All,
 
-> 
->> goto err;
->>
->> err = "Bad block size (not power of 2)";
-> 
-> 
-> 
-> 
-> In bcache-tools the minimum nbuckets is (1<<7) too. It is fine to modify it to 1<<10, I will modify bcache-tools too.
-> 
+I've not seen this commit appear in the mainline kernel yet. In 2023, 
+only this commit changed super.c in 2023:
+2023-04-25	block/drivers: remove dead clear of random flag
+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/log/drivers/md/bcache/super.c?h=v6.4-rc4
 
-bcache-tools also has this flaw, both are aligned to 1<<10 is a good choice!
+What's preventing this patch from going into the mainline kernel?
 
-Thanks,
-linfeng
+Cheers,
+Cedric
+
+_________________________________________________________________
+________________________________________________________
+Your E-Mail. Your Cloud. Your Office. eclipso Mail & Cloud. https://www.eclipso.de
+
 
