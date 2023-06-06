@@ -2,37 +2,39 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 8B139C7EE32
-	for <linux-bcache@archiver.kernel.org>; Tue,  6 Jun 2023 07:46:14 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id AD879C77B73
+	for <linux-bcache@archiver.kernel.org>; Tue,  6 Jun 2023 08:20:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S237369AbjFFHqM (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 6 Jun 2023 03:46:12 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51212 "EHLO
+        id S233118AbjFFIUx convert rfc822-to-8bit (ORCPT
+        <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 6 Jun 2023 04:20:53 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:48528 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S236530AbjFFHo0 (ORCPT
+        with ESMTP id S230220AbjFFIUv (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 6 Jun 2023 03:44:26 -0400
-Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:3::133])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id E18591703;
-        Tue,  6 Jun 2023 00:41:54 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
-        d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
-        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
-        :Reply-To:Content-Type:Content-ID:Content-Description;
-        bh=RkaoGw7hxnY7p2Aj4jgl8vVIBxmKSkWEmvUol6CzrBM=; b=NLn6+h1KQ1XPhC8jPNSjuxiI/H
-        d3m1qq+F+uiL75Nt82jjj6hyuacgFBd3QNUYV0sHDor2YZKT1Nxmg04qDVQhMYoevX0tImBwex4VG
-        G+9KvCdLT6m6XXN86IZINhovZ63m0Zc8rws01Ky24GKB/HiugyBnBWZH+oaHS8Q0Idl5inxJoIfSU
-        qi4TPJkaEIQeX6IPAScaGNPHjAr8/VFwUTGdvbJhjlV0CVdqGYYW6JpYO4BQJhreDe+7iuna18m0o
-        /zWoaJMNLycrCXvHvH4YL57SJwMV3vBqiYawbb8oLQ1PPYa/zpRelkQw/bx0xJpawaod/0ZWKLQo4
-        IzSMFktA==;
-Received: from 2a02-8389-2341-5b80-39d3-4735-9a3c-88d8.cable.dynamic.v6.surfer.at ([2a02:8389:2341:5b80:39d3:4735:9a3c:88d8] helo=localhost)
-        by bombadil.infradead.org with esmtpsa (Exim 4.96 #2 (Red Hat Linux))
-        id 1q6RJr-000aA8-0F;
-        Tue, 06 Jun 2023 07:41:33 +0000
-From:   Christoph Hellwig <hch@lst.de>
-To:     Jens Axboe <axboe@kernel.dk>
-Cc:     Richard Weinberger <richard@nod.at>,
-        Josef Bacik <josef@toxicpanda.com>,
+        Tue, 6 Jun 2023 04:20:51 -0400
+Received: from lithops.sigma-star.at (lithops.sigma-star.at [195.201.40.130])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 9299DFA;
+        Tue,  6 Jun 2023 01:20:49 -0700 (PDT)
+Received: from localhost (localhost [127.0.0.1])
+        by lithops.sigma-star.at (Postfix) with ESMTP id 89E7C63CC135;
+        Tue,  6 Jun 2023 10:20:47 +0200 (CEST)
+Received: from lithops.sigma-star.at ([127.0.0.1])
+        by localhost (lithops.sigma-star.at [127.0.0.1]) (amavisd-new, port 10032)
+        with ESMTP id w2bdPD93IvhE; Tue,  6 Jun 2023 10:20:47 +0200 (CEST)
+Received: from localhost (localhost [127.0.0.1])
+        by lithops.sigma-star.at (Postfix) with ESMTP id 14A1D616B2CD;
+        Tue,  6 Jun 2023 10:20:47 +0200 (CEST)
+Received: from lithops.sigma-star.at ([127.0.0.1])
+        by localhost (lithops.sigma-star.at [127.0.0.1]) (amavisd-new, port 10026)
+        with ESMTP id X5LSD106M-YC; Tue,  6 Jun 2023 10:20:46 +0200 (CEST)
+Received: from lithops.sigma-star.at (lithops.sigma-star.at [195.201.40.130])
+        by lithops.sigma-star.at (Postfix) with ESMTP id D62D563CC135;
+        Tue,  6 Jun 2023 10:20:46 +0200 (CEST)
+Date:   Tue, 6 Jun 2023 10:20:46 +0200 (CEST)
+From:   Richard Weinberger <richard@nod.at>
+To:     hch <hch@lst.de>
+Cc:     Jens Axboe <axboe@kernel.dk>, Josef Bacik <josef@toxicpanda.com>,
         "Md. Haris Iqbal" <haris.iqbal@ionos.com>,
         Jack Wang <jinpu.wang@ionos.com>,
         Phillip Potter <phil@philpotter.co.uk>,
@@ -41,81 +43,62 @@ Cc:     Richard Weinberger <richard@nod.at>,
         Vignesh Raghavendra <vigneshr@ti.com>,
         "Martin K. Petersen" <martin.petersen@oracle.com>,
         Chris Mason <clm@fb.com>, David Sterba <dsterba@suse.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Christian Brauner <brauner@kernel.org>,
         "Rafael J. Wysocki" <rafael@kernel.org>,
-        Pavel Machek <pavel@ucw.cz>, dm-devel@redhat.com,
-        linux-block@vger.kernel.org, linux-um@lists.infradead.org,
+        Pavel Machek <pavel@ucw.cz>, dm-devel <dm-devel@redhat.com>,
+        linux-block <linux-block@vger.kernel.org>,
+        linux-um <linux-um@lists.infradead.org>,
         linux-scsi@vger.kernel.org, linux-bcache@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-nvme@lists.infradead.org,
-        linux-btrfs@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        linux-nilfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: [PATCH 30/31] block: store the holder in file->private_data
-Date:   Tue,  6 Jun 2023 09:39:49 +0200
-Message-Id: <20230606073950.225178-31-hch@lst.de>
-X-Mailer: git-send-email 2.39.2
-In-Reply-To: <20230606073950.225178-1-hch@lst.de>
-References: <20230606073950.225178-1-hch@lst.de>
+        linux-mtd <linux-mtd@lists.infradead.org>,
+        linux-nvme@lists.infradead.org,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        linux-f2fs-devel <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-nilfs@vger.kernel.org,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-pm <linux-pm@vger.kernel.org>
+Message-ID: <766259639.3687124.1686039646763.JavaMail.zimbra@nod.at>
+In-Reply-To: <20230606073950.225178-26-hch@lst.de>
+References: <20230606073950.225178-1-hch@lst.de> <20230606073950.225178-26-hch@lst.de>
+Subject: Re: [PATCH 25/31] ubd: remove commented out code in ubd_open
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [195.201.40.130]
+X-Mailer: Zimbra 8.8.12_GA_3807 (ZimbraWebClient - FF97 (Linux)/8.8.12_GA_3809)
+Thread-Topic: remove commented out code in ubd_open
+Thread-Index: XkjrL/wptcQ24bQlPJHDQOJLYTpcmQ==
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Store the file struct used as the holder in file->private_data as an
-indicator that this file descriptor was opened exclusively to  remove
-the last use of FMODE_EXCL.
+----- Ursprüngliche Mail -----
+> Von: "hch" <hch@lst.de>
+> This code has been dead forever, make sure it doesn't show up in code
+> searches.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> ---
+> arch/um/drivers/ubd_kern.c | 7 -------
+> 1 file changed, 7 deletions(-)
+> 
+> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+> index 8b79554968addb..20c1a16199c503 100644
+> --- a/arch/um/drivers/ubd_kern.c
+> +++ b/arch/um/drivers/ubd_kern.c
+> @@ -1170,13 +1170,6 @@ static int ubd_open(struct gendisk *disk, fmode_t mode)
+> 	}
+> 	ubd_dev->count++;
+> 	set_disk_ro(disk, !ubd_dev->openflags.w);
+> -
+> -	/* This should no more be needed. And it didn't work anyway to exclude
+> -	 * read-write remounting of filesystems.*/
+> -	/*if((mode & FMODE_WRITE) && !ubd_dev->openflags.w){
+> -	        if(--ubd_dev->count == 0) ubd_close_dev(ubd_dev);
+> -	        err = -EROFS;
+> -	}*/
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/fops.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+Acked-by: Richard Weinberger <richard@nod.at>
 
-diff --git a/block/fops.c b/block/fops.c
-index c40b9f978e3bc7..915e0ef7560993 100644
---- a/block/fops.c
-+++ b/block/fops.c
-@@ -478,7 +478,7 @@ blk_mode_t file_to_blk_mode(struct file *file)
- 		mode |= BLK_OPEN_READ;
- 	if (file->f_mode & FMODE_WRITE)
- 		mode |= BLK_OPEN_WRITE;
--	if (file->f_mode & FMODE_EXCL)
-+	if (file->private_data)
- 		mode |= BLK_OPEN_EXCL;
- 	if ((file->f_flags & O_ACCMODE) == 3)
- 		mode |= BLK_OPEN_WRITE_IOCTL;
-@@ -501,12 +501,15 @@ static int blkdev_open(struct inode *inode, struct file *filp)
- 	filp->f_flags |= O_LARGEFILE;
- 	filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC;
- 
-+	/*
-+	 * Use the file private data to store the holder, file_to_blk_mode
-+	 * relies on this.
-+	 */
- 	if (filp->f_flags & O_EXCL)
--		filp->f_mode |= FMODE_EXCL;
-+		filp->private_data = filp;
- 
- 	bdev = blkdev_get_by_dev(inode->i_rdev, file_to_blk_mode(filp),
--				 (filp->f_mode & FMODE_EXCL) ? filp : NULL,
--				 NULL);
-+				 filp->private_data, NULL);
- 	if (IS_ERR(bdev))
- 		return PTR_ERR(bdev);
- 
-@@ -517,8 +520,7 @@ static int blkdev_open(struct inode *inode, struct file *filp)
- 
- static int blkdev_release(struct inode *inode, struct file *filp)
- {
--	blkdev_put(I_BDEV(filp->f_mapping->host),
--		   (filp->f_mode & FMODE_EXCL) ? filp : NULL);
-+	blkdev_put(I_BDEV(filp->f_mapping->host), filp->private_data);
- 	return 0;
- }
- 
--- 
-2.39.2
-
+Thanks,
+//richard
