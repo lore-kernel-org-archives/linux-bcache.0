@@ -2,60 +2,41 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id CD52DC7EE29
-	for <linux-bcache@archiver.kernel.org>; Thu,  8 Jun 2023 09:44:37 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 83F6AC8300C
+	for <linux-bcache@archiver.kernel.org>; Thu,  8 Jun 2023 11:03:28 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S236035AbjFHJog (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 8 Jun 2023 05:44:36 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:46276 "EHLO
+        id S234872AbjFHLD1 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Thu, 8 Jun 2023 07:03:27 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:35458 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S235960AbjFHJoe (ORCPT
+        with ESMTP id S232139AbjFHLDZ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 8 Jun 2023 05:44:34 -0400
-Received: from mail-wm1-x32c.google.com (mail-wm1-x32c.google.com [IPv6:2a00:1450:4864:20::32c])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 26B7F26B3
-        for <linux-bcache@vger.kernel.org>; Thu,  8 Jun 2023 02:44:24 -0700 (PDT)
-Received: by mail-wm1-x32c.google.com with SMTP id 5b1f17b1804b1-3f736e0c9a8so2217695e9.2
-        for <linux-bcache@vger.kernel.org>; Thu, 08 Jun 2023 02:44:24 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=philpotter-co-uk.20221208.gappssmtp.com; s=20221208; t=1686217463; x=1688809463;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:from:to:cc:subject:date:message-id:reply-to;
-        bh=7UW1P1+u4z8C1yYHhcCc7D6z205h5xRpA4Pis0U9UMY=;
-        b=yaY1SeETpr1491wAArwoEz9AJZvZ5z5Oelfq8FTwZjv5Pt/tYo5/JbhJmlnsdXccgT
-         rV+izm1qoxfwqsvCOevTNpa9AXiPp34leL/teWpFI8DnWj2gT9oTkJf5RM1JedYJsqOR
-         dOTz2gvKJANj4eEOoND3rs/e3YQmKzzRMznHOfQHFfxuyaer9zt098pnWbKtUtWgrjpL
-         rngkJTI/oyNl1h5w6WjYslic/vZHxQYsDYNvUly4Suef2mFO3KaGuI4pOX3o87LWbC1v
-         fP5qRuJh7sd0u5OqO4m/B3exo8izpU2YK4CbQWdtPhbZm6I3/7vshaMygPH9B4aEMU3h
-         0vHQ==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1686217463; x=1688809463;
-        h=in-reply-to:content-disposition:mime-version:references:message-id
-         :subject:cc:to:from:date:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=7UW1P1+u4z8C1yYHhcCc7D6z205h5xRpA4Pis0U9UMY=;
-        b=Aaa2ZWZC02Vw7ZXaNPTPJop3V4cg7SA6/tvK406LF55qIahUncozecqR6EeDl9yOrU
-         RAADCl/IdrjWW2qIuAh1YR6Ffkym/93B22pRQrd1Bfry1T4ndX0iVKx8JfU9THCi8ySO
-         GZly6LpyDDtWey1fiF8T49R4Rj9T31EQ/HD8pa2+KBxAM9q4wCMla2Ch3E9z4Kls1u9n
-         h9pzrWU3O65r/zAjJxJt5sjWi5GryMZf86nc6tnVavdVqmsMLhtnaCP9mwAI5izC5o9J
-         Y7NDtLd7GtEySwa6UrI5IuA+pnBpsrXQ0kDN6KcCdE9D0OmFrxwuhhDV3HPPPRaq30kW
-         pmxA==
-X-Gm-Message-State: AC+VfDwuM7c31HTYTT4/tAMTd9r6CXen//P25vyszznYaT1fTJx2UKXk
-        oDmOpiU90UaX2vSSTXPe/bxVMA==
-X-Google-Smtp-Source: ACHHUZ55+QiuKZDDVF2xerotwpMLkKmO7qQkxSxt7AJ+yBOXmT5EW03OqeXuJJ7vWtahwa0aPclqwA==
-X-Received: by 2002:adf:e60c:0:b0:30a:e3da:efe5 with SMTP id p12-20020adfe60c000000b0030ae3daefe5mr6178509wrm.32.1686217463182;
-        Thu, 08 Jun 2023 02:44:23 -0700 (PDT)
-Received: from equinox (2.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.a.1.e.e.d.f.d.0.b.8.0.1.0.0.2.ip6.arpa. [2001:8b0:dfde:e1a0::2])
-        by smtp.gmail.com with ESMTPSA id c17-20020adffb51000000b00307bc4e39e5sm1027878wrs.117.2023.06.08.02.44.22
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 08 Jun 2023 02:44:22 -0700 (PDT)
-Date:   Thu, 8 Jun 2023 10:44:20 +0100
-From:   Phillip Potter <phil@philpotter.co.uk>
-To:     Christoph Hellwig <hch@lst.de>
-Cc:     Jens Axboe <axboe@kernel.dk>, Richard Weinberger <richard@nod.at>,
+        Thu, 8 Jun 2023 07:03:25 -0400
+Received: from bombadil.infradead.org (bombadil.infradead.org [IPv6:2607:7c80:54:3::133])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4527A2134;
+        Thu,  8 Jun 2023 04:03:24 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+        d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
+        MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
+        :Reply-To:Content-Type:Content-ID:Content-Description;
+        bh=FYQsICe+jkO2yrGbgRzbumctJVKnV4wWIZUy1tv1p54=; b=oucg3Pp/rKcskrh+Hb+2MAm4oh
+        CAxirj8/J8boUvG5KuKH4XNEziwGZWCBFdjLkSPuAUYn9sLXGhsGXcPg2M6lmVYYC1OxeFi4XX36Q
+        mX6ufS/9I1nDuIHYRLJpnpVCMycipoqj5pJDMjncVmj7ncRPeNeQdCfoC1C+XghtjX90w4hi7Cse9
+        WqJiXO1TpgvnDBjtOlTfsZXa+pPttbNa1Qk3YLwmNPxsJ0ApRlEg2FfQvwoShtptcHJJ/EHBK67bZ
+        riO/Gx/2T4VFi3othQU0kqoY1H9RFVaLIpHIcFoekDpe1RzqiRE6QCfLa+tpzrRlyc+jZL1+KdS5R
+        ywv3NawA==;
+Received: from 2a02-8389-2341-5b80-39d3-4735-9a3c-88d8.cable.dynamic.v6.surfer.at ([2a02:8389:2341:5b80:39d3:4735:9a3c:88d8] helo=localhost)
+        by bombadil.infradead.org with esmtpsa (Exim 4.96 #2 (Red Hat Linux))
+        id 1q7DPz-0091cl-2t;
+        Thu, 08 Jun 2023 11:03:04 +0000
+From:   Christoph Hellwig <hch@lst.de>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Richard Weinberger <richard@nod.at>,
         Josef Bacik <josef@toxicpanda.com>,
         "Md. Haris Iqbal" <haris.iqbal@ionos.com>,
-        Jack Wang <jinpu.wang@ionos.com>, Coly Li <colyli@suse.de>,
+        Jack Wang <jinpu.wang@ionos.com>,
+        Phillip Potter <phil@philpotter.co.uk>,
+        Coly Li <colyli@suse.de>,
         Miquel Raynal <miquel.raynal@bootlin.com>,
         Vignesh Raghavendra <vigneshr@ti.com>,
         "Martin K. Petersen" <martin.petersen@oracle.com>,
@@ -70,40 +51,90 @@ Cc:     Jens Axboe <axboe@kernel.dk>, Richard Weinberger <richard@nod.at>,
         linux-btrfs@vger.kernel.org,
         linux-f2fs-devel@lists.sourceforge.net,
         linux-nilfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 06/31] cdrom: remove the unused mode argument to
- cdrom_release
-Message-ID: <ZIGi9GMGeKruSrrW@equinox>
-References: <20230606073950.225178-1-hch@lst.de>
- <20230606073950.225178-7-hch@lst.de>
- <ZH+6qd1W75G49P7p@equinox>
- <20230608084129.GA14689@lst.de>
- <ZIGVn9E9ME26V0Gn@equinox>
- <20230608090444.GA15075@lst.de>
+        linux-pm@vger.kernel.org, Hannes Reinecke <hare@suse.de>
+Subject: [PATCH 01/30] block: also call ->open for incremental partition opens
+Date:   Thu,  8 Jun 2023 13:02:29 +0200
+Message-Id: <20230608110258.189493-2-hch@lst.de>
+X-Mailer: git-send-email 2.39.2
+In-Reply-To: <20230608110258.189493-1-hch@lst.de>
+References: <20230608110258.189493-1-hch@lst.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20230608090444.GA15075@lst.de>
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-On Thu, Jun 08, 2023 at 11:04:44AM +0200, Christoph Hellwig wrote:
-> On Thu, Jun 08, 2023 at 09:47:27AM +0100, Phillip Potter wrote:
-> > Yes indeed - I was under the impression it was appropriate for a
-> > maintainer to signal their approval of a patch to maintained code using
-> > a Signed-off-by tag due to their involvement in the submission process?
-> > Apologies if I've got this wrong, happy to send Reviewed-bys by all
-> > means.
-> 
-> Signed-off-by is for the chain that the patches pass through.  You add
-> it when you apply or forward the patch.  Just give me a Reviewed-by
-> tag and say it shold apply to patches 1 to 6 and I'll add it.
+For whole devices ->open is called for each open, but for partitions it
+is only called on the first open of a partition, e.g.:
 
-Thanks for the guidance. Please apply the following to the block patch
-(1) and the CD-ROM patches (2-6) of your series, all looks good to me:
+  open("/dev/vdb", ...)
+  open("/dev/vdb", ...)
+    - 2 call to ->open
 
+  open("/dev/vdb1", ...)
+  open("/dev/vdb", ...)
+    - 2 call to ->open
+
+  open("/dev/vdb", ...)
+  open("/dev/vdb", ...)
+    - just open call to ->open
+
+This is problematic as various block drivers look at open flags and
+might not do all the required setup if the earlier open was with an
+odd flag like O_NDELAY or the magic 3 ioctl-only open mode.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Reviewed-by: Phillip Potter <phil@philpotter.co.uk>
+Reviewed-by: Hannes Reinecke <hare@suse.de>
+Acked-by: Christian Brauner <brauner@kernel.org>
+---
+ block/bdev.c | 18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
-Regards,
-Phil
+diff --git a/block/bdev.c b/block/bdev.c
+index 5c46ff10770638..981f6135795138 100644
+--- a/block/bdev.c
++++ b/block/bdev.c
+@@ -683,9 +683,6 @@ static int blkdev_get_part(struct block_device *part, fmode_t mode)
+ 	struct gendisk *disk = part->bd_disk;
+ 	int ret;
+ 
+-	if (atomic_read(&part->bd_openers))
+-		goto done;
+-
+ 	ret = blkdev_get_whole(bdev_whole(part), mode);
+ 	if (ret)
+ 		return ret;
+@@ -694,9 +691,10 @@ static int blkdev_get_part(struct block_device *part, fmode_t mode)
+ 	if (!bdev_nr_sectors(part))
+ 		goto out_blkdev_put;
+ 
+-	disk->open_partitions++;
+-	set_init_blocksize(part);
+-done:
++	if (!atomic_read(&part->bd_openers)) {
++		disk->open_partitions++;
++		set_init_blocksize(part);
++	}
+ 	atomic_inc(&part->bd_openers);
+ 	return 0;
+ 
+@@ -709,10 +707,10 @@ static void blkdev_put_part(struct block_device *part, fmode_t mode)
+ {
+ 	struct block_device *whole = bdev_whole(part);
+ 
+-	if (!atomic_dec_and_test(&part->bd_openers))
+-		return;
+-	blkdev_flush_mapping(part);
+-	whole->bd_disk->open_partitions--;
++	if (atomic_dec_and_test(&part->bd_openers)) {
++		blkdev_flush_mapping(part);
++		whole->bd_disk->open_partitions--;
++	}
+ 	blkdev_put_whole(whole, mode);
+ }
+ 
+-- 
+2.39.2
+
