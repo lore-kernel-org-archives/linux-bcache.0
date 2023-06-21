@@ -2,101 +2,241 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E8B00EB64D9
-	for <linux-bcache@archiver.kernel.org>; Thu, 15 Jun 2023 13:34:51 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 85410EB64D8
+	for <linux-bcache@archiver.kernel.org>; Wed, 21 Jun 2023 16:24:03 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1344331AbjFONeu (ORCPT
-        <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 15 Jun 2023 09:34:50 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:44904 "EHLO
+        id S232463AbjFUQYB (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 21 Jun 2023 12:24:01 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:49214 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1344154AbjFONeO (ORCPT
+        with ESMTP id S232577AbjFUQXj (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Thu, 15 Jun 2023 09:34:14 -0400
-Received: from mail-pf1-x42b.google.com (mail-pf1-x42b.google.com [IPv6:2607:f8b0:4864:20::42b])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 0A75B30FE
-        for <linux-bcache@vger.kernel.org>; Thu, 15 Jun 2023 06:33:47 -0700 (PDT)
-Received: by mail-pf1-x42b.google.com with SMTP id d2e1a72fcca58-6664ac3be47so396386b3a.0
-        for <linux-bcache@vger.kernel.org>; Thu, 15 Jun 2023 06:33:47 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=kernel-dk.20221208.gappssmtp.com; s=20221208; t=1686836027; x=1689428027;
-        h=content-transfer-encoding:mime-version:date:message-id:subject
-         :references:in-reply-to:cc:to:from:from:to:cc:subject:date
-         :message-id:reply-to;
-        bh=sVR+vT8DdsvA3Z3S0QOP6jSANdRArM8WL8xik+euJ7U=;
-        b=DEJZBn0jRo+nrmjAYfVbkW/mbWTo9TPUh5Zk5FdEZ9pNqXulFJpZdIL6dCbj+nxtYS
-         zcZv11ORnK6I++2adpuFhjl0ft85vJq3OrXtav0aI4US0+3khl91+a+ZlJDjLB7gWOV3
-         TL/LSTeYzjcZht0650UgDtwxgCQToPTz4Uzvkm/KwSKr+RKEp0szPSV+3yrBpWxmz8aF
-         BGLXUncI1pi+EeL4aNxttKZJn2qmvi5Hv1XuwsJh3/vCgx6DZU8SLeXeo0PgjwCmr6RU
-         lrTtxLpVwmaHEHOVBQTylSMH/9Qk0C2lntzNe91kKp6XtrlCCXay1JBOj9YToZZZ+RIj
-         MWdg==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1686836027; x=1689428027;
-        h=content-transfer-encoding:mime-version:date:message-id:subject
-         :references:in-reply-to:cc:to:from:x-gm-message-state:from:to:cc
-         :subject:date:message-id:reply-to;
-        bh=sVR+vT8DdsvA3Z3S0QOP6jSANdRArM8WL8xik+euJ7U=;
-        b=PAtoz1Xvf0JPxEw7Yy5hMJ2KSFfJx4lZY8+TeWSg97yDpgPuhqzh+sLf63Qyy/EK4J
-         2j0Re+Cyrfx9L6JnlL9iMaWuzyr9OReacwssXMsIkuuXAm7i8lOrWv51eJ8bVO2CQrU0
-         4nKyhSBoaBJ5a0YBgARvBtx2E8gzEVbrNJFWZx1EeLpg2elgLCszM1VkwNFrRXJy3JGh
-         90QmM8v59bA8SG/6VEoOCX17f2AhiTIiRe843Agv11v0gCp+orunItwx//vlH3FFVEmH
-         QygRe6CQjcdfMs/IuIeP4KO0lTmMU2eZIeSAxggK114B6//1fNbm0iClS8CFURcGGcOe
-         XFeA==
-X-Gm-Message-State: AC+VfDx8ndHZtKiCPohrx9ASwOdvsxoqf8Zdpq+sPQMDalbpy1umWhJr
-        76jGmZb0cHnxxsNvLqRnqj/KWPCHZn1jicVIGCI=
-X-Google-Smtp-Source: ACHHUZ4hYDWKSnGc0F3oLOsil5ywgqcuGr7h8N6KfecEA3vYODtqH0U/YpLcDAf/Ug39JuiuTrNGXw==
-X-Received: by 2002:a05:6a20:8e19:b0:11a:efaa:eb88 with SMTP id y25-20020a056a208e1900b0011aefaaeb88mr15781079pzj.3.1686836026892;
-        Thu, 15 Jun 2023 06:33:46 -0700 (PDT)
-Received: from [127.0.0.1] ([198.8.77.157])
-        by smtp.gmail.com with ESMTPSA id x17-20020aa793b1000000b00640dbf177b8sm12062928pff.37.2023.06.15.06.33.45
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 15 Jun 2023 06:33:45 -0700 (PDT)
-From:   Jens Axboe <axboe@kernel.dk>
-To:     Coly Li <colyli@suse.de>
-Cc:     linux-bcache@vger.kernel.org, linux-block@vger.kernel.org
-In-Reply-To: <20230615121223.22502-1-colyli@suse.de>
-References: <20230615121223.22502-1-colyli@suse.de>
-Subject: Re: [PATCH 0/6] bcache-next 20230615
-Message-Id: <168683602549.2139966.16055841086380737489.b4-ty@kernel.dk>
-Date:   Thu, 15 Jun 2023 07:33:45 -0600
+        Wed, 21 Jun 2023 12:23:39 -0400
+Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.220.28])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7C92A199F;
+        Wed, 21 Jun 2023 09:23:35 -0700 (PDT)
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by smtp-out1.suse.de (Postfix) with ESMTPS id 3084221F36;
+        Wed, 21 Jun 2023 16:23:34 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.cz; s=susede2_rsa;
+        t=1687364614; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=nuxv/JENKp4VItXO7paug/X1cN/wY0He1jTgcAzdBw4=;
+        b=JcMVC1d4QNRntkU1snLWBDCoHGYu8qq29RBVmMb1JQvKgbTUlreeKqaE3bwEXhL4QZCdcE
+        hCs71Ky7t+triqxwQaJon5t3tquL/DfHTlRDcb42YxripRVfroOvliO3qAChJYiTlwEFtW
+        do5a9d7eZKlRffDVJtc5jBQjHSDrAH4=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.cz;
+        s=susede2_ed25519; t=1687364614;
+        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=nuxv/JENKp4VItXO7paug/X1cN/wY0He1jTgcAzdBw4=;
+        b=EK8mRNHdmICT/uZJA3T/cjR/U+Rp7HXuu4pEuSk4duBej9phwRl539H1BjBMpwilif4f7U
+        OlO8AQbNi3ws2aCg==
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 1D41A13A66;
+        Wed, 21 Jun 2023 16:23:34 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([192.168.254.65])
+        by imap2.suse-dmz.suse.de with ESMTPSA
+        id WFWkBgYkk2TEPQAAMHmgww
+        (envelope-from <jack@suse.cz>); Wed, 21 Jun 2023 16:23:34 +0000
+Received: by quack3.suse.cz (Postfix, from userid 1000)
+        id 8EADDA0762; Wed, 21 Jun 2023 18:23:33 +0200 (CEST)
+From:   Jan Kara <jack@suse.cz>
+To:     Jens Axboe <axboe@kernel.dk>
+Cc:     Christoph Hellwig <hch@infradead.org>,
+        <linux-block@vger.kernel.org>, Coly Li <colyli@suse.de>,
+        linux-bcache@vger.kernel.org, Jan Kara <jack@suse.cz>
+Subject: [PATCH 2/2] bcache: Fix bcache device claiming
+Date:   Wed, 21 Jun 2023 18:23:27 +0200
+Message-Id: <20230621162333.30027-2-jack@suse.cz>
+X-Mailer: git-send-email 2.35.3
+In-Reply-To: <20230621162024.29310-1-jack@suse.cz>
+References: <20230621162024.29310-1-jack@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: b4 0.13-dev-c6835
+X-Developer-Signature: v=1; a=openpgp-sha256; l=5545; i=jack@suse.cz; h=from:subject; bh=Pti3dkedZN4wX/9P1flYkBVZnMPSkLX3HFuqYwyaiVg=; b=owEBbQGS/pANAwAIAZydqgc/ZEDZAcsmYgBkkyP++cvXYTC1oMaMwvMKOnS/5vaVQargmH8/Pr2b gMNE8QmJATMEAAEIAB0WIQSrWdEr1p4yirVVKBycnaoHP2RA2QUCZJMj/gAKCRCcnaoHP2RA2WRkB/ 47Zv5XxIh1n7jPUUTMhGjhIJtDHFzs4lfNAUaiRoSEofhW7wR3ppmejpHbe2NzjI2eAZPOio825Oc6 Pc5dfBF2WFT4qrVPPtkSVcLK5QuYOWTvbdF+9Ee7MVlSMivs95wVM7jVzWDSW+25LvVSBZwonNB/g+ LS7c4oIyNBM16IYpkVKbFjdHqHqVDYhHizGe/0hNAHPiqv9UXOXtME7rtp8Cw7Z2cDI9yOl/RQ9LY/ 8qjmkvo51iTld3NfsN4WXUc/n+hvhZjKN3VG7RErlNXR3LRWKiU7jjpVnwLf08/7oPv/xgpAcH8fOQ jU7BWVdl+mvMJnvwbKcV6VqPoKvOjl
+X-Developer-Key: i=jack@suse.cz; a=openpgp; fpr=93C6099A142276A28BBE35D815BC833443038D8C
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
+Commit 2736e8eeb0cc ("block: use the holder as indication for exclusive
+opens") introduced a change that blkdev_put() has to get exclusive
+holder of the bdev as an argument. However it overlooked that
+register_bdev() and register_cache() overwrite the bdev->bd_holder field
+in the block device to point to the real owning object which was not
+available at the time we called blkdev_get_by_path(). Messing with bdev
+internals like this is a layering violation and it also causes
+blkdev_put() to issue warning about mismatching holders.
 
-On Thu, 15 Jun 2023 20:12:17 +0800, Coly Li wrote:
-> I start to follow Song Liu's -next style to submit bcache patches to
-> you. This series are minor fixes I tested for a while, and generated
-> based on top of the for-6.5/block branch from linux-block tree.
-> 
-> The patch from Mingzhe Zou fixes a race in bcache initializaiton time,
-> rested patches from Andrea, Thomas, Zheng and Ye are code cleanup and
-> good to have them in.
-> 
-> [...]
+Fix bcache to reopen the block device with appropriate holder once it is
+available which also restores the behavior that multiple bcache caches
+cannot claim the same device which was also broken by commit
+2736e8eeb0cc.
 
-Applied, thanks!
+Fixes: 2736e8eeb0cc ("block: use the holder as indication for exclusive opens")
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ drivers/md/bcache/super.c | 63 ++++++++++++++++++++++-----------------
+ 1 file changed, 36 insertions(+), 27 deletions(-)
 
-[1/6] bcache: Convert to use sysfs_emit()/sysfs_emit_at() APIs
-      commit: a301b2deb66cd93bae0f676702356273ebf8abb6
-[2/6] bcache: make kobj_type structures constant
-      commit: b98dd0b0a596fdeaca68396ce8f782883ed253a9
-[3/6] bcache: Remove dead references to cache_readaheads
-      commit: ccb8c3bd6d93e7986b702d1f66d5d56d08abc59f
-[4/6] bcache: Remove some unnecessary NULL point check for the return value of __bch_btree_node_alloc-related pointer
-      commit: 028ddcac477b691dd9205c92f991cc15259d033e
-[5/6] bcache: Fix __bch_btree_node_alloc to make the failure behavior consistent
-      commit: 80fca8a10b604afad6c14213fdfd816c4eda3ee4
-[6/6] bcache: fixup btree_cache_wait list damage
-      commit: f0854489fc07d2456f7cc71a63f4faf9c716ffbe
-
-Best regards,
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 913dd94353b6..9738e8c0cbfc 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1369,7 +1369,7 @@ static void cached_dev_free(struct closure *cl)
+ 		put_page(virt_to_page(dc->sb_disk));
+ 
+ 	if (!IS_ERR_OR_NULL(dc->bdev))
+-		blkdev_put(dc->bdev, bcache_kobj);
++		blkdev_put(dc->bdev, dc);
+ 
+ 	wake_up(&unregister_wait);
+ 
+@@ -1453,7 +1453,6 @@ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+ 
+ 	memcpy(&dc->sb, sb, sizeof(struct cache_sb));
+ 	dc->bdev = bdev;
+-	dc->bdev->bd_holder = dc;
+ 	dc->sb_disk = sb_disk;
+ 
+ 	if (cached_dev_init(dc, sb->block_size << 9))
+@@ -2218,7 +2217,7 @@ void bch_cache_release(struct kobject *kobj)
+ 		put_page(virt_to_page(ca->sb_disk));
+ 
+ 	if (!IS_ERR_OR_NULL(ca->bdev))
+-		blkdev_put(ca->bdev, bcache_kobj);
++		blkdev_put(ca->bdev, ca);
+ 
+ 	kfree(ca);
+ 	module_put(THIS_MODULE);
+@@ -2345,7 +2344,6 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+ 
+ 	memcpy(&ca->sb, sb, sizeof(struct cache_sb));
+ 	ca->bdev = bdev;
+-	ca->bdev->bd_holder = ca;
+ 	ca->sb_disk = sb_disk;
+ 
+ 	if (bdev_max_discard_sectors((bdev)))
+@@ -2359,7 +2357,7 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+ 		 * call blkdev_put() to bdev in bch_cache_release(). So we
+ 		 * explicitly call blkdev_put() here.
+ 		 */
+-		blkdev_put(bdev, bcache_kobj);
++		blkdev_put(bdev, ca);
+ 		if (ret == -ENOMEM)
+ 			err = "cache_alloc(): -ENOMEM";
+ 		else if (ret == -EPERM)
+@@ -2516,10 +2514,11 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 	char *path = NULL;
+ 	struct cache_sb *sb;
+ 	struct cache_sb_disk *sb_disk;
+-	struct block_device *bdev;
+-	void *holder;
++	struct block_device *bdev, *bdev2;
++	void *holder = NULL;
+ 	ssize_t ret;
+ 	bool async_registration = false;
++	bool quiet = false;
+ 
+ #ifdef CONFIG_BCACHE_ASYNC_REGISTRATION
+ 	async_registration = true;
+@@ -2548,24 +2547,9 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 
+ 	ret = -EINVAL;
+ 	err = "failed to open device";
+-	bdev = blkdev_get_by_path(strim(path), BLK_OPEN_READ | BLK_OPEN_WRITE,
+-				  bcache_kobj, NULL);
+-	if (IS_ERR(bdev)) {
+-		if (bdev == ERR_PTR(-EBUSY)) {
+-			dev_t dev;
+-
+-			mutex_lock(&bch_register_lock);
+-			if (lookup_bdev(strim(path), &dev) == 0 &&
+-			    bch_is_open(dev))
+-				err = "device already registered";
+-			else
+-				err = "device busy";
+-			mutex_unlock(&bch_register_lock);
+-			if (attr == &ksysfs_register_quiet)
+-				goto done;
+-		}
++	bdev = blkdev_get_by_path(strim(path), BLK_OPEN_READ, NULL, NULL);
++	if (IS_ERR(bdev))
+ 		goto out_free_sb;
+-	}
+ 
+ 	err = "failed to set blocksize";
+ 	if (set_blocksize(bdev, 4096))
+@@ -2582,6 +2566,31 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 		goto out_put_sb_page;
+ 	}
+ 
++	/* Now reopen in exclusive mode with proper holder */
++	bdev2 = blkdev_get_by_dev(bdev->bd_dev, BLK_OPEN_READ | BLK_OPEN_WRITE,
++				  holder, NULL);
++	blkdev_put(bdev, NULL);
++	bdev = bdev2;
++	if (IS_ERR(bdev))
++		ret = PTR_ERR(bdev);
++		if (bdev == ERR_PTR(-EBUSY)) {
++			dev_t dev;
++
++			mutex_lock(&bch_register_lock);
++			if (lookup_bdev(strim(path), &dev) == 0 &&
++			    bch_is_open(dev))
++				err = "device already registered";
++			else
++				err = "device busy";
++			mutex_unlock(&bch_register_lock);
++			if (attr == &ksysfs_register_quiet) {
++				quiet = true;
++				ret = size;
++			}
++		}
++		goto out_free_holder;
++	}
++
+ 	err = "failed to register device";
+ 
+ 	if (async_registration) {
+@@ -2619,7 +2628,6 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 			goto out_free_sb;
+ 	}
+ 
+-done:
+ 	kfree(sb);
+ 	kfree(path);
+ 	module_put(THIS_MODULE);
+@@ -2631,7 +2639,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ out_put_sb_page:
+ 	put_page(virt_to_page(sb_disk));
+ out_blkdev_put:
+-	blkdev_put(bdev, register_bcache);
++	blkdev_put(bdev, holder);
+ out_free_sb:
+ 	kfree(sb);
+ out_free_path:
+@@ -2640,7 +2648,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ out_module_put:
+ 	module_put(THIS_MODULE);
+ out:
+-	pr_info("error %s: %s\n", path?path:"", err);
++	if (!quiet)
++		pr_info("error %s: %s\n", path?path:"", err);
+ 	return ret;
+ }
+ 
 -- 
-Jens Axboe
-
-
+2.35.3
 
