@@ -2,55 +2,51 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 582D9EB64D8
-	for <linux-bcache@archiver.kernel.org>; Thu, 22 Jun 2023 16:47:04 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 52A26EB64DA
+	for <linux-bcache@archiver.kernel.org>; Thu, 22 Jun 2023 16:47:05 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S229544AbjFVQrD (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Thu, 22 Jun 2023 12:47:03 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39806 "EHLO
+        id S231239AbjFVQrE (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Thu, 22 Jun 2023 12:47:04 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:39804 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S230381AbjFVQrC (ORCPT
+        with ESMTP id S229903AbjFVQrC (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
         Thu, 22 Jun 2023 12:47:02 -0400
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [IPv6:2001:67c:2178:6::1c])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 1C4E1D3;
+Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.220.28])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 93088E48;
         Thu, 22 Jun 2023 09:47:00 -0700 (PDT)
 Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
         (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
          key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
         (No client certificate requested)
-        by smtp-out1.suse.de (Postfix) with ESMTPS id BB93221CBF;
+        by smtp-out1.suse.de (Postfix) with ESMTPS id A76D521BB7;
         Thu, 22 Jun 2023 16:46:58 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.cz; s=susede2_rsa;
         t=1687452418; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=N7F0EKIZlmyobpd43iXvYg9XdRNVHFzLmZDplSjqY9Q=;
-        b=GB+5oAAGUFHqwNtdT07w4Hb8C+UFD9q/cjg02zcr1AqJfApNaPtESisrIhU/2bEdkgJces
-        y6DRx4spV+4HAzIP5M+4PA/2te2r4uCu2/RV1ivyCkEk5cFCZvUqHTi4Q8Z3cxYXFdSKdi
-        B7i/8RZKPmcp1TLbqPMr331f5Ch2vWk=
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=9XhVVq4Az2Jd7jLAWVpuEhRk7Nf3E7yVh0p+6lmDRuM=;
+        b=yZyRGtAOcFmImIv32mh2dwuXUMZghr42WRjlQoeDJFklN4CcrnM7IBTjx3ceIw0DQlvpDq
+        AbkWY/DXNx3j0Ijb6I9j8hQQlehSZsBzDv+Y/03K5wwN0EUWlTBvSqYtHvU+YEDlBpZtiG
+        hNNXj+ReCEpl42KKO0LbXxL9pWGWkXE=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.cz;
         s=susede2_ed25519; t=1687452418;
         h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=N7F0EKIZlmyobpd43iXvYg9XdRNVHFzLmZDplSjqY9Q=;
-        b=aBYobvqRbKRa30J+/N7xTT6dWFGF9IazeEcUOKmvzfMn+jFOfzSTEWnsTGhJd0a3wVMIs5
-        f2bQXIyaQjoxQgDQ==
+         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
+        bh=9XhVVq4Az2Jd7jLAWVpuEhRk7Nf3E7yVh0p+6lmDRuM=;
+        b=ygXHhE54RZ/34JN07bStjqUxw88Tf5b3mc6+9qxDmXIF9BktAavCo6MLl4faqvo6kR+JGU
+        Qyi3GKakXMOVYtAA==
 Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
         (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
          key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
         (No client certificate requested)
-        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id ABC4B13A76;
+        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 9917513905;
         Thu, 22 Jun 2023 16:46:58 +0000 (UTC)
 Received: from dovecot-director2.suse.de ([192.168.254.65])
         by imap2.suse-dmz.suse.de with ESMTPSA
-        id zNhwKQJ7lGSJSwAAMHmgww
+        id jiJYJQJ7lGSHSwAAMHmgww
         (envelope-from <jack@suse.cz>); Thu, 22 Jun 2023 16:46:58 +0000
 Received: by quack3.suse.cz (Postfix, from userid 1000)
-        id 2C701A0762; Thu, 22 Jun 2023 18:46:58 +0200 (CEST)
+        id 23286A0754; Thu, 22 Jun 2023 18:46:58 +0200 (CEST)
 From:   Jan Kara <jack@suse.cz>
 To:     Coly Li <colyli@suse.de>
 Cc:     linux-bcache@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
@@ -58,189 +54,35 @@ Cc:     linux-bcache@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
         <linux-block@vger.kernel.org>,
         Kent Overstreet <kent.overstreet@linux.dev>,
         Jan Kara <jack@suse.cz>
-Subject: [PATCH v2 2/2] bcache: Fix bcache device claiming
-Date:   Thu, 22 Jun 2023 18:46:55 +0200
-Message-Id: <20230622164658.12861-2-jack@suse.cz>
+Subject: [PATCH v2 0/2] bcache: Fix block device claiming
+Date:   Thu, 22 Jun 2023 18:46:53 +0200
+Message-Id: <20230622164149.17134-1-jack@suse.cz>
 X-Mailer: git-send-email 2.35.3
-In-Reply-To: <20230622164149.17134-1-jack@suse.cz>
-References: <20230622164149.17134-1-jack@suse.cz>
 MIME-Version: 1.0
-X-Developer-Signature: v=1; a=openpgp-sha256; l=5624; i=jack@suse.cz; h=from:subject; bh=S73/rHQIHtjz3aReLeRjgK308IcQMM4/uuTvBKwbiCg=; b=owEBbQGS/pANAwAIAZydqgc/ZEDZAcsmYgBklHr+E+R5bZdD5Nf/x8WlzxepzWvn1D0NT6Cq0fww 1VeohI6JATMEAAEIAB0WIQSrWdEr1p4yirVVKBycnaoHP2RA2QUCZJR6/gAKCRCcnaoHP2RA2Xt+B/ oCduNCwNeMR6jL8FLNxdXI4TTuK4WMVAMwnbjfPds5Kbki9oci6ggFLQN4ptzp0Auet1d83V1xjeWC gmGk+Hb4S3m5XU90ZJqPMQgTwf+tC0OAF41qTliQvOqS/E7I7FPpfXmTn+yZ5eg1KoYgDQwUHKSsuI Xp5pB49SnphPxAchU9bpb/+obZDTGastP50L7j0zdRXsPnXsU2B09AM7QY/yZWQQdV8Eqe2a0tLl+W VgWCrlLbVcwrvqQVGpWGgMiYPO+RRaUCOz+BZ9yQAKbGAkzYfNUUYW6eaeHoZnJDbr2lz4HheVvOSG 6Rc9SwFQcVVoAlSW2ZU3DLZkBJX5oX
+X-Developer-Signature: v=1; a=openpgp-sha256; l=745; i=jack@suse.cz; h=from:subject:message-id; bh=6xMgV5oGlSE8j+rUmk3rzHGPthAU9hRmF2ycDtsiCbU=; b=owEBbQGS/pANAwAIAZydqgc/ZEDZAcsmYgBklHr4ZqazW8BcZ9f98zkJ01RquX5s/6FxEx+tWZbh T+N1fjSJATMEAAEIAB0WIQSrWdEr1p4yirVVKBycnaoHP2RA2QUCZJR6+AAKCRCcnaoHP2RA2UoBB/ 9J63l33SFpqI8/HVHZliR0lzE0Mjkf+NWX/8u244n8saJqz1c7kNOt4zjCLPAQNmGou4JPkSdtf/tV b03eFi6brFrCKFFabeYOqk3dFjHKCLubzit5nszv+h0V46EZr2NIeXCcw1gCHOx+Yo4QVwlrtuiQNj LspVYd3hri4nwgvv3hVeuZIFmdMYLdEX/SVg2c1i8MgE/hQws6lNtrn9njdt0cXphaNYAD1flYmL5f 8rnnpho8r2dnf8qy1OYeg96BLJTd2y5lSR/SQpmdnStWucIGbPndHK0eQL9PSO/bXbIhifNNjiRYan Tfh4b930Ce0E88N2XIhhCKzpbqG35j
 X-Developer-Key: i=jack@suse.cz; a=openpgp; fpr=93C6099A142276A28BBE35D815BC833443038D8C
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Commit 2736e8eeb0cc ("block: use the holder as indication for exclusive
-opens") introduced a change that blkdev_put() has to get exclusive
-holder of the bdev as an argument. However it overlooked that
-register_bdev() and register_cache() overwrite the bdev->bd_holder field
-in the block device to point to the real owning object which was not
-available at the time we called blkdev_get_by_path(). Messing with bdev
-internals like this is a layering violation and it also causes
-blkdev_put() to issue warning about mismatching holders.
+Hello,
 
-Fix bcache to reopen the block device with appropriate holder once it is
-available which also restores the behavior that multiple bcache caches
-cannot claim the same device which was broken by commit 29499ab060fe
-("bcache: don't pass a stack address to blkdev_get_by_path").
+these two patches fix block device claiming for bcache broken by recent
+Christoph's changes to blkdev_get_*() functions and also cleans up the layering
+violation inside bcache which was the underlying cause of the breakage.
 
-Fixes: 2736e8eeb0cc ("block: use the holder as indication for exclusive opens")
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- drivers/md/bcache/super.c | 65 +++++++++++++++++++++++----------------
- 1 file changed, 38 insertions(+), 27 deletions(-)
+This time I've actually tested various modified error handling paths (which was
+good because one of them was indeed wrong!).
 
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 913dd94353b6..0ae2b3676293 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1369,7 +1369,7 @@ static void cached_dev_free(struct closure *cl)
- 		put_page(virt_to_page(dc->sb_disk));
- 
- 	if (!IS_ERR_OR_NULL(dc->bdev))
--		blkdev_put(dc->bdev, bcache_kobj);
-+		blkdev_put(dc->bdev, dc);
- 
- 	wake_up(&unregister_wait);
- 
-@@ -1453,7 +1453,6 @@ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
- 
- 	memcpy(&dc->sb, sb, sizeof(struct cache_sb));
- 	dc->bdev = bdev;
--	dc->bdev->bd_holder = dc;
- 	dc->sb_disk = sb_disk;
- 
- 	if (cached_dev_init(dc, sb->block_size << 9))
-@@ -2218,7 +2217,7 @@ void bch_cache_release(struct kobject *kobj)
- 		put_page(virt_to_page(ca->sb_disk));
- 
- 	if (!IS_ERR_OR_NULL(ca->bdev))
--		blkdev_put(ca->bdev, bcache_kobj);
-+		blkdev_put(ca->bdev, ca);
- 
- 	kfree(ca);
- 	module_put(THIS_MODULE);
-@@ -2345,7 +2344,6 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
- 
- 	memcpy(&ca->sb, sb, sizeof(struct cache_sb));
- 	ca->bdev = bdev;
--	ca->bdev->bd_holder = ca;
- 	ca->sb_disk = sb_disk;
- 
- 	if (bdev_max_discard_sectors((bdev)))
-@@ -2359,7 +2357,7 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
- 		 * call blkdev_put() to bdev in bch_cache_release(). So we
- 		 * explicitly call blkdev_put() here.
- 		 */
--		blkdev_put(bdev, bcache_kobj);
-+		blkdev_put(bdev, ca);
- 		if (ret == -ENOMEM)
- 			err = "cache_alloc(): -ENOMEM";
- 		else if (ret == -EPERM)
-@@ -2516,10 +2514,11 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 	char *path = NULL;
- 	struct cache_sb *sb;
- 	struct cache_sb_disk *sb_disk;
--	struct block_device *bdev;
--	void *holder;
-+	struct block_device *bdev, *bdev2;
-+	void *holder = NULL;
- 	ssize_t ret;
- 	bool async_registration = false;
-+	bool quiet = false;
- 
- #ifdef CONFIG_BCACHE_ASYNC_REGISTRATION
- 	async_registration = true;
-@@ -2548,24 +2547,9 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 
- 	ret = -EINVAL;
- 	err = "failed to open device";
--	bdev = blkdev_get_by_path(strim(path), BLK_OPEN_READ | BLK_OPEN_WRITE,
--				  bcache_kobj, NULL);
--	if (IS_ERR(bdev)) {
--		if (bdev == ERR_PTR(-EBUSY)) {
--			dev_t dev;
--
--			mutex_lock(&bch_register_lock);
--			if (lookup_bdev(strim(path), &dev) == 0 &&
--			    bch_is_open(dev))
--				err = "device already registered";
--			else
--				err = "device busy";
--			mutex_unlock(&bch_register_lock);
--			if (attr == &ksysfs_register_quiet)
--				goto done;
--		}
-+	bdev = blkdev_get_by_path(strim(path), BLK_OPEN_READ, NULL, NULL);
-+	if (IS_ERR(bdev))
- 		goto out_free_sb;
--	}
- 
- 	err = "failed to set blocksize";
- 	if (set_blocksize(bdev, 4096))
-@@ -2582,6 +2566,32 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 		goto out_put_sb_page;
- 	}
- 
-+	/* Now reopen in exclusive mode with proper holder */
-+	bdev2 = blkdev_get_by_dev(bdev->bd_dev, BLK_OPEN_READ | BLK_OPEN_WRITE,
-+				  holder, NULL);
-+	blkdev_put(bdev, NULL);
-+	bdev = bdev2;
-+	if (IS_ERR(bdev)) {
-+		ret = PTR_ERR(bdev);
-+		bdev = NULL;
-+		if (ret == -EBUSY) {
-+			dev_t dev;
-+
-+			mutex_lock(&bch_register_lock);
-+			if (lookup_bdev(strim(path), &dev) == 0 &&
-+			    bch_is_open(dev))
-+				err = "device already registered";
-+			else
-+				err = "device busy";
-+			mutex_unlock(&bch_register_lock);
-+			if (attr == &ksysfs_register_quiet) {
-+				quiet = true;
-+				ret = size;
-+			}
-+		}
-+		goto out_free_holder;
-+	}
-+
- 	err = "failed to register device";
- 
- 	if (async_registration) {
-@@ -2619,7 +2629,6 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- 			goto out_free_sb;
- 	}
- 
--done:
- 	kfree(sb);
- 	kfree(path);
- 	module_put(THIS_MODULE);
-@@ -2631,7 +2640,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- out_put_sb_page:
- 	put_page(virt_to_page(sb_disk));
- out_blkdev_put:
--	blkdev_put(bdev, register_bcache);
-+	if (bdev)
-+		blkdev_put(bdev, holder);
- out_free_sb:
- 	kfree(sb);
- out_free_path:
-@@ -2640,7 +2650,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
- out_module_put:
- 	module_put(THIS_MODULE);
- out:
--	pr_info("error %s: %s\n", path?path:"", err);
-+	if (!quiet)
-+		pr_info("error %s: %s\n", path?path:"", err);
- 	return ret;
- }
- 
--- 
-2.35.3
+Jens, please consider merging these fixes before sending Linus a pull request
+with blkdev changes.
 
+Changes since v1:
+* Fix compile breakage spotted by 0-day
+* Fix error handling path when the second blkdev_get_by_dev() fails
+* Fix commit message of patch 2/2
+
+								Honza
+Previous versions:
+Link: http://lore.kernel.org/r/20230621162024.29310-1-jack@suse.cz # v1
