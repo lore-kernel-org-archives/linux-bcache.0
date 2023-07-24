@@ -2,54 +2,54 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id E9749C07E8F
-	for <linux-bcache@archiver.kernel.org>; Mon, 24 Jul 2023 09:54:18 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 9FB97C10F1A
+	for <linux-bcache@archiver.kernel.org>; Mon, 24 Jul 2023 09:54:20 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232647AbjGXJyS (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        id S232671AbjGXJyS (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
         Mon, 24 Jul 2023 05:54:18 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52428 "EHLO
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52662 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232658AbjGXJxA (ORCPT
+        with ESMTP id S233121AbjGXJxv (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 24 Jul 2023 05:53:00 -0400
-Received: from mail-pl1-x62a.google.com (mail-pl1-x62a.google.com [IPv6:2607:f8b0:4864:20::62a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id A693A46AB
-        for <linux-bcache@vger.kernel.org>; Mon, 24 Jul 2023 02:49:19 -0700 (PDT)
-Received: by mail-pl1-x62a.google.com with SMTP id d9443c01a7336-1b7dfb95761so5877695ad.1
-        for <linux-bcache@vger.kernel.org>; Mon, 24 Jul 2023 02:49:19 -0700 (PDT)
+        Mon, 24 Jul 2023 05:53:51 -0400
+Received: from mail-pl1-x630.google.com (mail-pl1-x630.google.com [IPv6:2607:f8b0:4864:20::630])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id F18AB4C0E
+        for <linux-bcache@vger.kernel.org>; Mon, 24 Jul 2023 02:49:53 -0700 (PDT)
+Received: by mail-pl1-x630.google.com with SMTP id d9443c01a7336-1b8c364ad3bso8860925ad.1
+        for <linux-bcache@vger.kernel.org>; Mon, 24 Jul 2023 02:49:53 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=bytedance.com; s=google; t=1690192122; x=1690796922;
+        d=bytedance.com; s=google; t=1690192146; x=1690796946;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:from:to:cc:subject:date
          :message-id:reply-to;
-        bh=SZ4CyloeMnj8DJaX3jH++Kh0s8L9fcE8HheaL79+C9E=;
-        b=J/Bt6a5BMqhvdU/1SLuQX4nGlsOFwUStDgY9eH2v8f3RVdFq/sd3J4KWhio/dC9+p1
-         I7x8MAszW6LDKxiafO3ijuVZWlwLloveljXquKUGhfhkI+gBmVZ+aRdkRgZMuHOMA0H0
-         yKIvOrvLzQBJ0AtrK9ni37EuWpbTH6Gi1xp5mvGIU09YEhbSx5XeAtmIIM3L0YDCA4IY
-         cOQImgDx6CerfFdixsFA7q/WRBoRbwfsUuvzftsn9rBMTfKTu+7IX9QKeDCcJjiigyeD
-         MRXtrE3UPxmcDS5U+FzEfuL+bhB6TGOFiKBVZLyyImDcoC0jgqbvAUMVzKpuo72Ccxdg
-         yqhg==
+        bh=3CXd5cxT7BQDd98tt8oaC0MvbTuhoGV4WCiM7GrnKVE=;
+        b=Om2j7Eq4b1zO3xdV6jpRgZNyxXUYFkRHVqkn+q5W951pJcNCyyCCfcFLMOexVrickD
+         J4ocoN591zedkzE2l/xp9SKWxYNmVY9krcCZp1enxIDkg3AuGZslR02ZNhQ4EqRsU2HZ
+         PP0+JI5GQi1EzLTs4k94q0v4nCvWQ/wpATlpWJHquPmCZ9F29qdBLMIvq7n3uMU0LBE+
+         S5G8d6zEmU4sF3lI0zmYqBRm2zlIoJryhG+DWOUkdilD+QmzqjFCVIDjtSm2UD8IjhcW
+         4f3Go/NoxA8FuaENkugEjSaXcGkVRUNsilnpPO5VZgwHu2urEIWQPvH/FMxPOeDNA9uj
+         omeA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1690192122; x=1690796922;
+        d=1e100.net; s=20221208; t=1690192146; x=1690796946;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
          :subject:date:message-id:reply-to;
-        bh=SZ4CyloeMnj8DJaX3jH++Kh0s8L9fcE8HheaL79+C9E=;
-        b=WBseRoOC6NAcUaP3ytsI3ycyRO/QV2eIevbZJFv13VFQcuu7q1f3mlh7ogsZikLXtP
-         cYbfGRqdy75F9n98CJAbsjaMkrM/yzYLo3tJe4tIu54470hXR0vE9jhmRN+AWYvs6m4R
-         VGSvIMe27LZj2Ou88lyxapmy163VQDoNDqG6WNzWh0yzi5kpMhKaGUZSv4vA4+OALTrm
-         EMlDp1zti6hFx+9o5lkx8F5zP/O46d2UEf2xCZf2Gn1pZDsmzDbB28lWA+BKPWjNu2KR
-         A5M4R4c5NniDvMmW0IWr8yoF8JPEMgz86vCbhChToR50pzaq5dksi+jLhonvNfdCfeZ6
-         jMBQ==
-X-Gm-Message-State: ABy/qLZqQA9IMz0PcvytyWUsSiOOtnkksOXfKgeM+I7CTUTrgf7di4Nr
-        2dirEx8Lwkc5Ay3vvwVrgGa87Q==
-X-Google-Smtp-Source: APBJJlGdl4zR2tT8oeBRlnNa82kteJScCMEv7aXbUuimbAqUFJ617TPjzQL08XTMcGzg+wanNIE0AA==
-X-Received: by 2002:a17:902:ecce:b0:1b8:b55d:4cff with SMTP id a14-20020a170902ecce00b001b8b55d4cffmr12423850plh.2.1690192122325;
-        Mon, 24 Jul 2023 02:48:42 -0700 (PDT)
+        bh=3CXd5cxT7BQDd98tt8oaC0MvbTuhoGV4WCiM7GrnKVE=;
+        b=PUQ8cF05NCmOUlr8BCbeRXW7lM0Z0oAd785L+1p6xio6JNl1kVy3FSjRZBUeHzwjbd
+         9FMGsCkZmEWyqaWPPRpWxlJosOWtZRFRWLlQ6Y47FGLTm8qF6hKajtbdv7kLJKOUtOE1
+         xxyYq+zN97ExcBwpKe+4x8msomhHSX5r1odSoXRkh3dEn7pfnGh+2N+vdIFwr9CBcBjP
+         YR8v6QOTffqlMzWg1SJ78VrH7CyRMXxs1lOTbWFsYdqALKSYVwL+98A2Ry5vfE6kowVO
+         WbWnAwh9zpjjc/n5v6AzRu7YbbAsPsbT79WPkys0RPUwz6zsghIWWlZKuaekrM5ikRfQ
+         msBg==
+X-Gm-Message-State: ABy/qLYMW6MNXqXMPl+LzWzGDSotcpZvSYbNdDr6jlokPb25ut6iG/nt
+        wv0AUaULsX+QD7myUEpQr17Pvg==
+X-Google-Smtp-Source: APBJJlGIkgxKi3c8vlsRfvF8eC2AUaCtjB+PIQLMdMMArsufsHEWiltHfQyyqXBdYUy9SpebX4CtOg==
+X-Received: by 2002:a17:902:e80a:b0:1b8:50a9:6874 with SMTP id u10-20020a170902e80a00b001b850a96874mr12324079plg.5.1690192146760;
+        Mon, 24 Jul 2023 02:49:06 -0700 (PDT)
 Received: from C02DW0BEMD6R.bytedance.net ([203.208.167.147])
-        by smtp.gmail.com with ESMTPSA id d5-20020a170902c18500b001bb20380bf2sm8467233pld.13.2023.07.24.02.48.30
+        by smtp.gmail.com with ESMTPSA id d5-20020a170902c18500b001bb20380bf2sm8467233pld.13.2023.07.24.02.48.54
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 24 Jul 2023 02:48:41 -0700 (PDT)
+        Mon, 24 Jul 2023 02:49:06 -0700 (PDT)
 From:   Qi Zheng <zhengqi.arch@bytedance.com>
 To:     akpm@linux-foundation.org, david@fromorbit.com, tkhai@ya.ru,
         vbabka@suse.cz, roman.gushchin@linux.dev, djwong@kernel.org,
@@ -70,9 +70,9 @@ Cc:     linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
         linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
         linux-xfs@vger.kernel.org, linux-btrfs@vger.kernel.org,
         Qi Zheng <zhengqi.arch@bytedance.com>
-Subject: [PATCH v2 18/47] rcu: dynamically allocate the rcu-kfree shrinker
-Date:   Mon, 24 Jul 2023 17:43:25 +0800
-Message-Id: <20230724094354.90817-19-zhengqi.arch@bytedance.com>
+Subject: [PATCH v2 20/47] sunrpc: dynamically allocate the sunrpc_cred shrinker
+Date:   Mon, 24 Jul 2023 17:43:27 +0800
+Message-Id: <20230724094354.90817-21-zhengqi.arch@bytedance.com>
 X-Mailer: git-send-email 2.24.3 (Apple Git-128)
 In-Reply-To: <20230724094354.90817-1-zhengqi.arch@bytedance.com>
 References: <20230724094354.90817-1-zhengqi.arch@bytedance.com>
@@ -82,52 +82,56 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Use new APIs to dynamically allocate the rcu-kfree shrinker.
+Use new APIs to dynamically allocate the sunrpc_cred shrinker.
 
 Signed-off-by: Qi Zheng <zhengqi.arch@bytedance.com>
 ---
- kernel/rcu/tree.c | 21 +++++++++++++--------
- 1 file changed, 13 insertions(+), 8 deletions(-)
+ net/sunrpc/auth.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 1449cb69a0e0..d068ce3567fc 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -3445,12 +3445,7 @@ kfree_rcu_shrink_scan(struct shrinker *shrink, struct shrink_control *sc)
- 	return freed == 0 ? SHRINK_STOP : freed;
+diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
+index 2f16f9d17966..74e40c8a512d 100644
+--- a/net/sunrpc/auth.c
++++ b/net/sunrpc/auth.c
+@@ -861,11 +861,7 @@ rpcauth_uptodatecred(struct rpc_task *task)
+ 		test_bit(RPCAUTH_CRED_UPTODATE, &cred->cr_flags) != 0;
  }
  
--static struct shrinker kfree_rcu_shrinker = {
--	.count_objects = kfree_rcu_shrink_count,
--	.scan_objects = kfree_rcu_shrink_scan,
--	.batch = 0,
+-static struct shrinker rpc_cred_shrinker = {
+-	.count_objects = rpcauth_cache_shrink_count,
+-	.scan_objects = rpcauth_cache_shrink_scan,
 -	.seeks = DEFAULT_SEEKS,
 -};
-+static struct shrinker *kfree_rcu_shrinker;
++static struct shrinker *rpc_cred_shrinker;
  
- void __init kfree_rcu_scheduler_running(void)
+ int __init rpcauth_init_module(void)
  {
-@@ -4958,8 +4953,18 @@ static void __init kfree_rcu_batch_init(void)
- 		INIT_DELAYED_WORK(&krcp->page_cache_work, fill_page_cache_func);
- 		krcp->initialized = true;
- 	}
--	if (register_shrinker(&kfree_rcu_shrinker, "rcu-kfree"))
--		pr_err("Failed to register kfree_rcu() shrinker!\n");
+@@ -874,9 +870,16 @@ int __init rpcauth_init_module(void)
+ 	err = rpc_init_authunix();
+ 	if (err < 0)
+ 		goto out1;
+-	err = register_shrinker(&rpc_cred_shrinker, "sunrpc_cred");
+-	if (err < 0)
++	rpc_cred_shrinker = shrinker_alloc(0, "sunrpc_cred");
++	if (!rpc_cred_shrinker)
+ 		goto out2;
 +
-+	kfree_rcu_shrinker = shrinker_alloc(0, "rcu-kfree");
-+	if (!kfree_rcu_shrinker) {
-+		pr_err("Failed to allocate kfree_rcu() shrinker!\n");
-+		return;
-+	}
++	rpc_cred_shrinker->count_objects = rpcauth_cache_shrink_count;
++	rpc_cred_shrinker->scan_objects = rpcauth_cache_shrink_scan;
++	rpc_cred_shrinker->seeks = DEFAULT_SEEKS;
 +
-+	kfree_rcu_shrinker->count_objects = kfree_rcu_shrink_count;
-+	kfree_rcu_shrinker->scan_objects = kfree_rcu_shrink_scan;
-+	kfree_rcu_shrinker->seeks = DEFAULT_SEEKS;
++	shrinker_register(rpc_cred_shrinker);
 +
-+	shrinker_register(kfree_rcu_shrinker);
+ 	return 0;
+ out2:
+ 	rpc_destroy_authunix();
+@@ -887,5 +890,5 @@ int __init rpcauth_init_module(void)
+ void rpcauth_remove_module(void)
+ {
+ 	rpc_destroy_authunix();
+-	unregister_shrinker(&rpc_cred_shrinker);
++	shrinker_unregister(rpc_cred_shrinker);
  }
- 
- void __init rcu_init(void)
 -- 
 2.30.2
 
