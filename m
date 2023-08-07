@@ -2,54 +2,54 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DE94DC001DF
-	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:25:17 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 83B63C41513
+	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:25:54 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232632AbjHGLZQ (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 7 Aug 2023 07:25:16 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:59154 "EHLO
+        id S232650AbjHGLZx (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 7 Aug 2023 07:25:53 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60266 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232296AbjHGLYU (ORCPT
+        with ESMTP id S232495AbjHGLZa (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 7 Aug 2023 07:24:20 -0400
-Received: from mail-pj1-x102e.google.com (mail-pj1-x102e.google.com [IPv6:2607:f8b0:4864:20::102e])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 13BBF1BD7
-        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:21:52 -0700 (PDT)
-Received: by mail-pj1-x102e.google.com with SMTP id 98e67ed59e1d1-2690803a368so591684a91.1
-        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:21:52 -0700 (PDT)
+        Mon, 7 Aug 2023 07:25:30 -0400
+Received: from mail-pj1-f49.google.com (mail-pj1-f49.google.com [209.85.216.49])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 759D446B9
+        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:22:21 -0700 (PDT)
+Received: by mail-pj1-f49.google.com with SMTP id 98e67ed59e1d1-2680edb9767so930840a91.0
+        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:22:21 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=bytedance.com; s=google; t=1691407213; x=1692012013;
+        d=bytedance.com; s=google; t=1691406982; x=1692011782;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:from:to:cc:subject:date
          :message-id:reply-to;
-        bh=+T9zoPssix7N9qfaGNa68znQHEAFyeYciCKXdVaHQFo=;
-        b=AEtfoTIxkqzl025wvf9yyl8OvVpV1orZ+7ADsAn8FRdyaHqyneHFGuyJ9jSB6bZbnq
-         2fmUw9pixcoPu0uENFLV6yEHDyHzbx9PEa4/1QReRkJ9Vdrtq4t36sOjNjHyywd/DJSd
-         tcNSBkDsm06qXT7HTJrbLcS8z4Stb96uz/ah29ckB60DgcXFm35Nrt3Aq6Gzw7rdETno
-         9DoEQihV9/klwV9kg7jDjWFfkJeTbrOGsUsJTU6XthyBDJ62ZHYmlNs7Ps0ai9BdMXBM
-         XSVKEoVI2ousbfFpSnJdwsS47J/fbQRy8WPmYTGdWXjklXq1QHXWKCVy/72epw0hglU+
-         Vytw==
+        bh=2n4eBW/y496rw0R30jGqgr9PaTd+TyGx4MFgxeJTY98=;
+        b=FnWDWj5rwzmfFGLsv5BbODxTKmQBAUJaoO/xwiU3xtz9tOZ2AwDnatjsq2ab3ilYeJ
+         iWF7FCg8OfJEY1lx/DDczF41LpfDlE6nRRduQxYHOyP9X3uK7n/ZO9q7VAhZSG3xs95Q
+         OqWz/XghzU3SfaeMxwONvmK/HIjBzGEUASf2JFKX93u1G15t5fAwcHUsocilVhQXHkyU
+         J1tWV2QNpc4U36fDDO4ejlIhucfEnNm2u0Wt3z4T4cfN7wJRCQagqckfUu/vztdG0xlS
+         Buj0JJnUwu7QR/DBMG2ve3ld5n35BuwOJKjICt4m1cvU7hXO7dkM+KrhCZs3CTAs8/64
+         gYbQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1691407213; x=1692012013;
+        d=1e100.net; s=20221208; t=1691406982; x=1692011782;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
          :subject:date:message-id:reply-to;
-        bh=+T9zoPssix7N9qfaGNa68znQHEAFyeYciCKXdVaHQFo=;
-        b=er1+Vzb23riFsxpCYYvA9c2zVlr+ZZrrcHEVSqudiIycfSRqmndMznILzxSumeUPut
-         lV7d7DcmifF2RUw8o9g1xlZewXWltk12moyD84VMdoXwvwd+ReVxlx90PmiYVhMUnLXA
-         /oC8B6h37E43dqms/oqPu2zTRa+e0i7p85Ida9etmk2RHMNB+oadKz5rVQghumWCgGau
-         sydrr14n1b0Bs7x7zm15sFUyVjxASwcNvsub5cq2k10jAc8zjUgTA/hiKIakp/+Op01W
-         BwHaFKtXTLkBQGUoCC5XcxuFnRRpRR1dUh4Z7OVhiAEV9dvreYF73IMljB4jvmk4ekA9
-         7E1g==
-X-Gm-Message-State: AOJu0Yxg0v3oID+RZg99wHdFidzqPJzW8Y5dSAdvNZBCjUCKrasas+7I
-        UTTlyn7RR4Q8BTar48f0//Lzvg==
-X-Google-Smtp-Source: AGHT+IF0evmdLrDlsDTr5Y4TU4NmdZynXgLSKug5uHjkOo8cedCVYEqxJp+s7Xi+ZKGxMcrB3jNS6g==
-X-Received: by 2002:a17:90a:648:b0:269:60ed:d493 with SMTP id q8-20020a17090a064800b0026960edd493mr1830877pje.4.1691407213020;
-        Mon, 07 Aug 2023 04:20:13 -0700 (PDT)
+        bh=2n4eBW/y496rw0R30jGqgr9PaTd+TyGx4MFgxeJTY98=;
+        b=Z74WWOZ4pC2krjrevguA2nNK7dcHWaBRSSPeS84d9XsWu+b+xXpoEBWH7QD86+tJ17
+         KWAuheadpwJ70IMZfkw9GExqogAuSMlBZC1/5dr3PiHV+L7EqPZ6MpTCsCB411vBXXHy
+         y8wXj16wA4/YvZgG+ZtdnDp1VIlNNSunbAykJ0AURuQVGTcGDRSzjOF2BGkkEMFyI9SS
+         DAvOFDEyXbcsWkmnjnmEXsCuBzdph/uGcDzj8Z7nhSvWMqPkX8fSAomTUcmDXHEzrUqu
+         vYN0vu3rAw/e1R+b3usnRdr+jpS1us5QerfY5SCc7GrPduuMBRZQkE71kBdJy2raKzqp
+         JEag==
+X-Gm-Message-State: ABy/qLZpg1E3b5DCZTCBkLKW8JzatuQxY/TZ1f3RSwRPgym1XkWmcLlG
+        V3/8kSwmtdZy86uo+G+1x5k5CQ==
+X-Google-Smtp-Source: APBJJlGfZoIKy5dlf67l9aDnuNmoWN294jSLFWBRn8Nrl68gwCTSSg7v4NaF4AAHW/6J0zEJitKJCg==
+X-Received: by 2002:a17:90a:1f83:b0:268:3dc6:f0c5 with SMTP id x3-20020a17090a1f8300b002683dc6f0c5mr25038018pja.0.1691406981820;
+        Mon, 07 Aug 2023 04:16:21 -0700 (PDT)
 Received: from C02DW0BEMD6R.bytedance.net ([203.208.167.146])
-        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.20.00
+        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.16.09
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 07 Aug 2023 04:20:12 -0700 (PDT)
+        Mon, 07 Aug 2023 04:16:21 -0700 (PDT)
 From:   Qi Zheng <zhengqi.arch@bytedance.com>
 To:     akpm@linux-foundation.org, david@fromorbit.com, tkhai@ya.ru,
         vbabka@suse.cz, roman.gushchin@linux.dev, djwong@kernel.org,
@@ -70,10 +70,11 @@ Cc:     linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
         virtualization@lists.linux-foundation.org,
         linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
         linux-xfs@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        Qi Zheng <zhengqi.arch@bytedance.com>
-Subject: [PATCH v4 48/48] mm: shrinker: convert shrinker_rwsem to mutex
-Date:   Mon,  7 Aug 2023 19:09:36 +0800
-Message-Id: <20230807110936.21819-49-zhengqi.arch@bytedance.com>
+        Qi Zheng <zhengqi.arch@bytedance.com>,
+        Muchun Song <songmuchun@bytedance.com>
+Subject: [PATCH v4 30/48] vmw_balloon: dynamically allocate the vmw-balloon shrinker
+Date:   Mon,  7 Aug 2023 19:09:18 +0800
+Message-Id: <20230807110936.21819-31-zhengqi.arch@bytedance.com>
 X-Mailer: git-send-email 2.24.3 (Apple Git-128)
 In-Reply-To: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
 References: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
@@ -83,235 +84,101 @@ Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Now there are no readers of shrinker_rwsem, so we can simply replace it
-with mutex lock.
+In preparation for implementing lockless slab shrink, use new APIs to
+dynamically allocate the vmw-balloon shrinker, so that it can be freed
+asynchronously using kfree_rcu(). Then it doesn't need to wait for RCU
+read-side critical section when releasing the struct vmballoon.
+
+And we can simply exit vmballoon_init() when registering the shrinker
+fails. So the shrinker_registered indication is redundant, just remove it.
 
 Signed-off-by: Qi Zheng <zhengqi.arch@bytedance.com>
+Reviewed-by: Muchun Song <songmuchun@bytedance.com>
 ---
- drivers/md/dm-cache-metadata.c |  2 +-
- fs/super.c                     |  2 +-
- mm/shrinker.c                  | 28 ++++++++++++++--------------
- mm/shrinker_debug.c            | 14 +++++++-------
- 4 files changed, 23 insertions(+), 23 deletions(-)
+ drivers/misc/vmw_balloon.c | 38 ++++++++++++--------------------------
+ 1 file changed, 12 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
-index acffed750e3e..9e0c69958587 100644
---- a/drivers/md/dm-cache-metadata.c
-+++ b/drivers/md/dm-cache-metadata.c
-@@ -1828,7 +1828,7 @@ int dm_cache_metadata_abort(struct dm_cache_metadata *cmd)
- 	 * Replacement block manager (new_bm) is created and old_bm destroyed outside of
- 	 * cmd root_lock to avoid ABBA deadlock that would result (due to life-cycle of
- 	 * shrinker associated with the block manager's bufio client vs cmd root_lock).
--	 * - must take shrinker_rwsem without holding cmd->root_lock
-+	 * - must take shrinker_mutex without holding cmd->root_lock
+diff --git a/drivers/misc/vmw_balloon.c b/drivers/misc/vmw_balloon.c
+index 9ce9b9e0e9b6..ac2cdb6cdf74 100644
+--- a/drivers/misc/vmw_balloon.c
++++ b/drivers/misc/vmw_balloon.c
+@@ -380,16 +380,7 @@ struct vmballoon {
+ 	/**
+ 	 * @shrinker: shrinker interface that is used to avoid over-inflation.
  	 */
- 	new_bm = dm_block_manager_create(cmd->bdev, DM_CACHE_METADATA_BLOCK_SIZE << SECTOR_SHIFT,
- 					 CACHE_MAX_CONCURRENT_LOCKS);
-diff --git a/fs/super.c b/fs/super.c
-index a28193045345..60c2d290c754 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -54,7 +54,7 @@ static char *sb_writers_name[SB_FREEZE_LEVELS] = {
-  * One thing we have to be careful of with a per-sb shrinker is that we don't
-  * drop the last active reference to the superblock from within the shrinker.
-  * If that happens we could trigger unregistering the shrinker from within the
-- * shrinker path and that leads to deadlock on the shrinker_rwsem. Hence we
-+ * shrinker path and that leads to deadlock on the shrinker_mutex. Hence we
-  * take a passive reference to the superblock to avoid this from occurring.
-  */
- static unsigned long super_cache_scan(struct shrinker *shrink,
-diff --git a/mm/shrinker.c b/mm/shrinker.c
-index a12dede5d21f..3d44a335ef3c 100644
---- a/mm/shrinker.c
-+++ b/mm/shrinker.c
-@@ -8,7 +8,7 @@
- #include "internal.h"
+-	struct shrinker shrinker;
+-
+-	/**
+-	 * @shrinker_registered: whether the shrinker was registered.
+-	 *
+-	 * The shrinker interface does not handle gracefully the removal of
+-	 * shrinker that was not registered before. This indication allows to
+-	 * simplify the unregistration process.
+-	 */
+-	bool shrinker_registered;
++	struct shrinker *shrinker;
+ };
  
- LIST_HEAD(shrinker_list);
--DECLARE_RWSEM(shrinker_rwsem);
-+DEFINE_MUTEX(shrinker_mutex);
+ static struct vmballoon balloon;
+@@ -1568,29 +1559,27 @@ static unsigned long vmballoon_shrinker_count(struct shrinker *shrinker,
  
- #ifdef CONFIG_MEMCG
- static int shrinker_nr_max;
-@@ -80,7 +80,7 @@ int alloc_shrinker_info(struct mem_cgroup *memcg)
- 	int nid, ret = 0;
- 	int array_size = 0;
- 
--	down_write(&shrinker_rwsem);
-+	mutex_lock(&shrinker_mutex);
- 	array_size = shrinker_unit_size(shrinker_nr_max);
- 	for_each_node(nid) {
- 		info = kvzalloc_node(sizeof(*info) + array_size, GFP_KERNEL, nid);
-@@ -91,7 +91,7 @@ int alloc_shrinker_info(struct mem_cgroup *memcg)
- 			goto err;
- 		rcu_assign_pointer(memcg->nodeinfo[nid]->shrinker_info, info);
- 	}
--	up_write(&shrinker_rwsem);
-+	mutex_unlock(&shrinker_mutex);
- 
- 	return ret;
- 
-@@ -104,7 +104,7 @@ static struct shrinker_info *shrinker_info_protected(struct mem_cgroup *memcg,
- 						     int nid)
+ static void vmballoon_unregister_shrinker(struct vmballoon *b)
  {
- 	return rcu_dereference_protected(memcg->nodeinfo[nid]->shrinker_info,
--					 lockdep_is_held(&shrinker_rwsem));
-+					 lockdep_is_held(&shrinker_mutex));
+-	if (b->shrinker_registered)
+-		unregister_shrinker(&b->shrinker);
+-	b->shrinker_registered = false;
++	shrinker_free(b->shrinker);
  }
  
- static struct shrinker_info *shrinker_info_rcu(struct mem_cgroup *memcg,
-@@ -161,7 +161,7 @@ static int expand_shrinker_info(int new_id)
- 	if (!root_mem_cgroup)
- 		goto out;
+ static int vmballoon_register_shrinker(struct vmballoon *b)
+ {
+-	int r;
+-
+ 	/* Do nothing if the shrinker is not enabled */
+ 	if (!vmwballoon_shrinker_enable)
+ 		return 0;
  
--	lockdep_assert_held(&shrinker_rwsem);
-+	lockdep_assert_held(&shrinker_mutex);
+-	b->shrinker.scan_objects = vmballoon_shrinker_scan;
+-	b->shrinker.count_objects = vmballoon_shrinker_count;
+-	b->shrinker.seeks = DEFAULT_SEEKS;
++	b->shrinker = shrinker_alloc(0, "vmw-balloon");
++	if (!b->shrinker)
++		return -ENOMEM;
  
- 	new_size = shrinker_unit_size(new_nr_max);
- 	old_size = shrinker_unit_size(shrinker_nr_max);
-@@ -224,7 +224,7 @@ static int shrinker_memcg_alloc(struct shrinker *shrinker)
- 	if (mem_cgroup_disabled())
- 		return -ENOSYS;
+-	r = register_shrinker(&b->shrinker, "vmw-balloon");
++	b->shrinker->scan_objects = vmballoon_shrinker_scan;
++	b->shrinker->count_objects = vmballoon_shrinker_count;
++	b->shrinker->seeks = DEFAULT_SEEKS;
++	b->shrinker->private_data = b;
  
--	down_write(&shrinker_rwsem);
-+	mutex_lock(&shrinker_mutex);
- 	id = idr_alloc(&shrinker_idr, shrinker, 0, 0, GFP_KERNEL);
- 	if (id < 0)
- 		goto unlock;
-@@ -238,7 +238,7 @@ static int shrinker_memcg_alloc(struct shrinker *shrinker)
- 	shrinker->id = id;
- 	ret = 0;
- unlock:
--	up_write(&shrinker_rwsem);
-+	mutex_unlock(&shrinker_mutex);
- 	return ret;
+-	if (r == 0)
+-		b->shrinker_registered = true;
++	shrinker_register(b->shrinker);
+ 
+-	return r;
++	return 0;
  }
  
-@@ -248,7 +248,7 @@ static void shrinker_memcg_remove(struct shrinker *shrinker)
+ /*
+@@ -1883,7 +1872,7 @@ static int __init vmballoon_init(void)
  
- 	BUG_ON(id < 0);
+ 	error = vmballoon_register_shrinker(&balloon);
+ 	if (error)
+-		goto fail;
++		return error;
  
--	lockdep_assert_held(&shrinker_rwsem);
-+	lockdep_assert_held(&shrinker_mutex);
- 
- 	idr_remove(&shrinker_idr, id);
- }
-@@ -299,7 +299,7 @@ void reparent_shrinker_deferred(struct mem_cgroup *memcg)
- 		parent = root_mem_cgroup;
- 
- 	/* Prevent from concurrent shrinker_info expand */
--	down_write(&shrinker_rwsem);
-+	mutex_lock(&shrinker_mutex);
- 	for_each_node(nid) {
- 		child_info = shrinker_info_protected(memcg, nid);
- 		parent_info = shrinker_info_protected(parent, nid);
-@@ -312,7 +312,7 @@ void reparent_shrinker_deferred(struct mem_cgroup *memcg)
- 			}
- 		}
- 	}
--	up_write(&shrinker_rwsem);
-+	mutex_unlock(&shrinker_mutex);
- }
- #else
- static int shrinker_memcg_alloc(struct shrinker *shrinker)
-@@ -708,11 +708,11 @@ void shrinker_register(struct shrinker *shrinker)
- 		return;
- 	}
- 
--	down_write(&shrinker_rwsem);
-+	mutex_lock(&shrinker_mutex);
- 	list_add_tail_rcu(&shrinker->list, &shrinker_list);
- 	shrinker->flags |= SHRINKER_REGISTERED;
- 	shrinker_debugfs_add(shrinker);
--	up_write(&shrinker_rwsem);
-+	mutex_unlock(&shrinker_mutex);
- 
- 	init_completion(&shrinker->done);
  	/*
-@@ -745,7 +745,7 @@ void shrinker_free(struct shrinker *shrinker)
- 		wait_for_completion(&shrinker->done);
- 	}
+ 	 * Initialization of compaction must be done after the call to
+@@ -1905,9 +1894,6 @@ static int __init vmballoon_init(void)
+ 	vmballoon_debugfs_init(&balloon);
  
--	down_write(&shrinker_rwsem);
-+	mutex_lock(&shrinker_mutex);
- 	if (shrinker->flags & SHRINKER_REGISTERED) {
- 		/*
- 		 * Lookups on the shrinker are over and will fail in the future,
-@@ -760,7 +760,7 @@ void shrinker_free(struct shrinker *shrinker)
- 
- 	if (shrinker->flags & SHRINKER_MEMCG_AWARE)
- 		shrinker_memcg_remove(shrinker);
--	up_write(&shrinker_rwsem);
-+	mutex_unlock(&shrinker_mutex);
- 
- 	if (debugfs_entry)
- 		shrinker_debugfs_remove(debugfs_entry, debugfs_id);
-diff --git a/mm/shrinker_debug.c b/mm/shrinker_debug.c
-index aa2027075ed9..b698ca9e309e 100644
---- a/mm/shrinker_debug.c
-+++ b/mm/shrinker_debug.c
-@@ -7,7 +7,7 @@
- #include <linux/memcontrol.h>
- 
- /* defined in vmscan.c */
--extern struct rw_semaphore shrinker_rwsem;
-+extern struct mutex shrinker_mutex;
- extern struct list_head shrinker_list;
- 
- static DEFINE_IDA(shrinker_debugfs_ida);
-@@ -163,7 +163,7 @@ int shrinker_debugfs_add(struct shrinker *shrinker)
- 	char buf[128];
- 	int id;
- 
--	lockdep_assert_held(&shrinker_rwsem);
-+	lockdep_assert_held(&shrinker_mutex);
- 
- 	/* debugfs isn't initialized yet, add debugfs entries later. */
- 	if (!shrinker_debugfs_root)
-@@ -220,7 +220,7 @@ int shrinker_debugfs_rename(struct shrinker *shrinker, const char *fmt, ...)
- 	if (!new)
- 		return -ENOMEM;
- 
--	down_write(&shrinker_rwsem);
-+	mutex_lock(&shrinker_mutex);
- 
- 	old = shrinker->name;
- 	shrinker->name = new;
-@@ -238,7 +238,7 @@ int shrinker_debugfs_rename(struct shrinker *shrinker, const char *fmt, ...)
- 			shrinker->debugfs_entry = entry;
- 	}
- 
--	up_write(&shrinker_rwsem);
-+	mutex_unlock(&shrinker_mutex);
- 
- 	kfree_const(old);
- 
-@@ -251,7 +251,7 @@ struct dentry *shrinker_debugfs_detach(struct shrinker *shrinker,
- {
- 	struct dentry *entry = shrinker->debugfs_entry;
- 
--	lockdep_assert_held(&shrinker_rwsem);
-+	lockdep_assert_held(&shrinker_mutex);
- 
- 	shrinker_debugfs_name_free(shrinker);
- 
-@@ -279,14 +279,14 @@ static int __init shrinker_debugfs_init(void)
- 	shrinker_debugfs_root = dentry;
- 
- 	/* Create debugfs entries for shrinkers registered at boot */
--	down_write(&shrinker_rwsem);
-+	mutex_lock(&shrinker_mutex);
- 	list_for_each_entry(shrinker, &shrinker_list, list)
- 		if (!shrinker->debugfs_entry) {
- 			ret = shrinker_debugfs_add(shrinker);
- 			if (ret)
- 				break;
- 		}
--	up_write(&shrinker_rwsem);
-+	mutex_unlock(&shrinker_mutex);
- 
- 	return ret;
+ 	return 0;
+-fail:
+-	vmballoon_unregister_shrinker(&balloon);
+-	return error;
  }
+ 
+ /*
 -- 
 2.30.2
 
