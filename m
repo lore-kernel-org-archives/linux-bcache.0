@@ -2,54 +2,54 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 60401C001DF
-	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:18:54 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 97D9EC41513
+	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:19:04 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232282AbjHGLSx (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 7 Aug 2023 07:18:53 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52794 "EHLO
+        id S232371AbjHGLTB (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 7 Aug 2023 07:19:01 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:52462 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232149AbjHGLR5 (ORCPT
+        with ESMTP id S232776AbjHGLSr (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 7 Aug 2023 07:17:57 -0400
-Received: from mail-pg1-x52a.google.com (mail-pg1-x52a.google.com [IPv6:2607:f8b0:4864:20::52a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 6984630DD
-        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:16:04 -0700 (PDT)
-Received: by mail-pg1-x52a.google.com with SMTP id 41be03b00d2f7-56462258cdeso526294a12.1
-        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:16:04 -0700 (PDT)
+        Mon, 7 Aug 2023 07:18:47 -0400
+Received: from mail-pj1-x1030.google.com (mail-pj1-x1030.google.com [IPv6:2607:f8b0:4864:20::1030])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 69EB01988
+        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:17:02 -0700 (PDT)
+Received: by mail-pj1-x1030.google.com with SMTP id 98e67ed59e1d1-268663fb09cso631566a91.0
+        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:17:02 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=bytedance.com; s=google; t=1691406905; x=1692011705;
+        d=bytedance.com; s=google; t=1691406943; x=1692011743;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:from:to:cc:subject:date
          :message-id:reply-to;
-        bh=Tu9w5C30y8MI/napZavPwFZ6nIJBEFlaB1CCEG9BfCw=;
-        b=a1z4YhZHvqFoPORrF+lPhY3j/XjC+TmNlvpRZtfYsAqK97Oj+7/3ynKuNED1mH7m1Z
-         6e06VRzbid9nZWrrMcucwcQQbl3wWoXnyMdc8ZAlXCmo2cCjWRY3iHx4TeC9QHkfs0aM
-         d8RS7FugZHSZy2lCqTJeQn9s7jGIX4/E3wPsaz9+SXihbEJvHaKoo3rxKtwLTkFE7bEU
-         BQoGy+vR8UkI3yNn8zdn5buykCB5rpkHr/BUOTCuwQKNihZsP/3d1GH/pY3/5pZuhseK
-         T4uD+LwrMEDhqbcy3e5z3ztow6Tvzy0xPmsoxdy/BtYqGaCEBDHXu6qpNBRWJ+H1UeBT
-         R1aw==
+        bh=qDCHIUUJzhdUAQEb2C7RW/Dwv8wB1L4nNlzD+13VK1U=;
+        b=BoRgxmNUDtxzbmTK8+NbyH+07KYCd+Dr+oKPPa6V2FtEa17D0GvDQxjGlpnMkhmfxh
+         v95DV47NbKABEXmmquIWadBnc0OBxkEOLW5WkwOTzTf/BxgV/A3wBC3uAtz5110v+hzE
+         Ab8A6lWD76Mq+5DiKmh8yjejLb6xJUC09A5jGZ8oJIUHv3JYqq06sjhL7prumjkiRo3O
+         qB570Dus+/9+aUH0B/0q8kHN6EW2eaOwjl0xOlzT2kA7NW6hf0e/OVGGbp1TjXoLyoWq
+         aNUKJyMjC1sbPHUX4hmJJ6cJvGihC8n4kqK2Irls4fBt7l8WiF7MHJ0n9oTLuTvoH1vN
+         CZ3g==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1691406905; x=1692011705;
+        d=1e100.net; s=20221208; t=1691406943; x=1692011743;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
          :subject:date:message-id:reply-to;
-        bh=Tu9w5C30y8MI/napZavPwFZ6nIJBEFlaB1CCEG9BfCw=;
-        b=eeoBmxvfQESb7AQF4uaWsGegEiWq3H+f3u/pYVCtFnWhYUmwn2DWUI21fo17JlI7R5
-         fRo9X7mcBMKSvxazFdZLg0WsXxc5W7vBa3wLo7OeKBSdJHf1kM+nZtV66fWNoNARDYW4
-         NxcdJG214DVBYsP9+JZkmmdq2Wdn4MsWElJFDJ9RiZXkEjdPVcQlE8Qm3GFjACf88Z9I
-         A+ZupCXOIxfDuFZynplf6E2ueNxJN3vH16ViCgf3bF4RlJ/SDSop691U3Lk3pivryVCJ
-         XexLA1t+1pGM+edC5YFMIX0BxfCqrqEE/7U/jWnb1TG5R7ut8Z/KAJVZl+KwNMAF9U89
-         lUng==
-X-Gm-Message-State: AOJu0Yz5uvGYKX/EIyB/kgxUrbKtpOSZf8/yQg+7VsLsAshx5aTJaRxh
-        1U5wsuuxTnb2tMa903XquHaMMA==
-X-Google-Smtp-Source: AGHT+IEpCcigBA86rq7g8CBmKfvn4KajAK33DI3WvO1RysFov39NnZyAmCT+CDGKi31ZOdqYdEGlDQ==
-X-Received: by 2002:a17:90a:c8d:b0:268:196f:9656 with SMTP id v13-20020a17090a0c8d00b00268196f9656mr12996964pja.1.1691406905372;
-        Mon, 07 Aug 2023 04:15:05 -0700 (PDT)
+        bh=qDCHIUUJzhdUAQEb2C7RW/Dwv8wB1L4nNlzD+13VK1U=;
+        b=g/V6Buz099xLsAwTw72tJd0J1HbZxlc5cNzH3b6YTK9+PR8KybyO3Wul2jwXMNc7WN
+         PsnQNWSw+fG11E+c6cxNqxu3NRdL8LoLb2viFdv+rV74iG5KK6Dx+9Ek7/r9d4uIJYYJ
+         kY/XWWfvglKYgY2HYMLrSjOnlb8vIjUZlJXAJ0+b02q2qeR1t/hKz7GnNEm/yCle2V9a
+         RbC6OG5mEdFrwl+ksvbeWvNzeE/CcG/VVALk6p8y2Or0zklLQIBtz7o8oTwRK/jhYrgb
+         9L3tNwo+M1pR8DOXpy+yb+Gj/YxAAk95kQl6BbipbCQsDG2siskt15pnyd0CYxdCVPMY
+         eLeA==
+X-Gm-Message-State: ABy/qLZzZhE6zL08cSAT1Iz+tmTnknSbPb9ys+6YL9nIzlKdXuPAxV0H
+        2lzQDvLe5GYb8yNJ5BspnpzOdA==
+X-Google-Smtp-Source: APBJJlEUCHWWWNXSTNLHQrmZRIrp+biqETFoyppqOsbwjUrAqcyZvOjgkWFuVkSEp/5UbdP5i9KhZA==
+X-Received: by 2002:a17:90a:6c97:b0:263:730b:f568 with SMTP id y23-20020a17090a6c9700b00263730bf568mr23067993pjj.3.1691406943426;
+        Mon, 07 Aug 2023 04:15:43 -0700 (PDT)
 Received: from C02DW0BEMD6R.bytedance.net ([203.208.167.146])
-        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.14.52
+        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.15.31
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 07 Aug 2023 04:15:04 -0700 (PDT)
+        Mon, 07 Aug 2023 04:15:43 -0700 (PDT)
 From:   Qi Zheng <zhengqi.arch@bytedance.com>
 To:     akpm@linux-foundation.org, david@fromorbit.com, tkhai@ya.ru,
         vbabka@suse.cz, roman.gushchin@linux.dev, djwong@kernel.org,
@@ -72,9 +72,9 @@ Cc:     linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
         linux-xfs@vger.kernel.org, linux-btrfs@vger.kernel.org,
         Qi Zheng <zhengqi.arch@bytedance.com>,
         Muchun Song <songmuchun@bytedance.com>
-Subject: [PATCH v4 24/48] drm/msm: dynamically allocate the drm-msm_gem shrinker
-Date:   Mon,  7 Aug 2023 19:09:12 +0800
-Message-Id: <20230807110936.21819-25-zhengqi.arch@bytedance.com>
+Subject: [PATCH v4 27/48] dm zoned: dynamically allocate the dm-zoned-meta shrinker
+Date:   Mon,  7 Aug 2023 19:09:15 +0800
+Message-Id: <20230807110936.21819-28-zhengqi.arch@bytedance.com>
 X-Mailer: git-send-email 2.24.3 (Apple Git-128)
 In-Reply-To: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
 References: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
@@ -85,134 +85,88 @@ List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 In preparation for implementing lockless slab shrink, use new APIs to
-dynamically allocate the drm-msm_gem shrinker, so that it can be freed
+dynamically allocate the dm-zoned-meta shrinker, so that it can be freed
 asynchronously using kfree_rcu(). Then it doesn't need to wait for RCU
-read-side critical section when releasing the struct msm_drm_private.
+read-side critical section when releasing the struct dmz_metadata.
 
 Signed-off-by: Qi Zheng <zhengqi.arch@bytedance.com>
 Reviewed-by: Muchun Song <songmuchun@bytedance.com>
 ---
- drivers/gpu/drm/msm/msm_drv.c          |  4 ++-
- drivers/gpu/drm/msm/msm_drv.h          |  4 +--
- drivers/gpu/drm/msm/msm_gem_shrinker.c | 34 ++++++++++++++++----------
- 3 files changed, 26 insertions(+), 16 deletions(-)
+ drivers/md/dm-zoned-metadata.c | 29 +++++++++++++++++------------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/gpu/drm/msm/msm_drv.c b/drivers/gpu/drm/msm/msm_drv.c
-index 4bd028fa7500..7f20249d6071 100644
---- a/drivers/gpu/drm/msm/msm_drv.c
-+++ b/drivers/gpu/drm/msm/msm_drv.c
-@@ -462,7 +462,9 @@ static int msm_drm_init(struct device *dev, const struct drm_driver *drv)
- 	if (ret)
- 		goto err_msm_uninit;
+diff --git a/drivers/md/dm-zoned-metadata.c b/drivers/md/dm-zoned-metadata.c
+index 9d3cca8e3dc9..bbb0e69a7908 100644
+--- a/drivers/md/dm-zoned-metadata.c
++++ b/drivers/md/dm-zoned-metadata.c
+@@ -187,7 +187,7 @@ struct dmz_metadata {
+ 	struct rb_root		mblk_rbtree;
+ 	struct list_head	mblk_lru_list;
+ 	struct list_head	mblk_dirty_list;
+-	struct shrinker		mblk_shrinker;
++	struct shrinker		*mblk_shrinker;
  
--	msm_gem_shrinker_init(ddev);
-+	ret = msm_gem_shrinker_init(ddev);
-+	if (ret)
-+		goto err_msm_uninit;
- 
- 	if (priv->kms_init) {
- 		ret = priv->kms_init(ddev);
-diff --git a/drivers/gpu/drm/msm/msm_drv.h b/drivers/gpu/drm/msm/msm_drv.h
-index 02fd6c7d0bb7..e2fc56f161b5 100644
---- a/drivers/gpu/drm/msm/msm_drv.h
-+++ b/drivers/gpu/drm/msm/msm_drv.h
-@@ -221,7 +221,7 @@ struct msm_drm_private {
- 	} vram;
- 
- 	struct notifier_block vmap_notifier;
--	struct shrinker shrinker;
-+	struct shrinker *shrinker;
- 
- 	struct drm_atomic_state *pm_state;
- 
-@@ -283,7 +283,7 @@ int msm_ioctl_gem_submit(struct drm_device *dev, void *data,
- unsigned long msm_gem_shrinker_shrink(struct drm_device *dev, unsigned long nr_to_scan);
- #endif
- 
--void msm_gem_shrinker_init(struct drm_device *dev);
-+int msm_gem_shrinker_init(struct drm_device *dev);
- void msm_gem_shrinker_cleanup(struct drm_device *dev);
- 
- struct sg_table *msm_gem_prime_get_sg_table(struct drm_gem_object *obj);
-diff --git a/drivers/gpu/drm/msm/msm_gem_shrinker.c b/drivers/gpu/drm/msm/msm_gem_shrinker.c
-index f38296ad8743..20699993e4f8 100644
---- a/drivers/gpu/drm/msm/msm_gem_shrinker.c
-+++ b/drivers/gpu/drm/msm/msm_gem_shrinker.c
-@@ -34,8 +34,7 @@ static bool can_block(struct shrink_control *sc)
- static unsigned long
- msm_gem_shrinker_count(struct shrinker *shrinker, struct shrink_control *sc)
+ 	/* Zone allocation management */
+ 	struct mutex		map_lock;
+@@ -615,7 +615,7 @@ static unsigned long dmz_shrink_mblock_cache(struct dmz_metadata *zmd,
+ static unsigned long dmz_mblock_shrinker_count(struct shrinker *shrink,
+ 					       struct shrink_control *sc)
  {
--	struct msm_drm_private *priv =
--		container_of(shrinker, struct msm_drm_private, shrinker);
-+	struct msm_drm_private *priv = shrinker->private_data;
- 	unsigned count = priv->lru.dontneed.count;
+-	struct dmz_metadata *zmd = container_of(shrink, struct dmz_metadata, mblk_shrinker);
++	struct dmz_metadata *zmd = shrink->private_data;
  
- 	if (can_swap())
-@@ -100,8 +99,7 @@ active_evict(struct drm_gem_object *obj)
- static unsigned long
- msm_gem_shrinker_scan(struct shrinker *shrinker, struct shrink_control *sc)
- {
--	struct msm_drm_private *priv =
--		container_of(shrinker, struct msm_drm_private, shrinker);
-+	struct msm_drm_private *priv = shrinker->private_data;
- 	struct {
- 		struct drm_gem_lru *lru;
- 		bool (*shrink)(struct drm_gem_object *obj);
-@@ -148,10 +146,11 @@ msm_gem_shrinker_shrink(struct drm_device *dev, unsigned long nr_to_scan)
- 	struct shrink_control sc = {
- 		.nr_to_scan = nr_to_scan,
- 	};
--	int ret;
-+	unsigned long ret = SHRINK_STOP;
- 
- 	fs_reclaim_acquire(GFP_KERNEL);
--	ret = msm_gem_shrinker_scan(&priv->shrinker, &sc);
-+	if (priv->shrinker)
-+		ret = msm_gem_shrinker_scan(priv->shrinker, &sc);
- 	fs_reclaim_release(GFP_KERNEL);
- 
- 	return ret;
-@@ -210,16 +209,25 @@ msm_gem_shrinker_vmap(struct notifier_block *nb, unsigned long event, void *ptr)
-  *
-  * This function registers and sets up the msm shrinker.
-  */
--void msm_gem_shrinker_init(struct drm_device *dev)
-+int msm_gem_shrinker_init(struct drm_device *dev)
- {
- 	struct msm_drm_private *priv = dev->dev_private;
--	priv->shrinker.count_objects = msm_gem_shrinker_count;
--	priv->shrinker.scan_objects = msm_gem_shrinker_scan;
--	priv->shrinker.seeks = DEFAULT_SEEKS;
--	WARN_ON(register_shrinker(&priv->shrinker, "drm-msm_gem"));
-+
-+	priv->shrinker = shrinker_alloc(0, "drm-msm_gem");
-+	if (!priv->shrinker)
-+		return -ENOMEM;
-+
-+	priv->shrinker->count_objects = msm_gem_shrinker_count;
-+	priv->shrinker->scan_objects = msm_gem_shrinker_scan;
-+	priv->shrinker->seeks = DEFAULT_SEEKS;
-+	priv->shrinker->private_data = priv;
-+
-+	shrinker_register(priv->shrinker);
- 
- 	priv->vmap_notifier.notifier_call = msm_gem_shrinker_vmap;
- 	WARN_ON(register_vmap_purge_notifier(&priv->vmap_notifier));
-+
-+	return 0;
+ 	return atomic_read(&zmd->nr_mblks);
  }
- 
- /**
-@@ -232,8 +240,8 @@ void msm_gem_shrinker_cleanup(struct drm_device *dev)
+@@ -626,7 +626,7 @@ static unsigned long dmz_mblock_shrinker_count(struct shrinker *shrink,
+ static unsigned long dmz_mblock_shrinker_scan(struct shrinker *shrink,
+ 					      struct shrink_control *sc)
  {
- 	struct msm_drm_private *priv = dev->dev_private;
+-	struct dmz_metadata *zmd = container_of(shrink, struct dmz_metadata, mblk_shrinker);
++	struct dmz_metadata *zmd = shrink->private_data;
+ 	unsigned long count;
  
--	if (priv->shrinker.nr_deferred) {
-+	if (priv->shrinker) {
- 		WARN_ON(unregister_vmap_purge_notifier(&priv->vmap_notifier));
--		unregister_shrinker(&priv->shrinker);
-+		shrinker_free(priv->shrinker);
+ 	spin_lock(&zmd->mblk_lock);
+@@ -2936,19 +2936,24 @@ int dmz_ctr_metadata(struct dmz_dev *dev, int num_dev,
+ 	 */
+ 	zmd->min_nr_mblks = 2 + zmd->nr_map_blocks + zmd->zone_nr_bitmap_blocks * 16;
+ 	zmd->max_nr_mblks = zmd->min_nr_mblks + 512;
+-	zmd->mblk_shrinker.count_objects = dmz_mblock_shrinker_count;
+-	zmd->mblk_shrinker.scan_objects = dmz_mblock_shrinker_scan;
+-	zmd->mblk_shrinker.seeks = DEFAULT_SEEKS;
+ 
+ 	/* Metadata cache shrinker */
+-	ret = register_shrinker(&zmd->mblk_shrinker, "dm-zoned-meta:(%u:%u)",
+-				MAJOR(dev->bdev->bd_dev),
+-				MINOR(dev->bdev->bd_dev));
+-	if (ret) {
+-		dmz_zmd_err(zmd, "Register metadata cache shrinker failed");
++	zmd->mblk_shrinker = shrinker_alloc(0,  "dm-zoned-meta:(%u:%u)",
++					    MAJOR(dev->bdev->bd_dev),
++					    MINOR(dev->bdev->bd_dev));
++	if (!zmd->mblk_shrinker) {
++		ret = -ENOMEM;
++		dmz_zmd_err(zmd, "Allocate metadata cache shrinker failed");
+ 		goto err;
  	}
+ 
++	zmd->mblk_shrinker->count_objects = dmz_mblock_shrinker_count;
++	zmd->mblk_shrinker->scan_objects = dmz_mblock_shrinker_scan;
++	zmd->mblk_shrinker->seeks = DEFAULT_SEEKS;
++	zmd->mblk_shrinker->private_data = zmd;
++
++	shrinker_register(zmd->mblk_shrinker);
++
+ 	dmz_zmd_info(zmd, "DM-Zoned metadata version %d", zmd->sb_version);
+ 	for (i = 0; i < zmd->nr_devs; i++)
+ 		dmz_print_dev(zmd, i);
+@@ -2995,7 +3000,7 @@ int dmz_ctr_metadata(struct dmz_dev *dev, int num_dev,
+  */
+ void dmz_dtr_metadata(struct dmz_metadata *zmd)
+ {
+-	unregister_shrinker(&zmd->mblk_shrinker);
++	shrinker_free(zmd->mblk_shrinker);
+ 	dmz_cleanup_metadata(zmd);
+ 	kfree(zmd);
  }
 -- 
 2.30.2
