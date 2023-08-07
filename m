@@ -2,54 +2,54 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 79EF4C04FDF
-	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:38:43 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id A040DEB64DD
+	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:39:43 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231882AbjHGLil (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 7 Aug 2023 07:38:41 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:42272 "EHLO
+        id S232357AbjHGLjm (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 7 Aug 2023 07:39:42 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:47876 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232238AbjHGLh3 (ORCPT
+        with ESMTP id S231567AbjHGLjV (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 7 Aug 2023 07:37:29 -0400
-Received: from mail-io1-xd2a.google.com (mail-io1-xd2a.google.com [IPv6:2607:f8b0:4864:20::d2a])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id AC99C524E
-        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:34:19 -0700 (PDT)
-Received: by mail-io1-xd2a.google.com with SMTP id ca18e2360f4ac-790af3bfa5cso28227439f.1
-        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:34:19 -0700 (PDT)
+        Mon, 7 Aug 2023 07:39:21 -0400
+Received: from mail-pl1-x62a.google.com (mail-pl1-x62a.google.com [IPv6:2607:f8b0:4864:20::62a])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C38282683
+        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:35:55 -0700 (PDT)
+Received: by mail-pl1-x62a.google.com with SMTP id d9443c01a7336-1bb91c20602so9370335ad.0
+        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:35:55 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=bytedance.com; s=google; t=1691408014; x=1692012814;
+        d=bytedance.com; s=google; t=1691408091; x=1692012891;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:from:to:cc:subject:date
          :message-id:reply-to;
-        bh=jaqVlo27zysQOw4inLaa7RWYi61naAqQm5GJ5upJpN4=;
-        b=SnTpBglMEYCPit1GhsVHUSdo5sXgRcQutwheoXRhOcMNLPbwLK14flaBtOSpZBxNKV
-         Clc/pGAY9qN5yvBZFI3W5gaBoTejbOyumUoD/3jtFs+NOX8ezoiXEP3Qn+JRUtHFJn9u
-         Oel6mmaHsvZXhqwTTRQEBzgu13XH7q26jRMUbT+VdBf1iEM6kOyjKH0qqjOUMsYAhZeM
-         ONUCRoTn5WGEqktYu/ivpW2Lju0z3ov+Cf/+5G6x0gd3+k4gCYqfvNmDktLgxWEXGSJl
-         ifm65mVD771ol/FOn3pQ5fv1cSJXZotxS3KXWJO+/Yna2qSosuDvGGtaKTPdg1+ZE9Kb
-         exoA==
+        bh=xVRvDV5EwClRaurogoo7jeCmWiPiam6NNimoVigpYsU=;
+        b=LWDv9ogr0PQp5KSdVfiZu7gJdMrmipqERbDjIyT5fj22HHYeMpK15F29Kmj0kDD88P
+         bUp5dDmRZyhLeaPnqgldMbxb9MKei4hvr5s2qthA7uUtW5ZbzY0u5ZM5pLbJ3q0kdLz3
+         rQlGL0qenlJg33B6BMYK8aNITRuo7PbWlKvx3wGhOeI+XJAUOGdhy4hiN062CwS//iGI
+         fKUM9xJA1hpZPLui3Wq5VVi1f5OQdrpA5iFpTc4df4IhCwTiWpqPojXLWviNVmDjDTgl
+         21KJAP8bjkk4UFJlYtQTpEZdVlWKgLqhYhx0X0U+wFEMyCr5JfKK94obHCWvaeLCM0BH
+         qS3A==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1691408014; x=1692012814;
+        d=1e100.net; s=20221208; t=1691408091; x=1692012891;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
          :subject:date:message-id:reply-to;
-        bh=jaqVlo27zysQOw4inLaa7RWYi61naAqQm5GJ5upJpN4=;
-        b=KAyFye+NjMbB8QJMmo5jRsnMw8zD168vFkdQo+kJny6MnomSWo3tC/ePt6jaMFY9ZE
-         Ccqy3gV/Hbj5+3PoXLydSpV9HDvlUsjEJzaA3jTfuojh+wzkDgh/ALYneUQ8+YOoie7g
-         wE/H2u78SlI+ZGBvxdIU5r3TRZk0Aq5g7R8McmZ13+hPW4OE9is/XfbyEemOu1pSbrHi
-         eSGrgJQbVpTeCZ+hYcAfx2SNVZa5Ndcwo9gm9fTM05/SASm8+nsUVRJh97QQBiYM6nA4
-         sUyL4Y/HHYomui3p5R24OWqJ/UIfZP58bijD+bojmWc11aSnZw+RLM+tbtvEYCvbiFfi
-         pPoQ==
-X-Gm-Message-State: ABy/qLawV+LXSobW5pOWouCc4VrWZVqwFjkRJx5d1HPudBXJQiqoP+tz
-        odS72yKlMgEkTPo1hdydeweIcgxt72440bK15MU=
-X-Google-Smtp-Source: AGHT+IHBSjfm4qMxfKY1o30DsQrf62j+YLyyzQgOSjZX7MvZKQZkongUtrzUOFN5xrnWaoCKIehpOA==
-X-Received: by 2002:a17:90a:9c3:b0:269:41cf:7212 with SMTP id 61-20020a17090a09c300b0026941cf7212mr4969668pjo.4.1691407071669;
-        Mon, 07 Aug 2023 04:17:51 -0700 (PDT)
+        bh=xVRvDV5EwClRaurogoo7jeCmWiPiam6NNimoVigpYsU=;
+        b=bcZMos0xKznpAmKgkiUFXy3XAOe8YIexoEHd9zhJryZXHyLpqyH3i2/UjAFBoJfYJB
+         InX0Gjg83342qyRQVImLKN664OogvaKspwCqQrHc/UwhAhctWO3Tosm4AZvXhFba+7/P
+         p5XpIl8J4XJvtGNRyCX4PMwh+7BQqZJo/J+G7JutLG9LtbAmNOeTbZi3h75PXK3NMmmd
+         gJ1wYM/+OUhQH1SN49qbJhxRMzEQ5tkb02U1oBxpwDafjsgAxjH7ZKp38ZwVwd/KbiTy
+         LM9QFQu5Idxo4GIqXu4f28YiP9ibgIK4LKZ4Un3x3hnrOZyVKZmq9f9dw89pSe2LVtdS
+         NYaw==
+X-Gm-Message-State: AOJu0YwN0Ii5gMZva2XkU9VV47VDdTmuAuH1DQN/4K1ZpGeXeJ12xQS9
+        69OKMVWHxOjqol8eiBafs+A5ZjDt4ZzELSqu9jg=
+X-Google-Smtp-Source: APBJJlGBV531Fc0h3gGTcYh+GrDchiBvn4r3DyO1GlE79UVq2Tiyx2gaPN4S9h+mnuBR5bsUMtGvYQ==
+X-Received: by 2002:a17:90a:ac2:b0:268:f977:848c with SMTP id r2-20020a17090a0ac200b00268f977848cmr15219032pje.2.1691407007341;
+        Mon, 07 Aug 2023 04:16:47 -0700 (PDT)
 Received: from C02DW0BEMD6R.bytedance.net ([203.208.167.146])
-        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.17.39
+        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.16.35
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 07 Aug 2023 04:17:51 -0700 (PDT)
+        Mon, 07 Aug 2023 04:16:47 -0700 (PDT)
 From:   Qi Zheng <zhengqi.arch@bytedance.com>
 To:     akpm@linux-foundation.org, david@fromorbit.com, tkhai@ya.ru,
         vbabka@suse.cz, roman.gushchin@linux.dev, djwong@kernel.org,
@@ -72,9 +72,9 @@ Cc:     linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
         linux-xfs@vger.kernel.org, linux-btrfs@vger.kernel.org,
         Qi Zheng <zhengqi.arch@bytedance.com>,
         Muchun Song <songmuchun@bytedance.com>
-Subject: [PATCH v4 37/48] xfs: dynamically allocate the xfs-buf shrinker
-Date:   Mon,  7 Aug 2023 19:09:25 +0800
-Message-Id: <20230807110936.21819-38-zhengqi.arch@bytedance.com>
+Subject: [PATCH v4 32/48] mbcache: dynamically allocate the mbcache shrinker
+Date:   Mon,  7 Aug 2023 19:09:20 +0800
+Message-Id: <20230807110936.21819-33-zhengqi.arch@bytedance.com>
 X-Mailer: git-send-email 2.24.3 (Apple Git-128)
 In-Reply-To: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
 References: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
@@ -85,88 +85,83 @@ List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 In preparation for implementing lockless slab shrink, use new APIs to
-dynamically allocate the xfs-buf shrinker, so that it can be freed
+dynamically allocate the mbcache shrinker, so that it can be freed
 asynchronously using kfree_rcu(). Then it doesn't need to wait for RCU
-read-side critical section when releasing the struct xfs_buftarg.
+read-side critical section when releasing the struct mb_cache.
 
 Signed-off-by: Qi Zheng <zhengqi.arch@bytedance.com>
 Reviewed-by: Muchun Song <songmuchun@bytedance.com>
 ---
- fs/xfs/xfs_buf.c | 25 ++++++++++++++-----------
- fs/xfs/xfs_buf.h |  2 +-
- 2 files changed, 15 insertions(+), 12 deletions(-)
+ fs/mbcache.c | 23 +++++++++++++----------
+ 1 file changed, 13 insertions(+), 10 deletions(-)
 
-diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
-index 15d1e5a7c2d3..715730fc91cb 100644
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -1906,8 +1906,7 @@ xfs_buftarg_shrink_scan(
- 	struct shrinker		*shrink,
- 	struct shrink_control	*sc)
+diff --git a/fs/mbcache.c b/fs/mbcache.c
+index 2a4b8b549e93..0d1e24e9a5e3 100644
+--- a/fs/mbcache.c
++++ b/fs/mbcache.c
+@@ -37,7 +37,7 @@ struct mb_cache {
+ 	struct list_head	c_list;
+ 	/* Number of entries in cache */
+ 	unsigned long		c_entry_count;
+-	struct shrinker		c_shrink;
++	struct shrinker		*c_shrink;
+ 	/* Work for shrinking when the cache has too many entries */
+ 	struct work_struct	c_shrink_work;
+ };
+@@ -293,8 +293,7 @@ EXPORT_SYMBOL(mb_cache_entry_touch);
+ static unsigned long mb_cache_count(struct shrinker *shrink,
+ 				    struct shrink_control *sc)
  {
--	struct xfs_buftarg	*btp = container_of(shrink,
--					struct xfs_buftarg, bt_shrinker);
-+	struct xfs_buftarg	*btp = shrink->private_data;
- 	LIST_HEAD(dispose);
- 	unsigned long		freed;
+-	struct mb_cache *cache = container_of(shrink, struct mb_cache,
+-					      c_shrink);
++	struct mb_cache *cache = shrink->private_data;
  
-@@ -1929,8 +1928,7 @@ xfs_buftarg_shrink_count(
- 	struct shrinker		*shrink,
- 	struct shrink_control	*sc)
+ 	return cache->c_entry_count;
+ }
+@@ -333,8 +332,7 @@ static unsigned long mb_cache_shrink(struct mb_cache *cache,
+ static unsigned long mb_cache_scan(struct shrinker *shrink,
+ 				   struct shrink_control *sc)
  {
--	struct xfs_buftarg	*btp = container_of(shrink,
--					struct xfs_buftarg, bt_shrinker);
-+	struct xfs_buftarg	*btp = shrink->private_data;
- 	return list_lru_shrink_count(&btp->bt_lru, sc);
+-	struct mb_cache *cache = container_of(shrink, struct mb_cache,
+-					      c_shrink);
++	struct mb_cache *cache = shrink->private_data;
+ 	return mb_cache_shrink(cache, sc->nr_to_scan);
  }
  
-@@ -1938,7 +1936,7 @@ void
- xfs_free_buftarg(
- 	struct xfs_buftarg	*btp)
+@@ -377,15 +375,20 @@ struct mb_cache *mb_cache_create(int bucket_bits)
+ 	for (i = 0; i < bucket_count; i++)
+ 		INIT_HLIST_BL_HEAD(&cache->c_hash[i]);
+ 
+-	cache->c_shrink.count_objects = mb_cache_count;
+-	cache->c_shrink.scan_objects = mb_cache_scan;
+-	cache->c_shrink.seeks = DEFAULT_SEEKS;
+-	if (register_shrinker(&cache->c_shrink, "mbcache-shrinker")) {
++	cache->c_shrink = shrinker_alloc(0, "mbcache-shrinker");
++	if (!cache->c_shrink) {
+ 		kfree(cache->c_hash);
+ 		kfree(cache);
+ 		goto err_out;
+ 	}
+ 
++	cache->c_shrink->count_objects = mb_cache_count;
++	cache->c_shrink->scan_objects = mb_cache_scan;
++	cache->c_shrink->seeks = DEFAULT_SEEKS;
++	cache->c_shrink->private_data = cache;
++
++	shrinker_register(cache->c_shrink);
++
+ 	INIT_WORK(&cache->c_shrink_work, mb_cache_shrink_worker);
+ 
+ 	return cache;
+@@ -406,7 +409,7 @@ void mb_cache_destroy(struct mb_cache *cache)
  {
--	unregister_shrinker(&btp->bt_shrinker);
-+	shrinker_free(btp->bt_shrinker);
- 	ASSERT(percpu_counter_sum(&btp->bt_io_count) == 0);
- 	percpu_counter_destroy(&btp->bt_io_count);
- 	list_lru_destroy(&btp->bt_lru);
-@@ -2021,13 +2019,18 @@ xfs_alloc_buftarg(
- 	if (percpu_counter_init(&btp->bt_io_count, 0, GFP_KERNEL))
- 		goto error_lru;
+ 	struct mb_cache_entry *entry, *next;
  
--	btp->bt_shrinker.count_objects = xfs_buftarg_shrink_count;
--	btp->bt_shrinker.scan_objects = xfs_buftarg_shrink_scan;
--	btp->bt_shrinker.seeks = DEFAULT_SEEKS;
--	btp->bt_shrinker.flags = SHRINKER_NUMA_AWARE;
--	if (register_shrinker(&btp->bt_shrinker, "xfs-buf:%s",
--			      mp->m_super->s_id))
-+	btp->bt_shrinker = shrinker_alloc(SHRINKER_NUMA_AWARE, "xfs-buf:%s",
-+					  mp->m_super->s_id);
-+	if (!btp->bt_shrinker)
- 		goto error_pcpu;
-+
-+	btp->bt_shrinker->count_objects = xfs_buftarg_shrink_count;
-+	btp->bt_shrinker->scan_objects = xfs_buftarg_shrink_scan;
-+	btp->bt_shrinker->seeks = DEFAULT_SEEKS;
-+	btp->bt_shrinker->private_data = btp;
-+
-+	shrinker_register(btp->bt_shrinker);
-+
- 	return btp;
+-	unregister_shrinker(&cache->c_shrink);
++	shrinker_free(cache->c_shrink);
  
- error_pcpu:
-diff --git a/fs/xfs/xfs_buf.h b/fs/xfs/xfs_buf.h
-index 549c60942208..4e6969a675f7 100644
---- a/fs/xfs/xfs_buf.h
-+++ b/fs/xfs/xfs_buf.h
-@@ -102,7 +102,7 @@ typedef struct xfs_buftarg {
- 	size_t			bt_logical_sectormask;
- 
- 	/* LRU control structures */
--	struct shrinker		bt_shrinker;
-+	struct shrinker		*bt_shrinker;
- 	struct list_lru		bt_lru;
- 
- 	struct percpu_counter	bt_io_count;
+ 	/*
+ 	 * We don't bother with any locking. Cache must not be used at this
 -- 
 2.30.2
 
