@@ -2,54 +2,54 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 81496C41513
-	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:22:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 6A5DDEB64DD
+	for <linux-bcache@archiver.kernel.org>; Mon,  7 Aug 2023 11:22:25 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232417AbjHGLWL (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 7 Aug 2023 07:22:11 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54356 "EHLO
+        id S232154AbjHGLWY (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Mon, 7 Aug 2023 07:22:24 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:54906 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232373AbjHGLVd (ORCPT
+        with ESMTP id S232038AbjHGLWD (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 7 Aug 2023 07:21:33 -0400
-Received: from mail-pj1-f51.google.com (mail-pj1-f51.google.com [209.85.216.51])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id CAC1744A0
-        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:19:23 -0700 (PDT)
-Received: by mail-pj1-f51.google.com with SMTP id 98e67ed59e1d1-265c94064b8so593167a91.0
-        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:19:23 -0700 (PDT)
+        Mon, 7 Aug 2023 07:22:03 -0400
+Received: from mail-io1-xd2d.google.com (mail-io1-xd2d.google.com [IPv6:2607:f8b0:4864:20::d2d])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5AF6949E7
+        for <linux-bcache@vger.kernel.org>; Mon,  7 Aug 2023 04:19:48 -0700 (PDT)
+Received: by mail-io1-xd2d.google.com with SMTP id ca18e2360f4ac-77dcff76e35so48681539f.1
+        for <linux-bcache@vger.kernel.org>; Mon, 07 Aug 2023 04:19:48 -0700 (PDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=bytedance.com; s=google; t=1691407033; x=1692011833;
+        d=bytedance.com; s=google; t=1691407131; x=1692011931;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:from:to:cc:subject:date
          :message-id:reply-to;
-        bh=48waxWZGd1WUnLYaDrTSxvJywKXLcopaiUkWgt7j5Rg=;
-        b=IF5FMf6vfUKWXKquwpCQEDXlMw21VPTq0vQh30bzDQAe43NcnPpm7+3Lc8a3CIJRpA
-         3D5+DTGp/GVVz7K0qnRkJHp3ElWCuX/V5mJLE2CMMPVLrH696jMkWhUZV5knoMheDkE7
-         LNxcBFVMjsAliYNw3/qsjltVAMCexO3SFZuMneEunxblALcqU49wFlwUCGkH4chcrTm+
-         Mu+nFly5hda7TWhSn6s/LaVQ5cZernQQxFJBPj8H2QEyQDfBEaIAKgcH8kpChkzLsY8n
-         h49b3nM+GUF7t0uuu7NHoFu5rdBXy5wqqQ2n0YE+hiJT0Y6kOYKfZmJPFvsrDsGv9xrG
-         NHZQ==
+        bh=WPvD0YF4yF0E/V3NMttF7YVdRMfLZcl9Qmy2whUD9jE=;
+        b=BdABpBX4FXs0/4BSztrlfZFGnjnvWXahTndyFXGrHjnNgc9CLIVkkmvyMeZ3V5dqL9
+         UgUJ5lm5KcL08pNFO4v84eZQJLX+NfnkdeqM5Wvi5pV9ZPUvxEzmBwd+vhTsHJlRNsXN
+         Ml5cxbjkMxwwJ+HI49GzGsomo8lKGXOOW7e+XOhRs54wbmTuUXP6KxFGYu0z+ZRhT+Tl
+         AXbGwRiY7pvZKywYEKfsCpgRNLUEKc1sEENP8CZAHKHVLiAJ51rdCYmXzAIFRLO8mWfC
+         nSHWNsmizdPIPWgo+nYoQjsPB9aJFWe/Yp3vUK/7QAiE0qAdO3Q3mZqyWpS+YDR1cYMC
+         9u4g==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1691407033; x=1692011833;
+        d=1e100.net; s=20221208; t=1691407131; x=1692011931;
         h=content-transfer-encoding:mime-version:references:in-reply-to
          :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
          :subject:date:message-id:reply-to;
-        bh=48waxWZGd1WUnLYaDrTSxvJywKXLcopaiUkWgt7j5Rg=;
-        b=NDJD3kJFifSjaDh9FN9bi/nqZMdMk3nxRzPbei4dh8lsyoIoTZ+4B0utBgh2jhhBVR
-         lAp8EgoNXajujl5YjJanQDqMjJTEs4+Tdkwq9+i+sJQo+5WRds/T+SrnlsO4USwRLK7X
-         iCCfrv4wAd0O9vpWkIWraIuYY5Us9N9f2jjWl6lvTF3NYbZdICLZeHoAUgmxGCzWlMBQ
-         zZk1ujsuv+RQQu4yz9FNL8BE1w2wFjomiSl1lKiWNJU/6GrVQ17NouZ728hEi9eRGtT3
-         1XaLF2KYjoJkapDHIjQMLjCfFO1Ro4eB7KTemLTWv7igv910zWA4+65tiKg7B1gsAj9U
-         qP4Q==
-X-Gm-Message-State: ABy/qLbrWvutqRokS7mNz3ALxApiJDxNcKxwIIqv+c198xDMIj9/J4b2
-        ru80kYjiKJmn/4TbzX41Uj9r2g==
-X-Google-Smtp-Source: APBJJlHbn14CvO5TR8loNSEkHloCg3xrbjPIwtza5v7TtzUnsc09AI3fvHMVCyYd3DTpdbD1pcNBzw==
-X-Received: by 2002:a17:90a:4104:b0:25c:1ad3:a4a1 with SMTP id u4-20020a17090a410400b0025c1ad3a4a1mr24600948pjf.1.1691407032801;
-        Mon, 07 Aug 2023 04:17:12 -0700 (PDT)
+        bh=WPvD0YF4yF0E/V3NMttF7YVdRMfLZcl9Qmy2whUD9jE=;
+        b=j4DOBbtZFL5iAiY3rL9dz+zWahwZQg6EN6WJ/7lSXhf+kicWUFEcR8LB9XbH31dr3r
+         l6VdWu0iWDIeRDLM12518Xx27MwfK4dzpUxRp656JvB4gwNn3DqndmGZqzbaH3KY6NMK
+         dtQJZ+Xdqqym2zHL4rPzFSOLDaPjCSYqNC90AG6nreF7lclkkrsbN54/vKmGZYGWSm/F
+         oU2waalRpuZQ0vYdd7Gx+I2/axRDM7Heuf5JWmtqSe5+7By9ikF9xTy8v7kGv8wUiLG1
+         75pDSmBf2NrH4eJd/8DEqvsiCyekwy4BlGL5WHq3Kfe68v7Kz3DxQVDiyDXVPkuXm2AH
+         OFsA==
+X-Gm-Message-State: ABy/qLadLFRaFl+kH1O+SqZRJ8rh3aErQitZrF1cGcuPJ7gghfziPvOa
+        TsZdo8bPlNyBufq/w+E66DCMR0OCDGWNwACXeG4=
+X-Google-Smtp-Source: APBJJlFnoOazdp9TvNa1Sdutczsv0h+KjLn+q+TQByEK163E+9f/k1cC7rmChP+7R75WsTDRsF4HxQ==
+X-Received: by 2002:a17:90a:901:b0:268:3a31:3e4d with SMTP id n1-20020a17090a090100b002683a313e4dmr23078917pjn.2.1691407109946;
+        Mon, 07 Aug 2023 04:18:29 -0700 (PDT)
 Received: from C02DW0BEMD6R.bytedance.net ([203.208.167.146])
-        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.17.00
+        by smtp.gmail.com with ESMTPSA id y13-20020a17090aca8d00b0025be7b69d73sm5861191pjt.12.2023.08.07.04.18.17
         (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Mon, 07 Aug 2023 04:17:12 -0700 (PDT)
+        Mon, 07 Aug 2023 04:18:29 -0700 (PDT)
 From:   Qi Zheng <zhengqi.arch@bytedance.com>
 To:     akpm@linux-foundation.org, david@fromorbit.com, tkhai@ya.ru,
         vbabka@suse.cz, roman.gushchin@linux.dev, djwong@kernel.org,
@@ -72,9 +72,9 @@ Cc:     linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
         linux-xfs@vger.kernel.org, linux-btrfs@vger.kernel.org,
         Qi Zheng <zhengqi.arch@bytedance.com>,
         Muchun Song <songmuchun@bytedance.com>
-Subject: [PATCH v4 34/48] jbd2,ext4: dynamically allocate the jbd2-journal shrinker
-Date:   Mon,  7 Aug 2023 19:09:22 +0800
-Message-Id: <20230807110936.21819-35-zhengqi.arch@bytedance.com>
+Subject: [PATCH v4 40/48] zsmalloc: dynamically allocate the mm-zspool shrinker
+Date:   Mon,  7 Aug 2023 19:09:28 +0800
+Message-Id: <20230807110936.21819-41-zhengqi.arch@bytedance.com>
 X-Mailer: git-send-email 2.24.3 (Apple Git-128)
 In-Reply-To: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
 References: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
@@ -85,97 +85,81 @@ List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
 In preparation for implementing lockless slab shrink, use new APIs to
-dynamically allocate the jbd2-journal shrinker, so that it can be freed
+dynamically allocate the mm-zspool shrinker, so that it can be freed
 asynchronously using kfree_rcu(). Then it doesn't need to wait for RCU
-read-side critical section when releasing the struct journal_s.
+read-side critical section when releasing the struct zs_pool.
 
 Signed-off-by: Qi Zheng <zhengqi.arch@bytedance.com>
 Reviewed-by: Muchun Song <songmuchun@bytedance.com>
 ---
- fs/jbd2/journal.c    | 27 +++++++++++++++++----------
- include/linux/jbd2.h |  2 +-
- 2 files changed, 18 insertions(+), 11 deletions(-)
+ mm/zsmalloc.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
 
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index 1b5a45ab62b0..4c421da03fee 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1298,7 +1298,7 @@ static int jbd2_min_tag_size(void)
- static unsigned long jbd2_journal_shrink_scan(struct shrinker *shrink,
- 					      struct shrink_control *sc)
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index b58f957429f0..1909234bb345 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -229,7 +229,7 @@ struct zs_pool {
+ 	struct zs_pool_stats stats;
+ 
+ 	/* Compact classes */
+-	struct shrinker shrinker;
++	struct shrinker *shrinker;
+ 
+ #ifdef CONFIG_ZSMALLOC_STAT
+ 	struct dentry *stat_dentry;
+@@ -2086,8 +2086,7 @@ static unsigned long zs_shrinker_scan(struct shrinker *shrinker,
+ 		struct shrink_control *sc)
  {
--	journal_t *journal = container_of(shrink, journal_t, j_shrinker);
-+	journal_t *journal = shrink->private_data;
- 	unsigned long nr_to_scan = sc->nr_to_scan;
- 	unsigned long nr_shrunk;
- 	unsigned long count;
-@@ -1324,7 +1324,7 @@ static unsigned long jbd2_journal_shrink_scan(struct shrinker *shrink,
- static unsigned long jbd2_journal_shrink_count(struct shrinker *shrink,
- 					       struct shrink_control *sc)
+ 	unsigned long pages_freed;
+-	struct zs_pool *pool = container_of(shrinker, struct zs_pool,
+-			shrinker);
++	struct zs_pool *pool = shrinker->private_data;
+ 
+ 	/*
+ 	 * Compact classes and calculate compaction delta.
+@@ -2105,8 +2104,7 @@ static unsigned long zs_shrinker_count(struct shrinker *shrinker,
+ 	int i;
+ 	struct size_class *class;
+ 	unsigned long pages_to_free = 0;
+-	struct zs_pool *pool = container_of(shrinker, struct zs_pool,
+-			shrinker);
++	struct zs_pool *pool = shrinker->private_data;
+ 
+ 	for (i = ZS_SIZE_CLASSES - 1; i >= 0; i--) {
+ 		class = pool->size_class[i];
+@@ -2121,18 +2119,24 @@ static unsigned long zs_shrinker_count(struct shrinker *shrinker,
+ 
+ static void zs_unregister_shrinker(struct zs_pool *pool)
  {
--	journal_t *journal = container_of(shrink, journal_t, j_shrinker);
-+	journal_t *journal = shrink->private_data;
- 	unsigned long count;
+-	unregister_shrinker(&pool->shrinker);
++	shrinker_free(pool->shrinker);
+ }
  
- 	count = percpu_counter_read_positive(&journal->j_checkpoint_jh_count);
-@@ -1412,19 +1412,26 @@ static journal_t *journal_init_common(struct block_device *bdev,
- 	journal->j_superblock = (journal_superblock_t *)bh->b_data;
- 
- 	journal->j_shrink_transaction = NULL;
--	journal->j_shrinker.scan_objects = jbd2_journal_shrink_scan;
--	journal->j_shrinker.count_objects = jbd2_journal_shrink_count;
--	journal->j_shrinker.seeks = DEFAULT_SEEKS;
--	journal->j_shrinker.batch = journal->j_max_transaction_buffers;
- 
- 	if (percpu_counter_init(&journal->j_checkpoint_jh_count, 0, GFP_KERNEL))
- 		goto err_cleanup;
- 
--	if (register_shrinker(&journal->j_shrinker, "jbd2-journal:(%u:%u)",
--			      MAJOR(bdev->bd_dev), MINOR(bdev->bd_dev))) {
-+	journal->j_shrinker = shrinker_alloc(0, "jbd2-journal:(%u:%u)",
-+					     MAJOR(bdev->bd_dev),
-+					     MINOR(bdev->bd_dev));
-+	if (!journal->j_shrinker) {
- 		percpu_counter_destroy(&journal->j_checkpoint_jh_count);
- 		goto err_cleanup;
- 	}
+ static int zs_register_shrinker(struct zs_pool *pool)
+ {
+-	pool->shrinker.scan_objects = zs_shrinker_scan;
+-	pool->shrinker.count_objects = zs_shrinker_count;
+-	pool->shrinker.batch = 0;
+-	pool->shrinker.seeks = DEFAULT_SEEKS;
++	pool->shrinker = shrinker_alloc(0, "mm-zspool:%s", pool->name);
++	if (!pool->shrinker)
++		return -ENOMEM;
 +
-+	journal->j_shrinker->scan_objects = jbd2_journal_shrink_scan;
-+	journal->j_shrinker->count_objects = jbd2_journal_shrink_count;
-+	journal->j_shrinker->seeks = DEFAULT_SEEKS;
-+	journal->j_shrinker->batch = journal->j_max_transaction_buffers;
-+	journal->j_shrinker->private_data = journal;
++	pool->shrinker->scan_objects = zs_shrinker_scan;
++	pool->shrinker->count_objects = zs_shrinker_count;
++	pool->shrinker->batch = 0;
++	pool->shrinker->seeks = DEFAULT_SEEKS;
++	pool->shrinker->private_data = pool;
+ 
+-	return register_shrinker(&pool->shrinker, "mm-zspool:%s",
+-				 pool->name);
++	shrinker_register(pool->shrinker);
 +
-+	shrinker_register(journal->j_shrinker);
-+
- 	return journal;
++	return 0;
+ }
  
- err_cleanup:
-@@ -2187,9 +2194,9 @@ int jbd2_journal_destroy(journal_t *journal)
- 		brelse(journal->j_sb_buffer);
- 	}
- 
--	if (journal->j_shrinker.flags & SHRINKER_REGISTERED) {
-+	if (journal->j_shrinker) {
- 		percpu_counter_destroy(&journal->j_checkpoint_jh_count);
--		unregister_shrinker(&journal->j_shrinker);
-+		shrinker_free(journal->j_shrinker);
- 	}
- 	if (journal->j_proc_entry)
- 		jbd2_stats_proc_exit(journal);
-diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 44c298aa58d4..beb4c4586320 100644
---- a/include/linux/jbd2.h
-+++ b/include/linux/jbd2.h
-@@ -891,7 +891,7 @@ struct journal_s
- 	 * Journal head shrinker, reclaim buffer's journal head which
- 	 * has been written back.
- 	 */
--	struct shrinker		j_shrinker;
-+	struct shrinker		*j_shrinker;
- 
- 	/**
- 	 * @j_checkpoint_jh_count:
+ static int calculate_zspage_chain_size(int class_size)
 -- 
 2.30.2
 
