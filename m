@@ -2,418 +2,340 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id D42CBC001DB
-	for <linux-bcache@archiver.kernel.org>; Tue,  8 Aug 2023 18:36:13 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id ADEA1C05052
+	for <linux-bcache@archiver.kernel.org>; Fri, 11 Aug 2023 11:05:12 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S232204AbjHHSgM (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 8 Aug 2023 14:36:12 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:60194 "EHLO
+        id S235603AbjHKLFK (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Fri, 11 Aug 2023 07:05:10 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:51762 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S232781AbjHHSfu (ORCPT
+        with ESMTP id S235466AbjHKLFJ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 8 Aug 2023 14:35:50 -0400
-Received: from mail-qk1-x72e.google.com (mail-qk1-x72e.google.com [IPv6:2607:f8b0:4864:20::72e])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4A918132F1
-        for <linux-bcache@vger.kernel.org>; Tue,  8 Aug 2023 09:29:44 -0700 (PDT)
-Received: by mail-qk1-x72e.google.com with SMTP id af79cd13be357-76d198deb34so5193185a.1
-        for <linux-bcache@vger.kernel.org>; Tue, 08 Aug 2023 09:29:44 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=bytedance.com; s=google; t=1691512160; x=1692116960;
-        h=content-transfer-encoding:in-reply-to:from:content-language
-         :references:cc:to:subject:user-agent:mime-version:date:message-id
-         :from:to:cc:subject:date:message-id:reply-to;
-        bh=m1STCrinczuq8FuoUgLs8N4vldOealvmees85dm6MPY=;
-        b=QKGx8pk4UqGwqoIu9kJqhJgLGcjz01t1fs1b3dd9S/urrJ/iJY/Jf4pbhwtl60FYTJ
-         9pt6WcXOymT5hJeBv2K1N3VJXhKESPgVJmfi1TVoiVLdNwGSLgGp85X8/uk7n2mk6dDn
-         bh9Q1SgbsLB/TbX8fbktetsmJ1ZpknW1xqeJOv23discV/POBERopyjbmScwnvhCXc6X
-         1+KSeO6kXwxG5pXMziOKn1GaCrEk8xIhlV8ClRCSpe6ndS5U0ov+JQXcn6d/Npp9ss1z
-         4xuNqTRPN12GpmNST+pwesFFNwZYxTyK7DjOp7UKMTUaiJ2h3a88MV+81Oy/RJrJArxB
-         VmmA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20221208; t=1691512160; x=1692116960;
-        h=content-transfer-encoding:in-reply-to:from:content-language
-         :references:cc:to:subject:user-agent:mime-version:date:message-id
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
-        bh=m1STCrinczuq8FuoUgLs8N4vldOealvmees85dm6MPY=;
-        b=NwjID7NxXHCVOPg/WmlzF4843FBszZ3e0olxU1KY4a2vFCz+urqihrXA+mW1o762sO
-         MmzWaGTAgjliyWkQtlkQQetYikuNN2jYhE1zWEpDg9C7GBTay45znHdHQE42/K5MOHos
-         EHYZfvvFoY+XscLGG41eCe2bhXTQxB61fusRFABlxCfY8hPMRA/E6p9IJ6/O3ObUbG7E
-         4yflo0e9U/E5qJFumLYyJvHlLnu2+XXPq18uyDf5qr7glQiofLN1GPQgWwVh5vAUv8rk
-         DO26INsM94fBEhFZt+KZiyCKSmN5EmvYIfjqloBDjRw3zAqS7lRG1bwcLN3MbMjf7rAj
-         Kd7A==
-X-Gm-Message-State: AOJu0Yx7L7mTyOnQn+Or03r8cY6iAyL2zIIRTgu4c/zt+oCr/F8RR/yJ
-        wjVrbDUjFpNP9bBVCG/RHG/8fzmZhKLjruSNfp8=
-X-Google-Smtp-Source: APBJJlEAHd7r+M3vyCUQDMAxEjMveuzSqb/Q6wUuSUNAB0Ns9zs1qKL/YECIY4J9DtcJjA3HpA/s7A==
-X-Received: by 2002:a05:6a21:998c:b0:13d:1ebf:5dfc with SMTP id ve12-20020a056a21998c00b0013d1ebf5dfcmr38062815pzb.5.1691476391828;
-        Mon, 07 Aug 2023 23:33:11 -0700 (PDT)
-Received: from [10.70.252.135] ([203.208.167.146])
-        by smtp.gmail.com with ESMTPSA id ff12-20020a056a002f4c00b0067f2f7eccdcsm7204570pfb.193.2023.08.07.23.32.59
-        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
-        Mon, 07 Aug 2023 23:33:11 -0700 (PDT)
-Message-ID: <0e7b16ce-19f9-0c70-4a94-f05cbfee613a@bytedance.com>
-Date:   Tue, 8 Aug 2023 14:32:55 +0800
-MIME-Version: 1.0
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:102.0)
- Gecko/20100101 Thunderbird/102.14.0
-Subject: Re: [PATCH v4 44/48] mm: shrinker: add a secondary array for
- shrinker_info::{map, nr_deferred}
-To:     Dave Chinner <david@fromorbit.com>
-Cc:     akpm@linux-foundation.org, tkhai@ya.ru, vbabka@suse.cz,
-        roman.gushchin@linux.dev, djwong@kernel.org, brauner@kernel.org,
-        paulmck@kernel.org, tytso@mit.edu, steven.price@arm.com,
-        cel@kernel.org, senozhatsky@chromium.org, yujie.liu@intel.com,
-        gregkh@linuxfoundation.org, muchun.song@linux.dev,
-        simon.horman@corigine.com, dlemoal@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, x86@kernel.org,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        linux-erofs@lists.ozlabs.org,
-        linux-f2fs-devel@lists.sourceforge.net, cluster-devel@redhat.com,
-        linux-nfs@vger.kernel.org, linux-mtd@lists.infradead.org,
-        rcu@vger.kernel.org, netdev@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-arm-msm@vger.kernel.org,
-        dm-devel@redhat.com, linux-raid@vger.kernel.org,
+        Fri, 11 Aug 2023 07:05:09 -0400
+Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.220.28])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 5B1DB10F5;
+        Fri, 11 Aug 2023 04:05:07 -0700 (PDT)
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by smtp-out1.suse.de (Postfix) with ESMTPS id D78A12187C;
+        Fri, 11 Aug 2023 11:05:05 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.cz; s=susede2_rsa;
+        t=1691751905; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=AZvF9pAwZdklJY8vKsCkFwxQNHKU8QvDPK+3FubBNW4=;
+        b=WLx62Ko/jgBBvdCWMhuempkg1jYWkVWnVhJI0hK5p38A0KowpvPCy392DZHKfbu/02afTK
+        L96ZYvQKMSnfzJYJ4u9clhCUxLb5FZsQnkjcNSCLKm+v4VaxU+un5OxoyE3If/L6ZyzcjZ
+        pIkh9fjwXfKvYKfLkMVqUaiyno9T89Y=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.cz;
+        s=susede2_ed25519; t=1691751905;
+        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+         mime-version:mime-version:
+         content-transfer-encoding:content-transfer-encoding:
+         in-reply-to:in-reply-to:references:references;
+        bh=AZvF9pAwZdklJY8vKsCkFwxQNHKU8QvDPK+3FubBNW4=;
+        b=8pEYkTCEnFeTF9VtaeqtjrUC06FH9uW7tQRD6wbK0o9Y/lZW11vTsVJSHDoCd8G45v+zdD
+        tWw2DzmdUaxEWeAg==
+Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
+        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
+        (No client certificate requested)
+        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id C1719139F3;
+        Fri, 11 Aug 2023 11:05:05 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([192.168.254.65])
+        by imap2.suse-dmz.suse.de with ESMTPSA
+        id FZsbL+EV1mRJRQAAMHmgww
+        (envelope-from <jack@suse.cz>); Fri, 11 Aug 2023 11:05:05 +0000
+Received: by quack3.suse.cz (Postfix, from userid 1000)
+        id EC67AA0782; Fri, 11 Aug 2023 13:05:04 +0200 (CEST)
+From:   Jan Kara <jack@suse.cz>
+To:     <linux-fsdevel@vger.kernel.org>
+Cc:     <linux-block@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
         linux-bcache@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-xfs@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        Muchun Song <songmuchun@bytedance.com>
-References: <20230807110936.21819-1-zhengqi.arch@bytedance.com>
- <20230807110936.21819-45-zhengqi.arch@bytedance.com>
- <ZNGkcp3Dh8hOiFpk@dread.disaster.area>
-Content-Language: en-US
-From:   Qi Zheng <zhengqi.arch@bytedance.com>
-In-Reply-To: <ZNGkcp3Dh8hOiFpk@dread.disaster.area>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Kent Overstreet <kent.overstreet@gmail.com>,
+        Coly Li <colyli@suse.de>
+Subject: [PATCH 09/29] bcache: Convert to bdev_open_by_path()
+Date:   Fri, 11 Aug 2023 13:04:40 +0200
+Message-Id: <20230811110504.27514-9-jack@suse.cz>
+X-Mailer: git-send-email 2.35.3
+In-Reply-To: <20230810171429.31759-1-jack@suse.cz>
+References: <20230810171429.31759-1-jack@suse.cz>
+MIME-Version: 1.0
+X-Developer-Signature: v=1; a=openpgp-sha256; l=8861; i=jack@suse.cz; h=from:subject; bh=D/9GvZD0KiQPJN6aSX5CywXNJLZa2jzUMmDtEFLHpkM=; b=owEBbQGS/pANAwAIAZydqgc/ZEDZAcsmYgBk1hXKqIdSvJNwkZ9OU7OEW5NYbAiaxmF9NOWZBKFl LzuUqCeJATMEAAEIAB0WIQSrWdEr1p4yirVVKBycnaoHP2RA2QUCZNYVygAKCRCcnaoHP2RA2b0uCA Dje2hqXfjfJTBEIrOj/icWXEcdm+hYr5ui/588R2vKzpdoyMFnxmglUS7cezzehBbT1j+A2/sMGrb5 S0enjosV10Fp+piDmkaPPIfKfu0wAnxkd2yJI5YRyAvfridZy4HYoNZd/bKjHAjXYd66w0ghYp3nW2 qHH6SGf7u2NcVe4JZTFUFTzgxoLKP+BAIxOGFdazwfRHGvC39J7mJjm3ipz9wWHqiX5/ZhSYPDoAUE Bz9qGauSkBQYI/6ooBZZ8BwOWi0eYSqQsw/PjcvDXGVjtaO3GiL6cFDoFi/E6q/JqCQcDx7TziuU3r TMpxHPqKoFWtqLTx0SKJu42vQwVvlT
+X-Developer-Key: i=jack@suse.cz; a=openpgp; fpr=93C6099A142276A28BBE35D815BC833443038D8C
+Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hi Dave,
+Convert bcache to use bdev_open_by_path() and pass the handle around.
 
-On 2023/8/8 10:12, Dave Chinner wrote:
-> On Mon, Aug 07, 2023 at 07:09:32PM +0800, Qi Zheng wrote:
->> Currently, we maintain two linear arrays per node per memcg, which are
->> shrinker_info::map and shrinker_info::nr_deferred. And we need to resize
->> them when the shrinker_nr_max is exceeded, that is, allocate a new array,
->> and then copy the old array to the new array, and finally free the old
->> array by RCU.
->>
->> For shrinker_info::map, we do set_bit() under the RCU lock, so we may set
->> the value into the old map which is about to be freed. This may cause the
->> value set to be lost. The current solution is not to copy the old map when
->> resizing, but to set all the corresponding bits in the new map to 1. This
->> solves the data loss problem, but bring the overhead of more pointless
->> loops while doing memcg slab shrink.
->>
->> For shrinker_info::nr_deferred, we will only modify it under the read lock
->> of shrinker_rwsem, so it will not run concurrently with the resizing. But
->> after we make memcg slab shrink lockless, there will be the same data loss
->> problem as shrinker_info::map, and we can't work around it like the map.
->>
->> For such resizable arrays, the most straightforward idea is to change it
->> to xarray, like we did for list_lru [1]. We need to do xa_store() in the
->> list_lru_add()-->set_shrinker_bit(), but this will cause memory
->> allocation, and the list_lru_add() doesn't accept failure. A possible
->> solution is to pre-allocate, but the location of pre-allocation is not
->> well determined.
-> 
-> So you implemented a two level array that preallocates leaf
-> nodes to work around it? It's remarkable complex for what it does,
+CC: linux-bcache@vger.kernel.org
+CC: Coly Li <colyli@suse.de
+CC: Kent Overstreet <kent.overstreet@gmail.com>
+Acked-by: Coly Li <colyli@suse.de>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ drivers/md/bcache/bcache.h |  2 +
+ drivers/md/bcache/super.c  | 78 ++++++++++++++++++++------------------
+ 2 files changed, 43 insertions(+), 37 deletions(-)
 
-Yes, here I have implemented a two level array like the following:
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 5a79bb3c272f..2aa3f2c1f719 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -299,6 +299,7 @@ struct cached_dev {
+ 	struct list_head	list;
+ 	struct bcache_device	disk;
+ 	struct block_device	*bdev;
++	struct bdev_handle	*bdev_handle;
+ 
+ 	struct cache_sb		sb;
+ 	struct cache_sb_disk	*sb_disk;
+@@ -421,6 +422,7 @@ struct cache {
+ 
+ 	struct kobject		kobj;
+ 	struct block_device	*bdev;
++	struct bdev_handle	*bdev_handle;
+ 
+ 	struct task_struct	*alloc_thread;
+ 
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index 0ae2b3676293..c11ac86be72b 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1368,8 +1368,8 @@ static void cached_dev_free(struct closure *cl)
+ 	if (dc->sb_disk)
+ 		put_page(virt_to_page(dc->sb_disk));
+ 
+-	if (!IS_ERR_OR_NULL(dc->bdev))
+-		blkdev_put(dc->bdev, dc);
++	if (dc->bdev_handle)
++		bdev_release(dc->bdev_handle);
+ 
+ 	wake_up(&unregister_wait);
+ 
+@@ -1444,7 +1444,7 @@ static int cached_dev_init(struct cached_dev *dc, unsigned int block_size)
+ /* Cached device - bcache superblock */
+ 
+ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+-				 struct block_device *bdev,
++				 struct bdev_handle *bdev_handle,
+ 				 struct cached_dev *dc)
+ {
+ 	const char *err = "cannot allocate memory";
+@@ -1452,14 +1452,15 @@ static int register_bdev(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+ 	int ret = -ENOMEM;
+ 
+ 	memcpy(&dc->sb, sb, sizeof(struct cache_sb));
+-	dc->bdev = bdev;
++	dc->bdev_handle = bdev_handle;
++	dc->bdev = bdev_handle->bdev;
+ 	dc->sb_disk = sb_disk;
+ 
+ 	if (cached_dev_init(dc, sb->block_size << 9))
+ 		goto err;
+ 
+ 	err = "error creating kobject";
+-	if (kobject_add(&dc->disk.kobj, bdev_kobj(bdev), "bcache"))
++	if (kobject_add(&dc->disk.kobj, bdev_kobj(dc->bdev), "bcache"))
+ 		goto err;
+ 	if (bch_cache_accounting_add_kobjs(&dc->accounting, &dc->disk.kobj))
+ 		goto err;
+@@ -2216,8 +2217,8 @@ void bch_cache_release(struct kobject *kobj)
+ 	if (ca->sb_disk)
+ 		put_page(virt_to_page(ca->sb_disk));
+ 
+-	if (!IS_ERR_OR_NULL(ca->bdev))
+-		blkdev_put(ca->bdev, ca);
++	if (ca->bdev_handle)
++		bdev_release(ca->bdev_handle);
+ 
+ 	kfree(ca);
+ 	module_put(THIS_MODULE);
+@@ -2337,16 +2338,18 @@ static int cache_alloc(struct cache *ca)
+ }
+ 
+ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+-				struct block_device *bdev, struct cache *ca)
++				struct bdev_handle *bdev_handle,
++				struct cache *ca)
+ {
+ 	const char *err = NULL; /* must be set for any error case */
+ 	int ret = 0;
+ 
+ 	memcpy(&ca->sb, sb, sizeof(struct cache_sb));
+-	ca->bdev = bdev;
++	ca->bdev_handle = bdev_handle;
++	ca->bdev = bdev_handle->bdev;
+ 	ca->sb_disk = sb_disk;
+ 
+-	if (bdev_max_discard_sectors((bdev)))
++	if (bdev_max_discard_sectors((bdev_handle->bdev)))
+ 		ca->discard = CACHE_DISCARD(&ca->sb);
+ 
+ 	ret = cache_alloc(ca);
+@@ -2354,10 +2357,10 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+ 		/*
+ 		 * If we failed here, it means ca->kobj is not initialized yet,
+ 		 * kobject_put() won't be called and there is no chance to
+-		 * call blkdev_put() to bdev in bch_cache_release(). So we
+-		 * explicitly call blkdev_put() here.
++		 * call bdev_release() to bdev in bch_cache_release(). So
++		 * we explicitly call bdev_release() here.
+ 		 */
+-		blkdev_put(bdev, ca);
++		bdev_release(bdev_handle);
+ 		if (ret == -ENOMEM)
+ 			err = "cache_alloc(): -ENOMEM";
+ 		else if (ret == -EPERM)
+@@ -2367,7 +2370,7 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+ 		goto err;
+ 	}
+ 
+-	if (kobject_add(&ca->kobj, bdev_kobj(bdev), "bcache")) {
++	if (kobject_add(&ca->kobj, bdev_kobj(bdev_handle->bdev), "bcache")) {
+ 		err = "error calling kobject_add";
+ 		ret = -ENOMEM;
+ 		goto out;
+@@ -2382,14 +2385,14 @@ static int register_cache(struct cache_sb *sb, struct cache_sb_disk *sb_disk,
+ 		goto out;
+ 	}
+ 
+-	pr_info("registered cache device %pg\n", ca->bdev);
++	pr_info("registered cache device %pg\n", ca->bdev_handle->bdev);
+ 
+ out:
+ 	kobject_put(&ca->kobj);
+ 
+ err:
+ 	if (err)
+-		pr_notice("error %pg: %s\n", ca->bdev, err);
++		pr_notice("error %pg: %s\n", ca->bdev_handle->bdev, err);
+ 
+ 	return ret;
+ }
+@@ -2445,7 +2448,7 @@ struct async_reg_args {
+ 	char *path;
+ 	struct cache_sb *sb;
+ 	struct cache_sb_disk *sb_disk;
+-	struct block_device *bdev;
++	struct bdev_handle *bdev_handle;
+ 	void *holder;
+ };
+ 
+@@ -2456,8 +2459,8 @@ static void register_bdev_worker(struct work_struct *work)
+ 		container_of(work, struct async_reg_args, reg_work.work);
+ 
+ 	mutex_lock(&bch_register_lock);
+-	if (register_bdev(args->sb, args->sb_disk, args->bdev, args->holder)
+-	    < 0)
++	if (register_bdev(args->sb, args->sb_disk, args->bdev_handle,
++			  args->holder) < 0)
+ 		fail = true;
+ 	mutex_unlock(&bch_register_lock);
+ 
+@@ -2477,7 +2480,8 @@ static void register_cache_worker(struct work_struct *work)
+ 		container_of(work, struct async_reg_args, reg_work.work);
+ 
+ 	/* blkdev_put() will be called in bch_cache_release() */
+-	if (register_cache(args->sb, args->sb_disk, args->bdev, args->holder))
++	if (register_cache(args->sb, args->sb_disk, args->bdev_handle,
++			   args->holder))
+ 		fail = true;
+ 
+ 	if (fail)
+@@ -2514,7 +2518,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 	char *path = NULL;
+ 	struct cache_sb *sb;
+ 	struct cache_sb_disk *sb_disk;
+-	struct block_device *bdev, *bdev2;
++	struct bdev_handle *bdev_handle, *bdev_handle2;
+ 	void *holder = NULL;
+ 	ssize_t ret;
+ 	bool async_registration = false;
+@@ -2547,15 +2551,15 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 
+ 	ret = -EINVAL;
+ 	err = "failed to open device";
+-	bdev = blkdev_get_by_path(strim(path), BLK_OPEN_READ, NULL, NULL);
+-	if (IS_ERR(bdev))
++	bdev_handle = bdev_open_by_path(strim(path), BLK_OPEN_READ, NULL, NULL);
++	if (IS_ERR(bdev_handle))
+ 		goto out_free_sb;
+ 
+ 	err = "failed to set blocksize";
+-	if (set_blocksize(bdev, 4096))
++	if (set_blocksize(bdev_handle->bdev, 4096))
+ 		goto out_blkdev_put;
+ 
+-	err = read_super(sb, bdev, &sb_disk);
++	err = read_super(sb, bdev_handle->bdev, &sb_disk);
+ 	if (err)
+ 		goto out_blkdev_put;
+ 
+@@ -2567,13 +2571,13 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 	}
+ 
+ 	/* Now reopen in exclusive mode with proper holder */
+-	bdev2 = blkdev_get_by_dev(bdev->bd_dev, BLK_OPEN_READ | BLK_OPEN_WRITE,
+-				  holder, NULL);
+-	blkdev_put(bdev, NULL);
+-	bdev = bdev2;
+-	if (IS_ERR(bdev)) {
+-		ret = PTR_ERR(bdev);
+-		bdev = NULL;
++	bdev_handle2 = bdev_open_by_dev(bdev_handle->bdev->bd_dev,
++			BLK_OPEN_READ | BLK_OPEN_WRITE, holder, NULL);
++	bdev_release(bdev_handle);
++	bdev_handle = bdev_handle2;
++	if (IS_ERR(bdev_handle)) {
++		ret = PTR_ERR(bdev_handle);
++		bdev_handle = NULL;
+ 		if (ret == -EBUSY) {
+ 			dev_t dev;
+ 
+@@ -2608,7 +2612,7 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 		args->path	= path;
+ 		args->sb	= sb;
+ 		args->sb_disk	= sb_disk;
+-		args->bdev	= bdev;
++		args->bdev_handle	= bdev_handle;
+ 		args->holder	= holder;
+ 		register_device_async(args);
+ 		/* No wait and returns to user space */
+@@ -2617,14 +2621,14 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ 
+ 	if (SB_IS_BDEV(sb)) {
+ 		mutex_lock(&bch_register_lock);
+-		ret = register_bdev(sb, sb_disk, bdev, holder);
++		ret = register_bdev(sb, sb_disk, bdev_handle, holder);
+ 		mutex_unlock(&bch_register_lock);
+ 		/* blkdev_put() will be called in cached_dev_free() */
+ 		if (ret < 0)
+ 			goto out_free_sb;
+ 	} else {
+ 		/* blkdev_put() will be called in bch_cache_release() */
+-		ret = register_cache(sb, sb_disk, bdev, holder);
++		ret = register_cache(sb, sb_disk, bdev_handle, holder);
+ 		if (ret)
+ 			goto out_free_sb;
+ 	}
+@@ -2640,8 +2644,8 @@ static ssize_t register_bcache(struct kobject *k, struct kobj_attribute *attr,
+ out_put_sb_page:
+ 	put_page(virt_to_page(sb_disk));
+ out_blkdev_put:
+-	if (bdev)
+-		blkdev_put(bdev, holder);
++	if (bdev_handle)
++		bdev_release(bdev_handle);
+ out_free_sb:
+ 	kfree(sb);
+ out_free_path:
+-- 
+2.35.3
 
-+---------------+--------+--------+-----+
-| shrinker_info | unit 0 | unit 1 | ... | (secondary array)
-+---------------+--------+--------+-----+
-                      ^
-                      |
-                 +---------------+-----+
-                 | nr_deferred[] | map | (leaf array)
-                 +---------------+-----+
-                 (shrinker_info_unit)
-
-The leaf array is never freed unless the memcg is destroyed. The
-secondary array will be resized every time the shrinker id exceeds
-shrinker_nr_max.
-
-> I can't help but think a radix tree using a special holder for
-> nr_deferred values of zero would end up being simpler...
-
-I tried. If the shrinker uses list_lru, then we can preallocate
-xa node where list_lru_one is pre-allocated. But for other types of
-shrinkers, the location of pre-allocation is not easy to determine
-(Such as deferred_split_shrinker). And we can't force all memcg aware
-shrinkers to use list_lru, so I gave up using xarray and implemented the 
-above two-level array.
-
-> 
->> Therefore, this commit chooses to introduce a secondary array for
->> shrinker_info::{map, nr_deferred}, so that we only need to copy this
->> secondary array every time the size is resized. Then even if we get the
->> old secondary array under the RCU lock, the found map and nr_deferred are
->> also true, so no data is lost.
-> 
-> I don't understand what you are trying to describe here. If we get
-> the old array, then don't we get either a stale nr_deferred value,
-> or the update we do gets lost because the next shrinker lookup will
-> find the new array and os the deferred value stored to the old one
-> is never seen again?
-
-As shown above, the leaf array will not be freed when shrinker_info is
-expanded, so the shrinker_info_unit can be indexed from both the old
-and the new shrinker_info->unit[x]. So the updated nr_deferred and map
-will not be lost.
-
-> 
->>
->> [1]. https://lore.kernel.org/all/20220228122126.37293-13-songmuchun@bytedance.com/
->>
->> Signed-off-by: Qi Zheng <zhengqi.arch@bytedance.com>
->> Reviewed-by: Muchun Song <songmuchun@bytedance.com>
->> ---
-> .....
->> diff --git a/mm/shrinker.c b/mm/shrinker.c
->> index a27779ed3798..1911c06b8af5 100644
->> --- a/mm/shrinker.c
->> +++ b/mm/shrinker.c
->> @@ -12,15 +12,50 @@ DECLARE_RWSEM(shrinker_rwsem);
->>   #ifdef CONFIG_MEMCG
->>   static int shrinker_nr_max;
->>   
->> -/* The shrinker_info is expanded in a batch of BITS_PER_LONG */
->> -static inline int shrinker_map_size(int nr_items)
->> +static inline int shrinker_unit_size(int nr_items)
->>   {
->> -	return (DIV_ROUND_UP(nr_items, BITS_PER_LONG) * sizeof(unsigned long));
->> +	return (DIV_ROUND_UP(nr_items, SHRINKER_UNIT_BITS) * sizeof(struct shrinker_info_unit *));
->>   }
->>   
->> -static inline int shrinker_defer_size(int nr_items)
->> +static inline void shrinker_unit_free(struct shrinker_info *info, int start)
->>   {
->> -	return (round_up(nr_items, BITS_PER_LONG) * sizeof(atomic_long_t));
->> +	struct shrinker_info_unit **unit;
->> +	int nr, i;
->> +
->> +	if (!info)
->> +		return;
->> +
->> +	unit = info->unit;
->> +	nr = DIV_ROUND_UP(info->map_nr_max, SHRINKER_UNIT_BITS);
->> +
->> +	for (i = start; i < nr; i++) {
->> +		if (!unit[i])
->> +			break;
->> +
->> +		kvfree(unit[i]);
->> +		unit[i] = NULL;
->> +	}
->> +}
->> +
->> +static inline int shrinker_unit_alloc(struct shrinker_info *new,
->> +				       struct shrinker_info *old, int nid)
->> +{
->> +	struct shrinker_info_unit *unit;
->> +	int nr = DIV_ROUND_UP(new->map_nr_max, SHRINKER_UNIT_BITS);
->> +	int start = old ? DIV_ROUND_UP(old->map_nr_max, SHRINKER_UNIT_BITS) : 0;
->> +	int i;
->> +
->> +	for (i = start; i < nr; i++) {
->> +		unit = kvzalloc_node(sizeof(*unit), GFP_KERNEL, nid);
-> 
-> A unit is 576 bytes. Why is this using kvzalloc_node()?
-
-Ah, will use kzalloc_node() in the next version.
-
-> 
->> +		if (!unit) {
->> +			shrinker_unit_free(new, start);
->> +			return -ENOMEM;
->> +		}
->> +
->> +		new->unit[i] = unit;
->> +	}
->> +
->> +	return 0;
->>   }
->>   
->>   void free_shrinker_info(struct mem_cgroup *memcg)
->> @@ -32,6 +67,7 @@ void free_shrinker_info(struct mem_cgroup *memcg)
->>   	for_each_node(nid) {
->>   		pn = memcg->nodeinfo[nid];
->>   		info = rcu_dereference_protected(pn->shrinker_info, true);
->> +		shrinker_unit_free(info, 0);
->>   		kvfree(info);
->>   		rcu_assign_pointer(pn->shrinker_info, NULL);
->>   	}
-> 
-> Why is this safe? The info and maps are looked up by RCU, so why is
-> freeing them without a RCU grace period expiring safe?
-
-The free_shrinker_info() will be called in alloc_shrinker_info() and
-mem_cgroup_css_free().
-
-In alloc_shrinker_info(), it will only be called in the error path, so
-shrinker_info_unit and shrinker_info can be safely freed.
-
-In mem_cgroup_css_free(), when we get here, the traversal of this memcg
-has ended and will not be found again. That is to say, the corresponding
-shrink_slab() is also over, so shrinker_info_unit and shrinker_info can
-also be safely freed here.
-
-> 
-> Yes, it was safe to do this when it was all under a semaphore, but
-> now the lookup and use is under RCU, so this freeing isn't
-> serialised against lookups anymore...
-> 
-> 
->> @@ -40,28 +76,27 @@ void free_shrinker_info(struct mem_cgroup *memcg)
->>   int alloc_shrinker_info(struct mem_cgroup *memcg)
->>   {
->>   	struct shrinker_info *info;
->> -	int nid, size, ret = 0;
->> -	int map_size, defer_size = 0;
->> +	int nid, ret = 0;
->> +	int array_size = 0;
->>   
->>   	down_write(&shrinker_rwsem);
->> -	map_size = shrinker_map_size(shrinker_nr_max);
->> -	defer_size = shrinker_defer_size(shrinker_nr_max);
->> -	size = map_size + defer_size;
->> +	array_size = shrinker_unit_size(shrinker_nr_max);
->>   	for_each_node(nid) {
->> -		info = kvzalloc_node(sizeof(*info) + size, GFP_KERNEL, nid);
->> -		if (!info) {
->> -			free_shrinker_info(memcg);
->> -			ret = -ENOMEM;
->> -			break;
->> -		}
->> -		info->nr_deferred = (atomic_long_t *)(info + 1);
->> -		info->map = (void *)info->nr_deferred + defer_size;
->> +		info = kvzalloc_node(sizeof(*info) + array_size, GFP_KERNEL, nid);
->> +		if (!info)
->> +			goto err;
->>   		info->map_nr_max = shrinker_nr_max;
->> +		if (shrinker_unit_alloc(info, NULL, nid))
->> +			goto err;
-> 
-> That's going to now do a lot of small memory allocation when we have
-> lots of shrinkers active....
-> 
->> @@ -150,17 +175,34 @@ static int expand_shrinker_info(int new_id)
->>   	return ret;
->>   }
->>   
->> +static inline int shriner_id_to_index(int shrinker_id)
-> 
-> shrinker_id_to_index
-
-Will fix.
-
-> 
->> +{
->> +	return shrinker_id / SHRINKER_UNIT_BITS;
->> +}
->> +
->> +static inline int shriner_id_to_offset(int shrinker_id)
-> 
-> shrinker_id_to_offset
-
-Will fix.
-
-> 
->> +{
->> +	return shrinker_id % SHRINKER_UNIT_BITS;
->> +}
-> 
-> ....
->> @@ -209,26 +251,31 @@ static long xchg_nr_deferred_memcg(int nid, struct shrinker *shrinker,
->>   				   struct mem_cgroup *memcg)
->>   {
->>   	struct shrinker_info *info;
->> +	struct shrinker_info_unit *unit;
->>   
->>   	info = shrinker_info_protected(memcg, nid);
->> -	return atomic_long_xchg(&info->nr_deferred[shrinker->id], 0);
->> +	unit = info->unit[shriner_id_to_index(shrinker->id)];
->> +	return atomic_long_xchg(&unit->nr_deferred[shriner_id_to_offset(shrinker->id)], 0);
->>   }
->>   
->>   static long add_nr_deferred_memcg(long nr, int nid, struct shrinker *shrinker,
->>   				  struct mem_cgroup *memcg)
->>   {
->>   	struct shrinker_info *info;
->> +	struct shrinker_info_unit *unit;
->>   
->>   	info = shrinker_info_protected(memcg, nid);
->> -	return atomic_long_add_return(nr, &info->nr_deferred[shrinker->id]);
->> +	unit = info->unit[shriner_id_to_index(shrinker->id)];
->> +	return atomic_long_add_return(nr, &unit->nr_deferred[shriner_id_to_offset(shrinker->id)]);
->>   }
->>   
->>   void reparent_shrinker_deferred(struct mem_cgroup *memcg)
->>   {
->> -	int i, nid;
->> +	int nid, index, offset;
->>   	long nr;
->>   	struct mem_cgroup *parent;
->>   	struct shrinker_info *child_info, *parent_info;
->> +	struct shrinker_info_unit *child_unit, *parent_unit;
->>   
->>   	parent = parent_mem_cgroup(memcg);
->>   	if (!parent)
->> @@ -239,9 +286,13 @@ void reparent_shrinker_deferred(struct mem_cgroup *memcg)
->>   	for_each_node(nid) {
->>   		child_info = shrinker_info_protected(memcg, nid);
->>   		parent_info = shrinker_info_protected(parent, nid);
->> -		for (i = 0; i < child_info->map_nr_max; i++) {
->> -			nr = atomic_long_read(&child_info->nr_deferred[i]);
->> -			atomic_long_add(nr, &parent_info->nr_deferred[i]);
->> +		for (index = 0; index < shriner_id_to_index(child_info->map_nr_max); index++) {
->> +			child_unit = child_info->unit[index];
->> +			parent_unit = parent_info->unit[index];
->> +			for (offset = 0; offset < SHRINKER_UNIT_BITS; offset++) {
->> +				nr = atomic_long_read(&child_unit->nr_deferred[offset]);
->> +				atomic_long_add(nr, &parent_unit->nr_deferred[offset]);
->> +			}
->>   		}
->>   	}
->>   	up_read(&shrinker_rwsem);
->> @@ -407,7 +458,7 @@ static unsigned long shrink_slab_memcg(gfp_t gfp_mask, int nid,
->>   {
->>   	struct shrinker_info *info;
->>   	unsigned long ret, freed = 0;
->> -	int i;
->> +	int offset, index = 0;
->>   
->>   	if (!mem_cgroup_online(memcg))
->>   		return 0;
->> @@ -419,56 +470,63 @@ static unsigned long shrink_slab_memcg(gfp_t gfp_mask, int nid,
->>   	if (unlikely(!info))
->>   		goto unlock;
->>   
->> -	for_each_set_bit(i, info->map, info->map_nr_max) {
->> -		struct shrink_control sc = {
->> -			.gfp_mask = gfp_mask,
->> -			.nid = nid,
->> -			.memcg = memcg,
->> -		};
->> -		struct shrinker *shrinker;
->> +	for (; index < shriner_id_to_index(info->map_nr_max); index++) {
->> +		struct shrinker_info_unit *unit;
-> 
-> This adds another layer of indent to shrink_slab_memcg(). Please
-> factor it first so that the code ends up being readable. Doing that
-> first as a separate patch will also make the actual algorithm
-> changes in this patch be much more obvious - this huge hunk of
-> diff is pretty much impossible to review...
-
-OK, I will send this patch together with PATCH v4 01/02/03/43 as
-a single cleanup patchset.
-
-Thanks,
-Qi
-
-> 
-> -Dave.
