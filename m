@@ -2,188 +2,181 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id 0A4E4C3DA66
-	for <linux-bcache@archiver.kernel.org>; Wed, 23 Aug 2023 10:49:32 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 646CEC3DA6F
+	for <linux-bcache@archiver.kernel.org>; Thu, 24 Aug 2023 03:50:14 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S234082AbjHWKta (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Wed, 23 Aug 2023 06:49:30 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:34026 "EHLO
+        id S234354AbjHXDtn (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
+        Wed, 23 Aug 2023 23:49:43 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:58388 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S233987AbjHWKt1 (ORCPT
+        with ESMTP id S236657AbjHXDsd (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Wed, 23 Aug 2023 06:49:27 -0400
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [IPv6:2001:67c:2178:6::1c])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id D141810CC;
-        Wed, 23 Aug 2023 03:49:01 -0700 (PDT)
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by smtp-out1.suse.de (Postfix) with ESMTPS id 1F89B21EDA;
-        Wed, 23 Aug 2023 10:48:58 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.cz; s=susede2_rsa;
-        t=1692787738; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
-        bh=czbolVCNdiRIhtzRMydBVuDGtNoMVf0uK7rI8VUw4Wg=;
-        b=cea+STFByaV36NWMjg8zifEKP9bUJaVFrhrdsQ1BHrDjc+6YKTyOk0XUYe/aGcn7z1GdBW
-        Sp5Xg8/PcrR30C9G8GkmtNgleVHgoFT9VpO4HmYAD81nOJQ/2ts6Z2GJ97FCPouubZqTfM
-        7Ki5cRwEgj/8O3iByHVAhCDVhrdgZS0=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.cz;
-        s=susede2_ed25519; t=1692787738;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:  content-transfer-encoding:content-transfer-encoding;
-        bh=czbolVCNdiRIhtzRMydBVuDGtNoMVf0uK7rI8VUw4Wg=;
-        b=ccloVX/Tox8MPvEstSnU1swyihs7KV2puBqol0j3M4wpbT7Z67JF74RuKmYp8i9zsSQ2aK
-        Q/J06H24OiSZjOBw==
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id 0486813592;
-        Wed, 23 Aug 2023 10:48:58 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([192.168.254.65])
-        by imap2.suse-dmz.suse.de with ESMTPSA
-        id hdjcABrk5WQsIAAAMHmgww
-        (envelope-from <jack@suse.cz>); Wed, 23 Aug 2023 10:48:58 +0000
-Received: by quack3.suse.cz (Postfix, from userid 1000)
-        id 0E216A0774; Wed, 23 Aug 2023 12:48:57 +0200 (CEST)
-From:   Jan Kara <jack@suse.cz>
-To:     Christian Brauner <brauner@kernel.org>
-Cc:     Jens Axboe <axboe@kernel.dk>, <linux-fsdevel@vger.kernel.org>,
-        <linux-block@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
-        Alasdair Kergon <agk@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anna Schumaker <anna@kernel.org>, Chao Yu <chao@kernel.org>,
-        Christian Borntraeger <borntraeger@linux.ibm.com>,
-        "Darrick J. Wong" <djwong@kernel.org>,
-        Dave Kleikamp <shaggy@kernel.org>,
-        David Sterba <dsterba@suse.com>, dm-devel@redhat.com,
-        drbd-dev@lists.linbit.com, Gao Xiang <xiang@kernel.org>,
-        Jack Wang <jinpu.wang@ionos.com>,
-        Jaegeuk Kim <jaegeuk@kernel.org>,
-        jfs-discussion@lists.sourceforge.net,
-        Joern Engel <joern@lazybastard.org>,
-        Joseph Qi <joseph.qi@linux.alibaba.com>,
+        Wed, 23 Aug 2023 23:48:33 -0400
+Received: from mail-pg1-x52c.google.com (mail-pg1-x52c.google.com [IPv6:2607:f8b0:4864:20::52c])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id C4CAF173C
+        for <linux-bcache@vger.kernel.org>; Wed, 23 Aug 2023 20:47:42 -0700 (PDT)
+Received: by mail-pg1-x52c.google.com with SMTP id 41be03b00d2f7-5657ca46a56so833099a12.0
+        for <linux-bcache@vger.kernel.org>; Wed, 23 Aug 2023 20:47:42 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=bytedance.com; s=google; t=1692848859; x=1693453659;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=Fa4A7mARo9UASqTNF5nYV+l5Qm4MYZjHRGtSJYP4Y4U=;
+        b=d1wXSjPKCFEr8z/p/byM5kRgXe8PbCA56N3zhbP1G8RyclSiP3MfoWO1VjUBFEfLu8
+         Jv8srfHUD4wK1EF90VWGYzVLQFM3cgUH6eOrKYXPD/cVeTsc5WoF/vQIJUe26UY/Ow3z
+         ENqa6anDehpg55dE40ykBpXSJ3cGdh/QxK3Pyn1kpms/fmsU04YXRAopjkNGU4+76Pq8
+         3Y9zyUnnRNr/yzJsGa3A3VHXMPXaHq1XkZzHyi87cd+Y6LY4TdHFbhSuzevUvRulOVyP
+         sd5aajfZ70TnWEP93V/mOvFrzj1icTTQnnd4xRKj7zmyKuiZMzeQiMH8vplG2YqtFRs+
+         1NdA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20221208; t=1692848859; x=1693453659;
+        h=content-transfer-encoding:mime-version:references:in-reply-to
+         :message-id:date:subject:cc:to:from:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=Fa4A7mARo9UASqTNF5nYV+l5Qm4MYZjHRGtSJYP4Y4U=;
+        b=JeijgKYKhA0Snw957+TWSQPL0XfkJuLCgij9XkFRabOksHYtNVLSf1qCZBpug7sz5z
+         6ZYjwmh46vZwjIuMAQX4oHBrj1cZbWUXl/wmOKRDNYuco2bFSowB+kqpHWaJF08vhPw+
+         3Q5GrnijCcSGJ6X4VNJeFO2TM2ae+JY2rJ9HB0rOPtlZgJDxaJfjxCqqOGAWAEA43ucm
+         WANdeKYMziWYG0/tSI1bdHaQD4xDs0BHGDCR6gmnmOi1CG5UCO8RERYrGSFab725jLWH
+         Ali7pYispv0CGscDUDOOFHLIkhSuig5RSIEmlUpIk0I7VOxO9x6RAAmQ0ni+ldKyrb1g
+         th7w==
+X-Gm-Message-State: AOJu0YyTF+bbk6n4i2eWGvaMqwecon1+l5kyz1LfKI8BCJkIeXJpuA0C
+        jq76lTYK5GDRM8i53Tb9WhXaCg==
+X-Google-Smtp-Source: AGHT+IF3djZSCs4jg/UQUu42D+/WSQ6VNsO0pvWsZu5aji18gl8AMoEFfV4hmz2xAgIkNtsfI3eNSg==
+X-Received: by 2002:a05:6a20:3941:b0:111:a0e5:d2b7 with SMTP id r1-20020a056a20394100b00111a0e5d2b7mr16582686pzg.4.1692848858975;
+        Wed, 23 Aug 2023 20:47:38 -0700 (PDT)
+Received: from C02DW0BEMD6R.bytedance.net ([203.208.167.146])
+        by smtp.gmail.com with ESMTPSA id t6-20020a63b246000000b005579f12a238sm10533157pgo.86.2023.08.23.20.47.30
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Wed, 23 Aug 2023 20:47:38 -0700 (PDT)
+From:   Qi Zheng <zhengqi.arch@bytedance.com>
+To:     akpm@linux-foundation.org, david@fromorbit.com, tkhai@ya.ru,
+        vbabka@suse.cz, roman.gushchin@linux.dev, djwong@kernel.org,
+        brauner@kernel.org, paulmck@kernel.org, tytso@mit.edu,
+        steven.price@arm.com, cel@kernel.org, senozhatsky@chromium.org,
+        yujie.liu@intel.com, gregkh@linuxfoundation.org,
+        muchun.song@linux.dev
+Cc:     linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org,
+        Qi Zheng <zhengqi.arch@bytedance.com>,
+        Coly Li <colyli@suse.de>,
         Kent Overstreet <kent.overstreet@gmail.com>,
-        linux-bcache@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-erofs@lists.ozlabs.org, linux-ext4@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net, linux-mm@kvack.org,
-        linux-mtd@lists.infradead.org, linux-nfs@vger.kernel.org,
-        linux-nilfs@vger.kernel.org, linux-nvme@lists.infradead.org,
-        linux-pm@vger.kernel.org, linux-raid@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-xfs@vger.kernel.org,
-        "Md. Haris Iqbal" <haris.iqbal@ionos.com>,
-        Mike Snitzer <snitzer@kernel.org>,
-        Minchan Kim <minchan@kernel.org>, ocfs2-devel@oss.oracle.com,
-        reiserfs-devel@vger.kernel.org,
-        Sergey Senozhatsky <senozhatsky@chromium.org>,
-        Song Liu <song@kernel.org>,
-        Sven Schnelle <svens@linux.ibm.com>,
-        target-devel@vger.kernel.org, Ted Tso <tytso@mit.edu>,
-        Trond Myklebust <trond.myklebust@hammerspace.com>,
-        xen-devel@lists.xenproject.org
-Subject: [PATCH v3 0/29] block: Make blkdev_get_by_*() return handle
-Date:   Wed, 23 Aug 2023 12:48:11 +0200
-Message-Id: <20230818123232.2269-1-jack@suse.cz>
-X-Mailer: git-send-email 2.35.3
+        linux-bcache@vger.kernel.org
+Subject: [PATCH v5 26/45] bcache: dynamically allocate the md-bcache shrinker
+Date:   Thu, 24 Aug 2023 11:42:45 +0800
+Message-Id: <20230824034304.37411-27-zhengqi.arch@bytedance.com>
+X-Mailer: git-send-email 2.24.3 (Apple Git-128)
+In-Reply-To: <20230824034304.37411-1-zhengqi.arch@bytedance.com>
+References: <20230824034304.37411-1-zhengqi.arch@bytedance.com>
 MIME-Version: 1.0
-X-Developer-Signature: v=1; a=openpgp-sha256; l=3781; i=jack@suse.cz; h=from:subject:message-id; bh=cMBb8bZk7tVGWo+BW5D78pH+ebOvNFFLsxdd3Uvzd/w=; b=owEBbQGS/pANAwAIAZydqgc/ZEDZAcsmYgBk5ePhrEMij+4xGF6e8K//xuADex0OXIFxlpO0VT6g 42vu5BeJATMEAAEIAB0WIQSrWdEr1p4yirVVKBycnaoHP2RA2QUCZOXj4QAKCRCcnaoHP2RA2RqoB/ 91nt6Qs4NSStbt9M1WXY1akBbAqu+Bv3ZXdZ6WMy9kKyYwY7zCnyQziikP60M2MjCrud4NP9os4YAr 4uXdyOyVcdJ9TjbciDgTyoYdfkFl7g+rZhj1pyPeep1xmvDMn3QtNJ28EbhLegdC+nkmL6+bxPGEwd IdsuBKGrdIIEryWwhBq0+BWowL3nzmQjs5GoDtXLoHADfHYhgC8RKYK/4FaML1/SsAZRvGJ/C8wFB4 JUGsDGFE4CJx9XgiRx407CSIGNSoCciqBpMaMA7x/dbq9Tu76xcqN4/DZrtT2qyG4I7GZYetndEl3F vWMZMQFPauZmB2S1r30HY+nn2IOCrM
-X-Developer-Key: i=jack@suse.cz; a=openpgp; fpr=93C6099A142276A28BBE35D815BC833443038D8C
 Content-Transfer-Encoding: 8bit
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
-Hello,
+In preparation for implementing lockless slab shrink, use new APIs to
+dynamically allocate the md-bcache shrinker, so that it can be freed
+asynchronously via RCU. Then it doesn't need to wait for RCU read-side
+critical section when releasing the struct cache_set.
 
-this is a v3 of the patch series which implements the idea of blkdev_get_by_*()
-calls returning bdev_handle which is then passed to blkdev_put() [1]. This
-makes the get and put calls for bdevs more obviously matching and allows us to
-propagate context from get to put without having to modify all the users
-(again!). In particular I need to propagate used open flags to blkdev_put() to
-be able count writeable opens and add support for blocking writes to mounted
-block devices. I'll send that series separately.
-
-The series is based on Christian's vfs tree as of today as there is quite
-some overlap. Patches have passed some reasonable testing - I've tested block
-changes, md, dm, bcache, xfs, btrfs, ext4, swap. More testing or review is
-always welcome. Thanks! I've pushed out the full branch to:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git bdev_handle
-
-to ease review / testing. Since there were not many comments for v2 and
-Christoph has acked the series I think we should start discussing how to merge
-the series. Most collisions with this series seem to happen in the filesystems
-area so VFS tree would seem as the least painful way to merge this. Jens,
-are you OK with that?
-
-Changes since v2:
-* Rebased on top of current vfs tree
-* Added some acks
-* Reflected minor nits from Christoph
-* Added missing conversion of blkdev_put() calls in cramfs and erofs
-* Fixed possible leak of bdev handle in xfs if logdev is the same as fs dev
-
-Changes since v1:
-* Rebased on top of current vfs tree
-* Renamed final functions to bdev_open_by_*() and bdev_release()
-* Fixed detection of exclusive open in blkdev_ioctl() and blkdev_fallocate()
-* Fixed swap conversion to properly reinitialize swap_info->bdev_handle
-* Fixed xfs conversion to not oops with rtdev without logdev
-* Couple other minor fixups
-
-								Honza
-
-[1] https://lore.kernel.org/all/ZJGNsVDhZx0Xgs2H@infradead.org
-
-CC: Alasdair Kergon <agk@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Anna Schumaker <anna@kernel.org>
-CC: Chao Yu <chao@kernel.org>
-CC: Christian Borntraeger <borntraeger@linux.ibm.com>
-CC: Coly Li <colyli@suse.de
-CC: "Darrick J. Wong" <djwong@kernel.org>
-CC: Dave Kleikamp <shaggy@kernel.org>
-CC: David Sterba <dsterba@suse.com>
-CC: dm-devel@redhat.com
-CC: drbd-dev@lists.linbit.com
-CC: Gao Xiang <xiang@kernel.org>
-CC: Jack Wang <jinpu.wang@ionos.com>
-CC: Jaegeuk Kim <jaegeuk@kernel.org>
-CC: jfs-discussion@lists.sourceforge.net
-CC: Joern Engel <joern@lazybastard.org>
-CC: Joseph Qi <joseph.qi@linux.alibaba.com>
+Signed-off-by: Qi Zheng <zhengqi.arch@bytedance.com>
+CC: Coly Li <colyli@suse.de>
 CC: Kent Overstreet <kent.overstreet@gmail.com>
 CC: linux-bcache@vger.kernel.org
-CC: linux-btrfs@vger.kernel.org
-CC: linux-erofs@lists.ozlabs.org
-CC: <linux-ext4@vger.kernel.org>
-CC: linux-f2fs-devel@lists.sourceforge.net
-CC: linux-mm@kvack.org
-CC: linux-mtd@lists.infradead.org
-CC: linux-nfs@vger.kernel.org
-CC: linux-nilfs@vger.kernel.org
-CC: linux-nvme@lists.infradead.org
-CC: linux-pm@vger.kernel.org
-CC: linux-raid@vger.kernel.org
-CC: linux-s390@vger.kernel.org
-CC: linux-scsi@vger.kernel.org
-CC: linux-xfs@vger.kernel.org
-CC: "Md. Haris Iqbal" <haris.iqbal@ionos.com>
-CC: Mike Snitzer <snitzer@kernel.org>
-CC: Minchan Kim <minchan@kernel.org>
-CC: ocfs2-devel@oss.oracle.com
-CC: reiserfs-devel@vger.kernel.org
-CC: Sergey Senozhatsky <senozhatsky@chromium.org>
-CC: Song Liu <song@kernel.org>
-CC: Sven Schnelle <svens@linux.ibm.com>
-CC: target-devel@vger.kernel.org
-CC: Ted Tso <tytso@mit.edu>
-CC: Trond Myklebust <trond.myklebust@hammerspace.com>
-CC: xen-devel@lists.xenproject.org
+---
+ drivers/md/bcache/bcache.h |  2 +-
+ drivers/md/bcache/btree.c  | 27 ++++++++++++++++-----------
+ drivers/md/bcache/sysfs.c  |  3 ++-
+ 3 files changed, 19 insertions(+), 13 deletions(-)
 
-Previous versions:
-Link: http://lore.kernel.org/r/20230629165206.383-1-jack@suse.cz # v1
-Link: http://lore.kernel.org/r/20230810171429.31759-1-jack@suse.cz # v2
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index 5a79bb3c272f..c622bc50f81b 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -541,7 +541,7 @@ struct cache_set {
+ 	struct bio_set		bio_split;
+ 
+ 	/* For the btree cache */
+-	struct shrinker		shrink;
++	struct shrinker		*shrink;
+ 
+ 	/* For the btree cache and anything allocation related */
+ 	struct mutex		bucket_lock;
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index fd121a61f17c..ae5cbb55861f 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -667,7 +667,7 @@ static int mca_reap(struct btree *b, unsigned int min_order, bool flush)
+ static unsigned long bch_mca_scan(struct shrinker *shrink,
+ 				  struct shrink_control *sc)
+ {
+-	struct cache_set *c = container_of(shrink, struct cache_set, shrink);
++	struct cache_set *c = shrink->private_data;
+ 	struct btree *b, *t;
+ 	unsigned long i, nr = sc->nr_to_scan;
+ 	unsigned long freed = 0;
+@@ -734,7 +734,7 @@ static unsigned long bch_mca_scan(struct shrinker *shrink,
+ static unsigned long bch_mca_count(struct shrinker *shrink,
+ 				   struct shrink_control *sc)
+ {
+-	struct cache_set *c = container_of(shrink, struct cache_set, shrink);
++	struct cache_set *c = shrink->private_data;
+ 
+ 	if (c->shrinker_disabled)
+ 		return 0;
+@@ -752,8 +752,8 @@ void bch_btree_cache_free(struct cache_set *c)
+ 
+ 	closure_init_stack(&cl);
+ 
+-	if (c->shrink.list.next)
+-		unregister_shrinker(&c->shrink);
++	if (c->shrink)
++		shrinker_free(c->shrink);
+ 
+ 	mutex_lock(&c->bucket_lock);
+ 
+@@ -828,14 +828,19 @@ int bch_btree_cache_alloc(struct cache_set *c)
+ 		c->verify_data = NULL;
+ #endif
+ 
+-	c->shrink.count_objects = bch_mca_count;
+-	c->shrink.scan_objects = bch_mca_scan;
+-	c->shrink.seeks = 4;
+-	c->shrink.batch = c->btree_pages * 2;
++	c->shrink = shrinker_alloc(0, "md-bcache:%pU", c->set_uuid);
++	if (!c->shrink) {
++		pr_warn("bcache: %s: could not allocate shrinker\n", __func__);
++		return 0;
++	}
++
++	c->shrink->count_objects = bch_mca_count;
++	c->shrink->scan_objects = bch_mca_scan;
++	c->shrink->seeks = 4;
++	c->shrink->batch = c->btree_pages * 2;
++	c->shrink->private_data = c;
+ 
+-	if (register_shrinker(&c->shrink, "md-bcache:%pU", c->set_uuid))
+-		pr_warn("bcache: %s: could not register shrinker\n",
+-				__func__);
++	shrinker_register(c->shrink);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index 0e2c1880f60b..45d8af755de6 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -866,7 +866,8 @@ STORE(__bch_cache_set)
+ 
+ 		sc.gfp_mask = GFP_KERNEL;
+ 		sc.nr_to_scan = strtoul_or_return(buf);
+-		c->shrink.scan_objects(&c->shrink, &sc);
++		if (c->shrink)
++			c->shrink->scan_objects(c->shrink, &sc);
+ 	}
+ 
+ 	sysfs_strtoul_clamp(congested_read_threshold_us,
+-- 
+2.30.2
+
