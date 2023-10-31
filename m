@@ -2,111 +2,105 @@ Return-Path: <linux-bcache-owner@vger.kernel.org>
 X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
 	aws-us-west-2-korg-lkml-1.web.codeaurora.org
 Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id DD2B5C4332F
-	for <linux-bcache@archiver.kernel.org>; Mon, 30 Oct 2023 07:38:25 +0000 (UTC)
+	by smtp.lore.kernel.org (Postfix) with ESMTP id 705EEC4167B
+	for <linux-bcache@archiver.kernel.org>; Tue, 31 Oct 2023 16:36:52 +0000 (UTC)
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S231615AbjJ3Hi0 (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Mon, 30 Oct 2023 03:38:26 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:40032 "EHLO
+        id S1346682AbjJaQgw (ORCPT
+        <rfc822;linux-bcache@archiver.kernel.org>);
+        Tue, 31 Oct 2023 12:36:52 -0400
+Received: from lindbergh.monkeyblade.net ([23.128.96.19]:55148 "EHLO
         lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S229688AbjJ3Hi0 (ORCPT
+        with ESMTP id S1346693AbjJaQgJ (ORCPT
         <rfc822;linux-bcache@vger.kernel.org>);
-        Mon, 30 Oct 2023 03:38:26 -0400
-Received: from smtp-out2.suse.de (smtp-out2.suse.de [IPv6:2001:67c:2178:6::1d])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 73FF3A7;
-        Mon, 30 Oct 2023 00:38:23 -0700 (PDT)
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by smtp-out2.suse.de (Postfix) with ESMTPS id 1C6791FEDD;
-        Mon, 30 Oct 2023 07:38:22 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-        t=1698651502; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
+        Tue, 31 Oct 2023 12:36:09 -0400
+Received: from out-185.mta1.migadu.com (out-185.mta1.migadu.com [IPv6:2001:41d0:203:375::b9])
+        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 51E6010F3
+        for <linux-bcache@vger.kernel.org>; Tue, 31 Oct 2023 09:33:33 -0700 (PDT)
+X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
+        t=1698769504;
+        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+         to:to:cc:cc:mime-version:mime-version:
          content-transfer-encoding:content-transfer-encoding:
          in-reply-to:in-reply-to:references:references;
-        bh=POOUX/d8rILNu4kY0NehNla8wNVcSgPqGmuaJwG6QVM=;
-        b=jUrdh3/4R7K4A92i22xlDUBdw2eLsqEQnrpPTseRqpJcHtqBpx6Pck/IAWiGnRK713jayu
-        lePMtm7c22JlK5ojW/8NP313b+fPW9dwAjvbYCFx/xMPatUT6V4HNNFZ8kZ6Yv8n41FoWP
-        qTLiByj1JVt65kAEkOCkJAi/qsNhwSA=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-        s=susede2_ed25519; t=1698651502;
-        h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-         mime-version:mime-version:content-type:content-type:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=POOUX/d8rILNu4kY0NehNla8wNVcSgPqGmuaJwG6QVM=;
-        b=sm4XNJ6sypINzyvdn2Ioc9TOg+IS7DwUrvRnGW2T09ld40zitJBgXufO3OpnsawWnwP482
-        m7vS2E8gr3XeaiAw==
-Received: from imap2.suse-dmz.suse.de (imap2.suse-dmz.suse.de [192.168.254.74])
-        (using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-         key-exchange X25519 server-signature ECDSA (P-521) server-digest SHA512)
-        (No client certificate requested)
-        by imap2.suse-dmz.suse.de (Postfix) with ESMTPS id CE169138F8;
-        Mon, 30 Oct 2023 07:38:20 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([192.168.254.65])
-        by imap2.suse-dmz.suse.de with ESMTPSA
-        id P3wUJmxdP2V+UAAAMHmgww
-        (envelope-from <colyli@suse.de>); Mon, 30 Oct 2023 07:38:20 +0000
-Content-Type: text/plain;
-        charset=utf-8
-Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3774.200.91.1.1\))
-Subject: Re: [PATCH] bcache: Optimize sysfs_hprint()
-From:   Coly Li <colyli@suse.de>
-In-Reply-To: <9b82413f1ca0b924cc139d945777e32dd22ffe41.1698575385.git.christophe.jaillet@wanadoo.fr>
-Date:   Mon, 30 Oct 2023 15:38:08 +0800
-Cc:     Kent Overstreet <kent.overstreet@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-bcache@vger.kernel.org
-Content-Transfer-Encoding: quoted-printable
-Message-Id: <BF96F92E-B483-4FC7-B4DB-B9D76E44D9A7@suse.de>
-References: <9b82413f1ca0b924cc139d945777e32dd22ffe41.1698575385.git.christophe.jaillet@wanadoo.fr>
-To:     Christophe JAILLET <christophe.jaillet@wanadoo.fr>
-X-Mailer: Apple Mail (2.3774.200.91.1.1)
+        bh=uqS4BEhMwIAHIltUcK28FXSk9fUQ8Tpbi82lSqupklQ=;
+        b=K5Mp9HWE+8OC7T5meVobLfJ1oI2LVTPbvxBoqgjHcOCONI7BRC5vOSnUg9GleKvbB4J/2z
+        L6LeEXjLzfOQMxtlyd3dcCu2phfMvDR6Dz+2DagJft6vfXhQM6ufOLoiTQhICndN4WDQ0a
+        PFRdpoinlHfyiB6W41aR/04eh5AMpvY=
+From:   Kent Overstreet <kent.overstreet@linux.dev>
+To:     linux-bcache@vger.kernel.org, linux-bcachefs@vger.kernel.org
+Cc:     Kent Overstreet <kent.overstreet@linux.dev>
+Subject: [PATCH 1/2] closures: Better memory barriers
+Date:   Tue, 31 Oct 2023 12:24:51 -0400
+Message-ID: <20231031162454.3761482-2-kent.overstreet@linux.dev>
+In-Reply-To: <20231031162454.3761482-1-kent.overstreet@linux.dev>
+References: <20231031162454.3761482-1-kent.overstreet@linux.dev>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+X-Migadu-Flow: FLOW_OUT
 Precedence: bulk
 List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
 
+atomic_(dec|sub)_return_release() are a thing now - use them.
 
+Also, delete the useless barrier in set_closure_fn(): it's redundant
+with the memory barrier in closure_put(0.
 
-> 2023=E5=B9=B410=E6=9C=8829=E6=97=A5 18:30=EF=BC=8CChristophe JAILLET =
-<christophe.jaillet@wanadoo.fr> =E5=86=99=E9=81=93=EF=BC=9A
->=20
-> The size of what is in 'buf' is already computed by bch_hprint(), so =
-skip
-> these bytes when calling strcat().
->=20
-> This easily saves a few cycles. (should it matter)
->=20
-> Signed-off-by: Christophe JAILLET <christophe.jaillet@wanadoo.fr>
+Since closure_put() would now otherwise just have a release barrier, we
+also need a new barrier when the ref hits 0 -
+smp_acquire__after_ctrl_dep().
 
-Your change does save several cpu cycles, but hurts the readability. =
-This is not hot code path, just let strcat to do what it was designed =
-for.=20
+Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
+---
+ include/linux/closure.h | 2 --
+ lib/closure.c           | 6 ++++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-Thanks.
-
-Coly Li
-
-> ---
-> drivers/md/bcache/sysfs.h | 2 +-
-> 1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/md/bcache/sysfs.h b/drivers/md/bcache/sysfs.h
-> index 65b8bd975ab1..798bcbeab0bb 100644
-> --- a/drivers/md/bcache/sysfs.h
-> +++ b/drivers/md/bcache/sysfs.h
-> @@ -78,7 +78,7 @@ do { \
-> do { \
-> if (attr =3D=3D &sysfs_ ## file) { \
-> ssize_t ret =3D bch_hprint(buf, val); \
-> - strcat(buf, "\n"); \
-> + strcat(buf + ret, "\n"); \
-> return ret + 1; \
-> } \
-> } while (0)
-> --=20
-> 2.34.1
->=20
+diff --git a/include/linux/closure.h b/include/linux/closure.h
+index 722a586bb224..bdab17050bc8 100644
+--- a/include/linux/closure.h
++++ b/include/linux/closure.h
+@@ -233,8 +233,6 @@ static inline void set_closure_fn(struct closure *cl, closure_fn *fn,
+ 	closure_set_ip(cl);
+ 	cl->fn = fn;
+ 	cl->wq = wq;
+-	/* between atomic_dec() in closure_put() */
+-	smp_mb__before_atomic();
+ }
+ 
+ static inline void closure_queue(struct closure *cl)
+diff --git a/lib/closure.c b/lib/closure.c
+index 0855e698ced1..501dfa277b59 100644
+--- a/lib/closure.c
++++ b/lib/closure.c
+@@ -21,6 +21,8 @@ static inline void closure_put_after_sub(struct closure *cl, int flags)
+ 	BUG_ON(!r && (flags & ~CLOSURE_DESTRUCTOR));
+ 
+ 	if (!r) {
++		smp_acquire__after_ctrl_dep();
++
+ 		if (cl->fn && !(flags & CLOSURE_DESTRUCTOR)) {
+ 			atomic_set(&cl->remaining,
+ 				   CLOSURE_REMAINING_INITIALIZER);
+@@ -43,7 +45,7 @@ static inline void closure_put_after_sub(struct closure *cl, int flags)
+ /* For clearing flags with the same atomic op as a put */
+ void closure_sub(struct closure *cl, int v)
+ {
+-	closure_put_after_sub(cl, atomic_sub_return(v, &cl->remaining));
++	closure_put_after_sub(cl, atomic_sub_return_release(v, &cl->remaining));
+ }
+ EXPORT_SYMBOL(closure_sub);
+ 
+@@ -52,7 +54,7 @@ EXPORT_SYMBOL(closure_sub);
+  */
+ void closure_put(struct closure *cl)
+ {
+-	closure_put_after_sub(cl, atomic_dec_return(&cl->remaining));
++	closure_put_after_sub(cl, atomic_dec_return_release(&cl->remaining));
+ }
+ EXPORT_SYMBOL(closure_put);
+ 
+-- 
+2.42.0
 
