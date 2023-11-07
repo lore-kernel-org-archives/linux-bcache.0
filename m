@@ -1,137 +1,46 @@
-Return-Path: <linux-bcache-owner@vger.kernel.org>
-X-Spam-Checker-Version: SpamAssassin 3.4.0 (2014-02-07) on
-	aws-us-west-2-korg-lkml-1.web.codeaurora.org
-Received: from vger.kernel.org (vger.kernel.org [23.128.96.18])
-	by smtp.lore.kernel.org (Postfix) with ESMTP id AD958C4332F
-	for <linux-bcache@archiver.kernel.org>; Tue, 31 Oct 2023 16:45:43 +0000 (UTC)
-Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S236041AbjJaQpn (ORCPT <rfc822;linux-bcache@archiver.kernel.org>);
-        Tue, 31 Oct 2023 12:45:43 -0400
-Received: from lindbergh.monkeyblade.net ([23.128.96.19]:37096 "EHLO
-        lindbergh.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S236016AbjJaQpT (ORCPT
-        <rfc822;linux-bcache@vger.kernel.org>);
-        Tue, 31 Oct 2023 12:45:19 -0400
-X-Greylist: delayed 508 seconds by postgrey-1.37 at lindbergh.monkeyblade.net; Tue, 31 Oct 2023 09:33:33 PDT
-Received: from out-189.mta1.migadu.com (out-189.mta1.migadu.com [IPv6:2001:41d0:203:375::bd])
-        by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 8049610DB
-        for <linux-bcache@vger.kernel.org>; Tue, 31 Oct 2023 09:33:33 -0700 (PDT)
-X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
-        t=1698769504;
-        h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-         to:to:cc:cc:mime-version:mime-version:
-         content-transfer-encoding:content-transfer-encoding:
-         in-reply-to:in-reply-to:references:references;
-        bh=gvYk+9/dG37v3g+Ii65HjWgJMTMFcvuM3jdJSXX0CXk=;
-        b=CbdbADqoGEsRct7fWVPKuztstOPiFqViDDm4f8FWAtUUUoMd4aBx0mK0FTsQrA+9Z2QBCz
-        c8dZlBlTYQ7jiFzYPN5Tbkt7h2O3TXTNS+Bt2SNkiDBDAJRah5KSWPMCi1eUp0v95p/1yG
-        ZI8XLcEdA6jib7sZInXQvBzrxgaM3Xc=
-From:   Kent Overstreet <kent.overstreet@linux.dev>
-To:     linux-bcache@vger.kernel.org, linux-bcachefs@vger.kernel.org
-Cc:     Kent Overstreet <kent.overstreet@linux.dev>
-Subject: [PATCH 2/2] closures: Fix race in closure_sync()
-Date:   Tue, 31 Oct 2023 12:24:52 -0400
-Message-ID: <20231031162454.3761482-3-kent.overstreet@linux.dev>
-In-Reply-To: <20231031162454.3761482-1-kent.overstreet@linux.dev>
-References: <20231031162454.3761482-1-kent.overstreet@linux.dev>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Migadu-Flow: FLOW_OUT
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+	(No client certificate requested)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4E3AB18F;
+	Tue,  7 Nov 2023 00:00:53 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (1024-bit key) header.d=linuxfoundation.org header.i=@linuxfoundation.org header.b="2FYYS8MO"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 8E2A7C433C7;
+	Tue,  7 Nov 2023 00:00:53 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=linuxfoundation.org;
+	s=korg; t=1699315253;
+	bh=gWSQwVS/DuFY8epvQLsUoxyqrJ0L53S7NX9Y3cpdBb4=;
+	h=Date:From:To:Subject:From;
+	b=2FYYS8MOF+g1KB68wRaTBLt4qdi1oVNOVrcDhGPFKyzvQpkvWgDuhvgDRlPv0wRJ9
+	 JnCnzHfzpUgAfDJzf3Ko047wJ9qpjDPxUaQ+vacrgU1ekeVhxA1SkM+w7u2PxssFC5
+	 3MfQ3cbwb3IY+DCqoN+XoJe/TnyNPHlODGXbQPMA=
+Date: Mon, 6 Nov 2023 19:00:52 -0500
+From: Konstantin Ryabitsev <konstantin@linuxfoundation.org>
+To: lartc@vger.kernel.org, linux-alpha@vger.kernel.org, 
+	linux-api@vger.kernel.org, linux-arch@vger.kernel.org, linux-arm-msm@vger.kernel.org, 
+	linux-assembly@vger.kernel.org, linux-bcache@vger.kernel.org, linux-bcachefs@vger.kernel.org, 
+	linux-block@vger.kernel.org, linux-bluetooth@vger.kernel.org, linux-btrace@vger.kernel.org, 
+	linux-btrfs@vger.kernel.org, linux-can@vger.kernel.org, linux-cifs@vger.kernel.org, 
+	linux-clk@vger.kernel.org, linux-crypto@vger.kernel.org, linux-csky@vger.kernel.org, 
+	linux-debuggers@vger.kernel.org, linux-edac@vger.kernel.org, linux-efi@vger.kernel.org
+Subject: PSA: this list has been migrated (no action required)
+Message-ID: <20231106-courageous-soft-caiman-7b3e6a@meerkat>
 Precedence: bulk
-List-ID: <linux-bcache.vger.kernel.org>
 X-Mailing-List: linux-bcache@vger.kernel.org
+List-Id: <linux-bcache.vger.kernel.org>
+List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
+List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 
-As pointed out by Linus, closure_sync() was racy; we could skip blocking
-immediately after a get() and a put(), but then that would skip any
-barrier corresponding to the other thread's put() barrier.
+Hello:
 
-To fix this, always do the full __closure_sync() sequence whenever any
-get() has happened and the closure might have been used by other
-threads.
+This list has been migrated to the new vger infrastructure. You should't need
+to change anything about how you participate with the list or how you receive
+mail.
 
-Signed-off-by: Kent Overstreet <kent.overstreet@linux.dev>
----
- fs/bcachefs/fs-io-direct.c |  1 +
- include/linux/closure.h    | 10 +++++++++-
- lib/closure.c              |  3 +++
- 3 files changed, 13 insertions(+), 1 deletion(-)
+If something isn't working right, please reach out to helpdesk@kernel.org.
 
-diff --git a/fs/bcachefs/fs-io-direct.c b/fs/bcachefs/fs-io-direct.c
-index 6a9557e7ecab..5b42a76c4796 100644
---- a/fs/bcachefs/fs-io-direct.c
-+++ b/fs/bcachefs/fs-io-direct.c
-@@ -113,6 +113,7 @@ static int bch2_direct_IO_read(struct kiocb *req, struct iov_iter *iter)
- 	} else {
- 		atomic_set(&dio->cl.remaining,
- 			   CLOSURE_REMAINING_INITIALIZER + 1);
-+		dio->cl.closure_get_happened = true;
- 	}
- 
- 	dio->req	= req;
-diff --git a/include/linux/closure.h b/include/linux/closure.h
-index bdab17050bc8..de7bb47d8a46 100644
---- a/include/linux/closure.h
-+++ b/include/linux/closure.h
-@@ -154,6 +154,7 @@ struct closure {
- 	struct closure		*parent;
- 
- 	atomic_t		remaining;
-+	bool			closure_get_happened;
- 
- #ifdef CONFIG_DEBUG_CLOSURES
- #define CLOSURE_MAGIC_DEAD	0xc054dead
-@@ -185,7 +186,11 @@ static inline unsigned closure_nr_remaining(struct closure *cl)
-  */
- static inline void closure_sync(struct closure *cl)
- {
--	if (closure_nr_remaining(cl) != 1)
-+#ifdef CONFIG_DEBUG_CLOSURES
-+	BUG_ON(closure_nr_remaining(cl) != 1 && !cl->closure_get_happened);
-+#endif
-+
-+	if (cl->closure_get_happened)
- 		__closure_sync(cl);
- }
- 
-@@ -257,6 +262,8 @@ static inline void closure_queue(struct closure *cl)
-  */
- static inline void closure_get(struct closure *cl)
- {
-+	cl->closure_get_happened = true;
-+
- #ifdef CONFIG_DEBUG_CLOSURES
- 	BUG_ON((atomic_inc_return(&cl->remaining) &
- 		CLOSURE_REMAINING_MASK) <= 1);
-@@ -279,6 +286,7 @@ static inline void closure_init(struct closure *cl, struct closure *parent)
- 		closure_get(parent);
- 
- 	atomic_set(&cl->remaining, CLOSURE_REMAINING_INITIALIZER);
-+	cl->closure_get_happened = false;
- 
- 	closure_debug_create(cl);
- 	closure_set_ip(cl);
-diff --git a/lib/closure.c b/lib/closure.c
-index 501dfa277b59..f86c9eeafb35 100644
---- a/lib/closure.c
-+++ b/lib/closure.c
-@@ -23,6 +23,8 @@ static inline void closure_put_after_sub(struct closure *cl, int flags)
- 	if (!r) {
- 		smp_acquire__after_ctrl_dep();
- 
-+		cl->closure_get_happened = false;
-+
- 		if (cl->fn && !(flags & CLOSURE_DESTRUCTOR)) {
- 			atomic_set(&cl->remaining,
- 				   CLOSURE_REMAINING_INITIALIZER);
-@@ -92,6 +94,7 @@ bool closure_wait(struct closure_waitlist *waitlist, struct closure *cl)
- 	if (atomic_read(&cl->remaining) & CLOSURE_WAITING)
- 		return false;
- 
-+	cl->closure_get_happened = true;
- 	closure_set_waiting(cl, _RET_IP_);
- 	atomic_add(CLOSURE_WAITING + 1, &cl->remaining);
- 	llist_add(&cl->list, &waitlist->list);
--- 
-2.42.0
-
+Best regards,
+Konstantin
