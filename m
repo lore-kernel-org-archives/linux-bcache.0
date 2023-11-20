@@ -1,43 +1,41 @@
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="uR40Crvt";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="9ojSMYtD"
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [IPv6:2001:67c:2178:6::1c])
-	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 7ED87D8;
-	Sun, 19 Nov 2023 21:26:21 -0800 (PST)
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="GtJ/B6ZC";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="CjhbT2j/"
+Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.220.29])
+	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 4BBC8136;
+	Sun, 19 Nov 2023 21:44:45 -0800 (PST)
 Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-	by smtp-out1.suse.de (Postfix) with ESMTP id E72CB218EE;
-	Mon, 20 Nov 2023 05:26:19 +0000 (UTC)
+	by smtp-out2.suse.de (Postfix) with ESMTP id E7E3D1F855;
+	Mon, 20 Nov 2023 05:44:43 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1700457979; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
+	t=1700459083; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
 	 mime-version:mime-version:
 	 content-transfer-encoding:content-transfer-encoding:
 	 in-reply-to:in-reply-to:references:references;
-	bh=wEyttQhlG/fqThqqLMN+xqZGDxU7a6EZ31kO3DhpKq0=;
-	b=uR40CrvtMEYZnbZrQQknHreMat697/jzHKdepSKtU0z4IZZ1mUoW78jrgBHxAMz0LfNyJv
-	nnu2WURaRlf2mJZlpMUsIaP6di7fq7Sw0dTFyGBYSkXKj9pokpGWE72894cnAiv19g6PCy
-	Qs8bSrDbQKHNH1221HjAbSo7y299s6U=
+	bh=8mwAY6+Os3c1dJ5jySPRd9x61Vf/doet5H/qvmK0KsY=;
+	b=GtJ/B6ZCf7tJ48NQHSbCN2756tcNdl4eOjXyVBKcms9TMkdjH2B1Buu/RmIrevO6MvZ0vB
+	c5+xI66VLFO3xDsdNKQ1I64GFN75y6cDvGGdx2R7Shso3m7UsOsptBNj40uXUDXwqRsIfA
+	hnp4Wyy02nRE5Ei8zSdY6vzqdzCqn0c=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1700457979;
+	s=susede2_ed25519; t=1700459083;
 	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
 	 mime-version:mime-version:
 	 content-transfer-encoding:content-transfer-encoding:
 	 in-reply-to:in-reply-to:references:references;
-	bh=wEyttQhlG/fqThqqLMN+xqZGDxU7a6EZ31kO3DhpKq0=;
-	b=9ojSMYtDkkEutzTPXcZdRa4NA2SJ0CpY7ulQXHjooVQ0cTcP46PwKPa1bCEuQg6YidIXLk
-	6866GK4axYJLZxAA==
+	bh=8mwAY6+Os3c1dJ5jySPRd9x61Vf/doet5H/qvmK0KsY=;
+	b=CjhbT2j/WOeroumrFubO00khP5jrGkNGiovVoN8/ffu8tLHnUmLzVRl5IScdZIboS33rug
+	Wmc9kstsxCsj5IAQ==
 Received: from localhost.localdomain (colyli.tcp.ovpn1.nue.suse.de [10.163.16.22])
-	by relay2.suse.de (Postfix) with ESMTP id 775F62D3C8;
-	Mon, 20 Nov 2023 05:26:17 +0000 (UTC)
+	by relay2.suse.de (Postfix) with ESMTP id CFE092D3E5;
+	Mon, 20 Nov 2023 05:26:29 +0000 (UTC)
 From: Coly Li <colyli@suse.de>
 To: axboe@kernel.dk
 Cc: linux-block@vger.kernel.org,
 	linux-bcache@vger.kernel.org,
-	Mingzhe Zou <mingzhe.zou@easystack.cn>,
-	stable@vger.kernel.org,
 	Coly Li <colyli@suse.de>
-Subject: [PATCH 05/10] bcache: fixup init dirty data errors
-Date: Mon, 20 Nov 2023 13:24:58 +0800
-Message-Id: <20231120052503.6122-6-colyli@suse.de>
+Subject: [PATCH 10/10] bcache: avoid NULL checking to c->root in run_cache_set()
+Date: Mon, 20 Nov 2023 13:25:03 +0800
+Message-Id: <20231120052503.6122-11-colyli@suse.de>
 X-Mailer: git-send-email 2.35.3
 In-Reply-To: <20231120052503.6122-1-colyli@suse.de>
 References: <20231120052503.6122-1-colyli@suse.de>
@@ -48,76 +46,66 @@ List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-Spamd-Bar: ++++++++++++++++++++++
-Authentication-Results: smtp-out1.suse.de;
+X-Spamd-Bar: +++++++++++++++++++++++++++
+Authentication-Results: smtp-out2.suse.de;
 	dkim=none;
 	dmarc=none;
-	spf=softfail (smtp-out1.suse.de: 149.44.160.134 is neither permitted nor denied by domain of colyli@suse.de) smtp.mailfrom=colyli@suse.de
+	spf=softfail (smtp-out2.suse.de: 149.44.160.134 is neither permitted nor denied by domain of colyli@suse.de) smtp.mailfrom=colyli@suse.de
 X-Rspamd-Server: rspamd1
-X-Spamd-Result: default: False [22.06 / 50.00];
+X-Spamd-Result: default: False [27.09 / 50.00];
 	 ARC_NA(0.00)[];
-	 BAYES_SPAM(0.07)[58.45%];
+	 BAYES_SPAM(5.10)[99.99%];
 	 FROM_HAS_DN(0.00)[];
-	 TO_DN_SOME(0.00)[];
+	 RCPT_COUNT_THREE(0.00)[4];
 	 R_MISSING_CHARSET(2.50)[];
 	 NEURAL_SPAM_SHORT(3.00)[1.000];
 	 MIME_GOOD(-0.10)[text/plain];
 	 DMARC_NA(1.20)[suse.de];
 	 BROKEN_CONTENT_TYPE(1.50)[];
 	 R_SPF_SOFTFAIL(4.60)[~all:c];
-	 RCPT_COUNT_FIVE(0.00)[6];
-	 TO_MATCH_ENVRCPT_SOME(0.00)[];
+	 TO_DN_SOME(0.00)[];
 	 DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
 	 MX_GOOD(-0.01)[];
-	 NEURAL_SPAM_LONG(3.50)[1.000];
+	 TO_MATCH_ENVRCPT_SOME(0.00)[];
 	 MID_CONTAINS_FROM(1.00)[];
 	 RWL_MAILSPIKE_GOOD(-1.00)[149.44.160.134:from];
+	 NEURAL_SPAM_LONG(3.50)[1.000];
 	 VIOLATED_DIRECT_SPF(3.50)[];
 	 FUZZY_BLOCKED(0.00)[rspamd.com];
 	 RCVD_NO_TLS_LAST(0.10)[];
 	 FROM_EQ_ENVFROM(0.00)[];
 	 R_DKIM_NA(2.20)[];
 	 MIME_TRACE(0.00)[0:+];
-	 RCVD_COUNT_TWO(0.00)[2]
-X-Spam-Score: 22.06
-X-Rspamd-Queue-Id: E72CB218EE
+	 RCVD_COUNT_TWO(0.00)[2];
+	 GREYLIST(0.00)[pass,meta]
+X-Spam-Score: 27.09
+X-Rspamd-Queue-Id: E7E3D1F855
+X-Spam: Yes
 
-From: Mingzhe Zou <mingzhe.zou@easystack.cn>
+In run_cache_set() after c->root returned from bch_btree_node_get(), it
+is checked by IS_ERR_OR_NULL(). Indeed it is unncessary to check NULL
+because bch_btree_node_get() will not return NULL pointer to caller.
 
-We found that after long run, the dirty_data of the bcache device
-will have errors. This error cannot be eliminated unless re-register.
+This patch replaces IS_ERR_OR_NULL() by IS_ERR() for the above reason.
 
-We also found that reattach after detach, this error can accumulate.
-
-In bch_sectors_dirty_init(), all inode <= d->id keys will be recounted
-again. This is wrong, we only need to count the keys of the current
-device.
-
-Fixes: b144e45fc576 ("bcache: make bch_sectors_dirty_init() to be multithreaded")
-Signed-off-by: Mingzhe Zou <mingzhe.zou@easystack.cn>
-Cc: stable@vger.kernel.org
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/writeback.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/md/bcache/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index c3e872e0a6f2..77fb72ac6b81 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -991,8 +991,11 @@ void bch_sectors_dirty_init(struct bcache_device *d)
- 		op.count = 0;
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index c7ecc7058d77..bfe1685dbae5 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -2018,7 +2018,7 @@ static int run_cache_set(struct cache_set *c)
+ 		c->root = bch_btree_node_get(c, NULL, k,
+ 					     j->btree_level,
+ 					     true, NULL);
+-		if (IS_ERR_OR_NULL(c->root))
++		if (IS_ERR(c->root))
+ 			goto err;
  
- 		for_each_key_filter(&c->root->keys,
--				    k, &iter, bch_ptr_invalid)
-+				    k, &iter, bch_ptr_invalid) {
-+			if (KEY_INODE(k) != op.inode)
-+				continue;
- 			sectors_dirty_init_fn(&op.op, c->root, k);
-+		}
- 
- 		rw_unlock(0, c->root);
- 		return;
+ 		list_del_init(&c->root->list);
 -- 
 2.35.3
 
