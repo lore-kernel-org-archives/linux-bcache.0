@@ -1,41 +1,42 @@
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="EXTeJpOi";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="0gZr2a+X"
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="vNH1nm7S";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="tAR9tw/P"
 Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.220.28])
-	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 41A6C129;
+	by lindbergh.monkeyblade.net (Postfix) with ESMTPS id 413BD126;
 	Sun, 19 Nov 2023 21:44:45 -0800 (PST)
 Received: from relay2.suse.de (relay2.suse.de [149.44.160.134])
-	by smtp-out1.suse.de (Postfix) with ESMTP id EB673218E8;
+	by smtp-out1.suse.de (Postfix) with ESMTP id F3F4D218EC;
 	Mon, 20 Nov 2023 05:44:43 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
 	t=1700459083; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
 	 mime-version:mime-version:
 	 content-transfer-encoding:content-transfer-encoding:
 	 in-reply-to:in-reply-to:references:references;
-	bh=d8PBjCJPAkQiQ4CM8s/u0guKu9q2hW8pjd5h1jUbUR0=;
-	b=EXTeJpOikJ8EtvQi0gFMQqT43cROBD8G9T0fBWYM9ZhKcLJ/4MbRYBlzK6BGNhtjOMdd98
-	P0Ayfr5T5FpHXGc8HPRGO1rATc/LBVYadou28qukgnG+wZ9TDD4G9ktbrJM920hkn5iYw9
-	F5Cxg4mcTxgsY0fQCRisfjIl3/jdg1s=
+	bh=mWrlPNKLFOE1aHGwRjBzh1jm+Yz+yNwvV2OPANk8HZ4=;
+	b=vNH1nm7SKqZpN+GeuVKh5b+txHrhLg2VwleDiXmABBhQgpfZrBhlR4NLsGvmet689pFXzl
+	qQIl6pvkhYIJArMNBlLrHPRj3sBzdZMotU+A/4tLRpXuDE7PlkNtPFK47YqDMFRBtFUf30
+	a7ifycNFxT/suZGcfgH6/IgB6V7yXHM=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
 	s=susede2_ed25519; t=1700459083;
 	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
 	 mime-version:mime-version:
 	 content-transfer-encoding:content-transfer-encoding:
 	 in-reply-to:in-reply-to:references:references;
-	bh=d8PBjCJPAkQiQ4CM8s/u0guKu9q2hW8pjd5h1jUbUR0=;
-	b=0gZr2a+XymVGR7wICXrNU7m/fvn7ihYJXgvceETQCuOyajkYFicb/NASLsC4T2w4ss9tOC
-	AfeNfIIPzuwcB6Aw==
+	bh=mWrlPNKLFOE1aHGwRjBzh1jm+Yz+yNwvV2OPANk8HZ4=;
+	b=tAR9tw/PhtqChFDBulnZsqN/ojy270fNaB+rOBzkeITHZzt/mpzXuMyi1NW8iEYd3q63g0
+	DBo/7f28SWdBIPBQ==
 Received: from localhost.localdomain (colyli.tcp.ovpn1.nue.suse.de [10.163.16.22])
-	by relay2.suse.de (Postfix) with ESMTP id 177F72C146;
-	Mon, 20 Nov 2023 05:26:27 +0000 (UTC)
+	by relay2.suse.de (Postfix) with ESMTP id B19E42CC9F;
+	Mon, 20 Nov 2023 05:26:12 +0000 (UTC)
 From: Coly Li <colyli@suse.de>
 To: axboe@kernel.dk
 Cc: linux-block@vger.kernel.org,
 	linux-bcache@vger.kernel.org,
+	Colin Ian King <colin.i.king@gmail.com>,
 	Coly Li <colyli@suse.de>
-Subject: [PATCH 09/10] bcache: add code comments for bch_btree_node_get() and __bch_btree_node_alloc()
-Date: Mon, 20 Nov 2023 13:25:02 +0800
-Message-Id: <20231120052503.6122-10-colyli@suse.de>
+Subject: [PATCH 03/10] bcache: remove redundant assignment to variable cur_idx
+Date: Mon, 20 Nov 2023 13:24:56 +0800
+Message-Id: <20231120052503.6122-4-colyli@suse.de>
 X-Mailer: git-send-email 2.35.3
 In-Reply-To: <20231120052503.6122-1-colyli@suse.de>
 References: <20231120052503.6122-1-colyli@suse.de>
@@ -46,76 +47,75 @@ List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-Spamd-Bar: +++++++++++++++++++++++++++
+X-Spamd-Bar: +++++++++++++++++++++++
 Authentication-Results: smtp-out1.suse.de;
 	dkim=none;
 	dmarc=none;
 	spf=softfail (smtp-out1.suse.de: 149.44.160.134 is neither permitted nor denied by domain of colyli@suse.de) smtp.mailfrom=colyli@suse.de
-X-Rspamd-Server: rspamd2
-X-Spamd-Result: default: False [27.09 / 50.00];
-	 ARC_NA(0.00)[];
-	 BAYES_SPAM(5.10)[100.00%];
-	 FROM_HAS_DN(0.00)[];
-	 RCPT_COUNT_THREE(0.00)[4];
+X-Rspamd-Server: rspamd1
+X-Spamd-Result: default: False [23.60 / 50.00];
+	 BAYES_SPAM(0.11)[61.62%];
+	 GREYLIST(0.00)[pass,body];
+	 TO_DN_SOME(0.00)[];
 	 R_MISSING_CHARSET(2.50)[];
-	 NEURAL_SPAM_SHORT(3.00)[1.000];
-	 MIME_GOOD(-0.10)[text/plain];
-	 DMARC_NA(1.20)[suse.de];
+	 RWL_MAILSPIKE_GOOD(-1.00)[149.44.160.134:from];
 	 BROKEN_CONTENT_TYPE(1.50)[];
 	 R_SPF_SOFTFAIL(4.60)[~all:c];
-	 TO_DN_SOME(0.00)[];
-	 DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
+	 RCPT_COUNT_FIVE(0.00)[5];
 	 MX_GOOD(-0.01)[];
-	 TO_MATCH_ENVRCPT_SOME(0.00)[];
-	 MID_CONTAINS_FROM(1.00)[];
-	 RWL_MAILSPIKE_GOOD(-1.00)[149.44.160.134:from];
-	 NEURAL_SPAM_LONG(3.50)[1.000];
-	 VIOLATED_DIRECT_SPF(3.50)[];
-	 FUZZY_BLOCKED(0.00)[rspamd.com];
 	 RCVD_NO_TLS_LAST(0.10)[];
 	 FROM_EQ_ENVFROM(0.00)[];
 	 R_DKIM_NA(2.20)[];
 	 MIME_TRACE(0.00)[0:+];
+	 ARC_NA(0.00)[];
+	 FROM_HAS_DN(0.00)[];
+	 FREEMAIL_ENVRCPT(0.00)[gmail.com];
+	 NEURAL_SPAM_SHORT(3.00)[1.000];
+	 TAGGED_RCPT(0.00)[];
+	 MIME_GOOD(-0.10)[text/plain];
+	 DMARC_NA(1.20)[suse.de];
+	 TO_MATCH_ENVRCPT_SOME(0.00)[];
+	 DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
+	 VIOLATED_DIRECT_SPF(3.50)[];
+	 NEURAL_SPAM_LONG(3.50)[1.000];
+	 MID_CONTAINS_FROM(1.00)[];
+	 FUZZY_BLOCKED(0.00)[rspamd.com];
+	 FREEMAIL_CC(0.00)[vger.kernel.org,gmail.com,suse.de];
 	 RCVD_COUNT_TWO(0.00)[2];
-	 GREYLIST(0.00)[pass,body]
-X-Spam-Score: 27.09
-X-Rspamd-Queue-Id: EB673218E8
+	 SUSPICIOUS_RECIPS(1.50)[]
+X-Spam-Score: 23.60
+X-Rspamd-Queue-Id: F3F4D218EC
 X-Spam: Yes
 
-This patch adds code comments to bch_btree_node_get() and
-__bch_btree_node_alloc() that NULL pointer will not be returned and it
-is unnecessary to check NULL pointer by the callers of these routines.
+From: Colin Ian King <colin.i.king@gmail.com>
 
+Variable cur_idx is being initialized with a value that is never read,
+it is being re-assigned later in a while-loop. Remove the redundant
+assignment. Cleans up clang scan build warning:
+
+drivers/md/bcache/writeback.c:916:2: warning: Value stored to 'cur_idx'
+is never read [deadcode.DeadStores]
+
+Signed-off-by: Colin Ian King <colin.i.king@gmail.com>
+Reviewed-by: Coly Li <colyli@suse.de>
 Signed-off-by: Coly Li <colyli@suse.de>
 ---
- drivers/md/bcache/btree.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/md/bcache/writeback.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index 79f1fa4a0d55..de3019972b35 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1000,6 +1000,9 @@ static struct btree *mca_alloc(struct cache_set *c, struct btree_op *op,
-  *
-  * The btree node will have either a read or a write lock held, depending on
-  * level and op->lock.
-+ *
-+ * Note: Only error code or btree pointer will be returned, it is unncessary
-+ *       for callers to check NULL pointer.
-  */
- struct btree *bch_btree_node_get(struct cache_set *c, struct btree_op *op,
- 				 struct bkey *k, int level, bool write,
-@@ -1111,6 +1114,10 @@ static void btree_node_free(struct btree *b)
- 	mutex_unlock(&b->c->bucket_lock);
- }
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 24c049067f61..c3e872e0a6f2 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -913,7 +913,7 @@ static int bch_dirty_init_thread(void *arg)
+ 	int cur_idx, prev_idx, skip_nr;
  
-+/*
-+ * Only error code or btree pointer will be returned, it is unncessary for
-+ * callers to check NULL pointer.
-+ */
- struct btree *__bch_btree_node_alloc(struct cache_set *c, struct btree_op *op,
- 				     int level, bool wait,
- 				     struct btree *parent)
+ 	k = p = NULL;
+-	cur_idx = prev_idx = 0;
++	prev_idx = 0;
+ 
+ 	bch_btree_iter_init(&c->root->keys, &iter, NULL);
+ 	k = bch_btree_iter_next_filter(&iter, &c->root->keys, bch_ptr_bad);
 -- 
 2.35.3
 
