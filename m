@@ -1,26 +1,26 @@
 Received: from bombadil.infradead.org (bombadil.infradead.org [198.137.202.133])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1D74F4409;
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D05924402;
 	Thu, 28 Dec 2023 07:56:13 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=lst.de
 Authentication-Results: smtp.subspace.kernel.org; spf=none smtp.mailfrom=bombadil.srs.infradead.org
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="nDIXnjOk"
+	dkim=pass (2048-bit key) header.d=infradead.org header.i=@infradead.org header.b="X5x8LsO7"
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
 	d=infradead.org; s=bombadil.20210309; h=Content-Transfer-Encoding:
-	MIME-Version:Message-Id:Date:Subject:Cc:To:From:Sender:Reply-To:Content-Type:
-	Content-ID:Content-Description:In-Reply-To:References;
-	bh=wsinjDSCV+Rjfc71EDyifigolrdpbzFtrjrUVZw9+FQ=; b=nDIXnjOkHVtMU9aFr1prtKvnZz
-	Ki8PpxdH9FY7DbT8gAv6++ktPz9xu0rCdal8U5fn+UG7t34xCTQgYv+ZK1+pgSQqkpVObB+7sIrJY
-	4jUWJeigc10tLbt+X8pGHLB0I7of/v3GXZzYvO9SHHsToGvRewQGujunI9x651xVV4kf/ut0cMaQh
-	kh1AzFVNER65pYGhmGy5HfZzqJ7f4sLyCVskEooCS8ufrumusn13x60eZwwe8nw4HCGl9Ze9xJZA6
-	dmWMKjcehTNQtVJ2nA3y54TrhwdMBvwH42LDCsp3hnWBbY8iGTcWMTWloh1iNQU3FlG9LEBcMEtzP
-	Mk1ErNdw==;
+	MIME-Version:References:In-Reply-To:Message-Id:Date:Subject:Cc:To:From:Sender
+	:Reply-To:Content-Type:Content-ID:Content-Description;
+	bh=VWcP0rXhfX4Tpyx1C2oTgUUfvY4Ov9XACS1uYCYkWFQ=; b=X5x8LsO7IbK30BlWll4bAl3Yu2
+	Nnr3tA/pxO8vsdt95yX0T0Q8hK8zlKjtyIne9PfNa/QpFv3DxlYmaw0dfBNLve4dcBqemC24gFNC9
+	13KjhR6yKGz38gr4V7JnC3VE0UK5BRuY2ihthkLKu1L9p3OCoU5XPux906ciahlC8CQe6IWePcLzK
+	N86XdM/D8Bp+bphasOmls48841EPT5uTfur6iAjw7teAqGFPyM/vJssNVlfQtS/oZKUfKlT+JwNbl
+	GLzxCHVQOCxvhIgcIN5zpuDd2/4yBRvkbQ8RyQLyK3IetO4EH/aY1zgjN5/A+KOF+sjJx1I4u9N8m
+	toSELIfw==;
 Received: from 213-147-167-209.nat.highway.webapn.at ([213.147.167.209] helo=localhost)
 	by bombadil.infradead.org with esmtpsa (Exim 4.96 #2 (Red Hat Linux))
-	id 1rIlF9-00GMqU-1S;
-	Thu, 28 Dec 2023 07:55:52 +0000
+	id 1rIlFK-00GMr8-11;
+	Thu, 28 Dec 2023 07:56:03 +0000
 From: Christoph Hellwig <hch@lst.de>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: Richard Weinberger <richard@nod.at>,
@@ -36,10 +36,12 @@ Cc: Richard Weinberger <richard@nod.at>,
 	nbd@other.debian.org,
 	linux-bcache@vger.kernel.org,
 	linux-mtd@lists.infradead.org
-Subject: provide a sane discard_granularity default
-Date: Thu, 28 Dec 2023 07:55:36 +0000
-Message-Id: <20231228075545.362768-1-hch@lst.de>
+Subject: [PATCH 2/9] bcache: discard_granularity should not be smaller than a sector
+Date: Thu, 28 Dec 2023 07:55:38 +0000
+Message-Id: <20231228075545.362768-3-hch@lst.de>
 X-Mailer: git-send-email 2.39.2
+In-Reply-To: <20231228075545.362768-1-hch@lst.de>
+References: <20231228075545.362768-1-hch@lst.de>
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
@@ -49,20 +51,29 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org. See http://www.infradead.org/rpr.html
 
-Hi Jens,
+Just like all block I/O, discards are in units of sectors.  Thus setting a
+smaller than sector size discard limit in case of > 512 byte sectors in
+bcache doesn't make sense.  Always set the discard granularity to 512
+bytes instead.
 
-this series defaults the discard_granularity to the sector size as
-that is a very logical default for devices that have no further
-restrictions.  This removes the need for trivial drivers to set
-a discard granularity and cleans up the interface.
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ drivers/md/bcache/super.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Diffstat:
- arch/um/drivers/ubd_kern.c    |    1 -
- block/blk-merge.c             |    6 +-----
- block/blk-settings.c          |    5 ++++-
- drivers/block/nbd.c           |    6 +-----
- drivers/block/null_blk/main.c |    1 -
- drivers/block/zram/zram_drv.c |    1 -
- drivers/md/bcache/super.c     |    1 -
- drivers/mtd/mtd_blkdevs.c     |    4 +---
- 8 files changed, 7 insertions(+), 18 deletions(-)
+diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+index bfe1685dbae574..ecc1447f202a42 100644
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -954,7 +954,7 @@ static int bcache_device_init(struct bcache_device *d, unsigned int block_size,
+ 	q->limits.max_segment_size	= UINT_MAX;
+ 	q->limits.max_segments		= BIO_MAX_VECS;
+ 	blk_queue_max_discard_sectors(q, UINT_MAX);
+-	q->limits.discard_granularity	= 512;
++	q->limits.discard_granularity	= block_size;
+ 	q->limits.io_min		= block_size;
+ 	q->limits.logical_block_size	= block_size;
+ 	q->limits.physical_block_size	= block_size;
+-- 
+2.39.2
+
