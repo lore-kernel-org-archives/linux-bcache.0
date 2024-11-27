@@ -1,201 +1,243 @@
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.223.130])
+Received: from mail-ej1-f44.google.com (mail-ej1-f44.google.com [209.85.218.44])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 38A0B15C0;
-	Wed, 27 Nov 2024 03:17:22 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=195.135.223.130
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6AFB71272A6;
+	Wed, 27 Nov 2024 08:04:43 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.218.44
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1732677445; cv=none; b=mIRqMPqaTeILSiz75K6RHdOmospaUaLInYnLeYoFvur9sq0J4Pua8Yiafxg9vDS1tK1dxJxclMRC5NhwQH5dyArc0vONdarhD2zfnzyXbc9M5M4okdWdHqAz8FXQ+O7dkxkP1yHye1tBYpacJlZCJ8RORaJZEXPwhPPlvg9thcs=
+	t=1732694686; cv=none; b=XCcwXBs998O0TNVm2Qts8zjpWeiEo1FOKkwsGmekvUiVFbjG46Hhfubi3RwkplLc2LcXcoRupsf5hRhspO4qYRCSDxHZmE5vE3uw0ak+GmiDj/l7KcxfqKRwgVjaq8rwDqJTxW/JgtUACfqretQG/ZVd9mvSVn0+71dz77Y58Wk=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1732677445; c=relaxed/simple;
-	bh=7hssgipUOAkhjejCsuRKLDuJDq27eMRBSF25vQXFmHg=;
-	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
-	 Message-Id:References:To; b=NkgD8O0jRkqhKBBNKTHyed1OuR0T5YqKywJlJ9rMcTOksxeZu+KeB/gxlFjru1Zae4hFu+/TU1d+eWYEbr2yiK8xwuDqwlYXLFreIDQfWXHo7BprpKwBlimQ5LDJPuKG4v2ltSFntrL0d7OCR//fWoO27u3lg4+QPuzTT5d5/wY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de; spf=pass smtp.mailfrom=suse.de; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=abCvyCLl; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=91HwI6qF; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=abCvyCLl; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=91HwI6qF; arc=none smtp.client-ip=195.135.223.130
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="abCvyCLl";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="91HwI6qF";
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="abCvyCLl";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="91HwI6qF"
-Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [IPv6:2a07:de40:b281:104:10:150:64:97])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-out1.suse.de (Postfix) with ESMTPS id 0789621164;
-	Wed, 27 Nov 2024 03:17:21 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1732677441; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=jATjBtB2OGVhywDyqkSVuR6RGqt1WfVDdmwiHU0e0ng=;
-	b=abCvyCLlTSo2+k30H/RwkhESOy1z5Ac1OjjN8XisisPhXMFvnVWNOPhlQh3jpF5XpLkAEN
-	MuBHiM2TaAuNNWw1gEbC9DD0iQDTq9Pxn6iJVS15D8x2XYEqoiAnQHjGaF8AnonI84+XEl
-	ItXONFEex0yEty/nuVUayh+p6fifCKE=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1732677441;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=jATjBtB2OGVhywDyqkSVuR6RGqt1WfVDdmwiHU0e0ng=;
-	b=91HwI6qFUKaYPUizYHkfSO1/eLgX02u4L9fnhqUfxjYHE4ioMmcyCKFNV1/Ww6FzQ0jlTj
-	WGkjuigjgzuf9ABw==
-Authentication-Results: smtp-out1.suse.de;
-	dkim=pass header.d=suse.de header.s=susede2_rsa header.b=abCvyCLl;
-	dkim=pass header.d=suse.de header.s=susede2_ed25519 header.b=91HwI6qF
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1732677441; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=jATjBtB2OGVhywDyqkSVuR6RGqt1WfVDdmwiHU0e0ng=;
-	b=abCvyCLlTSo2+k30H/RwkhESOy1z5Ac1OjjN8XisisPhXMFvnVWNOPhlQh3jpF5XpLkAEN
-	MuBHiM2TaAuNNWw1gEbC9DD0iQDTq9Pxn6iJVS15D8x2XYEqoiAnQHjGaF8AnonI84+XEl
-	ItXONFEex0yEty/nuVUayh+p6fifCKE=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1732677441;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=jATjBtB2OGVhywDyqkSVuR6RGqt1WfVDdmwiHU0e0ng=;
-	b=91HwI6qFUKaYPUizYHkfSO1/eLgX02u4L9fnhqUfxjYHE4ioMmcyCKFNV1/Ww6FzQ0jlTj
-	WGkjuigjgzuf9ABw==
-Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id D679313983;
-	Wed, 27 Nov 2024 03:17:18 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
-	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id 0HeJIj6PRmdLVwAAD6G6ig
-	(envelope-from <colyli@suse.de>); Wed, 27 Nov 2024 03:17:18 +0000
-Content-Type: text/plain;
-	charset=utf-8
+	s=arc-20240116; t=1732694686; c=relaxed/simple;
+	bh=SXMUsolydLhLlh0RYa90/Fp6yYGJOG2VlShDRyUu/0Y=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=WcJ/MIOEZ34py2+alGlMyqeB0vbkQNljzZwIvdRCori58LUL+3K7YW8SdC8gIe3aD5XyGab0hQEkKyIEVOsTcrQ2F+fNwUIkVlvYFM63wA/b/4X1b0EFeldclRnHhuXTXngf3Tq8HXW879w5SJRe09gSaMiVRBu8P44UzcFT02E=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux-m68k.org; spf=pass smtp.mailfrom=gmail.com; arc=none smtp.client-ip=209.85.218.44
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=linux-m68k.org
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+Received: by mail-ej1-f44.google.com with SMTP id a640c23a62f3a-aa53a971480so503452866b.1;
+        Wed, 27 Nov 2024 00:04:43 -0800 (PST)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1732694677; x=1733299477;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=aJwxTYx2memGrlAcayO/d+D9wemFJ5kB8ER25ZwyFGQ=;
+        b=Fds54gQniJ4zFdwoD17IfiB5HeAV57PosFt12TKoJBM2SwgS3yJiWw4WDvKLzTAln/
+         ANs7T6jSbYlxRDw0gbCRBPoxWO0fjBRT2/A8qN+//kxuG08UFu9Tq2OqQxScEGsndBqB
+         r4jbgudanKmy6vSLY/zGsFvqas+ybPdEkLAthvv4wX3U/J1+UfT9vIe2JLYy8rHall8O
+         lfR55U5XWUx15/PSULr39AvCQrZtjObNPJNaZsJuAobl6a7bsSUnXoVP4gZ8cNdCbr3d
+         tsYzQRCkJFHeI9+yzdcar+okV7S17Xbj7a+P8uLUot0586e4gRWbyW+GRi7zEbiOzryE
+         3p4A==
+X-Forwarded-Encrypted: i=1; AJvYcCVLOWCEWY0b6S9VhvZpKalKmBB48ySO6QhKz1KeVwZ8kyMQkBRVE8jinY/1Y9g/bFR2pkUI628uYFhZwl5yd9s9dw==@vger.kernel.org, AJvYcCVvf9vOxzciEvh+X+IoTf43w7oFp2nI8t4Yvb+J6WAkQML0Brg8NIt+sfn5XB+pBXFffhCHzXxdzh9R@vger.kernel.org, AJvYcCVzPUzjClScKS29FypXvX3rERH88cDbLkwLpBHc2OlrHLGGCQucjBwwduI6QwRRO3i6gzhQjStMyYwmuIPK@vger.kernel.org, AJvYcCWZ5Bm0Vrztz/LNq4qoACPLT8nRYKThw7hKcrpSRMKh20+LtAUJvMoiwk5s0IpSoZHMguai5CNydAoYr14pFwmI@vger.kernel.org, AJvYcCWropiGdYISxAhwZJekx+qYKW20Iz6rIosM2lyz1bbhj3xgVGk135PydUjBy9VI45adpkrCyAn+f1MO/dE=@vger.kernel.org, AJvYcCXE2BAZLOwnVYKr+ZRSiH67xJE+RgixyhRTjahxisWzeQQh3/7POL5eUEtr2bgSQrhEXyoHZQPMoJaexDyAQKo=@vger.kernel.org
+X-Gm-Message-State: AOJu0YzNM8Fy3c98QfADlBDO1OQP2AVpLj6olJE42rrkLmu2fLzO7g6U
+	pzHvKtQH8VYj8OOObMz7wo1ZCrNht8BxUfyWOSirrk0pPTTn/n7KRBuJGZiE3ViFMA==
+X-Gm-Gg: ASbGncuT31G6ie8xVUktNfHvS8W7eThC+medP1hb+lu6+kUhiHGEOkKXLajR9vi7+VG
+	lzg2y1fRefrZzXKGbT5BXAkQq5iGx1//N0wvIm7enX7awiWONxYEPrJOImbtpEjRKjDcaV/rx4I
+	lM6I1JEI5NmKoa7lwYMa3d6phwmNqYr/uCbtRsph8eB1bWf9eYFvQMogBuhQBbhwoxpxBGsQqDl
+	ta4UUjFDWaP6nKA6Pi57gNchrIAkkF+KBfINi0l1gJyQBpdtpqce2QR2yR2MTKZeTdtgEZyEgLY
+	RiLrtBlueaW9
+X-Google-Smtp-Source: AGHT+IH2ZFMUlwY9rPJbuBy7o4FAsS8SFcpcqgchzIerRi1sDz13OFZDxvtNt56KWdfEGWhFi5Mhww==
+X-Received: by 2002:a17:907:784d:b0:aa5:2575:e76a with SMTP id a640c23a62f3a-aa580f2bc6cmr123462866b.13.1732694676729;
+        Wed, 27 Nov 2024 00:04:36 -0800 (PST)
+Received: from mail-ej1-f42.google.com (mail-ej1-f42.google.com. [209.85.218.42])
+        by smtp.gmail.com with ESMTPSA id a640c23a62f3a-aa50b3460d8sm675818566b.91.2024.11.27.00.04.34
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Wed, 27 Nov 2024 00:04:34 -0800 (PST)
+Received: by mail-ej1-f42.google.com with SMTP id a640c23a62f3a-aa549d9dffdso493993066b.2;
+        Wed, 27 Nov 2024 00:04:34 -0800 (PST)
+X-Forwarded-Encrypted: i=1; AJvYcCU8rpD4sSnl/IJXl0iILhGx4aLY7OWomRTxETFj3WMr6vqVvc2wNSIvk5NqayI2GojJcwNgAjPhjj1re4e3847wWQ==@vger.kernel.org, AJvYcCVgjqSgmy00mgBqAXldFIT21W8+QCLHJIjRaxGANE1TYjysN7EHgBS7XdKm1MYLJcGrFeKDotiOjQvVcKxCBIXy@vger.kernel.org, AJvYcCVw58QsomuFFXVAg9aDDd8/JFzYOJmvopYac4kK/wzyP81Etk03ZeHO9KLYqwkyEqDMPQs7Ce3zhYGOPM7FEqo=@vger.kernel.org, AJvYcCWtEk/oYoMtUysECeCO7Ad3q+CD1oPmIBjlHmVQ1Sp05iIhMMCrtGhJ7DrdrEgB9HvKhoIBDAhNJ4sF@vger.kernel.org, AJvYcCXPXwBjUCITIYIu3AdfrKM4EKE8BWdc4Qw8U2TMq3hJnbmJTSs1aGU9dhj7n6cuDZP44+JkVGu0UwkY7Zc=@vger.kernel.org, AJvYcCXlHa/yMv8pcPq49oY8eNGUAzwcaYwwAQXyTz6VCHj3+yYG9jIZ16t1ZPH0Fz8mKwNd8o0puqDPHhmHyfSs@vger.kernel.org
+X-Received: by 2002:a17:906:5a6b:b0:a99:fc3d:7c76 with SMTP id
+ a640c23a62f3a-aa581057f64mr101384466b.37.1732694673930; Wed, 27 Nov 2024
+ 00:04:33 -0800 (PST)
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3776.700.51\))
-Subject: Re: [PATCH V3] bcache: revert replacing IS_ERR_OR_NULL with IS_ERR
- again
-From: Coly Li <colyli@suse.de>
-In-Reply-To: <CAAsfc_pxrz1bcfo=29-qPuZhEEffbK5=LYGeNRV9gf=vfyp8Aw@mail.gmail.com>
-Date: Wed, 27 Nov 2024 11:17:01 +0800
-Cc: "mingzhe.zou@easystack.cn" <mingzhe.zou@easystack.cn>,
- Kent Overstreet <kent.overstreet@gmail.com>,
- linux-bcache <linux-bcache@vger.kernel.org>,
- linux-kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+References: <20241020040200.939973-1-visitorckw@gmail.com> <20241020040200.939973-2-visitorckw@gmail.com>
+ <CAMuHMdVO5DPuD9HYWBFqKDHphx7+0BEhreUxtVC40A=8p6VAhQ@mail.gmail.com> <Z0aLFidHu/msXbXq@visitorckw-System-Product-Name>
+In-Reply-To: <Z0aLFidHu/msXbXq@visitorckw-System-Product-Name>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Wed, 27 Nov 2024 09:04:19 +0100
+X-Gmail-Original-Message-ID: <CAMuHMdUVfQvA_d+ERuqRbd_aRVabUX4N=kKd+gc7RK+EArwi+w@mail.gmail.com>
+Message-ID: <CAMuHMdUVfQvA_d+ERuqRbd_aRVabUX4N=kKd+gc7RK+EArwi+w@mail.gmail.com>
+Subject: Re: [PATCH v2 01/10] lib/min_heap: Introduce non-inline versions of
+ min heap API functions
+To: Kuan-Wei Chiu <visitorckw@gmail.com>
+Cc: colyli@suse.de, kent.overstreet@linux.dev, msakai@redhat.com, 
+	corbet@lwn.net, peterz@infradead.org, mingo@redhat.com, acme@kernel.org, 
+	namhyung@kernel.org, akpm@linux-foundation.org, mark.rutland@arm.com, 
+	alexander.shishkin@linux.intel.com, jolsa@kernel.org, irogers@google.com, 
+	adrian.hunter@intel.com, kan.liang@linux.intel.com, willy@infradead.org, 
+	jserv@ccns.ncku.edu.tw, linux-kernel@vger.kernel.org, 
+	linux-bcache@vger.kernel.org, dm-devel@lists.linux.dev, 
+	linux-bcachefs@vger.kernel.org, linux-perf-users@vger.kernel.org, 
+	linux-doc@vger.kernel.org, 
+	"open list:KERNEL SELFTEST FRAMEWORK" <linux-kselftest@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
-Message-Id: <7B52DB03-5E27-4F61-AE1A-11081B12E4BE@suse.de>
-References: <CAAsfc_omvbgaSpmxqPPD9Jf4P2H-fEU97ADfRzJ0jULxGJehwg@mail.gmail.com>
- <TYZPR02MB78424F31FF023102693D2DB2A65A2@TYZPR02MB7842.apcprd02.prod.outlook.com>
- <15077D4C-8DE9-4751-9492-51D972B3E4C3@suse.de>
- <CAAsfc_r_6mZ2HesDOQWU-0F2KXhz=EJ_nHeR4bLanXNnAiduTg@mail.gmail.com>
- <D5D1CBD5-0031-4285-BE12-910D6898B465@suse.de>
- <CAAsfc_oTmE2E8pMctiLSwMngVUbtJa4G=KAozzAfztMMc_RMOQ@mail.gmail.com>
- <0CFF2B9E-4E40-480D-9F3B-F7631FE3CEA5@suse.de>
- <A86AAB66-C89A-4A37-8416-F9A99D4630D8@suse.de>
- <CAAsfc_pxrz1bcfo=29-qPuZhEEffbK5=LYGeNRV9gf=vfyp8Aw@mail.gmail.com>
-To: liequan che <liequanche@gmail.com>
-X-Mailer: Apple Mail (2.3776.700.51)
-X-Rspamd-Queue-Id: 0789621164
-X-Spam-Level: 
-X-Spamd-Result: default: False [-3.01 / 50.00];
-	BAYES_HAM(-3.00)[100.00%];
-	SUSPICIOUS_RECIPS(1.50)[];
-	NEURAL_HAM_LONG(-1.00)[-1.000];
-	R_DKIM_ALLOW(-0.20)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	NEURAL_HAM_SHORT(-0.20)[-1.000];
-	MIME_GOOD(-0.10)[text/plain];
-	MX_GOOD(-0.01)[];
-	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	FREEMAIL_TO(0.00)[gmail.com];
-	ARC_NA(0.00)[];
-	TO_DN_SOME(0.00)[];
-	FUZZY_BLOCKED(0.00)[rspamd.com];
-	MIME_TRACE(0.00)[0:+];
-	TO_DN_EQ_ADDR_SOME(0.00)[];
-	FREEMAIL_ENVRCPT(0.00)[gmail.com];
-	FREEMAIL_CC(0.00)[easystack.cn,gmail.com,vger.kernel.org];
-	RCVD_TLS_ALL(0.00)[];
-	RCVD_COUNT_TWO(0.00)[2];
-	FROM_EQ_ENVFROM(0.00)[];
-	FROM_HAS_DN(0.00)[];
-	RCPT_COUNT_FIVE(0.00)[5];
-	MID_RHS_MATCH_FROM(0.00)[];
-	TAGGED_RCPT(0.00)[];
-	APPLE_MAILER_COMMON(0.00)[];
-	DKIM_TRACE(0.00)[suse.de:+];
-	RCVD_VIA_SMTP_AUTH(0.00)[];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[imap1.dmz-prg2.suse.org:helo,imap1.dmz-prg2.suse.org:rdns,inspur.com:email,suse.de:email,suse.de:dkim,suse.de:mid]
-X-Rspamd-Server: rspamd2.dmz-prg2.suse.org
-X-Rspamd-Action: no action
-X-Spam-Score: -3.01
-X-Spam-Flag: NO
 
+Hi Kuan-Wei,
 
+On Wed, Nov 27, 2024 at 3:59=E2=80=AFAM Kuan-Wei Chiu <visitorckw@gmail.com=
+> wrote:
+> On Tue, Nov 26, 2024 at 02:27:09PM +0100, Geert Uytterhoeven wrote:
+> > On Sun, Oct 20, 2024 at 6:02=E2=80=AFAM Kuan-Wei Chiu <visitorckw@gmail=
+.com> wrote:
+> > > All current min heap API functions are marked with '__always_inline'.
+> > > However, as the number of users increases, inlining these functions
+> > > everywhere leads to a increase in kernel size.
+> > >
+> > > In performance-critical paths, such as when perf events are enabled a=
+nd
+> > > min heap functions are called on every context switch, it is importan=
+t
+> > > to retain the inline versions for optimal performance. To balance thi=
+s,
+> > > the original inline functions are kept, and additional non-inline
+> > > versions of the functions have been added in lib/min_heap.c.
+> > >
+> > > Link: https://lore.kernel.org/20240522161048.8d8bbc7b153b4ecd92c50666=
+@linux-foundation.org
+> > > Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+> > > Signed-off-by: Kuan-Wei Chiu <visitorckw@gmail.com>
+> >
+> > Thanks for your patch, which is now commit 92a8b224b833e82d
+> > ("lib/min_heap: introduce non-inline versions of min heap API
+> > functions") upstream.
+> >
+> > > --- a/include/linux/min_heap.h
+> > > +++ b/include/linux/min_heap.h
+> >
+> > > @@ -50,33 +50,33 @@ void __min_heap_init(min_heap_char *heap, void *d=
+ata, int size)
+> > >                 heap->data =3D heap->preallocated;
+> > >  }
+> > >
+> > > -#define min_heap_init(_heap, _data, _size)     \
+> > > -       __min_heap_init((min_heap_char *)_heap, _data, _size)
+> > > +#define min_heap_init_inline(_heap, _data, _size)      \
+> > > +       __min_heap_init_inline((min_heap_char *)_heap, _data, _size)
+> >
+> > Casting macro parameters without any further checks prevents the
+> > compiler from detecting silly mistakes.  Would it be possible to
+> > add safety-nets here and below, using e.g. container_of() or typeof()
+> > checks?
+>
+> IIUC, the concern is that passing a pointer that is not of type
+> min_heap might lead to compiler errors being missed. To address this,
 
-> 2024=E5=B9=B411=E6=9C=8827=E6=97=A5 11:01=EF=BC=8Cliequan che =
-<liequanche@gmail.com> =E5=86=99=E9=81=93=EF=BC=9A
->=20
-> Commit 028ddcac477b ("bcache: Remove unnecessary NULL point check in
-> node allocations") leads a NULL pointer deference in =
-cache_set_flush().
->=20
-> 1721         if (!IS_ERR_OR_NULL(c->root))
-> 1722                 list_add(&c->root->list, &c->btree_cache);
->=20
-> =46rom the above code in cache_set_flush(), if previous registration =
-code
-> fails before allocating c->root, it is possible c->root is NULL as =
-what
-> it is initialized. Also __bch_btree_node_alloc() never returns NULL =
-but
-> c->root is possible to be NULL at above line 1721.
->=20
-> This patch replaces IS_ERR() by IS_ERR_OR_NULL() to fix this.
+Exactly.
 
+> one possible solution could be to expand the members of struct min_heap
+> into individual parameters for the function.
+>
+> diff --git a/include/linux/min_heap.h b/include/linux/min_heap.h
+> index e781727c8916..ebd577003f0b 100644
+> --- a/include/linux/min_heap.h
+> +++ b/include/linux/min_heap.h
+> @@ -207,18 +207,20 @@ static size_t parent(size_t i, unsigned int lsbit, =
+size_t size)
+>
+>  /* Initialize a min-heap. */
+>  static __always_inline
+> -void __min_heap_init_inline(min_heap_char *heap, void *data, int size)
+> +void __min_heap_init_inline(int *heap_nr, int *heap_size, void **heap_da=
+ta,
+> +                           void *heap_preallocated, void *data, int size=
+)
+>  {
 
-OK, this time the commit log makes a lot sense. It is clear to me.
+Which means all functions and users must be updated now, and possibly
+again in the future (when there is ever a need to change the struct).
 
+> Alternatively, we could use container_of() for type safety.
+>
+> diff --git a/include/linux/min_heap.h b/include/linux/min_heap.h
+> index e781727c8916..fb96b1b82fb0 100644
+> --- a/include/linux/min_heap.h
+> +++ b/include/linux/min_heap.h
+> @@ -218,7 +218,7 @@ void __min_heap_init_inline(min_heap_char *heap, void=
+ *data, int size)
+>  }
+>
+>  #define min_heap_init_inline(_heap, _data, _size)      \
+> -       __min_heap_init_inline((min_heap_char *)_heap, _data, _size)
+> +       __min_heap_init_inline(container_of(&(_heap)->nr, min_heap_char, =
+nr), _data, _size)
+>
+>  /* Get the minimum element from the heap. */
+>  static __always_inline
+>
+> The first approach has better readability, while the second minimizes
+> the changes needed. Please let me know your thoughts.
 
->=20
-> Fixes: 028ddcac477b ("bcache: Remove unnecessary NULL point check in
-> node allocations")
-> Signed-off-by: Liequan Che <cheliequan@inspur.com>
-> Cc: stable@vger.kernel.org
-> Cc: Zheng Wang <zyytlz.wz@163.com>
-> Cc: Coly Li <colyli@suse.de>
-> ---
-> drivers/md/bcache/super.c | 2 +-
-> 1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index e7abfdd77c3b..e42f1400cea9 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -1718,7 +1718,7 @@ static CLOSURE_CALLBACK(cache_set_flush)
->        if (!IS_ERR_OR_NULL(c->gc_thread))
->                kthread_stop(c->gc_thread);
->=20
-> -       if (!IS_ERR(c->root))
-> +       if (!IS_ERR_OR_NULL(c->root))
->                list_add(&c->root->list, &c->btree_cache);
->=20
->        /*
-> =E2=80=94
-> 2.46.0
+container_of() is a well-known idiom in the Linux kernel, so I would go
+for this solution, for min_heap_init_inline() and all other functions
+currently using such a cast.
 
-It is fine to me. I am in travel these days, and will handle this patch =
-by end of this week.
+> > > --- a/lib/Kconfig
+> > > +++ b/lib/Kconfig
+> > > @@ -777,3 +777,6 @@ config POLYNOMIAL
+> > >
+> > >  config FIRMWARE_TABLE
+> > >         bool
+> > > +
+> > > +config MIN_HEAP
+> > > +       bool
+> >
+> > Perhaps tristate? See also below.
+> >
+> > > --- a/lib/Kconfig.debug
+> > > +++ b/lib/Kconfig.debug
+> > > @@ -2279,6 +2279,7 @@ config TEST_LIST_SORT
+> > >  config TEST_MIN_HEAP
+> > >         tristate "Min heap test"
+> > >         depends on DEBUG_KERNEL || m
+> > > +       select MIN_HEAP
+> >
+> > Ideally, tests should not select functionality, to prevent increasing t=
+he
+> > attack vector by merely enabling (modular) tests.
+> >
+> Makes sense. Thanks for catching this.
+>
+> > In this particular case, just using "depends on MIN_HEAP" is not an
+> > option, as MIN_HEAP is not user-visible, and thus cannot be enabled
+> > by the user on its own.  However, making MIN_HEAP tristate could be
+> > a first step for the modular case.
+> >
+> > The builtin case is harder to fix, as e.g.
+> >
+> >         depends on MIN_HEAP || COMPILE_TEST
+> >         select MIN_HEAP if COMPILE_TEST
+> >
+> > would still trigger a recursive dependency error.
+> >
+> > Alternatively, the test could just keep on using the inline variants,
+> > unless CONFIG_MIN_HEAP=3Dy? Or event test both for the latter?
+> >
+> I think that having min_heap_test continue using the inline variants
+> might be the simplest solution?
 
-Thanks for composing this patch.
+As lib/min_heap.c contains just wrappers around the inline functions,
+that would be fine for me.  If/when lib/min_heap.c gains more
+functionality, tests for that can be added to lib/test_min_heap.c
+inside an #ifdef CONFIG_MIN_HEAP/#endif block.
 
-Coly Li=
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--=20
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k=
+.org
+
+In personal conversations with technical people, I call myself a hacker. Bu=
+t
+when I'm talking to journalists I just say "programmer" or something like t=
+hat.
+                                -- Linus Torvalds
