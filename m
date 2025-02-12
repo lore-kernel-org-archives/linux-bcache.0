@@ -1,111 +1,167 @@
-Received: from mail-pj1-f54.google.com (mail-pj1-f54.google.com [209.85.216.54])
+Received: from mail-lf1-f47.google.com (mail-lf1-f47.google.com [209.85.167.47])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DAF8B1FAC45
-	for <linux-bcache@vger.kernel.org>; Wed, 12 Feb 2025 05:51:32 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.216.54
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5ABA72046B3
+	for <linux-bcache@vger.kernel.org>; Wed, 12 Feb 2025 07:42:08 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.167.47
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1739339494; cv=none; b=LwvQ6XPlQlhcHg72ZEh+0w7dD75GGOCa1vz5rHGX+nQTsbXw+JF2mhdIQMCaCLJOOOievV1omZuPRm2GUrDlpIriRYnx+50LcUzDwyYwkTsuZevAp6N8chX7Fv06X44Rcpj6yI3HcMrL8TdOJOsXlanBDAYGLyDiF+kw+nEl/SE=
+	t=1739346130; cv=none; b=FZKDzuNq4YTc5bhPUk4g7GhthDihy0Tq48vGNETUNx+QyaMyQc2qOSuNvIFWheKpbcZBzno4bxoWm/5n+Lc6SPAC+G78UhrFHMK3R8P40aKaynKnZKGxb+IDZfQl4YgmcGgZ+nB99JE+jh4ytu+x7P74eLTdx1Xu7XQ7uQG52d4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1739339494; c=relaxed/simple;
-	bh=On50N8XfJtdyg85Pfpd+FFpaDhSZdWToldlk7/cR41A=;
-	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version; b=oq8DXH6N2uN6p2SQZiiHLD7yqwPReuYZMWbf/NpxCOrwQr1vo3h8qfH58jzzzOVssNvMdBCYCgrhQInP7tPnHgli6u4J9eyL/DwYsV8/dTib7mLeMgRChxk+xYDpBG8soacPJwPbdioZsb8Fy3+JP3U/KjU9PAtNvltDygliJfU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=Vr2katO5; arc=none smtp.client-ip=209.85.216.54
+	s=arc-20240116; t=1739346130; c=relaxed/simple;
+	bh=nmgGjp6Hsua2qC7uevGCNhuckiJgC7Xrz1BZeCpMOVw=;
+	h=MIME-Version:References:In-Reply-To:From:Date:Message-ID:Subject:
+	 To:Cc:Content-Type; b=u+FcSRtn8PMxTPt1JVuaG9vjLlkdo7DFGm9n7CQhKF4IcOMJ+r1zjxk/850eGoKWwhVxMtR5XpNFpY0xHOcqZCBXX+JNRu2xdvndnXdT+VD4sULl5n7wSHXdegPftDhULeHbMBEYTrPysOAgiheK4ZmsFuj7Jb8B2YicQROfmyE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=QtIWU0j6; arc=none smtp.client-ip=209.85.167.47
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="Vr2katO5"
-Received: by mail-pj1-f54.google.com with SMTP id 98e67ed59e1d1-2f83a8afcbbso747755a91.1
-        for <linux-bcache@vger.kernel.org>; Tue, 11 Feb 2025 21:51:32 -0800 (PST)
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="QtIWU0j6"
+Received: by mail-lf1-f47.google.com with SMTP id 2adb3069b0e04-5450cf0cb07so2490423e87.0
+        for <linux-bcache@vger.kernel.org>; Tue, 11 Feb 2025 23:42:07 -0800 (PST)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20230601; t=1739339491; x=1739944291; darn=vger.kernel.org;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:from:to:cc:subject:date:message-id:reply-to;
-        bh=71OqmfUylbxT05XvE8URCg5FJ2nx2QDuN8fJlkXCpkg=;
-        b=Vr2katO5u5cNU7b16TrS8GLgyo+TFbjpN7XMA9Xt4WUU7M4Ufo8+GW/ailixL2VuyX
-         M1mVHFaDQ5O/yE5o/e2L+cS7o8hyOwtX/Fm9BLMEeAAuydIe7uitrkcG3oVWAx8xk1oh
-         YFVjPzOFI6MnkppVAJTXmUJuLYheK6RevtyksHHdhTzTbw9oLVtSzfzsZbxOGL/AcEiU
-         Oo7aZo7Vwud2VjA+zHRLeDwrdvi8mif8oGjrMrgBcmYrOk0tLYS7vGV5VBP/Kdjzs0i5
-         uTC1LWyzffys83JcGpXiv7Da6j67bHX6vvW7yQ4UgctyG0aE2qpvkc/6So1AjQamI7bP
-         RlLQ==
+        d=gmail.com; s=20230601; t=1739346126; x=1739950926; darn=vger.kernel.org;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=l4Lz6wMDUQ8OPcJDsT1Zmh9Nq0pDVI/Rc8vIMBXZZG4=;
+        b=QtIWU0j6k233d393FSXf7mlRPXVDJ1pjs844B18q1kXyKYRaxEPulF6fUJQ/ei2zJ4
+         pgXv4YUHjY3mRuWIe6zu/JGPHgmvLw5kXWWkOJWTH6aC/MoYudQvrGkcQbecyc+fTHA0
+         0ldUcQfG5j941T4MrXvbpu+Y1yEyyXVY+HDRD5/w8ZkHLdXlocW3c4bMQ1hRChVbXTmB
+         gotQQgUxw8tZ+zRP7lQveOJAv/g66uowmWB/9ZBWSPQ4OTwwBeuQaD3fQ6k9yXhhO8v7
+         TcfTFNrzGCNl1WJfISptMm0r/dghXLxAvM09yvIAoxLHgPRGt/Jyaf7O4tyoZp57OGa7
+         h7jQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20230601; t=1739339491; x=1739944291;
-        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
-         :to:from:x-gm-message-state:from:to:cc:subject:date:message-id
-         :reply-to;
-        bh=71OqmfUylbxT05XvE8URCg5FJ2nx2QDuN8fJlkXCpkg=;
-        b=mAH3hl1BpguIvPJyC5F1EBRxVQfIEh0rbBlYayFh64SJdSp1xUL/fmSlq6pZ2lK9G0
-         W+SC9dFai+PdulbdarFLyjKKDSwiyswEeR+h9c2nI84FU2Pw3Jrv5g/gCDdHh74HfqNu
-         MPcS1vGtMIPnS/PmSzYXGLhAadYPWC+Xq4dnCdXHnxgltSdsUtl1aMriCP4k+vMWRtNo
-         O0NoH1ae7OpKcitG7WIwZac2KnxsL7uhtRWh8bgrkOIZ9H/JmgYufNuEivY8K88pSnqA
-         D9rwqqoQulNVvV51mCgFwKZ2u2vL89825qGFyzziZj0IrK/RXTihnFiXncIFHZ+a6u9h
-         scSA==
-X-Gm-Message-State: AOJu0YylKL729q0e50XJTbNptYQtP0retvfD1Zu4/SdYlctUDk+cKGOB
-	eK9ZiejGr7Oll9l7xYOldrNDHHKG86LZv4xiOOis8OecQf47gyKC324z+Q==
-X-Gm-Gg: ASbGncsRM4PK8Z+Yhj9WEJWY5eru8BRfPzBugLJI1HLII9UKeGwXRDNh4lRhYU24fAg
-	41S/kJgwJN3l15zZWweAg3+SXQW2R+ekTWrR19ExYsHp22AnAoOp0HYqq0Uz9izezr09593yTrt
-	42DgByUc2s3RyGo+tdJRH3uklXT+txoF2ph65xkO8agClda65c9BepsttiX09PsytDNJ95tBjKl
-	2wXOcfm7BFVrJKM6eqMm3fXm1zJAPZYoKDTAsjvd7pY1oTOx7aVshbxIilu2gD/uzEI+VUZHwWf
-	Czi/pIDQDreILU0VTmnq
-X-Google-Smtp-Source: AGHT+IHM4+4hhNRJNw05QXTOYFlr5MNmEFCC9Xfv4wWF69RhLnJy0mpUohgmGGJc6Ek6ad9v4y1nig==
-X-Received: by 2002:a17:90b:56c3:b0:2fa:562c:c1cf with SMTP id 98e67ed59e1d1-2faa05deecemr10137207a91.1.1739339491481;
-        Tue, 11 Feb 2025 21:51:31 -0800 (PST)
-Received: from localhost ([123.113.100.114])
-        by smtp.gmail.com with ESMTPSA id 98e67ed59e1d1-2fbf98d9fefsm640428a91.29.2025.02.11.21.51.30
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 11 Feb 2025 21:51:31 -0800 (PST)
-From: Julian Sun <sunjunchao2870@gmail.com>
-To: linux-bcache@vger.kernel.org
-Cc: colyli@kernel.org,
-	kent.overstreet@linux.dev,
-	Julian Sun <sunjunchao2870@gmail.com>
-Subject: [PATCH] bcache: Use the lastest writeback_delay value when writeback thread is woken up
-Date: Wed, 12 Feb 2025 13:51:26 +0800
-Message-Id: <20250212055126.117092-1-sunjunchao2870@gmail.com>
-X-Mailer: git-send-email 2.39.5
+        d=1e100.net; s=20230601; t=1739346126; x=1739950926;
+        h=content-transfer-encoding:cc:to:subject:message-id:date:from
+         :in-reply-to:references:mime-version:x-gm-message-state:from:to:cc
+         :subject:date:message-id:reply-to;
+        bh=l4Lz6wMDUQ8OPcJDsT1Zmh9Nq0pDVI/Rc8vIMBXZZG4=;
+        b=A2x1RSnc7yNriwrTvQKH8dMRgJ5XkOMHnQLLbOwXxL5s6FuWBjo30gfuUJOIWNdeRw
+         o1pIO4X5Ze+XgA5LBmofp2d1/a/GorsQltwKc3u8Le1q0wa6q1NQrkU2BwRjPI/W7AHi
+         jv5n56LS6qHH5lmYbiL+/l2AMsQRsMO0rstFls3axzmTraY9uOb2oCVlf2xWoKh8rr73
+         Y9CQz8fjp0rtPaA91vH3Odph4lQF/fA/GsIWngggOs56k87msQfDs/CGqwbthfluFEdE
+         aH692SrQOKrHNoRCjJGQAfqF0+8EmQr8kSw2bFhu5Wp3v9Cp/TnUPKCrF6Qv9Mr+eLCy
+         dXyw==
+X-Gm-Message-State: AOJu0Yz726GKtCL18JP0fzZybA5YfXzVVvjB1+jK07oRW10XjMWY3p/z
+	XADTUxxkY5bhOWiqTfc8fcRIxM+ejGJPZnaQZhMULOQXiombjTYeGTw0Pjf53ZWAM59/4iavT8a
+	nCF2CxTsWX/Z7/wALhaeXLtlfJ2E=
+X-Gm-Gg: ASbGncu+2bMDQMDIu3YSw9cDMJ/nLompd353L3iCGy0fmeiwAt/DmnlPyjyDMJhUwW4
+	Sg0bjAPRE5rFK+9W9eBjNqt1Xl7aaX3AnlUdQhk8uEUfU3/0CcsHa65JBrXCJkafsG754vyGgyg
+	==
+X-Google-Smtp-Source: AGHT+IEKR1TrhUDybIPWS/zHA9/q7RwCX+IAjDf9sV8dI/WiO5wHCdpFwDpWRy/Cb46JYH1dlsxvejxWtt/NU0WBb+s=
+X-Received: by 2002:a05:6512:3056:b0:545:9ce:7606 with SMTP id
+ 2adb3069b0e04-54518178d07mr653941e87.34.1739346126019; Tue, 11 Feb 2025
+ 23:42:06 -0800 (PST)
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+References: <20250212055126.117092-1-sunjunchao2870@gmail.com> <ALsAXgAaLhNhHzKQW2msV4pl.3.1739343977966.Hmail.mingzhe.zou@easystack.cn>
+In-Reply-To: <ALsAXgAaLhNhHzKQW2msV4pl.3.1739343977966.Hmail.mingzhe.zou@easystack.cn>
+From: Julian Sun <sunjunchao2870@gmail.com>
+Date: Wed, 12 Feb 2025 15:41:54 +0800
+X-Gm-Features: AWEUYZlHzIO5GtRBUYSQVvNKrcTiWDBMv1gqftCwbXHWd0eoB03cUkziX2f5NRQ
+Message-ID: <CAHB1Najgakh_J94FZBW1HnYRSTeGbo8TehE3jQ5LKn8D6J8DKw@mail.gmail.com>
+Subject: Re: [PATCH] bcache: Use the lastest writeback_delay value when
+ writeback thread is woken up
+To: =?UTF-8?B?6YK55piO5ZOy?= <mingzhe.zou@easystack.cn>
+Cc: linux-bcache <linux-bcache@vger.kernel.org>, colyli <colyli@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-When users reset writeback_delay value and woke up writeback
-thread via sysfs interface, expect the writeback thread
-to do actual writeback work, but in reality, the writeback
-thread probably continue to sleep.
+Hi, mingzhe
 
-For example the following script set writeback_delay to 0 and
-wake up writeback thread, but writeback thread just continue to
-sleep:
-echo 0 > /sys/block/bcache0/bcache/writeback_delay
-echo 1 > /sys/block/bcache0/bcache/writeback_running
+Thanks for your review and comments.
 
-Using the lastest value when writeback thread is woken up can
-urge it to do actual writeback work.
+On Wed, Feb 12, 2025 at 3:06=E2=80=AFPM =E9=82=B9=E6=98=8E=E5=93=B2 <mingzh=
+e.zou@easystack.cn> wrote:
+>
+> Original:
+> From=EF=BC=9AJulian Sun <sunjunchao2870@gmail.com>
+> Date=EF=BC=9A2025-02-12 13:51:26(=E4=B8=AD=E5=9B=BD (GMT+08:00))
+> To=EF=BC=9Alinux-bcache<linux-bcache@vger.kernel.org>
+> Cc=EF=BC=9Acolyli<colyli@kernel.org> , kent.overstreet<kent.overstreet@li=
+nux.dev> , Julian Sun <sunjunchao2870@gmail.com>
+> Subject=EF=BC=9A[PATCH] bcache: Use the lastest writeback_delay value whe=
+n writeback thread is woken up
+> When users reset writeback_delay value and woke up writeback
+> thread via sysfs interface, expect the writeback thread
+> to do actual writeback work, but in reality, the writeback
+> thread probably continue to sleep.
+>
+> For example the following script set writeback_delay to 0 and
+> wake up writeback thread, but writeback thread just continue to
+> sleep:
+> echo 0 &gt; /sys/block/bcache0/bcache/writeback_delay
+> echo 1 &gt; /sys/block/bcache0/bcache/writeback_running
+>
+> Using the lastest value when writeback thread is woken up can
+> urge it to do actual writeback work.
+>
+> Signed-off-by: Julian Sun <sunjunchao2870@gmail.com>
+> ---
+>  drivers/md/bcache/writeback.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.=
+c
+> index c1d28e365910..0d2d06aaacfe 100644
+> --- a/drivers/md/bcache/writeback.c
+> +++ b/drivers/md/bcache/writeback.c
+> @@ -825,8 +825,10 @@ static int bch_writeback_thread(void *arg)
+>
+> Hi, Julian Sun:
+>
+> We should first understand the role of writable_delay.
+>
+> The writeback thread only sleep when searched_full_index is True,
+> which means that there are very few dirty keys at this time, all
+> dirty keys are refilled at once.
+>
+>                         while (delay &amp;&amp;
+>                                !kthread_should_stop() &amp;&amp;
+>                                !test_bit(CACHE_SET_IO_DISABLE, &amp;c-&gt=
+;flags) &amp;&amp;
+> -                              !test_bit(BCACHE_DEV_DETACHING, &amp;dc-&g=
+t;disk.flags))
+> +                              !test_bit(BCACHE_DEV_DETACHING, &amp;dc-&g=
+t;disk.flags)) {
+>                                 delay =3D schedule_timeout_interruptible(=
+delay);
+> +                               delay =3D min(delay, dc-&gt;writeback_del=
+ay * HZ);
+> +                       }
+>
+>
+> > So, I don't think it is necessary to immediately adjust the sleep time
+> > unless the writeback_delay is set very large. We need to set a reasonab=
+le
+> > value for writable_delay at startup, rather than adjusting it at runtim=
+e.
+> >
 
-Signed-off-by: Julian Sun <sunjunchao2870@gmail.com>
----
- drivers/md/bcache/writeback.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+I understand your point, but I still believe this is important.
+IMO, since /sys/block/bcacheX/bcache/writeback_delay allows adjusting
+the writeback_delay value at runtime,  bcache should ideally support
+this functionality. Otherwise, the current behavior may be confusing
+for users: "I've adjusted it, but why does it seem ineffective?" :)
 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index c1d28e365910..0d2d06aaacfe 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -825,8 +825,10 @@ static int bch_writeback_thread(void *arg)
- 			while (delay &&
- 			       !kthread_should_stop() &&
- 			       !test_bit(CACHE_SET_IO_DISABLE, &c->flags) &&
--			       !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags))
-+			       !test_bit(BCACHE_DEV_DETACHING, &dc->disk.flags)) {
- 				delay = schedule_timeout_interruptible(delay);
-+				delay = min(delay, dc->writeback_delay * HZ);
-+			}
- 
- 			bch_ratelimit_reset(&dc->writeback_rate);
- 		}
--- 
-2.39.5
+> mingzhe
+>
+>                         bch_ratelimit_reset(&amp;dc-&gt;writeback_rate);
+>                 }
+> --
+> 2.39.5
+>
+>
+>
+> </sunjunchao2870@gmail.com></sunjunchao2870@gmail.com></kent.overstreet@l=
+inux.dev></colyli@kernel.org></linux-bcache@vger.kernel.org></sunjunchao287=
+0@gmail.com>
+>
 
+Thanks,
+--=20
+Julian Sun <sunjunchao2870@gmail.com>
