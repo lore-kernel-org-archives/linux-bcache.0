@@ -1,92 +1,142 @@
-Received: from mail-m49223.qiye.163.com (mail-m49223.qiye.163.com [45.254.49.223])
+Received: from mail50.out.titan.email (mail50.out.titan.email [44.199.128.152])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 50D0B205AD4
-	for <linux-bcache@vger.kernel.org>; Wed, 12 Feb 2025 09:28:47 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=45.254.49.223
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EC42625A353
+	for <linux-bcache@vger.kernel.org>; Wed, 12 Feb 2025 17:23:05 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=44.199.128.152
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1739352542; cv=none; b=n47yPkHL95c99hbrYUPy3lxWKN+dgigQy3sesE0daUFv/Fluf1TVojhHagDbvJkvgu9GcrD8nsMnf0EKGhAAoOgcxs0qpc63R8GqURFbng0sVQr64T5wDtBaOJyrh5sGd+7qSeGRBbGs2HnWC7bbNWeoUwvopvCk+VoMLKIOLVI=
+	t=1739380989; cv=none; b=iSEQMGfQGlFf46oboxjo2zZO79PUaEAOxRqF+gwC0uSUQWv2pyRMp42aDIa9H8Tgfjlwab+NIz+xweQgRcfP9T4czAZoBA8BJ7e5QiAkjeS7zWE9cv35vmLp0rvVyY1uIm8X9eNQH2ZpjfGEjR5mrmmKWwhmjikSs4qBfjD5g9g=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1739352542; c=relaxed/simple;
-	bh=HobnbV5FYd6bzk/tW6gMPs+UmvmuMDTBYkupLDXAV5c=;
-	h=Content-Type:Message-ID:To:Cc:Subject:In-Reply-To:References:
-	 MIME-Version:From:Date; b=ox+d1Hv9hHeTa5D81YMTSh3nQqP+tD3Vw9w3iWgBzFvCMvWGpfMx5QOE6evndSGqMGTzftdLpd7nojpMWLPV+2AwmUOzKGe5URh6Jz++LLpfITlK0EzPd/oRB7xe6rQfFUcdTarjQFQyK3cdmIjfJz/QZs/EO9FK1c9f7wfKJMg=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=easystack.cn; spf=none smtp.mailfrom=easystack.cn; arc=none smtp.client-ip=45.254.49.223
-Authentication-Results: smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=easystack.cn
-Authentication-Results: smtp.subspace.kernel.org; spf=none smtp.mailfrom=easystack.cn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: base64
-Message-ID: <ALsAXgAaLhNhHzKQW2msV4pl.3.1739343977966.Hmail.mingzhe.zou@easystack.cn>
-To: Julian Sun  <sunjunchao2870@gmail.com>
-Cc: linux-bcache <linux-bcache@vger.kernel.org>, colyli <colyli@kernel.org>
-Subject: =?UTF-8?B?UmU6W1BBVENIXSBiY2FjaGU6IFVzZSB0aGUgbGFzdGVzdCB3cml0ZWJhY2tfZGVsYXkgdmFsdWUgd2hlbiB3cml0ZWJhY2sgdGhyZWFkIGlzIHdva2VuIHVw?=
-X-Priority: 3
-X-Mailer: HMail Webmail Server V2.0 Copyright (c) 2016-163.com Sirius_WEB_WIN_1.47.0
-In-Reply-To: <20250212055126.117092-1-sunjunchao2870@gmail.com>
+	s=arc-20240116; t=1739380989; c=relaxed/simple;
+	bh=SpJJRsxjvMzoag+/8U/c3dPxqH3msxnbTVJZ4wlWFpk=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=qTUYkVPwmFVRLtG8/zEnjugCpaKKNBIHt0DQ6CICn/XEqQXYQxKHzUVPRU66rqVUt1LKaYxyau+u4Ps/77HOcfsyIhGthsIQa/D30Tc2DOV2RPTvvfVaXdBN2427YZmoF0gaT6MatvS/8Zhcy6gNuXyykMaM1o/0xans67gNUa4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li; spf=pass smtp.mailfrom=coly.li; dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b=Z2/YY0it; arc=none smtp.client-ip=44.199.128.152
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=coly.li
+Authentication-Results: smtp.subspace.kernel.org;
+	dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b="Z2/YY0it"
+DKIM-Signature: a=rsa-sha256; bh=FrA11wHdAjI04fOkpguSq21Hbh1N/QWadWestOlAfEE=;
+	c=relaxed/relaxed; d=t12smtp-sign004.email;
+	h=message-id:in-reply-to:cc:subject:mime-version:date:to:from:references:from:to:cc:subject:date:message-id:in-reply-to:references:reply-to;
+	q=dns/txt; s=titan1; t=1739379988; v=1;
+	b=Z2/YY0itkQpuAHSuBStZWWBSpe3G7WEwRFYCa5Ygt41k8G+9COyyfwnU0oyGOEQ/2USAVdSS
+	eXjZtSxH+qoG4csIY5vH6et4GxVhXBL7D/dCnRW0GHRXjYkNWzyBHobfOa5v7V2ffu7gbGuJcn8
+	lvd8pCfRD/4uLAFKVbPGFhTU=
+Received: from studio.local (unknown [141.11.218.23])
+	by smtp-out.flockmail.com (Postfix) with ESMTPA id 61302E03C1;
+	Wed, 12 Feb 2025 17:06:26 +0000 (UTC)
+Date: Thu, 13 Feb 2025 01:06:23 +0800
+Feedback-ID: :i@coly.li:coly.li:flockmailId
+From: Coly Li <i@coly.li>
+To: Julian Sun <sunjunchao2870@gmail.com>
+Cc: =?utf-8?B?6YK55piO5ZOy?= <mingzhe.zou@easystack.cn>, 
+	linux-bcache <linux-bcache@vger.kernel.org>, colyli <colyli@kernel.org>
+Subject: Re: [PATCH] bcache: Use the lastest writeback_delay value when
+ writeback thread is woken up
+Message-ID: <mtmlo6kdq52z47fz336anzolmfctrqtzrffqjikqd5ee7jgp5q@pcissxq7yx7h>
 References: <20250212055126.117092-1-sunjunchao2870@gmail.com>
+ <ALsAXgAaLhNhHzKQW2msV4pl.3.1739343977966.Hmail.mingzhe.zou@easystack.cn>
+ <CAHB1Najgakh_J94FZBW1HnYRSTeGbo8TehE3jQ5LKn8D6J8DKw@mail.gmail.com>
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Received: from mingzhe.zou@easystack.cn( [218.94.118.90] ) by ajax-webmail ( [127.0.0.1] ) ; Wed, 12 Feb 2025 15:06:17 +0800 (GMT+08:00)
-From: =?UTF-8?B?6YK55piO5ZOy?= <mingzhe.zou@easystack.cn>
-Date: Wed, 12 Feb 2025 15:06:17 +0800 (GMT+08:00)
-X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
-	tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVlDS0JCVkNNGU0YGB5KHUseQ1YVFAkWGhdVGRETFh
-	oSFyQUDg9ZV1kYEgtZQVlJSkNVQk9VSkpDVUJLWVdZFhoPEhUdFFlBWU9LSFVKS0lPT09IVUpLS1
-	VKQktLWQY+
-X-HM-Tid: 0a94f8df23e60242kunm194892bc97a
-X-HM-MType: 1
-X-HM-NTES-SC: AL0_4z5B86Wr4Tz9jdMF+bhXMdPGVk+6WUBic5BJK0kLqbiJsCmuG9MdhyqTcq
-	cnmL0IyrvQXLgMHt5crrNISNn5Z/liK1AQ4Ex0S/+2bdLCvlYUr5kEP0A/oGew4DD0rL2YnWAEmw
-	s05MXW6K6rEBQKrZe2H8GYOLJsUItRaTHuibI=
-X-HM-Sender-Digest: e1kJHlYWEh9ZQUpCQkpCTUxCS0pPSzdXWQweGVlBDwkOHldZEh8eFQ9Z
-	QVlHOjcIOiMcOho3EzUTMwEwKixJFggtTwsXVUhVSkxIQkhPSEJMQ0xNQ1UzFhoSF1UWEhUcARMe
-	VQEUDjseGggCCA8aGBBVGBVFWVdZEgtZQVlJSkNVQk9VSkpDVUJLWVdZCAFZQUhISk83V1kUCw8S
-	FBUIWUFLNwY+
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHB1Najgakh_J94FZBW1HnYRSTeGbo8TehE3jQ5LKn8D6J8DKw@mail.gmail.com>
+X-F-Verdict: SPFVALID
+X-Titan-Src-Out: 1739379988088772005.19601.3081821619308659484@prod-use1-smtp-out1004.
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.4 cv=Ntorc9dJ c=1 sm=1 tr=0 ts=67acd514
+	a=USBFZE4A2Ag4MGBBroF6Xg==:117 a=USBFZE4A2Ag4MGBBroF6Xg==:17
+	a=IkcTkHD0fZMA:10 a=CEWIc4RMnpUA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8
+	a=Fqtvuo2cIafZQZ-0i1sA:9 a=3ZKOabzyN94A:10 a=QEXdDO2ut3YA:10
 
-T3JpZ2luYWw6CkZyb23vvJpKdWxpYW4gU3VuIDxzdW5qdW5jaGFvMjg3MEBnbWFpbC5jb20+CkRh
-dGXvvJoyMDI1LTAyLTEyIDEzOjUxOjI2KOS4reWbvSAoR01UKzA4OjAwKSkKVG/vvJpsaW51eC1i
-Y2FjaGU8bGludXgtYmNhY2hlQHZnZXIua2VybmVsLm9yZz4KQ2PvvJpjb2x5bGk8Y29seWxpQGtl
-cm5lbC5vcmc+ICwga2VudC5vdmVyc3RyZWV0PGtlbnQub3ZlcnN0cmVldEBsaW51eC5kZXY+ICwg
-SnVsaWFuIFN1biA8c3VuanVuY2hhbzI4NzBAZ21haWwuY29tPgpTdWJqZWN077yaW1BBVENIXSBi
-Y2FjaGU6IFVzZSB0aGUgbGFzdGVzdCB3cml0ZWJhY2tfZGVsYXkgdmFsdWUgd2hlbiB3cml0ZWJh
-Y2sgdGhyZWFkIGlzIHdva2VuIHVwCldoZW4gdXNlcnMgcmVzZXQgd3JpdGViYWNrX2RlbGF5IHZh
-bHVlIGFuZCB3b2tlIHVwIHdyaXRlYmFjawp0aHJlYWQgdmlhIHN5c2ZzIGludGVyZmFjZSwgZXhw
-ZWN0IHRoZSB3cml0ZWJhY2sgdGhyZWFkCnRvIGRvIGFjdHVhbCB3cml0ZWJhY2sgd29yaywgYnV0
-IGluIHJlYWxpdHksIHRoZSB3cml0ZWJhY2sKdGhyZWFkIHByb2JhYmx5IGNvbnRpbnVlIHRvIHNs
-ZWVwLgoKRm9yIGV4YW1wbGUgdGhlIGZvbGxvd2luZyBzY3JpcHQgc2V0IHdyaXRlYmFja19kZWxh
-eSB0byAwIGFuZAp3YWtlIHVwIHdyaXRlYmFjayB0aHJlYWQsIGJ1dCB3cml0ZWJhY2sgdGhyZWFk
-IGp1c3QgY29udGludWUgdG8Kc2xlZXA6CmVjaG8gMCAmZ3Q7IC9zeXMvYmxvY2svYmNhY2hlMC9i
-Y2FjaGUvd3JpdGViYWNrX2RlbGF5CmVjaG8gMSAmZ3Q7IC9zeXMvYmxvY2svYmNhY2hlMC9iY2Fj
-aGUvd3JpdGViYWNrX3J1bm5pbmcKClVzaW5nIHRoZSBsYXN0ZXN0IHZhbHVlIHdoZW4gd3JpdGVi
-YWNrIHRocmVhZCBpcyB3b2tlbiB1cCBjYW4KdXJnZSBpdCB0byBkbyBhY3R1YWwgd3JpdGViYWNr
-IHdvcmsuCgpTaWduZWQtb2ZmLWJ5OiBKdWxpYW4gU3VuIDxzdW5qdW5jaGFvMjg3MEBnbWFpbC5j
-b20+Ci0tLQogZHJpdmVycy9tZC9iY2FjaGUvd3JpdGViYWNrLmMgfCA0ICsrKy0KIDEgZmlsZSBj
-aGFuZ2VkLCAzIGluc2VydGlvbnMoKyksIDEgZGVsZXRpb24oLSkKCmRpZmYgLS1naXQgYS9kcml2
-ZXJzL21kL2JjYWNoZS93cml0ZWJhY2suYyBiL2RyaXZlcnMvbWQvYmNhY2hlL3dyaXRlYmFjay5j
-CmluZGV4IGMxZDI4ZTM2NTkxMC4uMGQyZDA2YWFhY2ZlIDEwMDY0NAotLS0gYS9kcml2ZXJzL21k
-L2JjYWNoZS93cml0ZWJhY2suYworKysgYi9kcml2ZXJzL21kL2JjYWNoZS93cml0ZWJhY2suYwpA
-QCAtODI1LDggKzgyNSwxMCBAQCBzdGF0aWMgaW50IGJjaF93cml0ZWJhY2tfdGhyZWFkKHZvaWQg
-KmFyZykKCkhpLCBKdWxpYW4gU3VuOgoKV2Ugc2hvdWxkIGZpcnN0IHVuZGVyc3RhbmQgdGhlIHJv
-bGUgb2Ygd3JpdGFibGVfZGVsYXkuIAoKVGhlIHdyaXRlYmFjayB0aHJlYWQgb25seSBzbGVlcCB3
-aGVuIHNlYXJjaGVkX2Z1bGxfaW5kZXggaXMgVHJ1ZSwKd2hpY2ggbWVhbnMgdGhhdCB0aGVyZSBh
-cmUgdmVyeSBmZXcgZGlydHkga2V5cyBhdCB0aGlzIHRpbWUsIGFsbApkaXJ0eSBrZXlzIGFyZSBy
-ZWZpbGxlZCBhdCBvbmNlLgoKIAkJCXdoaWxlIChkZWxheSAmYW1wOyZhbXA7CiAJCQkgICAgICAg
-IWt0aHJlYWRfc2hvdWxkX3N0b3AoKSAmYW1wOyZhbXA7CiAJCQkgICAgICAgIXRlc3RfYml0KENB
-Q0hFX1NFVF9JT19ESVNBQkxFLCAmYW1wO2MtJmd0O2ZsYWdzKSAmYW1wOyZhbXA7Ci0JCQkgICAg
-ICAgIXRlc3RfYml0KEJDQUNIRV9ERVZfREVUQUNISU5HLCAmYW1wO2RjLSZndDtkaXNrLmZsYWdz
-KSkKKwkJCSAgICAgICAhdGVzdF9iaXQoQkNBQ0hFX0RFVl9ERVRBQ0hJTkcsICZhbXA7ZGMtJmd0
-O2Rpc2suZmxhZ3MpKSB7CiAJCQkJZGVsYXkgPSBzY2hlZHVsZV90aW1lb3V0X2ludGVycnVwdGli
-bGUoZGVsYXkpOworCQkJCWRlbGF5ID0gbWluKGRlbGF5LCBkYy0mZ3Q7d3JpdGViYWNrX2RlbGF5
-ICogSFopOworCQkJfQoKU28sIEkgZG9uJ3QgdGhpbmsgaXQgaXMgbmVjZXNzYXJ5IHRvIGltbWVk
-aWF0ZWx5IGFkanVzdCB0aGUgc2xlZXAgdGltZQp1bmxlc3MgdGhlIHdyaXRlYmFja19kZWxheSBp
-cyBzZXQgdmVyeSBsYXJnZS4gV2UgbmVlZCB0byBzZXQgYSByZWFzb25hYmxlCnZhbHVlIGZvciB3
-cml0YWJsZV9kZWxheSBhdCBzdGFydHVwLCByYXRoZXIgdGhhbiBhZGp1c3RpbmcgaXQgYXQgcnVu
-dGltZS4KCm1pbmd6aGUKIAogCQkJYmNoX3JhdGVsaW1pdF9yZXNldCgmYW1wO2RjLSZndDt3cml0
-ZWJhY2tfcmF0ZSk7CiAJCX0KLS0gCjIuMzkuNQoKCgo8L3N1bmp1bmNoYW8yODcwQGdtYWlsLmNv
-bT48L3N1bmp1bmNoYW8yODcwQGdtYWlsLmNvbT48L2tlbnQub3ZlcnN0cmVldEBsaW51eC5kZXY+
-PC9jb2x5bGlAa2VybmVsLm9yZz48L2xpbnV4LWJjYWNoZUB2Z2VyLmtlcm5lbC5vcmc+PC9zdW5q
-dW5jaGFvMjg3MEBnbWFpbC5jb20+DQoNCg==
+On Wed, Feb 12, 2025 at 03:41:54PM +0800, Julian Sun wrote:
+> Hi, mingzhe
+> 
+> Thanks for your review and comments.
+> 
+> On Wed, Feb 12, 2025 at 3:06 PM 邹明哲 <mingzhe.zou@easystack.cn> wrote:
+> >
+> > Original:
+> > From：Julian Sun <sunjunchao2870@gmail.com>
+> > Date：2025-02-12 13:51:26(中国 (GMT+08:00))
+> > To：linux-bcache<linux-bcache@vger.kernel.org>
+> > Cc：colyli<colyli@kernel.org> , kent.overstreet<kent.overstreet@linux.dev> , Julian Sun <sunjunchao2870@gmail.com>
+> > Subject：[PATCH] bcache: Use the lastest writeback_delay value when writeback thread is woken up
+> > When users reset writeback_delay value and woke up writeback
+> > thread via sysfs interface, expect the writeback thread
+> > to do actual writeback work, but in reality, the writeback
+> > thread probably continue to sleep.
+> >
+> > For example the following script set writeback_delay to 0 and
+> > wake up writeback thread, but writeback thread just continue to
+> > sleep:
+> > echo 0 &gt; /sys/block/bcache0/bcache/writeback_delay
+> > echo 1 &gt; /sys/block/bcache0/bcache/writeback_running
+> >
+> > Using the lastest value when writeback thread is woken up can
+> > urge it to do actual writeback work.
+> >
+> > Signed-off-by: Julian Sun <sunjunchao2870@gmail.com>
+> > ---
+> >  drivers/md/bcache/writeback.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+> > index c1d28e365910..0d2d06aaacfe 100644
+> > --- a/drivers/md/bcache/writeback.c
+> > +++ b/drivers/md/bcache/writeback.c
+> > @@ -825,8 +825,10 @@ static int bch_writeback_thread(void *arg)
+> >
+> > Hi, Julian Sun:
+> >
+> > We should first understand the role of writable_delay.
+> >
+> > The writeback thread only sleep when searched_full_index is True,
+> > which means that there are very few dirty keys at this time, all
+> > dirty keys are refilled at once.
+> >
+> >                         while (delay &amp;&amp;
+> >                                !kthread_should_stop() &amp;&amp;
+> >                                !test_bit(CACHE_SET_IO_DISABLE, &amp;c-&gt;flags) &amp;&amp;
+> > -                              !test_bit(BCACHE_DEV_DETACHING, &amp;dc-&gt;disk.flags))
+> > +                              !test_bit(BCACHE_DEV_DETACHING, &amp;dc-&gt;disk.flags)) {
+> >                                 delay = schedule_timeout_interruptible(delay);
+> > +                               delay = min(delay, dc-&gt;writeback_delay * HZ);
+> > +                       }
+> >
+> >
+> > > So, I don't think it is necessary to immediately adjust the sleep time
+> > > unless the writeback_delay is set very large. We need to set a reasonable
+> > > value for writable_delay at startup, rather than adjusting it at runtime.
+> > >
+> 
+> I understand your point, but I still believe this is important.
+> IMO, since /sys/block/bcacheX/bcache/writeback_delay allows adjusting
+> the writeback_delay value at runtime,  bcache should ideally support
+> this functionality. Otherwise, the current behavior may be confusing
+> for users: "I've adjusted it, but why does it seem ineffective?" :)
+> 
+
+Hi Julian,
+
+Correct me if I am wrong. I feel maybe that you misunderstodd the
+functionality of sysfs parameter writeback_delay. It is NOT used to
+control the writeback rate. 
+You may want to check Documentation/admin-guide/bcache.rst at,
+
+468 writeback_delay
+469   When dirty data is written to the cache and it previously did not contain
+470   any, waits some number of seconds before initiating writeback. Defaults to
+471   30.
+
+Thanks.
+
+-- 
+Coly Li
