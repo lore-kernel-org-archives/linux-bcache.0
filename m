@@ -1,170 +1,90 @@
-Received: from mail90.out.titan.email (mail90.out.titan.email [209.209.25.243])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pl1-f201.google.com (mail-pl1-f201.google.com [209.85.214.201])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2A2E818FC92
-	for <linux-bcache@vger.kernel.org>; Tue, 15 Apr 2025 02:35:01 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.209.25.243
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 797272DFA4F
+	for <linux-bcache@vger.kernel.org>; Tue, 15 Apr 2025 17:00:11 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.214.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1744684504; cv=none; b=Yc5KwfpA/T3AFw0rT6l4eKh05Dme/tn/anfF3tezyK4VcRYd1RAvZMhYwimW0+aO4TeAZTecEicACuJFuG47hHA4da9FAbbI8Q69Wfl4XREGsVNS41jOr4sjD/hlb2VPexWfdRqqXBPivF7NlHpVu+WDcQ9/tfylFHujZSlRG6g=
+	t=1744736412; cv=none; b=hviwpzcsRl4cwH+qUVfw6OI6pcwwgopMiO+nahASKaNJS8+3HvCVgbo3PZuySitx7fLc0KDOqWbbowZeBJUiil450R4r7oGxpzP/mFWh1xFsmp1ruQIJD7vhH8M6SKnoO2W91J/EoV9JeGkOBDyUpMYNy8AMCw9DwHynGTzJzKw=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1744684504; c=relaxed/simple;
-	bh=T1y/CMwAFz7pNxUjh7yqxYmGC0hU6DiTWywFAAxz+gM=;
-	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
-	 Message-Id:References:To; b=ZrPj4B2nB9J+dMjEQswZYgo4R/oHyzNZ0P5q32EtUBPvdrUqCq25RZpwRy6S3/l0JTqP5w8+Ww1myj6o0/cd1nDcpFnjK3Qo0ZTGscbLh8r0W1rqR46Fs3jR5XrJpSg7rMNy7sbnwfn7ncIWPJrCoVdov2LwytVXEbuo7nuOrTY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li; spf=pass smtp.mailfrom=coly.li; dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b=uD039/bP; arc=none smtp.client-ip=209.209.25.243
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=coly.li
+	s=arc-20240116; t=1744736412; c=relaxed/simple;
+	bh=br7RtKW16h19laSRXigcqMs0RMv8e/9RomcwJ/PgoDo=;
+	h=Date:Mime-Version:Message-ID:Subject:From:To:Cc:Content-Type; b=sSw+NrM0IhlogsVIRy32TBQx2erl6Fe2mfo6+7uxxQtMp4uwmV3OtPuwxa/4Hw5ju37kHmFBfvNZpN+VGIFqHg99Bb4ZgBvXu5Ni/zUfH/hIBEe4JckzaasW35H55YwwBEPGp3IRABTgtC1BApXcs2B750bixpz7boEEma5zEn4=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--robertpang.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=mepAwsk4; arc=none smtp.client-ip=209.85.214.201
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--robertpang.bounces.google.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b="uD039/bP"
-Received: from localhost (localhost [127.0.0.1])
-	by smtp-out.flockmail.com (Postfix) with ESMTP id 77252140237;
-	Tue, 15 Apr 2025 01:57:25 +0000 (UTC)
-DKIM-Signature: a=rsa-sha256; bh=T1y/CMwAFz7pNxUjh7yqxYmGC0hU6DiTWywFAAxz+gM=;
-	c=relaxed/relaxed; d=t12smtp-sign004.email;
-	h=subject:from:references:to:cc:in-reply-to:date:message-id:mime-version:from:to:cc:subject:date:message-id:in-reply-to:references:reply-to;
-	q=dns/txt; s=titan1; t=1744682245; v=1;
-	b=uD039/bPyh+FNRFeJHMZAbCpxMIJx1L7liUKKeGGBOQ7pBmN0W8cSxsfed7pc9JC3c0sQp1y
-	K2eLG+OehbhvJnZTUnLpxAAO0GCm/WRbjvDvg0IYXE3KucVDAANc/a9rsYVdrIboguIUf6PdP6I
-	HcFNdiwgQo6jd2DjFxSCV9jM=
-Received: from smtpclient.apple (tk2-118-59677.vs.sakura.ne.jp [153.121.56.181])
-	by smtp-out.flockmail.com (Postfix) with ESMTPA id CE505140180;
-	Tue, 15 Apr 2025 01:57:23 +0000 (UTC)
-Content-Type: text/plain;
-	charset=utf-8
+	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="mepAwsk4"
+Received: by mail-pl1-f201.google.com with SMTP id d9443c01a7336-22651aca434so47058045ad.1
+        for <linux-bcache@vger.kernel.org>; Tue, 15 Apr 2025 10:00:11 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=20230601; t=1744736411; x=1745341211; darn=vger.kernel.org;
+        h=cc:to:from:subject:message-id:mime-version:date:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=oodgjne3EPT+xkMjjQ2HIqlD3K9yIy6+W8glEElUHkQ=;
+        b=mepAwsk4qLIR2kC23wJmjLBp713WNHlMZ7pSPUqR/CrpV9SeAeF7YRG5gxg1Sr9lZ5
+         lIYDyfSBhf/dFqxEnnyccjeblfGvl1Zm5YMEAATKERZII2pG7qbf+lvKJO//voQjSNsx
+         q/fmyv++fPzc+/z3PbCm7LeNIM+OS5bwq5v1i+js/8nFVuEKe/MKWZqTeOTGNw66qtV1
+         IXWWp8cVefvNz968tZgSTc9V9fzBpPXI4OL1SHwA4xBawXJ9he4cUfiMfGXZ0Rp+h/Aj
+         /ccmdI+ih/OdGhDsQQ1uK6ahmeE6xM8Cwo+kURIOjZGcnvgG/Ugj6HZ7TzugjM42O9zf
+         OrdQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1744736411; x=1745341211;
+        h=cc:to:from:subject:message-id:mime-version:date:x-gm-message-state
+         :from:to:cc:subject:date:message-id:reply-to;
+        bh=oodgjne3EPT+xkMjjQ2HIqlD3K9yIy6+W8glEElUHkQ=;
+        b=FfO3xCNAsyw5IfyQA4cwztjCA0Ke0D7JOUGfmxdZAVcG5qM2Z83mSelbPONlvoc5Rc
+         5ExVVIiTMtXMDltpUbdCjJYutLwbp+WzJxx0mA1AxAVSvOquzVRpMQAMcg50QqukMRTQ
+         yCL1bBbpo5jjZ2qRciHE118NH/DXlWWXIdNOPV09N4uWTH/sM4ttJZ1RPEPVc1NXwPop
+         2th4lFZng8CZ21Fnt2SCgrJaOKVsJzMnKJTn8eu4BGHRRLn96c60g6nptSWdoB3XZ5fJ
+         UDP3hKxPJ7/BLPAeNKzZt/cRoMfOtO/ybw6M+4UrOOLzRW6MuzlL/VBpXPH5rlsppBxo
+         e5KA==
+X-Forwarded-Encrypted: i=1; AJvYcCVpCJVQ3A9RRvOiQw/2/REz5WE9XMLGHRcVqY3u3FV98IQ5pnrcxfl/C7HPGkLtOG8oRgFfBasacIm0aE0=@vger.kernel.org
+X-Gm-Message-State: AOJu0YxZfgqrRmv+L/KxGV4RKu9SsTMgEq7bx6jSsUgqSxfLlgvDXqay
+	pA236uGgSkrucTyIMRsdc+rTAp0BTjMUS/ZXE3vUApOdZtFZ4XG2nEjRjzbzSvlXlQ1BHAwmD4Z
+	l6WXkjvHDJEFhQVTdBw==
+X-Google-Smtp-Source: AGHT+IGFf8YynfwADXlRd5pSzBo8ah6MX2ZzNmveyj0LabwuA9cVP4qciAVgPiJJhLkcs6Q1MPtgFWb1z+5hY7HS
+X-Received: from plyw11.prod.google.com ([2002:a17:902:d70b:b0:223:8233:a96c])
+ (user=robertpang job=prod-delivery.src-stubby-dispatcher) by
+ 2002:a17:902:ccc8:b0:224:10a2:cae1 with SMTP id d9443c01a7336-22bea4ffb3fmr241342215ad.37.1744736410719;
+ Tue, 15 Apr 2025 10:00:10 -0700 (PDT)
+Date: Tue, 15 Apr 2025 09:59:22 -0700
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3826.500.181.1.5\))
-Subject: Re: [PATCH 0/1] bcache: reduce front IO latency during GC
-Feedback-ID: :i@coly.li:coly.li:flockmailId
-From: Coly Li <i@coly.li>
-In-Reply-To: <20250414224415.77926-1-robertpang@google.com>
-Date: Tue, 15 Apr 2025 09:57:11 +0800
-Cc: Coly Li <colyli@kernel.org>,
- Kent Overstreet <kent.overstreet@linux.dev>,
- linux-bcache@vger.kernel.org,
- Mingzhe Zou <mingzhe.zou@easystack.cn>
-Content-Transfer-Encoding: quoted-printable
-Message-Id: <75D48114-A5BD-4AC6-9370-D61456FD4FD2@coly.li>
-References: <20250414224415.77926-1-robertpang@google.com>
-To: Robert Pang <robertpang@google.com>
-X-Mailer: Apple Mail (2.3826.500.181.1.5)
-X-F-Verdict: SPFVALID
-X-Titan-Src-Out: 1744682245321204847.32042.7242447923843221103@prod-use1-smtp-out1003.
-X-CMAE-Score: 0
-X-CMAE-Analysis: v=2.4 cv=fZxXy1QF c=1 sm=1 tr=0 ts=67fdbd05
-	a=hXS1xhdqaCDGgKeHTjTB6g==:117 a=hXS1xhdqaCDGgKeHTjTB6g==:17
-	a=IkcTkHD0fZMA:10 a=CEWIc4RMnpUA:10 a=VwQbUJbxAAAA:8 a=1XWaLZrsAAAA:8
-	a=8T08Js6Nrb8FjSixL_cA:9 a=QEXdDO2ut3YA:10
+Mime-Version: 1.0
+X-Mailer: git-send-email 2.49.0.805.g082f7c87e0-goog
+Message-ID: <20250415170002.334278-1-robertpang@google.com>
+Subject: [PATCH] bcache: remove unused constants
+From: Robert Pang <robertpang@google.com>
+To: Coly Li <colyli@kernel.org>, Kent Overstreet <kent.overstreet@linux.dev>, 
+	linux-bcache@vger.kernel.org
+Cc: Robert Pang <robertpang@google.com>
+Content-Type: text/plain; charset="UTF-8"
 
-Hi Robert,
+Remove constants MAX_NEED_GC and MAX_SAVE_PRIO in btree.c that have been unused
+since initial commit.
 
-Thanks for the fix up :-)
+Signed-off-by: Robert Pang <robertpang@google.com>
+---
+ drivers/md/bcache/btree.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-> 2025=E5=B9=B44=E6=9C=8815=E6=97=A5 06:44=EF=BC=8CRobert Pang =
-<robertpang@google.com> =E5=86=99=E9=81=93=EF=BC=9A
->=20
-> In performance benchmarks on disks with bcache using the Linux 6.6 =
-kernel, we
-> observe noticeable IO latency increase during btree garbage =
-collection. The
-> increase ranges from high tens to hundreds of milliseconds, depending =
-on the
-> size of the cache device. Further investigation reveals that it is the =
-same
-> issue reported in [1], where the large number of nodes processed in =
-each
-> incremental GC cycle causes the front IO latency.
->=20
-> Building upon the approach suggested in [1], this patch decomposes the
-> incremental GC process into more but smaller cycles. In contrast to =
-[1], this
-> implementation adopts a simpler strategy by setting a lower limit of =
-10 nodes
-> per cycle to reduce front IO delay and introducing a fixed 10ms sleep =
-per cycle
-> when front IO is in progress. Furthermore, when garbage collection =
-statistics
-> are available, the number of nodes processed per cycle is dynamically =
-rescaled
-> based on the average GC frequency to ensure GC completes well within =
-the next
-> subsequent scheduled interval.
->=20
-> Testing with a 750GB NVMe cache and 256KB bucket size using the =
-following fio
-> configuration demonstrates that our patch reduces front IO latency =
-during GC
-> without significantly increasing GC duration.
->=20
-> ioengine=3Dlibaio
-> direct=3D1
-> bs=3D4k
-> size=3D900G
-> iodepth=3D10
-> readwrite=3Drandwrite
-> log_avg_msec=3D10
->=20
-> Before:
->=20
-> time-ms,latency-ns,,,
->=20
-> 12170, 285016, 1, 0, 0
-> 12183, 296581, 1, 0, 0
-> 12207, 6542725, 1, 0, 0
-> 12242, 24483604, 1, 0, 0
-> 12250, 1895628, 1, 0, 0
-> 12260, 284854, 1, 0, 0
-> 12270, 275513, 1, 0, 0
->=20
-> =
-/sys/block/bcache0/bcache/cache/internal/btree_gc_average_duration_ms:2880=
-
-> =
-/sys/block/bcache0/bcache/cache/internal/btree_gc_average_frequency_sec:13=
-3
-> /sys/block/bcache0/bcache/cache/internal/btree_gc_last_sec:121
-> /sys/block/bcache0/bcache/cache/internal/btree_gc_max_duration_ms:3456
->=20
-> After:
->=20
-> 12690, 378494, 1, 0, 0
-> 12700, 413934, 1, 0, 0
-> 12710, 661217, 1, 0, 0
-> 12727, 354510, 1, 0, 0
-> 12730, 1100768, 1, 0, 0
-> 12742, 382484, 1, 0, 0
-> 12750, 532679, 1, 0, 0
-> 12760, 572758, 1, 0, 0
-> 12773, 283416, 1, 0, 0
->=20
-> =
-/sys/block/bcache0/bcache/cache/internal/btree_gc_average_duration_ms:3619=
-
-> =
-/sys/block/bcache0/bcache/cache/internal/btree_gc_average_frequency_sec:58=
-
-> /sys/block/bcache0/bcache/cache/internal/btree_gc_last_sec:23
-> /sys/block/bcache0/bcache/cache/internal/btree_gc_max_duration_ms:3866
->=20
-> [1] =
-https://lore.kernel.org/all/20220511073903.13568-1-mingzhe.zou@easystack.c=
-n/
-
-
-I see the data, it makes sense. I=E2=80=99d like to see more testing =
-data, e.g.
-1) Larger SSD (4T or 8T)
-2) Higher I/O pressure (randomwrite)
-3) Much longer time with high I/O pressure (24 hours+)
-
-Then it can help me to understand the optimization better and make =
-decision easier. Of course it will save a lot of testing time from my =
-side.
-
-Thank you in advance.
-
-Coly Li=20
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index ed40d8600656..f991be2bc44e 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -88,8 +88,6 @@
+  * Test module load/unload
+  */
+ 
+-#define MAX_NEED_GC		64
+-#define MAX_SAVE_PRIO		72
+ #define MAX_GC_TIMES		100
+ #define MIN_GC_NODES		100
+ #define GC_SLEEP_MS		100
+-- 
+2.49.0.805.g082f7c87e0-goog
 
