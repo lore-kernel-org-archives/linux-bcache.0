@@ -1,104 +1,102 @@
-Received: from out-183.mta1.migadu.com (out-183.mta1.migadu.com [95.215.58.183])
+Received: from mail66.out.titan.email (mail66.out.titan.email [3.216.99.48])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 20DD918FDD2
-	for <linux-bcache@vger.kernel.org>; Wed, 16 Apr 2025 06:08:45 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=95.215.58.183
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2708C2459F8
+	for <linux-bcache@vger.kernel.org>; Wed, 16 Apr 2025 12:26:14 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=3.216.99.48
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1744783728; cv=none; b=qjBc9p0tiqzNcG3jE+WwXkoiUM1ETrofBElo+m1qFe4vAa6nHn31RlbDheis1MtDpZSo4uYVOYcO0gy8RnE4y350kbB+vZ7qUYHHrxqmiBzYnOM8FGz+gDM2EncS3pGtykWB7sOt0Hjhi4hP7OiR4U0VFKzH9SF87c+D5KZNczQ=
+	t=1744806381; cv=none; b=eWN84eGWYDbkGjscJ09mFPPJCKmUpew5P4Xu7pKXd+ycj8ie83tKa8f8uUq4Wi0Q/LH5+g+hZ5TScQyp9hnIp29bwKAGHFFMj1ANmVxn3I1BKQGsdE/l1j5jan73GJec5gcCc/XyBwjfiXTWxL1RRQgXmqDpsJL6+wgY7o6RyjI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1744783728; c=relaxed/simple;
-	bh=S1hfwxWvddOHrR2LujD9OnylZrLvihKEOzv4l90MvuQ=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=ObjSYoiMQ6eMbgxnpiD2Q63+kv15G9DSnoXi/wEYpXz0dLuu0DbHzHxDBh+AgI+0BInIlgrYHwuD7AOhmwOVZ8sktlSAJMLTlMBsZ21BwJT14DS/gP2AKXyQinOANXi8ZaGOhg9jdTckv5qlVmkzhEMaUuaGIiVs1Oj8KG8E0rM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev; spf=pass smtp.mailfrom=linux.dev; dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b=jkHC0Wyt; arc=none smtp.client-ip=95.215.58.183
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.dev
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.dev
+	s=arc-20240116; t=1744806381; c=relaxed/simple;
+	bh=ZlLm5E8xrxYt7/tjKWOwX/LGFL3xxvplHR34NZON8wA=;
+	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
+	 Message-Id:References:To; b=OXvNBsRfcH0LzMB59FRLpU4ycLOU6HuTldy5kMFCyZFXdpERb9ahhhm0Ug382VoEJT0ch/JrSTGYv92AKj+4W7ORFH1dWr89mxt0b5SnkDrFDILGHQNZ/opLUByCxEG4hZrvC7mY3MGEYj2+6sCl1wQMZxG+/DRESy9jxQzvciM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li; spf=pass smtp.mailfrom=coly.li; dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b=A4Xnp9Mg; arc=none smtp.client-ip=3.216.99.48
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=coly.li
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=linux.dev header.i=@linux.dev header.b="jkHC0Wyt"
-Message-ID: <07f93a57-6459-46e2-8ee3-e0328dd67967@linux.dev>
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=linux.dev; s=key1;
-	t=1744783714;
-	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
-	 to:to:cc:cc:mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding:
-	 in-reply-to:in-reply-to:references:references;
-	bh=sDlzw9n3dMf2bJtTmXN0wtIQIhVbVUue8+JMQPzg3aY=;
-	b=jkHC0WytKU6OpaEV1nK9F6q3mzOB80piLbfVb3zy+c0gMXjhYmdstAHQZdZWz5aez3KDeT
-	vfxMbnv7mvcZyUVVJIOQJluUNrWcrSy95MZVAs+ZfQzpI2h/yLuPScMA6PJqGlLqDDXBe3
-	pMRgsp5raEOvMdvAvTrDK9ShTl57ODk=
-Date: Wed, 16 Apr 2025 14:08:25 +0800
+	dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b="A4Xnp9Mg"
+Received: from localhost (localhost [127.0.0.1])
+	by smtp-out.flockmail.com (Postfix) with ESMTP id 1382E600C9;
+	Wed, 16 Apr 2025 09:46:25 +0000 (UTC)
+DKIM-Signature: a=rsa-sha256; bh=YfxLBf5c0U/p+rueW2MA9gn88rwWf+u4t6Tiw9cgto8=;
+	c=relaxed/relaxed; d=t12smtp-sign004.email;
+	h=mime-version:cc:to:subject:from:date:message-id:in-reply-to:references:from:to:cc:subject:date:message-id:in-reply-to:references:reply-to;
+	q=dns/txt; s=titan1; t=1744796785; v=1;
+	b=A4Xnp9MgZ9Kih+vTf/o+BYYjTiwDvm1Vi62BSvEIw3FJQCTrOgXJ9CEakttuh3HG86f5sjum
+	xJ2R2gaXfl6tI/xyDOFkvvB+deVdsoSGQNtizufJypGFbHerk5YN1v52C0KldClU/vst7vPl/fg
+	sPFPFWJ9382XQb7yscIjiJOQ=
+Received: from smtpclient.apple (unknown [141.11.218.23])
+	by smtp-out.flockmail.com (Postfix) with ESMTPA id 5D650601BB;
+	Wed, 16 Apr 2025 09:46:23 +0000 (UTC)
+Content-Type: text/plain;
+	charset=utf-8
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Subject: Re: [RFC PATCH 00/11] pcache: Persistent Memory Cache for Block
- Devices
-To: Jens Axboe <axboe@kernel.dk>, Dan Williams <dan.j.williams@intel.com>,
- hch@lst.de, gregory.price@memverge.com, John@groves.net,
- Jonathan.Cameron@huawei.com, bbhushan2@marvell.com, chaitanyak@nvidia.com,
- rdunlap@infradead.org
-Cc: linux-block@vger.kernel.org, linux-kernel@vger.kernel.org,
- linux-cxl@vger.kernel.org, linux-bcache@vger.kernel.org,
- nvdimm@lists.linux.dev
-References: <20250414014505.20477-1-dongsheng.yang@linux.dev>
- <67fe9ea2850bc_71fe294d8@dwillia2-xfh.jf.intel.com.notmuch>
- <15e2151a-d788-48eb-8588-1d9a930c64dd@kernel.dk>
-X-Report-Abuse: Please report any abuse attempt to abuse@migadu.com and include these headers.
-From: Dongsheng Yang <dongsheng.yang@linux.dev>
-In-Reply-To: <15e2151a-d788-48eb-8588-1d9a930c64dd@kernel.dk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Migadu-Flow: FLOW_OUT
+Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3826.500.181.1.5\))
+Subject: Re: [PATCH] bcache: remove unused constants
+Feedback-ID: :i@coly.li:coly.li:flockmailId
+From: Coly Li <i@coly.li>
+In-Reply-To: <20250415170002.334278-1-robertpang@google.com>
+Date: Wed, 16 Apr 2025 17:46:10 +0800
+Cc: Coly Li <colyli@kernel.org>,
+ Kent Overstreet <kent.overstreet@linux.dev>,
+ linux-bcache@vger.kernel.org
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <18F0FB83-BD38-456E-B822-A13C8EF11DD1@coly.li>
+References: <20250415170002.334278-1-robertpang@google.com>
+To: Robert Pang <robertpang@google.com>
+X-Mailer: Apple Mail (2.3826.500.181.1.5)
+X-F-Verdict: SPFVALID
+X-Titan-Src-Out: 1744796784940922392.5242.2193316255149991258@prod-use1-smtp-out1001.
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.4 cv=fZxXy1QF c=1 sm=1 tr=0 ts=67ff7c70
+	a=USBFZE4A2Ag4MGBBroF6Xg==:117 a=USBFZE4A2Ag4MGBBroF6Xg==:17
+	a=IkcTkHD0fZMA:10 a=CEWIc4RMnpUA:10 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8
+	a=ei5mcS5IK7MuZK5A7soA:9 a=QEXdDO2ut3YA:10
 
 
-On 2025/4/16 9:04, Jens Axboe wrote:
-> On 4/15/25 12:00 PM, Dan Williams wrote:
->> Thanks for making the comparison chart. The immediate question this
->> raises is why not add "multi-tree per backend", "log structured
->> writeback", "readcache", and "CRC" support to dm-writecache?
->> device-mapper is everywhere, has a long track record, and enhancing it
->> immediately engages a community of folks in this space.
-> Strongly agree.
+
+> 2025=E5=B9=B44=E6=9C=8816=E6=97=A5 00:59=EF=BC=8CRobert Pang =
+<robertpang@google.com> =E5=86=99=E9=81=93=EF=BC=9A
+>=20
+> Remove constants MAX_NEED_GC and MAX_SAVE_PRIO in btree.c that have =
+been unused
+> since initial commit.
+>=20
+> Signed-off-by: Robert Pang <robertpang@google.com>
+
+Reviewed-by: Coly Li <colyli@kernel.org <mailto:colyli@kernel.org>>
+
+Thanks.
 
 
-Hi Dan and Jens,
-Thanks for your reply, that's a good question.
+Coly Li
 
-     1. Why not optimize within dm-writecache?
-     From my perspective, the design goal of dm-writecache is to be a 
-minimal write cache. It achieves caching by dividing the cache device 
-into n blocks, each managed by a wc_entry, using a very simple 
-management mechanism. On top of this design, it's quite difficult to 
-implement features like multi-tree structures, CRC, or log-structured 
-writeback. Moreover, adding such optimizations—especially a read 
-cache—would deviate from the original semantics of dm-writecache. So, we 
-didn't consider optimizing dm-writecache to meet our goals.
 
-     2. Why not optimize within bcache or dm-cache?
-     As mentioned above, dm-writecache is essentially a minimal write 
-cache. So, why not build on bcache or dm-cache, which are more complete 
-caching systems? The truth is, it's also quite difficult. These systems 
-were designed with traditional SSDs/NVMe in mind, and many of their 
-design assumptions no longer hold true in the context of PMEM. Every 
-design targets a specific scenario, which is why, even with dm-cache 
-available, dm-writecache emerged to support DAX-capable PMEM devices.
 
-     3. Then why not implement a full PMEM cache within the dm framework?
-     In high-performance IO scenarios—especially with PMEM 
-hardware—adding an extra DM layer in the IO stack is often unnecessary. 
-For example, DM performs a bio clone before calling __map_bio(clone) to 
-invoke the target operation, which introduces overhead.
+> ---
+> drivers/md/bcache/btree.c | 2 --
+> 1 file changed, 2 deletions(-)
+>=20
+> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+> index ed40d8600656..f991be2bc44e 100644
+> --- a/drivers/md/bcache/btree.c
+> +++ b/drivers/md/bcache/btree.c
+> @@ -88,8 +88,6 @@
+>  * Test module load/unload
+>  */
+>=20
+> -#define MAX_NEED_GC 64
+> -#define MAX_SAVE_PRIO 72
+> #define MAX_GC_TIMES 100
+> #define MIN_GC_NODES 100
+> #define GC_SLEEP_MS 100
+> --=20
+> 2.49.0.805.g082f7c87e0-goog
+>=20
+>=20
 
-Thank you again for the suggestion. I absolutely agree that leveraging 
-existing frameworks would be helpful in terms of code review, and 
-merging. I, more than anyone, hope more people can help review the code 
-or join in this work. However, I believe that in the long run, building 
-a standalone pcache module is a better choice.
-
-Thanx
-Dongsheng
-
->
