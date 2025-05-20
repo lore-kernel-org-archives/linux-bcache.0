@@ -1,73 +1,56 @@
-Received: from mail-pf1-f181.google.com (mail-pf1-f181.google.com [209.85.210.181])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from mail77.out.titan.email (mail77.out.titan.email [3.216.99.57])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 511A682D98
-	for <linux-bcache@vger.kernel.org>; Tue, 20 May 2025 12:26:15 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.181
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 014942C18A
+	for <linux-bcache@vger.kernel.org>; Tue, 20 May 2025 12:30:01 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=3.216.99.57
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1747743976; cv=none; b=Q7sTYXRs6Tbqw2ScYKQbVscCO8oXTbiC1otGInhTWj1Fxz10CYyj5VTROMl7oy8uXyHO3qLbe1xO7udjlM0z8fe9z0jk3Iu0POegguze5IMeorIqMcz9RNmf/Rnq9cCqCkY+zSzqip8mQs7FqXa7W3h/0ID/DNigG9jS9uspyQc=
+	t=1747744204; cv=none; b=TFbNU8QmtNnSNMjbxmHxTrxD+ldjTHaumzA9eM8ExmuVfAE8Tu1w+Cdwpqt/brtTr8Ecj43yHFS41sIvAtpX0+J65gEA3UK4Py+Zo6CmRUGXEzFtslxrIiu4IyFplxkp/7fYaWMXjitKOKZ19iquXl6OkwlUSjIVZRg4LcGW4L0=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1747743976; c=relaxed/simple;
-	bh=x1ussyM6luj7h6YL6eNAj+ACicyhaGpaSS4pDEuBsS0=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=PhZvTH18Osvohe80T7s3KtEPAJP5rx3ghiF1K9JzGm39yaKo1t/P7Jo7PH/xoGrCtOlYIAriN+DVXo7IlRpe6SAff8tohJzSYdZr21TLD0fR97y1ySCMZtr/2p+2n7lzlB7RKPyt1lqdcKrKvThKoSW43vK07eIckSBR5KLxQjM=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=m2OqwxOe; arc=none smtp.client-ip=209.85.210.181
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
+	s=arc-20240116; t=1747744204; c=relaxed/simple;
+	bh=PVtLV9laKxcFf6Yc5iX540g7tZ+2rWlN/6GkTKHRz94=;
+	h=Content-Type:Mime-Version:Subject:From:In-Reply-To:Date:Cc:
+	 Message-Id:References:To; b=hdr8Zwmcj3JT+raj0A/awyRMzooCJNRAikpQT53AGMmP/F9o9H4RFvAYwU3H3edsmxv8oHH0tJvcPVsN3/Riuv0lVjRstXeNPWpd1AKAOH6+9s5kF2zXwxehvEmR+plbU8MQs5ff0AkxalWR8mEzYo+7KHNmZXkFYwx6YjUCJtA=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li; spf=pass smtp.mailfrom=coly.li; dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b=Xuvzs4Nm; arc=none smtp.client-ip=3.216.99.57
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=coly.li
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=coly.li
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="m2OqwxOe"
-Received: by mail-pf1-f181.google.com with SMTP id d2e1a72fcca58-7398d65476eso4373504b3a.1
-        for <linux-bcache@vger.kernel.org>; Tue, 20 May 2025 05:26:15 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20230601; t=1747743974; x=1748348774; darn=vger.kernel.org;
-        h=in-reply-to:content-transfer-encoding:content-disposition
-         :mime-version:references:message-id:subject:cc:to:from:date:from:to
-         :cc:subject:date:message-id:reply-to;
-        bh=qBRJq/8VMeqUg5qxfvzzj1/Dw+iFHaLopX6RQDkphg8=;
-        b=m2OqwxOe+D8OlkYQY4gjfqceMqp/o68ycN5YwrogD49ag3ijWZSp5R32E2/R2jr+X7
-         2S7hpbasdYJHbwTzcQ7NS6yJnhVz4QeYH7RJtWhCSB0fCrhNlWJtu9Naet9gUITgdg9y
-         Q8mCmDoGphZZMf1s9KuW9mpHpUOWQFcwbQ3GN02teyK7uA8ca1B94IFdgUi3RuNSBWug
-         mNH2unpaV47gZUbM+xBtE+ezO507vV+9QWrm9asrq2Gex68Dt2zIi4t47xlc4KUPH6G3
-         3qdSNTKkInmACPoFwK7D1E7BH0dqNGRz9XmdwCu3gu0TUn2EJ4DYum99MnAzZ1fPJvPC
-         m5JA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20230601; t=1747743974; x=1748348774;
-        h=in-reply-to:content-transfer-encoding:content-disposition
-         :mime-version:references:message-id:subject:cc:to:from:date
-         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
-        bh=qBRJq/8VMeqUg5qxfvzzj1/Dw+iFHaLopX6RQDkphg8=;
-        b=XEUyXa46hF6LiwQXBxE1Q/EjM/IDAtNUkzTrYDkrLJhMna+xX96+/Kqlnxv535KeRc
-         tQBZy117nM+PlhvqVsZza1QooJr3NoTUewTttYjy2nPcqVixxyM0vnbX4sSKt/oAtpGW
-         +0rUZ8bk8ywWjBI/brQzRj8R2eodbe/rwFy6Gqb9PgEK3+W8yQFDPSJ36IRwxyrnndUp
-         JCAzvJ1fQXjGuqyLp8imee2BMMQduK4Elis10K2a9du0lMGfOetI0c+S0zFq/VCYhDUs
-         HVRKo1UaKCHWZkzxdnlQ1YDzXI4FZgPsdW3hl7eTsNrFOhpkJIxUvq8V7UXnZuvHPH1t
-         srKA==
-X-Forwarded-Encrypted: i=1; AJvYcCVnob9JMd0d4dyuihkgPk2/15iPUz+AGMJFNLY9CqrPlG5FPsX5NNFCbjov/WllqpKDpFziu1sZN70F04M=@vger.kernel.org
-X-Gm-Message-State: AOJu0Yy/Dfnssi6C0mxrU/jQJPwEMW1xSZlR9zU+veX3OrSaVAu29RW4
-	HZRBX9ocIl1vsGQNeKOrsqPiTqPuX/vaUKP54pWT8uMNuDYASYbnn3GWbcx1HlfJ
-X-Gm-Gg: ASbGncst9y35pEm2fpYRSiJ5yxQNKKjoel9Y1bC6SfKbWeAxaFspBSiwOktSV8CmlSs
-	zrwSAx7ulPcwbzcbJdN3Ro/APhsvW0s0Jr9K8nPwJzy+5Cu3p1Hm6GCB5dXJTYLIeWMVKs/CjUV
-	xJyP5Xe6WUqOO9lG2C41YYRsE8dcaTDkb7UFs/sQUqZ1W4njNEMekkDIou4gXdoG2kBpDtWF0R+
-	hzu2FWSyLdhdV5jMqkJkGwZhqHjU8znwjcl9RXStvauAnBAZRvDi2U6zcbc4y1SPS/uAKzaV36Y
-	PIpLvnwbfpMP7wKbA69eFHOwPmL57G2luGQgC6x2U3XAsOrwS9tP/uKei1x2Ke7AhUlihGPv9NN
-	ay50=
-X-Google-Smtp-Source: AGHT+IF2z8wCbnU1Lu25DZtENtQHVAfLDzxmc7rccobUIpRX/ZZPjVxJXixY9aQBygjQSKNiDol/Rw==
-X-Received: by 2002:a05:6a20:c681:b0:218:2b6e:711f with SMTP id adf61e73a8af0-2182b6e7268mr12727960637.14.1747743974360;
-        Tue, 20 May 2025 05:26:14 -0700 (PDT)
-Received: from visitorckw-System-Product-Name ([140.113.216.168])
-        by smtp.gmail.com with ESMTPSA id 41be03b00d2f7-b2982c04d12sm845974a12.21.2025.05.20.05.26.12
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Tue, 20 May 2025 05:26:13 -0700 (PDT)
-Date: Tue, 20 May 2025 20:26:10 +0800
-From: Kuan-Wei Chiu <visitorckw@gmail.com>
-To: Coly Li <i@coly.li>
-Cc: Kent Overstreet <kent.overstreet@linux.dev>,
-	Robert Pang <robertpang@google.com>, Coly Li <colyli@kernel.org>,
-	linux-bcache@vger.kernel.org,
-	Mingzhe Zou <mingzhe.zou@easystack.cn>
+	dkim=pass (1024-bit key) header.d=t12smtp-sign004.email header.i=@t12smtp-sign004.email header.b="Xuvzs4Nm"
+Received: from localhost (localhost [127.0.0.1])
+	by smtp-out.flockmail.com (Postfix) with ESMTP id 1ED1C1406DA;
+	Tue, 20 May 2025 12:13:59 +0000 (UTC)
+DKIM-Signature: a=rsa-sha256; bh=PVtLV9laKxcFf6Yc5iX540g7tZ+2rWlN/6GkTKHRz94=;
+	c=relaxed/relaxed; d=t12smtp-sign004.email;
+	h=subject:date:to:from:cc:references:mime-version:in-reply-to:message-id:from:to:cc:subject:date:message-id:in-reply-to:references:reply-to;
+	q=dns/txt; s=titan1; t=1747743238; v=1;
+	b=Xuvzs4Nmk56LBpbDHuhc5CYmYB4Ccm7Hr/M3/BKqvXh61Afy5zbdMTUTPfjd9U9vqeeoYLDe
+	Nvv0J6TEkgcXpZD6CWubSlQjZO6KyciDESQUS+JOk59yZVTp/C616PDpnSoYabgzPmXr/j/2hGv
+	vpqdT//Vi8PRqpoCE/r6zcns=
+Received: from smtpclient.apple (n218103205009.netvigator.com [218.103.205.9])
+	by smtp-out.flockmail.com (Postfix) with ESMTPA id C8B221401C6;
+	Tue, 20 May 2025 12:13:56 +0000 (UTC)
+Content-Type: text/plain;
+	charset=utf-8
+Precedence: bulk
+X-Mailing-List: linux-bcache@vger.kernel.org
+List-Id: <linux-bcache.vger.kernel.org>
+List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
+List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
+Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3826.500.181.1.5\))
 Subject: Re: [PATCH 0/1] bcache: reduce front IO latency during GC
-Message-ID: <aCx04pakaHTU5zD4@visitorckw-System-Product-Name>
-References: <CAJhEC07JauBGfqmEaYbV9XuLUkCdbart-gnbuMWYE7JwzG4CsA@mail.gmail.com>
+Feedback-ID: :i@coly.li:coly.li:flockmailId
+From: Coly Li <i@coly.li>
+In-Reply-To: <aCxszsXC1QnHYTzS@visitorckw-System-Product-Name>
+Date: Tue, 20 May 2025 20:13:47 +0800
+Cc: Robert Pang <robertpang@google.com>,
+ Coly Li <colyli@kernel.org>,
+ linux-bcache@vger.kernel.org,
+ Mingzhe Zou <mingzhe.zou@easystack.cn>
+Content-Transfer-Encoding: quoted-printable
+Message-Id: <8CA66E96-4D39-4DB1-967C-6C0EDA73EBC1@coly.li>
+References: <20250414224415.77926-1-robertpang@google.com>
+ <75D48114-A5BD-4AC6-9370-D61456FD4FD2@coly.li>
+ <CAJhEC07JauBGfqmEaYbV9XuLUkCdbart-gnbuMWYE7JwzG4CsA@mail.gmail.com>
  <CAJhEC04Po-OtwDe2Uxo2w-0yhgcemo5sn816sT7jNhnEdRxY4Q@mail.gmail.com>
  <pxfu7dxykuj2qnw4m2hyjohmwdyq562zlwnvdphqdbwvttztki@dyx4sa553clx>
  <CAJhEC06F_AtrPgw2-7CvCqZgeStgCtitbD-ryuPpXQA-JG5XXw@mail.gmail.com>
@@ -76,112 +59,119 @@ References: <CAJhEC07JauBGfqmEaYbV9XuLUkCdbart-gnbuMWYE7JwzG4CsA@mail.gmail.com>
  <aCdkgzPGWzcjXCrf@visitorckw-System-Product-Name>
  <AD23C0A6-E754-4E43-AF54-BCFF82B19450@coly.li>
  <aCxszsXC1QnHYTzS@visitorckw-System-Product-Name>
- <8CA66E96-4D39-4DB1-967C-6C0EDA73EBC1@coly.li>
-Precedence: bulk
-X-Mailing-List: linux-bcache@vger.kernel.org
-List-Id: <linux-bcache.vger.kernel.org>
-List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
-List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <8CA66E96-4D39-4DB1-967C-6C0EDA73EBC1@coly.li>
+To: Kuan-Wei Chiu <visitorckw@gmail.com>,
+ Kent Overstreet <kent.overstreet@linux.dev>
+X-Mailer: Apple Mail (2.3826.500.181.1.5)
+X-F-Verdict: SPFVALID
+X-Titan-Src-Out: 1747743238867686890.32042.8687302548720394528@prod-use1-smtp-out1003.
+X-CMAE-Score: 0
+X-CMAE-Analysis: v=2.4 cv=U8BoDfru c=1 sm=1 tr=0 ts=682c7206
+	a=eJNHGpZBYRW47XJYT+WeIA==:117 a=eJNHGpZBYRW47XJYT+WeIA==:17
+	a=IkcTkHD0fZMA:10 a=CEWIc4RMnpUA:10 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8
+	a=soO3Ray3s_zbp76wwXsA:9 a=QEXdDO2ut3YA:10
 
-On Tue, May 20, 2025 at 08:13:47PM +0800, Coly Li wrote:
-> 
-> 
-> > 2025年5月20日 19:51，Kuan-Wei Chiu <visitorckw@gmail.com> 写道：
-> > 
-> > On Sat, May 17, 2025 at 07:02:06PM +0800, Coly Li wrote:
-> >> 
-> >> 
-> >>> 2025年5月17日 00:14，Kuan-Wei Chiu <visitorckw@gmail.com> 写道：
-> >>> 
-> >>> On Thu, May 15, 2025 at 08:58:44PM -0700, Robert Pang wrote:
-> >>>> Hi Kuan-Wei,
-> >>>> 
-> >>>> Thank you for your prompt response. I tested your suggested patch to
-> >>>> inline the min heap operations for 8 hours and it is still ongoing.
-> >>>> Unfortunately, basing on the results so far, it didn't resolve the
-> >>>> regression, suggesting inlining isn't the issue.
-> >>>> 
-> >>>> After reviewing the commits in lib/min_heap.h, I noticed commit
-> >>>> c641722 ("lib min_heap: optimize number of comparisons in
-> >>>> min_heapify()") and it looked like a potential candidate. I reverted
-> >>>> this commit (below) and ran the tests. While the test is still
-> >>>> ongoing, the results for the past 3 hours show that the latency spikes
-> >>>> during invalidate_buckets_lru() disappeared after this change,
-> >>>> indicating that this commit is likely the root cause of the
-> >>>> regression.
-> >>>> 
-> >>>> My hypothesis is that while commit c641722 was designed to reduce
-> >>>> comparisons with randomized input [1], it might inadvertently increase
-> >>>> comparisons when the input isn't as random. A scenario where this
-> >>>> could happen is within invalidate_buckets_lru() before the cache is
-> >>>> fully populated. In such cases, many buckets are unfilled, causing
-> >>>> new_bucket_prio() to return zero, leading to more frequent
-> >>>> compare-equal operations with other unfilled buckets. In the case when
-> >>>> the cache is populated, the bucket priorities fall in a range with
-> >>>> many duplicates. How will heap_sift() behave in such cases?
-> >>>> 
-> >>>> [1] https://lore.kernel.org/linux-bcache/20240121153649.2733274-6-visitorckw@gmail.com/
-> >>>> 
-> >>> 
-> >>> You're very likely correct.
-> >>> 
-> >>> In scenarios where the majority of elements in the heap are identical,
-> >>> the traditional top-down version of heapify finishes after just 2
-> >>> comparisons. However, with the bottom-up version introduced by that
-> >>> commit, it ends up performing roughly 2 * log₂(n) comparisons in the
-> >>> same case.
-> >> 
-> >> For bcache scenario for ideal circumstances and best performance, the cached data
-> >> and following requests should have spatial or temporal locality.
-> >> 
-> >> I guess it means for the heap usage, the input might not be typical random.
-> >> 
-> >> 
-> >>> 
-> >>> That said, reverting the commit would increase the number of
-> >>> comparisons by about 2x in cases where all elements in the heap are
-> >>> distinct, which was the original motivation for the change. I'm not
-> >>> entirely sure what the best way would be to fix this regression without
-> >>> negatively impacting the performance of the other use cases.
-> >> 
-> >> If the data read model are fully sequential or random, bcache cannot help too much.
-> >> 
-> >> So I guess maybe we still need to old heapify code? The new version is for full random input,
-> >> and previous version for not that much random input.
-> >> 
-> > 
-> > I think we have two options here. One is to add a classic heapify
-> > function to min_heap.h, allowing users to choose based on whether they
-> > expect many duplicate elements in the heap. While having two heapify
-> > variants might be confusing from a library design perspective, we could
-> > mitigate that with clear kernel-doc comments. The other option is to
-> > revert to the old bcache heap code. I'm not sure which approach is
-> > better.
-> > 
-> 
-> I prefer to have two min_heap APIs, but how to name them, this is a question from me.
-> 
-> Also if the full-random min_heap version has no user in kernel, whether to keep it in kernel also is a question.
 
-From the perspective of the number of comparisons in heapify, what
-matters more is whether the data contains many equal elements, rather
-than whether it's truly random. I assume that for most other kernel
-users, their use cases don't typically involve a large number of equal
-elements?
 
-Regards,
-Kuan-Wei
+> 2025=E5=B9=B45=E6=9C=8820=E6=97=A5 19:51=EF=BC=8CKuan-Wei Chiu =
+<visitorckw@gmail.com> =E5=86=99=E9=81=93=EF=BC=9A
+>=20
+> On Sat, May 17, 2025 at 07:02:06PM +0800, Coly Li wrote:
+>>=20
+>>=20
+>>> 2025=E5=B9=B45=E6=9C=8817=E6=97=A5 00:14=EF=BC=8CKuan-Wei Chiu =
+<visitorckw@gmail.com> =E5=86=99=E9=81=93=EF=BC=9A
+>>>=20
+>>> On Thu, May 15, 2025 at 08:58:44PM -0700, Robert Pang wrote:
+>>>> Hi Kuan-Wei,
+>>>>=20
+>>>> Thank you for your prompt response. I tested your suggested patch =
+to
+>>>> inline the min heap operations for 8 hours and it is still ongoing.
+>>>> Unfortunately, basing on the results so far, it didn't resolve the
+>>>> regression, suggesting inlining isn't the issue.
+>>>>=20
+>>>> After reviewing the commits in lib/min_heap.h, I noticed commit
+>>>> c641722 ("lib min_heap: optimize number of comparisons in
+>>>> min_heapify()") and it looked like a potential candidate. I =
+reverted
+>>>> this commit (below) and ran the tests. While the test is still
+>>>> ongoing, the results for the past 3 hours show that the latency =
+spikes
+>>>> during invalidate_buckets_lru() disappeared after this change,
+>>>> indicating that this commit is likely the root cause of the
+>>>> regression.
+>>>>=20
+>>>> My hypothesis is that while commit c641722 was designed to reduce
+>>>> comparisons with randomized input [1], it might inadvertently =
+increase
+>>>> comparisons when the input isn't as random. A scenario where this
+>>>> could happen is within invalidate_buckets_lru() before the cache is
+>>>> fully populated. In such cases, many buckets are unfilled, causing
+>>>> new_bucket_prio() to return zero, leading to more frequent
+>>>> compare-equal operations with other unfilled buckets. In the case =
+when
+>>>> the cache is populated, the bucket priorities fall in a range with
+>>>> many duplicates. How will heap_sift() behave in such cases?
+>>>>=20
+>>>> [1] =
+https://lore.kernel.org/linux-bcache/20240121153649.2733274-6-visitorckw@g=
+mail.com/
+>>>>=20
+>>>=20
+>>> You're very likely correct.
+>>>=20
+>>> In scenarios where the majority of elements in the heap are =
+identical,
+>>> the traditional top-down version of heapify finishes after just 2
+>>> comparisons. However, with the bottom-up version introduced by that
+>>> commit, it ends up performing roughly 2 * log=E2=82=82(n) =
+comparisons in the
+>>> same case.
+>>=20
+>> For bcache scenario for ideal circumstances and best performance, the =
+cached data
+>> and following requests should have spatial or temporal locality.
+>>=20
+>> I guess it means for the heap usage, the input might not be typical =
+random.
+>>=20
+>>=20
+>>>=20
+>>> That said, reverting the commit would increase the number of
+>>> comparisons by about 2x in cases where all elements in the heap are
+>>> distinct, which was the original motivation for the change. I'm not
+>>> entirely sure what the best way would be to fix this regression =
+without
+>>> negatively impacting the performance of the other use cases.
+>>=20
+>> If the data read model are fully sequential or random, bcache cannot =
+help too much.
+>>=20
+>> So I guess maybe we still need to old heapify code? The new version =
+is for full random input,
+>> and previous version for not that much random input.
+>>=20
+>=20
+> I think we have two options here. One is to add a classic heapify
+> function to min_heap.h, allowing users to choose based on whether they
+> expect many duplicate elements in the heap. While having two heapify
+> variants might be confusing from a library design perspective, we =
+could
+> mitigate that with clear kernel-doc comments. The other option is to
+> revert to the old bcache heap code. I'm not sure which approach is
+> better.
+>=20
 
-> 
-> Kent,
-> Could you please offer your opinion?
-> 
-> Thanks.
-> 
-> Coly Li
-> 
+I prefer to have two min_heap APIs, but how to name them, this is a =
+question from me.
+
+Also if the full-random min_heap version has no user in kernel, whether =
+to keep it in kernel also is a question.
+
+Kent,
+Could you please offer your opinion?
+
+Thanks.
+
+Coly Li
+
