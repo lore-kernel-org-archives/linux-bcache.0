@@ -1,25 +1,25 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BA07226CE04
-	for <linux-bcache@vger.kernel.org>; Sun, 14 Sep 2025 16:32:22 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CD1AA1EA7CE
+	for <linux-bcache@vger.kernel.org>; Sun, 14 Sep 2025 16:32:24 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1757867543; cv=none; b=JUAE0dE+CKSYUmzHeZugfQfkmeDC+R+Yv4XfTO924Iy/OOEEvIBtYONVDNHcHDkd6uqpL4xgdkDgWytapsEqY6Le8xQdsVveasLRLn5iF5e6pabBqWQNmZKwQ61+7DtWOxGfXl0Gzceb3pn5TLGEYHiMmnXzSoxG/qo+jsPhZTQ=
+	t=1757867544; cv=none; b=ZB+Mb2suwUtjRo65CPhmRqqK4Dv8g97ir1kiTZQpMKFUDrMrKbzRXDlxF28sgXW+ZeYXVBjeRud78U9X9fBSc9RRemYslLta322hdr60xLflzBzRGu1f4lJmvdBcfk+4ZS+oADBWAEfbLcIdRlEGS62pjX9q4AHtj1QiW2aEtXo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1757867543; c=relaxed/simple;
-	bh=TjxFtAtZiBxA1K/7QvP+E9lC9gKQTW/hz/8JB8hfvtY=;
+	s=arc-20240116; t=1757867544; c=relaxed/simple;
+	bh=jOoDbp6fAgesc1rlON005ue+v2QyXSdaDaWUcVv8+YY=;
 	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=u8Vl2eRJ3PncbASN2nI3z0nq+wdq5SSX8tUcZNanT/p4Pbm+bLXnHx7OR/X398yPnANkrC6ka7fuWmixqfK1iOWbF08KN3EYGJD1RTHpcoM4LANY1auIjcen8ZrZGDbpTcEE7kDBt4uHhfbmog/35pQpDboW8Somb1fMEb8vn/k=
+	 MIME-Version; b=O6BbFwTwpNVo1O1u/pkjafebaXq/hdnVp1Qw3bAG0Rs9eMoKjXG2hMcv0TnSJDWKkEOUnERMrJPJNnBGKwEpk8bKn3db6bbYIXS5w7xafrXPr2UomMXuxgDBXbMwxhOktbNHHWr0Xo5I7dJUB2jDZXI5mpsXflDj3NvrbWpgRuo=
 ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 50FA5C4CEFA;
-	Sun, 14 Sep 2025 16:32:21 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id E30CEC4CEF1;
+	Sun, 14 Sep 2025 16:32:23 +0000 (UTC)
 From: colyli@fnnas.com
 To: linux-bcache@vger.kernel.org
 Cc: Coly Li <colyli@fnnas.com>
-Subject: [PATCH 2/4] bcache: remove discard code from alloc.c
-Date: Mon, 15 Sep 2025 00:32:14 +0800
-Message-ID: <20250914163216.115036-2-colyli@fnnas.com>
+Subject: [PATCH 4/4] bcache: remove discard sysfs interface document
+Date: Mon, 15 Sep 2025 00:32:16 +0800
+Message-ID: <20250914163216.115036-4-colyli@fnnas.com>
 X-Mailer: git-send-email 2.47.3
 In-Reply-To: <20250914163216.115036-1-colyli@fnnas.com>
 References: <20250914163216.115036-1-colyli@fnnas.com>
@@ -33,85 +33,70 @@ Content-Transfer-Encoding: 8bit
 
 From: Coly Li <colyli@fnnas.com>
 
-Bcache allocator initially has no free space to allocate. Firstly it
-does a garbage collection which is triggered by a cache device write
-and fills free space into ca->free[] lists. The discard happens after
-the free bucket is handled by garbage collection added into one of the
-ca->free[] lists. But normally this bucket will be allocated out very
-soon to requester and filled data onto it. The discard hint on this
-bucket LBA range doesn't help SSD control to improve internal erasure
-performance, and waste extra CPU cycles to issue discard bios.
-
-This patch removes the almost-useless discard code from alloc.c.
+This patch removes documents of bcache discard sysfs interface, it
+drops discard related sections from,
+- Documentation/ABI/testing/sysfs-block-bcache
+- Documentation/admin-guide/bcache.rst
 
 Signed-off-by: Coly Li <colyli@fnnas.com>
 ---
- drivers/md/bcache/alloc.c | 21 ++++-----------------
- 1 file changed, 4 insertions(+), 17 deletions(-)
+ Documentation/ABI/testing/sysfs-block-bcache |  7 -------
+ Documentation/admin-guide/bcache.rst         | 13 ++-----------
+ 2 files changed, 2 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-index 48ce750bf70a..db3684819e38 100644
---- a/drivers/md/bcache/alloc.c
-+++ b/drivers/md/bcache/alloc.c
-@@ -24,21 +24,18 @@
-  * Since the gens and priorities are all stored contiguously on disk, we can
-  * batch this up: We fill up the free_inc list with freshly invalidated buckets,
-  * call prio_write(), and when prio_write() finishes we pull buckets off the
-- * free_inc list and optionally discard them.
-+ * free_inc list.
-  *
-  * free_inc isn't the only freelist - if it was, we'd often to sleep while
-  * priorities and gens were being written before we could allocate. c->free is a
-  * smaller freelist, and buckets on that list are always ready to be used.
-  *
-- * If we've got discards enabled, that happens when a bucket moves from the
-- * free_inc list to the free list.
-- *
-  * There is another freelist, because sometimes we have buckets that we know
-  * have nothing pointing into them - these we can reuse without waiting for
-  * priorities to be rewritten. These come from freed btree nodes and buckets
-  * that garbage collection discovered no longer had valid keys pointing into
-  * them (because they were overwritten). That's the unused list - buckets on the
-- * unused list move to the free list, optionally being discarded in the process.
-+ * unused list move to the free list.
-  *
-  * It's also important to ensure that gens don't wrap around - with respect to
-  * either the oldest gen in the btree or the gen on disk. This is quite
-@@ -118,8 +115,7 @@ void bch_rescale_priorities(struct cache_set *c, int sectors)
- /*
-  * Background allocation thread: scans for buckets to be invalidated,
-  * invalidates them, rewrites prios/gens (marking them as invalidated on disk),
-- * then optionally issues discard commands to the newly free buckets, then puts
-- * them on the various freelists.
-+ * then puts them on the various freelists.
-  */
+diff --git a/Documentation/ABI/testing/sysfs-block-bcache b/Documentation/ABI/testing/sysfs-block-bcache
+index 9e4bbc5d51fd..9344a657ca70 100644
+--- a/Documentation/ABI/testing/sysfs-block-bcache
++++ b/Documentation/ABI/testing/sysfs-block-bcache
+@@ -106,13 +106,6 @@ Description:
+ 		will be discarded from the cache. Should not be turned off with
+ 		writeback caching enabled.
  
- static inline bool can_inc_bucket_gen(struct bucket *b)
-@@ -321,8 +317,7 @@ static int bch_allocator_thread(void *arg)
- 	while (1) {
- 		/*
- 		 * First, we pull buckets off of the unused and free_inc lists,
--		 * possibly issue discards to them, then we add the bucket to
--		 * the free list:
-+		 * then we add the bucket to the free list:
- 		 */
- 		while (1) {
- 			long bucket;
-@@ -330,14 +325,6 @@ static int bch_allocator_thread(void *arg)
- 			if (!fifo_pop(&ca->free_inc, bucket))
- 				break;
- 
--			if (ca->discard) {
--				mutex_unlock(&ca->set->bucket_lock);
--				blkdev_issue_discard(ca->bdev,
--					bucket_to_sector(ca->set, bucket),
--					ca->sb.bucket_size, GFP_KERNEL);
--				mutex_lock(&ca->set->bucket_lock);
--			}
+-What:		/sys/block/<disk>/bcache/discard
+-Date:		November 2010
+-Contact:	Kent Overstreet <kent.overstreet@gmail.com>
+-Description:
+-		For a cache, a boolean allowing discard/TRIM to be turned off
+-		or back on if the device supports it.
 -
- 			allocator_wait(ca, bch_allocator_push(ca, bucket));
- 			wake_up(&ca->set->btree_cache_wait);
- 			wake_up(&ca->set->bucket_wait);
+ What:		/sys/block/<disk>/bcache/bucket_size
+ Date:		November 2010
+ Contact:	Kent Overstreet <kent.overstreet@gmail.com>
+diff --git a/Documentation/admin-guide/bcache.rst b/Documentation/admin-guide/bcache.rst
+index 6fdb495ac466..f71f349553e4 100644
+--- a/Documentation/admin-guide/bcache.rst
++++ b/Documentation/admin-guide/bcache.rst
+@@ -17,8 +17,7 @@ The latest bcache kernel code can be found from mainline Linux kernel:
+ It's designed around the performance characteristics of SSDs - it only allocates
+ in erase block sized buckets, and it uses a hybrid btree/log to track cached
+ extents (which can be anywhere from a single sector to the bucket size). It's
+-designed to avoid random writes at all costs; it fills up an erase block
+-sequentially, then issues a discard before reusing it.
++designed to avoid random writes at all costs.
+ 
+ Both writethrough and writeback caching are supported. Writeback defaults to
+ off, but can be switched on and off arbitrarily at runtime. Bcache goes to
+@@ -618,19 +617,11 @@ bucket_size
+ cache_replacement_policy
+   One of either lru, fifo or random.
+ 
+-discard
+-  Boolean; if on a discard/TRIM will be issued to each bucket before it is
+-  reused. Defaults to off, since SATA TRIM is an unqueued command (and thus
+-  slow).
+-
+ freelist_percent
+   Size of the freelist as a percentage of nbuckets. Can be written to to
+   increase the number of buckets kept on the freelist, which lets you
+   artificially reduce the size of the cache at runtime. Mostly for testing
+-  purposes (i.e. testing how different size caches affect your hit rate), but
+-  since buckets are discarded when they move on to the freelist will also make
+-  the SSD's garbage collection easier by effectively giving it more reserved
+-  space.
++  purposes (i.e. testing how different size caches affect your hit rate).
+ 
+ io_errors
+   Number of errors that have occurred, decayed by io_error_halflife.
 -- 
 2.47.3
 
