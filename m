@@ -1,500 +1,312 @@
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.223.130])
+Received: from sg-1-23.ptr.blmpb.com (sg-1-23.ptr.blmpb.com [118.26.132.23])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id CB020366548
-	for <linux-bcache@vger.kernel.org>; Tue, 20 Jan 2026 13:28:27 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=195.135.223.130
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1BEA73EDAD7
+	for <linux-bcache@vger.kernel.org>; Tue, 20 Jan 2026 14:46:21 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=118.26.132.23
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1768915709; cv=none; b=kAiDX7rwguX/dgigEGHSg8laXuSjnViLpHUHLiYbr0GpknpEiSa6pgh6Wxz3VG23ESjqyCo5ksmzEqd2igDn5u+CKPV3WsJta6dkGREcX6t3+ZVxKY/JNqOqRTux7dVB3ACM6T/Q33SF/43EvUDY+5MWnI7izcSmTTbIwsehwqM=
+	t=1768920385; cv=none; b=UBlQw3D5VF1pCS6/QbkgEQ4f/Fkteo8HqZce6Jkd1JRE5cveCYUULzZjGJIA7/WZyornKow52Cq2hvRk5jOVjV0OAZEXqsYCGBMn6xU76ozT1sjbjON7R75LkdDfUOoer3y/S5Se859CXNomNX3roSwCwjZEJP1NZ8GYy7LEtRs=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1768915709; c=relaxed/simple;
-	bh=66t/P1JV7sy0zdEnDXunvix8jw1hoL4Ed4EcA6kMRao=;
-	h=From:Date:Subject:MIME-Version:Content-Type:Message-Id:To:Cc; b=FspFssKMK1KucHIQdEt97P/+DzG25u+avm0ARaxWPMEme3VWCwmJTk71ZBNAdqW+LqRkAfyctnoQmWR9i4nScGHS576p4Pgn5afxhb8vljeVJlwZbh//HihA/K3U4xaf9F4jsy1MRyxPY7d8cIgPTM0lHVrs20sVldyiVMvhb9k=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de; spf=pass smtp.mailfrom=suse.de; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=1XNxPMk/; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=1uLa/+tv; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=1XNxPMk/; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=1uLa/+tv; arc=none smtp.client-ip=195.135.223.130
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
+	s=arc-20240116; t=1768920385; c=relaxed/simple;
+	bh=XkqjHUorie/sKCLnHV1Aa2VUpGfQyl0AbsUgD2iFZ68=;
+	h=Content-Disposition:References:Cc:From:Subject:Message-Id:
+	 Content-Type:In-Reply-To:To:Date:Mime-Version; b=JudqpGIEd5Q04Z87HcZdUUA2YmfWEiEFMOvlgo1mLmMcoRT4H+T3zyANMqdDAE17dvgHTw3yzve2dtRCKtbr8KXEKtOvLPZ9R0LRbCMy6BOV3eT0RHm8YaAMDng5XFDfHWabeq8QWEol9/CFBaIYXXVNdvSo6zE43sDEWErBDrs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=fnnas.com; spf=none smtp.mailfrom=fnnas.com; dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b=yrTSECsI; arc=none smtp.client-ip=118.26.132.23
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=fnnas.com
+Authentication-Results: smtp.subspace.kernel.org; spf=none smtp.mailfrom=fnnas.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="1XNxPMk/";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="1uLa/+tv";
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="1XNxPMk/";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="1uLa/+tv"
-Received: from imap1.dmz-prg2.suse.org (unknown [10.150.64.97])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-out1.suse.de (Postfix) with ESMTPS id D9640337DC;
-	Tue, 20 Jan 2026 13:28:25 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1768915705; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=7pbivrkjoEp2/X9V8hmr4UuTP9afXQ9ZipFfG8QelWw=;
-	b=1XNxPMk/CZjF24emfp8FfCx/irPz/3E0z6iVJEWGX9C9SNjymXofIZ/CekMI8K/9V4EC8q
-	IAdEGVJPIgE1fqkMLtIsnHfOM3OmuOWAMgfqFiS7cBMPwc/xMZX+efC3fO34FpldELACdF
-	Kfrmko7EjNJnkhPIOad2roauD5ZM01c=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1768915705;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=7pbivrkjoEp2/X9V8hmr4UuTP9afXQ9ZipFfG8QelWw=;
-	b=1uLa/+tv2/bmpNfZz4xtN+uCQPt0MmkDsr5toDpPBsNYIdsHWvIQjnVrDnzQxVLRQjI/FE
-	c3eMMUo31RexyKCQ==
-Authentication-Results: smtp-out1.suse.de;
-	none
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1768915705; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=7pbivrkjoEp2/X9V8hmr4UuTP9afXQ9ZipFfG8QelWw=;
-	b=1XNxPMk/CZjF24emfp8FfCx/irPz/3E0z6iVJEWGX9C9SNjymXofIZ/CekMI8K/9V4EC8q
-	IAdEGVJPIgE1fqkMLtIsnHfOM3OmuOWAMgfqFiS7cBMPwc/xMZX+efC3fO34FpldELACdF
-	Kfrmko7EjNJnkhPIOad2roauD5ZM01c=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1768915705;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=7pbivrkjoEp2/X9V8hmr4UuTP9afXQ9ZipFfG8QelWw=;
-	b=1uLa/+tv2/bmpNfZz4xtN+uCQPt0MmkDsr5toDpPBsNYIdsHWvIQjnVrDnzQxVLRQjI/FE
-	c3eMMUo31RexyKCQ==
-Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id CB9C33EA63;
-	Tue, 20 Jan 2026 13:28:25 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
-	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id iD29MPmCb2lGIwAAD6G6ig
-	(envelope-from <dwagner@suse.de>); Tue, 20 Jan 2026 13:28:25 +0000
-From: Daniel Wagner <dwagner@suse.de>
-Date: Tue, 20 Jan 2026 14:28:18 +0100
-Subject: [PATCH blktests] bcache: add bcache/001
+	dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b="yrTSECsI"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+ s=s1; d=fnnas-com.20200927.dkim.feishu.cn; t=1768920370;
+  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
+ reply-to:content-type:mime-version:in-reply-to:message-id;
+ bh=NV/47piqB9x38rbPpoEFVl/ppjSwPuFhCuxaNF973z0=;
+ b=yrTSECsI2kP2kL/uE7Kam8uaP6AWc8kzoBcvQ/O96MP92ZbTeanfFaShwXszX6w2g8D5Bh
+ sMaefM5YisF+sRPEXXeXPR6bom9KMCDp/ibJRWhJ6crepg2LmZ5mWfa6S5hhMC2P2j0NsF
+ FLPw4WnPkCgMQQEJhQw1nikI6V51JM7TxyASKsfI+lyf+Z0yqUOhbF++qVj3pjztTJ0u5S
+ xg4UIFBfAeyqoAEThVAnna8fdio7BRd4c4Vp2equeTb27nONpVbUxLZ31n65+uYexcM6uD
+ +mfVONmtJPXPXDAL2Uq2HS/5ytWA1EKt6afqUseFsuDCR0bNIW4rOFuHdhPTPA==
+Content-Disposition: inline
+References: <20260120023535.9109-1-zhangshida@kylinos.cn> <CANubcdXsWsdueYf_aN9FSm+hnE-rpXx_hHhwP9_Z1ni1YGEH9Q@mail.gmail.com>
+X-Lms-Return-Path: <lba+2696f9530+644dfe+vger.kernel.org+colyli@fnnas.com>
+Cc: "Kent Overstreet" <kent.overstreet@linux.dev>, <axboe@kernel.dk>, 
+	"Sasha Levin" <sashal@kernel.org>, 
+	"Christoph Hellwig" <hch@infradead.org>, <linux-bcache@vger.kernel.org>, 
+	"Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, 
+	"zhangshida" <zhangshida@kylinos.cn>
+From: "Coly Li" <colyli@fnnas.com>
+X-Original-From: Coly Li <colyli@fnnas.com>
+Subject: Re: Fwd: [PATCH v2] bcache: use bio cloning for detached device requests
+Message-Id: <aW-DHlpo4dzKRB8K@studio.local>
+Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CANubcdXsWsdueYf_aN9FSm+hnE-rpXx_hHhwP9_Z1ni1YGEH9Q@mail.gmail.com>
+Content-Transfer-Encoding: quoted-printable
+Received: from studio.local ([120.245.64.73]) by smtp.feishu.cn with ESMTPS; Tue, 20 Jan 2026 22:46:07 +0800
+To: "Stephen Zhang" <starzhangzsd@gmail.com>
+Date: Tue, 20 Jan 2026 22:46:04 +0800
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <20260120-bcache-v1-1-59bf0b2d4140@suse.de>
-X-B4-Tracking: v=1; b=H4sIAAAAAAAC/6tWKk4tykwtVrJSqFYqSi3LLM7MzwNyDHUUlJIzE
- vPSU3UzU4B8JSMDIzMDQyMD3aTkxOSMVF1j09Rkc2Mzi2SLNBMloOKCotS0zAqwQdGxtbUA93t
- E7VgAAAA=
-X-Change-ID: 20260120-bcache-35ec7368c8f4
-To: Christoph Hellwig <hch@infradead.org>, 
- Stephen Zhang <starzhangzsd@gmail.com>, 
- Kent Overstreet <kent.overstreet@linux.dev>, Coly Li <colyli@fnnas.com>, 
- Shin'ichiro Kawasaki <shinichiro.kawasaki@wdc.com>, 
- linux-block@vger.kernel.org, linux-bcache@vger.kernel.org
-Cc: Daniel Wagner <dwagner@suse.de>
-X-Mailer: b4 0.14.3
-X-Spamd-Result: default: False [-4.30 / 50.00];
-	BAYES_HAM(-3.00)[100.00%];
-	NEURAL_HAM_LONG(-1.00)[-1.000];
-	NEURAL_HAM_SHORT(-0.20)[-1.000];
-	MIME_GOOD(-0.10)[text/plain];
-	RCVD_VIA_SMTP_AUTH(0.00)[];
-	FREEMAIL_TO(0.00)[infradead.org,gmail.com,linux.dev,fnnas.com,wdc.com,vger.kernel.org];
-	ARC_NA(0.00)[];
-	MIME_TRACE(0.00)[0:+];
-	RCPT_COUNT_SEVEN(0.00)[8];
-	FUZZY_RATELIMITED(0.00)[rspamd.com];
-	MID_RHS_MATCH_FROM(0.00)[];
-	FREEMAIL_ENVRCPT(0.00)[gmail.com];
-	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	FROM_EQ_ENVFROM(0.00)[];
-	FROM_HAS_DN(0.00)[];
-	TO_DN_SOME(0.00)[];
-	RCVD_TLS_ALL(0.00)[];
-	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	RCVD_COUNT_TWO(0.00)[2];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[suse.de:mid,suse.de:email]
-X-Spam-Flag: NO
-X-Spam-Score: -4.30
-X-Spam-Level: 
+Mime-Version: 1.0
 
-So far we are missing tests for bcache. Besides a relative simple
-setup/teardown tests add also the corresponding infrastructure. More
-tests are to be expected to depend on this.
+On Tue, Jan 20, 2026 at 10:39:36AM +0800, Stephen Zhang wrote:
+> ---------- Forwarded message ---------
+> =E5=8F=91=E4=BB=B6=E4=BA=BA=EF=BC=9A zhangshida <starzhangzsd@gmail.com>
+> Date: 2026=E5=B9=B41=E6=9C=8820=E6=97=A5=E5=91=A8=E4=BA=8C 10:35
+> Subject: [PATCH v2] bcache: use bio cloning for detached device requests
+> To: <colyli@fnnas.com>, <kent.overstreet@linux.dev>,
+> <axboe@kernel.dk>, <sashal@kernel.org>, <hch@infradead.org>
+> Cc: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+> <zhangshida@kylinos.cn>, <starzhangzsd@gmail.com>, Christoph Hellwig
+> <hch@lst.de>
+>=20
+>=20
+> From: Shida Zhang <zhangshida@kylinos.cn>
+>=20
+> Previously, bcache hijacked the bi_end_io and bi_private fields of
+> the incoming bio when the backing device was in a detached state.
+> This is fragile and breaks if the bio is needed to be processed by
+> other layers.
+>=20
+> This patch transitions to using a cloned bio embedded within a private
+> structure. This ensures the original bio's metadata remains untouched.
+>=20
+> Fixes: 53280e398471 ("bcache: fix improper use of bi_end_io")
+> Co-developed-by: Christoph Hellwig <hch@lst.de>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> Signed-off-by: Shida Zhang <zhangshida@kylinos.cn>
+> ---
+>=20
+> Changelog:
+> v1:
+> https://lore.kernel.org/all/20260115074811.230807-1-zhangshida@kylinos.cn=
+/
+>=20
+>  drivers/md/bcache/bcache.h  |  9 +++++
+>  drivers/md/bcache/request.c | 79 ++++++++++++++++---------------------
+>  drivers/md/bcache/super.c   | 12 +++++-
+>  3 files changed, 54 insertions(+), 46 deletions(-)
+>=20
+> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+> index 8ccacba8554..54ff4e0238a 100644
+> --- a/drivers/md/bcache/bcache.h
+> +++ b/drivers/md/bcache/bcache.h
+> @@ -273,6 +273,8 @@ struct bcache_device {
+>=20
+>         struct bio_set          bio_split;
+>=20
+> +       struct bio_set          bio_detach;
+                                  ^^^^^^^^^-> better to rename it to bio_de=
+tached
 
-_create_bcache/_remove_bcache are tracking the resources and if anything
-is missing it will complain.
+>         unsigned int            data_csum:1;
+>=20
+>         int (*cache_miss)(struct btree *b, struct search *s,
+> @@ -753,6 +755,13 @@ struct bbio {
+>         struct bio              bio;
+>  };
+>=20
+> +struct detached_dev_io_private {
+> +       struct bcache_device    *d;
+> +       unsigned long           start_time;
+> +       struct bio              *orig_bio;
+> +       struct bio              bio;
+> +};
+> +
+>  #define BTREE_PRIO             USHRT_MAX
+>  #define INITIAL_PRIO           32768U
+>=20
+> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
+> index 82fdea7dea7..e0b12cb622b 100644
+> --- a/drivers/md/bcache/request.c
+> +++ b/drivers/md/bcache/request.c
+> @@ -1077,68 +1077,58 @@ static CLOSURE_CALLBACK(cached_dev_nodata)
+>         continue_at(cl, cached_dev_bio_complete, NULL);
+>  }
+>=20
+> -struct detached_dev_io_private {
+> -       struct bcache_device    *d;
+> -       unsigned long           start_time;
+> -       bio_end_io_t            *bi_end_io;
+> -       void                    *bi_private;
+> -       struct block_device     *orig_bdev;
+> -};
+> -
+>  static void detached_dev_end_io(struct bio *bio)
+>  {
+> -       struct detached_dev_io_private *ddip;
+> -
+> -       ddip =3D bio->bi_private;
+> -       bio->bi_end_io =3D ddip->bi_end_io;
+> -       bio->bi_private =3D ddip->bi_private;
+> +       struct detached_dev_io_private *ddip =3D
+> +               container_of(bio, struct detached_dev_io_private, bio);
+> +       struct bio *orig_bio =3D ddip->orig_bio;
+>=20
+>         /* Count on the bcache device */
+> -       bio_end_io_acct_remapped(bio, ddip->start_time, ddip->orig_bdev);
+> +       bio_end_io_acct(orig_bio, ddip->start_time);
+>
+>         if (bio->bi_status) {
+> -               struct cached_dev *dc =3D container_of(ddip->d,
+> -                                                    struct cached_dev, d=
+isk);
+> +               struct cached_dev *dc =3D bio->bi_private;
+> +
+>                 /* should count I/O error for backing device here */
+>                 bch_count_backing_io_errors(dc, bio);
+> +               orig_bio->bi_status =3D bio->bi_status;
+>         }
+>=20
+> -       kfree(ddip);
+> -       bio_endio(bio);
+> +       bio_put(bio);
+> +       bio_endio(orig_bio);
+>  }
+>=20
+> -static void detached_dev_do_request(struct bcache_device *d, struct bio =
+*bio,
+> -               struct block_device *orig_bdev, unsigned long start_time)
+> +static void detached_dev_do_request(struct bcache_device *d,
+> +               struct bio *orig_bio, unsigned long start_time)
+>  {
+>         struct detached_dev_io_private *ddip;
+>         struct cached_dev *dc =3D container_of(d, struct cached_dev, disk=
+);
+> +       struct bio *clone_bio;
+>=20
+> -       /*
+> -        * no need to call closure_get(&dc->disk.cl),
+> -        * because upper layer had already opened bcache device,
+> -        * which would call closure_get(&dc->disk.cl)
+> -        */
+> -       ddip =3D kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO=
+);
+> -       if (!ddip) {
+> -               bio->bi_status =3D BLK_STS_RESOURCE;
+> -               bio_endio(bio);
+> +       if (bio_op(orig_bio) =3D=3D REQ_OP_DISCARD &&
+> +           !bdev_max_discard_sectors(dc->bdev)) {
+> +               bio_endio(orig_bio);
+>                 return;
+>         }
+>=20
+> -       ddip->d =3D d;
+> +       clone_bio =3D bio_alloc_clone(dc->bdev, orig_bio, GFP_NOIO,
+> +                                   &d->bio_detach);
+> +       if (!clone_bio) {
+> +               orig_bio->bi_status =3D BLK_STS_RESOURCE;
+> +               bio_endio(orig_bio);
+> +               return;
+> +       }
+> +
+> +       ddip =3D container_of(clone_bio, struct detached_dev_io_private, =
+bio);
+>         /* Count on the bcache device */
+> -       ddip->orig_bdev =3D orig_bdev;
+> +       ddip->d =3D d;
+>         ddip->start_time =3D start_time;
+> -       ddip->bi_end_io =3D bio->bi_end_io;
+> -       ddip->bi_private =3D bio->bi_private;
+> -       bio->bi_end_io =3D detached_dev_end_io;
+> -       bio->bi_private =3D ddip;
+> -
+> -       if ((bio_op(bio) =3D=3D REQ_OP_DISCARD) &&
+> -           !bdev_max_discard_sectors(dc->bdev))
+> -               detached_dev_end_io(bio);
+> -       else
+> -               submit_bio_noacct(bio);
+> +       ddip->orig_bio =3D orig_bio;
+> +
+> +       clone_bio->bi_end_io =3D detached_dev_end_io;
+> +       clone_bio->bi_private =3D dc;
+> +
+> +       submit_bio_noacct(clone_bio);
+>  }
+>=20
+>  static void quit_max_writeback_rate(struct cache_set *c,
+> @@ -1214,10 +1204,10 @@ void cached_dev_submit_bio(struct bio *bio)
+>=20
+>         start_time =3D bio_start_io_acct(bio);
+>=20
+> -       bio_set_dev(bio, dc->bdev);
+>         bio->bi_iter.bi_sector +=3D dc->sb.data_offset;
+>=20
+>         if (cached_dev_get(dc)) {
+> +               bio_set_dev(bio, dc->bdev);
+>                 s =3D search_alloc(bio, d, orig_bdev, start_time);
+>                 trace_bcache_request_start(s->d, bio);
+>=20
+> @@ -1237,9 +1227,10 @@ void cached_dev_submit_bio(struct bio *bio)
+>                         else
+>                                 cached_dev_read(dc, s);
+>                 }
+> -       } else
+> +       } else {
+>                 /* I/O request sent to backing device */
+> -               detached_dev_do_request(d, bio, orig_bdev, start_time);
+> +               detached_dev_do_request(d, bio, start_time);
+> +       }
+>  }
+>=20
+>  static int cached_dev_ioctl(struct bcache_device *d, blk_mode_t mode,
+> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
+> index c17d4517af2..d4b798668c8 100644
+> --- a/drivers/md/bcache/super.c
+> +++ b/drivers/md/bcache/super.c
+> @@ -887,6 +887,7 @@ static void bcache_device_free(struct bcache_device *=
+d)
+>         }
+>=20
+>         bioset_exit(&d->bio_split);
+> +       bioset_exit(&d->bio_detach);
+>         kvfree(d->full_dirty_stripes);
+>         kvfree(d->stripe_sectors_dirty);
+>=20
+> @@ -949,6 +950,11 @@ static int bcache_device_init(struct
+> bcache_device *d, unsigned int block_size,
+>                         BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
+>                 goto out_ida_remove;
+>=20
+> +       if (bioset_init(&d->bio_detach, 4,
+					^^^^^-> I feel 4 might be a bit small
+here. bio_detached set is for normal IO when backing device is not attached=
+ to
+a cache device. I would suggest to set the pool size to 128 or 256.
 
-Signed-off-by: Daniel Wagner <dwagner@suse.de>
----
-The initial test is very simple but it alreayd shows some troubles.
+> +                       offsetof(struct detached_dev_io_private, bio),
+> +                       BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
+> +               goto out_bioset_split_exit;
+> +
+>         if (lim.logical_block_size > PAGE_SIZE && cached_bdev) {
+>                 /*
+>                  * This should only happen with BCACHE_SB_VERSION_BDEV.
+> @@ -964,7 +970,7 @@ static int bcache_device_init(struct bcache_device
+> *d, unsigned int block_size,
+>=20
+>         d->disk =3D blk_alloc_disk(&lim, NUMA_NO_NODE);
+>         if (IS_ERR(d->disk))
+> -               goto out_bioset_exit;
+> +               goto out_bioset_detach_exit;
+>=20
+>         set_capacity(d->disk, sectors);
+>         snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", idx);
+> @@ -976,7 +982,9 @@ static int bcache_device_init(struct bcache_device
+> *d, unsigned int block_size,
+>         d->disk->private_data   =3D d;
+>         return 0;
+>=20
+> -out_bioset_exit:
+> +out_bioset_detach_exit:
+> +       bioset_exit(&d->bio_detach);
+> +out_bioset_split_exit:
+>         bioset_exit(&d->bio_split);
+>  out_ida_remove:
+>         ida_free(&bcache_device_idx, idx);
+> --
 
-After running make-bcache, sometime there is immediatly some kernel logs and
-this is the good case. User land finds all devices and thus is happy.
+Rested part is good to me. Thanks for patching up.
 
-Though when there is not activities (for seconds), user space complains about
-missing devices. I have added some debugging stuff in this verison so there is
-some more info to help figure out what's going on.
-
-"""
-bcache/001 => nvme0n1 vdb vdc (test bcache setup and teardown) [failed]
-    runtime  67.538s  ...  67.479s
-    --- tests/bcache/001.out    2026-01-20 12:57:37.151032990 +0000
-    +++ /tmp/blktests/nvme0n1_vdb_vdc/bcache/001.out.bad        2026-01-20 13:00:11.129159120 +0000
-    @@ -1 +1,32 @@
-     Running bcache/001
-    +WARNING: Could not find device node for UUID c23b55bf-0619-4825-ada6-8d26c57210bb after 60s
-    +$ make-bcache --bucket 64k --block 4k --cache /dev/nvme0n1 --bdev /dev/vdb
-    +UUID:                      1b8ed2a8-4bed-4d55-a9de-1da3d5d60922
-    +Set UUID:          c9fee0e5-b330-443a-8d8a-66750c1d4b86
-    +version:           0
-    +nbuckets:          65536
-    ...
-    (Run 'diff -u tests/bcache/001.out /tmp/blktests/nvme0n1_vdb_vdc/bcache/001.out.bad' to see the entire diff)
-
-[ 2882.431357] run blktests bcache/001 at 2026-01-20 12:59:10
-[...] make-bcache runs shortly after the test starts though we start to see logs way later:
-[ 2946.570731] bcache: run_cache_set() invalidating existing data
-[ 2946.576450] bcache: register_cache() registered cache device nvme0n1
-[ 2946.582442] bcache: register_bdev() registered backing device vdb
-[ 2946.590678] bcache: bch_cached_dev_attach() Caching vdb as bcache0 on set ed5c9c6d-a4f8-41fe-b6a2-73433b561796
-[ 2946.599839] bcache: register_bdev() registered backing device vdc
-[ 2946.609148] bcache: bch_cached_dev_attach() Caching vdc as bcache1 on set ed5c9c6d-a4f8-41fe-b6a2-73433b561796
-[ 2946.774259] bcache: bcache_device_free() bcache0 stopped
-[ 2946.818099] bcache: bcache_device_free() bcache1 stopped
-[ 2947.181586] bcache: cache_set_free() Cache set ed5c9c6d-a4f8-41fe-b6a2-73433b561796 unregistered
-
-Running bcache/001
-WARNING: Could not find device node for UUID c23b55bf-0619-4825-ada6-8d26c57210bb after 60s
-$ make-bcache --bucket 64k --block 4k --cache /dev/nvme0n1 --bdev /dev/vdb
-UUID:                   1b8ed2a8-4bed-4d55-a9de-1da3d5d60922
-Set UUID:               c9fee0e5-b330-443a-8d8a-66750c1d4b86
-version:                0
-nbuckets:               65536
-block_size:             8
-bucket_size:            128
-nr_in_set:              1
-nr_this_dev:            0
-first_bucket:           1
-UUID:                   c23b55bf-0619-4825-ada6-8d26c57210bb
-Set UUID:               c9fee0e5-b330-443a-8d8a-66750c1d4b86
-version:                1
-block_size:             8
-data_offset:            16
-
-/sys/fs/bcache*:
-total 0
---w------- 1 root root 4096 Jan 20 12:12 pendings_cleanup
---w------- 1 root root 4096 Jan 20 12:11 register
---w------- 1 root root 4096 Jan 20 12:12 register_quiet
-
-/sys/block/bcache*:
-ls: cannot access '/sys/block/bcache*': No such file or directory
-
-/dev/bcache*:
-ls: cannot access '/dev/bcache*': No such file or directory
-
-/dev/bcache/by-uuid/:
-ls: cannot access '/dev/bcache/by-uuid/': No such file or directory
-"""
-
-With one cache and one bdev device this happens pretty much everytime. I had
-some more luck using one cache and two bdev devices which has a successrate of
-roughly 50%.
-
-Note: to run this tests blktests TEST_CASE_DEV_ARRAY needs to be set:
-
-  # cat config
-  TEST_CASE_DEV_ARRAY[bcache/*]="/dev/nvme0n1 /dev/vdb /dev/vdc"
-
-# ./check -c config bcache
- 
----
- tests/bcache/001     |  32 ++++++++
- tests/bcache/001.out |   1 +
- tests/bcache/rc      | 225 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 258 insertions(+)
-
-diff --git a/tests/bcache/001 b/tests/bcache/001
-new file mode 100644
-index 000000000000..a723f14f80bf
---- /dev/null
-+++ b/tests/bcache/001
-@@ -0,0 +1,32 @@
-+#!/bin/bash
-+# SPDX-License-Identifier: GPL-2.0
-+# Copyright (C) 2026 Daniel Wagner, SUSE Labs
-+#
-+# Test bcache setup and teardown
-+
-+. tests/bcache/rc
-+
-+DESCRIPTION="test bcache setup and teardown"
-+
-+requires() {
-+		_bcache_requires
-+}
-+
-+test_device_array() {
-+	echo "Running ${TEST_NAME}"
-+
-+	if [[ ${#TEST_DEV_ARRAY[@]} -lt 3 ]]; then
-+		SKIP_REASONS+=("requires at least 3 devices")
-+		return 1
-+	fi
-+
-+	 _create_bcache \
-+		--cache "${TEST_DEV_ARRAY[0]##*/}" \
-+		--bdev "${TEST_DEV_ARRAY[1]##*/}"
-+     _remove_bcache
-+
-+	 _create_bcache \
-+	 	--cache "${TEST_DEV_ARRAY[0]##*/}" \
-+	 	--bdev "${TEST_DEV_ARRAY[1]##*/}" "${TEST_DEV_ARRAY[2]##*/}"
-+     _remove_bcache
-+}
-diff --git a/tests/bcache/001.out b/tests/bcache/001.out
-new file mode 100644
-index 000000000000..f890aed2736c
---- /dev/null
-+++ b/tests/bcache/001.out
-@@ -0,0 +1 @@
-+Running bcache/001
-diff --git a/tests/bcache/rc b/tests/bcache/rc
-new file mode 100644
-index 000000000000..cd71edf1042c
---- /dev/null
-+++ b/tests/bcache/rc
-@@ -0,0 +1,225 @@
-+#!/bin/bash
-+# SPDX-License-Identifier: GPL-2.0
-+# Copyright (C) 2026 Daniel Wagner, SUSE Labs
-+
-+. common/rc
-+
-+declare -a BCACHE_DEVS=()
-+declare -a BCACHE_BDEVS=()
-+declare -a BCACHE_CSETS=()
-+
-+BCACHE_MAX_RETRIES=60
-+
-+_bcache_requires() {
-+	_have_kernel_options MD BCACHE BCACHE_DEBUG AUTOFS_FS
-+	_have_program make-bcache
-+	_have_crypto_algorithm crc32c
-+}
-+
-+_create_bcache() {
-+    local -a cdevs=()
-+    local -a bdevs=()
-+    local bucket_size="64k"
-+    local block_size="4k"
-+
-+	_register_test_cleanup _cleanup_bcache
-+
-+	while [[ $# -gt 0 ]]; do
-+        case $1 in
-+            --cache)
-+                shift
-+                # Collect arguments until the next flag or end of input
-+                while [[ $# -gt 0 && ! $1 =~ ^-- ]]; do
-+                    cdevs+=("$1")
-+                    shift
-+                done
-+                ;;
-+            --bdev)
-+                shift
-+                # Collect arguments until the next flag or end of input
-+                while [[ $# -gt 0 && ! $1 =~ ^-- ]]; do
-+                    bdevs+=("$1")
-+                    shift
-+                done
-+                ;;
-+            --bucket-size)
-+                bucket_size="$2"
-+                shift 2
-+                ;;
-+            --block-size)
-+                block_size="$2"
-+                shift 2
-+                ;;
-+            --writeback)
-+				ARGS+=(--writeback)
-+                shift 1
-+                ;;
-+			--discard)
-+				ARGS+=(--discard)
-+				shift 1
-+				;;
-+            *)
-+                echo "WARNING: unknown argument: $1"
-+                shift
-+                ;;
-+        esac
-+    done
-+
-+	# add /dev prefix to device names
-+	cdevs=( "${cdevs[@]/#/\/dev\/}" )
-+	bdevs=( "${bdevs[@]/#/\/dev\/}" )
-+
-+	# make-bcache expects empty/cleared devices
-+	local dev
-+    for dev in "${cdevs[@]}" "${bdevs[@]}"; do
-+    	wipefs --all --quiet "${dev}"
-+		BCACHE_DEVS+=("${dev}")
-+    done
-+
-+    local -a cdevs_args=()
-+    for dev in "${cdevs[@]}"; do
-+        cdevs_args+=("--cache" "${dev}")
-+    done
-+
-+	local -a bdevs_args=()
-+    for dev in "${bdevs[@]}"; do
-+        bdevs_args+=("--bdev" "${dev}")
-+    done
-+
-+	local output cmd
-+	cmd=(make-bcache \
-+		--bucket "${bucket_size}" \
-+		--block "${block_size}" \
-+		"${cdevs_args[@]}" \
-+        "${bdevs_args[@]}" \
-+		"${ARGS[@]}")
-+
-+	output=$("${cmd[@]}" 2>&1)
-+	local rc=$?
-+    if [[ "${rc}" -ne 0 ]]; then
-+        echo "ERROR: make-bcache failed:" >&2
-+        echo "$output" >&2
-+        return 1
-+    fi
-+
-+	local cset_uuid
-+	cset_uuid=$(echo "$output" | awk '/Set UUID:/ {print $3}' | head -n 1)
-+	if [[ -z "${cset_uuid}" ]]; then
-+        echo "ERROR: Could not extract cset UUID from make-bcache output" >&2
-+        return 1
-+    fi
-+	BCACHE_CSETS+=("${cset_uuid}")
-+
-+	local -a bdev_uuids
-+	mapfile -t bdev_uuids < <(echo "$output" | awk '
-+  	  $1 == "UUID:" { last_uuid = $2 }
-+      $1 == "version:" && $2 == "1" { print last_uuid}
-+	')
-+
-+	udevadm settle
-+
-+	for uuid in "${bdev_uuids[@]}"; do
-+    	local link found attempt
-+
-+		link=/dev/bcache/by-uuid/"${uuid}"
-+		found=false
-+		attempt=0
-+
-+	    while (( attempt < BCACHE_MAX_RETRIES )); do
-+    	    if [[ -L "$link" ]]; then
-+        	    BCACHE_BDEVS+=("${uuid}")
-+            	found=true
-+				break
-+			fi
-+
-+		    (( attempt++ ))
-+			sleep 1
-+    	done
-+
-+		if [[ "$found" == "false" ]]; then
-+    	   echo "bcache: ${uuid} not found" > /dev/kmsg
-+		   echo "WARNING: Could not find device node for UUID ${uuid} after ${BCACHE_MAX_RETRIES}s" >&2
-+		   echo "\$ ${cmd[*]}" >&2
-+		   echo "${output}" >&2
-+		   echo "" >&2
-+		   echo "/sys/fs/bcache*:" >&2
-+		   ls -l /sys/fs/bcache* >&2
-+		   echo "" >&2
-+		   echo "/sys/block/bcache*:" >&2
-+		   ls -l /sys/block/bcache* >&2
-+		   echo "" >&2
-+		   echo "/dev/bcache*:" >&2
-+		   ls -l /dev/bcache* >&2
-+		   echo "" >&2
-+		   echo "/dev/bcache/by-uuid/:" >&2
-+		   ls -l /dev/bcache/by-uuid/ >&2
-+		fi
-+	done
-+}
-+
-+_remove_bcache() {
-+    local uuid
-+
-+	for uuid in "${BCACHE_BDEVS[@]}"; do
-+        local link full_path dev
-+
-+		link=/dev/disk/by-uuid/"${uuid}"
-+  		full_path=$(readlink -f "${link}")
-+	    dev="${full_path##*/}"
-+
-+		if [ -f /sys/block/"${dev}"/bcache/stop ] ; then
-+		   echo 1 > /sys/block/"${dev}"/bcache/stop
-+		fi
-+	done
-+
-+	for uuid in "${BCACHE_CSETS[@]}"; do
-+		if [ -f /sys/fs/bcache/"${uuid}"/unregister ] ; then
-+		   echo 1 > /sys/fs/bcache/"${uuid}"/unregister
-+		fi
-+    done
-+
-+	udevadm settle
-+	# XXX sic!
-+	sleep 3
-+
-+	for dev in "${BCACHE_DEVS[@]}"; do
-+        wipefs --all --quiet "${dev}"
-+    done
-+
-+	BCACHE_CSETS=()
-+	BCACHE_BDEVS=()
-+}
-+
-+_cleanup_bcache() {
-+    local cset dev
-+
-+	shopt -s nullglob
-+    for dev in /sys/block/bcache* ; do
-+        [ -e "${dev}" ] || continue
-+
-+        dev=$(basename "${dev}")
-+        echo "WARNING: bcache device ${dev} found"
-+
-+        if [[ -f /sys/block/"${dev}"/bcache/stop ]]; then
-+            echo 1 > /sys/block/"${dev}"/bcache/stop 2>/dev/null || true
-+        fi
-+    done
-+
-+	for cset in /sys/fs/bcache/*-*-*-*-*; do
-+        if [[ -d "${cset}" ]]; then
-+			echo "WARNING: Unregistering cset $(basename "${cset}")"
-+            echo 1 > "${cset}"/unregister 2>/dev/null || true
-+        fi
-+    done
-+    shopt -u nullglob
-+
-+    udevadm settle
-+
-+    for dev in "${BCACHE_DEVS[@]}"; do
-+        if ! wipefs --all --force "${dev}"; then
-+           echo "ERROR: Failed to wipe ${dev}. It may still be in use." >&2
-+        fi
-+    done
-+
-+	BCACHE_DEVS=()
-+}
-
----
-base-commit: e387a7e0169cc012eb6a7140a0561d2901c92a76
-change-id: 20260120-bcache-35ec7368c8f4
-
-Best regards,
--- 
-Daniel Wagner <dwagner@suse.de>
-
+Coly Li
