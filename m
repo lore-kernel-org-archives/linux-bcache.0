@@ -1,78 +1,82 @@
-Received: from smtp-out2.suse.de (smtp-out2.suse.de [195.135.223.131])
+Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.223.130])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 095C33A89BE
-	for <linux-bcache@vger.kernel.org>; Thu, 22 Jan 2026 09:57:19 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=195.135.223.131
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A057137BE84
+	for <linux-bcache@vger.kernel.org>; Thu, 22 Jan 2026 09:57:28 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=195.135.223.130
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1769075841; cv=none; b=S729AbVoS6pv+BRYizLJ7u4s3WDtDzi6vGoSVxKHfUEOP7bDczxP18CocCa31eTjQvEx4cRv490/7zNWttTfx8WBre0kTxImlrIz46VyBL5bkRCBBMskjlU/Rj5RhARXV8BXDAZ+NQcTR3WA03ekJ2XPwvnoYoQc4ztbbLS2X6Y=
+	t=1769075851; cv=none; b=GkFbbkO/QHRpb7cNnvrA9CS6zvq1ZBb1bafUR/KHxDlZkT07SkyDoGexMT9Oyjht+Rj0PVUYzoCU3iCcL17PmQBUrFRCfIVfHGfcMmW7rrtZw12IxEueTQ+3Vaf9cNdlY/fTW26pNcX2zxuUqV3pVqISX22gsxvMqAXyEYnQ6zE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1769075841; c=relaxed/simple;
-	bh=NwKM766jve6cwdRMlWgSLgJPeEpUyWaH5Qzxv/0YWnM=;
-	h=From:Subject:Date:Message-Id:MIME-Version:Content-Type:To; b=oQEROhie7B1w9jfVhdVJjwK9RCH3nfNZx46l/pRQZZ1Po/waL76wjh02zcM5mGhqmGbPIICJVCxR5rzNmJKPfrt5MC1rHz8MBZiod9++x/2TGQpo7e1sPXRokvTShkU1I4RMuKsCn+5Sfm7ME5dPzRVCVKMT2ZjpF7YpgWJECJE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de; spf=pass smtp.mailfrom=suse.de; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=f3E6zAk8; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=u4q6iUI7; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=z5wVksZp; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=/Kg2c+Ai; arc=none smtp.client-ip=195.135.223.131
+	s=arc-20240116; t=1769075851; c=relaxed/simple;
+	bh=G68a8UUR8nWXmrVNFqcrIUjj3el8ElrRP63LTG8nenE=;
+	h=From:Date:Subject:MIME-Version:Content-Type:Message-Id:References:
+	 In-Reply-To:To; b=SEsIesAGP3mCRIW9D5PDV44a9Mxfup+6gHKBuMjkWbiG7IIYfUbyZbJwPx8AN7tWf2HkzwXyhODwOjC/tpPnNuZ5+MpsX7fEbzuuTOxLL+Mh39n96Np7fI00eHbVsELvFEzA1bfi7BxwZf8WKpkwQGdPL8Umrhggw57e1vl34fs=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de; spf=pass smtp.mailfrom=suse.de; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=QUKnSh6t; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=w84xyJSe; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=QUKnSh6t; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=w84xyJSe; arc=none smtp.client-ip=195.135.223.130
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="f3E6zAk8";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="u4q6iUI7";
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="z5wVksZp";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="/Kg2c+Ai"
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="QUKnSh6t";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="w84xyJSe";
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="QUKnSh6t";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="w84xyJSe"
 Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [IPv6:2a07:de40:b281:104:10:150:64:97])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
 	(No client certificate requested)
-	by smtp-out2.suse.de (Postfix) with ESMTPS id ECB9F5BCE6;
-	Thu, 22 Jan 2026 09:57:17 +0000 (UTC)
+	by smtp-out1.suse.de (Postfix) with ESMTPS id A281C336EE;
+	Thu, 22 Jan 2026 09:57:26 +0000 (UTC)
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1769075838; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
+	t=1769075846; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
 	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=IgzyTsBFZLO0ugTNs8K7WRXuwUlDB1zpFclRdktsbN0=;
-	b=f3E6zAk81ekaKSw0cRmYiQBU9AqHwcabxd8IPpR4FYRFQ927oN+R3N/1TBstVdRN0GfOfa
-	p3XPQaw9OJ0cB7u62QfzY8+fKrzQVVgElNQHBHbIyPRRMddrRv2ux35sAPeB+YD8Wep9aE
-	3taxy2GD7Y/tlf+NkpZWOH2KGfOwTEI=
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=6Hs3tt4RDN0KoVF8Qvl543Yii58LKTYhT9typUI6Chs=;
+	b=QUKnSh6tzQXBj3ZXI73+fD5+nBbgEtglKsIqaOMOOd5iXWLGqsKfY0sXcuS1JErJ2lQAW+
+	zifSxIrwBqtWeRytMOCSvuVwX0BzT35jv32dY4zKBPEOadMrsxo3jfpmUF/6gaqCgDnDXY
+	I0R4jhWO7OcU/R6B/vkFhNhhsj+K0qM=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1769075838;
+	s=susede2_ed25519; t=1769075846;
 	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
 	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=IgzyTsBFZLO0ugTNs8K7WRXuwUlDB1zpFclRdktsbN0=;
-	b=u4q6iUI72kUcDvJSSrCRlYefIhWM02OIAW2fi/UFJko0UcbsVEID69/ME2SZeaoDsx8pzT
-	8UkMyrB4n7z80GCw==
-Authentication-Results: smtp-out2.suse.de;
-	dkim=pass header.d=suse.de header.s=susede2_rsa header.b=z5wVksZp;
-	dkim=pass header.d=suse.de header.s=susede2_ed25519 header.b="/Kg2c+Ai"
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=6Hs3tt4RDN0KoVF8Qvl543Yii58LKTYhT9typUI6Chs=;
+	b=w84xyJSevBufRpG7KpP9zv6x++eSCj19ejgX0ui6nM0ZPvaCwmQBMXXzc+73vzs5NxCexW
+	NThAMFXw3vwQXzDw==
+Authentication-Results: smtp-out1.suse.de;
+	dkim=pass header.d=suse.de header.s=susede2_rsa header.b=QUKnSh6t;
+	dkim=pass header.d=suse.de header.s=susede2_ed25519 header.b=w84xyJSe
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1769075837; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
+	t=1769075846; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
 	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=IgzyTsBFZLO0ugTNs8K7WRXuwUlDB1zpFclRdktsbN0=;
-	b=z5wVksZp079El++j2wkgL+CyDcLeYg9VfH3gH52M+yyeDwDVLPNMVz+xVp6cY43BNhBbX5
-	dr+9G6mA4EohYCZbKHkQbyHnrPe+bgKjhqORLx2fJDx84nGm0mkR9yKKPgyXvsb2fgwTJG
-	dcDfU1E0zThkFr0smENF4hVbZmrc9sY=
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=6Hs3tt4RDN0KoVF8Qvl543Yii58LKTYhT9typUI6Chs=;
+	b=QUKnSh6tzQXBj3ZXI73+fD5+nBbgEtglKsIqaOMOOd5iXWLGqsKfY0sXcuS1JErJ2lQAW+
+	zifSxIrwBqtWeRytMOCSvuVwX0BzT35jv32dY4zKBPEOadMrsxo3jfpmUF/6gaqCgDnDXY
+	I0R4jhWO7OcU/R6B/vkFhNhhsj+K0qM=
 DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1769075837;
+	s=susede2_ed25519; t=1769075846;
 	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
 	 mime-version:mime-version:content-type:content-type:
-	 content-transfer-encoding:content-transfer-encoding;
-	bh=IgzyTsBFZLO0ugTNs8K7WRXuwUlDB1zpFclRdktsbN0=;
-	b=/Kg2c+AiI+xKuBkqNJuZzeHSlES1zmwLgJYBRfQbeXPniMcgCR4gJ0yhzeU0HhNriBYLuk
-	wkATL99g3OQLq2Ag==
+	 content-transfer-encoding:content-transfer-encoding:
+	 in-reply-to:in-reply-to:references:references;
+	bh=6Hs3tt4RDN0KoVF8Qvl543Yii58LKTYhT9typUI6Chs=;
+	b=w84xyJSevBufRpG7KpP9zv6x++eSCj19ejgX0ui6nM0ZPvaCwmQBMXXzc+73vzs5NxCexW
+	NThAMFXw3vwQXzDw==
 Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
 	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
 	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
 	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id D254A13978;
-	Thu, 22 Jan 2026 09:57:17 +0000 (UTC)
+	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id 8444413978;
+	Thu, 22 Jan 2026 09:57:26 +0000 (UTC)
 Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
 	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id N/RmMn30cWnLGAAAD6G6ig
-	(envelope-from <dwagner@suse.de>); Thu, 22 Jan 2026 09:57:17 +0000
+	id h/q3H4b0cWnXGAAAD6G6ig
+	(envelope-from <dwagner@suse.de>); Thu, 22 Jan 2026 09:57:26 +0000
 From: Daniel Wagner <dwagner@suse.de>
-Subject: [PATCH blktests v3 0/3] bcache: add initial test cases
-Date: Thu, 22 Jan 2026 10:57:11 +0100
-Message-Id: <20260122-bcache-v3-0-2c02d15a4503@suse.de>
+Date: Thu, 22 Jan 2026 10:57:12 +0100
+Subject: [PATCH blktests v3 1/3] bcache: add bcache/001
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
@@ -81,11 +85,9 @@ List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-B4-Tracking: v=1; b=H4sIAAAAAAAC/2WMQQ7CIBBFr9LMWgwztFi78h7GBdDBsmkNKNE0v
- bu0CzVx+X7+ezMkjoETdNUMkXNIYRoLqF0FbjDjlUXoCwNJ0hJJCuuMG1ioht1B6da1voZyvkX
- 24bmFzpfCQ0j3Kb62bsZ1/UtkFCiao/XSUl9jLU/pkXjfM6yBTL8SfiQSJUDaeGwb1sp8pWVZ3
- kv3ODXPAAAA
-X-Change-ID: 20260120-bcache-35ec7368c8f4
+Message-Id: <20260122-bcache-v3-1-2c02d15a4503@suse.de>
+References: <20260122-bcache-v3-0-2c02d15a4503@suse.de>
+In-Reply-To: <20260122-bcache-v3-0-2c02d15a4503@suse.de>
 To: Christoph Hellwig <hch@infradead.org>, 
  Stephen Zhang <starzhangzsd@gmail.com>, 
  Kent Overstreet <kent.overstreet@linux.dev>, Coly Li <colyli@fnnas.com>, 
@@ -116,77 +118,468 @@ X-Spamd-Result: default: False [-4.51 / 50.00];
 	RCPT_COUNT_SEVEN(0.00)[9];
 	RCVD_COUNT_TWO(0.00)[2];
 	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[imap1.dmz-prg2.suse.org:helo,imap1.dmz-prg2.suse.org:rdns,suse.de:mid,suse.de:dkim,suse.de:email];
+	DBL_BLOCKED_OPENRESOLVER(0.00)[suse.de:mid,suse.de:dkim,suse.de:email,imap1.dmz-prg2.suse.org:helo,imap1.dmz-prg2.suse.org:rdns];
 	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
 	DKIM_TRACE(0.00)[suse.de:+]
 X-Spam-Flag: NO
 X-Spam-Score: -4.51
-X-Rspamd-Queue-Id: ECB9F5BCE6
+X-Rspamd-Queue-Id: A281C336EE
 X-Rspamd-Action: no action
 X-Rspamd-Server: rspamd2.dmz-prg2.suse.org
 X-Spam-Level: 
 
-I've added the test case from Stephen [1] which showed all the limitation in v2.
-The cleanup code should be more robust now. The new test case reports
+So far we are missing tests for bcache. Besides a relative simple
+setup/teardown tests add also the corresponding infrastructure. More
+tests are to be expected to depend on this.
 
-bcache/001 => nvme0n1 vdb vdc (test bcache setup and teardown) [passed]
-    runtime  1.373s  ...  1.334s
-bcache/002 => nvme0n1 vdb vdc (test bcache for bio leaks in clone) [failed]
-    runtime  7.360s  ...  7.336s
-    --- tests/bcache/002.out    2026-01-22 09:49:22.379130632 +0000
-    +++ /tmp/blktests/nvme0n1_vdb_vdc/bcache/002.out.bad        2026-01-22 09:49:39.343331470 +0000
-    @@ -1,2 +1,3 @@
-     Running bcache/002
-     Device state: no cache
-    +ERROR: Accounting leak detected!
-
-So it seems to do something. Though I think it could look at sysfs values
-directly isntead using iostat. Though that's for another time.
-
-I wont work on this in the next two weeks as I am on vacation. So no hurry to
-review :)
-
-Cheers,
-Daniel
-
-[1] https://lore.kernel.org/linux-bcache/CANubcdX7eNbH_bo4-f94DUbdiEbt04Vxy1MPyhm+CZyXB01FuQ@mail.gmail.com/
- 
+_create_bcache/_remove_bcache are tracking the resources and if anything
+is missing it will complain.
 
 Signed-off-by: Daniel Wagner <dwagner@suse.de>
 ---
-Changes in v3:
-- add bcache/002
-- return created bcache devices to tests case
-- made cleanup more robust (handling detached cache)
-- track all resources correctly
-- operatoe only in final cleanup on known devices
-- Link to v2: https://patch.msgid.link/20260121-bcache-v2-0-b26af185e63a@suse.de
+ tests/bcache/001     |  48 +++++++
+ tests/bcache/001.out |   3 +
+ tests/bcache/rc      | 368 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 419 insertions(+)
 
-Changes in v2:
-- fixed whitespace damage
-- added documentation on how to configure for bcache tests
-- do registering explicitly
-- made disk wiping more robust
-- Link to v1: https://patch.msgid.link/20260120-bcache-v1-1-59bf0b2d4140@suse.de
+diff --git a/tests/bcache/001 b/tests/bcache/001
+new file mode 100644
+index 000000000000..cc97c5bdd7c4
+--- /dev/null
++++ b/tests/bcache/001
+@@ -0,0 +1,48 @@
++#!/bin/bash
++# SPDX-License-Identifier: GPL-2.0
++# Copyright (C) 2026 Daniel Wagner, SUSE Labs
++#
++# Test bcache setup and teardown
++
++. tests/bcache/rc
++
++DESCRIPTION="test bcache setup and teardown"
++
++requires() {
++	_bcache_requires
++}
++
++test_device_array() {
++	echo "Running ${TEST_NAME}"
++
++	if [[ ${#TEST_DEV_ARRAY[@]} -lt 3 ]]; then
++		SKIP_REASONS+=("requires at least 3 devices")
++		return 1
++	fi
++
++	_setup_bcache "${TEST_DEV_ARRAY[@]}"
++
++	local bcache_nodes
++
++	mapfile -t bcache_nodes < <(_create_bcache \
++				--cache "${TEST_DEV_ARRAY[0]##*/}" \
++				--bdev "${TEST_DEV_ARRAY[1]##*/}" \
++				--writeback)
++
++	echo "number of bcaches: ${#bcache_nodes[*]}"
++
++	_remove_bcache --bcache "${bcache_nodes[@]}" \
++			--cache "${TEST_DEV_ARRAY[0]##*/}" \
++			--bdev "${TEST_DEV_ARRAY[1]##*/}" \
++
++	mapfile -t bcache_nodes < <(_create_bcache \
++				--cache "${TEST_DEV_ARRAY[0]##*/}" \
++				--bdev "${TEST_DEV_ARRAY[1]##*/}" "${TEST_DEV_ARRAY[2]##*/}" \
++				--writeback)
++
++	echo "number of bcaches: ${#bcache_nodes[*]}"
++
++	_remove_bcache --bcache "${bcache_nodes[@]}" \
++			--cache "${TEST_DEV_ARRAY[0]##*/}" \
++			--bdev "${TEST_DEV_ARRAY[1]##*/}" "${TEST_DEV_ARRAY[2]##*/}"
++}
+diff --git a/tests/bcache/001.out b/tests/bcache/001.out
+new file mode 100644
+index 000000000000..844154e13822
+--- /dev/null
++++ b/tests/bcache/001.out
+@@ -0,0 +1,3 @@
++Running bcache/001
++number of bcaches: 1
++number of bcaches: 2
+diff --git a/tests/bcache/rc b/tests/bcache/rc
+new file mode 100644
+index 000000000000..87a0317c4eb2
+--- /dev/null
++++ b/tests/bcache/rc
+@@ -0,0 +1,368 @@
++#!/bin/bash
++# SPDX-License-Identifier: GPL-2.0
++# Copyright (C) 2026 Daniel Wagner, SUSE Labs
++
++. common/rc
++
++declare BCACHE_DEVS_LIST
++
++BCACHE_MAX_RETRIES=5
++
++_bcache_requires() {
++	_have_kernel_options MD BCACHE BCACHE_DEBUG AUTOFS_FS
++	_have_program make-bcache
++	_have_crypto_algorithm crc32c
++}
++
++_bcache_wipe_devs() {
++	local devs=("$@")
++
++	for dev in "${devs[@]}"; do
++		# Attempt a clean wipe first
++		if wipefs --all --quiet "${dev}" 2>/dev/null; then
++			continue
++		fi
++
++		# Overwrite the first 10MB to clear stubborn partition tables or metadata
++		if ! dd if=/dev/zero of="${dev}" bs=1M count=10 conv=notrunc status=none; then
++			echo "Error: dd failed on ${dev}" >&2
++		fi
++
++		# Wipe the Tail (Last 5MB)
++		# bcache often places backup superblocks at the end of the device.
++		local dev_size_mb
++		dev_size_mb=$(blockdev --getsize64 "$dev" | awk '{print int($1 / 1024 / 1024)}')
++
++		if [ "$dev_size_mb" -gt 10 ]; then
++			local seek_pos=$((dev_size_mb - 5))
++			dd if=/dev/zero of="${dev}" bs=1M count=5 seek=$seek_pos conv=fsync status=none
++		fi
++
++		# Refresh kernel partition table & wait for udev
++		partprobe "$dev" 2>/dev/null
++		udevadm settle
++
++		# Try wiping again after clearing the headers
++		if ! wipefs --all --quiet --force "${dev}"; then
++			echo "Warning: Failed to wipe ${dev} even after dd." >&2
++		fi
++	done
++}
++
++_bcache_register() {
++	local devs=("$@")
++
++	if [[ ! -w /sys/fs/bcache/register ]]; then
++		echo "ERROR: bcache registration interface not found." >&2
++		return 1
++	fi
++
++	for dev in "${devs[@]}"; do
++		local tmp_err
++
++		tmp_err="/tmp/bcache_reg_$$.err"
++		if ! echo "${dev}" > /sys/fs/bcache/register 2> "${tmp_err}"; then
++			local err_msg
++
++			err_msg=$(< "${tmp_err}")
++			if [[ "${err_msg}" != *"Device or resource busy"* ]]; then
++				echo "ERROR: Failed to register ${dev}: ${err_msg:-"Unknown error"}" >&2
++			fi
++		fi
++		rm -f "${tmp_err}"
++	done
++}
++
++_create_bcache() {
++	local -a cdevs=()
++	local -a bdevs=()
++	local -a ARGS=()
++	local -a created_devs=()
++	local bucket_size="64k"
++	local block_size="4k"
++
++	while [[ $# -gt 0 ]]; do
++		case $1 in
++			--cache)
++				shift
++				# Collect arguments until the next flag or end of input
++				while [[ $# -gt 0 && ! $1 =~ ^-- ]]; do
++					cdevs+=("$1")
++					shift
++				done
++				;;
++			--bdev)
++				shift
++				# Collect arguments until the next flag or end of input
++				while [[ $# -gt 0 && ! $1 =~ ^-- ]]; do
++					bdevs+=("$1")
++					shift
++				done
++				;;
++			--bucket-size)
++				bucket_size="$2"
++				shift 2
++				;;
++			--block-size)
++				block_size="$2"
++				shift 2
++				;;
++			--writeback)
++				ARGS+=(--writeback)
++				shift 1
++				;;
++			--discard)
++				ARGS+=(--discard)
++				shift 1
++				;;
++			*)
++				echo "WARNING: unknown argument: $1"
++				shift
++				;;
++		esac
++	done
++
++	# add /dev prefix to device names
++	cdevs=( "${cdevs[@]/#/\/dev\/}" )
++	bdevs=( "${bdevs[@]/#/\/dev\/}" )
++
++	# make-bcache expects empty/cleared devices
++	_bcache_wipe_devs "${cdevs[@]}" "${bdevs[@]}"
++
++	local -a cmd
++	cmd=(make-bcache --wipe-bcache \
++			--bucket "${bucket_size}" \
++			--block "${block_size}")
++	for dev in "${cdevs[@]}"; do cmd+=("--cache" "${dev}"); done
++	for dev in "${bdevs[@]}"; do cmd+=("--bdev" "${dev}"); done
++	cmd+=("${ARGS[@]}")
++
++	local output rc
++	output=$("${cmd[@]}" 2>&1)
++	rc="$?"
++	if [[ "${rc}" -ne 0 ]]; then
++		echo "ERROR: make-bcache failed:" >&2
++		echo "$output" >&2
++		return 1
++	fi
++
++	local cset_uuid
++	cset_uuid=$(echo "$output" | awk '/Set UUID:/ {print $3}' | head -n 1)
++	if [[ -z "${cset_uuid}" ]]; then
++		echo "ERROR: Could not extract cset UUID from make-bcache output" >&2
++		return 1
++	fi
++
++	local -a bdev_uuids
++	mapfile -t bdev_uuids < <(echo "$output" | awk '
++	  $1 == "UUID:" { last_uuid = $2 }
++	  $1 == "version:" && $2 == "1" { print last_uuid}
++	')
++
++	_bcache_register "${cdevs[@]}" "${bdevs[@]}"
++	udevadm settle
++
++	for uuid in "${bdev_uuids[@]}"; do
++		local link found
++
++		link=/dev/bcache/by-uuid/"${uuid}"
++		found=false
++
++		for ((i=0; i<BCACHE_MAX_RETRIES; i++)); do
++			if [[ -L "${link}" ]]; then
++				created_devs+=("$(readlink -f "${link}")")
++				found=true
++				break
++			fi
++
++			# poke udev to create the links
++			udevadm trigger "block/$(basename "$(readlink -f "${link}" 2>/dev/null || echo "notfound")")" 2>/dev/null
++			sleep 1
++		done
++
++		if [[ "${found}" == "false" ]]; then
++		   echo "WARNING: Could not find device node for UUID ${uuid} after ${BCACHE_MAX_RETRIES}s" >&2
++		fi
++	done
++
++	printf "%s\n" "${created_devs[@]}"
++}
++
++_remove_bcache() {
++	local -a cdevs=()
++	local -a bdevs=()
++	local -a csets=()
++	local -a bcache_devs=()
++	local uuid
++
++	while [[ $# -gt 0 ]]; do
++		case $1 in
++			--cache)
++				shift
++				# Collect arguments until the next flag or end of input
++				while [[ $# -gt 0 && ! $1 =~ ^-- ]]; do
++					cdevs+=("$1")
++					shift
++				done
++				;;
++			--bdev)
++				shift
++				# Collect arguments until the next flag or end of input
++				while [[ $# -gt 0 && ! $1 =~ ^-- ]]; do
++					bdevs+=("$1")
++					shift
++				done
++				;;
++			--bcache)
++				shift
++				# Collect arguments until the next flag or end of input
++				while [[ $# -gt 0 && ! $1 =~ ^-- ]]; do
++					bcache_devs+=("$1")
++					shift
++				done
++				;;
++			*)
++				echo "WARNING: unknown argument: $1"
++				shift
++				;;
++		esac
++	done
++
++	for dev in "${bcache_devs[@]}"; do
++		local bcache bcache_dir
++
++		if mountpoint -q "${dev}" 2>/dev/null; then
++			umount -l "${dev}"
++		fi
++
++		bcache="${dev##*/}"
++		bcache_dir=/sys/block/"${bcache}"/bcache
++		if [ -f "${bcache_dir}"/stop ]; then
++			echo 1 > "${bcache_dir}"/stop
++		fi
++	done
++
++	# The cache could be detached, thus go through all caches and
++	# look for the cdev in there.
++	local cset_path
++	for cset_path in /sys/fs/bcache/*-*-*-*-*; do
++		local cache_link match_found
++
++		match_found=false
++		for cache_link in "${cset_path}"/cache[0-9]*; do
++			local full_sys_path _cdev cdev
++
++			full_sys_path="$(readlink -f "$cache_link")"
++			_cdev="$(basename "${full_sys_path%/bcache}")"
++
++			for cdev in "${cdevs[@]}"; do
++				if [ "${_cdev}" == "$(basename "${cdev}")"  ]; then
++					match_found=true
++					break 2
++				fi
++			done
++		done
++
++		if [ "${match_found}" = false ]; then
++			continue
++		fi
++
++		cset="$(basename "${cset_path}")"
++		if [ -d /sys/fs/bcache/"${cset}" ]; then
++			echo 1 > /sys/fs/bcache/"${cset}"/unregister
++			csets+=("${cset}")
++		fi
++	done
++
++	udevadm settle
++
++	local timeout
++	for cset in "${csets[@]}"; do
++		timeout=0
++		while [[ -d /sys/fs/bcache/"${cset}" ]] && (( timeout < 10 )); do
++			sleep 0.5
++			(( timeout++ ))
++		done
++	done
++
++	_bcache_wipe_devs "${cdevs[@]}" "${bdevs[@]}"
++}
++
++_cleanup_bcache() {
++	local cset dev bcache bcache_devs cset_path
++	local -a csets=()
++
++	bcache_devs=(${BCACHE_DEVS_LIST:-})
++
++	# Don't let successive Ctrl-Cs interrupt the cleanup processes
++	trap '' SIGINT
++
++	shopt -s nullglob
++	for bcache  in /sys/block/bcache* ; do
++		[ -e "${bcache}" ] || continue
++
++		if [[ -f "${bcache}/bcache/backing_dev_name" ]]; then
++			bdev=$(basename "$(cat "${bcache}/bcache/backing_dev_name")")
++
++			for dev in "${bcache_devs[@]}"; do
++				if [[ "${bdev}" == "$(basename "${dev}")" ]]; then
++					echo "WARNING: Stopping bcache device ${bdev}"
++					echo 1 > /sys/block/"${bdev}"/bcache/stop 2>/dev/null || true
++					break
++				fi
++			done
++		fi
++	done
++
++	for cset_path in /sys/fs/bcache/*-*-*-*-*; do
++		local cache_link match_found
++
++		match_found=false
++		for cache_link in "${cset_path}"/cache[0-9]*; do
++			local full_sys_path cdev
++
++			full_sys_path="$(readlink -f "$cache_link")"
++			cdev="$(basename "${full_sys_path%/bcache}")"
++
++			for dev in "${bcache_devs[@]}"; do
++				if [ "${cdev}" == "$(basename "${dev}")" ]; then
++					match_found=true
++					break 2
++				fi
++			done
++		done
++
++		if [ "${match_found}" = false ]; then
++			continue
++		fi
++
++		cset="$(basename "${cset_path}")"
++		if [ -d /sys/fs/bcache/"${cset}" ]; then
++			echo "WARNING: Unregistering cset $(basename "${cset}")"
++			echo 1 > /sys/fs/bcache/"${cset}"/unregister
++			csets+=("${cset}")
++		fi
++	done
++	shopt -u nullglob
++
++	udevadm settle
++
++	local timeout
++	for cset in "${csets[@]}"; do
++		timeout=0
++		while [[ -d /sys/fs/bcache/"${cset}" ]] && (( timeout < 10 )); do
++			sleep 0.5
++			(( timeout++ ))
++		done
++	done
++
++	_bcache_wipe_devs "${bcache_devs[@]}"
++
++	trap SIGINT
++}
++
++_setup_bcache() {
++	BCACHE_DEVS_LIST="$*"
++
++	_register_test_cleanup _cleanup_bcache
++}
 
----
-Daniel Wagner (3):
-      bcache: add bcache/001
-      bcache: add bcache/002
-      doc: document how to configure bcache tests
-
- Documentation/running-tests.md |  16 ++
- tests/bcache/001               |  48 ++++++
- tests/bcache/001.out           |   3 +
- tests/bcache/002               |  63 +++++++
- tests/bcache/002.out           |   2 +
- tests/bcache/rc                | 368 +++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 500 insertions(+)
----
-base-commit: e387a7e0169cc012eb6a7140a0561d2901c92a76
-change-id: 20260120-bcache-35ec7368c8f4
-
-Best regards,
 -- 
-Daniel Wagner <dwagner@suse.de>
+2.52.0
 
