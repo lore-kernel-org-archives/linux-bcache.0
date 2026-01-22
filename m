@@ -1,316 +1,138 @@
-Received: from sg-1-22.ptr.blmpb.com (sg-1-22.ptr.blmpb.com [118.26.132.22])
+Received: from sg-1-12.ptr.blmpb.com (sg-1-12.ptr.blmpb.com [118.26.132.12])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 23ECF3B9614
-	for <linux-bcache@vger.kernel.org>; Thu, 22 Jan 2026 03:25:23 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=118.26.132.22
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3A507344020
+	for <linux-bcache@vger.kernel.org>; Thu, 22 Jan 2026 03:39:51 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=118.26.132.12
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1769052327; cv=none; b=sZxklzznVkiWCrTX3DIY/RqgGx9d40OadFk0Araoqc3CfH/UavcmgDkOGQI3SMSd2qKdiYYU8WcooYFfAQLOxBEFuaKVhh7GRMYrRramuQuyUnaoGruINnQcad49GloPVuUgBYJB4BFniNJVuab9EiZIaPuet3VzyWCWzAO+Z7M=
+	t=1769053195; cv=none; b=sQabmQKK114XaD3KK2pirSni96J9rLIO47/769ve29EQn092z0C/UOtHYC2MJgoYannlZjKDGJB92Hz7rTjL5xljl1GUh6WHqnlyKh3KDKUeUhzicI0874F+rdKi06VBMTj/ZBoi+blOd8b3OMGs6K81yO7f/S9LNB9lvZu1zB4=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1769052327; c=relaxed/simple;
-	bh=L1KOxSlfsaqeTHEfyEMerMMiGaYevZT4YzGPKUdS2tI=;
-	h=Subject:From:Date:In-Reply-To:Mime-Version:Content-Type:To:Cc:
-	 Message-Id:Content-Disposition:References; b=ftYpcQYiYMfXCUeOvcRwwIlYT8DihaEiEecyybm3k0fJS+ia89HnIct+apEMFrfLPn2PmKDnPDMINTp6080sPUb5tSnggN4vYI6fQjwS3Ojvk6PyrDd2dpvvQnBr7EKU70z6h7jOkqo+3+PR1Fn2gxzf4UYlBjbLNRaJW1YP/Sc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=fnnas.com; spf=pass smtp.mailfrom=fnnas.com; dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b=ujULFKQZ; arc=none smtp.client-ip=118.26.132.22
+	s=arc-20240116; t=1769053195; c=relaxed/simple;
+	bh=0M3NbFxDlLaEnbxOLuewPZcqhu5hY957FmOdxAF8WrI=;
+	h=From:Date:Content-Type:In-Reply-To:To:Cc:Subject:Mime-Version:
+	 Message-Id:References; b=bwv31Tr/aImvb+fZFsbXeCZMVak2WYpqcSepF9gO/wYeYXb7m1q7frQ3MINi2veihLO/XbzX6hKA9fBSZVkSTBTeedn4+5m+CQSSm9oyfaY9ihnOAXaBAXRhJeqE/JbY1HPARVMvtFRd0s75uZ8qQ+ULPVJ0mFl61XHUAgnjCus=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=fnnas.com; spf=none smtp.mailfrom=fnnas.com; dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b=DLUCm26S; arc=none smtp.client-ip=118.26.132.12
 Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=fnnas.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fnnas.com
+Authentication-Results: smtp.subspace.kernel.org; spf=none smtp.mailfrom=fnnas.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b="ujULFKQZ"
+	dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b="DLUCm26S"
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fnnas-com.20200927.dkim.feishu.cn; t=1769052307;
+ s=s1; d=fnnas-com.20200927.dkim.feishu.cn; t=1769053179;
   h=from:subject:mime-version:from:date:message-id:subject:to:cc:
  reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=4GuYHkq67wOMif+zk7FU5EaaictjxdqP+VnTPX1cNVU=;
- b=ujULFKQZkdBHEmFkewN8FltmpkbfZzb/Kc+NXIqG1pHlD8hG1Aq/mWGyRglvtLHq+GLNdL
- L6gQcGpr3Bjtzn0E1Mzd4eH9FKMbHY105YaSS1dOPM8zqbWyWLqdrWjB1ZHzNoOGEoSSsA
- 62O1U1Cj9kpxqQw93vmYtf4ySrQ8tz/tl5fZiHX05vtIe8Hcwj5aR1n9oRMZZmoQLrzoyv
- 7W9f/V3kwQBwJxNhZIZ0z09llgMB3DmYXljZKLJ9LcxoIS5ShMEbFhy+yyIvm/2pXIpEtP
- d/4v3tKpkEqNluYG089jVUwu2KzM323RS4sNMq1pG7ZFl7w6tl7njCsXa+CZGg==
-Subject: Re: Fwd: [PATCH v3] bcache: use bio cloning for detached device requests
-Content-Transfer-Encoding: quoted-printable
+ bh=obpTP7ZNlYj+s/oH44OZfVFTYLFki17fBsQGDJoMdrI=;
+ b=DLUCm26S1mPLRnp0nRFegu4TRf45UzpadT5UqjyVz2pnsZSAE5SHfDjAVLOSitFq3D7pl6
+ 3ILHntBoIuyQLfct3RXod3SkuV9YSJVssa9uFRS6BELX4/dcuXOaAjOaFgJ6OIMdr6c3KF
+ AxvkSP/l6WSDs5BiY6nBVJKf1ZvJ8scrKHUlzVrYpahLYZKYs2a+2IIfYleyJhnmv8B2PE
+ fmK+LLYEfDT1oQoEWPn9kH/5VHwSOMh9a9kyE7SIeZ1plB0gyAdYyT8DbsFsWUqgRn0TV+
+ lkZSb302yPO4Bd3+uUCvQ+S/99uhPhUviZdHtUjw4Pwn3ebb4a4qwSxo6riO3Q==
+X-Mailer: Apple Mail (2.3864.300.41.1.7)
 From: "Coly Li" <colyli@fnnas.com>
-Date: Thu, 22 Jan 2026 11:25:04 +0800
-X-Lms-Return-Path: <lba+269719892+4884c4+vger.kernel.org+colyli@fnnas.com>
-In-Reply-To: <CANubcdUShtRu_t+VACzqpeEUdFtxqP+ErYFr-iWHgwqzD18Pog@mail.gmail.com>
+Date: Thu, 22 Jan 2026 11:39:25 +0800
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+X-Original-From: Coly Li <colyli@fnnas.com>
+In-Reply-To: <9a928d95-f027-4f0d-b34b-ca028ad36046@kernel.dk>
+To: "Jens Axboe" <axboe@kernel.dk>
+Cc: "Stephen Zhang" <starzhangzsd@gmail.com>, 
+	"Kent Overstreet" <kent.overstreet@linux.dev>, 
+	"Sasha Levin" <sashal@kernel.org>, 
+	"Christoph Hellwig" <hch@infradead.org>, <linux-bcache@vger.kernel.org>, 
+	"Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, 
+	"zhangshida" <zhangshida@kylinos.cn>
+Subject: Re: [PATCH v2] bcache: use bio cloning for detached device requests
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 Mime-Version: 1.0
-X-Original-From: Coly Li <colyli@fnnas.com>
-Content-Type: text/plain; charset=UTF-8
-To: "Stephen Zhang" <starzhangzsd@gmail.com>
-Cc: "Kent Overstreet" <kent.overstreet@linux.dev>, 
-	"Jens Axboe" <axboe@kernel.dk>, "Sasha Levin" <sashal@kernel.org>, 
-	"Christoph Hellwig" <hch@infradead.org>, <linux-bcache@vger.kernel.org>, 
-	"Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>, 
-	"zhangshida" <zhangshida@kylinos.cn>
-Message-Id: <aXGYYse4RjgLenVZ@studio.local>
-Content-Disposition: inline
-References: <20260122013650.321766-1-zhangshida@kylinos.cn> <CANubcdUShtRu_t+VACzqpeEUdFtxqP+ErYFr-iWHgwqzD18Pog@mail.gmail.com>
-Received: from studio.local ([120.245.64.73]) by smtp.feishu.cn with ESMTPS; Thu, 22 Jan 2026 11:25:05 +0800
+X-Lms-Return-Path: <lba+269719bf9+0abd45+vger.kernel.org+colyli@fnnas.com>
+Message-Id: <EA9A1644-0B59-4945-87D6-E67C65C4E4A3@fnnas.com>
+References: <20260120023535.9109-1-zhangshida@kylinos.cn> <CANubcdXsWsdueYf_aN9FSm+hnE-rpXx_hHhwP9_Z1ni1YGEH9Q@mail.gmail.com> <aW-DHlpo4dzKRB8K@studio.local> <322136ff-95f6-49f6-9126-05845f25b4e8@kernel.dk> <aXAoi9wTa7VWUiPj@studio.local> <CANubcdUT+PoGs3j=0ZN5jsntU-hNGHRFQoucKJZvYGXxFC75ng@mail.gmail.com> <9a928d95-f027-4f0d-b34b-ca028ad36046@kernel.dk>
+Received: from smtpclient.apple ([120.245.64.73]) by smtp.feishu.cn with ESMTPS; Thu, 22 Jan 2026 11:39:36 +0800
 
-On Thu, Jan 22, 2026 at 09:40:32AM +0800, Stephen Zhang wrote:
-> ---------- Forwarded message ---------
-> =E5=8F=91=E4=BB=B6=E4=BA=BA=EF=BC=9A zhangshida <starzhangzsd@gmail.com>
-> Date: 2026=E5=B9=B41=E6=9C=8822=E6=97=A5=E5=91=A8=E5=9B=9B 09:37
-> Subject: [PATCH v3] bcache: use bio cloning for detached device requests
-> To: <colyli@fnnas.com>, <kent.overstreet@linux.dev>,
-> <axboe@kernel.dk>, <sashal@kernel.org>, <hch@infradead.org>
-> Cc: <linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-> <zhangshida@kylinos.cn>, <starzhangzsd@gmail.com>, Christoph Hellwig
-> <hch@lst.de>
+> 2026=E5=B9=B41=E6=9C=8821=E6=97=A5 22:50=EF=BC=8CJens Axboe <axboe@kernel=
+.dk> =E5=86=99=E9=81=93=EF=BC=9A
 >=20
+> On 1/21/26 4:55 AM, Stephen Zhang wrote:
+>> Coly Li <colyli@fnnas.com> =E4=BA=8E2026=E5=B9=B41=E6=9C=8821=E6=97=A5=
+=E5=91=A8=E4=B8=89 09:34=E5=86=99=E9=81=93=EF=BC=9A
+>>>=20
+>>> On Tue, Jan 20, 2026 at 08:01:52AM +0800, Jens Axboe wrote:
+>>>> On 1/20/26 7:46 AM, Coly Li wrote:
+>>>>>> @@ -949,6 +950,11 @@ static int bcache_device_init(struct
+>>>>>> bcache_device *d, unsigned int block_size,
+>>>>>>                        BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
+>>>>>>                goto out_ida_remove;
+>>>>>>=20
+>>>>>> +       if (bioset_init(&d->bio_detach, 4,
+>>>>>                                    ^^^^^-> I feel 4 might be a bit sm=
+all
+>>>>> here. bio_detached set is for normal IO when backing device is not
+>>>>> attached to a cache device. I would suggest to set the pool size to
+>>>>> 128 or 256.
+>>>>=20
+>>>> Absolutely not, 4 is more than plenty. The pool elements are only ever
+>>>> used if allocations fail, to guarantee forward progress. Setting aside
+>>>> 128 or 256 for that case is utterly wasteful, you only need a couple. =
+4
+>>>> is a good number, if anything it should be smaller (2).
+>>>=20
+>>> Hi Jens,
+>>>=20
+>>> Thanks for the information. Please correct me if I am wrong for the fol=
+lowing
+>>> text,
+>>> - If the backing is a normal SSD raid0, the IOPS without attached cache=
+ device
+>>> might be more than thousands. In this case, I assume 128 or 256 might b=
+e more
+>>> tolerant.
+>>> - I see what =E2=80=984=E2=80=99 means, just not sure/comfortable when =
+memory pressure is high.
+>>> And reserving 128/256 will occupy around 0.5~1MB memory, I feel such ex=
+tra
+>>> memory is acceptable in bcache use case.
+>>>=20
+>>> Don't get me wrong, I totally trust you. If '4' works well enough for h=
+igh
+>>> memory pressure condition for detached bcache device, it is cool.
+>>>=20
+>>> Thanks in advance.
+>>>=20
+>>> Coly Li
+>>=20
+>> Hi Jens, Coly,
+>>=20
+>> Regarding the discussion on the bio_detached pool size: while 4 is
+>> sufficient to guarantee forward progress, some high-load environments
+>> may prefer a larger reserve to minimize allocation latency under
+>> extreme memory pressure.
+>>=20
+>> To provide a middle ground, I propose adding a generic bioset_resize()
+>> interface to the block layer and exposing it through a new bcache
+>> sysfs attribute 'detached_pool_size'.
+>>=20
+>> This allows us to keep the default value conservative (e.g., 4) to
+>> avoid unnecessary memory overhead, while giving users the flexibility
+>> to tune the emergency reserves based on their specific hardware and
+>> workload requirements.
+>>=20
+>> The patch is attached below. Does this look like a reasonable
+>> compromise?
 >=20
-> From: Shida Zhang <zhangshida@kylinos.cn>
+> Guys, just stop. 4 is fine. Take a look at the default biosets and
+> what reserve amount they use. I'd recommend you do some testing and
+> check how often the reserves are _actually_ used, and once you do
+> that, then you'll see why this isn't necessary at all.
 >=20
-> Previously, bcache hijacked the bi_end_io and bi_private fields of
-> the incoming bio when the backing device was in a detached state.
-> This is fragile and breaks if the bio is needed to be processed by
-> other layers.
->=20
-> This patch transitions to using a cloned bio embedded within a private
-> structure. This ensures the original bio's metadata remains untouched.
->=20
-> Fixes: 53280e398471 ("bcache: fix improper use of bi_end_io")
-> Co-developed-by: Christoph Hellwig <hch@lst.de>
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> Signed-off-by: Shida Zhang <zhangshida@kylinos.cn>
+> I thought the idea was to make some progress on getting this fixed.
+> Let's please do that and get it queued.
 
-Acked-by: Coly Li <colyli@fnnas.com>
+Yes, let=E2=80=99s get the fix in firstly.
 
 Thanks.
 
+
 Coly Li
-
-
-> ---
->=20
->=20
-> Changelog:
-> v2:
-> - Renamed `bio_detach` to `bio_detached`
-> https://lore.kernel.org/all/CANubcdXsWsdueYf_aN9FSm+hnE-rpXx_hHhwP9_Z1ni1=
-YGEH9Q@mail.gmail.com/
->=20
-> v1:
-> https://lore.kernel.org/all/20260115074811.230807-1-zhangshida@kylinos.cn=
-/
->=20
->  drivers/md/bcache/bcache.h  |  9 +++++
->  drivers/md/bcache/request.c | 79 ++++++++++++++++---------------------
->  drivers/md/bcache/super.c   | 12 +++++-
->  3 files changed, 54 insertions(+), 46 deletions(-)
->=20
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index 8ccacba8554..ec9ff971508 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -273,6 +273,8 @@ struct bcache_device {
->=20
->         struct bio_set          bio_split;
->=20
-> +       struct bio_set          bio_detached;
-> +
->         unsigned int            data_csum:1;
->=20
->         int (*cache_miss)(struct btree *b, struct search *s,
-> @@ -753,6 +755,13 @@ struct bbio {
->         struct bio              bio;
->  };
->=20
-> +struct detached_dev_io_private {
-> +       struct bcache_device    *d;
-> +       unsigned long           start_time;
-> +       struct bio              *orig_bio;
-> +       struct bio              bio;
-> +};
-> +
->  #define BTREE_PRIO             USHRT_MAX
->  #define INITIAL_PRIO           32768U
->=20
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index 82fdea7dea7..a02aecac05c 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -1077,68 +1077,58 @@ static CLOSURE_CALLBACK(cached_dev_nodata)
->         continue_at(cl, cached_dev_bio_complete, NULL);
->  }
->=20
-> -struct detached_dev_io_private {
-> -       struct bcache_device    *d;
-> -       unsigned long           start_time;
-> -       bio_end_io_t            *bi_end_io;
-> -       void                    *bi_private;
-> -       struct block_device     *orig_bdev;
-> -};
-> -
->  static void detached_dev_end_io(struct bio *bio)
->  {
-> -       struct detached_dev_io_private *ddip;
-> -
-> -       ddip =3D bio->bi_private;
-> -       bio->bi_end_io =3D ddip->bi_end_io;
-> -       bio->bi_private =3D ddip->bi_private;
-> +       struct detached_dev_io_private *ddip =3D
-> +               container_of(bio, struct detached_dev_io_private, bio);
-> +       struct bio *orig_bio =3D ddip->orig_bio;
->=20
->         /* Count on the bcache device */
-> -       bio_end_io_acct_remapped(bio, ddip->start_time, ddip->orig_bdev);
-> +       bio_end_io_acct(orig_bio, ddip->start_time);
->=20
->         if (bio->bi_status) {
-> -               struct cached_dev *dc =3D container_of(ddip->d,
-> -                                                    struct cached_dev, d=
-isk);
-> +               struct cached_dev *dc =3D bio->bi_private;
-> +
->                 /* should count I/O error for backing device here */
->                 bch_count_backing_io_errors(dc, bio);
-> +               orig_bio->bi_status =3D bio->bi_status;
->         }
->=20
-> -       kfree(ddip);
-> -       bio_endio(bio);
-> +       bio_put(bio);
-> +       bio_endio(orig_bio);
->  }
->=20
-> -static void detached_dev_do_request(struct bcache_device *d, struct bio =
-*bio,
-> -               struct block_device *orig_bdev, unsigned long start_time)
-> +static void detached_dev_do_request(struct bcache_device *d,
-> +               struct bio *orig_bio, unsigned long start_time)
->  {
->         struct detached_dev_io_private *ddip;
->         struct cached_dev *dc =3D container_of(d, struct cached_dev, disk=
-);
-> +       struct bio *clone_bio;
->=20
-> -       /*
-> -        * no need to call closure_get(&dc->disk.cl),
-> -        * because upper layer had already opened bcache device,
-> -        * which would call closure_get(&dc->disk.cl)
-> -        */
-> -       ddip =3D kzalloc(sizeof(struct detached_dev_io_private), GFP_NOIO=
-);
-> -       if (!ddip) {
-> -               bio->bi_status =3D BLK_STS_RESOURCE;
-> -               bio_endio(bio);
-> +       if (bio_op(orig_bio) =3D=3D REQ_OP_DISCARD &&
-> +           !bdev_max_discard_sectors(dc->bdev)) {
-> +               bio_endio(orig_bio);
->                 return;
->         }
->=20
-> -       ddip->d =3D d;
-> +       clone_bio =3D bio_alloc_clone(dc->bdev, orig_bio, GFP_NOIO,
-> +                                   &d->bio_detached);
-> +       if (!clone_bio) {
-> +               orig_bio->bi_status =3D BLK_STS_RESOURCE;
-> +               bio_endio(orig_bio);
-> +               return;
-> +       }
-> +
-> +       ddip =3D container_of(clone_bio, struct detached_dev_io_private, =
-bio);
->         /* Count on the bcache device */
-> -       ddip->orig_bdev =3D orig_bdev;
-> +       ddip->d =3D d;
->         ddip->start_time =3D start_time;
-> -       ddip->bi_end_io =3D bio->bi_end_io;
-> -       ddip->bi_private =3D bio->bi_private;
-> -       bio->bi_end_io =3D detached_dev_end_io;
-> -       bio->bi_private =3D ddip;
-> -
-> -       if ((bio_op(bio) =3D=3D REQ_OP_DISCARD) &&
-> -           !bdev_max_discard_sectors(dc->bdev))
-> -               detached_dev_end_io(bio);
-> -       else
-> -               submit_bio_noacct(bio);
-> +       ddip->orig_bio =3D orig_bio;
-> +
-> +       clone_bio->bi_end_io =3D detached_dev_end_io;
-> +       clone_bio->bi_private =3D dc;
-> +
-> +       submit_bio_noacct(clone_bio);
->  }
->=20
->  static void quit_max_writeback_rate(struct cache_set *c,
-> @@ -1214,10 +1204,10 @@ void cached_dev_submit_bio(struct bio *bio)
->=20
->         start_time =3D bio_start_io_acct(bio);
->=20
-> -       bio_set_dev(bio, dc->bdev);
->         bio->bi_iter.bi_sector +=3D dc->sb.data_offset;
->=20
->         if (cached_dev_get(dc)) {
-> +               bio_set_dev(bio, dc->bdev);
->                 s =3D search_alloc(bio, d, orig_bdev, start_time);
->                 trace_bcache_request_start(s->d, bio);
->=20
-> @@ -1237,9 +1227,10 @@ void cached_dev_submit_bio(struct bio *bio)
->                         else
->                                 cached_dev_read(dc, s);
->                 }
-> -       } else
-> +       } else {
->                 /* I/O request sent to backing device */
-> -               detached_dev_do_request(d, bio, orig_bdev, start_time);
-> +               detached_dev_do_request(d, bio, start_time);
-> +       }
->  }
->=20
->  static int cached_dev_ioctl(struct bcache_device *d, blk_mode_t mode,
-> diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-> index c17d4517af2..238d12ffdae 100644
-> --- a/drivers/md/bcache/super.c
-> +++ b/drivers/md/bcache/super.c
-> @@ -887,6 +887,7 @@ static void bcache_device_free(struct bcache_device *=
-d)
->         }
->=20
->         bioset_exit(&d->bio_split);
-> +       bioset_exit(&d->bio_detached);
->         kvfree(d->full_dirty_stripes);
->         kvfree(d->stripe_sectors_dirty);
->=20
-> @@ -949,6 +950,11 @@ static int bcache_device_init(struct
-> bcache_device *d, unsigned int block_size,
->                         BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
->                 goto out_ida_remove;
->=20
-> +       if (bioset_init(&d->bio_detached, 4,
-> +                       offsetof(struct detached_dev_io_private, bio),
-> +                       BIOSET_NEED_BVECS|BIOSET_NEED_RESCUER))
-> +               goto out_bioset_split_exit;
-> +
->         if (lim.logical_block_size > PAGE_SIZE && cached_bdev) {
->                 /*
->                  * This should only happen with BCACHE_SB_VERSION_BDEV.
-> @@ -964,7 +970,7 @@ static int bcache_device_init(struct bcache_device
-> *d, unsigned int block_size,
->=20
->         d->disk =3D blk_alloc_disk(&lim, NUMA_NO_NODE);
->         if (IS_ERR(d->disk))
-> -               goto out_bioset_exit;
-> +               goto out_bioset_detach_exit;
->=20
->         set_capacity(d->disk, sectors);
->         snprintf(d->disk->disk_name, DISK_NAME_LEN, "bcache%i", idx);
-> @@ -976,7 +982,9 @@ static int bcache_device_init(struct bcache_device
-> *d, unsigned int block_size,
->         d->disk->private_data   =3D d;
->         return 0;
->=20
-> -out_bioset_exit:
-> +out_bioset_detach_exit:
-> +       bioset_exit(&d->bio_detached);
-> +out_bioset_split_exit:
->         bioset_exit(&d->bio_split);
->  out_ida_remove:
->         ida_free(&bcache_device_idx, idx);
-> --
-> 2.34.1
