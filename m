@@ -1,137 +1,104 @@
-Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.223.130])
+Received: from mail-oi1-f172.google.com (mail-oi1-f172.google.com [209.85.167.172])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3D43030BF75
-	for <linux-bcache@vger.kernel.org>; Thu, 22 Jan 2026 10:28:28 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=195.135.223.130
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 3011B34E777
+	for <linux-bcache@vger.kernel.org>; Thu, 22 Jan 2026 14:26:31 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.167.172
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1769077709; cv=none; b=IY31GPMoe+QDHPjmemTWDbwuKdh4CySGNhgcx7M+t5w0a6WeG2j1AN/iTOo43m1no861A2UxfYISNbsTvxvciyCXfNakC/d//wRbcPmEzU3j72D/b+K8z7RREFnOIZlQB3PTaaFbOup8MoYGe1J0hMms/SPeId+TPiwPLS+j5iI=
+	t=1769091994; cv=none; b=YYLeeyQyWUvU3elqJwr1SMWxrncffdAZR/Tod9OoWhZxV3LxXiPMhY5+b5rSuPz782Vh4wQF1MllmtCDmOf/AiWKEy2fRiVXm9+VdbO6dLldkR+pWfye3UOV+1gJlX3V8tIRQoHqYijvtyEyE4S6B4KFdct6MKtjmgMfD6Por24=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1769077709; c=relaxed/simple;
-	bh=gcdwqHsD2Ab03j8tRkfU0PXKCNk5HOTFzfi3oyO9urI=;
-	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
-	 Content-Type:Content-Disposition:In-Reply-To; b=KWg/rw9QsdImdDXq9wZe5Co7osPMwTW/HgYiB6ujNxGngFCL8LxPgpRiW0E/yKL/zePjxVTFqL70ZYbv/G0bqoMZNS2PpgXyr3sjz7eZqnHmSb2xkxrDDpvRPcuhN5WFezxmACSd9TtBy5AdWDNagNu6ly4Z6r99FUCK7UHPf/U=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de; spf=pass smtp.mailfrom=suse.de; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=G+PWm0Dk; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=BKuv3w+0; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=G+PWm0Dk; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=BKuv3w+0; arc=none smtp.client-ip=195.135.223.130
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
+	s=arc-20240116; t=1769091994; c=relaxed/simple;
+	bh=ZHu3tvmAxx/ny807Qmav1uryRUjV6KS6597dZCE2Eug=;
+	h=From:To:Cc:In-Reply-To:References:Subject:Message-Id:Date:
+	 MIME-Version:Content-Type; b=ZEMiZEjdfYgFLgoa/XPzH57Ni30nggcj+7RJII0F+vUmxMkCUS1I31FRKu1fp5niBysniWunQP5bZPN0RKSZu04/71VgkuWCO/RJa50SkAev9I0nk1AOMpR+ip20n85rRHvAHV0AnLM9Ibq081tpyIkK9ih7ZS4hD/nsC+cusIY=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kernel.dk; spf=pass smtp.mailfrom=kernel.dk; dkim=pass (2048-bit key) header.d=kernel-dk.20230601.gappssmtp.com header.i=@kernel-dk.20230601.gappssmtp.com header.b=AJBkVLAl; arc=none smtp.client-ip=209.85.167.172
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kernel.dk
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kernel.dk
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="G+PWm0Dk";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="BKuv3w+0";
-	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="G+PWm0Dk";
-	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="BKuv3w+0"
-Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [IPv6:2a07:de40:b281:104:10:150:64:97])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by smtp-out1.suse.de (Postfix) with ESMTPS id 54C2C336AE;
-	Thu, 22 Jan 2026 10:28:26 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1769077706; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=CLO628HhJmeoTzGNfMA1BwmTSROgN3V8LaRmypF0eDk=;
-	b=G+PWm0DkMSWKTS6KStpLO+P+w8o/BKPR5FlCjyJuXOyj/b59HtCsxsTodXCvzBpzgM3XQV
-	wOCPj3n+qEayGELixfvSxSu3zsVlqu34fj833To/T+ruvDeqmFjTuBGDDfgm6tNIaCNuO9
-	vgXVg2Krhqn+s4PLC3zPgZx6wZOUOtI=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1769077706;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=CLO628HhJmeoTzGNfMA1BwmTSROgN3V8LaRmypF0eDk=;
-	b=BKuv3w+0k+PNV2OdoWZFcYBTJnqSQ2Hp5DeLpPuXnqbZIcoRiopoHtuqsWnnaBFurx+C/J
-	g5fUhpwH6ZucthAw==
-Authentication-Results: smtp-out1.suse.de;
-	dkim=pass header.d=suse.de header.s=susede2_rsa header.b=G+PWm0Dk;
-	dkim=pass header.d=suse.de header.s=susede2_ed25519 header.b=BKuv3w+0
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
-	t=1769077706; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=CLO628HhJmeoTzGNfMA1BwmTSROgN3V8LaRmypF0eDk=;
-	b=G+PWm0DkMSWKTS6KStpLO+P+w8o/BKPR5FlCjyJuXOyj/b59HtCsxsTodXCvzBpzgM3XQV
-	wOCPj3n+qEayGELixfvSxSu3zsVlqu34fj833To/T+ruvDeqmFjTuBGDDfgm6tNIaCNuO9
-	vgXVg2Krhqn+s4PLC3zPgZx6wZOUOtI=
-DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
-	s=susede2_ed25519; t=1769077706;
-	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:cc:
-	 mime-version:mime-version:content-type:content-type:
-	 in-reply-to:in-reply-to:references:references;
-	bh=CLO628HhJmeoTzGNfMA1BwmTSROgN3V8LaRmypF0eDk=;
-	b=BKuv3w+0k+PNV2OdoWZFcYBTJnqSQ2Hp5DeLpPuXnqbZIcoRiopoHtuqsWnnaBFurx+C/J
-	g5fUhpwH6ZucthAw==
-Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
-	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
-	(No client certificate requested)
-	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id 3AE211395E;
-	Thu, 22 Jan 2026 10:28:26 +0000 (UTC)
-Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
-	by imap1.dmz-prg2.suse.org with ESMTPSA
-	id PixwDcr7cWmFEwAAD6G6ig
-	(envelope-from <dwagner@suse.de>); Thu, 22 Jan 2026 10:28:26 +0000
-Date: Thu, 22 Jan 2026 11:28:21 +0100
-From: Daniel Wagner <dwagner@suse.de>
-To: Shinichiro Kawasaki <shinichiro.kawasaki@wdc.com>
-Cc: "hch@infradead.org" <hch@infradead.org>, 
-	Stephen Zhang <starzhangzsd@gmail.com>, Kent Overstreet <kent.overstreet@linux.dev>, 
-	Coly Li <colyli@fnnas.com>, Johannes Thumshirn <Johannes.Thumshirn@wdc.com>, 
-	"linux-block@vger.kernel.org" <linux-block@vger.kernel.org>, "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>
-Subject: Re: [PATCH blktests v2 1/2] bcache: add bcache/001
-Message-ID: <3da39ef2-702c-4314-abc9-8f1f084a1e4f@flourine.local>
-References: <20260121-bcache-v2-0-b26af185e63a@suse.de>
- <20260121-bcache-v2-1-b26af185e63a@suse.de>
- <aXHWBswguTmf8VCx@shinmob>
+	dkim=pass (2048-bit key) header.d=kernel-dk.20230601.gappssmtp.com header.i=@kernel-dk.20230601.gappssmtp.com header.b="AJBkVLAl"
+Received: by mail-oi1-f172.google.com with SMTP id 5614622812f47-459ac606f0bso642602b6e.0
+        for <linux-bcache@vger.kernel.org>; Thu, 22 Jan 2026 06:26:31 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=kernel-dk.20230601.gappssmtp.com; s=20230601; t=1769091991; x=1769696791; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:date:message-id:subject
+         :references:in-reply-to:cc:to:from:from:to:cc:subject:date
+         :message-id:reply-to;
+        bh=2Iz07gzDxA35yxkdomcfE9aNLnQIXSu1I/Og/R66TZU=;
+        b=AJBkVLAlAthGx4W/efZyFZnm2F6SMmPdODw5jl3ZSbQjFeOc14tg6EWGC5TT/KVGYP
+         FbLDp4qym4Y9YlGnHYgZVr4LMHY+JVwtldGxSa/ORMaq9+wb9ZhHug5Bxl9kef0F/93+
+         ZNhzU77YqhjFIWqLNL347Nd0DhmccPyGC+iKus2Vpj39GMGnqKyLK5tbN75LxHhyyZxA
+         55yYiqPpBsTmpMfyvEhgPgJ6EAe7Y47CnDdN9Y8kbzJRUWzhWgm1Kmyz0J+cr4NhBIcs
+         tXIbYh/WAAOqZI+r7hAA52v6IkHAtBspmka5rkhaJV9WYjY4hNg4udzmoPHG1T+ntzQ1
+         cSxQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1769091991; x=1769696791;
+        h=content-transfer-encoding:mime-version:date:message-id:subject
+         :references:in-reply-to:cc:to:from:x-gm-gg:x-gm-message-state:from
+         :to:cc:subject:date:message-id:reply-to;
+        bh=2Iz07gzDxA35yxkdomcfE9aNLnQIXSu1I/Og/R66TZU=;
+        b=e/RIOIUI1sfZMbmD+m394J0Q0w9DQ6vT20q2/Yy7hA0i6dpcgF1TRniWg+AvFJhhkV
+         bJJMbscDNtbY0BWX/aGbXzxH6PeaxNSOJ3ft23KiGLFS/kpBJjtQoQ/RQQzu/QnlyqUy
+         MoXl2ahcjEq/FP5hMKtHYMIfBIXOsseLnR/C9Q405ArJ82WcaM93WxGfAiYEBlg3uTdl
+         Szeu3VaPQVPdwYGnHzpwj+aCvWicIpsLzW78/LAL9PwFvz/nlj3iDEeY8G3SFdIYSOyL
+         OCLlaDIWdcm56yILzhj9O2vQQXfIKRFWZqs5e+VDXGDr1dL1O78kagCl4ypPpxHKaP05
+         Rd0Q==
+X-Gm-Message-State: AOJu0Yx96wXDaIjRn7GPn6aPVVRo9UYXZcKlyQpsOyrncHNohmGpc5A6
+	Fdwh+iGunRqxpzZUa0lR6+yLNflLvbjkllKtUsU7mphNMITZ4rMl4KGsrda/LZo7+YQ=
+X-Gm-Gg: AZuq6aLQGclRFzZDexFkO4sMj8PaxN0dkYp76UxRGGANuZof3TGxFN8hxReNvekMFo5
+	k5G+L24fee6gW4r8lm7zX2d2bfroV4pkG4DtbSStt4x4wOQ/jgsuziP0cv6PRNQDm6nfzXsBqRQ
+	8tdfPqKABYkImi5G8DL75mc7KrYeyDFxDvXM8RSpj19PGsqD9zXu9PmHfauHA9JKF+U5Mvay9as
+	YqhuOD0O6bITxsnU7gZRS9ebu0FTYNnGHnflFtSC021NWbufvByUW+pyyHLAM5XqJHblHLCktjc
+	mg57rrETj7EMOPEWA5BVzYs09zlp0qaBEYMwJjZ+7OKqsKgESYQ5lC+lIvvmJ4xL9G6uiwlF8bJ
+	f3l7PLGkVUy2l6eiPS0IiBZm1CcOglpeq5R6+PNf1WKKPJX6zcmoHfy7YV4w2p6nyoiXsO9We2n
+	RWhfjHcksci3hqmtVjfk1zlwyvhvj1lCN4mIbYDl9tjxrIqvyfaD76AGwy8H0pUbo=
+X-Received: by 2002:a05:6808:30a2:b0:450:caf8:ebc8 with SMTP id 5614622812f47-45c9c169726mr9616731b6e.55.1769091986046;
+        Thu, 22 Jan 2026 06:26:26 -0800 (PST)
+Received: from [127.0.0.1] ([96.43.243.2])
+        by smtp.gmail.com with ESMTPSA id 586e51a60fabf-4044bd5c64asm13773891fac.16.2026.01.22.06.26.24
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 22 Jan 2026 06:26:25 -0800 (PST)
+From: Jens Axboe <axboe@kernel.dk>
+To: colyli@fnnas.com, kent.overstreet@linux.dev, sashal@kernel.org, 
+ hch@infradead.org, zhangshida2026@163.com
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, 
+ zhangshida@kylinos.cn, starzhangzsd@gmail.com, 
+ Christoph Hellwig <hch@lst.de>
+In-Reply-To: <20260122061321.359218-1-zhangshida2026@163.com>
+References: <20260122061321.359218-1-zhangshida2026@163.com>
+Subject: Re: [PATCH RESEND v3] bcache: use bio cloning for detached device
+ requests
+Message-Id: <176909198455.303056.14934550192217004133.b4-ty@kernel.dk>
+Date: Thu, 22 Jan 2026 07:26:24 -0700
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <aXHWBswguTmf8VCx@shinmob>
-X-Spamd-Result: default: False [-4.51 / 50.00];
-	BAYES_HAM(-3.00)[99.99%];
-	NEURAL_HAM_LONG(-1.00)[-1.000];
-	NEURAL_HAM_SHORT(-0.20)[-1.000];
-	R_DKIM_ALLOW(-0.20)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	MIME_GOOD(-0.10)[text/plain];
-	MX_GOOD(-0.01)[];
-	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
-	FUZZY_RATELIMITED(0.00)[rspamd.com];
-	RBL_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:104:10:150:64:97:from];
-	ARC_NA(0.00)[];
-	TO_MATCH_ENVRCPT_ALL(0.00)[];
-	MIME_TRACE(0.00)[0:+];
-	TO_DN_EQ_ADDR_SOME(0.00)[];
-	FREEMAIL_ENVRCPT(0.00)[gmail.com];
-	RCVD_TLS_ALL(0.00)[];
-	TO_DN_SOME(0.00)[];
-	RCVD_COUNT_TWO(0.00)[2];
-	FROM_EQ_ENVFROM(0.00)[];
-	FROM_HAS_DN(0.00)[];
-	FREEMAIL_CC(0.00)[infradead.org,gmail.com,linux.dev,fnnas.com,wdc.com,vger.kernel.org];
-	RCPT_COUNT_SEVEN(0.00)[8];
-	RCVD_VIA_SMTP_AUTH(0.00)[];
-	RECEIVED_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:106:10:150:64:167:received];
-	DKIM_TRACE(0.00)[suse.de:+];
-	MISSING_XM_UA(0.00)[];
-	DBL_BLOCKED_OPENRESOLVER(0.00)[suse.de:dkim]
-X-Spam-Flag: NO
-X-Spam-Score: -4.51
-X-Rspamd-Queue-Id: 54C2C336AE
-X-Rspamd-Action: no action
-X-Rspamd-Server: rspamd2.dmz-prg2.suse.org
-X-Spam-Level: 
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Mailer: b4 0.14.3
 
-On Thu, Jan 22, 2026 at 08:05:04AM +0000, Shinichiro Kawasaki wrote:
-> Hi Daniel, thank you for working on this. It's great to extend the test
-> coverage :)
+
+On Thu, 22 Jan 2026 14:13:21 +0800, zhangshida2026@163.com wrote:
+> Previously, bcache hijacked the bi_end_io and bi_private fields of
+> the incoming bio when the backing device was in a detached state.
+> This is fragile and breaks if the bio is needed to be processed by
+> other layers.
 > 
-> Please find my review comments in line. I ran the new test case, and observed a
-> failure. I noted my findings about the failure as one of the inline
-> comments.
+> This patch transitions to using a cloned bio embedded within a private
+> structure. This ensures the original bio's metadata remains untouched.
+> 
+> [...]
 
-Ah sorry, saw your response after sending out v3. I'll work on v4 after
-I am back from my vacation.
+Applied, thanks!
+
+[1/1] bcache: use bio cloning for detached device requests
+      commit: 3ef825dfd4e487d6f92b23ee2df2455814583ef4
+
+Best regards,
+-- 
+Jens Axboe
+
+
+
