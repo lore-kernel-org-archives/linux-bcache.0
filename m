@@ -1,74 +1,189 @@
-Received: from n169-112.mail.139.com (n169-112.mail.139.com [120.232.169.112])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from smtp-out1.suse.de (smtp-out1.suse.de [195.135.223.130])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7CFE8136349
-	for <linux-bcache@vger.kernel.org>; Fri,  6 Feb 2026 02:39:04 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=120.232.169.112
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BBB251FBC8C
+	for <linux-bcache@vger.kernel.org>; Thu, 12 Feb 2026 15:23:47 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=195.135.223.130
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1770345545; cv=none; b=MTTg7ixu7gneZ1gzQ9nbFp8JI8veCGcBQtU3WACsLBtl5BY5My3MtXVHsPEvh4CBRURRSAk/M/gQJeuIXLPpsL2lW3Hjiih3LLdMp5pKVO+0GDUh4mVTO70PALBpULDRXGFN5VDO14e3j30/s7aAkO/K4CJRids4MczEDyY8rH4=
+	t=1770909830; cv=none; b=ZVXXrvIRG87LHtJqqhXfspxJqbZr8mWssAHVtAYwszHSOGUvFkCwLvGwSgGf+L2XCFV+3vLcwB6r+VIe37gLgHiK4qyryXYUQCf6LvGw00akbdpaRfAy4I2xSa6smLVhMe+7bmJk2t2AeevKmWoZF3l2O9URSt0uFuwJ8sRSeoM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1770345545; c=relaxed/simple;
-	bh=25Y2+i5wBgtljeeRREwXoQnIj1V/+Uao6baG9qdUf04=;
-	h=From:Content-Type:Mime-Version:Subject:Message-Id:Date:Cc:To; b=Mtt1qB7xcuRArnlCydo1Dk2qipfOXjjs9hUGxKMcnaFHFK7BrARpjVTmAoM81LHOufc9Kdp4+QWgkmYcNDlMsx/OVlT9leWBX5oV1fAhQRwMJ04wF23+s6lMNSxk/N25Pj538YZw/VwMpTEhBwAlvt2SmVe0gUkCCBzJhyXxaAE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=139.com; spf=pass smtp.mailfrom=139.com; dkim=pass (1024-bit key) header.d=139.com header.i=@139.com header.b=t4sMGqaO; arc=none smtp.client-ip=120.232.169.112
-Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=139.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=139.com
+	s=arc-20240116; t=1770909830; c=relaxed/simple;
+	bh=oq1RV8vmEW+wsEdfwCuojy7u0J5S7Vw4RazMQn1VjHs=;
+	h=From:Subject:Date:Message-Id:MIME-Version:Content-Type:To; b=k1SgH91zmj4vhjFM27iAONMmM2V5k7fliuqwM0lW9RXFFR1NM776RLVZF8b3lFuDeUwlqQr6y+XjJvcr30+tIKtO+eztk9lw3MCSYhy5Zq9m+6fonyJ9AvvSdAQSHmdng6c4gNniPwavexp1Q0W7ArhHhzNayEuuE43Xm7/3VxQ=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de; spf=pass smtp.mailfrom=suse.de; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=d+Bs/3JW; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=MsHPp0sP; dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b=d2x7Y8tY; dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b=vw29r+4B; arc=none smtp.client-ip=195.135.223.130
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=suse.de
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.de
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key) header.d=139.com header.i=@139.com header.b="t4sMGqaO"
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-	d=139.com; s=dkim; l=0;
-	h=from:subject:message-id:to:cc:mime-version;
-	bh=47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=;
-	b=t4sMGqaOmW4zGcH+xmZvgUsO7R1s1+yxnsjB61G7/udOHIO0OER1I8DYcOkkkPZz6SffJQxkLmurt
-	 UYCS0GMVRSsLhP88ckm6eqZ6sAvIbvvuuJyqQM4hGjFeDDj8qIXqTBlIkAGj+D1OZyxFtFVBHMk6qe
-	 WUCG2BEpfQXCR2tk=
-X-RM-TagInfo: emlType=0                                       
-X-RM-SPAM:                                                                                        
-X-RM-SPAM-FLAG:00000000
-Received:from smtpclient.apple (unknown[103.37.140.23])
-	by rmsmtp-lg-appmail-23-12026 (RichMail) with SMTP id 2efa6985543e6a0-d706c;
-	Fri, 06 Feb 2026 10:38:55 +0800 (CST)
-X-RM-TRANSID:2efa6985543e6a0-d706c
-From: yangliming <liming.yang@139.com>
-Content-Type: text/plain;
-	charset=us-ascii
-Content-Transfer-Encoding: quoted-printable
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="d+Bs/3JW";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="MsHPp0sP";
+	dkim=pass (1024-bit key) header.d=suse.de header.i=@suse.de header.b="d2x7Y8tY";
+	dkim=permerror (0-bit key) header.d=suse.de header.i=@suse.de header.b="vw29r+4B"
+Received: from imap1.dmz-prg2.suse.org (imap1.dmz-prg2.suse.org [IPv6:2a07:de40:b281:104:10:150:64:97])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
+	(No client certificate requested)
+	by smtp-out1.suse.de (Postfix) with ESMTPS id 01D013E6CE;
+	Thu, 12 Feb 2026 15:23:44 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+	t=1770909826; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=wwNVz192v3URqIaCsnTslVz2YPDKzTOQFcIOsBCgnkM=;
+	b=d+Bs/3JW058pi7sOnu080TaSLAMNkke5QGYC7xyVuPcYljV7v9uremksNEaFS20ZDFINx5
+	HzEogEB/Li2r4CBH1lk+kflN2wtqxTofIPyAGdMESer5Y/2vxEre7/FVONpcGyGaci7H+b
+	Y5sE4L8/pxtKUFjrZ1+fUjJU4FKGhCA=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+	s=susede2_ed25519; t=1770909826;
+	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=wwNVz192v3URqIaCsnTslVz2YPDKzTOQFcIOsBCgnkM=;
+	b=MsHPp0sPVENo3VOVIc1b29aIlnsmwaVLbx+6d1fU1NiawxaqX+owBFJPhoi/ezALSs3rFn
+	/sKP0sDWIB2niBDg==
+Authentication-Results: smtp-out1.suse.de;
+	dkim=pass header.d=suse.de header.s=susede2_rsa header.b=d2x7Y8tY;
+	dkim=pass header.d=suse.de header.s=susede2_ed25519 header.b=vw29r+4B
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=suse.de; s=susede2_rsa;
+	t=1770909824; h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=wwNVz192v3URqIaCsnTslVz2YPDKzTOQFcIOsBCgnkM=;
+	b=d2x7Y8tYGabZUjaizggA0wVXs0Zo0COvgmUrcj8GZ9iN59uqw21RGRMsP6QkIU5Ol+hKgT
+	+R5z3bYPXDP4MU4+T/84h19YVJveEYqW3fsov3d5vch7ZJu7TsukalJ6dEH0fJy3be30p7
+	I6wjUvUCTMgdpDBXKalK89voYwzQdM8=
+DKIM-Signature: v=1; a=ed25519-sha256; c=relaxed/relaxed; d=suse.de;
+	s=susede2_ed25519; t=1770909824;
+	h=from:from:reply-to:date:date:message-id:message-id:to:to:cc:
+	 mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=wwNVz192v3URqIaCsnTslVz2YPDKzTOQFcIOsBCgnkM=;
+	b=vw29r+4Be+12bIPk/dD8BaQnrM0eWIV0N4SvCkMyE/VxJliw2Vk08zPiMS8fC16xhWPAiv
+	R8ZSmbRRR5ntf4BQ==
+Received: from imap1.dmz-prg2.suse.org (localhost [127.0.0.1])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (4096 bits) server-digest SHA256)
+	(No client certificate requested)
+	by imap1.dmz-prg2.suse.org (Postfix) with ESMTPS id 82AC13EA62;
+	Thu, 12 Feb 2026 15:23:43 +0000 (UTC)
+Received: from dovecot-director2.suse.de ([2a07:de40:b281:106:10:150:64:167])
+	by imap1.dmz-prg2.suse.org with ESMTPSA
+	id Poq9Hn/wjWnlKgAAD6G6ig
+	(envelope-from <dwagner@suse.de>); Thu, 12 Feb 2026 15:23:43 +0000
+From: Daniel Wagner <dwagner@suse.de>
+Subject: [PATCH blktests v4 0/3] bcache: add initial test cases
+Date: Thu, 12 Feb 2026 16:23:30 +0100
+Message-Id: <20260212-bcache-v4-0-215f3fde1c84@suse.de>
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0 (Mac OS X Mail 16.0 \(3864.300.41.1.7\))
-Subject: [RFC/Feature Request] bcache: support io priority
-Message-Id: <D31CD28C-7B6F-4D3E-89E7-966A06DFEAF0@139.com>
-Date: Fri, 6 Feb 2026 10:38:44 +0800
-Cc: colyli@suse.de,
- kent.overstreet@gmail.com
-To: linux-bcache@vger.kernel.org
-X-Mailer: Apple Mail (2.3864.300.41.1.7)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-B4-Tracking: v=1; b=H4sIAAAAAAAC/2XMTQ6CMBCG4auQrq3pTH9EV97DuCjtIN2AabXRE
+ O5uYYEYl99knndkiWKgxE7VyCLlkMLQl6F2FXOd7W/Egy+boUAjAAVvnHUdcanJHaSpXd0qVp7
+ vkdrwWkKXa9ldSI8hvpduhvn6l8jAgetj04oGvQIlzumZaO+JzYGMWwQrQl4CaGwLtSYj7S+SW
+ 4QrkgWhE+hBW6WF/KJpmj7T/tKSBAEAAA==
+X-Change-ID: 20260120-bcache-35ec7368c8f4
+To: Christoph Hellwig <hch@infradead.org>, 
+ Stephen Zhang <starzhangzsd@gmail.com>, 
+ Kent Overstreet <kent.overstreet@linux.dev>, Coly Li <colyli@fnnas.com>, 
+ Shin'ichiro Kawasaki <shinichiro.kawasaki@wdc.com>, 
+ Johannes Thumshirn <Johannes.Thumshirn@wdc.com>, 
+ linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, 
+ Daniel Wagner <dwagner@suse.de>
+X-Mailer: b4 0.14.3
+X-Spam-Score: -4.51
+X-Spamd-Result: default: False [-4.51 / 50.00];
+	BAYES_HAM(-3.00)[100.00%];
+	NEURAL_HAM_LONG(-1.00)[-1.000];
+	R_DKIM_ALLOW(-0.20)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
+	NEURAL_HAM_SHORT(-0.20)[-1.000];
+	MIME_GOOD(-0.10)[text/plain];
+	MX_GOOD(-0.01)[];
+	DKIM_SIGNED(0.00)[suse.de:s=susede2_rsa,suse.de:s=susede2_ed25519];
+	FREEMAIL_ENVRCPT(0.00)[gmail.com];
+	FREEMAIL_TO(0.00)[infradead.org,gmail.com,linux.dev,fnnas.com,wdc.com,vger.kernel.org,suse.de];
+	FUZZY_RATELIMITED(0.00)[rspamd.com];
+	ARC_NA(0.00)[];
+	RBL_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:104:10:150:64:97:from];
+	TO_DN_SOME(0.00)[];
+	MIME_TRACE(0.00)[0:+];
+	TO_MATCH_ENVRCPT_ALL(0.00)[];
+	RCVD_TLS_ALL(0.00)[];
+	DKIM_TRACE(0.00)[suse.de:+];
+	RCVD_COUNT_TWO(0.00)[2];
+	FROM_EQ_ENVFROM(0.00)[];
+	FROM_HAS_DN(0.00)[];
+	SPAMHAUS_XBL(0.00)[2a07:de40:b281:104:10:150:64:97:from];
+	MID_RHS_MATCH_FROM(0.00)[];
+	RECEIVED_SPAMHAUS_BLOCKED_OPENRESOLVER(0.00)[2a07:de40:b281:106:10:150:64:167:received];
+	RCPT_COUNT_SEVEN(0.00)[9];
+	RCVD_VIA_SMTP_AUTH(0.00)[];
+	DBL_BLOCKED_OPENRESOLVER(0.00)[imap1.dmz-prg2.suse.org:rdns,imap1.dmz-prg2.suse.org:helo,suse.de:dkim,suse.de:mid,suse.de:email]
+X-Spam-Level: 
+X-Rspamd-Action: no action
+X-Rspamd-Queue-Id: 01D013E6CE
+X-Rspamd-Server: rspamd1.dmz-prg2.suse.org
+X-Spam-Flag: NO
 
-Hi bcache developers,
+I've updated the v3 version with the feedback from Shinichiro for v2.
+Shinichiro, please note I did rewrite some of the logic in v3, thus some of your
+comments didn't apply. But hopefully I don't made a big mess :)
+ 
+Cheers,
+Daniel
 
-Many business scenarios require different IO priorities. After setting =
-IO priorities, the goal is to have high-priority writes go to the SSD =
-cache, while low-priority requests are bypassed to the HDD. Currently, =
-the logic is:
-```
+[1] https://lore.kernel.org/linux-bcache/CANubcdX7eNbH_bo4-f94DUbdiEbt04Vxy1MPyhm+CZyXB01FuQ@mail.gmail.com/
+ 
 
-if ((bio->bi_opf & (REQ_RAHEAD|REQ_BACKGROUND))) {
+Signed-off-by: Daniel Wagner <dwagner@suse.de>
+---
+Changes in v4:
+- changed file mode to 755 for 001 and 002
+- changed license to GPL-3.0+
+- use group_requires
+- fixed whitespace damage
+- dropped unnecessary '|| true'
+- added 'local' for local variables
+- added wait loop for register interface to show up
+- updated documentation
+- Link to v3: https://patch.msgid.link/20260122-bcache-v3-0-2c02d15a4503@suse.de
 
-if (!(bio->bi_opf & (REQ_META|REQ_PRIO)) &&
+Changes in v3:
+- add bcache/002
+- return created bcache devices to tests case
+- made cleanup more robust (handling detached cache)
+- track all resources correctly
+- operatoe only in final cleanup on known devices
+- Link to v2: https://patch.msgid.link/20260121-bcache-v2-0-b26af185e63a@suse.de
 
-(dc->cache_readahead_policy !=3D BCH_CACHE_READA_ALL))
+Changes in v2:
+- fixed whitespace damage
+- added documentation on how to configure for bcache tests
+- do registering explicitly
+- made disk wiping more robust
+- Link to v1: https://patch.msgid.link/20260120-bcache-v1-1-59bf0b2d4140@suse.de
 
-goto skip;
+---
+Daniel Wagner (3):
+      bcache: add bcache/001
+      bcache: add bcache/002
+      doc: document how to configure bcache tests
 
-}=20
-```
+ Documentation/running-tests.md |  10 ++
+ tests/bcache/001               |  44 +++++
+ tests/bcache/001.out           |   3 +
+ tests/bcache/002               |  62 +++++++
+ tests/bcache/002.out           |   2 +
+ tests/bcache/rc                | 375 +++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 496 insertions(+)
+---
+base-commit: e387a7e0169cc012eb6a7140a0561d2901c92a76
+change-id: 20260120-bcache-35ec7368c8f4
 
-This logic allows IO requests to bypass, but the request type cannot be =
-controlled in user space.
-
-Could you support setting bypass based on IO request priority? Is such a =
-requirement reasonable?=
+Best regards,
+-- 
+Daniel Wagner <dwagner@suse.de>
 
