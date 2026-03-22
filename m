@@ -1,28 +1,28 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-1.web.codeaurora.org [10.30.226.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1EB4D30E0FD;
-	Sun, 22 Mar 2026 07:15:16 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6BEC732D7FF;
+	Sun, 22 Mar 2026 13:41:10 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1774163717; cv=none; b=O/s2Zp0S0EhmXBejlr3sg9Ytx15eoUC1CTj9V8nnaTY/erRSv6lLC8aivk1XhvJZOZqoY6+zcTD4IYVE/f2XefH+pOAaBVbLwsrkq6TZzGRxrP/3Z1dijYyEVzMgYdwaPnZxnmk346I6wnSc/4HN+mqzimscdlTDQMElaCzjUrI=
+	t=1774186870; cv=none; b=uI6RuFQd/d0XU4YS+VNlJIdAjZzAlsSJNmMGnpAjGbNBS9UWoeSeEn+EWxaOQYS1PcwQ61MnnuqpgORYYmx+8xJMgEEDChY5BSxPZ13HkqSY7Ot/HbwhR6GtBNLVbLxtEE71mYHxmdySaxn78QERyCG0QY8GN2P31KGazCMxhec=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1774163717; c=relaxed/simple;
-	bh=wpnfjT0rLTdmrzQrhKg0QQq1gC69lDWrwujs2gMsrnI=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=KYIFabzYvW/Rx9SFXCjaxtAx1MwAJy9p6hofk+7LrTzqwOdwEL75ubDOJJObJDHlz5F/BzHN2feLd3XO2+feVFxBjLYH4He+urq8HogSyOGPS76x5AUwlWU+D6ZrkoctGF+vl9GKgxCt74EaGFr+lBUYncwpOGVPwU2ww9QNEN4=
+	s=arc-20240116; t=1774186870; c=relaxed/simple;
+	bh=eCEkiN58Xyxy1hwGJsCam4Mju4eWxjo/7smrhQqR7BA=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=Sq1oi8oenxpb7KYz5z7pBxl1d0Wd9W2tuwBQql7uEVV3v6tvXX4GoLMkI1fEYMY8NZFcUbpFD7G9kctV6onA/xtr4dE31fZQTFzulEXyImGgnPsET+tnlL33M/9+NO7WMpg4IJ2EDGUg550svz8v+WON92Gb+v90LYSF/epoMFo=
 ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; arc=none smtp.client-ip=10.30.226.201
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 2D8B3C19424;
-	Sun, 22 Mar 2026 07:15:14 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3112FC19424;
+	Sun, 22 Mar 2026 13:41:06 +0000 (UTC)
 From: colyli@fnnas.com
 To: axboe@kernel.org
 Cc: linux-bcache@vger.kernel.org,
 	linux-block@vger.kernel.org,
 	Mingzhe Zou <mingzhe.zou@easystack.cn>,
-	stable@vger.linux.org,
+	stable@vger.kernel.org,
 	Coly Li <colyli@fnnas.com>
-Subject: [PATCH] bcache: fix cached_dev.sb_bio use-after-free and crash
-Date: Sun, 22 Mar 2026 15:15:05 +0800
-Message-ID: <20260322071505.479439-1-colyli@fnnas.com>
+Subject: [PATCH v2] bcache: fix cached_dev.sb_bio use-after-free and crash
+Date: Sun, 22 Mar 2026 21:41:02 +0800
+Message-ID: <20260322134102.480107-1-colyli@fnnas.com>
 X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
@@ -67,9 +67,13 @@ all details to the QWEN and adopted the modifications it made.
 
 Signed-off-by: Mingzhe Zou <mingzhe.zou@easystack.cn>
 Fixes: cafe563591446 ("bcache: A block layer cache")
-Cc: stable@vger.linux.org # 3.10+
+Cc: stable@vger.kernel.org # 3.10+
 Signed-off-by: Coly Li <colyli@fnnas.com>
 ---
+Change log,
+v2, fix emiail address type to stable kerenl.
+v1, initial version.
+
  drivers/md/bcache/super.c | 7 +++++++
  1 file changed, 7 insertions(+)
 
