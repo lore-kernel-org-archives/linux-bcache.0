@@ -1,21 +1,21 @@
-Received: from mail-m32120.qiye.163.com (mail-m32120.qiye.163.com [220.197.32.120])
+Received: from mail-m19731114.qiye.163.com (mail-m19731114.qiye.163.com [220.197.31.114])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id BC7571B4223
-	for <linux-bcache@vger.kernel.org>; Mon, 23 Mar 2026 13:01:57 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=220.197.32.120
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 46B923A8752
+	for <linux-bcache@vger.kernel.org>; Mon, 23 Mar 2026 13:35:21 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=220.197.31.114
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1774270921; cv=none; b=Cvg5Wmze0xOPFwAtE5P9k+Liy5QGLOO/DRKO4ZnRd6lx032+KKqVPMFRUkV1Diq5+czDx/PUveGb8+mTFHvwcvsynaTG/nvWFApyxtBgJh8RDwtLJKVsoROdPOhKSsMrWurdJ+FMdWozpNs4A7fO9dPR8tMjCVFkMeEz1lfhSUY=
+	t=1774272924; cv=none; b=ZyNM4HqiF9+mjUy2Aketv3pGoCFJymSLFDGXwB4TTHr23Icfq6trXLFzjWuR5tws852xtS9OEja66cNhAj0H3RFMTUbM2Ct1W5wmG2FWQ8rX812wpjxi34/vtxXg8zBpmrDWFfv9EwAdRaMLNyDNyju992PXEv2Up4rqPnbdeBA=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1774270921; c=relaxed/simple;
-	bh=zgt6rVc+/8KUWYoLTqFGrkCMxC+7hn1fkJ9wqcWhUBc=;
-	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version; b=sQVkmgt32sNOpN0EGlw6af6tqOlbZpUD2CdK58pVn9PxfXFM6NUfwGZist9SC0duZPyxyoPHO/HnweWcZiJK9TWCPzmWGppYomIpAGgd0nsHjLKHqpBP1Y7K3un95ZAK0Bul+L+LPJ7U7zaMcf3e2TT8w9ICoDvIrAr9Exk9Snw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=easystack.cn; spf=pass smtp.mailfrom=easystack.cn; arc=none smtp.client-ip=220.197.32.120
+	s=arc-20240116; t=1774272924; c=relaxed/simple;
+	bh=V9Zq9AAR178SEwvhQUqNzjE1Rel44h3gK6ry/musLfA=;
+	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version; b=lj56h6kpT/GdAP01sLGQCWCM7HnHDZHHX0wjX7Si7TFdUdBTOXJRpYDIo5tp1wZYA4f8Hfh39Gpg/Y5brf/+fl/Fakt0F5cRUOOhEyrJ/WbL/eqaIdrIUZxvougy46/iFdl+wlR+waZTyo1OktwJ9PFYJYGVvT0sZhXeRJzD6eg=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=easystack.cn; spf=pass smtp.mailfrom=easystack.cn; arc=none smtp.client-ip=220.197.31.114
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=easystack.cn
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=easystack.cn
 Received: from localhost.localdomain (unknown [218.94.118.90])
-	by smtp.qiye.163.com (Hmail) with ESMTP id 17fa12ba1;
-	Mon, 23 Mar 2026 21:01:47 +0800 (GMT+08:00)
+	by smtp.qiye.163.com (Hmail) with ESMTP id 17fa12b1a;
+	Mon, 23 Mar 2026 20:59:44 +0800 (GMT+08:00)
 From: mingzhe.zou@easystack.cn
 To: colyli@kernel.org,
 	colyli@fnnas.com
@@ -23,9 +23,9 @@ Cc: linux-bcache@vger.kernel.org,
 	zoumingzhe@qq.com,
 	zoumingzhe@outlook.com,
 	Mingzhe Zou <mingzhe.zou@easystack.cn>
-Subject: [PATCH v2] bcache: fix cached_dev.sb_bio use-after-free and crash
-Date: Mon, 23 Mar 2026 21:01:19 +0800
-Message-Id: <20260323130119.222252-1-mingzhe.zou@easystack.cn>
+Subject: [PATCH] bcache: fix cached_dev.sb_bio use-after-free and crash
+Date: Mon, 23 Mar 2026 20:59:12 +0800
+Message-Id: <20260323125912.220486-1-mingzhe.zou@easystack.cn>
 X-Mailer: git-send-email 2.34.1
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
@@ -34,10 +34,10 @@ List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-X-HM-Tid: 0a9d1ac98413022bkunm283263244a6ed4
+X-HM-Tid: 0a9d1ac7a2e2022bkunm103e3af34a6c7c
 X-HM-MType: 1
 X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
-	tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVlCHk1CVhpCGkodSEhKGktNGlYVFAkWGhdVGRETFh
+	tZV1koWUFJQjdXWS1ZQUlXWQ8JGhUIEh9ZQVlDT0hOVh1ITx4aGExMQx5MQ1YVFAkWGhdVGRETFh
 	oSFyQUDg9ZV1kYEgtZQVlJSkNVQk9VSkpDVUJLWVdZFhoPEhUdFFlBWU9LSFVKS0lPT09IVUpLS1
 	VKQktLWQY+
 
@@ -74,15 +74,12 @@ It should be noted that we analyzed the cause of the problem, then tell
 all details to the QWEN and adopted the modifications it made.
 
 Signed-off-by: Mingzhe Zou <mingzhe.zou@easystack.cn>
-
----
-v2: fix the crash caused by not calling closure_init in v1
 ---
  drivers/md/bcache/super.c | 7 +++++++
  1 file changed, 7 insertions(+)
 
 diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 64bb38c95895..b76edbaaf4f3 100644
+index 64bb38c95895..6627a381f65a 100644
 --- a/drivers/md/bcache/super.c
 +++ b/drivers/md/bcache/super.c
 @@ -1373,6 +1373,13 @@ static CLOSURE_CALLBACK(cached_dev_free)
@@ -94,7 +91,7 @@ index 64bb38c95895..b76edbaaf4f3 100644
 +	 * The sb_bio is embedded in struct cached_dev, so we must
 +	 * ensure no I/O is in progress.
 +	 */
-+	down(&dc->sb_write_mutex);
++	closure_sync(&dc->sb_write);
 +
  	if (dc->sb_disk)
  		folio_put(virt_to_folio(dc->sb_disk));
