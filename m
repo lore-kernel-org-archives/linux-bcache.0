@@ -1,128 +1,191 @@
-Received: from mail-pf1-f201.google.com (mail-pf1-f201.google.com [209.85.210.201])
+Received: from va-2-36.ptr.blmpb.com (va-2-36.ptr.blmpb.com [209.127.231.36])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 2BFB837EFFF
-	for <linux-bcache@vger.kernel.org>; Thu, 21 May 2026 16:39:31 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.201
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 1EA6E3A7F66
+	for <linux-bcache@vger.kernel.org>; Sun, 24 May 2026 16:13:12 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.36
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779381573; cv=none; b=VeV6MP2TVCGKf9+zAsu66kbKb1+5vK+j+eo2Vn9SDCj150s3ZdGwhIybM5NRYjau+7kxadl6aFfGHkUzBLsLcsMluuWcRKQ9bBU33Efh/8RcKH1A6V04fI73TK8EsxiLwNSRyCZTBpJDooSv0gSGh8dAWezOwwPuIfIOK8xM0Ww=
+	t=1779639199; cv=none; b=MocgnjR3rJVD0GVtAsMcK++3as6M8fMO+O4VOrH8rxpjM5hsuxlALa1aM19SlbPrDvGuZd4261foHztEfFI+FTLxhJdAsFDGQH1rqVJ4x4ZmwohiEQ8r1G/BssWI7RGmX6g/JCojq2JZskVcgd0eQpw301DVUTeql6x+PY0EPiU=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779381573; c=relaxed/simple;
-	bh=MBtIizEY5hBHrVdP5dcquGtpPCEAARy19S1vIGYeF58=;
-	h=Date:In-Reply-To:Mime-Version:References:Message-ID:Subject:From:
-	 To:Cc:Content-Type; b=oz4Jb1PmS0GiCX3nkp7uC2SACQVHEeIQ+6XoojSCqpOUOx7mT+cmr6xgZcZg1BWU3WM1BpVaFjPRteByL0sqKvxEU34koYbG5mQpi4KlKcT6HsGSpQvBcB7BTNoOv4UE32sb1pr7REg51VIHJkTr+0Xuw4BkSbbRRbzQp002AXw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--ankitkap.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=ADYlbLr3; arc=none smtp.client-ip=209.85.210.201
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--ankitkap.bounces.google.com
+	s=arc-20240116; t=1779639199; c=relaxed/simple;
+	bh=sjMJVGOWPvVgHOtlj65ii+D+LhAMduYVx4ZiWzf8a8A=;
+	h=Mime-Version:From:Content-Disposition:References:To:Date:
+	 Message-Id:Content-Type:Cc:Subject:In-Reply-To; b=O/OipNVEMINJQhpwXfQiE0eKqWkU13PoiTzLkbCa43JgsaM/E6OMVJUq9DTYtbry9l4SzS1HtJS56U2dXTXASQZF91TtSLckDFLEljrfctdnURoUDoSoG1HCgIiEpRt55eu8VPJuuYtKr/2ypSxvlVysKFngF0G3lubqY3FGBz0=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=fnnas.com; spf=none smtp.mailfrom=fnnas.com; dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b=w0dRuKeG; arc=none smtp.client-ip=209.127.231.36
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=fnnas.com
+Authentication-Results: smtp.subspace.kernel.org; spf=none smtp.mailfrom=fnnas.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="ADYlbLr3"
-Received: by mail-pf1-f201.google.com with SMTP id d2e1a72fcca58-83cecc22d5fso3252644b3a.2
-        for <linux-bcache@vger.kernel.org>; Thu, 21 May 2026 09:39:31 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20251104; t=1779381571; x=1779986371; darn=vger.kernel.org;
-        h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
-         :date:from:to:cc:subject:date:message-id:reply-to;
-        bh=nvqpFMFuzA1qxFgCYFe2rXCT+v/H7QYEEF/3u4IhSNY=;
-        b=ADYlbLr3ahCUNS6bsWCvQFvohJlhImtgfVq+dN/uMQU/2ZUBbyMRFlvm8QmIjJvkiw
-         kM9NJVtFJl2LxE1AawRvGRH5Gzcsfb/Q9F8sSr72W+IUXOij1/XFrhKpxXi562c5vew/
-         biF45kS/AvO/I8NMjWc1RZJY/AMoHWz6Kr9U8NPiaL7Q+HzZSl4m99JGxF+tiJkoCmmB
-         KQjrXmxfVuvidhXzRY6iC/b/C3N1bjrtiRtI0HydTt9315WUWi3Ilq+1NAnLDmDXlKWs
-         mcZuutdFHnWuYqP8UaHvdImSWaqsYWTA4mLeqrvOrb/iVrosOSEVZGSt6bIDCfaWL6ld
-         Uahw==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1779381571; x=1779986371;
-        h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
-         :date:x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
-        bh=nvqpFMFuzA1qxFgCYFe2rXCT+v/H7QYEEF/3u4IhSNY=;
-        b=Qad2FTrS7cnjWijEMiOR3KYBhXMSwinTR2gDUqsj1n+ppWriT9l78gEOqxg7Z1VVva
-         82c80yNcZoy1K9uNz5RkuprzZotrPsWHaM7371Th4D2n7tx0ZoKOVmrNxFE0PyzA3Cc6
-         ep+cnyT/hHABOgZOtuhkVDApgyQj2GC+687s2l5w5PyFF9lSDqfKlf91LbQJ2CnlryM5
-         oaNJ2mxNe38Owcoy5xc3A6I2DBdqFXqBAOY6WBM7K3WuY340a1i6AHk5n8AhR33/ciNE
-         OXM4ywoEiGjEq2blM9vs9khDqZd9BQFwvdhNblOetu5gJnk3clA2APBKkfTo4LLvTV7S
-         UFuA==
-X-Gm-Message-State: AOJu0YyDjMlKftH1FNXZrUr89PEKoC6a9x5uxVAXA/GbXPZXynku6mmG
-	uXqWnmPbGvcZfqRbgRbr7ze/8DO9TeEqxwzt88WKtbmc7kmxt0hpcxdK0g7+QYIXNRk9aUBqf61
-	9UOMTlMRmSZpGaQ==
-X-Received: from pfbjw10.prod.google.com ([2002:a05:6a00:928a:b0:82f:86c3:55ba])
- (user=ankitkap job=prod-delivery.src-stubby-dispatcher) by
- 2002:a05:6a00:2d06:b0:82c:225e:63c5 with SMTP id d2e1a72fcca58-8415f349f4fmr37456b3a.18.1779381571246;
- Thu, 21 May 2026 09:39:31 -0700 (PDT)
-Date: Thu, 21 May 2026 16:39:25 +0000
-In-Reply-To: <20260521163925.178264-1-ankitkap@google.com>
+	dkim=pass (2048-bit key) header.d=fnnas-com.20200927.dkim.feishu.cn header.i=@fnnas-com.20200927.dkim.feishu.cn header.b="w0dRuKeG"
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+ s=s1; d=fnnas-com.20200927.dkim.feishu.cn; t=1779639177;
+  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
+ reply-to:content-type:mime-version:in-reply-to:message-id;
+ bh=1rLzvHSzdH/mUg79/n60/P1xpTLbc2cGco0IQzakcCs=;
+ b=w0dRuKeGSVE++qhE+pR2HWV+HgrZUk2Uz58F2VAmR4w1ci/swQ8ICqeOEdrFk6BbwQy00W
+ d4OVNF5/eiXHX3Ku092qgwTuhnQeMctrYyCEdEVU+yyWdmREFCBynMGv+qKFYQDAU0hzZl
+ VfzDZu313FpRDZWOFAIA/ymr4SK5Njb6zKQlA3BSRn1wxk2aiH80BnE00+sGEFDJRL/qwf
+ MYzFY0Zxx+80YPgcxGDhd/DgoVuOPpfKSvOl4rZ9hGVLK5RXbajqrs1QP5HYwinqP2Zyve
+ buIMUe1hVx1CgpoO9y3ToCQfqcM9OpghJTt5LaAW4wvWTim8umm2YTcqkNv07A==
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 Mime-Version: 1.0
+X-Original-From: Coly Li <colyli@fnnas.com>
+Content-Transfer-Encoding: 7bit
+From: "Coly Li" <colyli@fnnas.com>
+X-Lms-Return-Path: <lba+26a132387+a0d56c+vger.kernel.org+colyli@fnnas.com>
+Received: from studio.local ([120.245.64.106]) by smtp.feishu.cn with ESMTPS; Mon, 25 May 2026 00:12:54 +0800
+Content-Disposition: inline
 References: <20260521163925.178264-1-ankitkap@google.com>
-X-Mailer: git-send-email 2.54.0.669.g59709faab0-goog
-Message-ID: <20260521163925.178264-2-ankitkap@google.com>
-Subject: [PATCH 1/1] bcache: fix stale data race between read cache miss and
- bypass write
-From: Ankit Kapoor <ankitkap@google.com>
-To: Coly Li <colyli@fnnas.com>, Kent Overstreet <kent.overstreet@linux.dev>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, 
-	Ankit Kapoor <ankitkap@google.com>
-Content-Type: text/plain; charset="UTF-8"
+To: "Ankit Kapoor" <ankitkap@google.com>
+Date: Mon, 25 May 2026 00:12:53 +0800
+Message-Id: <ahMi6qmGtJsf1X03@studio.local>
+Content-Type: text/plain; charset=UTF-8
+Cc: "Kent Overstreet" <kent.overstreet@linux.dev>, 
+	<linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/1] bcache: fix stale data race between read cache miss and bypass write
+In-Reply-To: <20260521163925.178264-1-ankitkap@google.com>
 
-A race condition exists between a read cache miss and a bypass write
-due to either congestion or sequential bypass, that causes stale data
-to be cached when the read cache miss runs concurrently with a bypass
-write targeting the same sectors. If the read cache miss fetches data
-from the backing device before the write to the backing device,
-stale data populates the cache.
+On Thu, May 21, 2026 at 04:39:24PM +0800, Ankit Kapoor wrote:
 
-The root cause is that bcache currently executes btree key
-invalidation in parallel with (or prior to) writing the actual data
-payload to the backing device. Under this sequence, a concurrent
-read path can register a cache miss and insert a placeholder key.
-If the write's btree key invalidation completes before the read finishes
-fetching old data from the backing device, the read's subsequent
-key replacement will not detect a collision, allowing stale data
-to persist in the cache.
+Hi Ankit,
 
-Fix this by deferring the btree key invalidation until after the
-backing device write completes successfully. Enforcing this
-sequential execution ensures that a stale read is always detected
-and invalidated.
+From your description and analysis, I feel this is a real issue.
+Let me understand this deeper and response you later.
 
-Signed-off-by: Ankit Kapoor <ankitkap@google.com>
----
- drivers/md/bcache/request.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+Thanks.
 
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index af345dc6fde1..ef2cf55df3bb 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -978,6 +978,14 @@ static CLOSURE_CALLBACK(cached_dev_write_complete)
- 	cached_dev_bio_complete(&cl->work);
- }
- 
-+static CLOSURE_CALLBACK(backing_device_bypass_write_complete)
-+{
-+	closure_type(s, struct search, cl);
-+
-+	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
-+	continue_at(cl, cached_dev_write_complete, NULL);
-+}
-+
- static void cached_dev_write(struct cached_dev *dc, struct search *s)
- {
- 	struct closure *cl = &s->cl;
-@@ -1058,6 +1066,11 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
- 	}
- 
- insert_data:
-+	if (s->iop.bypass) {
-+		continue_at(cl, backing_device_bypass_write_complete, NULL);
-+		return;
-+	}
-+
- 	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
- 	continue_at(cl, cached_dev_write_complete, NULL);
- }
--- 
-2.54.0.669.g59709faab0-goog
+Coly Li
 
+> Overview
+> --------
+> This series addresses a cache inconsistency issue with stale data in bcache
+> that arises from a race condition between a read cache miss and a bypass 
+> write due to congestion or sequential cutoff. The fix involves sequencing 
+> the btree invalidation of the bypass write to occur strictly after the 
+> backing device write.
+> 
+> Race Analysis
+> -------------
+> The following sequence illustrates how stale data is cached after a read
+> cache miss when btree invalidation of a bypass write happens in parallel
+> with a delayed write to the backing device:
+> 
+> Write IO Path (Parallel)            Read IO Path
+> ------------------------            ------------
+>            |
+>  [Btree Invalidation]
+>            |
+>            |                      [Cache Miss]
+>            |                           |
+>            |                     [Btree Placeholder Key Insertion]
+>            |                           |
+>  (Delay in writing                     |
+>  to the backing device)                |
+>            |                     [Cache data from the backing device]
+>            |                           |
+>            +-------------------------->|  <-- No key collision detected!
+>            |                      [Btree Placeholder Key Replacement]
+>            |                           |
+>     [Write to the                      |
+>     backing device]                -------------
+>                                  CRITICAL BUG:
+>                              Stale data gets cached
+> 
+> Reproduction Steps
+> ------------------
+> The bug can be reliably reproduced by injecting a 5-second delay into
+> the backing device write path via dm-delay. Cache mode is set to
+> writearound to simulate bypass write.
+> 
+> 1. Data Preparation:
+>   # printf -- '%.0s\0' {1..4096} > /tmp/0.txt
+>   # printf -- '%.0s\1' {1..4096} > /tmp/1.txt
+>   # echo writearound > /sys/block/bcache0/bcache/cache_mode
+>   # dd if=/tmp/0.txt of=/media/bcache/data.txt oflag=direct \
+>     bs=4096 count=1 conv=notrunc
+> 
+> 2. Race Execution:
+>   # dd if=/tmp/1.txt of=/media/bcache/data.txt oflag=direct \
+>     bs=4096 count=1 conv=notrunc &
+>   # sleep 1
+>   # dd if=/media/bcache/data.txt iflag=direct bs=4096 count=1 \
+>     status=none | hexdump > ./concurrent-read-result
+>   # sleep 10
+>   # dd if=/media/bcache/data.txt iflag=direct bs=4096 count=1 \
+>     status=none | hexdump > ./second-read-result
+> 
+> 3. Results (Without Patch):
+>   # cat second-read-result
+>   0000000 0000 0000 0000 0000 0000 0000 0000 0000  # <--- STALE READ
+> 
+> Proposed Fix
+> ------------
+> The fix enforces strict total (sequential) order of btree invalidation
+> after write to the backing device in a bypass write:
+> 
+> OLD FLOW                                          NEW FLOW
+> -------------------------------       --------------------------------
+>         [ Write Start ]                       [ Write Start ]
+>                |                                     |
+>        +-------+-------+                             |
+>        |               |                             v
+>        v               v                    [     Write to   ]
+>  [    Btree     ] [   Write to    ]         [ backing-device ]
+>  [ Invalidation ] [ backing-device]                  |
+>        |               |                             v
+>        +-------+-------+                    [      Btree     ]
+>                |                            [  Invalidation  ]
+>                v                                     |
+>          [ Write End ]                               v
+>                                                [ Write End ]
+> 
+> Enforcing this sequential execution ensures that either:
+> 1. A stale read is followed and invalidated by the deferred write
+>    invalidation flow.
+> 2. The write invalidation executes first, forcing the subsequent read
+>    path's key replacement sequence to properly catch the collision.
+> 
+> Failure Handling
+> ----------------
+> This patch keeps existing error-handling behavior intact. Although
+> execution is now sequential, btree invalidation is still triggered
+> regardless of whether the write to the backing device succeeds
+> or fails.
+> 
+> Verification and Performance
+> ----------------------------
+> Manual Results (With Patch):
+>   # cat second-read-result
+>   0000000 0101 0101 0101 0101 0101 0101 0101 0101  # <--- CORRECT DATA
+> 
+> Stress Verification:
+> FIO was executed under a write-only workload (128 KB Write, libaio,
+> iodepth=64, direct=1). Without the patch, FIO reported CRC errors
+> due to stale read corruptions; with the patch, zero CRC errors or
+> corruptions were reported.
+> 
+> Write-Only Workload (FIO Averages CSV):
+> Metric,With Fix,Without Fix,Delta
+> 
+> Write IOPS,1630,1630,0.00%
+> Write Bandwidth (MiB/s),204,204,0.00%
+> Write Avg Latency (micro second),39219.95,39219.58,0.00%
+> 
+> Test Environment
+> ----------------
+> - CPU: 1 vCPU, Intel Haswell x86_64 (n1-standard-1 instance)
+> - Memory: 3.75 GB RAM
+> - OS: Linux 6.12.68 (Google COS)
+> - Storage: Google Cloud SSD PD + Local SSD
+> 
+> Ankit Kapoor (1):
+>   bcache: fix stale data race between read cache miss and bypass write
+> 
+>  drivers/md/bcache/request.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> -- 
+> 2.54.0.669.g59709faab0-goog
