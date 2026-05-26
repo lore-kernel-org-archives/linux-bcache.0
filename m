@@ -1,146 +1,294 @@
-Received: from sg-3-42.ptr.tlmpb.com (sg-3-42.ptr.tlmpb.com [101.45.255.42])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7AD99384244
-	for <linux-bcache@vger.kernel.org>; Mon, 25 May 2026 13:54:36 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=101.45.255.42
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E571335E1B8
+	for <linux-bcache@vger.kernel.org>; Tue, 26 May 2026 05:45:12 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779717278; cv=none; b=d73Rmth3iY8C/PZjXV9Fnr6HHxjxUHvCPuyNlPRISsz9H2TEBqf9FIngas05gIooFnUIbeHu4ZFmI1R7pO4o69tptNKtbyEDcjStYfqPNQtoiNvKRipAevm+fR9/PFx5HeRAwfyLsxKMuZqSYRAo8SxfJlRJi5s7oKCCyILeQm4=
+	t=1779774315; cv=none; b=evNmVBlMjbtFXzqtadH4ZG+LdoofYZkQ4QOWDiBPaxgks3EEkaUrmto3nU5zPj8ou6H/UafkxbN5Zr4XC++dL55b4IO7C+KZCrNmbqw1gZ6CKjKjngA+9bjQLY45RoRd2iMaT9cqOhqNFtLST2KVHuF6WVxjYeH6nJa2YPuZRNo=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779717278; c=relaxed/simple;
-	bh=nBdsatoQEXUjyQAL+V7TVwCB5cVfGMxySQi7OkB9y8k=;
-	h=To:Subject:Date:In-Reply-To:Cc:Message-Id:Content-Type:From:
-	 References:Mime-Version:Content-Disposition; b=mbH2K+4iZ42ED506Vr5TBMxg/yZ3D/IYBPa9YneWxMLm8VTR2OR2EDARi2A0ycJJQ7y0884Ayz/702yquEw6mJAY6ys70elXEYxuC9pwZ6bPXQMgs9+HAg0k2YZT+zJdjJmwoG5pBZpecENURih7btVGZ0FCOpHtRuNCMAhrWU0=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=e+bptk0x; arc=none smtp.client-ip=101.45.255.42
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="e+bptk0x"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1779716507;
-  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
- reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=d0rhPK4qQ9astzIWbJW8jzOno1xfkj/iyWRJMLfNGCQ=;
- b=e+bptk0xdWMdmYNAxObl268EtQrQ/ZQnSNmKJcybk0KfvGoT+XvrhUmDcZIhLylyAbGDWy
- dENzklhGP7wTtuGsPiJTmxBvtGye1Ih0nGLikCtAA1aPZNFP5PQAJMbqWL62AedtLtGZcO
- QHGbPR/SF946yAiMGoViKS4EuYXDIw5m67y9wBETnnhi+lcgPLYjE9kAaUjTcrQ5yE6U46
- aiLX50CH79WUIbinohOM/sUTdVPL4nAXgM0Li3vDHMm3nFZUdoFJ2wJTJjgNoanqTRxTxw
- U4VWRJE56vHQqLXN4P32YmmKBJnOBR78oH+CCY7aXIJ7yyA1FyZy5xNSeZE/XQ==
-To: "Ankit Kapoor" <ankitkap@google.com>
-Subject: Re: [PATCH 1/1] bcache: fix stale data race between read cache miss and bypass write
-Date: Mon, 25 May 2026 21:41:43 +0800
-X-Original-From: Coly Li <colyli@fygo.io>
-In-Reply-To: <20260521163925.178264-2-ankitkap@google.com>
-Cc: "Kent Overstreet" <kent.overstreet@linux.dev>, 
-	<linux-bcache@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Message-Id: <ahRNUlU60mx9ESd1@studio.local>
-Content-Type: text/plain; charset=UTF-8
-X-Lms-Return-Path: <lba+26a14519a+03031c+vger.kernel.org+colyli@fygo.io>
-Content-Transfer-Encoding: 7bit
-From: "Coly Li" <colyli@fygo.io>
-Received: from studio.local ([120.245.64.106]) by smtp.larksuite.com with ESMTPS; Mon, 25 May 2026 13:41:46 +0000
-References: <20260521163925.178264-1-ankitkap@google.com> <20260521163925.178264-2-ankitkap@google.com>
+	s=arc-20240116; t=1779774315; c=relaxed/simple;
+	bh=mSr0ctr0YAf5VPQ+H8bg4E0oZTkU8UjnixBliO635SY=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=FIPG8gPdO1CBNg/v+W7hIByMZw/GA0NrfYCI+e9+bUj0Oqo18loUrK752oG2/4TNpAvrW0XlQis3hjcRWdcu3JJx9S3e6IezUjKbW49TEM8Xmcaf3XrWs3fz8nzoAkNo8Lw0Aidq0ecpowoP7oI6g8TtUognLpKT6AsuEl8wWEo=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3C3611F000E9;
+	Tue, 26 May 2026 05:45:11 +0000 (UTC)
+From: colyli@fygo.io
+To: linux-bcache@vger.kernel.org
+Cc: Coly Li <colyli@fygo.io>,
+	Zhou Jifeng <zhoujifeng@kylinos.com.cn>,
+	linux-stable@vger.kernel.org
+Subject: [PATCH RFC] bcache: flush backing device before cleaning the writeback dirty keys
+Date: Tue, 26 May 2026 13:44:38 +0800
+Message-ID: <20260526054438.818708-1-colyli@fygo.io>
+X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Content-Disposition: inline
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-Hi Ankit,
+From: Coly Li <colyli@fygo.io>
 
-Yes, I confirm this is an issue that must be solved. Nice catch!
+After dirty data on cache device is written back to backing device, the
+dirty keys of these written dirty data are set to clean and inserted
+back to the btree. There is no explicit flush bio sent to the backing
+device, whether the dirty data is flushed onto disk media or still in
+hard drive's DRAM cache, it is uncertain. If a power failure occurs
+after the cleaned keys are inserted back to the btree while dirty data
+still stays in hard drive's DRAM cache, after the reboot a stale data of
+the written data may happen because the dirty key is clean now, but
+dirty data has not been persisted indeed.
 
-On Thu, May 21, 2026 at 04:39:25PM +0800, Ankit Kapoor wrote:
-> A race condition exists between a read cache miss and a bypass write
-> due to either congestion or sequential bypass, that causes stale data
-> to be cached when the read cache miss runs concurrently with a bypass
-> write targeting the same sectors. If the read cache miss fetches data
-> from the backing device before the write to the backing device,
-> stale data populates the cache.
-> 
-> The root cause is that bcache currently executes btree key
-> invalidation in parallel with (or prior to) writing the actual data
-> payload to the backing device. Under this sequence, a concurrent
-> read path can register a cache miss and insert a placeholder key.
-> If the write's btree key invalidation completes before the read finishes
-> fetching old data from the backing device, the read's subsequent
-> key replacement will not detect a collision, allowing stale data
-> to persist in the cache.
-> 
-> Fix this by deferring the btree key invalidation until after the
-> backing device write completes successfully. Enforcing this
-> sequential execution ensures that a stale read is always detected
-> and invalidated.
->
+This patch introduce struct writeback_batch, and allocates a on-stack
+batch in read_dirty(), uses it to collect all successful writeback I/Os
+(a.k.a struct dirty_io). Then in write_dirty_finish() the successfully
+written back dirty key is not cleaned and inserted back to the btree
+immediately, it is added into batch->keys list and delayed to a new
+function writeback_finish_batch() to be cleaned and inserted back to
+the btree. In writeback_finish_batch, before inserting back all the
+cleaned keys to the btree by writeback_clean_key(), an explicit flush
+bio is issued to backing device if a real writeback I/O once happened.
 
-This patch fixes the stale data issue in run time, but if power failure
-happens inside the race window, after boot up again, the stale data
-still exists in cache for following read hits.
+By this method, when writeback I/Os are busy, a flush bio will be issued
+around every 500 writeback I/O based on current code.  Therefore an
+explicit backing device flush bio can be issued in time (every batch
+writeback I/Os in read_dirty()), and in a reasonable frequency.
 
-And your fix invalidate the key after on-disk bio completed, which makes
-such stale data window by power failure longer.
+Now this patch just passes compiling, not survive long time pressure
+testing yet.
+
+Fixes: cafe563591446 ("bcache: A block layer cache")
+Reported-by: Zhou Jifeng <zhoujifeng@kylinos.com.cn>
+Cc: linux-stable@vger.kernel.org
+Signed-off-by: Coly Li <colyli@fygo.io>
+---
+ drivers/md/bcache/writeback.c | 133 +++++++++++++++++++++++++++-------
+ 1 file changed, 106 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 4b237074f453..81b4514d6532 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -320,14 +320,22 @@ static unsigned int writeback_delay(struct cached_dev *dc,
+ }
  
-To solve all the stale data race both for run time and power failure
-condition, could you please consider the following proposal.
+ struct dirty_io {
+ 	struct closure		cl;
+ 	struct cached_dev	*dc;
++	struct writeback_batch	*batch;
++	struct list_head	list;
+ 	uint16_t		sequence;
+ 	struct bio		bio;
+ };
+ 
++struct writeback_batch {
++	struct list_head	keys;
++	spinlock_t		lock;
++	bool			need_flush;
++};
++
+ static void dirty_init(struct keybuf_key *w)
+ {
+ 	struct dirty_io *io = w->private;
+ 	struct bio *bio = &io->bio;
+ 
+@@ -351,42 +359,41 @@ static CLOSURE_CALLBACK(dirty_io_destructor)
+ static CLOSURE_CALLBACK(write_dirty_finish)
+ {
+ 	closure_type(io, struct dirty_io, cl);
+ 	struct keybuf_key *w = io->bio.bi_private;
+ 	struct cached_dev *dc = io->dc;
++	bool written = KEY_DIRTY(&w->key);
+ 
+ 	bio_free_pages(&io->bio);
+ 
+-	/* This is kind of a dumb way of signalling errors. */
+-	if (KEY_DIRTY(&w->key)) {
+-		int ret;
+-		unsigned int i;
+-		struct keylist keys;
+-
+-		bch_keylist_init(&keys);
+-
+-		bkey_copy(keys.top, &w->key);
+-		SET_KEY_DIRTY(keys.top, false);
+-		bch_keylist_push(&keys);
+-
+-		for (i = 0; i < KEY_PTRS(&w->key); i++)
+-			atomic_inc(&PTR_BUCKET(dc->disk.c, &w->key, i)->pin);
+-
+-		ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
+-
+-		if (ret)
+-			trace_bcache_writeback_collision(&w->key);
+-
+-		atomic_long_inc(ret
+-				? &dc->disk.c->writeback_keys_failed
+-				: &dc->disk.c->writeback_keys_done);
++	/*
++	 * Temporarily add this key into io->batch->keys. Once all dirty keys
++	 * in dc->writeback_keys are written back to backing device, a flush
++	 * bio will be issued to backing device by writeback_finish_batch().
++	 * Then before all clean keys are inserted back to btree, the writeback
++	 * dirty data is for sure flushed to backing device.
++	 * If power failure occurs after the clean key is inserted back to the
++	 * btree, the dirty data has already been in the disk platter and a
++	 * stale clean bkey can be avoided.
++	 */
++	if (written) {
++		INIT_LIST_HEAD(&io->list);
++		if (io->batch->need_flush != true)
++			io->batch->need_flush = true;
++		spin_lock(&io->batch->lock);
++		list_add_tail(&io->list, &io->batch->keys);
++		spin_unlock(&io->batch->lock);
++	} else {
++		bch_keybuf_del(&dc->writeback_keys, w);
+ 	}
+ 
+-	bch_keybuf_del(&dc->writeback_keys, w);
+ 	up(&dc->in_flight);
+ 
+-	closure_return_with_destructor(cl, dirty_io_destructor);
++	if (written)
++		closure_return(cl);
++	else
++		closure_return_with_destructor(cl, dirty_io_destructor);
+ }
+ 
+ static void dirty_endio(struct bio *bio)
+ {
+ 	struct keybuf_key *w = bio->bi_private;
+@@ -398,10 +405,74 @@ static void dirty_endio(struct bio *bio)
+ 	}
+ 
+ 	closure_put(&io->cl);
+ }
+ 
++static int writeback_flush(struct cached_dev *dc)
++{
++	struct bio bio;
++	int ret;
++
++	bio_init(&bio, dc->bdev, NULL, 0, REQ_OP_WRITE | REQ_PREFLUSH);
++
++	ret = submit_bio_wait(&bio);
++	if (ret)
++		bch_count_backing_io_errors(dc, &bio);
++
++	bio_uninit(&bio);
++	return ret;
++}
++
++static void writeback_clean_key(struct cached_dev *dc, struct keybuf_key *w)
++{
++	int ret;
++	unsigned int i;
++	struct keylist keys;
++
++	bch_keylist_init(&keys);
++
++	bkey_copy(keys.top, &w->key);
++	SET_KEY_DIRTY(keys.top, false);
++	bch_keylist_push(&keys);
++
++	for (i = 0; i < KEY_PTRS(&w->key); i++)
++		atomic_inc(&PTR_BUCKET(dc->disk.c, &w->key, i)->pin);
++
++	ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
++
++	if (ret)
++		trace_bcache_writeback_collision(&w->key);
++
++	atomic_long_inc(ret
++			? &dc->disk.c->writeback_keys_failed
++			: &dc->disk.c->writeback_keys_done);
++}
++
++static void writeback_finish_batch(struct cached_dev *dc,
++				   struct writeback_batch *batch)
++{
++	struct dirty_io *io, *t;
++	int flush_ret = 0;
++
++	if (batch->need_flush)
++		flush_ret = writeback_flush(dc);
++
++	list_for_each_entry_safe(io, t, &batch->keys, list) {
++		struct keybuf_key *w = io->bio.bi_private;
++
++		list_del(&io->list);
++
++		if (flush_ret == 0)
++			writeback_clean_key(dc, w);
++		else
++			atomic_long_inc(&dc->disk.c->writeback_keys_failed);
++
++		bch_keybuf_del(&dc->writeback_keys, w);
++		kfree(io);
++	}
++}
++
+ static CLOSURE_CALLBACK(write_dirty)
+ {
+ 	closure_type(io, struct dirty_io, cl);
+ 	struct keybuf_key *w = io->bio.bi_private;
+ 	struct cached_dev *dc = io->dc;
+@@ -478,15 +549,20 @@ static void read_dirty(struct cached_dev *dc)
+ 	size_t size;
+ 	int nk, i;
+ 	struct dirty_io *io;
+ 	struct closure cl;
+ 	uint16_t sequence = 0;
++	struct writeback_batch batch;
+ 
+ 	BUG_ON(!llist_empty(&dc->writeback_ordering_wait.list));
+ 	atomic_set(&dc->writeback_sequence_next, sequence);
+ 	closure_init_stack(&cl);
+ 
++	INIT_LIST_HEAD(&batch.keys);
++	spin_lock_init(&batch.lock);
++	batch.need_flush = false;
++
+ 	/*
+ 	 * XXX: if we error, background writeback just spins. Should use some
+ 	 * mempools.
+ 	 */
+ 
+@@ -542,10 +618,11 @@ static void read_dirty(struct cached_dev *dc)
+ 			if (!io)
+ 				goto err;
+ 
+ 			w->private	= io;
+ 			io->dc		= dc;
++			io->batch	= &batch;
+ 			io->sequence    = sequence++;
+ 
+ 			dirty_init(w);
+ 			io->bio.bi_opf = REQ_OP_READ;
+ 			io->bio.bi_iter.bi_sector = PTR_OFFSET(&w->key, 0);
+@@ -583,14 +660,16 @@ static void read_dirty(struct cached_dev *dc)
+ err:
+ 		bch_keybuf_del(&dc->writeback_keys, w);
+ 	}
+ 
+ 	/*
+-	 * Wait for outstanding writeback IOs to finish (and keybuf slots to be
+-	 * freed) before refilling again
++	 * Wait for outstanding writeback IOs to finish, then flush the
++	 * backing device, insert the clean keys back to btree, and free
++	 * keybuf slots.
+ 	 */
+ 	closure_sync(&cl);
++	writeback_finish_batch(dc, &batch);
+ }
+ 
+ /* Scan for dirty data */
+ 
+ void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
+-- 
+2.47.3
 
-Maintain a data structure to hold all invalidate range from by-pass
-write, record/insert the invalidation range before bch_data_insert(),
-and after cached_dev_write_complete(), clear/remove the invalidation
-range.
-
-For a cache-miss read, if there is any invalidation range refcount
-exists, check all non-zero refcount ranges, if any range overlaps with
-the cache-miss read range, do NOT update the missing bkey back to btree
-and only read data from backing device.
-
-Here you need to design a efficient data structure both for performance
-and memory consumption. I would sugguest to maintain chunk refcounts
-which mapping multiple 32MB ranges on cache device (current max key size
-if I remember correctly) range. You may look at how md raid maintains
-the legacy bitmap refcount, hope that code can give you any hint.
-
-Finally thank you for report this issue, nick catch!
-
-Coly Li
-
-
-> Signed-off-by: Ankit Kapoor <ankitkap@google.com>
-> ---
->  drivers/md/bcache/request.c | 13 +++++++++++++
->  1 file changed, 13 insertions(+)
-> 
-> diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-> index af345dc6fde1..ef2cf55df3bb 100644
-> --- a/drivers/md/bcache/request.c
-> +++ b/drivers/md/bcache/request.c
-> @@ -978,6 +978,14 @@ static CLOSURE_CALLBACK(cached_dev_write_complete)
->  	cached_dev_bio_complete(&cl->work);
->  }
->  
-> +static CLOSURE_CALLBACK(backing_device_bypass_write_complete)
-> +{
-> +	closure_type(s, struct search, cl);
-> +
-> +	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
-> +	continue_at(cl, cached_dev_write_complete, NULL);
-> +}
-> +
->  static void cached_dev_write(struct cached_dev *dc, struct search *s)
->  {
->  	struct closure *cl = &s->cl;
-> @@ -1058,6 +1066,11 @@ static void cached_dev_write(struct cached_dev *dc, struct search *s)
->  	}
->  
->  insert_data:
-> +	if (s->iop.bypass) {
-> +		continue_at(cl, backing_device_bypass_write_complete, NULL);
-> +		return;
-> +	}
-> +
->  	closure_call(&s->iop.cl, bch_data_insert, NULL, cl);
->  	continue_at(cl, cached_dev_write_complete, NULL);
->  }
-> -- 
-> 2.54.0.669.g59709faab0-goog
