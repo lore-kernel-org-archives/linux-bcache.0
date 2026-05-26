@@ -1,26 +1,26 @@
 Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E571335E1B8
-	for <linux-bcache@vger.kernel.org>; Tue, 26 May 2026 05:45:12 +0000 (UTC)
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 983153C0621
+	for <linux-bcache@vger.kernel.org>; Tue, 26 May 2026 06:09:12 +0000 (UTC)
 Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779774315; cv=none; b=evNmVBlMjbtFXzqtadH4ZG+LdoofYZkQ4QOWDiBPaxgks3EEkaUrmto3nU5zPj8ou6H/UafkxbN5Zr4XC++dL55b4IO7C+KZCrNmbqw1gZ6CKjKjngA+9bjQLY45RoRd2iMaT9cqOhqNFtLST2KVHuF6WVxjYeH6nJa2YPuZRNo=
+	t=1779775754; cv=none; b=XaRgJF9r3IX05sq8HL8dzfmDgVJUUAxj00+CEnrQwwWDgyHIPN0JSRJY4kpArEgrjZ2+OCKZTND+yZj+TS4wRbcrwPQb1+SdrgK0LQUfNJLUqiEN167RqangkqUIaS0OAyA81gsfrzuMwtC5+zpjFtZmWzRo/Tgv138TBEzLUNs=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779774315; c=relaxed/simple;
-	bh=mSr0ctr0YAf5VPQ+H8bg4E0oZTkU8UjnixBliO635SY=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=FIPG8gPdO1CBNg/v+W7hIByMZw/GA0NrfYCI+e9+bUj0Oqo18loUrK752oG2/4TNpAvrW0XlQis3hjcRWdcu3JJx9S3e6IezUjKbW49TEM8Xmcaf3XrWs3fz8nzoAkNo8Lw0Aidq0ecpowoP7oI6g8TtUognLpKT6AsuEl8wWEo=
+	s=arc-20240116; t=1779775754; c=relaxed/simple;
+	bh=dcXrpqa3WAg+nH27/1itAbd3AdVeekcZ1aRjYwSzb4Q=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=b2TWtuEcjtTDlk+prmM3F+kCvqcm6HNQHp4Wk+fQ0amWt+vbhChPW8y6Djm1AXH/l1Aq3ggLY55++FIi0pIIdCwF7ZaA+/8diTEBCvdixMcCEymFfDK9DF4r7V5F6Ky/93spvvRSeYj1xBeU9yuxnYd2cJAJmia3nvXWZmSN+Vw=
 ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 3C3611F000E9;
-	Tue, 26 May 2026 05:45:11 +0000 (UTC)
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 0B8D41F000E9;
+	Tue, 26 May 2026 06:09:10 +0000 (UTC)
 From: colyli@fygo.io
 To: linux-bcache@vger.kernel.org
 Cc: Coly Li <colyli@fygo.io>,
 	Zhou Jifeng <zhoujifeng@kylinos.com.cn>,
 	linux-stable@vger.kernel.org
-Subject: [PATCH RFC] bcache: flush backing device before cleaning the writeback dirty keys
-Date: Tue, 26 May 2026 13:44:38 +0800
-Message-ID: <20260526054438.818708-1-colyli@fygo.io>
+Subject: [PATCH RFC v2] bcache: flush backing device before cleaning the writeback dirty keys
+Date: Tue, 26 May 2026 14:09:02 +0800
+Message-ID: <20260526060902.832500-1-colyli@fygo.io>
 X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
@@ -32,47 +32,46 @@ Content-Transfer-Encoding: 8bit
 
 From: Coly Li <colyli@fygo.io>
 
-After dirty data on cache device is written back to backing device, the
-dirty keys of these written dirty data are set to clean and inserted
-back to the btree. There is no explicit flush bio sent to the backing
-device, whether the dirty data is flushed onto disk media or still in
-hard drive's DRAM cache, it is uncertain. If a power failure occurs
-after the cleaned keys are inserted back to the btree while dirty data
-still stays in hard drive's DRAM cache, after the reboot a stale data of
-the written data may happen because the dirty key is clean now, but
-dirty data has not been persisted indeed.
+After dirty data on the cache device is written back to the backing
+device, the dirty keys for the written data are set clean and inserted
+back into the btree. However, no explicit flush bio is sent to the
+backing device, so the data may still be in the backing device's
+volatile write cache instead of stable media.
 
-This patch introduce struct writeback_batch, and allocates a on-stack
-batch in read_dirty(), uses it to collect all successful writeback I/Os
-(a.k.a struct dirty_io). Then in write_dirty_finish() the successfully
-written back dirty key is not cleaned and inserted back to the btree
-immediately, it is added into batch->keys list and delayed to a new
-function writeback_finish_batch() to be cleaned and inserted back to
-the btree. In writeback_finish_batch, before inserting back all the
-cleaned keys to the btree by writeback_clean_key(), an explicit flush
-bio is issued to backing device if a real writeback I/O once happened.
+If power fails after the clean keys are inserted into the btree but
+before the backing device has persisted the data, stale data may be
+exposed after reboot: the btree key is clean, so bcache no longer has a
+chance to write back the still-valid dirty data from the cache device.
 
-By this method, when writeback I/Os are busy, a flush bio will be issued
-around every 500 writeback I/O based on current code.  Therefore an
-explicit backing device flush bio can be issued in time (every batch
-writeback I/Os in read_dirty()), and in a reasonable frequency.
+Fix this by adding struct writeback_batch and allocating an on-stack
+batch in read_dirty(). In write_dirty_finish() successful writeback IOs
+are collected in batch->keys instead of being cleaned immediately. After
+all outstanding writeback IOs in the read_dirty() completed, an explicit
+flush bio is issued in writeback_finish_batch() to the backing device.
+Only if the flush succeeds are the corresponding clean keys inserted
+back into the btree. Otherwise the dirty keys will continue to stay in
+btree and wait for next chance to be selected for writeback again.
 
-Now this patch just passes compiling, not survive long time pressure
-testing yet.
+With the current keybuf size, this issues at most one backing-device
+flush per read_dirty() pass, roughly every 500 writeback IOs when
+writeback is busy. Now an explicit backing device flush bio can be
+issued in time and in a reasonable frequency.
 
 Fixes: cafe563591446 ("bcache: A block layer cache")
 Reported-by: Zhou Jifeng <zhoujifeng@kylinos.com.cn>
 Cc: linux-stable@vger.kernel.org
 Signed-off-by: Coly Li <colyli@fygo.io>
 ---
- drivers/md/bcache/writeback.c | 133 +++++++++++++++++++++++++++-------
- 1 file changed, 106 insertions(+), 27 deletions(-)
+v2, refine commit log, and code cleanup.
+v1, initial version.
+ drivers/md/bcache/writeback.c | 128 +++++++++++++++++++++++++++-------
+ 1 file changed, 101 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 4b237074f453..81b4514d6532 100644
+index 4b237074f453..d0cb728c252e 100644
 --- a/drivers/md/bcache/writeback.c
 +++ b/drivers/md/bcache/writeback.c
-@@ -320,14 +320,22 @@ static unsigned int writeback_delay(struct cached_dev *dc,
+@@ -320,14 +320,21 @@ static unsigned int writeback_delay(struct cached_dev *dc,
  }
  
  struct dirty_io {
@@ -87,7 +86,6 @@ index 4b237074f453..81b4514d6532 100644
 +struct writeback_batch {
 +	struct list_head	keys;
 +	spinlock_t		lock;
-+	bool			need_flush;
 +};
 +
  static void dirty_init(struct keybuf_key *w)
@@ -95,7 +93,7 @@ index 4b237074f453..81b4514d6532 100644
  	struct dirty_io *io = w->private;
  	struct bio *bio = &io->bio;
  
-@@ -351,42 +359,41 @@ static CLOSURE_CALLBACK(dirty_io_destructor)
+@@ -351,42 +358,38 @@ static CLOSURE_CALLBACK(dirty_io_destructor)
  static CLOSURE_CALLBACK(write_dirty_finish)
  {
  	closure_type(io, struct dirty_io, cl);
@@ -129,19 +127,16 @@ index 4b237074f453..81b4514d6532 100644
 -				? &dc->disk.c->writeback_keys_failed
 -				: &dc->disk.c->writeback_keys_done);
 +	/*
-+	 * Temporarily add this key into io->batch->keys. Once all dirty keys
-+	 * in dc->writeback_keys are written back to backing device, a flush
-+	 * bio will be issued to backing device by writeback_finish_batch().
-+	 * Then before all clean keys are inserted back to btree, the writeback
-+	 * dirty data is for sure flushed to backing device.
-+	 * If power failure occurs after the clean key is inserted back to the
-+	 * btree, the dirty data has already been in the disk platter and a
-+	 * stale clean bkey can be avoided.
-+	 */
++	* Temporarily add this key to io->batch->keys. After the successful
++	* writeback IOs inside the current batch of read_dirty() finished,
++	* writeback_finish_batch() explicitly flushes the backing device before
++	* inserting the cleaned keys back into the btree. This guarantees that
++	* the backing data will be on stable media before the dirty btree keys
++	* are marked by the clean keys, avoiding stale clean bkeys after power
++	* failure.
++	*/
 +	if (written) {
 +		INIT_LIST_HEAD(&io->list);
-+		if (io->batch->need_flush != true)
-+			io->batch->need_flush = true;
 +		spin_lock(&io->batch->lock);
 +		list_add_tail(&io->list, &io->batch->keys);
 +		spin_unlock(&io->batch->lock);
@@ -162,7 +157,7 @@ index 4b237074f453..81b4514d6532 100644
  static void dirty_endio(struct bio *bio)
  {
  	struct keybuf_key *w = bio->bi_private;
-@@ -398,10 +405,74 @@ static void dirty_endio(struct bio *bio)
+@@ -398,10 +401,74 @@ static void dirty_endio(struct bio *bio)
  	}
  
  	closure_put(&io->cl);
@@ -214,7 +209,7 @@ index 4b237074f453..81b4514d6532 100644
 +	struct dirty_io *io, *t;
 +	int flush_ret = 0;
 +
-+	if (batch->need_flush)
++	if (!list_empty(&batch->keys))
 +		flush_ret = writeback_flush(dc);
 +
 +	list_for_each_entry_safe(io, t, &batch->keys, list) {
@@ -237,7 +232,7 @@ index 4b237074f453..81b4514d6532 100644
  	closure_type(io, struct dirty_io, cl);
  	struct keybuf_key *w = io->bio.bi_private;
  	struct cached_dev *dc = io->dc;
-@@ -478,15 +549,20 @@ static void read_dirty(struct cached_dev *dc)
+@@ -478,15 +545,19 @@ static void read_dirty(struct cached_dev *dc)
  	size_t size;
  	int nk, i;
  	struct dirty_io *io;
@@ -251,14 +246,13 @@ index 4b237074f453..81b4514d6532 100644
  
 +	INIT_LIST_HEAD(&batch.keys);
 +	spin_lock_init(&batch.lock);
-+	batch.need_flush = false;
 +
  	/*
  	 * XXX: if we error, background writeback just spins. Should use some
  	 * mempools.
  	 */
  
-@@ -542,10 +618,11 @@ static void read_dirty(struct cached_dev *dc)
+@@ -542,10 +613,11 @@ static void read_dirty(struct cached_dev *dc)
  			if (!io)
  				goto err;
  
@@ -270,7 +264,7 @@ index 4b237074f453..81b4514d6532 100644
  			dirty_init(w);
  			io->bio.bi_opf = REQ_OP_READ;
  			io->bio.bi_iter.bi_sector = PTR_OFFSET(&w->key, 0);
-@@ -583,14 +660,16 @@ static void read_dirty(struct cached_dev *dc)
+@@ -583,14 +655,16 @@ static void read_dirty(struct cached_dev *dc)
  err:
  		bch_keybuf_del(&dc->writeback_keys, w);
  	}
