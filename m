@@ -1,288 +1,405 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+Received: from smtpbgau2.qq.com (smtpbgau2.qq.com [54.206.34.216])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 983153C0621
-	for <linux-bcache@vger.kernel.org>; Tue, 26 May 2026 06:09:12 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 27EF93B9933
+	for <linux-bcache@vger.kernel.org>; Wed, 27 May 2026 08:30:02 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=54.206.34.216
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1779775754; cv=none; b=XaRgJF9r3IX05sq8HL8dzfmDgVJUUAxj00+CEnrQwwWDgyHIPN0JSRJY4kpArEgrjZ2+OCKZTND+yZj+TS4wRbcrwPQb1+SdrgK0LQUfNJLUqiEN167RqangkqUIaS0OAyA81gsfrzuMwtC5+zpjFtZmWzRo/Tgv138TBEzLUNs=
+	t=1779870608; cv=none; b=H/hZPmb0Jec6mjaQ2zNjBFi6ktflxzRxXmzZ9FBXvNHkW9J41zOSLrM9ttKIdhzf46Kxy/Sz0ASZMzGFgu0a3B+9MEcMEnWJNEsB02iOHJt6dwbE8mCnosYboRdpgpYcau2YlAPe0fM0aPoo4cENEApPXL/NCFVK4AhNRNJibkI=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1779775754; c=relaxed/simple;
-	bh=dcXrpqa3WAg+nH27/1itAbd3AdVeekcZ1aRjYwSzb4Q=;
-	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=b2TWtuEcjtTDlk+prmM3F+kCvqcm6HNQHp4Wk+fQ0amWt+vbhChPW8y6Djm1AXH/l1Aq3ggLY55++FIi0pIIdCwF7ZaA+/8diTEBCvdixMcCEymFfDK9DF4r7V5F6Ky/93spvvRSeYj1xBeU9yuxnYd2cJAJmia3nvXWZmSN+Vw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 0B8D41F000E9;
-	Tue, 26 May 2026 06:09:10 +0000 (UTC)
-From: colyli@fygo.io
-To: linux-bcache@vger.kernel.org
-Cc: Coly Li <colyli@fygo.io>,
-	Zhou Jifeng <zhoujifeng@kylinos.com.cn>,
-	linux-stable@vger.kernel.org
-Subject: [PATCH RFC v2] bcache: flush backing device before cleaning the writeback dirty keys
-Date: Tue, 26 May 2026 14:09:02 +0800
-Message-ID: <20260526060902.832500-1-colyli@fygo.io>
-X-Mailer: git-send-email 2.47.3
+	s=arc-20240116; t=1779870608; c=relaxed/simple;
+	bh=iGJ87GHcMlAXiZTbTh1pBeISbGaoZsvFHfVqdXsCNr8=;
+	h=From:To:Cc:Subject:Date:Message-Id:MIME-Version:Content-Type; b=qHmvUdEPJbcXn7KiJfgSqPjJ/IYB04mOXk317P4Cr8IJS2rh1HuH3kOadHVs8Lvq3CdMEETBq5sTkxhPUa4kK1jp9jBGALVy2JZlvsCiq4vaLqWrwgZEgK5S5I7r3Yo93f8ob4fclBCLmvZtUoisxDZUbe38bEFVQugfxU7cPdI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinsec.com.cn; spf=pass smtp.mailfrom=kylinsec.com.cn; arc=none smtp.client-ip=54.206.34.216
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinsec.com.cn
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinsec.com.cn
+X-QQ-mid: esmtpgz10t1779870596tb58a0649
+X-QQ-Originating-IP: AnnOPJCF87UwMAp6W7fd9pkNLkqR1R6a/HXDHPRP5bM=
+Received: from ksvd-Standard-PC-i440FX-PIIX-19 ( [175.11.89.213])
+	by bizesmtp.qq.com (ESMTP) with 
+	id ; Wed, 27 May 2026 16:28:38 +0800 (CST)
+X-QQ-SSF: 0000000000000000000000000000000
+X-QQ-GoodBg: 0
+X-BIZMAIL-ID: 970392071818683256
+EX-QQ-RecipientCnt: 3
+From: Zhou Jifeng <zhoujifeng@kylinsec.com.cn>
+To: colyli@fygo.io,
+	linux-bcache@vger.kernel.org
+Cc: zhoujifeng@kylinsec.com.cn
+Subject: [PATCH RFC v3] bcache: flush backing device before cleaning the writeback dirty keys
+Date: Wed, 27 May 2026 01:27:50 -0700
+Message-Id: <20260527082750.726707-1-zhoujifeng@kylinsec.com.cn>
+X-Mailer: git-send-email 2.34.1
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
+X-QQ-SENDSIZE: 520
+Feedback-ID: esmtpgz:kylinsec.com.cn:qybglogicsvrgz:qybglogicsvrgz6b-0
+X-QQ-XMAILINFO: MOhA8RfXD6A4rWywrZBvO2rPNPKhHLR1seCJUqGz41uxqO/2bYGQ+6fP
+	lO4ZeYWZE5DcorTEzCUcHHQVmnptZUF1v36F6MgSBI8XUcl/eqfSlJ51oUSFdMUqh2KHgHY
+	uVQfynI0NYiU9cAjjPgFtmvr1hvapajZbExM0lnZGawUyuD+c7bJitld4rHgcSXdacJwOoS
+	7+AqwGR9clTRC32JovGy/I717OWJqSRmsBCA8KmqMBm0gDT7Fe0M/5t0i3TGJhsqBk4PFnj
+	HmaE96W1jveA50u/CSSY7CxxZhINs3g5sSFSzjyd38CrtF+woBK//kf5OLp+6iqjoPOfir8
+	vxuzwt3EqiQN9qtoPlH8KPejOuBARYedk/rD71XSMHolS0Qji5N3h5MwYjwrRM4iTu7fzrE
+	6i+S6XF91RBlYSnpJDIlWptCHn8zkiAg7mdI8r8O0Opzp7NKtxvonBAo3x6WRpB3sCR8JSJ
+	zNtgxgEkF5+xUuqjsrcKW5pUPLWfy+xw6BeDLjbrGmnXVayYzwp4D7BJmeywVxEG3uDL7KN
+	biMx8zUSPmnkQDq6vfsAN5ifavVUm0k6iQrlp/oZOZOqj5alOm3iIBsOenXurYc/c1yMfPn
+	v9gv4RUzWzp2ftSAzMNKsXeGWdzcWEe4Cy5wd0705xG6VLBt9foBFg8+Gb2hl8CVr+yZaFQ
+	na48XJMDa1DX1nk8eei6xfLakDkPKXZuTTEgJ/k68OLc0FaeS+LoRJvQKKM6wqo3axZDT8V
+	ZC4KTcLeIpKJ4jcqyfx+o00HGu0otvjXkQ9TZMPUlxAAE1iXsdc90VyySCYHrM5Viwnp4j+
+	4p8/bUmxe5l0ISanifNyhQdamRjuR2zdRi1nt8Wf7pfEjo+Nue0FPpSNXYkRbW0uCt8jrW1
+	xKzuU5EFo0fKRC5SQc+v7a0HHCIag5bZ31uhmMOn8WPq5OG3ufLxdfij+RxLEgX8BNyxfCj
+	LxtFHvOwRKdq8WNxLr/6lk1DIeumfFl77E/v8VWIsJ0jVpNqYXbrgbx97hHYpWT5pqc806o
+	RdzWzn31EQr5E9ijgxSqkjDNTFVig=
+X-QQ-XMRINFO: Nq+8W0+stu50tPAe92KXseR0ZZmBTk3gLg==
+X-QQ-RECHKSPAM: 0
 
-From: Coly Li <colyli@fygo.io>
+Coly Li proposed an RFC that collects written-back keys into an on-stack
+per-pass batch (struct writeback_batch) inside read_dirty() and issues
+one REQ_PREFLUSH per pass (~500 IOs, bounded by KEYBUF_NR).  This patch
+builds directly on that design: the core data structures, function names
+(writeback_flush(), writeback_finish_batch()), and naming convention all
+follow Coly's RFC.
 
-After dirty data on the cache device is written back to the backing
-device, the dirty keys for the written data are set clean and inserted
-back into the btree. However, no explicit flush bio is sent to the
-backing device, so the data may still be in the backing device's
-volatile write cache instead of stable media.
+The extension is a persistent preallocated batch (dc->writeback_batch)
+that survives across read_dirty() passes, controlled by a new sysfs knob
+writeback_flush_interval:
 
-If power fails after the clean keys are inserted into the btree but
-before the backing device has persisted the data, stale data may be
-exposed after reboot: the btree key is clean, so bcache no longer has a
-chance to write back the still-valid dirty data from the cache device.
+  writeback_flush_interval = 0  (default):
+    writeback_finish_batch() is triggered after every read_dirty() pass
+    (because !0 is always true), reproducing Coly's one-flush-per-pass
+    behavior exactly.  In this mode keys never accumulate between passes,
+    so bch_writeback_finish_batch() (the GC hook) skips each device —
+    there is nothing pending to flush.
 
-Fix this by adding struct writeback_batch and allocating an on-stack
-batch in read_dirty(). In write_dirty_finish() successful writeback IOs
-are collected in batch->keys instead of being cleaned immediately. After
-all outstanding writeback IOs in the read_dirty() completed, an explicit
-flush bio is issued in writeback_finish_batch() to the backing device.
-Only if the flush succeeds are the corresponding clean keys inserted
-back into the btree. Otherwise the dirty keys will continue to stay in
-btree and wait for next chance to be selected for writeback again.
+  writeback_flush_interval > 0  (cross-pass batching):
+    writeback_finish_batch() fires only when the accumulated key count
+    reaches the threshold.  The GC hook flushes pending keys before
+    btree_gc_start() so GC can reclaim their bucket space.
 
-With the current keybuf size, this issues at most one backing-device
-flush per read_dirty() pass, roughly every 500 writeback IOs when
-writeback is busy. Now an explicit backing device flush bio can be
-issued in time and in a reasonable frequency.
-
-Fixes: cafe563591446 ("bcache: A block layer cache")
-Reported-by: Zhou Jifeng <zhoujifeng@kylinos.com.cn>
-Cc: linux-stable@vger.kernel.org
 Signed-off-by: Coly Li <colyli@fygo.io>
+Signed-off-by: Zhou Jifeng <zhoujifeng@kylinsec.com.cn>
 ---
-v2, refine commit log, and code cleanup.
-v1, initial version.
- drivers/md/bcache/writeback.c | 128 +++++++++++++++++++++++++++-------
- 1 file changed, 101 insertions(+), 27 deletions(-)
+ drivers/md/bcache/bcache.h    |  20 +++++
+ drivers/md/bcache/btree.c     |   2 +
+ drivers/md/bcache/btree.h     |   1 +
+ drivers/md/bcache/sysfs.c     |   6 ++
+ drivers/md/bcache/writeback.c | 137 ++++++++++++++++++++++++++++------
+ drivers/md/bcache/writeback.h |   1 +
+ 6 files changed, 145 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 4b237074f453..d0cb728c252e 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -320,14 +320,21 @@ static unsigned int writeback_delay(struct cached_dev *dc,
- }
- 
- struct dirty_io {
- 	struct closure		cl;
- 	struct cached_dev	*dc;
-+	struct writeback_batch	*batch;
-+	struct list_head	list;
- 	uint16_t		sequence;
- 	struct bio		bio;
+diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
+index ec9ff9715..03e401575 100644
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -247,6 +247,24 @@ struct keybuf {
+ 	DECLARE_ARRAY_ALLOCATOR(struct keybuf_key, freelist, KEYBUF_NR);
  };
  
-+struct writeback_batch {
-+	struct list_head	keys;
-+	spinlock_t		lock;
++struct writeback_bkey {
++	BKEY_PADDED(key);
++	struct list_head	list;
 +};
 +
- static void dirty_init(struct keybuf_key *w)
- {
- 	struct dirty_io *io = w->private;
- 	struct bio *bio = &io->bio;
++#define WRITEBACK_FLUSH_INTERVAL_DEFAULT	0
++#define WRITEBACK_FLUSH_INTERVAL_MIN		0
++#define WRITEBACK_FLUSH_INTERVAL_MAX		50000
++
++struct writeback_batch {
++	spinlock_t		lock;
++	u32			count;
++	struct list_head	keys;
++
++	DECLARE_ARRAY_ALLOCATOR(struct writeback_bkey, pool,
++				WRITEBACK_FLUSH_INTERVAL_MAX);
++};
++
+ struct bcache_device {
+ 	struct closure		cl;
  
-@@ -351,42 +358,38 @@ static CLOSURE_CALLBACK(dirty_io_destructor)
- static CLOSURE_CALLBACK(write_dirty_finish)
- {
- 	closure_type(io, struct dirty_io, cl);
- 	struct keybuf_key *w = io->bio.bi_private;
- 	struct cached_dev *dc = io->dc;
-+	bool written = KEY_DIRTY(&w->key);
+@@ -347,6 +365,8 @@ struct cached_dev {
+ 	struct workqueue_struct	*writeback_write_wq;
  
- 	bio_free_pages(&io->bio);
+ 	struct keybuf		writeback_keys;
++	struct writeback_batch	writeback_batch;
++	unsigned int		writeback_flush_interval;
+ 
+ 	struct task_struct	*status_update_thread;
+ 	/*
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index 27a129d47..d10c03f60 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -25,6 +25,7 @@
+ #include "btree.h"
+ #include "debug.h"
+ #include "extents.h"
++#include "writeback.h"
+ 
+ #include <linux/slab.h>
+ #include <linux/bitops.h>
+@@ -1837,6 +1838,7 @@ static void bch_btree_gc(struct cache_set *c)
+ 	closure_init_stack(&writes);
+ 	bch_btree_op_init(&op, SHRT_MAX);
+ 
++	bch_writeback_finish_batch(c);
+ 	btree_gc_start(c);
+ 
+ 	/* if CACHE_SET_IO_DISABLE set, gc thread should stop too */
+diff --git a/drivers/md/bcache/btree.h b/drivers/md/bcache/btree.h
+index 45d64b541..701b0009c 100644
+--- a/drivers/md/bcache/btree.h
++++ b/drivers/md/bcache/btree.h
+@@ -414,4 +414,5 @@ struct keybuf_key *bch_keybuf_next_rescan(struct cache_set *c,
+ 					  struct bkey *end,
+ 					  keybuf_pred_fn *pred);
+ void bch_update_bucket_in_use(struct cache_set *c, struct gc_stat *stats);
++void bkey_put(struct cache_set *c, struct bkey *k);
+ #endif
+diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
+index cfac56caa..7a87c64d7 100644
+--- a/drivers/md/bcache/sysfs.c
++++ b/drivers/md/bcache/sysfs.c
+@@ -150,6 +150,7 @@ rw_attribute(copy_gc_enabled);
+ rw_attribute(idle_max_writeback_rate);
+ rw_attribute(gc_after_writeback);
+ rw_attribute(size);
++rw_attribute(writeback_flush_interval);
+ 
+ static ssize_t bch_snprint_string_list(char *buf,
+ 				       size_t size,
+@@ -212,6 +213,7 @@ SHOW(__bch_cached_dev)
+ 	var_print(writeback_rate_fp_term_mid);
+ 	var_print(writeback_rate_fp_term_high);
+ 	var_print(writeback_rate_minimum);
++	var_print(writeback_flush_interval);
+ 
+ 	if (attr == &sysfs_writeback_rate_debug) {
+ 		char rate[20];
+@@ -353,6 +355,9 @@ STORE(__cached_dev)
+ 
+ 	sysfs_strtoul_clamp(io_error_limit, dc->error_limit, 0, INT_MAX);
+ 
++	sysfs_strtoul_clamp(writeback_flush_interval, dc->writeback_flush_interval,
++			    WRITEBACK_FLUSH_INTERVAL_MIN, WRITEBACK_FLUSH_INTERVAL_MAX);
++
+ 	if (attr == &sysfs_io_disable) {
+ 		int v = strtoul_or_return(buf);
+ 
+@@ -540,6 +545,7 @@ static struct attribute *bch_cached_dev_attrs[] = {
+ #endif
+ 	&sysfs_backing_dev_name,
+ 	&sysfs_backing_dev_uuid,
++	&sysfs_writeback_flush_interval,
+ 	NULL
+ };
+ ATTRIBUTE_GROUPS(bch_cached_dev);
+diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
+index 4b237074f..f36b515d6 100644
+--- a/drivers/md/bcache/writeback.c
++++ b/drivers/md/bcache/writeback.c
+@@ -348,39 +348,122 @@ static CLOSURE_CALLBACK(dirty_io_destructor)
+ 	kfree(io);
+ }
+ 
+-static CLOSURE_CALLBACK(write_dirty_finish)
++static void writeback_batch_init(struct writeback_batch *wb)
+ {
+-	closure_type(io, struct dirty_io, cl);
+-	struct keybuf_key *w = io->bio.bi_private;
+-	struct cached_dev *dc = io->dc;
++	wb->count = 0;
++	spin_lock_init(&wb->lock);
++	array_allocator_init(&wb->pool);
++	INIT_LIST_HEAD(&wb->keys);
++}
+ 
+-	bio_free_pages(&io->bio);
++static void writeback_add_key(struct cached_dev *dc, struct bkey *key)
++{
++	struct writeback_bkey *bk;
++	unsigned int i;
  
 -	/* This is kind of a dumb way of signalling errors. */
 -	if (KEY_DIRTY(&w->key)) {
 -		int ret;
 -		unsigned int i;
 -		struct keylist keys;
--
++	spin_lock(&dc->writeback_batch.lock);
++	bk = array_alloc(&dc->writeback_batch.pool);
++	if (!bk) {
++		spin_unlock(&dc->writeback_batch.lock);
++		return;
++	}
++
++	for (i = 0; i < KEY_PTRS(key); i++)
++		atomic_inc(&PTR_BUCKET(dc->disk.c, key, i)->pin);
+ 
 -		bch_keylist_init(&keys);
--
++	bkey_copy(&bk->key, key);
++	INIT_LIST_HEAD(&bk->list);
++	list_add_tail(&bk->list, &dc->writeback_batch.keys);
++	dc->writeback_batch.count++;
++	spin_unlock(&dc->writeback_batch.lock);
++}
+ 
 -		bkey_copy(keys.top, &w->key);
 -		SET_KEY_DIRTY(keys.top, false);
 -		bch_keylist_push(&keys);
--
--		for (i = 0; i < KEY_PTRS(&w->key); i++)
--			atomic_inc(&PTR_BUCKET(dc->disk.c, &w->key, i)->pin);
--
--		ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
--
--		if (ret)
--			trace_bcache_writeback_collision(&w->key);
--
--		atomic_long_inc(ret
--				? &dc->disk.c->writeback_keys_failed
--				: &dc->disk.c->writeback_keys_done);
-+	/*
-+	* Temporarily add this key to io->batch->keys. After the successful
-+	* writeback IOs inside the current batch of read_dirty() finished,
-+	* writeback_finish_batch() explicitly flushes the backing device before
-+	* inserting the cleaned keys back into the btree. This guarantees that
-+	* the backing data will be on stable media before the dirty btree keys
-+	* are marked by the clean keys, avoiding stale clean bkeys after power
-+	* failure.
-+	*/
-+	if (written) {
-+		INIT_LIST_HEAD(&io->list);
-+		spin_lock(&io->batch->lock);
-+		list_add_tail(&io->list, &io->batch->keys);
-+		spin_unlock(&io->batch->lock);
-+	} else {
-+		bch_keybuf_del(&dc->writeback_keys, w);
- 	}
- 
--	bch_keybuf_del(&dc->writeback_keys, w);
- 	up(&dc->in_flight);
- 
--	closure_return_with_destructor(cl, dirty_io_destructor);
-+	if (written)
-+		closure_return(cl);
-+	else
-+		closure_return_with_destructor(cl, dirty_io_destructor);
- }
- 
- static void dirty_endio(struct bio *bio)
- {
- 	struct keybuf_key *w = bio->bi_private;
-@@ -398,10 +401,74 @@ static void dirty_endio(struct bio *bio)
- 	}
- 
- 	closure_put(&io->cl);
- }
- 
 +static int writeback_flush(struct cached_dev *dc)
 +{
 +	struct bio bio;
 +	int ret;
-+
+ 
+-		for (i = 0; i < KEY_PTRS(&w->key); i++)
+-			atomic_inc(&PTR_BUCKET(dc->disk.c, &w->key, i)->pin);
 +	bio_init(&bio, dc->bdev, NULL, 0, REQ_OP_WRITE | REQ_PREFLUSH);
-+
+ 
+-		ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
 +	ret = submit_bio_wait(&bio);
 +	if (ret)
 +		bch_count_backing_io_errors(dc, &bio);
-+
+ 
+-		if (ret)
+-			trace_bcache_writeback_collision(&w->key);
 +	bio_uninit(&bio);
 +	return ret;
 +}
-+
-+static void writeback_clean_key(struct cached_dev *dc, struct keybuf_key *w)
+ 
+-		atomic_long_inc(ret
+-				? &dc->disk.c->writeback_keys_failed
+-				: &dc->disk.c->writeback_keys_done);
++static void writeback_finish_batch(struct cached_dev *dc)
 +{
-+	int ret;
-+	unsigned int i;
++	struct writeback_bkey *bk, *tmp;
 +	struct keylist keys;
++	LIST_HEAD(local);
++	int flush_ret, ret;
 +
-+	bch_keylist_init(&keys);
++	spin_lock(&dc->writeback_batch.lock);
++	if (list_empty(&dc->writeback_batch.keys)) {
++		spin_unlock(&dc->writeback_batch.lock);
++		return;
++	}
++	list_splice_init(&dc->writeback_batch.keys, &local);
++	dc->writeback_batch.count = 0;
++	spin_unlock(&dc->writeback_batch.lock);
 +
-+	bkey_copy(keys.top, &w->key);
-+	SET_KEY_DIRTY(keys.top, false);
-+	bch_keylist_push(&keys);
++	flush_ret = writeback_flush(dc);
 +
-+	for (i = 0; i < KEY_PTRS(&w->key); i++)
-+		atomic_inc(&PTR_BUCKET(dc->disk.c, &w->key, i)->pin);
-+
-+	ret = bch_btree_insert(dc->disk.c, &keys, NULL, &w->key);
-+
-+	if (ret)
-+		trace_bcache_writeback_collision(&w->key);
-+
-+	atomic_long_inc(ret
-+			? &dc->disk.c->writeback_keys_failed
-+			: &dc->disk.c->writeback_keys_done);
++	list_for_each_entry(bk, &local, list) {
++		if (flush_ret == 0) {
++			bch_keylist_init(&keys);
++			bkey_copy(keys.top, &bk->key);
++			SET_KEY_DIRTY(keys.top, false);
++			bch_keylist_push(&keys);
++			ret = bch_btree_insert(dc->disk.c, &keys, NULL,
++					       &bk->key);
++			if (ret)
++				trace_bcache_writeback_collision(&bk->key);
++			atomic_long_inc(ret
++					? &dc->disk.c->writeback_keys_failed
++					: &dc->disk.c->writeback_keys_done);
++		} else {
++			bkey_put(dc->disk.c, &bk->key);
++		}
+ 	}
+ 
++	spin_lock(&dc->writeback_batch.lock);
++	list_for_each_entry_safe(bk, tmp, &local, list) {
++		list_del(&bk->list);
++		array_free(&dc->writeback_batch.pool, bk);
++	}
++	spin_unlock(&dc->writeback_batch.lock);
 +}
 +
-+static void writeback_finish_batch(struct cached_dev *dc,
-+				   struct writeback_batch *batch)
++void bch_writeback_finish_batch(struct cache_set *c)
 +{
-+	struct dirty_io *io, *t;
-+	int flush_ret = 0;
++	unsigned int i;
 +
-+	if (!list_empty(&batch->keys))
-+		flush_ret = writeback_flush(dc);
++	for (i = 0; i < c->devices_max_used; i++) {
++		struct bcache_device *d = c->devices[i];
++		struct cached_dev *dc;
 +
-+	list_for_each_entry_safe(io, t, &batch->keys, list) {
-+		struct keybuf_key *w = io->bio.bi_private;
-+
-+		list_del(&io->list);
-+
-+		if (flush_ret == 0)
-+			writeback_clean_key(dc, w);
-+		else
-+			atomic_long_inc(&dc->disk.c->writeback_keys_failed);
-+
-+		bch_keybuf_del(&dc->writeback_keys, w);
-+		kfree(io);
++		if (!d || UUID_FLASH_ONLY(&c->uuids[i]))
++			continue;
++		dc = container_of(d, struct cached_dev, disk);
++		if (dc->writeback_flush_interval)
++			writeback_finish_batch(dc);
 +	}
 +}
 +
- static CLOSURE_CALLBACK(write_dirty)
- {
- 	closure_type(io, struct dirty_io, cl);
- 	struct keybuf_key *w = io->bio.bi_private;
- 	struct cached_dev *dc = io->dc;
-@@ -478,15 +545,19 @@ static void read_dirty(struct cached_dev *dc)
- 	size_t size;
- 	int nk, i;
- 	struct dirty_io *io;
- 	struct closure cl;
- 	uint16_t sequence = 0;
-+	struct writeback_batch batch;
- 
- 	BUG_ON(!llist_empty(&dc->writeback_ordering_wait.list));
- 	atomic_set(&dc->writeback_sequence_next, sequence);
- 	closure_init_stack(&cl);
- 
-+	INIT_LIST_HEAD(&batch.keys);
-+	spin_lock_init(&batch.lock);
++static CLOSURE_CALLBACK(write_dirty_finish)
++{
++	closure_type(io, struct dirty_io, cl);
++	struct keybuf_key *w = io->bio.bi_private;
++	struct cached_dev *dc = io->dc;
 +
- 	/*
- 	 * XXX: if we error, background writeback just spins. Should use some
- 	 * mempools.
- 	 */
++	bio_free_pages(&io->bio);
++
++	if (KEY_DIRTY(&w->key))
++		writeback_add_key(dc, &w->key);
++
+ 	bch_keybuf_del(&dc->writeback_keys, w);
+ 	up(&dc->in_flight);
  
-@@ -542,10 +613,11 @@ static void read_dirty(struct cached_dev *dc)
- 			if (!io)
- 				goto err;
+@@ -818,9 +901,15 @@ static int bch_writeback_thread(void *arg)
  
- 			w->private	= io;
- 			io->dc		= dc;
-+			io->batch	= &batch;
- 			io->sequence    = sequence++;
+ 		read_dirty(dc);
  
- 			dirty_init(w);
- 			io->bio.bi_opf = REQ_OP_READ;
- 			io->bio.bi_iter.bi_sector = PTR_OFFSET(&w->key, 0);
-@@ -583,14 +655,16 @@ static void read_dirty(struct cached_dev *dc)
- err:
- 		bch_keybuf_del(&dc->writeback_keys, w);
++		if (!dc->writeback_flush_interval ||
++		    dc->writeback_batch.count >= dc->writeback_flush_interval)
++			writeback_finish_batch(dc);
++
+ 		if (searched_full_index) {
+ 			unsigned int delay = dc->writeback_delay * HZ;
+ 
++			writeback_finish_batch(dc);
++
+ 			while (delay &&
+ 			       !kthread_should_stop() &&
+ 			       !test_bit(CACHE_SET_IO_DISABLE, &c->flags) &&
+@@ -831,6 +920,8 @@ static int bch_writeback_thread(void *arg)
+ 		}
  	}
  
- 	/*
--	 * Wait for outstanding writeback IOs to finish (and keybuf slots to be
--	 * freed) before refilling again
-+	 * Wait for outstanding writeback IOs to finish, then flush the
-+	 * backing device, insert the clean keys back to btree, and free
-+	 * keybuf slots.
- 	 */
- 	closure_sync(&cl);
-+	writeback_finish_batch(dc, &batch);
- }
++	writeback_finish_batch(dc);
++
+ 	if (dc->writeback_write_wq)
+ 		destroy_workqueue(dc->writeback_write_wq);
  
- /* Scan for dirty data */
+@@ -1049,6 +1140,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+ 	sema_init(&dc->in_flight, 64);
+ 	init_rwsem(&dc->writeback_lock);
+ 	bch_keybuf_init(&dc->writeback_keys);
++	writeback_batch_init(&dc->writeback_batch);
  
- void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
+ 	dc->writeback_metadata		= true;
+ 	dc->writeback_running		= false;
+@@ -1064,6 +1156,7 @@ void bch_cached_dev_writeback_init(struct cached_dev *dc)
+ 	dc->writeback_rate_fp_term_mid = 10;
+ 	dc->writeback_rate_fp_term_high = 1000;
+ 	dc->writeback_rate_i_term_inverse = 10000;
++	dc->writeback_flush_interval	= WRITEBACK_FLUSH_INTERVAL_DEFAULT;
+ 
+ 	/* For dc->writeback_lock contention in update_writeback_rate() */
+ 	dc->rate_update_retry = 0;
+diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
+index 31df71695..12b4c4420 100644
+--- a/drivers/md/bcache/writeback.h
++++ b/drivers/md/bcache/writeback.h
+@@ -151,5 +151,6 @@ void bcache_dev_sectors_dirty_add(struct cache_set *c, unsigned int inode,
+ void bch_sectors_dirty_init(struct bcache_device *d);
+ void bch_cached_dev_writeback_init(struct cached_dev *dc);
+ int bch_cached_dev_writeback_start(struct cached_dev *dc);
++void bch_writeback_finish_batch(struct cache_set *c);
+ 
+ #endif
 -- 
-2.47.3
+2.34.1
 
