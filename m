@@ -1,102 +1,62 @@
-Received: from va-2-51.ptr.blmpb.com (va-2-51.ptr.blmpb.com [209.127.231.51])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id D4F8327F19F
-	for <linux-bcache@vger.kernel.org>; Tue,  2 Jun 2026 03:43:12 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.51
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7BFA9184;
+	Sat, 13 Jun 2026 15:05:38 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1780371794; cv=none; b=iWJJBg8eNsLOapf/cw5WL5krk/GjNR3pdMqeMoEWfhPLD9jHmH4ZpqhhEokVId+ACn3fGaYbAvy++t96aFyv7yFLKYkoAn+zhRMZdHO38k7uGOTi8Ty7VMV6S8vICHBootLgfqXKS0fiP9BtTKjl+4xDXt5SdczBxJ+LJ/l35B8=
+	t=1781363139; cv=none; b=a783QtmD9pg6/bNsaOR6nn9ShwZ/N+L53JCjdEjfWyegMzIFOHjQ4k6a+jK52x6C6byLMUept2QlYab6KkY2ZFPyYURIm7QGd32Msi1gRO9E9MLISGU89OuxBZu12dhN1asZUaG3MzgI3N7Cq6i2PDqRjqrJckJ18nk8Jl0eXWM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1780371794; c=relaxed/simple;
-	bh=TYbTK+1pZKxSIOHaFVEQ0H0lKRBtMbTz3gFI+nBSXig=;
-	h=To:Mime-Version:From:Subject:Date:Cc:Message-Id:Content-Type:
-	 In-Reply-To:References; b=telx7Rz18Hoh92zyqjd6rzYOXaBZIAsUOj3VTBKRWdxHBSlNord9Ej+bGeHVQVRNFcaYQmUXtElLVlObnsx0jNtGE8s6IyUl6ulbaw8SMISDdqfdujv12DcsYwnGKy5SdEZA7lVK7HydXmex5Lrna42SbByOPwN+gvMQ+dnocVE=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=CuXbA23L; arc=none smtp.client-ip=209.127.231.51
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="CuXbA23L"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1780371667;
-  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
- reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=TYbTK+1pZKxSIOHaFVEQ0H0lKRBtMbTz3gFI+nBSXig=;
- b=CuXbA23Lo711oK9Irg1+ckVhiECd+m9hb+/7l5ELnsCa2kJ5EK/OgE4pvIerp9HuGSkYHk
- Xf1VfyIP16se8NT2QjaRuI8W8FpKVJ9A5Jv+n5syScs68ML4mOgruF3ie5lW/Et3rjg+XB
- Zutuh/wnQzNEPNAzxG0aJXLbfXJRYqueXRFBqwTHVr9t3mFmZwjfv5rdg+kMpf5YwwNx2d
- KVuHf5hd/j7C1WzV2cczIO4Kah/QDl0tv72tfkPx0Fb3j8ukq9ltWSmQSiLtgRcPAGvJ+7
- Pr1yR+1Xwvm0e61YIeN+VMkgn25+bK5aDeG/YCoRZ8HvslZj0WkRudOFpPhOfQ==
-To: "Jens Axboe" <axboe@kernel.dk>
-Received: from smtpclient.apple ([120.245.64.106]) by smtp.larksuite.com with ESMTPS; Tue, 02 Jun 2026 03:41:06 +0000
+	s=arc-20240116; t=1781363139; c=relaxed/simple;
+	bh=hmv24GLb7BcsKGplD+JKmBrW0aFmSzL0/jd7zCk7DgQ=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=CG0xDA08+y0dNdNkhPmlUIMvNMHTA/4ACBUY/fpd9D63EjY3B2KN49ri/j+JttpVZY8hDq4zfTig8mQ/uqu3x+E6le1tRVlStUKHIbCJepi6lQv8CaUj+6JNhzxavj7CfrHLJu2N6h6SmhdL4VJxi1Zkgs+Kxcj5zGTDxDhGi1c=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 5DB081F000E9;
+	Sat, 13 Jun 2026 15:05:35 +0000 (UTC)
+From: colyli@fygo.io
+To: axboe@kernel.dk
+Cc: linux-bcache@vger.kernel.org,
+	linux-block@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	Coly Li <colyli@fygo.io>
+Subject: [PATCH Resend] MAINTAINERS: Update Coly Li's email address
+Date: Sat, 13 Jun 2026 23:04:58 +0800
+Message-ID: <20260613150458.682707-1-colyli@fygo.io>
+X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-From: "Coly Li" <colyli@fygo.io>
-Subject: Re: [GIT PULL] md-7.2-20260531
-Date: Tue, 2 Jun 2026 11:40:53 +0800
-X-Mailer: Apple Mail (2.3864.600.51.1.1)
-Cc: "Yu Kuai" <yukuai@fygo.io>, <linux-raid@vger.kernel.org>, 
-	<linux-block@vger.kernel.org>, 
-	"linux-bcache" <linux-bcache@vger.kernel.org>
-Message-Id: <74048F79-FAD4-4C63-A885-31467EA60530@fygo.io>
-Content-Type: text/plain; charset=UTF-8
-X-Original-From: Coly Li <colyli@fygo.io>
-X-Lms-Return-Path: <lba+26a1e50d2+0d729a+vger.kernel.org+colyli@fygo.io>
-In-Reply-To: <753dfdb4-7d68-4183-af3f-d51e92d4dd31@kernel.dk>
-References: <20260531112618.160409-1-yukuai@fygo.io> <753dfdb4-7d68-4183-af3f-d51e92d4dd31@kernel.dk>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-Hi Jens,
+From: Coly Li <colyli@fygo.io>
 
-> 2026=E5=B9=B46=E6=9C=882=E6=97=A5 02:55=EF=BC=8CJens Axboe <axboe@kernel.=
-dk> =E5=86=99=E9=81=93=EF=BC=9A
->=20
-> On 5/31/26 5:26 AM, Yu Kuai wrote:
->> Hi Jens,
->>=20
->> Please consider pulling the following changes into your for-7.2/block
->> branch.
->>=20
->> This pull request contains:
->>=20
->> Bug Fixes:
->> - Only requeue dm-raid bios when dm is suspending. (Benjamin Marzinski)
->> - Reset raid10 read_slot when reusing r10bio for discard. (Chen Cheng)
->> - Fix raid1/raid10 deadlock in read error recovery path. (Abd-Alrhman Ma=
-salkhi)
->> - Fix raid1/raid10 error-path detection with md_cloned_bio(). (Abd-Alrhm=
-an Masalkhi)
->> - Fix raid1/raid10 bio accounting for split md cloned bios. (Abd-Alrhman=
- Masalkhi)
->> - Fix raid1 nr_pending leak in REQ_ATOMIC bad-block path. (Abd-Alrhman M=
-asalkhi)
->>=20
->> Improvements:
->> - Skip redundant raid_disks updates when the value is unchanged. (Abd-Al=
-rhman Masalkhi)
->>=20
->> Cleanups:
->> - Update MAINTAINERS email addresses. (Yu Kuai, Li Nan)
->> - Clean up raid1 read error handling. (Christoph Hellwig)
->> - Move the exceed_read_errors condition out of fix_read_error(). (Christ=
-oph Hellwig)
->> - Use str_plural() in raid0 dump_zones(). (Thorsten Blum)
->=20
-> Pulled, thanks.
->=20
-> Side note - emails from you with the new email address all end up in
-> spam. I just noticed some of them this morning. But I think you want to
-> ensure that the DKIM etc part of your email is all kosher, gmail flags
-> all of it.
+I switch to colyli@fygo.io as my current email address.
 
-Could you please check my patch to change my email address go fygo.io in yo=
-ur spam emails?
-I guess similar situation may also happen on my patch sent from fygo.io.
-And yes, we are looking into this DKIM issue now.
+Signed-off-by: Coly Li <colyli@fygo.io>
+---
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8856f10a72bd..d2aaa7dacf90 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4446,11 +4446,11 @@ F:	Documentation/networking/batman-adv.rst
+ F:	include/uapi/linux/batadv_packet.h
+ F:	include/uapi/linux/batman_adv.h
+ F:	net/batman-adv/
+ 
+ BCACHE (BLOCK LAYER CACHE)
+-M:	Coly Li <colyli@fnnas.com>
++M:	Coly Li <colyli@fygo.io>
+ M:	Kent Overstreet <kent.overstreet@linux.dev>
+ L:	linux-bcache@vger.kernel.org
+ S:	Maintained
+ W:	http://bcache.evilpiepirate.org
+ C:	irc://irc.oftc.net/bcache
+-- 
+2.47.3
 
-Coly Li
