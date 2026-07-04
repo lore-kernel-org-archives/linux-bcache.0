@@ -1,94 +1,204 @@
-Received: from mail-pl1-f202.google.com (mail-pl1-f202.google.com [209.85.214.202])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7337E330B22
-	for <linux-bcache@vger.kernel.org>; Wed, 17 Jun 2026 19:01:54 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.214.202
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 913BF12FF69;
+	Sat,  4 Jul 2026 19:51:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1781722915; cv=none; b=L1Lw1/yelH12SKfF7tGQcBNEBzXsX9LAhHITmKdnVjHINuRjuCjWYDCCpcg1BN8XO6tZJKfMDLLTI/oAA7n56p0FIIv1Hh00OGFVlfv6gFHxdKKHO3LGOHbc6nj/QAhOf7MOln7CU1ZGyySTATVnef4pKS/p2EMMqxlBcMbJ01M=
+	t=1783194706; cv=none; b=dJw1M9tQFxTmFTs7hFoPKxWLyMqd4DpYp1aW4JAYoNFgNhfL/EKqBGKfs7PtnkN67Tlgbf0ec2QzjF1lVOQ0jXk5jJ5jZPMtytyF1864FS0YHCyBuBpi6ykhJfMSBMJuVPZ4QNzi2e2omV8dvgm2NSV1tf+Bs1iyDKcr0Eboq0w=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1781722915; c=relaxed/simple;
-	bh=IABYL+VwE3lhXy7KLq///40Cq/0FyvfVk32b7R+nTQY=;
-	h=Date:In-Reply-To:Mime-Version:References:Message-ID:Subject:From:
-	 To:Cc:Content-Type; b=jFzeb8u1WeAjn/Nya0/puBldUoSeOjsRqoEYDypjGaLBcyBg/KpyrKDIgDxy4bBE2FtjBOF2F+LFIpkVNdaMeAvcjOJw70f6fMNifzMOp63zd9n09kK8dlJWoZdzlfKbayNsjJ8bzwRHHga28gvgDaGW3E3FLf8QtT902su4Nh8=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--ankitkap.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=mPxzS4P9; arc=none smtp.client-ip=209.85.214.202
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--ankitkap.bounces.google.com
+	s=arc-20240116; t=1783194706; c=relaxed/simple;
+	bh=SzNrAnwW1lRUyp0FZqIxKmarVC5X/hKSnp3uWTm97d8=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=cgMzkZSQ0YOcYcq/uWaz/0WgIHt5OC50VM4GLb7ey0jhxUdLYIsax21CgPKr+yuqmLnhcq3uL4Wl3n0NGorgC84WG4KdWiyUy6SHWTE58EyCBdITHWQglzyCdLqmXtvV5mYHRR4hi1kpTP4kI7rYUs1pZuFRBo00XwWhzJfxrnE=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=eyGDj+l9; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="mPxzS4P9"
-Received: by mail-pl1-f202.google.com with SMTP id d9443c01a7336-2c6bf305403so1067975ad.2
-        for <linux-bcache@vger.kernel.org>; Wed, 17 Jun 2026 12:01:54 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20251104; t=1781722914; x=1782327714; darn=vger.kernel.org;
-        h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
-         :date:from:to:cc:subject:date:message-id:reply-to;
-        bh=IABYL+VwE3lhXy7KLq///40Cq/0FyvfVk32b7R+nTQY=;
-        b=mPxzS4P9obZaYAmHx2MZ80NIqfwuecUr1evrpo+0RXvRCTiARzhGqZNyKxbgAjt3QM
-         +eEBsiMLXyoTJUh1MOr4Frd/HAnBct8Umv1FFxU7wxHxqncT400uiJCsrg/BeehT86Ss
-         n00vOQ7c7YEhTQoz9oQ5rZYZreYQCnWalWGh+OaYff7WYFW3cy88QANe3Z4uMUeZUNHC
-         D1cWD0ejsKZ5ktVgeePm819wawDtaIUvHZX6C9xYa/VTrYB1JDyAMEZlwlM8Iudrhsyk
-         J3ELJrMIjF6J24JQN7AeN75xQZ3xJXMOuJA15i5atWdH5ZksNHE+C+2jfllqvUlKxiiK
-         krjA==
-X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1781722914; x=1782327714;
-        h=cc:to:from:subject:message-id:references:mime-version:in-reply-to
-         :date:x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
-        bh=IABYL+VwE3lhXy7KLq///40Cq/0FyvfVk32b7R+nTQY=;
-        b=qlqqc1p6CKdyjG2n7ovzR2PPxmL0pki28C62EMhFStoGsgntsZUycaZJtKnw8nWQEf
-         6WbJOTBg6rbLznlA6RhC8xQw5DJpizfTuJSJi1elVjyA0iwDRASci+JFWTwHEbbtXt9+
-         oT5AhpYtNGdT8+of/5liOyVLH3UnYVPZ+xWHnpIH2BPtnM8K00Tx0BA0uOU61DZ70nBY
-         alOJZm+w0tLaKTQzT6pgR+f6JtVJJh486sBQc8ulmWntcSd5xygPZmaEcczifCL/bOEq
-         e+F7PnHX2axVed8ZVDvqdhGonzCOL/G7Ooqrl0F6g53rJKBUjz+gOXU9cG2VTjBzDunn
-         Urbw==
-X-Gm-Message-State: AOJu0YxnApvC4BKYjf1uFd+yXZhaCKG71wg9eRiLstkxAdvxheHm8+Z+
-	/mb4AOl0F5C7USVXTWoBWiJUwY8bMxUP9mx2sZws/wXvr0MZkL7oCL3xd3/ZcStfaqgvjqKGKbv
-	4S2KfLLfzw77XAw==
-X-Received: from plae21.prod.google.com ([2002:a17:902:e0d5:b0:2bc:bb08:92dc])
- (user=ankitkap job=prod-delivery.src-stubby-dispatcher) by
- 2002:a17:903:1b6f:b0:2bf:77b2:8b2d with SMTP id d9443c01a7336-2c6bc25ca62mr48771625ad.30.1781722913564;
- Wed, 17 Jun 2026 12:01:53 -0700 (PDT)
-Date: Wed, 17 Jun 2026 19:01:52 +0000
-In-Reply-To: <20260617103356.3287775-1-ankitkap@google.com>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="eyGDj+l9"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id DB6A41F000E9;
+	Sat,  4 Jul 2026 19:51:30 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1783194705;
+	bh=XBefwgHbcKa8lF9fx4CimAkm/mOI1OLeJiYAKnbJMVM=;
+	h=From:To:Cc:Subject:Date;
+	b=eyGDj+l9ou1O5f59vydhkXwbA3fDVbVY5wPAk+z0treKXGPKqXslTE3lUBAsGocd7
+	 j4HWvk4BMNpWicrOIm4gLY3YVgF3Q6UEhK7cReG0YCnUSyd7h/IgSYc0DKYXfWNGK2
+	 4NTeA2Sr3moCGhheLA2o94lnROHcghNi1lucHAcN49jDn2x5ypWvXlRjRz19Rb4+79
+	 D3BUC+ZGPqCZb8zqM+3k0kbrkEvOlPw3Ll9PYCZOu2J/UuiBjkZaboSHjLU787V9b2
+	 JaEC6vggxII6Lo1jd3LNPsKr4cE4QactM2ublptM5aeMxzXzOBZq6U+mCcpHFheYal
+	 aWylKO5MUd0xw==
+From: Yu Kuai <yukuai@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>,
+	Tejun Heo <tj@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>,
+	Keith Busch <kbusch@kernel.org>,
+	Sagi Grimberg <sagi@grimberg.me>,
+	Alasdair Kergon <agk@redhat.com>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Dongsheng Yang <dongsheng.yang@linux.dev>,
+	Zheng Gu <cengku@gmail.com>,
+	Coly Li <colyli@fygo.io>,
+	Kent Overstreet <kent.overstreet@linux.dev>,
+	Josef Bacik <josef@toxicpanda.com>,
+	Yu Kuai <yukuai@fygo.io>,
+	Nilay Shroff <nilay@linux.ibm.com>,
+	linux-block@vger.kernel.org,
+	cgroups@vger.kernel.org,
+	linux-nvme@lists.infradead.org,
+	dm-devel@lists.linux.dev,
+	linux-bcache@vger.kernel.org
+Subject: [RFC PATCH v1 00/17] blk-cgroup: protect blkgs with blkcg_mutex
+Date: Sun,  5 Jul 2026 03:51:07 +0800
+Message-ID: <20260704195124.1375075-1-yukuai@kernel.org>
+X-Mailer: git-send-email 2.51.0
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-References: <20260617103356.3287775-1-ankitkap@google.com>
-X-Mailer: git-send-email 2.54.0.1189.g8c84645362-goog
-Message-ID: <20260617190152.3436375-1-ankitkap@google.com>
-Subject: Re: [PATCH v2 0/1] bcache: track active bypass writes to prevent
- stale cache reads
-From: Ankit Kapoor <ankitkap@google.com>
-To: colyli@fygo.io
-Cc: linux-bcache@vger.kernel.org, kent.overstreet@linux.dev, 
-	linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-Hi Coly,
+From: Yu Kuai <yukuai@fygo.io>
 
-A quick update on my cover letter questions: after thinking more about
-those edge cases, I realized my initial reasoning was flawed and
-could lead to the exact stale-data reads this patch aims to prevent.
+This RFC moves queue-local blkg topology synchronization from
+q->queue_lock to q->blkcg_mutex.
 
-kzalloc failures: Bypassing the counter increment on memory failure
-means the chunk is untracked. A subsequent read will incorrectly fail
-to bypass the cache, but worse, if a later write does get tracked, the
-decrements will become asymmetrical. I am wondering if a pre-allocated
-fallback pool could be a potential solution other than the hijack
-approach used by md-bitmap.
+q->queue_lock is a hot block-layer spinlock used by request queue runtime
+paths, and it is also used in irq-disabled or otherwise atomic contexts.
+Using it to protect blkg topology makes blkg lookup, creation,
+destruction, policy activation, and policy-state walks inherit those atomic
+locking constraints.  That forces awkward preallocation schemes such as
+radix-tree preloading and prevents missing-blkg creation from sleeping,
+even though blkg creation is a blkcg control-plane operation rather than a
+queue dispatch fast-path operation.
 
-u16 counters: I realized clamping at U16_MAX completely breaks the
-decrement path. If an I/O burst exceeds 65,535 writes, clamping loses
-the true count. The counter will drop to 0 prematurely while writes
-are still in flight, leaving a window for stale reads.
+q->blkcg_mutex is a better fit for blkg protection because it is already a
+queue-local blkcg lock, it can serialize the full lookup/create/destroy and
+policy activation path, and it allows allocation and parent lookup to run
+from sleepable contexts.  Moving blkg topology under q->blkcg_mutex also
+separates blkcg topology from queue runtime locking, reducing queue_lock
+scope and making the locking rules for blkcg policy users explicit.
 
-To ensure absolute robustness, using u32 and a fallback memory pool
-seems necessary. I will hold off on sending a v3 so you can review
-the core page-lock tracking logic in v2 first and provide your
-suggestions on these two cases, but I wanted to correct my own
-reasoning before you spend time reviewing those specific questions.
+bio_set_dev() and bio allocation with a bdev can associate a bio with the
+destination queue's blkg.  Once missing blkg creation is serialized by
+q->blkcg_mutex, those helpers may sleep when they create a blkg.  The first
+part of the series therefore audits callers that can reach these helpers
+from completion, spinlocked, irq-disabled, GFP_NOWAIT, or other
+non-blocking paths, and either moves association to process context or uses
+a nowait association path that avoids sleeping.
 
-Thanks,
-Ankit Kapoor
+The preparatory patches cover NVMe multipath requeue, dm-thin and
+dm-snapshot map paths, blk-throttle's private runtime lock, atomic bio
+allocation helpers, bcache, dm-bufio, dm-pcache, DM NOWAIT clones/remaps,
+and BFQ's locked cgroup update path.  The final blkcg patches then move
+blkg lookup/create/destroy, policy activation, and configuration
+preparation to q->blkcg_mutex; remove radix-tree preloading; move blkg
+allocation into blkg_create(); and share creation code between bio
+association and config preparation.
+
+This is RFC because the locking conversion changes a central blkcg lifetime
+path and relies on all non-sleepable bio association users either being
+converted or tolerating nowait association failure.
+
+One intentional tradeoff is left in the nowait paths.  They first associate
+with an existing blkg.  If a thread issues IO to a queue for the first time
+from a GFP_NOWAIT or otherwise non-blocking path, the cgroup's blkg for
+that queue may not exist yet.  After blkg topology moves to q->blkcg_mutex,
+preemptible task-context callers try q->blkcg_mutex and attempt blkg
+creation.  Once allocation moves into blkg_create(), that opportunistic
+nowait creation uses GFP_ATOMIC.  If the caller is in atomic context,
+q->blkcg_mutex is contended, or allocation fails, the nowait helper still
+fails and the caller needs to retry from a blocking context, defer the
+association, or fall back to an existing slow path.
+
+Patch layout:
+
+Patch 1: move NVMe multipath failover bio retargeting to requeue work so
+bio_set_dev() runs from process context instead of completion context.
+
+Patches 2-3: remove or avoid bio_set_dev() while dm-thin and dm-snapshot
+locks are held, and restore blkcg association later where needed.
+
+Patch 4: give blk-throttle its own runtime-state lock so blkcg topology
+can be moved away from queue_lock.
+
+Patches 5-7: add bio_alloc_atomic(), make bio association nowait-aware,
+and make bio allocation with a bdev fail rather than sleep for
+non-blocking callers.
+
+Patches 8-12: convert bcache, dm-bufio, dm-pcache, block helper
+allocations, and DM NOWAIT remaps/clones to the new nowait or deferred
+association model.
+
+Patch 13: avoid a sleeping blkg lookup from BFQ while bfqd->lock is held.
+
+Patch 14: protect queue-local blkg lookup, creation, destruction, policy
+activation, and policy state walks with q->blkcg_mutex.  This also makes
+preemptible nowait bio association try q->blkcg_mutex instead of failing
+immediately after an RCU lookup miss.
+
+Patch 15: remove radix-tree preloading after blkg creation no longer runs
+under queue_lock.
+
+Patch 16: allocate blkgs inside blkg_create() and use GFP_ATOMIC for the
+nowait bio-association trylock creation path.
+
+Patch 17: share blkg creation between bio association and config
+preparation.
+
+Yu Kuai (17):
+  nvme-multipath: retarget failedover bios from requeue work
+  dm thin: avoid bio_set_dev under pool lock
+  dm snapshot: avoid bio_set_dev in locked map paths
+  blk-throttle: protect throttle state with td lock
+  block: add bio_alloc_atomic() for atomic bio users
+  blk-cgroup: support non-blocking bio association
+  block: support non-blocking bio allocation with a bdev
+  bcache: avoid sleeping blkg association from locked paths
+  dm bufio: avoid blkg association from GFP_NOWAIT bio init
+  dm pcache: handle non-blocking bio clone init failure
+  block: avoid scheduling from non-blocking helper allocations
+  dm: avoid sleeping blkg association from NOWAIT remaps
+  bfq: avoid blkg lookup from locked cgroup update
+  blk-cgroup: protect blkgs with blkcg_mutex
+  blk-cgroup: remove blkg radix tree preloading
+  blk-cgroup: allocate blkgs in blkg_create
+  blk-cgroup: share blkg creation between lookup and config prep
+
+ block/bfq-cgroup.c                 |  26 +-
+ block/bio.c                        |  50 +++-
+ block/blk-cgroup.c                 | 397 ++++++++++++-----------------
+ block/blk-cgroup.h                 |  16 +-
+ block/blk-crypto-fallback.c        |   2 +-
+ block/blk-iocost.c                 |   5 +-
+ block/blk-iolatency.c              |   7 +-
+ block/blk-lib.c                    |   3 +-
+ block/blk-map.c                    |   7 +-
+ block/blk-throttle.c               |  93 +++++--
+ drivers/md/bcache/journal.c        |   9 +-
+ drivers/md/bcache/request.c        |   4 +-
+ drivers/md/dm-bufio.c              |   9 +-
+ drivers/md/dm-linear.c             |   2 +-
+ drivers/md/dm-pcache/backing_dev.c |  10 +-
+ drivers/md/dm-snap.c               |  29 ++-
+ drivers/md/dm-stripe.c             |   6 +-
+ drivers/md/dm-switch.c             |   2 +-
+ drivers/md/dm-thin.c               |   3 -
+ drivers/md/dm-unstripe.c           |   2 +-
+ drivers/md/dm.c                    |  28 +-
+ drivers/md/md.c                    |   2 +-
+ drivers/nvdimm/nd_virtio.c         |  11 +-
+ drivers/nvme/host/multipath.c      |   4 +-
+ fs/gfs2/lops.c                     |   3 +-
+ fs/ocfs2/cluster/heartbeat.c       |  15 +-
+ include/linux/bio.h                |  53 ++--
+ include/linux/device-mapper.h      |   8 +
+ include/linux/writeback.h          |   2 +-
+ mm/page_io.c                       |   2 +-
+ 30 files changed, 467 insertions(+), 343 deletions(-)
+
+
+base-commit: a1c8bdbbd72564cebb0d02948c1ed57b80b2e773
+-- 
+2.51.0
