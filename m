@@ -1,42 +1,48 @@
-Received: from va-2-41.ptr.blmpb.com (va-2-41.ptr.blmpb.com [209.127.231.41])
+Received: from va-2-19.ptr.blmpb.com (va-2-19.ptr.blmpb.com [209.127.231.19])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 09BFE3E4C9F
-	for <linux-bcache@vger.kernel.org>; Thu,  9 Jul 2026 10:02:51 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.41
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DC6793F1670
+	for <linux-bcache@vger.kernel.org>; Thu,  9 Jul 2026 10:08:52 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.19
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783591373; cv=none; b=PHhH/dNaDF06BjD9cHX59UY8WY+Qg6/4gnW0d8iwOMmtDp49JjuB1qjcUVNrBH5tRq1l+WZ4O2Sb7Ie/RR+S9BSGtJSWP/FUNij4y5kb3VjZLJcCZCy5exW2kEruFr8P4wQm4vHtSicetghjSXxlM8BAivBBnJBnP9HldG/kuhw=
+	t=1783591734; cv=none; b=SS2S17i7vrVz/l1wQ90Xl1C/K/kuBxOIKuEQnBwCzauGZBMyuD9z10EvA2ZX2uoK9WKVY4z40XcwVL8/EIUzqzOjsmxWOiqBB7Gk86b2RRcQo1jvhCbeQQWfxkIg7SBC0e3n5v/vn7tBLo3sMaugwWujcnaAssPyLWv6gcV50hQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783591373; c=relaxed/simple;
-	bh=js3GOE6eNJYLE/SjBEOjGlHKW//nqpck89PQglEeI7I=;
-	h=In-Reply-To:To:From:Content-Type:Subject:Date:References:Cc:
-	 Message-Id:Mime-Version; b=ENXqto8Q4dcJDdi1ctFfNJXC8Y+PvQpbwnJsT60KUPSe8wCAlz0OjpdnmWb3k7ZQHPRqgR07hsCOfXW49X8p+qVF12cHejZEMuDHJewCrtzgbQSFJaunsSeSFvP1y3DXRDpwHLnCQRbgeumCQyncCGKUQ5GG5vZeX7OotRILWxY=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=G2/vTerT; arc=none smtp.client-ip=209.127.231.41
+	s=arc-20240116; t=1783591734; c=relaxed/simple;
+	bh=8Y8a558XU+yeUr5q6e4HBxwJmZ5LZ+XgJZHBJowpPs8=;
+	h=Mime-Version:Content-Type:To:Subject:Date:Message-Id:In-Reply-To:
+	 From:Cc:References; b=N8UkmdP1cLd7ig7yWpMXsCiieGHnwLBazFufgbwSkyW0IlhaPgwY7NbZrRPLrTJJhmSiIQ4kVqsrvFoR/H81xhYexEgNf9DeRSihwGOuj+qVfBfZ9/yJF6X+v/7aCR3QoW4816/cTjhlLaEHbWqR1D0/w8eCPAUbpo8veQ3Nkdw=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=lmEr59L6; arc=none smtp.client-ip=209.127.231.19
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="G2/vTerT"
+	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="lmEr59L6"
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1783591358;
+ s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1783591722;
   h=from:subject:mime-version:from:date:message-id:subject:to:cc:
  reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=js3GOE6eNJYLE/SjBEOjGlHKW//nqpck89PQglEeI7I=;
- b=G2/vTerTQHVKtUCxf0lbYJ0hD0o24yQuAOYZfOu3oqx72JtArWF+1mfZkEdVbxfzLDRz6q
- iiQOtwXK8oV5Vh/9rVAXL5YLZF8VWnRdHeaOabmwZea1CR0bqYShjrbgzlzaFe0NZFRjxI
- hYv7UTUuPNvUIxq+JdRwNMzlc6TWu+PrYMkaPTB+jnDBPHPqXG4k7YDqB9NkpeEMrRNksq
- f2qCNYH3u6vRGIexQcZr6CL9Tns4iH7Xj9i3DvNuq28JzCZr2DDSlhsKLB+9d0HNfutR3s
- A+wWC8WII7c2fSC96nXNxARmuT20KfUrCYssTMoQTjyRxqCZRmCo1zWRS6kabg==
-In-Reply-To: <20260709061500.GE16504@lst.de>
-To: "Christoph Hellwig" <hch@lst.de>, "yu kuai" <yukuai@fygo.io>
-From: "yu kuai" <yukuai@fygo.io>
-Content-Type: text/plain; charset=UTF-8
-X-Lms-Return-Path: <lba+26a4f71be+0de08c+vger.kernel.org+yukuai@fygo.io>
-Subject: Re: [RFC PATCH v1 07/17] block: support non-blocking bio allocation with a bdev
-Date: Thu, 9 Jul 2026 18:02:32 +0800
-References: <20260704195124.1375075-1-yukuai@kernel.org> <20260704195124.1375075-8-yukuai@kernel.org> <20260709061500.GE16504@lst.de>
-Received: from [192.168.1.104] ([39.182.0.144]) by smtp.larksuite.com with ESMTPS; Thu, 09 Jul 2026 10:02:37 +0000
-X-Original-From: yu kuai <yukuai@fygo.io>
+ bh=nzPK7Q3qm+3tUE8Y8KFwnXjquoOkl/kUWyXBpYXUuB8=;
+ b=lmEr59L6hyNDPoexltHX9iycAL/45pk6YoF3XWWsg6Wvx0rwSLZKorXPyguGonelmtu3sE
+ 2SFPEcoysIMDs3YXsZXF9DIQ7mta8Ukm1vDmj0+cGVbZRE0mBZyjMYpnUpuYXmV7XjRnUC
+ eONZHfJJ+Ns3mhhCK59zJJWgCu4Vyjod1zKrlUG/b4BQLAUvG7c8X0yc+qTy2Fp/FYWYh/
+ 3Myivt1FYf4L5l67F5beixXxczc9s07jswbBqs/CkDlav9ZhKGzZdZaeKWcKxneIdsk0Kf
+ auVcM8LVokNBtyNphHUMxjAcQdvowFH8U55ZQUNtxWRmykiEhEAtk2JT4XGIeQ==
+Precedence: bulk
+X-Mailing-List: linux-bcache@vger.kernel.org
+List-Id: <linux-bcache.vger.kernel.org>
+List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
+List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
+Mime-Version: 1.0
 User-Agent: Mozilla Thunderbird
+Received: from [192.168.1.104] ([39.182.0.144]) by smtp.larksuite.com with ESMTPS; Thu, 09 Jul 2026 10:08:41 +0000
+Content-Type: text/plain; charset=UTF-8
+To: "Christoph Hellwig" <hch@lst.de>, "yu kuai" <yukuai@fygo.io>
+Subject: Re: [RFC PATCH v1 00/17] blk-cgroup: protect blkgs with blkcg_mutex
+Date: Thu, 9 Jul 2026 18:08:36 +0800
+Message-Id: <75bc21b5-9cc5-4d39-8ba3-7cf69689e438@fygo.io>
+In-Reply-To: <20260709060959.GA16504@lst.de>
+From: "yu kuai" <yukuai@fygo.io>
+X-Original-From: yu kuai <yukuai@fygo.io>
+Content-Transfer-Encoding: quoted-printable
 Reply-To: yukuai@fygo.io
 Cc: "Jens Axboe" <axboe@kernel.dk>, "Tejun Heo" <tj@kernel.org>, 
 	"Keith Busch" <kbusch@kernel.org>, "Sagi Grimberg" <sagi@grimberg.me>, 
@@ -51,28 +57,33 @@ Cc: "Jens Axboe" <axboe@kernel.dk>, "Tejun Heo" <tj@kernel.org>,
 	"Nilay Shroff" <nilay@linux.ibm.com>, <linux-block@vger.kernel.org>, 
 	<cgroups@vger.kernel.org>, <linux-nvme@lists.infradead.org>, 
 	<dm-devel@lists.linux.dev>, <linux-bcache@vger.kernel.org>
-Message-Id: <ee70f959-b61e-45d2-b1f0-22bee85b0bdc@fygo.io>
-Precedence: bulk
-X-Mailing-List: linux-bcache@vger.kernel.org
-List-Id: <linux-bcache.vger.kernel.org>
-List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
-List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
+References: <20260704195124.1375075-1-yukuai@kernel.org> <20260709060959.GA16504@lst.de>
+X-Lms-Return-Path: <lba+26a4f7329+7afd3c+vger.kernel.org+yukuai@fygo.io>
 
 Hi,
 
-=E5=9C=A8 2026/7/9 14:15, Christoph Hellwig =E5=86=99=E9=81=93:
-> Maybe we should just move the blkcg allocation back to bio_submit where
-> we know we can sleep?
+=E5=9C=A8 2026/7/9 14:09, Christoph Hellwig =E5=86=99=E9=81=93:
+> On Sun, Jul 05, 2026 at 03:51:07AM +0800, Yu Kuai wrote:
+>> From: Yu Kuai <yukuai@fygo.io>
+>>
+>> This RFC moves queue-local blkg topology synchronization from
+>> q->queue_lock to q->blkcg_mutex.
+>>
+>> q->queue_lock is a hot block-layer spinlock used by request queue runtim=
+e
+>> paths,
+> I don't think it is hot any more.  If it is in one of your workloads
+> we have a deep problem somewhere.  That being said, futher removing
+> uses of his old catch-all lock is always good, hopefully we can
+> eventually remove it entirely.
+>
+> So this series looks great to me conceptually, but I'm unfortunately
+> not a very qualified reviewer for the blk-cgroup code.
 
-This sounds good, I already switch blkg allocation just before submit_bio()
-in some cases in this set.
+Thanks a lot for taking a look at this RFC set, it's very helpful.
 
-Just one question, for nowait case, is it correct that we still can't sleep
-during submit_bio()? If so, I still need to add nowait special case during
-blkg creation. Or I can just return -AGAIN if blkg lookup failed, this is
-much simplier.
+It's true that blk-cgroup review is not active for a long time. I'd like to
+help but I really don't have time to check every block layer patches.
 
 >
 --=20
