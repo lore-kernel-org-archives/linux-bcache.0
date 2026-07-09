@@ -1,149 +1,92 @@
-Received: from va-2-43.ptr.blmpb.com (va-2-43.ptr.blmpb.com [209.127.231.43])
+Received: from va-2-58.ptr.blmpb.com (va-2-58.ptr.blmpb.com [209.127.231.58])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 22A033CEBA9
-	for <linux-bcache@vger.kernel.org>; Thu,  9 Jul 2026 06:31:05 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.43
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 0D1C8404BC4
+	for <linux-bcache@vger.kernel.org>; Thu,  9 Jul 2026 09:57:34 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.58
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783578668; cv=none; b=PFDIbUEHfIlRaabPnjf97SEnzf3Eb5aIt3+n6ezEzLcaad9uGHFk5qLenk85CJr2+P0nLyjHak2rqRrq6R6NB3v1iemmRXFGefoQuLno4oxZkjibQlIERwybXe79Dw1foIgt34lhX0AqlpCbmNooWsvUrC2WlPNHLLuFRU+aPy8=
+	t=1783591056; cv=none; b=dNlwkeEE49Y73hSoTINVqj0tS9rjizRMypM/lJ1pJW/gp63oAS8nO+6dh4t7SFlyxSEklXhANS8TgSYy30gE9SfH2hqYpHo9dkn5tcdaJghw4hi2qShIdwcnyWcnySCmDLDwbHti7xucGgOMobzGuNv+FbTtpwp+XIoO0gTvS3g=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783578668; c=relaxed/simple;
-	bh=tfA18FZOnYPpQxz/k0O7WfsJGTE14cKdLg4TFkXHTXs=;
-	h=Content-Type:From:Date:References:In-Reply-To:Cc:Message-Id:
-	 Mime-Version:To:Subject; b=LiwKgO6tVga+10j/gD8jjXphRX1xsg91YGN3ktmQ/7yPb1rh366VA82WtuaUDrSmN6ecsQY0Nu2MvVLcxRFJEIqEcmCdm26oHEBWQm2kL9tazz5NlmbGm8zYivAuw+3uSBBnycQoBknnlTDbmAmyqd31WT2XqmN9dOtgK5SiG3I=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=bTNQG94u; arc=none smtp.client-ip=209.127.231.43
+	s=arc-20240116; t=1783591056; c=relaxed/simple;
+	bh=ScNDU72QZIGljZYAXX3TtqEW+QUCJIdbOtB91OHVf94=;
+	h=Content-Type:To:From:Subject:Date:Message-Id:In-Reply-To:
+	 Mime-Version:Cc:References; b=fvAdOqw4IyasElSMggD6gZmDWKQRKZvCd2PKHvggkiWmStZZuFhc8EOk90nucqfgAuPA3wQbgsqkARZjmoCcSaiMkb5L1X/tT/cA7aQhQhHi74SL1uSYwS2F1TMsOihr4CWdfYS7uBWuHJKF8I76X47jcF5cViRv3o2pg1wl7MI=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=GKr+YBcv; arc=none smtp.client-ip=209.127.231.58
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="bTNQG94u"
+	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="GKr+YBcv"
 DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1783578655;
+ s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1783591040;
   h=from:subject:mime-version:from:date:message-id:subject:to:cc:
  reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=4H3ENV8rb0vXQAFFJgvVw/RCxbNTkugc/uw49+mlQow=;
- b=bTNQG94unvm8SbWv0Oecf4HgnXJ4G1xV3k6LmTbib178NvyRNquSIBbDnQKW9eN+3fNugg
- o4RnfqGYXvRXVvYvAaBna86WKkfGoOt9tXw9I0AVGb80LbXc2j/sFNoFegoFbotzdz4PVc
- r77///KfVDaMcXqQq1bylQu7GTQPPLlpL89b1Aq2JuR96JfQrWs/NdfVNRZ28cbP7KC1Xg
- ZLGsj2NIwydR2KikLVTowIqQPSB5VmglKjNmjonqEyFCiT+o8U6CV+TxBrrsnKwtoYuGr5
- Wet23F9C8H/o1Its+Ta0MLW26eVhIvT39lZAX0KsNnQ+hmdg0FNTN0cY9aDPtw==
-X-Original-From: Coly Li <colyli@fygo.io>
-X-Mailer: Apple Mail (2.3864.600.51.1.1)
+ bh=HOGu0DcVoj6IGMDLrDh2fK8YIc1W/aNya5uNQNN/KKs=;
+ b=GKr+YBcv0NFr3xoiiCd7poxeeFYuqJw3Ssw/t0vRxeohJnXWLEBUUOLgO4sXJvs/1SWT9j
+ ZjAdreVVOJuzGQofpZTmAECG0IVX0xb/2EZchMjOa25K4U3p/VEECoRuxp/GwjnN9rV5mQ
+ QcG6NulqKgrLJ+rsthrOPE4LYVv7KdtDhauSFIKDpX3ekCGczn3YHRNRckWIOxRxMU/EPD
+ JcFdw8uQjIeirkRxl3Lz3rf71q53c39Up0LgV2lwdH76qMdIPOFoznH5Dmyr7qh6Q48G3z
+ 9oaQJAfdFBbzY0+QLFjjE2rqf5YXQB+smaNvRxLDvDeXpzmRNtBc4zbEhi+CEw==
+Reply-To: yukuai@fygo.io
+User-Agent: Mozilla Thunderbird
 Content-Type: text/plain; charset=UTF-8
-From: "Coly Li" <colyli@fygo.io>
-Date: Thu, 9 Jul 2026 14:30:41 +0800
-References: <ak3Jf2ZUhQmDmA3A@studio.local> <20260709062330.16970-1-zhoujifeng@kylinos.com.cn>
-X-Lms-Return-Path: <lba+26a4f401f+911e35+vger.kernel.org+colyli@fygo.io>
-In-Reply-To: <20260709062330.16970-1-zhoujifeng@kylinos.com.cn>
-Cc: <linux-bcache@vger.kernel.org>, <zhoujifeng@kylinsec.com.cn>
-Message-Id: <5FF95998-80AD-4E84-8022-A2D0C75939B7@fygo.io>
+Received: from [192.168.1.104] ([39.182.0.144]) by smtp.larksuite.com with ESMTPS; Thu, 09 Jul 2026 09:57:18 +0000
+Content-Transfer-Encoding: quoted-printable
+To: "Christoph Hellwig" <hch@lst.de>, "yu kuai" <yukuai@fygo.io>
+From: "yu kuai" <yukuai@fygo.io>
+Subject: Re: [RFC PATCH v1 15/17] blk-cgroup: remove blkg radix tree preloading
+Date: Thu, 9 Jul 2026 17:57:13 +0800
+Message-Id: <e2ae59dc-14b9-48fa-a945-0b15acff338d@fygo.io>
+X-Original-From: yu kuai <yukuai@fygo.io>
+In-Reply-To: <20260709061837.GF16504@lst.de>
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 Mime-Version: 1.0
-To: "Zhou Jifeng" <zhoujifeng@kylinos.com.cn>
-Subject: Re: [PATCH RFC v4] bcache: flush backing device before cleaning the writeback dirty keys
-Received: from smtpclient.apple ([120.245.64.95]) by smtp.larksuite.com with ESMTPS; Thu, 09 Jul 2026 06:30:54 +0000
-Content-Transfer-Encoding: quoted-printable
+X-Lms-Return-Path: <lba+26a4f707f+22850d+vger.kernel.org+yukuai@fygo.io>
+Cc: "Jens Axboe" <axboe@kernel.dk>, "Tejun Heo" <tj@kernel.org>, 
+	"Keith Busch" <kbusch@kernel.org>, "Sagi Grimberg" <sagi@grimberg.me>, 
+	"Alasdair Kergon" <agk@redhat.com>, 
+	"Benjamin Marzinski" <bmarzins@redhat.com>, 
+	"Mike Snitzer" <snitzer@kernel.org>, 
+	"Mikulas Patocka" <mpatocka@redhat.com>, 
+	"Dongsheng Yang" <dongsheng.yang@linux.dev>, 
+	"Zheng Gu" <cengku@gmail.com>, "Coly Li" <colyli@fygo.io>, 
+	"Kent Overstreet" <kent.overstreet@linux.dev>, 
+	"Josef Bacik" <josef@toxicpanda.com>, 
+	"Nilay Shroff" <nilay@linux.ibm.com>, <linux-block@vger.kernel.org>, 
+	<cgroups@vger.kernel.org>, <linux-nvme@lists.infradead.org>, 
+	<dm-devel@lists.linux.dev>, <linux-bcache@vger.kernel.org>
+References: <20260704195124.1375075-1-yukuai@kernel.org> <20260704195124.1375075-16-yukuai@kernel.org> <20260709061837.GF16504@lst.de>
 
-> 2026=E5=B9=B47=E6=9C=889=E6=97=A5 14:23=EF=BC=8CZhou Jifeng <zhoujifeng@k=
-ylinos.com.cn> =E5=86=99=E9=81=93=EF=BC=9A
->=20
-> From: Zhou Jifeng <zhoujifeng@kylinsec.com.cn>
->=20
-> Currently, when writeback dirty data completes, write_dirty_finish()
-> immediately inserts the clean key into the btree.  If a power failure
-> occurs after the clean-key insert but before the backing device has
-> flushed its volatile write cache, the btree contains a clean key that
-> points at backing data that never reached stable media.  On the next
-> read, bcache serves stale data from the backing device.
->=20
-> Fix this by deferring the clean-key btree insert until after an
-> explicit backing-device flush (REQ_PREFLUSH).  Written keys are first
-> parked in a new rbtree (writeback_flush_pending) keyed by START_KEY.
-> After enough read_dirty() passes, a full btree scan, or a wrap-around
-> in refill_dirty(), writeback_finish_batch() issues a synchronous
-> backing-device flush, and only on success inserts the clean keys into
-> the btree and removes them from the pending tree.  On flush failure
-> the entries are re-inserted into the current tree for a later retry.
->=20
-> Key changes:
->=20
-> - Introduce struct writeback_pending (separate kmalloc'd allocation,
->  decoupled from the dirty_io closure so the closure can be freed
->  immediately and the pending entry lives until the flush).
->=20
-> - Add __writeback_pending_insert() =E2=80=94 inserts into the START_KEY-
->  ordered rbtree with overlap detection.  The rbtree is also used as
->  an interval tree by bch_writeback_drop_pending() for front-end
->  write overlap queries; that search is correct only because dirty
->  btree keys are pairwise disjoint, an invariant enforced at insert
->  time.
->=20
-> - writeback_add_to_pending() parks a key after successful writeback
->  IO.  Uses GFP_NOIO because the caller runs on the WQ_MEM_RECLAIM
->  writeback workqueue.  kmalloc failure silently drops the key (it
->  stays dirty and is re-selected by the next scan).
->=20
-> - writeback_finish_batch() detaches the entire pending tree into a
->  local list under spinlock, issues writeback_flush(), then either
->  cleans the keys (on success) or re-inserts them (on failure).
->=20
-> - writeback_flush() open-codes blkdev_issue_flush() to call
->  bch_count_backing_io_errors() on failure.
->=20
-> - bch_writeback_drop_pending() drops overlapping entries from the
->  pending tree.  Called from cached_dev_write() alongside the
->  existing bch_keybuf_check_overlapping(); overlapping front-end
->  writes now force writeback instead of bypassing the cache.
->=20
-> - refill_dirty() now returns enum writeback_scan_result (PARTIAL,
->  PARTIAL_WRAP, FULL_SEARCHED) instead of a boolean.  Before
->  wrapping around for a second scan pass, it flushes the pending
->  tree so the wrap scan won't re-select keys that are still
->  KEY_DIRTY in the btree but already written to backing and
->  awaiting flush.  writeback_lock may be transiently released
->  mid-function during this pre-wrap flush.
->=20
-> - refill_full_stripes() no longer wraps internally; it returns
->  at the end of the stripe range and delegates the wrap to
->  refill_dirty().  buf->last_scanned is no longer rewound past
->  the current position to avoid re-selecting keys already in
->  writeback_flush_pending.
->=20
-> - read_dirty() gates deferred flush-and-clean on PASS_PER_FLUSH
->  (default 5) passes, a full btree scan, or a PARTIAL_WRAP.  It
->  accepts the scan_result from refill_dirty() as a parameter.
->=20
-> - write_dirty_finish() is simplified: it no longer inserts clean
->  keys inline; it only calls writeback_add_to_pending().
->=20
-> - BDEV_STATE_CLEAN eligibility in the main loop now also requires
->  writeback_pending_empty(), so a device is not marked clean while
->  entries are still in the pending tree.
->=20
-> - Thread exit: the workqueue is destroyed first, then a final
->  writeback_finish_batch() is attempted (skipped when the cache
->  set is disabled or the device is detaching), then any remaining
->  pending entries are drained.  The exit path intentionally does
->  NOT set BDEV_STATE_CLEAN because it lacks the WB_SCAN_FULL_SEARCHED
->  gate that the in-loop check requires; a kthread_stop mid-scan
->  (e.g. from bch_cached_dev_attach's error path) must not mark a
->  still-dirty device clean.
->=20
-> Signed-off-by: Coly Li <colyli@fygo.io>
-> Signed-off-by: Zhou Jifeng <zhoujifeng@kylinsec.com.cn>
+Hi,
 
-You cannot add my SOB for me. I know you mean the base idea of this version=
- was
-from me, but it is fine to only do your own SOB. I am good with this, since=
- you already
-do a lot of analysis and testing.
+=E5=9C=A8 2026/7/9 14:18, Christoph Hellwig =E5=86=99=E9=81=93:
+> On Sun, Jul 05, 2026 at 03:51:22AM +0800, Yu Kuai wrote:
+>> From: Yu Kuai <yukuai@fygo.io>
+>>
+>> blkg creation is now serialized by q->blkcg_mutex and no longer runs
+>> under q->queue_lock.  The radix tree is initialized with GFP_NOWAIT, so
+>> radix_tree_insert() cannot sleep while blkcg->lock is held and the old
+>> preload dance is no longer needed.
+>>
+>> Remove the preload calls and the associated unwind path.
+> Isn't the GFP_NOWAIT a bit of a problem because it can fail way too
+> easy?
 
-The v4 version format is much more easier to review.
-I will try my best to response you soon.
+I think GFP_NOWAIT should not be a problem because it's only possible to
+allocate blkg when the thread is issuing the first IO. And it's not a big
+deal to fail nowait in this case because the caller should fall back to
+sleepable context to issue this IO, and then blkg will be created. The foll=
+owing
+nowait IO issued by this thread should no longer hit blkg allocation path
+anymore.
 
-Thanks for the fix up and testing.
-
-Coly Li
+>
+> What about converting both the radix tree and list to an xarray
+> using the internal xarray to deal with sleeping allocations?
+>
+--=20
+Thanks,
+Kuai
