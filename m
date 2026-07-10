@@ -1,91 +1,167 @@
-Received: from va-2-19.ptr.blmpb.com (va-2-19.ptr.blmpb.com [209.127.231.19])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtpbgau1.qq.com (smtpbgau1.qq.com [54.206.16.166])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id DC6793F1670
-	for <linux-bcache@vger.kernel.org>; Thu,  9 Jul 2026 10:08:52 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.19
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 8B0813914E4
+	for <linux-bcache@vger.kernel.org>; Fri, 10 Jul 2026 10:17:25 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=54.206.16.166
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783591734; cv=none; b=SS2S17i7vrVz/l1wQ90Xl1C/K/kuBxOIKuEQnBwCzauGZBMyuD9z10EvA2ZX2uoK9WKVY4z40XcwVL8/EIUzqzOjsmxWOiqBB7Gk86b2RRcQo1jvhCbeQQWfxkIg7SBC0e3n5v/vn7tBLo3sMaugwWujcnaAssPyLWv6gcV50hQ=
+	t=1783678655; cv=none; b=t87afHCeAfblBoNMuqR8wAjDawdD99snYBnrUamzlvGl7wrmCmYad5rNvN/nlW4oVOdIf1SUKEjSlVQX+kIOVqg5ho7D/9BV6xJo8iOWGBTZ/dGJtixGvdWQv/nitkTtn3YvbVfU7wzI4BzpGmDCkA46QcaL1uIx9sXJC0oYdkM=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783591734; c=relaxed/simple;
-	bh=8Y8a558XU+yeUr5q6e4HBxwJmZ5LZ+XgJZHBJowpPs8=;
-	h=Mime-Version:Content-Type:To:Subject:Date:Message-Id:In-Reply-To:
-	 From:Cc:References; b=N8UkmdP1cLd7ig7yWpMXsCiieGHnwLBazFufgbwSkyW0IlhaPgwY7NbZrRPLrTJJhmSiIQ4kVqsrvFoR/H81xhYexEgNf9DeRSihwGOuj+qVfBfZ9/yJF6X+v/7aCR3QoW4816/cTjhlLaEHbWqR1D0/w8eCPAUbpo8veQ3Nkdw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=lmEr59L6; arc=none smtp.client-ip=209.127.231.19
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="lmEr59L6"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1783591722;
-  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
- reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=nzPK7Q3qm+3tUE8Y8KFwnXjquoOkl/kUWyXBpYXUuB8=;
- b=lmEr59L6hyNDPoexltHX9iycAL/45pk6YoF3XWWsg6Wvx0rwSLZKorXPyguGonelmtu3sE
- 2SFPEcoysIMDs3YXsZXF9DIQ7mta8Ukm1vDmj0+cGVbZRE0mBZyjMYpnUpuYXmV7XjRnUC
- eONZHfJJ+Ns3mhhCK59zJJWgCu4Vyjod1zKrlUG/b4BQLAUvG7c8X0yc+qTy2Fp/FYWYh/
- 3Myivt1FYf4L5l67F5beixXxczc9s07jswbBqs/CkDlav9ZhKGzZdZaeKWcKxneIdsk0Kf
- auVcM8LVokNBtyNphHUMxjAcQdvowFH8U55ZQUNtxWRmykiEhEAtk2JT4XGIeQ==
+	s=arc-20240116; t=1783678655; c=relaxed/simple;
+	bh=qGvSCuFXE9BNbqG0kKzkEBi+wpd5plRzEXcRqLI1oEs=;
+	h=From:To:Cc:Subject:Mime-Version:Content-Type:Date:Message-ID:
+	 References:In-Reply-To; b=jYLigaB0N+HQhmeR/NNF/03fS/BOjvxCjX2jVCtp83r2e31/pmuSHwbG7EOhGcIZcrfh9DElDUEMQZjG3DML2fZ0SjDuEJsNCCI2pmVwXcGfwLN/R7TPjHFB4u8jGORyLEbWOuH8Tz3D2IMB98++2MiJ6qGUzxlUN6+l1NV2Zho=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.com.cn; spf=pass smtp.mailfrom=kylinos.com.cn; arc=none smtp.client-ip=54.206.16.166
+Authentication-Results: smtp.subspace.kernel.org; dmarc=none (p=none dis=none) header.from=kylinos.com.cn
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=kylinos.com.cn
+EX-QQ-RecipientCnt: 2
+X-QQ-GoodBg: 2
+X-QQ-SSF: 00400000000000F0
+X-QQ-FEAT: D4aqtcRDiqSYbfq2fqToiE06OqpQR/8JocnLdZjgIrs=
+X-QQ-BUSINESS-ORIGIN: 2
+X-QQ-Originating-IP: L+5NqqliDqfOVSzSBwWq8xd+2XNaQZp0fC9vhYgPqc8=
+X-QQ-STYLE: 
+X-QQ-mid: v3gz7b-10t1783678639taf275ef4
+From: "=?utf-8?B?WmhvdSBKaWZlbmc=?=" <zhoujifeng@kylinos.com.cn>
+To: "=?utf-8?B?Q29seSBMaQ==?=" <colyli@fygo.io>
+Cc: "=?utf-8?B?bGludXgtYmNhY2hl?=" <linux-bcache@vger.kernel.org>
+Subject: Re: [PATCH RFC v4] bcache: flush backing device before cleaning the writeback dirty keys
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 Mime-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Received: from [192.168.1.104] ([39.182.0.144]) by smtp.larksuite.com with ESMTPS; Thu, 09 Jul 2026 10:08:41 +0000
-Content-Type: text/plain; charset=UTF-8
-To: "Christoph Hellwig" <hch@lst.de>, "yu kuai" <yukuai@fygo.io>
-Subject: Re: [RFC PATCH v1 00/17] blk-cgroup: protect blkgs with blkcg_mutex
-Date: Thu, 9 Jul 2026 18:08:36 +0800
-Message-Id: <75bc21b5-9cc5-4d39-8ba3-7cf69689e438@fygo.io>
-In-Reply-To: <20260709060959.GA16504@lst.de>
-From: "yu kuai" <yukuai@fygo.io>
-X-Original-From: yu kuai <yukuai@fygo.io>
-Content-Transfer-Encoding: quoted-printable
-Reply-To: yukuai@fygo.io
-Cc: "Jens Axboe" <axboe@kernel.dk>, "Tejun Heo" <tj@kernel.org>, 
-	"Keith Busch" <kbusch@kernel.org>, "Sagi Grimberg" <sagi@grimberg.me>, 
-	"Alasdair Kergon" <agk@redhat.com>, 
-	"Benjamin Marzinski" <bmarzins@redhat.com>, 
-	"Mike Snitzer" <snitzer@kernel.org>, 
-	"Mikulas Patocka" <mpatocka@redhat.com>, 
-	"Dongsheng Yang" <dongsheng.yang@linux.dev>, 
-	"Zheng Gu" <cengku@gmail.com>, "Coly Li" <colyli@fygo.io>, 
-	"Kent Overstreet" <kent.overstreet@linux.dev>, 
-	"Josef Bacik" <josef@toxicpanda.com>, 
-	"Nilay Shroff" <nilay@linux.ibm.com>, <linux-block@vger.kernel.org>, 
-	<cgroups@vger.kernel.org>, <linux-nvme@lists.infradead.org>, 
-	<dm-devel@lists.linux.dev>, <linux-bcache@vger.kernel.org>
-References: <20260704195124.1375075-1-yukuai@kernel.org> <20260709060959.GA16504@lst.de>
-X-Lms-Return-Path: <lba+26a4f7329+7afd3c+vger.kernel.org+yukuai@fygo.io>
+Content-Type: text/plain;
+	charset="utf-8"
+Content-Transfer-Encoding: base64
+Date: Fri, 10 Jul 2026 18:17:18 +0800
+X-Priority: 3
+Message-ID: <tencent_3964FC886EF21A2B778D4DC8@qq.com>
+X-QQ-MIME: TCMime 1.0 by Tencent
+X-Mailer: QQMail 2.x
+X-QQ-Mailer: QQMail 2.x
+References: <ak3Jf2ZUhQmDmA3A@studio.local>
+	<20260709062330.16970-1-zhoujifeng@kylinos.com.cn>
+	<5FF95998-80AD-4E84-8022-A2D0C75939B7@fygo.io>
+In-Reply-To: <5FF95998-80AD-4E84-8022-A2D0C75939B7@fygo.io>
+X-QQ-ReplyHash: 140062001
+X-BIZMAIL-ID: 1082151937085108295
+X-Address-Ticket:version=;type=;ticket_id=;id_list=;display_name=;session_id=;
+X-QQ-SENDSIZE: 520
+Received: from qq.com (unknown [127.0.0.1])
+	by smtp.qq.com (ESMTP) with SMTP
+	id ; Fri, 10 Jul 2026 18:17:20 +0800 (CST)
+Feedback-ID: v:kylinos.com.cn:qybglogicsvrsz:qybglogicsvrsz3b-0
+X-QQ-XMAILINFO: Mq+dXfLz1bhaFcYSaNC1Hdoxgt0qNY2hEGpjjJDVfGBi+l+AyPrmZeMs
+	wzx8/9piAXJHXQx5wwi1KIR27JP4XT7eK3IxnKhytuQUYhjGv6mNXE1feQrAVCQj4VeZJe0
+	Af51rv0LUOb+wooL70+7msquG7Ui1yw4i2ZozqjUP06TIZnENqZ+Q9tf2Hk1/gkFY8rEyui
+	ZxifYZM1FtsOv7Mt5UrPVey+vHSfOIxGKPyN+3wyENj4FmJ65wVrvjLUw2IqKWMxqX4NO/b
+	Ih3JKDxIy+SnoHR2LhCAhxmSvxhEswALtQDfySr040km8e1jjlsDdjUjTZm5qApDYaoR00q
+	xqNhgeOZfKjqJShMr3lO9SKXDdFAudQQCyKGbg9cxGOFcYu8bSd1OKGRlgnSE8k01nG7M/a
+	GfBDz9QURLlB+z0WeXHzVMpExF+sr+NXh1zg/PkZ7Htx55jdLvwWJ5C/ceLHle0mVnCv3w0
+	9hlUYxjIaHgAhVVbvnuOll3QC7T/VL+22rIHrksq2gjxtq81AglHkwNfGYtHNMTie4t1rxQ
+	7ozP1CI45Q30EA6nHJvqll/qTSFzzbPaqifwDVXIuGUb6jAD6OOtr9KwHi3dVurRROoFfjk
+	Brl4nxskmCvL4RPzoked6gRwS9y3E70fPG79UYMnQM6omTdDvxFy6wtI3QAcqKI1egZfYxj
+	tS8burx3MP/UpZHfYX636ww9S8pF7Q/CyqRuXSB+xDkJH6KDW4pkibFLjNvQgzvSllCGHN5
+	yL30Xgapy4yBbyLoLrDSauAs8FYJ4JRWb63A1gALx057vfH70bss0t3SQIkIxz0h8kZNyAY
+	AftWFpzcNAdHN9T7M+vVHs5Z0zq4EJwhzxwAhbPu67sM7esxZ37k7tcCVlydNQmm2hi/EOG
+	PnKckFhqkHm3iI56Vec0D4hWz4uSm4aMuqSul/g1XK0P1TkQGfML5TwtSxnqsCIOIk+dHCD
+	3PVxQtcR9o4Bi0qJZzIbskXNm2GCT7XnhkZlkUxbZMEiH+LU8vggkIw63HIncVxU7AXo=
+X-QQ-XMRINFO: NyFYKkN4Ny6Fnj/1t3OehWjG8zjrqEyTcg==
+X-QQ-RECHKSPAM: 0
 
-Hi,
+Pj4gMjAyNuW5tDfmnIg55pelIDE0OjIz77yMWmhvdSBKaWZlbmcgPHpob3VqaWZlbmdAa3ls
+aW5vcy5jb20uY24+IOWGmemBk++8mg0KPj4NCj4+IEZyb206IFpob3UgSmlmZW5nIDx6aG91
+amlmZW5nQGt5bGluc2VjLmNvbS5jbj4NCj4+DQo+PiBDdXJyZW50bHksIHdoZW4gd3JpdGVi
+YWNrIGRpcnR5IGRhdGEgY29tcGxldGVzLCB3cml0ZV9kaXJ0eV9maW5pc2goKQ0KPj4gaW1t
+ZWRpYXRlbHkgaW5zZXJ0cyB0aGUgY2xlYW4ga2V5IGludG8gdGhlIGJ0cmVlLiAgSWYgYSBw
+b3dlciBmYWlsdXJlDQo+PiBvY2N1cnMgYWZ0ZXIgdGhlIGNsZWFuLWtleSBpbnNlcnQgYnV0
+IGJlZm9yZSB0aGUgYmFja2luZyBkZXZpY2UgaGFzDQo+PiBmbHVzaGVkIGl0cyB2b2xhdGls
+ZSB3cml0ZSBjYWNoZSwgdGhlIGJ0cmVlIGNvbnRhaW5zIGEgY2xlYW4ga2V5IHRoYXQNCj4+
+IHBvaW50cyBhdCBiYWNraW5nIGRhdGEgdGhhdCBuZXZlciByZWFjaGVkIHN0YWJsZSBtZWRp
+YS4gIE9uIHRoZSBuZXh0DQo+PiByZWFkLCBiY2FjaGUgc2VydmVzIHN0YWxlIGRhdGEgZnJv
+bSB0aGUgYmFja2luZyBkZXZpY2UuDQo+Pg0KPj4gRml4IHRoaXMgYnkgZGVmZXJyaW5nIHRo
+ZSBjbGVhbi1rZXkgYnRyZWUgaW5zZXJ0IHVudGlsIGFmdGVyIGFuDQo+PiBleHBsaWNpdCBi
+YWNraW5nLWRldmljZSBmbHVzaCAoUkVRX1BSRUZMVVNIKS4gIFdyaXR0ZW4ga2V5cyBhcmUg
+Zmlyc3QNCj4+IHBhcmtlZCBpbiBhIG5ldyByYnRyZWUgKHdyaXRlYmFja19mbHVzaF9wZW5k
+aW5nKSBrZXllZCBieSBTVEFSVF9LRVkuDQo+PiBBZnRlciBlbm91Z2ggcmVhZF9kaXJ0eSgp
+IHBhc3NlcywgYSBmdWxsIGJ0cmVlIHNjYW4sIG9yIGEgd3JhcC1hcm91bmQNCj4+IGluIHJl
+ZmlsbF9kaXJ0eSgpLCB3cml0ZWJhY2tfZmluaXNoX2JhdGNoKCkgaXNzdWVzIGEgc3luY2hy
+b25vdXMNCj4+IGJhY2tpbmctZGV2aWNlIGZsdXNoLCBhbmQgb25seSBvbiBzdWNjZXNzIGlu
+c2VydHMgdGhlIGNsZWFuIGtleXMgaW50bw0KPj4gdGhlIGJ0cmVlIGFuZCByZW1vdmVzIHRo
+ZW0gZnJvbSB0aGUgcGVuZGluZyB0cmVlLiAgT24gZmx1c2ggZmFpbHVyZQ0KPj4gdGhlIGVu
+dHJpZXMgYXJlIHJlLWluc2VydGVkIGludG8gdGhlIGN1cnJlbnQgdHJlZSBmb3IgYSBsYXRl
+ciByZXRyeS4NCj4+DQo+PiBLZXkgY2hhbmdlczoNCj4+DQo+PiAtIEludHJvZHVjZSBzdHJ1
+Y3Qgd3JpdGViYWNrX3BlbmRpbmcgKHNlcGFyYXRlIGttYWxsb2MnZCBhbGxvY2F0aW9uLA0K
+Pj4gIGRlY291cGxlZCBmcm9tIHRoZSBkaXJ0eV9pbyBjbG9zdXJlIHNvIHRoZSBjbG9zdXJl
+IGNhbiBiZSBmcmVlZA0KPj4gIGltbWVkaWF0ZWx5IGFuZCB0aGUgcGVuZGluZyBlbnRyeSBs
+aXZlcyB1bnRpbCB0aGUgZmx1c2gpLg0KPj4NCj4+IC0gQWRkIF9fd3JpdGViYWNrX3BlbmRp
+bmdfaW5zZXJ0KCkg4oCUIGluc2VydHMgaW50byB0aGUgU1RBUlRfS0VZLQ0KPj4gIG9yZGVy
+ZWQgcmJ0cmVlIHdpdGggb3ZlcmxhcCBkZXRlY3Rpb24uICBUaGUgcmJ0cmVlIGlzIGFsc28g
+dXNlZCBhcw0KPj4gIGFuIGludGVydmFsIHRyZWUgYnkgYmNoX3dyaXRlYmFja19kcm9wX3Bl
+bmRpbmcoKSBmb3IgZnJvbnQtZW5kDQo+PiAgd3JpdGUgb3ZlcmxhcCBxdWVyaWVzOyB0aGF0
+IHNlYXJjaCBpcyBjb3JyZWN0IG9ubHkgYmVjYXVzZSBkaXJ0eQ0KPj4gIGJ0cmVlIGtleXMg
+YXJlIHBhaXJ3aXNlIGRpc2pvaW50LCBhbiBpbnZhcmlhbnQgZW5mb3JjZWQgYXQgaW5zZXJ0
+DQo+PiAgdGltZS4NCj4+DQo+PiAtIHdyaXRlYmFja19hZGRfdG9fcGVuZGluZygpIHBhcmtz
+IGEga2V5IGFmdGVyIHN1Y2Nlc3NmdWwgd3JpdGViYWNrDQo+PiAgSU8uICBVc2VzIEdGUF9O
+T0lPIGJlY2F1c2UgdGhlIGNhbGxlciBydW5zIG9uIHRoZSBXUV9NRU1fUkVDTEFJTQ0KPj4g
+IHdyaXRlYmFjayB3b3JrcXVldWUuICBrbWFsbG9jIGZhaWx1cmUgc2lsZW50bHkgZHJvcHMg
+dGhlIGtleSAoaXQNCj4+ICBzdGF5cyBkaXJ0eSBhbmQgaXMgcmUtc2VsZWN0ZWQgYnkgdGhl
+IG5leHQgc2NhbikuDQo+Pg0KPj4gLSB3cml0ZWJhY2tfZmluaXNoX2JhdGNoKCkgZGV0YWNo
+ZXMgdGhlIGVudGlyZSBwZW5kaW5nIHRyZWUgaW50byBhDQo+PiAgbG9jYWwgbGlzdCB1bmRl
+ciBzcGlubG9jaywgaXNzdWVzIHdyaXRlYmFja19mbHVzaCgpLCB0aGVuIGVpdGhlcg0KPj4g
+IGNsZWFucyB0aGUga2V5cyAob24gc3VjY2Vzcykgb3IgcmUtaW5zZXJ0cyB0aGVtIChvbiBm
+YWlsdXJlKS4NCj4+DQo+PiAtIHdyaXRlYmFja19mbHVzaCgpIG9wZW4tY29kZXMgYmxrZGV2
+X2lzc3VlX2ZsdXNoKCkgdG8gY2FsbA0KPj4gIGJjaF9jb3VudF9iYWNraW5nX2lvX2Vycm9y
+cygpIG9uIGZhaWx1cmUuDQo+Pg0KPj4gLSBiY2hfd3JpdGViYWNrX2Ryb3BfcGVuZGluZygp
+IGRyb3BzIG92ZXJsYXBwaW5nIGVudHJpZXMgZnJvbSB0aGUNCj4+ICBwZW5kaW5nIHRyZWUu
+ICBDYWxsZWQgZnJvbSBjYWNoZWRfZGV2X3dyaXRlKCkgYWxvbmdzaWRlIHRoZQ0KPj4gIGV4
+aXN0aW5nIGJjaF9rZXlidWZfY2hlY2tfb3ZlcmxhcHBpbmcoKTsgb3ZlcmxhcHBpbmcgZnJv
+bnQtZW5kDQo+PiAgd3JpdGVzIG5vdyBmb3JjZSB3cml0ZWJhY2sgaW5zdGVhZCBvZiBieXBh
+c3NpbmcgdGhlIGNhY2hlLg0KPj4NCj4+IC0gcmVmaWxsX2RpcnR5KCkgbm93IHJldHVybnMg
+ZW51bSB3cml0ZWJhY2tfc2Nhbl9yZXN1bHQgKFBBUlRJQUwsDQo+PiAgUEFSVElBTF9XUkFQ
+LCBGVUxMX1NFQVJDSEVEKSBpbnN0ZWFkIG9mIGEgYm9vbGVhbi4gIEJlZm9yZQ0KPj4gIHdy
+YXBwaW5nIGFyb3VuZCBmb3IgYSBzZWNvbmQgc2NhbiBwYXNzLCBpdCBmbHVzaGVzIHRoZSBw
+ZW5kaW5nDQo+PiAgdHJlZSBzbyB0aGUgd3JhcCBzY2FuIHdvbid0IHJlLXNlbGVjdCBrZXlz
+IHRoYXQgYXJlIHN0aWxsDQo+PiAgS0VZX0RJUlRZIGluIHRoZSBidHJlZSBidXQgYWxyZWFk
+eSB3cml0dGVuIHRvIGJhY2tpbmcgYW5kDQo+PiAgYXdhaXRpbmcgZmx1c2guICB3cml0ZWJh
+Y2tfbG9jayBtYXkgYmUgdHJhbnNpZW50bHkgcmVsZWFzZWQNCj4+ICBtaWQtZnVuY3Rpb24g
+ZHVyaW5nIHRoaXMgcHJlLXdyYXAgZmx1c2guDQo+Pg0KPj4gLSByZWZpbGxfZnVsbF9zdHJp
+cGVzKCkgbm8gbG9uZ2VyIHdyYXBzIGludGVybmFsbHk7IGl0IHJldHVybnMNCj4+ICBhdCB0
+aGUgZW5kIG9mIHRoZSBzdHJpcGUgcmFuZ2UgYW5kIGRlbGVnYXRlcyB0aGUgd3JhcCB0bw0K
+Pj4gIHJlZmlsbF9kaXJ0eSgpLiAgYnVmLT5sYXN0X3NjYW5uZWQgaXMgbm8gbG9uZ2VyIHJl
+d291bmQgcGFzdA0KPj4gIHRoZSBjdXJyZW50IHBvc2l0aW9uIHRvIGF2b2lkIHJlLXNlbGVj
+dGluZyBrZXlzIGFscmVhZHkgaW4NCj4+ICB3cml0ZWJhY2tfZmx1c2hfcGVuZGluZy4NCj4+
+DQo+PiAtIHJlYWRfZGlydHkoKSBnYXRlcyBkZWZlcnJlZCBmbHVzaC1hbmQtY2xlYW4gb24g
+UEFTU19QRVJfRkxVU0gNCj4+ICAoZGVmYXVsdCA1KSBwYXNzZXMsIGEgZnVsbCBidHJlZSBz
+Y2FuLCBvciBhIFBBUlRJQUxfV1JBUC4gIEl0DQo+PiAgYWNjZXB0cyB0aGUgc2Nhbl9yZXN1
+bHQgZnJvbSByZWZpbGxfZGlydHkoKSBhcyBhIHBhcmFtZXRlci4NCj4+DQo+PiAtIHdyaXRl
+X2RpcnR5X2ZpbmlzaCgpIGlzIHNpbXBsaWZpZWQ6IGl0IG5vIGxvbmdlciBpbnNlcnRzIGNs
+ZWFuDQo+PiAga2V5cyBpbmxpbmU7IGl0IG9ubHkgY2FsbHMgd3JpdGViYWNrX2FkZF90b19w
+ZW5kaW5nKCkuDQo+Pg0KPj4gLSBCREVWX1NUQVRFX0NMRUFOIGVsaWdpYmlsaXR5IGluIHRo
+ZSBtYWluIGxvb3Agbm93IGFsc28gcmVxdWlyZXMNCj4+ICB3cml0ZWJhY2tfcGVuZGluZ19l
+bXB0eSgpLCBzbyBhIGRldmljZSBpcyBub3QgbWFya2VkIGNsZWFuIHdoaWxlDQo+PiAgZW50
+cmllcyBhcmUgc3RpbGwgaW4gdGhlIHBlbmRpbmcgdHJlZS4NCj4+DQo+PiAtIFRocmVhZCBl
+eGl0OiB0aGUgd29ya3F1ZXVlIGlzIGRlc3Ryb3llZCBmaXJzdCwgdGhlbiBhIGZpbmFsDQo+
+PiAgd3JpdGViYWNrX2ZpbmlzaF9iYXRjaCgpIGlzIGF0dGVtcHRlZCAoc2tpcHBlZCB3aGVu
+IHRoZSBjYWNoZQ0KPj4gIHNldCBpcyBkaXNhYmxlZCBvciB0aGUgZGV2aWNlIGlzIGRldGFj
+aGluZyksIHRoZW4gYW55IHJlbWFpbmluZw0KPj4gIHBlbmRpbmcgZW50cmllcyBhcmUgZHJh
+aW5lZC4gIFRoZSBleGl0IHBhdGggaW50ZW50aW9uYWxseSBkb2VzDQo+PiAgTk9UIHNldCBC
+REVWX1NUQVRFX0NMRUFOIGJlY2F1c2UgaXQgbGFja3MgdGhlIFdCX1NDQU5fRlVMTF9TRUFS
+Q0hFRA0KPj4gIGdhdGUgdGhhdCB0aGUgaW4tbG9vcCBjaGVjayByZXF1aXJlczsgYSBrdGhy
+ZWFkX3N0b3AgbWlkLXNjYW4NCj4+ICAoZS5nLiBmcm9tIGJjaF9jYWNoZWRfZGV2X2F0dGFj
+aCdzIGVycm9yIHBhdGgpIG11c3Qgbm90IG1hcmsgYQ0KPj4gIHN0aWxsLWRpcnR5IGRldmlj
+ZSBjbGVhbi4NCj4+DQo+PiBTaWduZWQtb2ZmLWJ5OiBDb2x5IExpIDxjb2x5bGlAZnlnby5p
+bz4NCj4+IFNpZ25lZC1vZmYtYnk6IFpob3UgSmlmZW5nIDx6aG91amlmZW5nQGt5bGluc2Vj
+LmNvbS5jbj4NCg0KPg0KPiBZb3UgY2Fubm90IGFkZCBteSBTT0IgZm9yIG1lLiBJIGtub3cg
+eW91IG1lYW4gdGhlIGJhc2UgaWRlYSBvZiB0aGlzIHZlcnNpb24gd2FzDQo+IGZyb20gbWUs
+IGJ1dCBpdCBpcyBmaW5lIHRvIG9ubHkgZG8geW91ciBvd24gU09CLiBJIGFtIGdvb2Qgd2l0
+aCB0aGlzLCBzaW5jZSB5b3UgYWxyZWFkeQ0KPiBkbyBhIGxvdCBvZiBhbmFseXNpcyBhbmQg
+dGVzdGluZy4NCj4NCj4gVGhlIHY0IHZlcnNpb24gZm9ybWF0IGlzIG11Y2ggbW9yZSBlYXNp
+ZXIgdG8gcmV2aWV3Lg0KPiBJIHdpbGwgdHJ5IG15IGJlc3QgdG8gcmVzcG9uc2UgeW91IHNv
+b24uDQo+DQo+IFRoYW5rcyBmb3IgdGhlIGZpeCB1cCBhbmQgdGVzdGluZy4NCj4NCj4gQ29s
+eSBMaQ0KDQoNCkhpIENvbHks4oCLDQpJIHJlYWxseSBhcHByZWNpYXRlIHlvdXIgdGltZSBh
+bmQgZ3VpZGFuY2Ugb24gdGhpcyBwYXRjaC4NCg0KQmVzdCByZWdhcmRzLA0KWmhvdSBKaWZl
+bmc=
 
-=E5=9C=A8 2026/7/9 14:09, Christoph Hellwig =E5=86=99=E9=81=93:
-> On Sun, Jul 05, 2026 at 03:51:07AM +0800, Yu Kuai wrote:
->> From: Yu Kuai <yukuai@fygo.io>
->>
->> This RFC moves queue-local blkg topology synchronization from
->> q->queue_lock to q->blkcg_mutex.
->>
->> q->queue_lock is a hot block-layer spinlock used by request queue runtim=
-e
->> paths,
-> I don't think it is hot any more.  If it is in one of your workloads
-> we have a deep problem somewhere.  That being said, futher removing
-> uses of his old catch-all lock is always good, hopefully we can
-> eventually remove it entirely.
->
-> So this series looks great to me conceptually, but I'm unfortunately
-> not a very qualified reviewer for the blk-cgroup code.
-
-Thanks a lot for taking a look at this RFC set, it's very helpful.
-
-It's true that blk-cgroup review is not active for a long time. I'd like to
-help but I really don't have time to check every block layer patches.
-
->
---=20
-Thanks,
-Kuai
