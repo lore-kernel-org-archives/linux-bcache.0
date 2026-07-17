@@ -1,128 +1,87 @@
-Received: from va-2-57.ptr.blmpb.com (va-2-57.ptr.blmpb.com [209.127.231.57])
+Received: from mail-pg1-f201.google.com (mail-pg1-f201.google.com [209.85.215.201])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6C2A6191F94
-	for <linux-bcache@vger.kernel.org>; Tue, 14 Jul 2026 01:22:08 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.57
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 77D0823EAAF
+	for <linux-bcache@vger.kernel.org>; Fri, 17 Jul 2026 00:51:20 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.215.201
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1783992130; cv=none; b=HrDdaZY+W0XAmlZhUuyVeHhKz3/DkqLI68Fx9FrweO/J8ytIIB6Bvcu6Sg+gPxKDQLEUMww2SNAn2ijvxpNlQfvBLDkXhHK9OOv2ISmt8zdmmVCGhhemIuw65ghSJ/FUc/Y2l8eZt/z/jLk9Vorh6orjRP3nFPInCe7r6rZMAXU=
+	t=1784249482; cv=none; b=EM1rEl5OmRhOuTpFmgZJ+UZyGOoE7k6AKgnHB4YCz4A/JWGK24OYeBtyeYoIMOb5nGSX+aXY2SMVDhsJ/1lNliJguLPG7Xn54OK6QfRUbqPkPFBsAOTdR4cr9d1xUNlPfBBGHGdXozBqGCvk2d4eLZpUwTmUIjIbhaoLs7sub/o=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1783992130; c=relaxed/simple;
-	bh=ZeCuUN1Fp9W4TMQKtRmZ1tTkmF93aBEFuPtz6IeYxUs=;
-	h=From:Message-Id:In-Reply-To:Content-Type:Cc:Mime-Version:Subject:
-	 To:Date:References; b=TkkybJywSlKEbK5FQIzI0GwLkG9IRAoSDyzMFZgy20WAOMoUR0TLYlt/SQgBL1W5bSWFgzFjv8hWOc6Us3C954mFGOvCGhS0SHQINT0Z7d64WfWu4Skrl+/NjvgjoJFcA7NbldYdw0WQ5zlEuZ+CgUKrSnRsgpNYTGyZ49tHJPw=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=CsJkfioZ; arc=none smtp.client-ip=209.127.231.57
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
+	s=arc-20240116; t=1784249482; c=relaxed/simple;
+	bh=x3m/htLsP4Xl6tkAFtxz/ZNQfmQHMUnscKQfqn5RVHk=;
+	h=Date:In-Reply-To:Mime-Version:References:Message-ID:Subject:From:
+	 To:Cc:Content-Type; b=JKRbm+loHHVS2Ul5Qgd+bfGxXjfAY+rnJb4axQ6iFlHhSDzXn9hVsX/CpbOb5DpzwImI2NaKcJYrA08VIKsQqoR5bUTq/5OTtny9fyJ7rT5cwf2dvclOsxgzG6kk/fs8nCkgk7ZddRiZX4khE91ufdecWVLoroz/RdYmXK2A79o=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--robertpang.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=S6nhsKMA; arc=none smtp.client-ip=209.85.215.201
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--robertpang.bounces.google.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="CsJkfioZ"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1783992117;
-  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
- reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=MXAT3+5slbifSjkkzpCjT7TTJaAwUZJ8MfqgEo/pHc0=;
- b=CsJkfioZOfCKThBtkoFIqreHboAirqKwBEj69z/tsxUahDElsQl9i8Qq2wZGtQFC4vonXn
- tWWCqZI9aFONnkCoGrW2IOvX/kMubR9mLGaTQS6Ch8sHTYNkGIUER6Xc1hvHZKlL1h/bPi
- iCiVONZE8SU1oFJrvn2j8Q4tJ6GJWInKG5nevT4RT9C+qPjypZLMNH6QWrOBLl4Yd7v/dB
- qmwlFLyVkvVI23fjTTo9NA96ob3JK/6cLszMo86b1HtQmYoQ3i0QSSvc4zOGoov7h4mafa
- bQZb0LM89e/+gOH4L+Sn2WhWWnrMUKge8gH2IZWi0advUSoDqkZc6cg0BX8khw==
-From: "yu kuai" <yukuai@fygo.io>
-Message-Id: <e0ba356e-c5ef-4100-b774-b599cae65968@fygo.io>
-In-Reply-To: <20260713121244.GA20084@lst.de>
-Content-Type: text/plain; charset=UTF-8
-Reply-To: yukuai@fygo.io
-Cc: "Jens Axboe" <axboe@kernel.dk>, "Tejun Heo" <tj@kernel.org>, 
-	"Keith Busch" <kbusch@kernel.org>, "Sagi Grimberg" <sagi@grimberg.me>, 
-	"Alasdair Kergon" <agk@redhat.com>, 
-	"Benjamin Marzinski" <bmarzins@redhat.com>, 
-	"Mike Snitzer" <snitzer@kernel.org>, 
-	"Mikulas Patocka" <mpatocka@redhat.com>, 
-	"Dongsheng Yang" <dongsheng.yang@linux.dev>, 
-	"Zheng Gu" <cengku@gmail.com>, "Coly Li" <colyli@fygo.io>, 
-	"Kent Overstreet" <kent.overstreet@linux.dev>, 
-	"Josef Bacik" <josef@toxicpanda.com>, 
-	"Nilay Shroff" <nilay@linux.ibm.com>, <linux-block@vger.kernel.org>, 
-	<cgroups@vger.kernel.org>, <linux-nvme@lists.infradead.org>, 
-	<dm-devel@lists.linux.dev>, <linux-bcache@vger.kernel.org>, 
-	"yu kuai" <yukuai@fygo.io>
+	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="S6nhsKMA"
+Received: by mail-pg1-f201.google.com with SMTP id 41be03b00d2f7-c8952346bb9so6218707a12.2
+        for <linux-bcache@vger.kernel.org>; Thu, 16 Jul 2026 17:51:20 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=google.com; s=20251104; t=1784249480; x=1784854280; darn=vger.kernel.org;
+        h=content-type:cc:to:from:subject:message-id:references:mime-version
+         :in-reply-to:date:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=Ev6dCaGMd2PG8/f+hrXXrN8UMzqD5iaeXfaZiYQj5DA=;
+        b=S6nhsKMAEjzBZUMyZQ5f+MLzBMZ+PQ0xdyQWnYPORzpBLI/49uC+812VeW5CWmLBUW
+         M7Euz1vdrCLmM0gLoRiI3dC2JPXNMFgpGtYPRD+mWSARxdz9h+uF96KSz0uAunHUhwxN
+         fYwlCRPg6B5Jkgnxmsmi0/UHFZ1uODz/8aASmv8qw9J9Vhgv/ibfKahGxqrMfbQKtbXo
+         9pTqMRTnHuAcbyhgCpPpJcyn+xVmmfLX1gmxpaEbBV68gzRm9JDMdpHlMZFcPFokiMW2
+         YIr09GXxdujZDOPYksmgA742efy/vTP/4iN8gm0ppTaeiuti50hMLRYMhu2qYAOCxr0a
+         cqpw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1784249480; x=1784854280;
+        h=content-type:cc:to:from:subject:message-id:references:mime-version
+         :in-reply-to:date:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=Ev6dCaGMd2PG8/f+hrXXrN8UMzqD5iaeXfaZiYQj5DA=;
+        b=ZfU7OB3hKR6fScmm5PbOnmo6qUhABe/KKexA8mFd1UDbZjraYG+NszgUxldFNqvrb8
+         qva8ddCsVYX6p3yV4/8YZagU+opZE+hS1HhMN5uz8uxDYOgAV0tBfgSsz8a9BdtxFm5q
+         tg2Hf3nD+69ciPgyDa0r5qtqAinottFlVmhzmL0rC+YKLMMn/7wsOJYn9TBbIoFzoGB8
+         /3aiJjb3Xj+yC9QJCx6gBVZ0B17om0bG6b9SdUNbO4eFzMZjRleKzDXhUu7UF+/mJCWX
+         jQKSJFr2jFj6oLCrG8O7080cV/g9+3cOPSfBmibNdjHWRpNfFXUzuEoXZQeLEuIx+KJz
+         CZvQ==
+X-Gm-Message-State: AOJu0YzCRsghN74mgunrNDFUEDVcTeegIwsQGx8tH3d9s6+6QSUlW5cK
+	4yUI0k9vwKdxLqTF7txDCz8Y0T59M9TWP7AWhhMw1vzdMvE2Ncrc9tJ0OMLEMCxSlHUQDG6Jvo8
+	vkMk9W8LfTbdXnKjmQPOw4Q==
+X-Received: from dlbbu38.prod.google.com ([2002:a05:7022:2226:b0:13c:dac9:9116])
+ (user=robertpang job=prod-delivery.src-stubby-dispatcher) by
+ 2002:a05:6a20:1713:b0:3c3:8651:b302 with SMTP id adf61e73a8af0-3c3ad7ac447mr241161637.28.1784249479389;
+ Thu, 16 Jul 2026 17:51:19 -0700 (PDT)
+Date: Thu, 16 Jul 2026 17:50:39 -0700
+In-Reply-To: <20251113053630.54218-6-colyli@fnnas.com>
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 Mime-Version: 1.0
-Subject: Re: [RFC PATCH v1 01/17] nvme-multipath: retarget failedover bios from requeue work
-Received: from [192.168.1.104] ([39.182.0.157]) by smtp.larksuite.com with ESMTPS; Tue, 14 Jul 2026 01:21:56 +0000
-User-Agent: Mozilla Thunderbird
-X-Original-From: yu kuai <yukuai@fygo.io>
-To: "Christoph Hellwig" <hch@lst.de>, "Hannes Reinecke" <hare@suse.de>
-Date: Tue, 14 Jul 2026 09:21:50 +0800
-References: <20260704195124.1375075-1-yukuai@kernel.org> <20260704195124.1375075-2-yukuai@kernel.org> <0ded62a6-b3da-4790-adf0-566ded30ee43@suse.de> <20260713121244.GA20084@lst.de>
-X-Lms-Return-Path: <lba+26a558f34+c186fd+vger.kernel.org+yukuai@fygo.io>
-Content-Transfer-Encoding: quoted-printable
+References: <20251113053630.54218-6-colyli@fnnas.com>
+X-Mailer: git-send-email 2.55.0.229.g6434b31f56-goog
+Message-ID: <20260717005039.1953649-1-robertpang@google.com>
+Subject: Re: [PATCH 5/9] bcache: reduce gc latency by processing less nodes
+ and sleep less time
+From: Robert Pang <robertpang@google.com>
+To: colyli@fygo.io
+Cc: linux-bcache@vger.kernel.org, mingzhe.zou@easystack.cn, 
+	robertpang@google.com
+Content-Type: text/plain; charset="UTF-8"
 
-Hi=EF=BC=8C
+Hi Coly,
 
-=E5=9C=A8 2026/7/13 20:12, Christoph Hellwig =E5=86=99=E9=81=93:
-> On Mon, Jul 13, 2026 at 11:29:35AM +0200, Hannes Reinecke wrote:
->> On 7/4/26 9:51 PM, Yu Kuai wrote:
->>> From: Yu Kuai <yukuai@fygo.io>
->>>
->>> bio_set_dev() is about to become explicitly sleepable because it can
->>> associate the bio with a blkg for the destination queue.  NVMe failover
->>> can run from request completion context, and nvme_failover_req() also h=
-olds
->>> head->requeue_lock with interrupts disabled while it steals bios from t=
-he
->>> failed request.  Calling bio_set_dev() there is not safe once the helpe=
-r is
->>> allowed to sleep.
->>>
->>> The requeue lock only protects head->requeue_list.  Keep the list
->>> manipulation under that lock, but defer retargeting to nvme_requeue_wor=
-k(),
->>> which already drains the list from process context before resubmitting =
-each
->>> bio.  The bios remain private to the requeue list until the worker pops
->>> them, so moving the device switch there preserves the existing retry fl=
-ow
->>> while avoiding a sleepable helper in completion context.
->>>
->>> Signed-off-by: Yu Kuai <yukuai@fygo.io>
->>> ---
->>>    drivers/nvme/host/multipath.c | 4 +---
->>>    1 file changed, 1 insertion(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/nvme/host/multipath.c b/drivers/nvme/host/multipat=
-h.c
->>> index 9b9a657fa330..76baa180ae1c 100644
->>> --- a/drivers/nvme/host/multipath.c
->>> +++ b/drivers/nvme/host/multipath.c
->>> @@ -149,7 +149,6 @@ void nvme_failover_req(struct request *req)
->>>    	struct nvme_ns *ns =3D req->q->queuedata;
->>>    	u16 status =3D nvme_req(req)->status & NVME_SCT_SC_MASK;
->>>    	unsigned long flags;
->>> -	struct bio *bio;
->>>      	nvme_mpath_clear_current_path(ns);
->>>    	atomic_long_inc(&ns->failover);
->>> @@ -165,8 +164,6 @@ void nvme_failover_req(struct request *req)
->>>    	}
->>>      	spin_lock_irqsave(&ns->head->requeue_lock, flags);
->>> -	for (bio =3D req->bio; bio; bio =3D bio->bi_next)
->>> -		bio_set_dev(bio, ns->head->disk->part0);
->> If you remove this the original device remains being referenced by
->> the bio, so there might be a chance of some accidentally referencing
->> the (now invalid) bdev.
->> I think it might be better if you were set it to NULL here, to
->> signal that this bio currently has no bdev associated.
-> What should reference it?  This moves setting bi_bdev from the only
-> place adding to the list to the only place removing from the list.
+I was reviewing this patch again and noticed that btree_gc_min_nodes() reads the
+atomic counter 'search_inflight'. This counter is incremented and decremented by
+clients issuing front-side I/O. In this scenario, should we add a memory barrier
+(such as `smp_mb__before_atomic`) prior to `atomic_read()`? 
 
-I'll follow your advice to move blkg association to bio submit. And this pa=
-tch
-will not be needed anymore.
+My concern is that if btree_gc_min_nodes() is inlined in the caller
+btree_gc_recurse(), the compiler might hoist the `atomic_read()` outside of the
+while loop where btree_gc_min_nodes() is inlined, preventing us from fetching the
+latest counter value. Adding the barrier would guarantee we read the updated
+value.
 
->
---=20
-Thanks,
-Kuai
+What are your thoughts on this?
+
+Best regards,
+Robert Pang
