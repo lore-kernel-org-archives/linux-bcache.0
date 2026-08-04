@@ -1,164 +1,140 @@
-Received: from va-2-44.ptr.blmpb.com (va-2-44.ptr.blmpb.com [209.127.231.44])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 7829C362138
-	for <linux-bcache@vger.kernel.org>; Thu, 23 Jul 2026 07:03:58 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.44
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id F387733A9E1;
+	Tue,  4 Aug 2026 06:53:34 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1784790241; cv=none; b=HLWWZ2bUGpv1cwGj8zLPmpz7geKI6XLg76mG2aBB7etgQd/oRFbPvWBX4r6JFzB6WIzEO7wuRmMcyzj51srnSK+6Ysrl0SILIi6Vc3XggL63pCQsSePsNNu99rKZfX3llVeoBwx4fW5V17PP3BMCbJFwjHPkqevFllYkL7SRBas=
+	t=1785826416; cv=none; b=A1FIRkpVCkd5zJscITx1RhmUgp5jKIdxeRBGsndOcx9EJ7M6oG5qBawtHp1xpJ/krYHyxAEdSEG5xbuhSviE6we2vfP6FDPRrwiAaSP03qgLmezK7xiDqC8mIb7EHWMdXpJnZ1sv7hbHP4dSV+m+Tah9vQkl717TqoAAcX+2t7E=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1784790241; c=relaxed/simple;
-	bh=uhyBvDEhPU+sGnw3/t9PBXDk9+k140Odr/fon+soAPc=;
-	h=Message-Id:References:To:Mime-Version:Content-Type:Date:
-	 In-Reply-To:Cc:From:Subject; b=hmqVa5JYFqPHwI7zaDtceUUFFNKnpb4cg3UaMyoFY9TmjG2ejdIfKE8EuLMrf5CDA1K1Dc+Bw2yC3HL6RIgRvcGyEt4Mds8Iy0amTq0NRWCaRx0P/5n9KVbrhiTwWBRcfU+/2Z8x7hQB3kF0fKvRzS3T5py5pxL6md5rXU6C9zU=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=kRCLEiKe; arc=none smtp.client-ip=209.127.231.44
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
+	s=arc-20240116; t=1785826416; c=relaxed/simple;
+	bh=fao//z/eP3KEIwqi5tYZ4oMAvgE0jCpV9ZpBd4OEW9Y=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=ncynyAznDuM3SOqnTIaFMGQZ4swApRV/T0sXLUni7Q3NJOPJKQ2oKOLlUWIzDiui/nU2ERVbChepJWGeXarGMxTOSx790RljMOTHb5t75OV6QSsPpN70COkLJfe+lhVuEx/oks32aSWWOEtJPIJgRTLwQMd5Xppqn8MoC8nXtCk=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=HRAkGd6g; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="kRCLEiKe"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1784790224;
-  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
- reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=uhyBvDEhPU+sGnw3/t9PBXDk9+k140Odr/fon+soAPc=;
- b=kRCLEiKewcrFXOWLhoorNYSuDcSujGeZ+4YnuLSvybdE34VeH9awKs1DrmA8CDtssSpK7X
- rKLiZeSqg0YoQqDfdBx7bxC+P34/AFGG7iIgYmWmpc/Dh+wNCVO1vn3I8qD06Niz3WOVZd
- Ti22VrLglKfwRZDK+tgropkPvIOc//y9RAoRa9z+eU4lwyFlCQ+BQHJ2c2WQcnZ5EtuVAD
- ItBk8ScccMArT6vgWHA+qB/It/3pxoQn6kLcT2/6cMY7BIIxIYJY0TzhU3KBHmGsPbwnIm
- I2py8ldBbpQvkR+3+vTYp5+4F6O0StqnCGyCs+0ws9t+jlcS1VxhE57+494zGA==
-Message-Id: <338127ba-2c79-405e-bd8c-afa2bf812615@fygo.io>
-Received: from [192.168.1.104] ([39.182.0.167]) by smtp.larksuite.com with ESMTPS; Thu, 23 Jul 2026 07:03:42 +0000
-User-Agent: Mozilla Thunderbird
-References: <20260704195124.1375075-1-yukuai@kernel.org> <20260704195124.1375075-2-yukuai@kernel.org> <6baae2af-640e-48bd-9909-977cd316c8d5@linux.ibm.com>
-To: "Nilay Shroff" <nilay@linux.ibm.com>, "Jens Axboe" <axboe@kernel.dk>, 
-	"Tejun Heo" <tj@kernel.org>, "yu kuai" <yukuai@fygo.io>
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="HRAkGd6g"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id 5C0041F000E9;
+	Tue,  4 Aug 2026 06:53:17 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1785826414;
+	bh=VWVPrEk+52tzx0Rhhgtr7Ya1aHTvGOt+4XML3uQJj9A=;
+	h=From:To:Cc:Subject:Date;
+	b=HRAkGd6gzVJgwfR6icTxqTgd1Rlu43ZNA5zZFtStBCAOynam6IMY9HCWb9GK8vJWd
+	 uOdM+BvVgAgthosRUlVXAmHZPNwX3NKNZBL3gS4U9xL637R7mwZYDt4Z55SpWovOZ/
+	 aR3E2g6qz5VEiUcs7c698FjI2cLGpjEq14wU4uydMzKLmKDwBvHJ6wdAVX4CMOxXBB
+	 U9dcFBSrF01hZ9WglHLjp4m/kxWsAB2JgjMnlvXZvMCPnFPhta0yRXUXHcMkgebBuL
+	 Jj2n24YgBPUHFVYa5tBY6fd0rNG1mkYCLFcAj0lup18MrF9wbomZHXXi0Q6D0Fk6VQ
+	 Uadqdq7RKMMug==
+From: Yu Kuai <yukuai@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Tejun Heo <tj@kernel.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	=?UTF-8?q?Michal=20Koutn=C3=BD?= <mkoutny@suse.com>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Yu Kuai <yukuai@fygo.io>,
+	Josef Bacik <josef@toxicpanda.com>,
+	Coly Li <colyli@fygo.io>,
+	Kent Overstreet <kent.overstreet@linux.dev>,
+	Alasdair Kergon <agk@redhat.com>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	Song Liu <song@kernel.org>,
+	Dan Williams <djbw@kernel.org>,
+	Vishal Verma <vishal.l.verma@intel.com>,
+	Dave Jiang <dave.jiang@intel.com>,
+	Alison Schofield <alison.schofield@intel.com>,
+	Pankaj Gupta <pankaj.gupta.linux@gmail.com>,
+	Andreas Gruenbacher <agruenba@redhat.com>,
+	Matthew Wilcox <willy@infradead.org>,
+	Jan Kara <jack@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Chris Li <chrisl@kernel.org>,
+	Kairui Song <kasong@tencent.com>,
+	Christoph Hellwig <hch@lst.de>,
+	Nilay Shroff <nilay@linux.ibm.com>,
+	Tao Cui <cui.tao@linux.dev>,
+	cgroups@vger.kernel.org,
+	linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-block@vger.kernel.org,
+	linux-bcache@vger.kernel.org,
+	dm-devel@lists.linux.dev,
+	linux-raid@vger.kernel.org,
+	nvdimm@lists.linux.dev,
+	virtualization@lists.linux.dev,
+	gfs2@lists.linux.dev,
+	linux-fsdevel@vger.kernel.org,
+	linux-mm@kvack.org
+Subject: [RFC PATCH v1 0/3] blk-cgroup: store blkcg in bio before blkcg_mutex conversion
+Date: Tue,  4 Aug 2026 14:53:10 +0800
+Message-ID: <20260804065313.2092022-1-yukuai@kernel.org>
+X-Mailer: git-send-email 2.51.0
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-X-Original-From: yu kuai <yukuai@fygo.io>
-Date: Thu, 23 Jul 2026 15:03:37 +0800
-Content-Transfer-Encoding: quoted-printable
-In-Reply-To: <6baae2af-640e-48bd-9909-977cd316c8d5@linux.ibm.com>
-Reply-To: yukuai@fygo.io
-Cc: "Christoph Hellwig" <hch@lst.de>, "Keith Busch" <kbusch@kernel.org>, 
-	"Sagi Grimberg" <sagi@grimberg.me>, "Alasdair Kergon" <agk@redhat.com>, 
-	"Benjamin Marzinski" <bmarzins@redhat.com>, 
-	"Mike Snitzer" <snitzer@kernel.org>, 
-	"Mikulas Patocka" <mpatocka@redhat.com>, 
-	"Dongsheng Yang" <dongsheng.yang@linux.dev>, 
-	"Zheng Gu" <cengku@gmail.com>, "Coly Li" <colyli@fygo.io>, 
-	"Kent Overstreet" <kent.overstreet@linux.dev>, 
-	"Josef Bacik" <josef@toxicpanda.com>, "Yu Kuai" <yukuai@fygo.io>, 
-	<linux-block@vger.kernel.org>, <cgroups@vger.kernel.org>, 
-	<linux-nvme@lists.infradead.org>, <dm-devel@lists.linux.dev>, 
-	<linux-bcache@vger.kernel.org>
-From: "yu kuai" <yukuai@fygo.io>
-Subject: Re: [RFC PATCH v1 01/17] nvme-multipath: retarget failedover bios from requeue work
-X-Lms-Return-Path: <lba+26a61bccf+eca662+vger.kernel.org+yukuai@fygo.io>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
 
-Hi,
+From: Yu Kuai <yukuai@fygo.io>
 
-=E5=9C=A8 2026/7/18 3:12, Nilay Shroff =E5=86=99=E9=81=93:
-> On 7/5/26 1:21 AM, Yu Kuai wrote:
->> From: Yu Kuai <yukuai@fygo.io>
->>
->> bio_set_dev() is about to become explicitly sleepable because it can
->> associate the bio with a blkg for the destination queue.=C2=A0 NVMe fail=
-over
->> can run from request completion context, and nvme_failover_req() also=20
->> holds
->> head->requeue_lock with interrupts disabled while it steals bios from=20
->> the
->> failed request.=C2=A0 Calling bio_set_dev() there is not safe once the=
-=20
->> helper is
->> allowed to sleep.
->>
->> The requeue lock only protects head->requeue_list.=C2=A0 Keep the list
->> manipulation under that lock, but defer retargeting to=20
->> nvme_requeue_work(),
->> which already drains the list from process context before=20
->> resubmitting each
->> bio.=C2=A0 The bios remain private to the requeue list until the worker =
-pops
->> them, so moving the device switch there preserves the existing retry=20
->> flow
->> while avoiding a sleepable helper in completion context.
->>
->> Signed-off-by: Yu Kuai <yukuai@fygo.io>
->> ---
->> =C2=A0 drivers/nvme/host/multipath.c | 4 +---
->> =C2=A0 1 file changed, 1 insertion(+), 3 deletions(-)
->>
->> diff --git a/drivers/nvme/host/multipath.c=20
->> b/drivers/nvme/host/multipath.c
->> index 9b9a657fa330..76baa180ae1c 100644
->> --- a/drivers/nvme/host/multipath.c
->> +++ b/drivers/nvme/host/multipath.c
->> @@ -149,7 +149,6 @@ void nvme_failover_req(struct request *req)
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 struct nvme_ns *ns =3D req->q->queuedata;
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 u16 status =3D nvme_req(req)->status & NV=
-ME_SCT_SC_MASK;
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 unsigned long flags;
->> -=C2=A0=C2=A0=C2=A0 struct bio *bio;
->> =C2=A0 =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 nvme_mpath_clear_current_path(ns);
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 atomic_long_inc(&ns->failover);
->> @@ -165,8 +164,6 @@ void nvme_failover_req(struct request *req)
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 }
->> =C2=A0 =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 spin_lock_irqsave(&ns->head->reque=
-ue_lock, flags);
->> -=C2=A0=C2=A0=C2=A0 for (bio =3D req->bio; bio; bio =3D bio->bi_next)
->> -=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 bio_set_dev(bio, ns->head->d=
-isk->part0);
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 blk_steal_bios(&ns->head->requeue_list, r=
-eq);
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 spin_unlock_irqrestore(&ns->head->requeue=
-_lock, flags);
->> =C2=A0 @@ -684,6 +681,7 @@ static void nvme_requeue_work(struct=20
->> work_struct *work)
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 next =3D bio->bi_=
-next;
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 bio->bi_next =3D =
-NULL;
->> =C2=A0 +=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 bio_set_dev(bio, head=
-->disk->part0);
->> =C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0=C2=A0 submit_bio_noacct=
-(bio);
->
-> What happens if bio_set_dev() fails to associate a blkg? From what
-> I understand, bio_associate_blkg() may fail, leaving bio->bi_blkg
-> set to NULL. Later, submit_bio_noacct() can invoke blkcg-related
-> helpers such as blk_should_throtl(), which expect a valid bio->bi_blkg.
-> However if bio->bi_blkg is NULL then accessing it without NULL check
-> could crash the kernel. This is probably not a bug introduced with your
-> changes, but you may want to check it.
+This RFC is a preparatory series for the blkcg_mutex conversion proposed in
+the blkcg_mutex RFC v2 series [1].  That series moves queue-local blkg
+topology synchronization from q->queue_lock to q->blkcg_mutex.  A direct
+conversion is awkward while bios store queue-local blkg references, because
+bio allocation, bio_set_dev(), remap and clone paths can run in contexts
+where creating a missing blkg must not sleep or is unnecessary.
 
-bio_set_dev() will not leave bio->bi_blkg set to NULL. blkg_lookup_create()
-will iterate closest blkg start from root_blkg, if any blkg is missing then
-create, and if creating failed, current closest blkg is returned.
+This set makes the bio association queue-independent by storing the blkcg
+in the bio instead of a blkg.  A blkg is looked up from the bio's blkcg and
+current bdev only when blkcg policy or accounting code needs it.  The first
+successful policy lookup pins the blkg with a bio-owned reference tracked by
+BIO_BLKG_REF; the reference is dropped when the bio cgroup association is
+cleared or when bio_set_dev() changes the lookup key.
 
-The same iteration exist in blkcg configuration, where failure is returned =
-if
-blkg creation failed.
+Patch 1 adds accessors for the current bio cgroup state and factors out the
+release path.  Patch 2 switches the stored bio association from blkg to blkcg,
+adds lookup/create helpers for policy users, and converts the blkcg policies
+and cloned-bio users.  Patch 3 moves async bio punt state from blkg to blkcg
+so punted bios do not instantiate a queue-local blkg when no policy needs one.
 
->
-> The question is, is bio_associate_blkg() guaranteed never to fail, or
-> should the failure be handled explicitly before the bio is resubmitted?
->
-> I also skimmed through the rest of the series. However, as Christoph
-> mentioned in an earlier thread, we may be moving away from non-blocking
-> blkg allocation altogether. If that's the direction we're taking, this
-> series will likely need to be reworked. I'd therefore prefer to wait for
-> the next revision before reviewing the other patches.
->
-> Thanks,
-> --Nilay
->
->
---=20
-Thanks,
-Kuai
+This is v1 of this preparatory set; there is no previous version.
+
+Related series:
+  [1] RFC v2 blk-cgroup: protect blkgs with blkcg_mutex
+      https://lore.kernel.org/r/20260724123037.3004560-1-yukuai@kernel.org
+
+Yu Kuai (3):
+  blk-cgroup: add helpers for bio cgroup state
+  blk-cgroup: store blkcg in bio instead of blkg
+  blk-cgroup: move async bio punt state to blkcg
+
+ Documentation/admin-guide/cgroup-v2.rst |   2 +-
+ block/bfq-cgroup.c                      |  14 +-
+ block/bfq-iosched.c                     |  18 +-
+ block/bio.c                             |  22 +--
+ block/blk-cgroup-fc-appid.c             |  10 +-
+ block/blk-cgroup.c                      | 251 +++++++++++++++---------
+ block/blk-cgroup.h                      |  40 +++-
+ block/blk-crypto-fallback.c             |   2 +-
+ block/blk-iocost.c                      |  12 +-
+ block/blk-iolatency.c                   |  11 +-
+ block/blk-ioprio.c                      |   2 +-
+ block/blk-throttle.c                    |   2 +-
+ block/blk-throttle.h                    |   2 +-
+ drivers/md/bcache/request.c             |   2 +-
+ drivers/md/dm.c                         |   2 +-
+ drivers/md/md.c                         |   2 +-
+ drivers/nvdimm/nd_virtio.c              |   2 +-
+ fs/gfs2/lops.c                          |   3 +-
+ include/linux/bio.h                     |  20 +-
+ include/linux/blk_types.h               |   9 +-
+ include/linux/writeback.h               |   2 +-
+ mm/page_io.c                            |  10 +-
+ 22 files changed, 268 insertions(+), 172 deletions(-)
+
+base-commit: f2690679ecf3a3151688ebef766dd2512ff95854
+-- 
+2.51.0
