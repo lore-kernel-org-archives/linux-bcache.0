@@ -1,262 +1,244 @@
-Received: from va-2-18.ptr.blmpb.com (va-2-18.ptr.blmpb.com [209.127.231.18])
+Received: from mail-wr1-f48.google.com (mail-wr1-f48.google.com [209.85.221.48])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A4A3C41A928
-	for <linux-bcache@vger.kernel.org>; Thu,  6 Aug 2026 08:36:35 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.127.231.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 9C79C431A2B
+	for <linux-bcache@vger.kernel.org>; Thu,  6 Aug 2026 09:22:21 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.221.48
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1786005412; cv=none; b=iiP995KWBq16YU/cVyFUIvtumUolJfmtd3zToc0fZzOxbx9s7tc49y/7hX4909/XTAJCfQbD4Og2EiZelu5KxzlkYYCA6vNpUWgJhglcbNdBEOo3SJySRvQTLHNH7grqjyYDT0FMEBCaq2Jo9uEBz7N2BTpPC87Rm39wbOkCZeQ=
+	t=1786008144; cv=none; b=IEQsEp0eKdBS7qjncn7SsGgeBeON7oUe5A2R2tFoYn6z0yfE87X5mRP1R20cBlQs92oOTh3Wr6v8m2M3+iXhrfC32xyuilYFnpi2nS9TXwh4Xkr3Q+tlgqxV6qN0OgmPdmyWSlW2PJvxtCGUe8LO59TroncaQN73KSfb8+GAgNQ=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1786005412; c=relaxed/simple;
-	bh=GuyHZ+UTAySEwbsM4CZAdonq1dmhm7LRR7bw6zYXYHM=;
-	h=Subject:Date:References:Content-Type:To:Cc:From:Mime-Version:
-	 Message-Id:Content-Disposition:In-Reply-To; b=bzi1+vk+Svc/UjTNnIEGJHk2MzvaMVqDbAxHJMrPvl5+PWstK+KPxsF/eYYTNu5MkotRm5v37nSaF/EEg61nRyUF5n9LF3uZ8us9otatOMjJY60Bha4X5UAepEY1rKgQX3fojD4DFk5/4CfdhIF9gUdFAMWUmz/Cm+Q5PJM8j9M=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io; spf=pass smtp.mailfrom=fygo.io; dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b=l6Lv4dSD; arc=none smtp.client-ip=209.127.231.18
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
+	s=arc-20240116; t=1786008144; c=relaxed/simple;
+	bh=eAkOXZtlwNYjPhDGjyZtRke2iyDCQ2QqdzoXZFHQk1s=;
+	h=Date:From:To:Cc:Subject:Message-ID:References:MIME-Version:
+	 Content-Type:Content-Disposition:In-Reply-To; b=peYCzunsIpHhDshU1aF5XVT+lomJrzEhIgdwsnO/Eor2xAAPFseNaM3dlZNUiRYHirpt4JsD9Olr9tbXxw7qo9cbiKqYkqljlTY3XPIaetOVOiueUsa8qSXWueQpVj5N9q4n1Shv6XyJI/MjGUQw/GH6Jnz54qFDWB1MEfO9QGM=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=suse.com; spf=pass smtp.mailfrom=suse.com; dkim=pass (2048-bit key) header.d=suse.com header.i=@suse.com header.b=XrnD5ycW; arc=none smtp.client-ip=209.85.221.48
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=suse.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=suse.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.b="l6Lv4dSD"
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1786005383;
-  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
- reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=ctyHbJ15EdXGldV2RZV5oF+IUsn3jEHq8Baf6W9MCqE=;
- b=l6Lv4dSDHS0a5/lQDuR6WDsTZ6GMtVDv7yJPXI3eL17jNHiuAVKtnyuibfFPN0ChWON0Lb
- lmIuPyHxfgO8otmibRFDq2auf+tk1VzUDaF0Oyo6Vnkt9aTDjwQW7eSMg13LbzJuM0Bjdq
- PeragevkuCnA7kGgospea9Kg4N6IC4B/3j6DbIOupktbinUd5iBtWLQrnB7qt0eAB/hIUO
- uFjnmTt6FniWs9KJvkZ1cJSDOkC2lq7v4wjXyprG6NlxLs7A77cXyOI/0ozGNVcamFYVJr
- 7S8ucLloLO+7A+pcPsG30xNe5XUGQ9ZN0PHO7h1rmTcpmDP9XlvwPDmUmDsJ7w==
-Subject: Re: [PATCH 5/9] bcache: reduce gc latency by processing less nodes and sleep less time
-Date: Thu, 6 Aug 2026 16:36:19 +0800
-References: <20251113053630.54218-6-colyli@fnnas.com> <20260717005039.1953649-1-robertpang@google.com> <DD9682AB-F203-4106-8CF4-95F396A736D2@fygo.io> <CAJhEC07z6EmL42encTkdBsEhuXphwW08XkcrpdZseL4tx=B5mw@mail.gmail.com>
-X-Original-From: Coly Li <colyli@fygo.io>
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=UTF-8
-Received: from studio.local ([120.245.64.97]) by smtp.larksuite.com with ESMTPS; Thu, 06 Aug 2026 08:36:21 +0000
-X-Lms-Return-Path: <lba+26a744786+3682a0+vger.kernel.org+colyli@fygo.io>
-To: "Robert Pang" <robertpang@google.com>
-Cc: <linux-bcache@vger.kernel.org>, <mingzhe.zou@easystack.cn>
-From: "Coly Li" <colyli@fygo.io>
+	dkim=pass (2048-bit key) header.d=suse.com header.i=@suse.com header.b="XrnD5ycW"
+Received: by mail-wr1-f48.google.com with SMTP id ffacd0b85a97d-472326ca506so1329689f8f.2
+        for <linux-bcache@vger.kernel.org>; Thu, 06 Aug 2026 02:22:21 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=suse.com; s=google; t=1786008140; x=1786612940; darn=vger.kernel.org;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:from:to:cc:subject
+         :date:message-id:reply-to:content-type;
+        bh=Pcnhqt0EtUylxXGbjqsf+1Pc4DS5YZiCgI0VutNek2Q=;
+        b=XrnD5ycWprfq6ZXTgx/sPzXa5ZnxABDwcpmPqfn9GG88R1oeKt24y55hESrkuenR00
+         nCKpfv3AkKfF4BEvNi1Np0lFOrYCUwYWexMxsBnhPOx2mxRlL7ydg2m/kBT+aiUV3Zd3
+         VESkJ5GGNCSExJTW9D+DzbWi1fVcVr4NwLIFru+84F1HhDvhmChS2J0YqoM0vX1T/1cK
+         iAluYuFr7ppe3xH4njcLfGLfuvucdrfjmvVOh34RYec6puIycELs/LS1OFCHdSinjMYe
+         umcNKcyjctdczgVSItKFxhC6REpSN1RTegig96f/He4KlWghfvQV4c9yOrOSyHOvsfie
+         Z3iQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1786008140; x=1786612940;
+        h=in-reply-to:content-disposition:content-type:mime-version
+         :references:message-id:subject:cc:to:from:date:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=Pcnhqt0EtUylxXGbjqsf+1Pc4DS5YZiCgI0VutNek2Q=;
+        b=dCcc9MUFivE+dhmlCbcGxWdw3UVfgw54PEyeDtWuFgrqQqDsEolAiRXspxN+rBR0u0
+         JmpjZlSWCfDz+OMHkPa4LN9PqrOR94w8bTCXX9UdkOjdOQK9m2tnOSBil2I3cDP4Ers5
+         eDWdQtBug1k/6c3KsPVzSa8p+m+rMI7rdE9+7Y8GKJIrGUqmNYj/RlCtWTxqvsL2oRcq
+         teLb4jXy3BokBVxSUXvVK9wd6tLjNfuqEek1iOGF8v0QNmOrddS5EEYB7QaJQe40pMdo
+         CmLkZF9NE9ASHEbM0+Y6sJPiMT82n7q/PMVzEBZS5aM+cflSVQzHoRL67hDoyck9RlWr
+         B2uA==
+X-Forwarded-Encrypted: i=1; AHgh+RpzSxN+gX2gBQiVCJx5R6L4MFuYGlIuQ3a1hQJcSR8gj7RsRgaHQ6LKFaXR5mD8illCoL5eZWpqY8mB4zs=@vger.kernel.org
+X-Gm-Message-State: AOJu0Yw9aB7cXmZX+3bjoEhkB+0WnfyUUwOrvJuQi+bISI0Ra374+bBV
+	n2WBqE+Co0SSgM1rmpE0wCZRqjJ3r9xxeFZx0lP5UqQux4JgUmWY3XOdymuuiQR/YGo=
+X-Gm-Gg: AR+sD13tzGIcnHuOrnDW070qJIhSq+fS2YQZRaKqblmpz1x1ejqeHJ2lULlp7yEvc0m
+	6Zez/02Tsh2PIlN+RdKjZXPb2ijkPxOcUc/R/Lq/n7x7WynaQ+m0bm0ntTlLdk1RFG75RUgsCm9
+	T58c//FYs78ghY+tHk12PWyqJjHLbAOhxZdSQLRdyrB0RtpSqsStg4NVd9eYrdHR5pgfSEJ6YBF
+	+0Ob2dUv1Xqy2Evlk5Fp5wzZwME1DFp94XyzQMDCdrOsONo8/OxQqBa9ngFG0VtEq+5hnFIRDh0
+	7JTlKBOLvTyJOkTJUvJJEPxnpDdCydVdjqp2XP5GFgsvW07LGXp7ypNQkO8wrpL+UiFaK6Ng228
+	+xt9PyPZ894YvG93Iu+UH6ypQJMkCH3My/AjPX9FhQ0JoDONSlxPFeulfpU1xWKjuhOi9PeGsgw
+	izdOQHfOFbi9KynlH6xFSIR+GVRCD7AS0/f2jUcwXHerilVOVkTKb+p8yvwnDpgt0g
+X-Received: by 2002:a5d:624a:0:b0:47f:9750:26cc with SMTP id ffacd0b85a97d-47fec630b5cmr16574414f8f.23.1786008139632;
+        Thu, 06 Aug 2026 02:22:19 -0700 (PDT)
+Received: from localhost.localdomain ([2001:af0:8000:1409:193:86:92:181])
+        by smtp.gmail.com with ESMTPSA id ffacd0b85a97d-47ff7b31975sm4112794f8f.33.2026.08.06.02.22.17
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Thu, 06 Aug 2026 02:22:18 -0700 (PDT)
+Date: Thu, 6 Aug 2026 11:22:16 +0200
+From: Michal =?utf-8?Q?Koutn=C3=BD?= <mkoutny@suse.com>
+To: Yu Kuai <yukuai@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>, 
+	Johannes Weiner <hannes@cmpxchg.org>, Jonathan Corbet <corbet@lwn.net>, Yu Kuai <yukuai@fygo.io>, 
+	Josef Bacik <josef@toxicpanda.com>, Coly Li <colyli@fygo.io>, 
+	Kent Overstreet <kent.overstreet@linux.dev>, Alasdair Kergon <agk@redhat.com>, 
+	Mike Snitzer <snitzer@kernel.org>, Mikulas Patocka <mpatocka@redhat.com>, 
+	Benjamin Marzinski <bmarzins@redhat.com>, Song Liu <song@kernel.org>, Dan Williams <djbw@kernel.org>, 
+	Vishal Verma <vishal.l.verma@intel.com>, Dave Jiang <dave.jiang@intel.com>, 
+	Alison Schofield <alison.schofield@intel.com>, Pankaj Gupta <pankaj.gupta.linux@gmail.com>, 
+	Andreas Gruenbacher <agruenba@redhat.com>, Matthew Wilcox <willy@infradead.org>, Jan Kara <jack@suse.cz>, 
+	Andrew Morton <akpm@linux-foundation.org>, Chris Li <chrisl@kernel.org>, Kairui Song <kasong@tencent.com>, 
+	Christoph Hellwig <hch@lst.de>, Nilay Shroff <nilay@linux.ibm.com>, Tao Cui <cui.tao@linux.dev>, 
+	cgroups@vger.kernel.org, linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, 
+	linux-block@vger.kernel.org, linux-bcache@vger.kernel.org, dm-devel@lists.linux.dev, 
+	linux-raid@vger.kernel.org, nvdimm@lists.linux.dev, virtualization@lists.linux.dev, 
+	gfs2@lists.linux.dev, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v1 2/3] blk-cgroup: store blkcg in bio instead of blkg
+Message-ID: <anRPSKHWo59GPIA0@localhost.localdomain>
+References: <20260804065313.2092022-1-yukuai@kernel.org>
+ <20260804065313.2092022-3-yukuai@kernel.org>
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-Message-Id: <anQ3SNstTaytmxCn@studio.local>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="ltojthlavrpt3nkl"
 Content-Disposition: inline
-In-Reply-To: <CAJhEC07z6EmL42encTkdBsEhuXphwW08XkcrpdZseL4tx=B5mw@mail.gmail.com>
+In-Reply-To: <20260804065313.2092022-3-yukuai@kernel.org>
 
-On Tue, Jul 21, 2026 at 11:55:53AM +0800, Robert Pang wrote:
-> On Fri, Jul 17, 2026 at 9:20=E2=80=AFPM Coly Li <colyli@fygo.io> wrote:
-> >
-> > > 2026=E5=B9=B47=E6=9C=8817=E6=97=A5 08:50=EF=BC=8CRobert Pang <robertp=
-ang@google.com> =E5=86=99=E9=81=93=EF=BC=9A
-> > >
-> > > Hi Coly,
-> > >
-> > > I was reviewing this patch again and noticed that btree_gc_min_nodes(=
-) reads the
-> > > atomic counter 'search_inflight'. This counter is incremented and dec=
-remented by
-> > > clients issuing front-side I/O. In this scenario, should we add a mem=
-ory barrier
-> > > (such as `smp_mb__before_atomic`) prior to `atomic_read()`?
-> > >
-> > > My concern is that if btree_gc_min_nodes() is inlined in the caller
-> > > btree_gc_recurse(), the compiler might hoist the `atomic_read()` outs=
-ide of the
-> > > while loop where btree_gc_min_nodes() is inlined, preventing us from =
-fetching the
-> > > latest counter value. Adding the barrier would guarantee we read the =
-updated
-> > > value.
-> > >
-> > > What are your thoughts on this?
-> >
-> > Hi Robert,
-> >
-> > At the first glance I feel the code was fine. But, it was almost 8 mont=
-hs ago, to
-> > make sure I understand you correctly, can you place your comments with =
-the exact
-> > code together, then let me response you more accurately.
-> >
-> > Thanks for the review.
-> >
-> > Coly Li
+
+--ltojthlavrpt3nkl
+Content-Type: text/plain; protected-headers=v1; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+Subject: Re: [RFC PATCH v1 2/3] blk-cgroup: store blkcg in bio instead of blkg
+MIME-Version: 1.0
+
+Hi Kuai.
+
+On Tue, Aug 04, 2026 at 02:53:12PM +0800, Yu Kuai <yukuai@kernel.org> wrote:
+> From: Yu Kuai <yukuai@fygo.io>
 >=20
-> Hi Coly
+> A bio currently stores a queue-local blkg reference.  This forces bio
+> association and remap paths to look up or create a blkg even when the bio
+> will never enter a blkcg policy.
 >=20
-> My apology for missing the code context in the earlier email. Here are
-> the code snippets where my comments relate:
+> Store the blkcg css association in the bio instead, and derive the blkg
+> from the bio's blkcg and current bdev when a policy needs it.  The first
+> successful policy lookup pins the blkg, records the pin with BIO_BLKG_REF,
+> and drops it from bio_clear_blkcg() or when bio_set_dev() changes the
+> lookup key.
 >=20
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> index 210b59007d98..5d922d301ab6 100644
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
->=20
-> @@ -1578,29 +1579,29 @@ static unsigned int btree_gc_count_keys(struct bt=
-ree *b)
->=20
->  static size_t btree_gc_min_nodes(struct cache_set *c)
+> Keep lookup-only users from creating missing blkgs by using
+> bio_blkg_lookup(), and rename the bio cgroup association helpers to match
+> the stored blkcg state.
+
+I assume this should be OK due to limited lifetime of bios -- this would
+not lead no possibly indefinite accumulation of offlined blkcgs,
+correct?
+
+> -void bio_associate_blkg_from_css(struct bio *bio,
+> +void bio_associate_blkcg_from_css(struct bio *bio,
+>  				 struct cgroup_subsys_state *css)
 >  {
-> - size_t min_nodes;
-> + size_t min_nodes =3D GC_NODES_MIN;
->=20
-> - /*
-> - * Since incremental GC would stop 100ms when front
-> - * side I/O comes, so when there are many btree nodes,
-> - * if GC only processes constant (100) nodes each time,
-> - * GC would last a long time, and the front side I/Os
-> - * would run out of the buckets (since no new bucket
-> - * can be allocated during GC), and be blocked again.
-> - * So GC should not process constant nodes, but varied
-> - * nodes according to the number of btree nodes, which
-> - * realized by dividing GC into constant(100) times,
-> - * so when there are many btree nodes, GC can process
-> - * more nodes each time, otherwise, GC will process less
-> - * nodes each time (but no less than MIN_GC_NODES)
-> - */
-> - min_nodes =3D c->gc_stats.nodes / MAX_GC_TIMES;
-> - if (min_nodes < MIN_GC_NODES)
-> - min_nodes =3D MIN_GC_NODES;
-> + if (atomic_read(&c->search_inflight) =3D=3D 0) {
-> + size_t n =3D c->gc_stats.nodes >> MAX_GC_TIMES_SHIFT;
+> -	if (bio_blkg(bio))
+> -		blkg_put(bio_blkg(bio));
+> +	struct blkcg *blkcg;
+> =20
+> -	if (css && css->parent) {
+> -		bio->bi_blkg =3D blkg_tryget_closest(bio, css);
+> -	} else {
+> -		blkg_get(bdev_get_queue(bio->bi_bdev)->root_blkg);
+> -		bio->bi_blkg =3D bdev_get_queue(bio->bi_bdev)->root_blkg;
+> -	}
+> +	if (!css || !css->parent)
+> +		css =3D &blkcg_root.css;
 > +
-
-If atomic_read(&c->search_inflight) =3D=3D 0, it means currently
-no front end I/O. Then the gc nodes can be a bit more for a
-more aggressive garbage collection.
-
-Because the front end I/Os compete btree locks with gc threads,
-I set a more aggresive garbage collection only when there is no
-front I/O coming.
-
-
-> + if (min_nodes < n)
-> + min_nodes =3D n;
-> + }
->=20
->   return min_nodes;
+> +	blkcg =3D css_to_blkcg(css);
+> +	if (bio_blkcg(bio) =3D=3D blkcg)
+> +		return;
+> +
+> +	css_get(css);	<---
+> +	bio_clear_blkcg(bio);
+> +	bio->bi_blkcg =3D blkcg;
 >  }
->=20
-> In the above code change of this patch, btree_gc_min_nodes() reads the
-> atomic counter 'search_inflight'. And this counter is incremented and
-> decremented by clients issuing front-side I/O below:
->=20
-> drivers/md/bcache/request.c:
->=20
-> static CLOSURE_CALLBACK(search_free)
-> {
->   closure_type(s, struct search, cl);
->=20
->   atomic_dec(&s->iop.c->search_inflight);
->=20
->   if (s->iop.bio)
->     bio_put(s->iop.bio);
->=20
->   bio_complete(s);
->   closure_debug_destroy(cl);
->   mempool_free(s, &s->iop.c->search);
-> }
->=20
-> static inline struct search *search_alloc(struct bio *bio,
-> struct bcache_device *d, struct block_device *orig_bdev,
-> unsigned long start_time)
-> {
->   struct search *s;
->=20
->   s =3D mempool_alloc(&d->c->search, GFP_NOIO);
->=20
->   closure_init(&s->cl, NULL);
->   do_bio_hook(s, bio, request_endio);
->   atomic_inc(&d->c->search_inflight);
->   ...
-> }
->=20
-> My concern is that if btree_gc_min_nodes() is inlined in the caller
-> btree_gc_recurse() below, the compiler might hoist the `atomic_read()`
-> outside of the while loop where btree_gc_min_nodes() is inlined,
-> preventing us from fetching the latest counter value after each btree
-> node is traversed.
->=20
+> -EXPORT_SYMBOL_GPL(bio_associate_blkg_from_css);
+> +EXPORT_SYMBOL_GPL(bio_associate_blkcg_from_css);
 
-It is possible, but I do this on purpose. Because accurately catching
-zero inflight counter is unncessary. Let me explain in next text block.
+[skip to next comment below now]
 
-> drivers/md/bcache/btree.c:
->=20
-> static int btree_gc_recurse(struct btree *b, struct btree_op *op,
->     struct closure *writes, struct gc_stat *gc)
-> {
->   int ret =3D 0;
->   bool should_rewrite;
->   struct bkey *k;
->   struct btree_iter_stack iter;
->   struct gc_merge_info r[GC_MERGE_NODES];
->   struct gc_merge_info *i, *last =3D r + ARRAY_SIZE(r) - 1;
->=20
->   bch_btree_iter_stack_init(&b->keys, &iter, &b->c->gc_done);
->=20
->   for (i =3D r; i < r + ARRAY_SIZE(r); i++)
->     i->b =3D ERR_PTR(-EINTR);
->=20
->   while (1) {
->     k =3D bch_btree_iter_next_filter(&iter.iter, &b->keys,
->        bch_ptr_bad);
->     ...
->     if (gc->nodes >=3D (gc->nodes_pre + btree_gc_min_nodes(b->c))) {
->       gc->nodes_pre =3D  gc->nodes;
->       ret =3D -EAGAIN;
->       break;
->     }
->     ..
-> }
->=20
-> In this scenario, should we add a memory barrier (such as
-> `smp_mb__before_atomic`) prior to `atomic_read()` to guarantee we read
-> the updated value? I.e.
->=20
+And here yet another (any) reference to same css is taken 2nd time.
 
-Such memory barrier hurts performance, and for hot I/O path, it might
-introduce obviouos negative performance impect. Fortunately for the
-condition you are concerned, it works well without memory barrier.
+[skip after next comment below :)]
 
 
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> index 377052cbde5c..659b8706031a 100644
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
-> @@ -1582,6 +1582,8 @@ static size_t btree_gc_min_nodes(struct cache_set *=
-c)
+> =20
+>  /**
+> - * bio_associate_blkg - associate a bio with a blkg
+> + * bio_associate_blkcg - associate a bio with a blkcg
+>   * @bio: target bio
+>   *
+> - * Associate @bio with the blkg found from the bio's css and request_que=
+ue.
+> - * If one is not found, bio_lookup_blkg() creates the blkg.  If a blkg is
+> - * already associated, the css is reused and association redone as the
+> - * request_queue may have changed.
+> + * Associate @bio with the blkcg found from the bio's css.  If a blkcg is
+> + * already associated, keep it as blkcg association is not queue-local.
+>   */
+> -void bio_associate_blkg(struct bio *bio)
+
+
+> +void bio_associate_blkcg(struct bio *bio)
 >  {
->         size_t min_nodes =3D GC_NODES_MIN;
->=20
-> +       /* Fetch latest search_inflight count */
-> +       smp_mb__before_atomic();
->         if (atomic_read(&c->search_inflight) =3D=3D 0) {
->                 size_t n =3D c->gc_stats.nodes >> MAX_GC_TIMES_SHIFT;
->=20
-> What are your thoughts on this?
+>  	struct cgroup_subsys_state *css;
+> =20
+>  	if (blk_op_is_passthrough(bio->bi_opf))
+>  		return;
+> =20
+> -	if (bio_blkg(bio)) {
+> -		css =3D bio_blkcg_css(bio);
+> -		bio_associate_blkg_from_css(bio, css);
+> -	} else {
+> -		rcu_read_lock();
+> -		css =3D blkcg_css();
+> -		if (!css_tryget_online(css))
+> -			css =3D NULL;
+> -		rcu_read_unlock();
+> +	if (bio_blkcg(bio))
+> +		return;
+> =20
+> -		bio_associate_blkg_from_css(bio, css);
+> -		if (css)
+> -			css_put(css);
+> -	}
+> +	rcu_read_lock();
+> +	css =3D blkcg_css();
+> +	if (!css_tryget_online(css))	<---
+> +		css =3D NULL;
+> +	rcu_read_unlock();
+> +
+> +	bio_associate_blkcg_from_css(bio, css);
+> +	if (css)
+> +		css_put(css);
+>  }
+> -EXPORT_SYMBOL_GPL(bio_associate_blkg);
+> +EXPORT_SYMBOL_GPL(bio_associate_blkcg);
 
-The motivation is, when the bcache device is idle (no front end I/Os),
-make garbage collection be more aggressive by scanning more btree nodes
-in each iteration. This is a try-best effort, the inflight counter is
-unncessary to be accurate 0. If the check in btree_gc_min_nodes(),
-	atomic_read(&c->search_inflight) =3D=3D 0
-fails, then just fails. And if the bcache device is really idle for a
-while, finally the above check will be true and a larger min_nodes will
-be returned from btree_gc_min_nodes().
+next:
+Here you take (online) reference to the blkcg->css.
 
-But if adding a single memory barrier only in btree_gc_min_nodes(), indeed
-it does't help too much. Memory barrier is also necessary for locations
-where the inflight counter are changed. Then this is why I name it as
-negative performance impact in previous text block.
+[return back to previous comment]
 
-Maybe I need to add code comments to explain why memory barrier is
-unncessary in current btree_gc_min_nodes(). Does it help?
 
-Thanks for the quesiton.
+after:
+Ideally, no tasks should be in offlined (blk)cgs, so the `current` would
+not resolve to blkcg_css() returning an offlined blkcgs. OTOH, it's
+generally good not to do _new_ associations to an offlined blkcg.
+Which is why I think this logic would better fit to
+bio_associate_blkcg_from_css()
 
-Coly Li
+
+0.02=E2=82=AC,
+Michal
+
+
+--ltojthlavrpt3nkl
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+
+iJEEABYKADkWIQRCE24Fn/AcRjnLivR+PQLnlNv4CAUCanRSRBsUgAAAAAAEAA5t
+YW51MiwyLjUrMS4xMiwyLDIACgkQfj0C55Tb+Ahf+gEA5FtU8iXyQA9tlhJdWJEf
+nyf1IBDUt4tisH7UDE8KiSEBAP5BK6FXkSftml/wn918ol1iwizfBzFhephd2gZc
+e3UL
+=GgwG
+-----END PGP SIGNATURE-----
+
+--ltojthlavrpt3nkl--
