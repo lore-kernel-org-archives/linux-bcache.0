@@ -1,285 +1,156 @@
-Received: from mail-pl1-f200.google.com (mail-pl1-f200.google.com [209.85.214.200])
+Received: from mail-ot1-f77.google.com (mail-ot1-f77.google.com [209.85.210.77])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 5E0A23AB291
-	for <linux-bcache@vger.kernel.org>; Sat,  8 Aug 2026 04:06:20 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.214.200
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 38D673932C8
+	for <linux-bcache@vger.kernel.org>; Sun,  9 Aug 2026 19:12:45 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.77
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1786161982; cv=none; b=k49JeGKQn0SRnBbr+7x3daoEWXFLMZGFDlSthr88/cprsCm+Frhr8x8JxFL6iGZ+l/ER7Z8AISc6rAmtq3nL45z63n6avfI80LvIkI2aHJ3robw/2b7MItYWDbgZ7dNbgsi7A72cE9iq5Npf1+LzT3trK2Wzxh8U7hqB4yReNeg=
+	t=1786302770; cv=none; b=SJFBz17xujC9AnGrbDYUbZT+knifGso6L/+qFt/RTum7y+RtzbRdwoqMxrfG68HFdiE/zE0S7mAbZ/P8c5GGUoHKy8tOrOHUzXptbo7SWAi2wLBU1PoQuGoD9U1AeM7gnKNw3cSPQf78yyzohlXAILGYaEaSbNqHYmlXSrOCm9Q=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1786161982; c=relaxed/simple;
-	bh=xA+Anu1G01kalxTG8fE/ijwz0xdzhG/T7miN8n1j8/Q=;
-	h=Date:In-Reply-To:Mime-Version:References:Message-ID:Subject:From:
-	 To:Cc:Content-Type; b=OCjGy+ew8tS///MbEloZS3UVmQlDXMeBtfTJ2HqxkWIeNUZtJjQK4kUCfumrhKWmfYITPsIJWHkdTADIUmMKnkEwSlFKGXOq6HNF3mffj3a/XIIMfrBFJu8xL4GPQV14EdDw2TEJPR8eTHXZzAUkSt1xPyXkmqR3Do6FexoMU8Y=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com; spf=pass smtp.mailfrom=flex--ankitkap.bounces.google.com; dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b=fY5zmUgL; arc=none smtp.client-ip=209.85.214.200
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=flex--ankitkap.bounces.google.com
-Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=google.com header.i=@google.com header.b="fY5zmUgL"
-Received: by mail-pl1-f200.google.com with SMTP id d9443c01a7336-2d004f13426so3792795ad.3
-        for <linux-bcache@vger.kernel.org>; Fri, 07 Aug 2026 21:06:20 -0700 (PDT)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20251104; t=1786161980; x=1786766780; darn=vger.kernel.org;
-        h=content-type:cc:to:from:subject:message-id:references:mime-version
-         :in-reply-to:date:from:to:cc:subject:date:message-id:reply-to
-         :content-type;
-        bh=cp2CV40UiAeLycXOv282ow6mV6SoZ8nWxaGYowz7qXM=;
-        b=fY5zmUgLOWZo3V6GvY3eBSCrhds82RzCJQDYAds0393xSRU/cA9sv6zI5sF+Cg1/7C
-         HK3BAl1d79RLha36volF9XRK/pIgCnZcA87/x+2sO/f2ZpEls8jUwKy3KmeON6r1XNVj
-         ZQ7XtNzBaLCi8waIGTmZ5J978Yh3r1ASMJC7P3D45GfpGRBFHpf4/aoLsw5UE0YpVMZf
-         +z4wXsv+ILTvf78t4FZrNVy73mpSvZNPQeKXU1B0fHQBk3B3N+getQZ0laI2dcEDN97t
-         Tjuu7t1BQaxO8C3+LhTO9ZBlctihLYupWrQeXLWhd4uruh4nHMqgxR14HysVe03cD6HK
-         ExVg==
+	s=arc-20240116; t=1786302770; c=relaxed/simple;
+	bh=fPvinxA54imzdT3QU+qBV6bpd1Gy3ctxiCJZDtS+/yM=;
+	h=MIME-Version:Date:Message-ID:Subject:From:To:Content-Type; b=V5js2xBUuj/HThRS+xG79vbtAZPAE/yMFpflTV/J5nprx2z9DkHeZo9spiVOAOLSe8GPaRPJjwyO0UhWUS6rU6sNANFGSi/Pavg+a77uIhoS0/MvlWjdjae1rmfQZqOnmbeZArCvRuB/W0gPJ9bZ1rUZFUf1JtF7jlV6jMKVzts=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=syzkaller.appspotmail.com; spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com; arc=none smtp.client-ip=209.85.210.77
+Authentication-Results: smtp.subspace.kernel.org; dmarc=fail (p=none dis=none) header.from=syzkaller.appspotmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=M3KW2WVRGUFZ5GODRSRYTGD7.apphosting.bounces.google.com
+Received: by mail-ot1-f77.google.com with SMTP id 46e09a7af769-7ee59eeb8c1so862316a34.0
+        for <linux-bcache@vger.kernel.org>; Sun, 09 Aug 2026 12:12:45 -0700 (PDT)
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20251104; t=1786161980; x=1786766780;
-        h=content-type:cc:to:from:subject:message-id:references:mime-version
-         :in-reply-to:date:x-gm-message-state:from:to:cc:subject:date
-         :message-id:reply-to:content-type;
-        bh=cp2CV40UiAeLycXOv282ow6mV6SoZ8nWxaGYowz7qXM=;
-        b=OpzAulGDmlkqn+Ub2xGmeMItWYYpLGe5AGZEm5Jm2/5ut8NUmcYF1fJEM9d/wl88W1
-         O7JTOL4XjuGMUNQHOaIwiBoXREU4u6A08bsXODbbPGtwu+4Pos+M1gxMep3QeyusmuXU
-         QqeAbIo91NC3Gq7Kk77b4Ufx2ZveYqYBNAjLX8HIJ4zTkO0rptsyQ0OV1DD9q0u/BWCc
-         jzpAhEUKcVlyR5hT7pC6tphvKiGRspvd9mO1iDJ/gPUc7pFuvZdfqZQULL6BOJiwpH4Y
-         J1ekulVgt9ZTwSgnzu+zU4V6P9uvGDjOwIG84XjOiON8QcR7iW3TQrdySf1Wy+pm13hn
-         2j/Q==
-X-Forwarded-Encrypted: i=1; AHgh+Ro1M/3xqRr5eCvhbBTclZH33pqz61Qqj1t1eQtrFOVpjDv9Axo8fE9Q4HMluyFIV0Zlz6amRsNFS9I1W98=@vger.kernel.org
-X-Gm-Message-State: AOJu0YyqyiFqCdoPkGwYATCQTQIffWpysha9UoegUySfgeNSOKqa9Ip+
-	esLVlKTLL4S+dxBVaWoTcWBQEcPXIVjlHknHrc86zI41EKOa5ENX+MQ8RQS/V1tvc1zK7XJP1sl
-	TNSrbeXs79OqpGg==
-X-Received: from plas19.prod.google.com ([2002:a17:903:2013:b0:2d0:34d:e973])
- (user=ankitkap job=prod-delivery.src-stubby-dispatcher) by
- 2002:a17:902:e84b:b0:2c9:b396:1a55 with SMTP id d9443c01a7336-2d0ca76a3bamr304649095ad.12.1786161979362;
- Fri, 07 Aug 2026 21:06:19 -0700 (PDT)
-Date: Sat,  8 Aug 2026 04:05:49 +0000
-In-Reply-To: <20260808040549.2778125-1-ankitkap@google.com>
+        d=1e100.net; s=20251104; t=1786302764; x=1786907564;
+        h=content-type:to:from:subject:message-id:date:mime-version
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=PkZkDYRMiXb223Ypl5INSPCUQWRoz7cIQd6t9TboElo=;
+        b=DSXiB9u9kGnk/2SUIEQXNf/dAbIsIIJUo6mpvxHZ43xi6+dfEilaIVm/uGhxUCrrsa
+         nLplyqES6WGYvasiYQm4818+YmoLmHP1Vshq6F1cfpk5v1S28XdUtphYjC28blCORIG4
+         ZP3jfbjEFLVaO2VQ65QVYrXT9r6C8hfXyu680DOebE5ICTlssRZkAgm0Tp6DGTd//Z9O
+         Tljs2PozzFskT4UmKMjSEsYOMdk1vDpHx8eWoayj7Eu0fHLlYzN6jkW+hHyOfwntxtlN
+         xTk5UBw+gpZ0SDyPyYnc6dVoCC4M0hcZl42lDg4Xv+7QFru+ZKoA608H0P/vzZoVtkq9
+         kVaQ==
+X-Forwarded-Encrypted: i=1; AHgh+RrnFni7JWpV5xLnZDlM6Znv8jgjttdNj7gAipfuuoGnvzXW1/canvjKAo/1y3QR00WjkrHFuzsJnzO4/tA=@vger.kernel.org
+X-Gm-Message-State: AOJu0YyxLDwSLde1hf6QrbK0RWStVxmlRpVe16M+JBpRKrhpylI+bL1D
+	o7dSqsIJ1m7LX5baPY7/syyG2QytA7MALLhwkKKVe/UwAuTVNvDnDlFgpiATdMhWtpP+oaN3xoN
+	gsuKpz/qadQrVckzhRKIAzQjJbbZtKDF1t5fJ3c6jdgDBwieZKH7N4uP7lKA=
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
-Mime-Version: 1.0
-References: <20260808040549.2778125-1-ankitkap@google.com>
-X-Mailer: git-send-email 2.55.0.679.g6767b8d81c-goog
-Message-ID: <20260808040549.2778125-3-ankitkap@google.com>
-Subject: [PATCH v3 2/2] bcache: inspect active bypass writes lock-free via RCU
-From: Ankit Kapoor <ankitkap@google.com>
-To: Coly Li <colyli@fygo.io>, linux-bcache@vger.kernel.org
-Cc: Kent Overstreet <kent.overstreet@linux.dev>, linux-kernel@vger.kernel.org, 
-	Ankit Kapoor <ankitkap@google.com>
+MIME-Version: 1.0
+X-Received: by 2002:a05:6820:308b:b0:6ae:4131:98c6 with SMTP id
+ 006d021491bc7-6b041ee0bb8mr6842764eaf.2.1786302764212; Sun, 09 Aug 2026
+ 12:12:44 -0700 (PDT)
+Date: Sun, 09 Aug 2026 12:12:44 -0700
+X-Google-Appengine-App-Id: s~syzkaller
+X-Google-Appengine-App-Id-Alias: syzkaller
+Message-ID: <6a78d12c.01d0871a.3a0d52.008f.GAE@google.com>
+Subject: [syzbot] [bcache?] [ext4?] KASAN: use-after-free Read in register_bcache
+From: syzbot <syzbot+cb5b32abe226710cdd8a@syzkaller.appspotmail.com>
+To: colyli@fnnas.com, colyli@fygo.io, kent.overstreet@linux.dev, 
+	linux-bcache@vger.kernel.org, linux-ext4@vger.kernel.org, 
+	linux-kernel@vger.kernel.org, syzkaller-bugs@googlegroups.com
 Content-Type: text/plain; charset="UTF-8"
 
-Checking for active bypass writes on the cache miss read path currently
-requires acquiring page-level spinlocks across the target sector range.
-While contention is low under normal operation, acquiring a lock in the
-latency-sensitive read path introduces unnecessary overhead.
+Hello,
 
-Optimize the read path by using RCU to inspect active bypass write
-counters lock-free. Writers continue to use page-level spinlocks to
-synchronize counter updates and allocations, while readers inspect the
-tracking array under rcu_read_lock().
+syzbot found the following issue on:
 
-Suggested-by: Coly Li <colyli@fygo.io>
-Signed-off-by: Ankit Kapoor <ankitkap@google.com>
+HEAD commit:    ba5cc80fd326 Merge branch 'for-next/core' into for-kernelci
+git tree:       git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux.git for-kernelci
+console output: https://syzkaller.appspot.com/x/log.txt?x=17767fb9580000
+kernel config:  https://syzkaller.appspot.com/x/.config?x=ccf4bea59f67007
+dashboard link: https://syzkaller.appspot.com/bug?extid=cb5b32abe226710cdd8a
+compiler:       Debian clang version 22.1.8 (++20260613092233+e80beda6e255-1~exp1~20260613092250.77), Debian LLD 22.1.8
+userspace arch: arm64
+syz repro:      https://syzkaller.appspot.com/x/repro.syz?x=10f67fb9580000
+C reproducer:   https://syzkaller.appspot.com/x/repro.c?x=14cd8149580000
+
+Downloadable assets:
+disk image: https://storage.googleapis.com/syzbot-assets/959ad5f4e730/disk-ba5cc80f.raw.xz
+vmlinux: https://storage.googleapis.com/syzbot-assets/0787d25f251e/vmlinux-ba5cc80f.xz
+kernel image: https://storage.googleapis.com/syzbot-assets/2e85c36fabac/Image-ba5cc80f.gz.xz
+mounted in repro: https://storage.googleapis.com/syzbot-assets/130fa1cc1a68/mount_0.gz
+  fsck result: OK (log: https://syzkaller.appspot.com/x/fsck.log?x=111f8079580000)
+
+IMPORTANT: if you fix the issue, please add the following tag to the commit:
+Reported-by: syzbot+cb5b32abe226710cdd8a@syzkaller.appspotmail.com
+
+==================================================================
+BUG: KASAN: use-after-free in crc64_be_generic lib/crc/crc64-main.c:47 [inline]
+BUG: KASAN: use-after-free in crc64_be+0xb8/0xe8 lib/crc/crc64-main.c:68
+Read of size 1 at addr ffff0000dd543000 by task syz.0.33/4986
+
+CPU: 1 UID: 0 PID: 4986 Comm: syz.0.33 Not tainted syzkaller #0 PREEMPT 
+Hardware name: Google Google Compute Engine/Google Compute Engine, BIOS Google 07/02/2026
+Call trace:
+ show_stack+0x2c/0x3c arch/arm64/kernel/stacktrace.c:499 (C)
+ __dump_stack+0x30/0x40 lib/dump_stack.c:94
+ dump_stack_lvl+0xd8/0x12c lib/dump_stack.c:120
+ print_address_description+0xb0/0x238 mm/kasan/report.c:378
+ print_report+0x68/0x84 mm/kasan/report.c:482
+ kasan_report+0x8c/0xc4 mm/kasan/report.c:595
+ __asan_report_load1_noabort+0x20/0x2c mm/kasan/report_generic.c:378
+ crc64_be_generic lib/crc/crc64-main.c:47 [inline]
+ crc64_be+0xb8/0xe8 lib/crc/crc64-main.c:68
+ bch_crc64 drivers/md/bcache/util.h:529 [inline]
+ read_super drivers/md/bcache/super.c:208 [inline]
+ register_bcache+0x9a4/0x13d8 drivers/md/bcache/super.c:2601
+ kobj_attr_store+0x6c/0x90 lib/kobject.c:840
+ sysfs_kf_write+0xe0/0x108 fs/sysfs/file.c:145
+ kernfs_fop_write_iter+0x260/0x3b8 fs/kernfs/file.c:345
+ new_sync_write fs/read_write.c:595 [inline]
+ vfs_write+0x51c/0xa0c fs/read_write.c:687
+ ksys_write+0x12c/0x228 fs/read_write.c:739
+ __do_sys_write fs/read_write.c:750 [inline]
+ __se_sys_write fs/read_write.c:747 [inline]
+ __arm64_sys_write+0x84/0x98 fs/read_write.c:747
+ __invoke_syscall arch/arm64/kernel/syscall.c:35 [inline]
+ invoke_syscall+0x98/0x244 arch/arm64/kernel/syscall.c:49
+ el0_svc_common+0xec/0x23c arch/arm64/kernel/syscall.c:121
+ do_el0_svc+0x4c/0x5c arch/arm64/kernel/syscall.c:140
+ el0_svc+0x64/0x260 arch/arm64/kernel/entry-common.c:738
+ el0t_64_sync_handler+0x48/0x148 arch/arm64/kernel/entry-common.c:757
+ el0t_64_sync+0x198/0x19c arch/arm64/kernel/entry.S:590
+
+The buggy address belongs to the physical page:
+page: refcount:0 mapcount:0 mapping:0000000000000000 index:0xffff0000dd543af0 pfn:0x11d543
+flags: 0x5ffc00000000000(node=0|zone=2|lastcpupid=0x7ff)
+raw: 05ffc00000000000 fffffdffc3754688 fffffdffc3755348 0000000000000000
+raw: ffff0000dd543af0 0000000000000000 00000000ffffffff 0000000000000000
+page dumped because: kasan: bad access detected
+
+Memory state around the buggy address:
+ ffff0000dd542f00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ ffff0000dd542f80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+>ffff0000dd543000: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+                   ^
+ ffff0000dd543080: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+ ffff0000dd543100: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+==================================================================
+bcache: register_bcache() error : Bad checksum
+
+
 ---
- drivers/md/bcache/bcache.h  | 14 +++++++--
- drivers/md/bcache/request.c | 58 +++++++++++++++++++++++++------------
- drivers/md/bcache/super.c   |  9 ++++--
- 3 files changed, 56 insertions(+), 25 deletions(-)
+This report is generated by a bot. It may contain errors.
+See https://goo.gl/tpsmEJ for more information about syzbot.
+syzbot engineers can be reached at syzkaller@googlegroups.com.
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index 2e50526a52fc..2ecff48d8902 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -299,10 +299,18 @@ enum stop_on_failure {
- 	BCH_CACHED_DEV_STOP_MODE_MAX,
- };
- 
-+extern struct kmem_cache *bch_bypass_cache;
-+
-+struct bch_bypass_counts {
-+	struct rcu_head		rcu;
-+	struct cached_dev	*dc;
-+	u32			counts[PAGE_SIZE / sizeof(u32)];
-+};
-+
- struct bch_bypass_page {
--	u32		*counts;
--	unsigned int	active;
--	spinlock_t	lock;
-+	struct bch_bypass_counts __rcu *counts;
-+	unsigned int		active;
-+	spinlock_t		lock;
- };
- 
- struct cached_dev {
-diff --git a/drivers/md/bcache/request.c b/drivers/md/bcache/request.c
-index bfd28b68f499..9221db669050 100644
---- a/drivers/md/bcache/request.c
-+++ b/drivers/md/bcache/request.c
-@@ -24,6 +24,7 @@
- #define CUTOFF_CACHE_READA	90
- 
- struct kmem_cache *bch_search_cache;
-+struct kmem_cache *bch_bypass_cache;
- 
- static CLOSURE_CALLBACK(bch_data_insert_start);
- 
-@@ -852,22 +853,28 @@ static void bch_bypass_write_start(struct cached_dev *dc, sector_t sector, unsig
- 		unsigned long pg_idx = bypass_chunk_to_page(chunk);
- 		unsigned long pg_off = bypass_chunk_to_offset(chunk);
- 		struct bch_bypass_page *pg = &dc->bypass_pages[pg_idx];
--		u32 *new_counts;
--		u32 *dup_counts = NULL;
-+		struct bch_bypass_counts *new_counts;
-+		struct bch_bypass_counts *dup_counts = NULL;
-+		struct bch_bypass_counts *counts;
- 		unsigned long flags;
- 
- 		spin_lock_irqsave(&pg->lock, flags);
--		if (!pg->counts) {
-+		counts = rcu_dereference_protected(pg->counts, lockdep_is_held(&pg->lock));
-+		if (!counts) {
- 			spin_unlock_irqrestore(&pg->lock, flags);
- 			new_counts = mempool_alloc(&dc->bypass_mempool, GFP_NOIO);
--			memset(new_counts, 0, PAGE_SIZE);
-+			memset(new_counts->counts, 0, PAGE_SIZE);
-+			new_counts->dc = dc;
- 			spin_lock_irqsave(&pg->lock, flags);
--			if (pg->counts)
-+			counts = rcu_dereference_protected(pg->counts, lockdep_is_held(&pg->lock));
-+			if (counts) {
- 				dup_counts = new_counts;
--			else
--				pg->counts = new_counts;
-+			} else {
-+				counts = new_counts;
-+				rcu_assign_pointer(pg->counts, counts);
-+			}
- 		}
--		pg->counts[pg_off]++;
-+		WRITE_ONCE(counts->counts[pg_off], counts->counts[pg_off] + 1);
- 		pg->active++;
- 		spin_unlock_irqrestore(&pg->lock, flags);
- 
-@@ -876,6 +883,13 @@ static void bch_bypass_write_start(struct cached_dev *dc, sector_t sector, unsig
- 	}
- }
- 
-+static void bch_bypass_counts_free_rcu(struct rcu_head *rcu)
-+{
-+	struct bch_bypass_counts *counts = container_of(rcu, struct bch_bypass_counts, rcu);
-+
-+	mempool_free(counts, &counts->dc->bypass_mempool);
-+}
-+
- static void bch_bypass_write_end(struct cached_dev *dc, sector_t sector, unsigned int sectors)
- {
- 	unsigned long start_chunk = sector_to_bypass_chunk(sector);
-@@ -890,25 +904,27 @@ static void bch_bypass_write_end(struct cached_dev *dc, sector_t sector, unsigne
- 		unsigned long pg_idx = bypass_chunk_to_page(chunk);
- 		unsigned long pg_off = bypass_chunk_to_offset(chunk);
- 		struct bch_bypass_page *pg = &dc->bypass_pages[pg_idx];
--		u32 *counts = NULL;
-+		struct bch_bypass_counts *counts = NULL;
-+		struct bch_bypass_counts *current_counts;
- 		unsigned long flags;
- 
- 		spin_lock_irqsave(&pg->lock, flags);
--		if (WARN_ON_ONCE(!pg->counts || !pg->counts[pg_off])) {
-+		current_counts = rcu_dereference_protected(pg->counts, lockdep_is_held(&pg->lock));
-+		if (WARN_ON_ONCE(!current_counts || !current_counts->counts[pg_off])) {
- 			spin_unlock_irqrestore(&pg->lock, flags);
- 			continue;
- 		}
- 
--		pg->counts[pg_off]--;
-+		WRITE_ONCE(current_counts->counts[pg_off], current_counts->counts[pg_off] - 1);
- 		pg->active--;
- 		if (!pg->active) {
--			counts = pg->counts;
--			pg->counts = NULL;
-+			counts = current_counts;
-+			rcu_assign_pointer(pg->counts, NULL);
- 		}
- 		spin_unlock_irqrestore(&pg->lock, flags);
- 
- 		if (counts)
--			mempool_free(counts, &dc->bypass_mempool);
-+			call_rcu(&counts->rcu, bch_bypass_counts_free_rcu);
- 	}
- }
- 
-@@ -924,20 +940,19 @@ static bool bch_has_active_bypass_writes(struct cached_dev *dc, sector_t sector,
- 	if (WARN_ON_ONCE(end_pg_idx >= dc->bypass_num_pages))
- 		return false;
- 
-+	rcu_read_lock();
- 	for (chunk = start_chunk; chunk <= end_chunk; chunk++) {
- 		unsigned long pg_idx = bypass_chunk_to_page(chunk);
- 		unsigned long pg_off = bypass_chunk_to_offset(chunk);
- 		struct bch_bypass_page *pg = &dc->bypass_pages[pg_idx];
--		unsigned long flags;
-+		struct bch_bypass_counts *current_counts = rcu_dereference(pg->counts);
- 
--		spin_lock_irqsave(&pg->lock, flags);
--		if (pg->counts && pg->counts[pg_off] > 0) {
-+		if (current_counts && READ_ONCE(current_counts->counts[pg_off]) > 0) {
- 			has_active = true;
--			spin_unlock_irqrestore(&pg->lock, flags);
- 			break;
- 		}
--		spin_unlock_irqrestore(&pg->lock, flags);
- 	}
-+	rcu_read_unlock();
- 
- 	return has_active;
- }
-@@ -1458,6 +1473,7 @@ void bch_flash_dev_request_init(struct bcache_device *d)
- 
- void bch_request_exit(void)
- {
-+	kmem_cache_destroy(bch_bypass_cache);
- 	kmem_cache_destroy(bch_search_cache);
- }
- 
-@@ -1467,5 +1483,9 @@ int __init bch_request_init(void)
- 	if (!bch_search_cache)
- 		return -ENOMEM;
- 
-+	bch_bypass_cache = KMEM_CACHE(bch_bypass_counts, 0);
-+	if (!bch_bypass_cache)
-+		return -ENOMEM;
-+
- 	return 0;
- }
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index b994483511de..75aa6bb2e00b 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -1350,9 +1350,12 @@ void bch_cached_dev_release(struct kobject *kobj)
- 		unsigned long i;
- 
- 		for (i = 0; i < dc->bypass_num_pages; i++) {
--			if (dc->bypass_pages[i].counts)
--				mempool_free(dc->bypass_pages[i].counts, &dc->bypass_mempool);
-+			struct bch_bypass_counts *counts =
-+				rcu_dereference_protected(dc->bypass_pages[i].counts, 1);
-+			if (counts)
-+				mempool_free(counts, &dc->bypass_mempool);
- 		}
-+		rcu_barrier();
- 		kvfree(dc->bypass_pages);
- 		mempool_exit(&dc->bypass_mempool);
- 	}
-@@ -1433,7 +1436,7 @@ static int bch_cached_dev_bypass_init(struct cached_dev *dc, sector_t sectors)
- 	for (i = 0; i < dc->bypass_num_pages; i++)
- 		spin_lock_init(&dc->bypass_pages[i].lock);
- 
--	if (mempool_init_kmalloc_pool(&dc->bypass_mempool, 16, PAGE_SIZE)) {
-+	if (mempool_init_slab_pool(&dc->bypass_mempool, 16, bch_bypass_cache)) {
- 		kvfree(dc->bypass_pages);
- 		dc->bypass_pages = NULL;
- 		return -ENOMEM;
--- 
-2.55.0.679.g6767b8d81c-goog
+syzbot will keep track of this issue. See:
+https://goo.gl/tpsmEJ#status for how to communicate with syzbot.
 
+If the report is already addressed, let syzbot know by replying with:
+#syz fix: exact-commit-title
+
+If you want syzbot to run the reproducer, reply with:
+#syz test: git://repo/address.git branch-or-commit-hash
+If you attach or paste a git patch, syzbot will apply it before testing.
+
+If you want to overwrite report's subsystems, reply with:
+#syz set subsystems: new-subsystem
+(See the list of subsystem names on the web dashboard)
+
+If the report is a duplicate of another one, reply with:
+#syz dup: exact-subject-of-another-report
+
+If you want to undo deduplication, reply with:
+#syz undup
