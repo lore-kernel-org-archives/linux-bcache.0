@@ -1,87 +1,71 @@
-Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
-	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
+Received: from mail-pf1-f178.google.com (mail-pf1-f178.google.com [209.85.210.178])
+	(using TLSv1.2 with cipher ECDHE-RSA-AES128-GCM-SHA256 (128/128 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id A337C3921FA;
-	Tue, 11 Aug 2026 06:51:44 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id AD640243387
+	for <linux-bcache@vger.kernel.org>; Tue, 11 Aug 2026 12:37:42 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=209.85.210.178
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1786431106; cv=none; b=C98bmsqU+jtiqDWxil3RDYiC2AE47L7Fmt9LNWTSRmFUAWSSkezW9YAQSry09bHt42i60vM3phLBTW5+KoMZAwWxAXKI7G8OK9KMdHdM5v+6l8armiCQ/8NlG1CDpSQwP3wbcyp2gdTWdjjzjQadHffWxyKmzlLRdyt35QsSbVc=
+	t=1786451865; cv=none; b=pZ22nUq+wbY5HrrmygrWt7MoQex2CHwKiU0Z8mBrFQnp3euB0LtiQ8JW3xDOC0jagcp8Ij5iIMWpAnR6OEQVUwgDsORGJ4dFkNxo9Fmn+/bRAqlNZ51SOTPr5Q9gLwe9blW/ZEcJb7FfjeHPp7wKELUhQu90d9+NnQDr0ai4pNE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1786431106; c=relaxed/simple;
-	bh=R5vbx5TW9uZArHfFmDM2Vbf3lvk8FCMvkPXbapp6onc=;
-	h=From:To:Cc:Subject:Date:Message-ID:In-Reply-To:References:
-	 MIME-Version; b=AVppqlV+1IStZHjkPJH4n+spUMov66RJSuVZzWtyOffHzpJ0hZoLRYUJXSZuxdcpKmV3tsTkhIQm4zX/qbNfg8+4YNZZZhfb2FDDwFKEJgSUy9V1kClqzTIGVH8x4Rbfoiy7ivLcYlBDSqx6IM6FT8qCqg3MZuU5gEFXCzGMmbs=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=Iczf3uij; arc=none smtp.client-ip=100.103.45.18
+	s=arc-20240116; t=1786451865; c=relaxed/simple;
+	bh=DzI7kEhHtU5brJg70jdDaBPZVqXDvTQX9YZhXFDxk/Y=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=UjZYUlBkMihLPDXqLGojGeeUt9DLtHpGOi7XniZSSxefrWC5FpmhnZmidmimrABcjkYU9LRB25NqKivzRkU7ba4CfPxIEGZox+OiC1sLefcALMzhPHSXVQWanSm4eYlNbshSuYjR/gmNhneINP18TxdlbgsBaCknNsXjEhGNiyo=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com; spf=pass smtp.mailfrom=gmail.com; dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b=DemN43mx; arc=none smtp.client-ip=209.85.210.178
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="Iczf3uij"
-Received: by smtp.kernel.org (Postfix) with ESMTPSA id 097C91F000E9;
-	Tue, 11 Aug 2026 06:51:22 +0000 (UTC)
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
-	s=k20260515; t=1786431104;
-	bh=Z0ui+uRBvO4M0yd8KG2s22NLotks3BCDPbqh+26w/yM=;
-	h=From:To:Cc:Subject:Date:In-Reply-To:References;
-	b=Iczf3uijRgzjcA6B/j/Tqrmvx+RsfZ3ic3oyBMPLcYvnCHOsXKyP9Uc1mt+/kKnnw
-	 aCg+5WRQK3xX+vxyURFmuUZHcSElN7klIvjPQE6mDsVw1YZ5AFDf1AAtA0XwzjL8wn
-	 +V2QyfyO6vno/fnpnsGTHl2ZEAO2dG8ITTJty28KpY7y6myWHuzx9uKF6XML/6ocWn
-	 xvqP6MKXEWsqi/kbkY12AbVGGUnwkZKeU30q1clDS3JVvAqF5/4amoYAcBdl8PAJcy
-	 L5zGAiYTsbSph5NkP7VwbiyncINSGTTNYAtDbuitLlkDswP1sKH01tBnohL9UMffqh
-	 dcTwXOi8G8ajw==
-From: Yu Kuai <yukuai@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>,
-	Tejun Heo <tj@kernel.org>,
-	Josef Bacik <josef@toxicpanda.com>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	=?UTF-8?q?Michal=20Koutn=C3=BD?= <mkoutny@suse.com>
-Cc: Yu Kuai <yukuai@fygo.io>,
-	Christoph Hellwig <hch@lst.de>,
-	Tao Cui <cui.tao@linux.dev>,
-	Jan Kara <jack@suse.cz>,
-	Ming Lei <ming.lei@redhat.com>,
-	Jonathan Corbet <corbet@lwn.net>,
-	Shuah Khan <skhan@linuxfoundation.org>,
-	Coly Li <colyli@fygo.io>,
-	Kent Overstreet <kent.overstreet@linux.dev>,
-	Alasdair Kergon <agk@redhat.com>,
-	Mike Snitzer <snitzer@kernel.org>,
-	Mikulas Patocka <mpatocka@redhat.com>,
-	Benjamin Marzinski <bmarzins@redhat.com>,
-	Song Liu <song@kernel.org>,
-	Li Nan <magiclinan@didiglobal.com>,
-	Xiao Ni <xiao@kernel.org>,
-	Pankaj Gupta <pankaj.gupta.linux@gmail.com>,
-	Dan Williams <djbw@kernel.org>,
-	Vishal Verma <vishal.l.verma@intel.com>,
-	Dave Jiang <dave.jiang@intel.com>,
-	Alison Schofield <alison.schofield@intel.com>,
-	Ira Weiny <iweiny@kernel.org>,
-	Andreas Gruenbacher <agruenba@redhat.com>,
-	Matthew Wilcox <willy@infradead.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Chris Li <chrisl@kernel.org>,
-	Kairui Song <kasong@tencent.com>,
-	Kemeng Shi <shikemeng@huaweicloud.com>,
-	Nhat Pham <nphamcs@gmail.com>,
-	Baoquan He <baoquan.he@linux.dev>,
-	Barry Song <baohua@kernel.org>,
-	Youngjun Park <youngjun.park@lge.com>,
-	cgroups@vger.kernel.org,
-	linux-doc@vger.kernel.org,
+	dkim=pass (2048-bit key) header.d=gmail.com header.i=@gmail.com header.b="DemN43mx"
+Received: by mail-pf1-f178.google.com with SMTP id d2e1a72fcca58-848743155bcso1092166b3a.0
+        for <linux-bcache@vger.kernel.org>; Tue, 11 Aug 2026 05:37:42 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1786451860; x=1787056660; darn=vger.kernel.org;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:from:to:cc:subject:date:message-id:reply-to:content-type;
+        bh=28yuNNlegJl/rBWa83KpsQnTVO01eLaLH2nkr58B0ms=;
+        b=DemN43mxK6kvxYrUifCDa4o+Q+hvJCXE4ruwx7NM2hk24LoJ1FhyMbXYNH6cz82kHe
+         2DGV05eoLrix6KLZ41I5TdTEUeuSK2A6+cvUtItBgwWV/nxWfjFHXDY5ukKdPUpXjS5D
+         fj8agnz5TgttSVmTuwgQepR++8MNuksEDF+LdONG/imC5ngrXij8waDpxjOusCdgpQLo
+         54PT4ZuishYymC9h04C0ufMQC/Iu4RqK+lql14ZooY0b1wbSg4IC44qEcXE/2p3UWQBC
+         ofjco4LoHzsrIcBeOwcRkDAFXZFnWmoO1+kmxU925Y0N978MdOTmtBb32inrSa/L3oTG
+         FRGA==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20251104; t=1786451860; x=1787056660;
+        h=content-transfer-encoding:mime-version:message-id:date:subject:cc
+         :to:from:x-gm-gg:x-gm-message-state:from:to:cc:subject:date
+         :message-id:reply-to:content-type;
+        bh=28yuNNlegJl/rBWa83KpsQnTVO01eLaLH2nkr58B0ms=;
+        b=awZdNj19wLaaj7p8RFYecy7yNLNkKEQC/nMvwwihsuJUlAqzT82Q9JRSxS4/A7FZG4
+         kB86w5+hm3cIIbdgIBeEeKoiiGfXds3Zgpp2FpQYFhPtwUsVbFLAO6A//aHOLbfIjrgy
+         5URuYcZvF93izna4UJCV3bTrX4LY4XPmz6kk2rEuGvKuZAd7O0AJQhlDdcDSP7Zml+4L
+         NQSGOIuQzHaVNWZ30jfModAcXPdUJb0/IRGHgXH91HRX0vGpaVkWmpVwARl4PSqAy/gO
+         tBqIr+t0xoVAkzSN7MZcljc3IdZ1X+Q5TYaZBiGv5DtPU2cLZ6ml00Ag6G+OdXLtbtrm
+         LTnA==
+X-Gm-Message-State: AOJu0YzZQcqX921XEi22dRgXoLR/I7YFhSLKk3GH/PV98KQWz8wkJDzb
+	dhUsiem7j5bFZaif2ektgwYA15rPV8bVYNC1skoZ2LBQnm9PEDTOeyGo
+X-Gm-Gg: AR+sD12n2/wocSTarygkF8ZVvY5CeICOV3y7ax/Nn7YfACGm0UZNv6MDyQG5ZNJzJQu
+	ndR1jDrJwDN4hv5furAt64OtRcTkrLSBryksG1dNOAOBBPeFrrULXq2nnE8dZoz2l3jhu14MTrG
+	r4yWvI9eBxII1YQpnx4jzyFX7s6vga7IJUu4kKe+K7bbwhllP7DY9Rq9Wb1wDJvTclNaMyaBIvC
+	O+mjc10M3r4fYQ62l4xXoqCb60rSI0y1U0FD7Dj9FeGIcJc06qjrybpuP4c6ljlDRG9UZs4pkQO
+	6grMdBwA2WjOj2D14P1oBHk4avuhT3Utnvk8vlBLvVIH5XLAbq3F2hqevV0xya1uBmBdiiuDwCF
+	qdp8iaO5chyZIowvvuc/P1hkKfxaWP6hrUXOcPTJ37TmiZwLEZtzTGarwq+yf9kQSDtC+cvwZ33
+	PkRbI3doyTsmWLFCJ9ElOVz4YQpF9T2ipOunooiF6HmAj2I18g0xeeCU7kGyGU7gUAbqF8QzKjk
+	bwVH78=
+X-Received: by 2002:a05:6a00:430c:b0:84e:831:9a1a with SMTP id d2e1a72fcca58-84fa8874d85mr3008148b3a.21.1786451860206;
+        Tue, 11 Aug 2026 05:37:40 -0700 (PDT)
+Received: from localhost.localdomain ([113.98.201.214])
+        by smtp.gmail.com with ESMTPSA id d2e1a72fcca58-84fa9195371sm715118b3a.11.2026.08.11.05.37.36
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Tue, 11 Aug 2026 05:37:38 -0700 (PDT)
+From: Wale Zhang <wale.zhang.ftd@gmail.com>
+To: colyli@fygo.io,
+	kent.overstreet@linux.dev
+Cc: linux-bcache@vger.kernel.org,
 	linux-kernel@vger.kernel.org,
-	linux-block@vger.kernel.org,
-	linux-bcache@vger.kernel.org,
-	dm-devel@lists.linux.dev,
-	linux-raid@vger.kernel.org,
-	nvdimm@lists.linux.dev,
-	virtualization@lists.linux.dev,
-	gfs2@lists.linux.dev,
-	linux-fsdevel@vger.kernel.org,
-	linux-mm@kvack.org
-Subject: [RFC PATCH v2 4/4] blk-cgroup: move async bio punt state to blkcg
-Date: Tue, 11 Aug 2026 14:47:44 +0800
-Message-ID: <20260811064744.1139446-5-yukuai@kernel.org>
-X-Mailer: git-send-email 2.51.0
-In-Reply-To: <20260811064744.1139446-1-yukuai@kernel.org>
-References: <20260811064744.1139446-1-yukuai@kernel.org>
+	Wale Zhang <wale.zhang.ftd@gmail.com>
+Subject: [PATCH] bcache: reserve a bucket generation for btree node freeing
+Date: Tue, 11 Aug 2026 08:35:41 -0400
+Message-ID: <20260811123541.624750-1-wale.zhang.ftd@gmail.com>
+X-Mailer: git-send-email 2.47.3
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
@@ -90,191 +74,149 @@ List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 
-From: Yu Kuai <yukuai@fygo.io>
+The allocator allows a bucket generation to advance until its distance
+from last_gc reaches BUCKET_GC_GEN_MAX.  A bucket allocated for a btree
+node can then be advanced once more by make_btree_freeing_key() when that
+node is replaced.  That path does not go through can_inc_bucket_gen().
 
-blkcg_punt_bio_submit() currently queues punted bios on blkg->async_bios,
-so it has to call bio_blkg() to find or create a queue-local blkg.  Bios
-now carry and pin the blkcg css, so punted bio lifetime no longer needs to
-be anchored by a blkg.
+This can make the generation distance exceed BUCKET_GC_GEN_MAX.  It was
+observed during journal replay when a btree split advanced the distance
+from 96 to 97.  bch_inc_gen() warned and the subsequent btree scan
+reported:
 
-Keeping the punt state in blkg can instantiate a blkg even when no blkcg
-policy is enabled, just to bounce submission from a shared kthread.  Move
-async_bio_lock, async_bios and async_bio_work to struct blkcg, and queue
-punted bios on bio_blkcg() for non-root cgroups.  Root or unassociated bios
-are submitted directly.
+  key too stale: 97, need_gc 97
 
-This preserves the priority-inversion avoidance while preventing
-blkcg_punt_bio_submit() from creating blkgs that are not needed by any
-policy.
+The cache set was then disabled.
 
-Signed-off-by: Yu Kuai <yukuai@fygo.io>
+Stop normal bucket invalidation one generation earlier.  The reserved
+generation allows make_btree_freeing_key() to invalidate a btree node
+without exceeding BUCKET_GC_GEN_MAX.  A bucket cannot need another such
+increment before being reused, and reuse has to pass this check again.
+
+The kernel log is as follow:
+[   46.769015] ------------[ cut here ]------------
+[   46.769023] WARNING: CPU: 14 PID: 3891 at drivers/md/bcache/alloc.c:81 bch_inc_gen+0x3f/0x50 [bcache]
+[   46.769145] Modules linked in: bcache(E) dm_mod(E) ext4(E) crc16(E) jbd2(E) crc32c_cryptoapi(E) watchdog(E) squashfs(E) vfat(E) fat(E) overlay(E) raid10(E) raid456(E) async_raid6_recov(E) async_memcpy(E) async_pq(E) async_xor(E) xor(E) async_tx(E) raid6_pq(E) raid1(E) raid0(E) md_mod(E) quota_v2(E) quota_v1(E) quota_tree(E) loop(E) sd_mod(E) xhci_pci(E) nvme(E) ahci(E) xhci_hcd(E) nvme_core(E) libahci(E) libata(E) atlantic(E) nvme_keyring(E) nvme_auth(E) usbcore(E) scsi_mod(E)
+[   46.769216] CPU: 14 UID: 0 PID: 3891 Comm: bcache Tainted: G S   U      E       6.18.15 #1 PREEMPT(lazy)
+[   46.769222] Tainted: [S]=CPU_OUT_OF_SPEC, [U]=USER, [E]=UNSIGNED_MODULE
+[   46.769223] Hardware name: MINI Pro/Default string, BIOS MINI Pro V1.1 20250806 08/06/2025
+[   46.769225] RIP: 0010:bch_inc_gen+0x3f/0x50 [bcache]
+[   46.769240] Code: 0f 89 c2 2a 56 07 0f b6 b1 22 06 00 00 40 38 f2 0f 42 d6 88 91 22 06 00 00 48 8b 17 80 ba 22 06 00 00 60 77 05 c3 cc cc cc cc <0f> 0b c3 cc cc cc cc 66 2e 0f 1f 84 00 00 00 00 00 90 90 90 90 90
+[   46.769243] RSP: 0018:ffffcadc8ffdf590 EFLAGS: 00010202
+[   46.769245] RAX: 0000000000000063 RBX: 000007ffffffffff RCX: ffff89da58600000
+[   46.769247] RDX: ffff89da58600000 RSI: 0000000000000060 RDI: ffff89d8c14c8000
+[   46.769249] RBP: 0000000000000002 R08: 0000000ae3a62aea R09: 0000000000000000
+[   46.769250] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
+[   46.769252] R13: ffffcadc8ffdf658 R14: ffff89da820bb800 R15: ffffcadc8ffdf600
+[   46.769254] FS:  00007f7222e26bc0(0000) GS:ffff89e854219000(0000) knlGS:0000000000000000
+[   46.769256] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   46.769258] CR2: 00007f37b77fcde8 CR3: 0000000305c51006 CR4: 0000000000f72ef0
+[   46.769260] PKRU: 55555554
+[   46.769261] Call Trace:
+[   46.769265]  <TASK>
+[   46.769267]  make_btree_freeing_key+0xe3/0x120 [bcache]
+[   46.769287]  btree_split+0x4b3/0x6c0 [bcache]
+[   46.769304]  ? __pfx_closure_sync_fn+0x10/0x10
+[   46.769312]  ? update_load_avg+0x7f/0x790
+[   46.769319]  bch_btree_insert_node+0x2f6/0x3d0 [bcache]
+[   46.769335]  ? __pfx_btree_insert_fn+0x10/0x10 [bcache]
+[   46.769349]  btree_insert_fn+0x24/0x50 [bcache]
+[   46.769364]  bch_btree_map_nodes_recurse+0x103/0x190 [bcache]
+[   46.769379]  __bch_btree_map_nodes+0x1b7/0x1f0 [bcache]
+[   46.769393]  ? __pfx_btree_insert_fn+0x10/0x10 [bcache]
+[   46.769407]  bch_btree_insert+0xe3/0x160 [bcache]
+[   46.769420]  ? __pfx_autoremove_wake_function+0x10/0x10
+[   46.769425]  bch_journal_replay+0x131/0x290 [bcache]
+[   46.769442]  ? ttwu_queue_wakelist+0xe0/0x100
+[   46.769447]  ? try_to_wake_up+0x309/0x6e0
+[   46.769451]  register_bcache+0x18b2/0x2000 [bcache]
+[   46.769473]  kernfs_fop_write_iter+0x130/0x210
+[   46.769480]  vfs_write+0x258/0x420
+[   46.769486]  ksys_write+0x65/0xe0
+[   46.769490]  do_syscall_64+0x84/0x810
+[   46.769495]  ? next_uptodate_folio+0x85/0x2a0
+[   46.769501]  ? percpu_counter_add_batch+0x4c/0x90
+[   46.769504]  ? filemap_map_pages+0x64f/0x760
+[   46.769509]  ? do_fault+0x2a2/0x5a0
+[   46.769513]  ? __handle_mm_fault+0x943/0xfb0
+[   46.769518]  ? count_memcg_events+0xb6/0x170
+[   46.769523]  ? handle_mm_fault+0xb2/0x2b0
+[   46.769526]  ? do_user_addr_fault+0x212/0x6a0
+[   46.769531]  entry_SYSCALL_64_after_hwframe+0x76/0x7e
+[   46.769535] RIP: 0033:0x7f7222f20350
+[   46.769538] Code: 40 00 48 8b 15 b1 aa 0d 00 f7 d8 64 89 02 48 c7 c0 ff ff ff ff eb b7 0f 1f 00 80 3d 91 32 0e 00 00 74 17 b8 01 00 00 00 0f 05 <48> 3d 00 f0 ff ff 77 58 c3 0f 1f 80 00 00 00 00 48 83 ec 28 48 89
+[   46.769540] RSP: 002b:00007ffec1502588 EFLAGS: 00000202 ORIG_RAX: 0000000000000001
+[   46.769542] RAX: ffffffffffffffda RBX: 000000000000000a RCX: 00007f7222f20350
+[   46.769543] RDX: 000000000000000a RSI: 000055b8694a3c00 RDI: 0000000000000003
+[   46.769544] RBP: 000055b8694a3c00 R08: 00007f7222ffc2e0 R09: 0000000000000073
+[   46.769546] R10: 0000000000000000 R11: 0000000000000202 R12: 000000000000000a
+[   46.769547] R13: 00007ffec1502610 R14: 000000000000000a R15: 00007f7222ff79e0
+[   46.769549]  </TASK>
+[   46.769550] ---[ end trace 0000000000000000 ]---
+[   46.777982] bcache: bch_journal_replay() journal replay done, 4 keys in 3 entries, seq 75283
+[   46.809306] bcache: register_cache() registered cache device dm-1
+[   46.820987] bcache: register_bdev() registered backing device dm-3
+[   46.850260] bcache: bch_cache_set_error() error on b2f0a7d0-0c65-44e6-8ea7-c2b2d66324ad: key too stale: 97, need_gc 97, disabling caching
+[   46.850268] CPU: 4 UID: 0 PID: 4171 Comm: bch_dirtcnt[3] Tainted: G S   U  W   E       6.18.15 #1 PREEMPT(lazy)
+[   46.850270] Tainted: [S]=CPU_OUT_OF_SPEC, [U]=USER, [W]=WARN, [E]=UNSIGNED_MODULE
+[   46.850271] Hardware name: MINI Pro/Default string, BIOS MINI Pro V1.1 20250806 08/06/2025
+[   46.850272] Call Trace:
+[   46.850274]  <TASK>
+[   46.850277]  dump_stack_lvl+0x64/0x80
+[   46.850286]  bch_extent_bad+0x11e/0x170 [bcache]
+[   46.850299]  ? __pfx_bch_ptr_bad+0x10/0x10 [bcache]
+[   46.850305]  bch_btree_iter_next_filter+0x1b0/0x2e0 [bcache]
+[   46.850311]  bch_btree_map_keys_recurse+0x7d/0x190 [bcache]
+[   46.850317]  ? __pfx_sectors_dirty_init_fn+0x10/0x10 [bcache]
+[   46.850324]  ? sched_balance_update_blocked_averages+0x5f8/0x710
+[   46.850328]  ? bch_btree_node_get.part.0+0x1f6/0x2e0 [bcache]
+[   46.850333]  ? __pfx_up_read+0x10/0x10
+[   46.850335]  bch_root_node_dirty_init+0xdc/0x170 [bcache]
+[   46.850342]  ? __pfx_autoremove_wake_function+0x10/0x10
+[   46.850343]  bch_dirty_init_thread+0x11a/0x150 [bcache]
+[   46.850349]  ? __pfx_bch_dirty_init_thread+0x10/0x10 [bcache]
+[   46.850354]  kthread+0xfe/0x240
+[   46.850356]  ? __pfx_kthread+0x10/0x10
+[   46.850357]  ? __pfx_kthread+0x10/0x10
+[   46.850357]  ret_from_fork+0x1cc/0x200
+[   46.850360]  ? __pfx_kthread+0x10/0x10
+[   46.850360]  ret_from_fork_asm+0x1a/0x30
+[   46.850363]  </TASK>
+[   46.851013] Buffer I/O error on dev bcache0, logical block 0, async page read
+[   46.851027] ldm_validate_partition_table(): Disk read failed.
+[   46.851032] Buffer I/O error on dev bcache0, logical block 0, async page read
+[   46.851033] Dev bcache0: unable to read RDB block 0
+[   46.851037] Buffer I/O error on dev bcache0, logical block 3, async page read
+[   46.851039]  bcache0: unable to read partition table
+[   46.851155] bcache: bch_cached_dev_attach() Caching dm-3 as bcache0 on set b2f0a7d0-0c65-44e6-8ea7-c2b2d66324ad
+[   46.851296] bcache: conditional_stop_bcache_device() stop_when_cache_set_failed of bcache0 is "auto" and cache is dirty, stop it to avoid potential data corruption.
+[   46.856117] bcache: cached_dev_detach_finish() Caching disabled for dm-3
+[   46.881268] bcache: bcache_device_free() bcache0 stopped
+[   47.089287] bcache: cache_set_free() Cache set b2f0a7d0-0c65-44e6-8ea7-c2b2d66324ad unregistered
+
+Signed-off-by: Wale Zhang <wale.zhang.ftd@gmail.com>
 ---
- block/blk-cgroup.c | 44 +++++++++++++++++++++-----------------------
- block/blk-cgroup.h | 14 ++++++--------
- 2 files changed, 27 insertions(+), 31 deletions(-)
+ drivers/md/bcache/alloc.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 1de2f2433d11..e76e9a52f95d 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -177,14 +177,10 @@ static void blkg_free(struct blkcg_gq *blkg)
+diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
+index 3ec240ec685d..460a6eed59ff 100644
+--- a/drivers/md/bcache/alloc.c
++++ b/drivers/md/bcache/alloc.c
+@@ -120,7 +120,12 @@ void bch_rescale_priorities(struct cache_set *c, int sectors)
  
- static void __blkg_release(struct rcu_head *rcu)
+ static inline bool can_inc_bucket_gen(struct bucket *b)
  {
- 	struct blkcg_gq *blkg = container_of(rcu, struct blkcg_gq, rcu_head);
- 
--#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
--	WARN_ON(!bio_list_empty(&blkg->async_bios));
--#endif
--
- 	blkg_free(blkg);
+-	return bucket_gc_gen(b) < BUCKET_GC_GEN_MAX;
++	/*
++	 * A bucket may be allocated for a btree node. When the node is freed,
++	 * make_btree_freeing_key() increments the bucket generation once more
++	 * without going through this check. Leave room for that increment.
++	 */
++	return bucket_gc_gen(b) < BUCKET_GC_GEN_MAX - 1;
  }
  
- /*
-  * A group is RCU protected, but having an rcu lock does not mean that one
-@@ -218,23 +214,22 @@ static void blkg_release(struct percpu_ref *ref)
- }
- 
- #ifdef CONFIG_BLK_CGROUP_PUNT_BIO
- static struct workqueue_struct *blkcg_punt_bio_wq;
- 
--static void blkg_async_bio_workfn(struct work_struct *work)
-+static void blkcg_async_bio_workfn(struct work_struct *work)
- {
--	struct blkcg_gq *blkg = container_of(work, struct blkcg_gq,
--					     async_bio_work);
-+	struct blkcg *blkcg = container_of(work, struct blkcg, async_bio_work);
- 	struct bio_list bios = BIO_EMPTY_LIST;
- 	struct bio *bio;
- 	struct blk_plug plug;
- 	bool need_plug = false;
- 
--	/* as long as there are pending bios, @blkg can't go away */
--	spin_lock(&blkg->async_bio_lock);
--	bio_list_merge_init(&bios, &blkg->async_bios);
--	spin_unlock(&blkg->async_bio_lock);
-+	/* as long as there are pending bios, @blkcg can't go away */
-+	spin_lock(&blkcg->async_bio_lock);
-+	bio_list_merge_init(&bios, &blkcg->async_bios);
-+	spin_unlock(&blkcg->async_bio_lock);
- 
- 	/* start plug only when bio_list contains at least 2 bios */
- 	if (bios.head && bios.head->bi_next) {
- 		need_plug = true;
- 		blk_start_plug(&plug);
-@@ -251,19 +246,19 @@ static void blkg_async_bio_workfn(struct work_struct *work)
-  * cgroup.  Use this helper instead of submit_bio to punt the actual issuing to
-  * a dedicated per-blkcg work item to avoid such priority inversions.
-  */
- void blkcg_punt_bio_submit(struct bio *bio)
- {
--	struct blkcg_gq *blkg = bio_blkg(bio);
-+	struct blkcg *blkcg = bio_blkcg(bio);
- 
--	if (blkg && blkg->parent) {
--		spin_lock(&blkg->async_bio_lock);
--		bio_list_add(&blkg->async_bios, bio);
--		spin_unlock(&blkg->async_bio_lock);
--		queue_work(blkcg_punt_bio_wq, &blkg->async_bio_work);
-+	if (blkcg && cgroup_parent(blkcg->css.cgroup)) {
-+		spin_lock(&blkcg->async_bio_lock);
-+		bio_list_add(&blkcg->async_bios, bio);
-+		spin_unlock(&blkcg->async_bio_lock);
-+		queue_work(blkcg_punt_bio_wq, &blkcg->async_bio_work);
- 	} else {
--		/* Never bounce if there is no non-root blkg to queue on. */
-+		/* Never bounce if there is no non-root blkcg to queue on. */
- 		submit_bio(bio);
- 	}
- }
- EXPORT_SYMBOL_GPL(blkcg_punt_bio_submit);
- 
-@@ -342,15 +337,10 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct gendisk *disk,
- 	blkg->q = disk->queue;
- 	INIT_LIST_HEAD(&blkg->q_node);
- 	blkg->blkcg = blkcg;
- 	blkg->blkcg_id = blkcg->css.id;
- 	blkg->iostat.blkg = blkg;
--#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
--	spin_lock_init(&blkg->async_bio_lock);
--	bio_list_init(&blkg->async_bios);
--	INIT_WORK(&blkg->async_bio_work, blkg_async_bio_workfn);
--#endif
- 
- 	u64_stats_init(&blkg->iostat.sync);
- 	for_each_possible_cpu(cpu) {
- 		u64_stats_init(&per_cpu_ptr(blkg->iostat_cpu, cpu)->sync);
- 		per_cpu_ptr(blkg->iostat_cpu, cpu)->blkg = blkg;
-@@ -1370,10 +1360,13 @@ static void blkcg_css_free(struct cgroup_subsys_state *css)
- 		if (blkcg->cpd[i])
- 			blkcg_policy[i]->cpd_free_fn(blkcg->cpd[i]);
- 
- 	mutex_unlock(&blkcg_pol_mutex);
- 
-+#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
-+	WARN_ON(!bio_list_empty(&blkcg->async_bios));
-+#endif
- 	free_percpu(blkcg->lhead);
- 	kfree(blkcg);
- }
- 
- static struct cgroup_subsys_state *
-@@ -1418,10 +1411,15 @@ blkcg_css_alloc(struct cgroup_subsys_state *parent_css)
- 	}
- 
- 	spin_lock_init(&blkcg->lock);
- 	refcount_set(&blkcg->online_pin, 1);
- 	INIT_HLIST_HEAD(&blkcg->blkg_list);
-+#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
-+	spin_lock_init(&blkcg->async_bio_lock);
-+	bio_list_init(&blkcg->async_bios);
-+	INIT_WORK(&blkcg->async_bio_work, blkcg_async_bio_workfn);
-+#endif
- #ifdef CONFIG_CGROUP_WRITEBACK
- 	INIT_LIST_HEAD(&blkcg->cgwb_list);
- #endif
- 	list_add_tail(&blkcg->all_blkcgs_node, &all_blkcgs);
- 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 3d113f6f6d25..efef0967d39e 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -74,18 +74,11 @@ struct blkcg_gq {
- 
- 	struct blkg_iostat_set __percpu	*iostat_cpu;
- 	struct blkg_iostat_set		iostat;
- 
- 	struct blkg_policy_data		*pd[BLKCG_MAX_POLS];
--#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
--	spinlock_t			async_bio_lock;
--	struct bio_list			async_bios;
--#endif
--	union {
--		struct work_struct	async_bio_work;
--		struct work_struct	free_work;
--	};
-+	struct work_struct		free_work;
- 
- 	atomic_t			use_delay;
- 	atomic64_t			delay_nsec;
- 	atomic64_t			delay_start;
- 	u64				last_delay;
-@@ -110,10 +103,15 @@ struct blkcg {
- 	/*
- 	 * List of updated percpu blkg_iostat_set's since the last flush.
- 	 */
- 	struct llist_head __percpu	*lhead;
- 
-+#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
-+	spinlock_t			async_bio_lock; /* protects async_bios */
-+	struct bio_list			async_bios;
-+	struct work_struct		async_bio_work;
-+#endif
- #ifdef CONFIG_BLK_CGROUP_FC_APPID
- 	char                            fc_app_id[FC_APPID_LEN];
- #endif
- #ifdef CONFIG_CGROUP_WRITEBACK
- 	struct list_head		cgwb_list;
+ bool bch_can_invalidate_bucket(struct cache *ca, struct bucket *b)
 -- 
-2.51.0
+2.47.3
 
