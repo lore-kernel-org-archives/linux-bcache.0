@@ -1,300 +1,232 @@
-Received: from mx0b-001b2d01.pphosted.com (mx0b-001b2d01.pphosted.com [148.163.158.5])
+Received: from smtp.kernel.org (aws-us-west-2-korg-mail-alma10-1.taild15c8.ts.net [100.103.45.18])
 	(using TLSv1.2 with cipher ECDHE-RSA-AES256-GCM-SHA384 (256/256 bits))
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id C037D374E40;
-	Wed, 16 Sep 2026 05:48:26 +0000 (UTC)
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=148.163.158.5
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 47FEB331EB0;
+	Fri, 18 Sep 2026 04:17:56 +0000 (UTC)
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.client-ip=100.103.45.18
 ARC-Seal:i=1; a=rsa-sha256; d=subspace.kernel.org; s=arc-20240116;
-	t=1789537708; cv=none; b=RW4dvMrjvsSXNm1b338Ajd8PiXPKhsE+5z7Aeeri1xUoyWvYkAtOJMGqsZuDSOodI6mqSBtiKnJRYznY9P6WdqNWTDEJAs/f1/1Ffo8bG/CNY6xzwvMBhC7DkrnjzrMdqc28BCrGlvrd8mpIJz1QWAZndn9sGGoNn4wgt4cqZD0=
+	t=1789705078; cv=none; b=iN8NvXJwOS3njSTcVxKHPgAMvCsQl4J04/i27zzYU4kxJZECxBu80e76OK6FqfzR05xJHPbXCCLiPuegktET86NsRFIiXAxTFdofcq8xZ5FOo6JSMK8p038Cpk7vzk6busfUcu/QnGs3HrvSQxDwyvjBqlP+iFgj5/imxgTs4gE=
 ARC-Message-Signature:i=1; a=rsa-sha256; d=subspace.kernel.org;
-	s=arc-20240116; t=1789537708; c=relaxed/simple;
-	bh=njcNesu0T2wlf680w7LVVN2Ev1fYXdOMmrZOnhfUu7g=;
-	h=Message-ID:Date:MIME-Version:Subject:To:Cc:References:From:
-	 In-Reply-To:Content-Type; b=KHGbbmZBB54/QxFxTuuasgwZ/um4X+vvKaACq3gXcp3imbiF3r7je2NhjHoXrY+7R/vLZxXuSVROZxLRRCW7Tzl3yoD71xzd4cNk3N3ETBaukxhbdbiEzxgUKY48Po5v8wdQP40Xs+7GJt8EvpwOhd/95OeHSyi2CnlI0JqGtYc=
-ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com; spf=pass smtp.mailfrom=linux.ibm.com; dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b=lx12HJfL; arc=none smtp.client-ip=148.163.158.5
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=linux.ibm.com
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=linux.ibm.com
+	s=arc-20240116; t=1789705078; c=relaxed/simple;
+	bh=hAKfeURgimH+zD5v3mZSGKclYtLi5kuQXJoRur/UxdQ=;
+	h=From:To:Cc:Subject:Date:Message-ID:MIME-Version; b=M+B35J+r2cqVzhdIuSg6kwqrG9v3Mq0KdT0rSKMx6EBnXElftmnGatRpVSopnHAcG9ANu2n9/FAfX/b9wZvxk/zDXasxA2zMu2NYQwG4ie4N9g2PErWX4D43fkz3HZI74aXAdY4UQ+Qj0TT70+Nx1CbbyQCrO48lEUJs0+E7q2c=
+ARC-Authentication-Results:i=1; smtp.subspace.kernel.org; dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b=dZdUIubP; arc=none smtp.client-ip=100.103.45.18
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key) header.d=ibm.com header.i=@ibm.com header.b="lx12HJfL"
-Received: from pps.filterd (m0356516.ppops.net [127.0.0.1])
-	by mx0a-001b2d01.pphosted.com (8.18.1.11/8.18.1.11) with ESMTP id 68FLVo181805238;
-	Wed, 16 Sep 2026 05:46:46 GMT
-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=ibm.com; h=cc
-	:content-transfer-encoding:content-type:date:from:in-reply-to
-	:message-id:mime-version:references:subject:to; s=pp1; bh=LIabAc
-	JQ4SujGOG0uLelxBeziOrGyHi5lo2W+7zfeTE=; b=lx12HJfLZS91YM5KIhWYZ9
-	hDsxiLfBZdoX31K0/DytlhbwZEBHDky5J3S6a2bv1wyEH1AYLkSaG4lQuvSTEdUu
-	V7cXD8RKC8CpmxwYqHX6puNGwT5EPDlf1E+Oj7GhouPgT5MmqIbwyQwIUdPo53Wx
-	QKtzzjoYmJEEzPx04t87vjSqNrKvYIuDl8UHvrf0OK3f+KrZ+gm6EU2w/qAKWrXZ
-	rL33NwZbqi7VhQTP6DJgP8v6KHrWeZ0aJ31AI7AEhoBv0SuiQ+ffDehVa6hg2xZn
-	HhT2Zi6A3zsa1AtXdXD2Oxx+07DqgTuLSy7utHIhzAqbUetGjLdot7Lt4PkhQ9yw
-	==
-Received: from ppma12.dal12v.mail.ibm.com (dc.9e.1632.ip4.static.sl-reverse.com [50.22.158.220])
-	by mx0a-001b2d01.pphosted.com (PPS) with ESMTPS id 4gmv5htw82-1
-	(version=TLSv1.3 cipher=TLS_AES_256_GCM_SHA384 bits=256 verify=NOT);
-	Wed, 16 Sep 2026 05:46:45 +0000 (GMT)
-Received: from pps.filterd (ppma12.dal12v.mail.ibm.com [127.0.0.1])
-	by ppma12.dal12v.mail.ibm.com (8.18.1.11/8.18.1.11) with ESMTP id 68G2qVLt464070;
-	Wed, 16 Sep 2026 05:46:44 GMT
-Received: from smtprelay04.wdc07v.mail.ibm.com ([172.16.1.71])
-	by ppma12.dal12v.mail.ibm.com (PPS) with ESMTPS id 4gq03vcvf5-1
-	(version=TLSv1.2 cipher=ECDHE-RSA-AES256-GCM-SHA384 bits=256 verify=NOT);
-	Wed, 16 Sep 2026 05:46:44 +0000 (GMT)
-Received: from smtpav05.wdc07v.mail.ibm.com (smtpav05.wdc07v.mail.ibm.com [10.39.53.232])
-	by smtprelay04.wdc07v.mail.ibm.com (8.14.9/8.14.9/NCO v10.0) with ESMTP id 68G5khN328312216
-	(version=TLSv1/SSLv3 cipher=DHE-RSA-AES256-GCM-SHA384 bits=256 verify=OK);
-	Wed, 16 Sep 2026 05:46:43 GMT
-Received: from smtpav05.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 96B2558059;
-	Wed, 16 Sep 2026 05:46:43 +0000 (GMT)
-Received: from smtpav05.wdc07v.mail.ibm.com (unknown [127.0.0.1])
-	by IMSVA (Postfix) with ESMTP id 72C9258053;
-	Wed, 16 Sep 2026 05:46:29 +0000 (GMT)
-Received: from [9.61.52.228] (unknown [9.61.52.228])
-	by smtpav05.wdc07v.mail.ibm.com (Postfix) with ESMTP;
-	Wed, 16 Sep 2026 05:46:29 +0000 (GMT)
-Message-ID: <d0dbf12d-b358-4164-b865-0e44c7163b7d@linux.ibm.com>
-Date: Wed, 16 Sep 2026 11:16:27 +0530
+	dkim=pass (2048-bit key) header.d=kernel.org header.i=@kernel.org header.b="dZdUIubP"
+Received: by smtp.kernel.org (Postfix) with ESMTPSA id F1E811F000FF;
+	Fri, 18 Sep 2026 04:17:46 +0000 (UTC)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=kernel.org;
+	s=k20260515; t=1789705076;
+	bh=WWxabFUVlB3kxXBm4kFTC6I3NzI8FakdyNfET9iDosQ=;
+	h=From:To:Cc:Subject:Date;
+	b=dZdUIubP7WawPPBoUISGeGIF5ET69n9vHrkUVvspPnrH7fxHweJj2pqEOElVx2vIL
+	 0gFC5UbRFw2yyrUHY8PuEWsj3Mk6WHImCplwTlI60/XUI76P7v6YKqCFuBRQ3z6vC8
+	 D4IfiDdtb9OpF9KJwyaUUmE0WCWrChqkCcnscAtjBVSlbLeT1gn8kIAGDPn7QXBRDy
+	 uyVZJ/cSvCjKvvkrk1SWqjkP71K7D2BHoKJ257aiaDDnQ+ozchaBZMGL59Cyc8YNCA
+	 cgNPGGgrw2vZkS3Mn+lrb1xgQs6YmdMPOv5u8KaDeiJ+0j1eeksXZuaT4qd7J9F0+p
+	 3erBVRFc7D2AQ==
+From: Yu Kuai <yukuai@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>,
+	Josef Bacik <josef@toxicpanda.com>,
+	Tejun Heo <tj@kernel.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	=?UTF-8?q?Michal=20Koutn=C3=BD?= <mkoutny@suse.com>,
+	Jonathan Corbet <corbet@lwn.net>,
+	Shuah Khan <skhan@linuxfoundation.org>,
+	Randy Dunlap <rdunlap@infradead.org>,
+	Coly Li <colyli@fygo.io>,
+	Kent Overstreet <kent.overstreet@linux.dev>,
+	Alasdair Kergon <agk@redhat.com>,
+	Mike Snitzer <snitzer@kernel.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Benjamin Marzinski <bmarzins@redhat.com>,
+	Song Liu <song@kernel.org>,
+	Li Nan <magiclinan@didiglobal.com>,
+	Xiao Ni <xiao@kernel.org>,
+	Andreas Gruenbacher <agruenba@redhat.com>,
+	Matthew Wilcox <willy@infradead.org>,
+	Jan Kara <jack@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Chris Li <chrisl@kernel.org>,
+	Kairui Song <kasong@tencent.com>,
+	Kemeng Shi <shikemeng@huaweicloud.com>,
+	Nhat Pham <nphamcs@gmail.com>,
+	Baoquan He <baoquan.he@linux.dev>,
+	Barry Song <baohua@kernel.org>,
+	Youngjun Park <youngjun.park@lge.com>,
+	Nathan Chancellor <nathan@kernel.org>,
+	Nick Desaulniers <ndesaulniers@google.com>,
+	Bill Wendling <morbo@google.com>,
+	Justin Stitt <justinstitt@google.com>
+Cc: Yu Kuai <yukuai@fygo.io>,
+	Christoph Hellwig <hch@lst.de>,
+	Nilay Shroff <nilay@linux.ibm.com>,
+	Tao Cui <cuitao@kylinos.cn>,
+	linux-block@vger.kernel.org,
+	cgroups@vger.kernel.org,
+	linux-doc@vger.kernel.org,
+	linux-kernel@vger.kernel.org,
+	linux-bcache@vger.kernel.org,
+	dm-devel@lists.linux.dev,
+	linux-raid@vger.kernel.org,
+	gfs2@lists.linux.dev,
+	linux-fsdevel@vger.kernel.org,
+	linux-mm@kvack.org,
+	llvm@lists.linux.dev
+Subject: [PATCH v3 0/3] blk-cgroup: store blkcg in bio before blkcg_mutex conversion
+Date: Fri, 18 Sep 2026 12:17:41 +0800
+Message-ID: <20260918041744.1526924-1-yukuai@kernel.org>
+X-Mailer: git-send-email 2.51.0
 Precedence: bulk
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 MIME-Version: 1.0
-User-Agent: Mozilla Thunderbird
-Subject: Re: [PATCH v2 3/3] blk-cgroup: move async bio punt state to blkcg
-To: yukuai@fygo.io, Yu Kuai <yukuai@kernel.org>, Jens Axboe
- <axboe@kernel.dk>,
-        Josef Bacik <josef@toxicpanda.com>, Tejun Heo <tj@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        =?UTF-8?Q?Michal_Koutn=C3=BD?= <mkoutny@suse.com>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shuah Khan <skhan@linuxfoundation.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Coly Li <colyli@fygo.io>,
-        Kent Overstreet <kent.overstreet@linux.dev>,
-        Alasdair Kergon
- <agk@redhat.com>, Mike Snitzer <snitzer@kernel.org>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Benjamin Marzinski <bmarzins@redhat.com>, Song Liu <song@kernel.org>,
-        Li Nan <magiclinan@didiglobal.com>, Xiao Ni <xiao@kernel.org>,
-        Andreas Gruenbacher <agruenba@redhat.com>,
-        Matthew Wilcox <willy@infradead.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Li <chrisl@kernel.org>, Kairui Song <kasong@tencent.com>,
-        Kemeng Shi <shikemeng@huaweicloud.com>, Nhat Pham <nphamcs@gmail.com>,
-        Baoquan He <baoquan.he@linux.dev>, Barry Song <baohua@kernel.org>,
-        Youngjun Park <youngjun.park@lge.com>,
-        Nathan Chancellor <nathan@kernel.org>,
-        Nick Desaulniers <ndesaulniers@google.com>,
-        Bill Wendling
- <morbo@google.com>,
-        Justin Stitt <justinstitt@google.com>
-Cc: Christoph Hellwig <hch@lst.de>, Tao Cui <cuitao@kylinos.cn>,
-        linux-block@vger.kernel.org, cgroups@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-bcache@vger.kernel.org, dm-devel@lists.linux.dev,
-        linux-raid@vger.kernel.org, gfs2@lists.linux.dev,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        llvm@lists.linux.dev
-References: <cover.1789237876.git.yukuai@fygo.io>
- <326e4904402440323532168095f2eb0c6f697836.1789237877.git.yukuai@fygo.io>
- <f27ee89f-5a52-4cfc-a14a-e5019ae61d89@linux.ibm.com>
- <52df0198-9949-4801-ac0f-c86935d1aceb@fygo.io>
-Content-Language: en-US
-From: Nilay Shroff <nilay@linux.ibm.com>
-In-Reply-To: <52df0198-9949-4801-ac0f-c86935d1aceb@fygo.io>
-Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-X-TM-AS-GCONF: 00
-X-Proofpoint-Reinject: loops=2 maxloops=12
-X-Proofpoint-Spam-Details-Enc: AW1haW4tMjYwOTE2MDA2OSBTYWx0ZWRfX1gy6KzyZTO/l
- rL51RO0W701nRkcEHte/j9aRVxrfkRfJ+Jtis/WO9hc0tXlk424evaovVJRGnJvNjQ8gKGI8ddp
- A8scu8xfT/rVabl6n18riuCnKxgx1mjW8Pz2ohY0V3KxlY0zRQriM7EqDUvASE6rleZb9BxerXk
- MBWdtRatkDryBNFQmS2OfTrlu+shK/KU+pEOtyA0pT8bLU2KDiwDQEW/j+Dv4spAcF8nPVmPGHl
- AQzKnyUhbKqIy8tKmVx8QomvhHB68zeGZFudR9r5BoOtp05hHacxNcVgJWQC97OqrLe+XY28ZuI
- sG6otgW8E9sxOuxfYt4yCthjMiTmvN60SWfrZWqZWIuDquyvMpdUtxNKl3FoLWF78V6PSY/IXWB
- l5ZNRQDl9/BaeIKV0WM9zLbULJDQpiqbNdWBnzo8msr++EdqT32Rs46nmVeEUO7HQL2/tDdPsBu
- Ss8GhgqqHuM1Ilj9/Qg==
-X-Proofpoint-Spam-Info: AW1haW4tMjYwOTE2MDA2OSBTYWx0ZWRfXw5nEcY0jQeuZ
- tax0LoWnDAcmk4cbc2FCdT8zX9xVz7SxmWGxfp7CNjY7iP8psVX/aHLR9njmVbGNHuMSUuDjhxs
- jV4mV1YYN5V3CY+DGkFm4LkU9uZLAbk=
-X-Authority-Analysis: v=2.4 cv=Zsx4uN7G c=1 sm=1 tr=0 ts=6aaa2d46 cx=c_pps
- a=bLidbwmWQ0KltjZqbj+ezA==:117 a=bLidbwmWQ0KltjZqbj+ezA==:17
- a=IkcTkHD0fZMA:10 a=VdqzKS8jKosA:10 a=VkNPw1HP01LnGYTKEx00:22
- a=RnoormkPH1_aCDwRdu11:22 a=Y2IxJ9c9Rs8Kov3niI8_:22 a=EVVczme9KZ5WO4Hfbr4A:9
- a=3ZKOabzyN94A:10 a=QEXdDO2ut3YA:10
-X-Proofpoint-ORIG-GUID: 37_berB40VslJIQLTEVE8C2V_Rtd3Cmf
-X-Proofpoint-GUID: dUuyNwdiGQH56_Z-inY37SOtflE__LN5
-X-Proofpoint-Virus-Version: vendor=baseguard
- engine=ICAP:2.0.293,Aquarius:18.0.1176,Hydra:6.1.134,FMLib:17.12.100.49
- definitions=2026-09-15_05,2026-09-15_02,2025-10-01_01
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0
- malwarescore=0 impostorscore=0 clxscore=1015 priorityscore=1501
- lowpriorityscore=0 bulkscore=0 adultscore=0 phishscore=0 spamscore=0
- suspectscore=0 classifier=typeunknown authscore=0 authtc= authcc=
- route=outbound adjust=0 reason=mlx scancount=1 engine=8.22.0-2609040000
- definitions=main-2609160069
 
-On 9/15/26 9:24 PM, yu kuai wrote:
-> Hi,
-> 
-> 在 2026/9/13 21:29, Nilay Shroff 写道:
->> On 9/13/26 12:24 PM, Yu Kuai wrote:
->>> From: Yu Kuai <yukuai@fygo.io>
->>>
->>> blkcg_punt_bio_submit() currently queues punted bios on
->>> blkg->async_bios,
->>> so it has to call bio_blkg() to find or create a queue-local blkg.  Bios
->>> now carry and pin the blkcg css, so punted bio lifetime no longer
->>> needs to
->>> be anchored by a blkg.
->>>
->>> Keeping the punt state in blkg can instantiate a blkg even when no blkcg
->>> policy is enabled, just to bounce submission from a shared kthread.
->>> Move
->>> async_bio_lock, async_bios and async_bio_work to struct blkcg, and queue
->>> punted bios on bio_blkcg() for non-root cgroups.  Root or
->>> unassociated bios
->>> are submitted directly.
->>>
->>> This preserves the priority-inversion avoidance while preventing
->>> blkcg_punt_bio_submit() from creating blkgs that are not needed by any
->>> policy.
->>>
->>> Signed-off-by: Yu Kuai <yukuai@fygo.io>
->>> ---
->>>    block/blk-cgroup.c | 52 ++++++++++++++++++++++++++--------------------
->>>    block/blk-cgroup.h | 14 ++++++-------
->>>    2 files changed, 35 insertions(+), 31 deletions(-)
->>>
->>> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
->>> index 59ccfefe16a8..aa3cee107ebe 100644
->>> --- a/block/blk-cgroup.c
->>> +++ b/block/blk-cgroup.c
->>> @@ -180,14 +180,10 @@ static void blkg_free(struct blkcg_gq *blkg)
->>>      static void __blkg_release(struct rcu_head *rcu)
->>>    {
->>>        struct blkcg_gq *blkg = container_of(rcu, struct blkcg_gq,
->>> rcu_head);
->>>    -#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
->>> -    WARN_ON(!bio_list_empty(&blkg->async_bios));
->>> -#endif
->>> -
->>>        blkg_free(blkg);
->>>    }
->>>      /*
->>>     * A group is RCU protected, but having an rcu lock does not mean
->>> that one
->>> @@ -226,23 +222,23 @@ static void blkg_release(struct percpu_ref *ref)
->>>    }
->>>      #ifdef CONFIG_BLK_CGROUP_PUNT_BIO
->>>    static struct workqueue_struct *blkcg_punt_bio_wq;
->>>    -static void blkg_async_bio_workfn(struct work_struct *work)
->>> +static void blkcg_async_bio_workfn(struct work_struct *work)
->>>    {
->>> -    struct blkcg_gq *blkg = container_of(work, struct blkcg_gq,
->>> -                         async_bio_work);
->>> +    struct blkcg *blkcg = container_of(work, struct blkcg,
->>> async_bio_work);
->>>        struct bio_list bios = BIO_EMPTY_LIST;
->>>        struct bio *bio;
->>>        struct blk_plug plug;
->>>        bool need_plug = false;
->>>    -    /* as long as there are pending bios, @blkg can't go away */
->>> -    spin_lock(&blkg->async_bio_lock);
->>> -    bio_list_merge_init(&bios, &blkg->async_bios);
->>> -    spin_unlock(&blkg->async_bio_lock);
->>> +    /* as long as there are pending bios, @blkcg can't go away */
->>> +    {
->>> +        guard(spinlock)(&blkcg->async_bio_lock);
->>> +        bio_list_merge_init(&bios, &blkcg->async_bios);
->>> +    }
->>>
->> Instead of using guard(spinlock)(...) here, I think we could use the
->> simpler spin_lock()/spin_unlock() helpers. IMO, they are easier
->> to read and reason about for these short critical sections.
-> Ok.
->>
->>>        /* start plug only when bio_list contains at least 2 bios */
->>>        if (bios.head && bios.head->bi_next) {
->>>            need_plug = true;
->>>            blk_start_plug(&plug);
->>> @@ -259,19 +255,20 @@ static void blkg_async_bio_workfn(struct
->>> work_struct *work)
->>>     * cgroup.  Use this helper instead of submit_bio to punt the
->>> actual issuing to
->>>     * a dedicated per-blkcg work item to avoid such priority inversions.
->>>     */
->>>    void blkcg_punt_bio_submit(struct bio *bio)
->>>    {
->>> -    struct blkcg_gq *blkg = bio_blkg(bio);
->>> +    struct blkcg *blkcg = bio_blkcg(bio);
->>>    -    if (blkg && blkg->parent) {
->>> -        spin_lock(&blkg->async_bio_lock);
->>> -        bio_list_add(&blkg->async_bios, bio);
->>> -        spin_unlock(&blkg->async_bio_lock);
->>> -        queue_work(blkcg_punt_bio_wq, &blkg->async_bio_work);
->>> +    if (blkcg && cgroup_parent(blkcg->css.cgroup)) {
->>> +        {
->>> +            guard(spinlock)(&blkcg->async_bio_lock);
->>> +            bio_list_add(&blkcg->async_bios, bio);
->>> +        }
->>> +        queue_work(blkcg_punt_bio_wq, &blkcg->async_bio_work);
->>
->> Again same here, replace guard() with spin_lock() and spin_unlock()
->> helpers.
->>
->>>        } else {
->>> -        /* Never bounce if there is no non-root blkg to queue on. */
->>> +        /* Never bounce if there is no non-root blkcg to queue on. */
->>>            submit_bio(bio);
->>>        }
->>>    }
->>>    EXPORT_SYMBOL_GPL(blkcg_punt_bio_submit);
->>>    @@ -350,15 +347,10 @@ static struct blkcg_gq *blkg_alloc(struct
->>> blkcg *blkcg, struct gendisk *disk,
->>>        blkg->q = disk->queue;
->>>        INIT_LIST_HEAD(&blkg->q_node);
->>>        blkg->blkcg = blkcg;
->>>        blkg->blkcg_id = blkcg->css.id;
->>>        blkg->iostat.blkg = blkg;
->>> -#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
->>> -    spin_lock_init(&blkg->async_bio_lock);
->>> -    bio_list_init(&blkg->async_bios);
->>> -    INIT_WORK(&blkg->async_bio_work, blkg_async_bio_workfn);
->>> -#endif
->>>          u64_stats_init(&blkg->iostat.sync);
->>>        for_each_possible_cpu(cpu) {
->>>            u64_stats_init(&per_cpu_ptr(blkg->iostat_cpu, cpu)->sync);
->>>            per_cpu_ptr(blkg->iostat_cpu, cpu)->blkg = blkg;
->>> @@ -1399,10 +1391,16 @@ static void blkcg_css_free(struct
->>> cgroup_subsys_state *css)
->>>            if (blkcg->cpd[i])
->>>                blkcg_policy[i]->cpd_free_fn(blkcg->cpd[i]);
->>>          mutex_unlock(&blkcg_pol_mutex);
->>>    +#ifdef CONFIG_BLK_CGROUP_PUNT_BIO
->>> +    {
->>> +        guard(spinlock)(&blkcg->async_bio_lock);
->>> +        WARN_ON(!bio_list_empty(&blkcg->async_bios));
->>> +    }
->>> +#endif
->>
->> This is a slightly different case. At this point blkcg_css_free() is
->> freeing the blkcg object after its final reference has gone away, so
->> there should be no concurrent context accessing blkcg->async_bios.
->> Therefore, I don't think we need to acquire async_bio_lock here just
->> to perform the WARN_ON() check.
-> 
-> Perhaps is it better just to remove the check? blkcg will be pinned
-> by any bio inside the list, so I believe this is safe.
-> 
-Ideally yes we would not enter into blkcg_css_free() until all
-references to blkcg are dropped. So the WARN_ON() appears to be
-used just as a paranoia check. I'm okay either to drop it or
-if you want to keep it then I suggest replacing bio_list_empty()
-with bio_list_empty_careful(), so that the check explicitly allows
-lockless inspection during teardown.
+From: Yu Kuai <yukuai@fygo.io>
 
-Thanks,
---Nilay
+This is v3 of the preparatory series for the blkcg_mutex conversion
+proposed in the related series [1]. That conversion moves queue-local
+blkg topology synchronization from q->queue_lock to q->blkcg_mutex,
+which is awkward while bios directly store queue-local blkg references.
 
+Storing a blkg also ties a bio to one request_queue. A remapped bio must
+drop that reference and recreate the association for the new queue even
+when no blkcg policy needs it. Dying blkgs add another complication:
+they disappear from the per-blkcg lookup tree before all pinned bio
+references drain.
+
+Patch 1 makes request_queue the authoritative lookup owner. A
+queue-owned rhashtable keyed by the blkcg CSS ID keeps dying blkgs
+discoverable until their references drain, while q->blkg_list remains
+available for ordered walks.
+
+Patch 2 stores and pins the queue-independent blkcg CSS in each bio.
+Queue-local blkgs are created lazily by policy users, then pinned until
+the bio changes devices or releases its cgroup state. Completion and
+accounting paths which do not create a blkg remain lookup-only.
+
+Patch 3 moves async bio punt state from blkg to blkcg, so punting alone
+does not instantiate a queue-local blkg.
+
+Changes since v2:
+
+  - Rebase onto the latest for-7.4/block branch.
+  - In patch 2, clarify why dm_bio_record() excludes BIO_BLKG_REF and
+    add Nilay Shroff's Reviewed-by.
+  - In patch 3, replace scoped spinlock guards with explicit
+    spin_lock()/spin_unlock(), drop the redundant teardown check, and
+    rely on zero-initialization for async_bios before publication, as
+    suggested by Nilay Shroff and Christoph Hellwig.
+
+Changes since v1:
+
+  - Rebase onto the latest block-7.3 branch.
+  - In patch 2, require every blkg rhashtable lookup to run inside an
+    explicit RCU read-side critical section. Annotate blkg_lookup_any(),
+    blkg_lookup(), and recursive wrappers with __must_hold_shared(RCU)
+    so Clang thread-safety analysis verifies the contract.
+  - In patch 2, exclude BIO_BLKG_REF from the flags saved by
+    dm_bio_record(), since restoring an ownership bit cannot recreate
+    the associated blkg reference.
+  - In patch 3, use scoped spinlock guards for async_bios and annotate
+    the list with __guarded_by().
+  - Add Nilay Shroff's Reviewed-by to patch 1.
+
+Changes since RFC v3:
+
+  - Drop the RFC prefix.
+  - Add Christoph Hellwig's Reviewed-by to patch 1.
+  - Add Tao Cui's Reviewed-by to patch 2.
+  - In patch 2, relax blkg_lookup_any()/blkg_lookup() to also allow
+    q->queue_lock as an alternative to the RCU read lock.
+
+Changes since RFC v2:
+
+  - Drop the old patch 1 and send it separately as a bugfix for 7.3 and
+    -stable, as suggested by Christoph Hellwig.
+  - Rebase onto the latest for-7.3/block branch.
+  - In the new patch 1, note that the remaining q->blkg_list walkers are
+    cgroupfs/sysfs slow paths and can move to rhashtable iteration after
+    the queue_lock-to-blkcg_mutex conversion.
+  - In the new patch 1, explain the list_empty case in blkg_release(), and
+    add an RCU lockdep assertion plus documentation that blkg_lookup_any()
+    does not acquire a reference.
+
+Changes since RFC v1:
+
+  - Add patch 1 to wait for every old blkg to leave q->blkg_list before a
+    shared request_queue is rebound, instead of treating root_blkg == NULL
+    as completion of asynchronous blkg teardown.
+  - Add patch 2 to replace the per-blkcg radix tree and lookup hint with a
+    request_queue rhashtable keyed by blkcg->css.id, as suggested by
+    Christoph Hellwig. Keep dying pinned blkgs in the hash until
+    blkg_release() so bio-owned references remain discoverable.
+  - Fold the v1 helper-only patch into patch 3, as suggested by Jan Kara
+    and Christoph Hellwig, and make bio_blkcg() naturally return NULL for
+    an unassociated bio.
+  - Rework patch 3 so blkg_lookup_create() acquires the bio-owned
+    reference, falls back to a live parent when creation or tryget fails,
+    and updates bi_blkcg when the returned blkg belongs to an ancestor.
+  - Make bio_blkg_lookup() lookup-only: it returns NULL unless BIO_BLKG_REF
+    is already set. Use bio_blkg() in the BFQ and IOCOST merge paths which
+    may need to create a blkg, while keeping blk_cgroup_bio_start() and
+    completion paths lookup-only.
+  - Move CSS online-reference handling into
+    bio_associate_blkcg_from_css(), including fallback to the root blkcg,
+    so bio_associate_blkcg() does not take a redundant reference.
+  - Keep the v1 async bio punt conversion as patch 4 and document that
+    async_bio_lock protects async_bios.
+
+Previous versions:
+  - v2: https://lore.kernel.org/r/cover.1789237876.git.yukuai@fygo.io
+  - v1: https://lore.kernel.org/r/20260823133045.970199-1-yukuai@kernel.org
+  - RFC v3:
+    https://lore.kernel.org/r/20260818070641.756747-1-yukuai@kernel.org
+  - RFC v2:
+    https://lore.kernel.org/r/20260811064744.1139446-1-yukuai@kernel.org
+  - RFC v1:
+    https://lore.kernel.org/r/20260804065313.2092022-1-yukuai@kernel.org
+
+Related series:
+  [1] RFC v2 blk-cgroup: protect blkgs with blkcg_mutex
+      https://lore.kernel.org/r/20260724123037.3004560-1-yukuai@kernel.org
+
+Yu Kuai (3):
+  blk-cgroup: use a request_queue rhashtable for blkg lookup
+  blk-cgroup: store blkcg in bio instead of blkg
+  blk-cgroup: move async bio punt state to blkcg
+
+ Documentation/admin-guide/cgroup-v2.rst |   2 +-
+ block/bfq-cgroup.c                      |  18 +-
+ block/bfq-iosched.c                     |  19 +-
+ block/bio.c                             |  22 +-
+ block/blk-cgroup-fc-appid.c             |  10 +-
+ block/blk-cgroup-rwstat.h               |   2 +-
+ block/blk-cgroup.c                      | 346 ++++++++++++++----------
+ block/blk-cgroup.h                      |  93 +++++--
+ block/blk-core.c                        |   9 +-
+ block/blk-crypto-fallback.c             |   2 +-
+ block/blk-iocost.c                      |  12 +-
+ block/blk-iolatency.c                   |  11 +-
+ block/blk-ioprio.c                      |   2 +-
+ block/blk-throttle.c                    |   3 +-
+ block/blk-throttle.h                    |   2 +-
+ drivers/md/bcache/request.c             |   2 +-
+ drivers/md/dm-bio-record.h              |   5 +-
+ drivers/md/dm.c                         |   2 +-
+ drivers/md/md.c                         |   2 +-
+ fs/gfs2/lops.c                          |   3 +-
+ include/linux/bio.h                     |  26 +-
+ include/linux/blk_types.h               |   9 +-
+ include/linux/blkdev.h                  |   2 +
+ include/linux/writeback.h               |   2 +-
+ mm/page_io.c                            |  12 +-
+ 25 files changed, 381 insertions(+), 237 deletions(-)
+
+
+base-commit: af78ca007be5f63dc34b8180c8063c1113697192
+-- 
+2.51.0
