@@ -1,86 +1,95 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=74.125.82.54
-ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792726855;
-	b=jBz8n5YTv8nf4ARtrJMr8QdAzIxcbE7KxjtWzclf0GcIn1xd8XNzoYyUzHvgKXZaVkNi
-	 EjGLMv7HSSdiIDcA8x9xNqujRFV3ykj255vszGWNn5O/vraD9uE44rbuHhC6uy0HpYR+t
-	 MT/ml7ZKCAHvNVdjc7OkITJtWqZu9TJEHFHNdbBryNksyDNzIOaaytpMGEmw03JDnUxue
-	 yTJFVcxqfR+Xf1U5L7DglbMIB+YTxHkMm0PZQ9fkH08lr1si3IK9jtS4Dp2qqKnDEhvCn
-	 Rux2Y0V+OQUyJz3AhXE2PITZmBLZpF4Um+ApmNQffuT1GxU9kiPbV8uqg/vhKgM6jAw==
-ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792726855;
+Authentication-Results: smtp.subspace.kernel.org; arc=fail smtp.remote-ip=209.85.214.176
+ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=fail;
+	t=1792931928;
+	b=Uz1NGyqMDh+vVchkshc9ZU0Ez0v8ORasGqhBkywGQ//bOwOdkofpnAM2IenmHETn8U3j
+	 8oFTUZCmnTRDlyPOAHIoImUZSVdF2VYCbROjh9Qc+Y0nMQEGW3zBnTcHpfMgs6xQw7lDd
+	 viWj5yi+Rc739ipKllroVCzvnwzqu0P4sJpmso78qfSNxUQ/G0hTLf8zmOBsvnqmJbG0d
+	 qmjx+6u3Imh2Dsavjq5pA16YYCcffXMXmDWo8QibE1BqD2FZBGEveJdmMzJ/BRzze0zAI
+	 QZYw8MsgJRr/G2hioMGcOi7/guWMsvmgg4kRH19gwJx+joIgiBCoqqcl/IrLowr7SSA==
+ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
+	a=rsa-sha256; c=relaxed/relaxed; t=1792931928;
 	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
-	 X-Forwarded-Encrypted:X-Gm-Message-State:X-Gm-Gg:X-Received:Received:
-	 From:Date:Subject:MIME-Version:Content-Type:Content-Transfer-Encoding:
-	 Message-Id:X-B4-Tracking:To:Cc:X-Mailer;
-	bh=r84gnXzTqJKBeirbLqju8kxJzezP08DsjHOvlAIc1ig=;
-	b=H4vcBnDnavos9QAWoTQbdGj9LZVcwCL69FweRfkS6QTeLO2VVwTJPZYzHGi5ji1wlsAJ
-	 jWU+I9RLoOfWOteJmrE2iH2TCsmKnsmHPnOjuJH9jg6c8xKcGqgif6dNCMR715ycNqirv
-	 6Fe4TJ0/2aPGRAQaxgP6mvKYevLDPi38fcflONORpLBcpiUWcMtWUkB8J1r5xXqyFEcTK
-	 WSjL1VIb7k4Yr76m/awtSVbAso6vlzYxC01PmuCs2UGphBkXoA54SFfbrgNkf74RRJTk3
-	 gm/OWpSgCQJNEjg1xFE+k+CG1e4cvQvRRbppCG/b/yL1Lurhjux32XbmE13qzJrG9Wg==
-ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
+	 X-Gm-Message-State:X-Gm-Gg:X-Received:MIME-Version:From:Date:
+	 X-Gm-Features:Message-ID:Subject:To:Cc:Content-Type;
+	bh=ifIa5BWnf8laepgAGnQECywu1F41hu5JMjyB1fMNjtc=;
+	b=xLouKuDZhnSaVQA16PcY0eWQPPzj9yTSk2apYgXjbgfrvkEzwnRqFwn98jD1ozRratxy
+	 onwLinK1dOZgHlyRSMgaN9b5CLfX1wqZVSgfMcF7JdwBIMOAOTyJSyWrJ3uRSVyH32Xui
+	 L/Yatejk5XGqWcwwLqobSmeQ2LiZjr+fXWL5K6KrEIveVZki0szpCdR833gl7COorGSoz
+	 njHBlWedxUtHz//AZPUY8xPohJOnrF0q7xs9/uxM/t+tyTyZ7WKcvTpF+wenuBXLQGJD1
+	 EF6N6H8Y4crLK2ute1q0swvlZcHb7gp38hLPkpuLLLodlCTJKc19IANd4+Bp7lzKtHQ==
+ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=gmail.com;
 	spf=pass smtp.mailfrom=gmail.com;
-	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20251104 header.b=a+BSs70C;
-	arc=none smtp.remote-ip=74.125.82.54
-Received: from mail-dl1-f54.google.com (mail-dl1-f54.google.com [74.125.82.54])
+	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20251104 header.b=iOtqb047;
+	arc=fail smtp.remote-ip=209.85.214.176
+Received: from mail-pl1-f176.google.com (mail-pl1-f176.google.com [209.85.214.176])
 	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 913F4606A31B
-	for <linux-bcache@vger.kernel.org>; Fri, 23 Oct 2026 03:40:54 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 913F4606A31B
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 335F7606A31D
+	for <linux-bcache@vger.kernel.org>; Sun, 25 Oct 2026 12:38:48 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 335F7606A31D
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20251104 header.b=a+BSs70C
-Received: by mail-dl1-f54.google.com with SMTP id a92af1059eb24-157fe9d771bso536077c88.0
-        for <linux-bcache@vger.kernel.org>; Thu, 22 Oct 2026 20:40:54 -0700 (PDT)
+	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20251104 header.b=iOtqb047
+Received: by mail-pl1-f176.google.com with SMTP id d9443c01a7336-2e5fb79ce82so13951405ad.0
+        for <linux-bcache@vger.kernel.org>; Sun, 25 Oct 2026 05:38:48 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1792931927; cv=none;
+        d=google.com; s=arc-20260327;
+        b=btW3Fy4RRpuaDFyWkkAVxIBvsjd3R8d4zYCI3tzwyuEg1cQLef00bb68/u/bxtRWnj
+         BcNI2SFA0yBmKxgK1r7N4h/DGUx4lg4/BZGFct7B0OhzPHDvRBSZUOLpH4kO9utgXLE3
+         Uyz9JP+VbmFiIgrteCWjhP6MfspxMpnUnGPcMYdZ2D4TcCpuAxWXqiNVtbCbvzjy1NF3
+         FibgeRS6BWdKiYxPrxSxHCQLTioXLJmSU31FSZ/BEBwkVIaFuMXQPl3hacDWeAt9tqkO
+         j7qqy5Grx5U/EBQnVLsyMj0LU24v2BlLb7AePSyUvfAi0gBJe2i9dBbgBxqNxLcXm41v
+         RQ+g==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
+        h=cc:to:subject:message-id:date:from:mime-version:dkim-signature;
+        bh=ifIa5BWnf8laepgAGnQECywu1F41hu5JMjyB1fMNjtc=;
+        fh=W6WEZ8Y4lpEkHj7DPch7ihGJmlTYAVQqHHAeitlpTDk=;
+        b=X8yvbcK21Iq6OY7FMoyrllRK/53g65AY55vz9BakOFrrmOWNZ4slwhvYk4RXAwRGX4
+         Zy6ysZK5OoSucGP68nqZRX4IhnePw6dgFOFPe3vtou24KvbaTNb4Wp3CwPmjTBg1JKPu
+         Ogh49e4lYqqu2W1MZgPLRQvExZTCasVNzzPz6PZL6RrNPU+rLJ/mlY93C5lz6d67Nqc8
+         nuEGHABwwwAv/pDyU0/GSI9IASK+DtmdUFQMp4wEh2wy8mRTV1V5JlT6La/PRvpio+nc
+         /coFQY2zIRfAAvbUX+uInSWIGdtreQ/5khEUU9GBqNGR17DfJsCoZ9AIav2aDiC3K+/O
+         LogQ==;
+        darn=vger.kernel.org
+ARC-Authentication-Results: i=1; mx.google.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=gmail.com; s=20251104; t=1792726854; x=1793331654; darn=vger.kernel.org;
-        h=cc:to:message-id:content-transfer-encoding:content-type
-         :mime-version:subject:date:from:from:to:cc:subject:date:message-id
-         :reply-to:content-type;
-        bh=r84gnXzTqJKBeirbLqju8kxJzezP08DsjHOvlAIc1ig=;
-        b=a+BSs70CnSHtlqDxy4yOOq7jhBUmuczALQlXzPK6l0MDO2MuwJq2oQgIHgMgAp8gMg
-         VHXgpNjCnNbmaxysLzr8ouqw/KoLtMHjl3+rHGuT8tNo4CLVnS3zqK8X3xCM+DjuTexv
-         HUr46qjvgWgQXufgpyb87UYdbxx/U/QiBD4gkTw6JHNu+f2R4jP8C1jDhQNZHSrhms5+
-         /nhlMx56GiuBMp78+uM94WbcDzf1uVrwufa0rgWXjfdBBNqCCcrrYQ24ZO/2BcVwI7NC
-         JZ8TU/LPi3k69Vk3HATWDsh7/6QZ2IS0w9PL7OLpIJ+IfyzqpLVpVYgN5fr7VVFsS/um
-         Ui3Q==
+        d=gmail.com; s=20251104; t=1792931927; x=1793536727; darn=vger.kernel.org;
+        h=content-type:cc:to:subject:message-id:date:from:mime-version:from
+         :to:cc:subject:date:message-id:reply-to:content-type;
+        bh=ifIa5BWnf8laepgAGnQECywu1F41hu5JMjyB1fMNjtc=;
+        b=iOtqb047pnEUjxXecpH7QYAAr+0xFD5CcDSyHwjG3/WU1su2+31417TQX0mo173lXz
+         IJ2GtlWfHIjw5XYazrF54FlBJivDQWD+a6tIVaNJ5ZIG8Y8lPZNbezvVVNAcKsmQjLao
+         +5Kc2ezbXmfXt6ODeB67Z4TDljlwl6/7bF4DLWTZwYK079kp68HGtW3/PYrMGZlpIbOC
+         6Hxs7U8Nh9DJmBBFSHf4PghnVjo6J1znjCoHBA68pzOc/LYcVV2xZ/AhhpEwIkrdFmj4
+         eOzcraHDpl8Mcd92gD6TrWI+9nsRqXjK+qprUOrsNyxLf4H6cMXQTFmu0AHqGmzmM/7z
+         WVUA==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1792726854; x=1793331654;
-        h=cc:to:message-id:content-transfer-encoding:content-type
-         :mime-version:subject:date:from:x-gm-gg:x-gm-message-state:from:to
-         :cc:subject:date:message-id:reply-to:content-type;
-        bh=r84gnXzTqJKBeirbLqju8kxJzezP08DsjHOvlAIc1ig=;
-        b=xTh0RxceFk4ThU3swdmlQ8FKEjBFkFpfkLWWFe7jNapRRhwPzXAPlFz+K1YAytLxc2
-         x9apQQ0RXTJSqAEX08V5Rm3IuarHj9YIcD4L7H14C7D5/Mx69rdU27uHZ96PDCZsOjm7
-         vaXSKiIlXsf8vEZbzS2op6vFo2Aw8StLHOwwi+RP9SO5DWJTK8lZyIONcyH8heX74BPf
-         bpoEQ++Dl9YJhZCmFmcdkqkoi4kmTmqh9EPkv/Jt+eGdhtObrB+eXsdOvF145yjdimGn
-         uUU5jSZlff9OvqMQw+hr4JZDFty7OuQr281RA8/Cg4CjOOxwtrs/61fy5xozGrAHm1zf
-         MbsA==
-X-Forwarded-Encrypted: i=1; AKwUvBz0I3II0JPanWk4RQLMZevcabPCuEf5bGf7lorjCcTMfkuLMjDjaUqz84nON9S68ogWF3HKDvdMPSGAr1E=@vger.kernel.org
-X-Gm-Message-State: AFq9FYI6YbGJ33vlIiS05TDbqbb5FfF2RvXd+hVqwoaroVzKwOBOHaq4
-	ckW1G9qw+Yq6MobavhnPeZG8+KZXlLb3uSIPZwwp9sqgAngjXnXCWij4
-X-Gm-Gg: AYBFou1diLGCPjsuxwuaGbLHhemrHBVkJPmsZoAxvJNC8n3XnmAQ0VJv709y0Sij4ph
-	BulPOlyND1Tn0XQdMK0Mnf4r0/p0x82PcUQu3QAs1CGbpJgt0xTDzCTfQTOv93yqiJdsz4p8qyx
-	L/oradEL/RAzdTPnEhg5JE6FmcmEFCGbdBzKV1KtqDyD6fX1q6HnEKCfPBVl/5s/XBWQGTznc3V
-	GQcf6IubuAxAINcFZAyU8XfO0bTOMM3tviFjYGWXSWf8zBJuZhSK1tyuM4pv0nuBy7UGB+WcIVt
-	TPesByajFbjx9BQbBfDYarPvz8qarXCgBIdTcNj1P+GKbnm3Gd3D77IoK5Fs92lXVzPjAs2FOsh
-	G3YAylU78vymuaVF37UGTtwNeqMNaiQtqjgSj7YBAu9J+6XPRM6xEdNAW8PXS9iCKea4X1nxJ3h
-	+nBGk6hW1E/JZnh4OsbRAa/Ekx/Ijw00CJk9cX61+LWRKbbL85a6ZJKMlmiLcBFbXiM0cWWZkO6
-	WXQhQ/z5kVtcxkYwhKZ88k/+0JGpsgDAVUL/3qaCbtWGO7TtzI=
-X-Received: by 2002:a05:701b:4252:20b0:143:2719:566e with SMTP id a92af1059eb24-195c929683bmr1489574c88.42.1792726853488;
-        Thu, 22 Oct 2026 20:40:53 -0700 (PDT)
-Received: from [127.0.1.1] ([23.254.208.9])
-        by smtp.gmail.com with ESMTPSA id a92af1059eb24-195e9e9cbdcsm2513150c88.5.2026.10.22.20.40.51
-        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
-        Thu, 22 Oct 2026 20:40:53 -0700 (PDT)
-From: Qiliang Yuan <odys.yuan@gmail.com>
-Date: Fri, 23 Oct 2026 11:40:49 +0800
-Subject: [PATCH v4] bcache: avoid holding bch_register_lock across
- cache_set recovery
+        d=1e100.net; s=20260707; t=1792931927; x=1793536727;
+        h=content-type:cc:to:subject:message-id:date:from:mime-version
+         :x-gm-gg:x-gm-message-state:from:to:cc:subject:date:message-id
+         :reply-to:content-type;
+        bh=ifIa5BWnf8laepgAGnQECywu1F41hu5JMjyB1fMNjtc=;
+        b=IC7NKT7bgUOHMPeHygtfhPVP3FdIHI3caXo+yi3yE8N+qNABXhP1hOj9rW2WQZWWTk
+         EBwjMWA2EZp7uysRGOBSjwLdJI6npPJYlsSQWMJ9OD5uTBsFrRGh+8m6HpytluzbwXf1
+         AxgzFPXrIxKC+aqT8EMEiRDlZ8xZ2T9svqjwgqbAuANfrGaUHCHK1cp7jZ+AOJ+p/24F
+         BpY/nSIkzFzjbkuee2UnDGkgP7lukFnRez52BI/qYKxC7lkXnBwlubvpreRiWBU5Q+eS
+         HLpRBJXLBv4pnBd3+WyOZhaat11II7i5QYcMNBF1HK7bT4h+3UF4gqveq6GCNWmaLp/N
+         c6Yg==
+X-Gm-Message-State: AFq9FYLp/oqu/GpSplu7s0nNzUb8Q0JtOulXiTD1kFbHv+ofAGFvrGvz
+	WXnCZ6NiizyrbFVNy1qeZChP9ubBiAtwOSs2/rfSdAM/9sQKG/jZ2XhVu8c8dOXhe8srZMO3zP3
+	Je6kd5jP/VMX1uPVUGKe+mawc0rNWyBDJ8qgFjTg=
+X-Gm-Gg: AYBFou0I4uWJ5e2UppghKJsWMKyy9SLUGGdb+GE2DnxFx4+reH6Jm47FkrfEAIqHXZy
+	w80Z9+hqI7HhU7oncTbrfzTESm3ey5eX7UQ9JNOBa7Ssm+4buIhJ3ea6lUTSTo8jh80r1A+r1tm
+	/BgDeKQRci285sjA6Mywf7DI27dapHqwsmlAxvl06ARE5EVDP7J2REJCvU4mZy3UEWSX0YLM420
+	ZFfpNJ7amuh07ij23lrWa0kK0nzPF8Idn1jc1Ln5B9fBRccsqiHjjUDcOy18n0mOPSAoqXFNRIA
+	1dcqFC3o5YpFBg6XLhqGiEZ3CcVc1cH6Bf1h+Thunoqpl6+CPDI7k71AIgeNmriKtQAorXCL+YK
+	MQhn7+My5HW77SV/EbuU8PE+5GrYVEFrhQgIfc94=
+X-Received: by 2002:a17:903:1103:b0:2e8:3e5d:b2b7 with SMTP id
+ d9443c01a7336-2ea9c8754e2mr34279705ad.40.1792931927515; Sun, 25 Oct 2026
+ 05:38:47 -0700 (PDT)
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Post: <mailto:linux-bcache@vger.kernel.org>
@@ -90,307 +99,117 @@ List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:linux-bcache+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <20261023-feat-bcache-v4-1-a8fddd8eb2f3@gmail.com>
-X-B4-Tracking: v=1; b=H4sIAEDX2moC/33MQQ6CMBCF4auQWVtT2jqgK+9hXAxlgCZCTUsaD
- eHuFlYujMv3ku9fIHJwHOFSLBA4uej8lIc5FGAHmnoWrs0blFQoK4miY5pFY8kOLLTkMxoqq7Z
- VkMUzcOdee+12z3twcfbhvceT2t7fnaREKSpJpkFWBq289iO5x9H6EbZO0n+szrauM6s1ntDSt
- 13X9QM0zkoH4gAAAA==
-To: Coly Li <colyli@fygo.io>, Kent Overstreet <kent.overstreet@linux.dev>
-Cc: Coly Li <colyli@fnnas.com>, linux-bcache@vger.kernel.org, 
- linux-kernel@vger.kernel.org, Qiliang Yuan <odys.yuan@gmail.com>
-X-Mailer: b4 0.13.0
+From: Konstantin Nikiforov <helllamer@gmail.com>
+Date: Sun, 25 Oct 2026 15:38:36 +0300
+X-Gm-Features: AclHuK-zJVIt5pMq4aEG8YbVUe1pdfb3ZT8Uy3v4AWHcgp8mQbjuBakU33gJh-A
+Message-ID: <CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdqPDXKL8r8-kR9Q@mail.gmail.com>
+Subject: [REGRESSION] md/raid5: discards on an array of non-TRIM HDDs now fail
+ with BLK_STS_NOTSUPP; bcache counts them as backing-device errors and stops
+ the device
+To: linux-bcache@vger.kernel.org, linux-raid@vger.kernel.org
+Cc: "wale.zhang.ftd@gmail.com" <wale.zhang.ftd@gmail.com>, kent.overstreet@linux.dev, colyli@fygo.io, 
+	"song@kernel.org" <song@kernel.org>, yukuai@fygo.io, regressions@lists.linux.dev
+Content-Type: text/plain; charset="UTF-8"
 
-register_cache() holds bch_register_lock across register_cache_set(),
-which recovers a cache set from disk (journal replay, btree check,
-allocator start) before publishing it. The same global mutex serializes
-every sysfs store on cache sets and cached devices, and every
-register_bcache() call.
+#regzbot introduced: 90573092673c
 
-Recovery time grows with cache size and device health, so registering
-one cache device stalls unrelated, already running devices. On a Ceph
-OSD node with 12 cache sets on two NVMe drives, udev scripts writing
-congested_read_threshold_us under /sys/fs/bcache/<uuid>/ and
-sequential_cutoff under /sys/block/bcacheN/bcache/, and registration of
-other cache devices, sit in D state for minutes. udevd kills and
-retries those workers every 3 minutes, delaying OSD startup:
+Hi,
 
-  INFO: task bcache_cache_se:3496 blocked for more than 121 seconds.
-  Call trace:
-   __mutex_lock.constprop.0+0x1d4/0x5ec
-   mutex_lock+0x50/0x60
-   bch_cache_set_store+0x40/0x80 [bcache]
+since upgrading from 7.1.8 to 7.2.11 a machine with root on
+LVM -> bcache -> md raid5 (three SATA HDDs without TRIM) loses its root
+device a few minutes after boot. The same stack ran on 7.1.x without
+any bcache backing-device errors.
 
-Drop bch_register_lock in register_cache_set() while recovering a new
-cache set, and take it again to add the kobjects and attach pending
-devices. Keep the cache set on bch_cache_sets so that duplicate
-registrations and bcache_reboot() still see it, and mark it
-CACHE_SET_REGISTERING meanwhile: bch_cached_dev_attach() and the cache
-sysfs files leave it alone, __uuid_write() does not expect the lock, and
-__cache_set_unregister() waits for recovery, as bch_cache_set_error()
-or bcache_reboot() may stop the cache set at any time. Do not publish a
-cache set stopped that way. Take the cache kobject reference before
-recovery, and skip kobject_del() in cache_set_flush() if the cache set
-never reached sysfs. With a cache set recovering for about 15 seconds
-behind dm-delay (200ms reads), each operation started 1 second into
-recovery (3 runs):
+Storage stack
+-------------
+  3x ST1000DM010-2EP102 (no TRIM; discard_max_hw_bytes = 0)
+   -> md126: raid5, 3 devices, 512K chunk, metadata 1.2
+   -> bcache0: md126 as backing device, cache set detached
+      (also reproduced while an NVMe cache was attached)
+   -> LVM vgpcrd5
+   -> btrfs (/usr, /var, /opt; mounted without any discard option)
+      + ext4 (/, /home)
 
-                                    before (ms)    after (ms)
-  write congested_read_threshold_us   13893-14489    37-42
-  write sequential_cutoff             13889-14486    37-41
-  register another cache device       13923-14510    131-150
+Kernel: 7.2.11-arch1-1 (Arch Linux), mdadm 4.6, bcache-tools 1.1
 
-Signed-off-by: Qiliang Yuan <odys.yuan@gmail.com>
----
-Tested on a KASAN + lockdep kernel in a VM, with a cache set recovering
-behind dm-delay:
+Symptoms
+--------
+Every boot, starting ~3 minutes after mount, dmesg fills with:
 
-- Switching the cache device to dm-error 1, 4, 6 or 9 seconds into
-  recovery: v3 hits a KASAN slab-use-after-free in cache_set_flush()
-  followed by a panic; v4 fails the registration and frees the cache
-  set cleanly.
-- kexec reboot 1 second into recovery: in v3, bcache_reboot() tears the
-  cache set down while it is still being recovered (kernfs WARNs from
-  cache_set_flush()); in v4 the teardown waits for recovery, the cache
-  set is not published, and bcache_reboot() reports "All devices
-  stopped". If recovery outlasts bcache_reboot()'s 10 second wait, it
-  times out as it does for any slow cache set.
-- Registering a copy of the recovering cache device is rejected as a
-  duplicate cache set member right away.
----
-V3 -> V4:
-- Make __cache_set_unregister() wait for recovery, which
-  bcache_reboot() or bch_cache_set_error() could otherwise tear down
-  concurrently, and do not publish a cache set stopped meanwhile (Coly)
-- Take the cache kobject reference before recovery and skip
-  kobject_del() for a cache set never added to sysfs, fixing a
-  use-after-free when recovery fails
-- Keep run_cache_set() and drop the lock inside register_cache_set()
-  instead of splitting recovery into new helpers
-- Describe the blocked interfaces and their impact, and add before/after
-  data to the commit message (Coly)
-- Use one identity for From and Signed-off-by (Coly)
-- Rebase onto v7.3-5024-g864c07de0c7d
+  bcache: bch_count_backing_io_errors() md126: IO error on backing
+device, unrecoverable
 
-V2 -> V3:
-- Drop the mutex -> rw_semaphore conversion, which did not help stores
-  and raised a KABI concern (Coly)
-- Recover a new cache set without bch_register_lock and take the lock
-  only to publish it
-- Add CACHE_SET_REGISTERING to keep the cache set out of
-  bch_cached_dev_attach() and the cache sysfs files during recovery
-- Keep recovering an existing cache set under the lock
+in bursts of up to ~35 lines 2 ms apart. Per boot I counted 11, 17, 22
+and 63 of them. bcache's io_error_limit is 64, so once a boot crosses it
+bch_cached_dev_error() stops bcache0 and root, /usr, /var and /home
+disappear. No I/O errors are logged by libata, sd or md; all three
+members are healthy (SMART clean, array [UUU], no rebuild).
 
-V1 -> V2:
-- Hold the write lock throughout run_cache_set() instead of downgrading
-  it, closing a window where unregister could hit a half-initialized
-  cache set (Coly)
-- Take the write lock in all sysfs store wrappers, including
-  STORE_LOCKED and bch_flash_dev
-- Fix whitespace in the bcache_init() error path
-- bch_register_lock is not exported, so its type change does not affect
-  KABI
+Analysis
+--------
+Since 90573092673c ("md/raid5: validate discard support at request
+time", v7.2-rc1) raid5_set_limits() unconditionally sets
 
-v3: https://lore.kernel.org/r/20260706-feat-bcache-v3-1-8824683656ca@gmail.com
-v2: https://lore.kernel.org/r/20260706-feat-bcache-v2-1-70a4b6e246c0@gmail.com
-v1: https://lore.kernel.org/r/20260318-wujing-bcache-v1-1-f0b9aaf3f81d@gmail.com
----
- drivers/md/bcache/bcache.h |  4 +++
- drivers/md/bcache/super.c  | 64 +++++++++++++++++++++++++++++++++-------------
- drivers/md/bcache/sysfs.c  |  6 +++++
- 3 files changed, 56 insertions(+), 18 deletions(-)
+  lim.max_hw_discard_sectors = UINT_MAX;
 
-diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-index ec9ff97150812..d293e93b8eadf 100644
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -507,11 +507,15 @@ struct gc_stat {
-  * CACHE_SET_IO_DISABLE is set when bcache is stopping the whold cache set, all
-  * external and internal I/O should be denied when this flag is set.
-  *
-+ * CACHE_SET_REGISTERING is set while a new cache set is recovered without
-+ * bch_register_lock, before it is added to sysfs.
-+ *
-  */
- #define CACHE_SET_UNREGISTERING		0
- #define	CACHE_SET_STOPPING		1
- #define	CACHE_SET_RUNNING		2
- #define CACHE_SET_IO_DISABLE		3
-+#define CACHE_SET_REGISTERING		4
- 
- struct cache_set {
- 	struct closure		cl;
-diff --git a/drivers/md/bcache/super.c b/drivers/md/bcache/super.c
-index 97d9adb0bf96b..c209c92b60e91 100644
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -503,7 +503,8 @@ static int __uuid_write(struct cache_set *c)
- 	unsigned int size;
- 
- 	closure_init_stack(&cl);
--	lockdep_assert_held(&bch_register_lock);
-+	if (!test_bit(CACHE_SET_REGISTERING, &c->flags))
-+		lockdep_assert_held(&bch_register_lock);
- 
- 	if (bch_bucket_alloc_set(c, RESERVE_BTREE, &k.key, true))
- 		return 1;
-@@ -1215,6 +1216,10 @@ int bch_cached_dev_attach(struct cached_dev *dc, struct cache_set *c,
- 		return -EINVAL;
- 	}
- 
-+	/* Let register_cache_set() attach it once recovered */
-+	if (test_bit(CACHE_SET_REGISTERING, &c->flags))
-+		return -EBUSY;
-+
- 	if (dc->sb.block_size < c->cache->sb.block_size) {
- 		/* Will die */
- 		pr_err("Couldn't attach %pg: block size less than set's block size\n",
-@@ -1728,7 +1733,8 @@ static CLOSURE_CALLBACK(cache_set_flush)
- 	bch_cache_accounting_destroy(&c->accounting);
- 
- 	kobject_put(&c->internal);
--	kobject_del(&c->kobj);
-+	if (c->kobj.state_in_sysfs)
-+		kobject_del(&c->kobj);
- 
- 	if (!IS_ERR_OR_NULL(c->gc_thread))
- 		kthread_stop(c->gc_thread);
-@@ -1828,6 +1834,7 @@ static CLOSURE_CALLBACK(__cache_set_unregister)
- 	struct bcache_device *d;
- 	size_t i;
- 
-+	wait_on_bit(&c->flags, CACHE_SET_REGISTERING, TASK_UNINTERRUPTIBLE);
- 	mutex_lock(&bch_register_lock);
- 
- 	for (i = 0; i < c->devices_max_used; i++) {
-@@ -1986,7 +1993,6 @@ struct cache_set *bch_cache_set_alloc(struct cache_sb *sb)
- static int run_cache_set(struct cache_set *c)
- {
- 	const char *err = "cannot allocate memory";
--	struct cached_dev *dc, *t;
- 	struct cache *ca = c->cache;
- 	struct closure cl;
- 	LIST_HEAD(journal);
-@@ -2137,13 +2143,6 @@ static int run_cache_set(struct cache_set *c)
- 	if (bch_has_feature_obso_large_bucket(&c->cache->sb))
- 		pr_err("Detect obsoleted large bucket layout, all attached bcache device will be read-only\n");
- 
--	list_for_each_entry_safe(dc, t, &uncached_devices, list)
--		bch_cached_dev_attach(dc, c, NULL);
--
--	flash_devs_run(c);
--
--	bch_journal_space_reserve(&c->journal);
--	set_bit(CACHE_SET_RUNNING, &c->flags);
- 	return 0;
- err:
- 	while (!list_empty(&journal)) {
-@@ -2163,7 +2162,9 @@ static const char *register_cache_set(struct cache *ca)
- {
- 	char buf[12];
- 	const char *err = "cannot allocate memory";
-+	struct cached_dev *dc, *t;
- 	struct cache_set *c;
-+	int ret;
- 
- 	list_for_each_entry(c, &bch_cache_sets, list)
- 		if (!memcmp(c->set_uuid, ca->sb.set_uuid, 16)) {
-@@ -2177,6 +2178,25 @@ static const char *register_cache_set(struct cache *ca)
- 	if (!c)
- 		return err;
- 
-+	/*
-+	 * Drop bch_register_lock while recovering the new cache set, so that
-+	 * sysfs and registration of other devices are not blocked meanwhile.
-+	 * Keep it on bch_cache_sets for duplicate detection and
-+	 * bcache_reboot().
-+	 */
-+	kobject_get(&ca->kobj);
-+	set_bit(CACHE_SET_REGISTERING, &c->flags);
-+	list_add(&c->list, &bch_cache_sets);
-+	mutex_unlock(&bch_register_lock);
-+
-+	ret = run_cache_set(c);
-+
-+	mutex_lock(&bch_register_lock);
-+	clear_and_wake_up_bit(CACHE_SET_REGISTERING, &c->flags);
-+	err = "failed to run cache set";
-+	if (ret < 0 || test_bit(CACHE_SET_STOPPING, &c->flags))
-+		goto err;
-+
- 	err = "error creating kobject";
- 	if (kobject_add(&c->kobj, bcache_kobj, "%pU", c->set_uuid) ||
- 	    kobject_add(&c->internal, &c->kobj, "internal"))
-@@ -2186,22 +2206,30 @@ static const char *register_cache_set(struct cache *ca)
- 		goto err;
- 
- 	bch_debug_init_cache_set(c);
--
--	list_add(&c->list, &bch_cache_sets);
- found:
- 	sprintf(buf, "cache%i", ca->sb.nr_this_dev);
- 	if (sysfs_create_link(&ca->kobj, &c->kobj, "set") ||
- 	    sysfs_create_link(&c->kobj, &ca->kobj, buf))
- 		goto err;
- 
--	kobject_get(&ca->kobj);
--	ca->set = c;
--	ca->set->cache = ca;
-+	/* Recover an existing cache set locked, as it is already visible */
-+	if (!c->cache) {
-+		kobject_get(&ca->kobj);
-+		ca->set = c;
-+		ca->set->cache = ca;
- 
--	err = "failed to run cache set";
--	if (run_cache_set(c) < 0)
--		goto err;
-+		err = "failed to run cache set";
-+		if (run_cache_set(c) < 0)
-+			goto err;
-+	}
-+
-+	list_for_each_entry_safe(dc, t, &uncached_devices, list)
-+		bch_cached_dev_attach(dc, c, NULL);
- 
-+	flash_devs_run(c);
-+
-+	bch_journal_space_reserve(&c->journal);
-+	set_bit(CACHE_SET_RUNNING, &c->flags);
- 	return NULL;
- err:
- 	bch_cache_set_unregister(c);
-diff --git a/drivers/md/bcache/sysfs.c b/drivers/md/bcache/sysfs.c
-index cfac56caa8047..af970f802dcf5 100644
---- a/drivers/md/bcache/sysfs.c
-+++ b/drivers/md/bcache/sysfs.c
-@@ -1032,6 +1032,9 @@ SHOW(__bch_cache)
- {
- 	struct cache *ca = container_of(kobj, struct cache, kobj);
- 
-+	if (ca->set && test_bit(CACHE_SET_REGISTERING, &ca->set->flags))
-+		return -EBUSY;
-+
- 	sysfs_hprint(bucket_size,	bucket_bytes(ca));
- 	sysfs_hprint(block_size,	block_bytes(ca));
- 	sysfs_print(nbuckets,		ca->sb.nbuckets);
-@@ -1140,6 +1143,9 @@ STORE(__bch_cache)
- 	if (bcache_is_reboot)
- 		return -EBUSY;
- 
-+	if (ca->set && test_bit(CACHE_SET_REGISTERING, &ca->set->flags))
-+		return -EBUSY;
-+
- 	if (attr == &sysfs_cache_replacement_policy) {
- 		v = __sysfs_match_string(cache_replacement_policies, -1, buf);
- 		if (v < 0)
+and records member support in conf->raid5_discard_unsupported. On this
+array sysfs now shows:
 
----
-base-commit: 864c07de0c7dcbca58b61625dfa2e461ae63b242
-change-id: 20260706-feat-bcache-30e964a17dd2
+  /sys/block/md126/queue/discard_max_hw_bytes: 2199023255040
+  /sys/block/md126/queue/discard_max_bytes:    2199023255040
+  /sys/block/md126/queue/discard_granularity:  0
+  /sys/block/sd[abc]/queue/discard_max_hw_bytes: 0
+  (md127, a raid1 on the same disks, still shows 0 for all of these)
 
-Best regards,
--- 
-Qiliang Yuan <odys.yuan@gmail.com>
+Two upper layers react to the advertised discard support:
 
+1. btrfs enables discard=async by default because the device advertises
+   discard (mount shows "ssd,discard=async" although nothing in fstab
+   asks for it).
+
+2. bcache forwards discards to the backing device whenever
+   bdev_max_discard_sectors(dc->bdev) is non-zero (cached_dev_write()
+   and detached_dev_do_request()). Before 7.2 that was 0 for this array
+   and bcache completed the discards itself.
+
+raid5_discard_limits() then completes every such bio with
+BLK_STS_NOTSUPP. bcache's backing_request_endio() treats any non-zero
+bi_status as a media error and calls bch_count_backing_io_errors(), so
+each discard brings the backing device one step closer to being stopped.
+With 64 small deletions on the btrfs volume a root filesystem on
+raid5+bcache is gone.
+
+The granularity is also inconsistent: discard_granularity is 0 while
+discard_max_hw_bytes is non-zero, so writing any non-zero value to
+discard_max_bytes fails with EINVAL (only 0 is accepted).
+
+Related changes I found:
+- efdffeb6d491 ("md: skip discard on unsupported member devices", 7.3)
+  fixes the same bcache symptom for raid0/raid10 via
+  md_submit_discard_bio(), but raid5 does not use that helper and still
+  returns BLK_STS_NOTSUPP in current mainline (raid5_discard_limits()).
+- 85764f475f3b ("md/raid5: complete discard bios while reshape is
+  active") addresses a different fallout of the same commit (hang during
+  reshape).
+
+I have not found a report for this raid5 + bcache case on lore.
+
+Possible fixes (either side would do):
+- md/raid5: when conf->raid5_discard_unsupported is set, complete the
+  bio successfully (discard is advisory) instead of BLK_STS_NOTSUPP, or
+  do not advertise max_hw_discard_sectors in that case, as before 7.2.
+- bcache: do not count BLK_STS_NOTSUPP (or failed REQ_OP_DISCARD) in
+  bch_count_backing_io_errors(), the same way REQ_RAHEAD failures are
+  already ignored.
+
+Workaround in use
+-----------------
+A udev rule writing 0 to /sys/block/md126/queue/discard_max_bytes and
+/sys/block/bcache0/queue/discard_max_bytes (also inside the initramfs),
+plus "nodiscard" on the btrfs mounts. With that, io_errors stays at 0.
+
+I can test patches on this machine.
+
+Regards,
+Konstantin Nikiforov
+Claude Fable 5.1
