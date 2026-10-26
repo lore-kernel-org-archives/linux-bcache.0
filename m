@@ -1,52 +1,92 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.127.231.58
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.85.208.41
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1792952217;
-	b=S1B+PPmT8Lel6M+VootNf3iR5H3MumXpJ/k2bC/XCeFj9wWeXOqj8b7mUPYyyMmk0pjz
-	 H1TbvVgsucmfYqJoVC7i7U6bh6zxSQtSXitzdpf6TDYJZ3MnLWoeT5jadtuhWo4d2Ba/c
-	 GeaK9AmaNws6t5NDPnErfu9W0Co6MlR7HE4mwZOVYvmFVXPfpTzDSX38/gMQijybBzmFP
-	 Pc1PChw5f99Zg3QozyXptljys3Urp4sjXnc6rU/lth37eNpeaKoFDnOe+SjAGTbr6t18G
-	 EKrUjEclCPPfGHasdG6zwrPKpspfKyK/vUqR3po2H3W/4/nQkbNvoViyDhgZWFjexTQ==
+	t=1792998586;
+	b=U5r0MD39eIe38t/LJC7pyV4HDz4zyckgmQbTstU7rq3PwsvUuVXXe/Ghh+W44vq86Mnx
+	 Y494+8Of8Qdm0GGkgTNCWJtzNj3mAfDwiweVGnqDZIZkeTWMhyEOJEu+hFHPZmnAG7LZU
+	 SsJOyeDQtj/mxY80sSECaGTYYsBofws1saL8UYb5vewVile6MNzXUTKEccFLBvJzugY9o
+	 hB+mRNAnHV4BwycrbovhelXdlrYr8TlqWtLYDwS+4kaBfBbVTT+7q41N0cvbV3+MJvkCK
+	 k0iIEz25spAAtqGynl7ur2mwwTtzUBtzEN3+N1RN/EMPZSnOVaY/UEKF6/KOq3rqQww==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1792952217;
-	h=DMARC-Filter:DKIM-Signature:User-Agent:Cc:Mime-Version:In-Reply-To:
-	 Date:Message-Id:X-Original-From:Received:To:From:Subject:References:
-	 X-Lms-Return-Path:Reply-To:Content-Transfer-Encoding:Content-Type;
-	bh=/5lwkv3QUM5YvGs1kBijpp/6wHjZlSgrb379+9vBQcE=;
-	b=1bOMGgTa4lsxyU05iCM6Iw0xN3HaksPY+uQTmJL2yYuOiE3ij/+lfkolA+kfzKVLrmdk
-	 fyb27lRA0Fy3hi/KV6P2OR/EKw2xw4OgEPz5vRG5miu96nENaKSBDkpDAcYYLA75WQjxA
-	 INdQWKe3d80XhqJKmd1aBig2s9Gi2V4dzcwoFwyDwYjqjCYxPEf4oTznkxo8tW+1qq7Zn
-	 Xx4NnlfZf5JIw4DpstcnhQLIJBp/7QoKj+GgFeIZmO7fEwC9xts/3xexwwuBUV561vYtb
-	 MAUOIhNTloMvNahzgzM9tX/FODe1LizH4WgPrkakpLKHrqVyQ1jekhvaal4TN7Nbe7Q==
+	a=rsa-sha256; c=relaxed/relaxed; t=1792998586;
+	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
+	 X-Gm-Message-State:X-Gm-Gg:X-Received:Received:From:Date:Subject:To:
+	 Cc:In-Reply-To:References:Message-ID;
+	bh=NhqYyPv74NL/BY6caRQe870hWekwcUFmd+4G2FhAc5M=;
+	b=AMJ0lMnHx1+QMVMi+WoXg0HnvO/nGmh5M6YgOZqSVuEIKLVZW12grwDa6F37HOrAhbBe
+	 W/0gxM4JMZBSfgaKArU1JCtlWql34Bk9/yoqd+Tb+nHgr0tZZjWShO7aWFL4KhuqliQyg
+	 RTjVI/VLQRQihpk60LquZAQKjwevpHu2XH7xmsoMR3NcbW+r4PWk3MjPfmiOuEftdtEma
+	 nMEOqeoAK+BblTKaNpV5sps3TjSULpHSXK3BiYsZWW7+qYgQp52cayuBJYBQrZki/V2xI
+	 qx/0NV3BBZu8OzYmI3SH9AEI2wYqymuSIsiBLgzcGNn9f+xAyJJUpvR88fCE32nRPNA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=fygo.io;
-	spf=pass smtp.mailfrom=fygo.io;
-	dkim=pass header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.a=rsa-sha256 header.s=s1 header.b=QuBD33Uo;
-	arc=none smtp.remote-ip=209.127.231.58
-Received: from va-2-58.ptr.blmpb.com (va-2-58.ptr.blmpb.com [209.127.231.58])
+	dmarc=pass header.from=gmail.com;
+	spf=pass smtp.mailfrom=gmail.com;
+	dkim=pass header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20251104 header.b=hIVZI9MQ;
+	arc=none smtp.remote-ip=209.85.208.41
+Received: from mail-ed1-f41.google.com (mail-ed1-f41.google.com [209.85.208.41])
 	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id E7854606A31D
-	for <linux-bcache@vger.kernel.org>; Sun, 25 Oct 2026 18:16:51 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org E7854606A31D
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id EC94C606A31A
+	for <linux-bcache@vger.kernel.org>; Mon, 26 Oct 2026 07:09:45 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org EC94C606A31A
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=none dis=none) header.from=gmail.com
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=gmail.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.a=rsa-sha256 header.s=s1 header.b=QuBD33Uo
-DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
- s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1792952204;
-  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
- reply-to:content-type:mime-version:in-reply-to:message-id;
- bh=/5lwkv3QUM5YvGs1kBijpp/6wHjZlSgrb379+9vBQcE=;
- b=QuBD33UoJ0XNrNXlulx7JRtaPsQ4qoqOqO8xJleODGAQi7PudADFCXzp3QV1GvRqWJZXf4
- pxOcuxVcAZoEqvS1aKDUfAVE86SFcvCiSgUpuUOyqAsEBtlCoRdRvRhqdnBIdqiydKXIyn
- 5pT4JKYpfOjFId8YEuQqrQ3IkOOSdxRdFp9dSu7vJ2ARzG5LiPAxor+eID8RdsDUlVTNvm
- VxCCjMymqju3+OIX0xPBCl+UZW7C9RoL9wNqpneUkbqiZRpKfPqAYUNrAApqdBPxgm3S11
- pa/P4F00FcJhINf1B0xV0woy8m4g/TJNM6DCY3Ez7yQILu/DeCXaHo6qi3Iy4Q==
-User-Agent: Mozilla Thunderbird
-Cc: "wale.zhang.ftd@gmail.com" <wale.zhang.ftd@gmail.com>, 
-	<kent.overstreet@linux.dev>, <colyli@fygo.io>, 
-	"song@kernel.org" <song@kernel.org>, <regressions@lists.linux.dev>
+	dkim=pass (2048-bit key, unprotected) header.d=gmail.com header.i=@gmail.com header.a=rsa-sha256 header.s=20251104 header.b=hIVZI9MQ
+Received: by mail-ed1-f41.google.com with SMTP id 4fb4d7f45d1cf-6afafc89b48so4398157a12.2
+        for <linux-bcache@vger.kernel.org>; Mon, 26 Oct 2026 00:09:45 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20251104; t=1792998584; x=1793603384; darn=vger.kernel.org;
+        h=message-id:references:in-reply-to:cc:to:subject:date:from:from:to
+         :cc:subject:date:message-id:reply-to:content-type;
+        bh=NhqYyPv74NL/BY6caRQe870hWekwcUFmd+4G2FhAc5M=;
+        b=hIVZI9MQ73cXW6Kmn6e0cAksfZ4gsTv7dtZ5OsKF9feAnAQqHS7NDz3YxldxISW0uj
+         4Pm/DREjJs1ym7Fr9NPHyl/ZC0hG8sNjlGOrUE7NTEnHB6mKewfEGUq+EFffI3vCWLuc
+         oYcOM8kbxycwpGeNOREdPORvxnkUcGmCxQDr3qeA8tz8Smj45lsVTBguK+gigyCQO5kc
+         hQ8HqulTfI3ypyOV8oWBcLVIC98SW4M8vNBanhu1CKlZnvBlVXsjD6Izeub1jJVno8mP
+         nPzGsCaaztZH5pKYOkwfKWGeBiTttUmSmFnr5fGy+rqhoIGtDjYZ3/IcscdgLCIDirq7
+         5RtQ==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20260707; t=1792998584; x=1793603384;
+        h=message-id:references:in-reply-to:cc:to:subject:date:from:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
+         :content-type;
+        bh=NhqYyPv74NL/BY6caRQe870hWekwcUFmd+4G2FhAc5M=;
+        b=q6rgTGVktl4YNnsR7oWXJYeYNdR3Ssw7NVZCDacOY/M7vo+IYMCjOz06sFxTvaDEfu
+         bS7YDaRtI8EbTRG7hZptL1LK0KBswM+0NmSJvpZRm30kbBzY/vgJAqEi3t6bpar8puN3
+         CWAQIhUvVa56hMue6paQfw06GPDa6CbYE8pILkPSKEzU9m+Uje2Ko9NsH1rR31URxAyQ
+         TVcbugwWzU46IYjQh8h5uNxCHEbpPBcL/0DpyYZU4cek37dZo9VvnzwnZ1cXlUwR031y
+         ZPoemDeaZDBfX4JCKYJf6egbHPRLrEg+EPCw5DXUoXkgUCDevP+dzFvEQUE7UMUYIEDq
+         1erw==
+X-Gm-Message-State: AFq9FYKsWLkqFsA4hojkDbMiafpRSaFtpZ3ulSzX2xuYXBuc3sbx8cyu
+	5CsHMbeOAnGr9U895srQyxcgu/UxQ+ojBGoZ6lZqjNxHs23IBdfsHEKf
+X-Gm-Gg: AYBFou1dU0acZSF8TMh7yZULrm3VBuqZLpYo/xGsw3z62X9eU5HTIwUdIcIyokxV3nR
+	FVcuP1yHdUGXUi7QuHex4scBWaU8l9JVcuvq9mrhXEZ87MllDp/4nv4uAlru5+LV7fg8QuZkiyH
+	uHZD+vs6YlkvdDbalOLHpzRM+Xfn2bOJjO5liZxzDaI0ykVgpsBDOqgP5GZmQeZHe1S/ZYNS1Je
+	OOkXdkW2KKlpMj/rTPteAd0wmNjLOuz/kOF0ctAiiXoDOpuOhxHBVqdceGkjP+4PdLl7fFLsq3p
+	RdoFsOeJxHaK2a2DnjtVS+293r/IBcS8HQzwHfLCC+IdwB5OAMjYPdo9rtTJBfZ3wPVG0ZC/xwD
+	sPgQq9Q7gxXXvS5oub/992RVZXOpUP+L/Atl5irQ6CBNd4w1Q56dntHKal4nWdhRMw28hDvmGGm
+	riPSirp5keDe735Mk2kDgZfg3BpdkBs7TBBvGVmH50DOdSyT+0ObBsx05cVfVV+NTvh2ToYAOas
+	HvjYlQ54HK7kuVye8u9MDvcihvYCF7cw1cd5h9GRIgy7DV3LnTDjpSJEQ2I
+X-Received: by 2002:a17:906:c155:b0:c29:f5d8:9c73 with SMTP id a640c23a62f3a-c46bde6e440mr782878166b.34.1792998584236;
+        Mon, 26 Oct 2026 00:09:44 -0700 (PDT)
+Received: from [192.168.1.182] ([188.241.197.194])
+        by smtp.gmail.com with ESMTPSA id 4fb4d7f45d1cf-6b445991e83sm3363345a12.34.2026.10.26.00.09.40
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384 bits=256/256);
+        Mon, 26 Oct 2026 00:09:42 -0700 (PDT)
+From: Konstantin Nikiforov <helllamer@gmail.com>
+Date: Mon, 26 Oct 2026 09:21:09 +0300
+Subject: [PATCH] md/raid5: complete unsupported discards successfully
+To: linux-raid@vger.kernel.org
+Cc: linux-bcache@vger.kernel.org, regressions@lists.linux.dev,
+ linux-kernel@vger.kernel.org, stable@vger.kernel.org, yukuai@fygo.io,
+ song@kernel.org, magiclinan@didiglobal.com, xiao@kernel.org, colyli@fygo.io,
+ kent.overstreet@linux.dev
+In-Reply-To:
+ <CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdqPDXKL8r8-kR9Q@mail.gmail.com>
+References:
+ <CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdqPDXKL8r8-kR9Q@mail.gmail.com>
+Message-ID: <179299857972.12222.2729359466842183358@gmail.com>
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Post: <mailto:linux-bcache@vger.kernel.org>
@@ -55,134 +95,81 @@ List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:linux-bcache+owner@vger.kernel.org>
 Precedence: list
-Mime-Version: 1.0
-In-Reply-To: <CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdqPDXKL8r8-kR9Q@mail.gmail.com>
-Date: Mon, 26 Oct 2026 02:16:39 +0800
-Message-Id: <b6685fc8-0580-4118-ba65-a7d319c08bcf@fygo.io>
-X-Original-From: yu kuai <yukuai@fygo.io>
-Received: from [192.168.1.104] ([39.182.0.25]) by smtp.larksuite.com with ESMTPS; Sun, 25 Oct 2026 18:16:43 +0000
-To: "Konstantin Nikiforov" <helllamer@gmail.com>, 
-	<linux-bcache@vger.kernel.org>, <linux-raid@vger.kernel.org>, 
-	"yu kuai" <yukuai@fygo.io>
-From: "yu kuai" <yukuai@fygo.io>
-Subject: Re: [REGRESSION] md/raid5: discards on an array of non-TRIM HDDs now fail with BLK_STS_NOTSUPP; bcache counts them as backing-device errors and stops the device
-References: <CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdqPDXKL8r8-kR9Q@mail.gmail.com>
-X-Lms-Return-Path: <lba+26ade478b+8e7a4e+vger.kernel.org+yukuai@fygo.io>
-Reply-To: yukuai@fygo.io
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset=UTF-8
 
-Hi,
+Since commit 90573092673c ("md/raid5: validate discard support at
+request time") raid5 advertises max_hw_discard_sectors = UINT_MAX no
+matter whether the member devices support discard or
+devices_handle_discard_safely is set, and make_discard_request() fails
+the discards it cannot handle with BLK_STS_NOTSUPP.
 
-=E5=9C=A8 2026/10/25 20:38, Konstantin Nikiforov =E5=86=99=E9=81=93:
-> #regzbot introduced: 90573092673c
->
-> Hi,
->
-> since upgrading from 7.1.8 to 7.2.11 a machine with root on
-> LVM -> bcache -> md raid5 (three SATA HDDs without TRIM) loses its root
-> device a few minutes after boot. The same stack ran on 7.1.x without
-> any bcache backing-device errors.
->
-> Storage stack
-> -------------
->    3x ST1000DM010-2EP102 (no TRIM; discard_max_hw_bytes =3D 0)
->     -> md126: raid5, 3 devices, 512K chunk, metadata 1.2
->     -> bcache0: md126 as backing device, cache set detached
->        (also reproduced while an NVMe cache was attached)
->     -> LVM vgpcrd5
->     -> btrfs (/usr, /var, /opt; mounted without any discard option)
->        + ext4 (/, /home)
->
-> Kernel: 7.2.11-arch1-1 (Arch Linux), mdadm 4.6, bcache-tools 1.1
->
-> Symptoms
-> --------
-> Every boot, starting ~3 minutes after mount, dmesg fills with:
->
->    bcache: bch_count_backing_io_errors() md126: IO error on backing
-> device, unrecoverable
->
-> in bursts of up to ~35 lines 2 ms apart. Per boot I counted 11, 17, 22
-> and 63 of them. bcache's io_error_limit is 64, so once a boot crosses it
-> bch_cached_dev_error() stops bcache0 and root, /usr, /var and /home
-> disappear. No I/O errors are logged by libata, sd or md; all three
-> members are healthy (SMART clean, array [UUU], no rebuild).
->
-> Analysis
-> --------
-> Since 90573092673c ("md/raid5: validate discard support at request
-> time", v7.2-rc1) raid5_set_limits() unconditionally sets
->
->    lim.max_hw_discard_sectors =3D UINT_MAX;
->
-> and records member support in conf->raid5_discard_unsupported. On this
-> array sysfs now shows:
->
->    /sys/block/md126/queue/discard_max_hw_bytes: 2199023255040
->    /sys/block/md126/queue/discard_max_bytes:    2199023255040
->    /sys/block/md126/queue/discard_granularity:  0
->    /sys/block/sd[abc]/queue/discard_max_hw_bytes: 0
->    (md127, a raid1 on the same disks, still shows 0 for all of these)
->
-> Two upper layers react to the advertised discard support:
->
-> 1. btrfs enables discard=3Dasync by default because the device advertises
->     discard (mount shows "ssd,discard=3Dasync" although nothing in fstab
->     asks for it).
->
-> 2. bcache forwards discards to the backing device whenever
->     bdev_max_discard_sectors(dc->bdev) is non-zero (cached_dev_write()
->     and detached_dev_do_request()). Before 7.2 that was 0 for this array
->     and bcache completed the discards itself.
->
-> raid5_discard_limits() then completes every such bio with
-> BLK_STS_NOTSUPP. bcache's backing_request_endio() treats any non-zero
-> bi_status as a media error and calls bch_count_backing_io_errors(), so
-> each discard brings the backing device one step closer to being stopped.
-> With 64 small deletions on the btrfs volume a root filesystem on
-> raid5+bcache is gone.
->
-> The granularity is also inconsistent: discard_granularity is 0 while
-> discard_max_hw_bytes is non-zero, so writing any non-zero value to
-> discard_max_bytes fails with EINVAL (only 0 is accepted).
->
-> Related changes I found:
-> - efdffeb6d491 ("md: skip discard on unsupported member devices", 7.3)
->    fixes the same bcache symptom for raid0/raid10 via
->    md_submit_discard_bio(), but raid5 does not use that helper and still
->    returns BLK_STS_NOTSUPP in current mainline (raid5_discard_limits()).
-> - 85764f475f3b ("md/raid5: complete discard bios while reshape is
->    active") addresses a different fallout of the same commit (hang during
->    reshape).
->
-> I have not found a report for this raid5 + bcache case on lore.
->
-> Possible fixes (either side would do):
-> - md/raid5: when conf->raid5_discard_unsupported is set, complete the
->    bio successfully (discard is advisory) instead of BLK_STS_NOTSUPP, or
->    do not advertise max_hw_discard_sectors in that case, as before 7.2.
+Before that commit such arrays did not advertise discard at all, so
+upper layers never sent one. Now they do, and the failure is not
+harmless:
 
-I think it's fine to complete the bio successfully in this case, the same
-as the old code did. I can cook a patch, however, if you like, feel free to
-test and send a patch by yourself :)
+ - bcache forwards discards to its backing device whenever
+   bdev_max_discard_sectors() is non-zero, and backing_request_endio()
+   treats every non-zero bi_status as a media error. After io_error_limit
+   (64) of them bch_cached_dev_error() stops the cached device. On a
+   machine with root on LVM over bcache over a raid5 of three HDDs the
+   root filesystem disappeared a few minutes after every boot.
 
-> - bcache: do not count BLK_STS_NOTSUPP (or failed REQ_OP_DISCARD) in
->    bch_count_backing_io_errors(), the same way REQ_RAHEAD failures are
->    already ignored.
->
-> Workaround in use
-> -----------------
-> A udev rule writing 0 to /sys/block/md126/queue/discard_max_bytes and
-> /sys/block/bcache0/queue/discard_max_bytes (also inside the initramfs),
-> plus "nodiscard" on the btrfs mounts. With that, io_errors stays at 0.
->
-> I can test patches on this machine.
->
-> Regards,
-> Konstantin Nikiforov
-> Claude Fable 5.1
+ - btrfs enables discard=async by default on any device that advertises
+   discard, which is what generated the discards in the first place.
 
---=20
-Thanks,
-Kuai
+Discard is advisory: blkdev_issue_discard() already turns -EOPNOTSUPP
+into success for its callers, and md_submit_discard_bio() silently skips
+raid0/raid10 members without discard support. Do the same here and
+complete the bio successfully when the array cannot pass it down safely,
+so that callers submitting their own discard bios, like bcache, see the
+same behaviour.
+
+Fixes: 90573092673c ("md/raid5: validate discard support at request time")
+Cc: stable@vger.kernel.org # 7.2
+Closes: https://lore.kernel.org/all/CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdqPDXKL8r8-kR9Q@mail.gmail.com/
+Signed-off-by: Konstantin Nikiforov <helllamer@gmail.com>
+---
+Kuai, this is the raid5-side change you were fine with in the report
+thread. Reproducer: raid5 over three loop devices with a bcache backing
+device on top, four blkdiscard calls on the bcache device. On 7.2.11
+without the patch bcache's io_errors goes to 4 (bch_count_backing_io_errors
+in dmesg); with the patch applied to 7.2.11 it stays at 0, and the
+affected machine (root on LVM over bcache over raid5 of HDDs) boots and
+runs with the patched module without any backing-device errors.
+blkdiscard on the md device itself reports success either way because
+blkdev_issue_discard() masks EOPNOTSUPP.
+
+One correction to my report: the "discard_granularity is 0" observation
+was a side effect of my own workaround (writing 0 to discard_max_bytes
+makes the block layer report granularity 0); on a fresh array the
+granularity is the stripe size as expected.
+
+ drivers/md/raid5.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+index b91545ce090d..b462b18e47ff 100644
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -1144,7 +1144,16 @@ static bool raid5_discard_limits(struct mddev *mddev, struct bio *bi)
+ 	if (!conf->raid5_discard_unsupported)
+ 		return true;
+ 
+-	bi->bi_status = BLK_STS_NOTSUPP;
++	/*
++	 * Discard is advisory. The array advertises discard regardless of
++	 * member support, so an upper layer may legitimately send discards
++	 * that cannot be forwarded safely. Complete them successfully
++	 * instead of failing them: bcache counts every failed backing
++	 * device bio as an I/O error and stops the device after
++	 * io_error_limit of them, and btrfs enables discard=async on any
++	 * device that advertises discard. This also matches what
++	 * md_submit_discard_bio() does for members without discard support.
++	 */
+ 	bio_endio(bi);
+ 	return false;
+ }
+
+base-commit: 6b4b543fa18757297ac756a6fe6e64f506b7844a
+-- 
+2.56.0
+
