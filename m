@@ -1,99 +1,100 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.160.177
+Authentication-Results: smtp.subspace.kernel.org; arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.160.169
 ARC-Seal: i=2; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=pass;
-	t=1793743086;
-	b=tW5UQiZ6Phghd8vEmGV3N3y0dC/EUH1eZno+sU9d4vXT/YF5hERCEmezu/OnqbrWYn5L
-	 4NnVBSWqx9Uz2lKXam1c2VKBVnfZJe51eyaZ5PxWbSPfK4YtUxpAhAlfhxvEZWCvt5AS5
-	 h+aeNAT7A1DfvTnTFODLnkhJLHboqJSyVnj1pMoe4Zxan/pKkn55dW0XbICDESHT13tQI
-	 kpjiqECoVDTWTbgnQuuqXbD4fFa+s3ePDOpIi5LbSnNquvB0Qptyrb5wmKCGUDVKidJ+c
-	 V3lS66JgyXfvfBTd9SWUkpAFs8p3YCGpfx0QZ3BkGqipKqbfJy049ucYMHqcB88FvwQ==
+	t=1793744878;
+	b=R4kxkNvtmpndwptUgGz0HEQ/HFVVX8ZUNO1Az9VnTePcLk/qmOLNvCFlBXrzwvqUOjAj
+	 etDsq7IUGTe/QE4rcD+pyQwq1PNkgwk2hS9KwOwEtTKhr49U3RZK5+thSyCuHn4UbKLI5
+	 vffPONO+kOG/y96qR9KOOZYhBmqlU2qQZHHV28IRb/apN7b7n1cauAZ9KWysITvokAAB/
+	 sU7C0fF+s+tSF8lQZ1t7KZsbLsQGWIvK+w4fY/KZj66NzknfABbJvdy46JHoYPX/j7CqC
+	 yYCmMmsS2ePBe8qTQgKm1ATUjZF6M0Mq8XqDXw0F5FAyoNZythtiVGod3b3UMPEPyow==
 ARC-Message-Signature: i=2; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793743086;
+	a=rsa-sha256; c=relaxed/relaxed; t=1793744878;
 	h=DMARC-Filter:Received:DKIM-Signature:X-Google-DKIM-Signature:
 	 X-Gm-Message-State:X-Gm-Gg:X-Received:MIME-Version:References:
 	 In-Reply-To:From:Date:X-Gm-Features:Message-ID:Subject:To:Cc:
 	 Content-Type:Content-Transfer-Encoding;
-	bh=eXfhE46ByNVgLysQds+yI8htZlyiiFA2uPyig/gxm3w=;
-	b=Usb3fKBQhnc/VlUzCVRZ+SdeLB2K4BQxOgeczlZ511XP3AzOheJ7P6R+3UObRgx+j24t
-	 9nM6SIJE7TOtTop/7wqB+pDwaQhk+8RtrK9XdEhu45GCQIuo21fvzU1TL3FZG2UfeRBxg
-	 nWDEF1VOB4G9w1vDSTvb71DsRVSIaYn3w71J7HZsUJnlGor7Ljnq6xhpBa4L8gKBfhFJ1
-	 kGZyCreowPSaP/UsSYv6VI3AKeSDQB5yq5IJCxbeHWnagOBuJw0sxfHc9tSqbYvEa8YYS
-	 7QfVOIrxztwYzmg0AEOWtgeVwHqRT2lbF2PTffPkrRGGmkmaZY8EJw9duOE/ao2eR6w==
+	bh=U6sOeMDVcAvnCgHIdX2jRiq2c1v5uHZOJD+0XTCDNiI=;
+	b=EbD/veoJ00z/nXwECM6aRs/o6LoPZDhFgJUWvhJOSTdDRF+lAiJl8UJFhjoHCf8sf4D2
+	 WlsrNpezu7Z3Rz0sSRcf8NsoevR9W27yL7u81i0BUBB5R2CA4xzVdEEerpMOxGr8ZHOJk
+	 NlTTLUoONKfikdsfKlrp4IJxwSrhBewqQbxWSCf+B0F1CIxwTE+goxFGsf0L1JrP8KXu9
+	 23heC59cI8HL5aVbsUXFz2ljrbJ9pCvTnTQxP80vpeNwvDpv/GR+KU4g5vIKDE888Xjp2
+	 LkTt3Abn8mmO0k7h/Nr8c0FxNyPo8Id1QoZVzpY5JhldUn1nwufrOcQZIlOEVCw9wHA==
 ARC-Authentication-Results: i=2; smtp.subspace.kernel.org; 
 	dmarc=pass header.from=google.com;
 	spf=pass smtp.mailfrom=google.com;
-	dkim=pass header.d=google.com header.i=@google.com header.a=rsa-sha256 header.s=20260707 header.b=dwK6R528;
-	arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.160.177
-Received: from mail-qt1-f177.google.com (mail-qt1-f177.google.com [209.85.160.177])
+	dkim=pass header.d=google.com header.i=@google.com header.a=rsa-sha256 header.s=20260707 header.b=g7pPR470;
+	arc=pass header.oldest-pass=0 smtp.remote-ip=209.85.160.169
+Received: from mail-qt1-f169.google.com (mail-qt1-f169.google.com [209.85.160.169])
 	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 6B5D9606A31B
-	for <linux-bcache@vger.kernel.org>; Tue,  3 Nov 2026 21:58:06 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 6B5D9606A31B
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 26508606A31B
+	for <linux-bcache@vger.kernel.org>; Tue,  3 Nov 2026 22:27:58 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 26508606A31B
 Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=reject dis=none) header.from=google.com
 Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=google.com
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (2048-bit key, unprotected) header.d=google.com header.i=@google.com header.a=rsa-sha256 header.s=20260707 header.b=dwK6R528
-Received: by mail-qt1-f177.google.com with SMTP id d75a77b69052e-5383c97c8cfso29571cf.1
-        for <linux-bcache@vger.kernel.org>; Tue, 03 Nov 2026 13:58:06 -0800 (PST)
-ARC-Seal: i=1; a=rsa-sha256; t=1793743085; cv=none;
+	dkim=pass (2048-bit key, unprotected) header.d=google.com header.i=@google.com header.a=rsa-sha256 header.s=20260707 header.b=g7pPR470
+Received: by mail-qt1-f169.google.com with SMTP id d75a77b69052e-5383c97c8cfso38461cf.1
+        for <linux-bcache@vger.kernel.org>; Tue, 03 Nov 2026 14:27:58 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1793744877; cv=none;
         d=google.com; s=arc-20260327;
-        b=jAQuRvsJscBnJzYCIivq/J3FvrqfGUYJHJsAUuK5EwVUI83cvRcGqj/MjUQzmrQK5D
-         Y7EpeGhQqnvLaDyPW4dHX5mPmczwcvZDfbOHrQrdJMmPnj2npYN6NhoF0CmOXzkzh2bn
-         zDSPXBHqqsEoFu83/Zc1zTXPTNtTbov92PdO7YMoKry1PArf5aIXzUJSX5C+H/N53JIo
-         oOWESEiGoDsHzVtFDEcWUXPoYnGvB9h8YHZrMwSc+KBmcPnpDRkWpaOS5zmz8EB9tC5R
-         090kdBfTpZ3oH/v1F9/517iJR6q+uYn3CccrMQ0/PjNdHxU8Isj5h3IJTNuhzeJA4+HF
-         yurw==
+        b=f46ZDNkQ4k4258N95CTn8PtY3hbVfMZPQfPJ9mfDvD8hAJ9uKIiNbkVra5amsZqwpA
+         A5BzShvdzD43BsQGS1ircxfE4VLcicYnmhXlV4lw+kalcKZ+rTKQLMnqzv/qmbrhevo2
+         GfXQPYjsYWErrujcptcmZCkyfTYzXvwfBtRv8NnxkYUfoUIA1gDbiq60OOUINV7DeXiQ
+         /4K04SWCqGxGRIvfVvTI3ZU2GLL+wKqGXg/9TiRhp+zegwsmCGxDDMHggTpqvQy7GZXI
+         azFM++LxuTDb5v+EQgN92C1FwLYzATLTpYGBaFzj+RW5O5wpadixWLqdO2kIB85O2BsR
+         KVYQ==
 ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327;
         h=content-transfer-encoding:cc:to:subject:message-id:date:from
          :in-reply-to:references:mime-version:dkim-signature;
-        bh=eXfhE46ByNVgLysQds+yI8htZlyiiFA2uPyig/gxm3w=;
-        fh=uUK2cqHFhGpZ0D3uFjoJU+qVIZK3+guRocIAzIl1jf0=;
-        b=VjSbxLFAmrbFEArnoC2lPuu5WlRtV2TWAYUmAye9LK5rKoPH5vLGjCPgUYTI7CjPev
-         rvP33vo/XacKEv5OtsNLpxBhjuiY8bSsFZ0v3bw8/aAD3jzd5yyS4PQpByWfIYIMe7ng
-         9D1nnXcKoytZx1gtzU7El1CY/ANr7+EIMjdRByladQdp4UQB+xxdzmBOiKfxiNXW2C8b
-         xfn0DFTqV4yLM9axD3gIlKbzPEWJgjRjTw0M0iNaJMSo/bcAa1LohOoSHmiZyWjc4Eg8
-         HbX1ZW6eUEvraSi0efHnSkqAO+EggrTDP410k/26qkaRa6CKlOx22lFAET6IDi/8sODe
-         HxYQ==;
+        bh=U6sOeMDVcAvnCgHIdX2jRiq2c1v5uHZOJD+0XTCDNiI=;
+        fh=bHd1dYgj14LKM3jeHP2+42qCzyvF19odYPk6bSiX6Zg=;
+        b=qNpJ/FmIFB4b6WhVoigWiTA3ra84O3MwJNgPm3bs+VF5WLdcZTQmdR4CuIyb0XEc6E
+         jPgc9eLNgm8ltLG8gbmzpG0ssRT/6EppoXMolgrunxVfbFcwIxcRJbey+SgpjAFy4tZk
+         KQjq/aoTVtzGI3Q2fpr85qYgXoIa0SNBHJedBoG4ElaBleDurxeNkQpAXypq426Oh0rE
+         RiAkX8xT1OzsYBN0H6wx7bs1EjGf7jMjlm3JVKIbXwcJsCWTKCaa8JSfjtzyXu3jiieG
+         WNtpQqw7Bs5HtySGtwElUewF7AoZieT/COA1OtWXI73/EphfVwW+ZszvbvJJg+DUVIzK
+         /fNA==;
         darn=vger.kernel.org
 ARC-Authentication-Results: i=1; mx.google.com; arc=none
 DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=google.com; s=20260707; t=1793743085; x=1794347885; darn=vger.kernel.org;
+        d=google.com; s=20260707; t=1793744877; x=1794349677; darn=vger.kernel.org;
         h=content-transfer-encoding:content-type:cc:to:subject:message-id
          :date:from:in-reply-to:references:mime-version:from:to:cc:subject
          :date:message-id:reply-to:content-type;
-        bh=eXfhE46ByNVgLysQds+yI8htZlyiiFA2uPyig/gxm3w=;
-        b=dwK6R528K3S39IyfjydsfTmiX9LFzcMgUu6nD/bXYJxrTqYBDETz4LHTEWG3NvhFdp
-         ftUx9Z11He8VAFPjJHRr5bojyw32mmnOTt8LYj+cpgAJa8HRcBJyGAYZUNLX/2nAnnIr
-         h1HsE3eB6LxLOi3YlXTAWu0P/8uJVQYMy8o3OUCN1dZrhQxMzeUZ3sVLJC/bIE1XYPZ/
-         otjku0JGSireL02eK0A5I6P6ovG/mxXK/0Kx8cWri/wVw+PHskU/xRs8cnTqDzWCJAXy
-         N8cMOqB1Txna/jVRUOWDzzwDmH6vTvYrkCiLU2AmRYB155PbWmiR26KDx32bY7K1AQkO
-         LjJA==
+        bh=U6sOeMDVcAvnCgHIdX2jRiq2c1v5uHZOJD+0XTCDNiI=;
+        b=g7pPR470Cacpaxyq4bouZC5n+xAsKKXcWKRnDviJizeavWvuP+QVqEvi0u8zdOX65A
+         sMQm04l1bjCw2aXHRB3dF/LeGiKgY5LOIUVG4gDEyv0SHS96/pClIJreiJx5ppi6LjrY
+         eijCb/+dkNxT0KFC2NnbfedPtHUI4fmkqUjcSXademL4yPQ3oU1OQRlB9g530/IyP8BU
+         sZxDXi/bqc4ZegEcQmLHjjavdguBpDsC/jJ102zP2NuVZgNjtoFtDeGmzlusXQiyUSKG
+         jngfHDfSVTs0iUeLa8qFUaUOeBQYA0AVTG1Vy0Js0PoVcpZMNcGPShLgMCH9KXSJNY/i
+         CIMQ==
 X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
-        d=1e100.net; s=20260707; t=1793743085; x=1794347885;
+        d=1e100.net; s=20260707; t=1793744877; x=1794349677;
         h=content-transfer-encoding:content-type:cc:to:subject:message-id
          :date:from:in-reply-to:references:mime-version:x-gm-gg
          :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to
          :content-type;
-        bh=eXfhE46ByNVgLysQds+yI8htZlyiiFA2uPyig/gxm3w=;
-        b=XIlWCLru5mtRX7+5G1LsDcZ8cdXGVZ3+Ca0ynnU+CiEo9czPr1avOjkTjW2Rw3LOwk
-         FBgz5w1JiTIvrSasqeN2X3w0aFSBBuRQULKs8exa4zNsj+38GgCyr4E393v4NMHwLLB8
-         JUrBiLDU86IsCxePiIVblmMDchOCLQN2OPUOe5bRH79G0JP2GNB5RIl4Z7wvUFgi9yre
-         nvQcdKThZ1Az21MBtmCYtMjzQdwoYF5ZvK6t30GvEFf1c5FSGiDffL/b3MqUp994RJ13
-         11HE/2+6KnJuD0Uv19Q7Fv/wrp86mQNZEfz6zEJfgHQuyytJjfGwz1f704xosKgjkdeQ
-         ac/w==
-X-Gm-Message-State: APuU4Z8MJr56DziSMbAl7TCXGiRLayFVa0ebkDT0rpwAMk1KMhbtEkTw
-	uvheE+NeD8hxkcmX6EORVqr4zhos2l0883bry9ng8xO56IbivLa3ta4ejtLUrDiLe/ufjFBvvD6
-	al38b0nHbAoDU0FQvTf3Gb18GE/Icslm0lLc/CH2I
-X-Gm-Gg: AYBFou3nQ4/edwwtQasIgrOo3qW5nU+20/OxA2d+2jJeZWdgTB134jMdrTaJ+4jnW5a
-	lXqr6WeIUCwV1m6s1mJP+Z52WhS4Y4lFYSO3J9dz6aUzEBZ3nKvIk1rijYWuPMP6ZjaJ9FZldjs
-	HTKd2saFOvkg8ATfKIqOAKry7YE6sdxJe7ls2pJPobWCAC5EfGxF54jJCBpWvksuqENzJd6WZ0B
-	Y96a29WD7SqXO+I+qaTgbrAON7i5YiBWx/WsLhwghwLku1AZXXBJ1JWSCtfY1omiGJ9WmKKxr2I
-	Z2jXnnKtznDoPB0k13yVnQsWLYhJzu6PofFJvXFzaqciy42hrl/wtWUvOhN96ABIIFb3YtkKT/k
-	JJ24gyxBhTM+K+qjmp4r44QGlzMe3JZnhlPngzijMCiG84BO/sJIs/gfg9p2qWzoTRA==
-X-Received: by 2002:a05:622a:250c:b0:534:313:9b4e with SMTP id
- d75a77b69052e-54b2beaaf4amr4792951cf.5.1793743084531; Tue, 03 Nov 2026
- 13:58:04 -0800 (PST)
+        bh=U6sOeMDVcAvnCgHIdX2jRiq2c1v5uHZOJD+0XTCDNiI=;
+        b=f69VjWkXidzW64HtPrd6apN2/QuaUeNzvH2ZTv/R//gBBbutiWrPEDgCbDutuyLNEl
+         vIUILC2s7FfeJu17/xtGaSNsKAYXL0g62IMk8sUAgGwn5TRF2Uo0z1yOU7/yaCoR3Vbs
+         bV+YL1cRFVVi4/ImRGCWWWHMxMvtrhvQp10jIL3VEhTxa4HJLuqK6N3sKJdsG9edwHZP
+         cJokz1b3m2Llh1fsgXRCRUanhe97wTGbrFT+vqRwnJE1/ISeskNMSH0+SIKD6H3qw6Lt
+         YZqBsyOfv6+uc5zHtc+sORt239rgZf0VzLLUXM3GcAYQy5UkW8Bd8ijCvTftAlw4I4Ev
+         rE4Q==
+X-Gm-Message-State: APuU4Z8xa7kFd9jXSD81dwGgRdsgjebmea/+CyyRf30dAJN7cvz5LXQq
+	6RK0fDIwObpZyse/dppkN4Do7Hwrfrz7bfsr5HCDoohYzGq9Uft4roNDV4dDebEjiqxXQ1gDsCQ
+	g/kN4YK9jzX+vaJOefukImq37hPen3w3IDOsiIa2h
+X-Gm-Gg: AYBFou3pn387lqZiclNu7V3N0uUjnwpVJsVIfYNRjgfXYTSo2M2iWKE8GUZwg5j87Om
+	ZmbJWzuuhK+DLOzhIqFPALhIXNCB71P2rljbHI8tZCdKVIuSiJQwKEZBT/RSW7MTdjhtejF99Ss
+	da6Jbi/5yaJdkZdbBkUfEufJF6w0rjizZN0gLaa4+2fqrcsquYcX3Yu1+/4UIcpIHM3Qs7vXa7N
+	QfvCsAV39mpG8bWnYp1ozOosCyaM22yQ447BWqmaZxh+qCwPZj2R3VCd8ieGIycRxAni3MsWlYH
+	MHOCasZMN6TTuTX8DTh876tnJjQCvzyFSUR0dT2aNx/IXb1TsXy9VHnzC4w8PrCKtMChHg9oez9
+	MsdsyQbt22icbK6wuhWVYeKfKcNiaadqYvpvd59XCoSv1PVPVbetqFH56gn32yy9lRfdk9JAKNL
+	/Eo9fZWxiTI+M=
+X-Received: by 2002:a05:622a:2b07:b0:542:fc60:fe23 with SMTP id
+ d75a77b69052e-54b2a80e855mr5349021cf.3.1793744876064; Tue, 03 Nov 2026
+ 14:27:56 -0800 (PST)
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Post: <mailto:linux-bcache@vger.kernel.org>
@@ -103,117 +104,71 @@ List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:linux-bcache+owner@vger.kernel.org>
 Precedence: list
 MIME-Version: 1.0
-References: <20261103070122.1208383-1-robertpang@google.com>
-In-Reply-To: <20261103070122.1208383-1-robertpang@google.com>
+References: <20261103070407.1211071-1-robertpang@google.com>
+In-Reply-To: <20261103070407.1211071-1-robertpang@google.com>
 From: Robert Pang <robertpang@google.com>
-Date: Tue, 3 Nov 2026 13:57:53 -0800
-X-Gm-Features: AclHuK_s85z0JpxqehQwdC_3u-Z0zzJP76eAsxlJmBPLxwKxztS9OJIUR-ZEAB0
-Message-ID: <CAJhEC04+1tu_vGVNfc0TicEb9T2wPpFPLqmQRqX0G_k7M3sBwQ@mail.gmail.com>
-Subject: Re: [PATCH] bcache: allow more bucket reclaims during garbage collection
+Date: Tue, 3 Nov 2026 14:27:44 -0800
+X-Gm-Features: AclHuK_ZoXvD-8aoB7BiBr9V6B5ChZ0ecv0eLMPp_diX0MDcPttP-OdgfME7Vps
+Message-ID: <CAJhEC051dpSeqoMR4-w-feaEdR90xW_g9O91RiZ0HJoUM6CofA@mail.gmail.com>
+Subject: Re: [PATCH] bcache: fix available bucket accounting in bucket allocation
 To: colyli@fygo.io, kent.overstreet@linux.dev
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org, 
-	dongsheng.yang@easystack.cn, mingzhe.zou@easystack.cn
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 2, 2026 at 11:02=E2=80=AFPM Robert Pang <robertpang@google.com>=
+On Mon, Nov 2, 2026 at 11:04=E2=80=AFPM Robert Pang <robertpang@google.com>=
  wrote:
 >
-> In patch a14a68b76954 ("bcache: allow allocator to invalidate bucket in g=
-c"),
-> reclaimable buckets are added to the free list for the bucket allocator
-> at the start of a GC cycle.
+> In bch_bucket_alloc(), a cache set's avail_nbuckets is decremented whenev=
+er a
+> bucket is allocated, assuming that the bucket becomes unavailable once
+> allocated. However, when a bucket is allocated but the GC mark is unset o=
+r
+> reclaimable, it is available still. This false counter decrement leads to=
+ an
+> inflated in-use measurement, which triggers cache bypasses once CUTOFF_CA=
+CHE_ADD
+> is reached, persisting until the next garbage collection cycle.
 >
-> However, once these buckets are allocated, they are no longer marked as
-> reclaimable until the GC cycle finishes. Under heavy loads and frequent c=
-ache
-> updates, all reclaimable buckets can be exhausted before the GC ends, cau=
-sing
-> the allocator to wait and stalling incoming I/O.
->
-> Address this by allowing reclaimable buckets to be reclaimed during GC up=
- to
-> the number of generations left before BUCKET_GC_GEN_MAX.
+> Fix this by ensuring avail_nbuckets is only decremented when the allocate=
+d
+> bucket is already marked and not in the GC_MARK_RECLAIMABLE state.
 >
 > Signed-off-by: Robert Pang <robertpang@google.com>
 > ---
->  drivers/md/bcache/alloc.c  | 3 ++-
->  drivers/md/bcache/bcache.h | 2 +-
->  drivers/md/bcache/btree.c  | 5 +++--
->  3 files changed, 6 insertions(+), 4 deletions(-)
+>  drivers/md/bcache/alloc.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 >
 > diff --git a/drivers/md/bcache/alloc.c b/drivers/md/bcache/alloc.c
-> index 3ec240ec685d..959d753e7cf6 100644
+> index 3ec240ec685d..2d0cb9b414ac 100644
 > --- a/drivers/md/bcache/alloc.c
 > +++ b/drivers/md/bcache/alloc.c
-> @@ -141,7 +141,8 @@ void __bch_invalidate_one_bucket(struct cache *ca, st=
-ruct bucket *b)
->         bch_inc_gen(ca, b);
->         b->prio =3D INITIAL_PRIO;
->         atomic_inc(&b->pin);
-> -       b->reclaimable_in_gc =3D 0;
-> +       if (b->reclaimable_in_gc)
-> +               b->reclaimable_in_gc--;
->  }
+> @@ -446,7 +446,8 @@ long bch_bucket_alloc(struct cache *ca, unsigned int =
+reserve, bool wait)
+>                 b->prio =3D INITIAL_PRIO;
+>         }
 >
->  static void bch_invalidate_one_bucket(struct cache *ca, struct bucket *b=
-)
-> diff --git a/drivers/md/bcache/bcache.h b/drivers/md/bcache/bcache.h
-> index ec9ff9715081..daae5ac5ffbc 100644
-> --- a/drivers/md/bcache/bcache.h
-> +++ b/drivers/md/bcache/bcache.h
-> @@ -200,7 +200,7 @@ struct bucket {
->         uint8_t         gen;
->         uint8_t         last_gc; /* Most out of date gen in the btree */
->         uint16_t        gc_mark; /* Bitfield used by GC. See below for fi=
-eld */
-> -       uint16_t        reclaimable_in_gc:1;
-> +       uint8_t         reclaimable_in_gc; /* no. of times reclaimable in=
- GC */
->  };
->
->  /*
-> diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-> index 27a129d47d0a..fc167868c814 100644
-> --- a/drivers/md/bcache/btree.c
-> +++ b/drivers/md/bcache/btree.c
-> @@ -1742,9 +1742,10 @@ static void btree_gc_start(struct cache_set *c)
->
->         ca =3D c->cache;
->         for_each_bucket(b, ca) {
-> -               b->last_gc =3D b->gen;
->                 if (bch_can_invalidate_bucket(ca, b))
-> -                       b->reclaimable_in_gc =3D 1;
-> +                       b->reclaimable_in_gc =3D
-> +                               BUCKET_GC_GEN_MAX - bucket_gc_gen(b);
-> +               b->last_gc =3D b->gen;
->                 if (!atomic_read(&b->pin)) {
->                         SET_GC_MARK(b, 0);
->                         SET_GC_SECTORS_USED(b, 0);
+> -       if (ca->set->avail_nbuckets > 0) {
+> +       if (ca->set->avail_nbuckets > 0 &&
+> +           GC_MARK(b) && GC_MARK(b) !=3D GC_MARK_RECLAIMABLE) {
+>                 ca->set->avail_nbuckets--;
+>                 bch_update_bucket_in_use(ca->set, &ca->set->gc_stats);
+>         }
 > --
 > 2.56.0.398.g882cbad275-goog
 >
 
 Hi all,
 
-To provide some additional context on this patch:
+Here is some more context on this fix. This issue was observed during
+the investigation of [1]. We believe this is a latent issue exposed by
+longer garbage collection durations following commit 009073806fbc
+("bcache: reduce gc latency by processing less nodes and sleep less
+time") to reduce front IO tail latency during GC.
 
-  - This commit fixes a recurrence of the I/O stall issue [1]
-originally addressed by commit a14a68b76954 ("bcache: allow allocator
-to invalidate bucket in gc").
-  - The recurrence stems from commit 009073806fbc ("bcache: reduce gc
-latency by processing less nodes and sleep less time"), which
-introduces longer GC pauses (100 ms) to reduce front IO tail latency
-during GC.
-  - Due to the longer GC runtime, commit a14a68b76954 becomes
-ineffective under heavy cache updates because reclaimable buckets are
-rapidly exhausted when each bucket is limited to a single reclaim.
-  - This patch extends commit a14a68b76954 to allow buckets to be
-reclaimed multiple times, bounded by the BUCKET_GC_GEN_MAX safety
-range.
-
-Best regards
+Best regards,
 Robert Pang
 
-[1] https://lore.kernel.org/linux-bcache/1599736884-5479-1-git-send-email-d=
-ongsheng.yang@easystack.cn/
+[1] https://lore.kernel.org/linux-bcache/CAJhEC04+1tu_vGVNfc0TicEb9T2wPpFPL=
+qmQRqX0G_k7M3sBwQ@mail.gmail.com/T/#m0be3c1a4a63427ed7b233a3f753a55fcded69d=
+05
