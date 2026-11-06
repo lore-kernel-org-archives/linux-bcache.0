@@ -1,51 +1,58 @@
-Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=156.224.82.216
+Authentication-Results: smtp.subspace.kernel.org; arc=none smtp.remote-ip=209.127.231.16
 ARC-Seal: i=1; d=subspace.kernel.org; s=arc20261015; a=rsa-sha256; cv=none;
-	t=1793884810;
-	b=a5578KmScOYPFyw1VuTGEjWgCOdvsFbjqqMBpaLoQNl3UlNlnitrZLepjPkj0IGEubra
-	 6MTnlucBk6ECzP2Fm7Zj4o7juaGFigiFJrTD1sd4aowLKl8+fdvkxuIveWPWc9hZT7z9Q
-	 NVzpgVIweROjKehYwpINBvF5F2YcF+LeD5KFxPPf1RLsNjpE6fUgewT91h3YXBMvs5WFf
-	 DWOh3s+7SvZzTDadtTr7QD2MjPUKvJ3I8MvzYDOXuK7ES7rJtLKC8sHS93jY7s9DFqAlT
-	 xQFFR7CDr1h/DW73zPf8PZqLdP1XqEJ6rxDOr13un9EkjCP6tRhC1LtZTztTcFvzDWw==
+	t=1793935603;
+	b=hYdCeta4+8ZqapB60PX5JZruRndwnGRCC4iIBSmnVS92+glzmFMEK/Sl0iglAi8g1qOE
+	 qCS7UIujQNaVWtlISVv2rBYbNYBoyxJEFS8Q1ezFt9zI1nnOBsOAdwHdX4q07GEOIrXai
+	 nTbAf2ccnGu0sNlCWgmpBD9yR+hdU0Ra/v0PW/rwVt7g3G8bn+QvGqoe54B5jHUC5rKyl
+	 KiEmcOxEUvPNRAu+yXX5DN6Qvrvy90LVJX58He42Gt033HwvTmiG174agDyoZo2nRoL3y
+	 Z62r5Uasp1kN+p+6VlWMX1kXqTLAzKM+HTGTu0ARp7FR02KR6E+i1FwssLZ5L6F+exA==
 ARC-Message-Signature: i=1; d=subspace.kernel.org; s=arc20261015;
-	a=rsa-sha256; c=relaxed/relaxed; t=1793884810;
-	h=DMARC-Filter:Received:From:To:Cc:Subject:Date:Message-ID:X-Mailer:
-	 MIME-Version:Content-Transfer-Encoding:X-HM-Tid:X-HM-MType:
-	 X-HM-Spam-Status:DKIM-Signature;
-	bh=2TzSoLWtRKuFMw7/tnNqI1rSDm2j/2Qgs5STebGi0hs=;
-	b=vRoNF/6QtJ8KJt7jj/uBE7UDVaZkZwBJk6bNR1tuTpCZqhhqbd4k6i1Ey8iudGxZiUAG
-	 GKFLMQNypHMDoR4q9e9oY4dnsgkHwI3eCPHJmrBcLn35lU2ffTx1Gjs9aWAAQPKdvnUHV
-	 dig279UA1JhH3FFtSdJ7vlYx2qlE17KuaIn8M/LWDkpMo0mJ9I2pS8lB+fFdCdL2zfa26
-	 VbzzWQt0uVly31GNYU6ahwuuEbooNBkEMmOSAcm9j0DtsQzR/EhDW2trnvLnxygykHcQM
-	 CjPk0D0R5pjvEmh4w/2MmJjcY0UNpmr4eTc/JGhDrPWVa7rkKGIMq9uXJ7zmnso1Acg==
+	a=rsa-sha256; c=relaxed/relaxed; t=1793935603;
+	h=DMARC-Filter:DKIM-Signature:User-Agent:Content-Type:Reply-To:Cc:Date:
+	 Subject:Mime-Version:Content-Transfer-Encoding:In-Reply-To:
+	 X-Lms-Return-Path:Received:To:From:Message-Id:References:
+	 X-Original-From;
+	bh=GicqH+O3H0yQelB/uFYofYeCG5YOTIFkaNOJy/Z44EM=;
+	b=XpfuICcl5Hg4DLShSPomvDr5trMLXD5b4k95wul+iic3Wcw3Bqs6GlTZmHBJJWQKKTil
+	 rg1JWE1jjMWT4CjMwYydeog504ysbMmErq2DwhIq5Su3usbO2UK6cLVWRz+EZgWk1DxCi
+	 RuDqhNUxaOgtUWC3bak017sZTx5l3wAKGnAOQVLW3w9zcCoTVEGX89sJeV68gBP2Lb928
+	 bi3FEtybhfVcpxtiqkKduvP+fB1Gom7DvoyGMC+8pqFG1+ZDkHm3ZWt1FSAT2+W3SWpjc
+	 VBXDClfziUNNDMQ6E1CXkS8nUbsrtPMoZe3SUYEc6e/g4t8rrJf08Mfff9g776O/6qA==
 ARC-Authentication-Results: i=1; smtp.subspace.kernel.org; 
-	dmarc=pass header.from=easystack.cn;
-	spf=pass smtp.mailfrom=easystack.cn;
-	dkim=pass header.d=easystack.cn header.i=@easystack.cn header.a=rsa-sha256 header.s=default header.b=LBbs1IBy;
-	arc=none smtp.remote-ip=156.224.82.216
-Received: from mail-m82216.xmail.ntesmail.com (mail-m82216.xmail.ntesmail.com [156.224.82.216])
-	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	dmarc=pass header.from=fygo.io;
+	spf=pass smtp.mailfrom=fygo.io;
+	dkim=pass header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.a=rsa-sha256 header.s=s1 header.b=Lww5u+Kk;
+	arc=none smtp.remote-ip=209.127.231.16
+Received: from va-2-16.ptr.blmpb.com (va-2-16.ptr.blmpb.com [209.127.231.16])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
 	 key-exchange X25519 server-signature ECDSA (prime256v1) server-digest SHA256)
 	(No client certificate requested)
-	by smtp.subspace.kernel.org (Postfix) with ESMTPS id 4507C606A333;
-	Thu,  5 Nov 2026 13:20:05 +0000 (UTC)
-DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org 4507C606A333
-Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=easystack.cn
-Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=easystack.cn
+	by smtp.subspace.kernel.org (Postfix) with ESMTPS id B5FD4606A32C
+	for <linux-bcache@vger.kernel.org>; Fri,  6 Nov 2026 03:26:41 +0000 (UTC)
+DMARC-Filter: OpenDMARC Filter v1.4.2 smtp.subspace.kernel.org B5FD4606A32C
+Authentication-Results: smtp.subspace.kernel.org; dmarc=pass (p=quarantine dis=none) header.from=fygo.io
+Authentication-Results: smtp.subspace.kernel.org; spf=pass smtp.mailfrom=fygo.io
 Authentication-Results: smtp.subspace.kernel.org;
-	dkim=pass (1024-bit key, unprotected) header.d=easystack.cn header.i=@easystack.cn header.a=rsa-sha256 header.s=default header.b=LBbs1IBy
-Received: from chenfan-ThinkPad-P1-Gen-4i.. (unknown [218.94.118.90])
-	by smtp.qiye.163.com (Hmail) with ESMTP id 25658c7e3;
-	Thu, 5 Nov 2026 21:19:56 +0800 (GMT+08:00)
-From: Chen Fan <fan.chen@easystack.cn>
-To: colyli@fygo.io,
-	kent.overstreet@linux.dev
-Cc: linux-bcache@vger.kernel.org,
-	linux-kernel@vger.kernel.org,
-	fan.chen@easystack.cn
-Subject: [PATCH 1/1] bcache: fix use-after-free when waiting for dirty-init threads
-Date: Thu,  5 Nov 2026 21:19:54 +0800
-Message-ID: <20261105131954.1195428-1-fan.chen@easystack.cn>
-X-Mailer: git-send-email 2.43.0
+	dkim=pass (2048-bit key, unprotected) header.d=fygo-io.20200929.dkim.larksuite.com header.i=@fygo-io.20200929.dkim.larksuite.com header.a=rsa-sha256 header.s=s1 header.b=Lww5u+Kk
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+ s=s1; d=fygo-io.20200929.dkim.larksuite.com; t=1793935590;
+  h=from:subject:mime-version:from:date:message-id:subject:to:cc:
+ reply-to:content-type:mime-version:in-reply-to:message-id;
+ bh=GicqH+O3H0yQelB/uFYofYeCG5YOTIFkaNOJy/Z44EM=;
+ b=Lww5u+KknIvOlBE7zUBEE9vMd4FsH0NAxwfvYYEm6v8gt1Nbf5G1yV/ElsyVkKlZ6u8x+f
+ jZdQFZEHssGIg9E9pRIBC0l/EMqfjtxwSVHfC6Ny9gzwXy1J+6rLt8VhXwT8BgzstuZyiQ
+ /ayu6Lgjfxq7uepXap0rJzd67lAgu8lnuvw6gg5gVB5n+Ji+kVo+CTX5i7FOouiwH0bvss
+ 1lRkBk7MqLxP0QWcr5TrOqJK8E6XSJGBn/x+mk6u98xFIhNL+MfpCvWLtpSTXfTiNvqgrV
+ gslbthYDVijhXjSp2YQfVl+rx/a4PbUl5f9EGF6pLTCaOXddQ0tPdPUD7OWO7w==
+User-Agent: Mozilla Thunderbird
+Content-Type: text/plain; charset=UTF-8
+Reply-To: yukuai@fygo.io
+Cc: <linux-bcache@vger.kernel.org>, <regressions@lists.linux.dev>, 
+	<linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>, 
+	<song@kernel.org>, <magiclinan@didiglobal.com>, <xiao@kernel.org>, 
+	<colyli@fygo.io>, <kent.overstreet@linux.dev>
+Date: Fri, 6 Nov 2026 11:26:23 +0800
+Subject: Re: [PATCH] md/raid5: complete unsupported discards successfully
 X-Mailing-List: linux-bcache@vger.kernel.org
 List-Id: <linux-bcache.vger.kernel.org>
 List-Post: <mailto:linux-bcache@vger.kernel.org>
@@ -54,154 +61,76 @@ List-Subscribe: <mailto:linux-bcache+subscribe@vger.kernel.org>
 List-Unsubscribe: <mailto:linux-bcache+unsubscribe@vger.kernel.org>
 List-Owner: <mailto:linux-bcache+owner@vger.kernel.org>
 Precedence: list
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-HM-Tid: 0aa1abddb6240229kunmd82a544d4466
-X-HM-MType: 1
-X-HM-Spam-Status: e1kfGhgUHx5ZQUpXWQgPGg8OCBgUHx5ZQUlOS1dZFg8aDwILHllBWSg2Ly
-	tZV1koWUFJQjdXWRgWCB1ZQUpXWS1ZQUlXWQ8JGhUIEh9ZQVkaT0IfVkpMQ05PHk9ITUkYS1YVFA
-	kWGhdVGRETFhoSFyQUDg9ZV1kYEgtZQVlJSkNVQk9VSkpDVUJLWVdZFhoPEhUdFFlBWU9LSFVKS0
-	lPT09IVUpLS1VKQktLWQY+
-DKIM-Signature: a=rsa-sha256;
-	b=LBbs1IBygPK0IHriXErHsuWfvAQ3RdDboS55b4f0cQ0LYwZaX8SJ67WT7lEqWGDw6b26EvYpzHjLrMNSkLF5WTL9sWetnUP2hszXG0HLwe6cBoJxRSVjMcTUy4MnSL5izmsecaNrfjx9auz3GPuPcjt4ahZl5ZaN/UXoBTKvgOw=; s=default; c=relaxed/relaxed; d=easystack.cn; v=1;
-	bh=2TzSoLWtRKuFMw7/tnNqI1rSDm2j/2Qgs5STebGi0hs=;
-	h=date:mime-version:subject:message-id:from;
+Mime-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+In-Reply-To: <179299857972.12222.2729359466842183358@gmail.com>
+X-Lms-Return-Path: <lba+26aed48e5+b08a0b+vger.kernel.org+yukuai@fygo.io>
+Received: from [192.168.1.104] ([39.182.0.25]) by smtp.larksuite.com with ESMTPS; Fri, 06 Nov 2026 03:26:28 +0000
+To: "Konstantin Nikiforov" <helllamer@gmail.com>, 
+	<linux-raid@vger.kernel.org>, "yu kuai" <yukuai@fygo.io>
+From: "yu kuai" <yukuai@fygo.io>
+Message-Id: <770fdf93-4330-4094-9807-a0cb449ecb73@fygo.io>
+References: <CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdqPDXKL8r8-kR9Q@mail.gmail.com> <179299857972.12222.2729359466842183358@gmail.com>
+X-Original-From: yu kuai <yukuai@fygo.io>
 
-We use multiple threads to count dirty sectors in parallel (read-only).
-bch_sectors_dirty_init() waits for the last dirty-init thread to set
-state.started to 0.
+=E5=9C=A8 2026/10/26 14:21, Konstantin Nikiforov =E5=86=99=E9=81=93:
 
-However, after the last thread sets state.started to 0 but before it calls
-wake_up(&state->wait), bch_sectors_dirty_init() may observe started == 0,
-return from wait_event() directly, and free local variable state.
-The subsequent wake_up(&state->wait) then accesses freed memory, because
-bch_sectors_dirty_init() has already exited.
+> Since commit 90573092673c ("md/raid5: validate discard support at
+> request time") raid5 advertises max_hw_discard_sectors =3D UINT_MAX no
+> matter whether the member devices support discard or
+> devices_handle_discard_safely is set, and make_discard_request() fails
+> the discards it cannot handle with BLK_STS_NOTSUPP.
+>
+> Before that commit such arrays did not advertise discard at all, so
+> upper layers never sent one. Now they do, and the failure is not
+> harmless:
+>
+>   - bcache forwards discards to its backing device whenever
+>     bdev_max_discard_sectors() is non-zero, and backing_request_endio()
+>     treats every non-zero bi_status as a media error. After io_error_limi=
+t
+>     (64) of them bch_cached_dev_error() stops the cached device. On a
+>     machine with root on LVM over bcache over a raid5 of three HDDs the
+>     root filesystem disappeared a few minutes after every boot.
+>
+>   - btrfs enables discard=3Dasync by default on any device that advertise=
+s
+>     discard, which is what generated the discards in the first place.
+>
+> Discard is advisory: blkdev_issue_discard() already turns -EOPNOTSUPP
+> into success for its callers, and md_submit_discard_bio() silently skips
+> raid0/raid10 members without discard support. Do the same here and
+> complete the bio successfully when the array cannot pass it down safely,
+> so that callers submitting their own discard bios, like bcache, see the
+> same behaviour.
+>
+> Fixes: 90573092673c ("md/raid5: validate discard support at request time"=
+)
+> Cc:stable@vger.kernel.org # 7.2
+> Closes:https://lore.kernel.org/all/CAO96y0V6oncv54ihXnHfJMYiG_QAQ-NM8BOdq=
+PDXKL8r8-kR9Q@mail.gmail.com/
+> Signed-off-by: Konstantin Nikiforov<helllamer@gmail.com>
+> ---
+> Kuai, this is the raid5-side change you were fine with in the report
+> thread. Reproducer: raid5 over three loop devices with a bcache backing
+> device on top, four blkdiscard calls on the bcache device. On 7.2.11
+> without the patch bcache's io_errors goes to 4 (bch_count_backing_io_erro=
+rs
+> in dmesg); with the patch applied to 7.2.11 it stays at 0, and the
+> affected machine (root on LVM over bcache over raid5 of HDDs) boots and
+> runs with the patched module without any backing-device errors.
+> blkdiscard on the md device itself reports success either way because
+> blkdev_issue_discard() masks EOPNOTSUPP.
+>
+> One correction to my report: the "discard_granularity is 0" observation
+> was a side effect of my own workaround (writing 0 to discard_max_bytes
+> makes the block layer report granularity 0); on a fresh array the
+> granularity is the stripe size as expected.
+>
+>   drivers/md/raid5.c | 11 ++++++++++-
+>   1 file changed, 10 insertions(+), 1 deletion(-)
+Applied
 
-Fix this by using a completion to wait for all dirty-init threads, so that
-no dirty-init thread can still access state after the wait completes.
-
-This issue was triggered in our environment with the following stack:
-------------[ cut here ]------------
-[30433.391386] Internal error: Oops: 0000000096000047 [#1] SMP
-[30433.585804] CPU: 54 PID: 48242 Comm: bch_dirtcnt[1] Kdump: loaded Tainted: G  6.6.0-98.0.0.90.aarch64 #1
-[30433.718972] Call trace:
-[30433.722722]  native_queued_spin_lock_slowpath+0x33c/0x420
-[30433.729401]  __wake_up_common_lock+0xbc/0x118
-[30433.735050]  __wake_up+0x20/0x38
-[30433.739575]  bch_dirty_init_thread+0x1c0/0x1f8 [bcache]
-[30433.746169]  kthread+0xf0/0x108
-[30433.750583]  ret_from_fork+0x10/0x20
-[30433.755425] Code: 91002020 8b040284 f862d8a5 aa0403e2 (f8256841)
-      ---[ end trace ]---
-
-Signed-off-by: Chen Fan <fan.chen@easystack.cn>
----
- drivers/md/bcache/writeback.c | 31 ++++++++++++-------------------
- drivers/md/bcache/writeback.h |  4 +---
- 2 files changed, 13 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/md/bcache/writeback.c b/drivers/md/bcache/writeback.c
-index 4b237074f453..e74457a8c952 100644
---- a/drivers/md/bcache/writeback.c
-+++ b/drivers/md/bcache/writeback.c
-@@ -16,6 +16,7 @@
- #include <linux/kthread.h>
- #include <linux/sched/clock.h>
- #include <trace/events/bcache.h>
-+#include <linux/completion.h>
- 
- static void update_gc_after_writeback(struct cache_set *c)
- {
-@@ -953,12 +954,7 @@ static int bch_dirty_init_thread(void *arg)
- 	}
- 
- out:
--	/* In order to wake up state->wait in time */
--	smp_mb__before_atomic();
--	if (atomic_dec_and_test(&state->started))
--		wake_up(&state->wait);
--
--	return 0;
-+	kthread_complete_and_exit(&state->done, 0);
- }
- 
- static int bch_btre_dirty_init_thread_nr(void)
-@@ -975,8 +971,9 @@ static int bch_btre_dirty_init_thread_nr(void)
- 
- void bch_sectors_dirty_init(struct bcache_device *d)
- {
--	int i;
-+	int i, launched = 0;
- 	struct btree *b = NULL;
-+	struct task_struct *thread;
- 	struct bkey *k = NULL;
- 	struct btree_iter_stack iter;
- 	struct sectors_dirty_init op;
-@@ -1014,9 +1011,8 @@ void bch_sectors_dirty_init(struct bcache_device *d)
- 	state.total_threads = bch_btre_dirty_init_thread_nr();
- 	state.key_idx = 0;
- 	spin_lock_init(&state.idx_lock);
--	atomic_set(&state.started, 0);
- 	atomic_set(&state.enough, 0);
--	init_waitqueue_head(&state.wait);
-+	init_completion(&state.done);
- 
- 	for (i = 0; i < state.total_threads; i++) {
- 		/* Fetch latest state.enough earlier */
-@@ -1024,23 +1020,20 @@ void bch_sectors_dirty_init(struct bcache_device *d)
- 		if (atomic_read(&state.enough))
- 			break;
- 
--		atomic_inc(&state.started);
- 		state.infos[i].state = &state;
--		state.infos[i].thread =
-+		thread =
- 			kthread_run(bch_dirty_init_thread, &state.infos[i],
- 				    "bch_dirtcnt[%d]", i);
--		if (IS_ERR(state.infos[i].thread)) {
-+		if (IS_ERR(thread)) {
- 			pr_err("fails to run thread bch_dirty_init[%d]\n", i);
--			atomic_dec(&state.started);
--			for (--i; i >= 0; i--)
--				kthread_stop(state.infos[i].thread);
--			goto out;
-+			break;
- 		}
-+		launched++;
- 	}
- 
--out:
--	/* Must wait for all threads to stop. */
--	wait_event(state.wait, atomic_read(&state.started) == 0);
-+	/* Wait for all threads to finish accessing state. */
-+	for (i = 0; i < launched; i++)
-+		wait_for_completion(&state.done);
- 	rw_unlock(0, b);
- }
- 
-diff --git a/drivers/md/bcache/writeback.h b/drivers/md/bcache/writeback.h
-index 31df716951f6..e6c74be20fc6 100644
---- a/drivers/md/bcache/writeback.h
-+++ b/drivers/md/bcache/writeback.h
-@@ -31,7 +31,6 @@
- struct bch_dirty_init_state;
- struct dirty_init_thrd_info {
- 	struct bch_dirty_init_state	*state;
--	struct task_struct		*thread;
- };
- 
- struct bch_dirty_init_state {
-@@ -40,9 +39,8 @@ struct bch_dirty_init_state {
- 	int				total_threads;
- 	int				key_idx;
- 	spinlock_t			idx_lock;
--	atomic_t			started;
- 	atomic_t			enough;
--	wait_queue_head_t		wait;
-+	struct completion		done;
- 	struct dirty_init_thrd_info	infos[BCH_DIRTY_INIT_THRD_MAX];
- };
- 
--- 
-2.43.0
-
+--=20
+Thanks,
+Kuai
